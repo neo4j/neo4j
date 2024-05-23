@@ -154,7 +154,7 @@ class KernelSchemaStateFlushingTest {
 
     private void dropConstraint(ConstraintDescriptor descriptor) throws KernelException {
         try (KernelTransaction transaction = beginTransaction()) {
-            transaction.schemaWrite().constraintDrop(descriptor);
+            transaction.schemaWrite().constraintDrop(descriptor, false);
             transaction.commit();
         }
     }

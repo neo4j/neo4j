@@ -26,34 +26,8 @@ import org.neo4j.internal.schema.SchemaDescriptors;
 public class ConstraintDescriptorFactory {
     private ConstraintDescriptorFactory() {}
 
-    public static ExistenceConstraintDescriptor existsForLabel(int labelId, int... propertyIds) {
-        return ConstraintDescriptorImplementation.makeExistsConstraint(
-                SchemaDescriptors.forLabel(labelId, propertyIds));
-    }
-
-    public static ExistenceConstraintDescriptor existsForRelType(int relTypeId, int... propertyIds) {
-        return ConstraintDescriptorImplementation.makeExistsConstraint(
-                SchemaDescriptors.forRelType(relTypeId, propertyIds));
-    }
-
-    public static UniquenessConstraintDescriptor uniqueForLabel(int labelId, int... propertyIds) {
-        return uniqueForSchema(SchemaDescriptors.forLabel(labelId, propertyIds));
-    }
-
-    public static UniquenessConstraintDescriptor uniqueForLabel(IndexType indexType, int labelId, int... propertyIds) {
-        return uniqueForSchema(SchemaDescriptors.forLabel(labelId, propertyIds), indexType);
-    }
-
-    public static KeyConstraintDescriptor nodeKeyForLabel(int labelId, int... propertyIds) {
-        return keyForSchema(SchemaDescriptors.forLabel(labelId, propertyIds));
-    }
-
-    public static KeyConstraintDescriptor nodeKeyForLabel(IndexType indexType, int labelId, int... propertyIds) {
-        return keyForSchema(SchemaDescriptors.forLabel(labelId, propertyIds), indexType);
-    }
-
-    public static ExistenceConstraintDescriptor existsForSchema(SchemaDescriptor schema) {
-        return ConstraintDescriptorImplementation.makeExistsConstraint(schema);
+    public static ExistenceConstraintDescriptor existsForSchema(SchemaDescriptor schema, boolean isDependent) {
+        return ConstraintDescriptorImplementation.makeExistsConstraint(schema, isDependent);
     }
 
     public static UniquenessConstraintDescriptor uniqueForSchema(SchemaDescriptor schema) {
@@ -72,7 +46,33 @@ public class ConstraintDescriptorFactory {
         return ConstraintDescriptorImplementation.makeUniqueExistsConstraint(schema, indexType);
     }
 
-    public static TypeConstraintDescriptor typeForSchema(SchemaDescriptor schema, PropertyTypeSet allowedTypes) {
-        return ConstraintDescriptorImplementation.makePropertyTypeConstraint(schema, allowedTypes);
+    public static TypeConstraintDescriptor typeForSchema(
+            SchemaDescriptor schema, PropertyTypeSet allowedTypes, boolean isDependent) {
+        return ConstraintDescriptorImplementation.makePropertyTypeConstraint(schema, allowedTypes, isDependent);
+    }
+
+    public static ExistenceConstraintDescriptor existsForLabel(boolean isDependent, int labelId, int... propertyIds) {
+        return existsForSchema(SchemaDescriptors.forLabel(labelId, propertyIds), isDependent);
+    }
+
+    public static ExistenceConstraintDescriptor existsForRelType(
+            boolean isDependent, int relTypeId, int... propertyIds) {
+        return existsForSchema(SchemaDescriptors.forRelType(relTypeId, propertyIds), isDependent);
+    }
+
+    public static UniquenessConstraintDescriptor uniqueForLabel(int labelId, int... propertyIds) {
+        return uniqueForSchema(SchemaDescriptors.forLabel(labelId, propertyIds));
+    }
+
+    public static UniquenessConstraintDescriptor uniqueForLabel(IndexType indexType, int labelId, int... propertyIds) {
+        return uniqueForSchema(SchemaDescriptors.forLabel(labelId, propertyIds), indexType);
+    }
+
+    public static KeyConstraintDescriptor nodeKeyForLabel(int labelId, int... propertyIds) {
+        return keyForSchema(SchemaDescriptors.forLabel(labelId, propertyIds));
+    }
+
+    public static KeyConstraintDescriptor nodeKeyForLabel(IndexType indexType, int labelId, int... propertyIds) {
+        return keyForSchema(SchemaDescriptors.forLabel(labelId, propertyIds), indexType);
     }
 }

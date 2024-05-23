@@ -114,17 +114,19 @@ public interface SchemaWrite {
      * Create node property existence constraint
      *
      * @param schema description of the constraint
+     * @param isDependent graph type dependence
      */
-    ConstraintDescriptor nodePropertyExistenceConstraintCreate(LabelSchemaDescriptor schema, String name)
-            throws KernelException;
+    ConstraintDescriptor nodePropertyExistenceConstraintCreate(
+            LabelSchemaDescriptor schema, String name, boolean isDependent) throws KernelException;
 
     /**
      * Create relationship property existence constraint
      *
      * @param schema description of the constraint
+     * @param isDependent graph type dependence
      */
-    ConstraintDescriptor relationshipPropertyExistenceConstraintCreate(RelationTypeSchemaDescriptor schema, String name)
-            throws KernelException;
+    ConstraintDescriptor relationshipPropertyExistenceConstraintCreate(
+            RelationTypeSchemaDescriptor schema, String name, boolean isDependent) throws KernelException;
 
     /**
      * Create property type constraint
@@ -132,23 +134,27 @@ public interface SchemaWrite {
      * @param schema description of the constraint
      * @param name the name the created constraint should have, or null
      * @param propertyType the allowed property types
+     * @param isDependent  graph type dependence
      * @return the created constraint.
      * @throws KernelException if the constraint cannot be created for some reason.
      */
     ConstraintDescriptor propertyTypeConstraintCreate(
-            SchemaDescriptor schema, String name, PropertyTypeSet propertyType) throws KernelException;
+            SchemaDescriptor schema, String name, PropertyTypeSet propertyType, boolean isDependent)
+            throws KernelException;
 
     /**
      * Drop the constraint with the given name.
      *
-     * @param name The name of the constraint to be dropped.
+     * @param name             The name of the constraint to be dropped.
+     * @param canDropDependent if the drop is privileged to drop a dependent constraint
      */
-    void constraintDrop(String name) throws SchemaKernelException;
+    void constraintDrop(String name, boolean canDropDependent) throws SchemaKernelException;
 
     /**
      * Drop the specific constraint.
      *
      * @param constraint description of the constraint
+     * @param canDropDependent if the drop is privileged to drop a dependent constraint
      */
-    void constraintDrop(ConstraintDescriptor constraint) throws SchemaKernelException;
+    void constraintDrop(ConstraintDescriptor constraint, boolean canDropDependent) throws SchemaKernelException;
 }

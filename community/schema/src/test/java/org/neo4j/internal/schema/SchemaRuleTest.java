@@ -148,12 +148,13 @@ class SchemaRuleTest {
             ConstraintDescriptorFactory.uniqueForSchema(labelSchema, RANGE);
     private final ConstraintDescriptor uniqueRelTypeConstraint =
             ConstraintDescriptorFactory.uniqueForSchema(relTypeSchema, RANGE);
-    private final ConstraintDescriptor existsLabelConstraint = ConstraintDescriptorFactory.existsForSchema(labelSchema);
+    private final ConstraintDescriptor existsLabelConstraint =
+            ConstraintDescriptorFactory.existsForSchema(labelSchema, false);
     private final ConstraintDescriptor nodeKeyConstraint = ConstraintDescriptorFactory.keyForSchema(labelSchema, RANGE);
     private final ConstraintDescriptor relKeyConstraint =
             ConstraintDescriptorFactory.keyForSchema(relTypeSchema, RANGE);
     private final ConstraintDescriptor existsRelTypeConstraint =
-            ConstraintDescriptorFactory.existsForSchema(relTypeSchema);
+            ConstraintDescriptorFactory.existsForSchema(relTypeSchema, false);
     private final ConstraintDescriptor uniqueLabelConstraint2 =
             ConstraintDescriptorFactory.uniqueForSchema(labelSchema2);
     private final ConstraintDescriptor uniqueLabelConstraintNamed = uniqueLabelConstraint
@@ -177,21 +178,21 @@ class SchemaRuleTest {
             .withId(5)
             .withOwnedIndexId(5);
     private final ConstraintDescriptor nodeTypeConstraintIntBool = ConstraintDescriptorFactory.typeForSchema(
-            labelSchema, PropertyTypeSet.of(SchemaValueType.INTEGER, SchemaValueType.BOOLEAN));
+            labelSchema, PropertyTypeSet.of(SchemaValueType.INTEGER, SchemaValueType.BOOLEAN), false);
     private final ConstraintDescriptor nodeTypeConstraintBoolInt = ConstraintDescriptorFactory.typeForSchema(
-            labelSchema, PropertyTypeSet.of(SchemaValueType.BOOLEAN, SchemaValueType.INTEGER));
+            labelSchema, PropertyTypeSet.of(SchemaValueType.BOOLEAN, SchemaValueType.INTEGER), false);
     private final ConstraintDescriptor nodeTypeConstraintBoolString = ConstraintDescriptorFactory.typeForSchema(
-            labelSchema, PropertyTypeSet.of(SchemaValueType.BOOLEAN, SchemaValueType.STRING));
+            labelSchema, PropertyTypeSet.of(SchemaValueType.BOOLEAN, SchemaValueType.STRING), false);
     private final ConstraintDescriptor relationshipTypeConstraintIntBool = ConstraintDescriptorFactory.typeForSchema(
-            relTypeSchema, PropertyTypeSet.of(SchemaValueType.BOOLEAN, SchemaValueType.STRING));
+            relTypeSchema, PropertyTypeSet.of(SchemaValueType.BOOLEAN, SchemaValueType.STRING), false);
     private final ConstraintDescriptor relationshipTypeConstraintBoolInt = ConstraintDescriptorFactory.typeForSchema(
-            relTypeSchema, PropertyTypeSet.of(SchemaValueType.BOOLEAN, SchemaValueType.STRING));
+            relTypeSchema, PropertyTypeSet.of(SchemaValueType.BOOLEAN, SchemaValueType.STRING), false);
     private final ConstraintDescriptor namedNodeTypeConstraint = ConstraintDescriptorFactory.typeForSchema(
-                    labelSchema, PropertyTypeSet.of(SchemaValueType.STRING))
+                    labelSchema, PropertyTypeSet.of(SchemaValueType.STRING), false)
             .withName("namedNodeTypeConstraint")
             .withId(10);
     private final ConstraintDescriptor namedRelationshipTypeConstraint = ConstraintDescriptorFactory.typeForSchema(
-                    relTypeSchema, PropertyTypeSet.of(SchemaValueType.STRING))
+                    relTypeSchema, PropertyTypeSet.of(SchemaValueType.STRING), false)
             .withName("namedRelationshipTypeConstraint")
             .withId(11);
 

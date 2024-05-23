@@ -67,9 +67,9 @@ import org.neo4j.values.storable.ValueCategory;
 class SchemaCacheTest {
 
     private final SchemaRule hans = newIndexRule(1, 0, 5);
-    private final SchemaRule witch = nodePropertyExistenceConstraint(2, 3, 6);
+    private final SchemaRule witch = nodePropertyExistenceConstraint(2, 3, 6, false);
     private final SchemaRule gretel = newIndexRule(3, 0, 7);
-    private final ConstraintDescriptor robot = relPropertyExistenceConstraint(7L, 8, 9);
+    private final ConstraintDescriptor robot = relPropertyExistenceConstraint(7L, 8, 9, false);
     private final IndexConfigCompleter indexConfigCompleter = (index, indexingBehaviour) -> index;
     private static final int[] noEntityToken = EMPTY_INT_ARRAY;
 
@@ -135,14 +135,14 @@ class SchemaCacheTest {
         // WHEN
         cache.addSchemaRule(uniquenessConstraint(0L, 1, 2, 133L));
         cache.addSchemaRule(uniquenessConstraint(1L, 3, 4, 133L));
-        cache.addSchemaRule(relPropertyExistenceConstraint(2L, 5, 6));
-        cache.addSchemaRule(nodePropertyExistenceConstraint(3L, 7, 8));
+        cache.addSchemaRule(relPropertyExistenceConstraint(2L, 5, 6, false));
+        cache.addSchemaRule(nodePropertyExistenceConstraint(3L, 7, 8, false));
 
         // THEN
         ConstraintDescriptor unique1 = uniqueForLabel(1, 2);
         ConstraintDescriptor unique2 = uniqueForLabel(3, 4);
-        ConstraintDescriptor existsRel = ConstraintDescriptorFactory.existsForRelType(5, 6);
-        ConstraintDescriptor existsNode = existsForLabel(7, 8);
+        ConstraintDescriptor existsRel = ConstraintDescriptorFactory.existsForRelType(false, 5, 6);
+        ConstraintDescriptor existsNode = existsForLabel(false, 7, 8);
 
         assertEquals(asSet(unique1, unique2, existsRel, existsNode), Iterables.asSet(cache.constraints()));
 
@@ -382,7 +382,7 @@ class SchemaCacheTest {
         // Given
         ConstraintDescriptor rule1 = uniquenessConstraint(0, 1, 1, 0);
         ConstraintDescriptor rule2 = uniquenessConstraint(1, 2, 1, 0);
-        ConstraintDescriptor rule3 = nodePropertyExistenceConstraint(2, 1, 2);
+        ConstraintDescriptor rule3 = nodePropertyExistenceConstraint(2, 1, 2, false);
 
         SchemaCache cache = newSchemaCache();
         cache.addSchemaRule(rule1);
@@ -402,7 +402,7 @@ class SchemaCacheTest {
         // Given
         ConstraintDescriptor rule1 = uniquenessConstraint(0, 1, 1, 0);
         ConstraintDescriptor rule2 = uniquenessConstraint(1, 2, 1, 0);
-        ConstraintDescriptor rule3 = nodePropertyExistenceConstraint(2, 1, 2);
+        ConstraintDescriptor rule3 = nodePropertyExistenceConstraint(2, 1, 2, false);
 
         SchemaCache cache = newSchemaCache();
         cache.addSchemaRule(rule1);
@@ -419,9 +419,9 @@ class SchemaCacheTest {
     @Test
     void shouldListConstraintsForRelationshipType() {
         // Given
-        ConstraintDescriptor rule1 = relPropertyExistenceConstraint(0, 1, 1);
-        ConstraintDescriptor rule2 = relPropertyExistenceConstraint(1, 2, 1);
-        ConstraintDescriptor rule3 = relPropertyExistenceConstraint(2, 1, 2);
+        ConstraintDescriptor rule1 = relPropertyExistenceConstraint(0, 1, 1, false);
+        ConstraintDescriptor rule2 = relPropertyExistenceConstraint(1, 2, 1, false);
+        ConstraintDescriptor rule3 = relPropertyExistenceConstraint(2, 1, 2, false);
 
         SchemaCache cache = newSchemaCache();
         cache.addSchemaRule(rule1);
@@ -775,7 +775,7 @@ class SchemaCacheTest {
     @Test
     void shouldFindConstraintByName() {
         ConstraintDescriptor constraint =
-                nodePropertyExistenceConstraint(1, 2, 3).withName("constraint name");
+                nodePropertyExistenceConstraint(1, 2, 3, false).withName("constraint name");
         SchemaCache cache = newSchemaCache(constraint);
         assertEquals(constraint, cache.constraintForName("constraint name"));
         cache.removeSchemaRule(constraint.getId());
@@ -937,13 +937,13 @@ class SchemaCacheTest {
                 .as("should not find the logical key for the node/label yet")
                 .isEqualTo(NO_LOGICAL_KEYS);
 
-        final var existenceConstraint = nodePropertyExistenceConstraint(43, labelId, propertyId1);
+        final var existenceConstraint = nodePropertyExistenceConstraint(43, labelId, propertyId1, false);
         cache.addSchemaRule(existenceConstraint);
         assertThat(cache.constraintsGetPropertyTokensForLogicalKey(labelId, NODE))
                 .as("not all properties exist to make up the logical key for the node/label")
                 .isEqualTo(NO_LOGICAL_KEYS);
 
-        cache.addSchemaRule(nodePropertyExistenceConstraint(44, labelId, propertyId2));
+        cache.addSchemaRule(nodePropertyExistenceConstraint(44, labelId, propertyId2, false));
         assertThat(cache.constraintsGetPropertyTokensForLogicalKey(labelId, NODE))
                 .as("All properties exist that make up the logical key for the node/label")
                 .isEqualTo(logicalKeys(propertyId1, propertyId2));
@@ -974,7 +974,7 @@ class SchemaCacheTest {
                 .as("should not find the logical key for the relationship yet")
                 .isEqualTo(NO_LOGICAL_KEYS);
 
-        final var existenceConstraint = relPropertyExistenceConstraint(43, relType, propertyId1);
+        final var existenceConstraint = relPropertyExistenceConstraint(43, relType, propertyId1, false);
         cache.addSchemaRule(existenceConstraint);
         assertThat(cache.constraintsGetPropertyTokensForLogicalKey(relType, RELATIONSHIP))
                 .as("should now find the property that makes up the logical key for the relationship")
@@ -1006,8 +1006,8 @@ class SchemaCacheTest {
 
         final var descriptors = Lists.immutable.of(
                 keyForSchema(schema).withId(42).withOwnedIndexId(index.getId()).withName(schemaName),
-                nodePropertyExistenceConstraint(43, labelId, propertyId1),
-                nodePropertyExistenceConstraint(44, labelId, propertyId2));
+                nodePropertyExistenceConstraint(43, labelId, propertyId1, false),
+                nodePropertyExistenceConstraint(44, labelId, propertyId2, false));
 
         final var cache = newSchemaCache(index, descriptors.get(constraint1));
         cache.addSchemaRule(descriptors.get(constraint2));
@@ -1033,8 +1033,8 @@ class SchemaCacheTest {
 
         final var descriptors = Lists.immutable.of(
                 keyForSchema(schema).withId(42).withOwnedIndexId(index.getId()).withName(schemaName),
-                relPropertyExistenceConstraint(43, relType, propertyId1),
-                relPropertyExistenceConstraint(44, relType, propertyId2));
+                relPropertyExistenceConstraint(43, relType, propertyId1, false),
+                relPropertyExistenceConstraint(44, relType, propertyId2, false));
 
         final var cache = newSchemaCache(index, descriptors.get(constraint1));
         cache.addSchemaRule(descriptors.get(constraint2));
@@ -1080,12 +1080,14 @@ class SchemaCacheTest {
         return IndexPrototype.forSchema(schema).withName("index_id").materialise(id);
     }
 
-    private static ConstraintDescriptor nodePropertyExistenceConstraint(long ruleId, int labelId, int propertyId) {
-        return existsForLabel(labelId, propertyId).withId(ruleId);
+    private static ConstraintDescriptor nodePropertyExistenceConstraint(
+            long ruleId, int labelId, int propertyId, boolean isDependent) {
+        return existsForLabel(isDependent, labelId, propertyId).withId(ruleId);
     }
 
-    private static ConstraintDescriptor relPropertyExistenceConstraint(long ruleId, int relTypeId, int propertyId) {
-        return ConstraintDescriptorFactory.existsForRelType(relTypeId, propertyId)
+    private static ConstraintDescriptor relPropertyExistenceConstraint(
+            long ruleId, int relTypeId, int propertyId, boolean isDependent) {
+        return ConstraintDescriptorFactory.existsForRelType(isDependent, relTypeId, propertyId)
                 .withId(ruleId);
     }
 

@@ -96,35 +96,36 @@ public class RestrictedSchemaWrite implements SchemaWrite {
     }
 
     @Override
-    public ConstraintDescriptor nodePropertyExistenceConstraintCreate(LabelSchemaDescriptor schema, String name)
-            throws KernelException {
+    public ConstraintDescriptor nodePropertyExistenceConstraintCreate(
+            LabelSchemaDescriptor schema, String name, boolean isDependent) throws KernelException {
         securityAuthorizationHandler.assertSchemaWrites(securityContext, PrivilegeAction.CREATE_CONSTRAINT);
-        return inner.nodePropertyExistenceConstraintCreate(schema, name);
+        return inner.nodePropertyExistenceConstraintCreate(schema, name, isDependent);
     }
 
     @Override
     public ConstraintDescriptor relationshipPropertyExistenceConstraintCreate(
-            RelationTypeSchemaDescriptor schema, String name) throws KernelException {
+            RelationTypeSchemaDescriptor schema, String name, boolean isDependent) throws KernelException {
         securityAuthorizationHandler.assertSchemaWrites(securityContext, PrivilegeAction.CREATE_CONSTRAINT);
-        return inner.relationshipPropertyExistenceConstraintCreate(schema, name);
+        return inner.relationshipPropertyExistenceConstraintCreate(schema, name, isDependent);
     }
 
     @Override
     public ConstraintDescriptor propertyTypeConstraintCreate(
-            SchemaDescriptor schema, String name, PropertyTypeSet propertyType) throws KernelException {
+            SchemaDescriptor schema, String name, PropertyTypeSet propertyType, boolean isDependent)
+            throws KernelException {
         securityAuthorizationHandler.assertSchemaWrites(securityContext, PrivilegeAction.CREATE_CONSTRAINT);
-        return inner.propertyTypeConstraintCreate(schema, name, propertyType);
+        return inner.propertyTypeConstraintCreate(schema, name, propertyType, isDependent);
     }
 
     @Override
-    public void constraintDrop(String name) throws SchemaKernelException {
+    public void constraintDrop(String name, boolean canDropDependent) throws SchemaKernelException {
         securityAuthorizationHandler.assertSchemaWrites(securityContext, PrivilegeAction.DROP_CONSTRAINT);
-        inner.constraintDrop(name);
+        inner.constraintDrop(name, canDropDependent);
     }
 
     @Override
-    public void constraintDrop(ConstraintDescriptor constraint) throws SchemaKernelException {
+    public void constraintDrop(ConstraintDescriptor constraint, boolean canDropDependent) throws SchemaKernelException {
         securityAuthorizationHandler.assertSchemaWrites(securityContext, PrivilegeAction.DROP_CONSTRAINT);
-        inner.constraintDrop(constraint);
+        inner.constraintDrop(constraint, canDropDependent);
     }
 }

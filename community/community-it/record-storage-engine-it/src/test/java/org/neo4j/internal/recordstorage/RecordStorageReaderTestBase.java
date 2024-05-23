@@ -270,20 +270,21 @@ public abstract class RecordStorageReaderTestBase {
         return index;
     }
 
-    protected void createNodePropertyExistenceConstraint(Label label, String propertyKey) throws Exception {
+    protected void createNodePropertyExistenceConstraint(Label label, String propertyKey, boolean isDependent)
+            throws Exception {
         TxState txState = new TxState();
         ExistenceConstraintDescriptor constraint = ConstraintDescriptorFactory.existsForLabel(
-                getOrCreateLabelId(label), getOrCreatePropertyKeyId(propertyKey));
+                isDependent, getOrCreateLabelId(label), getOrCreatePropertyKeyId(propertyKey));
         long id = commitContext.reserveSchema();
         txState.constraintDoAdd(constraint.withId(id).withName("constraint_" + id));
         apply(txState);
     }
 
-    protected void createRelPropertyExistenceConstraint(RelationshipType relationshipType, String propertyKey)
-            throws Exception {
+    protected void createRelPropertyExistenceConstraint(
+            RelationshipType relationshipType, String propertyKey, boolean isDependent) throws Exception {
         TxState txState = new TxState();
         ExistenceConstraintDescriptor constraint = ConstraintDescriptorFactory.existsForRelType(
-                getOrCreateRelationshipTypeId(relationshipType), getOrCreatePropertyKeyId(propertyKey));
+                isDependent, getOrCreateRelationshipTypeId(relationshipType), getOrCreatePropertyKeyId(propertyKey));
         long id = commitContext.reserveSchema();
         txState.constraintDoAdd(constraint.withId(id).withName("constraint_" + id));
         apply(txState);

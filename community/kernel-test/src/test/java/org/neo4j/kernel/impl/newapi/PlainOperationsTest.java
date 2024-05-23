@@ -492,7 +492,7 @@ public class PlainOperationsTest extends OperationsTest {
         int labelId = 1;
         int relTypeId = 2;
         UniquenessConstraintDescriptor uniquenessConstraint = uniqueForLabel(labelId, 2, 3, 3);
-        ExistenceConstraintDescriptor existenceConstraint = existsForRelType(relTypeId, 3, 4, 5);
+        ExistenceConstraintDescriptor existenceConstraint = existsForRelType(false, relTypeId, 3, 4, 5);
         when(storageReader.constraintsGetAll())
                 .thenReturn(Iterators.iterator(uniquenessConstraint, existenceConstraint));
         when(storageReader.constraintExists(uniquenessConstraint)).thenReturn(true);
@@ -515,7 +515,7 @@ public class PlainOperationsTest extends OperationsTest {
         int labelId = 1;
         int relTypeId = 2;
         UniquenessConstraintDescriptor uniquenessConstraint = uniqueForLabel(labelId, 2, 3, 3);
-        ExistenceConstraintDescriptor existenceConstraint = existsForRelType(relTypeId, 3, 4, 5);
+        ExistenceConstraintDescriptor existenceConstraint = existsForRelType(false, relTypeId, 3, 4, 5);
         when(storageReaderSnapshot.constraintsGetAll())
                 .thenReturn(Iterators.iterator(uniquenessConstraint, existenceConstraint));
 
@@ -646,7 +646,7 @@ public class PlainOperationsTest extends OperationsTest {
     @Test
     void shouldReleaseAcquiredSchemaWriteLockIfNodePropertyExistenceConstraintCreationFails() throws Exception {
         // given
-        ExistenceConstraintDescriptor constraint = existsForSchema(schema);
+        ExistenceConstraintDescriptor constraint = existsForSchema(schema, false);
         storageReaderWithConstraints(constraint);
         int labelId = schema.getLabelId();
         int propertyId = schema.getPropertyId();
@@ -655,7 +655,7 @@ public class PlainOperationsTest extends OperationsTest {
 
         // when
         try {
-            operations.nodePropertyExistenceConstraintCreate(schema, "constraint name");
+            operations.nodePropertyExistenceConstraintCreate(schema, "constraint name", false);
             fail("Expected an exception because this schema should already be constrained.");
         } catch (AlreadyConstrainedException ignore) {
             // Good.
@@ -694,7 +694,7 @@ public class PlainOperationsTest extends OperationsTest {
     void shouldReleaseAcquiredSchemaWriteLockIfRelationshipPropertyExistenceConstraintCreationFails() throws Exception {
         // given
         RelationTypeSchemaDescriptor descriptor = forRelType(11, 13);
-        ExistenceConstraintDescriptor constraint = existsForSchema(descriptor);
+        ExistenceConstraintDescriptor constraint = existsForSchema(descriptor, false);
         storageReaderWithConstraints(constraint);
         int relTypeId = descriptor.getRelTypeId();
         int propertyId = descriptor.getPropertyId();
@@ -704,7 +704,7 @@ public class PlainOperationsTest extends OperationsTest {
 
         // when
         try {
-            operations.relationshipPropertyExistenceConstraintCreate(descriptor, "constraint name");
+            operations.relationshipPropertyExistenceConstraintCreate(descriptor, "constraint name", false);
             fail("Expected an exception because this schema should already be constrained.");
         } catch (AlreadyConstrainedException ignore) {
             // Good.
@@ -727,7 +727,7 @@ public class PlainOperationsTest extends OperationsTest {
         when(storageReader.indexGetForName("constraint")).thenReturn(index);
 
         // when
-        operations.constraintDrop(constraint);
+        operations.constraintDrop(constraint, false);
 
         // then
         order.verify(locks).acquireExclusive(LockTracer.NONE, ResourceType.LABEL, schema.getLabelId());
@@ -747,7 +747,7 @@ public class PlainOperationsTest extends OperationsTest {
         when(storageReader.constraintGetForName("constraint")).thenReturn(constraint);
 
         // when
-        operations.constraintDrop("constraint");
+        operations.constraintDrop("constraint", false);
 
         // then
         long nameLock = ResourceIds.schemaNameResourceId("constraint");

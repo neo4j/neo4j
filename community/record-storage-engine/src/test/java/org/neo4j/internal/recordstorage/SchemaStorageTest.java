@@ -150,7 +150,7 @@ class SchemaStorageTest {
         var e = assertThrows(
                 SchemaRuleNotFoundException.class,
                 () -> storage.constraintsGetSingle(
-                        ConstraintDescriptorFactory.existsForLabel(LABEL1_ID, PROP1_ID), StoreCursors.NULL));
+                        ConstraintDescriptorFactory.existsForLabel(false, LABEL1_ID, PROP1_ID), StoreCursors.NULL));
 
         assertThat(e, tokenNameLookup)
                 .hasUserMessage("No label property existence constraint was found for (:Label1 {prop1}).");
@@ -182,7 +182,7 @@ class SchemaStorageTest {
         var e = assertThrows(
                 SchemaRuleNotFoundException.class,
                 () -> storage.constraintsGetSingle(
-                        ConstraintDescriptorFactory.existsForRelType(TYPE1_ID, PROP1_ID), StoreCursors.NULL));
+                        ConstraintDescriptorFactory.existsForRelType(false, TYPE1_ID, PROP1_ID), StoreCursors.NULL));
         assertThat(e, tokenNameLookup)
                 .hasUserMessage(
                         "No relationship type property existence constraint was found for ()-[:Type1 {prop1}]-().");
@@ -195,13 +195,13 @@ class SchemaStorageTest {
         SchemaStorage schemaStorageSpy = Mockito.spy(storage);
         when(schemaStorageSpy.streamAllSchemaRules(false, StoreCursors.NULL))
                 .thenReturn(Stream.of(
-                        getRelationshipPropertyExistenceConstraintRule(1L, TYPE1_ID, PROP1_ID),
-                        getRelationshipPropertyExistenceConstraintRule(2L, TYPE1_ID, PROP1_ID)));
+                        getRelationshipPropertyExistenceConstraintRule(1L, TYPE1_ID, PROP1_ID, false),
+                        getRelationshipPropertyExistenceConstraintRule(2L, TYPE1_ID, PROP1_ID, false)));
 
         var e = assertThrows(
                 DuplicateSchemaRuleException.class,
                 () -> schemaStorageSpy.constraintsGetSingle(
-                        ConstraintDescriptorFactory.existsForRelType(TYPE1_ID, PROP1_ID), StoreCursors.NULL));
+                        ConstraintDescriptorFactory.existsForRelType(false, TYPE1_ID, PROP1_ID), StoreCursors.NULL));
 
         assertThat(e, tokenNameLookup)
                 .hasUserMessage(
@@ -310,8 +310,9 @@ class SchemaStorageTest {
     }
 
     private static ConstraintDescriptor getRelationshipPropertyExistenceConstraintRule(
-            long id, int type, int property) {
-        return ConstraintDescriptorFactory.existsForRelType(type, property).withId(id);
+            long id, int type, int property, boolean isDependent) {
+        return ConstraintDescriptorFactory.existsForRelType(isDependent, type, property)
+                .withId(id);
     }
 
     private static class TrackingIdUpdaterListener implements IdUpdateListener {

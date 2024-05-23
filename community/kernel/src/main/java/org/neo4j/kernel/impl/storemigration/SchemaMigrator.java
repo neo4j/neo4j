@@ -38,6 +38,7 @@ import org.neo4j.internal.batchimport.ReadBehaviour;
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.schema.ConstraintDescriptor;
+import org.neo4j.internal.schema.GraphTypeDependence;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptor;
@@ -171,7 +172,10 @@ public class SchemaMigrator {
                                         yield ConstraintDescriptorFactory.uniqueForSchema(
                                                 schema, indexBacked.indexType());
                                     }
-                                    case EXISTS -> ConstraintDescriptorFactory.existsForSchema(schema);
+                                    case EXISTS -> ConstraintDescriptorFactory.existsForSchema(
+                                            schema,
+                                            constraintDescriptor.graphTypeDependence()
+                                                    == GraphTypeDependence.DEPENDENT);
                                     case UNIQUE_EXISTS -> {
                                         IndexBackedConstraintDescriptor indexBacked =
                                                 constraintDescriptor.asIndexBackedConstraint();
@@ -181,7 +185,9 @@ public class SchemaMigrator {
                                             schema,
                                             constraintDescriptor
                                                     .asPropertyTypeConstraint()
-                                                    .propertyType());
+                                                    .propertyType(),
+                                            constraintDescriptor.graphTypeDependence()
+                                                    == GraphTypeDependence.DEPENDENT);
                                 };
                         descriptor = descriptor.withName(constraintDescriptor.getName());
 

@@ -1346,7 +1346,7 @@ class TransactionRecordStateTest {
         TransactionRecordState state = newTransactionRecordState();
         long ruleId = neoStores.getSchemaStore().getIdGenerator().nextId(NULL_CONTEXT);
         ConstraintDescriptor rule =
-                ConstraintDescriptorFactory.existsForLabel(0, 1).withId(ruleId);
+                ConstraintDescriptorFactory.existsForLabel(false, 0, 1).withId(ruleId);
         state.schemaRuleCreate(ruleId, true, rule);
 
         List<StorageCommand> commands = new ArrayList<>();

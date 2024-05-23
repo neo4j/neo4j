@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.constraints;
 
 import static org.neo4j.common.EntityType.NODE;
+import static org.neo4j.internal.schema.GraphTypeDependence.DEPENDENT;
 
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.common.TokenNameLookup;
@@ -100,9 +101,10 @@ public class StandardConstraintSemantics extends ConstraintSemantics {
             NodeCursor nodeCursor,
             PropertyCursor propertyCursor,
             LabelSchemaDescriptor descriptor,
-            TokenNameLookup tokenNameLookup)
+            TokenNameLookup tokenNameLookup,
+            boolean isDependent)
             throws CreateConstraintFailureException {
-        throw propertyExistenceConstraintsNotAllowed(descriptor);
+        throw propertyExistenceConstraintsNotAllowed(descriptor, isDependent);
     }
 
     @Override
@@ -110,9 +112,10 @@ public class StandardConstraintSemantics extends ConstraintSemantics {
             RelationshipScanCursor relationshipCursor,
             PropertyCursor propertyCursor,
             RelationTypeSchemaDescriptor descriptor,
-            TokenNameLookup tokenNameLookup)
+            TokenNameLookup tokenNameLookup,
+            boolean isDependent)
             throws CreateConstraintFailureException {
-        throw propertyExistenceConstraintsNotAllowed(descriptor);
+        throw propertyExistenceConstraintsNotAllowed(descriptor, isDependent);
     }
 
     @Override
@@ -120,9 +123,10 @@ public class StandardConstraintSemantics extends ConstraintSemantics {
             RelationshipTypeIndexCursor allRelationships,
             PropertyCursor propertyCursor,
             RelationTypeSchemaDescriptor descriptor,
-            TokenNameLookup tokenNameLookup)
+            TokenNameLookup tokenNameLookup,
+            boolean isDependent)
             throws CreateConstraintFailureException {
-        throw propertyExistenceConstraintsNotAllowed(descriptor);
+        throw propertyExistenceConstraintsNotAllowed(descriptor, isDependent);
     }
 
     @Override
@@ -140,10 +144,10 @@ public class StandardConstraintSemantics extends ConstraintSemantics {
     }
 
     private static CreateConstraintFailureException propertyExistenceConstraintsNotAllowed(
-            SchemaDescriptor descriptor) {
+            SchemaDescriptor descriptor, boolean isDependent) {
         // When creating a Property Existence Constraint in Community Edition
         return new CreateConstraintFailureException(
-                ConstraintDescriptorFactory.existsForSchema(descriptor), ERROR_MESSAGE_EXISTS);
+                ConstraintDescriptorFactory.existsForSchema(descriptor, isDependent), ERROR_MESSAGE_EXISTS);
     }
 
     private static CreateConstraintFailureException propertyTypeConstraintsNotAllowed(
@@ -177,7 +181,8 @@ public class StandardConstraintSemantics extends ConstraintSemantics {
     @Override
     public ConstraintDescriptor createExistenceConstraint(long ruleId, ConstraintDescriptor descriptor)
             throws CreateConstraintFailureException {
-        throw propertyExistenceConstraintsNotAllowed(descriptor.schema());
+        throw propertyExistenceConstraintsNotAllowed(
+                descriptor.schema(), descriptor.graphTypeDependence() == DEPENDENT);
     }
 
     @Override
@@ -203,9 +208,10 @@ public class StandardConstraintSemantics extends ConstraintSemantics {
             NodeCursor nodeCursor,
             PropertyCursor propertyCursor,
             LabelSchemaDescriptor descriptor,
-            TokenNameLookup tokenNameLookup)
+            TokenNameLookup tokenNameLookup,
+            boolean isDependent)
             throws CreateConstraintFailureException {
-        throw propertyExistenceConstraintsNotAllowed(descriptor);
+        throw propertyExistenceConstraintsNotAllowed(descriptor, isDependent);
     }
 
     @Override

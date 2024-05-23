@@ -295,14 +295,14 @@ class IndexIT extends KernelIntegrationTest {
         }
         {
             SchemaWrite statement = schemaWriteInNewTransaction();
-            statement.constraintDrop(constraint);
+            statement.constraintDrop(constraint, false);
             commit();
         }
 
         // when
         SchemaWrite statement = schemaWriteInNewTransaction();
         SchemaKernelException e =
-                assertThrows(SchemaKernelException.class, () -> statement.constraintDrop(constraintName));
+                assertThrows(SchemaKernelException.class, () -> statement.constraintDrop(constraintName, false));
         assertEquals("Unable to drop constraint `my constraint`: No such constraint my constraint.", e.getMessage());
         rollback();
     }

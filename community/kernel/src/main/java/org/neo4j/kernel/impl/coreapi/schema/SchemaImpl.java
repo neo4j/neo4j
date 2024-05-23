@@ -856,7 +856,7 @@ public class SchemaImpl implements Schema {
                 int[] propertyKeyIds = getOrCreatePropertyKeyIds(tokenWrite, propertyKeys);
                 LabelSchemaDescriptor schema = forLabel(labelId, propertyKeyIds);
                 ConstraintDescriptor constraint =
-                        transaction.schemaWrite().nodePropertyExistenceConstraintCreate(schema, name);
+                        transaction.schemaWrite().nodePropertyExistenceConstraintCreate(schema, name, false);
                 return new NodePropertyExistenceConstraintDefinition(this, constraint, label, propertyKeys);
             });
         }
@@ -870,7 +870,7 @@ public class SchemaImpl implements Schema {
                 int[] propertyKeyId = getOrCreatePropertyKeyIds(tokenWrite, propertyKey);
                 RelationTypeSchemaDescriptor schema = forRelType(typeId, propertyKeyId);
                 ConstraintDescriptor constraint =
-                        transaction.schemaWrite().relationshipPropertyExistenceConstraintCreate(schema, name);
+                        transaction.schemaWrite().relationshipPropertyExistenceConstraintCreate(schema, name, false);
                 return new RelationshipPropertyExistenceConstraintDefinition(this, constraint, type, propertyKey);
             });
         }
@@ -884,7 +884,7 @@ public class SchemaImpl implements Schema {
                 int[] propertyKeyId = getOrCreatePropertyKeyIds(tokenWrite, propertyKey);
                 LabelSchemaDescriptor schema = forLabel(labelId, propertyKeyId);
                 ConstraintDescriptor constraint =
-                        transaction.schemaWrite().propertyTypeConstraintCreate(schema, name, allowedTypes);
+                        transaction.schemaWrite().propertyTypeConstraintCreate(schema, name, allowedTypes, false);
                 return new NodePropertyTypeConstraintDefinition(this, constraint, label, propertyKey);
             });
         }
@@ -898,7 +898,7 @@ public class SchemaImpl implements Schema {
                 int[] propertyKeyId = getOrCreatePropertyKeyIds(tokenWrite, propertyKey);
                 RelationTypeSchemaDescriptor schema = forRelType(typeId, propertyKeyId);
                 ConstraintDescriptor constraint =
-                        transaction.schemaWrite().propertyTypeConstraintCreate(schema, name, allowedTypes);
+                        transaction.schemaWrite().propertyTypeConstraintCreate(schema, name, allowedTypes, false);
                 return new RelationshipPropertyTypeConstraintDefinition(this, constraint, type, propertyKey);
             });
         }
@@ -906,7 +906,7 @@ public class SchemaImpl implements Schema {
         @Override
         public void dropConstraint(ConstraintDescriptor constraint) {
             try {
-                transaction.schemaWrite().constraintDrop(constraint);
+                transaction.schemaWrite().constraintDrop(constraint, false);
             } catch (DropConstraintFailureException e) {
                 throw new ConstraintViolationException(e.getUserMessage(transaction.tokenRead()), e);
             } catch (InvalidTransactionTypeKernelException | SchemaKernelException e) {

@@ -25,11 +25,16 @@ import static org.neo4j.internal.schema.ConstraintType.EXISTS;
 import static org.neo4j.internal.schema.ConstraintType.PROPERTY_TYPE;
 import static org.neo4j.internal.schema.ConstraintType.UNIQUE;
 import static org.neo4j.internal.schema.ConstraintType.UNIQUE_EXISTS;
+import static org.neo4j.internal.schema.GraphTypeDependence.DEPENDENT;
+import static org.neo4j.internal.schema.GraphTypeDependence.INDEPENDENT;
+import static org.neo4j.internal.schema.GraphTypeDependence.UNDESIGNATED;
 import static org.neo4j.internal.schema.SchemaUserDescription.TOKEN_ID_NAME_LOOKUP;
 
+import java.util.Objects;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.ConstraintType;
+import org.neo4j.internal.schema.GraphTypeDependence;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaNameUtil;
@@ -48,6 +53,7 @@ public class ConstraintDescriptorImplementation
                 UniquenessConstraintDescriptor,
                 TypeConstraintDescriptor {
     private final ConstraintType type;
+    private final GraphTypeDependence graphTypeDependence;
     private final SchemaDescriptor schema;
     private final long id;
     private final String name;
@@ -56,29 +62,42 @@ public class ConstraintDescriptorImplementation
     private final PropertyTypeSet propertyType;
 
     static ConstraintDescriptorImplementation makeExistsConstraint(SchemaDescriptor schema) {
-        return new ConstraintDescriptorImplementation(EXISTS, schema, NO_ID, null, null, null, null);
+        return makeExistsConstraint(schema, false);
+    }
+
+    static ConstraintDescriptorImplementation makeExistsConstraint(SchemaDescriptor schema, boolean isDependent) {
+        return new ConstraintDescriptorImplementation(
+                EXISTS, isDependent ? DEPENDENT : INDEPENDENT, schema, NO_ID, null, null, null, null);
     }
 
     static KeyConstraintDescriptor makeUniqueExistsConstraint(SchemaDescriptor schema, IndexType indexType) {
         Preconditions.checkState(indexType != null, "Index type should be supplied for index-backed constraints");
 
-        return new ConstraintDescriptorImplementation(UNIQUE_EXISTS, schema, NO_ID, null, null, indexType, null);
+        return new ConstraintDescriptorImplementation(
+                UNIQUE_EXISTS, UNDESIGNATED, schema, NO_ID, null, null, indexType, null);
     }
 
     static UniquenessConstraintDescriptor makeUniqueConstraint(SchemaDescriptor schema, IndexType indexType) {
         Preconditions.checkState(indexType != null, "Index type should be supplied for index-backed constraints");
 
-        return new ConstraintDescriptorImplementation(UNIQUE, schema, NO_ID, null, null, indexType, null);
+        return new ConstraintDescriptorImplementation(UNIQUE, UNDESIGNATED, schema, NO_ID, null, null, indexType, null);
     }
 
     static TypeConstraintDescriptor makePropertyTypeConstraint(SchemaDescriptor schema, PropertyTypeSet propertyType) {
+        return makePropertyTypeConstraint(schema, propertyType, false);
+    }
+
+    static TypeConstraintDescriptor makePropertyTypeConstraint(
+            SchemaDescriptor schema, PropertyTypeSet propertyType, boolean isDependent) {
         Preconditions.checkState(
                 propertyType != null, "Property types should be supplied for property type constraints");
-        return new ConstraintDescriptorImplementation(PROPERTY_TYPE, schema, NO_ID, null, null, null, propertyType);
+        return new ConstraintDescriptorImplementation(
+                PROPERTY_TYPE, isDependent ? DEPENDENT : INDEPENDENT, schema, NO_ID, null, null, null, propertyType);
     }
 
     private ConstraintDescriptorImplementation(
             ConstraintType type,
+            GraphTypeDependence graphTypeDependence,
             SchemaDescriptor schema,
             long id,
             String name,
@@ -86,6 +105,7 @@ public class ConstraintDescriptorImplementation
             IndexType ownedIndexType,
             PropertyTypeSet propertyType) {
         this.type = type;
+        this.graphTypeDependence = graphTypeDependence;
         this.schema = schema;
         this.id = id;
         this.name = name;
@@ -99,6 +119,11 @@ public class ConstraintDescriptorImplementation
     @Override
     public ConstraintType type() {
         return type;
+    }
+
+    @Override
+    public GraphTypeDependence graphTypeDependence() {
+        return graphTypeDependence;
     }
 
     @Override
@@ -255,6 +280,10 @@ public class ConstraintDescriptorImplementation
             return false;
         }
 
+        if (this.graphTypeDependence != that.graphTypeDependence()) {
+            return false;
+        }
+
         if (!this.schema().equals(that.schema())) {
             return false;
         }
@@ -274,7 +303,7 @@ public class ConstraintDescriptorImplementation
 
     @Override
     public final int hashCode() {
-        return type.hashCode() & schema().hashCode();
+        return Objects.hash(type, graphTypeDependence, schema);
     }
 
     @Override
@@ -313,7 +342,8 @@ public class ConstraintDescriptorImplementation
 
     @Override
     public ConstraintDescriptorImplementation withId(long id) {
-        return new ConstraintDescriptorImplementation(type, schema, id, name, ownedIndex, ownedIndexType, propertyType);
+        return new ConstraintDescriptorImplementation(
+                type, graphTypeDependence, schema, id, name, ownedIndex, ownedIndexType, propertyType);
     }
 
     @Override
@@ -322,7 +352,8 @@ public class ConstraintDescriptorImplementation
             return this;
         }
         name = SchemaNameUtil.sanitiseName(name);
-        return new ConstraintDescriptorImplementation(type, schema, id, name, ownedIndex, ownedIndexType, propertyType);
+        return new ConstraintDescriptorImplementation(
+                type, graphTypeDependence, schema, id, name, ownedIndex, ownedIndexType, propertyType);
     }
 
     @Override
@@ -337,7 +368,8 @@ public class ConstraintDescriptorImplementation
     public ConstraintDescriptorImplementation withOwnedIndexId(long ownedIndex) {
         Preconditions.checkState(
                 ownedIndexType != null, "ConstraintDescriptor missing IndexType when connected to index");
-        return new ConstraintDescriptorImplementation(type, schema, id, name, ownedIndex, ownedIndexType, propertyType);
+        return new ConstraintDescriptorImplementation(
+                type, graphTypeDependence, schema, id, name, ownedIndex, ownedIndexType, propertyType);
     }
 
     @Override

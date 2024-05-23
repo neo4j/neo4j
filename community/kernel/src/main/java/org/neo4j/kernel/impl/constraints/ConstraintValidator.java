@@ -62,21 +62,24 @@ public interface ConstraintValidator {
             NodeCursor nodeCursor,
             PropertyCursor propertyCursor,
             LabelSchemaDescriptor descriptor,
-            TokenNameLookup tokenNameLookup)
+            TokenNameLookup tokenNameLookup,
+            boolean isDependent)
             throws CreateConstraintFailureException;
 
     void validateRelationshipPropertyExistenceConstraint(
             RelationshipScanCursor relationshipCursor,
             PropertyCursor propertyCursor,
             RelationTypeSchemaDescriptor descriptor,
-            TokenNameLookup tokenNameLookup)
+            TokenNameLookup tokenNameLookup,
+            boolean isDependent)
             throws CreateConstraintFailureException;
 
     void validateRelationshipPropertyExistenceConstraint(
             RelationshipTypeIndexCursor allRelationships,
             PropertyCursor propertyCursor,
             RelationTypeSchemaDescriptor descriptor,
-            TokenNameLookup tokenNameLookup)
+            TokenNameLookup tokenNameLookup,
+            boolean isDependent)
             throws CreateConstraintFailureException;
 
     TxStateVisitor decorateTxStateVisitor(
@@ -92,7 +95,8 @@ public interface ConstraintValidator {
             NodeCursor nodeCursor,
             PropertyCursor propertyCursor,
             LabelSchemaDescriptor descriptor,
-            TokenNameLookup tokenNameLookup)
+            TokenNameLookup tokenNameLookup,
+            boolean isDependent)
             throws CreateConstraintFailureException;
 
     void validateNodeKeyConstraint(

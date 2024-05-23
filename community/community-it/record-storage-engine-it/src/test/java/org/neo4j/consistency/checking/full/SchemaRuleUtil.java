@@ -41,30 +41,32 @@ public final class SchemaRuleUtil {
                 .withOwnedIndexId(indexId);
     }
 
-    public static ConstraintDescriptor nodePropertyExistenceConstraintRule(long ruleId, int labelId, int propertyId) {
-        return ConstraintDescriptorFactory.existsForLabel(labelId, propertyId)
+    public static ConstraintDescriptor nodePropertyExistenceConstraintRule(
+            long ruleId, int labelId, int propertyId, boolean isDependent) {
+        return ConstraintDescriptorFactory.existsForLabel(isDependent, labelId, propertyId)
                 .withId(ruleId)
                 .withName("constraint_" + ruleId);
     }
 
-    public static ConstraintDescriptor relPropertyExistenceConstraintRule(long ruleId, int relTypeId, int propertyId) {
-        return ConstraintDescriptorFactory.existsForRelType(relTypeId, propertyId)
+    public static ConstraintDescriptor relPropertyExistenceConstraintRule(
+            long ruleId, int relTypeId, int propertyId, boolean isDependent) {
+        return ConstraintDescriptorFactory.existsForRelType(isDependent, relTypeId, propertyId)
                 .withId(ruleId)
                 .withName("constraint_" + ruleId);
     }
 
     public static ConstraintDescriptor nodePropertyTypeConstraintRule(
-            long ruleId, int labelId, int propertyId, PropertyTypeSet propertyTypeSet) {
+            long ruleId, int labelId, int propertyId, PropertyTypeSet propertyTypeSet, boolean isDependent) {
         return ConstraintDescriptorFactory.typeForSchema(
-                        SchemaDescriptors.forLabel(labelId, propertyId), propertyTypeSet)
+                        SchemaDescriptors.forLabel(labelId, propertyId), propertyTypeSet, isDependent)
                 .withId(ruleId)
                 .withName("constraint_" + ruleId);
     }
 
     public static ConstraintDescriptor relPropertyTypeConstraintRule(
-            long ruleId, int relTypeId, int propertyId, PropertyTypeSet propertyTypeSet) {
+            long ruleId, int relTypeId, int propertyId, PropertyTypeSet propertyTypeSet, boolean isDependent) {
         return ConstraintDescriptorFactory.typeForSchema(
-                        SchemaDescriptors.forRelType(relTypeId, propertyId), propertyTypeSet)
+                        SchemaDescriptors.forRelType(relTypeId, propertyId), propertyTypeSet, isDependent)
                 .withId(ruleId)
                 .withName("constraint_" + ruleId);
     }

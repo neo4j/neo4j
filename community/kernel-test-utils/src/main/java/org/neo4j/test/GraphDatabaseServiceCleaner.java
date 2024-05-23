@@ -19,15 +19,22 @@
  */
 package org.neo4j.test;
 
+import static org.neo4j.internal.helpers.collection.Iterators.loop;
+
 import java.util.concurrent.TimeUnit;
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.AnyTokens;
-import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.internal.kernel.api.security.LoginContext;
+import org.neo4j.internal.schema.ConstraintDescriptor;
+import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 
 public class GraphDatabaseServiceCleaner {
     private GraphDatabaseServiceCleaner() {
@@ -40,15 +47,18 @@ public class GraphDatabaseServiceCleaner {
     }
 
     public static void cleanupSchema(GraphDatabaseService db) {
-        try (Transaction tx = db.beginTx()) {
-            for (ConstraintDefinition constraint : tx.schema().getConstraints()) {
-                constraint.drop();
+        try (InternalTransaction tx =
+                ((GraphDatabaseAPI) db).beginTransaction(KernelTransaction.Type.EXPLICIT, LoginContext.AUTH_DISABLED)) {
+            for (ConstraintDescriptor constraintDescriptor :
+                    loop(tx.kernelTransaction().schemaRead().constraintsGetAll())) {
+                tx.kernelTransaction().schemaWrite().constraintDrop(constraintDescriptor, true);
             }
-
             for (IndexDefinition index : tx.schema().getIndexes()) {
                 index.drop();
             }
             tx.commit();
+        } catch (KernelException e) {
+            throw new RuntimeException(e);
         }
         // re-create the default indexes
         try (Transaction tx = db.beginTx()) {

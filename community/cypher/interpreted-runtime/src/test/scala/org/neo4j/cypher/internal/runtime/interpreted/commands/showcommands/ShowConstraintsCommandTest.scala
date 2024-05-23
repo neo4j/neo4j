@@ -132,22 +132,22 @@ class ShowConstraintsCommandTest extends ShowCommandTestBase {
       .withId(8)
 
   private val nodeExistConstraintDescriptor =
-    ConstraintDescriptorFactory.existsForSchema(labelDescriptor)
+    ConstraintDescriptorFactory.existsForSchema(labelDescriptor, false)
       .withName("constraint5")
       .withId(9)
 
   private val relExistConstraintDescriptor =
-    ConstraintDescriptorFactory.existsForSchema(relTypeDescriptor)
+    ConstraintDescriptorFactory.existsForSchema(relTypeDescriptor, false)
       .withName("constraint1")
       .withId(2)
 
   private val nodePropTypeConstraintDescriptor =
-    ConstraintDescriptorFactory.typeForSchema(labelDescriptor, PropertyTypeSet.of(SchemaValueType.BOOLEAN))
+    ConstraintDescriptorFactory.typeForSchema(labelDescriptor, PropertyTypeSet.of(SchemaValueType.BOOLEAN), false)
       .withName("constraint10")
       .withId(10)
 
   private val relPropTypeConstraintDescriptor =
-    ConstraintDescriptorFactory.typeForSchema(relTypeDescriptor, PropertyTypeSet.of(SchemaValueType.STRING))
+    ConstraintDescriptorFactory.typeForSchema(relTypeDescriptor, PropertyTypeSet.of(SchemaValueType.STRING), false)
       .withName("constraint11")
       .withId(11)
 
@@ -828,11 +828,11 @@ class ShowConstraintsCommandTest extends ShowCommandTestBase {
     test(s"show normalized property type representation: $propType") {
       // Given
       val nodePropTypeConstraintDescriptor =
-        ConstraintDescriptorFactory.typeForSchema(labelDescriptor, PropertyTypeSet.of(propType))
+        ConstraintDescriptorFactory.typeForSchema(labelDescriptor, PropertyTypeSet.of(propType), false)
           .withName("constraint0")
           .withId(0)
       val relPropTypeConstraintDescriptor =
-        ConstraintDescriptorFactory.typeForSchema(relTypeDescriptor, PropertyTypeSet.of(propType))
+        ConstraintDescriptorFactory.typeForSchema(relTypeDescriptor, PropertyTypeSet.of(propType), false)
           .withName("constraint1")
           .withId(1)
       when(ctx.getAllConstraints()).thenReturn(Map(
@@ -869,11 +869,11 @@ class ShowConstraintsCommandTest extends ShowCommandTestBase {
       test(s"show normalized property type representation: $propType | $propType2") {
         // Given
         val nodePropTypeConstraintDescriptor =
-          ConstraintDescriptorFactory.typeForSchema(labelDescriptor, PropertyTypeSet.of(propType, propType2))
+          ConstraintDescriptorFactory.typeForSchema(labelDescriptor, PropertyTypeSet.of(propType, propType2), false)
             .withName("constraint0")
             .withId(0)
         val relPropTypeConstraintDescriptor =
-          ConstraintDescriptorFactory.typeForSchema(relTypeDescriptor, PropertyTypeSet.of(propType2, propType))
+          ConstraintDescriptorFactory.typeForSchema(relTypeDescriptor, PropertyTypeSet.of(propType2, propType), false)
             .withName("constraint1")
             .withId(1)
         when(ctx.getAllConstraints()).thenReturn(Map(
@@ -916,7 +916,8 @@ class ShowConstraintsCommandTest extends ShowCommandTestBase {
           SchemaValueType.LIST_DURATION,
           SchemaValueType.LOCAL_TIME,
           SchemaValueType.BOOLEAN
-        )
+        ),
+        false
       )
         .withName("constraint0")
         .withId(0)
@@ -931,7 +932,8 @@ class ShowConstraintsCommandTest extends ShowCommandTestBase {
           SchemaValueType.BOOLEAN,
           SchemaValueType.FLOAT,
           SchemaValueType.STRING
-        )
+        ),
+        false
       )
         .withName("constraint1")
         .withId(1)

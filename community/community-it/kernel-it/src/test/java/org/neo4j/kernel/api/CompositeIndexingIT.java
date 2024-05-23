@@ -119,7 +119,7 @@ class CompositeIndexingIT {
             if (index.isUnique()) {
                 Iterator<ConstraintDescriptor> constraints = ktx.schemaRead().constraintsGetForSchema(index.schema());
                 while (constraints.hasNext()) {
-                    ktx.schemaWrite().constraintDrop(constraints.next());
+                    ktx.schemaWrite().constraintDrop(constraints.next(), false);
                 }
             } else {
                 ktx.schemaWrite().indexDrop(index);

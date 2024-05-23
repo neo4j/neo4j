@@ -107,7 +107,7 @@ public interface SchemaRule44 {
                         constraint = constraint.withOwnedIndexId(ownedIndex);
                     }
                 }
-                case EXISTS -> constraint = ConstraintDescriptorFactory.existsForSchema(schema);
+                case EXISTS -> constraint = ConstraintDescriptorFactory.existsForSchema(schema, false);
                 case UNIQUE_EXISTS -> {
                     Preconditions.checkState(
                             indexType == IndexType.RANGE,

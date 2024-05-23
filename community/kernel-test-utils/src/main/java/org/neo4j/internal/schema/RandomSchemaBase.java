@@ -153,11 +153,12 @@ public abstract class RandomSchemaBase implements Supplier<SchemaRule> {
     public ConstraintDescriptor nextConstraint() {
         long ruleId = nextRuleIdForConstraint();
         int choice = rng.nextInt(12);
+
         return switch (choice) {
-            case 0 -> ConstraintDescriptorFactory.existsForSchema(nextRelationshipSchema())
+            case 0 -> ConstraintDescriptorFactory.existsForSchema(nextRelationshipSchema(), false)
                     .withId(ruleId)
                     .withName(nextName());
-            case 1 -> ConstraintDescriptorFactory.existsForSchema(nextNodeSchema())
+            case 1 -> ConstraintDescriptorFactory.existsForSchema(nextNodeSchema(), false)
                     .withId(ruleId)
                     .withName(nextName());
             case 2 -> ConstraintDescriptorFactory.uniqueForSchema(nextNodeSchema())
@@ -188,10 +189,10 @@ public abstract class RandomSchemaBase implements Supplier<SchemaRule> {
                     .withId(ruleId)
                     .withOwnedIndexId(existingIndexId())
                     .withName(nextName());
-            case 10 -> ConstraintDescriptorFactory.typeForSchema(nextRelationshipSchema(), randomAllowedTypes())
+            case 10 -> ConstraintDescriptorFactory.typeForSchema(nextRelationshipSchema(), randomAllowedTypes(), false)
                     .withId(ruleId)
                     .withName(nextName());
-            case 11 -> ConstraintDescriptorFactory.typeForSchema(nextNodeSchema(), randomAllowedTypes())
+            case 11 -> ConstraintDescriptorFactory.typeForSchema(nextNodeSchema(), randomAllowedTypes(), false)
                     .withId(ruleId)
                     .withName(nextName());
             default -> throw new RuntimeException("Bad constraint choice: " + choice);

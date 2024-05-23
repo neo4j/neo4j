@@ -492,19 +492,20 @@ class SchemaCheckerTest extends CheckerTestBase {
         // given
         try (AutoCloseable ignored = tx()) {
             var cursorContext = CursorContext.NULL_CONTEXT;
-            ExistenceConstraintDescriptor constraint1 = ConstraintDescriptorFactory.existsForLabel(label1, propertyKey1)
+            ExistenceConstraintDescriptor constraint1 = ConstraintDescriptorFactory.existsForLabel(
+                            false, label1, propertyKey1)
                     .withId(schemaIdGenerator.nextId(cursorContext))
                     .withName(NAME);
             ExistenceConstraintDescriptor constraint2 = ConstraintDescriptorFactory.existsForLabel(
-                            label2, propertyKey1, propertyKey2)
+                            false, label2, propertyKey1, propertyKey2)
                     .withId(schemaIdGenerator.nextId(cursorContext))
                     .withName(NAME2);
             ExistenceConstraintDescriptor constraint3 = ConstraintDescriptorFactory.existsForRelType(
-                            relationshipType1, propertyKey2)
+                            false, relationshipType1, propertyKey2)
                     .withId(schemaIdGenerator.nextId(cursorContext))
                     .withName(NAME);
             ExistenceConstraintDescriptor constraint4 = ConstraintDescriptorFactory.existsForRelType(
-                            relationshipType2, propertyKey1, propertyKey2)
+                            false, relationshipType2, propertyKey1, propertyKey2)
                     .withId(schemaIdGenerator.nextId(cursorContext))
                     .withName(NAME2);
             schemaStorage.writeSchemaRule(
@@ -538,27 +539,32 @@ class SchemaCheckerTest extends CheckerTestBase {
             var cursorContext = CursorContext.NULL_CONTEXT;
             TypeConstraintDescriptor constraint1 = ConstraintDescriptorFactory.typeForSchema(
                             SchemaDescriptors.forLabel(label1, propertyKey1),
-                            PropertyTypeSet.of(SchemaValueType.INTEGER))
+                            PropertyTypeSet.of(SchemaValueType.INTEGER),
+                            false)
                     .withId(schemaIdGenerator.nextId(cursorContext))
                     .withName(NAME);
             TypeConstraintDescriptor constraint2 = ConstraintDescriptorFactory.typeForSchema(
                             SchemaDescriptors.forLabel(label2, propertyKey1),
-                            PropertyTypeSet.of(SchemaValueType.STRING))
+                            PropertyTypeSet.of(SchemaValueType.STRING),
+                            false)
                     .withId(schemaIdGenerator.nextId(cursorContext))
                     .withName(NAME2);
             TypeConstraintDescriptor constraint3 = ConstraintDescriptorFactory.typeForSchema(
                             SchemaDescriptors.forRelType(relationshipType1, propertyKey1),
-                            PropertyTypeSet.of(SchemaValueType.BOOLEAN))
+                            PropertyTypeSet.of(SchemaValueType.BOOLEAN),
+                            false)
                     .withId(schemaIdGenerator.nextId(cursorContext))
                     .withName(NAME);
             TypeConstraintDescriptor constraint4 = ConstraintDescriptorFactory.typeForSchema(
                             SchemaDescriptors.forRelType(relationshipType2, propertyKey1),
-                            PropertyTypeSet.of(SchemaValueType.DATE))
+                            PropertyTypeSet.of(SchemaValueType.DATE),
+                            false)
                     .withId(schemaIdGenerator.nextId(cursorContext))
                     .withName(NAME2);
             TypeConstraintDescriptor constraint5 = ConstraintDescriptorFactory.typeForSchema(
                             SchemaDescriptors.forRelType(relationshipType2, propertyKey2),
-                            PropertyTypeSet.of(SchemaValueType.FLOAT))
+                            PropertyTypeSet.of(SchemaValueType.FLOAT),
+                            false)
                     .withId(schemaIdGenerator.nextId(cursorContext))
                     .withName(NAME2);
             schemaStorage.writeSchemaRule(

@@ -45,6 +45,12 @@ public class DropConstraintFailureException extends SchemaKernelException {
         this.constraint = null;
     }
 
+    public DropConstraintFailureException(SchemaDescriptorSupplier constraint, String message) {
+        super(Status.Schema.ConstraintDropFailed, "Unable to drop constraint: " + message);
+        this.constraint = constraint;
+        this.nameOrSchema = null;
+    }
+
     @Override
     public String getUserMessage(TokenNameLookup tokenNameLookup) {
         String message;

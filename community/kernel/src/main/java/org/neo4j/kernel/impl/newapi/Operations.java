@@ -101,6 +101,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelections;
 import org.neo4j.internal.kernel.api.security.AccessMode.Static;
 import org.neo4j.internal.schema.ConstraintDescriptor;
+import org.neo4j.internal.schema.GraphTypeDependence;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
@@ -181,6 +182,7 @@ public class Operations implements Write, SchemaWrite, Upgrade {
     private final MemoryTracker memoryTracker;
     private final boolean additionLockVerification;
     private final boolean typeConstraintEnabled;
+    private final boolean dependentConstraintsEnabled;
     private DefaultNodeCursor nodeCursor;
     private DefaultNodeCursor restrictedNodeCursor;
     private DefaultPropertyCursor propertyCursor;
@@ -219,6 +221,7 @@ public class Operations implements Write, SchemaWrite, Upgrade {
         this.memoryTracker = memoryTracker;
         this.additionLockVerification = config.get(additional_lock_verification);
         this.typeConstraintEnabled = config.get(GraphDatabaseInternalSettings.type_constraints);
+        this.dependentConstraintsEnabled = config.get(GraphDatabaseInternalSettings.dependent_constraints_enabled);
     }
 
     public void initialize(CursorContext cursorContext) {
@@ -2017,12 +2020,13 @@ public class Operations implements Write, SchemaWrite, Upgrade {
     }
 
     @Override
-    public ConstraintDescriptor nodePropertyExistenceConstraintCreate(LabelSchemaDescriptor schema, String name)
-            throws KernelException {
-        ConstraintDescriptor constraint = lockAndValidatePropertyExistenceConstraint(schema, name);
+    public ConstraintDescriptor nodePropertyExistenceConstraintCreate(
+            LabelSchemaDescriptor schema, String name, boolean isDependent) throws KernelException {
+
+        ConstraintDescriptor constraint = lockAndValidatePropertyExistenceConstraint(schema, name, isDependent);
 
         // enforce constraints
-        enforceNodePropertyExistenceConstraint(schema);
+        enforceNodePropertyExistenceConstraint(schema, isDependent);
 
         // create constraint
         ktx.txState().constraintDoAdd(constraint);
@@ -2053,15 +2057,16 @@ public class Operations implements Write, SchemaWrite, Upgrade {
         }
     }
 
-    private void enforceNodePropertyExistenceConstraint(LabelSchemaDescriptor schema) throws KernelException {
+    private void enforceNodePropertyExistenceConstraint(LabelSchemaDescriptor schema, boolean isDependent)
+            throws KernelException {
         enforceNodePropertyConstraint(
                 schema,
                 (allNodes, nodeCursor, propertyCursor, tokenNameLookup) ->
                         constraintSemantics.validateNodePropertyExistenceConstraint(
-                                allNodes, nodeCursor, propertyCursor, schema, tokenNameLookup),
+                                allNodes, nodeCursor, propertyCursor, schema, tokenNameLookup, isDependent),
                 (nodeCursor, propertyCursor, tokenNameLookup) ->
                         constraintSemantics.validateNodePropertyExistenceConstraint(
-                                nodeCursor, propertyCursor, schema, tokenNameLookup));
+                                nodeCursor, propertyCursor, schema, tokenNameLookup, isDependent));
     }
 
     private void enforceNodePropertyTypeConstraint(TypeConstraintDescriptor descriptor) throws KernelException {
@@ -2076,11 +2081,12 @@ public class Operations implements Write, SchemaWrite, Upgrade {
 
     @Override
     public ConstraintDescriptor relationshipPropertyExistenceConstraintCreate(
-            RelationTypeSchemaDescriptor schema, String name) throws KernelException {
-        ConstraintDescriptor constraint = lockAndValidatePropertyExistenceConstraint(schema, name);
+            RelationTypeSchemaDescriptor schema, String name, boolean isDependent) throws KernelException {
+
+        ConstraintDescriptor constraint = lockAndValidatePropertyExistenceConstraint(schema, name, isDependent);
 
         // enforce constraints
-        enforceRelationshipPropertyExistenceConstraint(schema);
+        enforceRelationshipPropertyExistenceConstraint(schema, isDependent);
 
         // Create
         ktx.txState().constraintDoAdd(constraint);
@@ -2118,16 +2124,16 @@ public class Operations implements Write, SchemaWrite, Upgrade {
         }
     }
 
-    private void enforceRelationshipPropertyExistenceConstraint(RelationTypeSchemaDescriptor schema)
-            throws KernelException {
+    private void enforceRelationshipPropertyExistenceConstraint(
+            RelationTypeSchemaDescriptor schema, boolean isDependent) throws KernelException {
         enforceRelationshipPropertyConstraint(
                 schema,
                 (relationships, propertyCursor, tokenNameLookup) ->
                         constraintSemantics.validateRelationshipPropertyExistenceConstraint(
-                                relationships, propertyCursor, schema, tokenNameLookup),
+                                relationships, propertyCursor, schema, tokenNameLookup, isDependent),
                 (relationships, propertyCursor, tokenNameLookup) ->
                         constraintSemantics.validateRelationshipPropertyExistenceConstraint(
-                                relationships, propertyCursor, schema, tokenNameLookup));
+                                relationships, propertyCursor, schema, tokenNameLookup, isDependent));
     }
 
     private void enforceRelationshipPropertyTypeConstraint(TypeConstraintDescriptor descriptor) throws KernelException {
@@ -2143,14 +2149,16 @@ public class Operations implements Write, SchemaWrite, Upgrade {
 
     @Override
     public ConstraintDescriptor propertyTypeConstraintCreate(
-            SchemaDescriptor schema, String name, PropertyTypeSet propertyType) throws KernelException {
+            SchemaDescriptor schema, String name, PropertyTypeSet propertyType, boolean isDependent)
+            throws KernelException {
         if (schema.getPropertyIds().length != 1) {
             throw new UnsupportedOperationException("Composite property type constraints are not supported.");
         }
         assertSupportedInVersion(
                 KernelVersion.VERSION_TYPE_CONSTRAINTS_INTRODUCED, "Failed to create property type constraint.");
 
-        ConstraintDescriptor constraint = lockAndValidatePropertyTypeConstraint(schema, name, propertyType);
+        ConstraintDescriptor constraint =
+                lockAndValidatePropertyTypeConstraint(schema, name, propertyType, isDependent);
 
         TypeConstraintDescriptor descriptor = constraint.asPropertyTypeConstraint();
 
@@ -2164,14 +2172,15 @@ public class Operations implements Write, SchemaWrite, Upgrade {
         return constraint;
     }
 
-    private ConstraintDescriptor lockAndValidatePropertyExistenceConstraint(SchemaDescriptor descriptor, String name)
-            throws KernelException {
+    private ConstraintDescriptor lockAndValidatePropertyExistenceConstraint(
+            SchemaDescriptor descriptor, String name, boolean isDependent) throws KernelException {
         return lockAndValidateNonIndexPropertyConstraint(
-                descriptor, ConstraintDescriptorFactory::existsForSchema, name);
+                descriptor, schema -> ConstraintDescriptorFactory.existsForSchema(schema, isDependent), name);
     }
 
     private ConstraintDescriptor lockAndValidatePropertyTypeConstraint(
-            SchemaDescriptor descriptor, String name, PropertyTypeSet propertyType) throws KernelException {
+            SchemaDescriptor descriptor, String name, PropertyTypeSet propertyType, boolean isDependent)
+            throws KernelException {
 
         TypeRepresentation.validate(propertyType);
 
@@ -2188,7 +2197,7 @@ public class Operations implements Write, SchemaWrite, Upgrade {
         }
 
         return lockAndValidateNonIndexPropertyConstraint(
-                descriptor, desc -> ConstraintDescriptorFactory.typeForSchema(desc, propertyType), name);
+                descriptor, desc -> ConstraintDescriptorFactory.typeForSchema(desc, propertyType, isDependent), name);
     }
 
     private ConstraintDescriptor lockAndValidateNonIndexPropertyConstraint(
@@ -2205,6 +2214,10 @@ public class Operations implements Write, SchemaWrite, Upgrade {
             assertValidDescriptor(descriptor, SchemaKernelException.OperationContext.CONSTRAINT_CREATION);
             ConstraintDescriptor constraint =
                     constraintFunction.apply(descriptor).withName(name);
+            if (!dependentConstraintsEnabled && constraint.graphTypeDependence() == GraphTypeDependence.DEPENDENT) {
+                throw new UnsupportedOperationException("Graph dependent constraints are not enabled, setting: "
+                        + GraphDatabaseInternalSettings.dependent_constraints_enabled.name());
+            }
             constraint = ensureConstraintHasName(constraint);
             exclusiveSchemaNameLock(constraint.getName());
             assertNoBlockingSchemaRulesExists(constraint);
@@ -2216,22 +2229,27 @@ public class Operations implements Write, SchemaWrite, Upgrade {
     }
 
     @Override
-    public void constraintDrop(String name) throws SchemaKernelException {
+    public void constraintDrop(String name, boolean canDropDependent) throws SchemaKernelException {
         exclusiveSchemaNameLock(name);
         ConstraintDescriptor constraint = allStoreHolder.constraintGetForName(name);
         if (constraint == null) {
             throw new DropConstraintFailureException(name, new NoSuchConstraintException(name));
         }
-        constraintDrop(constraint);
+        constraintDrop(constraint, canDropDependent);
     }
 
     @Override
-    public void constraintDrop(ConstraintDescriptor constraint) throws SchemaKernelException {
+    public void constraintDrop(ConstraintDescriptor constraint, boolean canDropDependent) throws SchemaKernelException {
         // Lock
         SchemaDescriptor schema = constraint.schema();
         exclusiveLock(schema.keyType(), schema.lockingKeys());
         exclusiveSchemaNameLock(constraint.getName());
         ktx.assertOpen();
+
+        if (constraint.graphTypeDependence() == GraphTypeDependence.DEPENDENT && !canDropDependent) {
+            throw new DropConstraintFailureException(
+                    constraint, "Cannot drop a constraint with dependence: " + GraphTypeDependence.DEPENDENT);
+        }
 
         // verify data integrity
         try {

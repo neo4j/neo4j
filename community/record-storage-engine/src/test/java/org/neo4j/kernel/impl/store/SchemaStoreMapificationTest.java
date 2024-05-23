@@ -33,6 +33,7 @@ import static org.neo4j.internal.schema.SchemaRuleMapifier.unmapifySchemaRule;
 import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.existsForSchema;
 import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.keyForSchema;
 
+import java.util.HashMap;
 import java.util.Map;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
@@ -91,14 +92,16 @@ class SchemaStoreMapificationTest {
             .withName("uniqueLabelConstraintWithType")
             .withOwnedIndexId(7)
             .withId(1);
-    private final ConstraintDescriptor existsLabelConstraint =
-            existsForSchema(labelSchema).withName("existsLabelConstraint").withId(1);
+    private final ConstraintDescriptor existsLabelConstraint = existsForSchema(labelSchema, false)
+            .withName("existsLabelConstraint")
+            .withId(1);
     private final ConstraintDescriptor nodeKeyConstraintWithType = keyForSchema(labelSchema, RANGE)
             .withName("nodeKeyConstraintWithType")
             .withOwnedIndexId(7)
             .withId(1);
-    private final ConstraintDescriptor existsRelTypeConstraint =
-            existsForSchema(relTypeSchema).withName("existsRelTypeConstraint").withId(1);
+    private final ConstraintDescriptor existsRelTypeConstraint = existsForSchema(relTypeSchema, false)
+            .withName("existsRelTypeConstraint")
+            .withId(1);
     private final ConstraintDescriptor relKeyConstraint =
             keyForSchema(relTypeSchema, TEXT).withName("relKeyConstraint").withId(1);
     private final ConstraintDescriptor relKeyConstraintWithType = keyForSchema(relTypeSchema, RANGE)
@@ -115,12 +118,13 @@ class SchemaStoreMapificationTest {
             .withOwnedIndexId(7)
             .withId(1);
     private final ConstraintDescriptor nodeTypeConstraintSingleScalarType = ConstraintDescriptorFactory.typeForSchema(
-                    labelSchema, PropertyTypeSet.of(SchemaValueType.BOOLEAN))
+                    labelSchema, PropertyTypeSet.of(SchemaValueType.BOOLEAN), false)
             .withName("nodeTypeConstrainSingleScalarType")
             .withId(1);
     private final ConstraintDescriptor relTypeConstraintSeveralTypes = ConstraintDescriptorFactory.typeForSchema(
                     relTypeSchema,
-                    PropertyTypeSet.of(SchemaValueType.BOOLEAN, SchemaValueType.LOCAL_DATETIME, SchemaValueType.FLOAT))
+                    PropertyTypeSet.of(SchemaValueType.BOOLEAN, SchemaValueType.LOCAL_DATETIME, SchemaValueType.FLOAT),
+                    false)
             .withName("relTypeConstrainSeveralTypes")
             .withId(1);
 
@@ -140,85 +144,100 @@ class SchemaStoreMapificationTest {
     @Test
     void labelIndexDeterministicUnmapification() throws Exception {
         // Index( 1, 'labelIndex', RANGE, :label[1](property[2], property[3]), range-1.0 )
-        Map<String, Value> mapified = Map.of(
-                "__org.neo4j.SchemaRule.schemaEntityType", Values.stringValue("NODE"),
-                "__org.neo4j.SchemaRule.name", Values.stringValue("labelIndex"),
-                "__org.neo4j.SchemaRule.schemaPropertySchemaType", Values.stringValue("COMPLETE_ALL_TOKENS"),
-                "__org.neo4j.SchemaRule.indexProviderName", Values.stringValue("range"),
-                "__org.neo4j.SchemaRule.indexProviderVersion", Values.stringValue("1.0"),
-                "__org.neo4j.SchemaRule.schemaPropertyIds", Values.intArray(new int[] {2, 3}),
-                "__org.neo4j.SchemaRule.schemaRuleType", Values.stringValue("INDEX"),
-                "__org.neo4j.SchemaRule.indexType", Values.stringValue("RANGE"),
-                "__org.neo4j.SchemaRule.indexRuleType", Values.stringValue("NON_UNIQUE"),
-                "__org.neo4j.SchemaRule.schemaEntityIds", Values.intArray(new int[] {1}));
+        Map<String, Value> mapified = new HashMap<>();
+
+        mapified.put("__org.neo4j.SchemaRule.schemaEntityType", Values.stringValue("NODE"));
+        mapified.put("__org.neo4j.SchemaRule.name", Values.stringValue("labelIndex"));
+        mapified.put("__org.neo4j.SchemaRule.schemaPropertySchemaType", Values.stringValue("COMPLETE_ALL_TOKENS"));
+        mapified.put("__org.neo4j.SchemaRule.indexProviderName", Values.stringValue("range"));
+        mapified.put("__org.neo4j.SchemaRule.indexProviderVersion", Values.stringValue("1.0"));
+        mapified.put("__org.neo4j.SchemaRule.schemaPropertyIds", Values.intArray(new int[] {2, 3}));
+        mapified.put("__org.neo4j.SchemaRule.schemaRuleType", Values.stringValue("INDEX"));
+        mapified.put("__org.neo4j.SchemaRule.indexType", Values.stringValue("RANGE"));
+        mapified.put("__org.neo4j.SchemaRule.indexRuleType", Values.stringValue("NON_UNIQUE"));
+        mapified.put("__org.neo4j.SchemaRule.schemaEntityIds", Values.intArray(new int[] {1}));
+        mapified.put("__org.neo4j.SchemaRule.graphTypeDependence", Values.stringValue("INDEPENDENT"));
+
         assertThat(unmapifySchemaRule(1, mapified)).isEqualTo(labelIndex);
     }
 
     @Test
     void labelUniqueIndexDeterministicUnmapification() throws Exception {
         // Index( 1, 'labelUniqueIndex', RANGE, :label[1](property[2], property[3]), range-1.0 )
-        Map<String, Value> mapified = Map.of(
-                "__org.neo4j.SchemaRule.schemaEntityType", Values.stringValue("NODE"),
-                "__org.neo4j.SchemaRule.name", Values.stringValue("labelUniqueIndex"),
-                "__org.neo4j.SchemaRule.schemaPropertySchemaType", Values.stringValue("COMPLETE_ALL_TOKENS"),
-                "__org.neo4j.SchemaRule.indexProviderName", Values.stringValue("range"),
-                "__org.neo4j.SchemaRule.indexProviderVersion", Values.stringValue("1.0"),
-                "__org.neo4j.SchemaRule.schemaPropertyIds", Values.intArray(new int[] {2, 3}),
-                "__org.neo4j.SchemaRule.schemaRuleType", Values.stringValue("INDEX"),
-                "__org.neo4j.SchemaRule.indexType", Values.stringValue("RANGE"),
-                "__org.neo4j.SchemaRule.indexRuleType", Values.stringValue("UNIQUE"),
-                "__org.neo4j.SchemaRule.schemaEntityIds", Values.intArray(new int[] {1}));
+        Map<String, Value> mapified = new HashMap<>();
+
+        mapified.put("__org.neo4j.SchemaRule.schemaEntityType", Values.stringValue("NODE"));
+        mapified.put("__org.neo4j.SchemaRule.name", Values.stringValue("labelUniqueIndex"));
+        mapified.put("__org.neo4j.SchemaRule.schemaPropertySchemaType", Values.stringValue("COMPLETE_ALL_TOKENS"));
+        mapified.put("__org.neo4j.SchemaRule.indexProviderName", Values.stringValue("range"));
+        mapified.put("__org.neo4j.SchemaRule.indexProviderVersion", Values.stringValue("1.0"));
+        mapified.put("__org.neo4j.SchemaRule.schemaPropertyIds", Values.intArray(new int[] {2, 3}));
+        mapified.put("__org.neo4j.SchemaRule.schemaRuleType", Values.stringValue("INDEX"));
+        mapified.put("__org.neo4j.SchemaRule.indexType", Values.stringValue("RANGE"));
+        mapified.put("__org.neo4j.SchemaRule.indexRuleType", Values.stringValue("UNIQUE"));
+        mapified.put("__org.neo4j.SchemaRule.schemaEntityIds", Values.intArray(new int[] {1}));
+        mapified.put("__org.neo4j.SchemaRule.graphTypeDependence", Values.stringValue("INDEPENDENT"));
+
         assertThat(unmapifySchemaRule(1, mapified)).isEqualTo(labelUniqueIndex);
     }
 
     @Test
     void relTypeIndexDeterministicUnmapification() throws Exception {
         // Index( 1, 'relTypeIndex', RANGE, -[:relType[1](property[2], property[3])]-, range-1.0 )
-        Map<String, Value> mapified = Map.of(
-                "__org.neo4j.SchemaRule.schemaEntityType", Values.stringValue("RELATIONSHIP"),
-                "__org.neo4j.SchemaRule.name", Values.stringValue("relTypeIndex"),
-                "__org.neo4j.SchemaRule.schemaPropertySchemaType", Values.stringValue("COMPLETE_ALL_TOKENS"),
-                "__org.neo4j.SchemaRule.indexProviderName", Values.stringValue("range"),
-                "__org.neo4j.SchemaRule.indexProviderVersion", Values.stringValue("1.0"),
-                "__org.neo4j.SchemaRule.schemaPropertyIds", Values.intArray(new int[] {2, 3}),
-                "__org.neo4j.SchemaRule.schemaRuleType", Values.stringValue("INDEX"),
-                "__org.neo4j.SchemaRule.indexType", Values.stringValue("RANGE"),
-                "__org.neo4j.SchemaRule.indexRuleType", Values.stringValue("NON_UNIQUE"),
-                "__org.neo4j.SchemaRule.schemaEntityIds", Values.intArray(new int[] {1}));
+        Map<String, Value> mapified = new HashMap<>();
+
+        mapified.put("__org.neo4j.SchemaRule.schemaEntityType", Values.stringValue("RELATIONSHIP"));
+        mapified.put("__org.neo4j.SchemaRule.name", Values.stringValue("relTypeIndex"));
+        mapified.put("__org.neo4j.SchemaRule.schemaPropertySchemaType", Values.stringValue("COMPLETE_ALL_TOKENS"));
+        mapified.put("__org.neo4j.SchemaRule.indexProviderName", Values.stringValue("range"));
+        mapified.put("__org.neo4j.SchemaRule.indexProviderVersion", Values.stringValue("1.0"));
+        mapified.put("__org.neo4j.SchemaRule.schemaPropertyIds", Values.intArray(new int[] {2, 3}));
+        mapified.put("__org.neo4j.SchemaRule.schemaRuleType", Values.stringValue("INDEX"));
+        mapified.put("__org.neo4j.SchemaRule.indexType", Values.stringValue("RANGE"));
+        mapified.put("__org.neo4j.SchemaRule.indexRuleType", Values.stringValue("NON_UNIQUE"));
+        mapified.put("__org.neo4j.SchemaRule.schemaEntityIds", Values.intArray(new int[] {1}));
+        mapified.put("__org.neo4j.SchemaRule.graphTypeDependence", Values.stringValue("INDEPENDENT"));
+
         assertThat(unmapifySchemaRule(1, mapified)).isEqualTo(relTypeIndex);
     }
 
     @Test
     void relTypeUniqueIndexDeterministicUnmapification() throws Exception {
         // Index( 1, 'relTypeUniqueIndex', RANGE, -[:relType[1](property[2], property[3])]-, range-1.0 )
-        Map<String, Value> mapified = Map.of(
-                "__org.neo4j.SchemaRule.schemaEntityType", Values.stringValue("RELATIONSHIP"),
-                "__org.neo4j.SchemaRule.name", Values.stringValue("relTypeUniqueIndex"),
-                "__org.neo4j.SchemaRule.schemaPropertySchemaType", Values.stringValue("COMPLETE_ALL_TOKENS"),
-                "__org.neo4j.SchemaRule.indexProviderName", Values.stringValue("range"),
-                "__org.neo4j.SchemaRule.indexProviderVersion", Values.stringValue("1.0"),
-                "__org.neo4j.SchemaRule.schemaPropertyIds", Values.intArray(new int[] {2, 3}),
-                "__org.neo4j.SchemaRule.schemaRuleType", Values.stringValue("INDEX"),
-                "__org.neo4j.SchemaRule.indexType", Values.stringValue("RANGE"),
-                "__org.neo4j.SchemaRule.indexRuleType", Values.stringValue("UNIQUE"),
-                "__org.neo4j.SchemaRule.schemaEntityIds", Values.intArray(new int[] {1}));
+        Map<String, Value> mapified = new HashMap<>();
+
+        mapified.put("__org.neo4j.SchemaRule.schemaEntityType", Values.stringValue("RELATIONSHIP"));
+        mapified.put("__org.neo4j.SchemaRule.name", Values.stringValue("relTypeUniqueIndex"));
+        mapified.put("__org.neo4j.SchemaRule.schemaPropertySchemaType", Values.stringValue("COMPLETE_ALL_TOKENS"));
+        mapified.put("__org.neo4j.SchemaRule.indexProviderName", Values.stringValue("range"));
+        mapified.put("__org.neo4j.SchemaRule.indexProviderVersion", Values.stringValue("1.0"));
+        mapified.put("__org.neo4j.SchemaRule.schemaPropertyIds", Values.intArray(new int[] {2, 3}));
+        mapified.put("__org.neo4j.SchemaRule.schemaRuleType", Values.stringValue("INDEX"));
+        mapified.put("__org.neo4j.SchemaRule.indexType", Values.stringValue("RANGE"));
+        mapified.put("__org.neo4j.SchemaRule.indexRuleType", Values.stringValue("UNIQUE"));
+        mapified.put("__org.neo4j.SchemaRule.schemaEntityIds", Values.intArray(new int[] {1}));
+        mapified.put("__org.neo4j.SchemaRule.graphTypeDependence", Values.stringValue("INDEPENDENT"));
+
         assertThat(unmapifySchemaRule(1, mapified)).isEqualTo(relTypeUniqueIndex);
     }
 
     @Test
     void nodeFtsIndexDeterministicUnmapification() throws Exception {
         // Index( 1, 'nodeFtsIndex', FULLTEXT, :label[1],label[2](property[1], property[2]), fulltext-1.0 )
-        Map<String, Value> mapified = Map.of(
-                "__org.neo4j.SchemaRule.schemaEntityType", Values.stringValue("NODE"),
-                "__org.neo4j.SchemaRule.name", Values.stringValue("nodeFtsIndex"),
-                "__org.neo4j.SchemaRule.schemaPropertySchemaType", Values.stringValue("PARTIAL_ANY_TOKEN"),
-                "__org.neo4j.SchemaRule.indexProviderName", Values.stringValue("fulltext"),
-                "__org.neo4j.SchemaRule.indexProviderVersion", Values.stringValue("1.0"),
-                "__org.neo4j.SchemaRule.schemaPropertyIds", Values.intArray(new int[] {1, 2}),
-                "__org.neo4j.SchemaRule.schemaRuleType", Values.stringValue("INDEX"),
-                "__org.neo4j.SchemaRule.indexType", Values.stringValue("FULLTEXT"),
-                "__org.neo4j.SchemaRule.indexRuleType", Values.stringValue("NON_UNIQUE"),
-                "__org.neo4j.SchemaRule.schemaEntityIds", Values.intArray(new int[] {1, 2}));
+        Map<String, Value> mapified = new HashMap<>();
+
+        mapified.put("__org.neo4j.SchemaRule.schemaEntityType", Values.stringValue("NODE"));
+        mapified.put("__org.neo4j.SchemaRule.name", Values.stringValue("nodeFtsIndex"));
+        mapified.put("__org.neo4j.SchemaRule.schemaPropertySchemaType", Values.stringValue("PARTIAL_ANY_TOKEN"));
+        mapified.put("__org.neo4j.SchemaRule.indexProviderName", Values.stringValue("fulltext"));
+        mapified.put("__org.neo4j.SchemaRule.indexProviderVersion", Values.stringValue("1.0"));
+        mapified.put("__org.neo4j.SchemaRule.schemaPropertyIds", Values.intArray(new int[] {1, 2}));
+        mapified.put("__org.neo4j.SchemaRule.schemaRuleType", Values.stringValue("INDEX"));
+        mapified.put("__org.neo4j.SchemaRule.indexType", Values.stringValue("FULLTEXT"));
+        mapified.put("__org.neo4j.SchemaRule.indexRuleType", Values.stringValue("NON_UNIQUE"));
+        mapified.put("__org.neo4j.SchemaRule.schemaEntityIds", Values.intArray(new int[] {1, 2}));
+        mapified.put("__org.neo4j.SchemaRule.graphTypeDependence", Values.stringValue("INDEPENDENT"));
+
         assertThat(unmapifySchemaRule(1, mapified)).isEqualTo(nodeFtsIndex);
     }
 
@@ -226,189 +245,261 @@ class SchemaStoreMapificationTest {
     void relFtsIndexDeterministicUnmapification() throws Exception {
         // Index( 1, 'relFtsIndex', FULLTEXT, -[:relType[1],relType[2](property[1], property[2])]-, fulltext-1.0
         // )
-        Map<String, Value> mapified = Map.of(
-                "__org.neo4j.SchemaRule.schemaEntityType", Values.stringValue("RELATIONSHIP"),
-                "__org.neo4j.SchemaRule.name", Values.stringValue("relFtsIndex"),
-                "__org.neo4j.SchemaRule.schemaPropertySchemaType", Values.stringValue("PARTIAL_ANY_TOKEN"),
-                "__org.neo4j.SchemaRule.indexProviderName", Values.stringValue("fulltext"),
-                "__org.neo4j.SchemaRule.indexProviderVersion", Values.stringValue("1.0"),
-                "__org.neo4j.SchemaRule.schemaPropertyIds", Values.intArray(new int[] {1, 2}),
-                "__org.neo4j.SchemaRule.schemaRuleType", Values.stringValue("INDEX"),
-                "__org.neo4j.SchemaRule.indexType", Values.stringValue("FULLTEXT"),
-                "__org.neo4j.SchemaRule.indexRuleType", Values.stringValue("NON_UNIQUE"),
-                "__org.neo4j.SchemaRule.schemaEntityIds", Values.intArray(new int[] {1, 2}));
+        Map<String, Value> mapified = new HashMap<>();
+
+        mapified.put("__org.neo4j.SchemaRule.schemaEntityType", Values.stringValue("RELATIONSHIP"));
+        mapified.put("__org.neo4j.SchemaRule.name", Values.stringValue("relFtsIndex"));
+        mapified.put("__org.neo4j.SchemaRule.schemaPropertySchemaType", Values.stringValue("PARTIAL_ANY_TOKEN"));
+        mapified.put("__org.neo4j.SchemaRule.indexProviderName", Values.stringValue("fulltext"));
+        mapified.put("__org.neo4j.SchemaRule.indexProviderVersion", Values.stringValue("1.0"));
+        mapified.put("__org.neo4j.SchemaRule.schemaPropertyIds", Values.intArray(new int[] {1, 2}));
+        mapified.put("__org.neo4j.SchemaRule.schemaRuleType", Values.stringValue("INDEX"));
+        mapified.put("__org.neo4j.SchemaRule.indexType", Values.stringValue("FULLTEXT"));
+        mapified.put("__org.neo4j.SchemaRule.indexRuleType", Values.stringValue("NON_UNIQUE"));
+        mapified.put("__org.neo4j.SchemaRule.schemaEntityIds", Values.intArray(new int[] {1, 2}));
+        mapified.put("__org.neo4j.SchemaRule.graphTypeDependence", Values.stringValue("INDEPENDENT"));
+
         assertThat(unmapifySchemaRule(1, mapified)).isEqualTo(relFtsIndex);
     }
 
     @Test
     void setUniqueLabelConstraintWithOtherTypeDeterministicUnmapification() throws Exception {
-        Map<String, Value> mapified = Map.of(
-                "__org.neo4j.SchemaRule.schemaEntityType", Values.stringValue("NODE"),
-                "__org.neo4j.SchemaRule.name", Values.stringValue("uniqueLabelConstraint"),
-                "__org.neo4j.SchemaRule.schemaPropertySchemaType", Values.stringValue("COMPLETE_ALL_TOKENS"),
-                "__org.neo4j.SchemaRule.schemaPropertyIds", Values.intArray(new int[] {2, 3}),
-                "__org.neo4j.SchemaRule.schemaRuleType", Values.stringValue("CONSTRAINT"),
-                "__org.neo4j.SchemaRule.constraintRuleType", Values.stringValue("UNIQUE"),
-                "__org.neo4j.SchemaRule.schemaEntityIds", Values.intArray(new int[] {1}),
-                "__org.neo4j.SchemaRule.indexType", Values.stringValue("TEXT"));
+        Map<String, Value> mapified = new HashMap<>();
+
+        mapified.put("__org.neo4j.SchemaRule.schemaEntityType", Values.stringValue("NODE"));
+        mapified.put("__org.neo4j.SchemaRule.name", Values.stringValue("uniqueLabelConstraint"));
+        mapified.put("__org.neo4j.SchemaRule.schemaPropertySchemaType", Values.stringValue("COMPLETE_ALL_TOKENS"));
+        mapified.put("__org.neo4j.SchemaRule.schemaPropertyIds", Values.intArray(new int[] {2, 3}));
+        mapified.put("__org.neo4j.SchemaRule.schemaRuleType", Values.stringValue("CONSTRAINT"));
+        mapified.put("__org.neo4j.SchemaRule.constraintRuleType", Values.stringValue("UNIQUE"));
+        mapified.put("__org.neo4j.SchemaRule.schemaEntityIds", Values.intArray(new int[] {1}));
+        mapified.put("__org.neo4j.SchemaRule.indexType", Values.stringValue("TEXT"));
+        mapified.put("__org.neo4j.SchemaRule.graphTypeDependence", Values.stringValue("UNDESIGNATED"));
+
         assertThat(unmapifySchemaRule(1, mapified)).isEqualTo(uniqueLabelConstraint);
     }
 
     @Test
     void setUniqueLabelConstraintWithTypeDeterministicUnmapification() throws Exception {
-        Map<String, Value> mapified = Map.of(
-                "__org.neo4j.SchemaRule.schemaEntityType", Values.stringValue("NODE"),
-                "__org.neo4j.SchemaRule.name", Values.stringValue("uniqueLabelConstraintWithType"),
-                "__org.neo4j.SchemaRule.schemaPropertySchemaType", Values.stringValue("COMPLETE_ALL_TOKENS"),
-                "__org.neo4j.SchemaRule.schemaPropertyIds", Values.intArray(new int[] {2, 3}),
-                "__org.neo4j.SchemaRule.schemaRuleType", Values.stringValue("CONSTRAINT"),
-                "__org.neo4j.SchemaRule.constraintRuleType", Values.stringValue("UNIQUE"),
-                "__org.neo4j.SchemaRule.schemaEntityIds", Values.intArray(new int[] {1}),
-                "__org.neo4j.SchemaRule.indexType", Values.stringValue("RANGE"),
-                "__org.neo4j.SchemaRule.ownedIndexId", Values.longValue(7));
+        Map<String, Value> mapified = new HashMap<>();
+
+        mapified.put("__org.neo4j.SchemaRule.schemaEntityType", Values.stringValue("NODE"));
+        mapified.put("__org.neo4j.SchemaRule.name", Values.stringValue("uniqueLabelConstraintWithType"));
+        mapified.put("__org.neo4j.SchemaRule.schemaPropertySchemaType", Values.stringValue("COMPLETE_ALL_TOKENS"));
+        mapified.put("__org.neo4j.SchemaRule.schemaPropertyIds", Values.intArray(new int[] {2, 3}));
+        mapified.put("__org.neo4j.SchemaRule.schemaRuleType", Values.stringValue("CONSTRAINT"));
+        mapified.put("__org.neo4j.SchemaRule.constraintRuleType", Values.stringValue("UNIQUE"));
+        mapified.put("__org.neo4j.SchemaRule.schemaEntityIds", Values.intArray(new int[] {1}));
+        mapified.put("__org.neo4j.SchemaRule.indexType", Values.stringValue("RANGE"));
+        mapified.put("__org.neo4j.SchemaRule.ownedIndexId", Values.longValue(7));
+        mapified.put("__org.neo4j.SchemaRule.graphTypeDependence", Values.stringValue("UNDESIGNATED"));
+
         assertThat(unmapifySchemaRule(1, mapified)).isEqualTo(uniqueLabelConstraintWithType);
     }
 
     @Test
     void setUniqueRelTypeConstraintWithOtherTypeDeterministicUnmapification() throws Exception {
-        Map<String, Value> mapified = Map.of(
-                "__org.neo4j.SchemaRule.schemaEntityType", Values.stringValue("RELATIONSHIP"),
-                "__org.neo4j.SchemaRule.name", Values.stringValue("uniqueRelTypeConstraint"),
-                "__org.neo4j.SchemaRule.schemaPropertySchemaType", Values.stringValue("COMPLETE_ALL_TOKENS"),
-                "__org.neo4j.SchemaRule.schemaPropertyIds", Values.intArray(new int[] {2, 3}),
-                "__org.neo4j.SchemaRule.schemaRuleType", Values.stringValue("CONSTRAINT"),
-                "__org.neo4j.SchemaRule.constraintRuleType", Values.stringValue("UNIQUE"),
-                "__org.neo4j.SchemaRule.schemaEntityIds", Values.intArray(new int[] {1}),
-                "__org.neo4j.SchemaRule.indexType", Values.stringValue("TEXT"));
+        Map<String, Value> mapified = new HashMap<>();
+
+        mapified.put("__org.neo4j.SchemaRule.schemaEntityType", Values.stringValue("RELATIONSHIP"));
+        mapified.put("__org.neo4j.SchemaRule.name", Values.stringValue("uniqueRelTypeConstraint"));
+        mapified.put("__org.neo4j.SchemaRule.schemaPropertySchemaType", Values.stringValue("COMPLETE_ALL_TOKENS"));
+        mapified.put("__org.neo4j.SchemaRule.schemaPropertyIds", Values.intArray(new int[] {2, 3}));
+        mapified.put("__org.neo4j.SchemaRule.schemaRuleType", Values.stringValue("CONSTRAINT"));
+        mapified.put("__org.neo4j.SchemaRule.constraintRuleType", Values.stringValue("UNIQUE"));
+        mapified.put("__org.neo4j.SchemaRule.schemaEntityIds", Values.intArray(new int[] {1}));
+        mapified.put("__org.neo4j.SchemaRule.indexType", Values.stringValue("TEXT"));
+        mapified.put("__org.neo4j.SchemaRule.graphTypeDependence", Values.stringValue("UNDESIGNATED"));
+
         assertThat(unmapifySchemaRule(1, mapified)).isEqualTo(uniqueRelTypeConstraint);
     }
 
     @Test
     void setUniqueRelTypeConstraintWithTypeDeterministicUnmapification() throws Exception {
-        Map<String, Value> mapified = Map.of(
-                "__org.neo4j.SchemaRule.schemaEntityType", Values.stringValue("RELATIONSHIP"),
-                "__org.neo4j.SchemaRule.name", Values.stringValue("uniqueRelTypeConstraintWithType"),
-                "__org.neo4j.SchemaRule.schemaPropertySchemaType", Values.stringValue("COMPLETE_ALL_TOKENS"),
-                "__org.neo4j.SchemaRule.schemaPropertyIds", Values.intArray(new int[] {2, 3}),
-                "__org.neo4j.SchemaRule.schemaRuleType", Values.stringValue("CONSTRAINT"),
-                "__org.neo4j.SchemaRule.constraintRuleType", Values.stringValue("UNIQUE"),
-                "__org.neo4j.SchemaRule.schemaEntityIds", Values.intArray(new int[] {1}),
-                "__org.neo4j.SchemaRule.indexType", Values.stringValue("RANGE"),
-                "__org.neo4j.SchemaRule.ownedIndexId", Values.longValue(7));
+        Map<String, Value> mapified = new HashMap<>();
+
+        mapified.put("__org.neo4j.SchemaRule.schemaEntityType", Values.stringValue("RELATIONSHIP"));
+        mapified.put("__org.neo4j.SchemaRule.name", Values.stringValue("uniqueRelTypeConstraintWithType"));
+        mapified.put("__org.neo4j.SchemaRule.schemaPropertySchemaType", Values.stringValue("COMPLETE_ALL_TOKENS"));
+        mapified.put("__org.neo4j.SchemaRule.schemaPropertyIds", Values.intArray(new int[] {2, 3}));
+        mapified.put("__org.neo4j.SchemaRule.schemaRuleType", Values.stringValue("CONSTRAINT"));
+        mapified.put("__org.neo4j.SchemaRule.constraintRuleType", Values.stringValue("UNIQUE"));
+        mapified.put("__org.neo4j.SchemaRule.schemaEntityIds", Values.intArray(new int[] {1}));
+        mapified.put("__org.neo4j.SchemaRule.indexType", Values.stringValue("RANGE"));
+        mapified.put("__org.neo4j.SchemaRule.ownedIndexId", Values.longValue(7));
+        mapified.put("__org.neo4j.SchemaRule.graphTypeDependence", Values.stringValue("UNDESIGNATED"));
+
         assertThat(unmapifySchemaRule(1, mapified)).isEqualTo(uniqueRelTypeConstraintWithType);
     }
 
     @Test
     void existsLabelConstraintDeterministicUnmapification() throws Exception {
         // org.neo4j.internal.schema.constraints.ConstraintDescriptorImplementation@41402017
-        Map<String, Value> mapified = Map.of(
-                "__org.neo4j.SchemaRule.schemaEntityType", Values.stringValue("NODE"),
-                "__org.neo4j.SchemaRule.name", Values.stringValue("existsLabelConstraint"),
-                "__org.neo4j.SchemaRule.schemaPropertySchemaType", Values.stringValue("COMPLETE_ALL_TOKENS"),
-                "__org.neo4j.SchemaRule.schemaPropertyIds", Values.intArray(new int[] {2, 3}),
-                "__org.neo4j.SchemaRule.schemaRuleType", Values.stringValue("CONSTRAINT"),
-                "__org.neo4j.SchemaRule.constraintRuleType", Values.stringValue("EXISTS"),
-                "__org.neo4j.SchemaRule.schemaEntityIds", Values.intArray(new int[] {1}));
+        Map<String, Value> mapified = new HashMap<>();
+
+        mapified.put("__org.neo4j.SchemaRule.schemaEntityType", Values.stringValue("NODE"));
+        mapified.put("__org.neo4j.SchemaRule.name", Values.stringValue("existsLabelConstraint"));
+        mapified.put("__org.neo4j.SchemaRule.schemaPropertySchemaType", Values.stringValue("COMPLETE_ALL_TOKENS"));
+        mapified.put("__org.neo4j.SchemaRule.schemaPropertyIds", Values.intArray(new int[] {2, 3}));
+        mapified.put("__org.neo4j.SchemaRule.schemaRuleType", Values.stringValue("CONSTRAINT"));
+        mapified.put("__org.neo4j.SchemaRule.constraintRuleType", Values.stringValue("EXISTS"));
+        mapified.put("__org.neo4j.SchemaRule.schemaEntityIds", Values.intArray(new int[] {1}));
+        mapified.put("__org.neo4j.SchemaRule.graphTypeDependence", Values.stringValue("INDEPENDENT"));
+
         assertThat(unmapifySchemaRule(1, mapified)).isEqualTo(existsLabelConstraint);
     }
 
     @Test
     void nodeKeyConstraintWithOtherTypeDeterministicUnmapification() throws Exception {
-        Map<String, Value> mapified = Map.of(
-                "__org.neo4j.SchemaRule.schemaEntityType", Values.stringValue("NODE"),
-                "__org.neo4j.SchemaRule.name", Values.stringValue("nodeKeyConstraint"),
-                "__org.neo4j.SchemaRule.schemaPropertySchemaType", Values.stringValue("COMPLETE_ALL_TOKENS"),
-                "__org.neo4j.SchemaRule.schemaPropertyIds", Values.intArray(new int[] {2, 3}),
-                "__org.neo4j.SchemaRule.schemaRuleType", Values.stringValue("CONSTRAINT"),
-                "__org.neo4j.SchemaRule.constraintRuleType", Values.stringValue("UNIQUE_EXISTS"),
-                "__org.neo4j.SchemaRule.schemaEntityIds", Values.intArray(new int[] {1}),
-                "__org.neo4j.SchemaRule.indexType", Values.stringValue("TEXT"));
+        Map<String, Value> mapified = new HashMap<>();
+
+        mapified.put("__org.neo4j.SchemaRule.schemaEntityType", Values.stringValue("NODE"));
+        mapified.put("__org.neo4j.SchemaRule.name", Values.stringValue("nodeKeyConstraint"));
+        mapified.put("__org.neo4j.SchemaRule.schemaPropertySchemaType", Values.stringValue("COMPLETE_ALL_TOKENS"));
+        mapified.put("__org.neo4j.SchemaRule.schemaPropertyIds", Values.intArray(new int[] {2, 3}));
+        mapified.put("__org.neo4j.SchemaRule.schemaRuleType", Values.stringValue("CONSTRAINT"));
+        mapified.put("__org.neo4j.SchemaRule.constraintRuleType", Values.stringValue("UNIQUE_EXISTS"));
+        mapified.put("__org.neo4j.SchemaRule.schemaEntityIds", Values.intArray(new int[] {1}));
+        mapified.put("__org.neo4j.SchemaRule.indexType", Values.stringValue("TEXT"));
+        mapified.put("__org.neo4j.SchemaRule.graphTypeDependence", Values.stringValue("UNDESIGNATED"));
+
         assertThat(unmapifySchemaRule(1, mapified)).isEqualTo(nodeKeyConstraint);
     }
 
     @Test
     void nodeKeyConstraintWithTypeDeterministicUnmapification() throws Exception {
-        Map<String, Value> mapified = Map.of(
-                "__org.neo4j.SchemaRule.schemaEntityType", Values.stringValue("NODE"),
-                "__org.neo4j.SchemaRule.name", Values.stringValue("nodeKeyConstraintWithType"),
-                "__org.neo4j.SchemaRule.schemaPropertySchemaType", Values.stringValue("COMPLETE_ALL_TOKENS"),
-                "__org.neo4j.SchemaRule.schemaPropertyIds", Values.intArray(new int[] {2, 3}),
-                "__org.neo4j.SchemaRule.schemaRuleType", Values.stringValue("CONSTRAINT"),
-                "__org.neo4j.SchemaRule.constraintRuleType", Values.stringValue("UNIQUE_EXISTS"),
-                "__org.neo4j.SchemaRule.schemaEntityIds", Values.intArray(new int[] {1}),
-                "__org.neo4j.SchemaRule.indexType", Values.stringValue("RANGE"),
-                "__org.neo4j.SchemaRule.ownedIndexId", Values.longValue(7));
+        Map<String, Value> mapified = new HashMap<>();
+
+        mapified.put("__org.neo4j.SchemaRule.schemaEntityType", Values.stringValue("NODE"));
+        mapified.put("__org.neo4j.SchemaRule.name", Values.stringValue("nodeKeyConstraintWithType"));
+        mapified.put("__org.neo4j.SchemaRule.schemaPropertySchemaType", Values.stringValue("COMPLETE_ALL_TOKENS"));
+        mapified.put("__org.neo4j.SchemaRule.schemaPropertyIds", Values.intArray(new int[] {2, 3}));
+        mapified.put("__org.neo4j.SchemaRule.schemaRuleType", Values.stringValue("CONSTRAINT"));
+        mapified.put("__org.neo4j.SchemaRule.constraintRuleType", Values.stringValue("UNIQUE_EXISTS"));
+        mapified.put("__org.neo4j.SchemaRule.schemaEntityIds", Values.intArray(new int[] {1}));
+        mapified.put("__org.neo4j.SchemaRule.indexType", Values.stringValue("RANGE"));
+        mapified.put("__org.neo4j.SchemaRule.ownedIndexId", Values.longValue(7));
+        mapified.put("__org.neo4j.SchemaRule.graphTypeDependence", Values.stringValue("UNDESIGNATED"));
+
         assertThat(unmapifySchemaRule(1, mapified)).isEqualTo(nodeKeyConstraintWithType);
     }
 
     @Test
     void relKeyConstraintWithOtherTypeDeterministicUnmapification() throws Exception {
-        Map<String, Value> mapified = Map.of(
-                "__org.neo4j.SchemaRule.schemaEntityType", Values.stringValue("RELATIONSHIP"),
-                "__org.neo4j.SchemaRule.name", Values.stringValue("relKeyConstraint"),
-                "__org.neo4j.SchemaRule.schemaPropertySchemaType", Values.stringValue("COMPLETE_ALL_TOKENS"),
-                "__org.neo4j.SchemaRule.schemaPropertyIds", Values.intArray(new int[] {2, 3}),
-                "__org.neo4j.SchemaRule.schemaRuleType", Values.stringValue("CONSTRAINT"),
-                "__org.neo4j.SchemaRule.constraintRuleType", Values.stringValue("UNIQUE_EXISTS"),
-                "__org.neo4j.SchemaRule.schemaEntityIds", Values.intArray(new int[] {1}),
-                "__org.neo4j.SchemaRule.indexType", Values.stringValue("TEXT"));
+        Map<String, Value> mapified = new HashMap<>();
+
+        mapified.put("__org.neo4j.SchemaRule.schemaEntityType", Values.stringValue("RELATIONSHIP"));
+        mapified.put("__org.neo4j.SchemaRule.name", Values.stringValue("relKeyConstraint"));
+        mapified.put("__org.neo4j.SchemaRule.schemaPropertySchemaType", Values.stringValue("COMPLETE_ALL_TOKENS"));
+        mapified.put("__org.neo4j.SchemaRule.schemaPropertyIds", Values.intArray(new int[] {2, 3}));
+        mapified.put("__org.neo4j.SchemaRule.schemaRuleType", Values.stringValue("CONSTRAINT"));
+        mapified.put("__org.neo4j.SchemaRule.constraintRuleType", Values.stringValue("UNIQUE_EXISTS"));
+        mapified.put("__org.neo4j.SchemaRule.schemaEntityIds", Values.intArray(new int[] {1}));
+        mapified.put("__org.neo4j.SchemaRule.indexType", Values.stringValue("TEXT"));
+        mapified.put("__org.neo4j.SchemaRule.graphTypeDependence", Values.stringValue("UNDESIGNATED"));
+
         assertThat(unmapifySchemaRule(1, mapified)).isEqualTo(relKeyConstraint);
     }
 
     @Test
     void relKeyConstraintWithTypeDeterministicUnmapification() throws Exception {
-        Map<String, Value> mapified = Map.of(
-                "__org.neo4j.SchemaRule.schemaEntityType", Values.stringValue("RELATIONSHIP"),
-                "__org.neo4j.SchemaRule.name", Values.stringValue("relKeyConstraintWithType"),
-                "__org.neo4j.SchemaRule.schemaPropertySchemaType", Values.stringValue("COMPLETE_ALL_TOKENS"),
-                "__org.neo4j.SchemaRule.schemaPropertyIds", Values.intArray(new int[] {2, 3}),
-                "__org.neo4j.SchemaRule.schemaRuleType", Values.stringValue("CONSTRAINT"),
-                "__org.neo4j.SchemaRule.constraintRuleType", Values.stringValue("UNIQUE_EXISTS"),
-                "__org.neo4j.SchemaRule.schemaEntityIds", Values.intArray(new int[] {1}),
-                "__org.neo4j.SchemaRule.indexType", Values.stringValue("RANGE"),
-                "__org.neo4j.SchemaRule.ownedIndexId", Values.longValue(7));
+        Map<String, Value> mapified = new HashMap<>();
+
+        mapified.put("__org.neo4j.SchemaRule.schemaEntityType", Values.stringValue("RELATIONSHIP"));
+        mapified.put("__org.neo4j.SchemaRule.name", Values.stringValue("relKeyConstraintWithType"));
+        mapified.put("__org.neo4j.SchemaRule.schemaPropertySchemaType", Values.stringValue("COMPLETE_ALL_TOKENS"));
+        mapified.put("__org.neo4j.SchemaRule.schemaPropertyIds", Values.intArray(new int[] {2, 3}));
+        mapified.put("__org.neo4j.SchemaRule.schemaRuleType", Values.stringValue("CONSTRAINT"));
+        mapified.put("__org.neo4j.SchemaRule.constraintRuleType", Values.stringValue("UNIQUE_EXISTS"));
+        mapified.put("__org.neo4j.SchemaRule.schemaEntityIds", Values.intArray(new int[] {1}));
+        mapified.put("__org.neo4j.SchemaRule.indexType", Values.stringValue("RANGE"));
+        mapified.put("__org.neo4j.SchemaRule.ownedIndexId", Values.longValue(7));
+        mapified.put("__org.neo4j.SchemaRule.graphTypeDependence", Values.stringValue("UNDESIGNATED"));
+
+        assertThat(unmapifySchemaRule(1, mapified)).isEqualTo(relKeyConstraintWithType);
+    }
+
+    @Test
+    void relKeyConstraintWithTypeDeterministicUnmapificationNoGraphTypeDependence() throws Exception {
+        Map<String, Value> mapified = new HashMap<>();
+
+        mapified.put("__org.neo4j.SchemaRule.schemaEntityType", Values.stringValue("RELATIONSHIP"));
+        mapified.put("__org.neo4j.SchemaRule.name", Values.stringValue("relKeyConstraintWithType"));
+        mapified.put("__org.neo4j.SchemaRule.schemaPropertySchemaType", Values.stringValue("COMPLETE_ALL_TOKENS"));
+        mapified.put("__org.neo4j.SchemaRule.schemaPropertyIds", Values.intArray(new int[] {2, 3}));
+        mapified.put("__org.neo4j.SchemaRule.schemaRuleType", Values.stringValue("CONSTRAINT"));
+        mapified.put("__org.neo4j.SchemaRule.constraintRuleType", Values.stringValue("UNIQUE_EXISTS"));
+        mapified.put("__org.neo4j.SchemaRule.schemaEntityIds", Values.intArray(new int[] {1}));
+        mapified.put("__org.neo4j.SchemaRule.indexType", Values.stringValue("RANGE"));
+        mapified.put("__org.neo4j.SchemaRule.ownedIndexId", Values.longValue(7));
+
         assertThat(unmapifySchemaRule(1, mapified)).isEqualTo(relKeyConstraintWithType);
     }
 
     @Test
     void existsRelTypeConstraintDeterministicUnmapification() throws Exception {
         // org.neo4j.internal.schema.constraints.ConstraintDescriptorImplementation@40083801
-        Map<String, Value> mapified = Map.of(
-                "__org.neo4j.SchemaRule.schemaEntityType", Values.stringValue("RELATIONSHIP"),
-                "__org.neo4j.SchemaRule.name", Values.stringValue("existsRelTypeConstraint"),
-                "__org.neo4j.SchemaRule.schemaPropertySchemaType", Values.stringValue("COMPLETE_ALL_TOKENS"),
-                "__org.neo4j.SchemaRule.schemaPropertyIds", Values.intArray(new int[] {2, 3}),
-                "__org.neo4j.SchemaRule.schemaRuleType", Values.stringValue("CONSTRAINT"),
-                "__org.neo4j.SchemaRule.constraintRuleType", Values.stringValue("EXISTS"),
-                "__org.neo4j.SchemaRule.schemaEntityIds", Values.intArray(new int[] {1}));
+        Map<String, Value> mapified = new HashMap<>();
+
+        mapified.put("__org.neo4j.SchemaRule.schemaEntityType", Values.stringValue("RELATIONSHIP"));
+        mapified.put("__org.neo4j.SchemaRule.name", Values.stringValue("existsRelTypeConstraint"));
+        mapified.put("__org.neo4j.SchemaRule.schemaPropertySchemaType", Values.stringValue("COMPLETE_ALL_TOKENS"));
+        mapified.put("__org.neo4j.SchemaRule.schemaPropertyIds", Values.intArray(new int[] {2, 3}));
+        mapified.put("__org.neo4j.SchemaRule.schemaRuleType", Values.stringValue("CONSTRAINT"));
+        mapified.put("__org.neo4j.SchemaRule.constraintRuleType", Values.stringValue("EXISTS"));
+        mapified.put("__org.neo4j.SchemaRule.schemaEntityIds", Values.intArray(new int[] {1}));
+        mapified.put("__org.neo4j.SchemaRule.graphTypeDependence", Values.stringValue("INDEPENDENT"));
+
         assertThat(unmapifySchemaRule(1, mapified)).isEqualTo(existsRelTypeConstraint);
     }
 
     @Test
     void propTypeLabelConstraintDeterministicUnmapification() throws Exception {
-        Map<String, Value> mapified = Map.of(
-                "__org.neo4j.SchemaRule.schemaEntityType", Values.stringValue("NODE"),
-                "__org.neo4j.SchemaRule.name", Values.stringValue("nodeTypeConstraintSingleScalarType"),
-                "__org.neo4j.SchemaRule.schemaPropertySchemaType", Values.stringValue("COMPLETE_ALL_TOKENS"),
-                "__org.neo4j.SchemaRule.schemaPropertyIds", Values.intArray(new int[] {2, 3}),
-                "__org.neo4j.SchemaRule.schemaRuleType", Values.stringValue("CONSTRAINT"),
-                "__org.neo4j.SchemaRule.constraintRuleType", Values.stringValue("PROPERTY_TYPE"),
-                "__org.neo4j.SchemaRule.schemaEntityIds", Values.intArray(new int[] {1}),
-                "__org.neo4j.SchemaRule.propertyType", Values.stringArray("BOOLEAN"));
+        Map<String, Value> mapified = new HashMap<>();
+
+        mapified.put("__org.neo4j.SchemaRule.schemaEntityType", Values.stringValue("NODE"));
+        mapified.put("__org.neo4j.SchemaRule.name", Values.stringValue("nodeTypeConstraintSingleScalarType"));
+        mapified.put("__org.neo4j.SchemaRule.schemaPropertySchemaType", Values.stringValue("COMPLETE_ALL_TOKENS"));
+        mapified.put("__org.neo4j.SchemaRule.schemaPropertyIds", Values.intArray(new int[] {2, 3}));
+        mapified.put("__org.neo4j.SchemaRule.schemaRuleType", Values.stringValue("CONSTRAINT"));
+        mapified.put("__org.neo4j.SchemaRule.constraintRuleType", Values.stringValue("PROPERTY_TYPE"));
+        mapified.put("__org.neo4j.SchemaRule.schemaEntityIds", Values.intArray(new int[] {1}));
+        mapified.put("__org.neo4j.SchemaRule.propertyType", Values.stringArray("BOOLEAN"));
+        mapified.put("__org.neo4j.SchemaRule.graphTypeDependence", Values.stringValue("INDEPENDENT"));
+
         assertThat(unmapifySchemaRule(1, mapified)).isEqualTo(nodeTypeConstraintSingleScalarType);
     }
 
     @Test
     void propTypeRelTypeConstraintDeterministicUnmapification() throws Exception {
-        Map<String, Value> mapified = Map.of(
-                "__org.neo4j.SchemaRule.schemaEntityType", Values.stringValue("RELATIONSHIP"),
-                "__org.neo4j.SchemaRule.name", Values.stringValue("relTypeConstrainSeveralTypes"),
-                "__org.neo4j.SchemaRule.schemaPropertySchemaType", Values.stringValue("COMPLETE_ALL_TOKENS"),
-                "__org.neo4j.SchemaRule.schemaPropertyIds", Values.intArray(new int[] {2, 3}),
-                "__org.neo4j.SchemaRule.schemaRuleType", Values.stringValue("CONSTRAINT"),
-                "__org.neo4j.SchemaRule.constraintRuleType", Values.stringValue("PROPERTY_TYPE"),
-                "__org.neo4j.SchemaRule.schemaEntityIds", Values.intArray(new int[] {1}),
-                "__org.neo4j.SchemaRule.propertyType", Values.stringArray("BOOLEAN", "LOCAL_DATETIME", "FLOAT"));
+        Map<String, Value> mapified = new HashMap<>();
+
+        mapified.put("__org.neo4j.SchemaRule.schemaEntityType", Values.stringValue("RELATIONSHIP"));
+        mapified.put("__org.neo4j.SchemaRule.name", Values.stringValue("relTypeConstrainSeveralTypes"));
+        mapified.put("__org.neo4j.SchemaRule.schemaPropertySchemaType", Values.stringValue("COMPLETE_ALL_TOKENS"));
+        mapified.put("__org.neo4j.SchemaRule.schemaPropertyIds", Values.intArray(new int[] {2, 3}));
+        mapified.put("__org.neo4j.SchemaRule.schemaRuleType", Values.stringValue("CONSTRAINT"));
+        mapified.put("__org.neo4j.SchemaRule.constraintRuleType", Values.stringValue("PROPERTY_TYPE"));
+        mapified.put("__org.neo4j.SchemaRule.schemaEntityIds", Values.intArray(new int[] {1}));
+        mapified.put("__org.neo4j.SchemaRule.propertyType", Values.stringArray("BOOLEAN", "LOCAL_DATETIME", "FLOAT"));
+        mapified.put("__org.neo4j.SchemaRule.graphTypeDependence", Values.stringValue("INDEPENDENT"));
+
+        assertThat(unmapifySchemaRule(1, mapified)).isEqualTo(relTypeConstraintSeveralTypes);
+    }
+
+    @Test
+    void propTypeRelTypeConstraintDeterministicUnmapificationNoGraphTypeDependence() throws Exception {
+        Map<String, Value> mapified = new HashMap<>();
+
+        mapified.put("__org.neo4j.SchemaRule.schemaEntityType", Values.stringValue("RELATIONSHIP"));
+        mapified.put("__org.neo4j.SchemaRule.name", Values.stringValue("relTypeConstrainSeveralTypes"));
+        mapified.put("__org.neo4j.SchemaRule.schemaPropertySchemaType", Values.stringValue("COMPLETE_ALL_TOKENS"));
+        mapified.put("__org.neo4j.SchemaRule.schemaPropertyIds", Values.intArray(new int[] {2, 3}));
+        mapified.put("__org.neo4j.SchemaRule.schemaRuleType", Values.stringValue("CONSTRAINT"));
+        mapified.put("__org.neo4j.SchemaRule.constraintRuleType", Values.stringValue("PROPERTY_TYPE"));
+        mapified.put("__org.neo4j.SchemaRule.schemaEntityIds", Values.intArray(new int[] {1}));
+        mapified.put("__org.neo4j.SchemaRule.propertyType", Values.stringArray("BOOLEAN", "LOCAL_DATETIME", "FLOAT"));
+
         assertThat(unmapifySchemaRule(1, mapified)).isEqualTo(relTypeConstraintSeveralTypes);
     }
 }

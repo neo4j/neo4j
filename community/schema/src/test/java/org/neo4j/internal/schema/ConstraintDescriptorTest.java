@@ -85,7 +85,7 @@ class ConstraintDescriptorTest extends SchemaRuleTestBase {
     @Test
     void shouldCreateExistenceConstraint() {
         // GIVEN
-        ConstraintDescriptor descriptor = existsForLabel(LABEL_ID, PROPERTY_ID_1);
+        ConstraintDescriptor descriptor = existsForLabel(false, LABEL_ID, PROPERTY_ID_1);
         ConstraintDescriptor constraint = descriptor.withId(RULE_ID);
 
         // THEN
@@ -99,11 +99,12 @@ class ConstraintDescriptorTest extends SchemaRuleTestBase {
 
     @Test
     void indexRulesAreEqualBasedOnConstraintDescriptor() {
-        assertEqualityByDescriptor(ConstraintDescriptorFactory.existsForLabel(LABEL_ID, PROPERTY_ID_1));
+        assertEqualityByDescriptor(ConstraintDescriptorFactory.existsForLabel(false, LABEL_ID, PROPERTY_ID_1));
         assertEqualityByDescriptor(ConstraintDescriptorFactory.uniqueForLabel(LABEL_ID, PROPERTY_ID_1));
         assertEqualityByDescriptor(ConstraintDescriptorFactory.nodeKeyForLabel(LABEL_ID, PROPERTY_ID_1));
-        assertEqualityByDescriptor(ConstraintDescriptorFactory.existsForRelType(REL_TYPE_ID, PROPERTY_ID_1));
-        assertEqualityByDescriptor(ConstraintDescriptorFactory.existsForLabel(LABEL_ID, PROPERTY_ID_1, PROPERTY_ID_2));
+        assertEqualityByDescriptor(ConstraintDescriptorFactory.existsForRelType(false, REL_TYPE_ID, PROPERTY_ID_1));
+        assertEqualityByDescriptor(
+                ConstraintDescriptorFactory.existsForLabel(false, LABEL_ID, PROPERTY_ID_1, PROPERTY_ID_2));
         assertEqualityByDescriptor(ConstraintDescriptorFactory.uniqueForLabel(LABEL_ID, PROPERTY_ID_1, PROPERTY_ID_2));
         assertEqualityByDescriptor(ConstraintDescriptorFactory.nodeKeyForLabel(LABEL_ID, PROPERTY_ID_1, PROPERTY_ID_2));
     }

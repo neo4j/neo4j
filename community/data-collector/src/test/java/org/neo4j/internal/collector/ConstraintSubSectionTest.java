@@ -44,13 +44,13 @@ class ConstraintSubSectionTest {
         NODE_PROPERTY_UNIQUENESS(ConstraintDescriptorFactory.uniqueForSchema(SchemaDescriptors.forLabel(0, 0))),
         RELATIONSHIP_PROPERTY_UNIQUENESS(
                 ConstraintDescriptorFactory.uniqueForSchema(SchemaDescriptors.forRelType(0, 0))),
-        NODE_PROPERTY_EXISTENCE(ConstraintDescriptorFactory.existsForSchema(SchemaDescriptors.forLabel(0, 0))),
+        NODE_PROPERTY_EXISTENCE(ConstraintDescriptorFactory.existsForSchema(SchemaDescriptors.forLabel(0, 0), false)),
         RELATIONSHIP_PROPERTY_EXISTENCE(
-                ConstraintDescriptorFactory.existsForSchema(SchemaDescriptors.forRelType(0, 0))),
+                ConstraintDescriptorFactory.existsForSchema(SchemaDescriptors.forRelType(0, 0), false)),
         NODE_PROPERTY_TYPE(ConstraintDescriptorFactory.typeForSchema(
-                SchemaDescriptors.forLabel(0, 0), PropertyTypeSet.of(SchemaValueType.INTEGER))),
+                SchemaDescriptors.forLabel(0, 0), PropertyTypeSet.of(SchemaValueType.INTEGER), false)),
         RELATIONSHIP_PROPERTY_TYPE(ConstraintDescriptorFactory.typeForSchema(
-                SchemaDescriptors.forRelType(0, 0), PropertyTypeSet.of(SchemaValueType.INTEGER))),
+                SchemaDescriptors.forRelType(0, 0), PropertyTypeSet.of(SchemaValueType.INTEGER), false)),
         NODE_KEY(ConstraintDescriptorFactory.keyForSchema(SchemaDescriptors.forLabel(0, 0))),
         RELATIONSHIP_KEY(ConstraintDescriptorFactory.keyForSchema(SchemaDescriptors.forRelType(0, 0)));
 

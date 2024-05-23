@@ -477,7 +477,7 @@ abstract class TxStateTest {
     @Test
     void shouldAddRelationshipPropertyExistenceConstraint() {
         // Given
-        ConstraintDescriptor constraint = ConstraintDescriptorFactory.existsForRelType(1, 42);
+        ConstraintDescriptor constraint = ConstraintDescriptorFactory.existsForRelType(false, 1, 42);
 
         // When
         state.constraintDoAdd(constraint);
@@ -491,8 +491,8 @@ abstract class TxStateTest {
     @Test
     void addingRelationshipPropertyExistenceConstraintConstraintShouldBeIdempotent() {
         // Given
-        ConstraintDescriptor constraint1 = ConstraintDescriptorFactory.existsForRelType(1, 42);
-        ConstraintDescriptor constraint2 = ConstraintDescriptorFactory.existsForRelType(1, 42);
+        ConstraintDescriptor constraint1 = ConstraintDescriptorFactory.existsForRelType(false, 1, 42);
+        ConstraintDescriptor constraint2 = ConstraintDescriptorFactory.existsForRelType(false, 1, 42);
 
         // When
         state.constraintDoAdd(constraint1);
@@ -508,7 +508,7 @@ abstract class TxStateTest {
     @Test
     void shouldDropRelationshipPropertyExistenceConstraint() {
         // Given
-        ConstraintDescriptor constraint = ConstraintDescriptorFactory.existsForRelType(1, 42);
+        ConstraintDescriptor constraint = ConstraintDescriptorFactory.existsForRelType(false, 1, 42);
         state.constraintDoAdd(constraint);
 
         // When
@@ -521,9 +521,9 @@ abstract class TxStateTest {
     @Test
     void shouldDifferentiateRelationshipPropertyExistenceConstraints() {
         // Given
-        ConstraintDescriptor constraint1 = ConstraintDescriptorFactory.existsForRelType(1, 11);
-        ConstraintDescriptor constraint2 = ConstraintDescriptorFactory.existsForRelType(1, 22);
-        ConstraintDescriptor constraint3 = ConstraintDescriptorFactory.existsForRelType(3, 33);
+        ConstraintDescriptor constraint1 = ConstraintDescriptorFactory.existsForRelType(false, 1, 11);
+        ConstraintDescriptor constraint2 = ConstraintDescriptorFactory.existsForRelType(false, 1, 22);
+        ConstraintDescriptor constraint3 = ConstraintDescriptorFactory.existsForRelType(false, 3, 33);
 
         // When
         state.constraintDoAdd(constraint1);

@@ -33,6 +33,8 @@ public interface ConstraintDescriptor extends SchemaDescriptorSupplier, SchemaRu
 
     ConstraintType type();
 
+    GraphTypeDependence graphTypeDependence();
+
     boolean enforcesUniqueness();
 
     boolean enforcesPropertyExistence();

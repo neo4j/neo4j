@@ -1156,6 +1156,12 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
     public static final Setting<Boolean> type_constraints =
             newBuilder("internal.dbms.type_constraints", BOOL, false).build();
 
+    @Internal
+    @Description("Enables creation of graph type dependent constraints")
+    public static final Setting<Boolean> dependent_constraints_enabled = newBuilder(
+                    "internal.dbms.dependent_constraints_enabled", BOOL, false)
+            .build();
+
     public enum ExtractLiteral {
         ALWAYS,
         NEVER,

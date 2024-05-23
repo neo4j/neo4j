@@ -3436,7 +3436,7 @@ public class FullCheckIntegrationTest {
     private void createNodePropertyExistenceConstraint(int labelId, int propertyKeyId) throws KernelException {
         SchemaStore schemaStore = fixture.directStoreAccess().nativeStores().getSchemaStore();
         long ruleId = schemaStore.getIdGenerator().nextId(NULL_CONTEXT);
-        ConstraintDescriptor rule = nodePropertyExistenceConstraintRule(ruleId, labelId, propertyKeyId)
+        ConstraintDescriptor rule = nodePropertyExistenceConstraintRule(ruleId, labelId, propertyKeyId, false)
                 .withName("constraint_" + ruleId);
         writeToSchemaStore(schemaStore, rule);
     }
@@ -3445,7 +3445,7 @@ public class FullCheckIntegrationTest {
         SchemaStore schemaStore = fixture.directStoreAccess().nativeStores().getSchemaStore();
         long ruleId = schemaStore.getIdGenerator().nextId(NULL_CONTEXT);
         ConstraintDescriptor rule = nodePropertyTypeConstraintRule(
-                        ruleId, labelId, propertyKeyId, PropertyTypeSet.of(SchemaValueType.INTEGER))
+                        ruleId, labelId, propertyKeyId, PropertyTypeSet.of(SchemaValueType.INTEGER), false)
                 .withName("constraint_" + ruleId);
         writeToSchemaStore(schemaStore, rule);
     }
@@ -3459,7 +3459,7 @@ public class FullCheckIntegrationTest {
         SchemaStore schemaStore = fixture.directStoreAccess().nativeStores().getSchemaStore();
         long ruleId = schemaStore.getIdGenerator().nextId(NULL_CONTEXT);
         ConstraintDescriptor rule = relPropertyTypeConstraintRule(
-                        ruleId, typeId, propertyKeyId, PropertyTypeSet.of(schemaValueType))
+                        ruleId, typeId, propertyKeyId, PropertyTypeSet.of(schemaValueType), false)
                 .withName("constraint_" + ruleId);
         writeToSchemaStore(schemaStore, rule);
     }
@@ -3468,7 +3468,7 @@ public class FullCheckIntegrationTest {
             throws KernelException {
         SchemaStore schemaStore = fixture.directStoreAccess().nativeStores().getSchemaStore();
         ConstraintDescriptor rule = relPropertyExistenceConstraintRule(
-                schemaStore.getIdGenerator().nextId(NULL_CONTEXT), relTypeId, propertyKeyId);
+                schemaStore.getIdGenerator().nextId(NULL_CONTEXT), relTypeId, propertyKeyId, false);
         writeToSchemaStore(schemaStore, rule);
     }
 

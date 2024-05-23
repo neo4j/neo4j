@@ -24,6 +24,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.OptionalLong;
 import org.eclipse.collections.api.RichIterable;
 import org.eclipse.collections.api.tuple.Pair;
@@ -48,6 +49,7 @@ public class SchemaRuleMapifier {
     private static final String PROP_INDEX_RULE_TYPE = PROP_SCHEMA_RULE_PREFIX + "indexRuleType"; // Uniqueness
     private static final String PROP_CONSTRAINT_RULE_TYPE =
             PROP_SCHEMA_RULE_PREFIX + "constraintRuleType"; // Existence / Uniqueness / ...
+    private static final String PROP_SCHEMA_GRAPH_TYPE_DEPENDENCE = PROP_SCHEMA_RULE_PREFIX + "graphTypeDependence";
     private static final String PROP_SCHEMA_RULE_NAME = PROP_SCHEMA_RULE_PREFIX + "name";
     private static final String PROP_OWNED_INDEX = PROP_SCHEMA_RULE_PREFIX + "ownedIndex";
     public static final String PROP_OWNING_CONSTRAINT = PROP_SCHEMA_RULE_PREFIX + "owningConstraint";
@@ -82,6 +84,7 @@ public class SchemaRuleMapifier {
         } else if (rule instanceof ConstraintDescriptor constraint) {
             schemaConstraintToMap(constraint, map);
         }
+
         return map;
     }
 
@@ -109,6 +112,7 @@ public class SchemaRuleMapifier {
         PropertySchemaType propertySchemaType = schemaDescriptor.propertySchemaType();
         int[] entityTokenIds = schemaDescriptor.getEntityTokenIds();
         int[] propertyIds = schemaDescriptor.getPropertyIds();
+
         putStringProperty(map, PROP_SCHEMA_DESCRIPTOR_ENTITY_TYPE, entityType.name());
         putStringProperty(map, PROP_SCHEMA_DESCRIPTOR_PROPERTY_SCHEMA_TYPE, propertySchemaType.name());
         putIntArrayProperty(map, PROP_SCHEMA_DESCRIPTOR_ENTITY_IDS, entityTokenIds);
@@ -161,6 +165,10 @@ public class SchemaRuleMapifier {
         ConstraintType type = rule.type();
         putStringProperty(map, PROP_SCHEMA_RULE_TYPE, "CONSTRAINT");
         putStringProperty(map, PROP_CONSTRAINT_RULE_TYPE, type.name());
+        putStringProperty(
+                map,
+                PROP_SCHEMA_GRAPH_TYPE_DEPENDENCE,
+                rule.graphTypeDependence().name());
         switch (type) {
             case UNIQUE, UNIQUE_EXISTS -> {
                 IndexBackedConstraintDescriptor indexBackedConstraint = rule.asIndexBackedConstraint();
@@ -207,6 +215,14 @@ public class SchemaRuleMapifier {
             return OptionalLong.of(longValue.value());
         }
         return OptionalLong.empty();
+    }
+
+    private static Optional<String> getOptionalString(String property, Map<String, Value> map) {
+        Value value = map.get(property);
+        if (value instanceof TextValue textValue) {
+            return Optional.of(textValue.stringValue());
+        }
+        return Optional.empty();
     }
 
     private static String getString(String property, Map<String, Value> map) throws MalformedSchemaRuleException {
@@ -286,38 +302,54 @@ public class SchemaRuleMapifier {
     private static SchemaRule buildConstraintRule(long id, Map<String, Value> props)
             throws MalformedSchemaRuleException {
         SchemaDescriptor schema = buildSchemaDescriptor(props);
-        String constraintRuleType = getString(PROP_CONSTRAINT_RULE_TYPE, props);
+        ConstraintType constraintRuleType = getConstraintType(getString(PROP_CONSTRAINT_RULE_TYPE, props));
+
+        GraphTypeDependence graphTypeDependence =
+                getGraphTypeDependence(constraintRuleType, getOptionalString(PROP_SCHEMA_GRAPH_TYPE_DEPENDENCE, props));
+
         String name = getString(PROP_SCHEMA_RULE_NAME, props);
         OptionalLong ownedIndex = getOptionalLong(PROP_OWNED_INDEX, props);
-        ConstraintDescriptor constraint;
-        switch (constraintRuleType) {
-            case "UNIQUE" -> {
-                constraint = ConstraintDescriptorFactory.uniqueForSchema(
-                        schema, getIndexType(getString(PROP_INDEX_TYPE, props)));
-
-                if (ownedIndex.isPresent()) {
-                    constraint = constraint.withOwnedIndexId(ownedIndex.getAsLong());
-                }
-            }
-
-            case "EXISTS" -> constraint = ConstraintDescriptorFactory.existsForSchema(schema);
-
-            case "UNIQUE_EXISTS" -> {
-                constraint = ConstraintDescriptorFactory.keyForSchema(
-                        schema, getIndexType(getString(PROP_INDEX_TYPE, props)));
-
-                if (ownedIndex.isPresent()) {
-                    constraint = constraint.withOwnedIndexId(ownedIndex.getAsLong());
-                }
-            }
-
-            case "PROPERTY_TYPE" -> constraint = ConstraintDescriptorFactory.typeForSchema(
-                    schema, getAllowedTypes(getStringArray(PROP_CONSTRAINT_ALLOWED_TYPES, props)));
-
-            default -> throw new MalformedSchemaRuleException(
-                    "Did not recognize constraint rule type: " + constraintRuleType);
-        }
+        ConstraintDescriptor constraint =
+                getConstraintDescriptor(constraintRuleType, graphTypeDependence, schema, ownedIndex, props);
         return constraint.withId(id).withName(name);
+    }
+
+    private static ConstraintDescriptor getConstraintDescriptor(
+            ConstraintType constraintRuleType,
+            GraphTypeDependence graphTypeDependence,
+            SchemaDescriptor schema,
+            OptionalLong ownedIndex,
+            Map<String, Value> props)
+            throws MalformedSchemaRuleException {
+        return switch (constraintRuleType) {
+            case UNIQUE -> {
+                var constraint = ConstraintDescriptorFactory.uniqueForSchema(
+                        schema, getIndexType(getString(PROP_INDEX_TYPE, props)));
+
+                if (ownedIndex.isPresent()) {
+                    constraint = constraint.withOwnedIndexId(ownedIndex.getAsLong());
+                }
+                yield constraint;
+            }
+
+            case EXISTS -> ConstraintDescriptorFactory.existsForSchema(
+                    schema, graphTypeDependence == GraphTypeDependence.DEPENDENT);
+
+            case UNIQUE_EXISTS -> {
+                var constraint = ConstraintDescriptorFactory.keyForSchema(
+                        schema, getIndexType(getString(PROP_INDEX_TYPE, props)));
+
+                if (ownedIndex.isPresent()) {
+                    constraint = constraint.withOwnedIndexId(ownedIndex.getAsLong());
+                }
+                yield constraint;
+            }
+
+            case PROPERTY_TYPE -> ConstraintDescriptorFactory.typeForSchema(
+                    schema,
+                    getAllowedTypes(getStringArray(PROP_CONSTRAINT_ALLOWED_TYPES, props)),
+                    graphTypeDependence == GraphTypeDependence.DEPENDENT);
+        };
     }
 
     private static SchemaDescriptor buildSchemaDescriptor(Map<String, Value> props)
@@ -379,5 +411,33 @@ public class SchemaRuleMapifier {
             }
         }
         return PropertyTypeSet.of(types);
+    }
+
+    static GraphTypeDependence getGraphTypeDependence(
+            ConstraintType constraintType, Optional<String> maybeGraphTypeDependence)
+            throws MalformedSchemaRuleException {
+        if (maybeGraphTypeDependence.isPresent()) {
+            GraphTypeDependence graphTypeDependence;
+            try {
+                graphTypeDependence = GraphTypeDependence.valueOf(maybeGraphTypeDependence.get());
+            } catch (Exception e) {
+                throw new MalformedSchemaRuleException(
+                        "Did not recognize constraint dependency type: " + maybeGraphTypeDependence.get(), e);
+            }
+            if (constraintType.enforcesUniqueness() && graphTypeDependence != GraphTypeDependence.UNDESIGNATED) {
+                throw new MalformedSchemaRuleException("incompatible graph type dependence " + graphTypeDependence
+                        + " with constraint rule type " + constraintType);
+            }
+            return graphTypeDependence;
+        }
+        return constraintType.enforcesUniqueness() ? GraphTypeDependence.UNDESIGNATED : GraphTypeDependence.INDEPENDENT;
+    }
+
+    static ConstraintType getConstraintType(String constraintType) throws MalformedSchemaRuleException {
+        try {
+            return ConstraintType.valueOf(constraintType);
+        } catch (Exception e) {
+            throw new MalformedSchemaRuleException("Did not recognize constraint rule type: " + constraintType);
+        }
     }
 }

@@ -41,7 +41,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.neo4j.exceptions.KernelException;
-import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.SchemaReadCore;
@@ -55,7 +54,6 @@ import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
-import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.internal.schema.constraints.PropertyTypeSet;
 import org.neo4j.internal.schema.constraints.SchemaValueType;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -63,7 +61,7 @@ import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.values.storable.Values;
 
 public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSupport> extends KernelAPIWriteTestBase<G> {
-    private int label, label2, type, prop1, prop2, prop3;
+    protected int label, label2, type, prop1, prop2, prop3;
 
     @BeforeEach
     void setUp() throws Exception {
@@ -72,7 +70,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
             SchemaWrite schemaWrite = transaction.schemaWrite();
             Iterator<ConstraintDescriptor> constraints = schemaRead.constraintsGetAll();
             while (constraints.hasNext()) {
-                schemaWrite.constraintDrop(constraints.next());
+                schemaWrite.constraintDrop(constraints.next(), false);
             }
             Iterator<IndexDescriptor> indexes = schemaRead.indexesGetAll();
             while (indexes.hasNext()) {
@@ -94,8 +92,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
     void shouldNotFindNonExistentIndex() throws Exception {
         try (KernelTransaction transaction = beginTransaction()) {
             SchemaRead schemaRead = transaction.schemaRead();
-            assertThat(schemaRead.index(SchemaDescriptors.forLabel(label, prop1)))
-                    .isExhausted();
+            assertThat(schemaRead.index(forLabel(label, prop1))).isExhausted();
         }
     }
 
@@ -104,8 +101,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
     void shouldNotFindNonExistentIndexWithType(IndexType type) throws Exception {
         try (KernelTransaction transaction = beginTransaction()) {
             SchemaRead schemaRead = transaction.schemaRead();
-            assertThat(schemaRead.index(SchemaDescriptors.forLabel(label, prop1), type))
-                    .isEqualTo(NO_INDEX);
+            assertThat(schemaRead.index(forLabel(label, prop1), type)).isEqualTo(NO_INDEX);
         }
     }
 
@@ -126,10 +122,8 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
 
         try (KernelTransaction transaction = beginTransaction()) {
             SchemaRead schemaRead = transaction.schemaRead();
-            assertThat(single(schemaRead.index(SchemaDescriptors.forLabel(label, prop1))))
-                    .isEqualTo(index);
-            assertThat(schemaRead.index(SchemaDescriptors.forLabel(label, prop1), type))
-                    .isEqualTo(index);
+            assertThat(single(schemaRead.index(forLabel(label, prop1)))).isEqualTo(index);
+            assertThat(schemaRead.index(forLabel(label, prop1), type)).isEqualTo(index);
         }
     }
 
@@ -198,8 +192,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
 
         try (KernelTransaction transaction = beginTransaction()) {
             SchemaRead schemaRead = transaction.schemaRead();
-            assertFalse(
-                    schemaRead.index(SchemaDescriptors.forLabel(label, prop1)).hasNext());
+            assertFalse(schemaRead.index(forLabel(label, prop1)).hasNext());
         }
     }
 
@@ -225,8 +218,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
 
         try (KernelTransaction transaction = beginTransaction()) {
             SchemaRead schemaRead = transaction.schemaRead();
-            assertFalse(
-                    schemaRead.index(SchemaDescriptors.forLabel(label, prop1)).hasNext());
+            assertFalse(schemaRead.index(forLabel(label, prop1)).hasNext());
         }
     }
 
@@ -338,7 +330,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
             var indexByType = schemaRead.index(schema, IndexType.RANGE);
             assertThat(indexByType).isEqualTo(otherIndex);
 
-            assertThat(2).isEqualTo(Iterators.asList(schemaRead.indexesGetAll()).size());
+            assertThat(2).isEqualTo(asList(schemaRead.indexesGetAll()).size());
         }
     }
 
@@ -367,9 +359,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
             assertThat(indexByType).isEqualTo(createdIndex);
 
             assertThat(schemaReadBefore.indexGetForName("my index 2")).isEqualTo(createdIndex);
-            assertThat(2)
-                    .isEqualTo(
-                            Iterators.asList(schemaReadBefore.indexesGetAll()).size());
+            assertThat(2).isEqualTo(asList(schemaReadBefore.indexesGetAll()).size());
 
             index = single(schemaReadAfter.index(schema));
             assertThat(index).isEqualTo(createdIndex);
@@ -377,8 +367,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
             assertThat(indexByType).isEqualTo(createdIndex);
 
             assertThat(schemaReadAfter.indexGetForName("my index 2")).isEqualTo(createdIndex);
-            assertThat(2)
-                    .isEqualTo(Iterators.asList(schemaReadAfter.indexesGetAll()).size());
+            assertThat(2).isEqualTo(asList(schemaReadAfter.indexesGetAll()).size());
         }
     }
 
@@ -696,7 +685,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         }
 
         try (KernelTransaction transaction = beginTransaction()) {
-            transaction.schemaWrite().constraintDrop(constraint);
+            transaction.schemaWrite().constraintDrop(constraint, false);
             transaction.commit();
         }
 
@@ -723,7 +712,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         }
 
         try (KernelTransaction transaction = beginTransaction()) {
-            transaction.schemaWrite().constraintDrop(constraintName);
+            transaction.schemaWrite().constraintDrop(constraintName, false);
             transaction.commit();
         }
 
@@ -909,7 +898,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
 
         try (KernelTransaction transaction = beginTransaction()) {
             SchemaReadCore before = transaction.schemaRead().snapshot();
-            transaction.schemaWrite().constraintDrop(existing);
+            transaction.schemaWrite().constraintDrop(existing, false);
             SchemaRead schemaRead = transaction.schemaRead();
             assertFalse(schemaRead.constraintExists(existing));
             assertThat(asList(entityType.constraintsGetForEntityToken(schemaRead, entityToken)))
@@ -956,7 +945,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         }
 
         try (KernelTransaction transaction = beginTransaction()) {
-            transaction.schemaWrite().constraintDrop(constraint);
+            transaction.schemaWrite().constraintDrop(constraint, false);
             transaction.commit();
         }
 
@@ -1034,7 +1023,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
 
         try (KernelTransaction transaction = beginTransaction()) {
             SchemaReadCore before = transaction.schemaRead().snapshot();
-            transaction.schemaWrite().constraintDrop(existing);
+            transaction.schemaWrite().constraintDrop(existing, false);
             SchemaRead schemaRead = transaction.schemaRead();
             assertFalse(schemaRead.constraintExists(existing));
             assertThat(asList(entityType.constraintsGetForEntityToken(schemaRead, entityToken)))
@@ -1052,7 +1041,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         try (KernelTransaction transaction = beginTransaction()) {
             constraint = transaction
                     .schemaWrite()
-                    .nodePropertyExistenceConstraintCreate(forLabel(label, prop1), "constraint name");
+                    .nodePropertyExistenceConstraintCreate(forLabel(label, prop1), "constraint name", false);
             transaction.commit();
         }
 
@@ -1071,12 +1060,12 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         try (KernelTransaction transaction = beginTransaction()) {
             constraint = transaction
                     .schemaWrite()
-                    .nodePropertyExistenceConstraintCreate(forLabel(label, prop1), "constraint name");
+                    .nodePropertyExistenceConstraintCreate(forLabel(label, prop1), "constraint name", false);
             transaction.commit();
         }
 
         try (KernelTransaction transaction = beginTransaction()) {
-            transaction.schemaWrite().constraintDrop(constraint);
+            transaction.schemaWrite().constraintDrop(constraint, false);
             transaction.commit();
         }
 
@@ -1103,7 +1092,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         try (KernelTransaction transaction = beginTransaction()) {
             assertThrows(SchemaKernelException.class, () -> transaction
                     .schemaWrite()
-                    .nodePropertyExistenceConstraintCreate(forLabel(label, prop1), "constraint name"));
+                    .nodePropertyExistenceConstraintCreate(forLabel(label, prop1), "constraint name", false));
         }
     }
 
@@ -1113,7 +1102,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         try (KernelTransaction transaction = beginTransaction()) {
             existing = transaction
                     .schemaWrite()
-                    .nodePropertyExistenceConstraintCreate(forLabel(label, prop1), "existing constraint");
+                    .nodePropertyExistenceConstraintCreate(forLabel(label, prop1), "existing constraint", false);
             transaction.commit();
         }
 
@@ -1121,7 +1110,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
             SchemaReadCore before = transaction.schemaRead().snapshot();
             ConstraintDescriptor newConstraint = transaction
                     .schemaWrite()
-                    .nodePropertyExistenceConstraintCreate(forLabel(label, prop2), "new constraint");
+                    .nodePropertyExistenceConstraintCreate(forLabel(label, prop2), "new constraint", false);
             SchemaRead schemaRead = transaction.schemaRead();
             assertTrue(schemaRead.constraintExists(existing));
             assertTrue(schemaRead.constraintExists(newConstraint));
@@ -1138,18 +1127,17 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         try (KernelTransaction transaction = beginTransaction()) {
             existing = transaction
                     .schemaWrite()
-                    .nodePropertyExistenceConstraintCreate(forLabel(label, prop1), "constraint name");
+                    .nodePropertyExistenceConstraintCreate(forLabel(label, prop1), "constraint name", false);
             transaction.commit();
         }
 
         try (KernelTransaction transaction = beginTransaction()) {
             SchemaReadCore before = transaction.schemaRead().snapshot();
-            transaction.schemaWrite().constraintDrop(existing);
+            transaction.schemaWrite().constraintDrop(existing, false);
             SchemaRead schemaRead = transaction.schemaRead();
             assertFalse(schemaRead.constraintExists(existing));
 
-            assertFalse(
-                    schemaRead.index(SchemaDescriptors.forLabel(label, prop2)).hasNext());
+            assertFalse(schemaRead.index(forLabel(label, prop2)).hasNext());
             assertThat(asList(schemaRead.constraintsGetForLabel(label))).isEmpty();
             assertThat(asList(schemaRead.snapshot().constraintsGetForLabel(label)))
                     .isEmpty();
@@ -1163,7 +1151,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         try (KernelTransaction transaction = beginTransaction()) {
             constraint = transaction
                     .schemaWrite()
-                    .relationshipPropertyExistenceConstraintCreate(forRelType(type, prop1), "constraint name");
+                    .relationshipPropertyExistenceConstraintCreate(forRelType(type, prop1), "constraint name", false);
             transaction.commit();
         }
 
@@ -1183,12 +1171,12 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         try (KernelTransaction transaction = beginTransaction()) {
             constraint = transaction
                     .schemaWrite()
-                    .relationshipPropertyExistenceConstraintCreate(forRelType(type, prop1), "constraint name");
+                    .relationshipPropertyExistenceConstraintCreate(forRelType(type, prop1), "constraint name", false);
             transaction.commit();
         }
 
         try (KernelTransaction transaction = beginTransaction()) {
-            transaction.schemaWrite().constraintDrop(constraint);
+            transaction.schemaWrite().constraintDrop(constraint, false);
             transaction.commit();
         }
 
@@ -1215,7 +1203,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         try (KernelTransaction transaction = beginTransaction()) {
             assertThrows(SchemaKernelException.class, () -> transaction
                     .schemaWrite()
-                    .relationshipPropertyExistenceConstraintCreate(forRelType(type, prop1), "constraint name"));
+                    .relationshipPropertyExistenceConstraintCreate(forRelType(type, prop1), "constraint name", false));
         }
     }
 
@@ -1225,7 +1213,8 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         try (KernelTransaction transaction = beginTransaction()) {
             existing = transaction
                     .schemaWrite()
-                    .relationshipPropertyExistenceConstraintCreate(forRelType(type, prop1), "existing constraint");
+                    .relationshipPropertyExistenceConstraintCreate(
+                            forRelType(type, prop1), "existing constraint", false);
             transaction.commit();
         }
 
@@ -1233,7 +1222,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
             SchemaReadCore before = transaction.schemaRead().snapshot();
             ConstraintDescriptor newConstraint = transaction
                     .schemaWrite()
-                    .relationshipPropertyExistenceConstraintCreate(forRelType(type, prop2), "new constraint");
+                    .relationshipPropertyExistenceConstraintCreate(forRelType(type, prop2), "new constraint", false);
             SchemaRead schemaRead = transaction.schemaRead();
             assertTrue(schemaRead.constraintExists(existing));
             assertTrue(schemaRead.constraintExists(newConstraint));
@@ -1251,18 +1240,17 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         try (KernelTransaction transaction = beginTransaction()) {
             existing = transaction
                     .schemaWrite()
-                    .relationshipPropertyExistenceConstraintCreate(forRelType(type, prop1), "constraint name");
+                    .relationshipPropertyExistenceConstraintCreate(forRelType(type, prop1), "constraint name", false);
             transaction.commit();
         }
 
         try (KernelTransaction transaction = beginTransaction()) {
             SchemaReadCore before = transaction.schemaRead().snapshot();
-            transaction.schemaWrite().constraintDrop(existing);
+            transaction.schemaWrite().constraintDrop(existing, false);
             SchemaRead schemaRead = transaction.schemaRead();
             assertFalse(schemaRead.constraintExists(existing));
 
-            assertFalse(
-                    schemaRead.index(SchemaDescriptors.forLabel(type, prop2)).hasNext());
+            assertFalse(schemaRead.index(forLabel(type, prop2)).hasNext());
             assertThat(asList(schemaRead.constraintsGetForLabel(label))).isEmpty();
             assertThat(asList(schemaRead.snapshot().constraintsGetForLabel(label)))
                     .isEmpty();
@@ -1290,8 +1278,9 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         }
 
         try (KernelTransaction tx = beginTransaction()) {
-            created = tx.schemaWrite().nodePropertyExistenceConstraintCreate(forLabel(label, prop1), "new constraint");
-            tx.schemaWrite().constraintDrop(toDrop);
+            created = tx.schemaWrite()
+                    .nodePropertyExistenceConstraintCreate(forLabel(label, prop1), "new constraint", false);
+            tx.schemaWrite().constraintDrop(toDrop, false);
 
             Iterable<ConstraintDescriptor> allConstraints =
                     () -> tx.schemaRead().constraintsGetAll();
@@ -1322,8 +1311,9 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
 
         try (KernelTransaction tx = beginTransaction()) {
             SchemaReadCore before = tx.schemaRead().snapshot();
-            created = tx.schemaWrite().nodePropertyExistenceConstraintCreate(forLabel(label, prop1), "new constraint");
-            tx.schemaWrite().constraintDrop(toDrop);
+            created = tx.schemaWrite()
+                    .nodePropertyExistenceConstraintCreate(forLabel(label, prop1), "new constraint", false);
+            tx.schemaWrite().constraintDrop(toDrop, false);
 
             Iterable<ConstraintDescriptor> allConstraints =
                     () -> tx.schemaRead().snapshot().constraintsGetAll();
@@ -1360,10 +1350,11 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
 
         try (KernelTransaction tx = beginTransaction()) {
             SchemaReadCore before = tx.schemaRead().snapshot();
-            createdInTx =
-                    tx.schemaWrite().nodePropertyExistenceConstraintCreate(forLabel(label, prop1), "fourth constraint");
-            tx.schemaWrite().nodePropertyExistenceConstraintCreate(forLabel(wrongLabel, prop1), "fifth constraint");
-            tx.schemaWrite().constraintDrop(droppedInTx);
+            createdInTx = tx.schemaWrite()
+                    .nodePropertyExistenceConstraintCreate(forLabel(label, prop1), "fourth constraint", false);
+            tx.schemaWrite()
+                    .nodePropertyExistenceConstraintCreate(forLabel(wrongLabel, prop1), "fifth constraint", false);
+            tx.schemaWrite().constraintDrop(droppedInTx, false);
 
             Iterable<ConstraintDescriptor> allConstraints =
                     () -> tx.schemaRead().constraintsGetForLabel(label);
@@ -1402,10 +1393,11 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         // Verify constraints created in transaction
         try (KernelTransaction tx = beginTransaction()) {
             SchemaReadCore before = tx.schemaRead().snapshot();
-            createdInTx =
-                    tx.schemaWrite().nodePropertyExistenceConstraintCreate(forLabel(label, prop1), "fourth constraint");
-            tx.schemaWrite().nodePropertyExistenceConstraintCreate(forLabel(wrongLabel, prop1), "fifth constraint");
-            tx.schemaWrite().constraintDrop(droppedInTx);
+            createdInTx = tx.schemaWrite()
+                    .nodePropertyExistenceConstraintCreate(forLabel(label, prop1), "fourth constraint", false);
+            tx.schemaWrite()
+                    .nodePropertyExistenceConstraintCreate(forLabel(wrongLabel, prop1), "fifth constraint", false);
+            tx.schemaWrite().constraintDrop(droppedInTx, false);
 
             Iterable<ConstraintDescriptor> allConstraints =
                     () -> tx.schemaRead().constraintsGetForLabelNonLocking(label);
@@ -1445,9 +1437,9 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         // Init
         try (KernelTransaction tx = beginTransaction()) {
             inStore = tx.schemaWrite()
-                    .relationshipPropertyExistenceConstraintCreate(forRelType(type, prop1), "second constraint");
+                    .relationshipPropertyExistenceConstraintCreate(forRelType(type, prop1), "second constraint", false);
             droppedInTx = tx.schemaWrite()
-                    .relationshipPropertyExistenceConstraintCreate(forRelType(type, prop2), "third constraint");
+                    .relationshipPropertyExistenceConstraintCreate(forRelType(type, prop2), "third constraint", false);
 
             tx.commit();
         }
@@ -1456,8 +1448,8 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         try (KernelTransaction tx = beginTransaction()) {
             SchemaReadCore before = tx.schemaRead().snapshot();
             createdInTx = tx.schemaWrite()
-                    .relationshipPropertyExistenceConstraintCreate(forRelType(type, prop3), "fourth constraint");
-            tx.schemaWrite().constraintDrop(droppedInTx);
+                    .relationshipPropertyExistenceConstraintCreate(forRelType(type, prop3), "fourth constraint", false);
+            tx.schemaWrite().constraintDrop(droppedInTx, false);
 
             Iterable<ConstraintDescriptor> constraintsForRelType =
                     () -> tx.schemaRead().constraintsGetForRelationshipTypeNonLocking(type);
@@ -1489,10 +1481,10 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
 
         // Init
         try (KernelTransaction tx = beginTransaction()) {
-            inStore =
-                    tx.schemaWrite().nodePropertyExistenceConstraintCreate(forLabel(label, prop1), "second constraint");
+            inStore = tx.schemaWrite()
+                    .nodePropertyExistenceConstraintCreate(forLabel(label, prop1), "second constraint", false);
             droppedInTx = tx.schemaWrite()
-                    .relationshipPropertyExistenceConstraintCreate(forRelType(type, prop2), "third constraint");
+                    .relationshipPropertyExistenceConstraintCreate(forRelType(type, prop2), "third constraint", false);
 
             tx.commit();
         }
@@ -1501,8 +1493,8 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         try (KernelTransaction tx = beginTransaction()) {
             SchemaReadCore before = tx.schemaRead().snapshot();
             createdInTx = tx.schemaWrite()
-                    .relationshipPropertyExistenceConstraintCreate(forRelType(type, prop3), "fourth constraint");
-            tx.schemaWrite().constraintDrop(droppedInTx);
+                    .relationshipPropertyExistenceConstraintCreate(forRelType(type, prop3), "fourth constraint", false);
+            tx.schemaWrite().constraintDrop(droppedInTx, false);
 
             Iterable<ConstraintDescriptor> constraintsForRelType =
                     () -> tx.schemaRead().constraintsGetAllNonLocking();
@@ -1565,8 +1557,10 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
                         .schemaWrite()
                         .keyConstraintCreate(
                                 uniqueForSchema(forLabel(label2, prop1)).withName("b"));
-                overlapping.schemaWrite().nodePropertyExistenceConstraintCreate(forLabel(label, prop2), "c");
-                overlapping.schemaWrite().relationshipPropertyExistenceConstraintCreate(forRelType(type, prop1), "d");
+                overlapping.schemaWrite().nodePropertyExistenceConstraintCreate(forLabel(label, prop2), "c", false);
+                overlapping
+                        .schemaWrite()
+                        .relationshipPropertyExistenceConstraintCreate(forRelType(type, prop1), "d", false);
                 overlapping.commit();
             }
 
@@ -1618,7 +1612,8 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
                     .propertyTypeConstraintCreate(
                             entityType.createSchemaDescriptor(entityToken, prop1),
                             null,
-                            PropertyTypeSet.of(SchemaValueType.BOOLEAN));
+                            PropertyTypeSet.of(SchemaValueType.BOOLEAN),
+                            false);
             transaction.commit();
         }
 
@@ -1643,12 +1638,13 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
                     .propertyTypeConstraintCreate(
                             entityType.createSchemaDescriptor(entityToken, prop1),
                             null,
-                            PropertyTypeSet.of(SchemaValueType.BOOLEAN));
+                            PropertyTypeSet.of(SchemaValueType.BOOLEAN),
+                            false);
             transaction.commit();
         }
 
         try (KernelTransaction transaction = beginTransaction()) {
-            transaction.schemaWrite().constraintDrop(constraint);
+            transaction.schemaWrite().constraintDrop(constraint, false);
             transaction.commit();
         }
 
@@ -1673,7 +1669,8 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
                     .propertyTypeConstraintCreate(
                             entityType.createSchemaDescriptor(entityToken, prop1),
                             "existing constraint",
-                            PropertyTypeSet.of(SchemaValueType.BOOLEAN));
+                            PropertyTypeSet.of(SchemaValueType.BOOLEAN),
+                            false);
             transaction.commit();
         }
 
@@ -1684,7 +1681,8 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
                     .propertyTypeConstraintCreate(
                             entityType.createSchemaDescriptor(entityToken, prop2),
                             "new constraint",
-                            PropertyTypeSet.of(SchemaValueType.BOOLEAN));
+                            PropertyTypeSet.of(SchemaValueType.BOOLEAN),
+                            false);
             SchemaRead schemaRead = transaction.schemaRead();
             assertTrue(schemaRead.constraintExists(existing));
             assertTrue(schemaRead.constraintExists(newConstraint));
@@ -1708,13 +1706,14 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
                     .propertyTypeConstraintCreate(
                             entityType.createSchemaDescriptor(entityToken, prop1),
                             "constraint name",
-                            PropertyTypeSet.of(SchemaValueType.BOOLEAN));
+                            PropertyTypeSet.of(SchemaValueType.BOOLEAN),
+                            false);
             transaction.commit();
         }
 
         try (KernelTransaction transaction = beginTransaction()) {
             SchemaReadCore before = transaction.schemaRead().snapshot();
-            transaction.schemaWrite().constraintDrop(existing);
+            transaction.schemaWrite().constraintDrop(existing, false);
             SchemaRead schemaRead = transaction.schemaRead();
             assertFalse(schemaRead.constraintExists(existing));
 

@@ -431,7 +431,8 @@ sealed class TransactionBoundQueryContext(
   override def createNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int, name: Option[String]): Unit =
     transactionalContext.schemaWrite.nodePropertyExistenceConstraintCreate(
       SchemaDescriptors.forLabel(labelId, propertyKeyId),
-      name.orNull
+      name.orNull,
+      false
     )
 
   override def createRelationshipPropertyExistenceConstraint(
@@ -441,7 +442,8 @@ sealed class TransactionBoundQueryContext(
   ): Unit =
     transactionalContext.schemaWrite.relationshipPropertyExistenceConstraintCreate(
       SchemaDescriptors.forRelType(relTypeId, propertyKeyId),
-      name.orNull
+      name.orNull,
+      false
     )
 
   override def createNodePropertyTypeConstraint(
@@ -453,7 +455,8 @@ sealed class TransactionBoundQueryContext(
     transactionalContext.schemaWrite.propertyTypeConstraintCreate(
       SchemaDescriptors.forLabel(labelId, propertyKeyId),
       name.orNull,
-      propertyTypes
+      propertyTypes,
+      false
     )
 
   override def createRelationshipPropertyTypeConstraint(
@@ -465,11 +468,12 @@ sealed class TransactionBoundQueryContext(
     transactionalContext.schemaWrite.propertyTypeConstraintCreate(
       SchemaDescriptors.forRelType(relTypeId, propertyKeyId),
       name.orNull,
-      propertyTypes
+      propertyTypes,
+      false
     )
 
   override def dropNamedConstraint(name: String): Unit =
-    transactionalContext.schemaWrite.constraintDrop(name)
+    transactionalContext.schemaWrite.constraintDrop(name, false)
 
   override def detachDeleteNode(node: Long): Int = transactionalContext.dataWrite.nodeDetachDelete(node)
 

@@ -122,7 +122,7 @@ public class CompositeUniquenessConstraintValidationIT {
         }
 
         newTransaction();
-        transaction.schemaWrite().constraintDrop(constraintDescriptor);
+        transaction.schemaWrite().constraintDrop(constraintDescriptor, false);
         commit();
 
         try (KernelTransaction tx =
