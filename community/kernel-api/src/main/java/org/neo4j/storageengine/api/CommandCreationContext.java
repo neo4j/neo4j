@@ -31,7 +31,8 @@ import org.neo4j.storageengine.api.cursor.StoreCursors;
  * to calls about creating commands. One of its purposes is to reserve and release ids. E.g. internal nodes and relationship references
  * are publicly exposed even before committed, which means that they will have to be reserved before committing.
  */
-public interface CommandCreationContext extends KernelVersionProvider, AutoCloseable {
+public interface CommandCreationContext
+        extends KernelVersionProvider, NodeIdAllocator, RelationshipIdAllocator, AutoCloseable {
     Supplier<Long> NO_STARTTIME_OF_OLDEST_TRANSACTION = () -> 0L;
 
     /**
@@ -41,6 +42,7 @@ public interface CommandCreationContext extends KernelVersionProvider, AutoClose
      *
      * @return a reserved node id for future use.
      */
+    @Override
     long reserveNode();
 
     /**
@@ -55,6 +57,7 @@ public interface CommandCreationContext extends KernelVersionProvider, AutoClose
      * @param sourceNodeAddedInTx whether the {@code sourceNode} is a node that is added in this transaction.
      * @param targetNodeAddedInTx whether the {@code targetNode} is a node that is added in this transaction.
      */
+    @Override
     long reserveRelationship(
             long sourceNode,
             long targetNode,

@@ -67,6 +67,7 @@ import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.dbms.DbmsRuntimeVersionProvider;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.function.ThrowingIntFunction;
+import org.neo4j.function.ThrowingLongConsumer;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.EntityCursor;
@@ -87,6 +88,7 @@ import org.neo4j.internal.kernel.api.TokenPredicate;
 import org.neo4j.internal.kernel.api.TokenSet;
 import org.neo4j.internal.kernel.api.Upgrade;
 import org.neo4j.internal.kernel.api.Write;
+import org.neo4j.internal.kernel.api.exceptions.EntityAlreadyExistsException;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
@@ -150,7 +152,9 @@ import org.neo4j.kernel.impl.locking.ResourceIds;
 import org.neo4j.lock.ResourceType;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.CommandCreationContext;
+import org.neo4j.storageengine.api.NodeIdAllocator;
 import org.neo4j.storageengine.api.PropertySelection;
+import org.neo4j.storageengine.api.RelationshipIdAllocator;
 import org.neo4j.storageengine.api.StorageLocks;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.token.api.TokenConstants;
@@ -235,21 +239,36 @@ public class Operations implements Write, SchemaWrite, Upgrade {
                 (DefaultRelationshipScanCursor) cursors.allocateRelationshipScanCursor(cursorContext, memoryTracker);
     }
 
-    @Override
-    public long nodeCreate() {
+    private <E extends Exception> long internalNodeCreate(
+            NodeIdAllocator idAllocator, ThrowingLongConsumer<E> checkAfterLocked) throws E {
         ktx.securityAuthorizationHandler().assertAllowsCreateNode(ktx.securityContext(), token::labelGetName, null);
         ktx.assertOpen();
         TransactionState txState = ktx.txState();
-        long nodeId = commandCreationContext.reserveNode();
+        long nodeId = idAllocator.reserveNode();
         storageLocks.acquireExclusiveNodeLock(ktx.lockTracer(), nodeId);
+        if (checkAfterLocked != null) {
+            checkAfterLocked.accept(nodeId);
+        }
         txState.nodeDoCreate(nodeId);
         return nodeId;
     }
 
     @Override
-    public long nodeCreateWithLabels(int[] labels) throws ConstraintValidationException {
+    public long nodeCreate() {
+        return internalNodeCreate(commandCreationContext, null);
+    }
+
+    @Override
+    public void nodeWithSpecificIdCreate(long nodeId) throws EntityAlreadyExistsException {
+        internalNodeCreate(() -> nodeId, this::assertNodeDoesntExist);
+        ktx.needsHighIdTracking();
+    }
+
+    private <E extends Exception> long internalNodeCreateWithLabels(
+            NodeIdAllocator idAllocator, int[] labels, ThrowingLongConsumer<E> checkAfterLocked)
+            throws E, ConstraintValidationException {
         if (labels == null || labels.length == 0) {
-            return nodeCreate();
+            return internalNodeCreate(idAllocator, checkAfterLocked);
         }
         ktx.securityAuthorizationHandler().assertAllowsCreateNode(ktx.securityContext(), token::labelGetName, labels);
 
@@ -262,12 +281,14 @@ public class Operations implements Write, SchemaWrite, Upgrade {
         sharedTokenSchemaLock(ResourceType.LABEL);
 
         TransactionState txState = ktx.txState();
-        long nodeId = commandCreationContext.reserveNode();
+        long nodeId = idAllocator.reserveNode();
         storageLocks.acquireExclusiveNodeLock(ktx.lockTracer(), nodeId);
+        if (checkAfterLocked != null) {
+            checkAfterLocked.accept(nodeId);
+        }
         txState.nodeDoCreate(nodeId);
         nodeCursor.single(nodeId, allStoreHolder);
         nodeCursor.next();
-
         int prevLabel = NO_SUCH_LABEL;
         for (long lockingId : lockingIds) {
             int label = (int) lockingId;
@@ -278,6 +299,18 @@ public class Operations implements Write, SchemaWrite, Upgrade {
             }
         }
         return nodeId;
+    }
+
+    @Override
+    public long nodeCreateWithLabels(int[] labels) throws ConstraintValidationException {
+        return internalNodeCreateWithLabels(commandCreationContext, labels, null);
+    }
+
+    @Override
+    public void nodeWithSpecificIdCreateWithLabels(long nodeId, int[] labels)
+            throws EntityAlreadyExistsException, ConstraintValidationException {
+        internalNodeCreateWithLabels(() -> nodeId, labels, this::assertNodeDoesntExist);
+        ktx.needsHighIdTracking();
     }
 
     private long[] acquireSharedLabelLocks(int[] labels) {
@@ -330,9 +363,13 @@ public class Operations implements Write, SchemaWrite, Upgrade {
         return deletedRelationships;
     }
 
-    @Override
-    public long relationshipCreate(long sourceNode, int relationshipType, long targetNode)
-            throws EntityNotFoundException {
+    private <E extends Exception> long internalRelationshipCreate(
+            RelationshipIdAllocator idAllocator,
+            long sourceNode,
+            int relationshipType,
+            long targetNode,
+            ThrowingLongConsumer<E> checkAfterLocked)
+            throws E, EntityNotFoundException {
         // We have seen a case where a relationship of type -1 has been 'created' resulting in a
         // relationship group of type 65535 but no relationship (because there is a guard for that
         // for some reason). Throwing here in the hopes of getting to the bottom of how this can ever happen
@@ -362,12 +399,35 @@ public class Operations implements Write, SchemaWrite, Upgrade {
             assertNodeExists(targetNode);
         }
 
-        long id = commandCreationContext.reserveRelationship(
+        long id = idAllocator.reserveRelationship(
                 sourceNode, targetNode, relationshipType, sourceNodeAddedInThisBatch, targetNodeAddedInTx);
         storageLocks.acquireExclusiveRelationshipLock(ktx.lockTracer(), id);
+        if (checkAfterLocked != null) {
+            checkAfterLocked.accept(id);
+        }
 
         txState.relationshipDoCreate(id, relationshipType, sourceNode, targetNode);
         return id;
+    }
+
+    @Override
+    public long relationshipCreate(long sourceNode, int relationshipType, long targetNode)
+            throws EntityNotFoundException {
+        return internalRelationshipCreate(commandCreationContext, sourceNode, relationshipType, targetNode, null);
+    }
+
+    @Override
+    public void relationshipWithSpecificIdCreate(
+            long relationshipId, long sourceNode, int relationshipType, long targetNode)
+            throws EntityAlreadyExistsException, EntityNotFoundException {
+        internalRelationshipCreate(
+                (sourceNode1, targetNode1, relationshipType1, sourceNodeAddedInTx, targetNodeAddedInTx) ->
+                        relationshipId,
+                sourceNode,
+                relationshipType,
+                targetNode,
+                this::assertRelationshipDoesntExist);
+        ktx.needsHighIdTracking();
     }
 
     @Override
@@ -2326,10 +2386,24 @@ public class Operations implements Write, SchemaWrite, Upgrade {
         return !lhs.isSameValueTypeAs(rhs) || !lhs.equals(rhs);
     }
 
-    private void assertNodeExists(long sourceNode) throws EntityNotFoundException {
-        if (!allStoreHolder.nodeExists(sourceNode)) {
+    private void assertNodeExists(long nodeId) throws EntityNotFoundException {
+        if (!allStoreHolder.nodeExists(nodeId)) {
             throw new EntityNotFoundException(
-                    NODE, ktx.internalTransaction().elementIdMapper().nodeElementId(sourceNode));
+                    NODE, ktx.internalTransaction().elementIdMapper().nodeElementId(nodeId));
+        }
+    }
+
+    private void assertNodeDoesntExist(long nodeId) throws EntityAlreadyExistsException {
+        if (allStoreHolder.nodeExists(nodeId)) {
+            throw new EntityAlreadyExistsException(
+                    NODE, ktx.internalTransaction().elementIdMapper().nodeElementId(nodeId));
+        }
+    }
+
+    private void assertRelationshipDoesntExist(long relationshipId) throws EntityAlreadyExistsException {
+        if (allStoreHolder.relationshipExists(relationshipId)) {
+            throw new EntityAlreadyExistsException(
+                    RELATIONSHIP, ktx.internalTransaction().elementIdMapper().relationshipElementId(relationshipId));
         }
     }
 

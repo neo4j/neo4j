@@ -34,6 +34,7 @@ import org.neo4j.kernel.impl.transaction.tracing.TransactionEvent;
 import org.neo4j.kernel.internal.event.TransactionEventListeners;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.storageengine.api.TransactionApplicationMode;
 
 public final class ChunkSink implements ChunkedTransactionSink {
     private final TransactionEventListeners eventListeners;
@@ -46,6 +47,7 @@ public final class ChunkSink implements ChunkedTransactionSink {
     private long startTimeMillis;
     private long lastTransactionIdWhenStarted;
     private Supplier<LockTracer> lockTracerSupplier;
+    private Supplier<TransactionApplicationMode> applicationModeSupplier;
 
     public ChunkSink(
             TransactionCommitter committer,
@@ -76,7 +78,8 @@ public final class ChunkSink implements ChunkedTransactionSink {
                         clocks.systemClock().millis(),
                         startTimeMillis,
                         lastTransactionIdWhenStarted,
-                        false);
+                        false,
+                        applicationModeSupplier.get());
                 txState.reset();
             } catch (Exception e) {
                 throw DefaultTransactionExceptionMapper.INSTANCE.mapException(e);
@@ -90,11 +93,13 @@ public final class ChunkSink implements ChunkedTransactionSink {
             CursorContext cursorContext,
             Supplier<LockTracer> lockTracerSupplier,
             long startTimeMillis,
-            long lastTransactionIdWhenStarted) {
+            long lastTransactionIdWhenStarted,
+            Supplier<TransactionApplicationMode> applicationModeSupplier) {
         this.cursorContext = cursorContext;
         this.leaseClient = leaseClient;
         this.lockTracerSupplier = lockTracerSupplier;
         this.startTimeMillis = startTimeMillis;
         this.lastTransactionIdWhenStarted = lastTransactionIdWhenStarted;
+        this.applicationModeSupplier = applicationModeSupplier;
     }
 }

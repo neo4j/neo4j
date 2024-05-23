@@ -25,6 +25,7 @@ import org.neo4j.kernel.impl.api.LeaseClient;
 import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionEvent;
 import org.neo4j.lock.LockTracer;
+import org.neo4j.storageengine.api.TransactionApplicationMode;
 
 public sealed interface ChunkedTransactionSink permits ChunkSink, ChunkedTransactionSink.EmptyChunkedTransactionSink {
 
@@ -37,7 +38,8 @@ public sealed interface ChunkedTransactionSink permits ChunkSink, ChunkedTransac
             CursorContext cursorContext,
             Supplier<LockTracer> lockTracerSupplier,
             long startTimeMillis,
-            long lastTransactionIdWhenStarted);
+            long lastTransactionIdWhenStarted,
+            Supplier<TransactionApplicationMode> applicationModeSupplier);
 
     final class EmptyChunkedTransactionSink implements ChunkedTransactionSink {
 
@@ -52,6 +54,7 @@ public sealed interface ChunkedTransactionSink permits ChunkSink, ChunkedTransac
                 CursorContext cursorContext,
                 Supplier<LockTracer> lockTracerSupplier,
                 long startTimeMillis,
-                long lastTransactionIdWhenStarted) {}
+                long lastTransactionIdWhenStarted,
+                Supplier<TransactionApplicationMode> applicationModeSupplier) {}
     }
 }

@@ -23,6 +23,7 @@ import java.util.Objects;
 import org.eclipse.collections.api.map.primitive.IntObjectMap;
 import org.eclipse.collections.api.set.primitive.IntSet;
 import org.neo4j.exceptions.KernelException;
+import org.neo4j.internal.kernel.api.exceptions.EntityAlreadyExistsException;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.values.storable.Value;
@@ -40,6 +41,15 @@ public interface Write {
     long nodeCreate();
 
     /**
+     * Create a node with a specific ID.
+     * This method is considered advanced in nature and shouldn't be used in a typical transactional environment.
+     *
+     * @param nodeId the internal ID this node will have.
+     * @throws EntityAlreadyExistsException if the node with this {@code nodeId} already exists.
+     */
+    void nodeWithSpecificIdCreate(long nodeId) throws EntityAlreadyExistsException;
+
+    /**
      * Create a node, and assign it the given array of labels.
      * <p>
      * This method differs from a {@link #nodeCreate()} and {@link #nodeAddLabel(long, int)} sequence, in that we will
@@ -50,6 +60,22 @@ public interface Write {
      * @return The internal id of the created node.
      */
     long nodeCreateWithLabels(int[] labels) throws ConstraintValidationException;
+
+    /**
+     * Create a node with a specific ID, and assign it the given array of labels.
+     * <p>
+     * This method differs from a {@link #nodeCreate()} and {@link #nodeAddLabel(long, int)} sequence, in that we will
+     * avoid taking the "unlabelled node lock" of the {@code nodeCreate}, and we will avoid taking the exclusive node
+     * lock in the {@code nodeAddLabel} method.
+     * <p>
+     * This method is considered advanced in nature and shouldn't be used in a typical transactional environment.
+     *
+     * @param nodeId the internal ID this node will have.
+     * @param labels The labels to assign to the newly created node.
+     * @throws EntityAlreadyExistsException if the node with this {@code nodeId} already exists.
+     */
+    void nodeWithSpecificIdCreateWithLabels(long nodeId, int[] labels)
+            throws EntityAlreadyExistsException, ConstraintValidationException;
 
     /**
      * Delete a node.
@@ -97,9 +123,23 @@ public interface Write {
      * @param sourceNode the source internal node id
      * @param relationshipType the type of the relationship to create
      * @param targetNode the target internal node id
+     * @throws EntityNotFoundException if any of the nodes doesn't exist.
      * @return the internal id of the created relationship
      */
     long relationshipCreate(long sourceNode, int relationshipType, long targetNode) throws EntityNotFoundException;
+
+    /**
+     * Create a relationship between two nodes, with a specific ID.
+     * This method is considered advanced in nature and shouldn't be used in a typical transactional environment.
+     *
+     * @param sourceNode the source internal node id
+     * @param relationshipType the type of the relationship to create
+     * @param targetNode the target internal node id
+     * @throws EntityNotFoundException if any of the nodes doesn't exist.
+     * @throws EntityAlreadyExistsException if the relationship with the given {@code relationshipId} already exists.
+     */
+    void relationshipWithSpecificIdCreate(long relationshipId, long sourceNode, int relationshipType, long targetNode)
+            throws EntityAlreadyExistsException, EntityNotFoundException;
 
     /**
      * Delete a relationship

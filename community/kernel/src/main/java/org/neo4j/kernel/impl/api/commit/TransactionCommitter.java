@@ -28,6 +28,7 @@ import org.neo4j.kernel.impl.transaction.tracing.TransactionRollbackEvent;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionWriteEvent;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.storageengine.api.TransactionApplicationMode;
 
 public sealed interface TransactionCommitter permits ChunkCommitter, DefaultCommitter {
     long commit(
@@ -40,7 +41,8 @@ public sealed interface TransactionCommitter permits ChunkCommitter, DefaultComm
             long commitTime,
             long startTimeMillis,
             long lastTransactionIdWhenStarted,
-            boolean commit)
+            boolean commit,
+            TransactionApplicationMode mode)
             throws KernelException;
 
     void rollback(TransactionRollbackEvent rollbackEvent) throws TransactionFailureException;

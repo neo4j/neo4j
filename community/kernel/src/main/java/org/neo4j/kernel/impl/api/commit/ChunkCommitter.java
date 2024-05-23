@@ -130,7 +130,8 @@ public final class ChunkCommitter implements TransactionCommitter {
             long commitTime,
             long startTimeMillis,
             long lastTransactionIdWhenStarted,
-            boolean commit)
+            boolean commit,
+            TransactionApplicationMode mode)
             throws KernelException {
         LockManager.Client lockClient = ktx.lockClient();
         try {
@@ -172,7 +173,7 @@ public final class ChunkCommitter implements TransactionCommitter {
                     }
                     CommandChunk chunk = new CommandChunk(extractedCommands, chunkMetadata);
                     transactionPayload.init(chunk);
-                    commitProcess.commit(transactionPayload, transactionWriteEvent, INTERNAL);
+                    commitProcess.commit(transactionPayload, transactionWriteEvent, mode);
 
                     validationLockDumper.dumpLocks(
                             transactionValidator, lockClient, chunkNumber, transactionPayload.transactionId());

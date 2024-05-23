@@ -160,6 +160,7 @@ import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageLocks;
 import org.neo4j.storageengine.api.StorageReader;
+import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.api.enrichment.ApplyEnrichmentStrategy;
 import org.neo4j.storageengine.api.enrichment.CaptureMode;
@@ -271,6 +272,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private volatile long transactionHeapBytesLimit;
     private final ExecutionContextFactory executionContextFactory;
     private ProcedureView procedureView;
+    private boolean needsHighIdTracking;
 
     /**
      * Lock prevents transaction {@link #markForTermination(Status)}  transaction termination} from interfering with
@@ -495,6 +497,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.allStoreHolder.initialize(procedureView);
         this.closing = false;
         this.closed = false;
+        this.needsHighIdTracking = false;
         return this;
     }
 
@@ -853,7 +856,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                     cursorContext,
                     currentStatement::lockTracer,
                     startTimeMillis,
-                    lastTransactionIdWhenStarted);
+                    lastTransactionIdWhenStarted,
+                    this::transactionApplicationMode);
             txState = new TxState(
                     collectionsFactory,
                     memoryTracker,
@@ -899,6 +903,14 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         if (closed) {
             throw new NotInTransactionException("This transaction has already been closed.");
         }
+    }
+
+    /**
+     * Used to make a note that this transaction, when it commits, will need to be applied with
+     * highId tracking for ID generators.
+     */
+    public void needsHighIdTracking() {
+        this.needsHighIdTracking = true;
     }
 
     @Override
@@ -1063,7 +1075,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                         timeCommitted,
                         startTimeMillis,
                         lastTransactionIdWhenStarted,
-                        true);
+                        true,
+                        transactionApplicationMode());
                 commitTime = timeCommitted;
             }
             success = true;
@@ -1092,6 +1105,10 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         Exceptions.throwIfInstanceOf(exception, TransactionFailureException.class);
         Exceptions.throwIfUnchecked(exception);
         throw new TransactionFailureException(Status.General.UnknownError, exception);
+    }
+
+    private TransactionApplicationMode transactionApplicationMode() {
+        return needsHighIdTracking ? TransactionApplicationMode.EXTERNAL : TransactionApplicationMode.INTERNAL;
     }
 
     public List<StorageCommand> extractCommands(MemoryTracker commandsTracker) throws KernelException {

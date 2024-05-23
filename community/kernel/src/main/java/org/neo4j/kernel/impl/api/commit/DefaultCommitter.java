@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.api.commit;
 
-import static org.neo4j.storageengine.api.TransactionApplicationMode.INTERNAL;
 import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_INDEX;
 
 import java.util.List;
@@ -39,6 +38,7 @@ import org.neo4j.kernel.impl.transaction.tracing.TransactionWriteEvent;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.StorageCommand;
+import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 public final class DefaultCommitter implements TransactionCommitter {
@@ -75,7 +75,8 @@ public final class DefaultCommitter implements TransactionCommitter {
             long commitTime,
             long startTimeMillis,
             long lastTransactionIdWhenStarted,
-            boolean commit)
+            boolean commit,
+            TransactionApplicationMode mode)
             throws KernelException {
         // Gather-up commands from the various sources
         List<StorageCommand> extractedCommands = ktx.extractCommands(memoryTracker);
@@ -111,7 +112,7 @@ public final class DefaultCommitter implements TransactionCommitter {
                     transactionIdGenerator);
 
             kernelTransactionMonitor.beforeApply();
-            return commitProcess.commit(batch, transactionWriteEvent, INTERNAL);
+            return commitProcess.commit(batch, transactionWriteEvent, mode);
         }
         return KernelTransaction.READ_ONLY_ID;
     }
