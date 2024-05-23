@@ -2009,7 +2009,7 @@ case class LogicalPlan2PlanDescription(
           val prefix = pretty"non-inlined predicates: "
           nonInlinedPreFilters match {
             case Some(Ands(preds)) => predicateLines(preds.toSeq.map(asPrettyString(_)).sorted, prefix)
-            case Some(singleExpr)  => pretty"$prefix${asPrettyString(singleExpr)}"
+            case Some(singleExpr)  => predicateLines(Seq(asPrettyString(singleExpr)), prefix)
             case None              => pretty""
           }
         }
