@@ -373,7 +373,7 @@ class NotificationCodeWithDescriptionTest {
                 NotificationCategory.GENERIC,
                 "01N62",
                 new DiagnosticRecord(warning, generic, -1, -1, -1, Map.of()).asMap(),
-                "warn: procedure. The procedure `my.proc` generates the warning `warning from procedure`.");
+                "warn: procedure execution warning. The procedure `my.proc` generates the warning `warning from procedure`.");
     }
 
     @Test
@@ -390,7 +390,7 @@ class NotificationCodeWithDescriptionTest {
                 NotificationCategory.DEPRECATION,
                 "01N03",
                 new DiagnosticRecord(warning, deprecation, -1, -1, -1, Map.of()).asMap(),
-                "warn: procedure return column deprecated. `field` returned by procedure `proc` is deprecated.");
+                "warn: procedure result column deprecated. `field` returned by procedure `proc` is deprecated.");
     }
 
     @Test
@@ -661,7 +661,7 @@ class NotificationCodeWithDescriptionTest {
                 NotificationCategory.GENERIC,
                 "01N60",
                 new DiagnosticRecord(warning, generic, -1, -1, -1, Map.of()).asMap(),
-                "warn: parameter not provided. The query plan cannot be cached and is not executable without `EXPLAIN` due to the undefined parameter(s) `$param1`. Provide the parameter(s).");
+                "warn: parameter missing. The query plan cannot be cached and is not executable without `EXPLAIN` due to the undefined parameter(s) `$param1`. Provide the parameter(s).");
     }
 
     @Test
@@ -681,7 +681,7 @@ class NotificationCodeWithDescriptionTest {
                 NotificationCategory.GENERIC,
                 "01N60",
                 new DiagnosticRecord(warning, generic, -1, -1, -1, Map.of()).asMap(),
-                "warn: parameter not provided. The query plan cannot be cached and is not executable without `EXPLAIN` due to the undefined parameter(s) `$param1, $param2`. Provide the parameter(s).");
+                "warn: parameter missing. The query plan cannot be cached and is not executable without `EXPLAIN` due to the undefined parameter(s) `$param1, $param2`. Provide the parameter(s).");
     }
 
     @Test

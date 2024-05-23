@@ -84,7 +84,7 @@ public enum GqlStatusInfoNotifications implements GqlStatusInfo {
     STATUS_01N03(
             new GqlStatus("01N03"),
             "`%s` returned by procedure `%s` is deprecated.",
-            "procedure return column deprecated",
+            "procedure result column deprecated",
             Condition.WARNING),
     STATUS_01N30(
             new GqlStatus("01N30"),
@@ -119,7 +119,7 @@ public enum GqlStatusInfoNotifications implements GqlStatusInfo {
     STATUS_01N60(
             new GqlStatus("01N60"),
             "The query plan cannot be cached and is not executable without `EXPLAIN` due to the undefined parameter(s) `%s`. Provide the parameter(s).",
-            "parameter not provided",
+            "parameter missing",
             Condition.WARNING),
     STATUS_01N61(
             new GqlStatus("01N61"),
@@ -127,7 +127,10 @@ public enum GqlStatusInfoNotifications implements GqlStatusInfo {
             "unsatisfiable relationship type expression",
             Condition.WARNING),
     STATUS_01N62(
-            new GqlStatus("01N62"), "The procedure `%s` generates the warning `%s`.", "procedure", Condition.WARNING),
+            new GqlStatus("01N62"),
+            "The procedure `%s` generates the warning `%s`.",
+            "procedure execution warning",
+            Condition.WARNING),
     STATUS_01N63(
             new GqlStatus("01N63"),
             "`%s` is repeated in `%s`, which leads to no results.",
