@@ -26,19 +26,22 @@ import org.neo4j.cypher.internal.cache.LFUCache
 import org.neo4j.cypher.internal.cache.TestExecutorCaffeineCacheFactory
 import org.neo4j.cypher.internal.config.CypherConfiguration
 import org.neo4j.cypher.internal.options.CypherConnectComponentsPlannerOption
+import org.neo4j.cypher.internal.options.CypherExecutionMode
 import org.neo4j.cypher.internal.options.CypherExpressionEngineOption
 import org.neo4j.cypher.internal.options.CypherInterpretedPipesFallbackOption
 import org.neo4j.cypher.internal.options.CypherOperatorEngineOption
 import org.neo4j.cypher.internal.options.CypherPlannerOption
+import org.neo4j.cypher.internal.options.CypherQueryOptions
 import org.neo4j.cypher.internal.options.CypherReplanOption
 import org.neo4j.cypher.internal.options.CypherRuntimeOption
+import org.neo4j.cypher.internal.options.CypherVersion
 import org.neo4j.cypher.internal.util.DeprecatedConnectComponentsPlannerPreParserOption
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.RecordingNotificationLogger
 import org.neo4j.cypher.internal.util.devNullLogger
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.exceptions.InvalidArgumentException
-import org.neo4j.exceptions.SyntaxException
+import org.neo4j.exceptions.InvalidCypherOption
 import org.neo4j.graphdb.config.Setting
 
 import scala.jdk.CollectionConverters.MapHasAsJava
@@ -63,9 +66,47 @@ class PreParserTest extends CypherFunSuite {
     intercept[InvalidArgumentException](preParse("PROFILE EXPLAIN RETURN 42"))
   }
 
-  test("should not allow CYPHER {version}") {
-    intercept[SyntaxException](preParse("CYPHER 4.4 RETURN 42"))
-      .getMessage should include("Support for setting Cypher Version has been removed (line 1, column 8 (offset: 7))")
+  test("should allow CYPHER version") {
+    preParse("RETURN 42").options.queryOptions shouldBe
+      CypherQueryOptions.defaultOptions
+    preParse("CYPHER RETURN 42").options.queryOptions shouldBe
+      CypherQueryOptions.defaultOptions
+
+    preParse("CYPHER 5 RETURN 42").options.queryOptions shouldBe
+      CypherQueryOptions.defaultOptions.copy(cypherVersion = CypherVersion.cypher5)
+    preParse("CYPHER 5 CYPHER 5 RETURN 42").options.queryOptions shouldBe
+      CypherQueryOptions.defaultOptions.copy(cypherVersion = CypherVersion.cypher5)
+    preParse("CYPHER 5 runtime=slotted RETURN 42").options.queryOptions shouldBe
+      CypherQueryOptions.defaultOptions.copy(
+        cypherVersion = CypherVersion.cypher5,
+        runtime = CypherRuntimeOption.slotted
+      )
+    preParse("CYPHER 5 runtime=slotted replan=skip RETURN 42").options.queryOptions shouldBe
+      CypherQueryOptions.defaultOptions.copy(
+        cypherVersion = CypherVersion.cypher5,
+        runtime = CypherRuntimeOption.slotted,
+        replan = CypherReplanOption.skip
+      )
+    preParse("EXPLAIN CYPHER 5 RETURN 42").options.queryOptions shouldBe
+      CypherQueryOptions.defaultOptions.copy(
+        cypherVersion = CypherVersion.cypher5,
+        executionMode = CypherExecutionMode.explain
+      )
+    preParse("PROFILE CYPHER 5 RETURN 42").options.queryOptions shouldBe
+      CypherQueryOptions.defaultOptions.copy(
+        cypherVersion = CypherVersion.cypher5,
+        executionMode = CypherExecutionMode.profile
+      )
+
+    intercept[InvalidCypherOption](preParse("CYPHER 6 RETURN 42"))
+      .getMessage shouldBe "6 is not a valid option for cypher version. Valid options are: 5"
+    intercept[InvalidCypherOption](preParse("CYPHER 5.20 RETURN 42"))
+      .getMessage shouldBe "5.20 is not a valid option for cypher version. Valid options are: 5"
+    intercept[InvalidCypherOption](preParse("CYPHER 4.4 RETURN 42"))
+      .getMessage shouldBe "4.4 is not a valid option for cypher version. Valid options are: 5"
+
+    // Not optimal, but not a lot we can do
+    preParse("CYPHER gql RETURN 42").options.queryOptions shouldBe CypherQueryOptions.defaultOptions
   }
 
   test("should not allow unknown options") {

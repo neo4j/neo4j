@@ -91,7 +91,7 @@ TOKEN [IGNORE_CASE]: {
 
 <DEFAULT>
 TOKEN : {
-  <VERSION: ((["0"-"9"])+ "." (["0"-"9"])+)>
+  <VERSION: (["0"-"9", "."])+>
   | <NUMBER: ["0" - "9"]>
   | <EQ: "=">
   | <SLASH: "/">
@@ -1065,18 +1065,12 @@ void CypherOption(List<PreParserOption> options) throws Exception :
   Token cypher = null;
 }
 {
-    cypher=<CYPHER> ( version=<VERSION> )?
-    {
-        if (version != null) {
-                throw exceptionFactory.syntaxException( new IllegalArgumentException("Support for setting Cypher Version has been removed"), token.beginOffset, token.beginLine, token.beginColumn );
-        }
-    }
+    cypher=<CYPHER>
+    ( LOOKAHEAD(2) version=<VERSION> { options.add(PreParserOption.version(version.image, pos(version))); } )?
     (
         LOOKAHEAD(<IDENTIFIER> <EQ>) key=<IDENTIFIER> <EQ> value=<IDENTIFIER>
         {
-            InputPosition position = InputPosition.apply(key.beginOffset, key.beginLine, key.beginColumn);
-            PreParserOption option = PreParserOption.generic( key.image, value.image, position );
-            options.add( option );
+            options.add(PreParserOption.generic(key.image, value.image, pos(key)));
         }
     )*
 }
@@ -1087,11 +1081,7 @@ void ExplainOption(List<PreParserOption> options):
  Token t;
 }
 {
-    t=<EXPLAIN>
-    {
-        InputPosition position = InputPosition.apply(t.beginOffset, t.beginLine, t.beginColumn);
-        options.add( PreParserOption.explain(position) );
-    }
+    t=<EXPLAIN> { options.add(PreParserOption.explain(pos(t))); }
 }
 
 void ProfileOption(List<PreParserOption> options):
@@ -1099,9 +1089,5 @@ void ProfileOption(List<PreParserOption> options):
  Token t;
 }
 {
-    t=<PROFILE>
-    {
-        InputPosition position = InputPosition.apply(t.beginOffset, t.beginLine, t.beginColumn);
-        options.add( PreParserOption.profile(position) );
-    }
+    t=<PROFILE> { options.add(PreParserOption.profile(pos(t))); }
 }

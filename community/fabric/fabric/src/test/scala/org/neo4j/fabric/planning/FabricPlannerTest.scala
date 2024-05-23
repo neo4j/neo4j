@@ -48,6 +48,7 @@ import org.neo4j.cypher.internal.options.CypherReplanOption
 import org.neo4j.cypher.internal.options.CypherRuntimeOption
 import org.neo4j.cypher.internal.options.CypherStatefulShortestPlanningModeOption
 import org.neo4j.cypher.internal.options.CypherUpdateStrategy
+import org.neo4j.cypher.internal.options.CypherVersion
 import org.neo4j.cypher.internal.options.LabelInferenceOption
 import org.neo4j.cypher.internal.tracing.TimingCompilationTracer
 import org.neo4j.cypher.internal.util.InputPosition
@@ -989,6 +990,7 @@ class FabricPlannerTest
       val expectedInner = QueryOptions(
         offset = InputPosition.NONE,
         queryOptions = CypherQueryOptions(
+          cypherVersion = CypherVersion.default,
           executionMode = CypherExecutionMode.default,
           planner = CypherPlannerOption.cost,
           runtime = CypherRuntimeOption.parallel,

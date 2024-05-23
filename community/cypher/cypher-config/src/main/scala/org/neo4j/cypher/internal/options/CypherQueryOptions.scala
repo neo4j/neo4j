@@ -34,6 +34,7 @@ import java.util.Locale
  * Collects all cypher options that can be set on query basis (pre-parser options)
  */
 case class CypherQueryOptions(
+  cypherVersion: CypherVersion,
   executionMode: CypherExecutionMode,
   planner: CypherPlannerOption,
   runtime: CypherRuntimeOption,
@@ -182,6 +183,29 @@ case object CypherExecutionMode extends CypherOptionCompanion[CypherExecutionMod
   implicit val logicalPlanCacheKey: OptionLogicalPlanCacheKey[CypherExecutionMode] =
     OptionLogicalPlanCacheKey.create(_.logicalPlanCacheKey)
   implicit val reader: OptionReader[CypherExecutionMode] = singleOptionReader()
+}
+
+sealed abstract class CypherVersion(val version: String) extends CypherOption(version) {
+  override def companion: CypherExecutionMode.type = CypherExecutionMode
+  override def render: String = super.render.toUpperCase(Locale.ROOT)
+  override def cacheKey: String = super.cacheKey.toUpperCase(Locale.ROOT)
+  override def relevantForLogicalPlanCacheKey: Boolean = true
+}
+
+case object CypherVersion extends CypherOptionCompanion[CypherVersion](name = "cypher version") {
+
+  case object default extends CypherVersion("")
+  case object cypher5 extends CypherVersion("5")
+
+  override def values: Set[CypherVersion] = Set(cypher5)
+
+  implicit val hasDefault: OptionDefault[CypherVersion] = OptionDefault.create(default)
+  implicit val renderer: OptionRenderer[CypherVersion] = OptionRenderer.create(_.render)
+  implicit val cacheKey: OptionCacheKey[CypherVersion] = OptionCacheKey.create(_.cacheKey)
+
+  implicit val logicalPlanCacheKey: OptionLogicalPlanCacheKey[CypherVersion] =
+    OptionLogicalPlanCacheKey.create(_.logicalPlanCacheKey)
+  implicit val reader: OptionReader[CypherVersion] = singleOptionReader()
 }
 
 sealed abstract class CypherPlannerOption(plannerName: String) extends CypherKeyValueOption(plannerName) {

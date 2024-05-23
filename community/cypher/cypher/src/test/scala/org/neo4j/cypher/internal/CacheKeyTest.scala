@@ -34,6 +34,7 @@ import org.neo4j.cypher.internal.options.CypherReplanOption
 import org.neo4j.cypher.internal.options.CypherRuntimeOption
 import org.neo4j.cypher.internal.options.CypherStatefulShortestPlanningModeOption
 import org.neo4j.cypher.internal.options.CypherUpdateStrategy
+import org.neo4j.cypher.internal.options.CypherVersion
 import org.neo4j.cypher.internal.options.LabelInferenceOption
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
@@ -55,6 +56,7 @@ class CacheKeyTest extends CypherFunSuite {
 
   test("All non-default options should be part of cache key, except replan") {
     val options = CypherQueryOptions(
+      cypherVersion = CypherVersion.cypher5,
       executionMode = CypherExecutionMode.profile,
       planner = CypherPlannerOption.dp,
       runtime = CypherRuntimeOption.pipelined,
@@ -73,12 +75,13 @@ class CacheKeyTest extends CypherFunSuite {
 
     options.cacheKey
       .shouldEqual(
-        """PROFILE planner=dp runtime=pipelined updateStrategy=eager expressionEngine=interpreted operatorEngine=interpreted interpretedPipesFallback=all connectComponentsPlanner=idp debug=querygraph debug=tostring parallelRuntimeSupport=disabled eagerAnalyzer=ir labelInference=enabled statefulShortestPlanningMode=all_if_possible"""
+        """5 PROFILE planner=dp runtime=pipelined updateStrategy=eager expressionEngine=interpreted operatorEngine=interpreted interpretedPipesFallback=all connectComponentsPlanner=idp debug=querygraph debug=tostring parallelRuntimeSupport=disabled eagerAnalyzer=ir labelInference=enabled statefulShortestPlanningMode=all_if_possible"""
       )
   }
 
   test("Only certain non-default options should be part of logical plan cache key") {
     val options = CypherQueryOptions(
+      cypherVersion = CypherVersion.cypher5,
       executionMode = CypherExecutionMode.profile,
       planner = CypherPlannerOption.dp,
       runtime = CypherRuntimeOption.pipelined,
@@ -97,7 +100,7 @@ class CacheKeyTest extends CypherFunSuite {
 
     options.logicalPlanCacheKey
       .shouldEqual(
-        """updateStrategy=eager connectComponentsPlanner=idp eagerAnalyzer=ir labelInference=enabled statefulShortestPlanningMode=all_if_possible"""
+        """5 updateStrategy=eager connectComponentsPlanner=idp eagerAnalyzer=ir labelInference=enabled statefulShortestPlanningMode=all_if_possible"""
       )
   }
 }
