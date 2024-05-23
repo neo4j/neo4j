@@ -276,7 +276,14 @@ class CountsState implements AutoCloseable
                         reporter.forCounts( new CountsEntry( nodeKey( labelId ), 0 ) ).inconsistentNodeCount( count );
                     }
                 }
-                for ( int label = ANY_LABEL; label < highLabelId; label++ )
+                // We only keep counts when at least one of start/end is ANY, so those are the cases we need to check.
+                // We split the check in 3 different loops instead of a single one, so we can have better data access
+                // locality, that is maximized when we can fix the label and move through the relTypeIds in sequence.
+                for ( int type = ANY_RELATIONSHIP_TYPE; type < highRelationshipTypeId; type++ )
+                {
+                    reportRelationshipIfNeeded(ANY_LABEL, type, ANY_LABEL);
+                }
+                for ( int label = 0; label < highLabelId; label++ )
                 {
                     for ( int type = ANY_RELATIONSHIP_TYPE; type < highRelationshipTypeId; type++ )
                     {
