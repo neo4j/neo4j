@@ -1203,12 +1203,12 @@ case class Foreach(
 
   override def clauseSpecificSemanticCheck: SemanticCheck =
     SemanticExpressionCheck.simple(expression) chain
-      expectType(CTList(CTAny).covariant, expression) chain
+      expectType(CTList(CTAny).covariant | CTAny.covariant, expression) chain
       updates.filter(!_.isInstanceOf[UpdateClause]).map(c =>
         SemanticError(s"Invalid use of ${c.name} inside FOREACH", c.position)
       ) ifOkChain
       withScopedState {
-        val possibleInnerTypes: TypeGenerator = types(expression)(_).unwrapLists
+        val possibleInnerTypes: TypeGenerator = types(expression)(_).unwrapPotentialLists
         declareVariable(variable, possibleInnerTypes) chain updates.semanticCheck
       }
 }

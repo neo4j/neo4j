@@ -190,3 +190,55 @@ Feature: ForeachAcceptance
       | +relationships | 3 |
       | +properties    | 4 |
 
+  Scenario: Foreach with single literal
+    Given any graph
+    When executing query:
+      """
+      FOREACH(v IN 1 | MERGE ({property: v}))
+      """
+    Then the result should be empty
+    And the side effects should be:
+      | +nodes      | 1 |
+      | +properties | 1 |
+
+  Scenario: Foreach with single literal in list
+    Given any graph
+    When executing query:
+      """
+      FOREACH(v IN [1] | MERGE ({property: v}))
+      """
+    Then the result should be empty
+    And the side effects should be:
+      | +nodes      | 1 |
+      | +properties | 1 |
+
+  Scenario: Foreach with single null
+    Given any graph
+    When executing query:
+      """
+      FOREACH(v IN null | CREATE ({property: v}))
+      """
+    Then the result should be empty
+    And no side effects
+
+  Scenario: Foreach with single null in list
+    Given any graph
+    When executing query:
+      """
+      FOREACH(v IN [null] | CREATE ({property: v}))
+      """
+    Then the result should be empty
+    And the side effects should be:
+      | +nodes      | 1 |
+      | +properties | 0 |
+
+  Scenario: Foreach with with expression
+    Given any graph
+    When executing query:
+      """
+      FOREACH(v IN true and false xor true or false = false | MERGE ({property: v}))
+      """
+    Then the result should be empty
+    And the side effects should be:
+      | +nodes      | 1 |
+      | +properties | 1 |
