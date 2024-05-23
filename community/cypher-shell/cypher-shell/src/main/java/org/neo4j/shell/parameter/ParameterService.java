@@ -37,12 +37,9 @@ import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 import org.apache.commons.lang3.StringUtils;
 import org.neo4j.cypher.internal.literal.interpreter.LiteralInterpreter;
-import org.neo4j.cypher.internal.parser.javacc.Cypher;
-import org.neo4j.cypher.internal.parser.javacc.CypherCharStream;
 import org.neo4j.driver.internal.value.NullValue;
 import org.neo4j.shell.TransactionHandler;
 import org.neo4j.shell.exception.CommandException;
-import org.neo4j.shell.exception.ParameterException;
 import org.neo4j.shell.log.Logger;
 
 public interface ParameterService {
@@ -208,7 +205,6 @@ class ShellParameterService implements ParameterService {
     }
 
     private class ShellParameterEvaluator implements ParameterEvaluator {
-        private final LiteralInterpreter interpreter = new LiteralInterpreter();
         private final TransactionHandler db;
 
         private ShellParameterEvaluator(TransactionHandler db) {
@@ -233,12 +229,9 @@ class ShellParameterService implements ParameterService {
             }
         }
 
-        @SuppressWarnings({"rawtypes", "unchecked"})
         private Optional<org.neo4j.driver.Value> evaluateOffline(String expression) {
             try {
-                final var charStream = new CypherCharStream(expression);
-                final var value = new Cypher(interpreter, ParameterException.FACTORY, charStream).Expression();
-                return Optional.of(toDriverValue(value));
+                return Optional.of(toDriverValue(LiteralInterpreter.parseExpression(expression)));
             } catch (Exception e) {
                 log.warn("Failed to evaluate expression " + expression + " locally", e);
                 return Optional.empty();

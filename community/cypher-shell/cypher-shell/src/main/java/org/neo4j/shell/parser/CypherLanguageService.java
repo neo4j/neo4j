@@ -21,7 +21,6 @@ package org.neo4j.shell.parser;
 
 import java.util.List;
 import java.util.stream.Stream;
-import org.neo4j.cypher.internal.parser.javacc.CypherConstants;
 
 /**
  * Analyses Cypher.
@@ -42,8 +41,24 @@ public interface CypherLanguageService {
      */
     List<String> suggestNextKeyword(String incompleteQuery);
 
+    /** Returns no-op service, but code is kept for a while in case we want to re-use it with the antlr parser. */
     static CypherLanguageService get() {
-        return new JavaCcCypherLanguageService();
+        return new CypherLanguageService() {
+            @Override
+            public List<Token> tokenize(String query) {
+                return List.of();
+            }
+
+            @Override
+            public Stream<String> keywords() {
+                return Stream.empty();
+            }
+
+            @Override
+            public List<String> suggestNextKeyword(String incompleteQuery) {
+                return List.of();
+            }
+        };
     }
 
     interface Token {
@@ -62,8 +77,6 @@ public interface CypherLanguageService {
         /** Returns true if this is a query parameter identifier */
         boolean isParameterIdentifier();
 
-        default boolean isIdentifier() {
-            return kind() == CypherConstants.IDENTIFIER;
-        }
+        boolean isIdentifier();
     }
 }

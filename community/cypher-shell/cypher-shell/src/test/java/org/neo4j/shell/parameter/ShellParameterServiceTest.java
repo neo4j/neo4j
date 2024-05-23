@@ -68,6 +68,8 @@ class ShellParameterServiceTest {
         assertEvaluate("duration('PT1S')", Values.isoDuration(0, 0, 1, 0));
         assertEvaluate("duration('P1M1W1DT1H1.001S')", Values.isoDuration(1, 8, 60 * 60 + 1, 1000000));
         assertEvaluate("[{b:[{id:1}]}]", List.of(Map.of("b", List.of(Map.of("id", 1L)))));
+        assertEvaluate(
+                "[null, {b:[{id:null}]}]", List.of(NullValue.NULL, Map.of("b", List.of(Map.of("id", NullValue.NULL)))));
         assertEvaluate("null", NullValue.NULL);
     }
 

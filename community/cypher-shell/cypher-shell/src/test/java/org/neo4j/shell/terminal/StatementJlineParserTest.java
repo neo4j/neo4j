@@ -29,7 +29,7 @@ import org.jline.reader.ParsedLine;
 import org.jline.reader.Parser.ParseContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.neo4j.shell.parser.JavaCcCypherLanguageService;
+import org.neo4j.shell.parser.CypherLanguageService;
 import org.neo4j.shell.parser.ShellStatementParser;
 import org.neo4j.shell.parser.StatementParser;
 import org.neo4j.shell.parser.StatementParser.CommandStatement;
@@ -44,7 +44,7 @@ import org.neo4j.shell.terminal.StatementJlineParser.UnparsedLine;
 // More test coverage of StatementJlineParser in JlineCompleterTest
 class StatementJlineParserTest {
     private final StatementJlineParser parser =
-            new StatementJlineParser(new ShellStatementParser(), new JavaCcCypherLanguageService());
+            new StatementJlineParser(new ShellStatementParser(), CypherLanguageService.get());
 
     @BeforeEach
     void setup() {

@@ -42,6 +42,7 @@ Apache Software License, Version 2.0
   Non-Blocking Reactive Foundation for the JVM
 
 BSD License
+  ANTLR 4 Runtime
   JLine JANSI Terminal
   JLine Reader
   JLine Terminal

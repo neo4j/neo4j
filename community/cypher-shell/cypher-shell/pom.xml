@@ -48,12 +48,7 @@
         </dependency>
         <dependency>
             <groupId>org.neo4j</groupId>
-            <artifactId>cypher-literal-interpreter</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-cypher-javacc-parser</artifactId>
+            <artifactId>cypher-v5-literal-interpreter</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
