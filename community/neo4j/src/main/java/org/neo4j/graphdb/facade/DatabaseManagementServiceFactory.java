@@ -59,6 +59,7 @@ import org.neo4j.dbms.database.SystemGraphComponents;
 import org.neo4j.dbms.database.UnableToStartDatabaseException;
 import org.neo4j.dbms.routing.ClientRoutingDomainChecker;
 import org.neo4j.dbms.routing.RoutingService;
+import org.neo4j.dbms.systemgraph.ContextBasedSystemDatabaseProvider;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -153,6 +154,7 @@ public class DatabaseManagementServiceFactory {
         globalDependencies.satisfyDependency(edition.getSystemGraphComponents());
 
         var databaseContextProvider = edition.createDatabaseContextProvider(globalModule);
+        var systemDatabaseProvider = new ContextBasedSystemDatabaseProvider(databaseContextProvider);
         var managementService = createManagementService(globalModule, globalLife, internalLog, databaseContextProvider);
         globalDependencies.satisfyDependencies(managementService);
         globalDependencies.satisfyDependency(new DatabaseSizeServiceImpl(databaseContextProvider));
@@ -160,7 +162,7 @@ public class DatabaseManagementServiceFactory {
         globalDependencies.satisfyDependencies(topologyInfoService);
 
         // Routing procedures depend on DatabaseResolver
-        edition.createDefaultDatabaseResolver(globalModule);
+        edition.createDefaultDatabaseResolver(systemDatabaseProvider);
         globalDependencies.satisfyDependency(edition.getDefaultDatabaseResolver());
 
         var clientRoutingDomainChecker = tryResolveOrCreate(
@@ -176,7 +178,7 @@ public class DatabaseManagementServiceFactory {
 
         edition.bootstrapQueryRouterServices(managementService);
 
-        edition.registerDatabaseInitializers(globalModule);
+        edition.registerDatabaseInitializers(globalModule, systemDatabaseProvider);
 
         edition.createSecurityModule(globalModule);
         SecurityProvider securityProvider = edition.getSecurityProvider();

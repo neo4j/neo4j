@@ -26,6 +26,7 @@ import org.neo4j.commandline.dbms.MigrateStoreCommand;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.DbmsRuntimeSystemGraphComponent;
 import org.neo4j.dbms.database.SystemGraphComponents;
+import org.neo4j.dbms.systemgraph.ContextBasedSystemDatabaseProvider;
 import org.neo4j.graphdb.event.DatabaseEventListener;
 import org.neo4j.graphdb.factory.module.GlobalModule;
 import org.neo4j.graphdb.factory.module.edition.migration.MigrationEditionModuleFactory;
@@ -72,8 +73,9 @@ public class SystemDbUpgrader {
         var progressMonitor = VisibleMigrationProgressMonitorFactory.forSystemUpgrade(log);
         progressMonitor.started(3);
         var bootstrapProgress = progressMonitor.startSection("Bootstrap");
-        var graphDatabaseDependencies =
-                dependenciesWithoutExtensions(eventListener).databaseEventListeners(Iterables.iterable(eventListener));
+        var graphDatabaseDependencies = GraphDatabaseDependencies.newDependencies()
+                .extensions(Iterables.empty())
+                .databaseEventListeners(Iterables.iterable(eventListener));
         var globalModule = new GlobalModule(config, DbmsInfo.TOOL, false, graphDatabaseDependencies) {
             @Override
             protected LogService createLogService(InternalLogProvider userLogProvider, boolean daemonMode) {
@@ -96,19 +98,20 @@ public class SystemDbUpgrader {
         edition.registerSystemGraphComponents(systemGraphComponentsBuilder, globalModule);
 
         var databaseContextProvider = edition.createDatabaseContextProvider(globalModule);
+        var systemDatabaseProvider = new ContextBasedSystemDatabaseProvider(databaseContextProvider);
         edition.bootstrapQueryRouterServices(null);
-        edition.registerDatabaseInitializers(globalModule);
+        edition.registerDatabaseInitializers(globalModule, systemDatabaseProvider);
 
-        edition.createDefaultDatabaseResolver(globalModule);
+        edition.createDefaultDatabaseResolver(systemDatabaseProvider);
         globalDependencies.satisfyDependency(edition.getDefaultDatabaseResolver());
 
         edition.createSecurityModule(globalModule);
         SecurityProvider securityProvider = edition.getSecurityProvider();
         globalDependencies.satisfyDependencies(securityProvider.authManager());
 
-        var dbmsVerisonProvider = edition.createAndRegisterDbmsRuntimeRepository(
+        var dbmsVersionProvider = edition.createAndRegisterDbmsRuntimeRepository(
                 globalModule, databaseContextProvider, globalDependencies, dbmsRuntimeSystemGraphComponent);
-        globalDependencies.satisfyDependency(dbmsVerisonProvider);
+        globalDependencies.satisfyDependency(dbmsVersionProvider);
 
         globalLife.start();
 
@@ -148,9 +151,5 @@ public class SystemDbUpgrader {
 
         globalLife.shutdown();
         progressMonitor.completed();
-    }
-
-    private static GraphDatabaseDependencies dependenciesWithoutExtensions(DatabaseEventListener eventListener) {
-        return GraphDatabaseDependencies.newDependencies().extensions(Iterables.empty());
     }
 }

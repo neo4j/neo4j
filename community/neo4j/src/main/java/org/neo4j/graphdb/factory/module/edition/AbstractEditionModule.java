@@ -20,7 +20,6 @@
 package org.neo4j.graphdb.factory.module.edition;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
-import static org.neo4j.kernel.database.NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID;
 import static org.neo4j.procedure.impl.temporal.TemporalFunction.registerTemporalFunctions;
 
 import java.util.function.Supplier;
@@ -31,7 +30,6 @@ import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.dbms.DbmsRuntimeVersionProvider;
-import org.neo4j.dbms.api.DatabaseManagementException;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseContextProvider;
@@ -46,9 +44,8 @@ import org.neo4j.dbms.routing.RoutingTableTTLProvider;
 import org.neo4j.dbms.routing.ServerSideRoutingTableProvider;
 import org.neo4j.dbms.routing.SimpleClientRoutingDomainChecker;
 import org.neo4j.dbms.routing.SingleAddressRoutingTableProvider;
+import org.neo4j.dbms.systemgraph.SystemDatabaseProvider;
 import org.neo4j.exceptions.KernelException;
-import org.neo4j.graphdb.DatabaseShutdownException;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.facade.DatabaseManagementServiceFactory;
 import org.neo4j.graphdb.factory.module.GlobalModule;
 import org.neo4j.graphdb.factory.module.id.IdContextFactory;
@@ -126,7 +123,8 @@ public abstract class AbstractEditionModule {
     public abstract <DB extends DatabaseContext> DatabaseContextProvider<DB> createDatabaseContextProvider(
             GlobalModule globalModule);
 
-    public abstract void registerDatabaseInitializers(GlobalModule globalModule);
+    public abstract void registerDatabaseInitializers(
+            GlobalModule globalModule, SystemDatabaseProvider systemDatabaseProvider);
 
     public abstract void registerSystemGraphComponents(
             SystemGraphComponents.Builder systemGraphComponentsBuilder, GlobalModule globalModule);
@@ -161,7 +159,7 @@ public abstract class AbstractEditionModule {
         this.securityProvider = securityProvider;
     }
 
-    public abstract void createDefaultDatabaseResolver(GlobalModule globalModule);
+    public abstract void createDefaultDatabaseResolver(SystemDatabaseProvider systemDatabaseProvider);
 
     public DefaultDatabaseResolver getDefaultDatabaseResolver() {
         return defaultDatabaseResolver;
@@ -228,18 +226,6 @@ public abstract class AbstractEditionModule {
                 IdContextFactory.class,
                 globalModule.getExternalDependencyResolver(),
                 () -> IdContextFactoryProvider.getInstance().buildIdContextFactory(globalModule));
-    }
-
-    protected static Supplier<GraphDatabaseService> systemSupplier(DependencyResolver dependencies) {
-        return () -> {
-            DatabaseContextProvider<?> databaseContextProvider =
-                    dependencies.resolveDependency(DatabaseContextProvider.class);
-            return databaseContextProvider
-                    .getDatabaseContext(NAMED_SYSTEM_DATABASE_ID)
-                    .orElseThrow(() -> new DatabaseShutdownException(
-                            new DatabaseManagementException("System database is not (yet) available")))
-                    .databaseFacade();
-        };
     }
 
     public abstract ProcedureConfig getProcedureConfig(Config config);
