@@ -376,7 +376,7 @@ public class CommunityEditionModule extends AbstractEditionModule implements Def
     @Override
     public void createDefaultDatabaseResolver(SystemDatabaseProvider systemDatabaseProvider) {
         var defaultDatabaseResolver =
-                new CommunityDefaultDatabaseResolver(globalModule.getGlobalConfig(), systemDatabaseProvider::database);
+                new CommunityDefaultDatabaseResolver(globalModule.getGlobalConfig(), systemDatabaseProvider);
         globalModule
                 .getTransactionEventListeners()
                 .registerTransactionEventListener(SYSTEM_DATABASE_NAME, defaultDatabaseResolver);

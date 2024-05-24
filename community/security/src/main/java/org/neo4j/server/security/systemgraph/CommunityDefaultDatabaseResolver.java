@@ -23,13 +23,13 @@ import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_DEFAULT
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_LABEL;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_NAME_PROPERTY;
 
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.dbms.systemgraph.SystemDatabaseProvider;
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.graphdb.event.TransactionEventListenerAdapter;
@@ -37,36 +37,31 @@ import org.neo4j.kernel.database.DefaultDatabaseResolver;
 
 public class CommunityDefaultDatabaseResolver extends TransactionEventListenerAdapter<Object>
         implements DefaultDatabaseResolver {
-    private final Config config;
-    private final Supplier<GraphDatabaseService> systemDbSupplier;
-    private GraphDatabaseService systemDb;
+    private final AtomicReference<String> cachedDefaultDatabase = new AtomicReference<>();
 
-    private final AtomicReference<String> cachedDefaultDatabase = new AtomicReference<>(null);
+    protected final Supplier<String> defaultDbSupplier;
+    protected final SystemDatabaseProvider systemDbProvider;
 
-    public CommunityDefaultDatabaseResolver(Config config, Supplier<GraphDatabaseService> systemDbSupplier) {
-        this.config = config;
-        this.systemDbSupplier = systemDbSupplier;
+    public CommunityDefaultDatabaseResolver(Config config, SystemDatabaseProvider systemDbProvider) {
+        this(() -> config.get(GraphDatabaseSettings.initial_default_database), systemDbProvider);
+    }
+
+    protected CommunityDefaultDatabaseResolver(
+            Supplier<String> defaultDbSupplier, SystemDatabaseProvider systemDbProvider) {
+        this.defaultDbSupplier = defaultDbSupplier;
+        this.systemDbProvider = systemDbProvider;
     }
 
     @Override
     public String defaultDatabase(String username) {
-        String cachedResult = cachedDefaultDatabase.get();
-        if (cachedResult != null) {
-            return cachedResult;
-        }
-
-        String defaultDatabase = getDefaultDatabase();
-        try (Transaction tx = getSystemDb().beginTx()) {
-            Node defaultDatabaseNode = tx.findNode(DATABASE_LABEL, DATABASE_DEFAULT_PROPERTY, true);
-            if (defaultDatabaseNode != null) {
-                defaultDatabase = (String) defaultDatabaseNode.getProperty(DATABASE_NAME_PROPERTY, defaultDatabase);
-            }
-            tx.commit();
+        var defaultDatabase = cachedDefaultDatabase.get();
+        if (defaultDatabase == null) {
+            defaultDatabase = systemDbProvider
+                    .query(CommunityDefaultDatabaseResolver::resolveDefaultDatabase)
+                    .orElseGet(defaultDbSupplier);
             cachedDefaultDatabase.set(defaultDatabase);
-            return defaultDatabase;
-        } catch (NotFoundException n) {
-            return defaultDatabase;
         }
+        return defaultDatabase;
     }
 
     @Override
@@ -74,19 +69,14 @@ public class CommunityDefaultDatabaseResolver extends TransactionEventListenerAd
         cachedDefaultDatabase.set(null);
     }
 
-    private GraphDatabaseService getSystemDb() {
-        if (systemDb == null) {
-            systemDb = systemDbSupplier.get();
-        }
-        return systemDb;
-    }
-
-    public String getDefaultDatabase() {
-        return config.get(GraphDatabaseSettings.initial_default_database);
-    }
-
     @Override
     public void afterCommit(TransactionData data, Object state, GraphDatabaseService databaseService) {
         clearCache();
+    }
+
+    private static Optional<String> resolveDefaultDatabase(Transaction tx) {
+        return Optional.ofNullable(tx.findNode(DATABASE_LABEL, DATABASE_DEFAULT_PROPERTY, true))
+                .flatMap(defaultDatabaseNode ->
+                        Optional.ofNullable((String) defaultDatabaseNode.getProperty(DATABASE_NAME_PROPERTY, null)));
     }
 }
