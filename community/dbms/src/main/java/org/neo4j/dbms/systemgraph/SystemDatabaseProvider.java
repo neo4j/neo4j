@@ -21,29 +21,18 @@ package org.neo4j.dbms.systemgraph;
 
 import java.util.Optional;
 import java.util.function.BiFunction;
-import org.neo4j.dbms.api.DatabaseManagementException;
-import org.neo4j.dbms.database.DatabaseContext;
-import org.neo4j.dbms.database.DatabaseContextProvider;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 
-public class SystemDatabaseProvider {
-    public static class SystemDatabaseUnavailableException extends RuntimeException {}
+@FunctionalInterface
+public interface SystemDatabaseProvider {
+    class SystemDatabaseUnavailableException extends RuntimeException {}
 
-    private final DatabaseContextProvider<? extends DatabaseContext> databaseContextProvider;
+    GraphDatabaseAPI database() throws SystemDatabaseUnavailableException;
 
-    public SystemDatabaseProvider(DatabaseContextProvider<? extends DatabaseContext> databaseContextProvider) {
-        this.databaseContextProvider = databaseContextProvider;
-    }
-
-    public <T> T execute(BiFunction<GraphDatabaseAPI, Transaction, T> function) {
-        var context = databaseContextProvider.getDatabaseContext(NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID);
-        if (context.isEmpty()) {
-            throw new SystemDatabaseUnavailableException();
-        }
-        var facade = context.get().databaseFacade();
-
+    default <T> T execute(BiFunction<GraphDatabaseAPI, Transaction, T> function)
+            throws SystemDatabaseUnavailableException {
+        var facade = database();
         if (!facade.isAvailable(1000)) {
             throw new SystemDatabaseUnavailableException();
         }
@@ -52,12 +41,8 @@ public class SystemDatabaseProvider {
         }
     }
 
-    public <T> Optional<T> dependency(Class<T> type) {
-        var context = databaseContextProvider.getDatabaseContext(NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID);
-        if (context.isEmpty()) {
-            throw new DatabaseManagementException("System Database is not yet started");
-        }
-        var dependencies = context.get().dependencies();
+    default <T> Optional<T> dependency(Class<T> type) throws SystemDatabaseUnavailableException {
+        var dependencies = database().getDependencyResolver();
         if (dependencies.containsDependency(type)) {
             return Optional.of(dependencies.resolveDependency(type));
         }
