@@ -20,7 +20,8 @@
 package org.neo4j.dbms.systemgraph;
 
 import java.util.Optional;
-import java.util.function.BiFunction;
+import java.util.function.Consumer;
+import java.util.function.Function;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 
@@ -30,14 +31,26 @@ public interface SystemDatabaseProvider {
 
     GraphDatabaseAPI database() throws SystemDatabaseUnavailableException;
 
-    default <T> T execute(BiFunction<GraphDatabaseAPI, Transaction, T> function)
-            throws SystemDatabaseUnavailableException {
+    default void execute(Consumer<Transaction> consumer) throws SystemDatabaseUnavailableException {
         var facade = database();
         if (!facade.isAvailable(1000)) {
             throw new SystemDatabaseUnavailableException();
         }
         try (var tx = facade.beginTx()) {
-            return function.apply(facade, tx);
+            consumer.accept(tx);
+            tx.commit();
+        }
+    }
+
+    default <T> T query(Function<Transaction, T> function) throws SystemDatabaseUnavailableException {
+        var facade = database();
+        if (!facade.isAvailable(1000)) {
+            throw new SystemDatabaseUnavailableException();
+        }
+        try (var tx = facade.beginTx()) {
+            var result = function.apply(tx);
+            tx.commit();
+            return result;
         }
     }
 
