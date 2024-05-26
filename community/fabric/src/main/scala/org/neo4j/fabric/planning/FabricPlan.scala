@@ -19,8 +19,12 @@
  */
 package org.neo4j.fabric.planning
 
+import org.neo4j.cypher.internal.CypherDeprecationNotificationsProvider
 import org.neo4j.cypher.internal.FullyParsedQuery
+import org.neo4j.cypher.internal.NotificationWrapping
 import org.neo4j.cypher.internal.options.CypherDebugOptions
+import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.internal.util.ObfuscationMetadata
 import org.neo4j.fabric.planning.FabricPlan.DebugOptions
 import org.neo4j.graphdb.Notification
@@ -33,8 +37,20 @@ case class FabricPlan(
   debugOptions: DebugOptions,
   obfuscationMetadata: ObfuscationMetadata,
   inFabricContext: Boolean,
-  notifications: Seq[Notification]
-)
+  internalNotifications: Set[InternalNotification],
+  queryOptionsOffset: InputPosition
+) {
+
+  def notifications: Seq[Notification] = internalNotifications.toSeq.map(NotificationWrapping.asKernelNotification(Some(queryOptionsOffset)))
+
+  def deprecationNotificationsProvider: CypherDeprecationNotificationsProvider = {
+    CypherDeprecationNotificationsProvider(
+      queryOptionsOffset = queryOptionsOffset,
+      preParserNotifications = Set.empty,
+      otherNotifications  = internalNotifications
+    )
+  }
+}
 
 object FabricPlan {
 

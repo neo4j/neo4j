@@ -114,6 +114,7 @@ public class FabricStatementLifecycles
         void doneFabricProcessing( FabricPlan plan )
         {
             executingQuery.onObfuscatorReady( CypherQueryObfuscator.apply( plan.obfuscationMetadata() ) );
+            executingQuery.onFabricDeprecationNotificationsProviderReady( plan.deprecationNotificationsProvider() );
 
             if ( plan.inFabricContext() )
             {
