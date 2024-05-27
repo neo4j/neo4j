@@ -1844,6 +1844,67 @@ class CsvInputTest {
     }
 
     @Test
+    void shouldHandleMultipleEqualReferencedSchemaForSameGroup() throws FileNotFoundException {
+        // given
+        var file1 = writeFile("nodes1", "myId:ID(MyGroup){label:Person}");
+        var file2 = writeFile("nodes2", "myId:ID(MyGroup){label:Person}");
+
+        try (var input = new CsvInput(
+                datas(
+                        DataFactories.data(NO_DECORATOR, defaultCharset(), file1),
+                        DataFactories.data(NO_DECORATOR, defaultCharset(), file2)),
+                defaultFormatNodeFileHeader(),
+                datas(),
+                defaultFormatRelationshipFileHeader(),
+                STRING,
+                TABS,
+                false,
+                NO_MONITOR,
+                INSTANCE)) {
+            // when
+            var tokenHolders = new TokenHolders(
+                    tokenHolder(Map.of("myId", 4)), tokenHolder(Map.of("Person", 2)), tokenHolder(Map.of()));
+
+            // then
+            var referencedNodeSchema = input.referencedNodeSchema(tokenHolders);
+            assertThat(referencedNodeSchema.get("MyGroup"))
+                    .isEqualTo(SchemaDescriptors.forLabel(
+                            tokenHolders.labelTokens().getIdByName("Person"),
+                            tokenHolders.propertyKeyTokens().getIdByName("myId")));
+        }
+    }
+
+    @Test
+    void shouldFailMultipleNonEqualReferencedSchemaForSameGroup() throws FileNotFoundException {
+        // given
+        var file1 = writeFile("nodes1", "myId:ID(MyGroup){label:Person}");
+        var file2 = writeFile("nodes2", "myId:ID(MyGroup){label:Company}");
+
+        try (var input = new CsvInput(
+                datas(
+                        DataFactories.data(NO_DECORATOR, defaultCharset(), file1),
+                        DataFactories.data(NO_DECORATOR, defaultCharset(), file2)),
+                defaultFormatNodeFileHeader(),
+                datas(),
+                defaultFormatRelationshipFileHeader(),
+                STRING,
+                TABS,
+                false,
+                NO_MONITOR,
+                INSTANCE)) {
+            // when
+            var tokenHolders = new TokenHolders(
+                    tokenHolder(Map.of("myId", 4)),
+                    tokenHolder(Map.of("Person", 2, "Company", 3)),
+                    tokenHolder(Map.of()));
+
+            // then
+            assertThatThrownBy(() -> input.referencedNodeSchema(tokenHolders))
+                    .hasMessageContaining("Multiple different indexes for group");
+        }
+    }
+
+    @Test
     void shouldParseReferencedNodeSchemaWithExplicitLabelOptionData() throws FileNotFoundException {
         // given
         Path file = writeFile("relationship-header", "myId:ID(My Group){label:Person}\tname:string\t:LABEL");

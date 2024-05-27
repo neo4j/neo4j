@@ -399,8 +399,11 @@ public class CsvInput implements Input {
                             "Property key '%s' for node index specified in '%s' does not exist",
                             keyName,
                             entry);
-                    var prev = result.put(entry.group().name(), SchemaDescriptors.forLabel(label, key));
-                    checkState(prev == null, "Multiple indexes for group " + entry.group());
+                    var schemaDescriptor = SchemaDescriptors.forLabel(label, key);
+                    var prev = result.put(entry.group().name(), schemaDescriptor);
+                    checkState(
+                            prev == null || prev.equals(schemaDescriptor),
+                            "Multiple different indexes for group " + entry.group());
                 });
     }
 
