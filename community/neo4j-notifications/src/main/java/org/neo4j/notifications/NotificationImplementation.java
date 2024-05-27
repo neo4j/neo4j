@@ -27,6 +27,7 @@ import org.neo4j.gqlstatus.GqlStatus;
 import org.neo4j.graphdb.InputPosition;
 import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.NotificationCategory;
+import org.neo4j.graphdb.NotificationClassification;
 import org.neo4j.graphdb.SeverityLevel;
 import org.neo4j.kernel.api.exceptions.Status;
 
@@ -171,6 +172,10 @@ public final class NotificationImplementation implements Notification {
         return mapCategory(diagnosticRecord.asMap().get("_classification").toString());
     }
 
+    public NotificationClassification getClassification() {
+        return mapClassification(diagnosticRecord.asMap().get("_classification").toString());
+    }
+
     @Override
     public SeverityLevel getSeverity() {
         return mapSeverity(diagnosticRecord.asMap().get("_severity").toString());
@@ -209,6 +214,10 @@ public final class NotificationImplementation implements Notification {
 
     private NotificationCategory mapCategory(String category) {
         return NotificationCategory.valueOf(category);
+    }
+
+    private NotificationClassification mapClassification(String classification) {
+        return NotificationClassification.valueOf(classification);
     }
 
     // Note: this should not be in the public interface until we have decided what name this field/function should have.

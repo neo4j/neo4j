@@ -86,6 +86,7 @@ import org.neo4j.exceptions.IndexHintException.IndexHintIndexType;
 import org.neo4j.gqlstatus.DiagnosticRecord;
 import org.neo4j.graphdb.InputPosition;
 import org.neo4j.graphdb.NotificationCategory;
+import org.neo4j.graphdb.NotificationClassification;
 import org.neo4j.graphdb.SeverityLevel;
 import org.neo4j.kernel.api.exceptions.Status;
 
@@ -104,6 +105,7 @@ class NotificationCodeWithDescriptionTest {
                 "Neo.ClientNotification.Schema.HintedIndexNotFound",
                 "The hinted index does not exist, please check the schema (index is: INDEX FOR (`person`:`Person`) ON (`person`.`name`))",
                 NotificationCategory.HINT,
+                NotificationClassification.HINT,
                 "01N31",
                 new DiagnosticRecord(warning, hint, -1, -1, -1, Map.of()).asMap(),
                 "warn: hinted index not found. Unable to create a plan with `INDEX :Person(name)` because the index does not exist.");
@@ -123,6 +125,7 @@ class NotificationCodeWithDescriptionTest {
                 "Neo.ClientNotification.Schema.HintedIndexNotFound",
                 "The hinted index does not exist, please check the schema (index is: TEXT INDEX FOR (`person`:`Person`) ON (`person`.`name`))",
                 NotificationCategory.HINT,
+                NotificationClassification.HINT,
                 "01N31",
                 new DiagnosticRecord(warning, hint, -1, -1, -1, Map.of()).asMap(),
                 "warn: hinted index not found. Unable to create a plan with `TEXT INDEX :Person(name)` because the index does not exist.");
@@ -143,6 +146,7 @@ class NotificationCodeWithDescriptionTest {
                 "Neo.ClientNotification.Schema.HintedIndexNotFound",
                 "The hinted index does not exist, please check the schema (index is: INDEX FOR ()-[`person`:`Person`]-() ON (`person`.`name`))",
                 NotificationCategory.HINT,
+                NotificationClassification.HINT,
                 "01N31",
                 new DiagnosticRecord(warning, hint, -1, -1, -1, Map.of()).asMap(),
                 "warn: hinted index not found. Unable to create a plan with `INDEX :Person(name)` because the index does not exist.");
@@ -163,6 +167,7 @@ class NotificationCodeWithDescriptionTest {
                 "Neo.ClientNotification.Schema.HintedIndexNotFound",
                 "The hinted index does not exist, please check the schema (index is: TEXT INDEX FOR ()-[`person`:`Person`]-() ON (`person`.`name`))",
                 NotificationCategory.HINT,
+                NotificationClassification.HINT,
                 "01N31",
                 new DiagnosticRecord(warning, hint, -1, -1, -1, Map.of()).asMap(),
                 "warn: hinted index not found. Unable to create a plan with `TEXT INDEX :Person(name)` because the index does not exist.");
@@ -183,6 +188,7 @@ class NotificationCodeWithDescriptionTest {
                 "Neo.ClientNotification.Schema.HintedIndexNotFound",
                 "The hinted index does not exist, please check the schema (index is: TEXT INDEX FOR ()-[`person`:`Person`]-() ON (`person`.`name`, `person`.`age`))",
                 NotificationCategory.HINT,
+                NotificationClassification.HINT,
                 "01N31",
                 new DiagnosticRecord(warning, hint, -1, -1, -1, Map.of()).asMap(),
                 "warn: hinted index not found. Unable to create a plan with `TEXT INDEX :Person(name, age)` because the index does not exist.");
@@ -208,6 +214,7 @@ class NotificationCodeWithDescriptionTest {
                         + "product, perhaps by adding a relationship between the different parts or by using OPTIONAL MATCH "
                         + "(identifiers are: (n, node2))",
                 NotificationCategory.PERFORMANCE,
+                NotificationClassification.PERFORMANCE,
                 "03N90",
                 new DiagnosticRecord(info, performance, -1, -1, -1, Map.of()).asMap(),
                 "info: cartesian product. The disconnected patterns `(node1), (node)--(node2)` build a cartesian product. A cartesian product may produce a large amount of data and slow down query processing.");
@@ -229,6 +236,7 @@ class NotificationCodeWithDescriptionTest {
                         + "please try using a different join key or restructure your query. "
                         + "(hinted join key identifiers are: n, node2)",
                 NotificationCategory.HINT,
+                NotificationClassification.HINT,
                 "01N30",
                 new DiagnosticRecord(warning, hint, -1, -1, -1, Map.of()).asMap(),
                 "warn: join hint unfulfillable. Unable to create a plan with `JOIN ON n, node2`. Try to change the join key(s) or restructure your query.");
@@ -247,6 +255,7 @@ class NotificationCodeWithDescriptionTest {
                 "Neo.ClientNotification.Statement.FeatureDeprecationWarning",
                 "The query used a deprecated procedure. ('oldName' has been replaced by 'newName')",
                 NotificationCategory.DEPRECATION,
+                NotificationClassification.DEPRECATION,
                 "01N01",
                 new DiagnosticRecord(warning, deprecation, -1, -1, -1, Map.of()).asMap(),
                 "warn: feature deprecated with replacement. `oldName` is deprecated. It is replaced by `newName`.");
@@ -265,6 +274,7 @@ class NotificationCodeWithDescriptionTest {
                 "Neo.ClientNotification.Statement.FeatureDeprecationWarning",
                 "The query used a deprecated procedure: `oldName`.",
                 NotificationCategory.DEPRECATION,
+                NotificationClassification.DEPRECATION,
                 "01N02",
                 new DiagnosticRecord(warning, deprecation, -1, -1, -1, Map.of()).asMap(),
                 "warn: feature deprecated without replacement. `oldName` is deprecated and will be removed without a replacement.");
@@ -282,6 +292,7 @@ class NotificationCodeWithDescriptionTest {
                 "Neo.ClientNotification.Statement.RuntimeUnsupportedWarning",
                 "Selected runtime is unsupported for this query, please use a different runtime instead or fallback to default. (PARALLEL)",
                 NotificationCategory.UNSUPPORTED,
+                NotificationClassification.UNSUPPORTED,
                 "01N40",
                 new DiagnosticRecord(warning, unsupported, -1, -1, -1, Map.of()).asMap(),
                 "warn: runtime unsupported. The query cannot be executed with `runtime=parallel`, `runtime=pipelined` is used. Cause: `PARALLEL`.");
@@ -301,6 +312,7 @@ class NotificationCodeWithDescriptionTest {
                 "Neo.ClientNotification.Statement.DynamicProperty",
                 "Using a dynamic property makes it impossible to use an index lookup for this query (indexed label is: (:A))",
                 NotificationCategory.PERFORMANCE,
+                NotificationClassification.PERFORMANCE,
                 "03N95",
                 new DiagnosticRecord(info, performance, -1, -1, -1, Map.of()).asMap(),
                 "info: dynamic property. An index exists on label/type(s) `A`. It is not possible to use indexes for dynamic properties. Consider using static properties.");
@@ -319,6 +331,7 @@ class NotificationCodeWithDescriptionTest {
                 "Neo.ClientNotification.Statement.FeatureDeprecationWarning",
                 "The query used a deprecated function. ('oldName' has been replaced by 'newName')",
                 NotificationCategory.DEPRECATION,
+                NotificationClassification.DEPRECATION,
                 "01N01",
                 new DiagnosticRecord(warning, deprecation, -1, -1, -1, Map.of()).asMap(),
                 "warn: feature deprecated with replacement. `oldName` is deprecated. It is replaced by `newName`.");
@@ -337,6 +350,7 @@ class NotificationCodeWithDescriptionTest {
                 "Neo.ClientNotification.Statement.FeatureDeprecationWarning",
                 "The query used a deprecated function: `oldName`.",
                 NotificationCategory.DEPRECATION,
+                NotificationClassification.DEPRECATION,
                 "01N02",
                 new DiagnosticRecord(warning, deprecation, -1, -1, -1, Map.of()).asMap(),
                 "warn: feature deprecated without replacement. `oldName` is deprecated and will be removed without a replacement.");
@@ -354,6 +368,7 @@ class NotificationCodeWithDescriptionTest {
                 "Neo.ClientNotification.Statement.FeatureDeprecationWarning",
                 "The query used a deprecated runtime option. (option=deprecatedOption)",
                 NotificationCategory.DEPRECATION,
+                NotificationClassification.DEPRECATION,
                 "01N01",
                 new DiagnosticRecord(warning, deprecation, -1, -1, -1, Map.of()).asMap(),
                 "warn: feature deprecated with replacement. `option=oldOption` is deprecated. It is replaced by `option=newOption`.");
@@ -371,6 +386,7 @@ class NotificationCodeWithDescriptionTest {
                 "Neo.ClientNotification.Procedure.ProcedureWarning",
                 "The query used a procedure that generated a warning. (warning from procedure my.proc)",
                 NotificationCategory.GENERIC,
+                NotificationClassification.GENERIC,
                 "01N62",
                 new DiagnosticRecord(warning, generic, -1, -1, -1, Map.of()).asMap(),
                 "warn: procedure execution warning. The procedure `my.proc` generates the warning `warning from procedure`.");
@@ -388,6 +404,7 @@ class NotificationCodeWithDescriptionTest {
                 "Neo.ClientNotification.Statement.FeatureDeprecationWarning",
                 "The query used a deprecated field from a procedure. ('field' returned by 'proc' is deprecated.)",
                 NotificationCategory.DEPRECATION,
+                NotificationClassification.DEPRECATION,
                 "01N03",
                 new DiagnosticRecord(warning, deprecation, -1, -1, -1, Map.of()).asMap(),
                 "warn: procedure result column deprecated. `field` returned by procedure `proc` is deprecated.");
@@ -405,6 +422,7 @@ class NotificationCodeWithDescriptionTest {
                 "Neo.ClientNotification.Statement.FeatureDeprecationWarning",
                 "The semantics of using colon in the separation of alternative relationship types will change in a future version. (Please use ':A|B' instead)",
                 NotificationCategory.DEPRECATION,
+                NotificationClassification.DEPRECATION,
                 "01N01",
                 new DiagnosticRecord(warning, deprecation, -1, -1, -1, Map.of()).asMap(),
                 "warn: feature deprecated with replacement. `:A:|B` is deprecated. It is replaced by `:A|B`.");
@@ -423,6 +441,7 @@ class NotificationCodeWithDescriptionTest {
                 "The use of nodes or relationships for setting properties is deprecated and will be removed in a future version. "
                         + "Please use properties() instead.",
                 NotificationCategory.DEPRECATION,
+                NotificationClassification.DEPRECATION,
                 "01N01",
                 new DiagnosticRecord(warning, deprecation, -1, -1, -1, Map.of()).asMap(),
                 "warn: feature deprecated with replacement. `SET a = b` is deprecated. It is replaced by `SET a = properties(b)`.");
@@ -441,6 +460,7 @@ class NotificationCodeWithDescriptionTest {
                 "The use of shortestPath and allShortestPaths with fixed length relationships is deprecated and will be removed in a future version. "
                         + "Please use a path with a length of 1 [r*1..1] instead or a Match with a limit.",
                 NotificationCategory.DEPRECATION,
+                NotificationClassification.DEPRECATION,
                 "01N01",
                 new DiagnosticRecord(warning, deprecation, -1, -1, -1, Map.of()).asMap(),
                 "warn: feature deprecated with replacement. `shortestPath((n)-[r]->(m))` is deprecated. It is replaced by `shortestPath((n)-[r*1..1]->(m))`.");
@@ -457,6 +477,7 @@ class NotificationCodeWithDescriptionTest {
                 "Neo.ClientNotification.Statement.FeatureDeprecationWarning",
                 "The `text-1.0` provider for text indexes is deprecated and will be removed in a future version. Please use `text-2.0` instead.",
                 NotificationCategory.DEPRECATION,
+                NotificationClassification.DEPRECATION,
                 "01N01",
                 new DiagnosticRecord(warning, deprecation, -1, -1, -1, Map.of()).asMap(),
                 "warn: feature deprecated with replacement. `text-1.0` is deprecated. It is replaced by `text-2.0`.");
@@ -477,6 +498,7 @@ class NotificationCodeWithDescriptionTest {
                         + "See the Neo4j Manual entry on the Eager operator for more information and hints on "
                         + "how problems could be avoided.",
                 NotificationCategory.PERFORMANCE,
+                NotificationClassification.PERFORMANCE,
                 "03N94",
                 new DiagnosticRecord(info, performance, -1, -1, -1, Map.of()).asMap(),
                 "info: eager operator. The query execution plan contains the `Eager` operator. `LOAD CSV` in combination with `Eager` can consume a lot of memory.");
@@ -494,6 +516,7 @@ class NotificationCodeWithDescriptionTest {
                 "Neo.ClientNotification.Request.DeprecatedFormat",
                 "The requested format has been deprecated. (u627)",
                 NotificationCategory.DEPRECATION,
+                NotificationClassification.DEPRECATION,
                 "01N01",
                 new DiagnosticRecord(warning, deprecation, -1, -1, -1, Map.of()).asMap(),
                 "warn: feature deprecated with replacement. `deprecatedFormat` is deprecated. It is replaced by `newFormat`.");
@@ -511,6 +534,7 @@ class NotificationCodeWithDescriptionTest {
                 "Neo.ClientNotification.Statement.FeatureDeprecationWarning",
                 "The Unicode character `\\u0061` is deprecated for unescaped identifiers and will be considered as a whitespace character in the future. To continue using it, escape the identifier by adding backticks around the identifier `ana`.",
                 NotificationCategory.DEPRECATION,
+                NotificationClassification.DEPRECATION,
                 "01N00",
                 new DiagnosticRecord(warning, deprecation, -1, -1, -1, Map.of()).asMap(),
                 "warn: feature deprecated. The Unicode character `\\u0061` is deprecated for unescaped identifiers and will be considered as a whitespace character in the future. To continue using it, escape the identifier by adding backticks around the identifier `ana`.");
@@ -527,6 +551,7 @@ class NotificationCodeWithDescriptionTest {
                 "Neo.ClientNotification.Statement.FeatureDeprecationWarning",
                 "The character with the Unicode representation `\\u0061` is deprecated for unescaped identifiers and will not be supported in the future. To continue using it, escape the identifier by adding backticks around the identifier `ana`.",
                 NotificationCategory.DEPRECATION,
+                NotificationClassification.DEPRECATION,
                 "01N00",
                 new DiagnosticRecord(warning, deprecation, -1, -1, -1, Map.of()).asMap(),
                 "warn: feature deprecated. The character with the Unicode representation `\\u0061` is deprecated for unescaped identifiers and will not be supported in the future. To continue using it, escape the identifier by adding backticks around the identifier `ana`.");
@@ -544,6 +569,7 @@ class NotificationCodeWithDescriptionTest {
                 "Using LOAD CSV followed by a MATCH or MERGE that matches a non-indexed label will most likely "
                         + "not perform well on large data sets. Please consider using a schema index.",
                 NotificationCategory.PERFORMANCE,
+                NotificationClassification.PERFORMANCE,
                 "03N93",
                 new DiagnosticRecord(info, performance, -1, -1, -1, Map.of()).asMap(),
                 "info: no applicable index. `LOAD CSV` in combination with `MATCH` or `MERGE` on a label that does not have an index may result in long execution times. Consider adding an index for label `Label`.");
@@ -562,6 +588,7 @@ class NotificationCodeWithDescriptionTest {
                 "One of the labels in your query is not available in the database, make sure you didn't "
                         + "misspell it or that the label is available when you run this statement in your application (the missing label name is: Label)",
                 NotificationCategory.UNRECOGNIZED,
+                NotificationClassification.UNRECOGNIZED,
                 "01N50",
                 new DiagnosticRecord(warning, unrecognized, -1, -1, -1, Map.of()).asMap(),
                 "warn: unknown label. The label `Label` does not exist. Verify that the spelling is correct.");
@@ -580,6 +607,7 @@ class NotificationCodeWithDescriptionTest {
                 "One of the relationship types in your query is not available in the database, make sure you didn't "
                         + "misspell it or that the label is available when you run this statement in your application (the missing relationship type is: Rel)",
                 NotificationCategory.UNRECOGNIZED,
+                NotificationClassification.UNRECOGNIZED,
                 "01N51",
                 new DiagnosticRecord(warning, unrecognized, -1, -1, -1, Map.of()).asMap(),
                 "warn: unknown relationship type. The relationship type `Rel` does not exist. Verify that the spelling is correct.");
@@ -599,6 +627,7 @@ class NotificationCodeWithDescriptionTest {
                         + "misspell it or that the label is available when you run this statement in your application "
                         + "(the missing property name is: prop)",
                 NotificationCategory.UNRECOGNIZED,
+                NotificationClassification.UNRECOGNIZED,
                 "01N52",
                 new DiagnosticRecord(warning, unrecognized, -1, -1, -1, Map.of()).asMap(),
                 "warn: unknown property key. The property `prop` does not exist. Verify that the spelling is correct.");
@@ -618,6 +647,7 @@ class NotificationCodeWithDescriptionTest {
                 "Using shortest path with an unbounded pattern will likely result in long execution times. "
                         + "It is recommended to use an upper limit to the number of node hops in your pattern.",
                 NotificationCategory.PERFORMANCE,
+                NotificationClassification.PERFORMANCE,
                 "03N91",
                 new DiagnosticRecord(info, performance, -1, -1, -1, Map.of()).asMap(),
                 "info: unbounded variable length pattern. The provided pattern `(a)-[2..*]-(b)` is unbounded. Shortest path with an unbounded pattern may result in long execution times. Use an upper limit (e.g. `[*..5]`) on the number of node hops in your pattern.");
@@ -639,6 +669,7 @@ class NotificationCodeWithDescriptionTest {
                         + "graph algorithms might not work for this use case. It is recommended to introduce a WITH to separate the "
                         + "MATCH containing the shortest path from the existential predicates on that path.",
                 NotificationCategory.PERFORMANCE,
+                NotificationClassification.PERFORMANCE,
                 "03N92",
                 new DiagnosticRecord(info, performance, -1, -1, -1, Map.of()).asMap(),
                 "info: exhaustive shortest path. The query runs with exhaustive shortest path due to the existential predicate(s) `length(p) > 1`. It may be possible to use `WITH` to separate the `MATCH` from the existential predicate(s).");
@@ -659,6 +690,7 @@ class NotificationCodeWithDescriptionTest {
                 "Did not supply query with enough parameters. "
                         + "The produced query plan will not be cached and is not executable without EXPLAIN. (Missing parameters: param1)",
                 NotificationCategory.GENERIC,
+                NotificationClassification.GENERIC,
                 "01N60",
                 new DiagnosticRecord(warning, generic, -1, -1, -1, Map.of()).asMap(),
                 "warn: parameter missing. The query plan cannot be cached and is not executable without `EXPLAIN` due to the undefined parameter(s) `$param1`. Provide the parameter(s).");
@@ -679,6 +711,7 @@ class NotificationCodeWithDescriptionTest {
                 "Did not supply query with enough parameters. "
                         + "The produced query plan will not be cached and is not executable without EXPLAIN. (Missing parameters: param1, param2)",
                 NotificationCategory.GENERIC,
+                NotificationClassification.GENERIC,
                 "01N60",
                 new DiagnosticRecord(warning, generic, -1, -1, -1, Map.of()).asMap(),
                 "warn: parameter missing. The query plan cannot be cached and is not executable without `EXPLAIN` due to the undefined parameter(s) `$param1, $param2`. Provide the parameter(s).");
@@ -699,6 +732,7 @@ class NotificationCodeWithDescriptionTest {
                 "Neo.ClientNotification.Statement.CodeGenerationFailed",
                 "The database was unable to generate code for the query. A stacktrace can be found in the debug.log. (method too big)",
                 NotificationCategory.PERFORMANCE,
+                NotificationClassification.PERFORMANCE,
                 "01N40",
                 new DiagnosticRecord(info, performance, -1, -1, -1, Map.of()).asMap(),
                 "warn: runtime unsupported. The query cannot be executed with `runtime=pipelined operatorEngine=compiled expressionEngine=compiled`, `runtime=pipelined operatorEngine=interpreted expressionEngine=compiled` is used. Cause: `method too big`.");
@@ -718,6 +752,7 @@ class NotificationCodeWithDescriptionTest {
                         + "If you want to use that variable instead, it must be imported into the subquery using "
                         + "importing WITH clause. (the shadowing variable is: v)",
                 NotificationCategory.GENERIC,
+                NotificationClassification.GENERIC,
                 "03N60",
                 new DiagnosticRecord(info, generic, -1, -1, -1, Map.of()).asMap(),
                 "info: subquery variable shadowing. The variable `v` in the subquery uses the same name as a variable from the outer query. Use `WITH v` in the subquery to import the one from the outer scope unless you want it to be a new variable.");
@@ -735,6 +770,7 @@ class NotificationCodeWithDescriptionTest {
                 "The home database provided does not currently exist in the DBMS. "
                         + "This command will not take effect until this database is created. (db)",
                 NotificationCategory.UNRECOGNIZED,
+                NotificationClassification.UNRECOGNIZED,
                 "00N50",
                 new DiagnosticRecord(info, unrecognized, -1, -1, -1, Map.of()).asMap(),
                 "note: successful completion - home database not found. The database `db` does not exist. Verify that the spelling is correct or create the database for the command to take effect.");
@@ -752,6 +788,7 @@ class NotificationCodeWithDescriptionTest {
                 "Databases and aliases with unescaped `.` are deprecated unless to indicate that they belong to a composite database. "
                         + "Names containing `.` should be escaped. (Name: db.one)",
                 NotificationCategory.DEPRECATION,
+                NotificationClassification.DEPRECATION,
                 "01N00",
                 new DiagnosticRecord(warning, deprecation, -1, -1, -1, Map.of()).asMap(),
                 "warn: feature deprecated. Databases and aliases with unescaped `.` are deprecated unless they belong to a composite database. Names containing `.` should be escaped. (Name: db.one)");
@@ -769,6 +806,7 @@ class NotificationCodeWithDescriptionTest {
                 "Neo.ClientNotification.Statement.UnsatisfiableRelationshipTypeExpression",
                 "Relationship type expression cannot possibly be satisfied. (`!%` can never be satisfied by any relationship. Relationships must have exactly one relationship type.)",
                 NotificationCategory.GENERIC,
+                NotificationClassification.GENERIC,
                 "01N61",
                 new DiagnosticRecord(warning, generic, -1, -1, -1, Map.of()).asMap(),
                 "warn: unsatisfiable relationship type expression. The expression `!%` cannot be satisfied because relationships must have exactly one type.");
@@ -786,6 +824,7 @@ class NotificationCodeWithDescriptionTest {
                 "Neo.ClientNotification.Statement.RepeatedRelationshipReference",
                 "A relationship is referenced more than once in the query, which leads to no results because relationships must not occur more than once in each result. (Relationship `r` was repeated)",
                 NotificationCategory.GENERIC,
+                NotificationClassification.GENERIC,
                 "01N63",
                 new DiagnosticRecord(warning, generic, -1, -1, -1, Map.of()).asMap(),
                 "warn: repeated relationship reference. `r` is repeated in `()-[r]->()<-[r]-()`, which leads to no results.");
@@ -803,6 +842,7 @@ class NotificationCodeWithDescriptionTest {
                 "Neo.ClientNotification.Statement.RepeatedRelationshipReference",
                 "A variable-length relationship variable is bound more than once, which leads to no results because relationships must not occur more than once in each result. (Relationship `r` was repeated)",
                 NotificationCategory.GENERIC,
+                NotificationClassification.GENERIC,
                 "01N63",
                 new DiagnosticRecord(warning, generic, -1, -1, -1, Map.of()).asMap(),
                 "warn: repeated relationship reference. `r` is repeated in `()-[r*]->()-[r*]->()`, which leads to no results.");
@@ -819,6 +859,7 @@ class NotificationCodeWithDescriptionTest {
                 "Neo.ClientNotification.Statement.FeatureDeprecationWarning",
                 "All subqueries in a UNION [ALL] should have the same ordering for the return columns. Using differently ordered return items in a UNION [ALL] clause is deprecated and will be removed in a future version.",
                 NotificationCategory.DEPRECATION,
+                NotificationClassification.DEPRECATION,
                 "01N00",
                 new DiagnosticRecord(warning, deprecation, -1, -1, -1, Map.of()).asMap(),
                 "warn: feature deprecated. All subqueries in a UNION [ALL] should have the same ordering for the return columns. Using differently ordered return items in a UNION [ALL] clause is deprecated and will be removed in a future version.");
@@ -838,6 +879,7 @@ class NotificationCodeWithDescriptionTest {
                         + "The product's default behavior of using a cost-based IDP search algorithm when combining sub-plans will be kept. "
                         + "For more information, see Cypher Manual -> Cypher planner.",
                 NotificationCategory.DEPRECATION,
+                NotificationClassification.DEPRECATION,
                 "01N02",
                 new DiagnosticRecord(warning, deprecation, -1, -1, -1, Map.of()).asMap(),
                 "warn: feature deprecated without replacement. `connectComponentsPlanner` is deprecated and will be removed without a replacement.");
@@ -855,6 +897,7 @@ class NotificationCodeWithDescriptionTest {
                 "Neo.ClientNotification.Security.CommandHasNoEffect",
                 "The role already has the privilege. See Status Codes documentation for more information.",
                 NotificationCategory.SECURITY,
+                NotificationClassification.SECURITY,
                 "00N70",
                 new DiagnosticRecord(info, security, -1, -1, -1, Map.of()).asMap(),
                 "note: successful completion - role or privilege already assigned. `GRANT WRITE ON GRAPH * TO editor` has no effect. The role or privilege is already assigned.");
@@ -872,6 +915,7 @@ class NotificationCodeWithDescriptionTest {
                 "Neo.ClientNotification.Security.CommandHasNoEffect",
                 "The role does not have the privilege. See Status Codes documentation for more information.",
                 NotificationCategory.SECURITY,
+                NotificationClassification.SECURITY,
                 "00N71",
                 new DiagnosticRecord(info, security, -1, -1, -1, Map.of()).asMap(),
                 "note: successful completion - role or privilege not assigned. `REVOKE ALL GRAPH PRIVILEGES ON GRAPH * FROM reader` has no effect. The role or privilege is not assigned.");
@@ -889,6 +933,7 @@ class NotificationCodeWithDescriptionTest {
                 "Neo.ClientNotification.Security.CommandHasNoEffect",
                 "The user already has the role. See Status Codes documentation for more information.",
                 NotificationCategory.SECURITY,
+                NotificationClassification.SECURITY,
                 "00N70",
                 new DiagnosticRecord(info, security, -1, -1, -1, Map.of()).asMap(),
                 "note: successful completion - role or privilege already assigned. `GRANT ROLE aliceRole TO alice` has no effect. The role or privilege is already assigned.");
@@ -906,6 +951,7 @@ class NotificationCodeWithDescriptionTest {
                 "Neo.ClientNotification.Security.CommandHasNoEffect",
                 "The user does not have the role. See Status Codes documentation for more information.",
                 NotificationCategory.SECURITY,
+                NotificationClassification.SECURITY,
                 "00N71",
                 new DiagnosticRecord(info, security, -1, -1, -1, Map.of()).asMap(),
                 "note: successful completion - role or privilege not assigned. `REVOKE ROLE other FROM alice` has no effect. The role or privilege is not assigned.");
@@ -924,6 +970,7 @@ class NotificationCodeWithDescriptionTest {
                 "Role does not exist. Make sure nothing is misspelled. This notification will become an error in a future major version. "
                         + "See Status Codes documentation for more information.",
                 NotificationCategory.SECURITY,
+                NotificationClassification.SECURITY,
                 "01N70",
                 new DiagnosticRecord(warning, security, -1, -1, -1, Map.of()).asMap(),
                 "warn: impossible revoke command. `REVOKE admina FROM ALICE` has no effect. Role does not exist. Make sure nothing is misspelled. This notification will become an error in a future major version.");
@@ -940,6 +987,7 @@ class NotificationCodeWithDescriptionTest {
                 "Neo.ClientNotification.Statement.FeatureDeprecationWarning",
                 "Creating an entity (n.prop) and referencing that entity in a property definition in the same CREATE is deprecated.",
                 NotificationCategory.DEPRECATION,
+                NotificationClassification.DEPRECATION,
                 "01N00",
                 new DiagnosticRecord(warning, deprecation, -1, -1, -1, Map.of()).asMap(),
                 "warn: feature deprecated. Creating an entity (n.prop) and referencing that entity in a property definition in the same CREATE is deprecated.");
@@ -956,6 +1004,7 @@ class NotificationCodeWithDescriptionTest {
                 "Neo.ClientNotification.Statement.FeatureDeprecationWarning",
                 "Merging an entity (n) and referencing that entity in a property definition in the same MERGE is deprecated.",
                 NotificationCategory.DEPRECATION,
+                NotificationClassification.DEPRECATION,
                 "01N00",
                 new DiagnosticRecord(warning, deprecation, -1, -1, -1, Map.of()).asMap(),
                 "warn: feature deprecated. Merging an entity (n) and referencing that entity in a property definition in the same MERGE is deprecated.");
@@ -972,6 +1021,7 @@ class NotificationCodeWithDescriptionTest {
                 "Neo.ClientNotification.Cluster.ServerAlreadyEnabled",
                 "Server `server` is already enabled. Verify that this is the intended server.",
                 NotificationCategory.TOPOLOGY,
+                NotificationClassification.TOPOLOGY,
                 "00N80",
                 new DiagnosticRecord(info, topology, -1, -1, -1, Map.of()).asMap(),
                 "note: successful completion - server already enabled. `ENABLE SERVER` has no effect. Server `server` is already enabled. Verify that this is the intended server.");
@@ -988,6 +1038,7 @@ class NotificationCodeWithDescriptionTest {
                 "Neo.ClientNotification.Cluster.ServerAlreadyCordoned",
                 "Server `server` is already cordoned. Verify that this is the intended server.",
                 NotificationCategory.TOPOLOGY,
+                NotificationClassification.TOPOLOGY,
                 "00N81",
                 new DiagnosticRecord(info, topology, -1, -1, -1, Map.of()).asMap(),
                 "note: successful completion - server already cordoned. `CORDON SERVER` has no effect. Server `server` is already cordoned. Verify that this is the intended server.");
@@ -1004,6 +1055,7 @@ class NotificationCodeWithDescriptionTest {
                 "Neo.ClientNotification.Cluster.NoDatabasesReallocated",
                 "No databases were reallocated. No better allocation is currently possible.",
                 NotificationCategory.TOPOLOGY,
+                NotificationClassification.TOPOLOGY,
                 "00N82",
                 new DiagnosticRecord(info, topology, -1, -1, -1, Map.of()).asMap(),
                 "note: successful completion - no databases reallocated. `REALLOCATE DATABASES` has no effect. No databases were reallocated. No better allocation is currently possible.");
@@ -1021,6 +1073,7 @@ class NotificationCodeWithDescriptionTest {
                 "Neo.ClientNotification.Cluster.CordonedServersExistedDuringAllocation",
                 "Server(s) `server-1,server-2,server-3` are cordoned. This can impact allocation decisions.",
                 NotificationCategory.TOPOLOGY,
+                NotificationClassification.TOPOLOGY,
                 "00N83",
                 new DiagnosticRecord(info, topology, -1, -1, -1, Map.of()).asMap(),
                 "note: successful completion - cordoned servers existed during allocation. Cordoned servers existed when making an allocation decision. Server(s) `server-1,server-2,server-3` are cordoned. This can impact allocation decisions.");
@@ -1037,6 +1090,7 @@ class NotificationCodeWithDescriptionTest {
                 "Neo.ClientNotification.Cluster.RequestedTopologyMatchedCurrentTopology",
                 "The requested topology matched the current topology. No allocations were changed.",
                 NotificationCategory.TOPOLOGY,
+                NotificationClassification.TOPOLOGY,
                 "00N84",
                 new DiagnosticRecord(info, topology, -1, -1, -1, Map.of()).asMap(),
                 "note: successful completion - requested topology matched current topology. `ALTER DATABASE` has no effect. The requested topology matched the current topology. No allocations were changed.");
@@ -1056,6 +1110,7 @@ class NotificationCodeWithDescriptionTest {
                 "Neo.ClientNotification.Schema.IndexOrConstraintAlreadyExists",
                 "`INDEX foo FOR (n:L) ON (n.p2)` already exists.",
                 NotificationCategory.SCHEMA,
+                NotificationClassification.SCHEMA,
                 "00NA0",
                 new DiagnosticRecord(info, schema, -1, -1, -1, Map.of()).asMap(),
                 "note: successful completion - index or constraint already exists. `CREATE INDEX foo IF NOT EXISTS FOR (n:L) ON (n.p1)` has no effect. `INDEX foo FOR (n:L) ON (n.p2)` already exists.");
@@ -1072,6 +1127,7 @@ class NotificationCodeWithDescriptionTest {
                 "Neo.ClientNotification.Schema.IndexOrConstraintAlreadyExists",
                 "`CONSTRAINT baz FOR (n:L) REQUIRE (n.p1) IS NODE KEY` already exists.",
                 NotificationCategory.SCHEMA,
+                NotificationClassification.SCHEMA,
                 "00NA0",
                 new DiagnosticRecord(info, schema, -1, -1, -1, Map.of()).asMap(),
                 "note: successful completion - index or constraint already exists. `CREATE CONSTRAINT bar IF NOT EXISTS FOR (n:L) REQUIRE (n.p1) IS NODE KEY` has no effect. `CONSTRAINT baz FOR (n:L) REQUIRE (n.p1) IS NODE KEY` already exists.");
@@ -1089,6 +1145,7 @@ class NotificationCodeWithDescriptionTest {
                 "Neo.ClientNotification.Schema.IndexOrConstraintDoesNotExist",
                 "`foo` does not exist.",
                 NotificationCategory.SCHEMA,
+                NotificationClassification.SCHEMA,
                 "00NA1",
                 new DiagnosticRecord(info, schema, -1, -1, -1, Map.of()).asMap(),
                 "note: successful completion - index or constraint does not exist. `DROP INDEX foo IF EXISTS` has no effect. `foo` does not exist.");
@@ -1102,6 +1159,7 @@ class NotificationCodeWithDescriptionTest {
                 "Neo.ClientNotification.Schema.IndexOrConstraintDoesNotExist",
                 "`foo` does not exist.",
                 NotificationCategory.SCHEMA,
+                NotificationClassification.SCHEMA,
                 "00NA1",
                 new DiagnosticRecord(info, schema, -1, -1, -1, Map.of()).asMap(),
                 "note: successful completion - index or constraint does not exist. `DROP CONSTRAINT bar IF EXISTS` has no effect. `foo` does not exist.");
@@ -1114,6 +1172,7 @@ class NotificationCodeWithDescriptionTest {
             String code,
             String description,
             NotificationCategory category,
+            NotificationClassification classification,
             String gqlStatusString,
             Map<String, Object> diagnosticRecord,
             String statusDescription) {
@@ -1122,6 +1181,7 @@ class NotificationCodeWithDescriptionTest {
         assertThat(notification.getCode()).isEqualTo(code);
         assertThat(notification.getDescription()).isEqualTo(description);
         assertThat(notification.getCategory()).isEqualTo(category);
+        assertThat(notification.getClassification()).isEqualTo(classification);
         assertThat(notification.getGqlStatus()).isEqualTo(gqlStatusString);
         assertThat(notification.getDiagnosticRecord()).isEqualTo(diagnosticRecord);
         assertThat(notification.getStatusDescription()).isEqualTo(statusDescription);

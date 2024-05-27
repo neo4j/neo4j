@@ -160,6 +160,19 @@ org.neo4j.graphdb.NotificationCategory::UNRECOGNIZED org.neo4j.graphdb.Notificat
 org.neo4j.graphdb.NotificationCategory::UNSUPPORTED org.neo4j.graphdb.NotificationCategory public static final
 org.neo4j.graphdb.NotificationCategory::valueOf(java.lang.String) org.neo4j.graphdb.NotificationCategory public static
 org.neo4j.graphdb.NotificationCategory::values() org.neo4j.graphdb.NotificationCategory[] public static
+org.neo4j.graphdb.NotificationClassification public final enum extends java.lang.Enum<org.neo4j.graphdb.NotificationClassification>
+org.neo4j.graphdb.NotificationClassification::DEPRECATION org.neo4j.graphdb.NotificationClassification public static final
+org.neo4j.graphdb.NotificationClassification::GENERIC org.neo4j.graphdb.NotificationClassification public static final
+org.neo4j.graphdb.NotificationClassification::HINT org.neo4j.graphdb.NotificationClassification public static final
+org.neo4j.graphdb.NotificationClassification::PERFORMANCE org.neo4j.graphdb.NotificationClassification public static final
+org.neo4j.graphdb.NotificationClassification::SCHEMA org.neo4j.graphdb.NotificationClassification public static final
+org.neo4j.graphdb.NotificationClassification::SECURITY org.neo4j.graphdb.NotificationClassification public static final
+org.neo4j.graphdb.NotificationClassification::TOPOLOGY org.neo4j.graphdb.NotificationClassification public static final
+org.neo4j.graphdb.NotificationClassification::UNKNOWN org.neo4j.graphdb.NotificationClassification public static final
+org.neo4j.graphdb.NotificationClassification::UNRECOGNIZED org.neo4j.graphdb.NotificationClassification public static final
+org.neo4j.graphdb.NotificationClassification::UNSUPPORTED org.neo4j.graphdb.NotificationClassification public static final
+org.neo4j.graphdb.NotificationClassification::valueOf(java.lang.String) org.neo4j.graphdb.NotificationClassification public static
+org.neo4j.graphdb.NotificationClassification::values() org.neo4j.graphdb.NotificationClassification[] public static
 org.neo4j.graphdb.Path public abstract interface implements java.lang.Iterable<org.neo4j.graphdb.Entity>
 org.neo4j.graphdb.Path::endNode() org.neo4j.graphdb.Node public abstract
 org.neo4j.graphdb.Path::iterator() java.util.Iterator<org.neo4j.graphdb.Entity> public abstract
