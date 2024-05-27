@@ -216,7 +216,7 @@ public class TokenScanValueIndexProgressorTest {
     void shouldSeekSeveralTimesDescending() {
         runSeekTest(IndexOrder.DESCENDING, (label, client, progressor, range) -> {
             List<Long> orderedSubset = LongStream.of(label.getNodeIds())
-                    .filter(ignored -> random.nextBoolean() && random.nextBoolean())
+                    .filter(ignored -> random.nextDouble() > 0.75)
                     .boxed()
                     .sorted(Collections.reverseOrder())
                     .toList();
@@ -233,7 +233,7 @@ public class TokenScanValueIndexProgressorTest {
     void shouldSeekSeveralTimesAscending() {
         runSeekTest(IndexOrder.ASCENDING, (label, client, progressor, range) -> {
             List<Long> orderedSubset = LongStream.of(label.getNodeIds())
-                    .filter(ignored -> random.nextBoolean() && random.nextBoolean())
+                    .filter(ignored -> random.nextDouble() > 0.75)
                     .boxed()
                     .toList();
 
