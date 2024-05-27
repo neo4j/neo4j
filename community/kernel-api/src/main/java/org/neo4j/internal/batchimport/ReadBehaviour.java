@@ -39,9 +39,25 @@ public interface ReadBehaviour {
         }
     };
 
-    boolean shouldIncludeNode(String[] labels);
+    boolean shouldIncludeNode(long nodeId, String[] labels);
 
-    boolean shouldIncludeRelationship(String relationshipType);
+    default long translateNodeId(long nodeId) {
+        return nodeId;
+    }
+
+    boolean shouldIncludeRelationship(long startNodeId, long endNodeId, long relationshipId, String relationshipType);
+
+    default long translateRelationshipId(long relationshipId) {
+        return relationshipId;
+    }
+
+    default long translateRelationshipStartNodeId(long relationshipId, long startNodeId, long endNodeId) {
+        return startNodeId;
+    }
+
+    default long translateRelationshipEndNodeId(long relationshipId, long startNodeId, long endNodeId) {
+        return endNodeId;
+    }
 
     String[] filterLabels(String[] labels);
 
@@ -63,12 +79,13 @@ public interface ReadBehaviour {
 
     class Adapter implements ReadBehaviour {
         @Override
-        public boolean shouldIncludeNode(String[] labels) {
+        public boolean shouldIncludeNode(long nodeId, String[] labels) {
             return true;
         }
 
         @Override
-        public boolean shouldIncludeRelationship(String relationshipType) {
+        public boolean shouldIncludeRelationship(
+                long startNodeId, long endNodeId, long relationshipId, String relationshipType) {
             return true;
         }
 

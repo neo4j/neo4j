@@ -68,7 +68,7 @@ class LenientNodeReader extends LenientStoreInputChunk {
             nodeStore.ensureHeavy(record, storeCursors);
             int[] labelIds = parseLabelsField(record).get(nodeStore, storeCursors);
             String[] labels = toNames(tokenHolders.labelTokens(), labelIds);
-            if (readBehaviour.shouldIncludeNode(labels)) {
+            if (readBehaviour.shouldIncludeNode(id, labels)) {
                 labels = readBehaviour.filterLabels(labels);
                 if (compactNodeStore) {
                     // this is the variant where the target store will generate new IDs

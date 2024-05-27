@@ -65,7 +65,8 @@ class LenientRelationshipReader extends LenientStoreInputChunk {
             String relationshipTypeName = LenientStoreInput.getTokenByIdSafe(
                             tokenHolders.relationshipTypeTokens(), relationshipType)
                     .name();
-            if (readBehaviour.shouldIncludeRelationship(relationshipTypeName)) {
+            if (readBehaviour.shouldIncludeRelationship(
+                    record.getFirstNode(), record.getSecondNode(), id, relationshipTypeName)) {
                 visitor.type(relationshipTypeName);
                 visitor.startId(record.getFirstNode(), group);
                 visitor.endId(record.getSecondNode(), group);
