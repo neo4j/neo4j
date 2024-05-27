@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.query.statistic;
 
+import org.neo4j.kernel.api.query.QueryTransactionStatisticsAggregator.CommitPhaseStatisticsListener;
+
 public interface StatisticProvider {
     long getPageCacheHits();
 
@@ -31,4 +33,6 @@ public interface StatisticProvider {
     default long getPageCacheMissesExcludingCommits() {
         return getPageCacheMisses();
     }
+
+    default void registerCommitPhaseStatisticsListener(CommitPhaseStatisticsListener listener) {}
 }

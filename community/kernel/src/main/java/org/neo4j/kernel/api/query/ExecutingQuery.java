@@ -274,8 +274,9 @@ public class ExecutingQuery implements QueryTransactionStatisticsAggregator {
     /**
      * A transaction executing part of this query is closing; record its page cache statistics (including commit).
      */
-    public void recordStatisticsOfClosedTransaction(long hits, long faults, long transactionSequenceNumber) {
-        aggregatedStatistics.recordStatisticsOfClosedTransaction(hits, faults, transactionSequenceNumber);
+    public void recordStatisticsOfClosedTransaction(
+            long hits, long faults, long transactionSequenceNumber, CommitPhaseStatisticsListener listener) {
+        aggregatedStatistics.recordStatisticsOfClosedTransaction(hits, faults, transactionSequenceNumber, listener);
     }
 
     public void onObfuscatorReady(QueryObfuscator queryObfuscator, int preparserOffset) {

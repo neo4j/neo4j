@@ -308,7 +308,7 @@ class QueryState(
     }
     if (profiler != null) {
       val newProfileInformation = new InterpretedProfileInformation
-      val newProfiler = profiler.createForInnerTransaction(newProfileInformation)
+      val newProfiler = profiler.withProfileInformation(newProfileInformation)
       if (linenumberDecorator != null) {
         (new LinenumberPipeDecorator(newProfiler), newProfileInformation)
       } else {

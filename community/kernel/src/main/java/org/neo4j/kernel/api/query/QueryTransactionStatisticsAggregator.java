@@ -28,7 +28,7 @@ import org.neo4j.util.VisibleForTesting;
 /**
  * Aggregated statistics of transactions that have executed a query but are already committed.
  */
-interface QueryTransactionStatisticsAggregator {
+public interface QueryTransactionStatisticsAggregator {
     /**
      * Record the page cache statistics of a transaction that is about to close.
      */
@@ -37,7 +37,8 @@ interface QueryTransactionStatisticsAggregator {
     /**
      * Record the page cache statistics of a transaction that has closed.
      */
-    void recordStatisticsOfClosedTransaction(long hits, long faults, long transactionSequenceNumber);
+    void recordStatisticsOfClosedTransaction(
+            long hits, long faults, long transactionSequenceNumber, CommitPhaseStatisticsListener listener);
 
     /**
      * Get the total page hits of closed transactions.
@@ -96,7 +97,8 @@ interface QueryTransactionStatisticsAggregator {
          * A transaction executing part of this query is closing; record its page cache statistics (including commit).
          */
         @Override
-        public void recordStatisticsOfClosedTransaction(long hits, long faults, long transactionSequenceNumber) {
+        public void recordStatisticsOfClosedTransaction(
+                long hits, long faults, long transactionSequenceNumber, CommitPhaseStatisticsListener listener) {
             // We only have one thread writing to these fields
             //noinspection NonAtomicOperationOnVolatileField
             pageHitsOfClosedTransactionsIncludingCommits += hits;
@@ -107,6 +109,10 @@ interface QueryTransactionStatisticsAggregator {
                     (pageHitsOfClosedTransactionsIncludingCommits - pageHitsOfClosedTransactionsExcludingCommits);
             pageFaultsOfClosedTransactionCommits =
                     (pageFaultsOfClosedTransactionsIncludingCommits - pageFaultsOfClosedTransactionsExcludingCommits);
+            listener.onRecordedStatisticsOfCommitPhase(
+                    pageHitsOfClosedTransactionCommits,
+                    pageFaultsOfClosedTransactionCommits,
+                    transactionSequenceNumber);
         }
 
         public long pageHitsOfClosedTransactions() {
@@ -148,7 +154,6 @@ interface QueryTransactionStatisticsAggregator {
     class ConcurrentImpl implements QueryTransactionStatisticsAggregator {
 
         private final Map<Long, Stats> pageStatsExcludingCommits = new ConcurrentHashMap<>();
-        // private Map<Long, Stats> pageStatsIncludingCommits = new ConcurrentHashMap<>();
 
         private final AtomicReference<Stats> statsOfClosedTransactionsExcludingCommits =
                 new AtomicReference<>(new Stats(0, 0, 0));
@@ -188,7 +193,8 @@ interface QueryTransactionStatisticsAggregator {
         }
 
         @Override
-        public void recordStatisticsOfClosedTransaction(long hits, long faults, long transactionSequenceNumber) {
+        public void recordStatisticsOfClosedTransaction(
+                long hits, long faults, long transactionSequenceNumber, CommitPhaseStatisticsListener listener) {
             // NOTE: We assume that only one thread is recording statistics for a given transaction sequence number.
             var excludingCommitsStats = pageStatsExcludingCommits.remove(transactionSequenceNumber);
             if (excludingCommitsStats == null) {
@@ -199,6 +205,9 @@ interface QueryTransactionStatisticsAggregator {
             }
             var hitsDuringCommit = hits - excludingCommitsStats.hits;
             var faultsDuringCommit = faults - excludingCommitsStats.faults;
+
+            listener.onRecordedStatisticsOfCommitPhase(hitsDuringCommit, faultsDuringCommit, transactionSequenceNumber);
+
             updateStats(
                     statsOfClosedTransactionCommits, hitsDuringCommit, faultsDuringCommit, transactionSequenceNumber);
         }
@@ -276,5 +285,10 @@ interface QueryTransactionStatisticsAggregator {
         public long getTransactionSequenceNumber() {
             return transactionSequenceNumber;
         }
+    }
+
+    @FunctionalInterface
+    interface CommitPhaseStatisticsListener {
+        void onRecordedStatisticsOfCommitPhase(long pageHits, long pageFaults, long transactionSequenceNumber);
     }
 }

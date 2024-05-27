@@ -35,6 +35,7 @@ import org.neo4j.kernel.api.QueryRegistry;
 import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.query.ExecutingQuery;
+import org.neo4j.kernel.api.query.QueryTransactionStatisticsAggregator.CommitPhaseStatisticsListener;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
@@ -69,7 +70,7 @@ public class Neo4jTransactionalContext implements TransactionalContext {
     // For normal queries we only include page hits/misses of the current transaction.
     // For PERIODIC COMMIT we also need to include page hits/misses of any committed transactions, because a transaction
     // can be committed/restarted at any point, even during a "profiling event".
-    private StatisticProvider statisticProvider;
+    private RecordingStatisticsProvider statisticProvider;
 
     private final QueryExecutionConfiguration queryExecutionConfiguration;
 
@@ -202,7 +203,10 @@ public class Neo4jTransactionalContext implements TransactionalContext {
     private KernelTransaction.KernelTransactionMonitor statisticsMonitor() {
         return KernelTransaction.KernelTransactionMonitor.withAfterCommit(
                 statistics -> executingQuery.recordStatisticsOfClosedTransaction(
-                        statistics.pageHits(), statistics.pageFaults(), statistics.getTransactionSequenceNumber()));
+                        statistics.pageHits(),
+                        statistics.pageFaults(),
+                        statistics.getTransactionSequenceNumber(),
+                        statisticProvider));
     }
 
     @Override
@@ -437,7 +441,7 @@ public class Neo4jTransactionalContext implements TransactionalContext {
      * Provide statistics using the page hits/misses of the current transaction plus the hits/misses caused by
      * the commits of already closed transactions.
      */
-    private class TransactionalContextStatisticProvider implements StatisticProvider {
+    private class TransactionalContextStatisticProvider extends RecordingStatisticsProvider {
         private final ExecutionStatistics executionStatistics;
 
         private TransactionalContextStatisticProvider(ExecutionStatistics executionStatistics) {
@@ -453,12 +457,22 @@ public class Neo4jTransactionalContext implements TransactionalContext {
         public long getPageCacheMisses() {
             return executionStatistics.pageFaults() + executingQuery.pageFaultsOfClosedTransactionCommits();
         }
+
+        @Override
+        public long getPageCacheHitsExcludingCommits() {
+            return executionStatistics.pageHits();
+        }
+
+        @Override
+        public long getPageCacheMissesExcludingCommits() {
+            return executionStatistics.pageFaults();
+        }
     }
 
     /**
      * Provide statistics using the page hits/misses of the current transaction and any already committed transactions.
      */
-    private class PeriodicCommitTransactionalContextStatisticProvider implements StatisticProvider {
+    private class PeriodicCommitTransactionalContextStatisticProvider extends RecordingStatisticsProvider {
         private final ExecutionStatistics executionStatistics;
 
         private PeriodicCommitTransactionalContextStatisticProvider(ExecutionStatistics executionStatistics) {
@@ -483,6 +497,23 @@ public class Neo4jTransactionalContext implements TransactionalContext {
         @Override
         public long getPageCacheMissesExcludingCommits() {
             return executionStatistics.pageFaults();
+        }
+    }
+
+    private abstract static class RecordingStatisticsProvider
+            implements StatisticProvider, CommitPhaseStatisticsListener {
+        private CommitPhaseStatisticsListener listener = null;
+
+        @Override
+        public void registerCommitPhaseStatisticsListener(CommitPhaseStatisticsListener listener) {
+            this.listener = listener;
+        }
+
+        @Override
+        public void onRecordedStatisticsOfCommitPhase(long pageHits, long pageFaults, long transactionSequenceNumber) {
+            if (listener != null) {
+                listener.onRecordedStatisticsOfCommitPhase(pageHits, pageFaults, transactionSequenceNumber);
+            }
         }
     }
 }

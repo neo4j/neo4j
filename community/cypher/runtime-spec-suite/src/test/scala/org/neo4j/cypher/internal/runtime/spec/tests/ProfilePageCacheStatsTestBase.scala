@@ -386,8 +386,47 @@ trait TransactionForeachPageCacheStatsTestBase[CONTEXT <: RuntimeContext] extend
       checkProfilerStatsMakeSense(runtimeResult, 6, expectedOperatorPageCacheStats, isOnlyOneTransaction = false)
     }
 
+    test(s"should profile page cache stats of plan with transactionApply concurrency=$concurrency") {
+      givenWithTransactionType(
+        {
+          nodePropertyGraph(
+            SIZE,
+            {
+              case i => Map("prop" -> i)
+            }
+          )
+          () // This makes sure we don't reattach the nodes to the new transaction, since that would create additional page cache hits/misses
+        },
+        KernelTransaction.Type.IMPLICIT
+      )
+
+      // when
+      val logicalQuery: LogicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("i")
+        .transactionApply(concurrency = concurrency, batchSize = 1)
+        .|.allNodeScan("x")
+        .unwind("range(1,20) AS i")
+        .argument()
+        .build()
+
+      val runtimeResult = profile(logicalQuery, runtime)
+      consume(runtimeResult)
+
+      // then
+      val expectedOperatorPageCacheStats: Map[Int, PageCacheStatsAssertion] =
+        Map(
+          0 -> PageCacheIsNotUsed, // produceResult
+          1 -> PageCacheIsNotUsed, // transactionApply
+          2 -> PageCacheStatsAssertion(PageCacheStatsAssertion.GreaterThanOrEqual, PageCacheStats(1, 0)), // allNodeScan
+          3 -> PageCacheIsNotUsed, // unwind
+          4 -> PageCacheIsNotUsed // argument
+        )
+
+      checkProfilerStatsMakeSense(runtimeResult, 5, expectedOperatorPageCacheStats, isOnlyOneTransaction = false)
+    }
+
     test(
-      s"should profile page cache stats of plan with transactionForeach concurrency and commit-phase hits/misses concurrency=$concurrency"
+      s"should profile page cache stats of plan with transactionForeach and commit-phase hits/misses concurrency=$concurrency"
     ) {
       givenWithTransactionType(
         {
@@ -435,7 +474,73 @@ trait TransactionForeachPageCacheStatsTestBase[CONTEXT <: RuntimeContext] extend
           6 -> PageCacheIsNotUsed // argument
         )
 
-      checkProfilerStatsMakeSense(runtimeResult, 6, expectedOperatorPageCacheStats, isOnlyOneTransaction = false)
+      checkProfilerStatsMakeSense(runtimeResult, 7, expectedOperatorPageCacheStats, isOnlyOneTransaction = false)
+    }
+
+    test(
+      s"should profile page cache stats of plan with two consecutive transactionForeach and commit-phase hits/misses concurrency=$concurrency"
+    ) {
+      givenWithTransactionType(
+        {
+          nodePropertyGraph(
+            1000,
+            {
+              case i => Map("prop" -> i)
+            },
+            "A"
+          )
+          () // This makes sure we don't reattach the nodes to the new transaction, since that would create additional page cache hits/misses
+        },
+        KernelTransaction.Type.IMPLICIT
+      )
+
+      // when
+      val logicalQuery: LogicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("i")
+        .transactionForeach(concurrency = concurrency, batchSize = 1)
+        .|.emptyResult()
+        .|.create(createNode("c", "C"))
+        .|.nodeByLabelScan("a", "A")
+        .transactionForeach(concurrency = concurrency, batchSize = 1)
+        .|.emptyResult()
+        .|.create(createNode("b", "B"))
+        .|.nodeByLabelScan("a", "A")
+        .unwind("range(1,100) AS i")
+        .argument()
+        .build()
+
+      val runtimeResult = profile(logicalQuery, runtime)
+      consume(runtimeResult)
+
+      // then
+      val expectedOperatorPageCacheStats: Map[Int, PageCacheStatsAssertion] =
+        Map(
+          0 -> PageCacheIsNotUsed, // produceResult
+          1 -> PageCacheStatsAssertion(
+            PageCacheStatsAssertion.GreaterThanOrEqual,
+            PageCacheStats(1, 1)
+          ), // transactionForeach
+          2 -> PageCacheIsNotUsed, // emptyResult
+          3 -> PageCacheIsNotUsed, // create
+          4 -> PageCacheStatsAssertion(
+            PageCacheStatsAssertion.GreaterThanOrEqual,
+            PageCacheStats(1, 0)
+          ), // nodeByLabelScan
+          5 -> PageCacheStatsAssertion(
+            PageCacheStatsAssertion.GreaterThanOrEqual,
+            PageCacheStats(1, 1)
+          ), // transactionForeach
+          6 -> PageCacheIsNotUsed, // emptyResult
+          7 -> PageCacheIsNotUsed, // create
+          8 -> PageCacheStatsAssertion(
+            PageCacheStatsAssertion.GreaterThanOrEqual,
+            PageCacheStats(1, 0)
+          ), // nodeByLabelScan
+          9 -> PageCacheIsNotUsed, // unwind
+          10 -> PageCacheIsNotUsed // argument
+        )
+
+      checkProfilerStatsMakeSense(runtimeResult, 11, expectedOperatorPageCacheStats, isOnlyOneTransaction = false)
     }
   }
 }

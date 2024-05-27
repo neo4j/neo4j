@@ -67,7 +67,7 @@ abstract class AbstractConcurrentTransactionsPipe(
     // in ExecutingQuery becomes thread-safe
     state.query.transactionalContext.kernelExecutingQuery.upgradeToConcurrentAccess()
 
-    val innerPipeInTx = TransactionPipeWrapper(onErrorBehaviour, inner, concurrentAccess = true)
+    val innerPipeInTx = TransactionPipeWrapper(onErrorBehaviour, id, inner, concurrentAccess = true)
     val batchSizeLong = evaluateBatchSize(batchSize, state)
     val concurrencyLong = evaluateConcurrency(concurrency, state)
 

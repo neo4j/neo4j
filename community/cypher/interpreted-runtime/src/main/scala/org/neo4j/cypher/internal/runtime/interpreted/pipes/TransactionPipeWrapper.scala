@@ -28,12 +28,12 @@ import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.EntityTransformer
 import org.neo4j.cypher.internal.runtime.QueryStatistics
-import org.neo4j.cypher.internal.runtime.QueryTransactionalContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.TransactionPipeWrapper.CypherRowEntityTransformer
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.TransactionPipeWrapper.assertTransactionStateIsEmpty
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.TransactionPipeWrapper.logError
 import org.neo4j.cypher.internal.runtime.interpreted.profiler.InterpretedProfileInformation
+import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.exceptions.CypherExecutionInterruptedException
 import org.neo4j.exceptions.InternalException
 import org.neo4j.internal.helpers.MathUtil
@@ -50,6 +50,8 @@ import scala.util.control.NonFatal
  * NOTE! Implementations might keep state that is not safe to re-use between queries. Create a new instance for each query.
  */
 trait TransactionPipeWrapper {
+  def outerId: Id
+
   def inner: Pipe
 
   def concurrentAccess: Boolean
@@ -144,6 +146,11 @@ trait TransactionPipeWrapper {
       val statistics =
         stateWithNewTransaction.getStatistics + QueryStatistics(transactionsStarted = 1, transactionsCommitted = 1)
       val profileInformation = stateWithNewTransaction.profileInformation
+      if (profileInformation != null) {
+        innerTxContext.kernelStatisticProvider.registerCommitPhaseStatisticsListener(
+          profileInformation.commitPhaseStatisticsListenerFor(outerId)
+        )
+      }
       innerTxContext.commitTransaction()
       Commit(transactionId, statistics, profileInformation)
     } catch {
@@ -171,7 +178,8 @@ trait TransactionPipeWrapper {
   }
 }
 
-class OnErrorContinueTxPipe(val inner: Pipe, val concurrentAccess: Boolean) extends TransactionPipeWrapper {
+class OnErrorContinueTxPipe(val outerId: Id, val inner: Pipe, val concurrentAccess: Boolean)
+    extends TransactionPipeWrapper {
 
   override def processBatch(
     state: QueryState,
@@ -184,7 +192,8 @@ class OnErrorContinueTxPipe(val inner: Pipe, val concurrentAccess: Boolean) exte
 }
 
 // NOTE! Keeps state that is not safe to re-use between queries. Create a new instance for each query.
-class OnErrorBreakTxPipe(val inner: Pipe, val concurrentAccess: Boolean) extends TransactionPipeWrapper {
+class OnErrorBreakTxPipe(val outerId: Id, val inner: Pipe, val concurrentAccess: Boolean)
+    extends TransactionPipeWrapper {
   @volatile private[this] var break: Boolean = false
 
   override def shouldBreak: Boolean = { break }
@@ -207,7 +216,8 @@ class OnErrorBreakTxPipe(val inner: Pipe, val concurrentAccess: Boolean) extends
   }
 }
 
-class OnErrorFailTxPipe(val inner: Pipe, val concurrentAccess: Boolean) extends TransactionPipeWrapper {
+class OnErrorFailTxPipe(val outerId: Id, val inner: Pipe, val concurrentAccess: Boolean)
+    extends TransactionPipeWrapper {
   require(!concurrentAccess) // NOTE: We instead use OnErrorBreakTxPipe in concurrent execution
 
   override def shouldBreak: Boolean = false
@@ -261,15 +271,20 @@ object TransactionPipeWrapper {
    * 
    * NOTE! Implementations might keep state that is not safe to re-use between queries. Create a new instance for each query.
    */
-  def apply(error: InTransactionsOnErrorBehaviour, inner: Pipe, concurrentAccess: Boolean): TransactionPipeWrapper = {
+  def apply(
+    error: InTransactionsOnErrorBehaviour,
+    outerId: Id,
+    inner: Pipe,
+    concurrentAccess: Boolean
+  ): TransactionPipeWrapper = {
     error match {
-      case OnErrorContinue                 => new OnErrorContinueTxPipe(inner, concurrentAccess)
-      case OnErrorBreak                    => new OnErrorBreakTxPipe(inner, concurrentAccess)
+      case OnErrorContinue                 => new OnErrorContinueTxPipe(outerId, inner, concurrentAccess)
+      case OnErrorBreak                    => new OnErrorBreakTxPipe(outerId, inner, concurrentAccess)
       case OnErrorFail if concurrentAccess =>
         // NOTE: We intentionally use OnErrorBreakTxPipe for OnErrorFail in concurrent execution,
         //       since we need to send the error back to the main thread anyway.
-        new OnErrorBreakTxPipe(inner, concurrentAccess)
-      case OnErrorFail => new OnErrorFailTxPipe(inner, concurrentAccess)
+        new OnErrorBreakTxPipe(outerId, inner, concurrentAccess)
+      case OnErrorFail => new OnErrorFailTxPipe(outerId, inner, concurrentAccess)
       case other       => throw new UnsupportedOperationException(s"Unsupported error behaviour $other")
     }
   }

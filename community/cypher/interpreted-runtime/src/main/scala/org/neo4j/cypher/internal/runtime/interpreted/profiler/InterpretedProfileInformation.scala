@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.runtime.memory.QueryMemoryTracker
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.result.OperatorProfile
 import org.neo4j.cypher.result.QueryProfile
+import org.neo4j.kernel.api.query.QueryTransactionStatisticsAggregator.CommitPhaseStatisticsListener
 
 import java.util
 
@@ -105,6 +106,13 @@ class InterpretedProfileInformation extends QueryProfile {
     other.pageCacheMap.foreach { case (id, otherPageCacheStats) =>
       pageCacheMap(id) += otherPageCacheStats
     }
+  }
+
+  def commitPhaseStatisticsListenerFor(id: Id): CommitPhaseStatisticsListener = {
+    (pageHits: Long, pageFaults: Long, _: Long) =>
+      {
+        pageCacheMap(id) += PageCacheStats(pageHits, pageFaults)
+      }
   }
 }
 
