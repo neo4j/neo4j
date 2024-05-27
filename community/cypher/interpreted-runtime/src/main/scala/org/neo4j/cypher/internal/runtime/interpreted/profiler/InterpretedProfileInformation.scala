@@ -103,7 +103,7 @@ class InterpretedProfileInformation extends QueryProfile {
       dbHitsMap.getOrElseUpdate(id, Counter()).increment(otherCounter.count)
     }
     other.pageCacheMap.foreach { case (id, otherPageCacheStats) =>
-      pageCacheMap.getOrElseUpdate(id, PageCacheStats(0, 0)) + otherPageCacheStats
+      pageCacheMap(id) += otherPageCacheStats
     }
   }
 }

@@ -34,4 +34,11 @@ public interface ExecutionStatistics {
      * @return the number of page faults in the current counters
      */
     long pageFaults();
+
+    /**
+     * Return the sequential transaction number of the current transaction
+     */
+    default long getTransactionSequenceNumber() {
+        return 0;
+    }
 }

@@ -201,7 +201,8 @@ public class Neo4jTransactionalContext implements TransactionalContext {
 
     private KernelTransaction.KernelTransactionMonitor statisticsMonitor() {
         return KernelTransaction.KernelTransactionMonitor.withAfterCommit(
-                statistics -> executingQuery.recordStatisticsOfClosedTransaction(statistics));
+                statistics -> executingQuery.recordStatisticsOfClosedTransaction(
+                        statistics.pageHits(), statistics.pageFaults(), statistics.getTransactionSequenceNumber()));
     }
 
     @Override
@@ -472,6 +473,16 @@ public class Neo4jTransactionalContext implements TransactionalContext {
         @Override
         public long getPageCacheMisses() {
             return executionStatistics.pageFaults() + executingQuery.pageFaultsOfClosedTransactions();
+        }
+
+        @Override
+        public long getPageCacheHitsExcludingCommits() {
+            return executionStatistics.pageHits();
+        }
+
+        @Override
+        public long getPageCacheMissesExcludingCommits() {
+            return executionStatistics.pageFaults();
         }
     }
 }

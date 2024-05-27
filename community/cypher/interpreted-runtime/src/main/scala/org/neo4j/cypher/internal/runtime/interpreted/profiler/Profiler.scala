@@ -64,8 +64,8 @@ import scala.collection.mutable
 class Profiler(val dbmsInfo: DbmsInfo, stats: InterpretedProfileInformation) extends PipeDecorator {
   outerProfiler =>
 
-  def withProfileInformation(profileInformation: InterpretedProfileInformation): Profiler =
-    new Profiler(dbmsInfo, profileInformation)
+  def createForInnerTransaction(profileInformation: InterpretedProfileInformation): Profiler =
+    new InnerTransactionProfiler(dbmsInfo, profileInformation)
 
   private case class StackEntry(planId: Id, transactionBoundStatisticProvider: StatisticProvider)
 
@@ -74,17 +74,22 @@ class Profiler(val dbmsInfo: DbmsInfo, stats: InterpretedProfileInformation) ext
   private val lastObservedStats =
     mutable.Map[StatisticProvider, PageCacheStats]().withDefaultValue(PageCacheStats(0, 0))
 
+  // TODO: Actually only TransactionApply or TransactionForeach plans should see the stats of closed transaction commits
+  //       And what if you have two or more CALL IN TRANSACTONS?. Do we need a transactional scope like in pipelined?
+  protected def getPageCacheStatsFor(statisticProvider: StatisticProvider): PageCacheStats = {
+    PageCacheStats(statisticProvider.getPageCacheHits, statisticProvider.getPageCacheMisses)
+  }
+
   private def startAccountingPageCacheStatsFor(statisticProvider: StatisticProvider, planId: Id): Unit = {
     // The current top of the stack hands over control to the plan with the provided planId.
     // Account any statistic updates that happened until now towards the previousId.
     planIdStack.headOption.foreach {
       case StackEntry(previousId, previousStatisticProvider) =>
-        val currentStatsOfPreviousPlan =
-          PageCacheStats(previousStatisticProvider.getPageCacheHits, previousStatisticProvider.getPageCacheMisses)
+        val currentStatsOfPreviousPlan = getPageCacheStatsFor(previousStatisticProvider)
         stats.pageCacheMap(previousId) += (currentStatsOfPreviousPlan - lastObservedStats(previousStatisticProvider))
     }
 
-    val currentStats = PageCacheStats(statisticProvider.getPageCacheHits, statisticProvider.getPageCacheMisses)
+    val currentStats = getPageCacheStatsFor(statisticProvider)
 
     planIdStack ::= StackEntry(planId, statisticProvider)
     lastObservedStats.update(statisticProvider, currentStats)
@@ -97,7 +102,7 @@ class Profiler(val dbmsInfo: DbmsInfo, stats: InterpretedProfileInformation) ext
       s"We messed up accounting the page cache statistics. Expected to pop $planId but popped ${head.planId}. Remaining stack: $planIdStack"
     )
 
-    val currentStats = PageCacheStats(statisticProvider.getPageCacheHits, statisticProvider.getPageCacheMisses)
+    val currentStats = getPageCacheStatsFor(statisticProvider)
     stats.pageCacheMap(planId) += (currentStats - lastObservedStats(statisticProvider))
 
     planIdStack = rest
@@ -166,6 +171,17 @@ class Profiler(val dbmsInfo: DbmsInfo, stats: InterpretedProfileInformation) ext
 
     override def afterCreateResults(planId: Id, state: QueryState): Unit =
       outerProfiler.afterCreateResults(outerPlanId, state)
+  }
+}
+
+class InnerTransactionProfiler(dbmsInfo: DbmsInfo, profileInformation: InterpretedProfileInformation)
+    extends Profiler(dbmsInfo, profileInformation) {
+
+  override def getPageCacheStatsFor(statisticProvider: StatisticProvider): PageCacheStats = {
+    PageCacheStats(
+      statisticProvider.getPageCacheHitsExcludingCommits,
+      statisticProvider.getPageCacheMissesExcludingCommits
+    )
   }
 }
 

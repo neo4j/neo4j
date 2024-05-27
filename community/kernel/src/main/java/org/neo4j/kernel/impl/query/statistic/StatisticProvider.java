@@ -23,4 +23,12 @@ public interface StatisticProvider {
     long getPageCacheHits();
 
     long getPageCacheMisses();
+
+    default long getPageCacheHitsExcludingCommits() {
+        return getPageCacheHits();
+    }
+
+    default long getPageCacheMissesExcludingCommits() {
+        return getPageCacheMisses();
+    }
 }

@@ -50,7 +50,7 @@ import org.neo4j.values.virtual.MapValue;
 /**
  * Represents a currently running query.
  */
-public class ExecutingQuery {
+public class ExecutingQuery implements QueryTransactionStatisticsAggregator {
     private static final AtomicLongFieldUpdater<ExecutingQuery> WAIT_TIME =
             newUpdater(ExecutingQuery.class, "waitTimeNanos");
     private final long queryId;
@@ -89,14 +89,8 @@ public class ExecutingQuery {
     private HeapHighWaterMarkTracker memoryTracker;
 
     // Accumulated statistics of transactions that have executed this query but are already committed
-    private volatile long pageHitsOfClosedTransactionsExcludingCommits;
-    private volatile long pageFaultsOfClosedTransactionsExcludingCommits;
-
-    private volatile long pageHitsOfClosedTransactionsIncludingCommits;
-    private volatile long pageFaultsOfClosedTransactionsIncludingCommits;
-
-    private volatile long pageHitsOfClosedTransactionCommits;
-    private volatile long pageFaultsOfClosedTransactionCommits;
+    private volatile QueryTransactionStatisticsAggregator aggregatedStatistics =
+            new QueryTransactionStatisticsAggregator.DefaultImpl();
 
     /**
      * Map of all transactions that are active executing this query.
@@ -268,32 +262,20 @@ public class ExecutingQuery {
         if (binding == null) {
             throw new IllegalStateException("Unbound a transaction that was never bound. ID: " + userTransactionId);
         }
-        recordStatisticsOfTransactionAboutToClose(binding.hitsSupplier.getAsLong(), binding.faultsSupplier.getAsLong());
+        recordStatisticsOfTransactionAboutToClose(
+                binding.hitsSupplier.getAsLong(), binding.faultsSupplier.getAsLong(), binding.transactionId);
     }
 
     @VisibleForTesting
-    void recordStatisticsOfTransactionAboutToClose(long hits, long faults) {
-        // We only have one thread writing to these fields
-        //noinspection NonAtomicOperationOnVolatileField
-        pageHitsOfClosedTransactionsExcludingCommits += hits;
-        //noinspection NonAtomicOperationOnVolatileField
-        pageFaultsOfClosedTransactionsExcludingCommits += faults;
+    public void recordStatisticsOfTransactionAboutToClose(long hits, long faults, long transactionSequenceNumber) {
+        aggregatedStatistics.recordStatisticsOfTransactionAboutToClose(hits, faults, transactionSequenceNumber);
     }
 
     /**
      * A transaction executing part of this query is closing; record its page cache statistics (including commit).
      */
-    public void recordStatisticsOfClosedTransaction(ExecutionStatistics statistics) {
-        // We only have one thread writing to these fields
-        //noinspection NonAtomicOperationOnVolatileField
-        pageHitsOfClosedTransactionsIncludingCommits += statistics.pageHits();
-        //noinspection NonAtomicOperationOnVolatileField
-        pageFaultsOfClosedTransactionsIncludingCommits += statistics.pageFaults();
-
-        pageHitsOfClosedTransactionCommits =
-                (pageHitsOfClosedTransactionsIncludingCommits - pageHitsOfClosedTransactionsExcludingCommits);
-        pageFaultsOfClosedTransactionCommits =
-                (pageFaultsOfClosedTransactionsIncludingCommits - pageFaultsOfClosedTransactionsExcludingCommits);
+    public void recordStatisticsOfClosedTransaction(long hits, long faults, long transactionSequenceNumber) {
+        aggregatedStatistics.recordStatisticsOfClosedTransaction(hits, faults, transactionSequenceNumber);
     }
 
     public void onObfuscatorReady(QueryObfuscator queryObfuscator, int preparserOffset) {
@@ -548,19 +530,29 @@ public class ExecutingQuery {
     }
 
     public long pageHitsOfClosedTransactions() {
-        return pageHitsOfClosedTransactionsExcludingCommits + pageHitsOfClosedTransactionCommits;
+        return aggregatedStatistics.pageHitsOfClosedTransactions();
     }
 
     public long pageFaultsOfClosedTransactions() {
-        return pageFaultsOfClosedTransactionsExcludingCommits + pageFaultsOfClosedTransactionCommits;
+        return aggregatedStatistics.pageFaultsOfClosedTransactions();
     }
 
     public long pageHitsOfClosedTransactionCommits() {
-        return pageHitsOfClosedTransactionCommits;
+        return aggregatedStatistics.pageHitsOfClosedTransactionCommits();
     }
 
     public long pageFaultsOfClosedTransactionCommits() {
-        return pageFaultsOfClosedTransactionCommits;
+        return aggregatedStatistics.pageFaultsOfClosedTransactionCommits();
+    }
+
+    @Override
+    public ExecutionStatistics statisticsOfClosedTransactionsExcludingCommits() {
+        return aggregatedStatistics.statisticsOfClosedTransactionsExcludingCommits();
+    }
+
+    @Override
+    public ExecutionStatistics statisticsOfClosedTransactionCommits() {
+        return aggregatedStatistics.statisticsOfClosedTransactionCommits();
     }
 
     public void executableQueryCacheHit() {
@@ -577,5 +569,18 @@ public class ExecutingQuery {
 
     public void logicalPlanCacheMiss() {
         this.logicalPlanCacheUsage = QueryCacheUsage.MISS;
+    }
+
+    /**
+     * Replaces the transaction statistics accumulator with a synchronized version the first time it is called.
+     * Should only be called from a single thread.
+     */
+    public void upgradeToConcurrentAccess() {
+        // We only have one thread writing to this field
+        //noinspection NonAtomicOperationOnVolatileField
+        var current = aggregatedStatistics;
+        if (!(current instanceof QueryTransactionStatisticsAggregator.ConcurrentImpl)) {
+            aggregatedStatistics = new QueryTransactionStatisticsAggregator.ConcurrentImpl(current);
+        }
     }
 }

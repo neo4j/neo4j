@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.LogicalQuery
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
+import org.neo4j.cypher.internal.logical.plans.TransactionConcurrency
 import org.neo4j.cypher.internal.runtime.interpreted.profiler.PageCacheStats
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
@@ -44,9 +45,11 @@ abstract class ProfilePageCacheStatsTestBase[CONTEXT <: RuntimeContext](
   // This needs to be big enough to trigger some page cache hits & misses
   protected val SIZE = 5000
 
-  val PageCacheIsNotUsed: PageCacheStats = PageCacheStats(0, 0)
+  val PageCacheIsNotUsed: PageCacheStatsAssertion =
+    PageCacheStatsAssertion(PageCacheStatsAssertion.Equal, PageCacheStats(0, 0))
 
-  val NoEntryInPageCacheStat: PageCacheStats = PageCacheStats(-1, -1)
+  val NoEntryInPageCacheStat: PageCacheStatsAssertion =
+    PageCacheStatsAssertion(PageCacheStatsAssertion.Equal, PageCacheStats(-1, -1))
 
   test("should profile page cache stats of linear plan") {
     givenGraph {
@@ -71,7 +74,7 @@ abstract class ProfilePageCacheStatsTestBase[CONTEXT <: RuntimeContext](
     consume(runtimeResult)
 
     // then
-    val expectedOperatorPageCacheStats: Map[Int, PageCacheStats] =
+    val expectedOperatorPageCacheStats: Map[Int, PageCacheStatsAssertion] =
       if (canFuse && !isParallel) {
         Map(
           0 -> NoEntryInPageCacheStat, // ProduceResults is part of a fused pipeline
@@ -114,7 +117,7 @@ abstract class ProfilePageCacheStatsTestBase[CONTEXT <: RuntimeContext](
     consume(runtimeResult)
 
     // then
-    val expectedOperatorPageCacheStats: Map[Int, PageCacheStats] =
+    val expectedOperatorPageCacheStats: Map[Int, PageCacheStatsAssertion] =
       if (canFuse) {
         Map(
           1 -> NoEntryInPageCacheStat, // Aggregation is part of a fused pipeline
@@ -156,7 +159,7 @@ abstract class ProfilePageCacheStatsTestBase[CONTEXT <: RuntimeContext](
     consume(runtimeResult)
 
     // then
-    val expectedOperatorPageCacheStats: Map[Int, PageCacheStats] =
+    val expectedOperatorPageCacheStats: Map[Int, PageCacheStatsAssertion] =
       if (canFuse) {
         Map(
           2 -> PageCacheIsNotUsed, // A join should not access store
@@ -202,7 +205,7 @@ abstract class ProfilePageCacheStatsTestBase[CONTEXT <: RuntimeContext](
     consume(runtimeResult)
 
     // then
-    val expectedOperatorPageCacheStats: Map[Int, PageCacheStats] =
+    val expectedOperatorPageCacheStats: Map[Int, PageCacheStatsAssertion] =
       if (canFuse) {
         Map(
           0 -> PageCacheIsNotUsed, // Produce result should not access store
@@ -218,10 +221,19 @@ abstract class ProfilePageCacheStatsTestBase[CONTEXT <: RuntimeContext](
     checkProfilerStatsMakeSense(runtimeResult, 8, expectedOperatorPageCacheStats)
   }
 
+  case class PageCacheStatsAssertion(op: PageCacheStatsAssertion.AssertionOp, stats: PageCacheStats)
+
+  object PageCacheStatsAssertion {
+    sealed trait AssertionOp
+    case object Equal extends AssertionOp
+    case object GreaterThanOrEqual extends AssertionOp
+    case object LessThanOrEqual extends AssertionOp
+  }
+
   protected def checkProfilerStatsMakeSense(
     runtimeResult: RecordingRuntimeResult,
     numberOfOperators: Int,
-    expectedOperatorPageCacheStats: Map[Int, PageCacheStats] = Map.empty,
+    expectedOperatorPageCacheStats: Map[Int, PageCacheStatsAssertion] = Map.empty,
     isOnlyOneTransaction: Boolean = true
   ): Unit = {
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
@@ -236,10 +248,24 @@ abstract class ProfilePageCacheStatsTestBase[CONTEXT <: RuntimeContext](
         if (expectedOperatorPageCacheStats.contains(i)) {
           val expectedBehaviour = expectedOperatorPageCacheStats(i)
           withClue("hits: ") {
-            hits should be(expectedBehaviour.hits)
+            expectedBehaviour.op match {
+              case PageCacheStatsAssertion.Equal =>
+                hits should be(expectedBehaviour.stats.hits)
+              case PageCacheStatsAssertion.GreaterThanOrEqual =>
+                hits should be >= expectedBehaviour.stats.hits
+              case PageCacheStatsAssertion.LessThanOrEqual =>
+                hits should be <= expectedBehaviour.stats.hits
+            }
           }
           withClue("misses: ") {
-            misses should be(expectedBehaviour.misses)
+            expectedBehaviour.op match {
+              case PageCacheStatsAssertion.Equal =>
+                misses should be(expectedBehaviour.stats.misses)
+              case PageCacheStatsAssertion.GreaterThanOrEqual =>
+                misses should be >= expectedBehaviour.stats.misses
+              case PageCacheStatsAssertion.LessThanOrEqual =>
+                misses should be(expectedBehaviour.stats.misses)
+            }
           }
         } else {
           withClue("hits: ") {
@@ -314,44 +340,102 @@ trait UpdatingProfilePageCacheStatsTestBase[CONTEXT <: RuntimeContext] {
 trait TransactionForeachPageCacheStatsTestBase[CONTEXT <: RuntimeContext] extends AnyFunSuiteLike {
   self: ProfilePageCacheStatsTestBase[CONTEXT] =>
 
-  test("should profile page cache stats of plan with transactionForeach") {
-    givenWithTransactionType(
-      {
-        nodePropertyGraph(
-          SIZE,
-          {
-            case i => Map("prop" -> i)
-          }
-        )
-        () // This makes sure we don't reattach the nodes to the new transaction, since that would create additional page cache hits/misses
-      },
-      KernelTransaction.Type.IMPLICIT
-    )
-
-    // when
-    val logicalQuery: LogicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("i")
-      .transactionForeach()
-      .|.emptyResult()
-      .|.allNodeScan("x")
-      .unwind("[1, 2] AS i")
-      .argument()
-      .build()
-
-    val runtimeResult = profile(logicalQuery, runtime)
-    consume(runtimeResult)
-
-    // then
-    val expectedOperatorPageCacheStats: Map[Int, PageCacheStats] =
-      Map(
-        0 -> PageCacheIsNotUsed, // produceResult
-        1 -> PageCacheIsNotUsed, // transactionForeach
-        2 -> PageCacheIsNotUsed, // emptyResult
-        // 3 is allNodeScan which may incur page cache hits/misses
-        4 -> PageCacheIsNotUsed, // unwind
-        5 -> PageCacheIsNotUsed // argument
+  Seq(
+    TransactionConcurrency.Serial,
+    TransactionConcurrency.Concurrent(2),
+    TransactionConcurrency.Concurrent(None)
+  ).foreach { concurrency =>
+    test(s"should profile page cache stats of plan with transactionForeach concurrency=$concurrency") {
+      givenWithTransactionType(
+        {
+          nodePropertyGraph(
+            SIZE,
+            {
+              case i => Map("prop" -> i)
+            }
+          )
+          () // This makes sure we don't reattach the nodes to the new transaction, since that would create additional page cache hits/misses
+        },
+        KernelTransaction.Type.IMPLICIT
       )
 
-    checkProfilerStatsMakeSense(runtimeResult, 6, expectedOperatorPageCacheStats, isOnlyOneTransaction = false)
+      // when
+      val logicalQuery: LogicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("i")
+        .transactionForeach(concurrency = concurrency, batchSize = 1)
+        .|.emptyResult()
+        .|.allNodeScan("x")
+        .unwind("range(1,20) AS i")
+        .argument()
+        .build()
+
+      val runtimeResult = profile(logicalQuery, runtime)
+      consume(runtimeResult)
+
+      // then
+      val expectedOperatorPageCacheStats: Map[Int, PageCacheStatsAssertion] =
+        Map(
+          0 -> PageCacheIsNotUsed, // produceResult
+          1 -> PageCacheIsNotUsed, // transactionForeach
+          2 -> PageCacheIsNotUsed, // emptyResult
+          3 -> PageCacheStatsAssertion(PageCacheStatsAssertion.GreaterThanOrEqual, PageCacheStats(1, 0)), // allNodeScan
+          4 -> PageCacheIsNotUsed, // unwind
+          5 -> PageCacheIsNotUsed // argument
+        )
+
+      checkProfilerStatsMakeSense(runtimeResult, 6, expectedOperatorPageCacheStats, isOnlyOneTransaction = false)
+    }
+
+    test(
+      s"should profile page cache stats of plan with transactionForeach concurrency and commit-phase hits/misses concurrency=$concurrency"
+    ) {
+      givenWithTransactionType(
+        {
+          nodePropertyGraph(
+            100,
+            {
+              case i => Map("prop" -> i)
+            },
+            "A"
+          )
+          () // This makes sure we don't reattach the nodes to the new transaction, since that would create additional page cache hits/misses
+        },
+        KernelTransaction.Type.IMPLICIT
+      )
+
+      // when
+      val logicalQuery: LogicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("i")
+        .transactionForeach(concurrency = TransactionConcurrency.Concurrent(None), batchSize = 1)
+        .|.emptyResult()
+        .|.create(createNode("b", "B"))
+        .|.nodeByLabelScan("a", "A")
+        .unwind("range(1,10) AS i")
+        .argument()
+        .build()
+
+      val runtimeResult = profile(logicalQuery, runtime)
+      consume(runtimeResult)
+
+      // then
+      val expectedOperatorPageCacheStats: Map[Int, PageCacheStatsAssertion] =
+        Map(
+          0 -> PageCacheIsNotUsed, // produceResult
+          1 -> PageCacheStatsAssertion(
+            PageCacheStatsAssertion.GreaterThanOrEqual,
+            PageCacheStats(1, 1)
+          ), // transactionForeach
+          2 -> PageCacheIsNotUsed, // emptyResult
+          3 -> PageCacheIsNotUsed, // create
+          4 -> PageCacheStatsAssertion(
+            PageCacheStatsAssertion.GreaterThanOrEqual,
+            PageCacheStats(1, 0)
+          ), // nodeByLabelScan
+          5 -> PageCacheIsNotUsed, // unwind
+          6 -> PageCacheIsNotUsed // argument
+        )
+
+      checkProfilerStatsMakeSense(runtimeResult, 6, expectedOperatorPageCacheStats, isOnlyOneTransaction = false)
+    }
   }
 }

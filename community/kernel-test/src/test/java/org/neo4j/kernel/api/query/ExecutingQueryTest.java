@@ -39,7 +39,6 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 import org.neo4j.internal.helpers.MathUtil;
-import org.neo4j.internal.kernel.api.ExecutionStatistics;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorCounters;
 import org.neo4j.kernel.database.NamedDatabaseId;
@@ -329,7 +328,7 @@ class ExecutingQueryTest {
     void shouldCorrectlySumPageCacheStatisticsOfClosedTransactions() {
         // Transaction 1:
         // Before commit:
-        query.recordStatisticsOfTransactionAboutToClose(1, 2);
+        query.recordStatisticsOfTransactionAboutToClose(1, 2, 1);
 
         assertThat(query.pageHitsOfClosedTransactions()).isEqualTo(1);
         assertThat(query.pageFaultsOfClosedTransactions()).isEqualTo(2);
@@ -337,17 +336,7 @@ class ExecutingQueryTest {
         assertThat(query.pageFaultsOfClosedTransactionCommits()).isEqualTo(0);
 
         // After commit:
-        query.recordStatisticsOfClosedTransaction(new ExecutionStatistics() {
-            @Override
-            public long pageHits() {
-                return 3;
-            }
-
-            @Override
-            public long pageFaults() {
-                return 4;
-            }
-        });
+        query.recordStatisticsOfClosedTransaction(3, 4, 1);
 
         assertThat(query.pageHitsOfClosedTransactions()).isEqualTo(3);
         assertThat(query.pageFaultsOfClosedTransactions()).isEqualTo(4);
@@ -357,7 +346,7 @@ class ExecutingQueryTest {
 
         // Transaction 2:
         // Before commit:
-        query.recordStatisticsOfTransactionAboutToClose(5, 6);
+        query.recordStatisticsOfTransactionAboutToClose(5, 6, 2);
 
         assertThat(query.pageHitsOfClosedTransactions()).isEqualTo(8);
         assertThat(query.pageFaultsOfClosedTransactions()).isEqualTo(10);
@@ -365,23 +354,70 @@ class ExecutingQueryTest {
         assertThat(query.pageFaultsOfClosedTransactionCommits()).isEqualTo(2);
 
         // After commit:
-        query.recordStatisticsOfClosedTransaction(new ExecutionStatistics() {
-            @Override
-            public long pageHits() {
-                return 7;
-            }
-
-            @Override
-            public long pageFaults() {
-                return 8;
-            }
-        });
+        query.recordStatisticsOfClosedTransaction(7, 8, 2);
 
         assertThat(query.pageHitsOfClosedTransactions()).isEqualTo(10);
         assertThat(query.pageFaultsOfClosedTransactions()).isEqualTo(12);
         // Should be the difference before and after commit
         assertThat(query.pageHitsOfClosedTransactionCommits()).isEqualTo(4);
         assertThat(query.pageFaultsOfClosedTransactionCommits()).isEqualTo(4);
+    }
+
+    @Test
+    void shouldCorrectlySumPageCacheStatisticsOfClosedTransactionsUpgradeToConcurrent() {
+        // Transaction 1:
+        // Before commit:
+        query.recordStatisticsOfTransactionAboutToClose(1, 2, 1);
+
+        assertThat(query.pageHitsOfClosedTransactions()).isEqualTo(1);
+        assertThat(query.pageFaultsOfClosedTransactions()).isEqualTo(2);
+        assertThat(query.pageHitsOfClosedTransactionCommits()).isEqualTo(0);
+        assertThat(query.pageFaultsOfClosedTransactionCommits()).isEqualTo(0);
+
+        // After commit:
+        query.recordStatisticsOfClosedTransaction(3, 4, 1);
+
+        assertThat(query.pageHitsOfClosedTransactions()).isEqualTo(3);
+        assertThat(query.pageFaultsOfClosedTransactions()).isEqualTo(4);
+        // Should be the difference before and after commit
+        assertThat(query.pageHitsOfClosedTransactionCommits()).isEqualTo(2);
+        assertThat(query.pageFaultsOfClosedTransactionCommits()).isEqualTo(2);
+
+        // Upgrade to concurrent access
+        query.upgradeToConcurrentAccess();
+
+        // Transaction 2 and 3 interleaved:
+        // Before commit:
+        query.recordStatisticsOfTransactionAboutToClose(5, 6, 2);
+
+        assertThat(query.pageHitsOfClosedTransactions()).isEqualTo(8);
+        assertThat(query.pageFaultsOfClosedTransactions()).isEqualTo(10);
+        assertThat(query.pageHitsOfClosedTransactionCommits()).isEqualTo(2);
+        assertThat(query.pageFaultsOfClosedTransactionCommits()).isEqualTo(2);
+
+        query.recordStatisticsOfTransactionAboutToClose(7, 8, 3);
+
+        assertThat(query.pageHitsOfClosedTransactions()).isEqualTo(15);
+        assertThat(query.pageFaultsOfClosedTransactions()).isEqualTo(18);
+        assertThat(query.pageHitsOfClosedTransactionCommits()).isEqualTo(2);
+        assertThat(query.pageFaultsOfClosedTransactionCommits()).isEqualTo(2);
+
+        // After commit:
+        query.recordStatisticsOfClosedTransaction(9, 10, 2);
+
+        assertThat(query.pageHitsOfClosedTransactions()).isEqualTo(19);
+        assertThat(query.pageFaultsOfClosedTransactions()).isEqualTo(22);
+        // Should be the difference before and after commit
+        assertThat(query.pageHitsOfClosedTransactionCommits()).isEqualTo(6);
+        assertThat(query.pageFaultsOfClosedTransactionCommits()).isEqualTo(6);
+
+        query.recordStatisticsOfClosedTransaction(11, 12, 3);
+
+        assertThat(query.pageHitsOfClosedTransactions()).isEqualTo(23);
+        assertThat(query.pageFaultsOfClosedTransactions()).isEqualTo(26);
+        // Should be the difference before and after commit
+        assertThat(query.pageHitsOfClosedTransactionCommits()).isEqualTo(10);
+        assertThat(query.pageFaultsOfClosedTransactionCommits()).isEqualTo(10);
     }
 
     private LockWaitEvent lock(ResourceType resourceType, long resourceId) {
