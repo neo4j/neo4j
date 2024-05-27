@@ -64,6 +64,7 @@ public enum IndexType {
      * <p>
      * TEXT indexes have the following abilities and limitations:
      * <ul>
+     *     <li>They do not support composite indexes.</li>
      *     <li>They do not support fuzzy matching and scoring, use FULLTEXT index for advance text searching</li>
      *     <li>They do not support {@linkplain Schema#indexFor(Label...) creating} {@linkplain IndexDefinition#isMultiTokenIndex() multi-token} indexes.</li>
      *     <li>They can be created on both {@link Schema#indexFor(Label) labels}, and {@link Schema#indexFor(RelationshipType) relationship types}.</li>
@@ -111,9 +112,10 @@ public enum IndexType {
      * {@link IndexSetting#vector_Similarity_Function() similarity function} are set. This is done automatically
      * when using the procedure {@code db.index.vector.createNodeIndex}.
      * <p>
-     * {@link #VECTOR} indexes have the following limitations:
+     * VECTOR indexes have the following limitations:
      * <ul>
      *     <li>They cannot be used as the {@link ConstraintCreator#withIndexType(IndexType) constraint index type} for index-backed constraints.</li>
+     *     <li>They do not support composite indexes.</li>
      *     <li>They do not support {@linkplain Schema#indexFor(Label...) creating} {@linkplain IndexDefinition#isMultiTokenIndex() multi-token} indexes.</li>
      *     <li>They can only be created on {@link Schema#indexFor(Label) labels}.</li>
      * </ul>
