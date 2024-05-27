@@ -40,7 +40,7 @@ import scala.collection.mutable
 
 case class subtractionLabelScanLeafPlanner(skipIDs: Set[LogicalVariable]) extends LeafPlanner {
 
-  private def combinePositiveAndNegativeLabelPredicates(qg: QueryGraph)
+  private def collectPositiveAndNegativeLabelPredicatesPerVariable(qg: QueryGraph)
     : Map[Variable, (Set[LabelName], Set[LabelName])] = {
     qg.selections.flatPredicatesSet.foldLeft(Map.empty[Variable, (Set[LabelName], Set[LabelName])]) {
       case (acc, current) => current match {
@@ -106,18 +106,20 @@ case class subtractionLabelScanLeafPlanner(skipIDs: Set[LogicalVariable]) extend
       case Some(nodeTokenIndex) if nodeTokenIndex.orderCapability == BOTH =>
         // Combine the positive labels and the negative labels
         // For example HasLabels(n, Seq(A)), HasLabels(n, Seq(B)), Not(HasLabels(n, Seq(C))), NOT(HasLabels(n, Seq(D)))  to n -> (Set(A, B), Set(C, D))
-        val combined: Map[Variable, (Set[LabelName], Set[LabelName])] = combinePositiveAndNegativeLabelPredicates(qg)
+        val combined: Map[Variable, (Set[LabelName], Set[LabelName])] =
+          collectPositiveAndNegativeLabelPredicatesPerVariable(qg)
 
         // combined: Map from 'variable' to pair '(positiveLabels, negativeLabels)'
         combined
-          .filter(variablePositiveLabelsNegativeLabels =>
-            variablePositiveLabelsNegativeLabels._2._1.nonEmpty &&
-              variablePositiveLabelsNegativeLabels._2._2.nonEmpty
+          .filter(variableToPositiveNegativeLabelsPair =>
+            // At least one positive label and at least one negative label
+            variableToPositiveNegativeLabelsPair._2._1.nonEmpty &&
+              variableToPositiveNegativeLabelsPair._2._2.nonEmpty
           )
-          .map(variablePositiveLabelsNegativeLabels => {
-            val variable = variablePositiveLabelsNegativeLabels._1
-            val positiveLabels = variablePositiveLabelsNegativeLabels._2._1
-            val negativeLabels = variablePositiveLabelsNegativeLabels._2._2
+          .map(variableToPositiveNegativeLabelsPair => {
+            val variable = variableToPositiveNegativeLabelsPair._1
+            val positiveLabels = variableToPositiveNegativeLabelsPair._2._1
+            val negativeLabels = variableToPositiveNegativeLabelsPair._2._2
 
             constructSubtractionNodeByLabelScan(
               variable,

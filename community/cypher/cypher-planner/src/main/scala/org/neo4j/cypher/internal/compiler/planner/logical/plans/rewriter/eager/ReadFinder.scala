@@ -40,6 +40,7 @@ import org.neo4j.cypher.internal.expressions.IsNotNull
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.LabelToken
 import org.neo4j.cypher.internal.expressions.LogicalVariable
+import org.neo4j.cypher.internal.expressions.Not
 import org.neo4j.cypher.internal.expressions.Ors
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
@@ -162,6 +163,7 @@ import org.neo4j.cypher.internal.logical.plans.Sort
 import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath
 import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath.Mapping
 import org.neo4j.cypher.internal.logical.plans.SubqueryForeach
+import org.neo4j.cypher.internal.logical.plans.SubtractionNodeByLabelsScan
 import org.neo4j.cypher.internal.logical.plans.TestOnlyPlan
 import org.neo4j.cypher.internal.logical.plans.Top
 import org.neo4j.cypher.internal.logical.plans.Top1WithTies
@@ -348,6 +350,20 @@ object ReadFinder {
           val hasLabels = HasLabels(variable, Seq(labelName))(InputPosition.NONE)
           acc.withLabelRead(AccessedLabel(labelName, Some(variable)))
             .withAddedNodeFilterExpression(variable, hasLabels)
+        }
+
+      case SubtractionNodeByLabelsScan(variable, positiveLabels, negativeLabels, _, _) =>
+        val acc = PlanReads()
+          .withIntroducedNodeVariable(variable)
+        val positivePlanReads = positiveLabels.foldLeft(acc) { (acc, labelName) =>
+          val hasLabels = HasLabels(variable, Seq(labelName))(InputPosition.NONE)
+          acc.withLabelRead(AccessedLabel(labelName, Some(variable)))
+            .withAddedNodeFilterExpression(variable, hasLabels)
+        }
+        negativeLabels.foldLeft(positivePlanReads) { (acc, labelName) =>
+          val notHasLabels = Not(HasLabels(variable, Seq(labelName))(InputPosition.NONE))(InputPosition.NONE)
+          acc.withLabelRead(AccessedLabel(labelName, Some(variable)))
+            .withAddedNodeFilterExpression(variable, notHasLabels)
         }
 
       case NodeCountFromCountStore(_, labelNames, _) =>

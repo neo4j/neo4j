@@ -403,10 +403,10 @@ sealed trait ConflictFinder {
     plansThatIntroduceVariable: Set[PlanThatIntroducesVariable],
     predicatesOnDeletedEntity: Seq[Expression]
   ): Boolean = {
-    val readEntityPredicateCombinations =
+    val readEntityPredicateCombinations: Set[Seq[Expression]] =
       if (plansThatIntroduceVariable.isEmpty) {
         // Variable was not introduced by a leaf plan
-        Seq(Seq.empty[Expression])
+        Set(Seq.empty[Expression])
       } else {
         plansThatIntroduceVariable.map(_.predicates)
       }
