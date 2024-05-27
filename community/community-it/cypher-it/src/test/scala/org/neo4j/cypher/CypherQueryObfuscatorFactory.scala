@@ -20,6 +20,7 @@
 package org.neo4j.cypher
 
 import org.neo4j.configuration.Config
+import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.cypher.internal.CachingPreParser
 import org.neo4j.cypher.internal.CypherQueryObfuscator
 import org.neo4j.cypher.internal.PreParsedQuery
@@ -76,7 +77,7 @@ class CypherQueryObfuscatorFactory {
   )
 
   private val pipeline =
-    Parse(useAntlr = false) andThen
+    Parse(useAntlr = GraphDatabaseInternalSettings.cypher_parser_antlr_enabled.defaultValue()) andThen
       RewriteProcedureCalls andThen
       ObfuscationMetadataCollection
 
