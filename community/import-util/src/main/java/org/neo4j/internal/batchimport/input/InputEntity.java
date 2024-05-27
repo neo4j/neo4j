@@ -239,6 +239,17 @@ public class InputEntity implements InputEntityVisitor {
         return map;
     }
 
+    public Map<String, Value> propertiesAsValueMap() {
+        Preconditions.checkState(!hasIntPropertyKeyIds, "This instance doesn't have String keys");
+        Map<String, Value> map = new HashMap<>();
+        var propertyCount = propertyCount();
+        for (int i = 0; i < propertyCount; i++) {
+            var value = propertyValue(i);
+            map.put((String) propertyKey(i), value instanceof Value v ? v : Values.of(value));
+        }
+        return map;
+    }
+
     public Iterable<StorageProperty> asStorageProperties(ToIntFunction<String> propertyKeyIdLookup) {
         return () -> new PrefetchingIterator<>() {
             private final int count = propertyCount();

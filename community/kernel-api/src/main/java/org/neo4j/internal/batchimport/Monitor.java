@@ -50,4 +50,58 @@ public interface Monitor {
      * Called after import have been completed.
      */
     default void completed(boolean success) {}
+
+    class Delegate implements Monitor {
+        private final Monitor delegate;
+
+        public Delegate(Monitor delegate) {
+            this.delegate = delegate;
+        }
+
+        @Override
+        public void doubleRelationshipRecordUnitsEnabled() {
+            delegate.doubleRelationshipRecordUnitsEnabled();
+        }
+
+        @Override
+        public void mayExceedNodeIdCapacity(long capacity, long estimatedCount) {
+            delegate.mayExceedNodeIdCapacity(capacity, estimatedCount);
+        }
+
+        @Override
+        public void mayExceedRelationshipIdCapacity(long capacity, long estimatedCount) {
+            delegate.mayExceedRelationshipIdCapacity(capacity, estimatedCount);
+        }
+
+        @Override
+        public void insufficientHeapSize(long optimalMinimalHeapSize, long heapSize) {
+            delegate.insufficientHeapSize(optimalMinimalHeapSize, heapSize);
+        }
+
+        @Override
+        public void abundantHeapSize(long optimalMinimalHeapSize, long heapSize) {
+            delegate.abundantHeapSize(optimalMinimalHeapSize, heapSize);
+        }
+
+        @Override
+        public void insufficientAvailableMemory(
+                long estimatedCacheSize, long optimalMinimalHeapSize, long availableMemory) {
+            delegate.insufficientAvailableMemory(estimatedCacheSize, optimalMinimalHeapSize, availableMemory);
+        }
+
+        @Override
+        public void started() {
+            delegate.started();
+        }
+
+        @Override
+        public void percentageCompleted(int percentage) {
+            delegate.percentageCompleted(percentage);
+        }
+
+        @Override
+        public void completed(boolean success) {
+            delegate.completed(success);
+        }
+    }
 }
