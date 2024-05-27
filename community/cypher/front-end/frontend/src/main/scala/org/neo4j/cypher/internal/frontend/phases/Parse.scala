@@ -21,30 +21,40 @@ import org.neo4j.cypher.internal.ast.factory.neo4j.JavaCCParser
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.cst.factory.neo4j.ast.CypherAstParser
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.PARSING
+import org.neo4j.cypher.internal.frontend.phases.FrontEndCompilationPhases.CypherVersion
 import org.neo4j.cypher.internal.frontend.phases.factories.ParsePipelineTransformerFactory
 import org.neo4j.cypher.internal.rewriting.rewriters.LiteralExtractionStrategy
+import org.neo4j.cypher.internal.util.CypherExceptionFactory
+import org.neo4j.cypher.internal.util.InternalNotificationLogger
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo
 
 /**
  * Parse text into an AST object.
  */
-case class Parse(useAntlr: Boolean) extends Phase[BaseContext, BaseState, BaseState] with StepSequencer.Step
+case class Parse(useAntlr: Boolean, version: CypherVersion) extends Phase[BaseContext, BaseState, BaseState]
+    with StepSequencer.Step
     with ParsePipelineTransformerFactory {
 
   override def process(in: BaseState, context: BaseContext): BaseState = {
+    in.withStatement(parse(in.queryText, context.cypherExceptionFactory, context.notificationLogger))
+  }
+
+  private def parse(
+    query: String,
+    exceptionFactory: CypherExceptionFactory,
+    notificationLogger: InternalNotificationLogger
+  ): Statement = {
     if (useAntlr) {
-      in.withStatement(CypherAstParser.parseStatements(
-        in.queryText,
-        context.cypherExceptionFactory,
-        Some(context.notificationLogger)
-      ))
+      version match {
+        case CypherVersion.Default => CypherAstParser.parseStatements(query, exceptionFactory, Some(notificationLogger))
+        case CypherVersion.Cypher5 => CypherAstParser.parseStatements(query, exceptionFactory, Some(notificationLogger))
+      }
     } else {
-      in.withStatement(JavaCCParser.parse(
-        in.queryText,
-        context.cypherExceptionFactory,
-        context.notificationLogger
-      ))
+      version match {
+        case CypherVersion.Default => JavaCCParser.parse(query, exceptionFactory, notificationLogger)
+        case CypherVersion.Cypher5 => JavaCCParser.parse(query, exceptionFactory, notificationLogger)
+      }
     }
   }
 

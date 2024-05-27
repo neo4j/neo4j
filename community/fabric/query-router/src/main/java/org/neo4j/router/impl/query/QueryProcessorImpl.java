@@ -280,6 +280,7 @@ public class QueryProcessorImpl implements QueryProcessor {
         return parsing.parseQuery(
                 preParsedQuery.statement(),
                 preParsedQuery.rawStatement(),
+                preParsedQuery.options().queryOptions().cypherVersion(),
                 notificationLogger,
                 preParsedQuery.options().queryOptions().planner().name(),
                 Option.apply(preParsedQuery.options().offset()),

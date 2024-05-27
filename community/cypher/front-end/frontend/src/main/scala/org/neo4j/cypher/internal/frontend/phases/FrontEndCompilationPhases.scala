@@ -19,6 +19,7 @@ package org.neo4j.cypher.internal.frontend.phases
 import org.neo4j.configuration.GraphDatabaseInternalSettings.ExtractLiteral
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.MultipleDatabases
+import org.neo4j.cypher.internal.frontend.phases.FrontEndCompilationPhases.CypherVersion
 import org.neo4j.cypher.internal.rewriting.Deprecations
 import org.neo4j.cypher.internal.rewriting.rewriters.Forced
 import org.neo4j.cypher.internal.rewriting.rewriters.IfNoParameter
@@ -36,6 +37,7 @@ trait FrontEndCompilationPhases {
     defaultSemanticFeatures ++ extra.map(SemanticFeature.fromString)
 
   case class ParsingConfig(
+    cypherVersion: CypherVersion,
     extractLiterals: ExtractLiteral = ExtractLiteral.ALWAYS,
     /* TODO: This is not part of configuration - Move to BaseState */
     parameterTypeMapping: Map[String, ParameterTypeInfo] = Map.empty,
@@ -53,7 +55,7 @@ trait FrontEndCompilationPhases {
   }
 
   def parsingBase(config: ParsingConfig): Transformer[BaseContext, BaseState, BaseState] = {
-    Parse(config.antlrParserEnabled) andThen
+    Parse(config.antlrParserEnabled, config.cypherVersion) andThen
       CollectSyntaxUsageMetrics andThen
       SyntaxDeprecationWarningsAndReplacements(Deprecations.syntacticallyDeprecatedFeatures) andThen
       PreparatoryRewriting andThen
@@ -106,4 +108,12 @@ trait FrontEndCompilationPhases {
   }
 }
 
-object FrontEndCompilationPhases extends FrontEndCompilationPhases
+object FrontEndCompilationPhases extends FrontEndCompilationPhases {
+  // We can't depend on org.neo4j.cypher.internal.options.CypherOption here :/, semantic-analysis-js won't build.
+  sealed trait CypherVersion
+
+  object CypherVersion {
+    case object Default extends CypherVersion
+    case object Cypher5 extends CypherVersion
+  }
+}

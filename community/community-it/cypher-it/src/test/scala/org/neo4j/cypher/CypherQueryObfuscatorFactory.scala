@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.compiler.phases.PlannerContext
 import org.neo4j.cypher.internal.compiler.phases.RewriteProcedureCalls
 import org.neo4j.cypher.internal.config.CypherConfiguration
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
+import org.neo4j.cypher.internal.frontend.phases.FrontEndCompilationPhases.CypherVersion
 import org.neo4j.cypher.internal.frontend.phases.InitialState
 import org.neo4j.cypher.internal.frontend.phases.ObfuscationMetadataCollection
 import org.neo4j.cypher.internal.frontend.phases.Parse
@@ -77,7 +78,10 @@ class CypherQueryObfuscatorFactory {
   )
 
   private val pipeline =
-    Parse(useAntlr = GraphDatabaseInternalSettings.cypher_parser_antlr_enabled.defaultValue()) andThen
+    Parse(
+      useAntlr = GraphDatabaseInternalSettings.cypher_parser_antlr_enabled.defaultValue(),
+      CypherVersion.Default
+    ) andThen
       RewriteProcedureCalls andThen
       ObfuscationMetadataCollection
 

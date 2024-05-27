@@ -35,6 +35,7 @@ import org.neo4j.cypher.internal.frontend.phases
 import org.neo4j.cypher.internal.frontend.phases.BaseContext
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.frontend.phases.FieldSignature
+import org.neo4j.cypher.internal.frontend.phases.FrontEndCompilationPhases.CypherVersion
 import org.neo4j.cypher.internal.frontend.phases.InitialState
 import org.neo4j.cypher.internal.frontend.phases.InternalSyntaxUsageStats
 import org.neo4j.cypher.internal.frontend.phases.InternalSyntaxUsageStatsNoOp
@@ -86,7 +87,10 @@ class FabricParsingPropertyTest extends CypherFunSuite
   }
 
   private val fabricParsingConfig =
-    ParsingConfig(semanticFeatures = defaultSemanticFeatures ++ Seq(MultipleGraphs, UseAsMultipleGraphsSelector))
+    ParsingConfig(
+      cypherVersion = CypherVersion.Default,
+      semanticFeatures = defaultSemanticFeatures ++ Seq(MultipleGraphs, UseAsMultipleGraphsSelector)
+    )
   private val fabricParsing = CompilationPhases.fabricParsing(fabricParsingConfig, resolver)
 
   private val prettifier: Prettifier =

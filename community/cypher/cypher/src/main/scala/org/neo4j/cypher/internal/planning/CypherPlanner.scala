@@ -230,6 +230,7 @@ case class CypherPlanner(
       val parsedQuery = planner.parseQuery(
         preParsedQuery.statement,
         preParsedQuery.rawStatement,
+        preParsedQuery.options.queryOptions.cypherVersion,
         notificationLogger,
         preParsedQuery.options.queryOptions.planner.name,
         Some(offset),

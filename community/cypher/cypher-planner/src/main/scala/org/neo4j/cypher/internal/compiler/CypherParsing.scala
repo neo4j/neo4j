@@ -30,11 +30,13 @@ import org.neo4j.cypher.internal.compiler.phases.CompilationPhases.defaultSemant
 import org.neo4j.cypher.internal.config.CypherConfiguration
 import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
+import org.neo4j.cypher.internal.frontend.phases.FrontEndCompilationPhases
 import org.neo4j.cypher.internal.frontend.phases.InitialState
 import org.neo4j.cypher.internal.frontend.phases.InternalSyntaxUsageStats
 import org.neo4j.cypher.internal.frontend.phases.Monitors
 import org.neo4j.cypher.internal.frontend.phases.ProcedureSignatureResolver
 import org.neo4j.cypher.internal.macros.AssertMacros
+import org.neo4j.cypher.internal.options.CypherVersion
 import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
 import org.neo4j.cypher.internal.planner.spi.PlannerNameFor
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
@@ -52,6 +54,7 @@ class CypherParsing(
   def parseQuery(
     queryText: String,
     rawQueryText: String,
+    cypherVersion: CypherVersion,
     notificationLogger: InternalNotificationLogger,
     plannerNameText: String = IDPPlannerName.name,
     offset: Option[InputPosition],
@@ -85,6 +88,7 @@ class CypherParsing(
     )
     CompilationPhases.parsing(
       ParsingConfig(
+        cypherVersion = convertCypherVersion(cypherVersion),
         extractLiterals = config.extractLiterals,
         parameterTypeMapping = paramTypes,
         semanticFeatures = features,
@@ -95,6 +99,10 @@ class CypherParsing(
     ).transform(startState, context)
   }
 
+  def convertCypherVersion(version: CypherVersion): FrontEndCompilationPhases.CypherVersion = version match {
+    case CypherVersion.default => FrontEndCompilationPhases.CypherVersion.Default
+    case CypherVersion.cypher5 => FrontEndCompilationPhases.CypherVersion.Cypher5
+  }
 }
 
 case class CypherParsingConfig(

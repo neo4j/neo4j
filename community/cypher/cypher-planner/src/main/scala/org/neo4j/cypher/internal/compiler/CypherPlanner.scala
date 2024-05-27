@@ -40,6 +40,7 @@ import org.neo4j.cypher.internal.frontend.phases.Monitors
 import org.neo4j.cypher.internal.macros.AssertMacros
 import org.neo4j.cypher.internal.options.CypherEagerAnalyzerOption
 import org.neo4j.cypher.internal.options.CypherStatefulShortestPlanningModeOption
+import org.neo4j.cypher.internal.options.CypherVersion
 import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
 import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.InputPosition
@@ -99,6 +100,7 @@ case class CypherPlanner[Context <: PlannerContext](
   def parseQuery(
     queryText: String,
     rawQueryText: String,
+    cypherVersion: CypherVersion,
     notificationLogger: InternalNotificationLogger,
     plannerNameText: String = IDPPlannerName.name,
     offset: Option[InputPosition],
@@ -111,6 +113,7 @@ case class CypherPlanner[Context <: PlannerContext](
     parsing.parseQuery(
       queryText,
       rawQueryText,
+      cypherVersion,
       notificationLogger,
       plannerNameText,
       offset,

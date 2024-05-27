@@ -72,6 +72,7 @@ import org.neo4j.cypher.internal.compiler.test_helpers.ContextHelper
 import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
+import org.neo4j.cypher.internal.frontend.phases.FrontEndCompilationPhases.CypherVersion
 import org.neo4j.cypher.internal.frontend.phases.If
 import org.neo4j.cypher.internal.frontend.phases.InitialState
 import org.neo4j.cypher.internal.frontend.phases.Phase
@@ -183,7 +184,8 @@ object LogicalPlanningTestSupport2 extends MockitoSugar {
     Map(GraphDatabaseInternalSettings.planning_intersection_scans_enabled -> java.lang.Boolean.TRUE)
   )
 
-  val defaultParsingConfig: ParsingConfig = ParsingConfig(extractLiterals = ExtractLiteral.NEVER)
+  val defaultParsingConfig: ParsingConfig =
+    ParsingConfig(extractLiterals = ExtractLiteral.NEVER, cypherVersion = CypherVersion.Default)
 
   def pipeLine(
     parsingConfig: ParsingConfig,

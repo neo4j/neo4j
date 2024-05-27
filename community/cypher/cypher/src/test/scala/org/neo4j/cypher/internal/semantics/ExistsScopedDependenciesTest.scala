@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.compiler.phases.CompilationPhases.ParsingConfig
 import org.neo4j.cypher.internal.frontend.phases
 import org.neo4j.cypher.internal.frontend.phases.BaseContext
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
+import org.neo4j.cypher.internal.frontend.phases.FrontEndCompilationPhases.CypherVersion
 import org.neo4j.cypher.internal.frontend.phases.InitialState
 import org.neo4j.cypher.internal.frontend.phases.InternalSyntaxUsageStats
 import org.neo4j.cypher.internal.frontend.phases.InternalSyntaxUsageStatsNoOp
@@ -46,7 +47,7 @@ import org.neo4j.monitoring.Monitors
 
 class ExistsScopedDependenciesTest extends CypherFunSuite with AstConstructionTestSupport {
 
-  private val parsing = CompilationPhases.parsing(ParsingConfig()) andThen Namespacer
+  private val parsing = CompilationPhases.parsing(ParsingConfig(CypherVersion.Default)) andThen Namespacer
 
   class DummyException() extends Exception
 

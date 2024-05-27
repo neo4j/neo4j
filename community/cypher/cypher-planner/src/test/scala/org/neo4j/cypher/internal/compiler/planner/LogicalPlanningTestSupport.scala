@@ -70,6 +70,7 @@ import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.frontend.phases.AstRewriting
 import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.FieldSignature
+import org.neo4j.cypher.internal.frontend.phases.FrontEndCompilationPhases.CypherVersion
 import org.neo4j.cypher.internal.frontend.phases.Monitors
 import org.neo4j.cypher.internal.frontend.phases.MoveBoundaryNodePredicates
 import org.neo4j.cypher.internal.frontend.phases.Namespacer
@@ -449,7 +450,10 @@ trait LogicalPlanningTestSupport extends AstConstructionTestSupport with Logical
   lazy val cnfNormalizerTransformer = CNFNormalizerTest.getTransformer(semanticFeatures)
 
   lazy val pipeLine: Transformer[PlannerContext, BaseState, LogicalPlanState] =
-    Parse(useAntlr = GraphDatabaseInternalSettings.cypher_parser_antlr_enabled.defaultValue()) andThen
+    Parse(
+      useAntlr = GraphDatabaseInternalSettings.cypher_parser_antlr_enabled.defaultValue(),
+      CypherVersion.Default
+    ) andThen
       PreparatoryRewriting andThen
       SemanticAnalysis(warn = true, semanticFeatures: _*) andThen
       AstRewriting() andThen

@@ -39,10 +39,12 @@ import org.neo4j.cypher.internal.config.CypherConfiguration
 import org.neo4j.cypher.internal.frontend.phases.BaseContext
 import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
+import org.neo4j.cypher.internal.frontend.phases.FrontEndCompilationPhases
 import org.neo4j.cypher.internal.frontend.phases.InitialState
 import org.neo4j.cypher.internal.frontend.phases.InternalSyntaxUsageStats
 import org.neo4j.cypher.internal.frontend.phases.ProcedureSignatureResolver
 import org.neo4j.cypher.internal.options.CypherExecutionMode
+import org.neo4j.cypher.internal.options.CypherVersion
 import org.neo4j.cypher.internal.planner.spi.PlannerNameFor
 import org.neo4j.cypher.internal.planning.WrappedMonitors
 import org.neo4j.cypher.internal.tracing.CompilationTracer
@@ -123,7 +125,13 @@ case class FabricFrontEnd(
       UseAsMultipleGraphsSelector
     )
 
+    private def convertCypherVersion(version: CypherVersion): FrontEndCompilationPhases.CypherVersion = version match {
+      case CypherVersion.default => FrontEndCompilationPhases.CypherVersion.Default
+      case CypherVersion.cypher5 => FrontEndCompilationPhases.CypherVersion.Cypher5
+    }
+
     private val parsingConfig = CompilationPhases.ParsingConfig(
+      cypherVersion = convertCypherVersion(query.options.queryOptions.cypherVersion),
       extractLiterals = cypherConfig.extractLiterals,
       parameterTypeMapping = ParameterValueTypeHelper.asCypherTypeMap(params, cypherConfig.useParameterSizeHint),
       semanticFeatures =
