@@ -16,7 +16,7 @@
  */
 package org.neo4j.cypher.internal.expressions.functions
 
-import org.neo4j.cypher.internal.expressions.TypeSignature
+import org.neo4j.cypher.internal.expressions.FunctionTypeSignature
 import org.neo4j.cypher.internal.util.symbols.CTString
 
 /**
@@ -26,6 +26,6 @@ case object Upper extends Function {
   def name = "upper"
 
   override val signatures = Vector(
-    TypeSignature(this, CTString, CTString, "Returns the given `STRING` in uppercase.", Category.STRING)
+    FunctionTypeSignature(this, CTString, CTString, "Returns the given `STRING` in uppercase.", Category.STRING)
   )
 }

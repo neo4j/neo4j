@@ -16,7 +16,7 @@
  */
 package org.neo4j.cypher.internal.expressions.functions
 
-import org.neo4j.cypher.internal.expressions.TypeSignature
+import org.neo4j.cypher.internal.expressions.FunctionTypeSignature
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.CTList
 import org.neo4j.cypher.internal.util.symbols.CTMap
@@ -29,7 +29,7 @@ case object Keys extends Function {
   def name = "keys"
 
   override val signatures = Vector(
-    TypeSignature(
+    FunctionTypeSignature(
       this,
       ClosedDynamicUnionType(Set(CTNode, CTRelationship, CTMap))(InputPosition.NONE),
       CTList(CTString),

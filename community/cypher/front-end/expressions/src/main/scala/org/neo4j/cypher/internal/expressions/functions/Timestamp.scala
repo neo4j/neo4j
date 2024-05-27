@@ -16,14 +16,14 @@
  */
 package org.neo4j.cypher.internal.expressions.functions
 
-import org.neo4j.cypher.internal.expressions.TypeSignature
+import org.neo4j.cypher.internal.expressions.FunctionTypeSignature
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 
 case object Timestamp extends Function {
   def name = "timestamp"
 
   override val signatures = Vector(
-    TypeSignature.noArg(
+    FunctionTypeSignature.noArg(
       this,
       CTInteger,
       "Returns the difference, measured in milliseconds, between the current time and midnight, January 1, 1970 UTC",

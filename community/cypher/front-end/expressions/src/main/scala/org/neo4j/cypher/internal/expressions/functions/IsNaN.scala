@@ -16,7 +16,7 @@
  */
 package org.neo4j.cypher.internal.expressions.functions
 
-import org.neo4j.cypher.internal.expressions.TypeSignature
+import org.neo4j.cypher.internal.expressions.FunctionTypeSignature
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.CTBoolean
 import org.neo4j.cypher.internal.util.symbols.CTFloat
@@ -26,8 +26,8 @@ import org.neo4j.cypher.internal.util.symbols.ClosedDynamicUnionType
 case object IsNaN extends Function {
   def name = "isNaN"
 
-  override val signatures: IndexedSeq[TypeSignature] = Vector(
-    TypeSignature(
+  override val signatures: IndexedSeq[FunctionTypeSignature] = Vector(
+    FunctionTypeSignature(
       this,
       ClosedDynamicUnionType(Set(CTInteger, CTFloat))(InputPosition.NONE),
       CTBoolean,

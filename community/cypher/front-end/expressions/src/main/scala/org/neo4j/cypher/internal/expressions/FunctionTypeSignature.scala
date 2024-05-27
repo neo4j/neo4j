@@ -67,6 +67,22 @@ case class FunctionTypeSignature(
   }
 }
 
+object FunctionTypeSignature {
+
+  def apply(
+    function: Function,
+    argumentType: CypherType,
+    outputType: CypherType,
+    description: String,
+    category: String
+  ): FunctionTypeSignature =
+    FunctionTypeSignature(function, outputType, Vector("input"), description, category, Vector(argumentType))
+
+  def noArg(function: Function, outputType: CypherType, description: String, category: String): FunctionTypeSignature =
+    FunctionTypeSignature(function, outputType, Vector("input"), description, category, Vector())
+
+}
+
 object TypeSignature {
 
   def apply(

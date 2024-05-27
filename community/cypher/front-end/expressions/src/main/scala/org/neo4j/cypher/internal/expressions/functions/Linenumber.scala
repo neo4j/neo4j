@@ -16,13 +16,18 @@
  */
 package org.neo4j.cypher.internal.expressions.functions
 
-import org.neo4j.cypher.internal.expressions.TypeSignature
+import org.neo4j.cypher.internal.expressions.FunctionTypeSignature
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 
 case object Linenumber extends Function {
   def name = "linenumber"
 
   override val signatures = Vector(
-    TypeSignature.noArg(this, CTInteger, "Returns the line number that LOAD CSV is currently using.", Category.SCALAR)
+    FunctionTypeSignature.noArg(
+      this,
+      CTInteger,
+      "Returns the line number that LOAD CSV is currently using.",
+      Category.SCALAR
+    )
   )
 }

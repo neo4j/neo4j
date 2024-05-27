@@ -16,7 +16,7 @@
  */
 package org.neo4j.cypher.internal.expressions.functions
 
-import org.neo4j.cypher.internal.expressions.TypeSignature
+import org.neo4j.cypher.internal.expressions.FunctionTypeSignature
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 
@@ -24,6 +24,6 @@ case object Count extends AggregatingFunction {
   def name = "count"
 
   override val signatures = Vector(
-    TypeSignature(this, CTAny, CTInteger, "Returns the number of values or rows.", Category.AGGREGATING)
+    FunctionTypeSignature(this, CTAny, CTInteger, "Returns the number of values or rows.", Category.AGGREGATING)
   )
 }

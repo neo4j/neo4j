@@ -16,14 +16,14 @@
  */
 package org.neo4j.cypher.internal.expressions.functions
 
-import org.neo4j.cypher.internal.expressions.TypeSignature
+import org.neo4j.cypher.internal.expressions.FunctionTypeSignature
 import org.neo4j.cypher.internal.util.symbols.CTAny
 
 case object Coalesce extends Function {
   def name = "coalesce"
 
   override val signatures = Vector(
-    TypeSignature(
+    FunctionTypeSignature(
       this,
       CTAny,
       outputType = CTAny,

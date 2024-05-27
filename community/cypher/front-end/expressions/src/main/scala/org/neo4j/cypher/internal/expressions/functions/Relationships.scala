@@ -16,7 +16,7 @@
  */
 package org.neo4j.cypher.internal.expressions.functions
 
-import org.neo4j.cypher.internal.expressions.TypeSignature
+import org.neo4j.cypher.internal.expressions.FunctionTypeSignature
 import org.neo4j.cypher.internal.util.symbols.CTList
 import org.neo4j.cypher.internal.util.symbols.CTPath
 import org.neo4j.cypher.internal.util.symbols.CTRelationship
@@ -25,7 +25,7 @@ case object Relationships extends Function {
   def name = "relationships"
 
   override val signatures = Vector(
-    TypeSignature(
+    FunctionTypeSignature(
       this,
       CTPath,
       CTList(CTRelationship),

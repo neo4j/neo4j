@@ -16,7 +16,7 @@
  */
 package org.neo4j.cypher.internal.expressions.functions
 
-import org.neo4j.cypher.internal.expressions.TypeSignature
+import org.neo4j.cypher.internal.expressions.FunctionTypeSignature
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.CTFloat
 import org.neo4j.cypher.internal.util.symbols.CTInteger
@@ -27,7 +27,7 @@ case object ToFloat extends Function {
   override def name = "toFloat"
 
   override val signatures = Vector(
-    TypeSignature(
+    FunctionTypeSignature(
       this,
       ClosedDynamicUnionType(Set(CTString, CTInteger, CTFloat))(InputPosition.NONE),
       CTFloat,

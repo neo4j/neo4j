@@ -16,13 +16,13 @@
  */
 package org.neo4j.cypher.internal.expressions.functions
 
-import org.neo4j.cypher.internal.expressions.TypeSignature
+import org.neo4j.cypher.internal.expressions.FunctionTypeSignature
 import org.neo4j.cypher.internal.util.symbols.CTFloat
 
 case object Haversin extends Function {
   def name = "haversin"
 
   override val signatures = Vector(
-    TypeSignature(this, CTFloat, CTFloat, "Returns half the versine of a number.", Category.TRIGONOMETRIC)
+    FunctionTypeSignature(this, CTFloat, CTFloat, "Returns half the versine of a number.", Category.TRIGONOMETRIC)
   )
 }

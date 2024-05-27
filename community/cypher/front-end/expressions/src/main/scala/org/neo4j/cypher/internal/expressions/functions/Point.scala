@@ -16,7 +16,7 @@
  */
 package org.neo4j.cypher.internal.expressions.functions
 
-import org.neo4j.cypher.internal.expressions.TypeSignature
+import org.neo4j.cypher.internal.expressions.FunctionTypeSignature
 import org.neo4j.cypher.internal.util.symbols.CTMap
 import org.neo4j.cypher.internal.util.symbols.CTPoint
 
@@ -24,7 +24,7 @@ case object Point extends Function {
   override def name = "point"
 
   override val signatures = Vector(
-    TypeSignature(
+    FunctionTypeSignature(
       this,
       CTMap,
       CTPoint,

@@ -16,14 +16,14 @@
  */
 package org.neo4j.cypher.internal.expressions.functions
 
-import org.neo4j.cypher.internal.expressions.TypeSignature
+import org.neo4j.cypher.internal.expressions.FunctionTypeSignature
 import org.neo4j.cypher.internal.util.symbols.CTFloat
 
 case object Rand extends Function {
   val name = "rand"
 
   override val signatures = Vector(
-    TypeSignature.noArg(
+    FunctionTypeSignature.noArg(
       this,
       CTFloat,
       "Returns a random `FLOAT` in the range from 0 (inclusive) to 1 (exclusive).",

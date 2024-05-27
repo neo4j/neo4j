@@ -16,13 +16,13 @@
  */
 package org.neo4j.cypher.internal.expressions.functions
 
-import org.neo4j.cypher.internal.expressions.TypeSignature
+import org.neo4j.cypher.internal.expressions.FunctionTypeSignature
 import org.neo4j.cypher.internal.util.symbols.CTAny
 
 case object Min extends AggregatingFunction {
   override def name = "min"
 
-  override val signatures: Vector[TypeSignature] = Vector(
-    TypeSignature(this, CTAny, CTAny, "Returns the minimum value in a set of values.", Category.AGGREGATING)
+  override val signatures: Vector[FunctionTypeSignature] = Vector(
+    FunctionTypeSignature(this, CTAny, CTAny, "Returns the minimum value in a set of values.", Category.AGGREGATING)
   )
 }

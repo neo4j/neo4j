@@ -16,13 +16,13 @@
  */
 package org.neo4j.cypher.internal.expressions.functions
 
-import org.neo4j.cypher.internal.expressions.TypeSignature
+import org.neo4j.cypher.internal.expressions.FunctionTypeSignature
 import org.neo4j.cypher.internal.util.symbols.CTString
 
 object RandomUUID extends Function {
   override def name: String = "randomUUID"
 
   override val signatures = Vector(
-    TypeSignature.noArg(this, CTString, "Generates a random UUID.", Category.SCALAR)
+    FunctionTypeSignature.noArg(this, CTString, "Generates a random UUID.", Category.SCALAR)
   )
 }

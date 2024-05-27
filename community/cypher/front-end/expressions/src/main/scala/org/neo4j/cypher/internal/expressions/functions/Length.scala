@@ -16,7 +16,7 @@
  */
 package org.neo4j.cypher.internal.expressions.functions
 
-import org.neo4j.cypher.internal.expressions.TypeSignature
+import org.neo4j.cypher.internal.expressions.FunctionTypeSignature
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.symbols.CTPath
 
@@ -24,6 +24,6 @@ case object Length extends Function {
   def name = "length"
 
   override val signatures = Vector(
-    TypeSignature(this, CTPath, CTInteger, "Returns the length of a `PATH`.", Category.SCALAR)
+    FunctionTypeSignature(this, CTPath, CTInteger, "Returns the length of a `PATH`.", Category.SCALAR)
   )
 }

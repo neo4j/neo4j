@@ -16,13 +16,19 @@
  */
 package org.neo4j.cypher.internal.expressions.functions
 
-import org.neo4j.cypher.internal.expressions.TypeSignature
+import org.neo4j.cypher.internal.expressions.FunctionTypeSignature
 import org.neo4j.cypher.internal.util.symbols.CTFloat
 
 case object Atan extends Function {
   def name = "atan"
 
   override val signatures = Vector(
-    TypeSignature(this, CTFloat, CTFloat, "Returns the arctangent of a `FLOAT` in radians.", Category.TRIGONOMETRIC)
+    FunctionTypeSignature(
+      this,
+      CTFloat,
+      CTFloat,
+      "Returns the arctangent of a `FLOAT` in radians.",
+      Category.TRIGONOMETRIC
+    )
   )
 }
