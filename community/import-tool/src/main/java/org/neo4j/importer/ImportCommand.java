@@ -37,6 +37,7 @@ import static picocli.CommandLine.Help.Visibility.NEVER;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.io.UncheckedIOException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -62,9 +63,13 @@ import org.neo4j.commandline.dbms.LockChecker;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.importer.CsvImporter.CsvImportException;
+import org.neo4j.internal.batchimport.AdditionalInitialIds;
+import org.neo4j.internal.batchimport.BatchImporter;
 import org.neo4j.internal.batchimport.Configuration;
 import org.neo4j.internal.batchimport.IndexConfig;
+import org.neo4j.internal.batchimport.input.Collector;
 import org.neo4j.internal.batchimport.input.IdType;
+import org.neo4j.internal.batchimport.input.Input;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
@@ -73,10 +78,20 @@ import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.context.FixedVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.database.NormalizedDatabaseName;
+import org.neo4j.kernel.impl.index.schema.DefaultIndexProvidersAccess;
+import org.neo4j.kernel.impl.index.schema.IndexImporterFactoryImpl;
 import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
+import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
+import org.neo4j.kernel.impl.transaction.log.files.TransactionLogInitializer;
 import org.neo4j.kernel.impl.util.Converters;
+import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.kernel.recovery.LogTailExtractor;
+import org.neo4j.logging.InternalLogProvider;
+import org.neo4j.logging.internal.LogService;
+import org.neo4j.logging.internal.SimpleLogService;
 import org.neo4j.memory.EmptyMemoryTracker;
+import org.neo4j.memory.MemoryTracker;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.util.VisibleForTesting;
 import picocli.CommandLine;
@@ -90,11 +105,10 @@ import picocli.CommandLine.Parameters;
         subcommands = {ImportCommand.Full.class, CommandLine.HelpCommand.class})
 @SuppressWarnings("FieldMayBeFinal")
 public class ImportCommand {
-
     /**
      * Arguments and logic shared between Full and Incremental import commands.
      */
-    private abstract static class Base extends AbstractAdminCommand {
+    protected abstract static class Base extends AbstractAdminCommand {
         /**
          * Delimiter used between files in an input group.
          */
@@ -376,7 +390,7 @@ public class ImportCommand {
                         "Automatically skip accidental header lines in subsequent files in file groups with more than one file.")
         private boolean autoSkipHeaders;
 
-        Base(ExecutionContext ctx) {
+        protected Base(ExecutionContext ctx) {
             super(ctx);
         }
 
@@ -391,11 +405,7 @@ public class ImportCommand {
         }
 
         protected void doExecute(
-                boolean incremental,
-                CsvImporter.IncrementalStage mode,
-                String format,
-                boolean overwriteDestination,
-                Base.MaybeLocker maybeLockChecker) {
+                ImportType importType, String format, boolean overwriteDestination, Base.MaybeLocker maybeLockChecker) {
             try {
                 final var databaseConfig = loadNeo4jConfig(format);
                 DatabaseLayout databaseLayout = Neo4jLayout.of(databaseConfig).databaseLayout(database.name());
@@ -427,11 +437,10 @@ public class ImportCommand {
                             .withVerbose(verbose)
                             .withAutoSkipHeaders(autoSkipHeaders)
                             .withForce(overwriteDestination)
-                            .withIncremental(incremental)
+                            .withImportType(importType)
                             .withLogProvider(logProvider);
                     CursorContextFactory cursorContextFactory;
-                    if (incremental) {
-                        importerBuilder.withIncrementalStage(mode);
+                    if (importType == ImportType.incremental) {
                         cursorContextFactory = new CursorContextFactory(
                                 PageCacheTracer.NULL,
                                 new FixedVersionContextSupplier(getLogTail(fileSystem, databaseLayout, databaseConfig)
@@ -451,7 +460,7 @@ public class ImportCommand {
                         importerBuilder.addRelationshipFiles(r.key, r.toPaths(fileSystem));
                     }
 
-                    importerBuilder.build().doImport();
+                    importerBuilder.build().doImport(this);
                 } catch (FileLockException e) {
                     throw new CommandFailedException(
                             "The database is in use. Stop database '%s' and try again."
@@ -467,6 +476,24 @@ public class ImportCommand {
                 throw new UncheckedIOException(e);
             }
         }
+
+        protected abstract void doImport(
+                FileSystemAbstraction fileSystem,
+                DatabaseLayout databaseLayout,
+                Config databaseConfig,
+                JobScheduler jobScheduler,
+                InternalLogProvider logProvider,
+                PageCacheTracer pageCacheTracer,
+                CursorContextFactory contextFactory,
+                Configuration importConfig,
+                LogService logService,
+                PrintStream stdOut,
+                PrintStream stdErr,
+                boolean verbose,
+                Collector badCollector,
+                MemoryTracker memoryTracker,
+                Input input)
+                throws IOException;
 
         private LogTailMetadata getLogTail(
                 FileSystemAbstraction fs, DatabaseLayout databaseLayout, Config databaseConfig) throws IOException {
@@ -491,6 +518,17 @@ public class ImportCommand {
                 builder.set(GraphDatabaseSettings.db_format, format);
             }
             return builder.build();
+        }
+
+        LogTailMetadata readLogTailMetaData(
+                FileSystemAbstraction fileSystem,
+                DatabaseLayout databaseLayout,
+                StorageEngineFactory storageEngineFactory)
+                throws IOException {
+            return LogFilesBuilder.logFilesBasedOnlyBuilder(databaseLayout.getTransactionLogsDirectory(), fileSystem)
+                    .withStorageEngineFactory(storageEngineFactory)
+                    .build()
+                    .getTailMetadata();
         }
 
         private org.neo4j.csv.reader.Configuration csvConfiguration() {
@@ -608,11 +646,51 @@ public class ImportCommand {
 
         @Override
         public void execute() throws Exception {
-            doExecute(false, null, format, overwriteDestination, databaseLayout -> {
+            doExecute(ImportType.full, format, overwriteDestination, databaseLayout -> {
                 // Create the db folder if it doesn't exist, to be able to create and lock the lockfile.
                 ctx.fs().mkdirs(databaseLayout.databaseDirectory());
                 return LockChecker.checkDatabaseLock(databaseLayout);
             });
+        }
+
+        @Override
+        protected void doImport(
+                FileSystemAbstraction fileSystem,
+                DatabaseLayout databaseLayout,
+                Config databaseConfig,
+                JobScheduler jobScheduler,
+                InternalLogProvider logProvider,
+                PageCacheTracer pageCacheTracer,
+                CursorContextFactory contextFactory,
+                Configuration importConfig,
+                LogService logService,
+                PrintStream stdOut,
+                PrintStream stdErr,
+                boolean verbose,
+                Collector badCollector,
+                MemoryTracker memoryTracker,
+                Input input)
+                throws IOException {
+            StorageEngineFactory storageEngineFactory = StorageEngineFactory.selectStorageEngine(databaseConfig);
+            BatchImporter importer = storageEngineFactory.batchImporter(
+                    databaseLayout,
+                    fileSystem,
+                    pageCacheTracer,
+                    importConfig,
+                    logService,
+                    stdOut,
+                    verbose,
+                    AdditionalInitialIds.EMPTY,
+                    databaseConfig,
+                    new PrintingImportLogicMonitor(stdOut, stdErr),
+                    jobScheduler,
+                    badCollector,
+                    TransactionLogInitializer.getLogFilesInitializer(),
+                    new IndexImporterFactoryImpl(),
+                    memoryTracker,
+                    contextFactory);
+
+            importer.doImport(input);
         }
     }
 
@@ -627,7 +705,7 @@ public class ImportCommand {
                         + "a stopped database) followed by 'build' (on a potentially running database) and "
                         + "finally 'merge' (on a stopped database).",
                 converter = StageConverter.class)
-        CsvImporter.IncrementalStage stage = CsvImporter.IncrementalStage.all;
+        IncrementalStage stage = IncrementalStage.all;
 
         @Option(names = "--force", required = true, description = "Confirm incremental import by setting this flag.")
         boolean forced;
@@ -643,12 +721,75 @@ public class ImportCommand {
                         "ERROR: Incremental import needs to be used with care. Please confirm by specifying --force.");
                 throw new IllegalArgumentException("Missing force");
             }
-            doExecute(true, stage, null, false, (layout) -> () -> {} /* locking handled in the specific steps */);
+            doExecute(
+                    ImportType.incremental,
+                    null,
+                    false,
+                    (layout) -> () -> {} /* locking handled in the specific steps */);
         }
 
-        static class StageConverter implements CommandLine.ITypeConverter<CsvImporter.IncrementalStage> {
+        @Override
+        protected void doImport(
+                FileSystemAbstraction fileSystem,
+                DatabaseLayout databaseLayout,
+                Config databaseConfig,
+                JobScheduler jobScheduler,
+                InternalLogProvider logProvider,
+                PageCacheTracer pageCacheTracer,
+                CursorContextFactory contextFactory,
+                Configuration importConfig,
+                LogService logService,
+                PrintStream stdOut,
+                PrintStream stdErr,
+                boolean verbose,
+                Collector badCollector,
+                MemoryTracker memoryTracker,
+                Input input)
+                throws IOException {
+            StorageEngineFactory storageEngineFactory = StorageEngineFactory.selectStorageEngine(
+                            fileSystem, databaseLayout)
+                    .orElseThrow();
+            try (Lifespan life = new Lifespan()) {
+                var indexProviders = life.add(new DefaultIndexProvidersAccess(
+                        storageEngineFactory,
+                        fileSystem,
+                        databaseConfig,
+                        jobScheduler,
+                        new SimpleLogService(logProvider),
+                        pageCacheTracer,
+                        contextFactory));
+                var importer = storageEngineFactory.incrementalBatchImporter(
+                        databaseLayout,
+                        fileSystem,
+                        pageCacheTracer,
+                        importConfig,
+                        logService,
+                        stdOut,
+                        verbose,
+                        AdditionalInitialIds.EMPTY,
+                        () -> readLogTailMetaData(fileSystem, databaseLayout, storageEngineFactory),
+                        databaseConfig,
+                        new PrintingImportLogicMonitor(stdOut, stdErr),
+                        jobScheduler,
+                        badCollector,
+                        TransactionLogInitializer.getLogFilesInitializer(),
+                        new IndexImporterFactoryImpl(),
+                        memoryTracker,
+                        contextFactory,
+                        indexProviders);
+                switch (stage) {
+                    case prepare -> importer.prepare(input);
+                    case build -> importer.build(input);
+                    case merge -> importer.merge();
+                    case all -> importer.doImport(input);
+                    default -> throw new IllegalArgumentException("Unknown import mode " + stage);
+                }
+            }
+        }
+
+        static class StageConverter implements CommandLine.ITypeConverter<IncrementalStage> {
             @Override
-            public CsvImporter.IncrementalStage convert(String in) {
+            public IncrementalStage convert(String in) {
                 in = switch (in) {
                     case "1" -> "prepare";
                     case "2" -> "build";
@@ -656,7 +797,7 @@ public class ImportCommand {
                     default -> in.toLowerCase(Locale.ROOT);
                 };
                 try {
-                    return CsvImporter.IncrementalStage.valueOf(in);
+                    return IncrementalStage.valueOf(in);
 
                 } catch (Exception e) {
                     throw new CommandLine.TypeConversionException(format("Invalid stage: %s (%s)", in, e));
@@ -730,4 +871,39 @@ public class ImportCommand {
             usageHelp = true,
             description = "Show this help message and exit.")
     private boolean helpRequested;
+
+    enum IncrementalStage {
+        /**
+         * Prepares an incremental import. This requires target database to be offline.
+         */
+        prepare,
+        /**
+         * Builds the incremental import. The is disjoint from the target database state.
+         */
+        build,
+        /**
+         * Merges the incremental import into the target database. This requires target database to be offline.
+         */
+        merge,
+        /**
+         * Performs a full incremental import including all steps involved.
+         */
+        all
+    }
+
+    protected enum ImportType {
+        full("Full import"),
+        incremental("Incremental import"),
+        spd("SPD property data sharded import");
+
+        private final String description;
+
+        ImportType(String description) {
+            this.description = description;
+        }
+
+        String description() {
+            return description;
+        }
+    }
 }

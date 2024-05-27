@@ -53,8 +53,6 @@ import java.util.Set;
 import java.util.function.Supplier;
 import org.neo4j.configuration.Config;
 import org.neo4j.csv.reader.IllegalMultilineFieldException;
-import org.neo4j.internal.batchimport.AdditionalInitialIds;
-import org.neo4j.internal.batchimport.BatchImporter;
 import org.neo4j.internal.batchimport.Configuration;
 import org.neo4j.internal.batchimport.cache.idmapping.string.DuplicateInputIdException;
 import org.neo4j.internal.batchimport.input.BadCollector;
@@ -73,13 +71,7 @@ import org.neo4j.io.os.OsBeanUtil;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.context.FixedVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.kernel.impl.index.schema.DefaultIndexProvidersAccess;
-import org.neo4j.kernel.impl.index.schema.IndexImporterFactoryImpl;
-import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
-import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
-import org.neo4j.kernel.impl.transaction.log.files.TransactionLogInitializer;
 import org.neo4j.kernel.internal.Version;
-import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.PrefixedLogProvider;
@@ -88,10 +80,9 @@ import org.neo4j.logging.log4j.Log4jLogProvider;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.util.Preconditions;
 
-class CsvImporter implements Importer {
+class CsvImporter {
     static final String DEFAULT_REPORT_FILE_NAME = "import.report";
 
     private final DatabaseLayout databaseLayout;
@@ -118,8 +109,8 @@ class CsvImporter implements Importer {
     private final CursorContextFactory contextFactory;
     private final MemoryTracker memoryTracker;
     private final boolean force;
-    private final IncrementalStage incrementalStage;
-    private final boolean incremental;
+    private final ImportCommand.IncrementalStage incrementalStage;
+    private final ImportCommand.ImportType importType;
     private final InternalLogProvider logProvider;
 
     private CsvImporter(Builder b) {
@@ -148,12 +139,11 @@ class CsvImporter implements Importer {
         this.stdErr = requireNonNull(b.stdErr);
         this.logProvider = requireNonNull(b.logProvider);
         this.force = b.force;
-        this.incremental = b.incremental;
+        this.importType = b.importType;
         this.incrementalStage = b.incrementalStage;
     }
 
-    @Override
-    public void doImport() throws IOException {
+    void doImport(ImportCommand.Base type) throws IOException {
         if (force) {
             fileSystem.deleteRecursively(
                     databaseLayout.databaseDirectory(), path -> !path.equals(databaseLayout.databaseLockFile()));
@@ -179,12 +169,12 @@ class CsvImporter implements Importer {
                     autoSkipHeaders,
                     new CsvInput.PrintingMonitor(stdOut),
                     memoryTracker)) {
-                doImport(input, badCollector);
+                doImport(input, badCollector, type);
             }
         }
     }
 
-    private void doImport(Input input, Collector badCollector) {
+    private void doImport(Input input, Collector badCollector, ImportCommand.Base type) {
         boolean success = false;
 
         printOverview();
@@ -195,71 +185,25 @@ class CsvImporter implements Importer {
                     NullLogProvider.getInstance(),
                     new PrefixedLogProvider(logProvider, databaseLayout.getDatabaseName()),
                     databaseConfig.get(duplication_user_messages));
-            if (incremental) {
-                StorageEngineFactory storageEngineFactory = StorageEngineFactory.selectStorageEngine(
-                                fileSystem, databaseLayout)
-                        .orElseThrow();
-                try (Lifespan life = new Lifespan()) {
-                    var indexProviders = life.add(new DefaultIndexProvidersAccess(
-                            storageEngineFactory,
-                            fileSystem,
-                            databaseConfig,
-                            jobScheduler,
-                            new SimpleLogService(logProvider),
-                            pageCacheTracer,
-                            contextFactory));
-                    var importer = storageEngineFactory.incrementalBatchImporter(
-                            databaseLayout,
-                            fileSystem,
-                            pageCacheTracer,
-                            importConfig,
-                            logService,
-                            stdOut,
-                            verbose,
-                            AdditionalInitialIds.EMPTY,
-                            () -> readLogTailMetaData(storageEngineFactory),
-                            databaseConfig,
-                            new PrintingImportLogicMonitor(stdOut, stdErr),
-                            jobScheduler,
-                            badCollector,
-                            TransactionLogInitializer.getLogFilesInitializer(),
-                            new IndexImporterFactoryImpl(),
-                            memoryTracker,
-                            contextFactory,
-                            indexProviders);
-                    switch (incrementalStage) {
-                        case prepare -> importer.prepare(input);
-                        case build -> importer.build(input);
-                        case merge -> importer.merge();
-                        case all -> importer.doImport(input);
-                        default -> throw new IllegalArgumentException("Unknown import mode " + incrementalStage);
-                    }
-                }
-            } else {
-                StorageEngineFactory storageEngineFactory = StorageEngineFactory.selectStorageEngine(databaseConfig);
-                BatchImporter importer = storageEngineFactory.batchImporter(
-                        databaseLayout,
-                        fileSystem,
-                        pageCacheTracer,
-                        importConfig,
-                        logService,
-                        stdOut,
-                        verbose,
-                        AdditionalInitialIds.EMPTY,
-                        databaseConfig,
-                        new PrintingImportLogicMonitor(stdOut, stdErr),
-                        jobScheduler,
-                        badCollector,
-                        TransactionLogInitializer.getLogFilesInitializer(),
-                        new IndexImporterFactoryImpl(),
-                        memoryTracker,
-                        contextFactory);
-
-                importer.doImport(input);
-            }
+            type.doImport(
+                    fileSystem,
+                    databaseLayout,
+                    databaseConfig,
+                    jobScheduler,
+                    logProvider,
+                    pageCacheTracer,
+                    contextFactory,
+                    importConfig,
+                    logService,
+                    stdOut,
+                    stdErr,
+                    verbose,
+                    badCollector,
+                    memoryTracker,
+                    input);
             success = true;
         } catch (Exception ex) {
-            throw andPrintError(databaseLayout.getDatabaseName(), ex, incremental, stdErr);
+            throw andPrintError(databaseLayout.getDatabaseName(), ex, importType, stdErr);
         } finally {
             long numberOfBadEntries = badCollector.badEntries();
             if (badTolerance != BadCollector.UNLIMITED_TOLERANCE && numberOfBadEntries > badTolerance) {
@@ -290,23 +234,16 @@ class CsvImporter implements Importer {
         }
     }
 
-    private LogTailMetadata readLogTailMetaData(StorageEngineFactory storageEngineFactory) throws IOException {
-        return LogFilesBuilder.logFilesBasedOnlyBuilder(databaseLayout.getTransactionLogsDirectory(), fileSystem)
-                .withStorageEngineFactory(storageEngineFactory)
-                .build()
-                .getTailMetadata();
-    }
-
     /**
      * Method name looks strange, but look at how it's used and you'll see why it's named like that.
      *
      * @param databaseName the name of the database to receive the import data
      * @param e            the error that occurred
-     * @param incremental  whether the import is incremental
+     * @param importType   type of import
      * @param err          the error output stream
      */
     private static RuntimeException andPrintError(
-            String databaseName, Exception e, boolean incremental, PrintStream err) {
+            String databaseName, Exception e, ImportCommand.ImportType importType, PrintStream err) {
         // List of common errors that can be explained to the user
         if (DuplicateInputIdException.class.equals(e.getClass())) {
             err.println("Duplicate input ids that would otherwise clash can be put into separate id space.");
@@ -318,7 +255,7 @@ class CsvImporter implements Importer {
         } else if (FileLockException.class.equals(e.getClass())) {
             String string =
                     "%s can only be run against a database which is offline. The current state of database '%s' is online."
-                            .formatted(incremental ? "Incremental import" : "Import", databaseName);
+                            .formatted(importType.description(), databaseName);
             err.println(string);
         }
         // This type of exception is wrapped since our input code throws InputException consistently,
@@ -466,8 +403,8 @@ class CsvImporter implements Importer {
         private PrintStream stdOut = System.out;
         private PrintStream stdErr = System.err;
         private boolean force;
-        private boolean incremental = false;
-        private IncrementalStage incrementalStage = null;
+        private ImportCommand.ImportType importType = ImportCommand.ImportType.full;
+        private ImportCommand.IncrementalStage incrementalStage = null;
         private InternalLogProvider logProvider = NullLogProvider.getInstance();
 
         Builder withDatabaseLayout(DatabaseLayout databaseLayout) {
@@ -592,12 +529,12 @@ class CsvImporter implements Importer {
             return this;
         }
 
-        Builder withIncremental(boolean incremental) {
-            this.incremental = incremental;
+        Builder withImportType(ImportCommand.ImportType importType) {
+            this.importType = importType;
             return this;
         }
 
-        Builder withIncrementalStage(IncrementalStage mode) {
+        Builder withIncrementalStage(ImportCommand.IncrementalStage mode) {
             this.incrementalStage = mode;
             return this;
         }
@@ -609,29 +546,10 @@ class CsvImporter implements Importer {
 
         CsvImporter build() {
             Preconditions.checkState(
-                    !(force && incremental),
+                    !(force && importType == ImportCommand.ImportType.incremental),
                     "--overwrite-destination doesn't work with incremental import",
                     incrementalStage);
             return new CsvImporter(this);
         }
-    }
-
-    enum IncrementalStage {
-        /**
-         * Prepares an incremental import. This requires target database to be offline.
-         */
-        prepare,
-        /**
-         * Builds the incremental import. The is disjoint from the target database state.
-         */
-        build,
-        /**
-         * Merges the incremental import into the target database. This requires target database to be offline.
-         */
-        merge,
-        /**
-         * Performs a full incremental import including all steps involved.
-         */
-        all
     }
 }

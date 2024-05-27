@@ -24,11 +24,11 @@ import static org.neo4j.io.ByteUnit.bytesToString;
 import java.io.PrintStream;
 import org.neo4j.internal.batchimport.Monitor;
 
-class PrintingImportLogicMonitor implements Monitor {
+public class PrintingImportLogicMonitor implements Monitor {
     private final PrintStream out;
     private final PrintStream err;
 
-    PrintingImportLogicMonitor(PrintStream out, PrintStream err) {
+    public PrintingImportLogicMonitor(PrintStream out, PrintStream err) {
         this.out = out;
         this.err = err;
     }

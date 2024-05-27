@@ -150,13 +150,15 @@ class ImportCommandTest {
         var requiredArgs = List.of("--force", "--nodes", tempFileName, "--relationships", tempFileName);
 
         assertIncrementalStageAliases(
-                requiredArgs, List.of("prepare", "PREPARE", "1"), CsvImporter.IncrementalStage.prepare);
-        assertIncrementalStageAliases(requiredArgs, List.of("build", "BUILD", "2"), CsvImporter.IncrementalStage.build);
-        assertIncrementalStageAliases(requiredArgs, List.of("merge", "MERGE", "3"), CsvImporter.IncrementalStage.merge);
+                requiredArgs, List.of("prepare", "PREPARE", "1"), ImportCommand.IncrementalStage.prepare);
+        assertIncrementalStageAliases(
+                requiredArgs, List.of("build", "BUILD", "2"), ImportCommand.IncrementalStage.build);
+        assertIncrementalStageAliases(
+                requiredArgs, List.of("merge", "MERGE", "3"), ImportCommand.IncrementalStage.merge);
     }
 
     private void assertIncrementalStageAliases(
-            List<String> requiredArgs, List<String> aliases, CsvImporter.IncrementalStage stage) {
+            List<String> requiredArgs, List<String> aliases, ImportCommand.IncrementalStage stage) {
         for (var alias : aliases) {
             var command = new ImportCommand.Incremental(getExecutionContext());
             var args = Stream.concat(Stream.of("--stage", alias), requiredArgs.stream());

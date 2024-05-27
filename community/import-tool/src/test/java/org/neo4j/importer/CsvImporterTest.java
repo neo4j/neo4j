@@ -38,6 +38,7 @@ import java.util.Collections;
 import java.util.List;
 import org.apache.commons.io.output.NullPrintStream;
 import org.junit.jupiter.api.Test;
+import org.neo4j.cli.ExecutionContext;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.csv.reader.Configuration;
@@ -83,7 +84,8 @@ class CsvImporterTest {
                     .withLogProvider(logProvider)
                     .addNodeFiles(emptySet(), new Path[] {inputFile.toAbsolutePath()})
                     .build();
-            csvImporter.doImport();
+
+            csvImporter.doImport(fullImport());
         }
 
         assertTrue(Files.exists(reportLocation));
@@ -110,7 +112,7 @@ class CsvImporterTest {
                     .withStdOut(new PrintStream(rawOut))
                     .withStdErr(new PrintStream(rawErr))
                     .withReportFile(reportLocation.toAbsolutePath());
-            assertThatThrownBy(() -> csvImporterBuilder.build().doImport())
+            assertThatThrownBy(() -> csvImporterBuilder.build().doImport(fullImport()))
                     .hasCauseInstanceOf(DirectoryNotEmptyException.class);
             out.flush();
             err.flush();
@@ -118,7 +120,7 @@ class CsvImporterTest {
             // Then
             assertThat(rawErr.toString().contains("Database already exist. Re-run with `--overwrite-destination`"))
                     .isTrue();
-            assertThatCode(() -> csvImporterBuilder.withForce(true).build().doImport())
+            assertThatCode(() -> csvImporterBuilder.withForce(true).build().doImport(fullImport()))
                     .doesNotThrowAnyException();
         }
     }
@@ -145,7 +147,7 @@ class CsvImporterTest {
                 .addNodeFiles(emptySet(), new Path[] {inputFile.toAbsolutePath()})
                 .build();
 
-        csvImporter.doImport();
+        csvImporter.doImport(fullImport());
 
         long pins = cacheTracer.pins();
         assertThat(pins).isGreaterThan(0);
@@ -171,7 +173,7 @@ class CsvImporterTest {
                 .build();
 
         // when
-        assertThatThrownBy(importer::doImport)
+        assertThatThrownBy(() -> importer.doImport(fullImport()))
                 .hasRootCauseInstanceOf(InputException.class)
                 .hasMessageContaining("Too many bad entries");
     }
@@ -180,5 +182,14 @@ class CsvImporterTest {
         var path = testDir.file(fileName);
         Files.write(path, List.of(lines), Charset.defaultCharset());
         return path;
+    }
+
+    private ImportCommand.Full fullImport() {
+        return new ImportCommand.Full(new ExecutionContext(
+                testDir.homePath(),
+                testDir.homePath().resolve("conf"),
+                NullPrintStream.INSTANCE,
+                NullPrintStream.INSTANCE,
+                testDir.getFileSystem()));
     }
 }
