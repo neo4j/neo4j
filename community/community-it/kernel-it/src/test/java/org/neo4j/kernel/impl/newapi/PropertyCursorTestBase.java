@@ -314,7 +314,7 @@ public abstract class PropertyCursorTestBase<G extends KernelAPIReadTestSupport>
                     relationship.relationshipReference(), relationship.propertiesReference(), ALL_PROPERTIES, props);
             assertFalse(props.next(), "no properties via property ref");
 
-            assertFalse(relationship.next(), "only one node");
+            assertFalse(relationship.next(), "only one relationship");
         }
     }
 
