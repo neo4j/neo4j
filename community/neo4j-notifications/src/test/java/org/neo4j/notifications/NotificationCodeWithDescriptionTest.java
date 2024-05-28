@@ -1214,6 +1214,14 @@ class NotificationCodeWithDescriptionTest {
                 .isNotEqualTo(NotificationCategory.UNKNOWN.name()));
     }
 
+    @Test
+    void noNotificationShouldHaveUnknownClassification() {
+        Arrays.stream(NotificationCodeWithDescription.values()).forEach(notification -> {
+            var notificationImpl = new NotificationImplementation.NotificationBuilder(notification).build();
+            assertThat(notificationImpl.getClassification()).isNotEqualTo(NotificationClassification.UNKNOWN);
+        });
+    }
+
     /**
      * If this test fails, you have added, changed or removed a notification.
      * To get it approved, follow the instructions on
