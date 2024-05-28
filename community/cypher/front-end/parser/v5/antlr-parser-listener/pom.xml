@@ -77,7 +77,7 @@
                         </executions>
                         <configuration>
                             <outputDirectory>${basedir}/src/main/java/</outputDirectory>
-                            <parserClass>org.neo4j.cypher.internal.parser.CypherParser</parserClass>
+                            <parserClass>org.neo4j.cypher.internal.parser.v5.CypherParser</parserClass>
                             <listenerName>AbstractAstBuilder</listenerName>
                         </configuration>
                     </plugin>

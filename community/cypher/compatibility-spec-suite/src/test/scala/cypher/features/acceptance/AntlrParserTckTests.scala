@@ -23,9 +23,9 @@ import cypher.features.BaseFeatureTestHolder
 import org.junit.jupiter.api.function.Executable
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.factory.neo4j.JavaCCParser
-import org.neo4j.cypher.internal.cst.factory.neo4j.ast.CypherAstParser
 import org.neo4j.cypher.internal.expressions.Or
 import org.neo4j.cypher.internal.expressions.Ors
+import org.neo4j.cypher.internal.parser.v5.ast.factory.ast.CypherAstParser
 import org.neo4j.cypher.internal.util.Neo4jCypherExceptionFactory
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
 import org.neo4j.cypher.internal.util.Rewriter

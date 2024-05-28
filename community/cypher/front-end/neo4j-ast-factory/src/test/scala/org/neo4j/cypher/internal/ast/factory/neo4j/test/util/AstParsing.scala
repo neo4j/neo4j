@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.ParseRes
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.ParseResults
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.ParseSuccess
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.ParserInTest
-import org.neo4j.cypher.internal.cst.factory.neo4j.AntlrRule
+import org.neo4j.cypher.internal.parser.v5.ast.factory.AntlrRule
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.internal.helpers.Exceptions
 

@@ -22,7 +22,7 @@ import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
 import org.neo4j.cypher.internal.expressions
 import org.neo4j.cypher.internal.expressions.Variable
-import org.neo4j.cypher.internal.parser.CypherParser
+import org.neo4j.cypher.internal.parser.v5.CypherParser
 import org.neo4j.cypher.internal.util.DummyPosition
 import org.neo4j.cypher.internal.util.test_helpers.CypherScalaCheckDrivenPropertyChecks
 import org.neo4j.exceptions.SyntaxException

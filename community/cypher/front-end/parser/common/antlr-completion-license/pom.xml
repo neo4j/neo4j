@@ -23,6 +23,6 @@
     </scm>
 
     <properties>
-        <moduleName>org.neo4j.cypher.internal.cst.factory.neo4j</moduleName>
+        <moduleName>org.neo4j.cypher.internal.parser.ast.factory</moduleName>
     </properties>
 </project>
