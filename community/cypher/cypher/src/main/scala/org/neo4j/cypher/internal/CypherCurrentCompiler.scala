@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal
 
-import org.neo4j.cypher.internal.CypherCurrentCompiler.getTerminationStatus
+import org.neo4j.cypher.internal.CypherCurrentCompiler.CypherExecutableQuery
 import org.neo4j.cypher.internal.cache.CypherQueryCaches
 import org.neo4j.cypher.internal.cache.CypherQueryCaches.CachedExecutionPlan
 import org.neo4j.cypher.internal.cache.CypherQueryCaches.ExecutionPlanCacheKey
@@ -181,7 +181,8 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](
       logicalPlanResult.shouldBeCached,
       contextManager.config.enableMonitors,
       logicalPlanResult.queryObfuscator,
-      contextManager.config.renderPlanDescription
+      contextManager.config.renderPlanDescription,
+      kernelMonitors
     )
   }
 
@@ -298,7 +299,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](
           }
         } else if (planState.planningAttributes.solveds(planState.logicalPlan.id).readOnly) {
           READ_ONLY
-        } else if (columnNames(planState.logicalPlan).isEmpty) {
+        } else if (CypherCurrentCompiler.columnNames(planState.logicalPlan).isEmpty) {
           WRITE
         } else {
           READ_WRITE
@@ -311,6 +312,38 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](
       case procCall: ProcedureCall if procCall.call.signature.accessMode == ProcedureDbmsAccess => true
     }
 
+  /**
+   * Clear the caches of this caching compiler.
+   *
+   * @return the number of entries that were cleared in any cache
+   */
+  def clearCaches(): Long = {
+    // TODO: global clear on queryCaches?
+    Math.max(planner.clearCaches(), queryCaches.executionPlanCache.clear())
+  }
+
+  def clearExecutionPlanCache(): Unit = queryCaches.executionPlanCache.clear()
+
+  def insertIntoCache(
+    preParsedQuery: PreParsedQuery,
+    params: MapValue,
+    parsedQuery: BaseState,
+    parsingNotifications: Set[InternalNotification]
+  ): Unit =
+    planner.insertIntoCache(preParsedQuery, params, parsedQuery, parsingNotifications)
+}
+
+object CypherCurrentCompiler {
+
+  private def getTerminationStatus(error: Throwable): Status = {
+    error match {
+      case e: HasStatus =>
+        e.status()
+      case _ =>
+        Status.Transaction.QueryExecutionFailedOnTransaction
+    }
+  }
+
   private def columnNames(logicalPlan: LogicalPlan): Array[String] =
     logicalPlan match {
       case produceResult: ProduceResult => produceResult.columns.map(_.name).toArray
@@ -318,7 +351,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](
       case _ => Array()
     }
 
-  protected class CypherExecutableQuery(
+  private[internal] class CypherExecutableQuery(
     logicalPlan: LogicalPlan,
     readOnly: Boolean,
     effectiveCardinalities: EffectiveCardinalities,
@@ -336,7 +369,8 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](
     override val shouldBeCached: Boolean,
     enableMonitors: Boolean,
     override val queryObfuscator: QueryObfuscator,
-    renderPlanDescription: Boolean
+    renderPlanDescription: Boolean,
+    kernelMonitors: Monitors
   ) extends ExecutableQuery {
 
     // Monitors are implemented via dynamic proxies which are slow compared to NOOP which is why we want to able to completely disable
@@ -535,38 +569,6 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](
         queryOptionsOffset = queryOptionsOffset,
         notifications = executionPlan.notifications ++ planningNotifications
       )
-    }
-  }
-
-  /**
-   * Clear the caches of this caching compiler.
-   *
-   * @return the number of entries that were cleared in any cache
-   */
-  def clearCaches(): Long = {
-    // TODO: global clear on queryCaches?
-    Math.max(planner.clearCaches(), queryCaches.executionPlanCache.clear())
-  }
-
-  def clearExecutionPlanCache(): Unit = queryCaches.executionPlanCache.clear()
-
-  def insertIntoCache(
-    preParsedQuery: PreParsedQuery,
-    params: MapValue,
-    parsedQuery: BaseState,
-    parsingNotifications: Set[InternalNotification]
-  ): Unit =
-    planner.insertIntoCache(preParsedQuery, params, parsedQuery, parsingNotifications)
-}
-
-object CypherCurrentCompiler {
-
-  private def getTerminationStatus(error: Throwable): Status = {
-    error match {
-      case e: HasStatus =>
-        e.status()
-      case _ =>
-        Status.Transaction.QueryExecutionFailedOnTransaction
     }
   }
 }
