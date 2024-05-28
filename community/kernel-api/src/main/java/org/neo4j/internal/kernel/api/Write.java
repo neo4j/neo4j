@@ -19,6 +19,7 @@
  */
 package org.neo4j.internal.kernel.api;
 
+import java.util.Objects;
 import org.eclipse.collections.api.map.primitive.IntObjectMap;
 import org.eclipse.collections.api.set.primitive.IntSet;
 import org.neo4j.exceptions.KernelException;
@@ -64,7 +65,31 @@ public interface Write {
      * @param node the node to delete
      * @return the number of deleted relationships
      */
-    int nodeDetachDelete(long node) throws KernelException;
+    default int nodeDetachDelete(long node) throws KernelException {
+        return nodeDetachDelete(node, (long id, int type, long sourceNodeReference, long targetNodeReference) -> {});
+    }
+
+    @FunctionalInterface
+    interface DetachDeleteConsumer {
+        void accept(long id, int type, long sourceNodeReference, long targetNodeReference);
+
+        default DetachDeleteConsumer andThen(DetachDeleteConsumer after) {
+            Objects.requireNonNull(after);
+            return (long id, int type, long sourceNodeReference, long targetNodeReference) -> {
+                accept(id, type, sourceNodeReference, targetNodeReference);
+                after.accept(id, type, sourceNodeReference, targetNodeReference);
+            };
+        }
+    }
+    /**
+     * Deletes the node and all relationships connecting the node, calls deletedRelationshipConsumer passing
+     * information about each deleted relationship
+     *
+     * @param node the node to delete
+     * @param deletedRelationshipConsumer consumer for deleted rel data
+     * @return the number of deleted relationships
+     */
+    int nodeDetachDelete(long node, DetachDeleteConsumer deletedRelationshipConsumer) throws KernelException;
 
     /**
      * Create a relationship between two nodes.

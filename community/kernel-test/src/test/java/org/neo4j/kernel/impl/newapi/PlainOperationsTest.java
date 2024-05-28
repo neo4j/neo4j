@@ -757,7 +757,7 @@ public class PlainOperationsTest extends OperationsTest {
     }
 
     @Test
-    void detachDeleteNodeWithoutRelationshipsExclusivelyLockNode() {
+    void detachDeleteNodeWithoutRelationshipsExclusivelyLockNode() throws KernelException {
         long nodeId = 1L;
         returnRelationships(transaction, new TestRelationshipChain(nodeId));
         when(transaction.ambientNodeCursor()).thenReturn(new StubNodeCursor(false).withNode(nodeId));
@@ -774,7 +774,7 @@ public class PlainOperationsTest extends OperationsTest {
     }
 
     @Test
-    void detachDeleteNodeExclusivelyLockNodes() {
+    void detachDeleteNodeExclusivelyLockNodes() throws KernelException {
         long nodeId = 1L;
         returnRelationships(transaction, new TestRelationshipChain(nodeId).outgoing(1, 2L, 42));
         when(transaction.ambientNodeCursor()).thenReturn(new StubNodeCursor(false).withNode(nodeId));
@@ -814,7 +814,7 @@ public class PlainOperationsTest extends OperationsTest {
     }
 
     @Test
-    void shouldAcquiredSharedLabelLocksWhenDetachDeletingNode() {
+    void shouldAcquiredSharedLabelLocksWhenDetachDeletingNode() throws KernelException {
         // given
         long nodeId = 1L;
         int labelId1 = 1;
