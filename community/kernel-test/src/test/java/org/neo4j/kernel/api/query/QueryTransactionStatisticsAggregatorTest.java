@@ -21,12 +21,12 @@ package org.neo4j.kernel.api.query;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
-import static org.neo4j.kernel.api.query.QueryTransactionStatisticsAggregator.CommitPhaseStatisticsListener.NO_OP;
 
 import java.util.Random;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.LockSupport;
 import org.junit.jupiter.api.Test;
 
@@ -36,11 +36,13 @@ class QueryTransactionStatisticsAggregatorTest {
         var timeout = TimeUnit.MINUTES.toMillis(10);
         var numberOfThreads = 10;
         var numberOfTransactions = 10000;
-        var accumulator = new QueryTransactionStatisticsAggregator.ConcurrentImpl();
+        var aggregator = new QueryTransactionStatisticsAggregator.ConcurrentImpl();
+        var commitPhaseHits = new LongAdder();
+        var commitPhaseFaults = new LongAdder();
         var queue = new ArrayBlockingQueue<Runnable>(numberOfTransactions);
         var executor = new ThreadPoolExecutor(numberOfThreads, numberOfThreads, 10, TimeUnit.SECONDS, queue);
         for (int i = 0; i < numberOfTransactions; i++) {
-            executor.execute(new Task(accumulator, i));
+            executor.execute(new Task(aggregator, i, commitPhaseHits, commitPhaseFaults));
         }
         executor.shutdown();
 
@@ -49,12 +51,12 @@ class QueryTransactionStatisticsAggregatorTest {
         var highestTransactionId1 = 0L;
         var highestTransactionId2 = 0L;
         while (!executor.isTerminated()) {
-            var stats1 = accumulator.statisticsOfClosedTransactionsExcludingCommits();
-            var stats2 = accumulator.statisticsOfClosedTransactionCommits();
+            var stats1 = aggregator.statisticsOfClosedTransactionsExcludingCommits();
+            var stats2 = aggregator.statisticsOfClosedTransactionCommits();
 
             // Page hits and faults should match
             assertThat(stats1.pageHits()).isEqualTo(stats1.pageFaults());
-            assertThat(stats2.pageHits()).isEqualTo(stats2.pageHits());
+            assertThat(stats2.pageHits()).isEqualTo(stats2.pageFaults());
 
             // Transaction ids should be increasing
             var transactionId1 = stats1.getTransactionSequenceNumber();
@@ -70,20 +72,30 @@ class QueryTransactionStatisticsAggregatorTest {
         }
 
         // Totals should add up
-        assertThat(accumulator.pageHitsOfClosedTransactions()).isEqualTo(numberOfTransactions * 3);
-        assertThat(accumulator.pageFaultsOfClosedTransactions()).isEqualTo(numberOfTransactions * 3);
-        assertThat(accumulator.pageHitsOfClosedTransactionCommits()).isEqualTo(numberOfTransactions);
-        assertThat(accumulator.pageFaultsOfClosedTransactionCommits()).isEqualTo(numberOfTransactions);
+        assertThat(aggregator.pageHitsOfClosedTransactions()).isEqualTo(numberOfTransactions * 3);
+        assertThat(aggregator.pageFaultsOfClosedTransactions()).isEqualTo(numberOfTransactions * 3);
+        assertThat(aggregator.pageHitsOfClosedTransactionCommits()).isEqualTo(numberOfTransactions);
+        assertThat(aggregator.pageFaultsOfClosedTransactionCommits()).isEqualTo(numberOfTransactions);
+        assertThat(commitPhaseHits.sum()).isEqualTo(numberOfTransactions);
+        assertThat(commitPhaseFaults.sum()).isEqualTo(numberOfTransactions);
     }
 
-    private record Task(QueryTransactionStatisticsAggregator accumulator, long transactionId) implements Runnable {
+    private record Task(
+            QueryTransactionStatisticsAggregator aggregator,
+            long transactionId,
+            LongAdder commitPhaseHits,
+            LongAdder commitPhaseFaults)
+            implements Runnable {
         private static final Random RANDOM = new Random();
 
         @Override
         public void run() {
-            accumulator.recordStatisticsOfTransactionAboutToClose(2, 2, transactionId);
+            aggregator.recordStatisticsOfTransactionAboutToClose(2, 2, transactionId);
             LockSupport.parkNanos(RANDOM.nextLong(1000, 10_000));
-            accumulator.recordStatisticsOfClosedTransaction(3, 3, transactionId, NO_OP);
+            aggregator.recordStatisticsOfClosedTransaction(3, 3, transactionId, (hits, faults, txId) -> {
+                commitPhaseHits.add(hits);
+                commitPhaseFaults.add(faults);
+            });
         }
     }
 }

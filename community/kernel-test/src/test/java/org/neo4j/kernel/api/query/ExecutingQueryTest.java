@@ -25,7 +25,6 @@ import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.kernel.api.query.QueryTransactionStatisticsAggregator.CommitPhaseStatisticsListener.NO_OP;
 import static org.neo4j.kernel.database.DatabaseIdFactory.from;
 import static org.neo4j.lock.LockType.SHARED;
 import static org.neo4j.lock.ResourceType.NODE;
@@ -337,7 +336,11 @@ class ExecutingQueryTest {
         assertThat(query.pageFaultsOfClosedTransactionCommits()).isEqualTo(0);
 
         // After commit:
-        query.recordStatisticsOfClosedTransaction(3, 4, 1, NO_OP);
+        query.recordStatisticsOfClosedTransaction(3, 4, 1, (hits, faults, txId) -> {
+            assertThat(hits).isEqualTo(2);
+            assertThat(faults).isEqualTo(2);
+            assertThat(txId).isEqualTo(1);
+        });
 
         assertThat(query.pageHitsOfClosedTransactions()).isEqualTo(3);
         assertThat(query.pageFaultsOfClosedTransactions()).isEqualTo(4);
@@ -355,7 +358,11 @@ class ExecutingQueryTest {
         assertThat(query.pageFaultsOfClosedTransactionCommits()).isEqualTo(2);
 
         // After commit:
-        query.recordStatisticsOfClosedTransaction(7, 8, 2, NO_OP);
+        query.recordStatisticsOfClosedTransaction(7, 8, 2, (hits, faults, txId) -> {
+            assertThat(hits).isEqualTo(4);
+            assertThat(faults).isEqualTo(4);
+            assertThat(txId).isEqualTo(2);
+        });
 
         assertThat(query.pageHitsOfClosedTransactions()).isEqualTo(10);
         assertThat(query.pageFaultsOfClosedTransactions()).isEqualTo(12);
@@ -376,7 +383,11 @@ class ExecutingQueryTest {
         assertThat(query.pageFaultsOfClosedTransactionCommits()).isEqualTo(0);
 
         // After commit:
-        query.recordStatisticsOfClosedTransaction(3, 4, 1, NO_OP);
+        query.recordStatisticsOfClosedTransaction(3, 4, 1, (hits, faults, txId) -> {
+            assertThat(hits).isEqualTo(2);
+            assertThat(faults).isEqualTo(2);
+            assertThat(txId).isEqualTo(1);
+        });
 
         assertThat(query.pageHitsOfClosedTransactions()).isEqualTo(3);
         assertThat(query.pageFaultsOfClosedTransactions()).isEqualTo(4);
@@ -404,7 +415,11 @@ class ExecutingQueryTest {
         assertThat(query.pageFaultsOfClosedTransactionCommits()).isEqualTo(2);
 
         // After commit:
-        query.recordStatisticsOfClosedTransaction(9, 10, 2, NO_OP);
+        query.recordStatisticsOfClosedTransaction(9, 10, 2, (hits, faults, txId) -> {
+            assertThat(hits).isEqualTo(4);
+            assertThat(faults).isEqualTo(4);
+            assertThat(txId).isEqualTo(2);
+        });
 
         assertThat(query.pageHitsOfClosedTransactions()).isEqualTo(19);
         assertThat(query.pageFaultsOfClosedTransactions()).isEqualTo(22);
@@ -412,7 +427,11 @@ class ExecutingQueryTest {
         assertThat(query.pageHitsOfClosedTransactionCommits()).isEqualTo(6);
         assertThat(query.pageFaultsOfClosedTransactionCommits()).isEqualTo(6);
 
-        query.recordStatisticsOfClosedTransaction(11, 12, 3, NO_OP);
+        query.recordStatisticsOfClosedTransaction(11, 12, 3, (hits, faults, txId) -> {
+            assertThat(hits).isEqualTo(4);
+            assertThat(faults).isEqualTo(4);
+            assertThat(txId).isEqualTo(3);
+        });
 
         assertThat(query.pageHitsOfClosedTransactions()).isEqualTo(23);
         assertThat(query.pageFaultsOfClosedTransactions()).isEqualTo(26);
