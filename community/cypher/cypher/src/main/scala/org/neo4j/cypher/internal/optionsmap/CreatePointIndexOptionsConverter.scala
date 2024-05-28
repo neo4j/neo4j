@@ -26,9 +26,9 @@ import org.neo4j.internal.schema.IndexProviderDescriptor
 import org.neo4j.internal.schema.IndexType
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException
 import org.neo4j.values.AnyValue
-import org.neo4j.values.storable.DoubleValue
+import org.neo4j.values.SequenceValue
+import org.neo4j.values.storable.NumberValue
 import org.neo4j.values.utils.PrettyPrinter
-import org.neo4j.values.virtual.ListValue
 import org.neo4j.values.virtual.MapValue
 
 import scala.jdk.CollectionConverters.IteratorHasAsScala
@@ -66,9 +66,11 @@ case class CreatePointIndexOptionsConverter(context: QueryContext)
         checkForVectorConfigValues(new PrettyPrinter(), itemsMap, schemaType)
 
         itemsMap.foldLeft(Map[String, Object]()) {
-          case (m, (p: String, e: ListValue)) =>
+          // Allow both list and array
+          case (m, (p: String, e: SequenceValue)) =>
             val configValue: Array[Double] = e.iterator().asScala.map {
-              case d: DoubleValue => d.doubleValue()
+              // Allow all numbers, and convert them to double
+              case d: NumberValue => d.doubleValue()
               case _              => throw exceptionWrongType(itemsMap)
             }.toArray
             m + (p -> configValue)
