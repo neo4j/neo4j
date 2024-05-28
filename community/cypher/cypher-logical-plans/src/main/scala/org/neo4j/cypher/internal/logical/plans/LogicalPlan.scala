@@ -431,6 +431,7 @@ sealed abstract class LogicalLeafPlan(idGen: IdGen) extends LogicalPlan(idGen) {
 
   def addArgumentIds(argsToAdd: Set[LogicalVariable]): LogicalLeafPlan
   def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): LogicalLeafPlan
+  def removeArgumentIds(): LogicalLeafPlan
 }
 
 sealed abstract class NodeLogicalLeafPlan(idGen: IdGen) extends LogicalLeafPlan(idGen) {
@@ -676,6 +677,8 @@ abstract class CommandLogicalPlan(idGen: IdGen) extends LogicalLeafPlan(idGen = 
 
   override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): CommandLogicalPlan = this
 
+  override def removeArgumentIds(): CommandLogicalPlan = this
+
   override def addArgumentIds(argsToAdd: Set[LogicalVariable]): LogicalLeafPlan = this
 
   // Always the first leaf plan, so arguments is always empty
@@ -776,6 +779,9 @@ case class AllNodesScan(idName: LogicalVariable, argumentIds: Set[LogicalVariabl
   override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): AllNodesScan =
     copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
 
+  override def removeArgumentIds(): AllNodesScan =
+    copy(argumentIds = Set.empty)(SameId(this.id))
+
   override def addArgumentIds(argsToAdd: Set[LogicalVariable]): LogicalLeafPlan =
     copy(argumentIds = argumentIds ++ argsToAdd)(SameId(this.id))
 }
@@ -792,6 +798,9 @@ case class PartitionedAllNodesScan(idName: LogicalVariable, argumentIds: Set[Log
 
   override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): PartitionedAllNodesScan =
     copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
+
+  override def removeArgumentIds(): PartitionedAllNodesScan =
+    copy(argumentIds = Set.empty)(SameId(this.id))
 
   override def addArgumentIds(argsToAdd: Set[LogicalVariable]): LogicalLeafPlan =
     copy(argumentIds = argumentIds ++ argsToAdd)(SameId(this.id))
@@ -879,6 +888,9 @@ case class Argument(argumentIds: Set[LogicalVariable] = Set.empty)(implicit idGe
   override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): Argument =
     copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
 
+  override def removeArgumentIds(): Argument =
+    copy(argumentIds = Set.empty)(SameId(this.id))
+
   override val distinctness: Distinctness = AtMostOneRow
 
   override def addArgumentIds(argsToAdd: Set[LogicalVariable]): LogicalLeafPlan =
@@ -933,6 +945,11 @@ idGen: IdGen)
       SameId(this.id)
     )
 
+  override def removeArgumentIds(): MultiNodeIndexLeafPlan =
+    copy(nodeIndexSeeks = nodeIndexSeeks.map(_.removeArgumentIds().asInstanceOf[NodeIndexSeekLeafPlan]))(
+      SameId(this.id)
+    )
+
   override def withMappedProperties(f: IndexedProperty => IndexedProperty): MultiNodeIndexLeafPlan =
     AssertingMultiNodeIndexSeek(node, nodeIndexSeeks.map(_.withMappedProperties(f)))(SameId(this.id))
 
@@ -980,6 +997,13 @@ case class AssertingMultiRelationshipIndexSeek(
   override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): MultiRelationshipIndexLeafPlan =
     copy(relIndexSeeks =
       relIndexSeeks.map(_.withoutArgumentIds(argsToExclude).asInstanceOf[RelationshipIndexSeekLeafPlan])
+    )(
+      SameId(this.id)
+    )
+
+  override def removeArgumentIds(): MultiRelationshipIndexLeafPlan =
+    copy(relIndexSeeks =
+      relIndexSeeks.map(_.removeArgumentIds().asInstanceOf[RelationshipIndexSeekLeafPlan])
     )(
       SameId(this.id)
     )
@@ -1345,6 +1369,9 @@ case class DirectedAllRelationshipsScan(
   override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): DirectedAllRelationshipsScan =
     copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
 
+  override def removeArgumentIds(): DirectedAllRelationshipsScan =
+    copy(argumentIds = Set.empty)(SameId(this.id))
+
   override def leftNode: LogicalVariable = startNode
 
   override def rightNode: LogicalVariable = endNode
@@ -1371,6 +1398,9 @@ case class PartitionedDirectedAllRelationshipsScan(
 
   override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): PartitionedDirectedAllRelationshipsScan =
     copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
+
+  override def removeArgumentIds(): PartitionedDirectedAllRelationshipsScan =
+    copy(argumentIds = Set.empty)(SameId(this.id))
 
   override def leftNode: LogicalVariable = startNode
 
@@ -1408,6 +1438,9 @@ case class DirectedRelationshipByElementIdSeek(
   override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): DirectedRelationshipByElementIdSeek =
     copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
 
+  override def removeArgumentIds(): DirectedRelationshipByElementIdSeek =
+    copy(argumentIds = Set.empty)(SameId(this.id))
+
   override def leftNode: LogicalVariable = startNode
 
   override def rightNode: LogicalVariable = endNode
@@ -1441,6 +1474,9 @@ case class DirectedRelationshipByIdSeek(
 
   override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): DirectedRelationshipByIdSeek =
     copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
+
+  override def removeArgumentIds(): DirectedRelationshipByIdSeek =
+    copy(argumentIds = Set.empty)(SameId(this.id))
 
   override def leftNode: LogicalVariable = startNode
 
@@ -1480,6 +1516,9 @@ case class DirectedRelationshipIndexContainsScan(
 
   override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): DirectedRelationshipIndexContainsScan =
     copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
+
+  override def removeArgumentIds(): DirectedRelationshipIndexContainsScan =
+    copy(argumentIds = Set.empty)(SameId(this.id))
 
   override def copyWithoutGettingValues: DirectedRelationshipIndexContainsScan =
     copy(property = property.copy(getValueFromIndex = DoNotGetValue))(SameId(this.id))
@@ -1526,6 +1565,9 @@ case class DirectedRelationshipIndexEndsWithScan(
   override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): DirectedRelationshipIndexEndsWithScan =
     copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
 
+  override def removeArgumentIds(): DirectedRelationshipIndexEndsWithScan =
+    copy(argumentIds = Set.empty)(SameId(this.id))
+
   override def copyWithoutGettingValues: DirectedRelationshipIndexEndsWithScan =
     copy(property = property.copy(getValueFromIndex = DoNotGetValue))(SameId(this.id))
 
@@ -1568,6 +1610,9 @@ case class DirectedRelationshipIndexScan(
   override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): DirectedRelationshipIndexScan =
     copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
 
+  override def removeArgumentIds(): DirectedRelationshipIndexScan =
+    copy(argumentIds = Set.empty)(SameId(this.id))
+
   override def copyWithoutGettingValues: DirectedRelationshipIndexScan =
     copy(properties = properties.map(_.copy(getValueFromIndex = DoNotGetValue)))(SameId(this.id))
 
@@ -1601,6 +1646,9 @@ case class PartitionedDirectedRelationshipIndexScan(
 
   override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): PartitionedDirectedRelationshipIndexScan =
     copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
+
+  override def removeArgumentIds(): PartitionedDirectedRelationshipIndexScan =
+    copy(argumentIds = Set.empty)(SameId(this.id))
 
   override def copyWithoutGettingValues: PartitionedDirectedRelationshipIndexScan =
     copy(properties = properties.map(_.copy(getValueFromIndex = DoNotGetValue)))(SameId(this.id))
@@ -1647,6 +1695,9 @@ case class DirectedRelationshipIndexSeek(
   override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): DirectedRelationshipIndexSeek =
     copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
 
+  override def removeArgumentIds(): DirectedRelationshipIndexSeek =
+    copy(argumentIds = Set.empty)(SameId(this.id))
+
   override def copyWithoutGettingValues: DirectedRelationshipIndexSeek =
     copy(properties = properties.map(_.copy(getValueFromIndex = DoNotGetValue)))(SameId(this.id))
 
@@ -1690,6 +1741,9 @@ case class PartitionedDirectedRelationshipIndexSeek(
 
   override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): PartitionedDirectedRelationshipIndexSeek =
     copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
+
+  override def removeArgumentIds(): PartitionedDirectedRelationshipIndexSeek =
+    copy(argumentIds = Set.empty)(SameId(this.id))
 
   override def copyWithoutGettingValues: PartitionedDirectedRelationshipIndexSeek =
     copy(properties = properties.map(_.copy(getValueFromIndex = DoNotGetValue)))(SameId(this.id))
@@ -1748,6 +1802,9 @@ case class DirectedRelationshipTypeScan(
   override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): DirectedRelationshipTypeScan =
     copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
 
+  override def removeArgumentIds(): DirectedRelationshipTypeScan =
+    copy(argumentIds = Set.empty)(SameId(this.id))
+
   override def leftNode: LogicalVariable = startNode
 
   override def rightNode: LogicalVariable = endNode
@@ -1773,6 +1830,9 @@ case class PartitionedDirectedRelationshipTypeScan(
 
   override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): PartitionedDirectedRelationshipTypeScan =
     copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
+
+  override def removeArgumentIds(): PartitionedDirectedRelationshipTypeScan =
+    copy(argumentIds = Set.empty)(SameId(this.id))
 
   override def leftNode: LogicalVariable = startNode
 
@@ -1811,6 +1871,9 @@ case class DirectedRelationshipUniqueIndexSeek(
 
   override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): DirectedRelationshipUniqueIndexSeek =
     copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
+
+  override def removeArgumentIds(): DirectedRelationshipUniqueIndexSeek =
+    copy(argumentIds = Set.empty)(SameId(this.id))
 
   override def copyWithoutGettingValues: DirectedRelationshipUniqueIndexSeek =
     copy(properties = properties.map(_.copy(getValueFromIndex = DoNotGetValue)))(SameId(this.id))
@@ -1857,6 +1920,9 @@ case class DirectedUnionRelationshipTypesScan(
   override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): DirectedUnionRelationshipTypesScan =
     copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
 
+  override def removeArgumentIds(): DirectedUnionRelationshipTypesScan =
+    copy(argumentIds = Set.empty)(SameId(this.id))
+
   override def leftNode: LogicalVariable = startNode
 
   override def rightNode: LogicalVariable = endNode
@@ -1882,6 +1948,9 @@ case class PartitionedDirectedUnionRelationshipTypesScan(
 
   override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): PartitionedDirectedUnionRelationshipTypesScan =
     copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
+
+  override def removeArgumentIds(): PartitionedDirectedUnionRelationshipTypesScan =
+    copy(argumentIds = Set.empty)(SameId(this.id))
 
   override def leftNode: LogicalVariable = startNode
 
@@ -2400,6 +2469,7 @@ case class Input(
   override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): Input = this
   override val distinctness: Distinctness = NotDistinct
   override def addArgumentIds(argsToAdd: Set[LogicalVariable]): LogicalLeafPlan = this
+  override def removeArgumentIds(): LogicalLeafPlan = this
 }
 
 object Input {
@@ -2427,6 +2497,9 @@ case class IntersectionNodeByLabelsScan(
   override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): IntersectionNodeByLabelsScan =
     copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
 
+  override def removeArgumentIds(): IntersectionNodeByLabelsScan =
+    copy(argumentIds = Set.empty)(SameId(this.id))
+
   override def addArgumentIds(argsToAdd: Set[LogicalVariable]): LogicalLeafPlan =
     copy(argumentIds = argumentIds ++ argsToAdd)(SameId(this.id))
 }
@@ -2444,6 +2517,9 @@ case class PartitionedIntersectionNodeByLabelsScan(
 
   override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): PartitionedIntersectionNodeByLabelsScan =
     copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
+
+  override def removeArgumentIds(): PartitionedIntersectionNodeByLabelsScan =
+    copy(argumentIds = Set.empty)(SameId(this.id))
 
   override def addArgumentIds(argsToAdd: Set[LogicalVariable]): LogicalLeafPlan =
     copy(argumentIds = argumentIds ++ argsToAdd)(SameId(this.id))
@@ -2643,6 +2719,9 @@ case class MultiNodeIndexSeek(nodeIndexSeeks: Seq[NodeIndexSeekLeafPlan])(implic
   override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): MultiNodeIndexLeafPlan =
     copy(nodeIndexSeeks.map(_.withoutArgumentIds(argsToExclude).asInstanceOf[NodeIndexSeekLeafPlan]))(SameId(this.id))
 
+  override def removeArgumentIds(): MultiNodeIndexLeafPlan =
+    copy(nodeIndexSeeks.map(_.removeArgumentIds().asInstanceOf[NodeIndexSeekLeafPlan]))(SameId(this.id))
+
   override def addArgumentIds(argsToAdd: Set[LogicalVariable]): LogicalLeafPlan =
     copy(nodeIndexSeeks = nodeIndexSeeks.map(_.addArgumentIds(argsToAdd).asInstanceOf[NodeIndexSeekLeafPlan]))(
       SameId(this.id)
@@ -2675,6 +2754,9 @@ case class NodeByElementIdSeek(idName: LogicalVariable, nodeIds: SeekableArgs, a
   override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): NodeByElementIdSeek =
     copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
 
+  override def removeArgumentIds(): NodeByElementIdSeek =
+    copy(argumentIds = Set.empty)(SameId(this.id))
+
   override def addArgumentIds(argsToAdd: Set[LogicalVariable]): LogicalLeafPlan =
     copy(argumentIds = argumentIds ++ argsToAdd)(SameId(this.id))
 }
@@ -2693,6 +2775,9 @@ idGen: IdGen)
 
   override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): NodeByIdSeek =
     copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
+
+  override def removeArgumentIds(): NodeByIdSeek =
+    copy(argumentIds = Set.empty)(SameId(this.id))
 
   override def addArgumentIds(argsToAdd: Set[LogicalVariable]): LogicalLeafPlan =
     copy(argumentIds = argumentIds ++ argsToAdd)(SameId(this.id))
@@ -2716,6 +2801,9 @@ case class NodeByLabelScan(
   override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): NodeByLabelScan =
     copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
 
+  override def removeArgumentIds(): NodeByLabelScan =
+    copy(argumentIds = Set.empty)(SameId(this.id))
+
   override def addArgumentIds(argsToAdd: Set[LogicalVariable]): LogicalLeafPlan =
     copy(argumentIds = argumentIds ++ argsToAdd)(SameId(this.id))
 }
@@ -2735,6 +2823,9 @@ case class PartitionedNodeByLabelScan(
 
   override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): PartitionedNodeByLabelScan =
     copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
+
+  override def removeArgumentIds(): PartitionedNodeByLabelScan =
+    copy(argumentIds = Set.empty)(SameId(this.id))
 
   override def addArgumentIds(argsToAdd: Set[LogicalVariable]): LogicalLeafPlan =
     copy(argumentIds = argumentIds ++ argsToAdd)(SameId(this.id))
@@ -2761,6 +2852,9 @@ case class NodeCountFromCountStore(
 
   override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): NodeCountFromCountStore =
     copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
+
+  override def removeArgumentIds(): NodeCountFromCountStore =
+    copy(argumentIds = Set.empty)(SameId(this.id))
 
   override val distinctness: Distinctness = AtMostOneRow
 
@@ -2820,6 +2914,9 @@ case class NodeIndexContainsScan(
   override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): NodeIndexContainsScan =
     copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
 
+  override def removeArgumentIds(): NodeIndexContainsScan =
+    copy(argumentIds = Set.empty)(SameId(this.id))
+
   override def copyWithoutGettingValues: NodeIndexContainsScan =
     copy(property = property.copy(getValueFromIndex = DoNotGetValue))(SameId(this.id))
 
@@ -2856,6 +2953,9 @@ case class NodeIndexEndsWithScan(
   override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): NodeIndexEndsWithScan =
     copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
 
+  override def removeArgumentIds(): NodeIndexEndsWithScan =
+    copy(argumentIds = Set.empty)(SameId(this.id))
+
   override def copyWithoutGettingValues: NodeIndexEndsWithScan =
     copy(property = property.copy(getValueFromIndex = DoNotGetValue))(SameId(this.id))
 
@@ -2886,6 +2986,9 @@ case class NodeIndexScan(
 
   override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): NodeIndexScan =
     copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
+
+  override def removeArgumentIds(): NodeIndexScan =
+    copy(argumentIds = Set.empty)(SameId(this.id))
 
   override def copyWithoutGettingValues: NodeIndexScan =
     copy(properties = properties.map(_.copy(getValueFromIndex = DoNotGetValue)))(SameId(this.id))
@@ -2918,6 +3021,9 @@ case class PartitionedNodeIndexScan(
   override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): PartitionedNodeIndexScan =
     copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
 
+  override def removeArgumentIds(): PartitionedNodeIndexScan =
+    copy(argumentIds = Set.empty)(SameId(this.id))
+
   override def copyWithoutGettingValues: PartitionedNodeIndexScan =
     copy(properties = properties.map(_.copy(getValueFromIndex = DoNotGetValue)))(SameId(this.id))
 
@@ -2949,6 +3055,9 @@ case class NodeIndexSeek(
   override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): NodeIndexSeek =
     copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
 
+  override def removeArgumentIds(): NodeIndexSeek =
+    copy(argumentIds = Set.empty)(SameId(this.id))
+
   override def copyWithoutGettingValues: NodeIndexSeek =
     copy(properties = properties.map(_.copy(getValueFromIndex = DoNotGetValue)))(SameId(this.id))
 
@@ -2976,6 +3085,9 @@ case class PartitionedNodeIndexSeek(
 
   override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): PartitionedNodeIndexSeek =
     copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
+
+  override def removeArgumentIds(): PartitionedNodeIndexSeek =
+    copy(argumentIds = Set.empty)(SameId(this.id))
 
   override def copyWithoutGettingValues: PartitionedNodeIndexSeek =
     copy(properties = properties.map(_.copy(getValueFromIndex = DoNotGetValue)))(SameId(this.id))
@@ -3019,6 +3131,9 @@ case class NodeUniqueIndexSeek(
 
   override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): NodeUniqueIndexSeek =
     copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
+
+  override def removeArgumentIds(): NodeUniqueIndexSeek =
+    copy(argumentIds = Set.empty)(SameId(this.id))
 
   override def copyWithoutGettingValues: NodeUniqueIndexSeek =
     copy(properties = properties.map(_.copy(getValueFromIndex = DoNotGetValue)))(SameId(this.id))
@@ -3504,6 +3619,9 @@ case class RelationshipCountFromCountStore(
 
   override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): RelationshipCountFromCountStore =
     copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
+
+  override def removeArgumentIds(): RelationshipCountFromCountStore =
+    copy(argumentIds = Set.empty)(SameId(this.id))
 
   override val distinctness: Distinctness = AtMostOneRow
 
@@ -4271,6 +4389,9 @@ case class UndirectedAllRelationshipsScan(
   override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): UndirectedAllRelationshipsScan =
     copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
 
+  override def removeArgumentIds(): UndirectedAllRelationshipsScan =
+    copy(argumentIds = Set.empty)(SameId(this.id))
+
   override def directed: Boolean = false
 
   override def addArgumentIds(argsToAdd: Set[LogicalVariable]): LogicalLeafPlan =
@@ -4291,6 +4412,9 @@ case class PartitionedUndirectedAllRelationshipsScan(
 
   override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): PartitionedUndirectedAllRelationshipsScan =
     copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
+
+  override def removeArgumentIds(): PartitionedUndirectedAllRelationshipsScan =
+    copy(argumentIds = Set.empty)(SameId(this.id))
 
   override def directed: Boolean = false
 
@@ -4320,6 +4444,9 @@ case class UndirectedRelationshipByElementIdSeek(
   override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): UndirectedRelationshipByElementIdSeek =
     copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
 
+  override def removeArgumentIds(): UndirectedRelationshipByElementIdSeek =
+    copy(argumentIds = Set.empty)(SameId(this.id))
+
   override def directed: Boolean = false
 
   override def addArgumentIds(argsToAdd: Set[LogicalVariable]): LogicalLeafPlan =
@@ -4347,6 +4474,9 @@ case class UndirectedRelationshipByIdSeek(
 
   override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): UndirectedRelationshipByIdSeek =
     copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
+
+  override def removeArgumentIds(): UndirectedRelationshipByIdSeek =
+    copy(argumentIds = Set.empty)(SameId(this.id))
 
   override def directed: Boolean = false
 
@@ -4383,6 +4513,9 @@ case class UndirectedRelationshipIndexContainsScan(
 
   override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): UndirectedRelationshipIndexContainsScan =
     copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
+
+  override def removeArgumentIds(): UndirectedRelationshipIndexContainsScan =
+    copy(argumentIds = Set.empty)(SameId(this.id))
 
   override def copyWithoutGettingValues: UndirectedRelationshipIndexContainsScan =
     copy(property = property.copy(getValueFromIndex = DoNotGetValue))(SameId(this.id))
@@ -4426,6 +4559,9 @@ case class UndirectedRelationshipIndexEndsWithScan(
   override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): UndirectedRelationshipIndexEndsWithScan =
     copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
 
+  override def removeArgumentIds(): UndirectedRelationshipIndexEndsWithScan =
+    copy(argumentIds = Set.empty)(SameId(this.id))
+
   override def copyWithoutGettingValues: UndirectedRelationshipIndexEndsWithScan =
     copy(property = property.copy(getValueFromIndex = DoNotGetValue))(SameId(this.id))
 
@@ -4466,6 +4602,9 @@ case class UndirectedRelationshipIndexScan(
   override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): UndirectedRelationshipIndexScan =
     copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
 
+  override def removeArgumentIds(): UndirectedRelationshipIndexScan =
+    copy(argumentIds = Set.empty)(SameId(this.id))
+
   override def copyWithoutGettingValues: UndirectedRelationshipIndexScan =
     copy(properties = properties.map(_.copy(getValueFromIndex = DoNotGetValue)))(SameId(this.id))
 
@@ -4495,6 +4634,9 @@ case class PartitionedUndirectedRelationshipIndexScan(
 
   override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): PartitionedUndirectedRelationshipIndexScan =
     copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
+
+  override def removeArgumentIds(): PartitionedUndirectedRelationshipIndexScan =
+    copy(argumentIds = Set.empty)(SameId(this.id))
 
   override def copyWithoutGettingValues: PartitionedUndirectedRelationshipIndexScan =
     copy(properties = properties.map(_.copy(getValueFromIndex = DoNotGetValue)))(SameId(this.id))
@@ -4538,6 +4680,9 @@ case class UndirectedRelationshipIndexSeek(
   override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): UndirectedRelationshipIndexSeek =
     copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
 
+  override def removeArgumentIds(): UndirectedRelationshipIndexSeek =
+    copy(argumentIds = Set.empty)(SameId(this.id))
+
   override def copyWithoutGettingValues: UndirectedRelationshipIndexSeek =
     copy(properties = properties.map(_.copy(getValueFromIndex = DoNotGetValue)))(SameId(this.id))
 
@@ -4577,6 +4722,9 @@ case class PartitionedUndirectedRelationshipIndexSeek(
 
   override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): PartitionedUndirectedRelationshipIndexSeek =
     copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
+
+  override def removeArgumentIds(): PartitionedUndirectedRelationshipIndexSeek =
+    copy(argumentIds = Set.empty)(SameId(this.id))
 
   override def copyWithoutGettingValues: PartitionedUndirectedRelationshipIndexSeek =
     copy(properties = properties.map(_.copy(getValueFromIndex = DoNotGetValue)))(SameId(this.id))
@@ -4632,6 +4780,9 @@ case class UndirectedRelationshipTypeScan(
   override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): UndirectedRelationshipTypeScan =
     copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
 
+  override def removeArgumentIds(): UndirectedRelationshipTypeScan =
+    copy(argumentIds = Set.empty)(SameId(this.id))
+
   override def directed: Boolean = false
 
   override def addArgumentIds(argsToAdd: Set[LogicalVariable]): LogicalLeafPlan =
@@ -4653,6 +4804,9 @@ case class PartitionedUndirectedRelationshipTypeScan(
 
   override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): PartitionedUndirectedRelationshipTypeScan =
     copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
+
+  override def removeArgumentIds(): PartitionedUndirectedRelationshipTypeScan =
+    copy(argumentIds = Set.empty)(SameId(this.id))
 
   override def directed: Boolean = false
 
@@ -4688,6 +4842,9 @@ case class UndirectedRelationshipUniqueIndexSeek(
 
   override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): UndirectedRelationshipUniqueIndexSeek =
     copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
+
+  override def removeArgumentIds(): UndirectedRelationshipUniqueIndexSeek =
+    copy(argumentIds = Set.empty)(SameId(this.id))
 
   override def copyWithoutGettingValues: UndirectedRelationshipUniqueIndexSeek =
     copy(properties = properties.map(_.copy(getValueFromIndex = DoNotGetValue)))(SameId(this.id))
@@ -4730,6 +4887,9 @@ case class UndirectedUnionRelationshipTypesScan(
   override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): UndirectedUnionRelationshipTypesScan =
     copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
 
+  override def removeArgumentIds(): UndirectedUnionRelationshipTypesScan =
+    copy(argumentIds = Set.empty)(SameId(this.id))
+
   override def leftNode: LogicalVariable = startNode
 
   override def rightNode: LogicalVariable = endNode
@@ -4756,6 +4916,9 @@ case class PartitionedUndirectedUnionRelationshipTypesScan(
   override def withoutArgumentIds(argsToExclude: Set[LogicalVariable])
     : PartitionedUndirectedUnionRelationshipTypesScan =
     copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
+
+  override def removeArgumentIds(): PartitionedUndirectedUnionRelationshipTypesScan =
+    copy(argumentIds = Set.empty)(SameId(this.id))
 
   override def leftNode: LogicalVariable = startNode
 
@@ -4799,6 +4962,9 @@ case class UnionNodeByLabelsScan(
   override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): UnionNodeByLabelsScan =
     copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
 
+  override def removeArgumentIds(): UnionNodeByLabelsScan =
+    copy(argumentIds = Set.empty)(SameId(this.id))
+
   override def addArgumentIds(argsToAdd: Set[LogicalVariable]): LogicalLeafPlan =
     copy(argumentIds = argumentIds ++ argsToAdd)(SameId(this.id))
 }
@@ -4816,6 +4982,9 @@ case class PartitionedUnionNodeByLabelsScan(
 
   override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): PartitionedUnionNodeByLabelsScan =
     copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
+
+  override def removeArgumentIds(): PartitionedUnionNodeByLabelsScan =
+    copy(argumentIds = Set.empty)(SameId(this.id))
 
   override def addArgumentIds(argsToAdd: Set[LogicalVariable]): LogicalLeafPlan =
     copy(argumentIds = argumentIds ++ argsToAdd)(SameId(this.id))
@@ -4841,6 +5010,9 @@ case class SubtractionNodeByLabelsScan(
   override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): SubtractionNodeByLabelsScan =
     copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
 
+  override def removeArgumentIds(): SubtractionNodeByLabelsScan =
+    copy(argumentIds = Set.empty)(SameId(this.id))
+
   override def addArgumentIds(argsToAdd: Set[LogicalVariable]): LogicalLeafPlan =
     copy(argumentIds = argumentIds ++ argsToAdd)(SameId(this.id))
 }
@@ -4859,6 +5031,9 @@ case class PartitionedSubtractionNodeByLabelsScan(
 
   override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): PartitionedSubtractionNodeByLabelsScan =
     copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
+
+  override def removeArgumentIds(): PartitionedSubtractionNodeByLabelsScan =
+    copy(argumentIds = Set.empty)(SameId(this.id))
 
   override def addArgumentIds(argsToAdd: Set[LogicalVariable]): LogicalLeafPlan =
     copy(argumentIds = argumentIds ++ argsToAdd)(SameId(this.id))
@@ -4932,6 +5107,8 @@ case class SimulatedNodeScan(idName: LogicalVariable, numberOfRows: Long)(implic
   override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): SimulatedNodeScan = this
 
   override def addArgumentIds(argsToAdd: Set[LogicalVariable]): LogicalLeafPlan = this
+
+  override def removeArgumentIds(): LogicalLeafPlan = this
 }
 
 /**

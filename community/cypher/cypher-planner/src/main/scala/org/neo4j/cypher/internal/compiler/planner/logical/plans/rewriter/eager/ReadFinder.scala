@@ -106,6 +106,7 @@ import org.neo4j.cypher.internal.logical.plans.LetSelectOrSemiApply
 import org.neo4j.cypher.internal.logical.plans.LetSemiApply
 import org.neo4j.cypher.internal.logical.plans.Limit
 import org.neo4j.cypher.internal.logical.plans.LoadCSV
+import org.neo4j.cypher.internal.logical.plans.LogicalLeafPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalLeafPlanExtension
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlanExtension
@@ -918,6 +919,9 @@ object ReadFinder {
         plan.endoRewrite(bottomUp(Rewriter.lift {
           case variable: LogicalVariable => rewriteLookup.getOrElse(variable, variable)
         }))
+
+      case p: LogicalLeafPlan => p.removeArgumentIds()
+
       case _ => plan
     }
 
@@ -926,6 +930,8 @@ object ReadFinder {
       case otherPlan: LogicalPlan if otherPlan.id != plan.id =>
         // Do not traverse the logical plan tree! We are only looking at expressions of the given plan
         acc => SkipChildren(acc)
+
+      case Optional(_, _) => acc => SkipChildren(acc)
 
       case v: Variable => acc =>
           var res = acc
