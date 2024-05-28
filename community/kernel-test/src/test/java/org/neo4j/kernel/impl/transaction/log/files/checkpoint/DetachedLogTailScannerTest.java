@@ -27,6 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.fail_on_corrupted_log_files;
+import static org.neo4j.kernel.impl.transaction.log.EmptyLogTailMetadata.EMPTY_APPEND_BATCH_INFO;
 import static org.neo4j.kernel.impl.transaction.log.files.checkpoint.DetachedLogTailScanner.NO_TRANSACTION_ID;
 import static org.neo4j.logging.AssertableLogProvider.Level.INFO;
 import static org.neo4j.logging.LogAssertions.assertThat;
@@ -58,11 +59,13 @@ import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.SimpleAppendIndexProvider;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
+import org.neo4j.kernel.impl.transaction.log.AppendBatchInfo;
 import org.neo4j.kernel.impl.transaction.log.LogIndexEncoding;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
 import org.neo4j.kernel.impl.transaction.log.TransactionLogWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
+import org.neo4j.kernel.impl.transaction.log.entry.LogFormat;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
@@ -137,6 +140,52 @@ class DetachedLogTailScannerTest {
                 .rootCause()
                 .hasMessageContaining("LogPosition{logVersion=8,")
                 .hasMessageContaining("checkpoint does not point to a valid location in transaction logs.");
+    }
+
+    @Test
+    void notFoundFilesEmptyLogTailLastBatch() {
+        LogTailMetadata tailMetadata = logFiles.getTailMetadata();
+        assertTrue(tailMetadata.logsMissing());
+        assertEquals(EMPTY_APPEND_BATCH_INFO, tailMetadata.lastBatch());
+    }
+
+    @ParameterizedTest
+    @MethodSource("params")
+    void emptyLogFilesLastBatch(int startLogVersion, int endLogVersion) throws Exception {
+        setupLogFiles(endLogVersion, logFile());
+
+        LogTailMetadata logTailInformation = logFiles.getTailMetadata();
+        AppendBatchInfo lastBatch = logTailInformation.lastBatch();
+        assertEquals(endLogVersion, lastBatch.logPositionAfter().getLogVersion());
+        assertEquals(UNKNOWN_APPEND_INDEX, lastBatch.appendIndex());
+    }
+
+    @Test
+    void lastBatchOfFilesWithoutCheckpoint() throws Exception {
+        long appendIndex = 17;
+        setupLogFiles(10, logFile(start(appendIndex), commit(appendIndex - 5)));
+
+        LogTailMetadata logTailInformation = logFiles.getTailMetadata();
+        AppendBatchInfo lastBatch = logTailInformation.lastBatch();
+        assertEquals(appendIndex, lastBatch.appendIndex());
+        assertEquals(10, lastBatch.logPositionAfter().getLogVersion());
+        assertThat(lastBatch.logPositionAfter().getByteOffset()).isGreaterThan(LogFormat.BIGGEST_HEADER);
+    }
+
+    @Test
+    void lastBatchOfFilesWithCheckpoint() throws Exception {
+        long appendIndex = 17;
+        setupLogFiles(
+                10,
+                logFile(start(appendIndex), commit(appendIndex - 5)),
+                logFile(checkPoint()),
+                logFile(start(appendIndex + 1), commit(appendIndex - 4)));
+
+        LogTailMetadata logTailInformation = logFiles.getTailMetadata();
+        AppendBatchInfo lastBatch = logTailInformation.lastBatch();
+        assertEquals(appendIndex + 1, lastBatch.appendIndex());
+        assertEquals(10, lastBatch.logPositionAfter().getLogVersion());
+        assertThat(lastBatch.logPositionAfter().getByteOffset()).isGreaterThan(LogFormat.BIGGEST_HEADER);
     }
 
     @Test
@@ -774,7 +823,7 @@ class DetachedLogTailScannerTest {
                 .checkPoint(
                         LogCheckPointEvent.NULL,
                         transactionId,
-                        transactionId.id() + 7,
+                        transactionId.appendIndex(),
                         kernelVersion,
                         logPosition,
                         Instant.now(),

@@ -19,16 +19,15 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
+import static org.neo4j.kernel.impl.transaction.log.EmptyLogTailMetadata.EMPTY_APPEND_BATCH_INFO;
+import static org.neo4j.kernel.impl.transaction.log.EmptyLogTailMetadata.START_POSITION;
 import static org.neo4j.storageengine.AppendIndexProvider.BASE_APPEND_INDEX;
-import static org.neo4j.storageengine.api.LogVersionRepository.BASE_TX_LOG_BYTE_OFFSET;
 import static org.neo4j.storageengine.api.LogVersionRepository.INITIAL_LOG_VERSION;
 
 import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.storageengine.api.TransactionIdStore;
 
 public class EmptyLogTailLogVersionsMetadata implements LogTailLogVersionsMetadata {
-    static final LogPosition START_POSITION = new LogPosition(INITIAL_LOG_VERSION, BASE_TX_LOG_BYTE_OFFSET);
-
     @Override
     public boolean isRecoveryRequired() {
         return false;
@@ -57,5 +56,10 @@ public class EmptyLogTailLogVersionsMetadata implements LogTailLogVersionsMetada
     @Override
     public long getLastCheckpointedAppendIndex() {
         return BASE_APPEND_INDEX;
+    }
+
+    @Override
+    public AppendBatchInfo lastBatch() {
+        return EMPTY_APPEND_BATCH_INFO;
     }
 }

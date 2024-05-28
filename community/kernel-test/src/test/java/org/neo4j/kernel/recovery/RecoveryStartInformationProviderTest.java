@@ -27,6 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.kernel.impl.transaction.log.LastAppendBatchInfoProvider.EMPTY_LAST_APPEND_BATCH_INFO_PROVIDER;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogSegments.UNKNOWN_LOG_SEGMENT_SIZE;
 import static org.neo4j.kernel.recovery.RecoveryStartInformation.MISSING_LOGS;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
@@ -75,7 +76,8 @@ class RecoveryStartInformationProviderTest {
                         false,
                         currentLogVersion,
                         LatestVersions.LATEST_KERNEL_VERSION.version(),
-                        kernelProv));
+                        kernelProv,
+                        EMPTY_LAST_APPEND_BATCH_INFO_PROVIDER));
 
         // when
         RecoveryStartInformation recoveryStartInformation =
@@ -116,7 +118,8 @@ class RecoveryStartInformationProviderTest {
                         currentLogVersion,
                         LatestVersions.LATEST_KERNEL_VERSION.version(),
                         null,
-                        kernelProv));
+                        kernelProv,
+                        EMPTY_LAST_APPEND_BATCH_INFO_PROVIDER));
 
         // when
         RecoveryStartInformation recoveryStartInformation =
@@ -136,7 +139,13 @@ class RecoveryStartInformationProviderTest {
         KernelVersion kernelVersion = LatestVersions.LATEST_KERNEL_VERSION;
         when(logFiles.getTailMetadata())
                 .thenReturn(new LogTailInformation(
-                        true, 10L, false, currentLogVersion, kernelVersion.version(), kernelProv));
+                        true,
+                        10L,
+                        false,
+                        currentLogVersion,
+                        kernelVersion.version(),
+                        kernelProv,
+                        EMPTY_LAST_APPEND_BATCH_INFO_PROVIDER));
 
         // when
         RecoveryStartInformation recoveryStartInformation =
@@ -156,7 +165,13 @@ class RecoveryStartInformationProviderTest {
     void detectMissingTransactionLogsInformation() {
         when(logFiles.getTailMetadata())
                 .thenReturn(new LogTailInformation(
-                        false, -1, true, -1, LatestVersions.LATEST_KERNEL_VERSION.version(), kernelProv));
+                        false,
+                        -1,
+                        true,
+                        -1,
+                        LatestVersions.LATEST_KERNEL_VERSION.version(),
+                        kernelProv,
+                        EMPTY_LAST_APPEND_BATCH_INFO_PROVIDER));
 
         RecoveryStartInformation recoveryStartInformation =
                 new RecoveryStartInformationProvider(logFiles, monitor).get();
@@ -176,7 +191,8 @@ class RecoveryStartInformationProviderTest {
                         false,
                         currentLogVersion,
                         LatestVersions.LATEST_KERNEL_VERSION.version(),
-                        kernelProv));
+                        kernelProv,
+                        EMPTY_LAST_APPEND_BATCH_INFO_PROVIDER));
 
         // when
         final String expectedMessage = "No check point found in any log file and transaction log "

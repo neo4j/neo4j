@@ -38,7 +38,6 @@ import org.neo4j.storageengine.api.StorageCommand;
 
 public class CommittedCommandBatchCursor implements CommandBatchCursor {
     private final ReadableLogPositionAwareChannel channel;
-    private final boolean light;
     private final LogEntryCursor logEntryCursor;
     private final LogPositionMarker lastGoodPositionMarker = new LogPositionMarker();
 
@@ -46,19 +45,7 @@ public class CommittedCommandBatchCursor implements CommandBatchCursor {
 
     public CommittedCommandBatchCursor(ReadableLogPositionAwareChannel channel, LogEntryReader entryReader)
             throws IOException {
-        this(channel, entryReader, false);
-    }
-
-    /**
-     * @param channel       channel to read
-     * @param entryReader   entry reader
-     * @param light         if true, actual commands will not be included into the batches
-     * @throws IOException  if something goes wrong
-     */
-    public CommittedCommandBatchCursor(
-            ReadableLogPositionAwareChannel channel, LogEntryReader entryReader, boolean light) throws IOException {
         this.channel = channel;
-        this.light = light;
         channel.getCurrentLogPosition(lastGoodPositionMarker);
         this.logEntryCursor = new LogEntryCursor(entryReader, channel);
     }
@@ -100,9 +87,7 @@ public class CommittedCommandBatchCursor implements CommandBatchCursor {
                 }
 
                 LogEntryCommand command = (LogEntryCommand) entry;
-                if (!light) {
-                    entries.add(command.getCommand());
-                }
+                entries.add(command.getCommand());
             }
             if (startEntry instanceof LogEntryStart entryStart && endEntry instanceof LogEntryCommit commitEntry) {
                 current = new CommittedTransactionRepresentation(entryStart, entries, commitEntry);

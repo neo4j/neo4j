@@ -24,6 +24,7 @@ import static org.neo4j.storageengine.AppendIndexProvider.UNKNOWN_APPEND_INDEX;
 
 import org.neo4j.io.pagecache.context.TransactionIdSnapshot;
 import org.neo4j.kernel.KernelVersion;
+import org.neo4j.kernel.impl.transaction.log.AppendBatchInfo;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 
 /**
@@ -246,6 +247,4 @@ public interface TransactionIdStore {
      * parties should do lookup in their side.
      */
     AppendBatchInfo lastBatch();
-
-    record AppendBatchInfo(long appendIndex, LogPosition logPositionAfter) {}
 }

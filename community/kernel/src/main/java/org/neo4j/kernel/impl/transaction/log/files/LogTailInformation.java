@@ -24,9 +24,10 @@ import static org.neo4j.storageengine.api.TransactionIdStore.emptyVersionedTrans
 import java.util.Optional;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.KernelVersionProvider;
+import org.neo4j.kernel.impl.transaction.log.AppendBatchInfo;
 import org.neo4j.kernel.impl.transaction.log.CheckpointInfo;
+import org.neo4j.kernel.impl.transaction.log.LastAppendBatchInfoProvider;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
-import org.neo4j.kernel.impl.transaction.log.LogTailLogVersionsMetadata;
 import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
 import org.neo4j.kernel.impl.transaction.log.files.checkpoint.DetachedLogTailScanner;
 import org.neo4j.storageengine.api.StoreId;
@@ -41,6 +42,8 @@ public class LogTailInformation implements LogTailMetadata {
     private final boolean recordAfterCheckpoint;
     private final StoreId storeId;
     private final KernelVersionProvider fallbackKernelVersionProvider;
+    private final LastAppendBatchInfoProvider lastAppendBatchInfoProvider;
+    private AppendBatchInfo lastBatchInfo;
 
     public LogTailInformation(
             boolean recordAfterCheckpoint,
@@ -48,7 +51,8 @@ public class LogTailInformation implements LogTailMetadata {
             boolean filesNotFound,
             long currentLogVersion,
             byte firstLogEntryVersionAfterCheckpoint,
-            KernelVersionProvider fallbackKernelVersionProvider) {
+            KernelVersionProvider fallbackKernelVersionProvider,
+            LastAppendBatchInfoProvider lastAppendBatchInfoProvider) {
         this(
                 null,
                 recordAfterCheckpoint,
@@ -57,7 +61,8 @@ public class LogTailInformation implements LogTailMetadata {
                 currentLogVersion,
                 firstLogEntryVersionAfterCheckpoint,
                 null,
-                fallbackKernelVersionProvider);
+                fallbackKernelVersionProvider,
+                lastAppendBatchInfoProvider);
     }
 
     public LogTailInformation(
@@ -68,7 +73,8 @@ public class LogTailInformation implements LogTailMetadata {
             long currentLogVersion,
             byte firstLogEntryVersionAfterCheckpoint,
             StoreId storeId,
-            KernelVersionProvider fallbackKernelVersionProvider) {
+            KernelVersionProvider fallbackKernelVersionProvider,
+            LastAppendBatchInfoProvider lastAppendBatchInfoProvider) {
         this.lastCheckPoint = lastCheckPoint;
         this.firstAppendIndexAfterLastCheckPoint = firstAppendIndexAfterLastCheckPoint;
         this.filesNotFound = filesNotFound;
@@ -77,6 +83,7 @@ public class LogTailInformation implements LogTailMetadata {
         this.recordAfterCheckpoint = recordAfterCheckpoint;
         this.storeId = storeId;
         this.fallbackKernelVersionProvider = fallbackKernelVersionProvider;
+        this.lastAppendBatchInfoProvider = lastAppendBatchInfoProvider;
     }
 
     public boolean logsAfterLastCheckpoint() {
@@ -123,7 +130,7 @@ public class LogTailInformation implements LogTailMetadata {
     @Override
     public long getCheckpointLogVersion() {
         if (lastCheckPoint == null) {
-            return LogTailLogVersionsMetadata.EMPTY_LOG_TAIL.getCheckpointLogVersion();
+            return EMPTY_LOG_TAIL.getCheckpointLogVersion();
         }
         return lastCheckPoint.channelPositionAfterCheckpoint().getLogVersion();
     }
@@ -148,7 +155,7 @@ public class LogTailInformation implements LogTailMetadata {
 
     @Override
     public long getLogVersion() {
-        return filesNotFound ? LogTailLogVersionsMetadata.EMPTY_LOG_TAIL.getLogVersion() : currentLogVersion;
+        return filesNotFound ? EMPTY_LOG_TAIL.getLogVersion() : currentLogVersion;
     }
 
     @Override
@@ -162,7 +169,7 @@ public class LogTailInformation implements LogTailMetadata {
     @Override
     public LogPosition getLastTransactionLogPosition() {
         if (lastCheckPoint == null) {
-            return LogTailLogVersionsMetadata.EMPTY_LOG_TAIL.getLastTransactionLogPosition();
+            return EMPTY_LOG_TAIL.getLastTransactionLogPosition();
         }
         return lastCheckPoint.transactionLogPosition();
     }
@@ -173,5 +180,17 @@ public class LogTailInformation implements LogTailMetadata {
             return EMPTY_LOG_TAIL.getLastCheckpointedAppendIndex();
         }
         return lastCheckPoint.appendIndex();
+    }
+
+    @Override
+    public AppendBatchInfo lastBatch() {
+        if (filesNotFound) {
+            return EMPTY_LOG_TAIL.lastBatch();
+        }
+        if (lastBatchInfo != null) {
+            return lastBatchInfo;
+        }
+        lastBatchInfo = lastAppendBatchInfoProvider.get();
+        return lastBatchInfo;
     }
 }

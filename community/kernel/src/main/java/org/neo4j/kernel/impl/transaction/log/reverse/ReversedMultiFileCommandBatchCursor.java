@@ -53,7 +53,6 @@ public class ReversedMultiFileCommandBatchCursor implements CommandBatchCursor {
      * @param failOnCorruptedLogFiles fail reading from log files as soon as first error is encountered
      * @param monitor                 reverse transaction cursor monitor
      * @param presketch               enables pre-sketching of next transaction file.
-     * @param light                   if true, actual commands will not be included into the batches
      * @return a {@link CommandBatchCursor} which returns transactions from the end of the log stream and backwards to
      * and including transaction starting at {@link LogPosition}.
      */
@@ -63,14 +62,13 @@ public class ReversedMultiFileCommandBatchCursor implements CommandBatchCursor {
             LogEntryReader logEntryReader,
             boolean failOnCorruptedLogFiles,
             ReversedTransactionCursorMonitor monitor,
-            boolean presketch,
-            boolean light) {
+            boolean presketch) {
         if (presketch) {
             return new ReversedMultiFileCommandBatchCursor(new PrefetchedReverseCommandBatchCursors(
-                    logFile, backToPosition, logEntryReader, failOnCorruptedLogFiles, monitor, light));
+                    logFile, backToPosition, logEntryReader, failOnCorruptedLogFiles, monitor));
         } else {
             return new ReversedMultiFileCommandBatchCursor(new DefaultReverseCommandBatchCursors(
-                    logFile, backToPosition, logEntryReader, failOnCorruptedLogFiles, monitor, light));
+                    logFile, backToPosition, logEntryReader, failOnCorruptedLogFiles, monitor));
         }
     }
 

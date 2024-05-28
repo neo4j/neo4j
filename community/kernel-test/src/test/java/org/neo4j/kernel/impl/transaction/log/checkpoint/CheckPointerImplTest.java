@@ -56,6 +56,7 @@ import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.database.DatabaseTracers;
+import org.neo4j.kernel.impl.transaction.log.AppendBatchInfo;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointerImpl.ForceOperation;
 import org.neo4j.kernel.impl.transaction.log.pruning.LogPruning;
@@ -68,7 +69,6 @@ import org.neo4j.storageengine.api.ClosedTransactionMetadata;
 import org.neo4j.storageengine.api.MetadataProvider;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionId;
-import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.LatestVersions;
 import org.neo4j.time.Clocks;
 import org.neo4j.util.concurrent.BinaryLatch;
@@ -428,8 +428,7 @@ class CheckPointerImplTest {
         when(metadataProvider.getLastClosedTransaction()).thenReturn(initialCommitted, otherCommitted);
         when(metadataProvider.getLastClosedTransactionId())
                 .thenReturn(initialTransactionId, transactionId, transactionId);
-        when(metadataProvider.lastBatch())
-                .thenReturn(new TransactionIdStore.AppendBatchInfo(transactionId, logPosition));
+        when(metadataProvider.lastBatch()).thenReturn(new AppendBatchInfo(transactionId, logPosition));
     }
 
     private class CheckpointCountingLock extends ReentrantLock {

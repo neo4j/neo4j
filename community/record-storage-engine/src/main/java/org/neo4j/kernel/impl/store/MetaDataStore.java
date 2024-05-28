@@ -52,6 +52,7 @@ import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.record.MetaDataRecord;
 import org.neo4j.kernel.impl.store.record.Record;
+import org.neo4j.kernel.impl.transaction.log.AppendBatchInfo;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogTailLogVersionsMetadata;
 import org.neo4j.logging.InternalLogProvider;
@@ -160,9 +161,8 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord, NoStoreHe
         lastCommittingTx = new AtomicLong(lastCommittedTx.id());
         highestCommittedTransaction = new HighestTransactionId(lastCommittedTx);
         var logPosition = logTailMetadata.getLastTransactionLogPosition();
-        long lastCommittedAppendIndex = logTailMetadata.getLastCheckpointedAppendIndex();
-        appendIndex = new AtomicLong(lastCommittedAppendIndex);
-        lastBatch = new AppendBatchInfo(lastCommittedAppendIndex, LogPosition.UNSPECIFIED);
+        lastBatch = logTailMetadata.lastBatch();
+        appendIndex = new AtomicLong(lastBatch.appendIndex());
         lastClosedTx = new ArrayQueueOutOfOrderSequence(
                 lastCommittedTx.id(),
                 200,

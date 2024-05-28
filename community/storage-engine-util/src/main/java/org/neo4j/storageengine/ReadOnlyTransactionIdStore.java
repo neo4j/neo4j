@@ -21,6 +21,7 @@ package org.neo4j.storageengine;
 
 import org.neo4j.io.pagecache.context.TransactionIdSnapshot;
 import org.neo4j.kernel.KernelVersion;
+import org.neo4j.kernel.impl.transaction.log.AppendBatchInfo;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogTailLogVersionsMetadata;
 import org.neo4j.storageengine.api.ClosedTransactionMetadata;
@@ -35,7 +36,7 @@ public class ReadOnlyTransactionIdStore implements TransactionIdStore {
     public ReadOnlyTransactionIdStore(LogTailLogVersionsMetadata logTailMetadata) {
         this.lastCommittedTransaction = logTailMetadata.getLastCommittedTransaction();
         this.logPosition = logTailMetadata.getLastTransactionLogPosition();
-        this.lastBatch = new AppendBatchInfo(logTailMetadata.getLastCheckpointedAppendIndex(), LogPosition.UNSPECIFIED);
+        this.lastBatch = logTailMetadata.lastBatch();
     }
 
     @Override

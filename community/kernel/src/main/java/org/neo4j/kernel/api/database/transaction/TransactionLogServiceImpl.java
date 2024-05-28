@@ -34,6 +34,7 @@ import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.BinarySupportedKernelVersions;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.availability.AvailabilityGuard;
+import org.neo4j.kernel.impl.transaction.log.AppendBatchInfo;
 import org.neo4j.kernel.impl.transaction.log.AppendedChunkLogVersionLocator;
 import org.neo4j.kernel.impl.transaction.log.AppendedChunkPositionLocator;
 import org.neo4j.kernel.impl.transaction.log.CommandBatchCursor;
@@ -50,7 +51,6 @@ import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.storageengine.api.CommandReaderFactory;
 import org.neo4j.storageengine.api.MetadataProvider;
 import org.neo4j.storageengine.api.TransactionId;
-import org.neo4j.storageengine.api.TransactionIdStore;
 
 public class TransactionLogServiceImpl implements TransactionLogService {
     private final LogicalTransactionStore transactionStore;
@@ -145,7 +145,7 @@ public class TransactionLogServiceImpl implements TransactionLogService {
         checkPointer.forceCheckPoint(transactionId, appendIndex, position, new SimpleTriggerInfo(reason));
     }
 
-    private TransactionIdStore.AppendBatchInfo getLastAppendBatch() throws IOException {
+    private AppendBatchInfo getLastAppendBatch() throws IOException {
         var lastBatchInfo = metadataProvider.lastBatch();
         if (!LogPosition.UNSPECIFIED.equals(lastBatchInfo.logPositionAfter())) {
             return lastBatchInfo;
@@ -199,10 +199,10 @@ public class TransactionLogServiceImpl implements TransactionLogService {
         }
     }
 
-    private TransactionIdStore.AppendBatchInfo getAppendBatchInfo(long appendIndex) throws IOException {
+    private AppendBatchInfo getAppendBatchInfo(long appendIndex) throws IOException {
         try (CommandBatchCursor commandBatchCursor = transactionStore.getCommandBatches(appendIndex)) {
             commandBatchCursor.next();
-            return new TransactionIdStore.AppendBatchInfo(appendIndex, commandBatchCursor.position());
+            return new AppendBatchInfo(appendIndex, commandBatchCursor.position());
         } catch (NoSuchLogEntryException e) {
             throw new IllegalArgumentException("Append index " + appendIndex + " not found in transaction logs.", e);
         }

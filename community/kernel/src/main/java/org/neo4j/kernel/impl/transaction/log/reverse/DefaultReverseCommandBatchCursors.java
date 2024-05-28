@@ -40,22 +40,19 @@ public final class DefaultReverseCommandBatchCursors implements CommandBatchCurs
     private final boolean failOnCorruptedLogFiles;
     private final ReversedTransactionCursorMonitor monitor;
     private long currentVersion;
-    private final boolean light;
 
     public DefaultReverseCommandBatchCursors(
             LogFile logFile,
             LogPosition beginning,
             LogEntryReader reader,
             boolean failOnCorruptedLogFiles,
-            ReversedTransactionCursorMonitor monitor,
-            boolean light) {
+            ReversedTransactionCursorMonitor monitor) {
         this.logFile = logFile;
         this.beginning = beginning;
         this.reader = reader;
         this.failOnCorruptedLogFiles = failOnCorruptedLogFiles;
         this.monitor = monitor;
         this.currentVersion = logFile.getHighestLogVersion();
-        this.light = light;
     }
 
     @Override
@@ -88,9 +85,9 @@ public final class DefaultReverseCommandBatchCursors implements CommandBatchCurs
     private CommandBatchCursor createCursor(ReadableLogChannel channel) throws IOException {
         if (channel instanceof ReadAheadLogChannel) {
             return new ReversedSingleFileCommandBatchCursor(
-                    (ReadAheadLogChannel) channel, reader, failOnCorruptedLogFiles, monitor, light);
+                    (ReadAheadLogChannel) channel, reader, failOnCorruptedLogFiles, monitor);
         }
-        return eagerlyReverse(new CommittedCommandBatchCursor(channel, reader, light));
+        return eagerlyReverse(new CommittedCommandBatchCursor(channel, reader));
     }
 
     @Override

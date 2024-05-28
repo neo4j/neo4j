@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
+import static org.neo4j.kernel.impl.transaction.log.EmptyLogTailMetadata.EMPTY_APPEND_BATCH_INFO;
+
 import java.io.IOException;
 import java.util.Optional;
 import java.util.UUID;
@@ -26,6 +28,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.TransactionIdSnapshot;
 import org.neo4j.kernel.KernelVersion;
+import org.neo4j.kernel.impl.transaction.log.AppendBatchInfo;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.storageengine.api.ClosedTransactionMetadata;
 import org.neo4j.storageengine.api.ExternalStoreId;
@@ -38,8 +41,7 @@ public class SimpleMetaDataProvider implements MetadataProvider {
     private final SimpleLogVersionRepository logVersionRepository;
     private final ExternalStoreId externalStoreId = new ExternalStoreId(UUID.randomUUID());
     private final AtomicLong appendIndex = new AtomicLong();
-    private volatile AppendBatchInfo appendBatchInfo =
-            new AppendBatchInfo(UNKNOWN_APPEND_INDEX, LogPosition.UNSPECIFIED);
+    private volatile AppendBatchInfo appendBatchInfo = EMPTY_APPEND_BATCH_INFO;
 
     public SimpleMetaDataProvider() {
         transactionIdStore = new SimpleTransactionIdStore();

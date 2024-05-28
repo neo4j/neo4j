@@ -32,6 +32,8 @@ import org.neo4j.storageengine.api.TransactionId;
 
 public class EmptyLogTailMetadata implements LogTailMetadata {
     static final LogPosition START_POSITION = new LogPosition(INITIAL_LOG_VERSION, BASE_TX_LOG_BYTE_OFFSET);
+    public static final AppendBatchInfo EMPTY_APPEND_BATCH_INFO =
+            new AppendBatchInfo(BASE_APPEND_INDEX, START_POSITION);
     private final KernelVersion kernelVersion;
 
     public EmptyLogTailMetadata(Config config) {
@@ -91,5 +93,10 @@ public class EmptyLogTailMetadata implements LogTailMetadata {
     @Override
     public long getLastCheckpointedAppendIndex() {
         return BASE_APPEND_INDEX;
+    }
+
+    @Override
+    public AppendBatchInfo lastBatch() {
+        return EMPTY_APPEND_BATCH_INFO;
     }
 }

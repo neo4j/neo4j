@@ -19,22 +19,9 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
-import org.neo4j.storageengine.api.TransactionId;
+import java.util.function.Supplier;
 
-public interface LogTailLogVersionsMetadata {
-    LogTailLogVersionsMetadata EMPTY_LOG_TAIL = new EmptyLogTailLogVersionsMetadata();
-
-    boolean isRecoveryRequired();
-
-    long getCheckpointLogVersion();
-
-    long getLogVersion();
-
-    TransactionId getLastCommittedTransaction();
-
-    LogPosition getLastTransactionLogPosition();
-
-    long getLastCheckpointedAppendIndex();
-
-    AppendBatchInfo lastBatch();
+public interface LastAppendBatchInfoProvider extends Supplier<AppendBatchInfo> {
+    LastAppendBatchInfoProvider EMPTY_LAST_APPEND_BATCH_INFO_PROVIDER =
+            () -> EmptyLogTailMetadata.EMPTY_APPEND_BATCH_INFO;
 }

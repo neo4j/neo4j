@@ -45,22 +45,19 @@ public class PrefetchedReverseCommandBatchCursors implements CommandBatchCursors
     private final boolean failOnCorruptedLogFiles;
     private final ReversedTransactionCursorMonitor monitor;
     private long currentVersion;
-    private final boolean light;
 
     public PrefetchedReverseCommandBatchCursors(
             LogFile logFile,
             LogPosition beginning,
             LogEntryReader reader,
             boolean failOnCorruptedLogFiles,
-            ReversedTransactionCursorMonitor monitor,
-            boolean light) {
+            ReversedTransactionCursorMonitor monitor) {
         this.logFile = logFile;
         this.beginning = beginning;
         this.reader = reader;
         this.failOnCorruptedLogFiles = failOnCorruptedLogFiles;
         this.monitor = monitor;
         this.currentVersion = logFile.getHighestLogVersion();
-        this.light = light;
         monitor.presketchingTransactionLogs();
         executor.execute(this::prepare);
     }
@@ -88,9 +85,9 @@ public class PrefetchedReverseCommandBatchCursors implements CommandBatchCursors
                 ReadableLogChannel channel = logFile.getReader(position, NO_MORE_CHANNELS);
                 if (channel instanceof ReadAheadLogChannel) {
                     cursors.put(new ReversedSingleFileCommandBatchCursor(
-                            (ReadAheadLogChannel) channel, reader, failOnCorruptedLogFiles, monitor, light));
+                            (ReadAheadLogChannel) channel, reader, failOnCorruptedLogFiles, monitor));
                 } else {
-                    cursors.put(eagerlyReverse(new CommittedCommandBatchCursor(channel, reader, light)));
+                    cursors.put(eagerlyReverse(new CommittedCommandBatchCursor(channel, reader)));
                 }
                 currentVersion--;
             }
