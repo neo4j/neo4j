@@ -21,6 +21,8 @@ package org.neo4j.internal.kernel.api.helpers;
 
 import static org.neo4j.internal.kernel.api.helpers.IntersectionNodeLabelIndexCursor.ascendingIntersectionNodeLabelIndexCursor;
 import static org.neo4j.internal.kernel.api.helpers.IntersectionNodeLabelIndexCursor.descendingIntersectionNodeLabelIndexCursor;
+import static org.neo4j.internal.kernel.api.helpers.UnionNodeLabelIndexCursor.ascendingUnionNodeLabelIndexCursor;
+import static org.neo4j.internal.kernel.api.helpers.UnionNodeLabelIndexCursor.descendingUnionNodeLabelIndexCursor;
 
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.DefaultCloseListenable;
@@ -50,7 +52,7 @@ public abstract class SubtractionNodeLabelIndexCursor extends DefaultCloseListen
         return new AscendingSubtractionLabelIndexCursor(
                 ascendingIntersectionNodeLabelIndexCursor(
                         read, tokenReadSession, cursorContext, positiveLabels, positiveCursors),
-                ascendingIntersectionNodeLabelIndexCursor(
+                ascendingUnionNodeLabelIndexCursor(
                         read, tokenReadSession, cursorContext, negativeLabels, negativeCursors));
     }
 
@@ -66,7 +68,7 @@ public abstract class SubtractionNodeLabelIndexCursor extends DefaultCloseListen
         return new DescendingSubtractionLabelIndexCursor(
                 descendingIntersectionNodeLabelIndexCursor(
                         read, tokenReadSession, cursorContext, positiveLabels, positiveCursors),
-                descendingIntersectionNodeLabelIndexCursor(
+                descendingUnionNodeLabelIndexCursor(
                         read, tokenReadSession, cursorContext, negativeLabels, negativeCursors));
     }
 
@@ -74,7 +76,7 @@ public abstract class SubtractionNodeLabelIndexCursor extends DefaultCloseListen
             NodeLabelIndexCursor[] positiveCursors, NodeLabelIndexCursor[] negativeCursor) {
         return new AscendingSubtractionLabelIndexCursor(
                 IntersectionNodeLabelIndexCursor.intersectionNodeLabelIndexCursor(positiveCursors),
-                IntersectionNodeLabelIndexCursor.intersectionNodeLabelIndexCursor(negativeCursor));
+                UnionNodeLabelIndexCursor.unionNodeLabelIndexCursor(negativeCursor));
     }
 
     SubtractionNodeLabelIndexCursor(SkippableCursor positiveCursor, SkippableCursor negativeCursor) {
