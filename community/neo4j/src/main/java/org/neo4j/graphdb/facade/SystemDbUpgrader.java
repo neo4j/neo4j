@@ -96,6 +96,7 @@ public class SystemDbUpgrader {
         var dbmsRuntimeSystemGraphComponent = new DbmsRuntimeSystemGraphComponent(globalModule.getGlobalConfig());
         systemGraphComponentsBuilder.register(dbmsRuntimeSystemGraphComponent);
         edition.registerSystemGraphComponents(systemGraphComponentsBuilder, globalModule);
+        globalDependencies.satisfyDependency(edition.getSystemGraphComponents());
 
         var databaseContextProvider = edition.createDatabaseContextProvider(globalModule);
         var systemDatabaseProvider = new ContextBasedSystemDatabaseProvider(databaseContextProvider);
