@@ -46,7 +46,6 @@ import org.neo4j.cypher.internal.runtime.memory.ProfilingParallelTrackingQueryMe
 import org.neo4j.cypher.internal.runtime.memory.QueryMemoryTracker
 import org.neo4j.cypher.internal.runtime.memory.TrackingQueryMemoryTracker
 import org.neo4j.cypher.internal.runtime.memory.TransactionWorkerThreadDelegatingMemoryTracker
-import org.neo4j.cypher.result.QueryProfile
 import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.internal.kernel.api.DefaultCloseListenable
 import org.neo4j.kernel.impl.query.QuerySubscriber
@@ -175,7 +174,7 @@ case class InterpretedExecutionResultBuilderFactory(
         lenientCreateRelationship = lenientCreateRelationship,
         prePopulateResults = prePopulateResults,
         input = input,
-        profileInformation,
+        if (doProfile) profileInformation else null,
         transactionWorkerExecutor
       )
     }

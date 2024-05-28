@@ -92,7 +92,7 @@ class SlottedExecutionResultBuilderFactory(
         lenientCreateRelationship = lenientCreateRelationship,
         prePopulateResults = prePopulateResults,
         input = input,
-        profileInformation,
+        if (doProfile) profileInformation else null,
         transactionWorkerExecutor = transactionWorkerExecutor
       )
     }
