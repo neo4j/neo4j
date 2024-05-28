@@ -290,5 +290,7 @@ public interface QueryTransactionStatisticsAggregator {
     @FunctionalInterface
     interface CommitPhaseStatisticsListener {
         void onRecordedStatisticsOfCommitPhase(long pageHits, long pageFaults, long transactionSequenceNumber);
+
+        CommitPhaseStatisticsListener NO_OP = (pageHits, pageFaults, transactionSequenceNumber) -> {};
     }
 }

@@ -21,6 +21,7 @@ package org.neo4j.kernel.api.query;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
+import static org.neo4j.kernel.api.query.QueryTransactionStatisticsAggregator.CommitPhaseStatisticsListener.NO_OP;
 
 import java.util.Random;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -82,7 +83,7 @@ class QueryTransactionStatisticsAggregatorTest {
         public void run() {
             accumulator.recordStatisticsOfTransactionAboutToClose(2, 2, transactionId);
             LockSupport.parkNanos(RANDOM.nextLong(1000, 10_000));
-            accumulator.recordStatisticsOfClosedTransaction(3, 3, transactionId);
+            accumulator.recordStatisticsOfClosedTransaction(3, 3, transactionId, NO_OP);
         }
     }
 }
