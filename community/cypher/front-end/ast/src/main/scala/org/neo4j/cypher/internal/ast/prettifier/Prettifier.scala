@@ -203,6 +203,7 @@ import org.neo4j.cypher.internal.ast.StartDatabase
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.StopDatabase
 import org.neo4j.cypher.internal.ast.SubqueryCall
+import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsConcurrencyParameters
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorBreak
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorContinue
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorFail
@@ -1104,6 +1105,11 @@ case class Prettifier(
         case Some(size) => " OF " + expr(size) + " ROWS"
         case None       => ""
       }
+      val concurrency = ip.concurrencyParams match {
+        case Some(InTransactionsConcurrencyParameters(Some(explicit))) => " " + expr(explicit) + " CONCURRENT"
+        case Some(InTransactionsConcurrencyParameters(None))           => " CONCURRENT"
+        case None                                                      => ""
+      }
       val onError = ip.errorParams.map(_.behaviour) match {
         case Some(OnErrorBreak)    => s" ON ERROR BREAK"
         case Some(OnErrorContinue) => s" ON ERROR CONTINUE"
@@ -1114,7 +1120,7 @@ case class Prettifier(
         case Some(statusVar) => s" REPORT STATUS AS ${ExpressionStringifier.backtick(statusVar.name)}"
         case None            => ""
       }
-      s" IN TRANSACTIONS$ofRows$onError$reportStatus"
+      s" IN$concurrency TRANSACTIONS$ofRows$onError$reportStatus"
     }
 
     def asString(w: Where): String =
