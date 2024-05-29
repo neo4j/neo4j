@@ -306,7 +306,7 @@ abstract class AbstractConcurrentTransactionsPipe(
           try {
             outputQueue.put(outputResult)
           } finally {
-            activeTaskCount.getAndAdd(-1)
+            activeTaskCount.getAndDecrement()
           }
         }
       }
