@@ -299,10 +299,15 @@ abstract class AbstractConcurrentTransactionsPipe(
           throw e
       } finally {
         try {
-          outputQueue.put(outputResult)
-        } finally {
-          activeTaskCount.getAndAdd(-1)
+          // NOTE: We need to close the memory tracker before putting the result in the output queue,
+          // since that could result in the query finishing on the main thread.
           closeMemoryTracker()
+        } finally {
+          try {
+            outputQueue.put(outputResult)
+          } finally {
+            activeTaskCount.getAndAdd(-1)
+          }
         }
       }
     }
