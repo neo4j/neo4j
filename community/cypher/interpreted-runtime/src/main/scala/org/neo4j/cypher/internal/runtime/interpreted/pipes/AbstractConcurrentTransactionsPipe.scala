@@ -126,11 +126,11 @@ abstract class AbstractConcurrentTransactionsPipe(
               }
             }
             currentOutputIterator = taskResult.outputIterator
-            maybeEnqueueTasks()
-          } else {
+          } else if (!hasAvailableInput) {
             logMessage("No more rows to prefetch. Iterator will finish on next call to .next")
             return None
           }
+          maybeEnqueueTasks()
         }
       } while (!hasAvailableOutputRow)
       logMessage("Outputting row")
