@@ -1761,12 +1761,14 @@ private[internal] class TransactionBoundReadQueryContext(
 
     val statement = newTransactionalContext.kernelTransactionalContext.statement()
     statement.registerCloseableResource(newResourceManager)
-    val closeable: AutoCloseable = () => statement.unregisterCloseableResource(newResourceManager)
+    // NOTE: It is not safe to call unregisterCloseableResource after commit or rollback.
+    //       The resource will be unregistered anyway when the statement is closed, so we do not
+    //       really need to have a callback just to call unregister.
 
     new TransactionBoundQueryContext(
       newTransactionalContext,
       newResourceManager,
-      Some(closeable)
+      None
     )(indexSearchMonitor)
   }
 
