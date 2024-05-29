@@ -1389,6 +1389,91 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
   }
 
   test(
+    "inserts no eager between Create and SubtractionNodeByLabelScan if no label overlap"
+  ) {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("m")
+      .create(createNode("o", "N"))
+      .apply()
+      .|.subtractionNodeByLabelsScan("n", Seq("N", "M"), Seq("P"))
+      .allNodeScan("m")
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    result should equal(plan)
+  }
+
+  test(
+    "inserts no eager between Create and SubtractionNodeByLabelScan if no label overlap due to negative label"
+  ) {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("m")
+      .create(createNode("o", "N", "M", "P"))
+      .apply()
+      .|.subtractionNodeByLabelsScan("n", Seq("N", "M"), Seq("P"))
+      .allNodeScan("m")
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    result should equal(plan)
+  }
+
+  test(
+    "inserts eager between Create and SubtractionNodeByLabelScan if label overlap"
+  ) {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("m")
+      .create(createNode("o", "M", "N"))
+      .apply()
+      .|.subtractionNodeByLabelsScan("n", Seq("N", "M"), Seq("P"))
+      .allNodeScan("m")
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("m")
+        .create(createNode("o", "M", "N"))
+        .eager(ListSet(
+          LabelReadSetConflict(labelName("N")).withConflict(Conflict(Id(1), Id(3))),
+          LabelReadSetConflict(labelName("M")).withConflict(Conflict(Id(1), Id(3)))
+        ))
+        .apply()
+        .|.subtractionNodeByLabelsScan("n", Seq("N", "M"), Seq("P"))
+        .allNodeScan("m")
+        .build()
+    )
+  }
+
+  test(
+    "inserts eager between Create and SubtractionNodeByLabelScan if label overlap, with possibly more labels on the newly created nodes"
+  ) {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("m")
+      .create(createNode("o", "N", "M", "Q"))
+      .apply()
+      .|.subtractionNodeByLabelsScan("n", Seq("N", "M"), Seq("P"))
+      .allNodeScan("m")
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("m")
+        .create(createNode("o", "M", "N", "Q"))
+        .eager(ListSet(
+          LabelReadSetConflict(labelName("N")).withConflict(Conflict(Id(1), Id(3))),
+          LabelReadSetConflict(labelName("M")).withConflict(Conflict(Id(1), Id(3))),
+          LabelReadSetConflict(labelName("Q")).withConflict(Conflict(Id(1), Id(3)))
+        ))
+        .apply()
+        .|.subtractionNodeByLabelsScan("n", Seq("N", "M"), Seq("P"))
+        .allNodeScan("m")
+        .build()
+    )
+  }
+
+  test(
     "inserts no eager between Create and NodeByLabelScan if no label overlap with ANDed labels, same label in Filter"
   ) {
     val planBuilder = new LogicalPlanBuilder()

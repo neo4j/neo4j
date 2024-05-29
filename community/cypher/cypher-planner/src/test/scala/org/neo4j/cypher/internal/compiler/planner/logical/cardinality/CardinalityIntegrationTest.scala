@@ -33,6 +33,7 @@ import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.NodeIndexSeek
+import org.neo4j.cypher.internal.logical.plans.SubtractionNodeByLabelsScan
 import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.symbols.CTNode
@@ -1788,6 +1789,30 @@ class CardinalityIntegrationTest extends CypherFunSuite with CardinalityIntegrat
 
     val card = card_0 + card_1 + card_2 + card_3 + card_4
     queryShouldHaveCardinality(builder, query, card)
+  }
+
+  test("subtractionNodeByLabelScan should obtain cardinality estimates using independence assumptions") {
+    val nodes = 200.0
+    val a = 50.0
+    val b = 20.0
+    val builder = plannerBuilder()
+      .setAllNodesCardinality(nodes)
+      .setLabelCardinality("A", a)
+      .setLabelCardinality("B", b)
+      .build()
+
+    val expectedCardinality = nodes * (a / nodes) * ((nodes - b) / nodes)
+
+    val query = "MATCH (n:A&!B)"
+
+    planShouldHaveCardinality(
+      builder,
+      query,
+      {
+        case _: SubtractionNodeByLabelsScan => true
+      },
+      expectedCardinality
+    )
   }
 
   private def uniquenessSelectivityForNRels(n: Int): Double = {

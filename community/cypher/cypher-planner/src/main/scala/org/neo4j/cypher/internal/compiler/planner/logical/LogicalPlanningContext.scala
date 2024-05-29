@@ -130,6 +130,8 @@ object LogicalPlanningContext {
     csvBufferSize: Int = GraphDatabaseSettings.csv_buffer_size.defaultValue().intValue(),
     planningIntersectionScansEnabled: Boolean =
       GraphDatabaseInternalSettings.planning_intersection_scans_enabled.defaultValue(),
+    planningSubtractionScansEnabled: Boolean =
+      GraphDatabaseInternalSettings.planning_subtraction_scans_enabled.defaultValue(),
     eagerAnalyzer: CypherEagerAnalyzerOption = CypherEagerAnalyzerOption.default,
     statefulShortestPlanningRewriteQuantifiersAbove: Int =
       GraphDatabaseInternalSettings.stateful_shortest_planning_rewrite_quantifiers_above.defaultValue()
@@ -149,6 +151,7 @@ object LogicalPlanningContext {
           legacyCsvQuoteEscaping: Boolean,
           csvBufferSize: Int,
           planningIntersectionScansEnabled: Boolean,
+          planningSubtractionScansEnabled: Boolean,
           eagerAnalyzer: CypherEagerAnalyzerOption,
           statefulShortestPlanningRewriteQuantifiersAbove: Int
         ) =>

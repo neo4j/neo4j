@@ -36,29 +36,34 @@ import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability.BOTH
 import org.neo4j.cypher.internal.planner.spi.TokenIndexDescriptor
 import org.neo4j.cypher.internal.util.InputPosition
 
-import scala.collection.mutable
-
 case class subtractionLabelScanLeafPlanner(skipIDs: Set[LogicalVariable]) extends LeafPlanner {
 
-  private def collectPositiveAndNegativeLabelPredicatesPerVariable(qg: QueryGraph)
-    : Map[Variable, (Set[LabelName], Set[LabelName])] = {
-    qg.selections.flatPredicatesSet.foldLeft(Map.empty[Variable, (Set[LabelName], Set[LabelName])]) {
+  case class Labels(positives: Set[LabelName], negatives: Set[LabelName])
+  case class VariableAndLabels(variable: Variable, labels: Labels)
+
+  private def collectPositiveAndNegativeLabelPredicatesPerVariable(qg: QueryGraph): Iterable[VariableAndLabels] = {
+    val variableToLabelsMap = qg.selections.flatPredicatesSet.foldLeft(Map.empty[Variable, Labels]) {
       case (acc, current) => current match {
           // Positive labels
           case HasLabels(variable: Variable, labels)
             if !skipIDs.contains(variable) && (qg.patternNodes(variable) && !qg.argumentIds(variable)) =>
             val newValue =
-              acc.get(variable).map(c => (c._1 ++ labels, c._2)).getOrElse((labels.toSet, Set.empty[LabelName]))
+              acc.get(variable).map(currentLabels =>
+                Labels(currentLabels.positives ++ labels, currentLabels.negatives)
+              ).getOrElse(Labels(labels.toSet, Set.empty[LabelName]))
             acc + (variable -> newValue)
           // Negative labels
           case Not(HasLabels(variable: Variable, labels))
             if !skipIDs.contains(variable) && (qg.patternNodes(variable) && !qg.argumentIds(variable)) =>
             val newValue =
-              acc.get(variable).map(c => (c._1, c._2 ++ labels)).getOrElse((Set.empty[LabelName], labels.toSet))
+              acc.get(variable).map(currentLabels =>
+                Labels(currentLabels.positives, currentLabels.negatives ++ labels)
+              ).getOrElse(Labels(Set.empty[LabelName], labels.toSet))
             acc + (variable -> newValue)
           case _ => acc
         }
     }
+    variableToLabelsMap.map(variableToLabels => VariableAndLabels(variableToLabels._1, variableToLabels._2))
   }
 
   private def constructSubtractionNodeByLabelScan(
@@ -84,7 +89,7 @@ case class subtractionLabelScanLeafPlanner(skipIDs: Set[LogicalVariable]) extend
       negativeLabels.map(label => Not(HasLabels(variable, Seq(label))(InputPosition.NONE))(InputPosition.NONE))
     val labelPredicates =
       negativeLabelPredicates.toSeq :+ HasLabels(variable, positiveLabels.toSeq)(InputPosition.NONE)
-    val result = context.staticComponents.logicalPlanProducer.planSubtractionNodeByLabelsScan(
+    context.staticComponents.logicalPlanProducer.planSubtractionNodeByLabelsScan(
       variable,
       positiveLabels.toSeq,
       negativeLabels.toSeq,
@@ -94,7 +99,6 @@ case class subtractionLabelScanLeafPlanner(skipIDs: Set[LogicalVariable]) extend
       providedOrder,
       context
     )
-    result
   }
 
   override def apply(
@@ -102,37 +106,35 @@ case class subtractionLabelScanLeafPlanner(skipIDs: Set[LogicalVariable]) extend
     interestingOrderConfig: InterestingOrderConfig,
     context: LogicalPlanningContext
   ): Set[LogicalPlan] = {
-    context.staticComponents.planContext.nodeTokenIndex match {
-      case Some(nodeTokenIndex) if nodeTokenIndex.orderCapability == BOTH =>
-        // Combine the positive labels and the negative labels
-        // For example HasLabels(n, Seq(A)), HasLabels(n, Seq(B)), Not(HasLabels(n, Seq(C))), NOT(HasLabels(n, Seq(D)))  to n -> (Set(A, B), Set(C, D))
-        val combined: Map[Variable, (Set[LabelName], Set[LabelName])] =
-          collectPositiveAndNegativeLabelPredicatesPerVariable(qg)
+    if (!context.settings.planningSubtractionScansEnabled) {
+      Set.empty
+    } else {
+      context.staticComponents.planContext.nodeTokenIndex match {
+        // SubtractionNodeByLabelScan relies on ordering, so we can only use this plan if the nodeTokenIndex is ordered.
+        case Some(nodeTokenIndex) if nodeTokenIndex.orderCapability == BOTH =>
+          // Combine the positive labels and the negative labels
+          // For example HasLabels(n, Seq(A)), HasLabels(n, Seq(B)), Not(HasLabels(n, Seq(C))), Not(HasLabels(n, Seq(D)))  to n -> (Set(A, B), Set(C, D))
+          val combined: Iterable[VariableAndLabels] =
+            collectPositiveAndNegativeLabelPredicatesPerVariable(qg)
 
-        // combined: Map from 'variable' to pair '(positiveLabels, negativeLabels)'
-        combined
-          .filter(variableToPositiveNegativeLabelsPair =>
-            // At least one positive label and at least one negative label
-            variableToPositiveNegativeLabelsPair._2._1.nonEmpty &&
-              variableToPositiveNegativeLabelsPair._2._2.nonEmpty
-          )
-          .map(variableToPositiveNegativeLabelsPair => {
-            val variable = variableToPositiveNegativeLabelsPair._1
-            val positiveLabels = variableToPositiveNegativeLabelsPair._2._1
-            val negativeLabels = variableToPositiveNegativeLabelsPair._2._2
+          // combined: Map from 'variable' to pair '(positiveLabels, negativeLabels)'
+          combined
+            .collect {
+              case VariableAndLabels(variable, Labels(positiveLabels, negativeLabels))
+                if positiveLabels.nonEmpty && negativeLabels.nonEmpty =>
+                constructSubtractionNodeByLabelScan(
+                  variable,
+                  positiveLabels,
+                  negativeLabels,
+                  qg,
+                  interestingOrderConfig,
+                  nodeTokenIndex,
+                  context
+                )
+            }.toSet
 
-            constructSubtractionNodeByLabelScan(
-              variable,
-              positiveLabels,
-              negativeLabels,
-              qg,
-              interestingOrderConfig,
-              nodeTokenIndex,
-              context
-            )
-          }).toSet
-
-      case _ => Set.empty
+        case _ => Set.empty
+      }
     }
   }
 }

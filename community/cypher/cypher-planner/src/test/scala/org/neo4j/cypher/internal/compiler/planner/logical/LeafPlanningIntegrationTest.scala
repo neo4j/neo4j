@@ -98,6 +98,7 @@ import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CTStringNotNull
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.exceptions.IndexHintException
+import org.neo4j.exceptions.SyntaxException
 import org.neo4j.graphdb.schema.IndexType
 
 import java.lang.Boolean.TRUE
@@ -1878,6 +1879,27 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     ))
   }
 
+  test(
+    "should plan subtraction node label scan for one positive label and two negative label specified using a disjunction"
+  ) {
+    val planner = plannerBuilder()
+      .setLabelCardinality("A", 1000)
+      .setLabelCardinality("B", 1000)
+      .setLabelCardinality("C", 1000)
+      .setAllNodesCardinality(5000)
+      .build()
+
+    val q = "MATCH (n:A&!(B|C)) RETURN n"
+    val plan = planner.plan(q)
+
+    plan should (equal(
+      planner.planBuilder()
+        .produceResults("n")
+        .subtractionNodeByLabelsScan("n", Seq("A"), Seq("B", "C"))
+        .build()
+    ))
+  }
+
   test("should plan subtraction node label scan for two positive label and one negative label") {
     val planner = plannerBuilder()
       .setLabelCardinality("A", 1000)
@@ -1937,6 +1959,26 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     ))
   }
 
+  test("should plan subtraction node label scan for two positive label and two negative label ascending order") {
+    val planner = plannerBuilder()
+      .setLabelCardinality("A", 1000)
+      .setLabelCardinality("B", 1000)
+      .setLabelCardinality("C", 1000)
+      .setLabelCardinality("D", 1000)
+      .setAllNodesCardinality(5000)
+      .build()
+
+    val q = "MATCH (n:!A&B&!C&D) RETURN n ORDER BY n ASC"
+    val plan = planner.plan(q)
+
+    plan should (equal(
+      planner.planBuilder()
+        .produceResults("n")
+        .subtractionNodeByLabelsScan("n", Seq("B", "D"), Seq("A", "C"), IndexOrderAscending)
+        .build()
+    ))
+  }
+
   test("should not plan subtraction node label scan when hint for relationship type scan is given") {
     val planner = plannerBuilder()
       .setLabelCardinality("A", 1000)
@@ -1968,18 +2010,156 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       .setAllRelationshipsCardinality(8000)
       .setRelationshipCardinality("()-[R1]->()", 4000)
       .setRelationshipCardinality("()-[R1]->(:A)", 400)
+      .setRelationshipCardinality("(:A)-[R1]->()", 400)
       .setRelationshipCardinality("()-[R1]->(:B)", 400)
+      .setRelationshipCardinality("(:A)-[R1]->(:B)", 4)
+      .addNodeIndex("A", Seq("id"), 0.2, 0.01)
       .build()
 
-    val q = "MATCH (a)-[r:R1]->(b:!A&B) USING SCAN b:B RETURN r"
+    val q = "MATCH (a:A {id:123})-[r:R1]->(b:!A&B) USING SCAN b:B RETURN r"
     val plan = planner.plan(q)
 
     plan should (equal(
       planner.planBuilder()
         .produceResults("r")
-        .expandAll("(b)<-[r:R1]-(a)")
-        .subtractionNodeByLabelsScan("b", Seq("B"), Seq("A"))
+        .nodeHashJoin("b")
+        .|.subtractionNodeByLabelsScan("b", Seq("B"), Seq("A"), IndexOrderNone)
+        .expandAll("(a)-[r:R1]->(b)")
+        .nodeIndexOperator("a:A(id = 123)", indexType = IndexType.RANGE)
         .build()
     ))
+  }
+
+  test("should not plan subtraction node label scan when hint for node label scan is given for another node") {
+    val planner = plannerBuilder()
+      .setLabelCardinality("A", 1000)
+      .setLabelCardinality("B", 1000)
+      .setAllNodesCardinality(5000)
+      .setAllRelationshipsCardinality(8000)
+      .setRelationshipCardinality("()-[R1]->()", 4000)
+      .setRelationshipCardinality("()-[R1]->(:A)", 400)
+      .setRelationshipCardinality("(:A)-[R1]->()", 400)
+      .setRelationshipCardinality("()-[R1]->(:B)", 400)
+      .setRelationshipCardinality("(:A)-[R1]->(:B)", 4)
+      .build()
+
+    val q = "MATCH (a:A)-[r:R1]->(b:!A&B) USING SCAN a:A RETURN r"
+    val plan = planner.plan(q)
+
+    plan should (equal(
+      planner.planBuilder()
+        .produceResults("r")
+        .filter("b:B", "NOT b:A")
+        .expandAll("(a)-[r:R1]->(b)")
+        .nodeByLabelScan("a", "A")
+        .build()
+    ))
+  }
+
+  test("should not plan subtraction node label scan when hint for node label scan is given for a negative label") {
+    val planner = plannerBuilder()
+      .setLabelCardinality("A", 1000)
+      .setLabelCardinality("B", 1000)
+      .setAllNodesCardinality(5000)
+      .setAllRelationshipsCardinality(8000)
+      .setRelationshipCardinality("()-[R1]->()", 4000)
+      .setRelationshipCardinality("()-[R1]->(:A)", 400)
+      .setRelationshipCardinality("(:A)-[R1]->()", 400)
+      .setRelationshipCardinality("()-[R1]->(:B)", 400)
+      .setRelationshipCardinality("(:A)-[R1]->(:B)", 4)
+      .build()
+
+    val q = "MATCH (a:A)-[r:R1]->(b:!A&B) USING SCAN b:A RETURN r"
+
+    the[SyntaxException].thrownBy(planner.plan(q))
+  }
+
+  test("should not start with a subtractionNodeByLabelScan") {
+    val nodes = 200.0
+    val a = 100.0
+    val b = 10.0
+    val builder = plannerBuilder()
+      .setAllNodesCardinality(nodes)
+      .setLabelCardinality("A", a)
+      .setLabelCardinality("B", b)
+      .setAllRelationshipsCardinality(500)
+      .setRelationshipCardinality("(:A)-[]->()", 300)
+      .setRelationshipCardinality("()-[]->(:B)", 30)
+      .setRelationshipCardinality("(:A)-[]->(:B)", 200)
+      .build()
+
+    val plan = builder.plan("MATCH (n:A&!B)-[r]->(m:B) RETURN r")
+
+    plan should equal(builder.planBuilder()
+      .produceResults("r")
+      .filter("NOT n:B", "n:A")
+      .expandAll("(m)<-[r]-(n)")
+      .nodeByLabelScan("m", "B")
+      .build())
+  }
+
+  test("should start with a subtractionNodeByLabelScan") {
+    val nodes = 200.0
+    val a = 100.0
+    val b = 100.0
+    val builder = plannerBuilder()
+      .setAllNodesCardinality(nodes)
+      .setLabelCardinality("A", a)
+      .setLabelCardinality("B", b)
+      .setAllRelationshipsCardinality(500)
+      .setRelationshipCardinality("(:A)-[]->()", 300)
+      .setRelationshipCardinality("()-[]->(:B)", 300)
+      .setRelationshipCardinality("(:A)-[]->(:B)", 200)
+      .build()
+
+    val plan = builder.plan("MATCH (n:A&!B)-[r]->(m:B) RETURN r")
+
+    plan should equal(builder.planBuilder()
+      .produceResults("r")
+      .filter("m:B")
+      .expandAll("(n)-[r]->(m)")
+      .subtractionNodeByLabelsScan("n", Seq("A"), Seq("B"))
+      .build())
+  }
+
+  private def confForSubtractionNodeByLabelScanVersusIndexTest(existsSelectivity: Double)
+    : StatisticsBackedLogicalPlanningConfiguration = {
+    val nodes = 200.0
+    val a = 100.0
+    val b = 100.0
+    plannerBuilder()
+      .setAllNodesCardinality(nodes)
+      .setLabelCardinality("A", a)
+      .setLabelCardinality("B", b)
+      .addNodeIndex("A", Seq("prop"), existsSelectivity, 1)
+      .build()
+  }
+
+  test("should plan index for subtractionNodeByLabelScan") {
+    val existsSelectivity = 0.1
+    val planningConf = confForSubtractionNodeByLabelScanVersusIndexTest(existsSelectivity)
+
+    val plan = planningConf.plan("MATCH (n:A&!B) WHERE n.prop IS NOT NULL RETURN n.prop")
+
+    plan should equal(planningConf.planBuilder()
+      .produceResults("`n.prop`")
+      .projection("cacheN[n.prop] AS `n.prop`")
+      .filter("NOT n:B")
+      .nodeIndexOperator("n:A(prop)", getValue = Map("prop" -> GetValue))
+      .build())
+  }
+
+  test("should NOT plan index for subtractionNodeByLabelScan") {
+    val existsSelectivity = 0.9
+    val planningConf = confForSubtractionNodeByLabelScanVersusIndexTest(existsSelectivity)
+
+    val plan = planningConf.plan("MATCH (n:A&!B) WHERE n.prop IS NOT NULL RETURN n.prop")
+
+    plan should equal(planningConf.planBuilder()
+      .produceResults("`n.prop`")
+      .projection("cacheN[n.prop] AS `n.prop`")
+      .filter("cacheNFromStore[n.prop] IS NOT NULL")
+      .subtractionNodeByLabelsScan("n", Seq("A"), Seq("B"))
+      .build())
   }
 }

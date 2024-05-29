@@ -250,6 +250,13 @@ class CypherPlannerConfiguration(
     () => config.planningIntersectionScansEnabled
   }
 
+  val planningSubtractionScansEnabled: () => Boolean = {
+    AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+      !GraphDatabaseInternalSettings.planning_subtraction_scans_enabled.dynamic()
+    )
+    () => config.planningSubtractionScansEnabled
+  }
+
   val predicatesAsUnionMaxSize: () => Int = {
     AssertMacros.checkOnlyWhenAssertionsAreEnabled(
       !GraphDatabaseInternalSettings.predicates_as_union_max_size.dynamic()

@@ -197,10 +197,14 @@ abstract class SubtractionLabelScanTestBase[CONTEXT <: RuntimeContext](
 
   test("should handle multiple labels") {
     // given
-    val justABNodes = givenGraph {
+    val abNoXy = givenGraph {
       nodeGraph(sizeHint, "A", "B", "C", "X", "Y")
       nodeGraph(sizeHint, "A")
-      nodeGraph(sizeHint, "A", "B") ++ nodeGraph(sizeHint, "A", "B", "X") ++ nodeGraph(sizeHint, "A", "B", "Y")
+      val AB = nodeGraph(sizeHint, "A", "B")
+      nodeGraph(sizeHint, "A", "B", "X")
+      nodeGraph(sizeHint, "A", "B", "Y")
+      val ABZ = nodeGraph(sizeHint, "A", "B", "Z")
+      AB ++ ABZ
     }
 
     // when
@@ -212,6 +216,6 @@ abstract class SubtractionLabelScanTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    runtimeResult should beColumns("x").withRows(singleColumn(justABNodes))
+    runtimeResult should beColumns("x").withRows(singleColumn(abNoXy))
   }
 }

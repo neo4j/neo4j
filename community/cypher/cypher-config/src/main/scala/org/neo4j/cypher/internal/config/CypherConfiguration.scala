@@ -146,6 +146,9 @@ class CypherConfiguration private (val config: Config) {
   val planningIntersectionScansEnabled: Boolean =
     config.get(GraphDatabaseInternalSettings.planning_intersection_scans_enabled)
 
+  val planningSubtractionScansEnabled: Boolean =
+    config.get(GraphDatabaseInternalSettings.planning_subtraction_scans_enabled)
+
   val eagerAnalyzer: CypherEagerAnalyzerOption = CypherEagerAnalyzerOption.fromConfig(config)
 
   val varExpandRelationshipIdSetThreshold: Integer =

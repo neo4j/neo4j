@@ -353,18 +353,19 @@ object ReadFinder {
         }
 
       case SubtractionNodeByLabelsScan(variable, positiveLabels, negativeLabels, _, _) =>
-        val acc = PlanReads()
-          .withIntroducedNodeVariable(variable)
-        val positivePlanReads = positiveLabels.foldLeft(acc) { (acc, labelName) =>
-          val hasLabels = HasLabels(variable, Seq(labelName))(InputPosition.NONE)
-          acc.withLabelRead(AccessedLabel(labelName, Some(variable)))
-            .withAddedNodeFilterExpression(variable, hasLabels)
-        }
-        negativeLabels.foldLeft(positivePlanReads) { (acc, labelName) =>
-          val notHasLabels = Not(HasLabels(variable, Seq(labelName))(InputPosition.NONE))(InputPosition.NONE)
-          acc.withLabelRead(AccessedLabel(labelName, Some(variable)))
-            .withAddedNodeFilterExpression(variable, notHasLabels)
-        }
+        Function.chain[PlanReads](Seq(
+          _.withIntroducedNodeVariable(variable),
+          positiveLabels.foldLeft(_) { (acc, labelName) =>
+            val hasLabels = HasLabels(variable, Seq(labelName))(InputPosition.NONE)
+            acc.withLabelRead(AccessedLabel(labelName, Some(variable)))
+              .withAddedNodeFilterExpression(variable, hasLabels)
+          },
+          negativeLabels.foldLeft(_) { (acc, labelName) =>
+            val notHasLabels = Not(HasLabels(variable, Seq(labelName))(InputPosition.NONE))(InputPosition.NONE)
+            acc.withLabelRead(AccessedLabel(labelName, Some(variable)))
+              .withAddedNodeFilterExpression(variable, notHasLabels)
+          }
+        ))(PlanReads())
 
       case NodeCountFromCountStore(_, labelNames, _) =>
         val variable = Variable(anonymousVariableNameGenerator.nextName)(InputPosition.NONE)
