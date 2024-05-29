@@ -31,7 +31,6 @@ import static org.neo4j.storageengine.api.RelationshipSelection.selection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
@@ -456,7 +455,7 @@ class DefaultRelationshipTraversalCursorTest {
         }
 
         @Override
-        public Set<ProcedureSignature> proceduresGetAll() {
+        public Stream<ProcedureSignature> proceduresGetAll() {
             return null;
         }
 

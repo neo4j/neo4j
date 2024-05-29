@@ -25,7 +25,6 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -849,7 +848,7 @@ public abstract class AllStoreHolder extends Read {
     }
 
     @Override
-    public Set<ProcedureSignature> proceduresGetAll() {
+    public Stream<ProcedureSignature> proceduresGetAll() {
         performCheckBeforeOperation();
         return getProcedureCaller().procedureView.getAllProcedures();
     }

@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.api.procedure;
 
-import java.util.Set;
 import java.util.stream.Stream;
 import org.neo4j.collection.RawIterator;
 import org.neo4j.function.ThrowingFunction;
@@ -41,7 +40,7 @@ public interface ProcedureView {
 
     UserFunctionHandle aggregationFunction(QualifiedName name);
 
-    Set<ProcedureSignature> getAllProcedures();
+    Stream<ProcedureSignature> getAllProcedures();
 
     Stream<UserFunctionSignature> getAllNonAggregatingFunctions();
 

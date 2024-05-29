@@ -22,7 +22,6 @@ package org.neo4j.procedure;
 import static java.util.Objects.requireNonNull;
 
 import java.io.IOException;
-import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -195,7 +194,7 @@ public class LazyProcedures implements GlobalProcedures, Consumer<Supplier<Globa
         }
 
         @Override
-        public Set<ProcedureSignature> getAllProcedures() {
+        public Stream<ProcedureSignature> getAllProcedures() {
             initView();
             return view.getAllProcedures();
         }

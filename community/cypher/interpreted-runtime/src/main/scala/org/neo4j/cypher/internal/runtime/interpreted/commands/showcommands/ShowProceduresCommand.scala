@@ -52,7 +52,7 @@ import org.neo4j.values.virtual.VirtualValues
 
 import java.util
 
-import scala.jdk.CollectionConverters.SetHasAsScala
+import scala.jdk.CollectionConverters.IteratorHasAsScala
 
 // SHOW PROCEDURE[S] [EXECUTABLE [BY {CURRENT USER | username}]] [WHERE clause | YIELD clause]
 case class ShowProceduresCommand(
@@ -95,8 +95,8 @@ case class ShowProceduresCommand(
       else
         false
 
-    val allProcedures = txContext.procedures.proceduresGetAll().asScala.filter(proc => !proc.internal).toList
-    val sortedProcedures = allProcedures.sortBy(a => a.name.toString)
+    val allProcedures = txContext.procedures.proceduresGetAll().iterator.asScala
+    val sortedProcedures = allProcedures.filter(proc => !proc.internal).toList.sortBy(a => a.name.toString)
 
     val rows = sortedProcedures.map { proc =>
       val (executeRoles, boostedExecuteRoles, allowedExecute) =

@@ -55,7 +55,7 @@ class TokenHoldersIdLookupTest {
         reg.registerAggregationFunction(TestProcedures.class);
         var procs = reg.getCurrentView();
         procName2id = new HashMap<>();
-        for (ProcedureSignature signature : procs.getAllProcedures()) {
+        for (ProcedureSignature signature : procs.getAllProcedures().toList()) {
             QualifiedName name = signature.name();
             ProcedureHandle procedure = procs.procedure(name);
             procName2id.put(name.toString(), procedure.id());

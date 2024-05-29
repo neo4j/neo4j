@@ -20,7 +20,6 @@
 package org.neo4j.fabric.transaction;
 
 import java.time.Clock;
-import java.util.Set;
 import java.util.stream.Stream;
 import org.neo4j.collection.RawIterator;
 import org.neo4j.common.DependencyResolver;
@@ -91,7 +90,7 @@ public class FabricProcedures implements Procedures {
     }
 
     @Override
-    public Set<ProcedureSignature> proceduresGetAll() throws ProcedureException {
+    public Stream<ProcedureSignature> proceduresGetAll() throws ProcedureException {
         return notAvailable();
     }
 

@@ -19,7 +19,6 @@
  */
 package org.neo4j.internal.kernel.api;
 
-import java.util.Set;
 import java.util.stream.Stream;
 import org.neo4j.collection.RawIterator;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
@@ -72,7 +71,7 @@ public interface Procedures {
      * @return all procedures
      * @throws ProcedureException
      */
-    Set<ProcedureSignature> proceduresGetAll() throws ProcedureException;
+    Stream<ProcedureSignature> proceduresGetAll() throws ProcedureException;
 
     /**
      * Invoke a read-only procedure by id.

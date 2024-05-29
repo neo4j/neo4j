@@ -25,7 +25,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.eclipse.collections.impl.list.mutable.primitive.IntArrayList;
 import org.neo4j.collection.RawIterator;
@@ -256,8 +255,8 @@ public class ProcedureRegistry {
                 id);
     }
 
-    public Set<ProcedureSignature> getAllProcedures() {
-        return procedures.all().stream().map(CallableProcedure::signature).collect(Collectors.toSet());
+    public Stream<ProcedureSignature> getAllProcedures() {
+        return procedures.all().stream().map(CallableProcedure::signature);
     }
 
     int[] getIdsOfProceduresMatching(Predicate<CallableProcedure> predicate) {

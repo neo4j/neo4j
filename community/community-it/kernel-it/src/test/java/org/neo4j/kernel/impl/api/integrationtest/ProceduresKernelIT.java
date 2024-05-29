@@ -31,7 +31,6 @@ import static org.neo4j.values.storable.Values.longValue;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.neo4j.collection.RawIterator;
-import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.Procedures;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
@@ -94,7 +93,7 @@ class ProceduresKernelIT extends KernelIntegrationTest {
 
         // When
         List<ProcedureSignature> signatures =
-                Iterables.asList(newTransaction().procedures().proceduresGetAll());
+                newTransaction().procedures().proceduresGetAll().toList();
 
         // Then
         assertThat(signatures)

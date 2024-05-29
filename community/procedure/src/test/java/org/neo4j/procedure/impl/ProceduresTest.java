@@ -37,7 +37,6 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.collection.RawIterator;
 import org.neo4j.common.DependencyResolver;
-import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.ProcedureHandle;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
@@ -79,7 +78,7 @@ class ProceduresTest {
         var view = procs.getCurrentView();
 
         // Then
-        List<ProcedureSignature> signatures = Iterables.asList(view.getAllProcedures());
+        List<ProcedureSignature> signatures = view.getAllProcedures().toList();
         assertThat(signatures)
                 .contains(
                         procedureSignature("org", "myproc1")

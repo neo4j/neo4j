@@ -19,7 +19,6 @@
  */
 package org.neo4j.procedure.impl;
 
-import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 import org.neo4j.collection.RawIterator;
@@ -120,7 +119,7 @@ public class ProcedureViewImpl implements ProcedureView {
     }
 
     @Override
-    public Set<ProcedureSignature> getAllProcedures() {
+    public Stream<ProcedureSignature> getAllProcedures() {
         return registry.getAllProcedures();
     }
 

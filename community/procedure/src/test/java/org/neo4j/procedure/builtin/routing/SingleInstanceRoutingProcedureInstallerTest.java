@@ -86,7 +86,9 @@ class SingleInstanceRoutingProcedureInstallerTest {
                 new QualifiedName(new String[] {"dbms", "routing"}, "getRoutingTable"),
                 new QualifiedName(new String[] {"dbms", "cluster", "routing"}, "getRoutingTable"));
 
-        Set<QualifiedName> actualNames = procedures.getCurrentView().getAllProcedures().stream()
+        Set<QualifiedName> actualNames = procedures
+                .getCurrentView()
+                .getAllProcedures()
                 .map(ProcedureSignature::name)
                 .collect(toSet());
 
