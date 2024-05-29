@@ -690,4 +690,30 @@ abstract class ValueHashJoinTestBase[CONTEXT <: RuntimeContext](
 
     execute(query, runtime) should beColumns("c")
   }
+
+  test("should join nested when join key is alias on rhs with conditionalApply on top") {
+    // given
+    val nodes = givenGraph {
+      nodeGraph(sizeHint)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y", "z")
+      .conditionalApply("x")
+      .|.projection("1 as z")
+      .|.argument()
+      .valueHashJoin("x=x")
+      .|.valueHashJoin("x=x")
+      .|.|.projection("y as x")
+      .|.|.allNodeScan("y")
+      .|.allNodeScan("x")
+      .allNodeScan("x")
+      .build()
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = nodes.map(n => Array(n, n, 1))
+    runtimeResult should beColumns("x", "y", "z").withRows(expected)
+  }
 }

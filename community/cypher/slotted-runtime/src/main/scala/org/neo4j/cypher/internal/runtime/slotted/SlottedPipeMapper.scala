@@ -2374,6 +2374,7 @@ object SlottedPipeMapper {
         out.getNestedArgumentSlot(id).map {
           outArgumentSlot => CopyLongSlot(slot.offset, outArgumentSlot.offset)
         }
+      case (DuplicatedSlotKey(_, _), _) => None
     }.flatten
   }
 

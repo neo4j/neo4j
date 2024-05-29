@@ -1222,7 +1222,7 @@ class SingleQuerySlotAllocator private[physicalplanning] (
                 result.newReference(key, lhsSlot.nullable || rhsSlot.nullable, newType)
             }
         }
-        // Note, we can potentially carry discaded slots from lhs/rhs here to save memory
+        // Note, we can potentially carry discarded slots from lhs/rhs here to save memory
         // First, add original variable names, cached properties and apply plan slots in order
         lhs.foreachSlotAndAliasesOrdered({
           case SlotWithKeyAndAliases(VariableSlotKey(key), slot, _) => addVariableToResult(key, slot)
@@ -1246,6 +1246,7 @@ class SingleQuerySlotAllocator private[physicalplanning] (
             if (rhs.hasNestedArgumentSlot(id)) {
               result.newNestedArgument(id)
             }
+          case SlotWithKeyAndAliases(DuplicatedSlotKey(_, _), _, _) => // noop
         })
 
         // Second, add aliases in order. Aliases get their own slots after a union.

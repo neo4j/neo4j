@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.physicalplanning.SlotConfiguration
 import org.neo4j.cypher.internal.physicalplanning.SlotConfigurationUtils
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -318,6 +319,24 @@ class SlottedRowTest extends CypherFunSuite {
         }
       }
     }
+  }
+
+  test("SlottedRow.toString should not explode") {
+
+    val slotConfig = slots(2, 2)
+
+    slotConfig.newLong("x", nullable = false, CTNode)
+    slotConfig.newLong("y", nullable = false, CTNode)
+    slotConfig.addAlias("x", "y")
+
+    slotConfig.newCachedProperty(prop("n", "p"))
+    slotConfig.newCachedProperty(prop("n", "p"), shouldDuplicate = true)
+
+    slotConfig.newArgument(Id(0))
+    slotConfig.newNestedArgument(Id(1))
+    slotConfig.newMetaData("meta", Id(2))
+
+    SlottedRow(slotConfig).toString shouldNot be(null)
   }
 
   private def prop(node: String, prop: String) =

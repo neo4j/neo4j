@@ -530,6 +530,12 @@ case class SlottedRow(slots: SlotConfiguration) extends CypherRow {
         tuples ::= ((s"Apply-Plan($id)", Values.longValue(longs(slot.offset))))
       case SlotWithKeyAndAliases(OuterNestedApplyPlanSlotKey(id), slot, _) =>
         tuples ::= ((s"Nested-Apply-Plan($id)", Values.longValue(longs(slot.offset))))
+      case SlotWithKeyAndAliases(DuplicatedSlotKey(key, id), slot, _) =>
+        tuples ::= ((
+          s"DuplicatedSlot($key, $id)",
+          if (slot.isLongSlot) Values.longValue(longs(slot.offset))
+          else refs(slot.offset)
+        ))
     })
     tuples.iterator
   }

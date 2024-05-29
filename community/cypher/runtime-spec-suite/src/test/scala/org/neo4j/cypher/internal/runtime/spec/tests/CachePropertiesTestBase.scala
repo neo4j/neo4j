@@ -736,6 +736,44 @@ abstract class CachePropertiesTestBase[CONTEXT <: RuntimeContext](
 
     result should beColumns("p3").withSingleRow(30)
   }
+
+  test("should handle duplicated cached properties on rhs of nested cartesian product with union on top") {
+    givenGraph {
+      val n1 = tx.createNode(Label.label("A"))
+      n1.setProperty("p", 10)
+      n1.setProperty("p2", 11)
+      val n2 = tx.createNode(Label.label("A"))
+      n2.setProperty("p", 20)
+      val n3 = tx.createNode(Label.label("C"))
+      n3.setProperty("p3", 30)
+      val n4 = tx.createNode(Label.label("D"))
+      n4.setProperty("p4", 40)
+    }
+
+    val query = new LogicalQueryBuilder(this)
+      .produceResults("prop")
+      .union()
+      .|.projection("n4.p4 as prop")
+      .|.filter("n4.p4 = 40")
+      .|.allNodeScan("n4")
+      .projection("cache[n3.p3] as prop")
+      .cacheProperties("cache[n3.p3]")
+      .apply()
+      .|.cartesianProduct()
+      .|.|.cartesianProduct()
+      .|.|.|.filter("cache[n1.p2] = 11")
+      .|.|.|.nodeByLabelScan("n3", "C")
+      .|.|.cacheProperties("cache[n1.p2]")
+      .|.|.argument("n1")
+      .|.filter("n2.p = 20")
+      .|.allNodeScan("n2")
+      .allNodeScan("n1")
+      .build()
+
+    val result = execute(query, runtime)
+
+    result should beColumns("prop").withRows(inAnyOrder(Seq(Array(30), Array(40))))
+  }
 }
 
 trait CachePropertiesTxStateTestBase[CONTEXT <: RuntimeContext] {
