@@ -69,7 +69,7 @@ class Profiler(val dbmsInfo: DbmsInfo, stats: InterpretedProfileInformation) ext
 
   private case class StackEntry(planId: Id, transactionBoundStatisticProvider: StatisticProvider)
 
-  private var planIdStack: List[StackEntry] = Nil
+  private val planIdStack: mutable.Stack[StackEntry] = new mutable.Stack[StackEntry]
 
   private val lastObservedStats =
     mutable.Map[StatisticProvider, PageCacheStats]().withDefaultValue(PageCacheStats(0, 0))
@@ -84,20 +84,22 @@ class Profiler(val dbmsInfo: DbmsInfo, stats: InterpretedProfileInformation) ext
   private def startAccountingPageCacheStatsFor(statisticProvider: StatisticProvider, planId: Id): Unit = {
     // The current top of the stack hands over control to the plan with the provided planId.
     // Account any statistic updates that happened until now towards the previousId.
-    planIdStack.headOption.foreach {
-      case StackEntry(previousId, previousStatisticProvider) =>
-        val currentStatsOfPreviousPlan = getPageCacheStatsFor(previousStatisticProvider)
-        stats.pageCacheMap(previousId) += (currentStatsOfPreviousPlan - lastObservedStats(previousStatisticProvider))
+    if (planIdStack.nonEmpty) {
+      planIdStack.head match {
+        case StackEntry(previousId, previousStatisticProvider) =>
+          val currentStatsOfPreviousPlan = getPageCacheStatsFor(previousStatisticProvider)
+          stats.pageCacheMap(previousId) += (currentStatsOfPreviousPlan - lastObservedStats(previousStatisticProvider))
+      }
     }
 
     val currentStats = getPageCacheStatsFor(statisticProvider)
 
-    planIdStack ::= StackEntry(planId, statisticProvider)
+    planIdStack.push(StackEntry(planId, statisticProvider))
     lastObservedStats.update(statisticProvider, currentStats)
   }
 
   private def stopAccountingPageCacheStatsFor(statisticProvider: StatisticProvider, planId: Id): Unit = {
-    val head :: rest = planIdStack
+    val head = planIdStack.pop()
     require(
       head.planId == planId,
       s"We messed up accounting the page cache statistics. Expected to pop $planId but popped ${head.planId}. Remaining stack: $planIdStack"
@@ -106,9 +108,9 @@ class Profiler(val dbmsInfo: DbmsInfo, stats: InterpretedProfileInformation) ext
     val currentStats = getPageCacheStatsFor(statisticProvider)
     stats.pageCacheMap(planId) += (currentStats - lastObservedStats(statisticProvider))
 
-    planIdStack = rest
     // To not leave any memory leak where we reference a transactionBoundStatisticProvider of an already committed
     // transaction, we have to clean up transactionBoundStatisticProvider whenever control goes back to another transaction.
+    val rest = planIdStack
     if (rest.isEmpty || rest.head.transactionBoundStatisticProvider != head.transactionBoundStatisticProvider) {
       lastObservedStats.remove(head.transactionBoundStatisticProvider)
     }
