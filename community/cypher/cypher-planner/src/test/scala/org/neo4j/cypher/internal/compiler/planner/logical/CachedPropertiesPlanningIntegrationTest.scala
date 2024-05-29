@@ -280,4 +280,25 @@ class CachedPropertiesPlanningIntegrationTest extends CypherFunSuite with Logica
         .build()
     )
   }
+
+  test("NameDeduplication should not trigger OrderedIndexPlansUseCachedProperties to complain") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setLabelCardinality("N", 10)
+      .addNodeIndex("N", Seq("prop"), 1, 0.1)
+      .build()
+
+    val query =
+      """MATCH (n:N) WHERE n.prop IS NOT NULL
+        |WITH n.prop AS foo ORDER BY n.prop
+        |MATCH (n) WHERE n.prop = 0 // This is a different n!
+        |RETURN n
+        |""".stripMargin
+
+    // If we check OrderedIndexPlansUseCachedProperties after NameDeduplication,
+    // it will complain that n.prop appears non-cached. But that is actually a different
+    // `n`-Variable, so a false positive. We should therefore not check
+    // OrderedIndexPlansUseCachedProperties after NameDeduplication.
+    noException should be thrownBy planner.plan(query)
+  }
 }

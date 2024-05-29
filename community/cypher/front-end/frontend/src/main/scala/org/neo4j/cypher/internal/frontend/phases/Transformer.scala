@@ -31,7 +31,16 @@ trait Transformer[-C <: BaseContext, -FROM, +TO] {
 
   def name: String
 
+  /**
+   * @return the conditions that are guaranteed to be met after this step has run.
+   */
   def postConditions: Set[StepSequencer.Condition]
+
+  /**
+   * @return the conditions that this step invalidates as a side-effect of its work.
+   *         Must not intersect with postConditions.
+   */
+  def invalidatedConditions: Set[StepSequencer.Condition] = Set.empty
 
   final protected[Transformer] def checkConditions(
     state: Any,
@@ -79,14 +88,26 @@ object Transformer {
 class PipeLine[-C <: BaseContext, FROM, MID, TO](first: Transformer[C, FROM, MID], after: Transformer[C, MID, TO])
     extends Transformer[C, FROM, TO] {
 
-  override def postConditions: Set[StepSequencer.Condition] = first.postConditions ++ after.postConditions
+  override def postConditions: Set[StepSequencer.Condition] =
+    first.postConditions ++
+      after.postConditions --
+      after.invalidatedConditions
+
+  override def invalidatedConditions: Set[StepSequencer.Condition] =
+    after.invalidatedConditions ++
+      first.invalidatedConditions --
+      after.postConditions
 
   override def transform(from: FROM, context: C): TO = {
     val step1 = first.transform(from, context)
     val step2 = after.transform(step1, context)
 
+    // We do not need to check `after.postConditions`, since executing
+    // `after.transform` is already doing that.
+    val conditionsToCheck = first.postConditions -- after.invalidatedConditions
+
     // Checking conditions inside assert so they are not run in production
-    checkOnlyWhenAssertionsAreEnabled(checkConditions(step2, first.postConditions)(context.cancellationChecker))
+    checkOnlyWhenAssertionsAreEnabled(checkConditions(step2, conditionsToCheck)(context.cancellationChecker))
 
     step2
   }
@@ -108,5 +129,12 @@ case class If[-C <: BaseContext, FROM, STATE <: FROM](f: STATE => Boolean)(thenT
 
   override def name: String = s"if(<f>) ${thenT.name}"
 
-  override def postConditions: Set[StepSequencer.Condition] = thenT.postConditions
+  override def toString: String = name
+
+  // We cannot guarantee the postConditions of thenT, if it is never run.
+  // Also we cannot check `f(state)` to determine if we should run the post-condition
+  // (in a ConditionalValidatingCondition wrapper), since `state` might have changed.
+  override def postConditions: Set[StepSequencer.Condition] = Set.empty
+
+  override def invalidatedConditions: Set[StepSequencer.Condition] = thenT.invalidatedConditions
 }

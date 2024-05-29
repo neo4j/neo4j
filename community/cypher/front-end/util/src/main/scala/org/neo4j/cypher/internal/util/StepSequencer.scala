@@ -208,7 +208,7 @@ object StepSequencer {
   trait Step {
 
     /**
-     * @return the conditions that needs to be met before this step can be allowed to run.
+     * @return the conditions that need to be met before this step can be allowed to run.
      */
     def preConditions: Set[Condition]
 

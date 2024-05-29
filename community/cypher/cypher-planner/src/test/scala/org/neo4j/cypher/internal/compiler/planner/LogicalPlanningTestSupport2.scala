@@ -34,6 +34,7 @@ import org.neo4j.cypher.internal.compiler.phases.CompilationPhases.ParsingConfig
 import org.neo4j.cypher.internal.compiler.phases.CompilationPhases.parsing
 import org.neo4j.cypher.internal.compiler.phases.CompilationPhases.planPipeLine
 import org.neo4j.cypher.internal.compiler.phases.CompilationPhases.prepareForCaching
+import org.neo4j.cypher.internal.compiler.phases.LogicalPlanCondition
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2.QueryGraphSolverWithIDPConnectComponents
@@ -67,6 +68,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.simpleExpressionEvalua
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.ExistsSubqueryPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.ExistsSubqueryPlannerWithCaching
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.LogicalPlanProducer
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.OrderedIndexPlansUseCachedProperties
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.devNullListener
 import org.neo4j.cypher.internal.compiler.test_helpers.ContextHelper
 import org.neo4j.cypher.internal.frontend.phases.BaseState
@@ -178,6 +180,11 @@ object LogicalPlanningTestSupport2 extends MockitoSugar {
         .withMaybeLogicalPlan(from.maybeLogicalPlan.map(removeGeneratedNamesAndParamsOnTree))
     }
     override def postConditions: Set[StepSequencer.Condition] = Set.empty
+
+    override def invalidatedConditions: Set[StepSequencer.Condition] = Set(
+      // When different variables share the same name, OrderedIndexPlansUseCachedProperties can report false positives.
+      LogicalPlanCondition(OrderedIndexPlansUseCachedProperties)
+    )
   }
 
   val defaultCypherCompilerConfig: CypherPlannerConfiguration = CypherPlannerConfiguration.withSettings(
