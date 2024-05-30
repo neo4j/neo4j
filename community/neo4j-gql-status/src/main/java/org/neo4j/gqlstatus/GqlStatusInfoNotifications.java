@@ -189,14 +189,22 @@ public enum GqlStatusInfoNotifications implements GqlStatusInfo {
         this.condition = condition;
     }
 
+    @Override
     public GqlStatus getGqlStatus() {
         return gqlStatus;
     }
 
+    @Override
+    public String getStatusString() {
+        return gqlStatus.gqlStatusString();
+    }
+
+    @Override
     public String getMessage() {
         return message;
     }
 
+    @Override
     public String getSubCondition() {
         return subCondition;
     }

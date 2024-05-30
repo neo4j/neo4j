@@ -25,4 +25,6 @@ public sealed interface GqlStatusInfo permits GqlStatusInfoNotifications {
     String getSubCondition();
 
     GqlStatus getGqlStatus();
+
+    String getStatusString();
 }
