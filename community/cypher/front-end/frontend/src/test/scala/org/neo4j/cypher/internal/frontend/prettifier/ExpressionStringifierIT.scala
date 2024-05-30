@@ -16,8 +16,14 @@
  */
 package org.neo4j.cypher.internal.frontend.prettifier
 
-import org.neo4j.cypher.internal.ast.factory.neo4j.JavaccRule
+import org.neo4j.cypher.internal.ast.factory.neo4j.Neo4jASTExceptionFactory
+import org.neo4j.cypher.internal.ast.factory.neo4j.Neo4jASTFactory
 import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
+import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.parser.javacc.Cypher
+import org.neo4j.cypher.internal.parser.javacc.CypherCharStream
+import org.neo4j.cypher.internal.parser.v5.ast.factory.ast.CypherAstParser
+import org.neo4j.cypher.internal.util.Neo4jCypherExceptionFactory
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.WindowsStringSafe
 
@@ -168,10 +174,23 @@ class ExpressionStringifierIT extends CypherFunSuite {
   tests foreach {
     case (inputString, expected) =>
       test(inputString) {
-        val expression = JavaccRule.Expression.apply(inputString)
-        val str = stringifier(expression)
-        str should equal(expected)
+        val expression = parseAntlr(inputString)
+        val expressionJavaCc = parseJavaCc(inputString)
+        expressionJavaCc shouldBe expression
+        stringifier(expression) should equal(expected)
+        stringifier(expressionJavaCc) should equal(expected)
       }
+  }
+
+  private def parseAntlr(cypher: String): Expression =
+    new CypherAstParser(cypher, Neo4jCypherExceptionFactory(cypher, None), None).expression()
+
+  // noinspection TypeAnnotation
+  private def parseJavaCc(cypher: String): Expression = {
+    val charStream = new CypherCharStream(cypher)
+    val astExceptionFactory = new Neo4jASTExceptionFactory(Neo4jCypherExceptionFactory(cypher, None))
+    val astFactory = new Neo4jASTFactory(cypher, astExceptionFactory, null)
+    new Cypher(astFactory, astExceptionFactory, charStream).Expression()
   }
 
 }

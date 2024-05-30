@@ -28,13 +28,14 @@ import org.json4s.JString
 import org.json4s.JValue
 import org.json4s.StringInput
 import org.json4s.native.JsonMethods
-import org.neo4j.cypher.internal.ast.factory.neo4j.JavaccRule
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.ListLiteral
 import org.neo4j.cypher.internal.expressions.MapExpression
 import org.neo4j.cypher.internal.expressions.NumberLiteral
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.StringLiteral
+import org.neo4j.cypher.internal.parser.v5.ast.factory.ast.CypherAstParser
+import org.neo4j.cypher.internal.util.Neo4jCypherExceptionFactory
 import org.neo4j.internal.schema.ConstraintType
 import org.neo4j.internal.schema.IndexProviderDescriptor
 import org.neo4j.internal.schema.IndexType
@@ -95,7 +96,7 @@ object GraphCountsJson {
   }
 
   def parseAsGraphCountDataFromCypherMapString(mapString: String): GraphCountData = {
-    val mapExpression = JavaccRule.Map.apply(mapString)
+    val mapExpression = new CypherAstParser(mapString, Neo4jCypherExceptionFactory(mapString, None), None).expression()
     val json = mapLiteralToJson(mapExpression)
     GraphCountsJson.parseAsGraphCountDataFromString(json)
   }

@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.runtime
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
-import org.neo4j.cypher.internal.ast.factory.neo4j.JavaccRule
 import org.neo4j.cypher.internal.expressions.AllIterablePredicate
 import org.neo4j.cypher.internal.expressions.CachedProperty
 import org.neo4j.cypher.internal.expressions.ContainerIndex
@@ -43,11 +42,13 @@ import org.neo4j.cypher.internal.logical.plans.Projection
 import org.neo4j.cypher.internal.logical.plans.PruningVarExpand
 import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.logical.plans.VarExpand
+import org.neo4j.cypher.internal.parser.v5.ast.factory.ast.CypherAstParser
 import org.neo4j.cypher.internal.runtime.ast.ConstantExpressionVariable
 import org.neo4j.cypher.internal.runtime.ast.ExpressionVariable
 import org.neo4j.cypher.internal.runtime.ast.RuntimeConstant
 import org.neo4j.cypher.internal.runtime.ast.TemporaryExpressionVariable
 import org.neo4j.cypher.internal.runtime.expressionVariableAllocation.Result
+import org.neo4j.cypher.internal.util.Neo4jCypherExceptionFactory
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
@@ -507,5 +508,6 @@ class ExpressionVariableAllocationTest extends CypherFunSuite with AstConstructi
 
 class ExpressionParser {
 
-  def parse(text: String): Expression = JavaccRule.Expression.apply(text)
+  def parse(text: String): Expression =
+    new CypherAstParser(text, Neo4jCypherExceptionFactory(text, None), None).expression()
 }

@@ -45,6 +45,7 @@ BSD - Scala License
   Scala Library
 
 BSD License
+  ANTLR 4 Runtime
   ParaNamer Core
 
 Eclipse Distribution License - v 1.0

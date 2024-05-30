@@ -19,7 +19,6 @@ package org.neo4j.cypher.internal.ast.factory.neo4j
 import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.Match
 import org.neo4j.cypher.internal.ast.Statements
-import org.neo4j.cypher.internal.ast.factory.neo4j.JavaccRule.Variable
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
@@ -82,7 +81,7 @@ class QuantifiedPathPatternParserTest extends AstParsingTestBase with LegacyAstP
     parsesTo[PatternPart] {
       PatternPart(QuantifiedPath(
         NamedPatternPart(
-          Variable("p"),
+          varFor("p"),
           PatternPart(
             RelationshipChain(
               nodePat(Some("n")),
@@ -148,7 +147,7 @@ class QuantifiedPathPatternParserTest extends AstParsingTestBase with LegacyAstP
           nodePat(name = Some("a")),
           QuantifiedPath(
             NamedPatternPart(
-              Variable("p"),
+              varFor("p"),
               PatternPart(
                 RelationshipChain(
                   nodePat(Some("n")),
@@ -446,7 +445,7 @@ class QuantifiedPathParserTest extends AstParsingTestBase with LegacyAstParsingT
     parsesTo[QuantifiedPath] {
       QuantifiedPath(
         NamedPatternPart(
-          Variable("p"),
+          varFor("p"),
           PatternPart(
             RelationshipChain(
               nodePat(Some("n")),

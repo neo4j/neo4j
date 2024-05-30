@@ -19,11 +19,11 @@
  */
 package org.neo4j.cypher.internal.evaluator
 
-import org.neo4j.cypher.internal.ast.factory.neo4j.JavaccRule
 import org.neo4j.cypher.internal.evaluator.SimpleInternalExpressionEvaluator.CONVERTERS
 import org.neo4j.cypher.internal.evaluator.SimpleInternalExpressionEvaluator.NULL_CURSOR_FACTORY
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Parameter
+import org.neo4j.cypher.internal.parser.v5.ast.factory.ast.CypherAstParser
 import org.neo4j.cypher.internal.planner.spi.ReadTokenContext
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.CypherRuntimeConfiguration
@@ -41,6 +41,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
+import org.neo4j.cypher.internal.util.Neo4jCypherExceptionFactory
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.internal.util.bottomUp
@@ -154,7 +155,8 @@ object SimpleInternalExpressionEvaluator {
 
   object ExpressionParser {
 
-    def parse(text: String): Expression = JavaccRule.Expression.apply(text)
+    def parse(text: String): Expression =
+      new CypherAstParser(text, Neo4jCypherExceptionFactory(text, None), None).expression()
   }
 
   private val NULL_CURSOR_FACTORY = new CursorFactory {

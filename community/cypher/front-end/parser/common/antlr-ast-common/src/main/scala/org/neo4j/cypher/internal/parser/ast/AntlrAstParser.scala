@@ -19,11 +19,13 @@ package org.neo4j.cypher.internal.parser.ast
 import org.antlr.v4.runtime.BailErrorStrategy
 import org.antlr.v4.runtime.CommonTokenStream
 import org.antlr.v4.runtime.Lexer
+import org.antlr.v4.runtime.Token
 import org.antlr.v4.runtime.TokenStream
 import org.antlr.v4.runtime.atn.PredictionMode
 import org.neo4j.cypher.internal.parser.AstRuleCtx
 import org.neo4j.cypher.internal.parser.CypherErrorStrategy
 import org.neo4j.cypher.internal.parser.SyntaxErrorListener
+import org.neo4j.cypher.internal.parser.lexer.CypherToken
 import org.neo4j.cypher.internal.parser.lexer.UnicodeEscapeReplacementReader
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.InputPosition
@@ -38,7 +40,7 @@ trait AntlrAstParser[P <: AstBuildingAntlrParser] extends AstParser {
   protected def exceptionFactory: CypherExceptionFactory
   protected def errorStrategyConf: CypherErrorStrategy.Conf
 
-  final def parse[CTX <: AstRuleCtx, AST <: AnyRef](f: P => CTX): AST = {
+  final def parse[AST <: AnyRef](f: P => AstRuleCtx): AST = {
     val listener = new SyntaxErrorListener(exceptionFactory)
     val parser = newParser(preparsedTokens(listener, fullTokens = false))
 
@@ -87,8 +89,18 @@ trait AntlrAstParser[P <: AstBuildingAntlrParser] extends AstParser {
       throw listener.syntaxErrors.reduce(Exceptions.chain)
     }
 
+    if (!parseReachedEof(parser)) {
+      throw exceptionFactory.syntaxException(
+        s"Invalid input '${parser.getCurrentToken.getText}'",
+        position(parser.getCurrentToken)
+      )
+    }
+
     result.ast[AST]()
   }
+
+  final private def parseReachedEof(parser: P): Boolean =
+    parser.isMatchedEOF || parser.getCurrentToken.getType == Token.EOF
 
   final private def preparsedTokens(listener: SyntaxErrorListener, fullTokens: Boolean): TokenStream =
     try {
@@ -100,4 +112,9 @@ trait AntlrAstParser[P <: AstBuildingAntlrParser] extends AstParser {
       case e: UnicodeEscapeReplacementReader.InvalidUnicodeLiteral =>
         throw exceptionFactory.syntaxException(e.getMessage, InputPosition(e.offset, e.line, e.col))
     }
+
+  private def position(token: Token): InputPosition = token match {
+    case cypherToken: CypherToken => cypherToken.position()
+    case _                        => InputPosition(token.getStartIndex, token.getLine, token.getCharPositionInLine + 1)
+  }
 }
