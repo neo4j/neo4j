@@ -49,11 +49,11 @@ class ExistsScopedDependenciesTest extends CypherFunSuite with AstConstructionTe
 
   private val parsing = CompilationPhases.parsing(ParsingConfig(CypherVersion.Default)) andThen Namespacer
 
-  class DummyException() extends Exception
+  class DummyException() extends RuntimeException
 
   private val dummyExceptionFactory = new CypherExceptionFactory {
-    override def arithmeticException(message: String, cause: Exception): Exception = new DummyException
-    override def syntaxException(message: String, pos: InputPosition): Exception = new DummyException
+    override def arithmeticException(message: String, cause: Exception): RuntimeException = new DummyException
+    override def syntaxException(message: String, pos: InputPosition): RuntimeException = new DummyException
   }
 
   val context = new BaseContext {

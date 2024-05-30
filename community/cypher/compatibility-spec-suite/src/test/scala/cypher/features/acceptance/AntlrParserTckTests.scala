@@ -79,7 +79,7 @@ class AntlrParserTckTests extends FeatureTest with FeatureQueryTest with Matcher
   }
 
   private def parseAntlr(query: String): Statement = {
-    CypherAstParser.parseStatements(query, Neo4jCypherExceptionFactory(query, None), None)
+    new CypherAstParser(query, Neo4jCypherExceptionFactory(query, None), None).singleStatement()
   }
 
   private def normaliseToString(ast: Any): String = ast.toString

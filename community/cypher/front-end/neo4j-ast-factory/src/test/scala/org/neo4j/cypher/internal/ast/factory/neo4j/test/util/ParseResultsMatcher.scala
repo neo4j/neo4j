@@ -54,7 +54,7 @@ case class ParseResultsMatcher[T <: ASTNode : ClassTag](
 case class ParseStringMatcher[T <: ASTNode : ClassTag](
   override val support: ParserSupport,
   override val matchers: Seq[Matcher[ParseResults[_]]] = Seq.empty
-) extends Matcher[String] with FluentMatchers[ParseStringMatcher[T], T] {
+)(implicit p: Parsers[T]) extends Matcher[String] with FluentMatchers[ParseStringMatcher[T], T] {
   type Self = ParseStringMatcher[T]
 
   override def apply(cypher: String): MatchResult = {

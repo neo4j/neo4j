@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.cypher.internal.parser.v5.ast.factory
+package org.neo4j.cypher.internal.parser
 
 import org.antlr.v4.runtime.BaseErrorListener
 import org.antlr.v4.runtime.RecognitionException
@@ -44,15 +44,4 @@ class SyntaxErrorListener(exceptionFactory: CypherExceptionFactory) extends Base
   }
 
   def reset(): Unit = _syntaxErrors = Seq.empty
-}
-
-object SyntaxErrorListener {
-
-  case class SyntaxError(
-    offendingSymbol: Any,
-    line: Int,
-    charPositionInLine: Int,
-    message: String,
-    e: RecognitionException
-  ) extends Exception(message)
 }

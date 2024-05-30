@@ -96,11 +96,11 @@ class FabricParsingPropertyTest extends CypherFunSuite
   private val prettifier: Prettifier =
     Prettifier(ExpressionStringifier(alwaysParens = true, alwaysBacktick = true, sensitiveParamsAsParams = true))
 
-  class DummyException() extends Exception
+  class DummyException() extends RuntimeException
 
   private val dummyExceptionFactory = new CypherExceptionFactory {
-    override def arithmeticException(message: String, cause: Exception): Exception = new DummyException
-    override def syntaxException(message: String, pos: InputPosition): Exception = new DummyException
+    override def arithmeticException(message: String, cause: Exception): RuntimeException = new DummyException
+    override def syntaxException(message: String, pos: InputPosition): RuntimeException = new DummyException
   }
 
   // The result of fabricParsing gets prettified later on in FabricStitcher.

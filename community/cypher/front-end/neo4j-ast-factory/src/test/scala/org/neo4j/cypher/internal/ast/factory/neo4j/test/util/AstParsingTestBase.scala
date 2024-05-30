@@ -97,7 +97,7 @@ trait AstParsingTestBase extends CypherFunSuite
     with AstConstructionTestSupport {
 
   /** Debug the specified cypher. */
-  def debug[T <: ASTNode : ClassTag](cypher: String): Unit = Try(parseAst[T](cypher)) match {
+  def debug[T <: ASTNode : ClassTag](cypher: String)(implicit p: Parsers[T]): Unit = Try(parseAst[T](cypher)) match {
     case Success(results) => throw new RuntimeException(MatchResults.describe(results))
     case Failure(e)       => throw new RuntimeException(s"Test framework failed unexpectedly\nCypher: $cypher", e)
   }
@@ -113,34 +113,37 @@ trait AstParsingMatchers extends TestName {
    * Parse successfully to any ast in all '''supported''' parsers.
    * The returned [[ParseStringMatcher]] can be used to add assertions.
    */
-  def parse[T <: ASTNode : ClassTag](support: ParserSupport): ParseStringMatcher[T] = parseAs[T](support).withoutErrors
+  def parse[T <: ASTNode : ClassTag](support: ParserSupport)(implicit p: Parsers[T]): ParseStringMatcher[T] =
+    parseAs[T](support).withoutErrors
 
   /** See [[parse(ParserSupport)]]. */
-  def parse[T <: ASTNode : ClassTag]: ParseStringMatcher[T] = parse[T](All)
+  def parse[T <: ASTNode : ClassTag](implicit p: Parsers[T]): ParseStringMatcher[T] = parse[T](All)
 
   /**
    * Parse successfully to the specified ast in all '''supported''' parsers.
    * The returned [[ParseStringMatcher]] can be used to add assertions.
    */
-  def parseTo[T <: ASTNode : ClassTag](expected: T): ParseStringMatcher[T] = parseAs[T].toAst(expected)
+  def parseTo[T <: ASTNode : ClassTag](expected: T)(implicit p: Parsers[T]): ParseStringMatcher[T] =
+    parseAs[T].toAst(expected)
 
   /**
    * See [[parseTo(ParserSupport)]].
    */
-  def parseTo[T <: ASTNode : ClassTag](support: ParserSupport)(expected: T): ParseStringMatcher[T] =
+  def parseTo[T <: ASTNode : ClassTag](support: ParserSupport)(expected: T)(implicit
+  p: Parsers[T]): ParseStringMatcher[T] =
     parse[T](support).toAst(expected)
 
   /**
    * Fail to parse in all '''supported''' parsers.
    * The returned [[ParseStringMatcher]] can be used to add assertions.
    */
-  def notParse[T <: ASTNode : ClassTag](support: ParserSupport): ParseStringMatcher[T] =
+  def notParse[T <: ASTNode : ClassTag](support: ParserSupport)(implicit p: Parsers[T]): ParseStringMatcher[T] =
     parseAs[T](support).withAnyFailure
 
   /**
    * See [[notParse(ParserSupport)]]
    */
-  def notParse[T <: ASTNode : ClassTag]: ParseStringMatcher[T] =
+  def notParse[T <: ASTNode : ClassTag](implicit p: Parsers[T]): ParseStringMatcher[T] =
     parseAs[T].withAnyFailure
 
   /**
@@ -148,12 +151,13 @@ trait AstParsingMatchers extends TestName {
    *
    * Avoid if possible, useful when you want completely separate behaviour from different parsers.
    */
-  def parseAs[T <: ASTNode : ClassTag](support: ParserSupport): ParseStringMatcher[T] = ParseStringMatcher[T](support)
+  def parseAs[T <: ASTNode : ClassTag](support: ParserSupport)(implicit p: Parsers[T]): ParseStringMatcher[T] =
+    ParseStringMatcher[T](support)
 
   /**
    * See [[parseAs(ParserSupport)]]
    */
-  def parseAs[T <: ASTNode : ClassTag]: ParseStringMatcher[T] = parseAs[T](All)
+  def parseAs[T <: ASTNode : ClassTag](implicit p: Parsers[T]): ParseStringMatcher[T] = parseAs[T](All)
 }
 
 object AstParsingMatchers extends AstParsingMatchers
@@ -168,51 +172,52 @@ trait TestNameAstAssertions extends AstParsingMatchers with AstParsing with Test
    * Parse successfully to any ast in all parsers.
    * The returned [[Parses]] can be used to add assertions.
    */
-  def parses[T <: ASTNode : ClassTag]: Parses[T] = parses[T](All)
+  def parses[T <: ASTNode : ClassTag](implicit p: Parsers[T]): Parses[T] = parses[T](All)
 
   /**
    * Parse successfully to any ast in all '''supported''' parsers.
    * The returned [[Parses]] can be used to add assertions.
    */
-  def parses[T <: ASTNode : ClassTag](support: ParserSupport): Parses[T] =
+  def parses[T <: ASTNode : ClassTag](support: ParserSupport)(implicit p: Parsers[T]): Parses[T] =
     Parses(parseAst[T](testName), support).withoutErrors
 
   /**
    * Parse successfully to the specified ast in all parsers.
    * The returned [[Parses]] can be used to add assertions.
    */
-  def parsesTo[T <: ASTNode : ClassTag](e: T): Unit = parses[T].toAst(e)
+  def parsesTo[T <: ASTNode : ClassTag](e: T)(implicit p: Parsers[T]): Unit = parses[T].toAst(e)
 
   /**
    * Parse successfully to the specified ast in all '''supported''' parsers.
    * The returned [[Parses]] can be used to add assertions.
    */
-  def parsesTo[T <: ASTNode : ClassTag](s: ParserSupport)(e: T): Unit = parses[T](s).toAst(e)
+  def parsesTo[T <: ASTNode : ClassTag](s: ParserSupport)(e: T)(implicit p: Parsers[T]): Unit = parses[T](s).toAst(e)
 
   /**
    * Fails to parse in all parsers.
    * The returned [[Parses]] can be used to add assertions.
    */
-  def failsParsing[T <: ASTNode : ClassTag]: Parses[T] = failsParsing[T](All)
+  def failsParsing[T <: ASTNode : ClassTag](implicit p: Parsers[T]): Parses[T] = failsParsing[T](All)
 
   /**
    * Fails to parse in all '''supported''' parsers.
    * The returned [[Parses]] can be used to add assertions.
    */
-  def failsParsing[T <: ASTNode : ClassTag](support: ParserSupport): Parses[T] =
+  def failsParsing[T <: ASTNode : ClassTag](support: ParserSupport)(implicit p: Parsers[T]): Parses[T] =
     Parses(parseAst[T](testName), support).withAnyFailure
 
   /**
    * Avoid if possible. Makes no prior assertions.
    * The returned [[Parses]] can be used to add assertions.
    */
-  def whenParsing[T <: ASTNode : ClassTag]: Parses[T] = whenParsing[T](All)
+  def whenParsing[T <: ASTNode : ClassTag](implicit p: Parsers[T]): Parses[T] = whenParsing[T](All)
 
   /**
    * Avoid if possible. Makes no prior assertions.
    * The returned [[Parses]] can be used to add assertions.
    */
-  def whenParsing[T <: ASTNode : ClassTag](support: ParserSupport): Parses[T] = Parses(parseAst[T](testName), support)
+  def whenParsing[T <: ASTNode : ClassTag](support: ParserSupport)(implicit p: Parsers[T]): Parses[T] =
+    Parses(parseAst[T](testName), support)
 }
 
 case class Parses[T <: ASTNode : ClassTag](

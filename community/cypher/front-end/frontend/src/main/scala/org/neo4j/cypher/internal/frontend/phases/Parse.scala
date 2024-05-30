@@ -47,8 +47,16 @@ case class Parse(useAntlr: Boolean, version: CypherVersion) extends Phase[BaseCo
   ): Statement = {
     if (useAntlr) {
       version match {
-        case CypherVersion.Default => CypherAstParser.parseStatements(query, exceptionFactory, Some(notificationLogger))
-        case CypherVersion.Cypher5 => CypherAstParser.parseStatements(query, exceptionFactory, Some(notificationLogger))
+        case CypherVersion.Default => new CypherAstParser(
+            query,
+            exceptionFactory,
+            Some(notificationLogger)
+          ).singleStatement()
+        case CypherVersion.Cypher5 => new CypherAstParser(
+            query,
+            exceptionFactory,
+            Some(notificationLogger)
+          ).singleStatement()
       }
     } else {
       version match {

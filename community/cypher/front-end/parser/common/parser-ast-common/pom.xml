@@ -4,17 +4,17 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
         <groupId>org.neo4j</groupId>
-        <artifactId>cypher-parser-parent</artifactId>
+        <artifactId>cypher-parser-common-parent</artifactId>
         <version>5.21.0-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
-    <artifactId>cypher-parser-common-parent</artifactId>
-    <packaging>pom</packaging>
-    <name>Cypher Parser Common Parent</name>
+    <artifactId>cypher-parser-ast-common</artifactId>
+    <packaging>jar</packaging>
+    <name>Cypher Parser AST Common</name>
 
-    <description>Cypher Parser Common Parent</description>
+    <description>Cypher Parser AST Common</description>
     <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
     <scm>
@@ -23,13 +23,16 @@
         <url>https://github.com/neo4j/neo4j</url>
     </scm>
 
-    <modules>
-        <module>parser-common</module>
-        <module>antlr-common</module>
-        <module>antlr-ast-common</module>
-        <module>antlr-parser-listener-maven-plugin</module>
-        <module>antlr-completion-license</module>
-        <module>parser-ast-common</module>
-    </modules>
+    <properties>
+        <moduleName>org.neo4j.cypher.internal.parser</moduleName>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-ast</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+    </dependencies>
 
 </project>

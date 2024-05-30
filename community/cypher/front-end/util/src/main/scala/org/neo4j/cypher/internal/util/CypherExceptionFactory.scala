@@ -21,8 +21,8 @@ import org.neo4j.exceptions.Neo4jException
 import org.neo4j.exceptions.SyntaxException
 
 trait CypherExceptionFactory {
-  def arithmeticException(message: String, cause: Exception = null): Exception
-  def syntaxException(message: String, pos: InputPosition): Exception
+  def arithmeticException(message: String, cause: Exception = null): RuntimeException
+  def syntaxException(message: String, pos: InputPosition): RuntimeException
 }
 
 case class Neo4jCypherExceptionFactory(queryText: String, preParserOffset: Option[InputPosition])

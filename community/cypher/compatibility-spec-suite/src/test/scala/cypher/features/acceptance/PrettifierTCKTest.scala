@@ -43,7 +43,7 @@ import scala.util.Try
 class PrettifierTCKTest extends PrettifierTCKTestBase {
 
   override protected def parseStatements(query: String): Statement =
-    CypherAstParser.parseStatements(query, Neo4jCypherExceptionFactory(query, None), None)
+    new CypherAstParser(query, Neo4jCypherExceptionFactory(query, None), None).singleStatement()
 }
 
 class PrettifierJavaCcTCKTest extends PrettifierTCKTestBase {

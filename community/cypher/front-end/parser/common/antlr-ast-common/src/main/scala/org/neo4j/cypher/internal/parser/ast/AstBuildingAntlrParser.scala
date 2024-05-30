@@ -26,20 +26,17 @@ import org.antlr.v4.runtime.tree.ErrorNode
 import org.antlr.v4.runtime.tree.ParseTreeListener
 import org.antlr.v4.runtime.tree.TerminalNode
 import org.neo4j.cypher.internal.parser.AstRuleCtx
-import org.neo4j.cypher.internal.parser.ast.BaseAstParser.DEBUG
-import org.neo4j.cypher.internal.util.CypherExceptionFactory
-import org.neo4j.cypher.internal.util.InternalNotificationLogger
+import org.neo4j.cypher.internal.parser.ast.AstBuildingAntlrParser.DEBUG
 
 import scala.util.control.NonFatal
 
-trait BaseAstParser extends Parser {
+/** Helper trait for parsers that builds Neo4j AST. Fails fast. Optimised for memory by removing the parse as we go. */
+trait AstBuildingAntlrParser extends Parser {
   private[this] var astBuilder: ParseTreeListener = _
   private[this] var checker: SyntaxChecker = _
   private[this] var hasFailed: Boolean = false
   private[this] var bailErrors: Boolean = false
 
-  def exceptionFactory: CypherExceptionFactory
-  def notificationLogger: Option[InternalNotificationLogger]
   def createSyntaxChecker(): SyntaxChecker
   def createAstBuilder(): ParseTreeListener
   def isSafeToFreeChildren(ctx: ParserRuleContext): Boolean
@@ -109,7 +106,7 @@ trait BaseAstParser extends Parser {
   final def syntaxChecker(): SyntaxChecker = checker
 }
 
-object BaseAstParser {
+object AstBuildingAntlrParser {
   final private val DEBUG = false
 }
 
