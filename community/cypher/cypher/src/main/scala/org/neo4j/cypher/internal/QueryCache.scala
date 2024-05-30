@@ -179,7 +179,7 @@ class QueryCache[QUERY_KEY <: AnyRef, EXECUTABLE_QUERY <: CacheabilityInfo](
 
     /**
      * Block this Thread until the computation is done. Return the computed value.
-     * Rethrow any exception that was encountered while performing the computation.
+     * //Rethrow any exception that was encountered while performing the computation.
      */
     def await(assertOpen: AssertOpen): ComputationTarget = {
       // Use an endless loop and a time-limit to test if TX is still alive, periodically.
@@ -190,8 +190,11 @@ class QueryCache[QUERY_KEY <: AnyRef, EXECUTABLE_QUERY <: CacheabilityInfo](
           case _: TimeoutException =>
             // Check that tx is still open, then retry
             assertOpen.assertOpen()
-          case ee: ExecutionException =>
-            throw ee.getCause
+          case _: ExecutionException =>
+            // In case of an exception, each waiting Thread will have to do the computation themselves.
+            // This is to avoid for example that an exception from a transaction with a short timeout
+            // is propagated to a transaction with a long timeout that could have finished.
+            return DoItYourself
         }
       }
       throw new IllegalStateException("cannot get here")
