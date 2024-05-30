@@ -30,7 +30,11 @@ import org.neo4j.cypher.internal.runtime.InputDataStream
 import org.neo4j.cypher.internal.runtime.ProfileMode
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.QueryIndexRegistrator
+import org.neo4j.cypher.internal.runtime.QueryTransactionMode
 import org.neo4j.cypher.internal.runtime.SelectivityTrackerRegistrator
+import org.neo4j.cypher.internal.runtime.StartsConcurrentTransactions
+import org.neo4j.cypher.internal.runtime.StartsNoTransactions
+import org.neo4j.cypher.internal.runtime.StartsSerialTransactions
 import org.neo4j.cypher.internal.runtime.expressionVariableAllocation
 import org.neo4j.cypher.internal.runtime.expressionVariableAllocation.Result
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionResultBuilderFactory
@@ -52,7 +56,6 @@ import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.values.virtual.MapValue
 
-import scala.annotation.nowarn
 import scala.collection.immutable.ArraySeq
 
 object InterpretedRuntime extends CypherRuntime[RuntimeContext] {
@@ -97,7 +100,7 @@ object InterpretedRuntime extends CypherRuntime[RuntimeContext] {
     val pipe = pipeTreeBuilder.build(logicalPlanWithConvertedNestedPlans, () => context.assertOpen.assertOpen())
     val columns = query.resultColumns
 
-    val transactionsMode = calculateTransactionsMode(query)
+    val transactionsMode = calculateTransactionMode(query)
 
     val resultBuilderFactory = InterpretedExecutionResultBuilderFactory(
       pipe,
@@ -116,44 +119,29 @@ object InterpretedRuntime extends CypherRuntime[RuntimeContext] {
       resultBuilderFactory,
       InterpretedRuntimeName,
       query.readOnly,
-      transactionsMode.isDefined,
+      transactionsMode.startsTransactions,
       IndexedSeq.empty,
       Set.empty
     )
   }
 
-  def calculateTransactionsMode(logicalQuery: LogicalQuery): Option[TransactionConcurrency] = {
-    val (startsTransactions, hasConcurrentTransactions) = doCalculateTransactionsMode(logicalQuery.logicalPlan)
-
-    if (hasConcurrentTransactions) {
-      Some(TransactionConcurrency.Concurrent(None))
-    } else if (startsTransactions) {
-      Some(TransactionConcurrency.Serial)
-    } else {
-      None
-    }
+  def calculateTransactionMode(logicalQuery: LogicalQuery): QueryTransactionMode = {
+    doCalculateTransactionMode(logicalQuery.logicalPlan)
   }
 
-  @nowarn("msg=return statement")
-  private def doCalculateTransactionsMode(plan: LogicalPlan): (Boolean, Boolean) = {
-    val startsTransactions = plan.folder.treeFold(false) {
+  private def doCalculateTransactionMode(plan: LogicalPlan): QueryTransactionMode = {
+    plan.folder.treeFold[QueryTransactionMode](StartsNoTransactions) {
       case TransactionApply(_, _, _, TransactionConcurrency.Concurrent(_), _, _) =>
-        return (true, true) // short circuit - if we are concurrent, we already know that we start transactions
-
+        _ => SkipChildren(StartsConcurrentTransactions)
       case TransactionForeach(_, _, _, TransactionConcurrency.Concurrent(_), _, _) =>
-        return (true, true)
-
+        _ => SkipChildren(StartsConcurrentTransactions)
       case _: TransactionApply | _: TransactionForeach =>
-        _ => TraverseChildren(true)
-
+        _ => TraverseChildren(StartsSerialTransactions)
       case _: LogicalPlan =>
         b => TraverseChildren(b)
-
       case _ =>
         b => SkipChildren(b)
     }
-
-    (startsTransactions, false)
   }
 
   /**

@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.runtime.ParameterMapping
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.QueryIndexes
 import org.neo4j.cypher.internal.runtime.QuerySelectivityTrackers
+import org.neo4j.cypher.internal.runtime.QueryTransactionMode
 import org.neo4j.cypher.internal.runtime.createParameterArray
 import org.neo4j.cypher.internal.runtime.interpreted.BaseExecutionResultBuilderFactory
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionResultBuilder
@@ -49,8 +50,8 @@ class SlottedExecutionResultBuilderFactory(
   lenientCreateRelationship: Boolean,
   memoryTrackingController: MemoryTrackingController,
   hasLoadCSV: Boolean,
-  startsTransactions: Option[TransactionConcurrency]
-) extends BaseExecutionResultBuilderFactory(pipe, columns, hasLoadCSV, startsTransactions) {
+  transactionMode: QueryTransactionMode
+) extends BaseExecutionResultBuilderFactory(pipe, columns, hasLoadCSV, transactionMode) {
 
   override def create(queryContext: QueryContext): ExecutionResultBuilder = SlottedExecutionResultBuilder(queryContext)
 
