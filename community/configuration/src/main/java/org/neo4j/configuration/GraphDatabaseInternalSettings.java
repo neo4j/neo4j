@@ -476,6 +476,13 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
                     "internal.cypher.pipelined.operator_fusion_over_pipeline_limit", INT, 8)
             .build();
 
+    @Internal
+    @Description("The minimum number of operators to consider for fusion. If the number of fuseable operators "
+            + "in a pipeline is less than this value no fusion will be attempted.")
+    public static final Setting<Integer> cypher_pipelined_operator_fusion_lower_limit = newBuilder(
+                    "internal.cypher.pipelined.operator_fusion_lower_limit", INT, 2)
+            .build();
+
     public enum EagerAnalysisImplementation {
         IR,
         LP

@@ -122,6 +122,9 @@ class CypherConfiguration private (val config: Config) {
   val operatorFusionOverPipelineLimit: Int =
     config.get(GraphDatabaseInternalSettings.cypher_pipelined_operator_fusion_over_pipeline_limit).intValue()
 
+  val operatorFusionLowerLimit: Int =
+    config.get(GraphDatabaseInternalSettings.cypher_pipelined_operator_fusion_lower_limit).intValue()
+
   val memoryTrackingController: MemoryTrackingController =
     if (
       runtime == CypherRuntimeOption.parallel && !config.get(
