@@ -37,7 +37,7 @@ import scala.jdk.CollectionConverters.IterableHasAsScala
 abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
   edition: Edition[CONTEXT],
   runtime: CypherRuntime[CONTEXT],
-  sizeHint: Int
+  val sizeHint: Int
 ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   test("handle cached properties and cartesian product on LHS of apply") {

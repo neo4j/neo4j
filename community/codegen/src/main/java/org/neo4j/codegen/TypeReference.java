@@ -94,6 +94,17 @@ public class TypeReference {
         return new TypeReference("", name, 0, true, null, Modifier.PUBLIC);
     }
 
+    public static TypeReference fullTypeReference(
+            String packageName,
+            String name,
+            int arrayDepth,
+            boolean isTypeParameter,
+            TypeReference declaringClass,
+            int modifiers,
+            TypeReference... parameters) {
+        return new TypeReference(packageName, name, arrayDepth, isTypeParameter, declaringClass, modifiers, parameters);
+    }
+
     public static TypeReference arrayOf(TypeReference type) {
         return new TypeReference(
                 type.packageName, type.name, type.arrayDepth + 1, false, type.declaringClass, type.modifiers);

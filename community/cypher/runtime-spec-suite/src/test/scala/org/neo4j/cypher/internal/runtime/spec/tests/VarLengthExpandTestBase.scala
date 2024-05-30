@@ -1358,7 +1358,7 @@ abstract class VarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 abstract class PipelinedVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
   edition: Edition[CONTEXT],
   runtime: CypherRuntime[CONTEXT],
-  sizeHint: Int,
+  val sizeHint: Int,
   varExpandRelationshipIdSetThreshold: Int = Random.nextInt(128) - 1
 ) extends VarLengthExpandTestBase[CONTEXT](
       edition.copyWith(GraphDatabaseInternalSettings.var_expand_relationship_id_set_threshold -> Int.box(
