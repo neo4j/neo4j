@@ -165,7 +165,7 @@ class QueryCache[QUERY_KEY <: AnyRef, EXECUTABLE_QUERY <: CacheabilityInfo](
   sealed trait CacheEntry
 
   /**
-   * A value being compited
+   * A value being computed.
    */
   sealed trait ComputationTarget
 
@@ -173,8 +173,6 @@ class QueryCache[QUERY_KEY <: AnyRef, EXECUTABLE_QUERY <: CacheabilityInfo](
    * A placeholder for a value currently being computed.
    * Other threads can register themselves to be woken up when the computation is done.
    * When the computation is done, the placeholder will be replaced with an actual [[CachedValue]].
-   *
-   * @param threadId the id of the Thread computing the value.
    */
   class BeingComputed() extends CacheEntry {
     private val future: CompletableFuture[ComputationTarget] = new CompletableFuture()
@@ -219,7 +217,6 @@ class QueryCache[QUERY_KEY <: AnyRef, EXECUTABLE_QUERY <: CacheabilityInfo](
    * This can happen due to stale values, or expression compilation.
    *
    * @param oldValue the value that was previously in the cache.
-   * @param threadId the id of the Thread computing the value.
    */
   class BeingRecomputed(val oldValue: CachedValue)
       extends BeingComputed()
