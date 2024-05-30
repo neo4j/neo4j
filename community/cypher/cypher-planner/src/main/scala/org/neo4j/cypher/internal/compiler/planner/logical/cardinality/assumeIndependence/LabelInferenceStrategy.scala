@@ -28,7 +28,6 @@ import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.ir.NodeConnection
 import org.neo4j.cypher.internal.ir.PatternRelationship
-import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.options.CypherInferSchemaPartsOption
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.spi.PlanContext
@@ -105,11 +104,12 @@ object LabelInferenceStrategy {
       nodeConnections: Seq[NodeConnection]
     ): (LabelInfo, SemanticTable) = {
 
-      val allInferredLabels = for {
-        nodeConnection <- nodeConnections
-        simpleRelationship <- SimpleRelationship.fromNodeConnection(nodeConnection, semanticTable).iterator
-        inferredLabel <- simpleRelationship.inferLabels(planContext)
-      } yield inferredLabel
+      val allInferredLabels = nodeConnections.flatMap(nodeConnection =>
+        SimpleRelationship.fromNodeConnection(nodeConnection, semanticTable)
+          .map(_.inferLabels(planContext))
+          .reduceLeftOption(_.intersect(_))
+          .getOrElse(Set.empty)
+      )
 
       val inferredLabels: Seq[SimpleRelationship.InferredLabel] = allInferredLabels
         .sequentiallyGroupBy(_.node)
@@ -211,17 +211,29 @@ object LabelInferenceStrategy {
   private object SimpleRelationship {
     case class InferredLabel(node: LogicalVariable, labelName: String, labelId: LabelId)
 
-    def fromNodeConnection(nodeConnection: NodeConnection, semanticTable: SemanticTable): Option[SimpleRelationship] =
+    /**
+     * Create simple relationships from a nodeConnection
+     * A simple relationship consists of a start node, end node and one type
+     * In case the nodeConnection is a PatternRelationship with a disjunction of multiple types, i.e. ()-[:R1|R2|R3]->(),
+     * then a single simple relationship will be created for each disjunction: [()-[:R1]->(), ()-[:R2]->(), ()-[:R3]->()]
+     * @param nodeConnection the node connection to create simple relationships from
+     * @param semanticTable using to obtain the relationship type id from the relationship type name
+     * @return a sequence of simple relationships obtained from the nodeConnection
+     */
+    def fromNodeConnection(nodeConnection: NodeConnection, semanticTable: SemanticTable): Seq[SimpleRelationship] =
       nodeConnection match {
-        case relationship @ PatternRelationship(_, _, dir, Seq(relationshipTypeName), SimplePatternLength) =>
+        case relationship @ PatternRelationship(_, _, dir, relationshipTypeNames, _) =>
+          // relationshipTypeNames contains possibly a disjunction of multiple relationship types
           val (startNode, endNode) = relationship.inOrder
-          semanticTable.id(relationshipTypeName).map(SimpleRelationship(
-            startNode,
-            endNode,
-            _,
-            dir == SemanticDirection.OUTGOING || dir == SemanticDirection.INCOMING
-          ))
-        case _ => None
+          relationshipTypeNames
+            .flatMap(semanticTable.id)
+            .map(SimpleRelationship(
+              startNode,
+              endNode,
+              _,
+              dir == SemanticDirection.OUTGOING || dir == SemanticDirection.INCOMING
+            ))
+        case _ => Seq.empty
       }
   }
 

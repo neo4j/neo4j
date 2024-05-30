@@ -34,7 +34,6 @@ import org.neo4j.cypher.internal.util.Multiplier
 import org.neo4j.cypher.internal.util.Selectivity
 
 import scala.annotation.tailrec
-import scala.util.chaining.scalaUtilChainingOps
 
 trait PatternRelationshipCardinalityModel extends NodeCardinalityModel {
 
@@ -72,48 +71,60 @@ trait PatternRelationshipCardinalityModel extends NodeCardinalityModel {
               )
             case i =>
               if (context.allNodesCardinality > Cardinality.EMPTY) {
+                // Prior to this call (in getBaseQueryGraphCardinality()), labels on the start and end nodes are already inferred
+                // Here, we want to find the labels that can be inferred on the middle nodes.
+                // Each middle node acts as the left boundary node of one of the unrolled relationships and
+                //                       as the right boundary node of another one of the unrolled relationships
+                // Therefore, the inferred labels on the middle nodes are those that can be implied on the left boundary node and those on the right boundary node (union)
 
-                val inferLabels: LabelInfo => (LabelInfo, QueryGraphCardinalityContext) =
-                  context.labelInferenceStrategy.inferLabels(
-                    context,
-                    _,
-                    Seq(relationship.copy(length = SimplePatternLength))
+                // First, we remove the labels on both sides of the relationship (since label inference won't override specified labels).
+                // Second, we obtain the labels that the relationship can infer on the left node and the right node.
+                // Last, take the union of the labels that can be inferred on the left node and the labels that can be inferred on the right node.
+                // Those are the labels that can be inferred on the middle nodes of this varPattern.
+                val labelInfoTemp =
+                  labelInfo.updated(relationship.left, Set.empty).updated(relationship.right, Set.empty)
+                val (inferredLabelMapForMiddleNodes, updatedContext) = context.labelInferenceStrategy.inferLabels(
+                  context,
+                  labelInfoTemp,
+                  Seq(relationship)
+                )
+                val inferredLabelsForMiddleNodes =
+                  inferredLabelMapForMiddleNodes.getOrElse(relationship.left, Set.empty) union
+                    inferredLabelMapForMiddleNodes.getOrElse(relationship.right, Set.empty)
+
+                // Goes from the left boundary node to a middle node
+                // Use labelInfo, but set the inferred labels of relationship.right (middle node) to inferredLabelsForMiddleNodes
+                val firstRelationshipCardinality =
+                  getSimpleRelationshipCardinality(
+                    context = updatedContext,
+                    labelInfo = labelInfo.updated(relationship.right, inferredLabelsForMiddleNodes),
+                    leftNode = relationship.left,
+                    rightNode = relationship.right,
+                    relationshipTypes = relationship.types,
+                    relationshipDirection = relationship.dir
                   )
 
-                val firstRelationshipCardinality =
-                  inferLabels(labelInfo.updated(relationship.right, Set.empty)) pipe {
-                    case (labelInfo, context) =>
-                      getSimpleRelationshipCardinality(
-                        context = context,
-                        labelInfo = labelInfo,
-                        leftNode = relationship.left,
-                        rightNode = relationship.right,
-                        relationshipTypes = relationship.types,
-                        relationshipDirection = relationship.dir
-                      )
-                  }
-
+                // Goes from a middle node to a middle node
+                // Use labelInfo, but set the inferred labels of relationship.left and relationship.right (middle nodes) to inferredLabelsForMiddleNodes
                 val intermediateRelationshipMultiplier =
-                  inferLabels(LabelInfo(relationship.left -> Set.empty, relationship.right -> Set.empty)) pipe {
-                    case (labelInfo, context) =>
-                      getIntermediateRelationshipMultiplier(
-                        context = context,
-                        labelInfo = labelInfo,
-                        relationship = relationship
-                      )
-                  }
+                  getIntermediateRelationshipMultiplier(
+                    context = updatedContext,
+                    labelInfo = labelInfo.updated(relationship.left, inferredLabelsForMiddleNodes).updated(
+                      relationship.right,
+                      inferredLabelsForMiddleNodes
+                    ),
+                    relationship
+                  )
 
+                // Goes from a middle node to the right boundary node
+                // Use labelInfo, but set the inferred labels of relationship.left (middle node) to inferredLabelsForMiddleNodes
                 val lastRelationshipMultiplier = {
-                  val labelInfoForEndPoints = inferLabels(labelInfo.updated(relationship.left, Set.empty))
-
-                  // we either divide by allNodesCardinality to calculate the multiplier,
-                  // or by inferred most-common label
-                  val labelInfoForNodeCardinality = inferLabels(LabelInfo(relationship.right -> Set.empty))
-
                   getLastRelationshipMultiplier(
-                    labelInfoAndContextForEndPoints = labelInfoForEndPoints,
-                    labelInfoAndContextForNodeCardinality = labelInfoForNodeCardinality,
-                    relationship = relationship
+                    labelInfoAndContextForEndPoints = (
+                      labelInfo.updated(relationship.left, inferredLabelsForMiddleNodes),
+                      updatedContext
+                    ),
+                    relationship
                   )
                 }
 
@@ -202,7 +213,7 @@ trait PatternRelationshipCardinalityModel extends NodeCardinalityModel {
       )
 
     val nodeCardinality =
-      getNodeCardinality(context, labelInfo, relationship.right)
+      getNodeCardinality(context, labelInfo, relationship.left)
         .getOrElse(context.allNodesCardinality)
 
     Multiplier.ofDivision(relCardinality, nodeCardinality)
@@ -211,7 +222,6 @@ trait PatternRelationshipCardinalityModel extends NodeCardinalityModel {
 
   private def getLastRelationshipMultiplier(
     labelInfoAndContextForEndPoints: (LabelInfo, QueryGraphCardinalityContext),
-    labelInfoAndContextForNodeCardinality: (LabelInfo, QueryGraphCardinalityContext),
     relationship: PatternRelationship
   ): Multiplier = {
     val relCardinality =
@@ -226,11 +236,11 @@ trait PatternRelationshipCardinalityModel extends NodeCardinalityModel {
 
     val nodeCardinality =
       getNodeCardinality(
-        labelInfoAndContextForNodeCardinality._2,
-        labelInfoAndContextForNodeCardinality._1,
-        relationship.right
+        labelInfoAndContextForEndPoints._2,
+        labelInfoAndContextForEndPoints._1,
+        relationship.left
       )
-        .getOrElse(labelInfoAndContextForNodeCardinality._2.allNodesCardinality)
+        .getOrElse(labelInfoAndContextForEndPoints._2.allNodesCardinality)
 
     Multiplier.ofDivision(relCardinality, nodeCardinality)
       .getOrElse(Multiplier.ZERO)
