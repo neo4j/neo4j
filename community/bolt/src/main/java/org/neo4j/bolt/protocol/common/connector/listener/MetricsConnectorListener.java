@@ -61,8 +61,9 @@ public class MetricsConnectorListener implements ConnectorListener, ConnectionLi
     }
 
     @Override
-    public void onIdle() {
+    public void onIdle(long boundTimeMillis) {
         this.monitor.connectionWaiting();
+        this.monitor.workerThreadReleased(boundTimeMillis);
     }
 
     @Override

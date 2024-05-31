@@ -96,6 +96,8 @@ class SocketNettyConnectorTest extends AbstractNettyConnectorTest<SocketNettyCon
                 512,
                 0,
                 Duration.ofMinutes(5),
+                true,
+                Duration.ofMillis(100),
                 false,
                 false,
                 null,

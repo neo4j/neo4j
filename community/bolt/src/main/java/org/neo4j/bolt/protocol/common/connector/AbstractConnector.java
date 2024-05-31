@@ -48,6 +48,7 @@ import org.neo4j.server.config.AuthConfigProvider;
  * Provides a generic base implementation for connectors.
  */
 public abstract class AbstractConnector<CFG extends AbstractConfiguration> implements Connector<CFG> {
+
     private final String id;
     private final MemoryPool memoryPool;
     private final Clock clock;
@@ -245,6 +246,7 @@ public abstract class AbstractConnector<CFG extends AbstractConfiguration> imple
     }
 
     protected abstract static class AbstractConfiguration implements Configuration {
+
         private final boolean enableProtocolCapture;
         private final Path protocolCapturePath;
         private final boolean enableProtocolLogging;
@@ -261,6 +263,8 @@ public abstract class AbstractConnector<CFG extends AbstractConfiguration> imple
         private final int streamingBufferSize;
         private final int streamingFlushThreshold;
         private final Duration connectionShutdownDuration;
+        private final boolean enableTransactionThreadBinding;
+        private final Duration threadBindingTimeout;
 
         protected AbstractConfiguration(
                 boolean enableProtocolCapture,
@@ -278,7 +282,9 @@ public abstract class AbstractConnector<CFG extends AbstractConfiguration> imple
                 int inboundBufferThrottleHighWatermark,
                 int streamingBufferSize,
                 int streamingFlushThreshold,
-                Duration connectionShutdownDuration) {
+                Duration connectionShutdownDuration,
+                boolean enableTransactionThreadBinding,
+                Duration threadBindingTimeout) {
             this.enableProtocolCapture = enableProtocolCapture;
             this.protocolCapturePath = protocolCapturePath;
             this.enableProtocolLogging = enableProtocolLogging;
@@ -295,6 +301,8 @@ public abstract class AbstractConnector<CFG extends AbstractConfiguration> imple
             this.streamingBufferSize = streamingBufferSize;
             this.streamingFlushThreshold = streamingFlushThreshold;
             this.connectionShutdownDuration = connectionShutdownDuration;
+            this.enableTransactionThreadBinding = enableTransactionThreadBinding;
+            this.threadBindingTimeout = threadBindingTimeout;
         }
 
         @Override
@@ -375,6 +383,16 @@ public abstract class AbstractConnector<CFG extends AbstractConfiguration> imple
         @Override
         public Duration connectionShutdownDuration() {
             return this.connectionShutdownDuration;
+        }
+
+        @Override
+        public boolean enableTransactionThreadBinding() {
+            return this.enableTransactionThreadBinding;
+        }
+
+        @Override
+        public Duration threadBindingTimeout() {
+            return this.threadBindingTimeout;
         }
     }
 }

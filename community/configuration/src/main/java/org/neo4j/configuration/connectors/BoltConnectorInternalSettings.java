@@ -239,6 +239,19 @@ public final class BoltConnectorInternalSettings implements SettingsDeclaration 
             .build();
 
     @Internal
+    @Description("Specifies whether transactions shall bind to a single thread for the duration of their lifetime")
+    public static final Setting<Boolean> transaction_thread_binding = newBuilder(
+                    "internal.dbms.bolt.transaction_thread_binding", BOOL, true)
+            .build();
+
+    @Internal
+    @Description("Specifies the duration for which threads will remain bound to wait for new requests to arrive.")
+    public static final Setting<Duration> thread_binding_timeout = newBuilder(
+                    "internal.dbms.bolt.thread_binding_timeout", DURATION, Duration.ofMillis(10))
+            .addConstraint(min(Duration.ZERO))
+            .build();
+
+    @Internal
     @Description("Specifies the string used to connect to the local channel")
     public static final Setting<String> local_channel_address =
             newBuilder("internal.dbms.bolt.local_address", STRING, null).build();

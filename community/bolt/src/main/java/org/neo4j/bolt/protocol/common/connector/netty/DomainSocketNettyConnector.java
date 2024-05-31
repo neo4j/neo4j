@@ -52,13 +52,16 @@ import org.neo4j.server.config.AuthConfigProvider;
 
 /**
  * Provides a connector which provides its services through a domain socket.
- * <p />
- * This implementation is currently limited for internal use only and is enabled via an unsupported switch.
- * <p />
- * Note that protocol level authentication will be unavailable for domain socket based communication. All authorization
- * is provided through the socket file itself and will thus occur on OS level.
+ * <p/>
+ * This implementation is currently limited for internal use only and is enabled via an unsupported
+ * switch.
+ * <p/>
+ * Note that protocol level authentication will be unavailable for domain socket based
+ * communication. All authorization is provided through the socket file itself and will thus occur
+ * on OS level.
  */
 public class DomainSocketNettyConnector extends AbstractNettyConnector<DomainSocketConfiguration> {
+
     private final Path path;
     private final ConnectorTransport transport;
 
@@ -145,6 +148,7 @@ public class DomainSocketNettyConnector extends AbstractNettyConnector<DomainSoc
     }
 
     public static class DomainSocketConfiguration extends NettyConfiguration {
+
         private final boolean deleteSocketFile;
 
         public DomainSocketConfiguration(
@@ -164,6 +168,8 @@ public class DomainSocketNettyConnector extends AbstractNettyConnector<DomainSoc
                 int streamingBufferSize,
                 int streamingFlushThreshold,
                 Duration connectionShutdownDuration,
+                boolean enableTransactionThreadBinding,
+                Duration threadBindingTimeout,
                 boolean enableMergeCumulator,
                 boolean deleteSocketFile) {
             super(
@@ -183,6 +189,8 @@ public class DomainSocketNettyConnector extends AbstractNettyConnector<DomainSoc
                     streamingBufferSize,
                     streamingFlushThreshold,
                     connectionShutdownDuration,
+                    enableTransactionThreadBinding,
+                    threadBindingTimeout,
                     enableMergeCumulator,
                     false, // Currently always disabled on UNIX socket
                     null);
@@ -191,11 +199,11 @@ public class DomainSocketNettyConnector extends AbstractNettyConnector<DomainSoc
         }
 
         /**
-         * Identifies whether the socket file shall be deleted when it already exists at the
-         * configured location.
-         * <p />
-         * When the specified socket file already exists and this option is enabled, the connector
-         * will attempt to delete it. If disabled, an exception will be raised instead.
+         * Identifies whether the socket file shall be deleted when it already exists at the configured
+         * location.
+         * <p/>
+         * When the specified socket file already exists and this option is enabled, the connector will
+         * attempt to delete it. If disabled, an exception will be raised instead.
          *
          * @return true if deletion shall be attempted, false otherwise.
          */

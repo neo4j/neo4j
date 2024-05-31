@@ -128,6 +128,8 @@ public class LocalNettyConnector extends AbstractNettyConnector<LocalConfigurati
                 int streamingBufferSize,
                 int streamingFlushThreshold,
                 Duration connectionShutdownDuration,
+                boolean enableTransactionThreadBinding,
+                Duration threadBindingTimeout,
                 boolean enableMergeCumulator) {
             super(
                     enableProtocolCapture,
@@ -146,6 +148,8 @@ public class LocalNettyConnector extends AbstractNettyConnector<LocalConfigurati
                     streamingBufferSize,
                     streamingFlushThreshold,
                     connectionShutdownDuration,
+                    enableTransactionThreadBinding,
+                    threadBindingTimeout,
                     enableMergeCumulator,
                     false, // Currently always disabled on local connector
                     null);

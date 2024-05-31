@@ -186,6 +186,8 @@ public class SocketNettyConnector extends AbstractNettyConnector<SocketConfigura
                 int streamingBufferSize,
                 int streamingFlushThreshold,
                 Duration connectionShutdownDuration,
+                boolean enableTransactionThreadBinding,
+                Duration threadBindingTimeout,
                 boolean enableMergeCumulator,
                 boolean requireEncryption,
                 SslContext sslContext,
@@ -207,6 +209,8 @@ public class SocketNettyConnector extends AbstractNettyConnector<SocketConfigura
                     streamingBufferSize,
                     streamingFlushThreshold,
                     connectionShutdownDuration,
+                    enableTransactionThreadBinding,
+                    threadBindingTimeout,
                     enableMergeCumulator,
                     requireEncryption,
                     sslContext);

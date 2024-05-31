@@ -515,6 +515,8 @@ public class BoltServer extends LifecycleAdapter {
                 this.config.get(BoltConnectorInternalSettings.streaming_buffer_size),
                 this.config.get(BoltConnectorInternalSettings.streaming_flush_threshold),
                 this.config.get(BoltConnectorInternalSettings.connection_shutdown_wait_time),
+                this.config.get(BoltConnectorInternalSettings.transaction_thread_binding),
+                this.config.get(BoltConnectorInternalSettings.thread_binding_timeout),
                 this.config.get(BoltConnectorInternalSettings.netty_message_merge_cumulator),
                 encryptionRequired,
                 sslContext,
@@ -570,6 +572,8 @@ public class BoltServer extends LifecycleAdapter {
                 this.config.get(BoltConnectorInternalSettings.streaming_buffer_size),
                 this.config.get(BoltConnectorInternalSettings.streaming_flush_threshold),
                 this.config.get(BoltConnectorInternalSettings.connection_shutdown_wait_time),
+                this.config.get(BoltConnectorInternalSettings.transaction_thread_binding),
+                this.config.get(BoltConnectorInternalSettings.thread_binding_timeout),
                 this.config.get(BoltConnectorInternalSettings.netty_message_merge_cumulator),
                 this.config.get(BoltConnectorInternalSettings.unsupported_loopback_delete));
 
@@ -628,6 +632,8 @@ public class BoltServer extends LifecycleAdapter {
                 this.config.get(BoltConnectorInternalSettings.streaming_buffer_size),
                 this.config.get(BoltConnectorInternalSettings.streaming_flush_threshold),
                 this.config.get(BoltConnectorInternalSettings.connection_shutdown_wait_time),
+                this.config.get(BoltConnectorInternalSettings.transaction_thread_binding),
+                this.config.get(BoltConnectorInternalSettings.thread_binding_timeout),
                 this.config.get(BoltConnectorInternalSettings.netty_message_merge_cumulator));
 
         var bindAddress = new LocalAddress(this.config.get(BoltConnectorInternalSettings.local_channel_address));

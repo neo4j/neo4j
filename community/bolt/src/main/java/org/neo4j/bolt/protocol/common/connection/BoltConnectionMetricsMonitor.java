@@ -42,5 +42,7 @@ public interface BoltConnectionMetricsMonitor {
 
     void responseFailed(Status status);
 
+    void workerThreadReleased(long boundMillis);
+
     void connectionClosed();
 }

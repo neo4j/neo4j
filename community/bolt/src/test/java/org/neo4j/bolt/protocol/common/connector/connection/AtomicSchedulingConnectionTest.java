@@ -488,7 +488,7 @@ class AtomicSchedulingConnectionTest {
         inOrder.verify(job1, Mockito.never()).perform(Mockito.eq(this.fsmInstance), Mockito.any());
         inOrder.verify(job2, Mockito.never()).perform(Mockito.eq(this.fsmInstance), Mockito.any());
 
-        inOrder.verify(listener).onIdle();
+        inOrder.verify(listener).onIdle(Mockito.anyLong());
         inOrder.verify(listener).onConnectionClosed(true);
         inOrder.verifyNoMoreInteractions();
 
@@ -543,9 +543,10 @@ class AtomicSchedulingConnectionTest {
         Mockito.verifyNoMoreInteractions(listener);
 
         // listeners should also receive calls through the notifyListenersSafely API
-        this.connection.notifyListenersSafely("idle", ConnectionListener::onIdle);
+        this.connection.notifyListenersSafely(
+                "idle", connectionListener1 -> connectionListener1.onIdle(Mockito.anyLong()));
 
-        Mockito.verify(listener).onIdle();
+        Mockito.verify(listener).onIdle(Mockito.anyLong());
         Mockito.verifyNoMoreInteractions(listener);
 
         // when removed, listeners should be notified via the onListenerRemoved function

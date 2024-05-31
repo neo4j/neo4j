@@ -209,6 +209,7 @@ public class AtomicSchedulingConnection extends AbstractConnection {
         // claim ownership of the current thread
         this.workerThread = currentThread;
 
+        var startTime = this.clock.millis();
         this.notifyListeners(ConnectionListener::onActivated);
         try {
             this.doExecuteJobs();
@@ -216,7 +217,8 @@ public class AtomicSchedulingConnection extends AbstractConnection {
             log.error("[" + this.id + "] Uncaught exception during job execution", ex);
             this.close();
         } finally {
-            this.notifyListeners(ConnectionListener::onIdle);
+            var timeBound = this.clock.millis() - startTime;
+            this.notifyListeners((l) -> l.onIdle(timeBound));
             log.debug("[%s] Returning to idle state", this.id);
 
             // remove ownership of the current thread in order to ensure that future isOnWorkerThread calls no longer
@@ -275,7 +277,8 @@ public class AtomicSchedulingConnection extends AbstractConnection {
             } else {
                 // if there are no jobs, we'll terminate unless there are open transactions or statements remaining
                 // which require us to remain on this thread
-                if (this.transaction().isEmpty()) {
+                if (this.transaction().isEmpty()
+                        && this.connector().configuration().enableTransactionThreadBinding()) {
                     break;
                 }
 
@@ -285,8 +288,17 @@ public class AtomicSchedulingConnection extends AbstractConnection {
                 try {
                     log.debug("[%s] Waiting for additional jobs", this.id);
 
-                    // TODO: Configurable timeout?
-                    job = this.jobs.pollFirst(10, TimeUnit.SECONDS);
+                    var timeoutMillis = this.connector()
+                            .configuration()
+                            .threadBindingTimeout()
+                            .toMillis();
+                    if (this.connector().configuration().enableTransactionThreadBinding()) {
+                        // FIXME: Still relies on the legacy hardcoded timeout as we do not want to
+                        //        alter this behavior quite yet. Update this block when ready.
+                        job = this.jobs.pollFirst(10, TimeUnit.SECONDS);
+                    } else if (timeoutMillis != 0) {
+                        job = this.jobs.pollFirst(timeoutMillis, TimeUnit.MILLISECONDS);
+                    }
                 } catch (InterruptedException ex) {
                     // this condition may occur in two different cases:
                     //
@@ -308,7 +320,7 @@ public class AtomicSchedulingConnection extends AbstractConnection {
                     this.executeJob(fsm, job);
                 } else {
                     // If no job was found in timeout period, check the fsm is still valid,
-                    if (!fsm.validate()) {
+                    if (!fsm.validate() || !this.connector().configuration().enableTransactionThreadBinding()) {
                         // if fsm is not valid then the executing worker thread can be released.
                         break;
                     }

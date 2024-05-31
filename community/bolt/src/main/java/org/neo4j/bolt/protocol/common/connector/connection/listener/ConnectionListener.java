@@ -93,7 +93,7 @@ public interface ConnectionListener {
      * <p />
      * This event occurs whenever the connection transitions from being actively processing requests to idling.
      */
-    default void onIdle() {}
+    default void onIdle(long boundTimeMillis) {}
 
     /**
      * Handles the submission of a request for processing within the connection.

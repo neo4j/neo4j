@@ -77,9 +77,22 @@ class MetricsConnectorListenerTest {
         var monitor = Mockito.mock(BoltConnectionMetricsMonitor.class);
 
         var listener = new MetricsConnectorListener(monitor);
-        listener.onIdle();
+        listener.onIdle(42);
 
         Mockito.verify(monitor).connectionWaiting();
+        Mockito.verify(monitor).workerThreadReleased(Mockito.anyLong());
+        Mockito.verifyNoMoreInteractions(monitor);
+    }
+
+    @Test
+    void shouldNotifyMonitorViaWorkerThreadReleasedOnIdle() {
+        var monitor = Mockito.mock(BoltConnectionMetricsMonitor.class);
+
+        var listener = new MetricsConnectorListener(monitor);
+        listener.onIdle(42);
+
+        Mockito.verify(monitor).connectionWaiting();
+        Mockito.verify(monitor).workerThreadReleased(42);
         Mockito.verifyNoMoreInteractions(monitor);
     }
 

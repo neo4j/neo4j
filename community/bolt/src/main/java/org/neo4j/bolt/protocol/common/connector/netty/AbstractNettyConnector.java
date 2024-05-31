@@ -58,6 +58,7 @@ import org.neo4j.server.config.AuthConfigProvider;
  * Provides a basis for connectors which rely on netty.
  */
 public abstract class AbstractNettyConnector<CFG extends NettyConfiguration> extends AbstractConnector<CFG> {
+
     protected final SocketAddress bindAddress;
     private final ByteBufAllocator allocator;
     private final EventLoopGroup bossGroup;
@@ -122,8 +123,9 @@ public abstract class AbstractNettyConnector<CFG extends NettyConfiguration> ext
 
     /**
      * Retrieves the "boss" group which handles the accepting of new connections to this connector.
-     * <p />
-     * When the implementation of this method is omitted, {@link #workerGroup()} is utilized as a boss group.
+     * <p/>
+     * When the implementation of this method is omitted, {@link #workerGroup()} is utilized as a boss
+     * group.
      *
      * @return a thread group.
      */
@@ -132,7 +134,8 @@ public abstract class AbstractNettyConnector<CFG extends NettyConfiguration> ext
     }
 
     /**
-     * Retrieves the "worker" group which handles the processing of incoming and outgoing data from/to this connector.
+     * Retrieves the "worker" group which handles the processing of incoming and outgoing data from/to
+     * this connector.
      *
      * @return a thread group.
      */
@@ -141,10 +144,12 @@ public abstract class AbstractNettyConnector<CFG extends NettyConfiguration> ext
     }
 
     /**
-     * Retrieves the channel type which shall be used when binding a new address for use with this connector.
-     * <p />
-     * The returned implementation must be compatible with the specific implementation returned by {@link #bossGroup()}
-     * and {@link #workerGroup()}. Refer to the netty documentation for more information.
+     * Retrieves the channel type which shall be used when binding a new address for use with this
+     * connector.
+     * <p/>
+     * The returned implementation must be compatible with the specific implementation returned by
+     * {@link #bossGroup()} and {@link #workerGroup()}. Refer to the netty documentation for more
+     * information.
      *
      * @return a channel type.
      */
@@ -167,15 +172,16 @@ public abstract class AbstractNettyConnector<CFG extends NettyConfiguration> ext
     protected void onChannelBound(Channel channel) {}
 
     /**
-     * Performs additional implementation specific tasks when the server channel is about to be closed.
+     * Performs additional implementation specific tasks when the server channel is about to be
+     * closed.
      *
      * @param channel a server channel.
      */
     protected void onChannelClose(Channel channel) {}
 
     /**
-     * Retrieves a channel initializer which performs initialization tasks and populates the pipelines of newly accepted
-     * client connections.
+     * Retrieves a channel initializer which performs initialization tasks and populates the pipelines
+     * of newly accepted client connections.
      *
      * @return a channel initializer.
      */
@@ -248,6 +254,7 @@ public abstract class AbstractNettyConnector<CFG extends NettyConfiguration> ext
     protected void logStartupMessage() {}
 
     public static class NettyConfiguration extends AbstractConfiguration {
+
         private final boolean requireEncryption;
         private final boolean enableMergeCumulator;
         private final SslContext sslContext;
@@ -269,6 +276,8 @@ public abstract class AbstractNettyConnector<CFG extends NettyConfiguration> ext
                 int streamingBufferSize,
                 int streamingFlushThreshold,
                 Duration connectionShutdownDuration,
+                boolean enableTransactionThreadBinding,
+                Duration threadBindingTimeout,
                 boolean enableMergeCumulator,
                 boolean requireEncryption,
                 SslContext sslContext) {
@@ -288,7 +297,9 @@ public abstract class AbstractNettyConnector<CFG extends NettyConfiguration> ext
                     inboundBufferThrottleHighWatermark,
                     streamingBufferSize,
                     streamingFlushThreshold,
-                    connectionShutdownDuration);
+                    connectionShutdownDuration,
+                    enableTransactionThreadBinding,
+                    threadBindingTimeout);
             if (requireEncryption && sslContext == null) {
                 throw new IllegalArgumentException("SslContext must be specified when encryption is required");
             }
@@ -309,9 +320,9 @@ public abstract class AbstractNettyConnector<CFG extends NettyConfiguration> ext
         }
 
         /**
-         * Identifies whether this connector shall use the merge cumulator instead of making use
-         * of a composite based cumulator implementation.
-         * <p />
+         * Identifies whether this connector shall use the merge cumulator instead of making use of a
+         * composite based cumulator implementation.
+         * <p/>
          * This configuration may lead to additional memory consumption as well as performance
          * degradation.
          *

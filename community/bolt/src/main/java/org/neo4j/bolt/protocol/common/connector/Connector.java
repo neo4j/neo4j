@@ -372,5 +372,27 @@ public interface Connector<CFG extends Connector.Configuration> extends Lifecycl
          * @return a maximum permissible shutdown duration.
          */
         Duration connectionShutdownDuration();
+
+        /**
+         * Identifies whether transactions shall be bound to threads for the duration of their
+         * lifetime.
+         *
+         * @return true if transactions shall occupy threads for their lifetime, false otherwise.
+         */
+        boolean enableTransactionThreadBinding();
+
+        /**
+         * Specifies the total duration for which a thread is bound to a given connection when no
+         * requests remain to be processed.
+         * <p/>
+         * This value is provided as an optimization in order to reduce rapid re-scheduling of
+         * connections within short windows of inactivity (e.g. due to network latency).
+         * <p/>
+         * When set to zero, threads will be freed up immediately once no more requests remain to be
+         * processed.
+         *
+         * @return a timeout duration after which a thread is released.
+         */
+        Duration threadBindingTimeout();
     }
 }
