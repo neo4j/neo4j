@@ -19,11 +19,15 @@
  */
 package org.neo4j.kernel.api;
 
+import org.neo4j.common.DependencyResolver;
+import org.neo4j.kernel.api.procedure.ProcedureView;
+
 /**
  * This interface is a way how sharded property functionality is hooked into Kernel.
  * The decorator should be invoked when a Kernel transaction is created in a SPD database.
  */
 public interface SpdKernelTransactionDecorator {
 
-    KernelTransaction decorate(KernelTransaction tx);
+    KernelTransaction decorate(
+            KernelTransaction tx, ProcedureView procedureView, DependencyResolver databaseDependencies);
 }

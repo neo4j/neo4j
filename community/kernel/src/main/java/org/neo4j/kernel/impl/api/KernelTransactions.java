@@ -302,7 +302,9 @@ public class KernelTransactions extends LifecycleAdapter
                         transactionIdSequence.next(),
                         clientInfo,
                         procedureView);
-                return spdKernelTransactionDecorator != null ? spdKernelTransactionDecorator.decorate(tx) : tx;
+                return spdKernelTransactionDecorator != null
+                        ? spdKernelTransactionDecorator.decorate(tx, procedureView, databaseDependencies)
+                        : tx;
             } finally {
                 newTransactionsLock.readLock().unlock();
             }
