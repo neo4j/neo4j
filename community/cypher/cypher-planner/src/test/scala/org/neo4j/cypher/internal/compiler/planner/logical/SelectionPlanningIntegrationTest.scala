@@ -214,10 +214,10 @@ class SelectionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanni
     }
   }
 
-  test("should treat inequality predicates on the same property separately") {
+  test("should group inequality predicates with the same store access count") {
     val q =
       """MATCH (n)
-        |WHERE n.prop > 123 AND n.prop < 321 AND n.prop >= 111 AND n.prop <= 333 AND
+        |WHERE n.prop1 > 123 AND n.prop2 < 321 AND n.prop3 >= 111 AND n.prop4 <= 333 AND
         |      n.otherProp < n.yetAnotherProp
         |RETURN n""".stripMargin
 
@@ -228,9 +228,8 @@ class SelectionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanni
       .stripProduceResults
 
     inside(plan) {
-      case Selection(Ands(SetExtractor(AndsReorderable(ltGt), AndsReorderable(lteGte), lastPredicate)), _) =>
-        ltGt.size shouldBe 2
-        lteGte.size shouldBe 2
+      case Selection(Ands(SetExtractor(AndsReorderable(singlePropPredicates), lastPredicate)), _) =>
+        singlePropPredicates.size shouldBe 4
         lastPredicate shouldBe lessThan(
           prop("n", "otherProp"),
           prop("n", "yetAnotherProp")

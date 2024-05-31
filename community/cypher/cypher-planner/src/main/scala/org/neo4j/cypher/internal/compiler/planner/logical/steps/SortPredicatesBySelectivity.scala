@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
+import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
 import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel
@@ -28,6 +29,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.IndexCompa
 import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.AndsReorderable
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.InequalityExpression
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
 import org.neo4j.cypher.internal.frontend.phases.Phase
@@ -130,31 +132,61 @@ case object SortPredicatesBySelectivity extends Phase[PlannerContext, LogicalPla
         .map(p => (p, sortCriteria(p)))
         .sortBy(_._2)
 
-      // gather consecutive predicates with the same cost
-      val groupedByCost: Seq[Seq[Expression]] =
-        sortedPredicates.foldLeft(List.empty[(PredicateCost, Seq[Expression])]) {
-          case (groups, (expr, exprCost)) =>
-            groups match {
-              case (groupCost, exprs) :: groupsTail if groupCost.equalsWithTolerance(exprCost) =>
-                (groupCost, (exprs :+ expr)) :: groupsTail
-              case _ =>
-                (exprCost, Seq(expr)) :: groups
-            }
-        }.map(_._2).reverse
-
-      /** ungroup predicates without store access and wrap remaining grouped predicates into [[AndsReorderable]] */
-      groupedByCost
-        .flatMap { group =>
-          val (hasStoreAccess, noStoreAccess) =
-            group.partition(expr => CardinalityCostModel.calculateNumberOfStoreAccesses(expr, from.semanticTable()) > 0)
-          noStoreAccess.map(e => Seq(e)) :+ hasStoreAccess
-        }
-        .flatMap { exprs =>
-          if (exprs.size == 1) exprs
-          else if (exprs.size > 1) Seq(AndsReorderable(ListSet.from(exprs))(exprs.head.position))
-          else Seq.empty
-        }
+      groupReorderablePredicates(sortedPredicates, from.semanticTable())
     }
   }
 
+  private[steps] def groupReorderablePredicates(
+    sortedPredicates: Seq[(Expression, PredicateCost)],
+    semanticTable: SemanticTable
+  ): Seq[Expression] = {
+
+    // gather consecutive predicates with the same cost
+    val groupedByCost: Seq[Seq[Expression]] =
+      sortedPredicates.foldLeft(List.empty[(PredicateCost, Seq[Expression])]) {
+        case (groups, (expr, exprCost)) =>
+          groups match {
+            case (groupCost, exprs) :: groupsTail
+              if groupCost.equalsWithTolerance(exprCost) ||
+                inequalityExpressionHeuristic(exprs, expr, semanticTable) =>
+              (groupCost, exprs :+ expr) :: groupsTail
+            case _ =>
+              (exprCost, Vector(expr)) :: groups
+          }
+      }.map(_._2).reverse
+
+    /** ungroup predicates without store access and wrap remaining grouped predicates into [[AndsReorderable]] */
+    groupedByCost
+      .flatMap { group =>
+        val (hasStoreAccess, noStoreAccess) =
+          group.partition(expr => CardinalityCostModel.calculateNumberOfStoreAccesses(expr, semanticTable) > 0)
+        noStoreAccess.map(e => Seq(e)) :+ hasStoreAccess
+      }
+      .flatMap { exprs =>
+        if (exprs.size == 1) exprs
+        else if (exprs.size > 1) Seq(AndsReorderable(ListSet.from(exprs))(exprs.head.position))
+        else Seq.empty
+      }
+  }
+
+  // Allow inequality predicate into current group even if its cost is higher,
+  // as long as there's another inequality predicate with matching store access count.
+  // The idea is to allow grouping > and >= predicates even if their selectivities are
+  // slightly different.
+  private def inequalityExpressionHeuristic(
+    group: Seq[Expression],
+    expr: Expression,
+    semanticTable: SemanticTable
+  ): Boolean = {
+    expr match {
+      case expr: InequalityExpression =>
+        val exprAccessCount = CardinalityCostModel.calculateNumberOfStoreAccesses(expr, semanticTable)
+        group.exists { groupExpr =>
+          groupExpr.isInstanceOf[InequalityExpression] &&
+          CardinalityCostModel.calculateNumberOfStoreAccesses(groupExpr, semanticTable) == exprAccessCount
+        }
+      case _ =>
+        false
+    }
+  }
 }
