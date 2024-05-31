@@ -394,7 +394,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.executionContextFactory = createExecutionContextFactory(
                 contextFactory,
                 storageEngine,
-                transactionMemoryPool,
                 config,
                 lockManager,
                 tokenHolders,
@@ -496,7 +495,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private static ExecutionContextFactory createExecutionContextFactory(
             CursorContextFactory contextFactory,
             StorageEngine storageEngine,
-            TransactionMemoryPool transactionMemoryPool,
             Config config,
             LockManager lockManager,
             TokenHolders tokenHolders,
@@ -519,8 +517,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                     PageCacheTracer.NULL, ExecutionContextCursorTracer.TRANSACTION_EXECUTION_TAG);
             var executionContextCursorContext = contextFactory.create(executionContextCursorTracer);
             StorageReader executionContextStorageReader = storageEngine.newReader();
-            MemoryTracker executionContextMemoryTracker =
-                    createExecutionContextMemoryTracker(transactionMemoryPool, config);
+            MemoryTracker executionContextMemoryTracker = kernelTransaction.createExecutionContextMemoryTracker();
             StoreCursors executionContextStoreCursors =
                     storageEngine.createStorageCursors(executionContextCursorContext);
             DefaultPooledCursors executionContextPooledCursors = new DefaultPooledCursors(
@@ -562,13 +559,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                     procedureView,
                     multiVersioned);
         };
-    }
-
-    private static MemoryTracker createExecutionContextMemoryTracker(
-            TransactionMemoryPool transactionMemoryPool, Config config) {
-        var grabSize = config.get(GraphDatabaseInternalSettings.initial_transaction_heap_grab_size_per_worker);
-        var maxGrabSize = config.get(GraphDatabaseInternalSettings.max_transaction_heap_grab_size_per_worker);
-        return transactionMemoryPool.getExecutionContextPoolMemoryTracker(grabSize, maxGrabSize);
     }
 
     @Override
@@ -684,7 +674,9 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
     @Override
     public MemoryTracker createExecutionContextMemoryTracker() {
-        return createExecutionContextMemoryTracker(transactionMemoryPool, config);
+        var grabSize = config.get(GraphDatabaseInternalSettings.initial_transaction_heap_grab_size_per_worker);
+        var maxGrabSize = config.get(GraphDatabaseInternalSettings.max_transaction_heap_grab_size_per_worker);
+        return transactionMemoryPool.getExecutionContextPoolMemoryTracker(grabSize, maxGrabSize);
     }
 
     @Override
