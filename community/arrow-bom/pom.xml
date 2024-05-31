@@ -70,6 +70,10 @@
                     <groupId>com.google.code.gson</groupId>
                     <artifactId>*</artifactId>
                 </exclusion>
+                <exclusion>
+                    <groupId>io.netty</groupId>
+                    <artifactId>netty-tcnative-boringssl-static</artifactId>
+                </exclusion>
             </exclusions>
         </dependency>
         <dependency>
