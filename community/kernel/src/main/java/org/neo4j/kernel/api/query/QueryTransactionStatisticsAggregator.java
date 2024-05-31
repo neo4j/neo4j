@@ -27,6 +27,11 @@ import org.neo4j.util.VisibleForTesting;
 
 /**
  * Aggregated statistics of transactions that have executed a query but are already committed.
+ * <p>
+ * NOTE: The logic for computing the statistics of the commit phase assumes that for
+ *       a given transaction sequence number, the two methods
+ *       recordStatisticsOfTransactionAboutToClose and recordStatisticsOfClosedTransaction
+ *       are called in sequence.
  */
 public interface QueryTransactionStatisticsAggregator {
     /**
@@ -146,10 +151,6 @@ public interface QueryTransactionStatisticsAggregator {
     /**
      * An implementation of {@link QueryTransactionStatisticsAggregator}
      * that supports concurrent writer threads to record statistics.
-     * <p>
-     * IMPORTANT: Only one thread at a time is allowed to record statistics for a given transaction sequence number.
-     * <p>
-     * NOTE:
      */
     class ConcurrentImpl implements QueryTransactionStatisticsAggregator {
 

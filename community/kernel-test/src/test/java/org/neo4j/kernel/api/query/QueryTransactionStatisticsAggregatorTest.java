@@ -24,6 +24,7 @@ import static org.assertj.core.api.Assertions.fail;
 
 import java.util.Random;
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
@@ -36,14 +37,16 @@ class QueryTransactionStatisticsAggregatorTest {
         var timeout = TimeUnit.MINUTES.toMillis(10);
         var numberOfThreads = 10;
         var numberOfTransactions = 10000;
+        var latch = new CountDownLatch(1);
         var aggregator = new QueryTransactionStatisticsAggregator.ConcurrentImpl();
         var commitPhaseHits = new LongAdder();
         var commitPhaseFaults = new LongAdder();
         var queue = new ArrayBlockingQueue<Runnable>(numberOfTransactions);
         var executor = new ThreadPoolExecutor(numberOfThreads, numberOfThreads, 10, TimeUnit.SECONDS, queue);
         for (int i = 0; i < numberOfTransactions; i++) {
-            executor.execute(new Task(aggregator, i, commitPhaseHits, commitPhaseFaults));
+            executor.execute(new Task(aggregator, i, commitPhaseHits, commitPhaseFaults, latch));
         }
+        latch.countDown();
         executor.shutdown();
 
         // While transactions are running we verify that the statistics are consistent.
@@ -84,12 +87,18 @@ class QueryTransactionStatisticsAggregatorTest {
             QueryTransactionStatisticsAggregator aggregator,
             long transactionId,
             LongAdder commitPhaseHits,
-            LongAdder commitPhaseFaults)
+            LongAdder commitPhaseFaults,
+            CountDownLatch latch)
             implements Runnable {
         private static final Random RANDOM = new Random();
 
         @Override
         public void run() {
+            try {
+                latch.await();
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
             aggregator.recordStatisticsOfTransactionAboutToClose(2, 2, transactionId);
             LockSupport.parkNanos(RANDOM.nextLong(1000, 10_000));
             aggregator.recordStatisticsOfClosedTransaction(3, 3, transactionId, (hits, faults, txId) -> {

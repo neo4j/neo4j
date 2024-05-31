@@ -573,12 +573,10 @@ public class ExecutingQuery implements QueryTransactionStatisticsAggregator {
     }
 
     /**
-     * Replaces the transaction statistics accumulator with a synchronized version the first time it is called.
+     * Replaces the transaction statistics accumulator with a concurrent version the first time it is called.
      * Should only be called from a single thread.
      */
-    public void upgradeToConcurrentAccess() {
-        // We only have one thread writing to this field
-        //noinspection NonAtomicOperationOnVolatileField
+    public synchronized void upgradeToConcurrentAccess() {
         var current = aggregatedStatistics;
         if (!(current instanceof QueryTransactionStatisticsAggregator.ConcurrentImpl)) {
             aggregatedStatistics = new QueryTransactionStatisticsAggregator.ConcurrentImpl(current);
