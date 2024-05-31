@@ -98,4 +98,7 @@ public interface PageIdRange {
      * Reset to previously marked allocation position, if {@link #mark()} was never called, reset to 0 position.
      */
     void resetToMark();
+
+    // TODO: misha remove for ongoing investigation only
+    default void setContext(long owner) {}
 }

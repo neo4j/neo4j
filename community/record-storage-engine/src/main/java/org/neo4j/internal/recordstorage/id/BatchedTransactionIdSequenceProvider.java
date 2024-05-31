@@ -106,6 +106,8 @@ public class BatchedTransactionIdSequenceProvider implements IdSequenceProvider 
                 close(cursorContext);
                 range = idGenerator.nextPageRange(cursorContext, recordsPerPage);
                 range.mark();
+                // TODO: investigation
+                range.setContext(Thread.currentThread().getId());
             }
             return range.nextId();
         }
