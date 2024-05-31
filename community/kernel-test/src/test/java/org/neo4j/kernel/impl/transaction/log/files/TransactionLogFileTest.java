@@ -860,7 +860,7 @@ class TransactionLogFileTest {
     private void createFile(Path filePath, long version, long lastCommittedTxId, KernelVersion kernelVersion)
             throws IOException {
 
-        var filesHelper = new TransactionLogFilesHelper(fileSystem, filePath);
+        var filesHelper = TransactionLogFilesHelper.forTransactions(fileSystem, filePath);
         try (StoreChannel storeChannel = fileSystem.write(filesHelper.getLogFileForVersion(version))) {
             LogFormat logFormat = LogFormat.fromKernelVersion(kernelVersion);
             LogHeader logHeader = logFormat.newHeader(

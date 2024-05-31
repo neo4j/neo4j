@@ -90,7 +90,7 @@ class TransactionLogChannelAllocatorIT {
 
     @BeforeEach
     void setUp() {
-        fileHelper = new TransactionLogFilesHelper(fileSystem, testDirectory.homePath());
+        fileHelper = TransactionLogFilesHelper.forTransactions(fileSystem, testDirectory.homePath());
         fileAllocator = createLogFileAllocator();
     }
 

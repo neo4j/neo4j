@@ -43,9 +43,9 @@ public class TransactionLogFiles extends LifecycleAdapter implements LogFiles {
     private final Path logsDirectory;
     private LifeSupport logFilesLife;
 
-    TransactionLogFiles(Path logsDirectory, String name, TransactionLogFilesContext context) {
+    TransactionLogFiles(Path logsDirectory, TransactionLogFilesContext context) {
         this.logsDirectory = logsDirectory;
-        this.logFile = new TransactionLogFile(this, context, name);
+        this.logFile = new TransactionLogFile(this, context);
         this.checkpointLogFile = new CheckpointLogFile(this, context);
     }
 

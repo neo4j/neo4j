@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.storemigration;
 
-import static org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesHelper.DEFAULT_FILENAME_FILTER;
+import static org.neo4j.kernel.impl.transaction.log.files.TransactionLogFiles.DEFAULT_FILENAME_FILTER;
 
 import java.io.IOException;
 import java.nio.file.Files;

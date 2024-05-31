@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.transaction.log.files.checkpoint;
 import static java.util.Collections.emptyList;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.BIGGEST_HEADER;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLogHeader;
-import static org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesHelper.CHECKPOINT_FILE_PREFIX;
 import static org.neo4j.kernel.impl.transaction.log.files.checkpoint.CheckpointInfoFactory.ofLogEntry;
 import static org.neo4j.kernel.impl.transaction.log.rotation.FileLogRotation.checkpointLogRotation;
 import static org.neo4j.storageengine.AppendIndexProvider.BASE_APPEND_INDEX;
@@ -88,8 +87,8 @@ public class CheckpointLogFile extends LifecycleAdapter implements CheckpointFil
         this.context = context;
         this.logFiles = logFiles;
         this.rotationsSize = context.getCheckpointRotationThreshold();
-        this.fileHelper = new TransactionLogFilesHelper(
-                context.getFileSystem(), logFiles.logFilesDirectory(), CHECKPOINT_FILE_PREFIX);
+        this.fileHelper =
+                TransactionLogFilesHelper.forCheckpoints(context.getFileSystem(), logFiles.logFilesDirectory());
         this.channelAllocator = new CheckpointLogChannelAllocator(context, fileHelper);
         this.monitor = context.getMonitors().newMonitor(LogTailScannerMonitor.class);
         this.logTailScanner = new DetachedLogTailScanner(logFiles, context, this, monitor);

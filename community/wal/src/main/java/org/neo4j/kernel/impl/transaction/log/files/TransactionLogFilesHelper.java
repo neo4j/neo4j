@@ -50,11 +50,15 @@ public class TransactionLogFilesHelper {
     private final Path logDirectory;
     private final DirectoryStream.Filter<Path> filenameFilter;
 
-    public TransactionLogFilesHelper(FileSystemAbstraction fileSystem, Path directory) {
-        this(fileSystem, directory, DEFAULT_NAME);
+    public static TransactionLogFilesHelper forTransactions(FileSystemAbstraction fs, Path dir) {
+        return new TransactionLogFilesHelper(fs, dir, DEFAULT_NAME);
     }
 
-    public TransactionLogFilesHelper(FileSystemAbstraction fileSystem, Path directory, String name) {
+    public static TransactionLogFilesHelper forCheckpoints(FileSystemAbstraction fs, Path dir) {
+        return new TransactionLogFilesHelper(fs, dir, CHECKPOINT_FILE_PREFIX);
+    }
+
+    private TransactionLogFilesHelper(FileSystemAbstraction fileSystem, Path directory, String name) {
         this.fileSystem = fileSystem;
         this.logDirectory = directory;
         this.logBaseName = directory.resolve(name);

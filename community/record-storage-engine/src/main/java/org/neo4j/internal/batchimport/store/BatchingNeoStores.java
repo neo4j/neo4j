@@ -33,7 +33,6 @@ import static org.neo4j.kernel.impl.store.StoreType.PROPERTY;
 import static org.neo4j.kernel.impl.store.StoreType.PROPERTY_ARRAY;
 import static org.neo4j.kernel.impl.store.StoreType.PROPERTY_STRING;
 import static org.neo4j.kernel.impl.store.StoreType.RELATIONSHIP_GROUP;
-import static org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesHelper.CHECKPOINT_FILE_PREFIX;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
 import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_INDEX;
 
@@ -95,7 +94,7 @@ import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.RecordStorageCapability;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.transaction.log.LogTailLogVersionsMetadata;
-import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesHelper;
+import org.neo4j.kernel.impl.transaction.log.files.LogFilesMatcher;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.memory.EmptyMemoryTracker;
@@ -239,16 +238,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
     }
 
     private boolean hasExistingTransactionContents() {
-        TransactionLogFilesHelper logFilesHelper =
-                new TransactionLogFilesHelper(fileSystem, databaseLayout.getTransactionLogsDirectory());
-        TransactionLogFilesHelper checkpointFilesHelper = new TransactionLogFilesHelper(
-                fileSystem, databaseLayout.getTransactionLogsDirectory(), CHECKPOINT_FILE_PREFIX);
-        try {
-            return logFilesHelper.getMatchedFiles().length > 0 || checkpointFilesHelper.getMatchedFiles().length > 0;
-        } catch (IOException e) {
-            // Could not check txlogs (does not exist?) Do nothing
-            return false;
-        }
+        return new LogFilesMatcher(fileSystem, databaseLayout.getTransactionLogsDirectory()).hasAnyLogFiles();
     }
 
     private boolean hasExistingDatabaseContents() {

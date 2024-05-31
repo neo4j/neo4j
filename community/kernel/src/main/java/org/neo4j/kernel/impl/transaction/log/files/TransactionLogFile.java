@@ -96,7 +96,6 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile {
     private final TransactionLogChannelAllocator channelAllocator;
     private final DatabaseHealth databaseHealth;
     private final LogFiles logFiles;
-    private final String baseName;
     private final LogRotation logRotation;
     private final LogHeaderCache logHeaderCache;
     private final FileSystemAbstraction fileSystem;
@@ -109,15 +108,14 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile {
     private LogVersionRepository logVersionRepository;
     private TransactionLogWriter transactionLogWriter;
 
-    TransactionLogFile(LogFiles logFiles, TransactionLogFilesContext context, String baseName) {
+    TransactionLogFile(LogFiles logFiles, TransactionLogFilesContext context) {
         this.logFiles = logFiles;
-        this.baseName = baseName;
         this.context = context;
         this.rotateAtSize = context.getRotationThreshold();
         this.fileSystem = context.getFileSystem();
         this.databaseHealth = context.getDatabaseHealth();
         this.versionTracker = context.getLogFileVersionTracker();
-        this.fileHelper = new TransactionLogFilesHelper(fileSystem, logFiles.logFilesDirectory(), baseName);
+        this.fileHelper = TransactionLogFilesHelper.forTransactions(fileSystem, logFiles.logFilesDirectory());
         this.logHeaderCache = new LogHeaderCache(1000);
         this.logFileInformation = new TransactionLogFileInformation(logFiles, logHeaderCache, context);
         this.channelAllocator = new TransactionLogChannelAllocator(
@@ -537,7 +535,7 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile {
     @Override
     public void combine(Path additionalLogFilesDirectory) throws IOException {
         long highestLogVersion = getHighestLogVersion();
-        var logHelper = new TransactionLogFilesHelper(fileSystem, additionalLogFilesDirectory, baseName);
+        var logHelper = TransactionLogFilesHelper.forTransactions(fileSystem, additionalLogFilesDirectory);
         for (Path matchedFile : logHelper.getMatchedFiles()) {
             long newFileVersion = ++highestLogVersion;
             Path newFileName = fileHelper.getLogFileForVersion(newFileVersion);

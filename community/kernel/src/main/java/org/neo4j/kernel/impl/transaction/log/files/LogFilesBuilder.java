@@ -318,7 +318,7 @@ public class LogFilesBuilder {
         TransactionLogFilesContext filesContext = buildContext();
         Path logsDirectory = getLogsDirectory();
         filesContext.getFileSystem().mkdirs(logsDirectory);
-        return new TransactionLogFiles(logsDirectory, TransactionLogFilesHelper.DEFAULT_NAME, filesContext);
+        return new TransactionLogFiles(logsDirectory, filesContext);
     }
 
     private Path getLogsDirectory() {

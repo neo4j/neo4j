@@ -252,7 +252,7 @@ class TransactionRangeDiagnosticsTest {
         return transactionLogs -> {
             when(transactionLogs.getLowestLogVersion()).thenReturn(lowVersion);
             when(transactionLogs.getHighestLogVersion()).thenReturn(highVersion);
-            TransactionLogFilesHelper helper = new TransactionLogFilesHelper(fs, directory.homePath());
+            TransactionLogFilesHelper helper = TransactionLogFilesHelper.forTransactions(fs, directory.homePath());
             for (long version = lowVersion; version <= highVersion; version++) {
                 when(transactionLogs.hasAnyEntries(version)).thenReturn(true);
                 when(transactionLogs.versionExists(version)).thenReturn(true);
