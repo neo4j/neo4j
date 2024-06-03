@@ -96,15 +96,15 @@ import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.parser.ast.util.Util.astOpt
+import org.neo4j.cypher.internal.parser.ast.util.Util.astSeq
+import org.neo4j.cypher.internal.parser.ast.util.Util.ctxChild
+import org.neo4j.cypher.internal.parser.ast.util.Util.nodeChild
+import org.neo4j.cypher.internal.parser.ast.util.Util.pos
 import org.neo4j.cypher.internal.parser.v5.CypherParser
 import org.neo4j.cypher.internal.parser.v5.CypherParser.ShowConstraintMultiContext
 import org.neo4j.cypher.internal.parser.v5.CypherParserListener
 import org.neo4j.cypher.internal.parser.v5.ast.factory.ast.DdlShowBuilder.ShowWrapper
-import org.neo4j.cypher.internal.parser.v5.ast.factory.ast.Util.astOpt
-import org.neo4j.cypher.internal.parser.v5.ast.factory.ast.Util.astSeq
-import org.neo4j.cypher.internal.parser.v5.ast.factory.ast.Util.ctxChild
-import org.neo4j.cypher.internal.parser.v5.ast.factory.ast.Util.nodeChild
-import org.neo4j.cypher.internal.parser.v5.ast.factory.ast.Util.pos
 import org.neo4j.cypher.internal.util.InputPosition
 
 import scala.collection.immutable.ArraySeq

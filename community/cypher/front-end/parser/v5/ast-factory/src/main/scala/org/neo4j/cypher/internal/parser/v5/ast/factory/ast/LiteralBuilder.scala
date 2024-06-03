@@ -32,13 +32,13 @@ import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.expressions.True
 import org.neo4j.cypher.internal.parser.AstRuleCtx
 import org.neo4j.cypher.internal.parser.CypherErrorStrategy
+import org.neo4j.cypher.internal.parser.ast.util.Util.astSeq
+import org.neo4j.cypher.internal.parser.ast.util.Util.lastChild
+import org.neo4j.cypher.internal.parser.ast.util.Util.pos
+import org.neo4j.cypher.internal.parser.ast.util.Util.rangePos
 import org.neo4j.cypher.internal.parser.v5.CypherParser
 import org.neo4j.cypher.internal.parser.v5.CypherParserListener
 import org.neo4j.cypher.internal.parser.v5.ast.factory.ast.LiteralBuilder.cypherStringToString
-import org.neo4j.cypher.internal.parser.v5.ast.factory.ast.Util.astSeq
-import org.neo4j.cypher.internal.parser.v5.ast.factory.ast.Util.lastChild
-import org.neo4j.cypher.internal.parser.v5.ast.factory.ast.Util.pos
-import org.neo4j.cypher.internal.parser.v5.ast.factory.ast.Util.rangePos
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.InputPosition
 

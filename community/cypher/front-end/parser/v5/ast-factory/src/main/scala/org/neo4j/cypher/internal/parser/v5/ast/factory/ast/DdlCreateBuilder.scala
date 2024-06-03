@@ -67,6 +67,13 @@ import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.macros.AssertMacros
 import org.neo4j.cypher.internal.parser.AstRuleCtx
+import org.neo4j.cypher.internal.parser.ast.util.Util.astOpt
+import org.neo4j.cypher.internal.parser.ast.util.Util.astOptFromList
+import org.neo4j.cypher.internal.parser.ast.util.Util.astSeqPositioned
+import org.neo4j.cypher.internal.parser.ast.util.Util.ifExistsDo
+import org.neo4j.cypher.internal.parser.ast.util.Util.lastChild
+import org.neo4j.cypher.internal.parser.ast.util.Util.nodeChild
+import org.neo4j.cypher.internal.parser.ast.util.Util.pos
 import org.neo4j.cypher.internal.parser.v5.CypherParser
 import org.neo4j.cypher.internal.parser.v5.CypherParser.ConstraintExistsContext
 import org.neo4j.cypher.internal.parser.v5.CypherParser.ConstraintIsNotNullContext
@@ -76,14 +83,7 @@ import org.neo4j.cypher.internal.parser.v5.CypherParser.ConstraintTypedContext
 import org.neo4j.cypher.internal.parser.v5.CypherParser.CreateCommandContext
 import org.neo4j.cypher.internal.parser.v5.CypherParser.CreateIndexContext
 import org.neo4j.cypher.internal.parser.v5.CypherParserListener
-import org.neo4j.cypher.internal.parser.v5.ast.factory.ast.Util.astOpt
-import org.neo4j.cypher.internal.parser.v5.ast.factory.ast.Util.astOptFromList
-import org.neo4j.cypher.internal.parser.v5.ast.factory.ast.Util.astSeqPositioned
-import org.neo4j.cypher.internal.parser.v5.ast.factory.ast.Util.ifExistsDo
-import org.neo4j.cypher.internal.parser.v5.ast.factory.ast.Util.lastChild
-import org.neo4j.cypher.internal.parser.v5.ast.factory.ast.Util.nodeChild
-import org.neo4j.cypher.internal.parser.v5.ast.factory.ast.Util.nonEmptyPropertyKeyName
-import org.neo4j.cypher.internal.parser.v5.ast.factory.ast.Util.pos
+import org.neo4j.cypher.internal.parser.v5.ast.factory.ast.Cypher5AstUtil.nonEmptyPropertyKeyName
 import org.neo4j.cypher.internal.util.symbols.CypherType
 
 import scala.collection.immutable.ArraySeq
@@ -534,7 +534,7 @@ trait DdlCreateBuilder extends CypherParserListener {
     val nodePattern = ctx.lookupIndexNodePattern()
     val isNode = nodePattern != null
     val functionName = ctx.symbolicNameString
-    val functionPos = Util.pos(functionName)
+    val functionPos = pos(functionName)
     val function = FunctionInvocation(
       FunctionName(functionName.ast[String]())(functionPos),
       distinct = false,

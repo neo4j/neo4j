@@ -96,17 +96,18 @@ import org.neo4j.cypher.internal.expressions.SimplePattern
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.macros.AssertMacros.checkOnlyWhenAssertionsAreEnabled
 import org.neo4j.cypher.internal.parser.AstRuleCtx
+import org.neo4j.cypher.internal.parser.ast.util.Util.astChild
+import org.neo4j.cypher.internal.parser.ast.util.Util.astOpt
+import org.neo4j.cypher.internal.parser.ast.util.Util.astSeq
+import org.neo4j.cypher.internal.parser.ast.util.Util.astSeqPositioned
+import org.neo4j.cypher.internal.parser.ast.util.Util.ctxChild
+import org.neo4j.cypher.internal.parser.ast.util.Util.inputText
+import org.neo4j.cypher.internal.parser.ast.util.Util.lastChild
+import org.neo4j.cypher.internal.parser.ast.util.Util.nodeChild
+import org.neo4j.cypher.internal.parser.ast.util.Util.pos
 import org.neo4j.cypher.internal.parser.v5.CypherParser
 import org.neo4j.cypher.internal.parser.v5.CypherParserListener
-import org.neo4j.cypher.internal.parser.v5.ast.factory.ast.Util.astChild
-import org.neo4j.cypher.internal.parser.v5.ast.factory.ast.Util.astOpt
-import org.neo4j.cypher.internal.parser.v5.ast.factory.ast.Util.astSeq
-import org.neo4j.cypher.internal.parser.v5.ast.factory.ast.Util.astSeqPositioned
-import org.neo4j.cypher.internal.parser.v5.ast.factory.ast.Util.ctxChild
-import org.neo4j.cypher.internal.parser.v5.ast.factory.ast.Util.inputText
-import org.neo4j.cypher.internal.parser.v5.ast.factory.ast.Util.lastChild
-import org.neo4j.cypher.internal.parser.v5.ast.factory.ast.Util.nodeChild
-import org.neo4j.cypher.internal.parser.v5.ast.factory.ast.Util.pos
+import org.neo4j.cypher.internal.parser.v5.ast.factory.ast.Cypher5AstUtil.nonEmptyPropertyKeyName
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.NonEmptyList
@@ -349,12 +350,6 @@ trait StatementBuilder extends CypherParserListener {
 
   final override def exitNonEmptyNameList(ctx: CypherParser.NonEmptyNameListContext): Unit = {
     ctx.ast = astSeqPositioned[PropertyKeyName, String](ctx.symbolicNameString(), PropertyKeyName.apply)
-  }
-
-  private def nonEmptyPropertyKeyName(list: CypherParser.NonEmptyNameListContext): ArraySeq[PropertyKeyName] = {
-    ArraySeq.from(list.symbolicNameString().asScala.collect {
-      case s: CypherParser.SymbolicNameStringContext => PropertyKeyName(s.ast())(pos(s))
-    })
   }
 
   private def nonEmptyVariables(list: CypherParser.NonEmptyNameListContext): NonEmptyList[Variable] = {

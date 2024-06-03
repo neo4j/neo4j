@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.cypher.internal.parser.v5.ast.factory.ast
+package org.neo4j.cypher.internal.parser.ast.util
 
 import org.antlr.v4.runtime.ParserRuleContext
 import org.antlr.v4.runtime.Token
@@ -27,11 +27,9 @@ import org.neo4j.cypher.internal.ast.IfExistsReplace
 import org.neo4j.cypher.internal.ast.IfExistsThrowError
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.UnsignedDecimalIntegerLiteral
-import org.neo4j.cypher.internal.macros.AssertMacros
 import org.neo4j.cypher.internal.parser.AstRuleCtx
+import org.neo4j.cypher.internal.parser.lexer.CypherQueryAccess
 import org.neo4j.cypher.internal.parser.lexer.CypherToken
-import org.neo4j.cypher.internal.parser.v5.CypherParser
-import org.neo4j.cypher.internal.parser.v5.ast.factory.CypherAstLexer
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.collection.immutable.ListSet
@@ -49,8 +47,10 @@ object Util {
   @inline def astOpt[T <: Any](ctx: AstRuleCtx, default: => T): T = if (ctx == null) default else ctx.ast[T]()
 
   def astOptFromList[T <: Any](list: java.util.List[_ <: AstRuleCtx], default: => Option[T]): Option[T] = {
-    AssertMacros.checkOnlyWhenAssertionsAreEnabled(list.size() < 2)
-    if (list.isEmpty) default else Some(list.get(0).ast[T]())
+    val size = list.size()
+    if (size == 0) default
+    else if (size == 1) Some(list.get(0).ast[T]())
+    else throw new IllegalArgumentException(s"Unexpected size $size")
   }
 
   def optUnsignedDecimalInt(token: Token): Option[UnsignedDecimalIntegerLiteral] = {
@@ -103,12 +103,6 @@ object Util {
       i += 1
     }
     ArraySeq.unsafeWrapArray(result)
-  }
-
-  def nonEmptyPropertyKeyName(list: CypherParser.NonEmptyNameListContext): ArraySeq[PropertyKeyName] = {
-    ArraySeq.from(list.symbolicNameString().asScala.collect {
-      case s: CypherParser.SymbolicNameStringContext => PropertyKeyName(s.ast())(pos(s))
-    })
   }
 
   def astChildListSet[T <: ASTNode](ctx: AstRuleCtx): ListSet[T] = {
@@ -175,7 +169,7 @@ object Util {
    * In most situations ctx.getText is what you want.
    */
   @inline def inputText(ctx: AstRuleCtx): String = {
-    ctx.stop.getTokenSource.asInstanceOf[CypherAstLexer].inputText(ctx.start, ctx.stop)
+    ctx.stop.getTokenSource.asInstanceOf[CypherQueryAccess].inputText(ctx.start, ctx.stop)
   }
 
   @inline def rangePos(ctx: ParserRuleContext): InputPosition.Range = {

@@ -35,6 +35,13 @@ import org.neo4j.cypher.internal.label_expressions.LabelExpression.Leaf
 import org.neo4j.cypher.internal.label_expressions.LabelExpression.Negation
 import org.neo4j.cypher.internal.label_expressions.LabelExpression.Wildcard
 import org.neo4j.cypher.internal.parser.AstRuleCtx
+import org.neo4j.cypher.internal.parser.ast.util.Util.astChild
+import org.neo4j.cypher.internal.parser.ast.util.Util.astOpt
+import org.neo4j.cypher.internal.parser.ast.util.Util.astSeq
+import org.neo4j.cypher.internal.parser.ast.util.Util.ctxChild
+import org.neo4j.cypher.internal.parser.ast.util.Util.lastChild
+import org.neo4j.cypher.internal.parser.ast.util.Util.nodeChild
+import org.neo4j.cypher.internal.parser.ast.util.Util.pos
 import org.neo4j.cypher.internal.parser.v5.CypherParser
 import org.neo4j.cypher.internal.parser.v5.CypherParser.AnyLabelContext
 import org.neo4j.cypher.internal.parser.v5.CypherParser.AnyLabelIsContext
@@ -43,13 +50,6 @@ import org.neo4j.cypher.internal.parser.v5.CypherParser.LabelNameIsContext
 import org.neo4j.cypher.internal.parser.v5.CypherParser.ParenthesizedLabelExpressionContext
 import org.neo4j.cypher.internal.parser.v5.CypherParser.ParenthesizedLabelExpressionIsContext
 import org.neo4j.cypher.internal.parser.v5.CypherParserListener
-import org.neo4j.cypher.internal.parser.v5.ast.factory.ast.Util.astChild
-import org.neo4j.cypher.internal.parser.v5.ast.factory.ast.Util.astOpt
-import org.neo4j.cypher.internal.parser.v5.ast.factory.ast.Util.astSeq
-import org.neo4j.cypher.internal.parser.v5.ast.factory.ast.Util.ctxChild
-import org.neo4j.cypher.internal.parser.v5.ast.factory.ast.Util.lastChild
-import org.neo4j.cypher.internal.parser.v5.ast.factory.ast.Util.nodeChild
-import org.neo4j.cypher.internal.parser.v5.ast.factory.ast.Util.pos
 
 import scala.collection.immutable.ArraySeq
 import scala.jdk.CollectionConverters.CollectionHasAsScala

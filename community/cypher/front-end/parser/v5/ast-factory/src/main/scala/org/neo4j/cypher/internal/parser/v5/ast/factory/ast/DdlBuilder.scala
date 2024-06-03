@@ -88,17 +88,17 @@ import org.neo4j.cypher.internal.expressions.SensitiveStringLiteral
 import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.parser.AstRuleCtx
+import org.neo4j.cypher.internal.parser.ast.util.Util.astOpt
+import org.neo4j.cypher.internal.parser.ast.util.Util.astOptFromList
+import org.neo4j.cypher.internal.parser.ast.util.Util.astPairs
+import org.neo4j.cypher.internal.parser.ast.util.Util.astSeq
+import org.neo4j.cypher.internal.parser.ast.util.Util.ctxChild
+import org.neo4j.cypher.internal.parser.ast.util.Util.lastChild
+import org.neo4j.cypher.internal.parser.ast.util.Util.nodeChild
+import org.neo4j.cypher.internal.parser.ast.util.Util.pos
+import org.neo4j.cypher.internal.parser.ast.util.Util.rangePos
 import org.neo4j.cypher.internal.parser.v5.CypherParser
 import org.neo4j.cypher.internal.parser.v5.CypherParserListener
-import org.neo4j.cypher.internal.parser.v5.ast.factory.ast.Util.astOpt
-import org.neo4j.cypher.internal.parser.v5.ast.factory.ast.Util.astOptFromList
-import org.neo4j.cypher.internal.parser.v5.ast.factory.ast.Util.astPairs
-import org.neo4j.cypher.internal.parser.v5.ast.factory.ast.Util.astSeq
-import org.neo4j.cypher.internal.parser.v5.ast.factory.ast.Util.ctxChild
-import org.neo4j.cypher.internal.parser.v5.ast.factory.ast.Util.lastChild
-import org.neo4j.cypher.internal.parser.v5.ast.factory.ast.Util.nodeChild
-import org.neo4j.cypher.internal.parser.v5.ast.factory.ast.Util.pos
-import org.neo4j.cypher.internal.parser.v5.ast.factory.ast.Util.rangePos
 import org.neo4j.cypher.internal.util.symbols.CTString
 import org.neo4j.exceptions.SyntaxException
 

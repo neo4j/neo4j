@@ -27,6 +27,11 @@ import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.FunctionName
 import org.neo4j.cypher.internal.parser.AstRuleCtx
 import org.neo4j.cypher.internal.parser.ast.SyntaxChecker
+import org.neo4j.cypher.internal.parser.ast.util.Util.astSeq
+import org.neo4j.cypher.internal.parser.ast.util.Util.cast
+import org.neo4j.cypher.internal.parser.ast.util.Util.ctxChild
+import org.neo4j.cypher.internal.parser.ast.util.Util.nodeChild
+import org.neo4j.cypher.internal.parser.ast.util.Util.pos
 import org.neo4j.cypher.internal.parser.v5.CypherParser
 import org.neo4j.cypher.internal.parser.v5.CypherParser.ConstraintExistsContext
 import org.neo4j.cypher.internal.parser.v5.CypherParser.ConstraintIsNotNullContext
@@ -37,11 +42,6 @@ import org.neo4j.cypher.internal.parser.v5.CypherParser.DropConstraintContext
 import org.neo4j.cypher.internal.parser.v5.CypherParser.GlobContext
 import org.neo4j.cypher.internal.parser.v5.CypherParser.GlobRecursiveContext
 import org.neo4j.cypher.internal.parser.v5.CypherParser.SymbolicAliasNameOrParameterContext
-import org.neo4j.cypher.internal.parser.v5.ast.factory.ast.Util.astSeq
-import org.neo4j.cypher.internal.parser.v5.ast.factory.ast.Util.cast
-import org.neo4j.cypher.internal.parser.v5.ast.factory.ast.Util.ctxChild
-import org.neo4j.cypher.internal.parser.v5.ast.factory.ast.Util.nodeChild
-import org.neo4j.cypher.internal.parser.v5.ast.factory.ast.Util.pos
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.ClosedDynamicUnionType
