@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.api.impl.fulltext;
 
+import java.util.ArrayList;
+import java.util.List;
 import org.neo4j.kernel.api.impl.index.DatabaseIndex;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexUpdater;
@@ -28,6 +30,7 @@ class EventuallyConsistentIndexUpdater implements IndexUpdater {
     private final DatabaseIndex<? extends IndexReader> index;
     private final IndexUpdater indexUpdater;
     private final IndexUpdateSink indexUpdateSink;
+    private final List<IndexEntryUpdate<?>> updates = new ArrayList<>();
 
     EventuallyConsistentIndexUpdater(
             DatabaseIndex<? extends IndexReader> index, IndexUpdater indexUpdater, IndexUpdateSink indexUpdateSink) {
@@ -38,11 +41,13 @@ class EventuallyConsistentIndexUpdater implements IndexUpdater {
 
     @Override
     public void process(IndexEntryUpdate<?> update) {
-        indexUpdateSink.enqueueUpdate(index, indexUpdater, update);
+        updates.add(update);
     }
 
     @Override
     public void close() {
-        indexUpdateSink.closeUpdater(index, indexUpdater);
+        if (!updates.isEmpty()) {
+            indexUpdateSink.enqueueTransactionBatchOfUpdates(index, indexUpdater, updates);
+        }
     }
 }

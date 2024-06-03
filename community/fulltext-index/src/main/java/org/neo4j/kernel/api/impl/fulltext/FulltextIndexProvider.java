@@ -103,6 +103,7 @@ public class FulltextIndexProvider extends IndexProvider {
     private final String defaultAnalyzerName;
     private final boolean defaultEventuallyConsistentSetting;
     private final DatabaseReadOnlyChecker readOnlyChecker;
+    private final JobScheduler scheduler;
     private final InternalLog log;
     private final IndexUpdateSink indexUpdateSink;
     private final IndexStorageFactory indexStorageFactory;
@@ -122,6 +123,7 @@ public class FulltextIndexProvider extends IndexProvider {
         this.config = config;
         this.tokenHolders = tokenHolders;
         this.readOnlyChecker = readOnlyChecker;
+        this.scheduler = scheduler;
         this.log = log;
 
         defaultAnalyzerName = config.get(FulltextSettings.fulltext_default_analyzer);
@@ -277,8 +279,8 @@ public class FulltextIndexProvider extends IndexProvider {
         DatabaseIndex<FulltextIndexReader> fulltextIndex = fulltextIndexBuilder.build();
         fulltextIndex.open();
 
-        FulltextIndexAccessor accessor =
-                new FulltextIndexAccessor(indexUpdateSink, fulltextIndex, index, propertyNames, UPDATE_IGNORE_STRATEGY);
+        FulltextIndexAccessor accessor = new FulltextIndexAccessor(
+                indexUpdateSink, fulltextIndex, index, propertyNames, UPDATE_IGNORE_STRATEGY, config, scheduler);
         log.debug("Created online accessor for fulltext schema index %s: %s", index, accessor);
         return accessor;
     }

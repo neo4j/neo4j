@@ -39,6 +39,7 @@ import org.neo4j.capabilities.DBMSCapabilities;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.FulltextSettings;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
@@ -372,6 +373,10 @@ public class GlobalModule {
                 Group.INDEX_POPULATION, globalConfig.get(GraphDatabaseInternalSettings.index_population_parallelism));
         jobScheduler.setParallelism(
                 Group.PAGE_CACHE_PRE_FETCHER, globalConfig.get(GraphDatabaseSettings.pagecache_scan_prefetch));
+        jobScheduler.setParallelism(
+                Group.INDEX_UPDATING, globalConfig.get(FulltextSettings.eventually_consistent_apply_parallelism));
+        jobScheduler.setParallelism(
+                Group.INDEX_REFRESHING, globalConfig.get(FulltextSettings.eventually_consistent_refresh_parallelism));
         return jobScheduler;
     }
 

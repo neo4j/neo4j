@@ -141,4 +141,9 @@ public abstract class AbstractDelegatingIndexProxy implements IndexProxy {
     public void reportUsageStatistics(IndexUsageStatsConsumer consumer) {
         getDelegate().reportUsageStatistics(consumer);
     }
+
+    @Override
+    public void maintenance() {
+        getDelegate().maintenance();
+    }
 }

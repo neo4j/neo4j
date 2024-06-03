@@ -1,7 +1,10 @@
 org.neo4j.configuration.FulltextSettings public class extends java.lang.Object implements org.neo4j.configuration.SettingsDeclaration
 org.neo4j.configuration.FulltextSettings::FulltextSettings() void public
 org.neo4j.configuration.FulltextSettings::eventually_consistent org.neo4j.graphdb.config.Setting<java.lang.Boolean> public static final
+org.neo4j.configuration.FulltextSettings::eventually_consistent_apply_parallelism org.neo4j.graphdb.config.Setting<java.lang.Integer> public static final
 org.neo4j.configuration.FulltextSettings::eventually_consistent_index_update_queue_max_length org.neo4j.graphdb.config.Setting<java.lang.Integer> public static final
+org.neo4j.configuration.FulltextSettings::eventually_consistent_refresh_interval org.neo4j.graphdb.config.Setting<java.time.Duration> public static final
+org.neo4j.configuration.FulltextSettings::eventually_consistent_refresh_parallelism org.neo4j.graphdb.config.Setting<java.lang.Integer> public static final
 org.neo4j.configuration.FulltextSettings::fulltext_default_analyzer org.neo4j.graphdb.config.Setting<java.lang.String> public static final
 org.neo4j.graphdb.schema.AnalyzerProvider public abstract class extends java.lang.Object implements org.neo4j.service.NamedService
 org.neo4j.graphdb.schema.AnalyzerProvider::AnalyzerProvider(java.lang.String) void protected

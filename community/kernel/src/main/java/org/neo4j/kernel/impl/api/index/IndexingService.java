@@ -56,6 +56,7 @@ import org.neo4j.common.EntityType;
 import org.neo4j.common.Subject;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.FulltextSettings;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.exceptions.UnderlyingStorageException;
@@ -148,6 +149,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
     private final StorageEngineIndexingBehaviour storageEngineIndexingBehaviour;
     private final KernelVersionProvider kernelVersionProvider;
     private final IndexDropController indexDropController;
+    private JobHandle<?> eventuallyConsistentFulltextIndexRefreshJob;
 
     private volatile JobHandle<?> usageReportJob;
 
@@ -356,6 +358,25 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
                 TimeUnit.SECONDS);
 
         state = State.RUNNING;
+
+        startEventuallyConsistentFulltextIndexRefreshThread();
+    }
+
+    private void startEventuallyConsistentFulltextIndexRefreshThread() {
+        Duration interval = config.get(FulltextSettings.eventually_consistent_refresh_interval);
+        if (!interval.isZero()) {
+            eventuallyConsistentFulltextIndexRefreshJob = jobScheduler.scheduleRecurring(
+                    Group.STORAGE_MAINTENANCE,
+                    this::checkAndScheduleEventuallyConsistentFulltextIndexRefresh,
+                    interval.toMillis(),
+                    TimeUnit.MILLISECONDS);
+        }
+    }
+
+    private void checkAndScheduleEventuallyConsistentFulltextIndexRefresh() {
+        for (IndexProxy indexProxy : indexMapRef.getAllIndexProxies()) {
+            indexProxy.maintenance();
+        }
     }
 
     private void dontRebuildIndexesInReadOnlyMode(MutableLongObjectMap<IndexDescriptor> rebuildingDescriptors) {
@@ -444,6 +465,10 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
     // races between checkpoint flush and index jobs
     @Override
     public void stop() throws Exception {
+        if (eventuallyConsistentFulltextIndexRefreshJob != null) {
+            eventuallyConsistentFulltextIndexRefreshJob.cancel();
+        }
+
         usageReportJob.cancel();
         indexDropController.stop();
         samplingController.stop();

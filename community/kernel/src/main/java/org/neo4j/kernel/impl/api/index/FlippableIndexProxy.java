@@ -332,6 +332,16 @@ public class FlippableIndexProxy extends AbstractDelegatingIndexProxy {
         }
     }
 
+    @Override
+    public void maintenance() {
+        lock.readLock().lock();
+        try {
+            delegate.maintenance();
+        } finally {
+            lock.readLock().unlock();
+        }
+    }
+
     void setFlipTarget(IndexProxyFactory flipTarget) {
         lock.writeLock().lock();
         try {

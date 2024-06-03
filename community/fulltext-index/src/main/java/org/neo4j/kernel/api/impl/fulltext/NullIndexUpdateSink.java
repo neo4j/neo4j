@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.impl.fulltext;
 
+import java.util.Collection;
 import org.neo4j.kernel.api.impl.index.DatabaseIndex;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexUpdater;
@@ -35,11 +36,10 @@ public class NullIndexUpdateSink extends IndexUpdateSink {
     }
 
     @Override
-    public void enqueueUpdate(
-            DatabaseIndex<? extends IndexReader> index, IndexUpdater indexUpdater, IndexEntryUpdate<?> update) {}
-
-    @Override
-    public void closeUpdater(DatabaseIndex<? extends IndexReader> index, IndexUpdater indexUpdater) {}
+    public void enqueueTransactionBatchOfUpdates(
+            DatabaseIndex<? extends IndexReader> index,
+            IndexUpdater indexUpdater,
+            Collection<IndexEntryUpdate<?>> updates) {}
 
     @Override
     public void awaitUpdateApplication() {}

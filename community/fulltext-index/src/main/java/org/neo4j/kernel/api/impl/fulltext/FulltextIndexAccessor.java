@@ -25,9 +25,13 @@ import static org.neo4j.kernel.api.impl.fulltext.LuceneFulltextDocumentStructure
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.time.Duration;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.Term;
+import org.neo4j.configuration.Config;
+import org.neo4j.configuration.FulltextSettings;
 import org.neo4j.internal.helpers.collection.BoundedIterable;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -37,30 +41,57 @@ import org.neo4j.kernel.api.index.IndexEntriesReader;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.index.schema.IndexUpdateIgnoreStrategy;
+import org.neo4j.scheduler.Group;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.values.storable.Value;
 
 public class FulltextIndexAccessor
         extends AbstractLuceneIndexAccessor<FulltextIndexReader, DatabaseIndex<FulltextIndexReader>> {
-
     private final IndexUpdateSink indexUpdateSink;
     private final IndexDescriptor index;
     private final String[] propertyNames;
+    private final AtomicBoolean needsRefresh = new AtomicBoolean();
+    private final JobScheduler jobScheduler;
+    private final Duration eventuallyConsistentRefreshInterval;
 
     FulltextIndexAccessor(
             IndexUpdateSink indexUpdateSink,
             DatabaseIndex<FulltextIndexReader> luceneIndex,
             IndexDescriptor index,
             String[] propertyNames,
-            IndexUpdateIgnoreStrategy ignoreStrategy) {
+            IndexUpdateIgnoreStrategy ignoreStrategy,
+            Config config,
+            JobScheduler jobScheduler) {
         super(luceneIndex, index, ignoreStrategy);
         this.indexUpdateSink = indexUpdateSink;
         this.index = index;
         this.propertyNames = propertyNames;
+        this.eventuallyConsistentRefreshInterval = config.get(FulltextSettings.eventually_consistent_refresh_interval);
+        this.jobScheduler = jobScheduler;
     }
 
     @Override
     public IndexUpdater getIndexUpdater(IndexUpdateMode mode) {
-        IndexUpdater indexUpdater = new FulltextIndexUpdater(mode.requiresIdempotency(), mode.requiresRefresh());
+        boolean eventuallyConsistent = isEventuallyConsistent(index);
+        Runnable refreshAction;
+        if (mode.requiresRefresh()) {
+            if (eventuallyConsistent && !eventuallyConsistentRefreshInterval.isZero()) {
+                // If eventually consistent and we're configured to refresh at regular intervals then instead of doing
+                // the refresh
+                // then simply update a flag saying that we need a refresh so that another maintenance thread can come
+                // in and see
+                // this flag and schedule a refresh.
+                refreshAction = () -> needsRefresh.set(true);
+            } else {
+                // Otherwise, or if we're immediately consistent then refresh will happen when closing this updater
+                refreshAction = this::refresh;
+            }
+        } else {
+            // No refresh required (recovery mode or similar)
+            refreshAction = () -> {};
+        }
+
+        IndexUpdater indexUpdater = new FulltextIndexUpdater(mode.requiresIdempotency(), refreshAction);
         if (isEventuallyConsistent(index)) {
             indexUpdater = new EventuallyConsistentIndexUpdater(luceneIndex, indexUpdater, indexUpdateSink);
         }
@@ -92,9 +123,16 @@ public class FulltextIndexAccessor
         return index.getIndexConfig().asMap();
     }
 
+    @Override
+    public void maintenance() {
+        if (needsRefresh.compareAndSet(true, false)) {
+            jobScheduler.schedule(Group.INDEX_REFRESHING, this::refresh);
+        }
+    }
+
     public class FulltextIndexUpdater extends AbstractLuceneIndexUpdater {
-        private FulltextIndexUpdater(boolean idempotent, boolean refresh) {
-            super(idempotent, refresh);
+        private FulltextIndexUpdater(boolean idempotent, Runnable refreshAction) {
+            super(idempotent, refreshAction);
         }
 
         @Override

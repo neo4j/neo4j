@@ -213,4 +213,9 @@ public class OnlineIndexProxy implements IndexProxy {
         indexCounters.reportQueryCount(descriptor, stats.readCount());
         consumer.addUsageStats(descriptor.getId(), stats);
     }
+
+    @Override
+    public void maintenance() {
+        accessor.maintenance();
+    }
 }

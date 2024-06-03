@@ -237,6 +237,8 @@ public interface IndexAccessor extends Closeable, ConsistencyCheckable, MinimalI
             int threads,
             JobScheduler jobScheduler);
 
+    default void maintenance() {}
+
     class Adapter implements IndexAccessor {
         @Override
         public void drop() {}
@@ -438,6 +440,11 @@ public interface IndexAccessor extends Closeable, ConsistencyCheckable, MinimalI
                 int threads,
                 JobScheduler jobScheduler) {
             delegate.validate(other, valueUniqueness, conflictHandler, entityFilter, threads, jobScheduler);
+        }
+
+        @Override
+        public void maintenance() {
+            delegate.maintenance();
         }
     }
 }

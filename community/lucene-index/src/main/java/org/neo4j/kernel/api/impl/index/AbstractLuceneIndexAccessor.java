@@ -275,23 +275,23 @@ public abstract class AbstractLuceneIndexAccessor<READER extends ValueIndexReade
 
     protected abstract class AbstractLuceneIndexUpdater implements IndexUpdater {
         private final boolean idempotent;
-        private final boolean refresh;
+        private final Runnable refreshAction;
 
         private boolean hasChanges;
 
         protected AbstractLuceneIndexUpdater(boolean idempotent, boolean refresh) {
+            this(idempotent, refresh ? AbstractLuceneIndexAccessor.this::refresh : () -> {});
+        }
+
+        protected AbstractLuceneIndexUpdater(boolean idempotent, Runnable refreshAction) {
             this.idempotent = idempotent;
-            this.refresh = refresh;
+            this.refreshAction = refreshAction;
         }
 
         @Override
         public void close() {
-            if (hasChanges && refresh) {
-                try {
-                    luceneIndex.maybeRefreshBlocking();
-                } catch (IOException e) {
-                    throw new UncheckedIOException(e);
-                }
+            if (hasChanges) {
+                refreshAction.run();
             }
         }
 

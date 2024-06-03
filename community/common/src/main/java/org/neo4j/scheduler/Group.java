@@ -64,10 +64,8 @@ public enum Group {
     /** Background index sampling */
     INDEX_SAMPLING("IndexSampling"),
     /** Background index update applier, for eventually consistent indexes. */
-    INDEX_UPDATING(
-            "IndexUpdating",
-            ExecutorServiceFactory
-                    .singleThread()), // Single-threaded to serialise updates with opening/closing/flushing of indexes.
+    INDEX_UPDATING("IndexUpdating"),
+    INDEX_REFRESHING("IndexRefreshing"),
     /** Thread pool for anyone who want some help doing file IO in parallel. */
     FILE_IO_HELPER("FileIOHelper"),
     LOG_WRITER("LOG_WRITER"),
