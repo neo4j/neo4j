@@ -53,4 +53,30 @@ class ApplyPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
         .build()
     )
   }
+
+  test("should unnest Apply after multiple rewrites on RHS, Trail->VarExpand->BFSPruningVarExpand") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setRelationshipCardinality("()-[:HAS]->()", 200)
+      .build()
+
+    val query =
+      """
+        |MATCH (x)
+        |WITH * SKIP 0
+        |MATCH (simplePort)<-[:HAS]-{1,9}(otherEndParentDevice)
+        |RETURN DISTINCT simplePort.name AS sp_name
+        |""".stripMargin
+
+    val plan = planner.plan(query).stripProduceResults
+    plan shouldEqual planner.subPlanBuilder()
+      .distinct("cacheN[simplePort.name] AS sp_name")
+      .bfsPruningVarExpand("(simplePort)<-[:HAS*1..9]-(otherEndParentDevice)")
+      .cacheProperties("cacheNFromStore[simplePort.name]")
+      .apply()
+      .|.allNodeScan("simplePort", "x")
+      .skip(0)
+      .allNodeScan("x")
+      .build()
+  }
 }

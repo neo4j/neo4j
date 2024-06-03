@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.logical.plans.Apply
 import org.neo4j.cypher.internal.logical.plans.ApplyPlan
 import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.Expand
+import org.neo4j.cypher.internal.logical.plans.FindShortestPaths
 import org.neo4j.cypher.internal.logical.plans.LogicalLeafPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalUnaryPlan
@@ -207,6 +208,7 @@ object UnnestApply {
       case p: Expand               => Some(p)
       case p: VarExpand            => Some(p)
       case p: StatefulShortestPath => Some(p)
+      case p: FindShortestPaths    => Some(p)
       case _                       => None
     }
   }

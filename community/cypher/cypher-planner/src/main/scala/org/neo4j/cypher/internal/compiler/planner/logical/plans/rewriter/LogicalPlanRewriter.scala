@@ -74,7 +74,9 @@ case object PlanRewriter extends LogicalPlanRewriter with StepSequencer.Step wit
     anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
     readOnly: Boolean
   ): Rewriter = {
-    val allRewriters: Seq[Rewriter] = Seq(
+
+    // not fusing these allows UnnestApply to do more work
+    val dontFuseRewriters: Seq[Rewriter] = Seq(
       Some(ForAllRepetitionsPredicateRewriter(
         anonymousVariableNameGenerator,
         solveds,
@@ -98,7 +100,10 @@ case object PlanRewriter extends LogicalPlanRewriter with StepSequencer.Step wit
         providedOrders,
         otherAttributes.withAlso(effectiveCardinalities, labelAndRelTypeInfos),
         context.cancellationChecker
-      )),
+      ))
+    ).flatten
+
+    val rewritersAfterUnnestApply: Seq[Rewriter] = Seq(
       Some(unnestCartesianProduct),
       Option.when(context.eagerAnalyzer != CypherEagerAnalyzerOption.lp)(cleanUpEager(
         cardinalities,
@@ -142,7 +147,7 @@ case object PlanRewriter extends LogicalPlanRewriter with StepSequencer.Step wit
       ))
     ).flatten
 
-    val (bottomUps, topDowns, others) = allRewriters.foldLeft((
+    val (bottomUps, topDowns, others) = rewritersAfterUnnestApply.foldLeft((
       Vector.empty[BottomUpMergeableRewriter],
       Vector.empty[TopDownMergeableRewriter],
       Vector.empty[Rewriter]
@@ -155,7 +160,7 @@ case object PlanRewriter extends LogicalPlanRewriter with StepSequencer.Step wit
         (bottomUps, topDowns, others :+ r)
     }
 
-    val allRewritersMerged = Seq(
+    val allRewritersMerged = dontFuseRewriters ++ Seq(
       Rewriter.mergeBottomUp(bottomUps: _*),
       Rewriter.mergeTopDown(topDowns: _*)
     ) ++ others
