@@ -41,7 +41,7 @@ abstract class BaseAcceptanceTest extends BaseFeatureTest {
     filterScenarios(BaseFeatureTestHolder.allAcceptanceScenarios, categoryToRun, featureToRun, scenarioToRun)
 
   private val provider: TestDatabaseProvider =
-    new TestDatabaseProvider(() => new TestDatabaseManagementServiceBuilder())
+    new TestDatabaseProvider(() => new TestDatabaseManagementServiceBuilder(), _ => {})
 
   override def dbProvider(): TestDatabaseProvider = {
     provider

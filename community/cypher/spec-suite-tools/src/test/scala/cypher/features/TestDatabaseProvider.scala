@@ -27,7 +27,10 @@ import java.util.concurrent.CopyOnWriteArrayList
 
 import scala.jdk.CollectionConverters.MapHasAsJava
 
-class TestDatabaseProvider(dbBuilder: () => TestDatabaseManagementServiceBuilder) {
+class TestDatabaseProvider(
+  dbBuilder: () => TestDatabaseManagementServiceBuilder,
+  onDbmsCreatedCallback: DatabaseManagementService => Unit
+) {
 
   private val managementServices: ThreadLocal[Option[(Map[Setting[_], Object], DatabaseManagementService)]] =
     ThreadLocal.withInitial(() => None)
@@ -48,6 +51,7 @@ class TestDatabaseProvider(dbBuilder: () => TestDatabaseManagementServiceBuilder
 
   private def createManagementService(config: Map[Setting[_], Object]): DatabaseManagementService = {
     val dbms = dbBuilder.apply().impermanent().setConfig(config.asJava).build()
+    onDbmsCreatedCallback.apply(dbms)
     managementServices.set(Some(config -> dbms))
     testDbms.add(dbms)
     dbms
