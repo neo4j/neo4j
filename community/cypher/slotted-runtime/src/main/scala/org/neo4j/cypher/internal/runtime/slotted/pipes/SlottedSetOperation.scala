@@ -73,7 +73,15 @@ abstract class SlottedSetEntityPropertyOperation[T](propertyKey: LazyPropertyKey
 
       val wasSet =
         try {
-          setProperty[T](executionContext, state, ops, itemId, propertyKey, expression)
+          setProperty[T](
+            executionContext,
+            state,
+            ops,
+            itemId,
+            propertyKey.name,
+            propertyKey.id(state.query),
+            expression
+          )
         } finally if (needsExclusiveLock) ops.releaseExclusiveLock(itemId)
 
       if (wasSet) 1L else 0L

@@ -1783,7 +1783,7 @@ public final class CypherFunctions {
                         "Cannot access a map '" + container.toString() + "' by key '" + index.toString() + "'"));
     }
 
-    private static String asString(AnyValue value) {
+    public static String asString(AnyValue value) {
         return asTextValue(value).stringValue();
     }
 

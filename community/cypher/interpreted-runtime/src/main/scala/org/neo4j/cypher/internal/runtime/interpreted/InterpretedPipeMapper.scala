@@ -153,6 +153,7 @@ import org.neo4j.cypher.internal.logical.plans.SelectOrAntiSemiApply
 import org.neo4j.cypher.internal.logical.plans.SelectOrSemiApply
 import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.logical.plans.SemiApply
+import org.neo4j.cypher.internal.logical.plans.SetDynamicProperty
 import org.neo4j.cypher.internal.logical.plans.SetLabels
 import org.neo4j.cypher.internal.logical.plans.SetNodeProperties
 import org.neo4j.cypher.internal.logical.plans.SetNodePropertiesFromMap
@@ -313,6 +314,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.RollUpApplyPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.RunQueryAtPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.SelectOrSemiApplyPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.SemiApplyPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.SetDynamicPropertyOperation
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.SetLabelsOperation
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.SetNodePropertiesOperation
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.SetNodePropertyFromMapOperation
@@ -1743,6 +1745,16 @@ case class InterpretedPipeMapper(
             buildExpression(entityExpr),
             LazyPropertyKey(propertyKey),
             buildExpression(expression)
+          )
+        )(id = id)
+
+      case SetDynamicProperty(_, entity, property, value) =>
+        SetPipe(
+          source,
+          SetDynamicPropertyOperation(
+            buildExpression(entity),
+            buildExpression(property),
+            buildExpression(value)
           )
         )(id = id)
 

@@ -33,6 +33,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.IsMap
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.SideEffect
 import org.neo4j.cypher.internal.runtime.makeValueNeoSafe
+import org.neo4j.cypher.operations.CypherFunctions
 import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.exceptions.InvalidArgumentException
 import org.neo4j.internal.kernel.api.NodeCursor
@@ -76,25 +77,24 @@ abstract class AbstractSetPropertyOperation extends SetOperation {
     state: QueryState,
     ops: WriteOperations[T, _],
     itemId: Long,
-    propertyKey: LazyPropertyKey,
+    propertyKeyName: String,
+    maybePropertyKey: Int,
     expression: Expression
   ): Boolean = {
 
     val queryContext = state.query
-    val maybePropertyKey = propertyKey.id(queryContext) // if the key was already looked up
     val value = makeValueNeoSafe(expression(context, state))
 
     if (value eq Values.NO_VALUE) {
-      val optPropertyKeyId = queryContext.getOptPropertyKeyId(propertyKey.name)
-      if (optPropertyKeyId.isDefined) {
-        ops.removeProperty(itemId, optPropertyKeyId.get)
+      if (maybePropertyKey != LazyPropertyKey.UNKNOWN) {
+        ops.removeProperty(itemId, maybePropertyKey)
       } else {
         false
       }
     } else {
       val propertyId =
         if (maybePropertyKey == LazyPropertyKey.UNKNOWN) {
-          queryContext.getOrCreatePropertyKeyId(propertyKey.name)
+          queryContext.getOrCreatePropertyKeyId(propertyKeyName)
         } else {
           maybePropertyKey
         }
@@ -155,7 +155,15 @@ abstract class SetEntityPropertyOperation[T](itemName: String, propertyKey: Lazy
 
       val wasSet =
         try {
-          setProperty[T](executionContext, state, ops, itemId, propertyKey, expression)
+          setProperty[T](
+            executionContext,
+            state,
+            ops,
+            itemId,
+            propertyKey.name,
+            propertyKey.id(state.query),
+            expression
+          )
         } finally {
           if (needsExclusiveLock) ops.releaseExclusiveLock(itemId)
         }
@@ -287,7 +295,7 @@ case class SetPropertyOperation(entityExpr: Expression, propertyKey: LazyPropert
         invalidation(entityId)
 
         try {
-          setProperty(executionContext, state, ops, entityId, propertyKey, expression)
+          setProperty(executionContext, state, ops, entityId, propertyKey.name, propertyKey.id(state.query), expression)
         } finally ops.releaseExclusiveLock(entityId)
       }
 
@@ -301,6 +309,60 @@ case class SetPropertyOperation(entityExpr: Expression, propertyKey: LazyPropert
           )
         case _ => throw new InvalidArgumentException(
             s"The expression $entityExpr should have been a node or a relationship, but got $resolvedEntity"
+          )
+      }
+
+      if (wasSet) 1L else 0L
+    } else {
+      0L
+    }
+  }
+
+  override def needsExclusiveLock = true
+}
+
+case class SetDynamicPropertyOperation(
+  entityExpression: Expression,
+  propertyExpression: Expression,
+  valueExpression: Expression
+) extends AbstractSetPropertyOperation {
+
+  override def name: String = "SetProperty"
+
+  override def set(executionContext: CypherRow, state: QueryState): Long = {
+    val entity = entityExpression(executionContext, state)
+    val propertyKey = CypherFunctions.asString(propertyExpression(executionContext, state))
+
+    if (entity ne Values.NO_VALUE) {
+      def setIt[T](entityId: Long, ops: Operations[T, _], invalidation: Long => Unit): Boolean = {
+        // better safe than sorry let's lock the entity
+        ops.acquireExclusiveLock(entityId)
+
+        invalidation(entityId)
+
+        try {
+          setProperty(
+            executionContext,
+            state,
+            ops,
+            entityId,
+            propertyKey,
+            state.query.propertyKey(propertyKey),
+            valueExpression
+          )
+        } finally ops.releaseExclusiveLock(entityId)
+      }
+
+      val wasSet = entity match {
+        case node: VirtualNodeValue =>
+          setIt(node.id(), state.query.nodeWriteOps, (id: Long) => executionContext.invalidateCachedNodeProperties(id))
+        case rel: VirtualRelationshipValue => setIt(
+            rel.id(),
+            state.query.relationshipWriteOps,
+            (id: Long) => executionContext.invalidateCachedRelationshipProperties(id)
+          )
+        case _ => throw new InvalidArgumentException(
+            s"The expression $entityExpression should have been a node or a relationship, but got $entity"
           )
       }
 

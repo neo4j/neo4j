@@ -129,6 +129,7 @@ import org.neo4j.cypher.internal.logical.plans.RollUpApply
 import org.neo4j.cypher.internal.logical.plans.SelectOrAntiSemiApply
 import org.neo4j.cypher.internal.logical.plans.SelectOrSemiApply
 import org.neo4j.cypher.internal.logical.plans.Selection
+import org.neo4j.cypher.internal.logical.plans.SetDynamicProperty
 import org.neo4j.cypher.internal.logical.plans.SetLabels
 import org.neo4j.cypher.internal.logical.plans.SetNodeProperties
 import org.neo4j.cypher.internal.logical.plans.SetNodePropertiesFromMap
@@ -1720,6 +1721,7 @@ class SlottedPipeMapper(
 
       case _: SetLabels |
         _: SetProperty |
+        _: SetDynamicProperty |
         _: SetProperties |
         _: SetPropertiesFromMap |
         _: RemoveLabels =>

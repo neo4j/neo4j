@@ -146,6 +146,7 @@ import org.neo4j.cypher.internal.runtime.spec.tests.RuntimeDebugLoggingTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.SelectOrAntiSemiApplyTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.SelectOrSemiApplyTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.SemiApplyTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.SetDynamicPropertyTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.SetLabelsTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.SetNodePropertiesFromMapTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.SetNodePropertiesTestBase
@@ -447,6 +448,9 @@ class InterpretedCreateTest extends CreateTestBase(COMMUNITY.EDITION, Interprete
 class InterpretedLenientCreateRelationshipTest
     extends LenientCreateRelationshipTestBase(COMMUNITY.EDITION, InterpretedRuntime)
 class InterpretedSetPropertyTest extends SetPropertyTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
+
+class InterpretedSetDynamicPropertyTest
+    extends SetDynamicPropertyTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedSetPropertiesTest extends SetPropertiesTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 
 class InterpretedSetPropertiesFromMapNodeTest

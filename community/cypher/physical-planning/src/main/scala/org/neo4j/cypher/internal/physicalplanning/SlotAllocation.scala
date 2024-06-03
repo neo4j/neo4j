@@ -118,6 +118,7 @@ import org.neo4j.cypher.internal.logical.plans.RightOuterHashJoin
 import org.neo4j.cypher.internal.logical.plans.RollUpApply
 import org.neo4j.cypher.internal.logical.plans.RunQueryAt
 import org.neo4j.cypher.internal.logical.plans.Selection
+import org.neo4j.cypher.internal.logical.plans.SetDynamicProperty
 import org.neo4j.cypher.internal.logical.plans.SetLabels
 import org.neo4j.cypher.internal.logical.plans.SetNodeProperties
 import org.neo4j.cypher.internal.logical.plans.SetNodePropertiesFromMap
@@ -903,6 +904,7 @@ class SingleQuerySlotAllocator private[physicalplanning] (
         _: SetRelationshipPropertiesFromMap |
         _: SetProperties |
         _: SetProperty |
+        _: SetDynamicProperty |
         _: SetPropertiesFromMap |
         _: RemoveLabels =>
 
