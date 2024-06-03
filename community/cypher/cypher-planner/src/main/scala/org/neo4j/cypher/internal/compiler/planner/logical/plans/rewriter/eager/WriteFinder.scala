@@ -36,6 +36,7 @@ import org.neo4j.cypher.internal.ir.CreatesPropertyKeys
 import org.neo4j.cypher.internal.ir.CreatesUnknownPropertyKeys
 import org.neo4j.cypher.internal.ir.DeleteMutatingPattern
 import org.neo4j.cypher.internal.ir.RemoveLabelPattern
+import org.neo4j.cypher.internal.ir.SetDynamicPropertyPattern
 import org.neo4j.cypher.internal.ir.SetLabelPattern
 import org.neo4j.cypher.internal.ir.SetMutatingPattern
 import org.neo4j.cypher.internal.ir.SetNodePropertiesFromMapPattern
@@ -60,6 +61,7 @@ import org.neo4j.cypher.internal.logical.plans.Foreach
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.Merge
 import org.neo4j.cypher.internal.logical.plans.RemoveLabels
+import org.neo4j.cypher.internal.logical.plans.SetDynamicProperty
 import org.neo4j.cypher.internal.logical.plans.SetLabels
 import org.neo4j.cypher.internal.logical.plans.SetNodeProperties
 import org.neo4j.cypher.internal.logical.plans.SetNodePropertiesFromMap
@@ -240,6 +242,14 @@ object WriteFinder {
             PlanSets(
               writtenNodeProperties = Seq(AccessedProperty(propertyName, asMaybeVar(entity))),
               writtenRelProperties = Seq(AccessedProperty(propertyName, asMaybeVar(entity)))
+            )
+          )
+
+        case SetDynamicProperty(_, entity, _, _) =>
+          PlanWrites(sets =
+            PlanSets(
+              unknownNodePropertiesAccessors = Seq(asMaybeVar(entity)),
+              unknownRelPropertiesAccessors = Seq(asMaybeVar(entity))
             )
           )
 
@@ -440,6 +450,10 @@ object WriteFinder {
         acc.withUnknownRelPropertiesWritten(Some(variable))
 
       case (acc, SetPropertyPattern(entity, _, _)) =>
+        acc.withUnknownRelPropertiesWritten(asMaybeVar(entity))
+          .withUnknownNodePropertiesWritten(asMaybeVar(entity))
+
+      case (acc, SetDynamicPropertyPattern(entity, _, _)) =>
         acc.withUnknownRelPropertiesWritten(asMaybeVar(entity))
           .withUnknownNodePropertiesWritten(asMaybeVar(entity))
 

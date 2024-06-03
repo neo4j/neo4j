@@ -219,6 +219,7 @@ import org.neo4j.cypher.internal.logical.plans.SelectOrAntiSemiApply
 import org.neo4j.cypher.internal.logical.plans.SelectOrSemiApply
 import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.logical.plans.SemiApply
+import org.neo4j.cypher.internal.logical.plans.SetDynamicProperty
 import org.neo4j.cypher.internal.logical.plans.SetLabels
 import org.neo4j.cypher.internal.logical.plans.SetNodeProperties
 import org.neo4j.cypher.internal.logical.plans.SetNodePropertiesFromMap
@@ -2465,6 +2466,17 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
   def setProperty(entity: String, propertyKey: String, value: String): IMPL = {
     appendAtCurrentIndent(UnaryOperator(source =>
       SetProperty(source, parseExpression(entity), PropertyKeyName(propertyKey)(pos), parseExpression(value))(_)
+    ))
+  }
+
+  def setDynamicProperty(entityExpression: String, propertyString: String, valueExpression: String): IMPL = {
+    appendAtCurrentIndent(UnaryOperator(source =>
+      SetDynamicProperty(
+        source,
+        parseExpression(entityExpression),
+        parseExpression(propertyString),
+        parseExpression(valueExpression)
+      )(_)
     ))
   }
 

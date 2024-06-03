@@ -131,6 +131,16 @@ case class SetPropertiesFromMapPattern(entityExpression: Expression, expression:
     copy(f(entityExpression), f(expression))
 }
 
+case class SetDynamicPropertyPattern(entity: Expression, property: Expression, expression: Expression)
+    extends SetMutatingPattern with HasMappableExpressions[SetDynamicPropertyPattern] {
+
+  override def mapExpressions(f: Expression => Expression): SetDynamicPropertyPattern =
+    copy(f(entity), f(property), f(expression))
+
+  override def dependencies: Set[LogicalVariable] =
+    entity.dependencies ++ property.dependencies ++ expression.dependencies
+}
+
 case class SetNodePropertyPattern(variable: LogicalVariable, propertyKey: PropertyKeyName, expression: Expression)
     extends SetMutatingPattern
     with HasMappableExpressions[SetNodePropertyPattern] {

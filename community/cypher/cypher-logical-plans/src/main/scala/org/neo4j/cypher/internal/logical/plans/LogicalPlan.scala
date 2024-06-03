@@ -3828,6 +3828,19 @@ case class SetProperty(
   override val availableSymbols: Set[LogicalVariable] = source.availableSymbols
 }
 
+case class SetDynamicProperty(
+  override val source: LogicalPlan,
+  entityExpression: Expression,
+  propertyExpression: Expression,
+  valueExpression: Expression
+)(implicit idGen: IdGen) extends LogicalUnaryPlan(idGen) with UpdatingPlan {
+
+  override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan with UpdatingPlan =
+    copy(source = newLHS)(idGen)
+
+  override val availableSymbols: Set[LogicalVariable] = source.availableSymbols
+}
+
 case class SetRelationshipProperties(
   override val source: LogicalPlan,
   idName: LogicalVariable,

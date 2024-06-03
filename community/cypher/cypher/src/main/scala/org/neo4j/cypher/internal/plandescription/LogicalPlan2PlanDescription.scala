@@ -65,6 +65,7 @@ import org.neo4j.cypher.internal.ir.EagernessReason
 import org.neo4j.cypher.internal.ir.PatternLength
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.RemoveLabelPattern
+import org.neo4j.cypher.internal.ir.SetDynamicPropertyPattern
 import org.neo4j.cypher.internal.ir.SetLabelPattern
 import org.neo4j.cypher.internal.ir.SetNodePropertiesFromMapPattern
 import org.neo4j.cypher.internal.ir.SetNodePropertiesPattern
@@ -234,6 +235,7 @@ import org.neo4j.cypher.internal.logical.plans.SelectOrAntiSemiApply
 import org.neo4j.cypher.internal.logical.plans.SelectOrSemiApply
 import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.logical.plans.SemiApply
+import org.neo4j.cypher.internal.logical.plans.SetDynamicProperty
 import org.neo4j.cypher.internal.logical.plans.SetLabels
 import org.neo4j.cypher.internal.logical.plans.SetNodeProperties
 import org.neo4j.cypher.internal.logical.plans.SetNodePropertiesFromMap
@@ -2323,6 +2325,19 @@ case class LogicalPlan2PlanDescription(
           withDistinctness
         )
 
+      case SetDynamicProperty(_, entityExpression, propertyExpression, valueExpression) =>
+        val entityString = pretty"${asPrettyString(entityExpression)}[${asPrettyString(propertyExpression)}]"
+        val details = Details(setPropertyInfo(entityString, valueExpression, true))
+        PlanDescriptionImpl(
+          id,
+          "SetDynamicProperty",
+          children,
+          Seq(details),
+          variables,
+          withRawCardinalities,
+          withDistinctness
+        )
+
       case SetNodeProperty(_, idName, propertyKey, expression) =>
         val details = Details(setPropertyInfo(
           pretty"${asPrettyString(idName)}.${asPrettyString(propertyKey.name)}",
@@ -3675,6 +3690,9 @@ case class LogicalPlan2PlanDescription(
       pretty"SET ${setPropertyInfo(asPrettyString(relationship), value, removeOtherProps)}"
     case SetPropertyPattern(entity, propertyKey, expression) =>
       val entityString = pretty"${asPrettyString(entity)}.${asPrettyString(propertyKey.name)}"
+      pretty"SET ${setPropertyInfo(entityString, expression, true)}"
+    case SetDynamicPropertyPattern(entity, propertyKey, expression) =>
+      val entityString = pretty"${asPrettyString(entity)}.${asPrettyString(propertyKey)}"
       pretty"SET ${setPropertyInfo(entityString, expression, true)}"
     case SetPropertiesFromMapPattern(entity, expression, removeOtherProps) =>
       pretty"SET ${setPropertyInfo(asPrettyString(entity), expression, removeOtherProps)}"

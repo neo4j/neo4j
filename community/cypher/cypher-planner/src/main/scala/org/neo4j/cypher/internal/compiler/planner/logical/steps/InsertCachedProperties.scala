@@ -54,6 +54,7 @@ import org.neo4j.cypher.internal.frontend.phases.Phase
 import org.neo4j.cypher.internal.frontend.phases.Transformer
 import org.neo4j.cypher.internal.frontend.phases.factories.PlanPipelineTransformerFactory
 import org.neo4j.cypher.internal.ir.RemoveLabelPattern
+import org.neo4j.cypher.internal.ir.SetDynamicPropertyPattern
 import org.neo4j.cypher.internal.ir.SetLabelPattern
 import org.neo4j.cypher.internal.ir.SetNodePropertiesFromMapPattern
 import org.neo4j.cypher.internal.ir.SetNodePropertiesPattern
@@ -86,6 +87,7 @@ import org.neo4j.cypher.internal.logical.plans.ProduceResult
 import org.neo4j.cypher.internal.logical.plans.ProjectingPlan
 import org.neo4j.cypher.internal.logical.plans.RelationshipIndexLeafPlan
 import org.neo4j.cypher.internal.logical.plans.RemoveLabels
+import org.neo4j.cypher.internal.logical.plans.SetDynamicProperty
 import org.neo4j.cypher.internal.logical.plans.SetLabels
 import org.neo4j.cypher.internal.logical.plans.SetNodeProperties
 import org.neo4j.cypher.internal.logical.plans.SetNodePropertiesFromMap
@@ -733,6 +735,8 @@ object RestrictedCaching {
       case _: SetPropertiesFromMap =>
         // Only protect properties when there is a direct dependency, which only happens when value is a MapExpression
         Some(CacheAll)
+      case _: SetDynamicProperty =>
+        Some(CacheAll)
       case SetNodeProperty(_, entity, key, value) =>
         Some(protectedProperties(entity, Seq(key.name -> value)))
       case SetNodeProperties(_, entity, items) =>
@@ -754,6 +758,7 @@ object RestrictedCaching {
       case merge: Merge =>
         val protectedMergeProps = merge.onMatch.map {
           case SetPropertyPattern(e, key, value)             => protectedProperties(e, Seq(key.name -> value))
+          case _: SetDynamicPropertyPattern                  => CacheAll
           case SetPropertiesPattern(e, ps)                   => protectedProperties(e, ps.map(byName))
           case SetRelationshipPropertyPattern(e, key, value) => protectedProperties(e, Seq(key.name -> value))
           case SetRelationshipPropertiesPattern(e, ps)       => protectedProperties(e, ps.map(byName))

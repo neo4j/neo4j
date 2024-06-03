@@ -101,6 +101,7 @@ import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.ir.RemoveLabelPattern
 import org.neo4j.cypher.internal.ir.RunQueryAtProjection
 import org.neo4j.cypher.internal.ir.SelectivePathPattern
+import org.neo4j.cypher.internal.ir.SetDynamicPropertyPattern
 import org.neo4j.cypher.internal.ir.SetLabelPattern
 import org.neo4j.cypher.internal.ir.SetMutatingPattern
 import org.neo4j.cypher.internal.ir.SetNodePropertiesFromMapPattern
@@ -217,6 +218,7 @@ import org.neo4j.cypher.internal.logical.plans.SelectOrSemiApply
 import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.logical.plans.Selection.LabelAndRelTypeInfo
 import org.neo4j.cypher.internal.logical.plans.SemiApply
+import org.neo4j.cypher.internal.logical.plans.SetDynamicProperty
 import org.neo4j.cypher.internal.logical.plans.SetLabels
 import org.neo4j.cypher.internal.logical.plans.SetNodeProperties
 import org.neo4j.cypher.internal.logical.plans.SetNodePropertiesFromMap
@@ -3136,6 +3138,30 @@ case class LogicalPlanProducer(
     val rewrittenPattern = pattern.endoRewrite(rewriter)
 
     val plan = SetProperties(inner, rewrittenPattern.entityExpression, rewrittenPattern.items)
+    val providedOrder =
+      providedOrderOfUpdate(plan, inner, context.settings.executionModel, context.providedOrderFactory)
+    annotate(plan, solved, providedOrder, context)
+  }
+
+  def planSetDynamicProperty(
+    inner: LogicalPlan,
+    pattern: SetDynamicPropertyPattern,
+    context: LogicalPlanningContext
+  ): LogicalPlan = {
+    val solved =
+      solveds.get(inner.id).asSinglePlannerQuery.updateTailOrSelf(_.amendQueryGraph(_.addMutatingPatterns(pattern)))
+
+    // SET has currently row-by-row visibility. This could change in a major release.
+    // To maintain the visibility, even with subqueries, we must use NestedPlanExpressions.
+    val rewriter = irExpressionRewriter(inner, context)
+    val rewrittenPattern = pattern.endoRewrite(rewriter)
+
+    val plan = SetDynamicProperty(
+      inner,
+      rewrittenPattern.entity,
+      rewrittenPattern.property,
+      rewrittenPattern.expression
+    )
     val providedOrder =
       providedOrderOfUpdate(plan, inner, context.settings.executionModel, context.providedOrderFactory)
     annotate(plan, solved, providedOrder, context)

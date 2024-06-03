@@ -702,6 +702,10 @@ trait UpdateGraph {
       case SetPropertiesPattern(_, items) =>
         // Not sure whether we're setting on a node or rel, we have to include it to be safe
         CreatesKnownPropertyKeys(items.map(_._1).toSet)
+
+      case _: SetDynamicPropertyPattern =>
+        // Not sure whether we're setting on a node or rel, we have to include it to be safe
+        CreatesUnknownPropertyKeys
       case _: SetRelationshipPropertyPattern =>
         // Not dealing with relationships here
         CreatesNoPropertyKeys
@@ -760,6 +764,9 @@ trait UpdateGraph {
       case SetPropertiesPattern(_, items) =>
         // Not sure whether we're setting on a node or rel, we have to include it to be safe
         CreatesKnownPropertyKeys(items.map(_._1).toSet)
+      case _: SetDynamicPropertyPattern =>
+        // Not sure whether we're setting on a node or rel, we have to include it to be safe
+        CreatesUnknownPropertyKeys
       case SetRelationshipPropertyPattern(_, propertyKey, _) =>
         CreatesKnownPropertyKeys(propertyKey)
       case SetRelationshipPropertiesPattern(_, items) =>

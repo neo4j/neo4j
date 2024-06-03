@@ -1264,6 +1264,17 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName wi
   )
 
   testPlan(
+    "setDynamicProperty",
+    new TestPlanBuilder()
+      .produceResults("x", "y")
+      .setDynamicProperty("x", "prop", "42")
+      .setDynamicProperty("head([x])", "prop", "42")
+      .setDynamicProperty("x", "'prop'", "42")
+      .argument()
+      .build()
+  )
+
+  testPlan(
     "setNodeProperty",
     new TestPlanBuilder()
       .produceResults("x", "y")

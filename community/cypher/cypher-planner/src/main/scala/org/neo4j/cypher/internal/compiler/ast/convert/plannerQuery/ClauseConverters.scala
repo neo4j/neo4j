@@ -36,6 +36,7 @@ import org.neo4j.cypher.internal.ast.OnCreate
 import org.neo4j.cypher.internal.ast.OnMatch
 import org.neo4j.cypher.internal.ast.OrderBy
 import org.neo4j.cypher.internal.ast.Remove
+import org.neo4j.cypher.internal.ast.RemoveDynamicPropertyItem
 import org.neo4j.cypher.internal.ast.RemoveLabelItem
 import org.neo4j.cypher.internal.ast.RemovePropertyItem
 import org.neo4j.cypher.internal.ast.Return
@@ -59,6 +60,7 @@ import org.neo4j.cypher.internal.ast.Yield
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.helpers.AggregationHelper
 import org.neo4j.cypher.internal.compiler.planner.ProcedureCallProjection
+import org.neo4j.cypher.internal.expressions.ContainerIndex
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.HasLabels
@@ -107,6 +109,7 @@ import org.neo4j.cypher.internal.ir.RegularQueryProjection
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.ir.RemoveLabelPattern
 import org.neo4j.cypher.internal.ir.Selections
+import org.neo4j.cypher.internal.ir.SetDynamicPropertyPattern
 import org.neo4j.cypher.internal.ir.SetLabelPattern
 import org.neo4j.cypher.internal.ir.SetMutatingPattern
 import org.neo4j.cypher.internal.ir.SetNodePropertiesFromMapPattern
@@ -711,8 +714,8 @@ object ClauseConverters {
     case SetIncludingPropertiesFromMapItem(vr, expression) =>
       SetPropertiesFromMapPattern(vr, expression, removeOtherProps = false)
 
-    case SetDynamicPropertyItem(_, _) =>
-      throw new InternalException(s"Dynamic properties not supported.")
+    case SetDynamicPropertyItem(ContainerIndex(expr, idx), expression) =>
+      SetDynamicPropertyPattern(expr, idx, expression)
   }
 
   private def addMergeToLogicalPlanInput(builder: PlannerQueryBuilder, clause: Merge): PlannerQueryBuilder = {
@@ -1018,6 +1021,12 @@ object ClauseConverters {
       case (builder, RemovePropertyItem(Property(variable, propertyKey))) =>
         builder.amendQueryGraph(_.addMutatingPatterns(
           SetPropertyPattern(variable, propertyKey, Null()(propertyKey.position))
+        ))
+
+      // REMOVE rel[<expr>]
+      case (builder, RemoveDynamicPropertyItem(ContainerIndex(entity, prop))) =>
+        builder.amendQueryGraph(_.addMutatingPatterns(
+          SetDynamicPropertyPattern(entity, prop, Null()(prop.position))
         ))
 
       case (_, other) =>

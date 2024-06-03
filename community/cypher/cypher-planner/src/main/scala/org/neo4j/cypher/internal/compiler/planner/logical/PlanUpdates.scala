@@ -37,6 +37,7 @@ import org.neo4j.cypher.internal.ir.MutatingPattern
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.ir.RemoveLabelPattern
+import org.neo4j.cypher.internal.ir.SetDynamicPropertyPattern
 import org.neo4j.cypher.internal.ir.SetLabelPattern
 import org.neo4j.cypher.internal.ir.SetMutatingPattern
 import org.neo4j.cypher.internal.ir.SetNodePropertiesFromMapPattern
@@ -245,6 +246,10 @@ case object PlanUpdates extends UpdatesPlanner {
       // SET x += {p1: ..., p2: ...}
       case pattern: SetPropertiesFromMapPattern =>
         context.staticComponents.logicalPlanProducer.planSetPropertiesFromMap(source, pattern, context)
+
+      // SET x[<expr1>] = <expr2>
+      case pattern: SetDynamicPropertyPattern =>
+        context.staticComponents.logicalPlanProducer.planSetDynamicProperty(source, pattern, context)
 
       // REMOVE n:Foo:Bar
       case pattern: RemoveLabelPattern =>

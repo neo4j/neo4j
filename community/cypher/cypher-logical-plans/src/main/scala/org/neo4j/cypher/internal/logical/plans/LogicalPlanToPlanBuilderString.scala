@@ -50,6 +50,7 @@ import org.neo4j.cypher.internal.ir.CreateRelationship
 import org.neo4j.cypher.internal.ir.EagernessReason
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.RemoveLabelPattern
+import org.neo4j.cypher.internal.ir.SetDynamicPropertyPattern
 import org.neo4j.cypher.internal.ir.SetLabelPattern
 import org.neo4j.cypher.internal.ir.SetNodePropertiesFromMapPattern
 import org.neo4j.cypher.internal.ir.SetNodePropertiesPattern
@@ -628,6 +629,12 @@ object LogicalPlanToPlanBuilderString {
         wrapInQuotations(expressionStringifier(expression))
       case SetProperty(_, entity, propertyKey, value) =>
         wrapInQuotationsAndMkString(Seq(expressionStringifier(entity), propertyKey.name, expressionStringifier(value)))
+      case SetDynamicProperty(_, entity, propertyKey, value) =>
+        wrapInQuotationsAndMkString(Seq(
+          expressionStringifier(entity),
+          expressionStringifier(propertyKey),
+          expressionStringifier(value)
+        ))
       case SetNodeProperty(_, idName, propertyKey, value) =>
         wrapInQuotationsAndMkString(Seq(idName.name, propertyKey.name, expressionStringifier(value)))
       case SetRelationshipProperty(_, idName, propertyKey, value) =>
@@ -1758,6 +1765,8 @@ object LogicalPlanToPlanBuilderString {
       s"setRelationshipPropertiesFromMap(${wrapInQuotationsAndMkString(Seq(idName.name, expressionStringifier(expression)))}, $removeOtherProps)"
     case SetPropertyPattern(entityExpression, propertyKey, value) =>
       s"setProperty(${wrapInQuotationsAndMkString(Seq(expressionStringifier(entityExpression), propertyKey.name, expressionStringifier(value)))})"
+    case SetDynamicPropertyPattern(entityExpression, propertyKey, value) =>
+      s"setProperty(${wrapInQuotationsAndMkString(Seq(expressionStringifier(entityExpression), expressionStringifier(propertyKey), expressionStringifier(value)))})"
     case SetPropertiesFromMapPattern(entityExpression, map, removeOtherProps) =>
       s"setPropertyFromMap(${wrapInQuotationsAndMkString(Seq(expressionStringifier(entityExpression), expressionStringifier(map)))}, $removeOtherProps)"
     case SetPropertiesPattern(entity, items) =>

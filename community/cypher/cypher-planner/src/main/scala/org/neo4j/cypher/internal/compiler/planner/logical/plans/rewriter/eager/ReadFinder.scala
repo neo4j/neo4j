@@ -146,6 +146,7 @@ import org.neo4j.cypher.internal.logical.plans.SelectOrAntiSemiApply
 import org.neo4j.cypher.internal.logical.plans.SelectOrSemiApply
 import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.logical.plans.SemiApply
+import org.neo4j.cypher.internal.logical.plans.SetDynamicProperty
 import org.neo4j.cypher.internal.logical.plans.SetLabels
 import org.neo4j.cypher.internal.logical.plans.SetNodeProperties
 import org.neo4j.cypher.internal.logical.plans.SetNodePropertiesFromMap
@@ -845,6 +846,7 @@ object ReadFinder {
         SetProperties(_, _, _) |
         SetPropertiesFromMap(_, _, _, _) |
         SetProperty(_, _, _, _) |
+        SetDynamicProperty(_, _, _, _) |
         Skip(_, _) |
         SubqueryForeach(_, _) |
         Union(_, _) |

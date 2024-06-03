@@ -344,6 +344,7 @@ import org.neo4j.cypher.internal.logical.plans.SelectOrAntiSemiApply
 import org.neo4j.cypher.internal.logical.plans.SelectOrSemiApply
 import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.logical.plans.SemiApply
+import org.neo4j.cypher.internal.logical.plans.SetDynamicProperty
 import org.neo4j.cypher.internal.logical.plans.SetLabels
 import org.neo4j.cypher.internal.logical.plans.SetNodeProperties
 import org.neo4j.cypher.internal.logical.plans.SetNodePropertiesFromMap
@@ -6709,6 +6710,11 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     assertGood(
       attach(SetPropertiesFromMap(lhsLP, varFor("x"), map, removeOtherProps = true), 1.0),
       planDescription(id, "SetPropertiesFromMap", SingleChild(lhsPD), Seq(details(s"x = $prettifiedMapExpr")), Set("a"))
+    )
+
+    assertGood(
+      attach(SetDynamicProperty(lhsLP, varFor("x"), stringLiteral("prop"), number("42")), 1.0),
+      planDescription(id, "SetDynamicProperty", SingleChild(lhsPD), Seq(details(s"x[\"prop\"] = 42")), Set("a"))
     )
 
     assertGood(
