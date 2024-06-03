@@ -1342,6 +1342,7 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
                             "datetime",
                             "duration",
                             "gds.graph.project.remote",
+                            "gds.arrow.project",
                             "gds.arrow.write",
                             "localdatetime",
                             "localtime",
