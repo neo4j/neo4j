@@ -362,6 +362,25 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
         startEventuallyConsistentFulltextIndexRefreshThread();
     }
 
+    /**
+     * Ensures all eventually consistent fulltext indexes to be refreshed up to this point.
+     */
+    public void awaitFulltextIndexRefresh() {
+        Duration interval = config.get(FulltextSettings.eventually_consistent_refresh_interval);
+        if (!interval.isZero()) {
+            for (IndexProxy indexProxy : indexMapRef.getAllIndexProxies()) {
+                try {
+                    if (indexProxy.getDescriptor().schema().isFulltextSchemaDescriptor()) {
+                        indexProxy.refresh();
+                    }
+                } catch (IOException e) {
+                    throw new UncheckedIOException(e);
+                }
+            }
+        }
+        // else if the refresh interval is zero then refresh is done by the index update threads.
+    }
+
     private void startEventuallyConsistentFulltextIndexRefreshThread() {
         Duration interval = config.get(FulltextSettings.eventually_consistent_refresh_interval);
         if (!interval.isZero()) {

@@ -19,10 +19,15 @@
  */
 package org.neo4j.kernel.api.impl.fulltext;
 
+import static org.neo4j.util.concurrent.OutOfOrderSequence.EMPTY_META;
+
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Collection;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.LockSupport;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.index.DatabaseIndex;
 import org.neo4j.kernel.api.index.IndexReader;
@@ -31,7 +36,8 @@ import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobMonitoringParams;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
-import org.neo4j.util.concurrent.BinaryLatch;
+import org.neo4j.util.concurrent.ArrayQueueOutOfOrderSequence;
+import org.neo4j.util.concurrent.OutOfOrderSequence;
 
 /**
  * A sink for index updates that will eventually be applied.
@@ -40,6 +46,8 @@ public class IndexUpdateSink {
     private final JobScheduler scheduler;
     private final Semaphore updateQueueLimit;
     private final int eventuallyConsistentUpdateQueueLimit;
+    private final OutOfOrderSequence jobSequence = new ArrayQueueOutOfOrderSequence(-1, 10, EMPTY_META);
+    private final AtomicLong nextJobId = new AtomicLong();
 
     IndexUpdateSink(JobScheduler scheduler, int eventuallyConsistentUpdateQueueLimit) {
         this.scheduler = scheduler;
@@ -59,6 +67,7 @@ public class IndexUpdateSink {
             return;
         }
 
+        long jobId = nextJobId.getAndIncrement();
         Runnable eventualUpdate = () -> {
             try (indexUpdater) {
                 for (var update : updates) {
@@ -67,7 +76,11 @@ public class IndexUpdateSink {
             } catch (IndexEntryConflictException e) {
                 markAsFailed(index, e);
             } finally {
-                updateQueueLimit.release(numberOfUpdates);
+                try {
+                    updateQueueLimit.release(numberOfUpdates);
+                } finally {
+                    jobSequence.offer(jobId, EMPTY_META);
+                }
             }
         };
 
@@ -91,8 +104,9 @@ public class IndexUpdateSink {
     }
 
     public void awaitUpdateApplication() {
-        BinaryLatch updateLatch = new BinaryLatch();
-        scheduler.schedule(Group.INDEX_UPDATING, JobMonitoringParams.NOT_MONITORED, updateLatch::release);
-        updateLatch.await();
+        long targetJobId = nextJobId.get() - 1;
+        while (jobSequence.getHighestGapFreeNumber() < targetJobId) {
+            LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(10));
+        }
     }
 }

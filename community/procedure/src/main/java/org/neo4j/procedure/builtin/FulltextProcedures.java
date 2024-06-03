@@ -52,6 +52,7 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.impl.fulltext.FulltextAdapter;
 import org.neo4j.kernel.api.procedure.SystemProcedure;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
+import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Description;
@@ -102,6 +103,7 @@ public class FulltextProcedures {
         }
 
         accessor.awaitRefresh();
+        resolver.resolveDependency(IndexingService.class).awaitFulltextIndexRefresh();
     }
 
     @SystemProcedure
