@@ -28,6 +28,11 @@
 
     <dependencies>
         <dependency>
+            <groupId>org.antlr</groupId>
+            <artifactId>antlr4-runtime</artifactId>
+        </dependency>
+
+        <dependency>
             <groupId>org.scala-lang</groupId>
             <artifactId>scala-library</artifactId>
         </dependency>
@@ -51,12 +56,6 @@
             <artifactId>maven-core</artifactId>
             <version>${required.maven.version}</version>
             <scope>provided</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.neo4j</groupId>
-            <artifactId>cypher-v5-antlr-parser</artifactId>
-            <version>${project.version}</version>
         </dependency>
 
         <dependency>

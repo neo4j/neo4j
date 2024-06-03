@@ -28,10 +28,12 @@ import org.apache.maven.plugins.annotations.LifecyclePhase
 import org.apache.maven.plugins.annotations.Mojo
 import org.apache.maven.plugins.annotations.Parameter
 import org.apache.maven.plugins.annotations.ResolutionScope
+import org.apache.maven.project.MavenProject
 import org.neo4j.cypher.internal.parser.GenerateListenerMavenPlugin.ParserMeta
 import org.neo4j.cypher.internal.parser.GenerateListenerMavenPlugin.RuleMeta
 
 import java.io.File
+import java.net.URLClassLoader
 
 import scala.jdk.CollectionConverters.SeqHasAsJava
 
@@ -49,6 +51,9 @@ import javax.lang.model.element.Modifier
 )
 class GenerateListenerMavenPlugin extends AbstractMojo {
 
+  @Parameter(defaultValue = "${project}", required = true, readonly = true)
+  protected var project: MavenProject = _
+
   @Parameter(defaultValue = "${project.build.directory}/generated-sources/parser")
   protected var outputDirectory: File = _
 
@@ -59,7 +64,7 @@ class GenerateListenerMavenPlugin extends AbstractMojo {
   protected var listenerName: String = _
 
   override def execute(): Unit = {
-    val parser = GenerateListenerMavenPlugin.parserMeta(parserClass)
+    val parser = GenerateListenerMavenPlugin.parserMeta(parserClass, getClassLoader)
     val parserName = parser.cls.getSimpleName
 
     val parserListenerSpec = TypeSpec.interfaceBuilder(s"${parserName}Listener")
@@ -128,6 +133,16 @@ class GenerateListenerMavenPlugin extends AbstractMojo {
     val ctxClassName = s"${parser.cls.getSimpleName}.${rule.cls.getSimpleName}" // YourParser.TheRuleContext
     s"  case $ruleIndexField -> ${rule.exitName}(($ctxClassName) ctx);"
   }
+
+  private def getClassLoader: ClassLoader = {
+    Option(project.getRuntimeClasspathElements) match {
+      case Some(classpathElements) =>
+        val urls = classpathElements.toArray(Array[String]()).map(e => new File(e).toURI.toURL)
+        new URLClassLoader(urls, getClass.getClassLoader)
+      case _ =>
+        Thread.currentThread.getContextClassLoader
+    }
+  }
 }
 
 object GenerateListenerMavenPlugin {
@@ -138,8 +153,8 @@ object GenerateListenerMavenPlugin {
     def exitName: String = s"exit${name.capitalize}"
   }
 
-  private def parserMeta(parserClassName: String): ParserMeta = {
-    val parserClass = getClass.getClassLoader.loadClass(parserClassName).asSubclass(classOf[Parser])
+  private def parserMeta(parserClassName: String, classLoader: ClassLoader): ParserMeta = {
+    val parserClass = classLoader.loadClass(parserClassName).asSubclass(classOf[Parser])
     val names: Array[String] = parserClass.getField("ruleNames").get(null).asInstanceOf[Array[String]]
     ParserMeta(
       cls = parserClass,
