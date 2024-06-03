@@ -1637,6 +1637,41 @@ trait WriteOperatorsDbHitsTestBase[CONTEXT <: RuntimeContext] {
     produceResultProfile.dbHits() shouldBe sizeHint * (costOfProperty + costOfProperty)
   }
 
+  test("should profile rows of set dynamic property correctly") {
+    // given
+    givenGraph {
+      bipartiteGraph(sizeHint, "A", "B", "R")
+    }
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .setDynamicProperty("x", "'prop'", "1")
+      .nodeByLabelScan("x", "A")
+      .build()
+
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    val produceResultProfile = queryProfile.operatorProfile(0)
+    val setPropertyProfile = queryProfile.operatorProfile(1)
+
+    val expectedDbHits =
+      if (useWritesWithProfiling & canFuseOverPipelines) {
+        val propertyTokenDbHits = 1 * sizeHint
+        val writeNodePropertyDbHits = 1 * sizeHint
+        propertyTokenDbHits + writeNodePropertyDbHits
+      } else {
+        costOfPropertyToken /*create property token*/ + sizeHint * costOfProperty
+      }
+
+    setPropertyProfile.rows() shouldBe sizeHint
+    setPropertyProfile.dbHits() shouldBe expectedDbHits
+    produceResultProfile.rows() shouldBe sizeHint
+    produceResultProfile.dbHits() shouldBe sizeHint * (costOfProperty + costOfProperty)
+  }
+
   test("should profile db hits of delete node") {
     // given
     val nodeCount = sizeHint
