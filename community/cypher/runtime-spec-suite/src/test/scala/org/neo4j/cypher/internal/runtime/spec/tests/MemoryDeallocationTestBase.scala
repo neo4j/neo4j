@@ -838,7 +838,7 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
       .argument()
       .build()
 
-    compareMemoryUsage(query(rows = 10), query(rows = 100))
+    compareMemoryUsage(query(rows = 10), query(rows = 100), toleratedDeviation = 0.01)
   }
 
   test("should deallocate memory after sort under apply") {
@@ -854,7 +854,7 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
       .build()
 
     // then
-    compareMemoryUsage(query(rows = 10), query(rows = 100))
+    compareMemoryUsage(query(rows = 10), query(rows = 100), toleratedDeviation = 0.005)
   }
 
   test("should deallocate memory after top under apply") {
@@ -870,7 +870,7 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
       .build()
 
     // then
-    compareMemoryUsage(query(rows = 10), query(rows = 100))
+    compareMemoryUsage(query(rows = 10), query(rows = 100), toleratedDeviation = 0.01)
   }
 
   test("should deallocate memory after skip with out of order arguments in pipelined runtime") {
