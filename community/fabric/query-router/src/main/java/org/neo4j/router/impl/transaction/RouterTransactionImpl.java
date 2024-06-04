@@ -416,6 +416,13 @@ public class RouterTransactionImpl implements CompoundTransaction<DatabaseTransa
         markForTermination(reason);
     }
 
+    @Override
+    public void closeTransaction(DatabaseTransaction databaseTransaction) {
+        if (readingTransactions.removeIf(readingTx -> readingTx.inner == databaseTransaction)) {
+            databaseTransaction.close();
+        }
+    }
+
     private void throwIfNonEmpty(List<ErrorRecord> failures, Status defaultStatusCode) {
         if (!failures.isEmpty()) {
             // The main exception is not logged, because it will be logged by Bolt

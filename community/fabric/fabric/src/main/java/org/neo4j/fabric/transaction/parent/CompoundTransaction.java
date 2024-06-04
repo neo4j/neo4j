@@ -77,4 +77,6 @@ public interface CompoundTransaction<Child extends ChildTransaction> {
 
         void terminate(Status reason);
     }
+
+    void closeTransaction(Child databaseTransaction);
 }

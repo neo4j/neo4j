@@ -20,6 +20,7 @@
 package org.neo4j.router.transaction;
 
 import static java.util.Collections.emptyMap;
+import static org.neo4j.kernel.database.NamedDatabaseId.SYSTEM_DATABASE_NAME;
 
 import java.time.Duration;
 import java.util.List;
@@ -142,6 +143,10 @@ public final class TransactionInfo {
 
     public boolean isComposite() {
         return isComposite;
+    }
+
+    public boolean targetsSystemDatabase() {
+        return sessionDatabaseName.equals(new NormalizedDatabaseName(SYSTEM_DATABASE_NAME));
     }
 
     @Override

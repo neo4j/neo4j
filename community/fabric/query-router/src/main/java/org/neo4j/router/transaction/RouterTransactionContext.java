@@ -50,4 +50,6 @@ public interface RouterTransactionContext {
     void verifyStatementType(StatementType type);
 
     DatabaseReference sessionDatabaseReference();
+
+    DatabaseTransaction sessionTransaction();
 }

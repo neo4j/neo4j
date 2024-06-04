@@ -265,4 +265,9 @@ public class FabricTransactionImpl extends AbstractCompoundTransaction<SingleDbT
     public Set<InternalTransaction> getInternalTransactions() {
         return localTransactionContext.getInternalTransactions();
     }
+
+    @Override
+    public void closeTransaction(SingleDbTransaction databaseTransaction) {
+        // only used in query router
+    }
 }

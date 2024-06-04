@@ -38,7 +38,8 @@ public record RouterTransactionContextImpl(
         RouterTransaction routerTransaction,
         TargetService targetService,
         LocationService locationService,
-        TransactionBookmarkManager txBookmarkManager)
+        TransactionBookmarkManager txBookmarkManager,
+        DatabaseTransaction sessionTransaction)
         implements RouterTransactionContext {
 
     @Override
@@ -79,5 +80,10 @@ public record RouterTransactionContextImpl(
     @Override
     public DatabaseReference sessionDatabaseReference() {
         return routingInfo.sessionDatabaseReference();
+    }
+
+    @Override
+    public DatabaseTransaction sessionTransaction() {
+        return sessionTransaction;
     }
 }

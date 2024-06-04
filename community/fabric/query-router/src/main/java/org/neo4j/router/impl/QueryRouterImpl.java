@@ -61,6 +61,7 @@ import org.neo4j.router.query.DatabaseReferenceResolver;
 import org.neo4j.router.query.Query;
 import org.neo4j.router.query.QueryProcessor;
 import org.neo4j.router.query.TargetService;
+import org.neo4j.router.transaction.DatabaseTransaction;
 import org.neo4j.router.transaction.DatabaseTransactionFactory;
 import org.neo4j.router.transaction.RouterTransaction;
 import org.neo4j.router.transaction.RouterTransactionContext;
@@ -137,12 +138,13 @@ public class QueryRouterImpl implements QueryRouter {
         transactionManager.registerTransaction(routerTransaction);
 
         // Try to create a dummy kernel transaction so that this router transaction can be monitored
+        DatabaseTransaction sessionTransaction = null;
         try {
             var dummyTransactionMode = transactionInfo.accessMode().equals(AccessMode.READ)
                     ? TransactionMode.DEFINITELY_READ
                     : TransactionMode.MAYBE_WRITE;
-            routerTransaction.transactionFor(
-                    locationService.locationOf(sessionDatabaseReference), dummyTransactionMode, locationService);
+            Location location = locationService.locationOf(sessionDatabaseReference);
+            sessionTransaction = routerTransaction.transactionFor(location, dummyTransactionMode, locationService);
         } catch (Exception e) {
             queryRouterLog.warn("Could not eagerly create kernel transaction due to: %s".formatted(e));
         }
@@ -153,7 +155,8 @@ public class QueryRouterImpl implements QueryRouter {
                 routerTransaction,
                 new TransactionTargetService(queryTargetService),
                 locationService,
-                transactionBookmarkManager);
+                transactionBookmarkManager,
+                sessionTransaction);
     }
 
     private DatabaseReference resolveSessionDatabaseReference(TransactionInfo transactionInfo) {
@@ -226,6 +229,22 @@ public class QueryRouterImpl implements QueryRouter {
             var target = processedQueryInfo.target();
             verifyAccessModeWithStatementType(executionMode, accessMode, statementType, target);
             var location = locationService.locationOf(target);
+
+            /*
+             * We know it's not possible to execute an administration command in the same transaction as a
+             * non-administration command. This is verified in the `context.verifyStatementType`.
+             * Therefor, we can close the transaction towards the session database if the statement is an administration
+             * command. This makes it possible to run queries like:
+             *
+             * - DROP DATABASE <session database>
+             * - CREATE OR REPLACE DATABASE <session database>
+             */
+            if (statementType.statementType().equals(StatementType.AdministrationCommand())
+                    && !transactionInfo.targetsSystemDatabase()) {
+                if (context.sessionTransaction() != null) {
+                    context.routerTransaction().closeTransaction(context.sessionTransaction());
+                }
+            }
             updateQueryRouterMetric(location);
             statementLifecycle.doneRouterProcessing(
                     processedQueryInfo.obfuscationMetadata().get(),
