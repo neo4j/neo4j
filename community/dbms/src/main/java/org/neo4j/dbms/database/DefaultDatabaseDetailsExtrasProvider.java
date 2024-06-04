@@ -21,6 +21,7 @@ package org.neo4j.dbms.database;
 
 import java.util.Optional;
 import org.neo4j.kernel.database.DatabaseId;
+import org.neo4j.storageengine.AppendIndexProvider;
 import org.neo4j.storageengine.StoreFileClosedException;
 import org.neo4j.storageengine.api.ExternalStoreId;
 import org.neo4j.storageengine.api.StoreId;
@@ -38,23 +39,32 @@ public class DefaultDatabaseDetailsExtrasProvider {
     }
 
     public DatabaseDetailsExtras extraDetails(DatabaseId databaseId, TopologyInfoService.RequestedExtras detailsLevel) {
-        if (detailsLevel.lastTx() || detailsLevel.storeId()) {
+        if (detailsLevel.txInfo() || detailsLevel.storeInfo()) {
             var lastCommittedTxId = Optional.<Long>empty();
+            var lastAppendIndex = Optional.<Long>empty();
             var storeId = Optional.<StoreId>empty();
             var externalStoreId = Optional.<ExternalStoreId>empty();
             var context = databaseContextProvider
                     .getDatabaseContext(databaseId)
                     .filter(databaseContext -> databaseContext.database().isStarted());
-            if (detailsLevel.lastTx()) {
+            if (detailsLevel.txInfo()) {
                 lastCommittedTxId = fetchLastCommittedTxId(context);
+                lastAppendIndex = fetchLastAppendIndex(context);
             }
-            if (detailsLevel.storeId()) {
+            if (detailsLevel.storeInfo()) {
                 storeId = fetchStoreId(context);
                 externalStoreId = fetchExternalStoreId(context);
             }
-            return new DatabaseDetailsExtras(lastCommittedTxId, storeId, externalStoreId);
+            return new DatabaseDetailsExtras(lastCommittedTxId, lastAppendIndex, storeId, externalStoreId);
         }
         return DatabaseDetailsExtras.EMPTY;
+    }
+
+    private static Optional<Long> fetchLastAppendIndex(Optional<? extends DatabaseContext> context) {
+        return context.map(DatabaseContext::dependencies)
+                .filter(dependencies -> dependencies.containsDependency(AppendIndexProvider.class))
+                .map(dependencies -> dependencies.resolveDependency(AppendIndexProvider.class))
+                .flatMap(applyIndexProvider -> Optional.of(applyIndexProvider.getLastAppendIndex()));
     }
 
     private static Optional<Long> fetchLastCommittedTxId(Optional<? extends DatabaseContext> context) {

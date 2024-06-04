@@ -65,9 +65,10 @@ public class DatabaseRecoveryFacade implements RecoveryFacade {
             DatabaseLayout layout,
             RecoveryCriteria recoveryCriteria,
             RecoveryFacadeMonitor recoveryFacadeMonitor,
-            RecoveryMode recoveryMode)
+            RecoveryMode recoveryMode,
+            boolean rollbackIncompleteTransactions)
             throws IOException {
-        recovery(layout, recoveryCriteria, recoveryFacadeMonitor, recoveryMode, false);
+        recovery(layout, recoveryCriteria, recoveryFacadeMonitor, recoveryMode, false, rollbackIncompleteTransactions);
     }
 
     @Override
@@ -78,20 +79,28 @@ public class DatabaseRecoveryFacade implements RecoveryFacade {
     @Override
     public void performRecovery(DatabaseLayout databaseLayout, RecoveryFacadeMonitor monitor, RecoveryMode mode)
             throws IOException {
-        performRecovery(databaseLayout, RecoveryCriteria.ALL, monitor, mode);
+        performRecovery(databaseLayout, RecoveryCriteria.ALL, monitor, mode, true);
     }
 
     @Override
     public void performRecovery(
-            DatabaseLayout databaseLayout, RecoveryCriteria recoveryCriteria, RecoveryFacadeMonitor monitor)
+            DatabaseLayout databaseLayout,
+            RecoveryCriteria recoveryCriteria,
+            RecoveryFacadeMonitor monitor,
+            boolean rollbackIncompleteTransactions)
             throws IOException {
-        performRecovery(databaseLayout, recoveryCriteria, monitor, RecoveryMode.FULL);
+        performRecovery(databaseLayout, recoveryCriteria, monitor, RecoveryMode.FULL, rollbackIncompleteTransactions);
     }
 
     @Override
-    public void forceRecovery(DatabaseLayout databaseLayout, RecoveryFacadeMonitor monitor, RecoveryMode recoveryMode)
+    public void forceRecovery(
+            DatabaseLayout databaseLayout,
+            RecoveryFacadeMonitor monitor,
+            RecoveryMode recoveryMode,
+            boolean rollbackIncompleteTransactions)
             throws IOException {
-        recovery(databaseLayout, RecoveryCriteria.ALL, monitor, RecoveryMode.FULL, true);
+        recovery(
+                databaseLayout, RecoveryCriteria.ALL, monitor, RecoveryMode.FULL, true, rollbackIncompleteTransactions);
     }
 
     private void recovery(
@@ -99,7 +108,8 @@ public class DatabaseRecoveryFacade implements RecoveryFacade {
             RecoveryCriteria recoveryCriteria,
             RecoveryFacadeMonitor monitor,
             RecoveryMode mode,
-            boolean force)
+            boolean force,
+            boolean rollbackIncompleteTransactions)
             throws IOException {
         monitor.recoveryStarted();
         var recoveryContext = Recovery.context(
@@ -117,6 +127,7 @@ public class DatabaseRecoveryFacade implements RecoveryFacade {
         }
         Recovery.performRecovery(recoveryContext
                 .recoveryPredicate(recoveryCriteria.toPredicate())
+                .rollbackIncompleteTransactions(rollbackIncompleteTransactions)
                 .recoveryMode(mode));
         monitor.recoveryCompleted();
     }

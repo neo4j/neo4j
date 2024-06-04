@@ -50,7 +50,6 @@ import org.neo4j.logging.InternalLog;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.storageengine.AppendIndexProvider;
 import org.neo4j.storageengine.api.LogVersionRepository;
-import org.neo4j.storageengine.api.MetadataProvider;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.storageengine.api.TransactionIdStore;
@@ -68,7 +67,6 @@ public class DefaultRecoveryService implements RecoveryService {
     private final boolean doParallelRecovery;
     private final BinarySupportedKernelVersions binarySupportedKernelVersions;
     private final CursorContextFactory contextFactory;
-    private final MetadataProvider metadataProvider;
 
     DefaultRecoveryService(
             StorageEngine storageEngine,
@@ -82,8 +80,7 @@ public class DefaultRecoveryService implements RecoveryService {
             Clock clock,
             boolean doParallelRecovery,
             BinarySupportedKernelVersions binarySupportedKernelVersions,
-            CursorContextFactory contextFactory,
-            MetadataProvider metadataProvider) {
+            CursorContextFactory contextFactory) {
         this.storageEngine = storageEngine;
         this.transactionIdStore = transactionIdStore;
         this.logicalTransactionStore = logicalTransactionStore;
@@ -95,7 +92,6 @@ public class DefaultRecoveryService implements RecoveryService {
         this.doParallelRecovery = doParallelRecovery;
         this.binarySupportedKernelVersions = binarySupportedKernelVersions;
         this.contextFactory = contextFactory;
-        this.metadataProvider = metadataProvider;
         this.recoveryStartInformationProvider = new RecoveryStartInformationProvider(logFiles, monitor);
     }
 
@@ -215,6 +211,7 @@ public class DefaultRecoveryService implements RecoveryService {
                     highestTransactionRecoveredBatch.txId(),
                     highestTransactionRecoveredBatch.appendIndex(),
                     highestTransactionRecoveredBatch.kernelVersion(),
+                    // TODO: misha this checksum is from the first batch while usually its from the last one
                     highestTransactionRecoveredBatch.checksum(),
                     highestTransactionRecoveredBatch.timeWritten(),
                     highestTransactionRecoveredBatch.consensusIndex(),

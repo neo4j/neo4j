@@ -77,7 +77,6 @@ import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.SimpleAppendIndexProvider;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
-import org.neo4j.kernel.impl.transaction.SimpleMetaDataProvider;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.FlushableLogPositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
@@ -239,8 +238,7 @@ class TransactionLogsRecoveryTest {
                             Clocks.systemClock(),
                             false,
                             LatestVersions.BINARY_VERSIONS,
-                            contextFactory,
-                            new SimpleMetaDataProvider()) {
+                            contextFactory) {
                         private int nr;
 
                         @Override
@@ -287,6 +285,7 @@ class TransactionLogsRecoveryTest {
                     false,
                     EMPTY_CHECKER,
                     RecoveryPredicate.ALL,
+                    false,
                     contextFactory,
                     RecoveryMode.FULL));
 
@@ -359,8 +358,7 @@ class TransactionLogsRecoveryTest {
                             Clocks.systemClock(),
                             false,
                             LatestVersions.BINARY_VERSIONS,
-                            contextFactory,
-                            new SimpleMetaDataProvider()),
+                            contextFactory),
                     logPruner,
                     schemaLife,
                     monitor,
@@ -368,6 +366,7 @@ class TransactionLogsRecoveryTest {
                     false,
                     EMPTY_CHECKER,
                     RecoveryPredicate.ALL,
+                    false,
                     contextFactory,
                     RecoveryMode.FULL));
 
@@ -581,6 +580,7 @@ class TransactionLogsRecoveryTest {
                 true,
                 EMPTY_CHECKER,
                 RecoveryPredicate.ALL,
+                false,
                 contextFactory,
                 RecoveryMode.FULL);
 
@@ -664,8 +664,7 @@ class TransactionLogsRecoveryTest {
                             Clocks.systemClock(),
                             false,
                             LatestVersions.BINARY_VERSIONS,
-                            contextFactory,
-                            new SimpleMetaDataProvider()),
+                            contextFactory),
                     logPruner,
                     schemaLife,
                     monitor,
@@ -673,6 +672,7 @@ class TransactionLogsRecoveryTest {
                     false,
                     startupChecker,
                     RecoveryPredicate.ALL,
+                    true,
                     contextFactory,
                     RecoveryMode.FULL));
 

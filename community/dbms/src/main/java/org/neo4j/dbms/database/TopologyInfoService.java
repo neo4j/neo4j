@@ -29,7 +29,7 @@ public interface TopologyInfoService {
     Set<DatabaseDetails> databases(
             Transaction transaction, Set<NamedDatabaseId> databaseIds, RequestedExtras requestedExtras);
 
-    record RequestedExtras(boolean lastTx, boolean storeId) {
+    record RequestedExtras(boolean txInfo, boolean storeInfo) {
         public static final RequestedExtras ALL = new RequestedExtras(true, true);
         public static final RequestedExtras NONE = new RequestedExtras(false, false);
     }

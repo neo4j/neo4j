@@ -1559,7 +1559,7 @@ class RecoveryCorruptedTransactionLogIT {
 
         /**
          * Use a non-existing log entry version. Implementation stolen from
-         * {@link LogEntryWriter#writeStartEntry(KernelVersion, long, long, int, byte[])}.
+         * {@link LogEntryWriter#writeStartEntry(KernelVersion, long, long, long, int, byte[])}.
          */
         @Override
         public void writeStartEntry(

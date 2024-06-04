@@ -25,6 +25,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.neo4j.collection.Dependencies.dependenciesOf;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.internal.helpers.collection.Iterables.stream;
+import static org.neo4j.io.pagecache.PageCacheOpenOptions.MULTI_VERSIONED;
 import static org.neo4j.io.pagecache.context.OldestTransactionIdFactory.EMPTY_OLDEST_ID_FACTORY;
 import static org.neo4j.io.pagecache.context.TransactionIdSnapshotFactory.EMPTY_SNAPSHOT_FACTORY;
 import static org.neo4j.kernel.impl.api.TransactionVisibilityProvider.EMPTY_VISIBILITY_PROVIDER;
@@ -300,6 +301,7 @@ public final class Recovery {
         private final Config config;
         private final DatabaseTracers tracers;
         private final InternalLogProvider logProvider;
+        private boolean rollbackIncompleteTransactions = true;
         private boolean forceRunRecovery;
         private Monitors globalMonitors = new Monitors();
         private Iterable<ExtensionFactory<?>> extensionFactories;
@@ -424,6 +426,11 @@ public final class Recovery {
             this.mode = mode;
             return this;
         }
+
+        public Context rollbackIncompleteTransactions(boolean rollbackIncompleteTransactions) {
+            this.rollbackIncompleteTransactions = rollbackIncompleteTransactions;
+            return this;
+        }
     }
 
     /**
@@ -459,6 +466,7 @@ public final class Recovery {
                     context.clock,
                     context.ioController,
                     context.recoveryPredicate,
+                    context.rollbackIncompleteTransactions,
                     context.awaitIndexesOnlineMillis,
                     context.emptyLogsFallbackKernelVersion,
                     context.mode);
@@ -484,6 +492,7 @@ public final class Recovery {
             Clock clock,
             IOController ioController,
             RecoveryPredicate recoveryPredicate,
+            boolean rollbackIncompleteTransactions,
             long awaitIndexesOnlineMillis,
             KernelVersionProvider emptyLogsFallbackKernelVersion,
             RecoveryMode mode)
@@ -604,6 +613,13 @@ public final class Recovery {
                 tracers.getPageCacheTracer(),
                 recoveryVersionStorage);
 
+        // multi versioned stores recovery does not support format mode atm
+        if (storageEngine.getOpenOptions().contains(MULTI_VERSIONED)) {
+            mode = RecoveryMode.FULL;
+        } else {
+            rollbackIncompleteTransactions = true;
+        }
+
         // Schema indexes
         FullScanStoreView fullScanStoreView = new FullScanStoreView(NO_LOCK_SERVICE, storageEngine, config, scheduler);
         IndexStoreViewFactory indexStoreViewFactory = new IndexStoreViewFactory(
@@ -706,10 +722,10 @@ public final class Recovery {
                 clock,
                 doParallelRecovery,
                 recoveryPredicate,
+                rollbackIncompleteTransactions,
                 cursorContextFactory,
                 mode,
-                new BinarySupportedKernelVersions(config),
-                metadataProvider);
+                new BinarySupportedKernelVersions(config));
 
         CheckPointerImpl.ForceOperation forceOperation =
                 new DefaultForceOperation(indexingService, storageEngine, databasePageCache);
@@ -839,10 +855,10 @@ public final class Recovery {
             Clock clock,
             boolean doParallelRecovery,
             RecoveryPredicate recoveryPredicate,
+            boolean rollbackIncompleteTransactions,
             CursorContextFactory contextFactory,
             RecoveryMode mode,
-            BinarySupportedKernelVersions binarySupportedKernelVersions,
-            MetadataProvider metadataProvider) {
+            BinarySupportedKernelVersions binarySupportedKernelVersions) {
         RecoveryService recoveryService = new DefaultRecoveryService(
                 storageEngine,
                 transactionIdStore,
@@ -855,8 +871,7 @@ public final class Recovery {
                 clock,
                 doParallelRecovery,
                 binarySupportedKernelVersions,
-                contextFactory,
-                metadataProvider);
+                contextFactory);
         CorruptedLogsTruncator logsTruncator = new CorruptedLogsTruncator(
                 databaseLayout.databaseDirectory(), logFiles, fileSystemAbstraction, memoryTracker);
         var loggerPrintWriterAdaptor = new LoggerPrintWriterAdaptor(log, Level.INFO);
@@ -869,6 +884,7 @@ public final class Recovery {
                 failOnCorruptedLogFiles,
                 startupChecker,
                 recoveryPredicate,
+                rollbackIncompleteTransactions,
                 contextFactory,
                 mode);
     }

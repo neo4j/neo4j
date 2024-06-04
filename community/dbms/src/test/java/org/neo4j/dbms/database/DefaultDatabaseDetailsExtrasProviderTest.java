@@ -35,6 +35,7 @@ import org.neo4j.dbms.database.TopologyInfoService.RequestedExtras;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.database.DatabaseIdFactory;
+import org.neo4j.storageengine.AppendIndexProvider;
 import org.neo4j.storageengine.api.ExternalStoreId;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.StoreIdProvider;
@@ -44,7 +45,8 @@ class DefaultDatabaseDetailsExtrasProviderTest {
     private final DatabaseId databaseId = DatabaseIdFactory.from(UUID.randomUUID());
     private final StoreId storeId = new StoreId(1, 2, "engine", "format", 3, 4);
     private final ExternalStoreId externalStoreId = new ExternalStoreId(UUID.randomUUID());
-    private final long lastCommittedTaxId = 42;
+    private final long lastCommittedTxId = 42;
+    private final long lastAppendIndex = 44;
     private DatabaseContextProvider<? extends DatabaseContext> databaseContextProvider;
     private DefaultDatabaseDetailsExtrasProvider provider;
 
@@ -57,10 +59,14 @@ class DefaultDatabaseDetailsExtrasProviderTest {
         var storeIdProvider = mock(StoreIdProvider.class);
         when(storeIdProvider.getExternalStoreId()).thenReturn(externalStoreId);
         var transactionIdStore = mock(TransactionIdStore.class);
-        when(transactionIdStore.getLastCommittedTransactionId()).thenReturn(lastCommittedTaxId);
+        when(transactionIdStore.getLastCommittedTransactionId()).thenReturn(lastCommittedTxId);
+        var appendIndexProvider = mock(AppendIndexProvider.class);
+        when(appendIndexProvider.getLastAppendIndex()).thenReturn(lastAppendIndex);
+
         var dependencies = new Dependencies();
         dependencies.satisfyDependency(storeIdProvider);
         dependencies.satisfyDependency(transactionIdStore);
+        dependencies.satisfyDependency(appendIndexProvider);
         var database = mock(Database.class);
         when(database.getStoreId()).thenReturn(storeId);
         when(database.isStarted()).thenReturn(true);
@@ -89,7 +95,9 @@ class DefaultDatabaseDetailsExtrasProviderTest {
         var result = provider.extraDetails(databaseId, RequestedExtras.ALL);
 
         // then
-        assertThat(result).isEqualTo(new DatabaseDetailsExtras(Optional.empty(), Optional.empty(), Optional.empty()));
+        assertThat(result)
+                .isEqualTo(new DatabaseDetailsExtras(
+                        Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty()));
         verify(databaseContextProvider).getDatabaseContext(databaseId);
     }
 
@@ -101,7 +109,7 @@ class DefaultDatabaseDetailsExtrasProviderTest {
         // then
         assertThat(result)
                 .isEqualTo(new DatabaseDetailsExtras(
-                        Optional.empty(), Optional.of(storeId), Optional.of(externalStoreId)));
+                        Optional.empty(), Optional.empty(), Optional.of(storeId), Optional.of(externalStoreId)));
         verify(databaseContextProvider).getDatabaseContext(databaseId);
     }
 
@@ -112,8 +120,11 @@ class DefaultDatabaseDetailsExtrasProviderTest {
 
         // then
         assertThat(result)
-                .isEqualTo(
-                        new DatabaseDetailsExtras(Optional.of(lastCommittedTaxId), Optional.empty(), Optional.empty()));
+                .isEqualTo(new DatabaseDetailsExtras(
+                        Optional.of(lastCommittedTxId),
+                        Optional.of(lastAppendIndex),
+                        Optional.empty(),
+                        Optional.empty()));
         verify(databaseContextProvider).getDatabaseContext(databaseId);
     }
 }

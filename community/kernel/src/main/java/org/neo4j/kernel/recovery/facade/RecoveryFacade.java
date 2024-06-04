@@ -30,7 +30,8 @@ public interface RecoveryFacade {
             DatabaseLayout layout,
             RecoveryCriteria recoveryCriteria,
             RecoveryFacadeMonitor recoveryFacadeMonitor,
-            RecoveryMode recoveryMode)
+            RecoveryMode recoveryMode,
+            boolean rollbackIncompleteTransactions)
             throws IOException;
 
     void performRecovery(DatabaseLayout databaseLayout) throws IOException;
@@ -39,9 +40,16 @@ public interface RecoveryFacade {
             throws IOException;
 
     void performRecovery(
-            DatabaseLayout databaseLayout, RecoveryCriteria recoveryCriteria, RecoveryFacadeMonitor monitor)
+            DatabaseLayout databaseLayout,
+            RecoveryCriteria recoveryCriteria,
+            RecoveryFacadeMonitor monitor,
+            boolean recoverOnlyAvailableTransactions)
             throws IOException;
 
-    void forceRecovery(DatabaseLayout databaseLayout, RecoveryFacadeMonitor monitor, RecoveryMode recoveryMode)
+    void forceRecovery(
+            DatabaseLayout databaseLayout,
+            RecoveryFacadeMonitor monitor,
+            RecoveryMode recoveryMode,
+            boolean rollbackIncompleteTransactions)
             throws IOException;
 }

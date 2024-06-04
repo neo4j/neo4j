@@ -30,9 +30,12 @@ import org.neo4j.storageengine.api.ExternalStoreId;
 import org.neo4j.storageengine.api.StoreId;
 
 public record DatabaseDetailsExtras(
-        Optional<Long> lastCommittedTxId, Optional<StoreId> storeId, Optional<ExternalStoreId> externalStoreId) {
+        Optional<Long> lastCommittedTxId,
+        Optional<Long> lastAppendIndex,
+        Optional<StoreId> storeId,
+        Optional<ExternalStoreId> externalStoreId) {
     public static final DatabaseDetailsExtras EMPTY =
-            new DatabaseDetailsExtras(Optional.empty(), Optional.empty(), Optional.empty());
+            new DatabaseDetailsExtras(Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());
 
     public static <T> Map<DatabaseId, Long> maxCommittedTxIds(
             Map<T, DatabaseDetailsExtras> extraDetails, Function<T, DatabaseId> databaseIdResolver) {
@@ -58,10 +61,12 @@ public record DatabaseDetailsExtras(
     }
 
     public boolean isEmpty() {
-        return this.equals(EMPTY);
+        return EMPTY.equals(this);
     }
 
     public void ifPresent(Consumer<DatabaseDetailsExtras> consumer) {
-        if (!isEmpty()) consumer.accept(this);
+        if (!isEmpty()) {
+            consumer.accept(this);
+        }
     }
 }

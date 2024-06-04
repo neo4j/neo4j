@@ -23,6 +23,7 @@ public interface LogVersionRepository {
     long INITIAL_LOG_VERSION = 0;
     long BASE_TX_LOG_VERSION = 0;
     int BASE_TX_LOG_BYTE_OFFSET = 64;
+    long UNKNOWN_LOG_OFFSET = -1;
 
     /**
      * Returns the current log version. It is non blocking.

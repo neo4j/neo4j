@@ -242,6 +242,7 @@ class PhysicalLogicalTransactionStoreTest {
                 false,
                 EMPTY_CHECKER,
                 RecoveryPredicate.ALL,
+                false,
                 contextFactory,
                 RecoveryMode.FULL));
 

@@ -336,7 +336,7 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile {
 
         try (var logAppendEvent =
                 context.getDatabaseTracers().getDatabaseTracer().logAppend()) {
-            if (transactionId.isPresent()) {
+            if (appendIndex.isPresent()) {
                 logRotation.batchedRotateLogIfNeeded(
                         logAppendEvent, transactionId.getAsLong() - 1, appendIndex.getAsLong() - 1);
             }

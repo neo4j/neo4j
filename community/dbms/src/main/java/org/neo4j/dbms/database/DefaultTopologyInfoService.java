@@ -98,7 +98,7 @@ public class DefaultTopologyInfoService implements TopologyInfoService {
 
     private DatabaseDetails database(NamedDatabaseId id, RequestedExtras detailsLevel) {
         var extraDetails = databaseDetailsExtrasProvider.extraDetails(
-                id.databaseId(), new RequestedExtras(false, detailsLevel.storeId()));
+                id.databaseId(), new RequestedExtras(false, detailsLevel.storeInfo()));
         return new DatabaseDetails(
                 Optional.of(serverId),
                 readOnlyDatabases.isReadOnly(id.databaseId()) ? READ_ONLY : READ_WRITE,

@@ -34,8 +34,8 @@ public class BackupDescription {
     private final boolean recovered;
     private final boolean compressed;
     private final boolean full;
-    private final long lowestTransactionId;
-    private final long highestTransactionId;
+    private final long lowestAppendIndex;
+    private final long highestAppendIndex;
 
     public BackupDescription(
             String databaseName,
@@ -45,8 +45,8 @@ public class BackupDescription {
             boolean recovered,
             boolean compressed,
             boolean full,
-            long lowestTransactionId,
-            long highestTransactionId) {
+            long lowestAppendIndex,
+            long highestAppendIndex) {
         this.databaseName = new NormalizedDatabaseName(databaseName).name();
         this.storeId = storeId;
         this.databaseId = databaseId;
@@ -54,8 +54,8 @@ public class BackupDescription {
         this.recovered = recovered;
         this.compressed = compressed;
         this.full = full;
-        this.lowestTransactionId = lowestTransactionId;
-        this.highestTransactionId = highestTransactionId;
+        this.lowestAppendIndex = lowestAppendIndex;
+        this.highestAppendIndex = highestAppendIndex;
     }
 
     public String getDatabaseName() {
@@ -86,16 +86,16 @@ public class BackupDescription {
         return full;
     }
 
-    public long getLowestTransactionId() {
-        return lowestTransactionId;
+    public long getLowestAppendIndex() {
+        return lowestAppendIndex;
     }
 
-    public long getHighestTransactionId() {
-        return highestTransactionId;
+    public long getHighestAppendIndex() {
+        return highestAppendIndex;
     }
 
     public boolean isEmpty() {
-        return lowestTransactionId == 0 && highestTransactionId == 0;
+        return lowestAppendIndex == 0 && highestAppendIndex == 0;
     }
 
     @Override
@@ -110,8 +110,8 @@ public class BackupDescription {
         return recovered == that.recovered
                 && compressed == that.compressed
                 && full == that.full
-                && lowestTransactionId == that.lowestTransactionId
-                && highestTransactionId == that.highestTransactionId
+                && lowestAppendIndex == that.lowestAppendIndex
+                && highestAppendIndex == that.highestAppendIndex
                 && Objects.equals(databaseName, that.databaseName)
                 && Objects.equals(storeId, that.storeId)
                 && Objects.equals(databaseId, that.databaseId)
@@ -128,8 +128,8 @@ public class BackupDescription {
                 recovered,
                 compressed,
                 full,
-                lowestTransactionId,
-                highestTransactionId);
+                lowestAppendIndex,
+                highestAppendIndex);
     }
 
     @Override
@@ -141,8 +141,8 @@ public class BackupDescription {
                 + backupTime + ", recovered="
                 + recovered + ", compressed="
                 + compressed + ", full="
-                + full + ", lowestTransactionId="
-                + lowestTransactionId + ", highestTransactionId="
-                + highestTransactionId + '}';
+                + full + ", lowestAppendIndex="
+                + lowestAppendIndex + ", highestAppendIndex="
+                + highestAppendIndex + '}';
     }
 }

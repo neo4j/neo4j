@@ -50,7 +50,7 @@ public record StoreSnapshot(
         Stream<StoreResource> unrecoverableFiles,
         Path[] recoverableFiles,
         TransactionId lastAppliedTransactionId,
-        long appendIndex,
+        long checkpointAppendIndex,
         StoreId storeId,
         Resource checkPointMutex)
         implements AutoCloseable {

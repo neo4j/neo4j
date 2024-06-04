@@ -78,7 +78,9 @@ public record CommittedTransactionRepresentation(
 
     @Override
     public long appendIndex() {
-        return startEntry.getAppendIndex();
+        return startEntry.kernelVersion().isAtLeast(KernelVersion.VERSION_APPEND_INDEX_INTRODUCED)
+                ? startEntry.getAppendIndex()
+                : commitEntry.getTxId();
     }
 
     @Override

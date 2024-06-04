@@ -43,8 +43,8 @@ public class BackupMetadataV1 implements BackupMetadata {
     private final boolean recovered;
     private final boolean compressed;
     private final boolean full;
-    private final long lowestTransactionId;
-    private final long highestTransactionId;
+    private final long lowestAppendIndex;
+    private final long highestAppendIndex;
 
     public static BackupMetadataV1 readFromStream(InputStream inputStream) throws IOException {
         return readMetadata(inputStream);
@@ -56,8 +56,8 @@ public class BackupMetadataV1 implements BackupMetadata {
                 description.getStoreId(),
                 description.getDatabaseId(),
                 description.getBackupTime(),
-                description.getLowestTransactionId(),
-                description.getHighestTransactionId(),
+                description.getLowestAppendIndex(),
+                description.getHighestAppendIndex(),
                 description.isRecovered(),
                 description.isCompressed(),
                 description.isFull());
@@ -68,8 +68,8 @@ public class BackupMetadataV1 implements BackupMetadata {
             StoreId storeId,
             DatabaseId databaseId,
             LocalDateTime backupTime,
-            long lowestTransactionId,
-            long highestTransactionId,
+            long lowestAppendIndex,
+            long highestAppendIndex,
             boolean recovered,
             boolean compressed,
             boolean full) {
@@ -80,8 +80,8 @@ public class BackupMetadataV1 implements BackupMetadata {
         this.recovered = recovered;
         this.compressed = compressed;
         this.full = full;
-        this.lowestTransactionId = lowestTransactionId;
-        this.highestTransactionId = highestTransactionId;
+        this.lowestAppendIndex = lowestAppendIndex;
+        this.highestAppendIndex = highestAppendIndex;
     }
 
     public String getDatabaseName() {
@@ -117,8 +117,8 @@ public class BackupMetadataV1 implements BackupMetadata {
         writeDatabaseId(compressionStream, getDatabaseId());
         writeString(compressionStream, getDatabaseName());
         writeLong(compressionStream, getBackupTime().toEpochSecond(UTC));
-        writeLong(compressionStream, lowestTransactionId);
-        writeLong(compressionStream, highestTransactionId);
+        writeLong(compressionStream, lowestAppendIndex);
+        writeLong(compressionStream, highestAppendIndex);
 
         BitSet flags = new BitSet(3);
         flags.set(0, isRecovered());
@@ -213,7 +213,7 @@ public class BackupMetadataV1 implements BackupMetadata {
                 recovered,
                 compressed,
                 full,
-                lowestTransactionId,
-                highestTransactionId);
+                lowestAppendIndex,
+                highestAppendIndex);
     }
 }

@@ -77,10 +77,16 @@ class DefaultTopologyInfoServiceTest {
         var userExternalStoreId = new ExternalStoreId(UUID.randomUUID());
         when(extrasProvider.extraDetails(eq(databaseId.databaseId()), any()))
                 .thenReturn(new DatabaseDetailsExtras(
-                        Optional.empty(), Optional.of(userStoreId), Optional.of(userExternalStoreId)));
+                        Optional.empty(),
+                        Optional.empty(),
+                        Optional.of(userStoreId),
+                        Optional.of(userExternalStoreId)));
         when(extrasProvider.extraDetails(eq(SYSTEM_DATABASE_ID), any()))
                 .thenReturn(new DatabaseDetailsExtras(
-                        Optional.empty(), Optional.of(systemStoreId), Optional.of(systemExternalStoreId)));
+                        Optional.empty(),
+                        Optional.empty(),
+                        Optional.of(systemStoreId),
+                        Optional.of(systemExternalStoreId)));
 
         var boltAddress = config.get(BoltConnector.advertised_address);
         var service = new DefaultTopologyInfoService(
