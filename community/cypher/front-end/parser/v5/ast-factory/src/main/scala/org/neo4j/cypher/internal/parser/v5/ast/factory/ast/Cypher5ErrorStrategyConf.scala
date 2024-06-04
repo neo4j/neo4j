@@ -99,4 +99,6 @@ class Cypher5ErrorStrategyConf extends CypherErrorStrategy.Conf {
   }
 
   override def errorCharTokenType: Int = CypherParser.ErrorChar
+
+  override def ruleNames: Array[String] = CypherParser.ruleNames
 }

@@ -17,6 +17,8 @@
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.ast.Clause
+import org.neo4j.cypher.internal.ast.RemoveDynamicPropertyItem
+import org.neo4j.cypher.internal.ast.RemovePropertyItem
 import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
@@ -105,6 +107,76 @@ class RemoveParserTest extends AstParsingTestBase {
     )
   }
 
+  test("REMOVE map.n.prop") {
+    parsesTo[Clause](
+      remove(
+        Seq(
+          RemovePropertyItem(prop(prop(varFor("map"), "n"), "prop"))
+        )
+      )
+    )
+  }
+
+  test("REMOVE map[prop]") {
+    parsesTo[Clause](
+      remove(
+        Seq(
+          RemoveDynamicPropertyItem(containerIndex(varFor("map"), varFor("prop")))
+        )
+      )
+    )
+  }
+
+  test("REMOVE (CASE WHEN true THEN r END).name") {
+    parsesTo[Clause](
+      remove(
+        Seq(
+          RemovePropertyItem(prop(caseExpression((literalBoolean(true), varFor("r"))), "name"))
+        )
+      )
+    )
+  }
+
+  test("REMOVE (CASE WHEN true THEN r END)[toUpper(\"prop\")]") {
+    parsesTo[Clause](
+      remove(
+        Seq(
+          RemoveDynamicPropertyItem(
+            containerIndex(
+              caseExpression((literalBoolean(true), varFor("r"))),
+              function("toUpper", literalString("prop"))
+            )
+          )
+        )
+      )
+    )
+  }
+
+  test("REMOVE (listOfNodes[0])[toUpper(\"prop\")]") {
+    parsesTo[Clause](
+      remove(
+        Seq(
+          RemoveDynamicPropertyItem(
+            containerIndex(
+              containerIndex(varFor("listOfNodes"), 0),
+              function("toUpper", literalString("prop"))
+            )
+          )
+        )
+      )
+    )
+  }
+
+  test("REMOVE listOfNodes[0][toUpper(\"prop\")]") {
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input '['"))
+      .parseIn(Antlr)(_.withMessage(
+        """Invalid input '[': expected 'FOREACH', ',', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'UNION', 'UNWIND', 'USE', 'WITH' or <EOF> (line 1, column 22 (offset: 21))
+          |"REMOVE listOfNodes[0][toUpper("prop")]"
+          |                      ^""".stripMargin
+      ))
+  }
+
   //  Invalid use of other label expression symbols than :
 
   test("REMOVE n:A|B") {
@@ -171,7 +243,7 @@ class RemoveParserTest extends AstParsingTestBase {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input 'A': expected \"IS\""))
       .parseIn(Antlr)(_.withMessage(
-        """Invalid input 'A': expected an expression, '.', ':' or 'IS' (line 1, column 11 (offset: 10))
+        """Invalid input 'A': expected an expression, '.', ':', 'IS' or '[' (line 1, column 11 (offset: 10))
           |"REMOVE IS A"
           |           ^""".stripMargin
       ))

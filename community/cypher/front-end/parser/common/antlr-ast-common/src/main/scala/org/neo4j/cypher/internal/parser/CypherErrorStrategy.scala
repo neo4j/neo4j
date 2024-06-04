@@ -173,6 +173,7 @@ object CypherErrorStrategy {
     def customTokenDisplayNames: Map[Int, String]
     def errorCharTokenType: Int
     def ruleGroups: Map[Int, CypherRuleGroup]
+    def ruleNames: Array[String]
   }
 
   sealed trait CypherRuleGroup
@@ -201,8 +202,8 @@ final class CypherErrorVocabulary(conf: CypherErrorStrategy.Conf) extends Vocabu
     // println("Tokens: " + candidates.tokens.keySet().asScala.map(t => getDisplayName(t)).mkString(", "))
     // println("Rules: " + candidates.rules.entrySet().asScala
     //   .map { e =>
-    //     CypherParser.ruleNames(e.getKey) +
-    //       " (callstack: " + e.getValue.asScala.map(r => CypherParser.ruleNames(r)).mkString(", ") + ")"
+    //     conf.ruleNames(e.getKey) +
+    //       " (callstack: " + e.getValue.asScala.map(r => conf.ruleNames(r)).mkString(", ") + ")"
     //   }
     //   .mkString(", ")
     // )

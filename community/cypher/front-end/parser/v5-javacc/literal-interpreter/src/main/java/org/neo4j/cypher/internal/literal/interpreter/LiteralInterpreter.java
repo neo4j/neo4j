@@ -264,6 +264,11 @@ public class LiteralInterpreter
     }
 
     @Override
+    public NULL setDynamicProperty(Object o, Object value) {
+        throw new UnsupportedOperationException("setDynamicProperty is not a literal");
+    }
+
+    @Override
     public NULL setVariable(Object o, Object value) {
         throw new UnsupportedOperationException("setVariable is not a literal");
     }
@@ -286,6 +291,11 @@ public class LiteralInterpreter
     @Override
     public NULL removeProperty(Object o) {
         throw new UnsupportedOperationException("removeProperty is not a literal");
+    }
+
+    @Override
+    public NULL removeDynamicProperty(Object o) {
+        throw new UnsupportedOperationException("removeDynamicProperty is not a literal");
     }
 
     @Override

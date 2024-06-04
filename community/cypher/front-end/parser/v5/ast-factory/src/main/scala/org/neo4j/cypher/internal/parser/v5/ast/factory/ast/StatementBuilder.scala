@@ -39,11 +39,13 @@ import org.neo4j.cypher.internal.ast.ProcedureResult
 import org.neo4j.cypher.internal.ast.ProcedureResultItem
 import org.neo4j.cypher.internal.ast.Query
 import org.neo4j.cypher.internal.ast.Remove
+import org.neo4j.cypher.internal.ast.RemoveDynamicPropertyItem
 import org.neo4j.cypher.internal.ast.RemoveLabelItem
 import org.neo4j.cypher.internal.ast.RemovePropertyItem
 import org.neo4j.cypher.internal.ast.Return
 import org.neo4j.cypher.internal.ast.ReturnItems
 import org.neo4j.cypher.internal.ast.SetClause
+import org.neo4j.cypher.internal.ast.SetDynamicPropertyItem
 import org.neo4j.cypher.internal.ast.SetExactPropertiesFromMapItem
 import org.neo4j.cypher.internal.ast.SetIncludingPropertiesFromMapItem
 import org.neo4j.cypher.internal.ast.SetLabelItem
@@ -77,6 +79,7 @@ import org.neo4j.cypher.internal.ast.With
 import org.neo4j.cypher.internal.ast.factory.ASTExceptionFactory
 import org.neo4j.cypher.internal.ast.factory.HintIndexType
 import org.neo4j.cypher.internal.expressions.AnonymousPatternPart
+import org.neo4j.cypher.internal.expressions.ContainerIndex
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.MatchMode
 import org.neo4j.cypher.internal.expressions.NamedPatternPart
@@ -264,6 +267,9 @@ trait StatementBuilder extends CypherParserListener {
     ctx.ast = ctx match {
       case _: CypherParser.SetPropContext =>
         SetPropertyItem(ctxChild(ctx, 0).ast(), ctxChild(ctx, 2).ast())(pos(ctx))
+      case _: CypherParser.SetDynamicPropContext =>
+        val dynamicProp = ctxChild(ctx, 0).ast[ContainerIndex]()
+        SetDynamicPropertyItem(dynamicProp, ctxChild(ctx, 2).ast())(dynamicProp.position)
       case _: CypherParser.SetPropsContext =>
         SetExactPropertiesFromMapItem(ctxChild(ctx, 0).ast(), ctxChild(ctx, 2).ast())(pos(ctx))
       case _: CypherParser.AddPropContext =>
@@ -286,6 +292,8 @@ trait StatementBuilder extends CypherParserListener {
     ctx.ast = ctx match {
       case r: CypherParser.RemovePropContext =>
         RemovePropertyItem(ctxChild(r, 0).ast())
+      case r: CypherParser.RemoveDynamicPropContext =>
+        RemoveDynamicPropertyItem(ctxChild(r, 0).ast())
       case r: CypherParser.RemoveLabelsContext =>
         RemoveLabelItem(ctxChild(r, 0).ast(), ctxChild(r, 1).ast(), containsIs = false)(pos(ctx))
       case r: CypherParser.RemoveLabelsIsContext =>

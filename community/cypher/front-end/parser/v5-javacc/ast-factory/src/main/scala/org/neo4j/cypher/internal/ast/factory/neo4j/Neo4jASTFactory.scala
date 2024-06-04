@@ -231,6 +231,7 @@ import org.neo4j.cypher.internal.ast.RelUniqueConstraints
 import org.neo4j.cypher.internal.ast.RelationshipAllQualifier
 import org.neo4j.cypher.internal.ast.RelationshipQualifier
 import org.neo4j.cypher.internal.ast.Remove
+import org.neo4j.cypher.internal.ast.RemoveDynamicPropertyItem
 import org.neo4j.cypher.internal.ast.RemoveHomeDatabaseAction
 import org.neo4j.cypher.internal.ast.RemoveItem
 import org.neo4j.cypher.internal.ast.RemoveLabelAction
@@ -256,6 +257,7 @@ import org.neo4j.cypher.internal.ast.SchemaCommand
 import org.neo4j.cypher.internal.ast.ServerManagementAction
 import org.neo4j.cypher.internal.ast.SetClause
 import org.neo4j.cypher.internal.ast.SetDatabaseAccessAction
+import org.neo4j.cypher.internal.ast.SetDynamicPropertyItem
 import org.neo4j.cypher.internal.ast.SetExactPropertiesFromMapItem
 import org.neo4j.cypher.internal.ast.SetHomeDatabaseAction
 import org.neo4j.cypher.internal.ast.SetIncludingPropertiesFromMapItem
@@ -775,6 +777,13 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
   override def setProperty(property: Property, value: Expression): SetItem =
     SetPropertyItem(property, value)(property.position)
 
+  override def setDynamicProperty(dynamicProperty: Expression, value: Expression): SetItem = dynamicProperty match {
+    case c: ContainerIndex => SetDynamicPropertyItem(c, value)(dynamicProperty.position)
+    case _ => throw new IllegalArgumentException(
+        s"Expected a container index, got: [${dynamicProperty.getClass.getSimpleName}]"
+      )
+  }
+
   override def setVariable(variable: Variable, value: Expression): SetItem =
     SetExactPropertiesFromMapItem(variable, value)(variable.position)
 
@@ -792,6 +801,13 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
     Remove(removeItems.asScala.toList)(p)
 
   override def removeProperty(property: Property): RemoveItem = RemovePropertyItem(property)
+
+  override def removeDynamicProperty(expression: Expression): RemoveItem = expression match {
+    case c: ContainerIndex => RemoveDynamicPropertyItem(c)
+    case _ => throw new IllegalArgumentException(
+        s"Expected a container index, got: [${expression.getClass.getSimpleName}]"
+      )
+  }
 
   override def removeLabels(
     variable: Variable,

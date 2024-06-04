@@ -504,6 +504,10 @@ trait ExpressionBuilder extends CypherParserListener {
     ctx.ast = ctxChild(ctx, 1).ast[PropertyKeyName]()
   }
 
+  def exitDynamicProperty(ctx: CypherParser.DynamicPropertyContext): Unit = {
+    ctx.ast = ctxChild(ctx, 1).ast()
+  }
+
   final override def exitPropertyExpression(ctx: CypherParser.PropertyExpressionContext): Unit = {
     var result = Property(ctxChild(ctx, 0).ast(), ctxChild(ctx, 1).ast())(pos(ctx))
     val size = ctx.children.size(); var i = 2
@@ -513,6 +517,11 @@ trait ExpressionBuilder extends CypherParserListener {
       i += 1
     }
     ctx.ast = result
+  }
+
+  final override def exitDynamicPropertyExpression(ctx: CypherParser.DynamicPropertyExpressionContext): Unit = {
+    val index = ctxChild(ctx, 1).ast[Expression]()
+    ctx.ast = ContainerIndex(ctxChild(ctx, 0).ast(), index)(index.position)
   }
 
   final override def exitExpression1(ctx: CypherParser.Expression1Context): Unit = {

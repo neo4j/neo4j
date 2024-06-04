@@ -219,7 +219,11 @@ public interface CypherParserListener extends ParseTreeListener {
 
     void exitProperty(CypherParser.PropertyContext ctx);
 
+    void exitDynamicProperty(CypherParser.DynamicPropertyContext ctx);
+
     void exitPropertyExpression(CypherParser.PropertyExpressionContext ctx);
+
+    void exitDynamicPropertyExpression(CypherParser.DynamicPropertyExpressionContext ctx);
 
     void exitExpression1(CypherParser.Expression1Context ctx);
 

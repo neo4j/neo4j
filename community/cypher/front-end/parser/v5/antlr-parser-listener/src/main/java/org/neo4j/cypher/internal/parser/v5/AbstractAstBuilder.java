@@ -152,8 +152,11 @@ public abstract class AbstractAstBuilder implements CypherParserListener {
             case CypherParser.RULE_expression2 -> exitExpression2((CypherParser.Expression2Context) ctx);
             case CypherParser.RULE_postFix -> exitPostFix((CypherParser.PostFixContext) ctx);
             case CypherParser.RULE_property -> exitProperty((CypherParser.PropertyContext) ctx);
+            case CypherParser.RULE_dynamicProperty -> exitDynamicProperty((CypherParser.DynamicPropertyContext) ctx);
             case CypherParser.RULE_propertyExpression -> exitPropertyExpression(
                     (CypherParser.PropertyExpressionContext) ctx);
+            case CypherParser.RULE_dynamicPropertyExpression -> exitDynamicPropertyExpression(
+                    (CypherParser.DynamicPropertyExpressionContext) ctx);
             case CypherParser.RULE_expression1 -> exitExpression1((CypherParser.Expression1Context) ctx);
             case CypherParser.RULE_literal -> exitLiteral((CypherParser.LiteralContext) ctx);
             case CypherParser.RULE_caseExpression -> exitCaseExpression((CypherParser.CaseExpressionContext) ctx);

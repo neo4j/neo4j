@@ -151,6 +151,7 @@ import org.neo4j.cypher.internal.ast.ReallocateDatabases
 import org.neo4j.cypher.internal.ast.RelationshipAllQualifier
 import org.neo4j.cypher.internal.ast.RelationshipQualifier
 import org.neo4j.cypher.internal.ast.Remove
+import org.neo4j.cypher.internal.ast.RemoveDynamicPropertyItem
 import org.neo4j.cypher.internal.ast.RemoveHomeDatabaseAction
 import org.neo4j.cypher.internal.ast.RemoveItem
 import org.neo4j.cypher.internal.ast.RemoveLabelItem
@@ -165,6 +166,7 @@ import org.neo4j.cypher.internal.ast.RevokePrivilege
 import org.neo4j.cypher.internal.ast.RevokeRolesFromUsers
 import org.neo4j.cypher.internal.ast.SchemaCommand
 import org.neo4j.cypher.internal.ast.SetClause
+import org.neo4j.cypher.internal.ast.SetDynamicPropertyItem
 import org.neo4j.cypher.internal.ast.SetExactPropertiesFromMapItem
 import org.neo4j.cypher.internal.ast.SetHomeDatabaseAction
 import org.neo4j.cypher.internal.ast.SetIncludingPropertiesFromMapItem
@@ -298,7 +300,8 @@ case class Prettifier(
 
   def prettifySetItems(setItems: Seq[SetItem]): String = {
     val items = setItems.map {
-      case SetPropertyItem(prop, exp) => s"${expr(prop)} = ${expr(exp)}"
+      case SetPropertyItem(prop, exp)        => s"${expr(prop)} = ${expr(exp)}"
+      case SetDynamicPropertyItem(prop, exp) => s"${expr(prop)} = ${expr(exp)}"
       case SetPropertyItems(entity, items) =>
         items.map(i => s"${expr(entity)}.${i._1.name} = ${expr(i._2)}").mkString(", ")
       case SetLabelItem(variable, labels, false)            => labelsString(variable, labels)
@@ -311,9 +314,10 @@ case class Prettifier(
 
   def prettifyRemoveItems(removeItems: Seq[RemoveItem]): String = {
     val items = removeItems.map {
-      case RemovePropertyItem(prop)                 => s"${expr(prop)}"
-      case RemoveLabelItem(variable, labels, false) => labelsString(variable, labels)
-      case RemoveLabelItem(variable, labels, true)  => isLabelsString(variable, labels)
+      case RemovePropertyItem(prop)                         => s"${expr(prop)}"
+      case RemoveDynamicPropertyItem(dynamicPropertyLookup) => s"${expr(dynamicPropertyLookup)}"
+      case RemoveLabelItem(variable, labels, false)         => labelsString(variable, labels)
+      case RemoveLabelItem(variable, labels, true)          => isLabelsString(variable, labels)
     }
     items.mkString(", ")
   }

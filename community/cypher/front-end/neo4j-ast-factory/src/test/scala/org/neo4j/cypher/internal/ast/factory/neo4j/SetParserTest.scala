@@ -17,7 +17,11 @@
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.ast.Clause
+import org.neo4j.cypher.internal.ast.SetDynamicPropertyItem
+import org.neo4j.cypher.internal.ast.SetPropertyItem
 import org.neo4j.cypher.internal.ast.Statements
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
 
 class SetParserTest extends AstParsingTestBase {
@@ -90,6 +94,84 @@ class SetParserTest extends AstParsingTestBase {
         )
       )
     )
+  }
+
+  test("SET map.n.prop = 1") {
+    parsesTo[Clause](
+      set_(
+        Seq(
+          SetPropertyItem(prop(prop(varFor("map"), "n"), "prop"), literalInt(1))(pos)
+        )
+      )
+    )
+  }
+
+  test("SET map[\"prop\"] = 1") {
+    parsesTo[Clause](
+      set_(
+        Seq(
+          SetDynamicPropertyItem(containerIndex(varFor("map"), literalString("prop")), literalInt(1))(pos)
+        )
+      )
+    )
+  }
+
+  test("SET (CASE WHEN true THEN r END).name = 'neo4j'") {
+    parsesTo[Clause](
+      set_(
+        Seq(
+          SetPropertyItem(prop(caseExpression((literalBoolean(true), varFor("r"))), "name"), literalString("neo4j"))(
+            pos
+          )
+        )
+      )
+    )
+  }
+
+  test("SET (CASE WHEN true THEN r END)[toUpper(\"prop\")] = 'neo4j'") {
+    parsesTo[Clause](
+      set_(
+        Seq(
+          SetDynamicPropertyItem(
+            containerIndex(
+              caseExpression((literalBoolean(true), varFor("r"))),
+              function("toUpper", literalString("prop"))
+            ),
+            literalString("neo4j")
+          )(
+            pos
+          )
+        )
+      )
+    )
+  }
+
+  test("SET (listOfNodes[0])[toUpper(\"prop\")] = 'neo4j'") {
+    parsesTo[Clause](
+      set_(
+        Seq(
+          SetDynamicPropertyItem(
+            containerIndex(
+              containerIndex(varFor("listOfNodes"), 0),
+              function("toUpper", literalString("prop"))
+            ),
+            literalString("neo4j")
+          )(
+            pos
+          )
+        )
+      )
+    )
+  }
+
+  test("SET listOfNodes[0][toUpper(\"prop\")] = 'neo4j'") {
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input '['"))
+      .parseIn(Antlr)(_.withMessage(
+        """Invalid input '[': expected '=' (line 1, column 19 (offset: 18))
+          |"SET listOfNodes[0][toUpper("prop")] = 'neo4j'"
+          |                   ^""".stripMargin
+      ))
   }
 
   // Invalid mix of colon conjunction and IS, this will be disallowed in semantic checking

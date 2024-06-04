@@ -41,6 +41,7 @@ import org.neo4j.cypher.internal.ast.RemovePropertyItem
 import org.neo4j.cypher.internal.ast.Return
 import org.neo4j.cypher.internal.ast.ReturnItems
 import org.neo4j.cypher.internal.ast.SetClause
+import org.neo4j.cypher.internal.ast.SetDynamicPropertyItem
 import org.neo4j.cypher.internal.ast.SetExactPropertiesFromMapItem
 import org.neo4j.cypher.internal.ast.SetIncludingPropertiesFromMapItem
 import org.neo4j.cypher.internal.ast.SetItem
@@ -709,6 +710,9 @@ object ClauseConverters {
 
     case SetIncludingPropertiesFromMapItem(vr, expression) =>
       SetPropertiesFromMapPattern(vr, expression, removeOtherProps = false)
+
+    case SetDynamicPropertyItem(_, _) =>
+      throw new InternalException(s"Dynamic properties not supported.")
   }
 
   private def addMergeToLogicalPlanInput(builder: PlannerQueryBuilder, clause: Merge): PlannerQueryBuilder = {

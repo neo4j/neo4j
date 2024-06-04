@@ -65,6 +65,10 @@ object SemanticFeature {
     override def name: String = "composable commands"
   }
 
+  case object DynamicProperties extends SemanticFeature with FeatureToString {
+    override def name: String = "Allow setting and removing of properties dynamically"
+  }
+
   private val allSemanticFeatures = Set(
     MultipleDatabases,
     MultipleGraphs,
@@ -73,7 +77,8 @@ object SemanticFeature {
     ShowSetting,
     GpmShortestPath,
     MatchModes,
-    ComposableCommands
+    ComposableCommands,
+    DynamicProperties
   )
 
   def fromString(str: String): SemanticFeature =

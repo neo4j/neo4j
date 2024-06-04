@@ -653,6 +653,11 @@ public class NullAstFactory
     }
 
     @Override
+    public NULL setDynamicProperty(NULL aNull, NULL value) {
+        return null;
+    }
+
+    @Override
     public NULL setVariable(NULL aNull, NULL value) {
         return null;
     }
@@ -674,6 +679,11 @@ public class NullAstFactory
 
     @Override
     public NULL removeProperty(NULL aNull) {
+        return null;
+    }
+
+    @Override
+    public NULL removeDynamicProperty(NULL aNull) {
         return null;
     }
 

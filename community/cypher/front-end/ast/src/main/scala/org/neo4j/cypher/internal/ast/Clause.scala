@@ -1102,7 +1102,14 @@ case class SetClause(items: Seq[SetItem])(val position: InputPosition) extends U
   override def name = "SET"
 
   override def clauseSpecificSemanticCheck: SemanticCheck =
-    items.semanticCheck chain fromState(checkIfMixingIsWithMultipleLabels)
+    whenState(
+      items.exists(_.isInstanceOf[SetDynamicPropertyItem]) && !_.features.contains(SemanticFeature.DynamicProperties)
+    ) {
+      error(
+        "Setting properties dynamically is not supported.",
+        items.find(_.isInstanceOf[SetDynamicPropertyItem]).get.position
+      )
+    } chain items.semanticCheck chain fromState(checkIfMixingIsWithMultipleLabels)
 
   override def mapExpressions(f: Expression => Expression): UpdateClause =
     copy(items.map(_.mapExpressions(f)))(this.position)
@@ -1152,7 +1159,15 @@ case class Remove(items: Seq[RemoveItem])(val position: InputPosition) extends U
   override def name = "REMOVE"
 
   override def clauseSpecificSemanticCheck: SemanticCheck =
-    items.semanticCheck chain checkIfMixingIsWithMultipleLabels
+    whenState(
+      items.exists(_.isInstanceOf[RemoveDynamicPropertyItem]) && !_.features.contains(SemanticFeature.DynamicProperties)
+    ) {
+      error(
+        "Removing properties dynamically is not supported.",
+        items.find(_.isInstanceOf[RemoveDynamicPropertyItem]).get.position
+      )
+    } chain
+      items.semanticCheck chain checkIfMixingIsWithMultipleLabels
 
   override def mapExpressions(f: Expression => Expression): UpdateClause =
     copy(items.map(_.mapExpressions(f)))(this.position)

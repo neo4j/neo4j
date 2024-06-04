@@ -1978,11 +1978,13 @@ SET_ITEM SetItem() throws Exception:
 {
     EXPRESSION e;
     PROPERTY p;
+    EXPRESSION d;
     VARIABLE v;
     List<StringPos<POS>> labels;
 }
 {
-    LOOKAHEAD( 2 ) p=PropertyExpression() <EQ> e=Expression() { return astFactory.setProperty( p, e ); }
+    LOOKAHEAD( Expression1() <DOT> ) p=PropertyExpression() <EQ> e=Expression() { return astFactory.setProperty( p, e ); }
+    | LOOKAHEAD( Expression1() <LBRACKET> ) d=DynamicPropertyExpression() <EQ> e=Expression() { return astFactory.setDynamicProperty( d, e ); }
     | LOOKAHEAD( 2 ) v=Variable() <EQ> e=Expression() { return astFactory.setVariable( v, e ); }
     | LOOKAHEAD( 2 ) v = Variable() <PLUSEQUAL> e=Expression() { return astFactory.addAndSetVariable( v, e ); }
     | LOOKAHEAD( 2 ) v = Variable() labels = NodeLabels() { return astFactory.setLabels( v, labels, false ); }
@@ -2012,7 +2014,8 @@ REMOVE_ITEM RemoveItem() throws Exception:
     List<StringPos<POS>> labels;
 }
 {
-    LOOKAHEAD(2) p=PropertyExpression() { return astFactory.removeProperty( p ); }
+    LOOKAHEAD( Expression1() <DOT> ) p=PropertyExpression() { return astFactory.removeProperty( p ); }
+    | LOOKAHEAD( Expression1() <LBRACKET> ) e=DynamicPropertyExpression() { return astFactory.removeDynamicProperty( e ); }
     | LOOKAHEAD(2) v=Variable() labels=NodeLabels() { return astFactory.removeLabels( v, labels, false ); }
     | v=Variable() labels=NodeLabelsIs() { return astFactory.removeLabels( v, labels, true ); }
 }
@@ -3681,6 +3684,18 @@ PROPERTY Property( EXPRESSION subject ) :
     }
 }
 
+EXPRESSION DynamicPropertyExpression() throws Exception:
+{
+    EXPRESSION subject;
+    EXPRESSION e;
+}
+{
+    subject=Expression1() e=DynamicProperty( subject )
+    {
+        return e; 
+    }
+}
+
 PROPERTY PropertyExpression() throws Exception:
 {
     EXPRESSION subject;
@@ -3690,6 +3705,17 @@ PROPERTY PropertyExpression() throws Exception:
     subject=Expression1() ( p=Property( subject ) { subject = p; } )+
     {
         return p;
+    }
+}
+
+EXPRESSION DynamicProperty( EXPRESSION subject ) throws Exception:
+{
+    EXPRESSION e;
+}
+{
+    <LBRACKET> e=Expression() <RBRACKET> 
+    {
+        return astFactory.listLookup( subject, e ); 
     }
 }
 

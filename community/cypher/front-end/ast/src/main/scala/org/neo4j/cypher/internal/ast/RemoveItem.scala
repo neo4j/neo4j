@@ -20,6 +20,7 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticCheck
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheckable
 import org.neo4j.cypher.internal.ast.semantics.SemanticExpressionCheck
 import org.neo4j.cypher.internal.ast.semantics.SemanticPatternCheck
+import org.neo4j.cypher.internal.expressions.ContainerIndex
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.HasMappableExpressions
 import org.neo4j.cypher.internal.expressions.LabelName
@@ -29,6 +30,7 @@ import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.CTNode
+import org.neo4j.cypher.internal.util.symbols.CTRelationship
 
 sealed trait RemoveItem extends ASTNode with SemanticCheckable with HasMappableExpressions[RemoveItem]
 
@@ -60,4 +62,15 @@ case class RemovePropertyItem(property: LogicalProperty) extends RemoveItem {
           s"We don't expect this to be called on any other logical properties. Got: $property"
         )
     }
+}
+
+case class RemoveDynamicPropertyItem(dynamicPropertyLookup: ContainerIndex) extends RemoveItem {
+  override def position: InputPosition = dynamicPropertyLookup.position
+
+  override def semanticCheck: SemanticCheck = SemanticExpressionCheck.simple(dynamicPropertyLookup) chain
+    SemanticExpressionCheck.expectType(CTNode.covariant | CTRelationship.covariant, dynamicPropertyLookup.expr)
+
+  override def mapExpressions(f: Expression => Expression): RemoveItem = copy(
+    f(dynamicPropertyLookup).asInstanceOf[ContainerIndex]
+  )
 }

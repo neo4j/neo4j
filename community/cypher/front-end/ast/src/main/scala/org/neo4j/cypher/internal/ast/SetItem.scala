@@ -20,6 +20,7 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticAnalysisTooling
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheckable
 import org.neo4j.cypher.internal.ast.semantics.SemanticExpressionCheck
 import org.neo4j.cypher.internal.ast.semantics.SemanticPatternCheck
+import org.neo4j.cypher.internal.expressions.ContainerIndex
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.HasMappableExpressions
 import org.neo4j.cypher.internal.expressions.LabelName
@@ -69,6 +70,23 @@ case class SetPropertyItem(property: LogicalProperty, expression: Expression)(va
           s"We don't expect this to be called on any other logical properties. Got: $property"
         )
     }
+  }
+}
+
+case class SetDynamicPropertyItem(dynamicPropertyLookup: ContainerIndex, expression: Expression)(
+  val position: InputPosition
+) extends SetProperty {
+
+  def semanticCheck =
+    SemanticExpressionCheck.simple(dynamicPropertyLookup) chain
+      SemanticExpressionCheck.simple(expression) chain
+      SemanticExpressionCheck.expectType(CTNode.covariant | CTRelationship.covariant, dynamicPropertyLookup.expr)
+
+  override def mapExpressions(f: Expression => Expression): SetItem = {
+    copy(
+      f(dynamicPropertyLookup).asInstanceOf[ContainerIndex],
+      f(expression)
+    )(this.position)
   }
 }
 
