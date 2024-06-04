@@ -22,6 +22,7 @@ package org.neo4j.internal.kernel.api;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.internal.kernel.api.exceptions.schema.TokenCapacityExceededKernelException;
+import org.neo4j.token.api.NonUniqueTokenException;
 
 public interface TokenWrite {
     /**
@@ -79,6 +80,17 @@ public interface TokenWrite {
      * @throws TokenCapacityExceededKernelException if too many relationship types would be created by this call, compared to the token id space available.
      */
     int relationshipTypeCreateForName(String relationshipTypeName, boolean internal) throws KernelException;
+
+    /**
+     * Creates a relationship type with the given id and name.
+     * @param relationshipTypeName the name of the relationship.
+     * @throws IllegalTokenNameException if token name is illegal.
+     * @throws TokenCapacityExceededKernelException if too many relationship types would be created by this call, compared to the token id space available.
+     * @throws NonUniqueTokenException if a token already exists with either the given {@code relationshipTypeId}
+     * or the given {@code relationshipTypeName} and the existing token doesn't match given data exactly.
+     */
+    void relationshipTypeWithSpecificIdCreateForName(int relationshipTypeId, String relationshipTypeName)
+            throws KernelException;
 
     /**
      * Returns a property key id for a property key. If the key doesn't exist prior to

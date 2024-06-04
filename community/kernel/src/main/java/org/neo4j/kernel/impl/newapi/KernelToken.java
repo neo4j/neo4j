@@ -33,7 +33,11 @@ import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.storageengine.api.CommandCreationContext;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.token.TokenHolders;
+import org.neo4j.token.api.NamedToken;
+import org.neo4j.token.api.NonUniqueTokenException;
+import org.neo4j.token.api.TokenConstants;
 import org.neo4j.token.api.TokenHolder;
+import org.neo4j.token.api.TokenNotFoundException;
 
 public class KernelToken extends KernelTokenRead implements Token {
     private final StorageReader store;
@@ -80,6 +84,35 @@ public class KernelToken extends KernelTokenRead implements Token {
                 commandCreationContext::reserveRelationshipTypeTokenId, tokenHolders.relationshipTypeTokens());
         txState.relationshipTypeDoCreateForName(relationshipTypeName, internal, id);
         return id;
+    }
+
+    @Override
+    public void relationshipTypeWithSpecificIdCreateForName(int relationshipTypeId, String relationshipTypeName)
+            throws KernelException {
+        ktx.assertOpen();
+        TransactionState txState = ktx.txState();
+        try {
+            var existingToken = tokenHolders.relationshipTypeTokens().getTokenById(relationshipTypeId);
+            var newToken = new NamedToken(relationshipTypeName, relationshipTypeId);
+            if (!newToken.equals(existingToken)) {
+                throw new NonUniqueTokenException(TokenHolder.TYPE_RELATIONSHIP_TYPE, newToken, existingToken);
+            }
+        } catch (TokenNotFoundException e) {
+            // There's no relationship type token with the given ID
+        }
+        int existingId = tokenHolders.relationshipTypeTokens().getIdByName(relationshipTypeName);
+        if (existingId != TokenConstants.NO_TOKEN) {
+            if (relationshipTypeId != existingId) {
+                throw new NonUniqueTokenException(
+                        TokenHolder.TYPE_RELATIONSHIP_TYPE,
+                        new NamedToken(relationshipTypeName, relationshipTypeId),
+                        new NamedToken(relationshipTypeName, existingId));
+            }
+        }
+        // else there's no relationship type token with the given name
+
+        txState.relationshipTypeDoCreateForName(relationshipTypeName, false, relationshipTypeId);
+        ktx.needsHighIdTracking();
     }
 
     @Override

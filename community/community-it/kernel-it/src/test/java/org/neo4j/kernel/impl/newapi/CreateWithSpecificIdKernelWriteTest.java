@@ -26,6 +26,7 @@ import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.RelationshipSelection.ALL_RELATIONSHIPS;
 
+import java.util.concurrent.atomic.AtomicInteger;
 import org.eclipse.collections.api.factory.primitive.IntObjectMaps;
 import org.eclipse.collections.api.factory.primitive.IntSets;
 import org.eclipse.collections.api.factory.primitive.LongObjectMaps;
@@ -43,12 +44,18 @@ import org.neo4j.internal.kernel.api.exceptions.EntityAlreadyExistsException;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
+import org.neo4j.token.api.NonUniqueTokenException;
 import org.neo4j.values.storable.Value;
 
 @ExtendWith(RandomExtension.class)
 class CreateWithSpecificIdKernelWriteTest extends KernelAPIWriteTestBase<WriteTestSupport> {
     @Inject
     private RandomSupport random;
+
+    // We need some coordination here since these test suites runs with PER_CLASS mode
+    // Don't start from 0 since apparently record format(s) starts from 1, and it's also
+    // generally more interesting to test creation of ID that aren't the perfect sequence from start
+    private final AtomicInteger nextRelationshipTypeTokenId = new AtomicInteger(5);
 
     @Override
     public WriteTestSupport newTestSupport() {
@@ -165,6 +172,99 @@ class CreateWithSpecificIdKernelWriteTest extends KernelAPIWriteTestBase<WriteTe
             assertThatThrownBy(() -> write.relationshipWithSpecificIdCreate(relationshipId, nodeId1, 1, nodeId2))
                     .isInstanceOf(EntityAlreadyExistsException.class);
             tx.commit();
+        }
+    }
+
+    @Test
+    void shouldCreateRelationshipTypeWithSpecificId() throws Exception {
+        // given
+        int id = nextRelationshipTypeTokenId.getAndIncrement();
+        String name = "MY_TYPE" + id;
+
+        // when
+        try (var tx = beginTransaction()) {
+            var tokenWrite = tx.tokenWrite();
+            tokenWrite.relationshipTypeWithSpecificIdCreateForName(id, name);
+            tx.commit();
+        }
+
+        // then
+        try (var tx = beginTransaction()) {
+            assertThat(tx.tokenRead().relationshipTypeName(id)).isEqualTo(name);
+            assertThat(tx.tokenRead().relationshipType(name)).isEqualTo(id);
+        }
+
+        // and when
+        try (var tx = beginTransaction()) {
+            int otherId = tx.tokenWrite().relationshipTypeCreateForName("OTHER_TYPE", false);
+            assertThat(otherId).isNotEqualTo(id);
+            tx.commit();
+            nextRelationshipTypeTokenId.getAndIncrement();
+        }
+    }
+
+    @Test
+    void shouldIdempotentlyCreateRelationshipTypeWithSpecificId() throws Exception {
+        // given
+        String name = "MY_TYPE" + nextRelationshipTypeTokenId.getAndIncrement();
+        int id;
+        try (var tx = beginTransaction()) {
+            var tokenWrite = tx.tokenWrite();
+            id = tokenWrite.relationshipTypeCreateForName(name, false);
+            tx.commit();
+        }
+
+        // when
+        try (var tx = beginTransaction()) {
+            var tokenWrite = tx.tokenWrite();
+            tokenWrite.relationshipTypeWithSpecificIdCreateForName(id, name);
+            tx.commit();
+        }
+
+        // then
+        try (var tx = beginTransaction()) {
+            assertThat(tx.tokenRead().relationshipTypeName(id)).isEqualTo(name);
+            assertThat(tx.tokenRead().relationshipType(name)).isEqualTo(id);
+        }
+    }
+
+    @Test
+    void shouldFailCreateRelationshipTypeWithSpecificIdOnExistingId() throws Exception {
+        // given
+        String name = "MY_TYPE" + nextRelationshipTypeTokenId.getAndIncrement();
+        int id;
+        try (var tx = beginTransaction()) {
+            var tokenWrite = tx.tokenWrite();
+            id = tokenWrite.relationshipTypeCreateForName(name, false);
+            tx.commit();
+        }
+
+        // when
+        try (var tx = beginTransaction()) {
+            var tokenWrite = tx.tokenWrite();
+            // then
+            assertThatThrownBy(() -> tokenWrite.relationshipTypeWithSpecificIdCreateForName(id, name + "_OTHER"))
+                    .isInstanceOf(NonUniqueTokenException.class);
+        }
+    }
+
+    @Test
+    void shouldFailCreateRelationshipTypeWithSpecificIdOnExistingName() throws Exception {
+        // given
+        String name = "MY_TYPE" + nextRelationshipTypeTokenId.getAndIncrement();
+        int id;
+        try (var tx = beginTransaction()) {
+            var tokenWrite = tx.tokenWrite();
+            id = tokenWrite.relationshipTypeCreateForName(name, false);
+            tx.commit();
+        }
+
+        // when
+        try (var tx = beginTransaction()) {
+            var tokenWrite = tx.tokenWrite();
+            // then
+            assertThatThrownBy(() -> tokenWrite.relationshipTypeWithSpecificIdCreateForName(id + 1, name))
+                    .isInstanceOf(NonUniqueTokenException.class);
         }
     }
 
