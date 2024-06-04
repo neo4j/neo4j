@@ -592,6 +592,31 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("c").withSingleRow((0 until sizeHint by 2).sum)
   }
 
+  test("should sum(n.prop) with mixed floats and integers") {
+    givenGraph {
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i: Int if i < sizeHint / 2 => Map("num" -> i)
+          case i: Int                     => Map("num" -> i.toDouble)
+        },
+        "Honey"
+      )
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("c")
+      .aggregation(Seq.empty, Seq("sum(x.num) AS c"))
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("c").withSingleRow((0 until sizeHint).sum)
+  }
+
   test("should fail sum() on mixed numbers and durations I") {
     assertFailOnMixedNumberAndDuration("sum(x)")
   }
