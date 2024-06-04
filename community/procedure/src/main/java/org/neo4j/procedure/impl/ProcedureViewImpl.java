@@ -31,6 +31,7 @@ import org.neo4j.internal.kernel.api.procs.QualifiedName;
 import org.neo4j.internal.kernel.api.procs.UserAggregationReducer;
 import org.neo4j.internal.kernel.api.procs.UserFunctionHandle;
 import org.neo4j.internal.kernel.api.procs.UserFunctionSignature;
+import org.neo4j.kernel.api.CypherScope;
 import org.neo4j.kernel.api.ResourceMonitor;
 import org.neo4j.kernel.api.procedure.Context;
 import org.neo4j.kernel.api.procedure.ProcedureView;
@@ -105,32 +106,62 @@ public class ProcedureViewImpl implements ProcedureView {
 
     @Override
     public ProcedureHandle procedure(QualifiedName name) throws ProcedureException {
-        return registry.procedure(name);
+        return procedure(name, CypherScope.CYPHER_5);
     }
 
     @Override
     public UserFunctionHandle function(QualifiedName name) {
-        return registry.function(name);
+        return function(name, CypherScope.CYPHER_5);
     }
 
     @Override
     public UserFunctionHandle aggregationFunction(QualifiedName name) {
-        return registry.aggregationFunction(name);
+        return aggregationFunction(name, CypherScope.CYPHER_5);
+    }
+
+    @Override
+    public ProcedureHandle procedure(QualifiedName name, CypherScope scope) throws ProcedureException {
+        return registry.procedure(name, scope);
+    }
+
+    @Override
+    public UserFunctionHandle function(QualifiedName name, CypherScope scope) {
+        return registry.function(name, scope);
+    }
+
+    @Override
+    public UserFunctionHandle aggregationFunction(QualifiedName name, CypherScope scope) {
+        return registry.aggregationFunction(name, scope);
     }
 
     @Override
     public Stream<ProcedureSignature> getAllProcedures() {
-        return registry.getAllProcedures();
+        return getAllProcedures(CypherScope.CYPHER_5);
     }
 
     @Override
     public Stream<UserFunctionSignature> getAllNonAggregatingFunctions() {
-        return registry.getAllNonAggregatingFunctions();
+        return getAllNonAggregatingFunctions(CypherScope.CYPHER_5);
     }
 
     @Override
     public Stream<UserFunctionSignature> getAllAggregatingFunctions() {
-        return registry.getAllAggregatingFunctions();
+        return getAllAggregatingFunctions(CypherScope.CYPHER_5);
+    }
+
+    @Override
+    public Stream<ProcedureSignature> getAllProcedures(CypherScope scope) {
+        return registry.getAllProcedures(scope);
+    }
+
+    @Override
+    public Stream<UserFunctionSignature> getAllNonAggregatingFunctions(CypherScope scope) {
+        return registry.getAllNonAggregatingFunctions(scope);
+    }
+
+    @Override
+    public Stream<UserFunctionSignature> getAllAggregatingFunctions(CypherScope scope) {
+        return registry.getAllAggregatingFunctions(scope);
     }
 
     @Override

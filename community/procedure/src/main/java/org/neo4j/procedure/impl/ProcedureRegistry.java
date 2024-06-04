@@ -24,6 +24,7 @@ import static java.lang.String.format;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 import org.eclipse.collections.impl.list.mutable.primitive.IntArrayList;
@@ -39,6 +40,7 @@ import org.neo4j.internal.kernel.api.procs.UserFunctionHandle;
 import org.neo4j.internal.kernel.api.procs.UserFunctionSignature;
 import org.neo4j.internal.kernel.api.security.AbstractSecurityLog;
 import org.neo4j.internal.kernel.api.security.PermissionState;
+import org.neo4j.kernel.api.CypherScope;
 import org.neo4j.kernel.api.ResourceMonitor;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.procedure.CallableProcedure;
@@ -86,14 +88,17 @@ public class ProcedureRegistry {
                     "Procedures with zero output fields must be declared as VOID");
         }
 
-        if (procedures.contains(name)) {
-            throw new ProcedureException(
-                    Status.Procedure.ProcedureRegistrationFailed,
-                    "Unable to register procedure, because the name `%s` is already in use.",
-                    name);
+        var supportedScopes = signature.supportedCypherScopes();
+        for (var scope : supportedScopes) {
+            if (procedures.contains(name, scope)) {
+                throw new ProcedureException(
+                        Status.Procedure.ProcedureRegistrationFailed,
+                        "Unable to register procedure, because the name `%s` is already in use.",
+                        name);
+            }
         }
 
-        procedures.put(name, proc, signature.caseInsensitive());
+        procedures.put(name, supportedScopes, proc, signature.caseInsensitive());
     }
 
     /**
@@ -104,22 +109,25 @@ public class ProcedureRegistry {
     public void register(CallableUserFunction function) throws ProcedureException {
         UserFunctionSignature signature = function.signature();
         QualifiedName name = signature.name();
+        var supportedScopes = signature.supportedCypherScopes();
 
-        if (aggregationFunctions.contains(name)) {
-            throw new ProcedureException(
-                    Status.Procedure.ProcedureRegistrationFailed,
-                    "Unable to register function, because the name `%s` is already in use as an aggregation function.",
-                    name);
+        for (var scope : supportedScopes) {
+            if (aggregationFunctions.contains(name, scope)) {
+                throw new ProcedureException(
+                        Status.Procedure.ProcedureRegistrationFailed,
+                        "Unable to register function, because the name `%s` is already in use as an aggregation function.",
+                        name);
+            }
+
+            if (functions.contains(name, scope)) {
+                throw new ProcedureException(
+                        Status.Procedure.ProcedureRegistrationFailed,
+                        "Unable to register function, because the name `%s` is already in use.",
+                        name);
+            }
         }
 
-        if (functions.contains(name)) {
-            throw new ProcedureException(
-                    Status.Procedure.ProcedureRegistrationFailed,
-                    "Unable to register function, because the name `%s` is already in use.",
-                    name);
-        }
-
-        functions.put(name, function, signature.caseInsensitive());
+        functions.put(name, supportedScopes, function, signature.caseInsensitive());
     }
 
     /**
@@ -130,22 +138,25 @@ public class ProcedureRegistry {
     public void register(CallableUserAggregationFunction function) throws ProcedureException {
         UserFunctionSignature signature = function.signature();
         QualifiedName name = signature.name();
+        var supportedScopes = signature.supportedCypherScopes();
 
-        if (functions.contains(name)) {
-            throw new ProcedureException(
-                    Status.Procedure.ProcedureRegistrationFailed,
-                    "Unable to register aggregation function, because the name `%s` is already in use as a function.",
-                    name);
+        for (var scope : supportedScopes) {
+            if (functions.contains(name, scope)) {
+                throw new ProcedureException(
+                        Status.Procedure.ProcedureRegistrationFailed,
+                        "Unable to register aggregation function, because the name `%s` is already in use as a function.",
+                        name);
+            }
+
+            if (aggregationFunctions.contains(name, scope)) {
+                throw new ProcedureException(
+                        Status.Procedure.ProcedureRegistrationFailed,
+                        "Unable to register aggregation function, because the name `%s` is already in use.",
+                        name);
+            }
         }
 
-        if (aggregationFunctions.contains(name)) {
-            throw new ProcedureException(
-                    Status.Procedure.ProcedureRegistrationFailed,
-                    "Unable to register aggregation function, because the name `%s` is already in use.",
-                    name);
-        }
-
-        aggregationFunctions.put(name, function, signature.caseInsensitive());
+        aggregationFunctions.put(name, supportedScopes, function, signature.caseInsensitive());
     }
 
     private void validateSignature(String descriptiveName, List<FieldSignature> fields, String fieldType)
@@ -163,35 +174,50 @@ public class ProcedureRegistry {
         }
     }
 
+    @Deprecated(forRemoval = true)
     public ProcedureHandle procedure(QualifiedName name) throws ProcedureException {
-        CallableProcedure proc = procedures.get(name);
+        return procedure(name, CypherScope.CYPHER_5);
+    }
+
+    public ProcedureHandle procedure(QualifiedName name, CypherScope scope) throws ProcedureException {
+        CallableProcedure proc = procedures.getByKey(name, scope);
         if (proc == null) {
             throw noSuchProcedure(name);
         }
-        return new ProcedureHandle(proc.signature(), procedures.idOf(name));
+        return new ProcedureHandle(proc.signature(), procedures.idOfKey(name, scope));
     }
 
+    @Deprecated(forRemoval = true)
     public UserFunctionHandle function(QualifiedName name) {
-        CallableUserFunction func = functions.get(name);
-        if (func == null) {
-            return null;
-        }
-        return new UserFunctionHandle(func.signature(), functions.idOf(name));
+        return function(name, CypherScope.CYPHER_5);
     }
 
-    public UserFunctionHandle aggregationFunction(QualifiedName name) {
-        CallableUserAggregationFunction func = aggregationFunctions.get(name);
+    public UserFunctionHandle function(QualifiedName name, CypherScope scope) {
+        CallableUserFunction func = functions.getByKey(name, scope);
         if (func == null) {
             return null;
         }
-        return new UserFunctionHandle(func.signature(), aggregationFunctions.idOf(name));
+        return new UserFunctionHandle(func.signature(), functions.idOfKey(name, scope));
+    }
+
+    @Deprecated(forRemoval = true)
+    public UserFunctionHandle aggregationFunction(QualifiedName name) {
+        return aggregationFunction(name, CypherScope.CYPHER_5);
+    }
+
+    public UserFunctionHandle aggregationFunction(QualifiedName name, CypherScope scope) {
+        CallableUserAggregationFunction func = aggregationFunctions.getByKey(name, scope);
+        if (func == null) {
+            return null;
+        }
+        return new UserFunctionHandle(func.signature(), aggregationFunctions.idOfKey(name, scope));
     }
 
     public RawIterator<AnyValue[], ProcedureException> callProcedure(
             Context ctx, int id, AnyValue[] input, ResourceMonitor resourceMonitor) throws ProcedureException {
         CallableProcedure proc;
         try {
-            proc = procedures.get(id);
+            proc = procedures.getById(id);
             var permission = ctx.securityContext().allowExecuteAdminProcedure(id);
             if (proc.signature().admin() && !permission.allowsAccess()) {
                 String errorDescriptor = (permission == PermissionState.EXPLICIT_DENY)
@@ -216,7 +242,7 @@ public class ProcedureRegistry {
     public AnyValue callFunction(Context ctx, int functionId, AnyValue[] input) throws ProcedureException {
         CallableUserFunction func;
         try {
-            func = functions.get(functionId);
+            func = functions.getById(functionId);
         } catch (IndexOutOfBoundsException e) {
             throw noSuchFunction(functionId);
         }
@@ -225,7 +251,7 @@ public class ProcedureRegistry {
 
     public UserAggregationReducer createAggregationFunction(Context ctx, int id) throws ProcedureException {
         try {
-            CallableUserAggregationFunction func = aggregationFunctions.get(id);
+            CallableUserAggregationFunction func = aggregationFunctions.getById(id);
             return func.createReducer(ctx);
         } catch (IndexOutOfBoundsException e) {
             throw noSuchFunction(id);
@@ -255,24 +281,30 @@ public class ProcedureRegistry {
                 id);
     }
 
-    public Stream<ProcedureSignature> getAllProcedures() {
-        return procedures.all().stream().map(CallableProcedure::signature);
+    public Stream<ProcedureSignature> getAllProcedures(CypherScope scope) {
+        return stream(procedures, CallableProcedure::signature, (signature) -> signature
+                .supportedCypherScopes()
+                .contains(scope));
     }
 
     int[] getIdsOfProceduresMatching(Predicate<CallableProcedure> predicate) {
         return getIdsOf(procedures, predicate);
     }
 
-    public Stream<UserFunctionSignature> getAllNonAggregatingFunctions() {
-        return functions.all().stream().map(CallableUserFunction::signature);
+    public Stream<UserFunctionSignature> getAllNonAggregatingFunctions(CypherScope scope) {
+        return stream(functions, CallableUserFunction::signature, (signature) -> signature
+                .supportedCypherScopes()
+                .contains(scope));
     }
 
     int[] getIdsOfFunctionsMatching(Predicate<CallableUserFunction> predicate) {
         return getIdsOf(functions, predicate);
     }
 
-    public Stream<UserFunctionSignature> getAllAggregatingFunctions() {
-        return aggregationFunctions.all().stream().map(CallableUserAggregationFunction::signature);
+    public Stream<UserFunctionSignature> getAllAggregatingFunctions(CypherScope scope) {
+        return stream(aggregationFunctions, CallableUserAggregationFunction::signature, (signature) -> signature
+                .supportedCypherScopes()
+                .contains(scope));
     }
 
     int[] getIdsOfAggregatingFunctionsMatching(Predicate<CallableUserAggregationFunction> predicate) {
@@ -317,7 +349,23 @@ public class ProcedureRegistry {
 
     private static <T> int[] getIdsOf(ProcedureHolder<T> holder, Predicate<T> predicate) {
         var lst = new IntArrayList();
-        holder.forEach((i, v) -> lst.add(i), predicate);
+        holder.forEach((i, v) -> {
+            if (predicate.test(v)) {
+                lst.add(i);
+            }
+        });
         return lst.toArray();
+    }
+
+    private static <T, F> Stream<F> stream(
+            ProcedureHolder<T> holder, Function<T, F> transform, Predicate<F> condition) {
+        Stream.Builder<F> builder = Stream.builder();
+        holder.forEach((id, callable) -> {
+            var value = transform.apply(callable);
+            if (condition.test(value)) {
+                builder.add(value);
+            }
+        });
+        return builder.build();
     }
 }

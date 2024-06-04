@@ -38,6 +38,7 @@ import org.neo4j.internal.kernel.api.procs.QualifiedName;
 import org.neo4j.internal.kernel.api.procs.UserAggregationReducer;
 import org.neo4j.internal.kernel.api.procs.UserFunctionHandle;
 import org.neo4j.internal.kernel.api.procs.UserFunctionSignature;
+import org.neo4j.kernel.api.CypherScope;
 import org.neo4j.kernel.api.ResourceMonitor;
 import org.neo4j.kernel.api.procedure.CallableProcedure;
 import org.neo4j.kernel.api.procedure.CallableUserAggregationFunction;
@@ -194,6 +195,24 @@ public class LazyProcedures implements GlobalProcedures, Consumer<Supplier<Globa
         }
 
         @Override
+        public ProcedureHandle procedure(QualifiedName name, CypherScope scope) throws ProcedureException {
+            initView();
+            return view.procedure(name, scope);
+        }
+
+        @Override
+        public UserFunctionHandle function(QualifiedName name, CypherScope scope) {
+            initView();
+            return view.function(name, scope);
+        }
+
+        @Override
+        public UserFunctionHandle aggregationFunction(QualifiedName name, CypherScope scope) {
+            initView();
+            return view.aggregationFunction(name, scope);
+        }
+
+        @Override
         public Stream<ProcedureSignature> getAllProcedures() {
             initView();
             return view.getAllProcedures();
@@ -209,6 +228,24 @@ public class LazyProcedures implements GlobalProcedures, Consumer<Supplier<Globa
         public Stream<UserFunctionSignature> getAllAggregatingFunctions() {
             initView();
             return view.getAllAggregatingFunctions();
+        }
+
+        @Override
+        public Stream<ProcedureSignature> getAllProcedures(CypherScope scope) {
+            initView();
+            return view.getAllProcedures(scope);
+        }
+
+        @Override
+        public Stream<UserFunctionSignature> getAllNonAggregatingFunctions(CypherScope scope) {
+            initView();
+            return view.getAllNonAggregatingFunctions(scope);
+        }
+
+        @Override
+        public Stream<UserFunctionSignature> getAllAggregatingFunctions(CypherScope scope) {
+            initView();
+            return view.getAllAggregatingFunctions(scope);
         }
 
         @Override

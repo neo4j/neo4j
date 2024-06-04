@@ -26,14 +26,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
-import org.neo4j.function.Predicates;
+import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
 import org.neo4j.internal.kernel.api.procs.QualifiedName;
+import org.neo4j.kernel.api.CypherScope;
 
 /**
  * Simple in memory store for procedures.
@@ -45,8 +44,10 @@ import org.neo4j.internal.kernel.api.procs.QualifiedName;
  * @param <T> the type to be stored
  */
 class ProcedureHolder<T> {
-    private final Map<QualifiedName, Integer> nameToId;
-    private final Map<QualifiedName, Integer> caseInsensitiveName2Id;
+    private final Map<QualifiedName, int[]> nameToEntries;
+    private final Map<QualifiedName, int[]> caseInsensitiveName2Entries;
+
+    private static int UNUSED_REFERENCE = -1;
     private final List<Object> store;
 
     private static final Object TOMBSTONE = new Object() {
@@ -61,20 +62,22 @@ class ProcedureHolder<T> {
     }
 
     private ProcedureHolder(
-            Map<QualifiedName, Integer> nameToId,
-            Map<QualifiedName, Integer> caseInsensitiveName2Id,
-            List<Object> store) {
-        this.nameToId = nameToId;
-        this.caseInsensitiveName2Id = caseInsensitiveName2Id;
+            Map<QualifiedName, int[]> nameToId, Map<QualifiedName, int[]> caseInsensitiveName2Id, List<Object> store) {
+        this.nameToEntries = nameToId;
+        this.caseInsensitiveName2Entries = caseInsensitiveName2Id;
         this.store = store;
     }
 
-    T get(QualifiedName name) {
-        Integer id = name2Id(name);
-        if (id == null) {
+    T getByKey(QualifiedName name, CypherScope scope) {
+        int[] ids = name2entry(name);
+        if (ids == null) {
             return null;
         }
-        Object value = store.get(id);
+        int reference = ids[scope.ordinal()];
+        if (reference == UNUSED_REFERENCE) {
+            return null;
+        }
+        Object value = store.get(reference);
         if (value == TOMBSTONE) {
             return null;
         }
@@ -82,7 +85,7 @@ class ProcedureHolder<T> {
         return (T) value;
     }
 
-    T get(int id) {
+    T getById(int id) {
         Object element = store.get(id);
         if (element == TOMBSTONE) {
             return null;
@@ -91,34 +94,51 @@ class ProcedureHolder<T> {
         return (T) element;
     }
 
-    int put(QualifiedName name, T item, boolean caseInsensitive) {
-        Integer id = name2Id(name);
+    int put(QualifiedName name, Set<CypherScope> scopes, T item, boolean caseInsensitive) {
+        int[] entry = name2entry(name);
+        int reference = UNUSED_REFERENCE;
 
-        // Existing entry -> preserve ids
-        if (id != null) {
-            store.set(id, item);
+        if (entry != null) {
+            // If the item already exists, then there is at least one scope set.
+            if (hasDifferentScopes(entry, scopes)) {
+                // If there is a different set of scopes, then we will need to add a new item.
+                reference = store.size();
+                store.add(item);
+                for (var scope : scopes) {
+                    entry[scope.ordinal()] = reference;
+                }
+            } else {
+                // The scopes are the same, then we go ahead and update the items
+                for (var scope : scopes) {
+                    reference = entry[scope.ordinal()];
+                    store.set(reference, item);
+                }
+            }
+
         } else {
-            id = store.size();
-            nameToId.put(name, id);
+            reference = store.size();
+            entry = makeEntry(scopes, reference);
+            nameToEntries.put(name, entry);
             store.add(item);
         }
 
         // Update case sensitivity
         var lowercaseName = toLowerCaseName(name);
         if (caseInsensitive) {
-            caseInsensitiveName2Id.put(lowercaseName, id);
+            caseInsensitiveName2Entries.put(lowercaseName, entry);
         } else {
-            caseInsensitiveName2Id.remove(lowercaseName);
+            caseInsensitiveName2Entries.remove(lowercaseName);
         }
 
-        return id;
+        assert reference != UNUSED_REFERENCE;
+        return reference;
     }
 
     /**
      * Create a tombstone:d copy of the ProcedureHolder.
      *
      * @param src The source ProcedureHolder from which the copy is made.
-     * @param which The ids that should be preserved, if any.
+     * @param which The ids that should be tombstone:d, if any.
      *
      * @return A new ProcedureHolder
      */
@@ -126,11 +146,12 @@ class ProcedureHolder<T> {
         requireNonNull(which);
 
         var ret = new ProcedureHolder<T>();
-
-        Set<Integer> matches = src.nameToId.entrySet().stream()
-                .filter(entry -> which.test(entry.getKey()))
-                .map(Entry::getValue)
-                .collect(Collectors.toSet());
+        IntHashSet matches = new IntHashSet();
+        for (var entry : src.nameToEntries.entrySet()) {
+            if (which.test(entry.getKey())) {
+                matches.addAll(entry.getValue());
+            }
+        }
 
         for (int i = 0; i < src.store.size(); i++) {
             if (matches.contains(i)) {
@@ -140,52 +161,52 @@ class ProcedureHolder<T> {
             }
         }
 
-        ret.caseInsensitiveName2Id.putAll(src.caseInsensitiveName2Id);
-        ret.nameToId.putAll(src.nameToId);
+        ret.caseInsensitiveName2Entries.putAll(src.caseInsensitiveName2Entries);
+        ret.nameToEntries.putAll(src.nameToEntries);
 
         return ret;
     }
 
-    int idOf(QualifiedName name) {
-        Integer id = name2Id(name);
+    int idOfKey(QualifiedName name, CypherScope scope) {
+        int[] entry = name2entry(name);
 
-        if (id == null || store.get(id) == TOMBSTONE) {
+        if (entry == null) {
             throw new NoSuchElementException();
         }
 
-        return id;
+        int reference = entry[scope.ordinal()];
+        if (reference == UNUSED_REFERENCE) {
+            throw new NoSuchElementException();
+        }
+
+        if (store.get(reference) == TOMBSTONE) {
+            throw new NoSuchElementException();
+        }
+
+        return reference;
     }
 
-    List<T> all() {
-        // In the general case, the procedure list is upper bounded by the store size,
-        // but since tombstone:d elements are rare, the size will in all likelihood be
-        // equal to the store size.
-        var lst = new ArrayList<T>(store.size());
-        forEach((id, item) -> lst.add(item), Predicates.alwaysTrue());
-        return lst;
-    }
-
-    void forEach(BiConsumer<Integer, T> consumer, Predicate<T> filter) {
+    void forEach(BiConsumer<Integer, T> consumer) {
         for (int i = 0; i < store.size(); i++) {
             var item = store.get(i);
-            if (item != TOMBSTONE && filter.test((T) item)) {
+            if (item != TOMBSTONE) {
                 consumer.accept(i, (T) item);
             }
         }
     }
 
-    boolean contains(QualifiedName name) {
-        return get(name) != null;
+    boolean contains(QualifiedName name, CypherScope scope) {
+        return getByKey(name, scope) != null;
     }
 
-    private Integer name2Id(QualifiedName name) {
-        Integer id = nameToId.get(name);
-        if (id == null) { // Did not find it in the case sensitive lookup - let's check for case insensitive objects
+    private int[] name2entry(QualifiedName name) {
+        int[] entry = nameToEntries.get(name);
+        if (entry == null) { // Did not find it in the case sensitive lookup - let's check for case insensitive objects
             QualifiedName lowerCaseName = toLowerCaseName(name);
-            id = caseInsensitiveName2Id.get(lowerCaseName);
+            entry = caseInsensitiveName2Entries.get(lowerCaseName);
         }
 
-        return id;
+        return entry;
     }
 
     private QualifiedName toLowerCaseName(QualifiedName name) {
@@ -199,9 +220,14 @@ class ProcedureHolder<T> {
     }
 
     public void unregister(QualifiedName name) {
-        Integer id = name2Id(name);
-        if (id != null) {
-            store.set(id, TOMBSTONE);
+        int[] entry = name2entry(name);
+        if (entry == null) {
+            return;
+        }
+        for (int reference : entry) {
+            if (reference != UNUSED_REFERENCE) {
+                store.set(reference, TOMBSTONE);
+            }
         }
     }
     /**
@@ -213,6 +239,27 @@ class ProcedureHolder<T> {
      **/
     public static <T> ProcedureHolder<T> copyOf(ProcedureHolder<T> ref) {
         return new ProcedureHolder<>(
-                Map.copyOf(ref.nameToId), Map.copyOf(ref.caseInsensitiveName2Id), List.copyOf(ref.store));
+                Map.copyOf(ref.nameToEntries), Map.copyOf(ref.caseInsensitiveName2Entries), List.copyOf(ref.store));
+    }
+
+    private static boolean hasDifferentScopes(int[] entry, Set<CypherScope> scopes) {
+        for (var scope : CypherScope.ALL_SCOPES) {
+            if (entry[scope.ordinal()] != UNUSED_REFERENCE && !scopes.contains(scope)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static int[] makeEntry(Set<CypherScope> scopes, int reference) {
+        int[] ids = new int[CypherScope.ALL_SCOPES.size()];
+        for (var s : CypherScope.ALL_SCOPES) {
+            if (scopes.contains(s)) {
+                ids[s.ordinal()] = reference;
+            } else {
+                ids[s.ordinal()] = UNUSED_REFERENCE;
+            }
+        }
+        return ids;
     }
 }

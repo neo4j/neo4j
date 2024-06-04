@@ -36,6 +36,7 @@ import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.internal.kernel.api.procs.QualifiedName;
+import org.neo4j.kernel.api.CypherScope;
 import org.neo4j.kernel.api.ResourceMonitor;
 import org.neo4j.kernel.api.procedure.CallableProcedure;
 import org.neo4j.kernel.api.procedure.Context;
@@ -44,11 +45,20 @@ import org.neo4j.values.storable.Values;
 
 class ProceduresKernelIT extends KernelIntegrationTest {
     private final ProcedureSignature signature = procedureSignature("example", "exampleProc")
+            .supportedCypherScopes(CypherScope.CYPHER_5)
             .in("name", NTString)
             .out("name", NTString)
             .build();
 
+    private final ProcedureSignature futureSignature = procedureSignature("example", "exampleProc")
+            .supportedCypherScopes(CypherScope.CYPHER_FUTURE)
+            .in("firstName", NTString)
+            .in("lastName", NTString)
+            .out("name", NTString)
+            .build();
+
     private final CallableProcedure procedure = procedure(signature);
+    private final CallableProcedure futureProcedure = procedure(futureSignature);
 
     @Test
     void shouldGetProcedureByName() throws Throwable {
@@ -160,6 +170,21 @@ class ProceduresKernelIT extends KernelIntegrationTest {
             // Then
             assertNotNull(asList(stream).get(0)[0]);
         }
+        commit();
+    }
+
+    @Test
+    void shouldGetProceduresWithRightScope() throws Throwable {
+        // Given
+        internalKernel().registerProcedure(procedure);
+        internalKernel().registerProcedure(futureProcedure);
+
+        // When
+        List<ProcedureSignature> signatures =
+                newTransaction().procedures().proceduresGetAll().toList();
+
+        // Then
+        assertThat(signatures).contains(procedure.signature());
         commit();
     }
 
