@@ -133,6 +133,7 @@ class VersionAwareLogEntryReaderIT {
                 .withStorageEngineFactory(storageEngineFactory)
                 .withLogVersionRepository(new SimpleLogVersionRepository())
                 .withTransactionIdStore(new SimpleTransactionIdStore())
+                .withAppendIndexProvider(new SimpleAppendIndexProvider())
                 .withStoreId(STORE_ID)
                 .build();
         try (Lifespan lifespan = new Lifespan(logFiles)) {
