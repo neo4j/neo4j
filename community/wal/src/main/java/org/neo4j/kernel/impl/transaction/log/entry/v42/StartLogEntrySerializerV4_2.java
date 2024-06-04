@@ -28,6 +28,7 @@ import org.neo4j.io.fs.WritableChannel;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
+import org.neo4j.kernel.impl.transaction.log.entry.BadLogEntryException;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntrySerializer;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes;
@@ -102,6 +103,10 @@ public class StartLogEntrySerializerV4_2 extends LogEntrySerializer<LogEntryStar
         long latestCommittedTxWhenStarted = channel.getLong();
         int previousChecksum = channel.getInt();
         int additionalHeaderLength = channel.getInt();
+        if (additionalHeaderLength > LogEntryStart.MAX_ADDITIONAL_HEADER_SIZE) {
+            throw new BadLogEntryException("Additional header length limit(" + LogEntryStart.MAX_ADDITIONAL_HEADER_SIZE
+                    + ") exceeded. Parsed length is " + additionalHeaderLength);
+        }
         byte[] additionalHeader = new byte[additionalHeaderLength];
         channel.get(additionalHeader, additionalHeaderLength);
         return new LogEntryStartV4_2(

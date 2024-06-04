@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.transaction.log.entry;
 
 import static org.apache.commons.lang3.ArrayUtils.EMPTY_BYTE_ARRAY;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.io.ByteUnit.kibiBytes;
@@ -159,6 +160,36 @@ class LogEntrySerializerDispatcherTest {
 
         // then
         assertEquals(start, logEntry);
+    }
+
+    @ParameterizedTest
+    @KernelVersionSource(atLeast = "4.2") // Oldest version we can write
+    void parseCorruptedStartEntry(KernelVersion version) throws IOException {
+        final LogEntryStart start = newStartEntry(
+                version,
+                1,
+                2,
+                3,
+                4,
+                new byte[] {4},
+                version.isAtLeast(KernelVersion.VERSION_APPEND_INDEX_INTRODUCED) ? positionV5_20 : position);
+        try (final InMemoryClosableChannel channel = new InMemoryClosableChannel()) {
+            channel.putLong(start.getTimeWritten());
+            channel.putLong(start.getLastCommittedTxWhenTransactionStarted());
+            channel.putInt(start.getPreviousChecksum());
+            if (version.isAtLeast(KernelVersion.VERSION_APPEND_INDEX_INTRODUCED)) {
+                channel.putLong(start.getAppendIndex());
+            }
+            channel.putInt(Integer.MAX_VALUE);
+
+            channel.getCurrentLogPosition(marker);
+
+            LogEntrySerializer<LogEntry> parser =
+                    serializationSet(version, BINARY_VERSIONS).select(LogEntryTypeCodes.TX_START);
+
+            assertThatThrownBy(() -> parser.parse(version, channel, marker, commandReader))
+                    .isInstanceOf(IOException.class);
+        }
     }
 
     @ParameterizedTest

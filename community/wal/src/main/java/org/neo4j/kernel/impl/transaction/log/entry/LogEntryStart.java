@@ -28,6 +28,8 @@ import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.string.Mask;
 
 public class LogEntryStart extends AbstractVersionAwareLogEntry {
+    public static final int MAX_ADDITIONAL_HEADER_SIZE = Long.BYTES;
+
     protected final long timeWritten;
     protected final long lastCommittedTxWhenTransactionStarted;
     protected final byte[] additionalHeader;
