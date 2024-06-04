@@ -844,23 +844,22 @@ public final class SettingValueParsers {
     public static long parseLongWithUnit(String numberWithPotentialUnit) {
         int firstNonDigitIndex = findFirstNonDigit(numberWithPotentialUnit);
         String number = numberWithPotentialUnit.substring(0, firstNonDigitIndex);
+        var byteUnit = getByteUnit(numberWithPotentialUnit, firstNonDigitIndex);
+        return byteUnit.toBytes(parseLong(number));
+    }
 
-        long multiplier = 1;
-        if (firstNonDigitIndex < numberWithPotentialUnit.length()) {
-            String unit = numberWithPotentialUnit.substring(firstNonDigitIndex);
-            if (unit.equalsIgnoreCase("k")) {
-                multiplier = 1024;
-            } else if (unit.equalsIgnoreCase("m")) {
-                multiplier = 1024 * 1024;
-            } else if (unit.equalsIgnoreCase("g")) {
-                multiplier = 1024 * 1024 * 1024;
-            } else {
-                throw new IllegalArgumentException(
-                        "Illegal unit '" + unit + "' for number '" + numberWithPotentialUnit + "'");
-            }
+    private static ByteUnit getByteUnit(String numberWithPotentialUnit, int firstNonDigitIndex) {
+        if (firstNonDigitIndex >= numberWithPotentialUnit.length()) {
+            return ByteUnit.Byte;
         }
-
-        return parseLong(number) * multiplier;
+        String unit = numberWithPotentialUnit.substring(firstNonDigitIndex).toLowerCase(Locale.ROOT);
+        return switch (unit) {
+            case "k" -> ByteUnit.KibiByte;
+            case "m" -> ByteUnit.MebiByte;
+            case "g" -> ByteUnit.GibiByte;
+            default -> throw new IllegalArgumentException(
+                    "Illegal unit '" + unit + "' for number '" + numberWithPotentialUnit + "'");
+        };
     }
 
     /**
