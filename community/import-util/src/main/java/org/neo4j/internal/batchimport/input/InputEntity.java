@@ -46,6 +46,7 @@ import org.neo4j.values.storable.Values;
 public class InputEntity implements InputEntityVisitor {
     public static final Object[] NO_PROPERTIES = EMPTY_OBJECT_ARRAY;
     public static final String[] NO_LABELS = EMPTY_STRING_ARRAY;
+    public static final int NULL_ID = -1;
 
     private final InputEntityVisitor delegate;
 
@@ -288,7 +289,7 @@ public class InputEntity implements InputEntityVisitor {
         if (stringType != null) {
             return idLookup.applyAsInt(stringType);
         }
-        return -1;
+        return NULL_ID;
     }
 
     private long extractNodeId(
@@ -299,7 +300,7 @@ public class InputEntity implements InputEntityVisitor {
         if (objectId != null) {
             return idLookup.get(objectId, idGroup);
         }
-        return -1;
+        return NULL_ID;
     }
 
     private void checkClear() {
@@ -312,28 +313,28 @@ public class InputEntity implements InputEntityVisitor {
     public void reset() {
         end = false;
         hasPropertyId = false;
-        propertyId = -1;
+        propertyId = NULL_ID;
         hasIntPropertyKeyIds = false;
         properties.clear();
         encodedProperties = null;
         propertiesOffloaded = false;
         hasLongId = false;
-        longId = -1;
+        longId = NULL_ID;
         objectId = null;
         idGroup = null;
         labels.clear();
         hasLabelField = false;
-        labelField = -1;
+        labelField = NULL_ID;
         hasLongStartId = false;
-        longStartId = -1;
+        longStartId = NULL_ID;
         objectStartId = null;
         startIdGroup = null;
         hasLongEndId = false;
-        longEndId = -1;
+        longEndId = NULL_ID;
         objectEndId = null;
         endIdGroup = null;
         hasIntType = false;
-        intType = -1;
+        intType = NULL_ID;
         stringType = null;
     }
 
