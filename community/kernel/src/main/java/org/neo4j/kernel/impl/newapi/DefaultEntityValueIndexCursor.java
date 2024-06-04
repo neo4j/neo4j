@@ -76,12 +76,14 @@ abstract class DefaultEntityValueIndexCursor<CURSOR> extends IndexCursor<IndexPr
     private boolean shortcutSecurity;
     private boolean needStoreFilter;
     private PropertySelection propertySelection;
+    private final boolean applyAccessModeToTxState;
 
-    DefaultEntityValueIndexCursor(CursorPool<CURSOR> pool) {
+    DefaultEntityValueIndexCursor(CursorPool<CURSOR> pool, boolean applyAccessModeToTxState) {
         super(pool);
         entity = NO_ID;
         score = Float.NaN;
         indexOrder = IndexOrder.NONE;
+        this.applyAccessModeToTxState = applyAccessModeToTxState;
     }
 
     @Override
@@ -235,40 +237,64 @@ abstract class DefaultEntityValueIndexCursor<CURSOR> extends IndexCursor<IndexPr
 
     private boolean nextWithoutOrder() {
         if (!needsValues && added.hasNext()) {
-            this.entity = added.next();
-            this.values = null;
-            if (tracer != null) {
-                traceOnEntity(tracer, entity);
+            while (added.hasNext()) {
+                long next = added.next();
+                if (!applyAccessModeToTxState || allowed(next)) {
+                    this.entity = next;
+                    this.values = null;
+                    if (tracer != null) {
+                        traceOnEntity(tracer, entity);
+                    }
+                    return true;
+                }
             }
-            return true;
-        } else if (needsValues && addedWithValues.hasNext()) {
-            EntityWithPropertyValues entityWithPropertyValues = addedWithValues.next();
-            this.entity = entityWithPropertyValues.getEntityId();
-            this.values = entityWithPropertyValues.getValues();
-            if (tracer != null) {
-                traceOnEntity(tracer, entity);
+        }
+
+        if (needsValues && addedWithValues.hasNext()) {
+            while (addedWithValues.hasNext()) {
+                EntityWithPropertyValues entityWithPropertyValues = addedWithValues.next();
+                long entityId = entityWithPropertyValues.getEntityId();
+                if (!applyAccessModeToTxState || allowed(entityId)) {
+                    this.entity = entityId;
+                    this.values = entityWithPropertyValues.getValues();
+                    if (tracer != null) {
+                        traceOnEntity(tracer, entity);
+                    }
+                    return true;
+                }
             }
-            return true;
-        } else if (added.hasNext() || addedWithValues.hasNext()) {
+        }
+
+        if (added.hasNext() || addedWithValues.hasNext()) {
             throw new IllegalStateException(
                     "Index cursor cannot have transaction state with values and without values simultaneously");
-        } else {
-            boolean next = indexNext();
-            if (tracer != null && next) {
-                traceOnEntity(tracer, entity);
-            }
-            return next;
         }
+
+        boolean next = indexNext();
+        if (tracer != null && next) {
+            traceOnEntity(tracer, entity);
+        }
+        return next;
     }
 
     private boolean nextWithOrdering() {
         if (sortedMergeJoin.needsA() && addedWithValues.hasNext()) {
-            EntityWithPropertyValues entityWithPropertyValues = addedWithValues.next();
-            sortedMergeJoin.setA(entityWithPropertyValues.getEntityId(), entityWithPropertyValues.getValues());
+            while (addedWithValues.hasNext()) {
+                EntityWithPropertyValues entityWithPropertyValues = addedWithValues.next();
+                if (!applyAccessModeToTxState || canAccessEntityAndProperties(entityWithPropertyValues.getEntityId())) {
+                    sortedMergeJoin.setA(entityWithPropertyValues.getEntityId(), entityWithPropertyValues.getValues());
+                    break;
+                }
+            }
         }
 
-        if (sortedMergeJoin.needsB() && indexNext()) {
-            sortedMergeJoin.setB(entity, values);
+        if (sortedMergeJoin.needsB()) {
+            while (indexNext()) {
+                if (!applyAccessModeToTxState || canAccessEntityAndProperties(entity)) {
+                    sortedMergeJoin.setB(entity, values);
+                    break;
+                }
+            }
         }
 
         boolean next = sortedMergeJoin.next(this);

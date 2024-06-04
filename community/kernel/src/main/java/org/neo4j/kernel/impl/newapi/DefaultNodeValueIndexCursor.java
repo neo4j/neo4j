@@ -43,7 +43,7 @@ class DefaultNodeValueIndexCursor extends DefaultEntityValueIndexCursor<DefaultN
             CursorPool<DefaultNodeValueIndexCursor> pool,
             InternalCursorFactory internalCursors,
             boolean applyAccessModeToTxState) {
-        super(pool);
+        super(pool, applyAccessModeToTxState);
         this.internalCursors = internalCursors;
         this.applyAccessModeToTxState = applyAccessModeToTxState;
     }
@@ -113,7 +113,9 @@ class DefaultNodeValueIndexCursor extends DefaultEntityValueIndexCursor<DefaultN
             return false;
         }
 
-        int[] labels = securityNodeCursor.labelsIgnoringTxStateSetRemove().all();
+        int[] labels = applyAccessModeToTxState
+                ? securityNodeCursor.labels().all()
+                : securityNodeCursor.labelsIgnoringTxStateSetRemove().all();
 
         AccessMode accessMode = read.getAccessMode();
         if (accessMode.hasPropertyReadRules(propertyIds)) {

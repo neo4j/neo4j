@@ -22,10 +22,13 @@ package org.neo4j.internal.kernel.api.security;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.util.List;
 import org.eclipse.collections.api.map.primitive.IntObjectMap;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
+import org.neo4j.storageengine.api.PropertyKeyValue;
+import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.storageengine.api.StoragePropertyCursor;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
@@ -37,7 +40,8 @@ class LazyReadSecurityPropertyProviderTest {
         StoragePropertyCursor securityPropCursor = mock(StoragePropertyCursor.class);
         when(securityPropCursor.next()).thenReturn(false);
 
-        var provider = new ReadSecurityPropertyProvider.LazyReadSecurityPropertyProvider(securityPropCursor);
+        var provider = new ReadSecurityPropertyProvider.LazyReadSecurityPropertyProvider(
+                securityPropCursor, null, PropertySelection.NO_PROPERTIES);
         IntObjectMap<Value> properties = provider.getSecurityProperties();
         Assertions.assertEquals(0, properties.size());
     }
@@ -49,7 +53,8 @@ class LazyReadSecurityPropertyProviderTest {
         when(securityPropCursor.propertyKey()).thenReturn(1);
         when(securityPropCursor.propertyValue()).thenReturn(Values.intValue(1));
 
-        var provider = new ReadSecurityPropertyProvider.LazyReadSecurityPropertyProvider(securityPropCursor);
+        var provider = new ReadSecurityPropertyProvider.LazyReadSecurityPropertyProvider(
+                securityPropCursor, null, PropertySelection.selection(1));
         IntObjectMap<Value> properties = provider.getSecurityProperties();
         Assertions.assertEquals(1, properties.size());
         Assertions.assertEquals(Values.intValue(1), properties.get(1));
@@ -62,7 +67,8 @@ class LazyReadSecurityPropertyProviderTest {
         when(securityPropCursor.propertyKey()).thenReturn(1, 2);
         when(securityPropCursor.propertyValue()).thenReturn(Values.intValue(1), Values.intValue(2));
 
-        var provider = new ReadSecurityPropertyProvider.LazyReadSecurityPropertyProvider(securityPropCursor);
+        var provider = new ReadSecurityPropertyProvider.LazyReadSecurityPropertyProvider(
+                securityPropCursor, null, PropertySelection.selection(1, 2));
         IntObjectMap<Value> properties = provider.getSecurityProperties();
         Assertions.assertEquals(2, properties.size());
         Assertions.assertEquals(Values.intValue(1), properties.get(1));
@@ -76,7 +82,8 @@ class LazyReadSecurityPropertyProviderTest {
         Mockito.when(securityPropCursor.propertyKey()).thenReturn(1);
         Mockito.when(securityPropCursor.propertyValue()).thenReturn(Values.intValue(1));
 
-        var provider = new ReadSecurityPropertyProvider.LazyReadSecurityPropertyProvider(securityPropCursor);
+        var provider = new ReadSecurityPropertyProvider.LazyReadSecurityPropertyProvider(
+                securityPropCursor, null, PropertySelection.selection(1));
         IntObjectMap<Value> properties1 = provider.getSecurityProperties();
         // Assert that the cursor is only called two times (once to get the value, then once to signal exhaustion).
         Mockito.verify(securityPropCursor, Mockito.times(2)).next();
@@ -85,5 +92,54 @@ class LazyReadSecurityPropertyProviderTest {
         // are used.
         Mockito.verify(securityPropCursor, Mockito.times(2)).next();
         Assertions.assertEquals(properties1, properties2);
+    }
+
+    @Test
+    void testGetSecurityPropertiesWhenTxStateChangedPropertiesAndNoPropertiesInTheSecurityPropertyCursor() {
+        StoragePropertyCursor securityPropCursor = mock(StoragePropertyCursor.class);
+        when(securityPropCursor.next()).thenReturn(false);
+
+        var provider = new ReadSecurityPropertyProvider.LazyReadSecurityPropertyProvider(
+                securityPropCursor,
+                List.of(new PropertyKeyValue(0, Values.intValue(1))),
+                PropertySelection.selection(0));
+        IntObjectMap<Value> properties = provider.getSecurityProperties();
+        Assertions.assertEquals(1, properties.size());
+        Assertions.assertEquals(Values.intValue(1), properties.get(0));
+    }
+
+    @Test
+    void testGetSecurityPropertiesWhenTxStateChangedPropertiesAndPropertiesInTheSecurityPropertyCursor() {
+        StoragePropertyCursor securityPropCursor = mock(StoragePropertyCursor.class);
+        when(securityPropCursor.next()).thenReturn(true, true, false);
+        when(securityPropCursor.propertyKey()).thenReturn(1, 2);
+        when(securityPropCursor.propertyValue()).thenReturn(Values.intValue(1), Values.intValue(2));
+
+        var provider = new ReadSecurityPropertyProvider.LazyReadSecurityPropertyProvider(
+                securityPropCursor,
+                List.of(new PropertyKeyValue(0, Values.intValue(1)), new PropertyKeyValue(4, Values.intValue(4))),
+                PropertySelection.selection(0, 1, 2));
+        IntObjectMap<Value> properties = provider.getSecurityProperties();
+        Assertions.assertEquals(3, properties.size());
+        Assertions.assertEquals(Values.intValue(1), properties.get(0));
+        Assertions.assertEquals(Values.intValue(1), properties.get(1));
+        Assertions.assertEquals(Values.intValue(2), properties.get(2));
+    }
+
+    @Test
+    void testGetSecurityPropertiesWhenTxStateChangedPropertiesAndConflictingKeysInTheSecurityPropertyCursor() {
+        StoragePropertyCursor securityPropCursor = mock(StoragePropertyCursor.class);
+        when(securityPropCursor.next()).thenReturn(true, true, false);
+        when(securityPropCursor.propertyKey()).thenReturn(1, 2);
+        when(securityPropCursor.propertyValue()).thenReturn(Values.intValue(1), Values.intValue(2));
+
+        var provider = new ReadSecurityPropertyProvider.LazyReadSecurityPropertyProvider(
+                securityPropCursor,
+                List.of(new PropertyKeyValue(1, Values.intValue(3))),
+                PropertySelection.selection(1, 2));
+        IntObjectMap<Value> properties = provider.getSecurityProperties();
+        Assertions.assertEquals(2, properties.size());
+        Assertions.assertEquals(Values.intValue(3), properties.get(1));
+        Assertions.assertEquals(Values.intValue(2), properties.get(2));
     }
 }

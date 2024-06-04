@@ -94,7 +94,7 @@ public class DefaultPropertyCursor extends TraceableCursorImpl<DefaultPropertyCu
         this.type = NODE;
         this.addedInTx = nodeCursor.currentNodeIsAddedInTx();
         initializeNodeTransactionState(entityReference, read);
-        if (!addedInTx) {
+        if (!addedInTx || applyAccessModeToTxState) {
             if (initStoreCursor) {
                 storeCursor.initNodeProperties(nodeCursor.storeCursor, filterSelectionForTxState(selection));
             } // else it has already been externally initialized
@@ -133,8 +133,12 @@ public class DefaultPropertyCursor extends TraceableCursorImpl<DefaultPropertyCu
         }
         // We have RELEVANT property read rules (i.e. they pertain to the `selection`)
         initNodeProperties.accept(lazyInitAndGetSecurityPropertyCursor(), securityProperties);
-        securityPropertyProvider =
-                new ReadSecurityPropertyProvider.LazyReadSecurityPropertyProvider(securityPropertyCursor);
+        securityPropertyProvider = new ReadSecurityPropertyProvider.LazyReadSecurityPropertyProvider(
+                securityPropertyCursor,
+                applyAccessModeToTxState && this.propertiesState != null
+                        ? this.propertiesState.addedAndChangedProperties()
+                        : null,
+                securityProperties);
     }
 
     private StoragePropertyCursor lazyInitAndGetSecurityPropertyCursor() {
@@ -171,7 +175,7 @@ public class DefaultPropertyCursor extends TraceableCursorImpl<DefaultPropertyCu
         init(selection, read);
         initializeRelationshipTransactionState(entityReference, read);
         this.addedInTx = relationshipCursor.currentRelationshipIsAddedInTx();
-        if (!addedInTx) {
+        if (!addedInTx || applyAccessModeToTxState) {
             storeCursor.initRelationshipProperties(
                     relationshipCursor.storeCursor, filterSelectionForTxState(selection));
         } else {
@@ -236,11 +240,14 @@ public class DefaultPropertyCursor extends TraceableCursorImpl<DefaultPropertyCu
         if (txStateChangedProperties != null) {
             while (txStateChangedProperties.hasNext()) {
                 txStateValue = txStateChangedProperties.next();
-                if (selection.test(txStateValue.propertyKeyId())) {
-                    if (tracer != null) {
-                        tracer.onProperty(txStateValue.propertyKeyId());
+                int propertyKey = txStateValue.propertyKeyId();
+                if (selection.test(propertyKey)) {
+                    if (!applyAccessModeToTxState || allowed(propertyKey)) {
+                        if (tracer != null) {
+                            tracer.onProperty(propertyKey);
+                        }
+                        return true;
                     }
-                    return true;
                 }
             }
             txStateChangedProperties = null;
@@ -333,7 +340,11 @@ public class DefaultPropertyCursor extends TraceableCursorImpl<DefaultPropertyCu
             }
             read.singleNode(entityReference, securityNodeCursor);
             securityNodeCursor.next();
-            labels = securityNodeCursor.labelsIgnoringTxStateSetRemove();
+            if (applyAccessModeToTxState) {
+                labels = securityNodeCursor.labels();
+            } else {
+                labels = securityNodeCursor.labelsIgnoringTxStateSetRemove();
+            }
         }
         return labels;
     }

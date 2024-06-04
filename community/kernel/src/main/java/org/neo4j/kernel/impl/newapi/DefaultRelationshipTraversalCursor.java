@@ -157,14 +157,19 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Defau
         // tx-state relationships
         if (hasChanges) {
             while (addedRelationships.hasNext()) {
-                read.txState().relationshipVisit(addedRelationships.next(), relationshipTxStateDataVisitor);
-                if (neighbourNodeReference != NO_ID && otherNodeReference() != neighbourNodeReference) {
-                    continue;
+                long next = addedRelationships.next();
+                read.txState().relationshipVisit(next, relationshipTxStateDataVisitor);
+
+                if (!applyAccessModeToTxState || allowed()) {
+                    if (neighbourNodeReference != NO_ID && otherNodeReference() != neighbourNodeReference) {
+                        continue;
+                    }
+
+                    if (tracer != null) {
+                        tracer.onRelationship(relationshipReference());
+                    }
+                    return true;
                 }
-                if (tracer != null) {
-                    tracer.onRelationship(relationshipReference());
-                }
-                return true;
             }
             currentAddedInTx = NO_ID;
         }
@@ -192,14 +197,18 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Defau
 
     protected boolean allowed() {
         AccessMode accessMode = read.getAccessMode();
-        if (accessMode.allowsTraverseRelType(storeCursor.type())) {
+        if (accessMode.allowsTraverseRelType(type())) {
             if (accessMode.allowsTraverseAllLabels()) {
                 return true;
             }
             if (securityNodeCursor == null) {
                 securityNodeCursor = internalCursors.allocateNodeCursor();
             }
-            read.singleNode(storeCursor.neighbourNodeReference(), securityNodeCursor);
+            if (applyAccessModeToTxState && this.currentAddedInTx != NO_ID && neighbourNodeReference != NO_ID) {
+                read.singleNode(neighbourNodeReference, securityNodeCursor);
+            } else {
+                read.singleNode(storeCursor.neighbourNodeReference(), securityNodeCursor);
+            }
             return securityNodeCursor.next();
         }
         return false;
@@ -211,6 +220,12 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Defau
             read = null;
             selection = null;
             storeCursor.close();
+
+            if (securityNodeCursor != null) {
+                securityNodeCursor.close();
+                securityNodeCursor.release();
+                securityNodeCursor = null;
+            }
         }
         super.closeInternal();
     }

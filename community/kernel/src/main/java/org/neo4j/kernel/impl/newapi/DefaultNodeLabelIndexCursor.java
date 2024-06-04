@@ -39,7 +39,7 @@ class DefaultNodeLabelIndexCursor extends DefaultEntityTokenIndexCursor<DefaultN
             CursorPool<DefaultNodeLabelIndexCursor> pool,
             InternalCursorFactory internalCursors,
             boolean applyAccessModeToTxState) {
-        super(pool);
+        super(pool, applyAccessModeToTxState);
         this.internalCursors = internalCursors;
         this.applyAccessModeToTxState = applyAccessModeToTxState;
     }

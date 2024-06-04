@@ -42,6 +42,7 @@ import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.storageengine.api.Reference;
 import org.neo4j.storageengine.api.RelationshipSelection;
 import org.neo4j.storageengine.api.StorageNodeCursor;
+import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.StoragePropertyCursor;
 import org.neo4j.storageengine.api.StorageRelationshipTraversalCursor;
 import org.neo4j.storageengine.api.txstate.NodeState;
@@ -125,19 +126,7 @@ class DefaultNodeCursor extends TraceableCursorImpl<DefaultNodeCursor> implement
 
     @Override
     public TokenSet labels() {
-        if (currentAddedInTx != NO_ID) {
-            // Node added in tx-state, no reason to go down to store and check
-            TransactionState txState = read.txState();
-            return Labels.from(txState.nodeStateLabelDiffSets(currentAddedInTx).getAdded());
-        } else if (hasChanges()) {
-            TransactionState txState = read.txState();
-            final MutableIntSet labels = new IntHashSet(storeCursor.labels());
-            // Augment what was found in store with what we have in tx state
-            return Labels.from(txState.augmentLabels(labels, txState.getNodeState(storeCursor.entityReference())));
-        } else {
-            // Nothing in tx state, just read the data.
-            return Labels.from(storeCursor.labels());
-        }
+        return labels(storeCursor);
     }
 
     @Override
@@ -359,7 +348,7 @@ class DefaultNodeCursor extends TraceableCursorImpl<DefaultNodeCursor> implement
             return true;
         }
 
-        var labels = nodeCursor.labels();
+        var labels = applyAccessModeToTxState ? labels(nodeCursor).all() : nodeCursor.labels();
         if (accessMode.hasTraversePropertyRules()) {
             var securityProperties = accessMode.getTraverseSecurityProperties(labels);
             if (securityProperties.notEmpty()) { // This means there are property-based rules affecting THIS NODE
@@ -377,11 +366,34 @@ class DefaultNodeCursor extends TraceableCursorImpl<DefaultNodeCursor> implement
         return securityPropertyCursor;
     }
 
+    private TokenSet labels(StorageNodeCursor nodeCursor) {
+        if (currentAddedInTx != NO_ID) {
+            // Node added in tx-state, no reason to go down to store and check
+            TransactionState txState = read.txState();
+            return Labels.from(txState.nodeStateLabelDiffSets(currentAddedInTx).getAdded());
+        } else if (hasChanges()) {
+            TransactionState txState = read.txState();
+            final MutableIntSet labels = new IntHashSet(nodeCursor.labels());
+            // Augment what was found in store with what we have in tx state
+            return Labels.from(txState.augmentLabels(labels, txState.getNodeState(nodeCursor.entityReference())));
+        } else {
+            // Nothing in tx state, just read the data.
+            return Labels.from(nodeCursor.labels());
+        }
+    }
+
     private ReadSecurityPropertyProvider getSecurityPropertyProvider(
             StorageNodeCursor storageNodeCursor, IntSet securityProperties) {
         storageNodeCursor.properties(
                 lazyInitAndGetSecurityPropertyCursor(), PropertySelection.selection(securityProperties.toArray()));
-        return new ReadSecurityPropertyProvider.LazyReadSecurityPropertyProvider(securityPropertyCursor);
+        Iterable<StorageProperty> txStateChangedProperties = applyAccessModeToTxState
+                ? read.txState().getNodeState(this.nodeReference()).addedAndChangedProperties()
+                : null;
+
+        return new ReadSecurityPropertyProvider.LazyReadSecurityPropertyProvider(
+                securityPropertyCursor,
+                txStateChangedProperties,
+                PropertySelection.selection(securityProperties.toArray()));
     }
 
     @Override
@@ -390,18 +402,20 @@ class DefaultNodeCursor extends TraceableCursorImpl<DefaultNodeCursor> implement
         boolean hasChanges = hasChanges();
 
         if (hasChanges) {
-            if (isSingle) {
-                if (singleIsAddedInTx) {
-                    currentAddedInTx = single;
-                    singleIsAddedInTx = false;
+            if (isSingle && singleIsAddedInTx) {
+                currentAddedInTx = single;
+                singleIsAddedInTx = false;
+                if (!applyAccessModeToTxState || allowsTraverse()) {
                     if (tracer != null) {
                         tracer.onNode(nodeReference());
                     }
                     return true;
                 }
-            } else {
-                if (addedNodes.hasNext()) {
-                    currentAddedInTx = addedNodes.next();
+            }
+
+            while (addedNodes.hasNext()) {
+                currentAddedInTx = addedNodes.next();
+                if ((!applyAccessModeToTxState || allowsTraverse())) {
                     if (tracer != null) {
                         tracer.onNode(nodeReference());
                     }

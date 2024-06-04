@@ -92,15 +92,18 @@ class DefaultRelationshipScanCursor extends DefaultRelationshipCursor implements
         boolean hasChanges = hasChanges();
 
         if (hasChanges) {
-            if (addedRelationships.hasNext()) {
-                read.txState().relationshipVisit(addedRelationships.next(), relationshipTxStateDataVisitor);
-                if (tracer != null) {
-                    tracer.onRelationship(relationshipReference());
+            while (addedRelationships.hasNext()) {
+                long next = addedRelationships.next();
+                read.txState().relationshipVisit(next, relationshipTxStateDataVisitor);
+
+                if (!applyAccessModeToTxState || allowed()) {
+                    if (tracer != null) {
+                        tracer.onRelationship(relationshipReference());
+                    }
+                    return true;
                 }
-                return true;
-            } else {
-                currentAddedInTx = NO_ID;
             }
+            currentAddedInTx = NO_ID;
         }
 
         while (storeCursor.next()) {
@@ -117,7 +120,7 @@ class DefaultRelationshipScanCursor extends DefaultRelationshipCursor implements
 
     protected boolean allowed() {
         AccessMode accessMode = read.getAccessMode();
-        return accessMode.allowsTraverseRelType(storeCursor.type()) && allowedToSeeEndNode(accessMode);
+        return accessMode.allowsTraverseRelType(type()) && allowedToSeeEndNode(accessMode);
     }
 
     private boolean allowedToSeeEndNode(AccessMode mode) {
@@ -127,11 +130,22 @@ class DefaultRelationshipScanCursor extends DefaultRelationshipCursor implements
         if (securityNodeCursor == null) {
             securityNodeCursor = internalCursors.allocateNodeCursor();
         }
-        read.singleNode(storeCursor.sourceNodeReference(), securityNodeCursor);
+
+        if (applyAccessModeToTxState && currentAddedInTx != NO_ID) {
+            read.singleNode(txStateSourceNodeReference, securityNodeCursor);
+        } else {
+            read.singleNode(storeCursor.sourceNodeReference(), securityNodeCursor);
+        }
+
         if (securityNodeCursor.next()) {
-            read.singleNode(storeCursor.targetNodeReference(), securityNodeCursor);
+            if (applyAccessModeToTxState && currentAddedInTx != NO_ID) {
+                read.singleNode(txStateTargetNodeReference, securityNodeCursor);
+            } else {
+                read.singleNode(storeCursor.targetNodeReference(), securityNodeCursor);
+            }
             return securityNodeCursor.next();
         }
+
         return false;
     }
 
@@ -140,6 +154,11 @@ class DefaultRelationshipScanCursor extends DefaultRelationshipCursor implements
         if (!isClosed()) {
             read = null;
             storeCursor.close();
+            if (securityNodeCursor != null) {
+                securityNodeCursor.close();
+                securityNodeCursor.release();
+                securityNodeCursor = null;
+            }
         }
         super.closeInternal();
     }

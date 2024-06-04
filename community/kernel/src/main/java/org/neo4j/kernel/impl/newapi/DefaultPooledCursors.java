@@ -117,7 +117,7 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
     }
 
     @Override
-    public DefaultRelationshipScanCursor allocateRelationshipScanCursor(
+    public RelationshipScanCursor allocateRelationshipScanCursor(
             CursorContext cursorContext, MemoryTracker memoryTracker) {
         if (relationshipScanCursor == null) {
             return trace(new DefaultRelationshipScanCursor(
@@ -143,7 +143,7 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
     }
 
     @Override
-    public RelationshipScanCursor allocateFullAccessRelationshipScanCursor(CursorContext cursorContext) {
+    public DefaultRelationshipScanCursor allocateFullAccessRelationshipScanCursor(CursorContext cursorContext) {
         if (fullAccessRelationshipScanCursor == null) {
             return trace(new FullAccessRelationshipScanCursor(
                     this::acceptFullAccess, storageReader.allocateRelationshipScanCursor(cursorContext, storeCursors)));

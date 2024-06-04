@@ -46,7 +46,7 @@ class DefaultRelationshipValueIndexCursor extends DefaultEntityValueIndexCursor<
             DefaultRelationshipScanCursor relationshipScanCursor,
             InternalCursorFactory internalCursors,
             boolean applyAccessModeToTxState) {
-        super(pool);
+        super(pool, applyAccessModeToTxState);
         this.relationshipScanCursor = relationshipScanCursor;
         this.internalCursors = internalCursors;
         this.applyAccessModeToTxState = applyAccessModeToTxState;

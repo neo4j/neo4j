@@ -55,10 +55,12 @@ abstract class DefaultEntityTokenIndexCursor<SELF extends DefaultEntityTokenInde
     private boolean useMergeSort;
     private final PrimitiveSortedMergeJoin sortedMergeJoin = new PrimitiveSortedMergeJoin();
     private boolean shortcutSecurity;
+    private final boolean applyAccessModeToTxState;
 
-    DefaultEntityTokenIndexCursor(CursorPool<SELF> pool) {
+    DefaultEntityTokenIndexCursor(CursorPool<SELF> pool, boolean applyAccessModeToTxState) {
         super(pool);
         this.entity = NO_ID;
+        this.applyAccessModeToTxState = applyAccessModeToTxState;
     }
 
     @Override
@@ -185,9 +187,23 @@ abstract class DefaultEntityTokenIndexCursor<SELF extends DefaultEntityTokenInde
 
     private boolean nextWithoutOrder() {
         if (added != null && added.hasNext()) {
-            entity = added.next();
-        } else if (innerNext()) {
-            entity = nextEntity();
+            while (added.hasNext()) {
+                long next = added.next();
+                if (!applyAccessModeToTxState || allowed(next)) {
+                    entity = next;
+                    break;
+                }
+            }
+        }
+
+        if (entity == NO_ID) {
+            while (innerNext()) {
+                long next = nextEntity();
+                if (!applyAccessModeToTxState || allowed(next)) {
+                    entity = next;
+                    break;
+                }
+            }
         }
 
         return entity != NO_ID;
@@ -196,12 +212,23 @@ abstract class DefaultEntityTokenIndexCursor<SELF extends DefaultEntityTokenInde
     private boolean nextWithOrdering() {
         // items from Tx state
         if (sortedMergeJoin.needsA() && added.hasNext()) {
-            sortedMergeJoin.setA(added.next());
+            while (added.hasNext()) {
+                long next = added.next();
+                if (!applyAccessModeToTxState || allowed(next)) {
+                    sortedMergeJoin.setA(next);
+                    break;
+                }
+            }
         }
 
         // items from index/store
-        if (sortedMergeJoin.needsB() && innerNext()) {
-            sortedMergeJoin.setB(entityFromIndex);
+        if (sortedMergeJoin.needsB()) {
+            while (innerNext()) {
+                if (!applyAccessModeToTxState || allowed(entityFromIndex)) {
+                    sortedMergeJoin.setB(entityFromIndex);
+                    break;
+                }
+            }
         }
 
         final var nextId = sortedMergeJoin.next();

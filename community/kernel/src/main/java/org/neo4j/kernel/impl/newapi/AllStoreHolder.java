@@ -83,10 +83,12 @@ import org.neo4j.kernel.impl.locking.LockManager.Client;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceType;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.storageengine.api.StorageLocks;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.StorageSchemaReader;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
+import org.neo4j.storageengine.api.txstate.RelationshipState;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.Value;
 
@@ -184,15 +186,40 @@ public abstract class AllStoreHolder extends Read {
     @Override
     public Value nodePropertyChangeInBatchOrNull(long node, int propertyKeyId) {
         performCheckBeforeOperation();
-        return hasTxStateWithChanges() ? txState().getNodeState(node).propertyValue(propertyKeyId) : null;
+        if (hasTxStateWithChanges()) {
+            if (applyAccessModeToTxState) {
+                try (DefaultNodeCursor nodeCursor = cursors.allocateNodeCursor(cursorContext(), memoryTracker())) {
+                    singleNode(node, nodeCursor);
+                    nodeCursor.next();
+                    try (DefaultPropertyCursor propertyCursor =
+                            cursors.allocatePropertyCursor(cursorContext(), memoryTracker)) {
+                        nodeCursor.properties(propertyCursor, PropertySelection.selection(propertyKeyId));
+                        return propertyCursor.allowed(propertyKeyId)
+                                ? txState().getNodeState(node).propertyValue(propertyKeyId)
+                                : null;
+                    }
+                }
+            } else {
+                return txState().getNodeState(node).propertyValue(propertyKeyId);
+            }
+        }
+        return null;
     }
 
     @Override
     public Value relationshipPropertyChangeInBatchOrNull(long relationship, int propertyKeyId) {
         performCheckBeforeOperation();
-        return hasTxStateWithChanges()
-                ? txState().getRelationshipState(relationship).propertyValue(propertyKeyId)
-                : null;
+        if (hasTxStateWithChanges()) {
+            RelationshipState relationshipState = txState().getRelationshipState(relationship);
+            return !applyAccessModeToTxState
+                            || (relationshipState.hasPropertyChanges()
+                                    && getAccessMode()
+                                            .allowsReadRelationshipProperty(
+                                                    () -> relationshipState.getType(), propertyKeyId))
+                    ? relationshipState.propertyValue(propertyKeyId)
+                    : null;
+        }
+        return null;
     }
 
     @Override
@@ -265,7 +292,7 @@ public abstract class AllStoreHolder extends Read {
         } else if (!existsInRelStore) {
             return false;
         } else {
-            try (DefaultRelationshipScanCursor rels =
+            try (DefaultRelationshipScanCursor rels = (DefaultRelationshipScanCursor)
                     cursors.allocateRelationshipScanCursor(cursorContext(), memoryTracker())) {
                 singleRelationship(reference, rels);
                 return rels.next();

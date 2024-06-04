@@ -22,6 +22,8 @@ package org.neo4j.internal.kernel.api.security;
 import org.eclipse.collections.api.factory.primitive.IntObjectMaps;
 import org.eclipse.collections.api.map.primitive.IntObjectMap;
 import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
+import org.neo4j.storageengine.api.PropertySelection;
+import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.StoragePropertyCursor;
 import org.neo4j.values.storable.Value;
 
@@ -31,9 +33,16 @@ public interface ReadSecurityPropertyProvider {
     class LazyReadSecurityPropertyProvider implements ReadSecurityPropertyProvider {
         private final StoragePropertyCursor securityPropCursor;
         private MutableIntObjectMap<Value> properties;
+        private final Iterable<StorageProperty> txStateChangedProperties;
+        private final PropertySelection securityProperties;
 
-        public LazyReadSecurityPropertyProvider(StoragePropertyCursor securityPropCursor) {
+        public LazyReadSecurityPropertyProvider(
+                StoragePropertyCursor securityPropCursor,
+                Iterable<StorageProperty> txStateChangedProperties,
+                PropertySelection securityProperties) {
             this.securityPropCursor = securityPropCursor;
+            this.txStateChangedProperties = txStateChangedProperties;
+            this.securityProperties = securityProperties;
         }
 
         @Override
@@ -42,6 +51,17 @@ public interface ReadSecurityPropertyProvider {
                 properties = IntObjectMaps.mutable.empty();
                 while (securityPropCursor.next()) {
                     properties.put(securityPropCursor.propertyKey(), securityPropCursor.propertyValue());
+                }
+                if (txStateChangedProperties != null) {
+                    for (StorageProperty changedProperty : txStateChangedProperties) {
+                        if (securityProperties != null) {
+                            if (securityProperties.test(changedProperty.propertyKeyId())) {
+                                properties.put(changedProperty.propertyKeyId(), changedProperty.value());
+                            }
+                        } else {
+                            properties.put(changedProperty.propertyKeyId(), changedProperty.value());
+                        }
+                    }
                 }
             }
             return properties;

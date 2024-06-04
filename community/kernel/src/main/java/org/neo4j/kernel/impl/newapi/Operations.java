@@ -189,6 +189,8 @@ public class Operations implements Write, SchemaWrite, Upgrade {
     private DefaultPropertyCursor restrictedPropertyCursor;
     private DefaultRelationshipScanCursor relationshipCursor;
 
+    private DefaultRelationshipScanCursor restrictedRelationshipCursor;
+
     public Operations(
             AllStoreHolder allStoreHolder,
             StorageReader storageReader,
@@ -227,9 +229,11 @@ public class Operations implements Write, SchemaWrite, Upgrade {
     public void initialize(CursorContext cursorContext) {
         this.nodeCursor = cursors.allocateFullAccessNodeCursor(cursorContext);
         this.propertyCursor = cursors.allocateFullAccessPropertyCursor(cursorContext, memoryTracker);
-        this.relationshipCursor = cursors.allocateRelationshipScanCursor(cursorContext, memoryTracker);
+        this.relationshipCursor = cursors.allocateFullAccessRelationshipScanCursor(cursorContext);
         this.restrictedNodeCursor = cursors.allocateNodeCursor(cursorContext, memoryTracker);
         this.restrictedPropertyCursor = cursors.allocatePropertyCursor(cursorContext, memoryTracker);
+        this.restrictedRelationshipCursor =
+                (DefaultRelationshipScanCursor) cursors.allocateRelationshipScanCursor(cursorContext, memoryTracker);
     }
 
     @Override
@@ -803,7 +807,8 @@ public class Operations implements Write, SchemaWrite, Upgrade {
         if (existingRelationshipId != NO_SUCH_RELATIONSHIP) {
             int[] propertyKeys = getPropertyIds(propertyValues);
             var allowsReadAllProperties = false;
-            try (var relCursor = cursors.allocateRelationshipScanCursor(ktx.cursorContext(), memoryTracker);
+            try (var relCursor = (DefaultRelationshipScanCursor)
+                            cursors.allocateRelationshipScanCursor(ktx.cursorContext(), memoryTracker);
                     var propertyCursor = cursors.allocatePropertyCursor(ktx.cursorContext(), memoryTracker)) {
                 relCursor.single(existingRelationshipId, allStoreHolder);
                 //  First check if the current access mode can read the relationship
@@ -1515,13 +1520,17 @@ public class Operations implements Write, SchemaWrite, Upgrade {
             propertyCursor.close();
             propertyCursor = null;
         }
+        if (restrictedPropertyCursor != null) {
+            restrictedPropertyCursor.close();
+            restrictedPropertyCursor = null;
+        }
         if (relationshipCursor != null) {
             relationshipCursor.close();
             relationshipCursor = null;
         }
-        if (restrictedPropertyCursor != null) {
-            restrictedPropertyCursor.close();
-            restrictedPropertyCursor = null;
+        if (restrictedRelationshipCursor != null) {
+            restrictedRelationshipCursor.close();
+            restrictedRelationshipCursor = null;
         }
 
         cursors.assertClosed();
@@ -1545,7 +1554,7 @@ public class Operations implements Write, SchemaWrite, Upgrade {
     }
 
     public DefaultRelationshipScanCursor relationshipCursor() {
-        return relationshipCursor;
+        return restrictedRelationshipCursor;
     }
 
     public DefaultPropertyCursor propertyCursor() {
