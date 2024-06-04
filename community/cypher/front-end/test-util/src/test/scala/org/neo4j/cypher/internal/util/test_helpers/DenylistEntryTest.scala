@@ -26,7 +26,8 @@ class DenylistEntryTest extends CypherFunSuite {
         Some("QuantifiedPathPatternAcceptance"),
         "Solutions can be assigned to path variable",
         None,
-        isFlaky = false
+        isFlaky = false,
+        acceptTransientError = false
       )
     )
   }
@@ -39,7 +40,8 @@ class DenylistEntryTest extends CypherFunSuite {
         Some("List11 - Create a list from a range"),
         "Create list from `range()` with explicitly given step",
         Some("10"),
-        isFlaky = false
+        isFlaky = false,
+        acceptTransientError = false
       )
     )
   }
@@ -52,32 +54,101 @@ class DenylistEntryTest extends CypherFunSuite {
         Some("QuantifiedPathPatternAcceptance"),
         "Solutions can be assigned to path variable",
         None,
-        isFlaky = true
+        isFlaky = true,
+        acceptTransientError = false
+      )
+    )
+  }
+
+  test("parseAcceptTransientErrorScenario") {
+    DenylistEntry(
+      """~Feature "QuantifiedPathPatternAcceptance": Scenario "Solutions can be assigned to path variable""""
+    ) should equal(
+      ScenarioDenylistEntry(
+        Some("QuantifiedPathPatternAcceptance"),
+        "Solutions can be assigned to path variable",
+        None,
+        isFlaky = false,
+        acceptTransientError = true
+      )
+    )
+  }
+
+  test("parseFlakyAcceptTransientErrorScenario") {
+    DenylistEntry(
+      """?~Feature "QuantifiedPathPatternAcceptance": Scenario "Solutions can be assigned to path variable""""
+    ) should equal(
+      ScenarioDenylistEntry(
+        Some("QuantifiedPathPatternAcceptance"),
+        "Solutions can be assigned to path variable",
+        None,
+        isFlaky = true,
+        acceptTransientError = true
       )
     )
   }
 
   test("parseFeatureOnly") {
     DenylistEntry("""Feature "QuantifiedPathPatternAcceptance"""") should equal(
-      FeatureDenylistEntry("QuantifiedPathPatternAcceptance", isFlaky = false)
+      FeatureDenylistEntry("QuantifiedPathPatternAcceptance", isFlaky = false, acceptTransientError = false)
     )
   }
 
   test("parseFlakyFeatureOnly") {
     DenylistEntry("""?Feature "QuantifiedPathPatternAcceptance"""") should equal(
-      FeatureDenylistEntry("QuantifiedPathPatternAcceptance", isFlaky = true)
+      FeatureDenylistEntry("QuantifiedPathPatternAcceptance", isFlaky = true, acceptTransientError = false)
+    )
+  }
+
+  test("parseAcceptTransientErrorFeatureOnly") {
+    DenylistEntry("""~Feature "QuantifiedPathPatternAcceptance"""") should equal(
+      FeatureDenylistEntry("QuantifiedPathPatternAcceptance", isFlaky = false, acceptTransientError = true)
+    )
+  }
+
+  test("parseFlakyAcceptTransientErrorFeatureOnly") {
+    DenylistEntry("""?~Feature "QuantifiedPathPatternAcceptance"""") should equal(
+      FeatureDenylistEntry("QuantifiedPathPatternAcceptance", isFlaky = true, acceptTransientError = true)
     )
   }
 
   test("toStringFeatureOnly") {
-    FeatureDenylistEntry("QuantifiedPathPatternAcceptance", isFlaky = false).toString should equal(
+    FeatureDenylistEntry(
+      "QuantifiedPathPatternAcceptance",
+      isFlaky = false,
+      acceptTransientError = false
+    ).toString should equal(
       """Feature "QuantifiedPathPatternAcceptance""""
     )
   }
 
   test("toStringFlakyFeatureOnly") {
-    FeatureDenylistEntry("QuantifiedPathPatternAcceptance", isFlaky = true).toString should equal(
+    FeatureDenylistEntry(
+      "QuantifiedPathPatternAcceptance",
+      isFlaky = true,
+      acceptTransientError = false
+    ).toString should equal(
       """?Feature "QuantifiedPathPatternAcceptance""""
+    )
+  }
+
+  test("toStringAcceptTransientErrorFeatureOnly") {
+    FeatureDenylistEntry(
+      "QuantifiedPathPatternAcceptance",
+      isFlaky = false,
+      acceptTransientError = true
+    ).toString should equal(
+      """~Feature "QuantifiedPathPatternAcceptance""""
+    )
+  }
+
+  test("toStringFlakyAcceptTransientErrorFeatureOnly") {
+    FeatureDenylistEntry(
+      "QuantifiedPathPatternAcceptance",
+      isFlaky = true,
+      acceptTransientError = true
+    ).toString should equal(
+      """?~Feature "QuantifiedPathPatternAcceptance""""
     )
   }
 
@@ -86,9 +157,10 @@ class DenylistEntryTest extends CypherFunSuite {
       Some("List11 - Create a list from a range"),
       "Create list from `range()` with explicitly given step",
       Some("10"),
-      isFlaky = true
+      isFlaky = true,
+      acceptTransientError = true
     ).toString should equal(
-      """?Feature "List11 - Create a list from a range": Scenario "Create list from `range()` with explicitly given step": Example "10""""
+      """?~Feature "List11 - Create a list from a range": Scenario "Create list from `range()` with explicitly given step": Example "10""""
     )
 
   }

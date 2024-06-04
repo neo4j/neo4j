@@ -21,6 +21,7 @@ package cypher.features
 
 import cypher.features.Neo4jAdapter.defaultTestConfig
 import cypher.features.ScenarioTestHelper.checkForDuplicates
+import cypher.features.ScenarioTestHelper.isTransientError
 import cypher.features.ScenarioTestHelper.parseDenylist
 import cypher.features.ScenarioTestHelper.printComputedDenylist
 import org.junit.jupiter.api.Assertions.fail
@@ -30,6 +31,8 @@ import org.junit.jupiter.api.function.Executable
 import org.neo4j.cypher.internal.util.test_helpers.DenylistEntry
 import org.neo4j.cypher.internal.util.test_helpers.FeatureTest
 import org.neo4j.graphdb.config.Setting
+import org.neo4j.kernel.api.exceptions.Status
+import org.neo4j.kernel.api.exceptions.Status.HasStatus
 import org.opencypher.tools.tck.api.ExpectError
 import org.opencypher.tools.tck.api.Scenario
 
@@ -89,7 +92,10 @@ trait ScenarioTestHelper extends FeatureTest {
               // That is not critical. Therefore, if the test is denylisted, we allow it to fail at runtime.
               // If, on the other hand, the scenario expects results and the test is denylisted, only compile
               // time failures are acceptable.
-              if (phase == Phase.runtime && !scenarioExpectsError) {
+              if (
+                phase == Phase.runtime && !scenarioExpectsError &&
+                !(denylist().exists(_.acceptTransientError(scenario)) && isTransientError(cause))
+              ) {
                 // That's not OK
                 throw new Exception(
                   s"""Failed at $phase in scenario $name for query
@@ -144,6 +150,13 @@ trait ScenarioTestHelper extends FeatureTest {
 }
 
 object ScenarioTestHelper {
+
+  private def isTransientError(error: Neo4jExecutionFailed): Boolean = {
+    error.cause match {
+      case c: HasStatus => c.status().code().classification() == Status.Classification.TransientError
+      case _            => false
+    }
+  }
 
   private def checkForDuplicates(scenarios: Seq[Scenario], denylist: Seq[DenylistEntry]): Unit = {
     // test scenarios

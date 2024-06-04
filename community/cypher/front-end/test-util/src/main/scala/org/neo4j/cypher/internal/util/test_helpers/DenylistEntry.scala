@@ -24,21 +24,33 @@ trait DenylistEntry {
   def isDenylisted(scenario: Scenario): Boolean
   def isFlaky(scenario: Scenario): Boolean = isDenylisted(scenario) && isFlaky
   def isFlaky: Boolean
+  def acceptTransientError(scenario: Scenario): Boolean = isDenylisted(scenario) && acceptTransientError
+  def acceptTransientError: Boolean
+
+  def maybeIsFlakyPrefix: String = {
+    if (isFlaky) DenylistEntry.isFlakyPrefix else ""
+  }
+
+  def maybeAcceptTransientErrorPrefix: String = {
+    if (acceptTransientError) DenylistEntry.acceptTransientErrorPrefix else ""
+  }
 }
 
 case class FeatureDenylistEntry(
   featureName: String,
-  override val isFlaky: Boolean
+  override val isFlaky: Boolean,
+  override val acceptTransientError: Boolean
 ) extends DenylistEntry {
   override def isDenylisted(scenario: Scenario): Boolean = scenario.featureName == featureName
-  override def toString: String = s"""${if (isFlaky) "?" else ""}Feature "$featureName""""
+  override def toString: String = s"""${maybeIsFlakyPrefix}${maybeAcceptTransientErrorPrefix}Feature "$featureName""""
 }
 
 case class ScenarioDenylistEntry(
   featureName: Option[String],
   scenarioName: String,
   exampleNumberOrName: Option[String],
-  override val isFlaky: Boolean
+  override val isFlaky: Boolean,
+  override val acceptTransientError: Boolean
 ) extends DenylistEntry {
 
   def isDenylisted(scenario: Scenario): Boolean = {
@@ -59,26 +71,30 @@ case class ScenarioDenylistEntry(
       // legacy version
       scenarioName
     }
-    if (isFlaky) s"?$entry" else entry
+    s"${maybeIsFlakyPrefix}${maybeAcceptTransientErrorPrefix}$entry"
   }
 }
 
 object DenylistEntry {
-  val entryPattern: Regex = """(\??)Feature "([^"]*)": Scenario "([^"]*)"(?:: Example "(.*)")?""".r
-  val featurePattern: Regex = """^(\??)Feature "([^"]+)"$""".r
+  def isFlakyPrefix: String = "?"
+  def acceptTransientErrorPrefix: String = "~"
+
+  val entryPattern: Regex = """(\??)(~?)Feature "([^"]*)": Scenario "([^"]*)"(?:: Example "(.*)")?""".r
+  val featurePattern: Regex = """^(\??)(~?)Feature "([^"]+)"$""".r
 
   def apply(line: String): DenylistEntry = {
-    if (line.startsWith("?") || line.startsWith("Feature")) {
+    if (line.startsWith("?") || line.startsWith("~") || line.startsWith("Feature")) {
       line match {
-        case entryPattern(questionMark, featureName, scenarioName, exampleNumberOrName) =>
+        case entryPattern(questionMark, tilde, featureName, scenarioName, exampleNumberOrName) =>
           ScenarioDenylistEntry(
             Some(featureName),
             scenarioName,
             Option(exampleNumberOrName),
-            isFlaky = questionMark.nonEmpty
+            isFlaky = questionMark.nonEmpty,
+            acceptTransientError = tilde.nonEmpty
           )
-        case featurePattern(questionMark, featureName) =>
-          FeatureDenylistEntry(featureName, isFlaky = questionMark.nonEmpty)
+        case featurePattern(questionMark, tilde, featureName) =>
+          FeatureDenylistEntry(featureName, isFlaky = questionMark.nonEmpty, acceptTransientError = tilde.nonEmpty)
         case other => throw new UnsupportedOperationException(
             s"""Could not pattern match denylist entry
                |$other
@@ -93,7 +109,7 @@ object DenylistEntry {
 
     } else {
       // Legacy case of just stating the scenario
-      ScenarioDenylistEntry(None, line, None, isFlaky = false)
+      ScenarioDenylistEntry(None, line, None, isFlaky = false, acceptTransientError = false)
     }
   }
 }
