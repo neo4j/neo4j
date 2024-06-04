@@ -21,7 +21,6 @@ import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
 import org.neo4j.cypher.internal.expressions.Expression
-import org.neo4j.exceptions.SyntaxException
 
 class NormalizeFunctionParserTest extends AstParsingTestBase {
 
@@ -68,47 +67,55 @@ class NormalizeFunctionParserTest extends AstParsingTestBase {
 
   // Failing tests
   test("RETURN normalize(\"hello\", \"NFC\")") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart(
-        "Invalid input 'NFC': expected \"NFC\", \"NFD\", \"NFKC\" or \"NFKD\" (line 1, column 27 (offset: 26))"
-      ))
-      .parseIn(Antlr)(_.withMessage(
-        """Invalid normal form, expected NFC, NFD, NFKC, NFKD (line 1, column 27 (offset: 26))
-          |"RETURN normalize("hello", "NFC")"
-          |                           ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart(
+          "Invalid input 'NFC': expected \"NFC\", \"NFD\", \"NFKC\" or \"NFKD\" (line 1, column 27 (offset: 26))"
+        )
+      case Antlr => _.withMessage(
+          """Invalid normal form, expected NFC, NFD, NFKC, NFKD (line 1, column 27 (offset: 26))
+            |"RETURN normalize("hello", "NFC")"
+            |                           ^""".stripMargin
+        )
+    }
   }
 
   test("RETURN normalize(\"hello\", null)") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart(
-        "Invalid input 'null': expected \"NFC\", \"NFD\", \"NFKC\" or \"NFKD\" (line 1, column 27 (offset: 26))"
-      ))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid normal form, expected NFC, NFD, NFKC, NFKD (line 1, column 27 (offset: 26))
-          |"RETURN normalize("hello", null)"
-          |                           ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart(
+          "Invalid input 'null': expected \"NFC\", \"NFD\", \"NFKC\" or \"NFKD\" (line 1, column 27 (offset: 26))"
+        )
+      case Antlr => _.withSyntaxError(
+          """Invalid normal form, expected NFC, NFD, NFKC, NFKD (line 1, column 27 (offset: 26))
+            |"RETURN normalize("hello", null)"
+            |                           ^""".stripMargin
+        )
+    }
   }
 
   test("RETURN normalize(\"hello\", NFF)") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart(
-        "Invalid input 'NFF': expected \"NFC\", \"NFD\", \"NFKC\" or \"NFKD\" (line 1, column 27 (offset: 26))"
-      ))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid normal form, expected NFC, NFD, NFKC, NFKD (line 1, column 27 (offset: 26))
-          |"RETURN normalize("hello", NFF)"
-          |                           ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart(
+          "Invalid input 'NFF': expected \"NFC\", \"NFD\", \"NFKC\" or \"NFKD\" (line 1, column 27 (offset: 26))"
+        )
+      case Antlr => _.withSyntaxError(
+          """Invalid normal form, expected NFC, NFD, NFKC, NFKD (line 1, column 27 (offset: 26))
+            |"RETURN normalize("hello", NFF)"
+            |                           ^""".stripMargin
+        )
+    }
   }
 
   test("normalize(\"hello\", NFC, anotherVar)") {
-    whenParsing[Expression].parseIn(JavaCc)(_.withAnyFailure).parseIn(Antlr)(_.withoutErrors)
+    parsesIn[Expression] {
+      case JavaCc => _.withAnyFailure
+      case _      => _.withoutErrors
+    }
   }
 
   test("normalize()") {
-    whenParsing[Expression].parseIn(JavaCc)(_.withAnyFailure).parseIn(Antlr)(_.withoutErrors)
+    parsesIn[Expression] {
+      case JavaCc => _.withAnyFailure
+      case _      => _.withoutErrors
+    }
   }
-
 }

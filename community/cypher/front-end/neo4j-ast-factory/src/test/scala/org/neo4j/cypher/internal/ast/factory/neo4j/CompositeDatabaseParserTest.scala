@@ -29,7 +29,6 @@ import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.TimeoutAfter
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
-import org.neo4j.exceptions.SyntaxException
 
 class CompositeDatabaseParserTest extends AdministrationAndSchemaCommandParserTestBase {
 
@@ -89,21 +88,22 @@ class CompositeDatabaseParserTest extends AdministrationAndSchemaCommandParserTe
   }
 
   test("CREATE COMPOSITE DATABASE name TOPOLOGY 1 PRIMARY") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart(
-        """Invalid input 'TOPOLOGY': expected
-          |  "."
-          |  "IF"
-          |  "NOWAIT"
-          |  "OPTIONS"
-          |  "WAIT"
-          |  <EOF> (line 1, column 32 (offset: 31))""".stripMargin
-      ))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input 'TOPOLOGY': expected a database name, 'IF NOT EXISTS', 'NOWAIT', 'OPTIONS', 'WAIT' or <EOF> (line 1, column 32 (offset: 31))
-          |"CREATE COMPOSITE DATABASE name TOPOLOGY 1 PRIMARY"
-          |                                ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart(
+          """Invalid input 'TOPOLOGY': expected
+            |  "."
+            |  "IF"
+            |  "NOWAIT"
+            |  "OPTIONS"
+            |  "WAIT"
+            |  <EOF> (line 1, column 32 (offset: 31))""".stripMargin
+        )
+      case Antlr => _.withSyntaxError(
+          """Invalid input 'TOPOLOGY': expected a database name, 'IF NOT EXISTS', 'NOWAIT', 'OPTIONS', 'WAIT' or <EOF> (line 1, column 32 (offset: 31))
+            |"CREATE COMPOSITE DATABASE name TOPOLOGY 1 PRIMARY"
+            |                                ^""".stripMargin
+        )
+    }
   }
 
   test("CREATE COMPOSITE DATABASE name WAIT") {

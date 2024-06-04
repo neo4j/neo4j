@@ -30,7 +30,6 @@ import org.neo4j.cypher.internal.expressions.AllIterablePredicate
 import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.util.symbols.IntegerType
-import org.neo4j.exceptions.SyntaxException
 
 /* Tests for listing procedures */
 class ShowProceduresCommandParserTest extends AdministrationAndSchemaCommandParserTestBase {
@@ -417,63 +416,64 @@ class ShowProceduresCommandParserTest extends AdministrationAndSchemaCommandPars
   }
 
   test("SHOW EXECUTABLE PROCEDURE") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart(
-        """Invalid input 'EXECUTABLE': expected
-          |  "ALIAS"
-          |  "ALIASES"
-          |  "ALL"
-          |  "BTREE"
-          |  "BUILT"
-          |  "CONSTRAINT"
-          |  "CONSTRAINTS"
-          |  "CURRENT"
-          |  "DATABASE"
-          |  "DATABASES"
-          |  "DEFAULT"
-          |  "EXIST"
-          |  "EXISTENCE"
-          |  "EXISTS"
-          |  "FULLTEXT"
-          |  "FUNCTION"
-          |  "FUNCTIONS"
-          |  "HOME"
-          |  "INDEX"
-          |  "INDEXES"
-          |  "KEY"
-          |  "LOOKUP"
-          |  "NODE"
-          |  "POINT"
-          |  "POPULATED"
-          |  "PRIVILEGE"
-          |  "PRIVILEGES"
-          |  "PROCEDURE"
-          |  "PROCEDURES"
-          |  "PROPERTY"
-          |  "RANGE"
-          |  "REL"
-          |  "RELATIONSHIP"
-          |  "ROLE"
-          |  "ROLES"
-          |  "SERVER"
-          |  "SERVERS"
-          |  "SETTING"
-          |  "SETTINGS"
-          |  "SUPPORTED"
-          |  "TEXT"
-          |  "TRANSACTION"
-          |  "TRANSACTIONS"
-          |  "UNIQUE"
-          |  "UNIQUENESS"
-          |  "USER"
-          |  "USERS"
-          |  "VECTOR" (line 1, column 6 (offset: 5))""".stripMargin
-      ))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input 'EXECUTABLE': expected 'ALIAS', 'ALIASES', 'ALL', 'BTREE', 'CONSTRAINT', 'CONSTRAINTS', 'DATABASE', 'DEFAULT DATABASE', 'HOME DATABASE', 'DATABASES', 'EXIST', 'EXISTENCE', 'EXISTS', 'FULLTEXT', 'FUNCTION', 'FUNCTIONS', 'BUILT IN', 'INDEX', 'INDEXES', 'KEY', 'LOOKUP', 'NODE', 'POINT', 'POPULATED', 'PRIVILEGE', 'PRIVILEGES', 'PROCEDURE', 'PROCEDURES', 'PROPERTY', 'RANGE', 'REL', 'RELATIONSHIP', 'ROLE', 'ROLES', 'SERVER', 'SERVERS', 'SETTING', 'SETTINGS', 'SUPPORTED', 'TEXT', 'TRANSACTION', 'TRANSACTIONS', 'UNIQUE', 'UNIQUENESS', 'USER', 'CURRENT USER', 'USERS' or 'VECTOR' (line 1, column 6 (offset: 5))
-          |"SHOW EXECUTABLE PROCEDURE"
-          |      ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart(
+          """Invalid input 'EXECUTABLE': expected
+            |  "ALIAS"
+            |  "ALIASES"
+            |  "ALL"
+            |  "BTREE"
+            |  "BUILT"
+            |  "CONSTRAINT"
+            |  "CONSTRAINTS"
+            |  "CURRENT"
+            |  "DATABASE"
+            |  "DATABASES"
+            |  "DEFAULT"
+            |  "EXIST"
+            |  "EXISTENCE"
+            |  "EXISTS"
+            |  "FULLTEXT"
+            |  "FUNCTION"
+            |  "FUNCTIONS"
+            |  "HOME"
+            |  "INDEX"
+            |  "INDEXES"
+            |  "KEY"
+            |  "LOOKUP"
+            |  "NODE"
+            |  "POINT"
+            |  "POPULATED"
+            |  "PRIVILEGE"
+            |  "PRIVILEGES"
+            |  "PROCEDURE"
+            |  "PROCEDURES"
+            |  "PROPERTY"
+            |  "RANGE"
+            |  "REL"
+            |  "RELATIONSHIP"
+            |  "ROLE"
+            |  "ROLES"
+            |  "SERVER"
+            |  "SERVERS"
+            |  "SETTING"
+            |  "SETTINGS"
+            |  "SUPPORTED"
+            |  "TEXT"
+            |  "TRANSACTION"
+            |  "TRANSACTIONS"
+            |  "UNIQUE"
+            |  "UNIQUENESS"
+            |  "USER"
+            |  "USERS"
+            |  "VECTOR" (line 1, column 6 (offset: 5))""".stripMargin
+        )
+      case Antlr => _.withSyntaxError(
+          """Invalid input 'EXECUTABLE': expected 'ALIAS', 'ALIASES', 'ALL', 'BTREE', 'CONSTRAINT', 'CONSTRAINTS', 'DATABASE', 'DEFAULT DATABASE', 'HOME DATABASE', 'DATABASES', 'EXIST', 'EXISTENCE', 'EXISTS', 'FULLTEXT', 'FUNCTION', 'FUNCTIONS', 'BUILT IN', 'INDEX', 'INDEXES', 'KEY', 'LOOKUP', 'NODE', 'POINT', 'POPULATED', 'PRIVILEGE', 'PRIVILEGES', 'PROCEDURE', 'PROCEDURES', 'PROPERTY', 'RANGE', 'REL', 'RELATIONSHIP', 'ROLE', 'ROLES', 'SERVER', 'SERVERS', 'SETTING', 'SETTINGS', 'SUPPORTED', 'TEXT', 'TRANSACTION', 'TRANSACTIONS', 'UNIQUE', 'UNIQUENESS', 'USER', 'CURRENT USER', 'USERS' or 'VECTOR' (line 1, column 6 (offset: 5))
+            |"SHOW EXECUTABLE PROCEDURE"
+            |      ^""".stripMargin
+        )
+    }
   }
 
   test("SHOW PROCEDURE EXECUTABLE user") {
@@ -485,21 +485,22 @@ class ShowProceduresCommandParserTest extends AdministrationAndSchemaCommandPars
   }
 
   test("SHOW PROCEDURE EXEC") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart(
-        """Invalid input 'EXEC': expected
-          |  "EXECUTABLE"
-          |  "SHOW"
-          |  "TERMINATE"
-          |  "WHERE"
-          |  "YIELD"
-          |  <EOF> (line 1, column 16 (offset: 15))""".stripMargin
-      ))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input 'EXEC': expected 'EXECUTABLE', 'SHOW', 'TERMINATE', 'WHERE', 'YIELD' or <EOF> (line 1, column 16 (offset: 15))
-          |"SHOW PROCEDURE EXEC"
-          |                ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart(
+          """Invalid input 'EXEC': expected
+            |  "EXECUTABLE"
+            |  "SHOW"
+            |  "TERMINATE"
+            |  "WHERE"
+            |  "YIELD"
+            |  <EOF> (line 1, column 16 (offset: 15))""".stripMargin
+        )
+      case Antlr => _.withSyntaxError(
+          """Invalid input 'EXEC': expected 'EXECUTABLE', 'SHOW', 'TERMINATE', 'WHERE', 'YIELD' or <EOF> (line 1, column 16 (offset: 15))
+            |"SHOW PROCEDURE EXEC"
+            |                ^""".stripMargin
+        )
+    }
   }
 
   test("SHOW PROCEDURE EXECUTABLE BY") {
@@ -539,27 +540,29 @@ class ShowProceduresCommandParserTest extends AdministrationAndSchemaCommandPars
   }
 
   test("SHOW user PROCEDURE") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart(
-        """Invalid input '': expected ",", "PRIVILEGE" or "PRIVILEGES" (line 1, column 20 (offset: 19))"""
-      ))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input '': expected 'PRIVILEGE' or 'PRIVILEGES' (line 1, column 20 (offset: 19))
-          |"SHOW user PROCEDURE"
-          |                    ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart(
+          """Invalid input '': expected ",", "PRIVILEGE" or "PRIVILEGES" (line 1, column 20 (offset: 19))"""
+        )
+      case Antlr => _.withSyntaxError(
+          """Invalid input '': expected 'PRIVILEGE' or 'PRIVILEGES' (line 1, column 20 (offset: 19))
+            |"SHOW user PROCEDURE"
+            |                    ^""".stripMargin
+        )
+    }
   }
 
   test("SHOW USER user PROCEDURE") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart(
-        """Invalid input 'PROCEDURE': expected ",", "PRIVILEGE" or "PRIVILEGES" (line 1, column 16 (offset: 15))"""
-      ))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input 'PROCEDURE': expected 'PRIVILEGE' or 'PRIVILEGES' (line 1, column 16 (offset: 15))
-          |"SHOW USER user PROCEDURE"
-          |                ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart(
+          """Invalid input 'PROCEDURE': expected ",", "PRIVILEGE" or "PRIVILEGES" (line 1, column 16 (offset: 15))"""
+        )
+      case Antlr => _.withSyntaxError(
+          """Invalid input 'PROCEDURE': expected 'PRIVILEGE' or 'PRIVILEGES' (line 1, column 16 (offset: 15))
+            |"SHOW USER user PROCEDURE"
+            |                ^""".stripMargin
+        )
+    }
   }
 
   test("SHOW PROCEDURE EXECUTABLE BY USER user") {
@@ -579,94 +582,104 @@ class ShowProceduresCommandParserTest extends AdministrationAndSchemaCommandPars
   for (prefix <- Seq("USE neo4j", "")) {
     test(s"$prefix SHOW PROCEDURES YIELD * WITH * MATCH (n) RETURN n") {
       // Can't parse WITH after SHOW
-      failsParsing[Statements]
-        .parseIn(JavaCc)(_.withMessageStart("Invalid input 'WITH': expected"))
-        .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-          """Invalid input 'WITH': expected 'ORDER BY'""".stripMargin
-        ))
+      failsParsing[Statements].in {
+        case JavaCc => _.withMessageStart("Invalid input 'WITH': expected")
+        case Antlr => _.withSyntaxErrorContaining(
+            """Invalid input 'WITH': expected 'ORDER BY'""".stripMargin
+          )
+      }
 
     }
 
     test(s"$prefix UNWIND range(1,10) as b SHOW PROCEDURES YIELD * RETURN *") {
       // Can't parse SHOW  after UNWIND
-      failsParsing[Statements]
-        .parseIn(JavaCc)(_.withMessageStart("Invalid input 'SHOW': expected"))
-        .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-          """Invalid input 'SHOW': expected 'FOREACH', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'UNION', 'UNWIND', 'USE', 'WITH' or <EOF>""".stripMargin
-        ))
+      failsParsing[Statements].in {
+        case JavaCc => _.withMessageStart("Invalid input 'SHOW': expected")
+        case Antlr => _.withSyntaxErrorContaining(
+            """Invalid input 'SHOW': expected 'FOREACH', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'UNION', 'UNWIND', 'USE', 'WITH' or <EOF>""".stripMargin
+          )
+      }
 
     }
 
     test(s"$prefix SHOW PROCEDURES WITH name, type RETURN *") {
       // Can't parse WITH after SHOW
-      failsParsing[Statements]
-        .parseIn(JavaCc)(_.withMessageStart("Invalid input 'WITH': expected"))
-        .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-          """Invalid input 'WITH': expected 'EXECUTABLE'""".stripMargin
-        ))
+      failsParsing[Statements].in {
+        case JavaCc => _.withMessageStart("Invalid input 'WITH': expected")
+        case Antlr => _.withSyntaxErrorContaining(
+            """Invalid input 'WITH': expected 'EXECUTABLE'""".stripMargin
+          )
+      }
 
     }
 
     test(s"$prefix WITH 'n' as n SHOW PROCEDURES YIELD name RETURN name as numIndexes") {
-      failsParsing[Statements]
-        .parseIn(JavaCc)(_.withMessageStart("Invalid input 'SHOW': expected"))
-        .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-          """Invalid input 'SHOW': expected 'FOREACH', ',', 'ORDER BY', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'LIMIT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'SKIP', 'UNION', 'UNWIND', 'USE', 'WHERE', 'WITH' or <EOF>""".stripMargin
-        ))
+      failsParsing[Statements].in {
+        case JavaCc => _.withMessageStart("Invalid input 'SHOW': expected")
+        case Antlr => _.withSyntaxErrorContaining(
+            """Invalid input 'SHOW': expected 'FOREACH', ',', 'ORDER BY', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'LIMIT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'SKIP', 'UNION', 'UNWIND', 'USE', 'WHERE', 'WITH' or <EOF>""".stripMargin
+          )
+      }
 
     }
 
     test(s"$prefix SHOW PROCEDURES RETURN name as numIndexes") {
-      failsParsing[Statements]
-        .parseIn(JavaCc)(_.withMessageStart("Invalid input 'RETURN': expected"))
-        .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-          """Invalid input 'RETURN': expected 'EXECUTABLE'""".stripMargin
-        ))
+      failsParsing[Statements].in {
+        case JavaCc => _.withMessageStart("Invalid input 'RETURN': expected")
+        case Antlr => _.withSyntaxErrorContaining(
+            """Invalid input 'RETURN': expected 'EXECUTABLE'""".stripMargin
+          )
+      }
 
     }
 
     test(s"$prefix SHOW PROCEDURES WITH 1 as c RETURN name as numIndexes") {
-      failsParsing[Statements]
-        .parseIn(JavaCc)(_.withMessageStart("Invalid input 'WITH': expected"))
-        .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-          """Invalid input 'WITH': expected 'EXECUTABLE'""".stripMargin
-        ))
+      failsParsing[Statements].in {
+        case JavaCc => _.withMessageStart("Invalid input 'WITH': expected")
+        case Antlr => _.withSyntaxErrorContaining(
+            """Invalid input 'WITH': expected 'EXECUTABLE'""".stripMargin
+          )
+      }
 
     }
 
     test(s"$prefix SHOW PROCEDURES WITH 1 as c") {
-      failsParsing[Statements]
-        .parseIn(JavaCc)(_.withMessageStart("Invalid input 'WITH': expected"))
-        .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-          """Invalid input 'WITH': expected 'EXECUTABLE'""".stripMargin
-        ))
+      failsParsing[Statements].in {
+        case JavaCc => _.withMessageStart("Invalid input 'WITH': expected")
+        case Antlr => _.withSyntaxErrorContaining(
+            """Invalid input 'WITH': expected 'EXECUTABLE'""".stripMargin
+          )
+      }
 
     }
 
     test(s"$prefix SHOW PROCEDURES YIELD a WITH a RETURN a") {
-      failsParsing[Statements]
-        .parseIn(JavaCc)(_.withMessageStart("Invalid input 'WITH': expected"))
-        .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-          """Invalid input 'WITH': expected ',', 'AS', 'ORDER BY', 'LIMIT', 'RETURN', 'SHOW', 'SKIP', 'TERMINATE', 'WHERE' or <EOF>""".stripMargin
-        ))
+      failsParsing[Statements].in {
+        case JavaCc => _.withMessageStart("Invalid input 'WITH': expected")
+        case Antlr => _.withSyntaxErrorContaining(
+            """Invalid input 'WITH': expected ',', 'AS', 'ORDER BY', 'LIMIT', 'RETURN', 'SHOW', 'SKIP', 'TERMINATE', 'WHERE' or <EOF>""".stripMargin
+          )
+      }
 
     }
 
     test(s"$prefix SHOW PROCEDURES YIELD as UNWIND as as a RETURN a") {
-      failsParsing[Statements]
-        .parseIn(JavaCc)(_.withMessageStart("Invalid input 'UNWIND': expected"))
-        .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-          """Invalid input 'UNWIND': expected ',', 'AS', 'ORDER BY', 'LIMIT', 'RETURN', 'SHOW', 'SKIP', 'TERMINATE', 'WHERE' or <EOF>""".stripMargin
-        ))
+      failsParsing[Statements].in {
+        case JavaCc => _.withMessageStart("Invalid input 'UNWIND': expected")
+        case Antlr => _.withSyntaxErrorContaining(
+            """Invalid input 'UNWIND': expected ',', 'AS', 'ORDER BY', 'LIMIT', 'RETURN', 'SHOW', 'SKIP', 'TERMINATE', 'WHERE' or <EOF>""".stripMargin
+          )
+      }
 
     }
 
     test(s"$prefix SHOW PROCEDURES RETURN name2 YIELD name2") {
-      failsParsing[Statements]
-        .parseIn(JavaCc)(_.withMessageStart("Invalid input 'RETURN': expected"))
-        .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-          """Invalid input 'RETURN': expected 'EXECUTABLE'""".stripMargin
-        ))
+      failsParsing[Statements].in {
+        case JavaCc => _.withMessageStart("Invalid input 'RETURN': expected")
+        case Antlr => _.withSyntaxErrorContaining(
+            """Invalid input 'RETURN': expected 'EXECUTABLE'""".stripMargin
+          )
+      }
 
     }
   }
@@ -718,50 +731,51 @@ class ShowProceduresCommandParserTest extends AdministrationAndSchemaCommandPars
   }
 
   test("SHOW PROCEDURE YIELD name ORDER BY name AST RETURN *") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart(
-        """Invalid input 'AST': expected
-          |  "!="
-          |  "%"
-          |  "*"
-          |  "+"
-          |  ","
-          |  "-"
-          |  "/"
-          |  "::"
-          |  "<"
-          |  "<="
-          |  "<>"
-          |  "="
-          |  "=~"
-          |  ">"
-          |  ">="
-          |  "AND"
-          |  "ASC"
-          |  "ASCENDING"
-          |  "CONTAINS"
-          |  "DESC"
-          |  "DESCENDING"
-          |  "ENDS"
-          |  "IN"
-          |  "IS"
-          |  "LIMIT"
-          |  "OR"
-          |  "RETURN"
-          |  "SHOW"
-          |  "SKIP"
-          |  "STARTS"
-          |  "TERMINATE"
-          |  "WHERE"
-          |  "XOR"
-          |  "^"
-          |  "||"
-          |  <EOF> (line 1, column 41 (offset: 40))""".stripMargin
-      ))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input 'AST': expected an expression, ',', 'ASC', 'ASCENDING', 'DESC', 'DESCENDING', 'LIMIT', 'RETURN', 'SHOW', 'SKIP', 'TERMINATE', 'WHERE' or <EOF> (line 1, column 41 (offset: 40))
-          |"SHOW PROCEDURE YIELD name ORDER BY name AST RETURN *"
-          |                                         ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart(
+          """Invalid input 'AST': expected
+            |  "!="
+            |  "%"
+            |  "*"
+            |  "+"
+            |  ","
+            |  "-"
+            |  "/"
+            |  "::"
+            |  "<"
+            |  "<="
+            |  "<>"
+            |  "="
+            |  "=~"
+            |  ">"
+            |  ">="
+            |  "AND"
+            |  "ASC"
+            |  "ASCENDING"
+            |  "CONTAINS"
+            |  "DESC"
+            |  "DESCENDING"
+            |  "ENDS"
+            |  "IN"
+            |  "IS"
+            |  "LIMIT"
+            |  "OR"
+            |  "RETURN"
+            |  "SHOW"
+            |  "SKIP"
+            |  "STARTS"
+            |  "TERMINATE"
+            |  "WHERE"
+            |  "XOR"
+            |  "^"
+            |  "||"
+            |  <EOF> (line 1, column 41 (offset: 40))""".stripMargin
+        )
+      case Antlr => _.withSyntaxError(
+          """Invalid input 'AST': expected an expression, ',', 'ASC', 'ASCENDING', 'DESC', 'DESCENDING', 'LIMIT', 'RETURN', 'SHOW', 'SKIP', 'TERMINATE', 'WHERE' or <EOF> (line 1, column 41 (offset: 40))
+            |"SHOW PROCEDURE YIELD name ORDER BY name AST RETURN *"
+            |                                         ^""".stripMargin
+        )
+    }
   }
 }

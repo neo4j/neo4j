@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
+import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
 import org.neo4j.cypher.internal.util.symbols.AnyType
 import org.neo4j.cypher.internal.util.symbols.BooleanType
 import org.neo4j.cypher.internal.util.symbols.CTMap
@@ -1625,13 +1626,14 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
           test(
             s"CREATE OR REPLACE CONSTRAINT my_constraint $forOrOnString (node:Label) $requireOrAssertString (node.prop2, node.prop3) IS NOT NULL"
           ) {
-            failsParsing[Statements]
-              .parseIn(JavaCc)(_.throws[Neo4jASTConstructionException].withMessage(
-                ASTExceptionFactory.onlySinglePropertyAllowed(ConstraintType.NODE_IS_NOT_NULL)
-              ))
-              .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-                ASTExceptionFactory.onlySinglePropertyAllowed(ConstraintType.NODE_IS_NOT_NULL)
-              ))
+            failsParsing[Statements].in {
+              case JavaCc => _.throws[Neo4jASTConstructionException].withMessage(
+                  ASTExceptionFactory.onlySinglePropertyAllowed(ConstraintType.NODE_IS_NOT_NULL)
+                )
+              case Antlr => _.withSyntaxErrorContaining(
+                  ASTExceptionFactory.onlySinglePropertyAllowed(ConstraintType.NODE_IS_NOT_NULL)
+                )
+            }
           }
 
           // Relationship property existence
@@ -1714,13 +1716,14 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
           test(
             s"CREATE OR REPLACE CONSTRAINT my_constraint $forOrOnString ()-[r1:REL]-() $requireOrAssertString (r2.prop2, r3.prop3) IS NOT NULL"
           ) {
-            failsParsing[Statements]
-              .parseIn(JavaCc)(_.throws[Neo4jASTConstructionException].withMessage(
-                ASTExceptionFactory.onlySinglePropertyAllowed(ConstraintType.REL_IS_NOT_NULL)
-              ))
-              .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-                ASTExceptionFactory.onlySinglePropertyAllowed(ConstraintType.REL_IS_NOT_NULL)
-              ))
+            failsParsing[Statements].in {
+              case JavaCc => _.throws[Neo4jASTConstructionException].withMessage(
+                  ASTExceptionFactory.onlySinglePropertyAllowed(ConstraintType.REL_IS_NOT_NULL)
+                )
+              case Antlr => _.withSyntaxErrorContaining(
+                  ASTExceptionFactory.onlySinglePropertyAllowed(ConstraintType.REL_IS_NOT_NULL)
+                )
+            }
           }
 
           Seq("IS TYPED", "IS ::", "::").foreach(typeKeyword => {
@@ -1809,13 +1812,14 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
             test(
               s"CREATE OR REPLACE CONSTRAINT my_constraint $forOrOnString (node:Label) $requireOrAssertString (node.prop2, node.prop3) $typeKeyword STRING"
             ) {
-              failsParsing[Statements]
-                .parseIn(JavaCc)(_.throws[Neo4jASTConstructionException].withMessage(
-                  ASTExceptionFactory.onlySinglePropertyAllowed(ConstraintType.NODE_IS_TYPED)
-                ))
-                .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-                  ASTExceptionFactory.onlySinglePropertyAllowed(ConstraintType.NODE_IS_TYPED)
-                ))
+              failsParsing[Statements].in {
+                case JavaCc => _.throws[Neo4jASTConstructionException].withMessage(
+                    ASTExceptionFactory.onlySinglePropertyAllowed(ConstraintType.NODE_IS_TYPED)
+                  )
+                case Antlr => _.withSyntaxErrorContaining(
+                    ASTExceptionFactory.onlySinglePropertyAllowed(ConstraintType.NODE_IS_TYPED)
+                  )
+              }
             }
 
             // Relationship property type
@@ -1903,13 +1907,14 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
             test(
               s"CREATE OR REPLACE CONSTRAINT my_constraint $forOrOnString ()-[r1:REL]-() $requireOrAssertString (r2.prop2, r3.prop3) $typeKeyword STRING"
             ) {
-              failsParsing[Statements]
-                .parseIn(JavaCc)(_.throws[Neo4jASTConstructionException].withMessage(
-                  ASTExceptionFactory.onlySinglePropertyAllowed(ConstraintType.REL_IS_TYPED)
-                ))
-                .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-                  ASTExceptionFactory.onlySinglePropertyAllowed(ConstraintType.REL_IS_TYPED)
-                ))
+              failsParsing[Statements].in {
+                case JavaCc => _.throws[Neo4jASTConstructionException].withMessage(
+                    ASTExceptionFactory.onlySinglePropertyAllowed(ConstraintType.REL_IS_TYPED)
+                  )
+                case Antlr => _.withSyntaxErrorContaining(
+                    ASTExceptionFactory.onlySinglePropertyAllowed(ConstraintType.REL_IS_TYPED)
+                  )
+              }
             }
           })
 
@@ -1918,99 +1923,118 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
           test(
             s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString (node.prop) IS NODE KEY {indexProvider : 'range-1.0'}"
           ) {
-            failsParsing[Statements]
-              .parseIn(JavaCc)(_.withMessageStart("Invalid input '{': expected \"OPTIONS\" or <EOF>"))
-              .parseIn(Antlr)(
-                _.throws[SyntaxException].withMessageStart("Invalid input '{': expected 'OPTIONS' or <EOF>")
-              )
+            failsParsing[Statements].in {
+              case JavaCc => _.withMessageStart("Invalid input '{': expected \"OPTIONS\" or <EOF>")
+              case Antlr =>
+                _.withSyntaxErrorContaining("Invalid input '{': expected 'OPTIONS' or <EOF>")
+            }
           }
 
           test(
             s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString (node.prop) IS NODE KEY OPTIONS"
           ) {
-            failsParsing[Statements]
-              .parseIn(JavaCc)(_.withMessageStart("Invalid input '': expected \"{\" or a parameter"))
-              .parseIn(Antlr)(
-                _.throws[SyntaxException].withMessageStart("Invalid input '': expected a parameter or '{'")
-              )
+            failsParsing[Statements].in {
+              case JavaCc => _.withMessageStart("Invalid input '': expected \"{\" or a parameter")
+              case Antlr =>
+                _.withSyntaxErrorContaining("Invalid input '': expected a parameter or '{'")
+
+            }
           }
 
           test(s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString node.prop.part IS UNIQUE") {
-            failsParsing[Statements]
-              .parseIn(JavaCc)(_.withMessageStart("Invalid input '.': expected \"::\" or \"IS\""))
-              .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart("Invalid input '.': expected '::' or 'IS'"))
+            failsParsing[Statements].in {
+              case JavaCc => _.withMessageStart("Invalid input '.': expected \"::\" or \"IS\"")
+              case Antlr  => _.withSyntaxErrorContaining("Invalid input '.': expected '::' or 'IS'")
+            }
           }
 
           test(s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString (node.prop.part) IS UNIQUE") {
-            failsParsing[Statements]
-              .parseIn(JavaCc)(_.withMessageStart("Invalid input '.': expected \")\" or \",\""))
-              .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart("Invalid input '.': expected ')' or ','"))
+            failsParsing[Statements].in {
+              case JavaCc => _.withMessageStart("Invalid input '.': expected \")\" or \",\"")
+              case Antlr  => _.withSyntaxErrorContaining("Invalid input '.': expected ')' or ','")
+            }
           }
 
           test(
             s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString (node.prop) IS UNIQUE {indexProvider : 'range-1.0'}"
           ) {
-            failsParsing[Statements]
-              .parseIn(JavaCc)(_.withMessageStart(
-                "Invalid input '{': expected \"OPTIONS\" or <EOF>"
-              ))
-              .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-                "Invalid input '{': expected 'OPTIONS' or <EOF>"
-              ))
+            failsParsing[Statements].in {
+              case JavaCc => _.withMessageStart(
+                  "Invalid input '{': expected \"OPTIONS\" or <EOF>"
+                )
+              case Antlr => _.withSyntaxErrorContaining(
+                  "Invalid input '{': expected 'OPTIONS' or <EOF>"
+                )
+            }
           }
 
           test(
             s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString (node.prop1, node.prop2) IS UNIQUE OPTIONS"
           ) {
-            failsParsing[Statements]
-              .parseIn(JavaCc)(_.withMessageStart("Invalid input '': expected \"{\" or a parameter"))
-              .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-                "Invalid input '': expected a parameter or '{'"
-              ))
+            failsParsing[Statements].in {
+              case JavaCc => _.withMessageStart("Invalid input '': expected \"{\" or a parameter")
+              case Antlr => _.withSyntaxErrorContaining(
+                  "Invalid input '': expected a parameter or '{'"
+                )
+            }
           }
 
           test(
             s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString (node.prop1, node.prop2) IS NOT NULL"
           ) {
-            failsParsing[Statements]
-              .parseIn(JavaCc)(_.withMessage("Constraint type 'IS NOT NULL' does not allow multiple properties"))
-              .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-                "Constraint type 'IS NOT NULL' does not allow multiple properties"
-              ))
+            failsParsing[Statements].in {
+              case JavaCc => _.withMessage("Constraint type 'IS NOT NULL' does not allow multiple properties")
+              case Antlr => _.withSyntaxErrorContaining(
+                  "Constraint type 'IS NOT NULL' does not allow multiple properties"
+                )
+            }
           }
 
           test(
             s"CREATE CONSTRAINT $forOrOnString ()-[r:R]-() $requireOrAssertString (r.prop1, r.prop2) IS NOT NULL"
           ) {
-            failsParsing[Statements]
-              .parseIn(JavaCc)(_.withMessage("Constraint type 'IS NOT NULL' does not allow multiple properties"))
-              .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-                "Constraint type 'IS NOT NULL' does not allow multiple properties"
-              ))
+            failsParsing[Statements].in {
+              case JavaCc => _.withMessage("Constraint type 'IS NOT NULL' does not allow multiple properties")
+              case Antlr => _.withSyntaxErrorContaining(
+                  "Constraint type 'IS NOT NULL' does not allow multiple properties"
+                )
+            }
           }
 
           test(s"CREATE CONSTRAINT $forOrOnString ()-[r1:REL]-() $requireOrAssertString (r2.prop) IS NODE KEY") {
             failsParsing[Statements]
               .withMessageStart(ASTExceptionFactory.relationshipPatternNotAllowed(ConstraintType.NODE_KEY))
-              .parseIn(Antlr)(_.throws[SyntaxException])
+              .in {
+                case JavaCc => _.throws[OpenCypherExceptionFactory.SyntaxException]
+                case _      => _.throws[SyntaxException]
+              }
           }
 
           test(s"CREATE CONSTRAINT $forOrOnString ()-[r1:REL]-() $requireOrAssertString (r2.prop) IS NODE UNIQUE") {
             failsParsing[Statements]
               .withMessageStart(ASTExceptionFactory.relationshipPatternNotAllowed(ConstraintType.NODE_UNIQUE))
-              .parseIn(Antlr)(_.throws[SyntaxException])
+              .in {
+                case JavaCc => _.throws[OpenCypherExceptionFactory.SyntaxException]
+                case _      => _.throws[SyntaxException]
+              }
           }
 
           test(s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString (r.prop) IS RELATIONSHIP KEY") {
             failsParsing[Statements]
               .withMessageStart(ASTExceptionFactory.nodePatternNotAllowed(ConstraintType.REL_KEY))
-              .parseIn(Antlr)(_.throws[SyntaxException])
+              .in {
+                case JavaCc => _.throws[OpenCypherExceptionFactory.SyntaxException]
+                case _      => _.throws[SyntaxException]
+              }
           }
 
           test(s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString (r.prop) IS REL KEY") {
             failsParsing[Statements]
               .withMessageStart(ASTExceptionFactory.nodePatternNotAllowed(ConstraintType.REL_KEY))
-              .parseIn(Antlr)(_.throws[SyntaxException])
+              .in {
+                case JavaCc => _.throws[OpenCypherExceptionFactory.SyntaxException]
+                case _      => _.throws[SyntaxException]
+              }
           }
 
           test(
@@ -2018,13 +2042,19 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
           ) {
             failsParsing[Statements]
               .withMessageStart(ASTExceptionFactory.nodePatternNotAllowed(ConstraintType.REL_UNIQUE))
-              .parseIn(Antlr)(_.throws[SyntaxException])
+              .in {
+                case JavaCc => _.throws[OpenCypherExceptionFactory.SyntaxException]
+                case _      => _.throws[SyntaxException]
+              }
           }
 
           test(s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString (r.prop) IS REL UNIQUE") {
             failsParsing[Statements]
               .withMessageStart(ASTExceptionFactory.nodePatternNotAllowed(ConstraintType.REL_UNIQUE))
-              .parseIn(Antlr)(_.throws[SyntaxException])
+              .in {
+                case JavaCc => _.throws[OpenCypherExceptionFactory.SyntaxException]
+                case _      => _.throws[SyntaxException]
+              }
           }
 
           test(
@@ -2781,19 +2811,23 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
       .withMessageStart(
         "Closed Dynamic Union Types can not be appended with `NOT NULL`, specify `NOT NULL` on all inner types instead."
       )
-      .parseIn(Antlr)(_.throws[SyntaxException])
+      .in {
+        case JavaCc => _.throws[OpenCypherExceptionFactory.SyntaxException]
+        case _      => _.throws[SyntaxException]
+      }
   }
 
   test("CREATE CONSTRAINT my_constraint FOR (n:L) REQUIRE n.p IS :: BOOLEAN LIST NOT NULL NOT NULL") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart(
-        "Invalid input 'NOT': expected \"ARRAY\", \"LIST\", \"OPTIONS\" or <EOF> (line 1, column 83 (offset: 82))"
-      ))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input 'NOT': expected 'ARRAY', 'LIST', 'OPTIONS', '|' or <EOF> (line 1, column 83 (offset: 82))
-          |"CREATE CONSTRAINT my_constraint FOR (n:L) REQUIRE n.p IS :: BOOLEAN LIST NOT NULL NOT NULL"
-          |                                                                                   ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart(
+          "Invalid input 'NOT': expected \"ARRAY\", \"LIST\", \"OPTIONS\" or <EOF> (line 1, column 83 (offset: 82))"
+        )
+      case Antlr => _.withSyntaxError(
+          """Invalid input 'NOT': expected 'ARRAY', 'LIST', 'OPTIONS', '|' or <EOF> (line 1, column 83 (offset: 82))
+            |"CREATE CONSTRAINT my_constraint FOR (n:L) REQUIRE n.p IS :: BOOLEAN LIST NOT NULL NOT NULL"
+            |                                                                                   ^""".stripMargin
+        )
+    }
   }
 
   // ASSERT EXISTS
@@ -2880,8 +2914,10 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
   test("CREATE CONSTRAINT ON (node1:Label) ASSERT EXISTS (node2.prop1, node3.prop2)") {
     failsParsing[Statements]
       .withMessageStart(ASTExceptionFactory.onlySinglePropertyAllowed(ConstraintType.NODE_EXISTS))
-      .parseIn(JavaCc)(_.throws[Neo4jASTConstructionException])
-      .parseIn(Antlr)(_.throws[SyntaxException])
+      .in {
+        case JavaCc => _.throws[Neo4jASTConstructionException]
+        case _      => _.throws[SyntaxException]
+      }
   }
 
   test("CREATE CONSTRAINT ON ()-[r:R]-() ASSERT EXISTS (r.prop)") {
@@ -2979,8 +3015,10 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
   test("CREATE CONSTRAINT ON ()-[r1:REL]-() ASSERT EXISTS (r2.prop1, r3.prop2)") {
     failsParsing[Statements]
       .withMessageStart(ASTExceptionFactory.onlySinglePropertyAllowed(ConstraintType.REL_EXISTS))
-      .parseIn(JavaCc)(_.throws[Neo4jASTConstructionException])
-      .parseIn(Antlr)(_.throws[SyntaxException])
+      .in {
+        case JavaCc => _.throws[Neo4jASTConstructionException]
+        case _      => _.throws[SyntaxException]
+      }
   }
 
   test("CREATE CONSTRAINT my_constraint ON (node:Label) ASSERT EXISTS (node.prop)") {
@@ -3105,8 +3143,10 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
   ) {
     failsParsing[Statements]
       .withMessageStart("Constraint type 'EXISTS' does not allow multiple properties")
-      .parseIn(JavaCc)(_.throws[Neo4jASTConstructionException])
-      .parseIn(Antlr)(_.throws[SyntaxException])
+      .in {
+        case JavaCc => _.throws[Neo4jASTConstructionException]
+        case _      => _.throws[SyntaxException]
+      }
   }
 
   test(
@@ -3114,8 +3154,10 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
   ) {
     failsParsing[Statements]
       .withMessageStart("Constraint type 'EXISTS' does not allow multiple properties")
-      .parseIn(JavaCc)(_.throws[Neo4jASTConstructionException])
-      .parseIn(Antlr)(_.throws[SyntaxException])
+      .in {
+        case JavaCc => _.throws[Neo4jASTConstructionException]
+        case _      => _.throws[SyntaxException]
+      }
   }
 
   test("CREATE CONSTRAINT $my_constraint ON ()-[r:R]-() ASSERT EXISTS (r.prop)") {
@@ -3224,446 +3266,470 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
 
   test("CREATE CONSTRAINT FOR (:A)-[n1:R]-() REQUIRE (n2.name) IS RELATIONSHIP KEY") {
     // label on node
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart(
-        """Invalid input ':': expected ")" or an identifier"""
-      ))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input ':': expected a variable name or ')' (line 1, column 24 (offset: 23))
-          |"CREATE CONSTRAINT FOR (:A)-[n1:R]-() REQUIRE (n2.name) IS RELATIONSHIP KEY"
-          |                        ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart(
+          """Invalid input ':': expected ")" or an identifier"""
+        )
+      case Antlr => _.withSyntaxError(
+          """Invalid input ':': expected a variable name or ')' (line 1, column 24 (offset: 23))
+            |"CREATE CONSTRAINT FOR (:A)-[n1:R]-() REQUIRE (n2.name) IS RELATIONSHIP KEY"
+            |                        ^""".stripMargin
+        )
+    }
   }
 
   test("CREATE CONSTRAINT FOR ()-[n1:R]-(:A) REQUIRE (n2.name) IS UNIQUE") {
     // label on node
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("""Invalid input ':': expected ")""""))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input ':': expected ')' (line 1, column 34 (offset: 33))
-          |"CREATE CONSTRAINT FOR ()-[n1:R]-(:A) REQUIRE (n2.name) IS UNIQUE"
-          |                                  ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("""Invalid input ':': expected ")"""")
+      case Antlr => _.withSyntaxError(
+          """Invalid input ':': expected ')' (line 1, column 34 (offset: 33))
+            |"CREATE CONSTRAINT FOR ()-[n1:R]-(:A) REQUIRE (n2.name) IS UNIQUE"
+            |                                  ^""".stripMargin
+        )
+    }
   }
 
   test("CREATE CONSTRAINT FOR (n2)-[n1:R]-() REQUIRE (n2.name) IS NOT NULL") {
     // variable on node
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart(
-        """Invalid input ')': expected ":""""
-      ))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input ')': expected ':' (line 1, column 26 (offset: 25))
-          |"CREATE CONSTRAINT FOR (n2)-[n1:R]-() REQUIRE (n2.name) IS NOT NULL"
-          |                          ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart(
+          """Invalid input ')': expected ":""""
+        )
+      case Antlr => _.withSyntaxError(
+          """Invalid input ')': expected ':' (line 1, column 26 (offset: 25))
+            |"CREATE CONSTRAINT FOR (n2)-[n1:R]-() REQUIRE (n2.name) IS NOT NULL"
+            |                          ^""".stripMargin
+        )
+    }
   }
 
   test("CREATE CONSTRAINT FOR ()-[n1:R]-(n2) REQUIRE (n2.name) IS :: STRING") {
     // variable on node
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart(
-        """Invalid input 'n2': expected ")""""
-      ))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input 'n2': expected ')' (line 1, column 34 (offset: 33))
-          |"CREATE CONSTRAINT FOR ()-[n1:R]-(n2) REQUIRE (n2.name) IS :: STRING"
-          |                                  ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart(
+          """Invalid input 'n2': expected ")""""
+        )
+      case Antlr => _.withSyntaxError(
+          """Invalid input 'n2': expected ')' (line 1, column 34 (offset: 33))
+            |"CREATE CONSTRAINT FOR ()-[n1:R]-(n2) REQUIRE (n2.name) IS :: STRING"
+            |                                  ^""".stripMargin
+        )
+    }
   }
 
   test("CREATE CONSTRAINT FOR (n2:A)-[n1:R]-() REQUIRE (n2.name) IS KEY") {
     // variable on node
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart(
-        """Invalid input '-': expected "ASSERT" or "REQUIRE""""
-      ))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input '-': expected 'ASSERT' or 'REQUIRE' (line 1, column 29 (offset: 28))
-          |"CREATE CONSTRAINT FOR (n2:A)-[n1:R]-() REQUIRE (n2.name) IS KEY"
-          |                             ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart(
+          """Invalid input '-': expected "ASSERT" or "REQUIRE""""
+        )
+      case Antlr => _.withSyntaxError(
+          """Invalid input '-': expected 'ASSERT' or 'REQUIRE' (line 1, column 29 (offset: 28))
+            |"CREATE CONSTRAINT FOR (n2:A)-[n1:R]-() REQUIRE (n2.name) IS KEY"
+            |                             ^""".stripMargin
+        )
+    }
   }
 
   test("CREATE CONSTRAINT FOR ()-[n1:R]-(n2:A) REQUIRE (n2.name) IS RELATIONSHIP UNIQUE") {
     // variable on node
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart(
-        """Invalid input 'n2': expected ")""""
-      ))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input 'n2': expected ')' (line 1, column 34 (offset: 33))
-          |"CREATE CONSTRAINT FOR ()-[n1:R]-(n2:A) REQUIRE (n2.name) IS RELATIONSHIP UNIQUE"
-          |                                  ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart(
+          """Invalid input 'n2': expected ")""""
+        )
+      case Antlr => _.withSyntaxError(
+          """Invalid input 'n2': expected ')' (line 1, column 34 (offset: 33))
+            |"CREATE CONSTRAINT FOR ()-[n1:R]-(n2:A) REQUIRE (n2.name) IS RELATIONSHIP UNIQUE"
+            |                                  ^""".stripMargin
+        )
+    }
   }
 
   test("CREATE CONSTRAINT my_constraint ON (node:Label) ASSERT EXISTS (node.prop) IS NOT NULL") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart(
-        """Invalid input 'IS': expected "OPTIONS" or <EOF> (line 1, column 75 (offset: 74))"""
-      ))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input 'IS': expected 'OPTIONS' or <EOF> (line 1, column 75 (offset: 74))
-          |"CREATE CONSTRAINT my_constraint ON (node:Label) ASSERT EXISTS (node.prop) IS NOT NULL"
-          |                                                                           ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart(
+          """Invalid input 'IS': expected "OPTIONS" or <EOF> (line 1, column 75 (offset: 74))"""
+        )
+      case Antlr => _.withSyntaxError(
+          """Invalid input 'IS': expected 'OPTIONS' or <EOF> (line 1, column 75 (offset: 74))
+            |"CREATE CONSTRAINT my_constraint ON (node:Label) ASSERT EXISTS (node.prop) IS NOT NULL"
+            |                                                                           ^""".stripMargin
+        )
+    }
   }
 
   test("CREATE CONSTRAINT my_constraint ON ()-[r:R]-() ASSERT EXISTS (r.prop) IS NOT NULL") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart(
-        "Invalid input 'IS': expected \"OPTIONS\" or <EOF> (line 1, column 71 (offset: 70))"
-      ))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input 'IS': expected 'OPTIONS' or <EOF> (line 1, column 71 (offset: 70))
-          |"CREATE CONSTRAINT my_constraint ON ()-[r:R]-() ASSERT EXISTS (r.prop) IS NOT NULL"
-          |                                                                       ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart(
+          "Invalid input 'IS': expected \"OPTIONS\" or <EOF> (line 1, column 71 (offset: 70))"
+        )
+      case Antlr => _.withSyntaxError(
+          """Invalid input 'IS': expected 'OPTIONS' or <EOF> (line 1, column 71 (offset: 70))
+            |"CREATE CONSTRAINT my_constraint ON ()-[r:R]-() ASSERT EXISTS (r.prop) IS NOT NULL"
+            |                                                                       ^""".stripMargin
+        )
+    }
   }
 
   test("CREATE CONSTRAINT FOR (n:Label) REQUIRE (n.prop)") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart(
-        "Invalid input '': expected \"::\" or \"IS\" (line 1, column 49 (offset: 48))"
-      ))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input '': expected '::' or 'IS' (line 1, column 49 (offset: 48))
-          |"CREATE CONSTRAINT FOR (n:Label) REQUIRE (n.prop)"
-          |                                                 ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart(
+          "Invalid input '': expected \"::\" or \"IS\" (line 1, column 49 (offset: 48))"
+        )
+      case Antlr => _.withSyntaxError(
+          """Invalid input '': expected '::' or 'IS' (line 1, column 49 (offset: 48))
+            |"CREATE CONSTRAINT FOR (n:Label) REQUIRE (n.prop)"
+            |                                                 ^""".stripMargin
+        )
+    }
   }
 
   test("CREATE CONSTRAINT FOR (node:Label) REQUIRE EXISTS (node.prop)") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart(
-        "Invalid input '(': expected \".\" (line 1, column 51 (offset: 50))"
-      ))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input '(': expected '.' (line 1, column 51 (offset: 50))
-          |"CREATE CONSTRAINT FOR (node:Label) REQUIRE EXISTS (node.prop)"
-          |                                                   ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart(
+          "Invalid input '(': expected \".\" (line 1, column 51 (offset: 50))"
+        )
+      case Antlr => _.withSyntaxError(
+          """Invalid input '(': expected '.' (line 1, column 51 (offset: 50))
+            |"CREATE CONSTRAINT FOR (node:Label) REQUIRE EXISTS (node.prop)"
+            |                                                   ^""".stripMargin
+        )
+    }
   }
 
   test("CREATE CONSTRAINT FOR ()-[r:R]-() REQUIRE EXISTS (r.prop)") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart(
-        "Invalid input '(': expected \".\" (line 1, column 50 (offset: 49))"
-      ))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input '(': expected '.' (line 1, column 50 (offset: 49))
-          |"CREATE CONSTRAINT FOR ()-[r:R]-() REQUIRE EXISTS (r.prop)"
-          |                                                  ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart(
+          "Invalid input '(': expected \".\" (line 1, column 50 (offset: 49))"
+        )
+      case Antlr => _.withSyntaxError(
+          """Invalid input '(': expected '.' (line 1, column 50 (offset: 49))
+            |"CREATE CONSTRAINT FOR ()-[r:R]-() REQUIRE EXISTS (r.prop)"
+            |                                                  ^""".stripMargin
+        )
+    }
   }
 
   test(s"CREATE CONSTRAINT my_constraint ON ()-[r:R]-() ASSERT r.prop IS NULL") {
-    failsParsing[Statements].parseIn(JavaCc)(
-      _.withMessageStart("""Invalid input 'NULL': expected
-                           |  "::"
-                           |  "KEY"
-                           |  "NODE"
-                           |  "NOT"
-                           |  "REL"
-                           |  "RELATIONSHIP"
-                           |  "TYPED"
-                           |  "UNIQUE" (line 1, column 65 (offset: 64))""".stripMargin)
-    )
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input 'NULL': expected '::', 'KEY', 'NODE', 'NOT NULL', 'REL', 'RELATIONSHIP', 'TYPED' or 'UNIQUE' (line 1, column 65 (offset: 64))
-          |"CREATE CONSTRAINT my_constraint ON ()-[r:R]-() ASSERT r.prop IS NULL"
-          |                                                                 ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart(
+          """Invalid input 'NULL': expected
+            |  "::"
+            |  "KEY"
+            |  "NODE"
+            |  "NOT"
+            |  "REL"
+            |  "RELATIONSHIP"
+            |  "TYPED"
+            |  "UNIQUE" (line 1, column 65 (offset: 64))""".stripMargin
+        )
+      case Antlr => _.withSyntaxError(
+          """Invalid input 'NULL': expected '::', 'KEY', 'NODE', 'NOT NULL', 'REL', 'RELATIONSHIP', 'TYPED' or 'UNIQUE' (line 1, column 65 (offset: 64))
+            |"CREATE CONSTRAINT my_constraint ON ()-[r:R]-() ASSERT r.prop IS NULL"
+            |                                                                 ^""".stripMargin
+        )
+    }
   }
 
   test(s"CREATE CONSTRAINT my_constraint FOR ()-[r:R]-() REQUIRE r.prop IS NULL") {
-    failsParsing[Statements].parseIn(JavaCc)(_.withMessageStart(
-      """Invalid input 'NULL': expected
-        |  "::"
-        |  "KEY"
-        |  "NODE"
-        |  "NOT"
-        |  "REL"
-        |  "RELATIONSHIP"
-        |  "TYPED"
-        |  "UNIQUE" (line 1, column 67 (offset: 66))""".stripMargin
-    ))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input 'NULL': expected '::', 'KEY', 'NODE', 'NOT NULL', 'REL', 'RELATIONSHIP', 'TYPED' or 'UNIQUE' (line 1, column 67 (offset: 66))
-          |"CREATE CONSTRAINT my_constraint FOR ()-[r:R]-() REQUIRE r.prop IS NULL"
-          |                                                                   ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart(
+          """Invalid input 'NULL': expected
+            |  "::"
+            |  "KEY"
+            |  "NODE"
+            |  "NOT"
+            |  "REL"
+            |  "RELATIONSHIP"
+            |  "TYPED"
+            |  "UNIQUE" (line 1, column 67 (offset: 66))""".stripMargin
+        )
+      case Antlr => _.withSyntaxError(
+          """Invalid input 'NULL': expected '::', 'KEY', 'NODE', 'NOT NULL', 'REL', 'RELATIONSHIP', 'TYPED' or 'UNIQUE' (line 1, column 67 (offset: 66))
+            |"CREATE CONSTRAINT my_constraint FOR ()-[r:R]-() REQUIRE r.prop IS NULL"
+            |                                                                   ^""".stripMargin
+        )
+    }
   }
 
   test(s"CREATE CONSTRAINT my_constraint ON (node:Label) ASSERT node.prop IS NULL") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart(
-        """Invalid input 'NULL': expected
-          |  "::"
-          |  "KEY"
-          |  "NODE"
-          |  "NOT"
-          |  "REL"
-          |  "RELATIONSHIP"
-          |  "TYPED"
-          |  "UNIQUE" (line 1, column 69 (offset: 68))""".stripMargin
-      ))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input 'NULL': expected '::', 'KEY', 'NODE', 'NOT NULL', 'REL', 'RELATIONSHIP', 'TYPED' or 'UNIQUE' (line 1, column 69 (offset: 68))
-          |"CREATE CONSTRAINT my_constraint ON (node:Label) ASSERT node.prop IS NULL"
-          |                                                                     ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart(
+          """Invalid input 'NULL': expected
+            |  "::"
+            |  "KEY"
+            |  "NODE"
+            |  "NOT"
+            |  "REL"
+            |  "RELATIONSHIP"
+            |  "TYPED"
+            |  "UNIQUE" (line 1, column 69 (offset: 68))""".stripMargin
+        )
+      case Antlr => _.withSyntaxError(
+          """Invalid input 'NULL': expected '::', 'KEY', 'NODE', 'NOT NULL', 'REL', 'RELATIONSHIP', 'TYPED' or 'UNIQUE' (line 1, column 69 (offset: 68))
+            |"CREATE CONSTRAINT my_constraint ON (node:Label) ASSERT node.prop IS NULL"
+            |                                                                     ^""".stripMargin
+        )
+    }
   }
 
   test(s"CREATE CONSTRAINT my_constraint FOR (node:Label) REQUIRE node.prop IS NULL") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("""Invalid input 'NULL': expected
-                                            |  "::"
-                                            |  "KEY"
-                                            |  "NODE"
-                                            |  "NOT"
-                                            |  "REL"
-                                            |  "RELATIONSHIP"
-                                            |  "TYPED"
-                                            |  "UNIQUE" (line 1, column 71 (offset: 70))""".stripMargin))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input 'NULL': expected '::', 'KEY', 'NODE', 'NOT NULL', 'REL', 'RELATIONSHIP', 'TYPED' or 'UNIQUE' (line 1, column 71 (offset: 70))
-          |"CREATE CONSTRAINT my_constraint FOR (node:Label) REQUIRE node.prop IS NULL"
-          |                                                                       ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("""Invalid input 'NULL': expected
+                                          |  "::"
+                                          |  "KEY"
+                                          |  "NODE"
+                                          |  "NOT"
+                                          |  "REL"
+                                          |  "RELATIONSHIP"
+                                          |  "TYPED"
+                                          |  "UNIQUE" (line 1, column 71 (offset: 70))""".stripMargin)
+      case Antlr => _.withSyntaxError(
+          """Invalid input 'NULL': expected '::', 'KEY', 'NODE', 'NOT NULL', 'REL', 'RELATIONSHIP', 'TYPED' or 'UNIQUE' (line 1, column 71 (offset: 70))
+            |"CREATE CONSTRAINT my_constraint FOR (node:Label) REQUIRE node.prop IS NULL"
+            |                                                                       ^""".stripMargin
+        )
+    }
   }
 
   test("CREATE CONSTRAINT FOR (n:L) REQUIRE n.p IS TYPED") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart(
-        """Invalid input '': expected
-          |  "ANY"
-          |  "ARRAY"
-          |  "BOOL"
-          |  "BOOLEAN"
-          |  "DATE"
-          |  "DURATION"
-          |  "EDGE"
-          |  "FLOAT"
-          |  "INT"
-          |  "INTEGER"
-          |  "LIST"
-          |  "LOCAL"
-          |  "MAP"
-          |  "NODE"
-          |  "NOTHING"
-          |  "PATH"
-          |  "POINT"
-          |  "PROPERTY"
-          |  "RELATIONSHIP"
-          |  "SIGNED"
-          |  "STRING"
-          |  "TIME"
-          |  "TIMESTAMP"
-          |  "VARCHAR"
-          |  "VERTEX"
-          |  "ZONED"
-          |  "null"""".stripMargin
-      ))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input '': expected 'ARRAY', 'LIST', 'ANY', 'BOOL', 'BOOLEAN', 'DATE', 'DURATION', 'EDGE', 'FLOAT', 'INT', 'INTEGER', 'LOCAL', 'MAP', 'NODE', 'NOTHING', 'NULL', 'PATH', 'PATHS', 'POINT', 'RELATIONSHIP', 'SIGNED', 'STRING', 'TIME', 'TIMESTAMP', 'PROPERTY VALUE', 'VARCHAR', 'VERTEX' or 'ZONED' (line 1, column 49 (offset: 48))
-          |"CREATE CONSTRAINT FOR (n:L) REQUIRE n.p IS TYPED"
-          |                                                 ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart(
+          """Invalid input '': expected
+            |  "ANY"
+            |  "ARRAY"
+            |  "BOOL"
+            |  "BOOLEAN"
+            |  "DATE"
+            |  "DURATION"
+            |  "EDGE"
+            |  "FLOAT"
+            |  "INT"
+            |  "INTEGER"
+            |  "LIST"
+            |  "LOCAL"
+            |  "MAP"
+            |  "NODE"
+            |  "NOTHING"
+            |  "PATH"
+            |  "POINT"
+            |  "PROPERTY"
+            |  "RELATIONSHIP"
+            |  "SIGNED"
+            |  "STRING"
+            |  "TIME"
+            |  "TIMESTAMP"
+            |  "VARCHAR"
+            |  "VERTEX"
+            |  "ZONED"
+            |  "null"""".stripMargin
+        )
+      case Antlr => _.withSyntaxError(
+          """Invalid input '': expected 'ARRAY', 'LIST', 'ANY', 'BOOL', 'BOOLEAN', 'DATE', 'DURATION', 'EDGE', 'FLOAT', 'INT', 'INTEGER', 'LOCAL', 'MAP', 'NODE', 'NOTHING', 'NULL', 'PATH', 'PATHS', 'POINT', 'RELATIONSHIP', 'SIGNED', 'STRING', 'TIME', 'TIMESTAMP', 'PROPERTY VALUE', 'VARCHAR', 'VERTEX' or 'ZONED' (line 1, column 49 (offset: 48))
+            |"CREATE CONSTRAINT FOR (n:L) REQUIRE n.p IS TYPED"
+            |                                                 ^""".stripMargin
+        )
+    }
 
   }
 
   test("CREATE CONSTRAINT FOR (n:L) REQUIRE n.p IS ::") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart(
-        """Invalid input '': expected
-          |  "ANY"
-          |  "ARRAY"
-          |  "BOOL"
-          |  "BOOLEAN"
-          |  "DATE"
-          |  "DURATION"
-          |  "EDGE"
-          |  "FLOAT"
-          |  "INT"
-          |  "INTEGER"
-          |  "LIST"
-          |  "LOCAL"
-          |  "MAP"
-          |  "NODE"
-          |  "NOTHING"
-          |  "PATH"
-          |  "POINT"
-          |  "PROPERTY"
-          |  "RELATIONSHIP"
-          |  "SIGNED"
-          |  "STRING"
-          |  "TIME"
-          |  "TIMESTAMP"
-          |  "VARCHAR"
-          |  "VERTEX"
-          |  "ZONED"
-          |  "null"""".stripMargin
-      ))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input '': expected 'ARRAY', 'LIST', 'ANY', 'BOOL', 'BOOLEAN', 'DATE', 'DURATION', 'EDGE', 'FLOAT', 'INT', 'INTEGER', 'LOCAL', 'MAP', 'NODE', 'NOTHING', 'NULL', 'PATH', 'PATHS', 'POINT', 'RELATIONSHIP', 'SIGNED', 'STRING', 'TIME', 'TIMESTAMP', 'PROPERTY VALUE', 'VARCHAR', 'VERTEX' or 'ZONED' (line 1, column 46 (offset: 45))
-          |"CREATE CONSTRAINT FOR (n:L) REQUIRE n.p IS ::"
-          |                                              ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart(
+          """Invalid input '': expected
+            |  "ANY"
+            |  "ARRAY"
+            |  "BOOL"
+            |  "BOOLEAN"
+            |  "DATE"
+            |  "DURATION"
+            |  "EDGE"
+            |  "FLOAT"
+            |  "INT"
+            |  "INTEGER"
+            |  "LIST"
+            |  "LOCAL"
+            |  "MAP"
+            |  "NODE"
+            |  "NOTHING"
+            |  "PATH"
+            |  "POINT"
+            |  "PROPERTY"
+            |  "RELATIONSHIP"
+            |  "SIGNED"
+            |  "STRING"
+            |  "TIME"
+            |  "TIMESTAMP"
+            |  "VARCHAR"
+            |  "VERTEX"
+            |  "ZONED"
+            |  "null"""".stripMargin
+        )
+      case Antlr => _.withSyntaxError(
+          """Invalid input '': expected 'ARRAY', 'LIST', 'ANY', 'BOOL', 'BOOLEAN', 'DATE', 'DURATION', 'EDGE', 'FLOAT', 'INT', 'INTEGER', 'LOCAL', 'MAP', 'NODE', 'NOTHING', 'NULL', 'PATH', 'PATHS', 'POINT', 'RELATIONSHIP', 'SIGNED', 'STRING', 'TIME', 'TIMESTAMP', 'PROPERTY VALUE', 'VARCHAR', 'VERTEX' or 'ZONED' (line 1, column 46 (offset: 45))
+            |"CREATE CONSTRAINT FOR (n:L) REQUIRE n.p IS ::"
+            |                                              ^""".stripMargin
+        )
+    }
   }
 
   test("CREATE CONSTRAINT FOR (n:L) REQUIRE n.p ::") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart(
-        """Invalid input '': expected
-          |  "ANY"
-          |  "ARRAY"
-          |  "BOOL"
-          |  "BOOLEAN"
-          |  "DATE"
-          |  "DURATION"
-          |  "EDGE"
-          |  "FLOAT"
-          |  "INT"
-          |  "INTEGER"
-          |  "LIST"
-          |  "LOCAL"
-          |  "MAP"
-          |  "NODE"
-          |  "NOTHING"
-          |  "PATH"
-          |  "POINT"
-          |  "PROPERTY"
-          |  "RELATIONSHIP"
-          |  "SIGNED"
-          |  "STRING"
-          |  "TIME"
-          |  "TIMESTAMP"
-          |  "VARCHAR"
-          |  "VERTEX"
-          |  "ZONED"
-          |  "null"""".stripMargin
-      ))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input '': expected 'ARRAY', 'LIST', 'ANY', 'BOOL', 'BOOLEAN', 'DATE', 'DURATION', 'EDGE', 'FLOAT', 'INT', 'INTEGER', 'LOCAL', 'MAP', 'NODE', 'NOTHING', 'NULL', 'PATH', 'PATHS', 'POINT', 'RELATIONSHIP', 'SIGNED', 'STRING', 'TIME', 'TIMESTAMP', 'PROPERTY VALUE', 'VARCHAR', 'VERTEX' or 'ZONED' (line 1, column 43 (offset: 42))
-          |"CREATE CONSTRAINT FOR (n:L) REQUIRE n.p ::"
-          |                                           ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart(
+          """Invalid input '': expected
+            |  "ANY"
+            |  "ARRAY"
+            |  "BOOL"
+            |  "BOOLEAN"
+            |  "DATE"
+            |  "DURATION"
+            |  "EDGE"
+            |  "FLOAT"
+            |  "INT"
+            |  "INTEGER"
+            |  "LIST"
+            |  "LOCAL"
+            |  "MAP"
+            |  "NODE"
+            |  "NOTHING"
+            |  "PATH"
+            |  "POINT"
+            |  "PROPERTY"
+            |  "RELATIONSHIP"
+            |  "SIGNED"
+            |  "STRING"
+            |  "TIME"
+            |  "TIMESTAMP"
+            |  "VARCHAR"
+            |  "VERTEX"
+            |  "ZONED"
+            |  "null"""".stripMargin
+        )
+      case Antlr => _.withSyntaxError(
+          """Invalid input '': expected 'ARRAY', 'LIST', 'ANY', 'BOOL', 'BOOLEAN', 'DATE', 'DURATION', 'EDGE', 'FLOAT', 'INT', 'INTEGER', 'LOCAL', 'MAP', 'NODE', 'NOTHING', 'NULL', 'PATH', 'PATHS', 'POINT', 'RELATIONSHIP', 'SIGNED', 'STRING', 'TIME', 'TIMESTAMP', 'PROPERTY VALUE', 'VARCHAR', 'VERTEX' or 'ZONED' (line 1, column 43 (offset: 42))
+            |"CREATE CONSTRAINT FOR (n:L) REQUIRE n.p ::"
+            |                                           ^""".stripMargin
+        )
+    }
   }
 
   test("CREATE CONSTRAINT FOR (n:L) REQUIRE n.p :: TYPED") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart(
-        """Invalid input 'TYPED': expected
-          |  "ANY"
-          |  "ARRAY"
-          |  "BOOL"
-          |  "BOOLEAN"
-          |  "DATE"
-          |  "DURATION"
-          |  "EDGE"
-          |  "FLOAT"
-          |  "INT"
-          |  "INTEGER"
-          |  "LIST"
-          |  "LOCAL"
-          |  "MAP"
-          |  "NODE"
-          |  "NOTHING"
-          |  "PATH"
-          |  "POINT"
-          |  "PROPERTY"
-          |  "RELATIONSHIP"
-          |  "SIGNED"
-          |  "STRING"
-          |  "TIME"
-          |  "TIMESTAMP"
-          |  "VARCHAR"
-          |  "VERTEX"
-          |  "ZONED"
-          |  "null" (line 1, column 44 (offset: 43))""".stripMargin
-      ))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input 'TYPED': expected 'ARRAY', 'LIST', 'ANY', 'BOOL', 'BOOLEAN', 'DATE', 'DURATION', 'EDGE', 'FLOAT', 'INT', 'INTEGER', 'LOCAL', 'MAP', 'NODE', 'NOTHING', 'NULL', 'PATH', 'PATHS', 'POINT', 'RELATIONSHIP', 'SIGNED', 'STRING', 'TIME', 'TIMESTAMP', 'PROPERTY VALUE', 'VARCHAR', 'VERTEX' or 'ZONED' (line 1, column 44 (offset: 43))
-          |"CREATE CONSTRAINT FOR (n:L) REQUIRE n.p :: TYPED"
-          |                                            ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart(
+          """Invalid input 'TYPED': expected
+            |  "ANY"
+            |  "ARRAY"
+            |  "BOOL"
+            |  "BOOLEAN"
+            |  "DATE"
+            |  "DURATION"
+            |  "EDGE"
+            |  "FLOAT"
+            |  "INT"
+            |  "INTEGER"
+            |  "LIST"
+            |  "LOCAL"
+            |  "MAP"
+            |  "NODE"
+            |  "NOTHING"
+            |  "PATH"
+            |  "POINT"
+            |  "PROPERTY"
+            |  "RELATIONSHIP"
+            |  "SIGNED"
+            |  "STRING"
+            |  "TIME"
+            |  "TIMESTAMP"
+            |  "VARCHAR"
+            |  "VERTEX"
+            |  "ZONED"
+            |  "null" (line 1, column 44 (offset: 43))""".stripMargin
+        )
+      case Antlr => _.withSyntaxError(
+          """Invalid input 'TYPED': expected 'ARRAY', 'LIST', 'ANY', 'BOOL', 'BOOLEAN', 'DATE', 'DURATION', 'EDGE', 'FLOAT', 'INT', 'INTEGER', 'LOCAL', 'MAP', 'NODE', 'NOTHING', 'NULL', 'PATH', 'PATHS', 'POINT', 'RELATIONSHIP', 'SIGNED', 'STRING', 'TIME', 'TIMESTAMP', 'PROPERTY VALUE', 'VARCHAR', 'VERTEX' or 'ZONED' (line 1, column 44 (offset: 43))
+            |"CREATE CONSTRAINT FOR (n:L) REQUIRE n.p :: TYPED"
+            |                                            ^""".stripMargin
+        )
+    }
   }
 
   test("CREATE CONSTRAINT FOR (n:L) REQUIRE n.p :: UNIQUE") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart(
-        """Invalid input 'UNIQUE': expected
-          |  "ANY"
-          |  "ARRAY"
-          |  "BOOL"
-          |  "BOOLEAN"
-          |  "DATE"
-          |  "DURATION"
-          |  "EDGE"
-          |  "FLOAT"
-          |  "INT"
-          |  "INTEGER"
-          |  "LIST"
-          |  "LOCAL"
-          |  "MAP"
-          |  "NODE"
-          |  "NOTHING"
-          |  "PATH"
-          |  "POINT"
-          |  "PROPERTY"
-          |  "RELATIONSHIP"
-          |  "SIGNED"
-          |  "STRING"
-          |  "TIME"
-          |  "TIMESTAMP"
-          |  "VARCHAR"
-          |  "VERTEX"
-          |  "ZONED"
-          |  "null" (line 1, column 44 (offset: 43))""".stripMargin
-      ))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input 'UNIQUE': expected 'ARRAY', 'LIST', 'ANY', 'BOOL', 'BOOLEAN', 'DATE', 'DURATION', 'EDGE', 'FLOAT', 'INT', 'INTEGER', 'LOCAL', 'MAP', 'NODE', 'NOTHING', 'NULL', 'PATH', 'PATHS', 'POINT', 'RELATIONSHIP', 'SIGNED', 'STRING', 'TIME', 'TIMESTAMP', 'PROPERTY VALUE', 'VARCHAR', 'VERTEX' or 'ZONED' (line 1, column 44 (offset: 43))
-          |"CREATE CONSTRAINT FOR (n:L) REQUIRE n.p :: UNIQUE"
-          |                                            ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart(
+          """Invalid input 'UNIQUE': expected
+            |  "ANY"
+            |  "ARRAY"
+            |  "BOOL"
+            |  "BOOLEAN"
+            |  "DATE"
+            |  "DURATION"
+            |  "EDGE"
+            |  "FLOAT"
+            |  "INT"
+            |  "INTEGER"
+            |  "LIST"
+            |  "LOCAL"
+            |  "MAP"
+            |  "NODE"
+            |  "NOTHING"
+            |  "PATH"
+            |  "POINT"
+            |  "PROPERTY"
+            |  "RELATIONSHIP"
+            |  "SIGNED"
+            |  "STRING"
+            |  "TIME"
+            |  "TIMESTAMP"
+            |  "VARCHAR"
+            |  "VERTEX"
+            |  "ZONED"
+            |  "null" (line 1, column 44 (offset: 43))""".stripMargin
+        )
+      case Antlr => _.withSyntaxError(
+          """Invalid input 'UNIQUE': expected 'ARRAY', 'LIST', 'ANY', 'BOOL', 'BOOLEAN', 'DATE', 'DURATION', 'EDGE', 'FLOAT', 'INT', 'INTEGER', 'LOCAL', 'MAP', 'NODE', 'NOTHING', 'NULL', 'PATH', 'PATHS', 'POINT', 'RELATIONSHIP', 'SIGNED', 'STRING', 'TIME', 'TIMESTAMP', 'PROPERTY VALUE', 'VARCHAR', 'VERTEX' or 'ZONED' (line 1, column 44 (offset: 43))
+            |"CREATE CONSTRAINT FOR (n:L) REQUIRE n.p :: UNIQUE"
+            |                                            ^""".stripMargin
+        )
+    }
   }
 
   test("CREATE CONSTRAINT FOR (n:L) REQUIRE n.p :: BOOLEAN UNIQUE") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart(
-        """Invalid input 'UNIQUE': expected
-          |  "!"
-          |  "ARRAY"
-          |  "LIST"
-          |  "NOT"
-          |  "OPTIONS"
-          |  <EOF>""".stripMargin
-      ))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input 'UNIQUE': expected '!', 'ARRAY', 'LIST', 'NOT NULL', 'OPTIONS', '|' or <EOF> (line 1, column 52 (offset: 51))
-          |"CREATE CONSTRAINT FOR (n:L) REQUIRE n.p :: BOOLEAN UNIQUE"
-          |                                                    ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart(
+          """Invalid input 'UNIQUE': expected
+            |  "!"
+            |  "ARRAY"
+            |  "LIST"
+            |  "NOT"
+            |  "OPTIONS"
+            |  <EOF>""".stripMargin
+        )
+      case Antlr => _.withSyntaxError(
+          """Invalid input 'UNIQUE': expected '!', 'ARRAY', 'LIST', 'NOT NULL', 'OPTIONS', '|' or <EOF> (line 1, column 52 (offset: 51))
+            |"CREATE CONSTRAINT FOR (n:L) REQUIRE n.p :: BOOLEAN UNIQUE"
+            |                                                    ^""".stripMargin
+        )
+    }
   }
 
   test("CREATE CONSTRAINT FOR (n:L) REQUIRE n.p IS :: BOOL EAN") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart(
-        """Invalid input 'EAN': expected
-          |  "!"
-          |  "ARRAY"
-          |  "LIST"
-          |  "NOT"
-          |  "OPTIONS"
-          |  <EOF>""".stripMargin
-      ))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input 'EAN': expected '!', 'ARRAY', 'LIST', 'NOT NULL', 'OPTIONS', '|' or <EOF> (line 1, column 52 (offset: 51))
-          |"CREATE CONSTRAINT FOR (n:L) REQUIRE n.p IS :: BOOL EAN"
-          |                                                    ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart(
+          """Invalid input 'EAN': expected
+            |  "!"
+            |  "ARRAY"
+            |  "LIST"
+            |  "NOT"
+            |  "OPTIONS"
+            |  <EOF>""".stripMargin
+        )
+      case Antlr => _.withSyntaxError(
+          """Invalid input 'EAN': expected '!', 'ARRAY', 'LIST', 'NOT NULL', 'OPTIONS', '|' or <EOF> (line 1, column 52 (offset: 51))
+            |"CREATE CONSTRAINT FOR (n:L) REQUIRE n.p IS :: BOOL EAN"
+            |                                                    ^""".stripMargin
+        )
+    }
   }
 
   // Drop constraint by schema (throws either in parsing, ast generation or semantic checking)
@@ -3806,217 +3872,259 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
   test("DROP CONSTRAINT ON ()-[r1:R]-() ASSERT r2.prop IS NODE KEY") {
     failsParsing[Statements]
       .withMessageStart(ASTExceptionFactory.relationshipPatternNotAllowed(ConstraintType.NODE_KEY))
-      .parseIn(Antlr)(_.throws[SyntaxException])
+      .in {
+        case JavaCc => _.throws[OpenCypherExceptionFactory.SyntaxException]
+        case _      => _.throws[SyntaxException]
+      }
   }
 
   test("DROP CONSTRAINT ON ()-[r1:R]-() ASSERT r2.prop IS UNIQUE") {
     failsParsing[Statements]
       .withMessageStart(ASTExceptionFactory.relationshipPatternNotAllowed(ConstraintType.NODE_UNIQUE))
-      .parseIn(Antlr)(_.throws[SyntaxException])
+      .in {
+        case JavaCc => _.throws[OpenCypherExceptionFactory.SyntaxException]
+        case _      => _.throws[SyntaxException]
+      }
   }
 
   test("DROP CONSTRAINT ON (n:L) ASSERT EXISTS (n.p1, n.p2)") {
     failsParsing[Statements]
       .withMessageStart(ASTExceptionFactory.onlySinglePropertyAllowed(ConstraintType.NODE_EXISTS))
-      .parseIn(JavaCc)(_.throws[Neo4jASTConstructionException])
-      .parseIn(Antlr)(_.throws[SyntaxException])
+      .in {
+        case JavaCc => _.throws[Neo4jASTConstructionException]
+        case _      => _.throws[SyntaxException]
+      }
   }
 
   test("DROP CONSTRAINT ON ()-[r:R]-() ASSERT EXISTS (r.p1, r.p2)") {
     failsParsing[Statements]
       .withMessageStart(ASTExceptionFactory.onlySinglePropertyAllowed(ConstraintType.REL_EXISTS))
-      .parseIn(JavaCc)(_.throws[Neo4jASTConstructionException])
-      .parseIn(Antlr)(_.throws[SyntaxException])
+      .in {
+        case JavaCc => _.throws[Neo4jASTConstructionException]
+        case _      => _.throws[SyntaxException]
+      }
   }
 
   test("DROP CONSTRAINT ON (node:Label) ASSERT (node.prop) IS NOT NULL") {
     failsParsing[Statements]
       .withMessageStart(ASTExceptionFactory.invalidDropCommand)
-      .parseIn(Antlr)(_.throws[SyntaxException])
+      .in {
+        case JavaCc => _.throws[Neo4jASTConstructionException]
+        case _      => _.throws[SyntaxException]
+      }
   }
 
   test("DROP CONSTRAINT ON (node:Label) ASSERT node.prop IS NOT NULL") {
     failsParsing[Statements]
       .withMessageStart(ASTExceptionFactory.invalidDropCommand)
-      .parseIn(Antlr)(_.throws[SyntaxException])
+      .in {
+        case JavaCc => _.throws[Neo4jASTConstructionException]
+        case _      => _.throws[SyntaxException]
+      }
+
   }
 
   test("DROP CONSTRAINT ON ()-[r:R]-() ASSERT (r.prop) IS NOT NULL") {
     failsParsing[Statements]
       .withMessageStart(ASTExceptionFactory.invalidDropCommand)
-      .parseIn(Antlr)(_.throws[SyntaxException])
+      .in {
+        case JavaCc => _.throws[Neo4jASTConstructionException]
+        case _      => _.throws[SyntaxException]
+      }
+
   }
 
   test("DROP CONSTRAINT ON ()-[r:R]-() ASSERT r.prop IS NOT NULL") {
     failsParsing[Statements]
       .withMessageStart(ASTExceptionFactory.invalidDropCommand)
-      .parseIn(Antlr)(_.throws[SyntaxException])
+      .in {
+        case JavaCc => _.throws[Neo4jASTConstructionException]
+        case _      => _.throws[SyntaxException]
+      }
+
   }
 
   test("DROP CONSTRAINT ON (n:L) ASSERT (n.p1, n.p2) IS NOT NULL") {
     failsParsing[Statements]
       .withMessageStart(ASTExceptionFactory.invalidDropCommand)
-      .parseIn(Antlr)(_.throws[SyntaxException])
+      .in {
+        case JavaCc => _.throws[Neo4jASTConstructionException]
+        case _      => _.throws[SyntaxException]
+      }
+
   }
 
   test("DROP CONSTRAINT ON ()-[r:R]-() ASSERT (r.p1, r.p2) IS NOT NULL") {
     failsParsing[Statements]
       .withMessageStart(ASTExceptionFactory.invalidDropCommand)
-      .parseIn(Antlr)(_.throws[SyntaxException])
+      .in {
+        case JavaCc => _.throws[Neo4jASTConstructionException]
+        case _      => _.throws[SyntaxException]
+      }
+
   }
 
   test("DROP CONSTRAINT FOR (n:L) REQUIRE n.p IS NODE KEY") {
     // Parses FOR as constraint name
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("""Invalid input '(': expected "IF" or <EOF> (line"""))
-      .parseIn(Antlr)(
-        _.throws[SyntaxException].withMessageStart("Invalid input '(': expected 'IF EXISTS' or <EOF> (line")
-      )
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("""Invalid input '(': expected "IF" or <EOF> (line""")
+      case Antlr =>
+        _.withSyntaxErrorContaining("Invalid input '(': expected 'IF EXISTS' or <EOF> (line")
+    }
   }
 
   test("DROP CONSTRAINT FOR (n:L) ASSERT n.p IS NODE KEY") {
     // Parses FOR as constraint name
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("""Invalid input '(': expected "IF" or <EOF> (line"""))
-      .parseIn(Antlr)(
-        _.throws[SyntaxException].withMessageStart("Invalid input '(': expected 'IF EXISTS' or <EOF> (line")
-      )
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("""Invalid input '(': expected "IF" or <EOF> (line""")
+      case Antlr  => _.withSyntaxErrorContaining("Invalid input '(': expected 'IF EXISTS' or <EOF> (line")
+    }
   }
 
   test("DROP CONSTRAINT ON (n:L) REQUIRE n.p IS NODE KEY") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("""Invalid input 'REQUIRE': expected "ASSERT" (line"""))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart("Invalid input 'REQUIRE': expected 'ASSERT' (line"))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("""Invalid input 'REQUIRE': expected "ASSERT" (line""")
+      case Antlr  => _.withSyntaxErrorContaining("Invalid input 'REQUIRE': expected 'ASSERT' (line")
+    }
   }
 
   test("DROP CONSTRAINT FOR (n:L) REQUIRE n.p IS UNIQUE") {
     // Parses FOR as constraint name
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("""Invalid input '(': expected "IF" or <EOF> (line"""))
-      .parseIn(Antlr)(
-        _.throws[SyntaxException].withMessageStart("Invalid input '(': expected 'IF EXISTS' or <EOF> (line")
-      )
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("""Invalid input '(': expected "IF" or <EOF> (line""")
+      case Antlr  => _.withSyntaxErrorContaining("Invalid input '(': expected 'IF EXISTS' or <EOF> (line")
+    }
   }
 
   test("DROP CONSTRAINT FOR (n:L) ASSERT n.p IS UNIQUE") {
     // Parses FOR as constraint name
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("""Invalid input '(': expected "IF" or <EOF> (line"""))
-      .parseIn(Antlr)(
-        _.throws[SyntaxException].withMessageStart("Invalid input '(': expected 'IF EXISTS' or <EOF> (line")
-      )
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("""Invalid input '(': expected "IF" or <EOF> (line""")
+      case Antlr  => _.withSyntaxErrorContaining("Invalid input '(': expected 'IF EXISTS' or <EOF> (line")
+    }
   }
 
   test("DROP CONSTRAINT ON (n:L) REQUIRE n.p IS UNIQUE") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("""Invalid input 'REQUIRE': expected "ASSERT" (line"""))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart("Invalid input 'REQUIRE': expected 'ASSERT' (line"))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("""Invalid input 'REQUIRE': expected "ASSERT" (line""")
+      case Antlr  => _.withSyntaxErrorContaining("Invalid input 'REQUIRE': expected 'ASSERT' (line")
+    }
   }
 
   test("DROP CONSTRAINT FOR (n:L) REQUIRE EXISTS n.p") {
     // Parses FOR as constraint name
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("""Invalid input '(': expected "IF" or <EOF> (line"""))
-      .parseIn(Antlr)(
-        _.throws[SyntaxException].withMessageStart("Invalid input '(': expected 'IF EXISTS' or <EOF> (line")
-      )
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("""Invalid input '(': expected "IF" or <EOF> (line""")
+      case Antlr  => _.withSyntaxErrorContaining("Invalid input '(': expected 'IF EXISTS' or <EOF> (line")
+    }
   }
 
   test("DROP CONSTRAINT FOR (n:L) ASSERT EXISTS n.p") {
     // Parses FOR as constraint name
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("""Invalid input '(': expected "IF" or <EOF> (line"""))
-      .parseIn(Antlr)(
-        _.throws[SyntaxException].withMessageStart("Invalid input '(': expected 'IF EXISTS' or <EOF> (line")
-      )
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("""Invalid input '(': expected "IF" or <EOF> (line""")
+      case Antlr  => _.withSyntaxErrorContaining("Invalid input '(': expected 'IF EXISTS' or <EOF> (line")
+    }
   }
 
   test("DROP CONSTRAINT ON (n:L) REQUIRE EXISTS n.p") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("""Invalid input 'REQUIRE': expected "ASSERT" (line"""))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart("Invalid input 'REQUIRE': expected 'ASSERT' (line"))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("""Invalid input 'REQUIRE': expected "ASSERT" (line""")
+      case Antlr  => _.withSyntaxErrorContaining("Invalid input 'REQUIRE': expected 'ASSERT' (line")
+    }
   }
 
   test("DROP CONSTRAINT ON (n:L) ASSERT n.p IS REL KEY") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("""Invalid input 'REL': expected "NODE", "NOT" or "UNIQUE" (line"""))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-        "Invalid input 'REL': expected 'NODE KEY', 'NOT NULL' or 'UNIQUE' (line"
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("""Invalid input 'REL': expected "NODE", "NOT" or "UNIQUE" (line""")
+      case Antlr => _.withSyntaxErrorContaining(
+          "Invalid input 'REL': expected 'NODE KEY', 'NOT NULL' or 'UNIQUE' (line"
+        )
+    }
   }
 
   test("DROP CONSTRAINT ON (n:L) ASSERT n.p IS RELATIONSHIP KEY") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("""Invalid input 'RELATIONSHIP': expected "NODE", "NOT" or "UNIQUE" (line"""))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-        "Invalid input 'RELATIONSHIP': expected 'NODE KEY', 'NOT NULL' or 'UNIQUE' (line"
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("""Invalid input 'RELATIONSHIP': expected "NODE", "NOT" or "UNIQUE" (line""")
+      case Antlr => _.withSyntaxErrorContaining(
+          "Invalid input 'RELATIONSHIP': expected 'NODE KEY', 'NOT NULL' or 'UNIQUE' (line"
+        )
+    }
   }
 
   test("DROP CONSTRAINT ON (n:L) ASSERT n.p IS REL UNIQUE") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("""Invalid input 'REL': expected "NODE", "NOT" or "UNIQUE" (line"""))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-        "Invalid input 'REL': expected 'NODE KEY', 'NOT NULL' or 'UNIQUE' (line"
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("""Invalid input 'REL': expected "NODE", "NOT" or "UNIQUE" (line""")
+      case Antlr => _.withSyntaxErrorContaining(
+          "Invalid input 'REL': expected 'NODE KEY', 'NOT NULL' or 'UNIQUE' (line"
+        )
+    }
   }
 
   test("DROP CONSTRAINT ON (n:L) ASSERT n.p IS RELATIONSHIP UNIQUE") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("""Invalid input 'RELATIONSHIP': expected "NODE", "NOT" or "UNIQUE" (line"""))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-        "Invalid input 'RELATIONSHIP': expected 'NODE KEY', 'NOT NULL' or 'UNIQUE' (line"
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("""Invalid input 'RELATIONSHIP': expected "NODE", "NOT" or "UNIQUE" (line""")
+      case Antlr => _.withSyntaxErrorContaining(
+          "Invalid input 'RELATIONSHIP': expected 'NODE KEY', 'NOT NULL' or 'UNIQUE' (line"
+        )
+    }
   }
 
   test("DROP CONSTRAINT ON (n:L) ASSERT n.p IS NODE UNIQUE") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("""Invalid input 'UNIQUE': expected "KEY" (line"""))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart("Invalid input 'UNIQUE': expected 'KEY' (line"))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("""Invalid input 'UNIQUE': expected "KEY" (line""")
+      case Antlr  => _.withSyntaxErrorContaining("Invalid input 'UNIQUE': expected 'KEY' (line")
+    }
   }
 
   test("DROP CONSTRAINT ON (n:L) ASSERT n.p IS TYPED INT") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("""Invalid input 'TYPED': expected "NODE", "NOT" or "UNIQUE" (line"""))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-        "Invalid input 'TYPED': expected 'NODE KEY', 'NOT NULL' or 'UNIQUE' (line"
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("""Invalid input 'TYPED': expected "NODE", "NOT" or "UNIQUE" (line""")
+      case Antlr => _.withSyntaxErrorContaining(
+          "Invalid input 'TYPED': expected 'NODE KEY', 'NOT NULL' or 'UNIQUE' (line"
+        )
+    }
   }
 
   test("DROP CONSTRAINT ON ()-[r:R]-() ASSERT r.p IS TYPED STRING") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("""Invalid input 'TYPED': expected "NODE", "NOT" or "UNIQUE" (line"""))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-        "Invalid input 'TYPED': expected 'NODE KEY', 'NOT NULL' or 'UNIQUE' (line"
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("""Invalid input 'TYPED': expected "NODE", "NOT" or "UNIQUE" (line""")
+      case Antlr => _.withSyntaxErrorContaining(
+          "Invalid input 'TYPED': expected 'NODE KEY', 'NOT NULL' or 'UNIQUE' (line"
+        )
+    }
   }
 
   test("DROP CONSTRAINT ON (n:L) ASSERT n.p IS :: LIST<FLOAT>") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("""Invalid input '::': expected "NODE", "NOT" or "UNIQUE" (line"""))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-        "Invalid input '::': expected 'NODE KEY', 'NOT NULL' or 'UNIQUE' (line"
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("""Invalid input '::': expected "NODE", "NOT" or "UNIQUE" (line""")
+      case Antlr => _.withSyntaxErrorContaining(
+          "Invalid input '::': expected 'NODE KEY', 'NOT NULL' or 'UNIQUE' (line"
+        )
+    }
   }
 
   test("DROP CONSTRAINT ON ()-[r:R]-() ASSERT r.p IS :: BOOLEAN") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("""Invalid input '::': expected "NODE", "NOT" or "UNIQUE" (line"""))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-        "Invalid input '::': expected 'NODE KEY', 'NOT NULL' or 'UNIQUE' (line"
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("""Invalid input '::': expected "NODE", "NOT" or "UNIQUE" (line""")
+      case Antlr => _.withSyntaxErrorContaining(
+          "Invalid input '::': expected 'NODE KEY', 'NOT NULL' or 'UNIQUE' (line"
+        )
+    }
   }
 
   test("DROP CONSTRAINT ON (n:L) ASSERT n.p :: ZONED DATETIME") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("""Invalid input '::': expected "IS" (line"""))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart("Invalid input '::': expected 'IS' (line"))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("""Invalid input '::': expected "IS" (line""")
+      case Antlr  => _.withSyntaxErrorContaining("Invalid input '::': expected 'IS' (line")
+    }
   }
 
   test("DROP CONSTRAINT ON ()-[r:R]-() ASSERT r.p :: LOCAL TIME") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("""Invalid input '::': expected "IS" (line"""))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart("Invalid input '::': expected 'IS' (line"))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("""Invalid input '::': expected "IS" (line""")
+      case Antlr  => _.withSyntaxErrorContaining("Invalid input '::': expected 'IS' (line")
+    }
   }
 
   // Drop constraint by name
@@ -4051,14 +4159,13 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
   }
 
   test("DROP CONSTRAINT my_constraint ON (node:Label) ASSERT (node.prop1,node.prop2) IS NODE KEY") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(
-        _.withMessageStart("Invalid input 'ON': expected \"IF\" or <EOF> (line 1, column 31 (offset: 30))")
-      )
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input 'ON': expected 'IF EXISTS' or <EOF> (line 1, column 31 (offset: 30))
-          |"DROP CONSTRAINT my_constraint ON (node:Label) ASSERT (node.prop1,node.prop2) IS NODE KEY"
-          |                               ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("Invalid input 'ON': expected \"IF\" or <EOF> (line 1, column 31 (offset: 30))")
+      case Antlr => _.withSyntaxError(
+          """Invalid input 'ON': expected 'IF EXISTS' or <EOF> (line 1, column 31 (offset: 30))
+            |"DROP CONSTRAINT my_constraint ON (node:Label) ASSERT (node.prop1,node.prop2) IS NODE KEY"
+            |                               ^""".stripMargin
+        )
+    }
   }
 }

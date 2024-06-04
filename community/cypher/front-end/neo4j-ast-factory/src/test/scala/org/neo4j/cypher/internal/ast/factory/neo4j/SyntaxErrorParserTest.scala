@@ -23,7 +23,6 @@ import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
-import org.neo4j.exceptions.SyntaxException
 
 /** Make sure syntax error messages are stable */
 class SyntaxErrorParserTest extends AstParsingTestBase {
@@ -34,9 +33,10 @@ class SyntaxErrorParserTest extends AstParsingTestBase {
       s"""Invalid input '$input': expected $expected ($pos)
          |"$testName"
          | ${" ".repeat(pos.offset)}^""".stripMargin
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.throws[OpenCypherExceptionFactory.SyntaxException])
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(expectedMessage))
+    failsParsing[Statements].in {
+      case JavaCc => _.throws[OpenCypherExceptionFactory.SyntaxException]
+      case Antlr  => _.withSyntaxError(expectedMessage)
+    }
   }
 
   test("merge") { invalid("", "a graph pattern", 5) }

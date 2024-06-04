@@ -23,11 +23,11 @@ import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.ParseSuc
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.ParserInTest
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.parseAst
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.MatchResults.merge
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.ParserSupport.Explicit
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.VerifyAstPositionTestSupport.findPosMismatch
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.VerifyStatementUseGraph.findUseGraphMismatch
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.exceptions.SyntaxException
 import org.scalatest.matchers.MatchResult
 import org.scalatest.matchers.Matcher
 import org.scalatest.matchers.must.Matchers.be
@@ -41,36 +41,38 @@ import scala.util.Try
 
 /** ScalaTest Matcher for ParseResults */
 case class ParseResultsMatcher[T <: ASTNode : ClassTag](
-  override val support: ParserSupport,
-  override val matchers: Seq[Matcher[ParseResults[_]]] = Seq.empty
+  override val matchers: Seq[Matcher[ParseResults[_]]] = Seq.empty,
+  override val support: ParserInTest => Boolean = _ => true
 ) extends Matcher[ParseResults[_]] with FluentMatchers[ParseResultsMatcher[T], T] {
   type Self = ParseResultsMatcher[T]
   override def apply(results: ParseResults[_]): MatchResult = merge(matchers.map(_.apply(results)))
-  override protected def createForParser(s: ParserSupport): Self = ParseResultsMatcher(s)
+  override protected def createForParser(s: ParserInTest): Self = ParseResultsMatcher(support = _ == s)
   override protected def copyWith(matchers: Seq[Matcher[ParseResults[_]]]): Self = copy(matchers = matchers)
 }
 
 /** ScalaTest Matcher for Cypher strings */
 case class ParseStringMatcher[T <: ASTNode : ClassTag](
-  override val support: ParserSupport,
-  override val matchers: Seq[Matcher[ParseResults[_]]] = Seq.empty
+  override val matchers: Seq[Matcher[ParseResults[_]]] = Seq.empty,
+  override val support: ParserInTest => Boolean = _ => true
 )(implicit p: Parsers[T]) extends Matcher[String] with FluentMatchers[ParseStringMatcher[T], T] {
   type Self = ParseStringMatcher[T]
 
   override def apply(cypher: String): MatchResult = {
     Try(parseAst[T](cypher)) match {
-      case Success(results)   => ParseResultsMatcher(support, matchers).apply(results)
+      case Success(results)   => ParseResultsMatcher(matchers).apply(results)
       case Failure(exception) => throw new RuntimeException(s"Test framework failed\nCypher: $cypher", exception)
     }
   }
-  override protected def createForParser(s: ParserSupport): Self = ParseStringMatcher(s)
+  override protected def createForParser(s: ParserInTest): Self = ParseStringMatcher(support = _ == s)
   override protected def copyWith(matchers: Seq[Matcher[ParseResults[_]]]): Self = copy(matchers = matchers)
 }
 
 trait FluentMatchers[Self <: FluentMatchers[Self, T], T <: ASTNode] extends AstMatchers { self: Self =>
-  private val supportedParsers: Seq[ParserInTest] = ParserInTest.AllParsers.filterNot(support.ignore)
+  private val supportedParsers: Seq[ParserInTest] = ParserInTest.AllParsers.filter(support)
 
-  def parseIn(s: ParserInTest)(f: Self => Self): Self = addAll(f(createForParser(Explicit(s))).matchers)
+  def in(f: ParserInTest => Self => Self): Self = ParserInTest.AllParsers.foldLeft(self) {
+    case (acc, p) => acc.addAll(f(p)(acc.createForParser(p)).matchers)
+  }
   def withoutErrors: Self = and(beSuccess)
   def withAstLike(assertion: T => Unit): Self = and(haveAstLike(assertion))
   def withPositionOf[S <: ASTNode : ClassTag](expected: InputPosition*): Self = and(haveAstPositions[S](expected: _*))
@@ -82,6 +84,8 @@ trait FluentMatchers[Self <: FluentMatchers[Self, T], T <: ASTNode] extends AstM
   def errorShould(matcher: Matcher[Throwable]): Self = and(failLike(matcher))
   def messageShould(matcher: Matcher[String]): Self = errorShould(matcher.compose(t => norm(t.getMessage)))
   def withError(assertion: Throwable => Unit): Self = errorShould(beLike(assertion))
+  def withSyntaxError(message: String): Self = throws[SyntaxException].withMessage(message)
+  def withSyntaxErrorContaining(message: String): Self = throws[SyntaxException].withMessageContaining(message)
   def withMessage(expected: String): Self = messageShould(be(norm(expected)))
   def withMessageStart(expected: String): Self = messageShould(startWith(norm(expected)))
   def withMessageContaining(expected: String): Self = messageShould(include(norm(expected)))
@@ -105,9 +109,9 @@ trait FluentMatchers[Self <: FluentMatchers[Self, T], T <: ASTNode] extends AstM
   final private def addAll(matchers: Seq[Matcher[ParseResults[_]]]): Self = copyWith(this.matchers ++ matchers)
   private def addIfMultiParsers(m: => Matcher[ParseResults[_]]): Self = if (supportedParsers.size > 1) add(m) else this
 
-  def support: ParserSupport
+  def support: ParserInTest => Boolean
   protected def copyWith(matchers: Seq[Matcher[ParseResults[_]]]): Self
-  protected def createForParser(parser: ParserSupport): Self
+  protected def createForParser(parser: ParserInTest): Self
   protected def matchers: Seq[Matcher[ParseResults[_]]]
 }
 
@@ -276,19 +280,5 @@ object MatchResults {
        |${results.cypher}
        |Results:
        |${parserResults.mkString("  ", "\n  ", "")}""".stripMargin
-  }
-}
-
-sealed trait ParserSupport {
-
-  /** Returns true if this parser should be completely ignored */
-  def ignore(parser: ParserInTest): Boolean = false
-}
-
-object ParserSupport {
-  case object All extends ParserSupport
-
-  case class Explicit(parsers: ParserInTest*) extends ParserSupport {
-    override def ignore(parser: ParserInTest): Boolean = !parsers.contains(parser)
   }
 }

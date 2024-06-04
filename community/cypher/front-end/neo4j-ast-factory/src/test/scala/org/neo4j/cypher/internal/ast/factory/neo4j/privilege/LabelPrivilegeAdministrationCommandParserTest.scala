@@ -21,7 +21,6 @@ import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.factory.neo4j.AdministrationAndSchemaCommandParserTestBase
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
-import org.neo4j.exceptions.SyntaxException
 
 class LabelPrivilegeAdministrationCommandParserTest extends AdministrationAndSchemaCommandParserTestBase {
   private val labelResource = ast.LabelsResource(Seq("label"))(_)
@@ -188,19 +187,21 @@ class LabelPrivilegeAdministrationCommandParserTest extends AdministrationAndSch
               // Database instead of graph keyword
 
               test(s"$verb$immutableString $setOrRemove LABEL label ON DATABASES * $preposition role") {
-                failsParsing[Statements]
-                  .parseIn(JavaCc)(_.withMessageStart("""Invalid input 'DATABASES': expected"""))
-                  .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-                    """Invalid input 'DATABASES': expected"""
-                  ))
+                failsParsing[Statements].in {
+                  case JavaCc => _.withMessageStart("""Invalid input 'DATABASES': expected""")
+                  case Antlr => _.withSyntaxErrorContaining(
+                      """Invalid input 'DATABASES': expected"""
+                    )
+                }
               }
 
               test(s"$verb$immutableString $setOrRemove LABEL label ON DATABASE foo $preposition role") {
-                failsParsing[Statements]
-                  .parseIn(JavaCc)(_.withMessageStart("""Invalid input 'DATABASE': expected"""))
-                  .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-                    """Invalid input 'DATABASE': expected"""
-                  ))
+                failsParsing[Statements].in {
+                  case JavaCc => _.withMessageStart("""Invalid input 'DATABASE': expected""")
+                  case Antlr => _.withSyntaxErrorContaining(
+                      """Invalid input 'DATABASE': expected"""
+                    )
+                }
               }
 
               test(s"$verb$immutableString $setOrRemove LABEL label ON HOME DATABASE $preposition role") {

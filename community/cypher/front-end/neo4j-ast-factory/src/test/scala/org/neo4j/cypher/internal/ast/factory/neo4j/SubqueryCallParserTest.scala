@@ -39,13 +39,14 @@ class SubqueryCallParserTest extends AstParsingTestBase {
   }
 
   test("CALL { }") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("Invalid input '}'"))
-      .parseIn(Antlr)(_.withMessage(
-        """Invalid input '}': expected 'FOREACH', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'UNWIND', 'USE' or 'WITH' (line 1, column 8 (offset: 7))
-          |"CALL { }"
-          |        ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("Invalid input '}'")
+      case Antlr => _.withMessage(
+          """Invalid input '}': expected 'FOREACH', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'UNWIND', 'USE' or 'WITH' (line 1, column 8 (offset: 7))
+            |"CALL { }"
+            |        ^""".stripMargin
+        )
+    }
   }
 
   test("CALL { CREATE (n:N) }") {

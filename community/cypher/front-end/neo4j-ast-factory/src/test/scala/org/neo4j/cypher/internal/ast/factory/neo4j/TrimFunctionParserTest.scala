@@ -87,13 +87,14 @@ class TrimFunctionParserTest extends AstParsingTestBase {
 
   // Failing tests
   test("RETURN trim(' ' \"hello\")") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("Invalid input 'hello'"))
-      .parseIn(Antlr)(_.withMessage(
-        """Invalid input '"hello"': expected an expression (line 1, column 17 (offset: 16))
-          |"RETURN trim(' ' "hello")"
-          |                 ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("Invalid input 'hello'")
+      case Antlr => _.withMessage(
+          """Invalid input '"hello"': expected an expression (line 1, column 17 (offset: 16))
+            |"RETURN trim(' ' "hello")"
+            |                 ^""".stripMargin
+        )
+    }
   }
 
   Seq("BOTH", "LEADING", "TRAILING").foreach { trimSpec =>
@@ -104,9 +105,10 @@ class TrimFunctionParserTest extends AstParsingTestBase {
 
   Seq("BOTH", "LEADING", "TRAILING").foreach { trimSpec =>
     test(s"RETURN trim($trimSpec ' ' \"hello\")") {
-      failsParsing[Statements]
-        .parseIn(JavaCc)(_.withMessageStart("Invalid input 'hello'"))
-        .parseIn(Antlr)(_.withMessageStart("Invalid input '\"hello\"'"))
+      failsParsing[Statements].in {
+        case JavaCc => _.withMessageStart("Invalid input 'hello'")
+        case Antlr  => _.withMessageStart("Invalid input '\"hello\"'")
+      }
     }
   }
 }

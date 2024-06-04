@@ -41,32 +41,35 @@ class MapExpressionParserTest extends AstParsingTestBase {
   }
 
   test("map with non-string key should not parse") {
-    "{42: 'value'}" should notParse[MapExpression]
-      .parseIn(JavaCc)(_.withMessageStart("Encountered \" <UNSIGNED_DECIMAL_INTEGER> \"42\"\" at line 1, column 2."))
-      .parseIn(Antlr)(_.withMessage(
-        """Invalid input '42': expected an identifier or '}' (line 1, column 2 (offset: 1))
-          |"{42: 'value'}"
-          |  ^""".stripMargin
-      ))
+    "{42: 'value'}" should notParse[MapExpression].in {
+      case JavaCc => _.withMessageStart("Encountered \" <UNSIGNED_DECIMAL_INTEGER> \"42\"\" at line 1, column 2.")
+      case Antlr => _.withMessage(
+          """Invalid input '42': expected an identifier or '}' (line 1, column 2 (offset: 1))
+            |"{42: 'value'}"
+            |  ^""".stripMargin
+        )
+    }
   }
 
   test("map without comma separation should not parse") {
-    "{key1: 'value' key2: 42}" should notParse[MapExpression]
-      .parseIn(JavaCc)(_.withMessageStart("Encountered \" <IDENTIFIER> \"key2\"\" at line 1, column 16."))
-      .parseIn(Antlr)(_.withMessage(
-        """Invalid input 'key2': expected an expression, ',' or '}' (line 1, column 16 (offset: 15))
-          |"{key1: 'value' key2: 42}"
-          |                ^""".stripMargin
-      ))
+    "{key1: 'value' key2: 42}" should notParse[MapExpression].in {
+      case JavaCc => _.withMessageStart("Encountered \" <IDENTIFIER> \"key2\"\" at line 1, column 16.")
+      case Antlr => _.withMessage(
+          """Invalid input 'key2': expected an expression, ',' or '}' (line 1, column 16 (offset: 15))
+            |"{key1: 'value' key2: 42}"
+            |                ^""".stripMargin
+        )
+    }
   }
 
   test("map with invalid start comma should not parse") {
-    "{, key: 'value'}" should notParse[MapExpression]
-      .parseIn(JavaCc)(_.withMessageStart("Encountered \" \",\" \",\"\" at line 1, column 2."))
-      .parseIn(Antlr)(_.withMessage(
-        """Invalid input ',': expected an identifier or '}' (line 1, column 2 (offset: 1))
-          |"{, key: 'value'}"
-          |  ^""".stripMargin
-      ))
+    "{, key: 'value'}" should notParse[MapExpression].in {
+      case JavaCc => _.withMessageStart("Encountered \" \",\" \",\"\" at line 1, column 2.")
+      case Antlr => _.withMessage(
+          """Invalid input ',': expected an identifier or '}' (line 1, column 2 (offset: 1))
+            |"{, key: 'value'}"
+            |  ^""".stripMargin
+        )
+    }
   }
 }

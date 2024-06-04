@@ -22,7 +22,6 @@ import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
-import org.neo4j.exceptions.SyntaxException
 
 class FinishParserTest extends AstParsingTestBase {
 
@@ -44,63 +43,69 @@ class FinishParserTest extends AstParsingTestBase {
   //  Invalid use of any projection-like items after FINISH
 
   test("FINISH *") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("Invalid input '*'"))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input '*': expected 'FOREACH', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'UNION', 'UNWIND', 'USE', 'WITH' or <EOF> (line 1, column 8 (offset: 7))
-          |"FINISH *"
-          |        ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("Invalid input '*'")
+      case Antlr => _.withSyntaxError(
+          """Invalid input '*': expected 'FOREACH', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'UNION', 'UNWIND', 'USE', 'WITH' or <EOF> (line 1, column 8 (offset: 7))
+            |"FINISH *"
+            |        ^""".stripMargin
+        )
+    }
   }
 
   test("FINISH a, b") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("Invalid input 'a'"))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input 'a': expected 'FOREACH', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'UNION', 'UNWIND', 'USE', 'WITH' or <EOF> (line 1, column 8 (offset: 7))
-          |"FINISH a, b"
-          |        ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("Invalid input 'a'")
+      case Antlr => _.withSyntaxError(
+          """Invalid input 'a': expected 'FOREACH', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'UNION', 'UNWIND', 'USE', 'WITH' or <EOF> (line 1, column 8 (offset: 7))
+            |"FINISH a, b"
+            |        ^""".stripMargin
+        )
+    }
     failsParsing[Statements]
   }
 
   test("FINISH DISTINCT *") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("Invalid input 'DISTINCT'"))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input 'DISTINCT': expected 'FOREACH', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'UNION', 'UNWIND', 'USE', 'WITH' or <EOF> (line 1, column 8 (offset: 7))
-          |"FINISH DISTINCT *"
-          |        ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("Invalid input 'DISTINCT'")
+      case Antlr => _.withSyntaxError(
+          """Invalid input 'DISTINCT': expected 'FOREACH', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'UNION', 'UNWIND', 'USE', 'WITH' or <EOF> (line 1, column 8 (offset: 7))
+            |"FINISH DISTINCT *"
+            |        ^""".stripMargin
+        )
+    }
   }
 
   test("FINISH DISTINCT a, b") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("Invalid input 'DISTINCT'"))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input 'DISTINCT': expected 'FOREACH', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'UNION', 'UNWIND', 'USE', 'WITH' or <EOF> (line 1, column 8 (offset: 7))
-          |"FINISH DISTINCT a, b"
-          |        ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("Invalid input 'DISTINCT'")
+      case Antlr => _.withSyntaxError(
+          """Invalid input 'DISTINCT': expected 'FOREACH', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'UNION', 'UNWIND', 'USE', 'WITH' or <EOF> (line 1, column 8 (offset: 7))
+            |"FINISH DISTINCT a, b"
+            |        ^""".stripMargin
+        )
+    }
   }
 
   test("FINISH n:A") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("Invalid input 'n'"))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input 'n': expected 'FOREACH', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'UNION', 'UNWIND', 'USE', 'WITH' or <EOF> (line 1, column 8 (offset: 7))
-          |"FINISH n:A"
-          |        ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("Invalid input 'n'")
+      case Antlr => _.withSyntaxError(
+          """Invalid input 'n': expected 'FOREACH', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'UNION', 'UNWIND', 'USE', 'WITH' or <EOF> (line 1, column 8 (offset: 7))
+            |"FINISH n:A"
+            |        ^""".stripMargin
+        )
+    }
   }
 
   test("FINISH n:A&B") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("Invalid input 'n'"))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input 'n': expected 'FOREACH', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'UNION', 'UNWIND', 'USE', 'WITH' or <EOF> (line 1, column 8 (offset: 7))
-          |"FINISH n:A&B"
-          |        ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("Invalid input 'n'")
+      case Antlr => _.withSyntaxError(
+          """Invalid input 'n': expected 'FOREACH', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'UNION', 'UNWIND', 'USE', 'WITH' or <EOF> (line 1, column 8 (offset: 7))
+            |"FINISH n:A&B"
+            |        ^""".stripMargin
+        )
+    }
   }
 }

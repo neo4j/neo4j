@@ -21,7 +21,6 @@ import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.factory.neo4j.AdministrationAndSchemaCommandParserTestBase
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
-import org.neo4j.exceptions.SyntaxException
 
 class MergePrivilegeAdministrationCommandParserTest extends AdministrationAndSchemaCommandParserTestBase {
 
@@ -234,24 +233,26 @@ class MergePrivilegeAdministrationCommandParserTest extends AdministrationAndSch
 
           test(s"$verb$immutableString MERGE { prop } ON DATABASES * $preposition role") {
             val offset = verb.length + immutableString.length + 19
-            failsParsing[Statements]
-              .parseIn(JavaCc)(_.withMessage(
-                s"""Invalid input 'DATABASES': expected "DEFAULT", "GRAPH", "GRAPHS" or "HOME" (line 1, column ${offset + 1} (offset: $offset))"""
-              ))
-              .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-                s"""Invalid input 'DATABASES': expected 'GRAPH', 'DEFAULT GRAPH', 'HOME GRAPH' or 'GRAPHS' (line 1, column ${offset + 1} (offset: $offset))"""
-              ))
+            failsParsing[Statements].in {
+              case JavaCc => _.withMessage(
+                  s"""Invalid input 'DATABASES': expected "DEFAULT", "GRAPH", "GRAPHS" or "HOME" (line 1, column ${offset + 1} (offset: $offset))"""
+                )
+              case Antlr => _.withSyntaxErrorContaining(
+                  s"""Invalid input 'DATABASES': expected 'GRAPH', 'DEFAULT GRAPH', 'HOME GRAPH' or 'GRAPHS' (line 1, column ${offset + 1} (offset: $offset))"""
+                )
+            }
           }
 
           test(s"$verb$immutableString MERGE { prop } ON DATABASE foo $preposition role") {
             val offset = verb.length + immutableString.length + 19
-            failsParsing[Statements]
-              .parseIn(JavaCc)(_.withMessage(
-                s"""Invalid input 'DATABASE': expected "DEFAULT", "GRAPH", "GRAPHS" or "HOME" (line 1, column ${offset + 1} (offset: $offset))"""
-              ))
-              .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-                s"Invalid input 'DATABASE': expected 'GRAPH', 'DEFAULT GRAPH', 'HOME GRAPH' or 'GRAPHS' (line 1, column ${offset + 1} (offset: $offset))"
-              ))
+            failsParsing[Statements].in {
+              case JavaCc => _.withMessage(
+                  s"""Invalid input 'DATABASE': expected "DEFAULT", "GRAPH", "GRAPHS" or "HOME" (line 1, column ${offset + 1} (offset: $offset))"""
+                )
+              case Antlr => _.withSyntaxErrorContaining(
+                  s"Invalid input 'DATABASE': expected 'GRAPH', 'DEFAULT GRAPH', 'HOME GRAPH' or 'GRAPHS' (line 1, column ${offset + 1} (offset: $offset))"
+                )
+            }
           }
 
           test(s"$verb$immutableString MERGE { prop } ON HOME DATABASE $preposition role") {

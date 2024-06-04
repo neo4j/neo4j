@@ -34,7 +34,6 @@ import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.util.InputPosition
-import org.neo4j.exceptions.SyntaxException
 
 class ExistsExpressionParserTest extends AstParsingTestBase {
 
@@ -318,14 +317,15 @@ class ExistsExpressionParserTest extends AstParsingTestBase {
       |WHERE EXISTS { (a)-[r]->(b) WHERE a.prop = 1 RETURN r }
       |RETURN m""".stripMargin
   ) {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart(
-        "Invalid input 'RETURN'"
-      ))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input 'RETURN': expected an expression or '}' (line 2, column 46 (offset: 55))
-          |"WHERE EXISTS { (a)-[r]->(b) WHERE a.prop = 1 RETURN r }"
-          |                                              ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart(
+          "Invalid input 'RETURN'"
+        )
+      case Antlr => _.withSyntaxError(
+          """Invalid input 'RETURN': expected an expression or '}' (line 2, column 46 (offset: 55))
+            |"WHERE EXISTS { (a)-[r]->(b) WHERE a.prop = 1 RETURN r }"
+            |                                              ^""".stripMargin
+        )
+    }
   }
 }

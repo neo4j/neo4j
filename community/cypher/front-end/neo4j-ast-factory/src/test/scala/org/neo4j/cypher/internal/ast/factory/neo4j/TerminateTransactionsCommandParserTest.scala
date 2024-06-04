@@ -24,7 +24,6 @@ import org.neo4j.cypher.internal.expressions.AllIterablePredicate
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.IntegerType
-import org.neo4j.exceptions.SyntaxException
 
 /* Tests for terminating transactions */
 class TerminateTransactionsCommandParserTest extends AdministrationAndSchemaCommandParserTestBase {
@@ -776,109 +775,121 @@ class TerminateTransactionsCommandParserTest extends AdministrationAndSchemaComm
     test(s"$prefix TERMINATE TRANSACTIONS WITH * MATCH (n) RETURN n") {
       // Can't parse WITH after TERMINATE
       // parses varFor("WITH") * function("MATCH", varFor("n"))
-      failsParsing[Statements]
-        .parseIn(JavaCc)(_.withMessageStart("Invalid input 'RETURN': expected"))
-        .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-          """Invalid input 'RETURN': expected an expression, 'SHOW', 'TERMINATE', 'WHERE', 'YIELD' or <EOF>"""
-        ))
+      failsParsing[Statements].in {
+        case JavaCc => _.withMessageStart("Invalid input 'RETURN': expected")
+        case Antlr => _.withSyntaxErrorContaining(
+            """Invalid input 'RETURN': expected an expression, 'SHOW', 'TERMINATE', 'WHERE', 'YIELD' or <EOF>"""
+          )
+      }
     }
 
     test(s"$prefix TERMINATE TRANSACTIONS YIELD * WITH * MATCH (n) RETURN n") {
       // Can't parse WITH after TERMINATE
-      failsParsing[Statements]
-        .parseIn(JavaCc)(_.withMessageStart("Invalid input 'WITH': expected"))
+      failsParsing[Statements].in {
+        case JavaCc => _.withMessageStart("Invalid input 'WITH': expected")
         // Antlr parses YIELD * WITH * MATCH (n) as an expression
-        .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-          """Invalid input 'RETURN': expected an expression, 'SHOW', 'TERMINATE', 'WHERE', 'YIELD' or <EOF>"""
-        ))
+        case Antlr => _.withSyntaxErrorContaining(
+            """Invalid input 'RETURN': expected an expression, 'SHOW', 'TERMINATE', 'WHERE', 'YIELD' or <EOF>"""
+          )
+      }
     }
 
     test(s"$prefix UNWIND range(1,10) as b TERMINATE TRANSACTIONS YIELD * RETURN *") {
       // Can't parse TERMINATE  after UNWIND
-      failsParsing[Statements]
-        .parseIn(JavaCc)(_.withMessageStart("Invalid input 'TERMINATE': expected"))
-        .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-          """Invalid input 'TERMINATE': expected 'FOREACH', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'UNION', 'UNWIND', 'USE', 'WITH' or <EOF>"""
-        ))
+      failsParsing[Statements].in {
+        case JavaCc => _.withMessageStart("Invalid input 'TERMINATE': expected")
+        case Antlr => _.withSyntaxErrorContaining(
+            """Invalid input 'TERMINATE': expected 'FOREACH', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'UNION', 'UNWIND', 'USE', 'WITH' or <EOF>"""
+          )
+      }
     }
 
     test(s"$prefix TERMINATE TRANSACTIONS WITH name, type RETURN *") {
       // Can't parse WITH after TERMINATE
       // parses varFor("WITH")
-      failsParsing[Statements]
-        .parseIn(JavaCc)(_.withMessageStart("Invalid input 'name': expected"))
-        .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-          """Invalid input 'name': expected an expression, 'SHOW', 'TERMINATE', 'WHERE', 'YIELD' or <EOF>"""
-        ))
+      failsParsing[Statements].in {
+        case JavaCc => _.withMessageStart("Invalid input 'name': expected")
+        case Antlr => _.withSyntaxErrorContaining(
+            """Invalid input 'name': expected an expression, 'SHOW', 'TERMINATE', 'WHERE', 'YIELD' or <EOF>"""
+          )
+      }
     }
 
     test(s"$prefix WITH 'n' as n TERMINATE TRANSACTIONS YIELD name RETURN name as numIndexes") {
-      failsParsing[Statements]
-        .parseIn(JavaCc)(_.withMessageStart("Invalid input 'TERMINATE': expected"))
-        .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-          """Invalid input 'TERMINATE': expected 'FOREACH', ',', 'ORDER BY', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'LIMIT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'SKIP', 'UNION', 'UNWIND', 'USE', 'WHERE', 'WITH' or <EOF>"""
-        ))
+      failsParsing[Statements].in {
+        case JavaCc => _.withMessageStart("Invalid input 'TERMINATE': expected")
+        case Antlr => _.withSyntaxErrorContaining(
+            """Invalid input 'TERMINATE': expected 'FOREACH', ',', 'ORDER BY', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'LIMIT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'SKIP', 'UNION', 'UNWIND', 'USE', 'WHERE', 'WITH' or <EOF>"""
+          )
+      }
     }
 
     test(s"$prefix TERMINATE TRANSACTIONS RETURN name as numIndexes") {
       // parses varFor("RETURN")
-      failsParsing[Statements]
-        .parseIn(JavaCc)(_.withMessageStart("Invalid input 'name': expected"))
-        .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-          """Invalid input 'name': expected an expression, 'SHOW', 'TERMINATE', 'WHERE', 'YIELD' or <EOF>"""
-        ))
+      failsParsing[Statements].in {
+        case JavaCc => _.withMessageStart("Invalid input 'name': expected")
+        case Antlr => _.withSyntaxErrorContaining(
+            """Invalid input 'name': expected an expression, 'SHOW', 'TERMINATE', 'WHERE', 'YIELD' or <EOF>"""
+          )
+      }
     }
 
     test(s"$prefix TERMINATE TRANSACTIONS WITH 1 as c RETURN name as numIndexes") {
       // parses varFor("WITH")
-      failsParsing[Statements]
-        .parseIn(JavaCc)(_.withMessageStart("Invalid input '1': expected"))
-        .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-          """Invalid input '1': expected an expression, 'SHOW', 'TERMINATE', 'WHERE', 'YIELD' or <EOF>"""
-        ))
+      failsParsing[Statements].in {
+        case JavaCc => _.withMessageStart("Invalid input '1': expected")
+        case Antlr => _.withSyntaxErrorContaining(
+            """Invalid input '1': expected an expression, 'SHOW', 'TERMINATE', 'WHERE', 'YIELD' or <EOF>"""
+          )
+      }
     }
 
     test(s"$prefix TERMINATE TRANSACTIONS WITH 1 as c") {
       // parses varFor("WITH")
-      failsParsing[Statements]
-        .parseIn(JavaCc)(_.withMessageStart("Invalid input '1': expected"))
-        .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-          """Invalid input '1': expected an expression, 'SHOW', 'TERMINATE', 'WHERE', 'YIELD' or <EOF>"""
-        ))
+      failsParsing[Statements].in {
+        case JavaCc => _.withMessageStart("Invalid input '1': expected")
+        case Antlr => _.withSyntaxErrorContaining(
+            """Invalid input '1': expected an expression, 'SHOW', 'TERMINATE', 'WHERE', 'YIELD' or <EOF>"""
+          )
+      }
     }
 
     test(s"$prefix TERMINATE TRANSACTIONS YIELD a WITH a RETURN a") {
-      failsParsing[Statements]
-        .parseIn(JavaCc)(_.withMessageStart("Invalid input 'WITH': expected"))
-        .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-          """Invalid input 'WITH': expected ',', 'AS', 'ORDER BY', 'LIMIT', 'RETURN', 'SHOW', 'SKIP', 'TERMINATE', 'WHERE' or <EOF>"""
-        ))
+      failsParsing[Statements].in {
+        case JavaCc => _.withMessageStart("Invalid input 'WITH': expected")
+        case Antlr => _.withSyntaxErrorContaining(
+            """Invalid input 'WITH': expected ',', 'AS', 'ORDER BY', 'LIMIT', 'RETURN', 'SHOW', 'SKIP', 'TERMINATE', 'WHERE' or <EOF>"""
+          )
+      }
     }
 
     test(s"$prefix TERMINATE TRANSACTIONS UNWIND as as a RETURN a") {
       // parses varFor("UNWIND")
-      failsParsing[Statements]
-        .parseIn(JavaCc)(_.withMessageStart("Invalid input 'as': expected"))
-        .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-          """Invalid input 'as': expected an expression, 'SHOW', 'TERMINATE', 'WHERE', 'YIELD' or <EOF>"""
-        ))
+      failsParsing[Statements].in {
+        case JavaCc => _.withMessageStart("Invalid input 'as': expected")
+        case Antlr => _.withSyntaxErrorContaining(
+            """Invalid input 'as': expected an expression, 'SHOW', 'TERMINATE', 'WHERE', 'YIELD' or <EOF>"""
+          )
+      }
     }
 
     test(s"$prefix TERMINATE TRANSACTIONS YIELD as UNWIND as as a RETURN a") {
-      failsParsing[Statements]
-        .parseIn(JavaCc)(_.withMessageStart("Invalid input 'UNWIND': expected"))
-        .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-          """Invalid input 'UNWIND': expected ',', 'AS', 'ORDER BY', 'LIMIT', 'RETURN', 'SHOW', 'SKIP', 'TERMINATE', 'WHERE' or <EOF>"""
-        ))
+      failsParsing[Statements].in {
+        case JavaCc => _.withMessageStart("Invalid input 'UNWIND': expected")
+        case Antlr => _.withSyntaxErrorContaining(
+            """Invalid input 'UNWIND': expected ',', 'AS', 'ORDER BY', 'LIMIT', 'RETURN', 'SHOW', 'SKIP', 'TERMINATE', 'WHERE' or <EOF>"""
+          )
+      }
     }
 
     test(s"$prefix TERMINATE TRANSACTIONS RETURN id2 YIELD id2") {
       // parses varFor("RETURN")
-      failsParsing[Statements]
-        .parseIn(JavaCc)(_.withMessageStart("Invalid input 'id2': expected"))
-        .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-          """Invalid input 'id2': expected an expression, 'SHOW', 'TERMINATE', 'WHERE', 'YIELD' or <EOF>"""
-        ))
+      failsParsing[Statements].in {
+        case JavaCc => _.withMessageStart("Invalid input 'id2': expected")
+        case Antlr => _.withSyntaxErrorContaining(
+            """Invalid input 'id2': expected an expression, 'SHOW', 'TERMINATE', 'WHERE', 'YIELD' or <EOF>"""
+          )
+      }
     }
   }
 

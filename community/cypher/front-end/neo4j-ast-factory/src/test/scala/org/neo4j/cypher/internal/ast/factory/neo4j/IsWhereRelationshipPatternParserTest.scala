@@ -23,7 +23,6 @@ import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTestSupport
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.label_expressions.LabelExpressionPredicate
-import org.neo4j.exceptions.SyntaxException
 
 /**
  * The aim of this class is to test parsing for all combinations of
@@ -86,15 +85,17 @@ class IsWhereRelationshipPatternParserTest extends AstParsingTestBase with Legac
         }
 
         test(s"MATCH ()-[$maybeVariable WHERE $isOrWhere WHERE $isOrWhere2]->() RETURN *") {
-          failsParsing[Statements]
-            .parseIn(JavaCc)(_.withMessageStart("Invalid input"))
-            .parseIn(Antlr)(_.throws[SyntaxException])
+          failsParsing[Statements].in {
+            case JavaCc => _.withMessageStart("Invalid input")
+            case _      => _.withSyntaxErrorContaining("Invalid input")
+          }
         }
 
         test(s"MATCH ()-[$maybeVariable IS $isOrWhere IS $isOrWhere2]->() RETURN *") {
-          failsParsing[Statements]
-            .parseIn(JavaCc)(_.withMessageStart("Invalid input"))
-            .parseIn(Antlr)(_.throws[SyntaxException])
+          failsParsing[Statements].in {
+            case JavaCc => _.withMessageStart("Invalid input")
+            case Antlr  => _.withSyntaxErrorContaining("Invalid input")
+          }
         }
 
         for {

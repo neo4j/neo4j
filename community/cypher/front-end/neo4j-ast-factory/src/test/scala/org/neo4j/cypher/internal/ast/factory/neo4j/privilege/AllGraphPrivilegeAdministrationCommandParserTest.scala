@@ -21,7 +21,6 @@ import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.factory.neo4j.AdministrationAndSchemaCommandParserTestBase
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
-import org.neo4j.exceptions.SyntaxException
 
 class AllGraphPrivilegeAdministrationCommandParserTest extends AdministrationAndSchemaCommandParserTestBase {
 
@@ -195,95 +194,88 @@ class AllGraphPrivilegeAdministrationCommandParserTest extends AdministrationAnd
           }
 
           test(s"$verb$immutableString GRAPH ON GRAPH foo $preposition role") {
-            val expected =
-              """Invalid input 'GRAPH': expected
-                |  "ACCESS"""".stripMargin
-
-            val antlrExpected = "Invalid input 'GRAPH': expected"
-            failsParsing[Statements]
-              .parseIn(JavaCc)(_.withMessageStart(expected))
-              .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(antlrExpected))
+            failsParsing[Statements].in {
+              case JavaCc => _.withMessageStart("Invalid input 'GRAPH': expected\n  \"ACCESS\"")
+              case Antlr  => _.withSyntaxErrorContaining("Invalid input 'GRAPH': expected")
+            }
           }
 
           test(s"$verb$immutableString GRAPH PRIVILEGES ON GRAPH foo $preposition role") {
-            val expected =
-              """Invalid input 'GRAPH': expected
-                |  "ACCESS"""".stripMargin
-
-            val antlrExpected = "Invalid input 'GRAPH': expected"
-            failsParsing[Statements]
-              .parseIn(JavaCc)(_.withMessageStart(expected))
-              .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(antlrExpected))
+            failsParsing[Statements].in {
+              case JavaCc => _.withMessageStart("Invalid input 'GRAPH': expected\n  \"ACCESS\"")
+              case Antlr  => _.withSyntaxErrorContaining("Invalid input 'GRAPH': expected")
+            }
           }
 
           test(s"$verb$immutableString PRIVILEGES ON GRAPH foo $preposition role") {
-            val expected =
-              """Invalid input 'PRIVILEGES': expected
-                |  "ACCESS"""".stripMargin
-
-            val antlrExpected = "Invalid input 'PRIVILEGES': expected"
-            failsParsing[Statements]
-              .parseIn(JavaCc)(_.withMessageStart(expected))
-              .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(antlrExpected))
+            failsParsing[Statements].in {
+              case JavaCc => _.withMessageStart("Invalid input 'PRIVILEGES': expected\n  \"ACCESS\"")
+              case Antlr  => _.withSyntaxErrorContaining("Invalid input 'PRIVILEGES': expected")
+            }
           }
 
           // Database/dbms instead of graph keyword
 
           test(s"$verb$immutableString ALL GRAPH PRIVILEGES ON DATABASES * $preposition role") {
             val offset = verb.length + immutableString.length + 25
-            failsParsing[Statements]
-              .parseIn(JavaCc)(_.withMessageStart(
-                s"""Invalid input 'DATABASES': expected "GRAPH" (line 1, column ${offset + 1} (offset: $offset))"""
-              ))
-              .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-                s"""Invalid input 'DATABASES': expected "GRAPH" (line 1, column ${offset + 1} (offset: $offset))"""
-              ))
+            failsParsing[Statements].in {
+              case JavaCc => _.withMessageStart(
+                  s"""Invalid input 'DATABASES': expected "GRAPH" (line 1, column ${offset + 1} (offset: $offset))"""
+                )
+              case Antlr => _.withSyntaxErrorContaining(
+                  s"""Invalid input 'DATABASES': expected "GRAPH" (line 1, column ${offset + 1} (offset: $offset))"""
+                )
+            }
           }
 
           test(s"$verb$immutableString ALL GRAPH PRIVILEGES ON DATABASE foo $preposition role") {
             val offset = verb.length + immutableString.length + 25
-            failsParsing[Statements]
-              .parseIn(JavaCc)(_.withMessageStart(
-                s"""Invalid input 'DATABASE': expected "GRAPH" (line 1, column ${offset + 1} (offset: $offset))"""
-              ))
-              .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-                s"""Invalid input 'DATABASE': expected "GRAPH" (line 1, column ${offset + 1} (offset: $offset))"""
-              ))
+            failsParsing[Statements].in {
+              case JavaCc => _.withMessageStart(
+                  s"""Invalid input 'DATABASE': expected "GRAPH" (line 1, column ${offset + 1} (offset: $offset))"""
+                )
+              case Antlr => _.withSyntaxErrorContaining(
+                  s"""Invalid input 'DATABASE': expected "GRAPH" (line 1, column ${offset + 1} (offset: $offset))"""
+                )
+            }
           }
 
           test(s"$verb$immutableString ALL GRAPH PRIVILEGES ON HOME DATABASE $preposition role") {
             val offset = verb.length + immutableString.length + 25
             val antlrOffset = verb.length + immutableString.length + 30
-            failsParsing[Statements]
-              .parseIn(JavaCc)(_.withMessageStart(
-                s"""Invalid input 'HOME': expected "GRAPH" (line 1, column ${offset + 1} (offset: $offset))"""
-              ))
-              .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-                s"""Invalid input 'DATABASE': expected "GRAPH" (line 1, column ${antlrOffset + 1} (offset: $antlrOffset))"""
-              ))
+            failsParsing[Statements].in {
+              case JavaCc => _.withMessageStart(
+                  s"""Invalid input 'HOME': expected "GRAPH" (line 1, column ${offset + 1} (offset: $offset))"""
+                )
+              case Antlr => _.withSyntaxErrorContaining(
+                  s"""Invalid input 'DATABASE': expected "GRAPH" (line 1, column ${antlrOffset + 1} (offset: $antlrOffset))"""
+                )
+            }
           }
 
           test(s"$verb$immutableString ALL GRAPH PRIVILEGES ON DEFAULT DATABASE $preposition role") {
             val offset = verb.length + immutableString.length + 25
             val antlrOffset = verb.length + immutableString.length + 33
-            failsParsing[Statements]
-              .parseIn(JavaCc)(_.withMessageStart(
-                s"""Invalid input 'DEFAULT': expected "GRAPH" (line 1, column ${offset + 1} (offset: $offset))"""
-              ))
-              .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-                s"""Invalid input 'DATABASE': expected "GRAPH" (line 1, column ${antlrOffset + 1} (offset: $antlrOffset))"""
-              ))
+            failsParsing[Statements].in {
+              case JavaCc => _.withMessageStart(
+                  s"""Invalid input 'DEFAULT': expected "GRAPH" (line 1, column ${offset + 1} (offset: $offset))"""
+                )
+              case Antlr => _.withSyntaxErrorContaining(
+                  s"""Invalid input 'DATABASE': expected "GRAPH" (line 1, column ${antlrOffset + 1} (offset: $antlrOffset))"""
+                )
+            }
           }
 
           test(s"$verb$immutableString ALL GRAPH PRIVILEGES ON DBMS $preposition role") {
             val offset = verb.length + immutableString.length + 25
-            failsParsing[Statements]
-              .parseIn(JavaCc)(_.withMessageStart(
-                s"""Invalid input 'DBMS': expected "GRAPH" (line 1, column ${offset + 1} (offset: $offset))"""
-              ))
-              .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-                s"""Invalid input 'DBMS': expected "GRAPH" (line 1, column ${offset + 1} (offset: $offset))"""
-              ))
+            failsParsing[Statements].in {
+              case JavaCc => _.withMessageStart(
+                  s"""Invalid input 'DBMS': expected "GRAPH" (line 1, column ${offset + 1} (offset: $offset))"""
+                )
+              case Antlr => _.withSyntaxErrorContaining(
+                  s"""Invalid input 'DBMS': expected "GRAPH" (line 1, column ${offset + 1} (offset: $offset))"""
+                )
+            }
           }
       }
   }

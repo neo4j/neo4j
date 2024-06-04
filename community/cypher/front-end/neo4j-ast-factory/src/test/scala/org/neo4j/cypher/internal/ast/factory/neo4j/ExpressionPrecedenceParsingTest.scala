@@ -102,7 +102,7 @@ class ExpressionPrecedenceParsingTest extends AstParsingTestBase with LegacyAstP
     // = (1 IS NOT TYPED BOOLEAN) = ('string' IS NORMALIZED) = ('string' IS NOT NORMALIZED)
     "'string' STARTS WITH 's' = 'string' =~ 's?' > 'string' ENDS WITH 's' < 'string' IS NULL >= 'string' " +
       "CONTAINS 's' <> 'string' IS NOT NULL <= 'string' IN list = y IS TYPED BOOLEAN = 1 IS NOT TYPED BOOLEAN" +
-      " = 'string' IS NORMALIZED = 'string' IS NOT NORMALIZED" should parseAs[Expression].toAst(
+      " = 'string' IS NORMALIZED = 'string' IS NOT NORMALIZED" should parseTo[Expression](
         ands(
           eq(
             startsWith(literalString("string"), literalString("s")),
@@ -211,7 +211,7 @@ class ExpressionPrecedenceParsingTest extends AstParsingTestBase with LegacyAstP
     )
 
     // (2 + 3) IN [(2 - 1)]
-    "2 + 3 IN [2 - 1]" should parseAs[Expression].toAsts {
+    "2 + 3 IN [2 - 1]" should parse[Expression].toAsts {
       case JavaCc =>
         in(add(literalInt(2), literalInt(3)), listOf(subtract(literalInt(2), literalInt(1))))
       case Antlr =>

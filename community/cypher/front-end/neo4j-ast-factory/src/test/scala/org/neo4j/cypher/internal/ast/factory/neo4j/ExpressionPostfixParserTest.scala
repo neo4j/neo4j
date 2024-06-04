@@ -23,7 +23,6 @@ import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.ListSlice
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
-import org.neo4j.exceptions.SyntaxException
 
 class ExpressionPostfixParserTest extends AstParsingTestBase {
 
@@ -74,13 +73,14 @@ class ExpressionPostfixParserTest extends AstParsingTestBase {
   }
 
   test("RETURN a.[]") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("Invalid input '[': expected \"NFKD\" or an identifier"))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input '[': expected an identifier (line 1, column 10 (offset: 9))
-          |"RETURN a.[]"
-          |          ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("Invalid input '[': expected \"NFKD\" or an identifier")
+      case Antlr => _.withSyntaxError(
+          """Invalid input '[': expected an identifier (line 1, column 10 (offset: 9))
+            |"RETURN a.[]"
+            |          ^""".stripMargin
+        )
+    }
   }
 
   test("a[0..1]") {

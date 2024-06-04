@@ -22,7 +22,6 @@ import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
 import org.neo4j.cypher.internal.expressions.SensitiveParameter
 import org.neo4j.cypher.internal.expressions.SensitiveStringLiteral
-import org.neo4j.exceptions.SyntaxException
 
 import java.nio.charset.StandardCharsets.UTF_8
 import java.util
@@ -477,365 +476,397 @@ class AlterUserAdministrationCommandParserTest extends UserAdministrationCommand
   // fails parsing
 
   test("ALTER USER foo") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessage(
-        "Invalid input '': expected \"IF\", \"REMOVE\" or \"SET\" (line 1, column 15 (offset: 14))"
-      ))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input '': expected 'REMOVE HOME DATABASE', 'IF EXISTS' or 'SET' (line 1, column 15 (offset: 14))
-          |"ALTER USER foo"
-          |               ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessage(
+          "Invalid input '': expected \"IF\", \"REMOVE\" or \"SET\" (line 1, column 15 (offset: 14))"
+        )
+      case Antlr => _.withSyntaxError(
+          """Invalid input '': expected 'REMOVE HOME DATABASE', 'IF EXISTS' or 'SET' (line 1, column 15 (offset: 14))
+            |"ALTER USER foo"
+            |               ^""".stripMargin
+        )
+    }
   }
 
   test("ALTER USER foo SET NAME bar") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessage(
-        s"""Invalid input 'NAME': expected
-           |  "ENCRYPTED"
-           |  "HOME"
-           |  "PASSWORD"
-           |  "PLAINTEXT"
-           |  "STATUS" (line 1, column 20 (offset: 19))""".stripMargin
-      ))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input 'NAME': expected 'HOME DATABASE', 'ENCRYPTED', 'PASSWORD', 'PLAINTEXT' or 'STATUS' (line 1, column 20 (offset: 19))
-          |"ALTER USER foo SET NAME bar"
-          |                    ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessage(
+          s"""Invalid input 'NAME': expected
+             |  "ENCRYPTED"
+             |  "HOME"
+             |  "PASSWORD"
+             |  "PLAINTEXT"
+             |  "STATUS" (line 1, column 20 (offset: 19))""".stripMargin
+        )
+      case Antlr => _.withSyntaxError(
+          """Invalid input 'NAME': expected 'HOME DATABASE', 'ENCRYPTED', 'PASSWORD', 'PLAINTEXT' or 'STATUS' (line 1, column 20 (offset: 19))
+            |"ALTER USER foo SET NAME bar"
+            |                    ^""".stripMargin
+        )
+    }
   }
 
   test("ALTER USER foo SET PASSWORD 'secret' SET NAME bar") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessage(
-        s"""Invalid input 'NAME': expected
-           |  "ENCRYPTED"
-           |  "HOME"
-           |  "PASSWORD"
-           |  "PLAINTEXT"
-           |  "STATUS" (line 1, column 42 (offset: 41))""".stripMargin
-      ))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input 'NAME': expected 'HOME DATABASE', 'ENCRYPTED', 'PASSWORD', 'PLAINTEXT' or 'STATUS' (line 1, column 42 (offset: 41))
-          |"ALTER USER foo SET PASSWORD 'secret' SET NAME bar"
-          |                                          ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessage(
+          s"""Invalid input 'NAME': expected
+             |  "ENCRYPTED"
+             |  "HOME"
+             |  "PASSWORD"
+             |  "PLAINTEXT"
+             |  "STATUS" (line 1, column 42 (offset: 41))""".stripMargin
+        )
+      case Antlr => _.withSyntaxError(
+          """Invalid input 'NAME': expected 'HOME DATABASE', 'ENCRYPTED', 'PASSWORD', 'PLAINTEXT' or 'STATUS' (line 1, column 42 (offset: 41))
+            |"ALTER USER foo SET PASSWORD 'secret' SET NAME bar"
+            |                                          ^""".stripMargin
+        )
+    }
   }
 
   test("ALTER USER foo RENAME TO bar") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessage(
-        "Invalid input 'RENAME': expected \"IF\", \"REMOVE\" or \"SET\" (line 1, column 16 (offset: 15))"
-      ))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input 'RENAME': expected 'REMOVE HOME DATABASE', 'IF EXISTS' or 'SET' (line 1, column 16 (offset: 15))
-          |"ALTER USER foo RENAME TO bar"
-          |                ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessage(
+          "Invalid input 'RENAME': expected \"IF\", \"REMOVE\" or \"SET\" (line 1, column 16 (offset: 15))"
+        )
+      case Antlr => _.withSyntaxError(
+          """Invalid input 'RENAME': expected 'REMOVE HOME DATABASE', 'IF EXISTS' or 'SET' (line 1, column 16 (offset: 15))
+            |"ALTER USER foo RENAME TO bar"
+            |                ^""".stripMargin
+        )
+    }
   }
 
   test("ALTER USER foo SET PASSWORD null") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessage(
-        "Invalid input 'null': expected \"CHANGE\", \"\\\"\", \"\\'\" or a parameter (line 1, column 29 (offset: 28))"
-      ))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input 'null': expected a parameter, a string or 'CHANGE' (line 1, column 29 (offset: 28))
-          |"ALTER USER foo SET PASSWORD null"
-          |                             ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessage(
+          "Invalid input 'null': expected \"CHANGE\", \"\\\"\", \"\\'\" or a parameter (line 1, column 29 (offset: 28))"
+        )
+      case Antlr => _.withSyntaxError(
+          """Invalid input 'null': expected a parameter, a string or 'CHANGE' (line 1, column 29 (offset: 28))
+            |"ALTER USER foo SET PASSWORD null"
+            |                             ^""".stripMargin
+        )
+    }
   }
 
   test("ALTER USER foo SET PASSWORD 123") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessage(
-        "Invalid input '123': expected \"CHANGE\", \"\\\"\", \"\\'\" or a parameter (line 1, column 29 (offset: 28))"
-      ))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input '123': expected a parameter, a string or 'CHANGE' (line 1, column 29 (offset: 28))
-          |"ALTER USER foo SET PASSWORD 123"
-          |                             ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessage(
+          "Invalid input '123': expected \"CHANGE\", \"\\\"\", \"\\'\" or a parameter (line 1, column 29 (offset: 28))"
+        )
+      case Antlr => _.withSyntaxError(
+          """Invalid input '123': expected a parameter, a string or 'CHANGE' (line 1, column 29 (offset: 28))
+            |"ALTER USER foo SET PASSWORD 123"
+            |                             ^""".stripMargin
+        )
+    }
   }
 
   test("ALTER USER foo SET PASSWORD") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessage(
-        "Invalid input '': expected \"CHANGE\", \"\\\"\", \"\\'\" or a parameter (line 1, column 28 (offset: 27))"
-      ))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input '': expected a parameter, a string or 'CHANGE' (line 1, column 28 (offset: 27))
-          |"ALTER USER foo SET PASSWORD"
-          |                            ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessage(
+          "Invalid input '': expected \"CHANGE\", \"\\\"\", \"\\'\" or a parameter (line 1, column 28 (offset: 27))"
+        )
+      case Antlr => _.withSyntaxError(
+          """Invalid input '': expected a parameter, a string or 'CHANGE' (line 1, column 28 (offset: 27))
+            |"ALTER USER foo SET PASSWORD"
+            |                            ^""".stripMargin
+        )
+    }
   }
 
   test("ALTER USER foo SET ENCRYPTED PASSWORD 123") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessage(
-        "Invalid input '123': expected \"\\\"\", \"\\'\" or a parameter (line 1, column 39 (offset: 38))"
-      ))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input '123': expected a parameter or a string (line 1, column 39 (offset: 38))
-          |"ALTER USER foo SET ENCRYPTED PASSWORD 123"
-          |                                       ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessage(
+          "Invalid input '123': expected \"\\\"\", \"\\'\" or a parameter (line 1, column 39 (offset: 38))"
+        )
+      case Antlr => _.withSyntaxError(
+          """Invalid input '123': expected a parameter or a string (line 1, column 39 (offset: 38))
+            |"ALTER USER foo SET ENCRYPTED PASSWORD 123"
+            |                                       ^""".stripMargin
+        )
+    }
   }
 
   test("ALTER USER foo SET PLAINTEXT PASSWORD") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart(
-        "Invalid input '': expected \"\\\"\", \"\\'\" or a parameter (line 1, column 38 (offset: 37))"
-      ))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input '': expected a parameter or a string (line 1, column 38 (offset: 37))
-          |"ALTER USER foo SET PLAINTEXT PASSWORD"
-          |                                      ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart(
+          "Invalid input '': expected \"\\\"\", \"\\'\" or a parameter (line 1, column 38 (offset: 37))"
+        )
+      case Antlr => _.withSyntaxError(
+          """Invalid input '': expected a parameter or a string (line 1, column 38 (offset: 37))
+            |"ALTER USER foo SET PLAINTEXT PASSWORD"
+            |                                      ^""".stripMargin
+        )
+    }
   }
 
   test("ALTER USER foo SET ENCRYPTED PASSWORD") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart(
-        "Invalid input '': expected \"\\\"\", \"\\'\" or a parameter (line 1, column 38 (offset: 37))"
-      ))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input '': expected a parameter or a string (line 1, column 38 (offset: 37))
-          |"ALTER USER foo SET ENCRYPTED PASSWORD"
-          |                                      ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart(
+          "Invalid input '': expected \"\\\"\", \"\\'\" or a parameter (line 1, column 38 (offset: 37))"
+        )
+      case Antlr => _.withSyntaxError(
+          """Invalid input '': expected a parameter or a string (line 1, column 38 (offset: 37))
+            |"ALTER USER foo SET ENCRYPTED PASSWORD"
+            |                                      ^""".stripMargin
+        )
+    }
   }
 
   test("ALTER USER foo SET PASSWORD 'password' SET ENCRYPTED PASSWORD") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("Duplicate SET PASSWORD clause (line 1, column 40 (offset: 39))"))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input '': expected a parameter or a string (line 1, column 62 (offset: 61))
-          |"ALTER USER foo SET PASSWORD 'password' SET ENCRYPTED PASSWORD"
-          |                                                              ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("Duplicate SET PASSWORD clause (line 1, column 40 (offset: 39))")
+      case Antlr => _.withSyntaxError(
+          """Invalid input '': expected a parameter or a string (line 1, column 62 (offset: 61))
+            |"ALTER USER foo SET PASSWORD 'password' SET ENCRYPTED PASSWORD"
+            |                                                              ^""".stripMargin
+        )
+    }
   }
 
   test("ALTER USER foo SET PASSWORD 'password' SET ENCRYPTED PASSWORD 'password'") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("Duplicate SET PASSWORD clause (line 1, column 40 (offset: 39))"))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-        "Duplicate SET PASSWORD clause (line 1, column 44 (offset: 43))"
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("Duplicate SET PASSWORD clause (line 1, column 40 (offset: 39))")
+      case Antlr => _.withSyntaxErrorContaining(
+          "Duplicate SET PASSWORD clause (line 1, column 44 (offset: 43))"
+        )
+    }
   }
 
   test("ALTER USER foo SET PASSWORD 'password' ENCRYPTED") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("Invalid input 'ENCRYPTED'"))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input 'ENCRYPTED': expected 'CHANGE', 'SET' or <EOF> (line 1, column 40 (offset: 39))
-          |"ALTER USER foo SET PASSWORD 'password' ENCRYPTED"
-          |                                        ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("Invalid input 'ENCRYPTED'")
+      case Antlr => _.withSyntaxError(
+          """Invalid input 'ENCRYPTED': expected 'CHANGE', 'SET' or <EOF> (line 1, column 40 (offset: 39))
+            |"ALTER USER foo SET PASSWORD 'password' ENCRYPTED"
+            |                                        ^""".stripMargin
+        )
+    }
   }
 
   test("ALTER USER foo SET PASSWORD 'password' SET STATUS ACTIVE CHANGE NOT REQUIRED") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart(
-        "Invalid input 'CHANGE'"
-      ))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input 'CHANGE': expected 'SET' or <EOF> (line 1, column 58 (offset: 57))
-          |"ALTER USER foo SET PASSWORD 'password' SET STATUS ACTIVE CHANGE NOT REQUIRED"
-          |                                                          ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart(
+          "Invalid input 'CHANGE'"
+        )
+      case Antlr => _.withSyntaxError(
+          """Invalid input 'CHANGE': expected 'SET' or <EOF> (line 1, column 58 (offset: 57))
+            |"ALTER USER foo SET PASSWORD 'password' SET STATUS ACTIVE CHANGE NOT REQUIRED"
+            |                                                          ^""".stripMargin
+        )
+    }
   }
 
   test("ALTER USER foo SET STATUS") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("Invalid input '': expected \"ACTIVE\" or \"SUSPENDED\""))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input '': expected 'ACTIVE' or 'SUSPENDED' (line 1, column 26 (offset: 25))
-          |"ALTER USER foo SET STATUS"
-          |                          ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("Invalid input '': expected \"ACTIVE\" or \"SUSPENDED\"")
+      case Antlr => _.withSyntaxError(
+          """Invalid input '': expected 'ACTIVE' or 'SUSPENDED' (line 1, column 26 (offset: 25))
+            |"ALTER USER foo SET STATUS"
+            |                          ^""".stripMargin
+        )
+    }
   }
 
   test("ALTER USER foo PASSWORD CHANGE NOT REQUIRED") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("Invalid input 'PASSWORD'"))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input 'PASSWORD': expected 'REMOVE HOME DATABASE', 'IF EXISTS' or 'SET' (line 1, column 16 (offset: 15))
-          |"ALTER USER foo PASSWORD CHANGE NOT REQUIRED"
-          |                ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("Invalid input 'PASSWORD'")
+      case Antlr => _.withSyntaxError(
+          """Invalid input 'PASSWORD': expected 'REMOVE HOME DATABASE', 'IF EXISTS' or 'SET' (line 1, column 16 (offset: 15))
+            |"ALTER USER foo PASSWORD CHANGE NOT REQUIRED"
+            |                ^""".stripMargin
+        )
+    }
   }
 
   test("ALTER USER foo CHANGE NOT REQUIRED") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("Invalid input 'CHANGE'"))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-        """Invalid input 'CHANGE': expected 'REMOVE HOME DATABASE', 'IF EXISTS' or 'SET' (line 1, column 16 (offset: 15))
-          |"ALTER USER foo CHANGE NOT REQUIRED"
-          |                ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("Invalid input 'CHANGE'")
+      case Antlr => _.withSyntaxErrorContaining(
+          """Invalid input 'CHANGE': expected 'REMOVE HOME DATABASE', 'IF EXISTS' or 'SET' (line 1, column 16 (offset: 15))
+            |"ALTER USER foo CHANGE NOT REQUIRED"
+            |                ^""".stripMargin
+        )
+    }
   }
 
   test("ALTER USER foo SET PASSWORD 'password' SET PASSWORD SET STATUS ACTIVE") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("Invalid input 'SET'"))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-        """Invalid input 'SET': expected a parameter, a string or 'CHANGE' (line 1, column 53 (offset: 52))
-          |"ALTER USER foo SET PASSWORD 'password' SET PASSWORD SET STATUS ACTIVE"
-          |                                                     ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("Invalid input 'SET'")
+      case Antlr => _.withSyntaxErrorContaining(
+          """Invalid input 'SET': expected a parameter, a string or 'CHANGE' (line 1, column 53 (offset: 52))
+            |"ALTER USER foo SET PASSWORD 'password' SET PASSWORD SET STATUS ACTIVE"
+            |                                                     ^""".stripMargin
+        )
+    }
   }
 
   test("ALTER USER foo SET PASSWORD STATUS ACTIVE") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("Invalid input 'STATUS'"))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-        """Invalid input 'STATUS': expected a parameter, a string or 'CHANGE' (line 1, column 29 (offset: 28))
-          |"ALTER USER foo SET PASSWORD STATUS ACTIVE"
-          |                             ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("Invalid input 'STATUS'")
+      case Antlr => _.withSyntaxErrorContaining(
+          """Invalid input 'STATUS': expected a parameter, a string or 'CHANGE' (line 1, column 29 (offset: 28))
+            |"ALTER USER foo SET PASSWORD STATUS ACTIVE"
+            |                             ^""".stripMargin
+        )
+    }
   }
 
   test("ALTER USER foo SET HOME DATABASE 123456") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("Invalid input '123456'"))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-        """Invalid input '123456': expected a database name or a parameter (line 1, column 34 (offset: 33))
-          |"ALTER USER foo SET HOME DATABASE 123456"
-          |                                  ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("Invalid input '123456'")
+      case Antlr => _.withSyntaxErrorContaining(
+          """Invalid input '123456': expected a database name or a parameter (line 1, column 34 (offset: 33))
+            |"ALTER USER foo SET HOME DATABASE 123456"
+            |                                  ^""".stripMargin
+        )
+    }
   }
 
   test("ALTER USER foo SET HOME DATABASE #dfkfop!") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("Invalid input '#'"))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input '#': expected a database name or a parameter (line 1, column 34 (offset: 33))
-          |"ALTER USER foo SET HOME DATABASE #dfkfop!"
-          |                                  ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("Invalid input '#'")
+      case Antlr => _.withSyntaxError(
+          """Invalid input '#': expected a database name or a parameter (line 1, column 34 (offset: 33))
+            |"ALTER USER foo SET HOME DATABASE #dfkfop!"
+            |                                  ^""".stripMargin
+        )
+    }
   }
 
   test("ALTER USER foo SET PASSWORD 'password' SET STATUS IMAGINARY") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("Invalid input 'IMAGINARY'"))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-        """Invalid input 'IMAGINARY': expected 'ACTIVE' or 'SUSPENDED' (line 1, column 51 (offset: 50))
-          |"ALTER USER foo SET PASSWORD 'password' SET STATUS IMAGINARY"
-          |                                                   ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("Invalid input 'IMAGINARY'")
+      case Antlr => _.withSyntaxErrorContaining(
+          """Invalid input 'IMAGINARY': expected 'ACTIVE' or 'SUSPENDED' (line 1, column 51 (offset: 50))
+            |"ALTER USER foo SET PASSWORD 'password' SET STATUS IMAGINARY"
+            |                                                   ^""".stripMargin
+        )
+    }
   }
 
   test("ALTER USER foo IF NOT EXISTS SET PASSWORD 'password'") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("Invalid input 'NOT'"))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input 'NOT': expected 'EXISTS' (line 1, column 19 (offset: 18))
-          |"ALTER USER foo IF NOT EXISTS SET PASSWORD 'password'"
-          |                   ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("Invalid input 'NOT'")
+      case Antlr => _.withSyntaxError(
+          """Invalid input 'NOT': expected 'EXISTS' (line 1, column 19 (offset: 18))
+            |"ALTER USER foo IF NOT EXISTS SET PASSWORD 'password'"
+            |                   ^""".stripMargin
+        )
+    }
   }
 
   test("ALTER USER foo SET STATUS SUSPENDED REMOVE HOME DATABASE") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart(
-        """Invalid input 'REMOVE': expected "SET" or <EOF> (line 1, column 37 (offset: 36))"""
-      ))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input 'REMOVE': expected 'SET' or <EOF> (line 1, column 37 (offset: 36))
-          |"ALTER USER foo SET STATUS SUSPENDED REMOVE HOME DATABASE"
-          |                                     ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart(
+          """Invalid input 'REMOVE': expected "SET" or <EOF> (line 1, column 37 (offset: 36))"""
+        )
+      case Antlr => _.withSyntaxError(
+          """Invalid input 'REMOVE': expected 'SET' or <EOF> (line 1, column 37 (offset: 36))
+            |"ALTER USER foo SET STATUS SUSPENDED REMOVE HOME DATABASE"
+            |                                     ^""".stripMargin
+        )
+    }
   }
 
   test("ALTER USER foo SET HOME DATABASE db1 REMOVE HOME DATABASE") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart(
-        """Invalid input 'REMOVE': expected ".", "SET" or <EOF> (line 1, column 38 (offset: 37))"""
-      ))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input 'REMOVE': expected a database name, 'SET' or <EOF> (line 1, column 38 (offset: 37))
-          |"ALTER USER foo SET HOME DATABASE db1 REMOVE HOME DATABASE"
-          |                                      ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart(
+          """Invalid input 'REMOVE': expected ".", "SET" or <EOF> (line 1, column 38 (offset: 37))"""
+        )
+      case Antlr => _.withSyntaxError(
+          """Invalid input 'REMOVE': expected a database name, 'SET' or <EOF> (line 1, column 38 (offset: 37))
+            |"ALTER USER foo SET HOME DATABASE db1 REMOVE HOME DATABASE"
+            |                                      ^""".stripMargin
+        )
+    }
   }
 
   test("ALTER USER foo REMOVE HOME DATABASE SET PASSWORD CHANGE REQUIRED") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("Invalid input 'SET': expected <EOF> (line 1, column 37 (offset: 36))"))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input 'SET': expected <EOF> (line 1, column 37 (offset: 36))
-          |"ALTER USER foo REMOVE HOME DATABASE SET PASSWORD CHANGE REQUIRED"
-          |                                     ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("Invalid input 'SET': expected <EOF> (line 1, column 37 (offset: 36))")
+      case Antlr => _.withSyntaxError(
+          """Invalid input 'SET': expected <EOF> (line 1, column 37 (offset: 36))
+            |"ALTER USER foo REMOVE HOME DATABASE SET PASSWORD CHANGE REQUIRED"
+            |                                     ^""".stripMargin
+        )
+    }
   }
 
   test("ALTER USER foo SET DEFAULT DATABASE db1") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("Invalid input 'DEFAULT': expected"))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input 'DEFAULT': expected 'HOME DATABASE', 'ENCRYPTED', 'PASSWORD', 'PLAINTEXT' or 'STATUS' (line 1, column 20 (offset: 19))
-          |"ALTER USER foo SET DEFAULT DATABASE db1"
-          |                    ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("Invalid input 'DEFAULT': expected")
+      case Antlr => _.withSyntaxError(
+          """Invalid input 'DEFAULT': expected 'HOME DATABASE', 'ENCRYPTED', 'PASSWORD', 'PLAINTEXT' or 'STATUS' (line 1, column 20 (offset: 19))
+            |"ALTER USER foo SET DEFAULT DATABASE db1"
+            |                    ^""".stripMargin
+        )
+    }
   }
 
   test("ALTER USER foo REMOVE DEFAULT DATABASE") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("Invalid input 'DEFAULT'"))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input 'DEFAULT': expected 'HOME DATABASE' (line 1, column 23 (offset: 22))
-          |"ALTER USER foo REMOVE DEFAULT DATABASE"
-          |                       ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("Invalid input 'DEFAULT'")
+      case Antlr => _.withSyntaxError(
+          """Invalid input 'DEFAULT': expected 'HOME DATABASE' (line 1, column 23 (offset: 22))
+            |"ALTER USER foo REMOVE DEFAULT DATABASE"
+            |                       ^""".stripMargin
+        )
+    }
   }
 
   test("ALTER USER foo SET PASSWORD $password SET PASSWORD 'password'") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessage(
-        "Duplicate SET PASSWORD clause (line 1, column 39 (offset: 38))"
-      ))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Duplicate SET PASSWORD clause (line 1, column 43 (offset: 42))
-          |"ALTER USER foo SET PASSWORD $password SET PASSWORD 'password'"
-          |                                           ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessage(
+          "Duplicate SET PASSWORD clause (line 1, column 39 (offset: 38))"
+        )
+      case Antlr => _.withSyntaxError(
+          """Duplicate SET PASSWORD clause (line 1, column 43 (offset: 42))
+            |"ALTER USER foo SET PASSWORD $password SET PASSWORD 'password'"
+            |                                           ^""".stripMargin
+        )
+    }
   }
 
   test("ALTER USER foo SET PASSWORD CHANGE NOT REQUIRED SET PASSWORD CHANGE REQUIRED") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessage(
-        "Duplicate SET PASSWORD CHANGE [NOT] REQUIRED clause (line 1, column 49 (offset: 48))"
-      ))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Duplicate SET PASSWORD CHANGE [NOT] REQUIRED clause (line 1, column 53 (offset: 52))
-          |"ALTER USER foo SET PASSWORD CHANGE NOT REQUIRED SET PASSWORD CHANGE REQUIRED"
-          |                                                     ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessage(
+          "Duplicate SET PASSWORD CHANGE [NOT] REQUIRED clause (line 1, column 49 (offset: 48))"
+        )
+      case Antlr => _.withSyntaxError(
+          """Duplicate SET PASSWORD CHANGE [NOT] REQUIRED clause (line 1, column 53 (offset: 52))
+            |"ALTER USER foo SET PASSWORD CHANGE NOT REQUIRED SET PASSWORD CHANGE REQUIRED"
+            |                                                     ^""".stripMargin
+        )
+    }
   }
 
   test("ALTER USER foo SET STATUS ACTIVE SET STATUS SUSPENDED") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessage(
-        "Duplicate SET STATUS {SUSPENDED|ACTIVE} clause (line 1, column 34 (offset: 33))"
-      ))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Duplicate SET STATUS {SUSPENDED|ACTIVE} clause (line 1, column 38 (offset: 37))
-          |"ALTER USER foo SET STATUS ACTIVE SET STATUS SUSPENDED"
-          |                                      ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessage(
+          "Duplicate SET STATUS {SUSPENDED|ACTIVE} clause (line 1, column 34 (offset: 33))"
+        )
+      case Antlr => _.withSyntaxError(
+          """Duplicate SET STATUS {SUSPENDED|ACTIVE} clause (line 1, column 38 (offset: 37))
+            |"ALTER USER foo SET STATUS ACTIVE SET STATUS SUSPENDED"
+            |                                      ^""".stripMargin
+        )
+    }
   }
 
   test("ALTER USER foo SET HOME DATABASE db SET HOME DATABASE db") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessage(
-        "Duplicate SET HOME DATABASE clause (line 1, column 37 (offset: 36))"
-      ))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Duplicate SET HOME DATABASE clause (line 1, column 41 (offset: 40))
-          |"ALTER USER foo SET HOME DATABASE db SET HOME DATABASE db"
-          |                                         ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessage(
+          "Duplicate SET HOME DATABASE clause (line 1, column 37 (offset: 36))"
+        )
+      case Antlr => _.withSyntaxError(
+          """Duplicate SET HOME DATABASE clause (line 1, column 41 (offset: 40))
+            |"ALTER USER foo SET HOME DATABASE db SET HOME DATABASE db"
+            |                                         ^""".stripMargin
+        )
+    }
   }
 
   // Alter current user/Change own password
@@ -897,77 +928,92 @@ class AlterUserAdministrationCommandParserTest extends UserAdministrationCommand
   // fails parsing
 
   test("ALTER CURRENT USER SET PASSWORD FROM 'current' TO null") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("Invalid input 'null': expected \"\\\"\", \"\\'\" or a parameter"))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input 'null': expected a parameter or a string (line 1, column 51 (offset: 50))
-          |"ALTER CURRENT USER SET PASSWORD FROM 'current' TO null"
-          |                                                   ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("Invalid input 'null': expected \"\\\"\", \"\\'\" or a parameter")
+      case Antlr => _.withSyntaxError(
+          """Invalid input 'null': expected a parameter or a string (line 1, column 51 (offset: 50))
+            |"ALTER CURRENT USER SET PASSWORD FROM 'current' TO null"
+            |                                                   ^""".stripMargin
+        )
+    }
   }
 
   test("ALTER CURRENT USER SET PASSWORD FROM $current TO 123") {
-    failsParsing[Statements]
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input '123': expected a parameter or a string (line 1, column 50 (offset: 49))
-          |"ALTER CURRENT USER SET PASSWORD FROM $current TO 123"
-          |                                                  ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case Antlr => _.withSyntaxError(
+          """Invalid input '123': expected a parameter or a string (line 1, column 50 (offset: 49))
+            |"ALTER CURRENT USER SET PASSWORD FROM $current TO 123"
+            |                                                  ^""".stripMargin
+        )
+      case JavaCc => identity
+    }
   }
 
   test("ALTER PASSWORD FROM 'current' TO 'new'") {
-    failsParsing[Statements]
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input 'PASSWORD': expected 'ALIAS', 'DATABASE', 'CURRENT USER SET PASSWORD FROM', 'SERVER' or 'USER' (line 1, column 7 (offset: 6))
-          |"ALTER PASSWORD FROM 'current' TO 'new'"
-          |       ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case Antlr => _.withSyntaxError(
+          """Invalid input 'PASSWORD': expected 'ALIAS', 'DATABASE', 'CURRENT USER SET PASSWORD FROM', 'SERVER' or 'USER' (line 1, column 7 (offset: 6))
+            |"ALTER PASSWORD FROM 'current' TO 'new'"
+            |       ^""".stripMargin
+        )
+      case JavaCc => identity
+    }
   }
 
   test("ALTER CURRENT PASSWORD FROM 'current' TO 'new'") {
-    failsParsing[Statements]
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input 'PASSWORD': expected 'USER SET PASSWORD FROM' (line 1, column 15 (offset: 14))
-          |"ALTER CURRENT PASSWORD FROM 'current' TO 'new'"
-          |               ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case Antlr => _.withSyntaxError(
+          """Invalid input 'PASSWORD': expected 'USER SET PASSWORD FROM' (line 1, column 15 (offset: 14))
+            |"ALTER CURRENT PASSWORD FROM 'current' TO 'new'"
+            |               ^""".stripMargin
+        )
+      case JavaCc => identity
+    }
+
   }
 
   test("ALTER CURRENT USER PASSWORD FROM 'current' TO 'new'") {
-    failsParsing[Statements]
-      .parseIn(Antlr)(
-        _.throws[SyntaxException].withMessage(
+    failsParsing[Statements].in {
+      case Antlr =>
+        _.withSyntaxError(
           """Invalid input 'PASSWORD': expected 'SET PASSWORD FROM' (line 1, column 20 (offset: 19))
             |"ALTER CURRENT USER PASSWORD FROM 'current' TO 'new'"
             |                    ^""".stripMargin
         )
-      )
+      case JavaCc => identity
+    }
   }
 
   test("ALTER CURRENT USER SET PASSWORD FROM 'current' TO") {
-    failsParsing[Statements]
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input '': expected a parameter or a string (line 1, column 50 (offset: 49))
-          |"ALTER CURRENT USER SET PASSWORD FROM 'current' TO"
-          |                                                  ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case Antlr => _.withSyntaxError(
+          """Invalid input '': expected a parameter or a string (line 1, column 50 (offset: 49))
+            |"ALTER CURRENT USER SET PASSWORD FROM 'current' TO"
+            |                                                  ^""".stripMargin
+        )
+      case JavaCc => identity
+    }
   }
 
   test("ALTER CURRENT USER SET PASSWORD FROM TO 'new'") {
-    failsParsing[Statements]
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input 'TO': expected a parameter or a string (line 1, column 38 (offset: 37))
-          |"ALTER CURRENT USER SET PASSWORD FROM TO 'new'"
-          |                                      ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case Antlr => _.withSyntaxError(
+          """Invalid input 'TO': expected a parameter or a string (line 1, column 38 (offset: 37))
+            |"ALTER CURRENT USER SET PASSWORD FROM TO 'new'"
+            |                                      ^""".stripMargin
+        )
+      case JavaCc => identity
+    }
   }
 
   test("ALTER CURRENT USER SET PASSWORD TO 'new'") {
-    failsParsing[Statements]
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input 'TO': expected 'FROM' (line 1, column 33 (offset: 32))
-          |"ALTER CURRENT USER SET PASSWORD TO 'new'"
-          |                                 ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case Antlr => _.withSyntaxError(
+          """Invalid input 'TO': expected 'FROM' (line 1, column 33 (offset: 32))
+            |"ALTER CURRENT USER SET PASSWORD TO 'new'"
+            |                                 ^""".stripMargin
+        )
+      case JavaCc => identity
+    }
   }
 }

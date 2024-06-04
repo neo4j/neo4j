@@ -25,7 +25,6 @@ import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
 import org.neo4j.cypher.internal.expressions.AllIterablePredicate
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.IntegerType
-import org.neo4j.exceptions.SyntaxException
 
 class ShowSettingsCommandParserTest extends AdministrationAndSchemaCommandParserTestBase {
 
@@ -538,93 +537,99 @@ class ShowSettingsCommandParserTest extends AdministrationAndSchemaCommandParser
   // Negative tests
 
   test("SHOW ALL SETTINGS") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart(
-        """Invalid input 'SETTINGS': expected
-          |  "CONSTRAINT"
-          |  "CONSTRAINTS"
-          |  "FUNCTION"
-          |  "FUNCTIONS"
-          |  "INDEX"
-          |  "INDEXES"
-          |  "PRIVILEGE"
-          |  "PRIVILEGES"
-          |  "ROLE"
-          |  "ROLES"""".stripMargin
-      ))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input 'SETTINGS': expected 'CONSTRAINT', 'CONSTRAINTS', 'FUNCTION', 'FUNCTIONS', 'INDEX', 'INDEXES', 'PRIVILEGE', 'PRIVILEGES', 'ROLE' or 'ROLES' (line 1, column 10 (offset: 9))
-          |"SHOW ALL SETTINGS"
-          |          ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart(
+          """Invalid input 'SETTINGS': expected
+            |  "CONSTRAINT"
+            |  "CONSTRAINTS"
+            |  "FUNCTION"
+            |  "FUNCTIONS"
+            |  "INDEX"
+            |  "INDEXES"
+            |  "PRIVILEGE"
+            |  "PRIVILEGES"
+            |  "ROLE"
+            |  "ROLES"""".stripMargin
+        )
+      case Antlr => _.withSyntaxError(
+          """Invalid input 'SETTINGS': expected 'CONSTRAINT', 'CONSTRAINTS', 'FUNCTION', 'FUNCTIONS', 'INDEX', 'INDEXES', 'PRIVILEGE', 'PRIVILEGES', 'ROLE' or 'ROLES' (line 1, column 10 (offset: 9))
+            |"SHOW ALL SETTINGS"
+            |          ^""".stripMargin
+        )
+    }
   }
 
   test("SHOW SETTING $foo, $bar") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart(
-        """Invalid input ',': expected
-          |  "!="
-          |  "%"""".stripMargin
-      ))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input ',': expected an expression, 'SHOW', 'TERMINATE', 'WHERE', 'YIELD' or <EOF> (line 1, column 18 (offset: 17))
-          |"SHOW SETTING $foo, $bar"
-          |                  ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart(
+          """Invalid input ',': expected
+            |  "!="
+            |  "%"""".stripMargin
+        )
+      case Antlr => _.withSyntaxError(
+          """Invalid input ',': expected an expression, 'SHOW', 'TERMINATE', 'WHERE', 'YIELD' or <EOF> (line 1, column 18 (offset: 17))
+            |"SHOW SETTING $foo, $bar"
+            |                  ^""".stripMargin
+        )
+    }
   }
 
   test("SHOW SETTING $foo $bar") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart(
-        """Invalid input '$': expected
-          |  "!="
-          |  "%"""".stripMargin
-      ))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input '$': expected an expression, 'SHOW', 'TERMINATE', 'WHERE', 'YIELD' or <EOF> (line 1, column 19 (offset: 18))
-          |"SHOW SETTING $foo $bar"
-          |                   ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart(
+          """Invalid input '$': expected
+            |  "!="
+            |  "%"""".stripMargin
+        )
+      case Antlr => _.withSyntaxError(
+          """Invalid input '$': expected an expression, 'SHOW', 'TERMINATE', 'WHERE', 'YIELD' or <EOF> (line 1, column 19 (offset: 18))
+            |"SHOW SETTING $foo $bar"
+            |                   ^""".stripMargin
+        )
+    }
   }
 
   test("SHOW SETTING 'bar', $foo") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart(
-        """Invalid input '$': expected "\"" or "\'" """
-      ))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input '$': expected a string (line 1, column 21 (offset: 20))
-          |"SHOW SETTING 'bar', $foo"
-          |                     ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart(
+          """Invalid input '$': expected "\"" or "\'" """
+        )
+      case Antlr => _.withSyntaxError(
+          """Invalid input '$': expected a string (line 1, column 21 (offset: 20))
+            |"SHOW SETTING 'bar', $foo"
+            |                     ^""".stripMargin
+        )
+    }
   }
 
   test("SHOW SETTING $foo, 'bar'") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart(
-        """Invalid input ',': expected
-          |  "!="
-          |  "%"""".stripMargin
-      ))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input ',': expected an expression, 'SHOW', 'TERMINATE', 'WHERE', 'YIELD' or <EOF> (line 1, column 18 (offset: 17))
-          |"SHOW SETTING $foo, 'bar'"
-          |                  ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart(
+          """Invalid input ',': expected
+            |  "!="
+            |  "%"""".stripMargin
+        )
+      case Antlr => _.withSyntaxError(
+          """Invalid input ',': expected an expression, 'SHOW', 'TERMINATE', 'WHERE', 'YIELD' or <EOF> (line 1, column 18 (offset: 17))
+            |"SHOW SETTING $foo, 'bar'"
+            |                  ^""".stripMargin
+        )
+    }
   }
 
   test("SHOW SETTING 'foo' 'bar'") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart(
-        """Invalid input 'bar': expected
-          |  "!="
-          |  "%"""".stripMargin
-      ))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input ''bar'': expected an expression, ',', 'SHOW', 'TERMINATE', 'WHERE', 'YIELD' or <EOF> (line 1, column 20 (offset: 19))
-          |"SHOW SETTING 'foo' 'bar'"
-          |                    ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart(
+          """Invalid input 'bar': expected
+            |  "!="
+            |  "%"""".stripMargin
+        )
+      case Antlr => _.withSyntaxError(
+          """Invalid input ''bar'': expected an expression, ',', 'SHOW', 'TERMINATE', 'WHERE', 'YIELD' or <EOF> (line 1, column 20 (offset: 19))
+            |"SHOW SETTING 'foo' 'bar'"
+            |                    ^""".stripMargin
+        )
+    }
   }
 
   test("SHOW SETTINGS YIELD (123 + xyz) AS foo") {

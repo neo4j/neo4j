@@ -96,27 +96,28 @@ trait LegacyAstParsingTestSupport {
     cypher should notParse[T]
 
   /**
-   * @deprecated use [[parseAs]], `"cypher" should parseAs[T].parseIn(JavaCc)(_.withAnyFailure)`.
+   * @deprecated use [[parseIn]], `"cypher" should parseIn[T] { case JavaCc =>_.withAnyFailure }`.
    */
   @deprecated("Use methods from AstParsingTestBase", "-")
   def failsToParseOnlyJavaCC[T <: ASTNode : ClassTag](query: String)(implicit p: Parsers[T]): Unit =
     assertFailsOnlyJavaCC(query)
 
   /**
-   * @deprecated use [[whenParsing]], `whenParsing[T].parseIn(JavaCc)(_.withAnyFailure)`.
+   * @deprecated use [[parsesIn]], `parsesIn[T] { case JavaCc =>_.withAnyFailure)` }.
    */
   @deprecated("Use methods from AstParsingTestBase", "-")
   def failsToParseOnlyJavaCC[T <: ASTNode : ClassTag]()(implicit p: Parsers[T]): Unit =
     assertFailsOnlyJavaCC(testName)
 
   /**
-   * @deprecated use [[parseAs]], `"cypher" should parseAs[T].parseIn(JavaCc)(_.withAnyFailure)`.
+   * @deprecated use [[parseIn]], `"cypher" should parseIn[T] { case JavaCc =>_.withAnyFailure }`.
    */
   @deprecated("Use methods from AstParsingTestBase", "-")
   def assertFailsOnlyJavaCC[T <: ASTNode : ClassTag](s: String)(implicit p: Parsers[T]): Unit = {
-    s should parseAs[T]
-      .parseIn(Antlr)(_.withoutErrors)
-      .parseIn(JavaCc)(_.withAnyFailure)
+    s should parseIn[T] {
+      case Antlr  => _.withoutErrors
+      case JavaCc => _.withAnyFailure
+    }
   }
 
   /**
@@ -129,15 +130,16 @@ trait LegacyAstParsingTestSupport {
     failsOnlyJavaCC: Boolean = false
   )(implicit p: Parsers[T]): Unit = {
     if (failsOnlyJavaCC)
-      cypher should parseAs[T]
-        .parseIn(Antlr)(_.withoutErrors)
-        .parseIn(JavaCc)(_.withAnyFailure.withMessage(expectedMessage))
+      cypher should parseIn[T] {
+        case Antlr  => _.withoutErrors
+        case JavaCc => _.withAnyFailure.withMessage(expectedMessage)
+      }
     else
       cypher should notParse[T].withMessage(expectedMessage)
   }
 
   /**
-   * @deprecated use [[parseAs]].
+   * @deprecated use [[parseIn]].
    */
   @deprecated("Use methods from AstParsingTestBase", "-")
   def assertFailsWithMessageStart[T <: ASTNode : ClassTag](
@@ -146,9 +148,10 @@ trait LegacyAstParsingTestSupport {
     failsOnlyJavaCC: Boolean = false
   )(implicit p: Parsers[T]): Unit = {
     if (failsOnlyJavaCC)
-      cypher should parseAs[T]
-        .parseIn(Antlr)(_.withoutErrors)
-        .parseIn(JavaCc)(_.withAnyFailure.withMessageStart(expectedMessage))
+      cypher should parseIn[T] {
+        case Antlr  => _.withoutErrors
+        case JavaCc => _.withAnyFailure.withMessageStart(expectedMessage)
+      }
     else
       cypher should notParse[T].withMessageStart(expectedMessage)
   }

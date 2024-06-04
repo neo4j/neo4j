@@ -168,84 +168,92 @@ class RemoveParserTest extends AstParsingTestBase {
   }
 
   test("REMOVE listOfNodes[0][toUpper(\"prop\")]") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("Invalid input '['"))
-      .parseIn(Antlr)(_.withMessage(
-        """Invalid input '[': expected 'FOREACH', ',', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'UNION', 'UNWIND', 'USE', 'WITH' or <EOF> (line 1, column 22 (offset: 21))
-          |"REMOVE listOfNodes[0][toUpper("prop")]"
-          |                      ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("Invalid input '['")
+      case Antlr => _.withMessage(
+          """Invalid input '[': expected 'FOREACH', ',', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'UNION', 'UNWIND', 'USE', 'WITH' or <EOF> (line 1, column 22 (offset: 21))
+            |"REMOVE listOfNodes[0][toUpper("prop")]"
+            |                      ^""".stripMargin
+        )
+    }
   }
 
   //  Invalid use of other label expression symbols than :
 
   test("REMOVE n:A|B") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("Invalid input '|'"))
-      .parseIn(Antlr)(_.withMessage(
-        """Invalid input '|': expected 'FOREACH', ',', ':', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'UNION', 'UNWIND', 'USE', 'WITH' or <EOF> (line 1, column 11 (offset: 10))
-          |"REMOVE n:A|B"
-          |           ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("Invalid input '|'")
+      case Antlr => _.withMessage(
+          """Invalid input '|': expected 'FOREACH', ',', ':', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'UNION', 'UNWIND', 'USE', 'WITH' or <EOF> (line 1, column 11 (offset: 10))
+            |"REMOVE n:A|B"
+            |           ^""".stripMargin
+        )
+    }
   }
 
   test("REMOVE n:!A") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("Invalid input '!'"))
-      .parseIn(Antlr)(_.withMessage(
-        """Invalid input '!': expected an identifier (line 1, column 10 (offset: 9))
-          |"REMOVE n:!A"
-          |          ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("Invalid input '!'")
+      case Antlr => _.withMessage(
+          """Invalid input '!': expected an identifier (line 1, column 10 (offset: 9))
+            |"REMOVE n:!A"
+            |          ^""".stripMargin
+        )
+    }
   }
 
   test("REMOVE n:%") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("Invalid input '%'"))
-      .parseIn(Antlr)(_.withMessage(
-        """Invalid input '%': expected an identifier (line 1, column 10 (offset: 9))
-          |"REMOVE n:%"
-          |          ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("Invalid input '%'")
+      case Antlr => _.withMessage(
+          """Invalid input '%': expected an identifier (line 1, column 10 (offset: 9))
+            |"REMOVE n:%"
+            |          ^""".stripMargin
+        )
+    }
   }
 
   test("REMOVE n:A&B") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("Invalid input '&'"))
-      .parseIn(Antlr)(_.withMessage(
-        """Invalid input '&': expected 'FOREACH', ',', ':', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'UNION', 'UNWIND', 'USE', 'WITH' or <EOF> (line 1, column 11 (offset: 10))
-          |"REMOVE n:A&B"
-          |           ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("Invalid input '&'")
+      case Antlr => _.withMessage(
+          """Invalid input '&': expected 'FOREACH', ',', ':', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'UNION', 'UNWIND', 'USE', 'WITH' or <EOF> (line 1, column 11 (offset: 10))
+            |"REMOVE n:A&B"
+            |           ^""".stripMargin
+        )
+    }
   }
 
   test("REMOVE n IS A&B") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("Invalid input '&'"))
-      .parseIn(Antlr)(_.withMessage(
-        """Invalid input '&': expected 'FOREACH', ',', ':', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'UNION', 'UNWIND', 'USE', 'WITH' or <EOF> (line 1, column 14 (offset: 13))
-          |"REMOVE n IS A&B"
-          |              ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("Invalid input '&'")
+      case Antlr => _.withMessage(
+          """Invalid input '&': expected 'FOREACH', ',', ':', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'UNION', 'UNWIND', 'USE', 'WITH' or <EOF> (line 1, column 14 (offset: 13))
+            |"REMOVE n IS A&B"
+            |              ^""".stripMargin
+        )
+    }
   }
 
   test("REMOVE :A") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("Invalid input ':'"))
-      .parseIn(Antlr)(_.withMessage(
-        """Invalid input ':': expected an expression (line 1, column 8 (offset: 7))
-          |"REMOVE :A"
-          |        ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("Invalid input ':'")
+      case Antlr => _.withMessage(
+          """Invalid input ':': expected an expression (line 1, column 8 (offset: 7))
+            |"REMOVE :A"
+            |        ^""".stripMargin
+        )
+    }
   }
 
   test("REMOVE IS A") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("Invalid input 'A': expected \"IS\""))
-      .parseIn(Antlr)(_.withMessage(
-        """Invalid input 'A': expected an expression, '.', ':', 'IS' or '[' (line 1, column 11 (offset: 10))
-          |"REMOVE IS A"
-          |           ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("Invalid input 'A': expected \"IS\"")
+      case Antlr => _.withMessage(
+          """Invalid input 'A': expected an expression, '.', ':', 'IS' or '[' (line 1, column 11 (offset: 10))
+            |"REMOVE IS A"
+            |           ^""".stripMargin
+        )
+    }
   }
 }

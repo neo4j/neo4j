@@ -21,7 +21,6 @@ import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.factory.neo4j.AdministrationAndSchemaCommandParserTestBase
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
-import org.neo4j.exceptions.SyntaxException
 
 class PropertyPrivilegeAdministrationCommandParserTest extends AdministrationAndSchemaCommandParserTestBase {
 
@@ -244,68 +243,72 @@ class PropertyPrivilegeAdministrationCommandParserTest extends AdministrationAnd
 
           test(s"$verb$immutableString SET PROPERTYS { prop } ON GRAPH * $preposition role") {
             val offset = verb.length + immutableString.length + 5
-            failsParsing[Statements]
-              .parseIn(JavaCc)(_.withMessage(
-                s"""Invalid input 'PROPERTYS': expected
-                   |  "DATABASE"
-                   |  "LABEL"
-                   |  "PASSWORD"
-                   |  "PASSWORDS"
-                   |  "PROPERTY"
-                   |  "USER" (line 1, column ${offset + 1} (offset: $offset))""".stripMargin
-              ))
-              .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-                """Invalid input 'PROPERTYS': expected 'DATABASE ACCESS', 'LABEL', 'PASSWORD', 'PASSWORDS', 'PROPERTY' or 'USER'"""
-              ))
+            failsParsing[Statements].in {
+              case JavaCc => _.withMessage(
+                  s"""Invalid input 'PROPERTYS': expected
+                     |  "DATABASE"
+                     |  "LABEL"
+                     |  "PASSWORD"
+                     |  "PASSWORDS"
+                     |  "PROPERTY"
+                     |  "USER" (line 1, column ${offset + 1} (offset: $offset))""".stripMargin
+                )
+              case Antlr => _.withSyntaxErrorContaining(
+                  """Invalid input 'PROPERTYS': expected 'DATABASE ACCESS', 'LABEL', 'PASSWORD', 'PASSWORDS', 'PROPERTY' or 'USER'"""
+                )
+            }
           }
 
           test(s"$verb$immutableString SET PROPERTIES { prop } ON GRAPH * $preposition role") {
             val offset = verb.length + immutableString.length + 5
-            failsParsing[Statements]
-              .parseIn(JavaCc)(_.withMessage(
-                s"""Invalid input 'PROPERTIES': expected
-                   |  "DATABASE"
-                   |  "LABEL"
-                   |  "PASSWORD"
-                   |  "PASSWORDS"
-                   |  "PROPERTY"
-                   |  "USER" (line 1, column ${offset + 1} (offset: $offset))""".stripMargin
-              ))
-              .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-                """Invalid input 'PROPERTIES': expected 'DATABASE ACCESS', 'LABEL', 'PASSWORD', 'PASSWORDS', 'PROPERTY' or 'USER'"""
-              ))
+            failsParsing[Statements].in {
+              case JavaCc => _.withMessage(
+                  s"""Invalid input 'PROPERTIES': expected
+                     |  "DATABASE"
+                     |  "LABEL"
+                     |  "PASSWORD"
+                     |  "PASSWORDS"
+                     |  "PROPERTY"
+                     |  "USER" (line 1, column ${offset + 1} (offset: $offset))""".stripMargin
+                )
+              case Antlr => _.withSyntaxErrorContaining(
+                  """Invalid input 'PROPERTIES': expected 'DATABASE ACCESS', 'LABEL', 'PASSWORD', 'PASSWORDS', 'PROPERTY' or 'USER'"""
+                )
+            }
           }
 
           // Database instead of graph keyword
 
           test(s"$verb$immutableString SET PROPERTY { prop } ON DATABASES * $preposition role") {
             val offset = verb.length + immutableString.length + 26
-            failsParsing[Statements]
-              .parseIn(JavaCc)(_.withMessage(
-                s"""Invalid input 'DATABASES': expected "DEFAULT", "GRAPH", "GRAPHS" or "HOME" (line 1, column ${offset + 1} (offset: $offset))"""
-              ))
-              .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-                s"""Invalid input 'DATABASES': expected 'GRAPH', 'DEFAULT GRAPH', 'HOME GRAPH' or 'GRAPHS' (line 1, column ${offset + 1} (offset: $offset))"""
-              ))
+            failsParsing[Statements].in {
+              case JavaCc => _.withMessage(
+                  s"""Invalid input 'DATABASES': expected "DEFAULT", "GRAPH", "GRAPHS" or "HOME" (line 1, column ${offset + 1} (offset: $offset))"""
+                )
+              case Antlr => _.withSyntaxErrorContaining(
+                  s"""Invalid input 'DATABASES': expected 'GRAPH', 'DEFAULT GRAPH', 'HOME GRAPH' or 'GRAPHS' (line 1, column ${offset + 1} (offset: $offset))"""
+                )
+            }
           }
 
           test(s"$verb$immutableString SET PROPERTY { prop } ON DATABASE foo $preposition role") {
             val offset = verb.length + immutableString.length + 26
-            failsParsing[Statements]
-              .parseIn(JavaCc)(_.withMessage(
-                s"""Invalid input 'DATABASE': expected "DEFAULT", "GRAPH", "GRAPHS" or "HOME" (line 1, column ${offset + 1} (offset: $offset))"""
-              ))
-              .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-                s"""Invalid input 'DATABASE': expected 'GRAPH', 'DEFAULT GRAPH', 'HOME GRAPH' or 'GRAPHS' (line 1, column ${offset + 1} (offset: $offset))"""
-              ))
+            failsParsing[Statements].in {
+              case JavaCc => _.withMessage(
+                  s"""Invalid input 'DATABASE': expected "DEFAULT", "GRAPH", "GRAPHS" or "HOME" (line 1, column ${offset + 1} (offset: $offset))"""
+                )
+              case Antlr => _.withSyntaxErrorContaining(
+                  s"""Invalid input 'DATABASE': expected 'GRAPH', 'DEFAULT GRAPH', 'HOME GRAPH' or 'GRAPHS' (line 1, column ${offset + 1} (offset: $offset))"""
+                )
+            }
           }
 
           test(s"$verb$immutableString SET PROPERTY { prop } ON HOME DATABASE $preposition role") {
-            failsParsing[Statements]
+            failsParsing[Statements].withMessageStart("Invalid input")
           }
 
           test(s"$verb$immutableString SET PROPERTY { prop } ON DEFAULT DATABASE $preposition role") {
-            failsParsing[Statements]
+            failsParsing[Statements].withMessageStart("Invalid input")
           }
       }
   }

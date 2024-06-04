@@ -25,7 +25,6 @@ import org.neo4j.cypher.internal.expressions.SignedHexIntegerLiteral
 import org.neo4j.cypher.internal.expressions.SignedOctalIntegerLiteral
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.CTAny
-import org.neo4j.exceptions.SyntaxException
 
 /* Tests for combining listing and terminating commands */
 class CombinedCommandParserTest extends AdministrationAndSchemaCommandParserTestBase {
@@ -1994,13 +1993,14 @@ class CombinedCommandParserTest extends AdministrationAndSchemaCommandParserTest
   }
 
   test("MATCH (n) TERMINATE TRANSACTION") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("Invalid input"))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input 'TERMINATE': expected a graph pattern, 'FOREACH', ',', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'UNION', 'UNWIND', 'USE', 'USING', 'WHERE', 'WITH' or <EOF> (line 1, column 11 (offset: 10))
-          |"MATCH (n) TERMINATE TRANSACTION"
-          |           ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("Invalid input")
+      case Antlr => _.withSyntaxError(
+          """Invalid input 'TERMINATE': expected a graph pattern, 'FOREACH', ',', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'UNION', 'UNWIND', 'USE', 'USING', 'WHERE', 'WITH' or <EOF> (line 1, column 11 (offset: 10))
+            |"MATCH (n) TERMINATE TRANSACTION"
+            |           ^""".stripMargin
+        )
+    }
   }
 
 }

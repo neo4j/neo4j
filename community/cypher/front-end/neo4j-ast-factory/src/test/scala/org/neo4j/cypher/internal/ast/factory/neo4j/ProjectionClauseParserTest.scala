@@ -44,13 +44,14 @@ class ProjectionClauseParserTest extends AstParsingTestBase {
   }
 
   test("WITH ") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("Invalid input '': expected \"*\", \"DISTINCT\" or an expression"))
-      .parseIn(Antlr)(_.withMessage(
-        """Invalid input '': expected an expression, '*' or 'DISTINCT' (line 1, column 5 (offset: 4))
-          |"WITH"
-          |     ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("Invalid input '': expected \"*\", \"DISTINCT\" or an expression")
+      case Antlr => _.withMessage(
+          """Invalid input '': expected an expression, '*' or 'DISTINCT' (line 1, column 5 (offset: 4))
+            |"WITH"
+            |     ^""".stripMargin
+        )
+    }
   }
 
   test("RETURN *") {
@@ -72,22 +73,24 @@ class ProjectionClauseParserTest extends AstParsingTestBase {
   }
 
   test("RETURN ") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("Invalid input '': expected \"*\", \"DISTINCT\" or an expression"))
-      .parseIn(Antlr)(_.withMessage(
-        """Invalid input '': expected an expression, '*' or 'DISTINCT' (line 1, column 7 (offset: 6))
-          |"RETURN"
-          |       ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("Invalid input '': expected \"*\", \"DISTINCT\" or an expression")
+      case Antlr => _.withMessage(
+          """Invalid input '': expected an expression, '*' or 'DISTINCT' (line 1, column 7 (offset: 6))
+            |"RETURN"
+            |       ^""".stripMargin
+        )
+    }
   }
 
   test("RETURN GRAPH *") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("Invalid input '': expected \"+\" or \"-\""))
-      .parseIn(Antlr)(_.withMessage(
-        """Invalid input '': expected an expression (line 1, column 15 (offset: 14))
-          |"RETURN GRAPH *"
-          |               ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("Invalid input '': expected \"+\" or \"-\"")
+      case Antlr => _.withMessage(
+          """Invalid input '': expected an expression (line 1, column 15 (offset: 14))
+            |"RETURN GRAPH *"
+            |               ^""".stripMargin
+        )
+    }
   }
 }

@@ -21,7 +21,6 @@ import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
 import org.neo4j.cypher.internal.expressions.Expression
-import org.neo4j.exceptions.SyntaxException
 
 class ConcatenationParserTest extends AstParsingTestBase {
 
@@ -65,42 +64,46 @@ class ConcatenationParserTest extends AstParsingTestBase {
   }
 
   test("RETURN a ||") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("Invalid input '': expected \"+\" or \"-\""))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input '': expected an expression (line 1, column 12 (offset: 11))
-          |"RETURN a ||"
-          |            ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("Invalid input '': expected \"+\" or \"-\"")
+      case Antlr => _.withSyntaxError(
+          """Invalid input '': expected an expression (line 1, column 12 (offset: 11))
+            |"RETURN a ||"
+            |            ^""".stripMargin
+        )
+    }
   }
 
   test("RETURN || b") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("Invalid input '||': expected \"*\", \"DISTINCT\" or an expression"))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input '||': expected an expression, '*' or 'DISTINCT' (line 1, column 8 (offset: 7))
-          |"RETURN || b"
-          |        ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("Invalid input '||': expected \"*\", \"DISTINCT\" or an expression")
+      case Antlr => _.withSyntaxError(
+          """Invalid input '||': expected an expression, '*' or 'DISTINCT' (line 1, column 8 (offset: 7))
+            |"RETURN || b"
+            |        ^""".stripMargin
+        )
+    }
   }
 
   test("RETURN a ||| b") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("Invalid input '|': expected \"+\" or \"-\""))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input '|': expected an expression (line 1, column 12 (offset: 11))
-          |"RETURN a ||| b"
-          |            ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("Invalid input '|': expected \"+\" or \"-\"")
+      case Antlr => _.withSyntaxError(
+          """Invalid input '|': expected an expression (line 1, column 12 (offset: 11))
+            |"RETURN a ||| b"
+            |            ^""".stripMargin
+        )
+    }
   }
 
   test("RETURN a || || b") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("Invalid input '||': expected \"+\" or \"-\""))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input '||': expected an expression (line 1, column 13 (offset: 12))
-          |"RETURN a || || b"
-          |             ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("Invalid input '||': expected \"+\" or \"-\"")
+      case Antlr => _.withSyntaxError(
+          """Invalid input '||': expected an expression (line 1, column 13 (offset: 12))
+            |"RETURN a || || b"
+            |             ^""".stripMargin
+        )
+    }
   }
 }

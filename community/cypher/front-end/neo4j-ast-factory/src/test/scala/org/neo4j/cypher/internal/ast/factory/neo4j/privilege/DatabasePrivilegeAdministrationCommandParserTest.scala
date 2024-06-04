@@ -21,7 +21,6 @@ import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.factory.neo4j.AdministrationAndSchemaCommandParserTestBase
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
-import org.neo4j.exceptions.SyntaxException
 
 class DatabasePrivilegeAdministrationCommandParserTest extends AdministrationAndSchemaCommandParserTestBase {
   private val databaseScopeFoo = ast.NamedDatabasesScope(Seq(literalFoo))(_)
@@ -231,57 +230,63 @@ class DatabasePrivilegeAdministrationCommandParserTest extends AdministrationAnd
 
               test(s"$verb$immutableString $privilege ON HOME DATABASES $preposition role") {
                 // 'databases' instead of 'database'
-                failsParsing[Statements]
-                  .parseIn(JavaCc)(_.withMessageStart("""Invalid input 'DATABASES': expected "DATABASE""""))
-                  .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-                    """Invalid input 'DATABASES': expected 'DATABASE'"""
-                  ))
+                failsParsing[Statements].in {
+                  case JavaCc => _.withMessageStart("""Invalid input 'DATABASES': expected "DATABASE"""")
+                  case Antlr => _.withSyntaxErrorContaining(
+                      """Invalid input 'DATABASES': expected 'DATABASE'"""
+                    )
+                }
 
               }
 
               test(s"$verb$immutableString $privilege ON HOME DATABASE foo $preposition role") {
                 // both home and database name
-                failsParsing[Statements]
-                  .parseIn(JavaCc)(_.withMessageStart(s"""Invalid input 'foo': expected "$preposition""""))
-                  .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-                    s"""Invalid input 'foo': expected '$preposition'"""
-                  ))
+                failsParsing[Statements].in {
+                  case JavaCc => _.withMessageStart(s"""Invalid input 'foo': expected "$preposition"""")
+                  case Antlr => _.withSyntaxErrorContaining(
+                      s"""Invalid input 'foo': expected '$preposition'"""
+                    )
+                }
               }
 
               test(s"$verb$immutableString $privilege ON HOME DATABASE * $preposition role") {
                 // both home and *
-                failsParsing[Statements]
-                  .parseIn(JavaCc)(_.withMessageStart(s"""Invalid input '*': expected "$preposition""""))
-                  .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-                    s"""Invalid input '*': expected '$preposition'"""
-                  ))
+                failsParsing[Statements].in {
+                  case JavaCc => _.withMessageStart(s"""Invalid input '*': expected "$preposition"""")
+                  case Antlr => _.withSyntaxErrorContaining(
+                      s"""Invalid input '*': expected '$preposition'"""
+                    )
+                }
               }
 
               test(s"$verb$immutableString $privilege ON DEFAULT DATABASES $preposition role") {
                 // 'databases' instead of 'database'
-                failsParsing[Statements]
-                  .parseIn(JavaCc)(_.withMessageStart("""Invalid input 'DATABASES': expected "DATABASE""""))
-                  .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-                    """Invalid input 'DATABASES': expected 'DATABASE'""".stripMargin
-                  ))
+                failsParsing[Statements].in {
+                  case JavaCc => _.withMessageStart("""Invalid input 'DATABASES': expected "DATABASE"""")
+                  case Antlr => _.withSyntaxErrorContaining(
+                      """Invalid input 'DATABASES': expected 'DATABASE'""".stripMargin
+                    )
+                }
               }
 
               test(s"$verb$immutableString $privilege ON DEFAULT DATABASE foo $preposition role") {
                 // both default and database name
-                failsParsing[Statements]
-                  .parseIn(JavaCc)(_.withMessageStart(s"""Invalid input 'foo': expected "$preposition""""))
-                  .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-                    s"""Invalid input 'foo': expected '$preposition'""".stripMargin
-                  ))
+                failsParsing[Statements].in {
+                  case JavaCc => _.withMessageStart(s"""Invalid input 'foo': expected "$preposition"""")
+                  case Antlr => _.withSyntaxErrorContaining(
+                      s"""Invalid input 'foo': expected '$preposition'""".stripMargin
+                    )
+                }
               }
 
               test(s"$verb$immutableString $privilege ON DEFAULT DATABASE * $preposition role") {
                 // both default and *
-                failsParsing[Statements]
-                  .parseIn(JavaCc)(_.withMessageStart(s"""Invalid input '*': expected "$preposition""""))
-                  .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-                    s"""Invalid input '*': expected '$preposition'""".stripMargin
-                  ))
+                failsParsing[Statements].in {
+                  case JavaCc => _.withMessageStart(s"""Invalid input '*': expected "$preposition"""")
+                  case Antlr => _.withSyntaxErrorContaining(
+                      s"""Invalid input '*': expected '$preposition'""".stripMargin
+                    )
+                }
               }
           }
 
@@ -681,11 +686,12 @@ class DatabasePrivilegeAdministrationCommandParserTest extends AdministrationAnd
             val expected =
               """Invalid input 'TRANSACTIONS': expected
                 |  "ACCESS"""".stripMargin
-            failsParsing[Statements]
-              .parseIn(JavaCc)(_.withMessageStart(expected))
-              .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-                """Invalid input 'TRANSACTIONS': expected"""
-              ))
+            failsParsing[Statements].in {
+              case JavaCc => _.withMessageStart(expected)
+              case Antlr => _.withSyntaxErrorContaining(
+                  """Invalid input 'TRANSACTIONS': expected"""
+                )
+            }
           }
 
           test(s"$verb$immutableString TRANSACTIONS (*) ON DATABASES * $preposition role") {
@@ -693,11 +699,12 @@ class DatabasePrivilegeAdministrationCommandParserTest extends AdministrationAnd
             val expected =
               """Invalid input 'TRANSACTIONS': expected
                 |  "ACCESS"""".stripMargin
-            failsParsing[Statements]
-              .parseIn(JavaCc)(_.withMessageStart(expected))
-              .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-                """Invalid input 'TRANSACTIONS': expected"""
-              ))
+            failsParsing[Statements].in {
+              case JavaCc => _.withMessageStart(expected)
+              case Antlr => _.withSyntaxErrorContaining(
+                  """Invalid input 'TRANSACTIONS': expected"""
+                )
+            }
           }
 
           test(s"$verb$immutableString TRANSACTIONS MANAGEMENT ON DATABASES * $preposition role") {
@@ -705,11 +712,12 @@ class DatabasePrivilegeAdministrationCommandParserTest extends AdministrationAnd
             val expected =
               """Invalid input 'TRANSACTIONS': expected
                 |  "ACCESS"""".stripMargin
-            failsParsing[Statements]
-              .parseIn(JavaCc)(_.withMessageStart(expected))
-              .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-                """Invalid input 'TRANSACTIONS': expected"""
-              ))
+            failsParsing[Statements].in {
+              case JavaCc => _.withMessageStart(expected)
+              case Antlr => _.withSyntaxErrorContaining(
+                  """Invalid input 'TRANSACTIONS': expected"""
+                )
+            }
           }
 
           test(s"$verb$immutableString TRANSACTIONS MANAGEMENT (*) ON DATABASES * $preposition role") {
@@ -717,11 +725,12 @@ class DatabasePrivilegeAdministrationCommandParserTest extends AdministrationAnd
             val expected =
               """Invalid input 'TRANSACTIONS': expected
                 |  "ACCESS"""".stripMargin
-            failsParsing[Statements]
-              .parseIn(JavaCc)(_.withMessageStart(expected))
-              .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-                """Invalid input 'TRANSACTIONS': expected"""
-              ))
+            failsParsing[Statements].in {
+              case JavaCc => _.withMessageStart(expected)
+              case Antlr => _.withSyntaxErrorContaining(
+                  """Invalid input 'TRANSACTIONS': expected"""
+                )
+            }
           }
       }
   }

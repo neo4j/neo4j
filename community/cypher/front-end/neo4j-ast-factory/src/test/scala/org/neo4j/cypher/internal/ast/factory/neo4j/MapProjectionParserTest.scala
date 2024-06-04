@@ -78,32 +78,35 @@ class MapProjectionParserTest extends AstParsingTestBase with LegacyAstParsingTe
   }
 
   test("map with non-string key should not parse") {
-    "abc {42: 'value'}" should notParse[MapProjection]
-      .parseIn(JavaCc)(_.withMessageStart("Encountered \" <UNSIGNED_DECIMAL_INTEGER> \"42\"\" at line 1, column 6."))
-      .parseIn(Antlr)(_.withMessage(
-        """Invalid input '42': expected an identifier, '.' or '}' (line 1, column 6 (offset: 5))
-          |"abc {42: 'value'}"
-          |      ^""".stripMargin
-      ))
+    "abc {42: 'value'}" should notParse[MapProjection].in {
+      case JavaCc => _.withMessageStart("Encountered \" <UNSIGNED_DECIMAL_INTEGER> \"42\"\" at line 1, column 6.")
+      case Antlr => _.withMessage(
+          """Invalid input '42': expected an identifier, '.' or '}' (line 1, column 6 (offset: 5))
+            |"abc {42: 'value'}"
+            |      ^""".stripMargin
+        )
+    }
   }
 
   test("map without comma separation should not parse") {
-    "abc {key1: 'value' key2: 42}" should notParse[MapProjection]
-      .parseIn(JavaCc)(_.withMessageStart("Encountered \" <IDENTIFIER> \"key2\"\" at line 1, column 20."))
-      .parseIn(Antlr)(_.withMessage(
-        """Invalid input 'key2': expected an expression, ',' or '}' (line 1, column 20 (offset: 19))
-          |"abc {key1: 'value' key2: 42}"
-          |                    ^""".stripMargin
-      ))
+    "abc {key1: 'value' key2: 42}" should notParse[MapProjection].in {
+      case JavaCc => _.withMessageStart("Encountered \" <IDENTIFIER> \"key2\"\" at line 1, column 20.")
+      case Antlr => _.withMessage(
+          """Invalid input 'key2': expected an expression, ',' or '}' (line 1, column 20 (offset: 19))
+            |"abc {key1: 'value' key2: 42}"
+            |                    ^""".stripMargin
+        )
+    }
   }
 
   test("map with invalid start comma should not parse") {
-    "abc {, key: 'value'}" should notParse[MapProjection]
-      .parseIn(JavaCc)(_.withMessageStart("Encountered \" \",\" \",\"\" at line 1, column 6."))
-      .parseIn(Antlr)(_.withMessage(
-        """Invalid input ',': expected an identifier, '.' or '}' (line 1, column 6 (offset: 5))
-          |"abc {, key: 'value'}"
-          |      ^""".stripMargin
-      ))
+    "abc {, key: 'value'}" should notParse[MapProjection].in {
+      case JavaCc => _.withMessageStart("Encountered \" \",\" \",\"\" at line 1, column 6.")
+      case Antlr => _.withMessage(
+          """Invalid input ',': expected an identifier, '.' or '}' (line 1, column 6 (offset: 5))
+            |"abc {, key: 'value'}"
+            |      ^""".stripMargin
+        )
+    }
   }
 }

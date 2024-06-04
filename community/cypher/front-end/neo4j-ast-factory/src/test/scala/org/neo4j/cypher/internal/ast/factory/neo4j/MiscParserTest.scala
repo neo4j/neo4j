@@ -35,7 +35,7 @@ import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.ParseSuccess
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTestSupport
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.ParserSupport.Explicit
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.Parses
 import org.neo4j.cypher.internal.expressions.AllIterablePredicate
 import org.neo4j.cypher.internal.expressions.AnyIterablePredicate
 import org.neo4j.cypher.internal.expressions.CountStar
@@ -216,18 +216,19 @@ class MiscParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport
       "[x = ()--()--()--()--()--()--()--()--()--()--()]"
     )
     for (l <- listLiterals) withClue(l) {
-      l should parseAs[Expression].withAstLike(_ shouldBe a[ListLiteral])
+      l should parse[Expression].withAstLike(_ shouldBe a[ListLiteral])
     }
   }
 
   test("should not parse pattern comprehensions with single nodes") {
-    "[p = (x) | p]" should notParse[PatternComprehension]
-      .parseIn(JavaCc)(_.withMessageStart("Encountered \" \"|\" \"|\"\" at line 1, column 10."))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input '|': expected '-' (line 1, column 10 (offset: 9))
-          |"[p = (x) | p]"
-          |          ^""".stripMargin
-      ))
+    "[p = (x) | p]" should notParse[PatternComprehension].in {
+      case JavaCc => _.withMessageStart("Encountered \" \"|\" \"|\"\" at line 1, column 10.")
+      case Antlr => _.withSyntaxError(
+          """Invalid input '|': expected '-' (line 1, column 10 (offset: 9))
+            |"[p = (x) | p]"
+            |          ^""".stripMargin
+        )
+    }
   }
 
   test("should handle escaping in string literals") {
@@ -244,7 +245,7 @@ class MiscParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport
 
   test("Unicode escape outside of string literals") {
     // https://neo4j.com/docs/cypher-manual/current/syntax/parsing/#_using_unicodes_in_cypher
-    "M\\u0041TCH (m) RETURN m" should parseAs[Statement].toAstPositioned(
+    "M\\u0041TCH (m) RETURN m" should parse[Statement].toAstPositioned(
       SingleQuery(Seq(
         Match(
           optional = false,
@@ -452,138 +453,146 @@ class MiscParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport
   }
 
   test("MATCH (a)->(b) RETURN *") {
-    failsParsing[Statements](Explicit(JavaCc))
-      .throws[OpenCypherExceptionFactory.SyntaxException]
-      .withMessageStart("Invalid input '-': expected")
-
-    // Note, antlr will not produce the same errors, it will not even fail on the same token always as shown here
-    failsParsing[Statements](Explicit(Antlr))
-      .throws[SyntaxException]
-      .withMessage(
-        """Invalid input '>': expected '-' (line 1, column 11 (offset: 10))
-          |"MATCH (a)->(b) RETURN *"
-          |           ^""".stripMargin
-      )
+    failsParsing[Statements].in {
+      case JavaCc => (a: Parses[Statements]) =>
+          a.throws[OpenCypherExceptionFactory.SyntaxException]
+            .withMessageStart("Invalid input '-': expected")
+      case Antlr => (a: Parses[Statements]) =>
+          a.throws[SyntaxException]
+            .withMessage(
+              """Invalid input '>': expected '-' (line 1, column 11 (offset: 10))
+                |"MATCH (a)->(b) RETURN *"
+                |           ^""".stripMargin
+            )
+    }
   }
 
   test("MATCH (a)--->(b) RETURN *") {
-    failsParsing[Statements](Explicit(JavaCc))
-      .throws[OpenCypherExceptionFactory.SyntaxException]
-      .withMessageStart("Invalid input '-': expected")
-
-    failsParsing[Statements](Explicit(Antlr))
-      .throws[SyntaxException]
-      .withMessage(
-        """Invalid input '-': expected '(' (line 1, column 12 (offset: 11))
-          |"MATCH (a)--->(b) RETURN *"
-          |            ^""".stripMargin
-      )
+    failsParsing[Statements].in {
+      case JavaCc =>
+        _.throws[OpenCypherExceptionFactory.SyntaxException]
+          .withMessageStart("Invalid input '-': expected")
+      case Antlr =>
+        _.throws[SyntaxException]
+          .withMessage(
+            """Invalid input '-': expected '(' (line 1, column 12 (offset: 11))
+              |"MATCH (a)--->(b) RETURN *"
+              |            ^""".stripMargin
+          )
+    }
   }
 
   test("RETURN RETURN 1") {
-    failsParsing[Statements](Explicit(JavaCc))
-      .throws[OpenCypherExceptionFactory.SyntaxException]
-      .withMessageStart("Invalid input '1': expected")
-
-    failsParsing[Statements](Explicit(Antlr))
-      .throws[SyntaxException]
-      .withMessage(
-        """Invalid input '1': expected an expression, 'FOREACH', ',', 'AS', 'ORDER BY', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'LIMIT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'SKIP', 'UNION', 'UNWIND', 'USE', 'WITH' or <EOF> (line 1, column 15 (offset: 14))
-          |"RETURN RETURN 1"
-          |               ^""".stripMargin
-      )
+    failsParsing[Statements].in {
+      case JavaCc =>
+        _.throws[OpenCypherExceptionFactory.SyntaxException]
+          .withMessageStart("Invalid input '1': expected")
+      case Antlr =>
+        _.throws[SyntaxException]
+          .withMessage(
+            """Invalid input '1': expected an expression, 'FOREACH', ',', 'AS', 'ORDER BY', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'LIMIT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'SKIP', 'UNION', 'UNWIND', 'USE', 'WITH' or <EOF> (line 1, column 15 (offset: 14))
+              |"RETURN RETURN 1"
+              |               ^""".stripMargin
+          )
+    }
   }
 
   test("RETURN 'hell") {
-    failsParsing[Statements](Explicit(JavaCc))
-      .throws[TokenMgrException]
-      .withMessageStart("Lexical error at line 1, column 13.  Encountered: <EOF> after : \"\"")
-
-    failsParsing[Statements](Explicit(Antlr))
-      .throws[SyntaxException]
-      .withMessage(
-        """Failed to parse string literal. The query must contain an even number of non-escaped quotes. (line 1, column 8 (offset: 7))
-          |"RETURN 'hell"
-          |        ^""".stripMargin
-      )
+    failsParsing[Statements].in {
+      case JavaCc =>
+        _.throws[TokenMgrException]
+          .withMessageStart("Lexical error at line 1, column 13.  Encountered: <EOF> after : \"\"")
+      case Antlr =>
+        _.throws[SyntaxException]
+          .withMessage(
+            """Failed to parse string literal. The query must contain an even number of non-escaped quotes. (line 1, column 8 (offset: 7))
+              |"RETURN 'hell"
+              |        ^""".stripMargin
+          )
+    }
   }
 
   test("correct positions in errors with unicode escapes and comments") {
     val query = "/* \\u003A\\u0029 */  MATCH /* */ (a)/* */->/* */(b)/* */RETURN *"
-    query should notParse[Statements](Explicit(JavaCc))
-      .throws[OpenCypherExceptionFactory.SyntaxException]
-      .withMessageStart("Invalid input '-': expected")
-      .withMessageContaining("(line 1, column 41 (offset: 40))")
-
-    query should notParse[Statements](Explicit(Antlr))
-      .throws[SyntaxException]
-      .withMessage(
-        s"""Invalid input '>': expected '-' (line 1, column 42 (offset: 41))
-           |"$query"
-           |                                          ^""".stripMargin
-      )
+    query should notParse[Statements].in {
+      case JavaCc =>
+        _.throws[OpenCypherExceptionFactory.SyntaxException]
+          .withMessageStart("Invalid input '-': expected")
+          .withMessageContaining("(line 1, column 41 (offset: 40))")
+      case Antlr =>
+        _.withSyntaxError(
+          s"""Invalid input '>': expected '-' (line 1, column 42 (offset: 41))
+             |"$query"
+             |                                          ^""".stripMargin
+        )
+    }
   }
 
   test("MATCH (n) WHERE n.prop = 'ab + 1") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("Lexical error at"))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Failed to parse string literal. The query must contain an even number of non-escaped quotes. (line 1, column 26 (offset: 25))
-          |"MATCH (n) WHERE n.prop = 'ab + 1"
-          |                          ^""".stripMargin
-      ))
-
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("Lexical error at")
+      case Antlr => _.withSyntaxError(
+          """Failed to parse string literal. The query must contain an even number of non-escaped quotes. (line 1, column 26 (offset: 25))
+            |"MATCH (n) WHERE n.prop = 'ab + 1"
+            |                          ^""".stripMargin
+        )
+    }
   }
 
   test("MATCH (n) WHERE n.prop = 'ab'' + 1") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("Lexical error at"))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Failed to parse string literal. The query must contain an even number of non-escaped quotes. (line 1, column 30 (offset: 29))
-          |"MATCH (n) WHERE n.prop = 'ab'' + 1"
-          |                              ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("Lexical error at")
+      case Antlr => _.withSyntaxError(
+          """Failed to parse string literal. The query must contain an even number of non-escaped quotes. (line 1, column 30 (offset: 29))
+            |"MATCH (n) WHERE n.prop = 'ab'' + 1"
+            |                              ^""".stripMargin
+        )
+    }
   }
 
   test("MATCH (n) WHERE n.prop = '") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("Lexical error at"))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Failed to parse string literal. The query must contain an even number of non-escaped quotes. (line 1, column 26 (offset: 25))
-          |"MATCH (n) WHERE n.prop = '"
-          |                          ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("Lexical error at")
+      case Antlr => _.withSyntaxError(
+          """Failed to parse string literal. The query must contain an even number of non-escaped quotes. (line 1, column 26 (offset: 25))
+            |"MATCH (n) WHERE n.prop = '"
+            |                          ^""".stripMargin
+        )
+    }
   }
 
   test("MATCH (n) WHERE n.'prop") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("Lexical error at"))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Failed to parse string literal. The query must contain an even number of non-escaped quotes. (line 1, column 19 (offset: 18))
-          |"MATCH (n) WHERE n.'prop"
-          |                   ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("Lexical error at")
+      case Antlr => _.withSyntaxError(
+          """Failed to parse string literal. The query must contain an even number of non-escaped quotes. (line 1, column 19 (offset: 18))
+            |"MATCH (n) WHERE n.'prop"
+            |                   ^""".stripMargin
+        )
+    }
   }
 
   test("SHOW SETTING 'a', 'b''") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("Lexical error at"))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Failed to parse string literal. The query must contain an even number of non-escaped quotes. (line 1, column 22 (offset: 21))
-          |"SHOW SETTING 'a', 'b''"
-          |                      ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("Lexical error at")
+      case Antlr => _.withSyntaxError(
+          """Failed to parse string literal. The query must contain an even number of non-escaped quotes. (line 1, column 22 (offset: 21))
+            |"SHOW SETTING 'a', 'b''"
+            |                      ^""".stripMargin
+        )
+    }
 
   }
 
   test("MATCH (n) WHERE n.prop = 'ab\\'c' AND 'b\\'c' AND 'c\\'") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("Lexical error at line 1, column 53"))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Failed to parse string literal. The query must contain an even number of non-escaped quotes. (line 1, column 49 (offset: 48))
-          |"MATCH (n) WHERE n.prop = 'ab\'c' AND 'b\'c' AND 'c\'"
-          |                                                 ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("Lexical error at line 1, column 53")
+      case Antlr => _.withSyntaxError(
+          """Failed to parse string literal. The query must contain an even number of non-escaped quotes. (line 1, column 49 (offset: 48))
+            |"MATCH (n) WHERE n.prop = 'ab\'c' AND 'b\'c' AND 'c\'"
+            |                                                 ^""".stripMargin
+        )
+    }
   }
 
   test("RETURN '\\\\'") {
@@ -601,13 +610,14 @@ class MiscParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport
   }
 
   test("RETURN /* abc */ 1 /*'") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("Lexical error at line 1, column 23."))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Failed to parse comment. A comment starting on `/*` must have a closing `*/`. (line 1, column 21 (offset: 20))
-          |"RETURN /* abc */ 1 /*'"
-          |                     ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("Lexical error at line 1, column 23.")
+      case Antlr => _.withSyntaxError(
+          """Failed to parse comment. A comment starting on `/*` must have a closing `*/`. (line 1, column 21 (offset: 20))
+            |"RETURN /* abc */ 1 /*'"
+            |                     ^""".stripMargin
+        )
+    }
   }
 
   test("return item text parses correctly") {

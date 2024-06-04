@@ -165,13 +165,14 @@ class SetParserTest extends AstParsingTestBase {
   }
 
   test("SET listOfNodes[0][toUpper(\"prop\")] = 'neo4j'") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("Invalid input '['"))
-      .parseIn(Antlr)(_.withMessage(
-        """Invalid input '[': expected '=' (line 1, column 19 (offset: 18))
-          |"SET listOfNodes[0][toUpper("prop")] = 'neo4j'"
-          |                   ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("Invalid input '['")
+      case Antlr => _.withSyntaxError(
+          """Invalid input '[': expected '=' (line 1, column 19 (offset: 18))
+            |"SET listOfNodes[0][toUpper("prop")] = 'neo4j'"
+            |                   ^""".stripMargin
+        )
+    }
   }
 
   // Invalid mix of colon conjunction and IS, this will be disallowed in semantic checking

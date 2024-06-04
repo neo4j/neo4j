@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.UnaliasedReturnItem
 import org.neo4j.cypher.internal.ast.UnionDistinct
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTestSupport
 import org.neo4j.cypher.internal.expressions.AllIterablePredicate
@@ -41,7 +42,6 @@ import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.label_expressions.LabelExpression.Leaf
 import org.neo4j.cypher.internal.util.InputPosition
-import org.neo4j.exceptions.SyntaxException
 
 class CollectExpressionParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport {
 
@@ -570,11 +570,13 @@ class CollectExpressionParserTest extends AstParsingTestBase with LegacyAstParsi
       |WHERE COLLECT { MATCH (b) RETURN b WHERE true } = [1, 2, 3]
       |RETURN m""".stripMargin
   ) {
-    failsParsing[Statements]
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input 'WHERE': expected an expression, 'FOREACH', ',', 'AS', 'ORDER BY', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'LIMIT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'SKIP', 'UNION', 'UNWIND', 'USE', 'WITH' or '}' (line 2, column 36 (offset: 45))
-          |"WHERE COLLECT { MATCH (b) RETURN b WHERE true } = [1, 2, 3]"
-          |                                    ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case Antlr => _.withSyntaxError(
+          """Invalid input 'WHERE': expected an expression, 'FOREACH', ',', 'AS', 'ORDER BY', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'LIMIT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'SKIP', 'UNION', 'UNWIND', 'USE', 'WITH' or '}' (line 2, column 36 (offset: 45))
+            |"WHERE COLLECT { MATCH (b) RETURN b WHERE true } = [1, 2, 3]"
+            |                                    ^""".stripMargin
+        )
+      case JavaCc => identity
+    }
   }
 }

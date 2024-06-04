@@ -21,7 +21,6 @@ import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
 import org.neo4j.cypher.internal.expressions.Expression
-import org.neo4j.exceptions.SyntaxException
 
 class ListLiteralParserTest extends AstParsingTestBase {
 
@@ -43,22 +42,24 @@ class ListLiteralParserTest extends AstParsingTestBase {
   }
 
   test("list without comma separation should not parse") {
-    "RETURN ['value' 42]" should notParse[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("Invalid input '[': expected \"+\" or \"-\" (line 1, column 8 (offset: 7))"))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input '42': expected an expression, ',' or ']' (line 1, column 17 (offset: 16))
-          |"RETURN ['value' 42]"
-          |                 ^""".stripMargin
-      ))
+    "RETURN ['value' 42]" should notParse[Statements].in {
+      case JavaCc => _.withMessageStart("Invalid input '[': expected \"+\" or \"-\" (line 1, column 8 (offset: 7))")
+      case Antlr => _.withSyntaxError(
+          """Invalid input '42': expected an expression, ',' or ']' (line 1, column 17 (offset: 16))
+            |"RETURN ['value' 42]"
+            |                 ^""".stripMargin
+        )
+    }
   }
 
   test("list with invalid start comma should not parse") {
-    "RETURN [, 'value']" should notParse[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("Invalid input '[': expected \"+\" or \"-\" (line 1, column 8 (offset: 7))"))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input ',': expected an expression (line 1, column 9 (offset: 8))
-          |"RETURN [, 'value']"
-          |         ^""".stripMargin
-      ))
+    "RETURN [, 'value']" should notParse[Statements].in {
+      case JavaCc => _.withMessageStart("Invalid input '[': expected \"+\" or \"-\" (line 1, column 8 (offset: 7))")
+      case Antlr => _.withSyntaxError(
+          """Invalid input ',': expected an expression (line 1, column 9 (offset: 8))
+            |"RETURN [, 'value']"
+            |         ^""".stripMargin
+        )
+    }
   }
 }

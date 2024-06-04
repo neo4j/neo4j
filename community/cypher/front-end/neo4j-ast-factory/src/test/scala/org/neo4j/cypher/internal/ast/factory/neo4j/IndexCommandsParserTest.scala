@@ -30,7 +30,6 @@ import org.neo4j.cypher.internal.expressions.functions.Labels
 import org.neo4j.cypher.internal.expressions.functions.Type
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.CTMap
-import org.neo4j.exceptions.SyntaxException
 
 /* Tests for creating and dropping indexes */
 class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBase {
@@ -45,39 +44,42 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   }
 
   test("CREATE INDEX my_index ON :Person(name)") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart(
-        "Invalid input 'ON': expected \"FOR\" or \"IF\" (line 1, column 23 (offset: 22))"
-      ))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input 'ON': expected 'IF NOT EXISTS' or 'FOR' (line 1, column 23 (offset: 22))
-          |"CREATE INDEX my_index ON :Person(name)"
-          |                       ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart(
+          "Invalid input 'ON': expected \"FOR\" or \"IF\" (line 1, column 23 (offset: 22))"
+        )
+      case Antlr => _.withSyntaxError(
+          """Invalid input 'ON': expected 'IF NOT EXISTS' or 'FOR' (line 1, column 23 (offset: 22))
+            |"CREATE INDEX my_index ON :Person(name)"
+            |                       ^""".stripMargin
+        )
+    }
   }
 
   test("CREATE INDEX my_index ON :Person(name,age)") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart(
-        "Invalid input 'ON': expected \"FOR\" or \"IF\" (line 1, column 23 (offset: 22))"
-      ))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input 'ON': expected 'IF NOT EXISTS' or 'FOR' (line 1, column 23 (offset: 22))
-          |"CREATE INDEX my_index ON :Person(name,age)"
-          |                       ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart(
+          "Invalid input 'ON': expected \"FOR\" or \"IF\" (line 1, column 23 (offset: 22))"
+        )
+      case Antlr => _.withSyntaxError(
+          """Invalid input 'ON': expected 'IF NOT EXISTS' or 'FOR' (line 1, column 23 (offset: 22))
+            |"CREATE INDEX my_index ON :Person(name,age)"
+            |                       ^""".stripMargin
+        )
+    }
   }
 
   test("CREATE OR REPLACE INDEX ON :Person(name)") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart(
-        "'REPLACE' is not allowed for this index syntax (line 1, column 1 (offset: 0))"
-      ))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """'REPLACE' is not allowed for this index syntax (line 1, column 11 (offset: 10))
-          |"CREATE OR REPLACE INDEX ON :Person(name)"
-          |           ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart(
+          "'REPLACE' is not allowed for this index syntax (line 1, column 1 (offset: 0))"
+        )
+      case Antlr => _.withSyntaxError(
+          """'REPLACE' is not allowed for this index syntax (line 1, column 11 (offset: 10))
+            |"CREATE OR REPLACE INDEX ON :Person(name)"
+            |           ^""".stripMargin
+        )
+    }
   }
 
   // Create index
@@ -1334,9 +1336,10 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE FULLTEXT INDEX FOR $pattern ON [n2.name]") {
-        failsParsing[Statements]
-          .parseIn(JavaCc)(_.withMessageStart("Invalid input '['"))
-          .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart("Invalid input '[': expected 'EACH'"))
+        failsParsing[Statements].in {
+          case JavaCc => _.withMessageStart("Invalid input '['")
+          case Antlr  => _.withSyntaxErrorContaining("Invalid input '[': expected 'EACH'")
+        }
       }
 
       test(s"CREATE INDEX FOR $pattern ON EACH [n2.name]") {
@@ -1349,9 +1352,10 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       test(
         s"CREATE FULLTEXT INDEX FOR $pattern ON EACH [n2.name] OPTIONS {indexConfig : {fulltext.analyzer: 'some_analyzer'}}"
       ) {
-        failsParsing[Statements]
-          .parseIn(JavaCc)(_.withMessageStart("Invalid input '{': expected \"+\" or \"-\""))
-          .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart("Invalid input '.': expected ':'"))
+        failsParsing[Statements].in {
+          case JavaCc => _.withMessageStart("Invalid input '{': expected \"+\" or \"-\"")
+          case Antlr  => _.withSyntaxErrorContaining("Invalid input '.': expected ':'")
+        }
       }
   }
 
@@ -2152,19 +2156,21 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE VECTOR INDEX FOR $pattern ON n2.name, n3.age") {
-        failsParsing[Statements]
-          .parseIn(JavaCc)(_.withMessageStart(
-            "Invalid input ',': expected \"OPTIONS\" or <EOF>"
-          ))
-          .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-            "Invalid input ',': expected 'OPTIONS' or <EOF>"
-          ))
+        failsParsing[Statements].in {
+          case JavaCc => _.withMessageStart(
+              "Invalid input ',': expected \"OPTIONS\" or <EOF>"
+            )
+          case Antlr => _.withSyntaxErrorContaining(
+              "Invalid input ',': expected 'OPTIONS' or <EOF>"
+            )
+        }
       }
 
       test(s"CREATE VECTOR INDEX FOR $pattern ON (n.name) {indexProvider : 'vector-1.0'}") {
-        failsParsing[Statements]
-          .parseIn(JavaCc)(_.withMessageStart("Invalid input '{'"))
-          .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart("Invalid input '{': expected 'OPTIONS' or <EOF>"))
+        failsParsing[Statements].in {
+          case JavaCc => _.withMessageStart("Invalid input '{'")
+          case Antlr  => _.withSyntaxErrorContaining("Invalid input '{': expected 'OPTIONS' or <EOF>")
+        }
       }
 
       test(s"CREATE VECTOR INDEX FOR $pattern ON (n.name) OPTIONS") {
@@ -2174,15 +2180,16 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
 
   test("CREATE INDEX $ FOR (n1:Label) ON (n2.name)") {
     // Missing parameter name (or backticks)
-    failsParsing[Statements]
-      .parseIn(JavaCc)(
+    failsParsing[Statements].in {
+      case JavaCc =>
         _.withMessageStart("Invalid input '(': expected \"FOR\" or \"IF\" (line 1, column 20 (offset: 19))")
-      )
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input '(': expected 'IF NOT EXISTS' or 'FOR' (line 1, column 20 (offset: 19))
-          |"CREATE INDEX $ FOR (n1:Label) ON (n2.name)"
-          |                    ^""".stripMargin
-      ))
+
+      case Antlr => _.withSyntaxError(
+          """Invalid input '(': expected 'IF NOT EXISTS' or 'FOR' (line 1, column 20 (offset: 19))
+            |"CREATE INDEX $ FOR (n1:Label) ON (n2.name)"
+            |                    ^""".stripMargin
+        )
+    }
   }
 
   test("CREATE LOOKUP INDEX FOR (x1) ON EACH labels(x2)") {
@@ -2308,963 +2315,1048 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
 
   test("CREATE LOOKUP INDEX FOR ()-[x]-() ON EACH(x)") {
     // Thinks it is missing the function name since `EACH` is parsed as keyword
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("Invalid input '(': expected an identifier (line 1, column 42 (offset: 41))"))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Missing function name for the LOOKUP INDEX (line 1, column 42 (offset: 41))
-          |"CREATE LOOKUP INDEX FOR ()-[x]-() ON EACH(x)"
-          |                                          ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("Invalid input '(': expected an identifier (line 1, column 42 (offset: 41))")
+      case Antlr => _.withSyntaxError(
+          """Missing function name for the LOOKUP INDEX (line 1, column 42 (offset: 41))
+            |"CREATE LOOKUP INDEX FOR ()-[x]-() ON EACH(x)"
+            |                                          ^""".stripMargin
+        )
+    }
   }
 
   test("CREATE INDEX FOR n1:Person ON (n2.name)") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(
+    failsParsing[Statements].in {
+      case JavaCc =>
         _.withMessageStart("Invalid input 'n1': expected \"FOR\" or \"IF\" (line 1, column 18 (offset: 17))")
-      )
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input 'n1': expected '(', 'IF NOT EXISTS' or 'FOR' (line 1, column 18 (offset: 17))
-          |"CREATE INDEX FOR n1:Person ON (n2.name)"
-          |                  ^""".stripMargin
-      ))
+
+      case Antlr => _.withSyntaxError(
+          """Invalid input 'n1': expected '(', 'IF NOT EXISTS' or 'FOR' (line 1, column 18 (offset: 17))
+            |"CREATE INDEX FOR n1:Person ON (n2.name)"
+            |                  ^""".stripMargin
+        )
+    }
   }
 
   test("CREATE INDEX FOR (n1) ON (n2.name)") {
     // missing label
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("Invalid input ')': expected \":\" (line 1, column 21 (offset: 20))"))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input ')': expected ':' (line 1, column 21 (offset: 20))
-          |"CREATE INDEX FOR (n1) ON (n2.name)"
-          |                     ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("Invalid input ')': expected \":\" (line 1, column 21 (offset: 20))")
+      case Antlr => _.withSyntaxError(
+          """Invalid input ')': expected ':' (line 1, column 21 (offset: 20))
+            |"CREATE INDEX FOR (n1) ON (n2.name)"
+            |                     ^""".stripMargin
+        )
+    }
   }
 
   test("CREATE INDEX FOR ()-[n1]-() ON (n2.name)") {
     // missing relationship type
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("Invalid input ']': expected \":\" (line 1, column 24 (offset: 23))"))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input ']': expected ':' (line 1, column 24 (offset: 23))
-          |"CREATE INDEX FOR ()-[n1]-() ON (n2.name)"
-          |                        ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("Invalid input ']': expected \":\" (line 1, column 24 (offset: 23))")
+      case Antlr => _.withSyntaxError(
+          """Invalid input ']': expected ':' (line 1, column 24 (offset: 23))
+            |"CREATE INDEX FOR ()-[n1]-() ON (n2.name)"
+            |                        ^""".stripMargin
+        )
+    }
   }
 
   test("CREATE INDEX FOR -[r1:R]-() ON (r2.name)") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(
+    failsParsing[Statements].in {
+      case JavaCc =>
         _.withMessageStart("Invalid input '-': expected \"FOR\" or \"IF\" (line 1, column 18 (offset: 17))")
-      )
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input '-': expected '(', 'IF NOT EXISTS' or 'FOR' (line 1, column 18 (offset: 17))
-          |"CREATE INDEX FOR -[r1:R]-() ON (r2.name)"
-          |                  ^""".stripMargin
-      ))
+
+      case Antlr => _.withSyntaxError(
+          """Invalid input '-': expected '(', 'IF NOT EXISTS' or 'FOR' (line 1, column 18 (offset: 17))
+            |"CREATE INDEX FOR -[r1:R]-() ON (r2.name)"
+            |                  ^""".stripMargin
+        )
+    }
   }
 
   test("CREATE INDEX FOR ()-[r1:R]- ON (r2.name)") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart(
-        "Invalid input 'ON': expected \"(\", \">\" or <ARROW_RIGHT_HEAD> (line 1, column 29 (offset: 28))"
-      ))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input 'ON': expected '(' or '>' (line 1, column 29 (offset: 28))
-          |"CREATE INDEX FOR ()-[r1:R]- ON (r2.name)"
-          |                             ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart(
+          "Invalid input 'ON': expected \"(\", \">\" or <ARROW_RIGHT_HEAD> (line 1, column 29 (offset: 28))"
+        )
+      case Antlr => _.withSyntaxError(
+          """Invalid input 'ON': expected '(' or '>' (line 1, column 29 (offset: 28))
+            |"CREATE INDEX FOR ()-[r1:R]- ON (r2.name)"
+            |                             ^""".stripMargin
+        )
+    }
   }
 
   test("CREATE INDEX FOR -[r1:R]- ON (r2.name)") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(
+    failsParsing[Statements].in {
+      case JavaCc =>
         _.withMessageStart("Invalid input '-': expected \"FOR\" or \"IF\" (line 1, column 18 (offset: 17))")
-      )
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input '-': expected '(', 'IF NOT EXISTS' or 'FOR' (line 1, column 18 (offset: 17))
-          |"CREATE INDEX FOR -[r1:R]- ON (r2.name)"
-          |                  ^""".stripMargin
-      ))
+
+      case Antlr => _.withSyntaxError(
+          """Invalid input '-': expected '(', 'IF NOT EXISTS' or 'FOR' (line 1, column 18 (offset: 17))
+            |"CREATE INDEX FOR -[r1:R]- ON (r2.name)"
+            |                  ^""".stripMargin
+        )
+    }
   }
 
   test("CREATE INDEX FOR [r1:R] ON (r2.name)") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(
+    failsParsing[Statements].in {
+      case JavaCc =>
         _.withMessageStart("Invalid input '[': expected \"FOR\" or \"IF\" (line 1, column 18 (offset: 17))")
-      )
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input '[': expected '(', 'IF NOT EXISTS' or 'FOR' (line 1, column 18 (offset: 17))
-          |"CREATE INDEX FOR [r1:R] ON (r2.name)"
-          |                  ^""".stripMargin
-      ))
+
+      case Antlr => _.withSyntaxError(
+          """Invalid input '[': expected '(', 'IF NOT EXISTS' or 'FOR' (line 1, column 18 (offset: 17))
+            |"CREATE INDEX FOR [r1:R] ON (r2.name)"
+            |                  ^""".stripMargin
+        )
+    }
   }
 
   test("CREATE INDEX FOR (:A)-[n1:R]-() ON (n2.name)") {
     // label on node
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("""Invalid input ':': expected ")" or an identifier"""))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input ':': expected a variable name or ')' (line 1, column 19 (offset: 18))
-          |"CREATE INDEX FOR (:A)-[n1:R]-() ON (n2.name)"
-          |                   ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("""Invalid input ':': expected ")" or an identifier""")
+      case Antlr => _.withSyntaxError(
+          """Invalid input ':': expected a variable name or ')' (line 1, column 19 (offset: 18))
+            |"CREATE INDEX FOR (:A)-[n1:R]-() ON (n2.name)"
+            |                   ^""".stripMargin
+        )
+    }
   }
 
   test("CREATE INDEX FOR ()-[n1:R]-(:A) ON (n2.name)") {
     // label on node
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("""Invalid input ':': expected ")""""))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input ':': expected ')' (line 1, column 29 (offset: 28))
-          |"CREATE INDEX FOR ()-[n1:R]-(:A) ON (n2.name)"
-          |                             ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("""Invalid input ':': expected ")"""")
+      case Antlr => _.withSyntaxError(
+          """Invalid input ':': expected ')' (line 1, column 29 (offset: 28))
+            |"CREATE INDEX FOR ()-[n1:R]-(:A) ON (n2.name)"
+            |                             ^""".stripMargin
+        )
+    }
   }
 
   test("CREATE INDEX FOR (n2)-[n1:R]-() ON (n2.name)") {
     // variable on node
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("""Invalid input ')': expected ":""""))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input ')': expected ':' (line 1, column 21 (offset: 20))
-          |"CREATE INDEX FOR (n2)-[n1:R]-() ON (n2.name)"
-          |                     ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("""Invalid input ')': expected ":"""")
+      case Antlr => _.withSyntaxError(
+          """Invalid input ')': expected ':' (line 1, column 21 (offset: 20))
+            |"CREATE INDEX FOR (n2)-[n1:R]-() ON (n2.name)"
+            |                     ^""".stripMargin
+        )
+    }
   }
 
   test("CREATE INDEX FOR ()-[n1:R]-(n2) ON (n2.name)") {
     // variable on node
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("""Invalid input 'n2': expected ")""""))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input 'n2': expected ')' (line 1, column 29 (offset: 28))
-          |"CREATE INDEX FOR ()-[n1:R]-(n2) ON (n2.name)"
-          |                             ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("""Invalid input 'n2': expected ")"""")
+      case Antlr => _.withSyntaxError(
+          """Invalid input 'n2': expected ')' (line 1, column 29 (offset: 28))
+            |"CREATE INDEX FOR ()-[n1:R]-(n2) ON (n2.name)"
+            |                             ^""".stripMargin
+        )
+    }
   }
 
   test("CREATE INDEX FOR (n2:A)-[n1:R]-() ON (n2.name)") {
     // variable on node
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("""Invalid input '-': expected "ON""""))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input '-': expected 'ON' (line 1, column 24 (offset: 23))
-          |"CREATE INDEX FOR (n2:A)-[n1:R]-() ON (n2.name)"
-          |                        ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("""Invalid input '-': expected "ON"""")
+      case Antlr => _.withSyntaxError(
+          """Invalid input '-': expected 'ON' (line 1, column 24 (offset: 23))
+            |"CREATE INDEX FOR (n2:A)-[n1:R]-() ON (n2.name)"
+            |                        ^""".stripMargin
+        )
+    }
   }
 
   test("CREATE INDEX FOR ()-[n1:R]-(n2:A) ON (n2.name)") {
     // variable on node
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("""Invalid input 'n2': expected ")""""))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input 'n2': expected ')' (line 1, column 29 (offset: 28))
-          |"CREATE INDEX FOR ()-[n1:R]-(n2:A) ON (n2.name)"
-          |                             ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("""Invalid input 'n2': expected ")"""")
+      case Antlr => _.withSyntaxError(
+          """Invalid input 'n2': expected ')' (line 1, column 29 (offset: 28))
+            |"CREATE INDEX FOR ()-[n1:R]-(n2:A) ON (n2.name)"
+            |                             ^""".stripMargin
+        )
+    }
   }
 
   test("CREATE TEXT INDEX FOR n1:Person ON (n2.name)") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(
+    failsParsing[Statements].in {
+      case JavaCc =>
         _.withMessageStart("Invalid input 'n1': expected \"FOR\" or \"IF\" (line 1, column 23 (offset: 22))")
-      )
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input 'n1': expected '(', 'IF NOT EXISTS' or 'FOR' (line 1, column 23 (offset: 22))
-          |"CREATE TEXT INDEX FOR n1:Person ON (n2.name)"
-          |                       ^""".stripMargin
-      ))
+
+      case Antlr => _.withSyntaxError(
+          """Invalid input 'n1': expected '(', 'IF NOT EXISTS' or 'FOR' (line 1, column 23 (offset: 22))
+            |"CREATE TEXT INDEX FOR n1:Person ON (n2.name)"
+            |                       ^""".stripMargin
+        )
+    }
   }
 
   test("CREATE TEXT INDEX FOR (n1) ON (n2.name)") {
     // missing label
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("Invalid input ')': expected \":\" (line 1, column 26 (offset: 25))"))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input ')': expected ':' (line 1, column 26 (offset: 25))
-          |"CREATE TEXT INDEX FOR (n1) ON (n2.name)"
-          |                          ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("Invalid input ')': expected \":\" (line 1, column 26 (offset: 25))")
+      case Antlr => _.withSyntaxError(
+          """Invalid input ')': expected ':' (line 1, column 26 (offset: 25))
+            |"CREATE TEXT INDEX FOR (n1) ON (n2.name)"
+            |                          ^""".stripMargin
+        )
+    }
   }
 
   test("CREATE TEXT INDEX FOR ()-[n1]-() ON (n2.name)") {
     // missing relationship type
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("Invalid input ']': expected \":\" (line 1, column 29 (offset: 28))"))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input ']': expected ':' (line 1, column 29 (offset: 28))
-          |"CREATE TEXT INDEX FOR ()-[n1]-() ON (n2.name)"
-          |                             ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("Invalid input ']': expected \":\" (line 1, column 29 (offset: 28))")
+      case Antlr => _.withSyntaxError(
+          """Invalid input ']': expected ':' (line 1, column 29 (offset: 28))
+            |"CREATE TEXT INDEX FOR ()-[n1]-() ON (n2.name)"
+            |                             ^""".stripMargin
+        )
+    }
   }
 
   test("CREATE TEXT INDEX FOR -[r1:R]-() ON (r2.name)") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(
+    failsParsing[Statements].in {
+      case JavaCc =>
         _.withMessageStart("Invalid input '-': expected \"FOR\" or \"IF\" (line 1, column 23 (offset: 22))")
-      )
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input '-': expected '(', 'IF NOT EXISTS' or 'FOR' (line 1, column 23 (offset: 22))
-          |"CREATE TEXT INDEX FOR -[r1:R]-() ON (r2.name)"
-          |                       ^""".stripMargin
-      ))
+
+      case Antlr => _.withSyntaxError(
+          """Invalid input '-': expected '(', 'IF NOT EXISTS' or 'FOR' (line 1, column 23 (offset: 22))
+            |"CREATE TEXT INDEX FOR -[r1:R]-() ON (r2.name)"
+            |                       ^""".stripMargin
+        )
+    }
   }
 
   test("CREATE TEXT INDEX FOR ()-[r1:R]- ON (r2.name)") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart(
-        "Invalid input 'ON': expected \"(\", \">\" or <ARROW_RIGHT_HEAD> (line 1, column 34 (offset: 33))"
-      ))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input 'ON': expected '(' or '>' (line 1, column 34 (offset: 33))
-          |"CREATE TEXT INDEX FOR ()-[r1:R]- ON (r2.name)"
-          |                                  ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart(
+          "Invalid input 'ON': expected \"(\", \">\" or <ARROW_RIGHT_HEAD> (line 1, column 34 (offset: 33))"
+        )
+      case Antlr => _.withSyntaxError(
+          """Invalid input 'ON': expected '(' or '>' (line 1, column 34 (offset: 33))
+            |"CREATE TEXT INDEX FOR ()-[r1:R]- ON (r2.name)"
+            |                                  ^""".stripMargin
+        )
+    }
   }
 
   test("CREATE TEXT INDEX FOR -[r1:R]- ON (r2.name)") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(
+    failsParsing[Statements].in {
+      case JavaCc =>
         _.withMessageStart("Invalid input '-': expected \"FOR\" or \"IF\" (line 1, column 23 (offset: 22))")
-      )
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input '-': expected '(', 'IF NOT EXISTS' or 'FOR' (line 1, column 23 (offset: 22))
-          |"CREATE TEXT INDEX FOR -[r1:R]- ON (r2.name)"
-          |                       ^""".stripMargin
-      ))
+
+      case Antlr => _.withSyntaxError(
+          """Invalid input '-': expected '(', 'IF NOT EXISTS' or 'FOR' (line 1, column 23 (offset: 22))
+            |"CREATE TEXT INDEX FOR -[r1:R]- ON (r2.name)"
+            |                       ^""".stripMargin
+        )
+    }
   }
 
   test("CREATE TEXT INDEX FOR [r1:R] ON (r2.name)") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(
+    failsParsing[Statements].in {
+      case JavaCc =>
         _.withMessageStart("Invalid input '[': expected \"FOR\" or \"IF\" (line 1, column 23 (offset: 22))")
-      )
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input '[': expected '(', 'IF NOT EXISTS' or 'FOR' (line 1, column 23 (offset: 22))
-          |"CREATE TEXT INDEX FOR [r1:R] ON (r2.name)"
-          |                       ^""".stripMargin
-      ))
+
+      case Antlr => _.withSyntaxError(
+          """Invalid input '[': expected '(', 'IF NOT EXISTS' or 'FOR' (line 1, column 23 (offset: 22))
+            |"CREATE TEXT INDEX FOR [r1:R] ON (r2.name)"
+            |                       ^""".stripMargin
+        )
+    }
   }
 
   test("CREATE TEXT INDEX FOR (:A)-[n1:R]-() ON (n2.name)") {
     // label on node
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("""Invalid input ':': expected ")" or an identifier"""))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input ':': expected a variable name or ')' (line 1, column 24 (offset: 23))
-          |"CREATE TEXT INDEX FOR (:A)-[n1:R]-() ON (n2.name)"
-          |                        ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("""Invalid input ':': expected ")" or an identifier""")
+      case Antlr => _.withSyntaxError(
+          """Invalid input ':': expected a variable name or ')' (line 1, column 24 (offset: 23))
+            |"CREATE TEXT INDEX FOR (:A)-[n1:R]-() ON (n2.name)"
+            |                        ^""".stripMargin
+        )
+    }
   }
 
   test("CREATE TEXT INDEX FOR ()-[n1:R]-(:A) ON (n2.name)") {
     // label on node
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("""Invalid input ':': expected ")""""))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input ':': expected ')' (line 1, column 34 (offset: 33))
-          |"CREATE TEXT INDEX FOR ()-[n1:R]-(:A) ON (n2.name)"
-          |                                  ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("""Invalid input ':': expected ")"""")
+      case Antlr => _.withSyntaxError(
+          """Invalid input ':': expected ')' (line 1, column 34 (offset: 33))
+            |"CREATE TEXT INDEX FOR ()-[n1:R]-(:A) ON (n2.name)"
+            |                                  ^""".stripMargin
+        )
+    }
   }
 
   test("CREATE TEXT INDEX FOR (n2)-[n1:R]-() ON (n2.name)") {
     // variable on node
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("""Invalid input ')': expected ":""""))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input ')': expected ':' (line 1, column 26 (offset: 25))
-          |"CREATE TEXT INDEX FOR (n2)-[n1:R]-() ON (n2.name)"
-          |                          ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("""Invalid input ')': expected ":"""")
+      case Antlr => _.withSyntaxError(
+          """Invalid input ')': expected ':' (line 1, column 26 (offset: 25))
+            |"CREATE TEXT INDEX FOR (n2)-[n1:R]-() ON (n2.name)"
+            |                          ^""".stripMargin
+        )
+    }
   }
 
   test("CREATE TEXT INDEX FOR ()-[n1:R]-(n2) ON (n2.name)") {
     // variable on node
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("""Invalid input 'n2': expected ")""""))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input 'n2': expected ')' (line 1, column 34 (offset: 33))
-          |"CREATE TEXT INDEX FOR ()-[n1:R]-(n2) ON (n2.name)"
-          |                                  ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("""Invalid input 'n2': expected ")"""")
+      case Antlr => _.withSyntaxError(
+          """Invalid input 'n2': expected ')' (line 1, column 34 (offset: 33))
+            |"CREATE TEXT INDEX FOR ()-[n1:R]-(n2) ON (n2.name)"
+            |                                  ^""".stripMargin
+        )
+    }
   }
 
   test("CREATE TEXT INDEX FOR (n2:A)-[n1:R]-() ON (n2.name)") {
     // variable on node
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("""Invalid input '-': expected "ON""""))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input '-': expected 'ON' (line 1, column 29 (offset: 28))
-          |"CREATE TEXT INDEX FOR (n2:A)-[n1:R]-() ON (n2.name)"
-          |                             ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("""Invalid input '-': expected "ON"""")
+      case Antlr => _.withSyntaxError(
+          """Invalid input '-': expected 'ON' (line 1, column 29 (offset: 28))
+            |"CREATE TEXT INDEX FOR (n2:A)-[n1:R]-() ON (n2.name)"
+            |                             ^""".stripMargin
+        )
+    }
   }
 
   test("CREATE TEXT INDEX FOR ()-[n1:R]-(n2:A) ON (n2.name)") {
     // variable on node
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("""Invalid input 'n2': expected ")""""))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input 'n2': expected ')' (line 1, column 34 (offset: 33))
-          |"CREATE TEXT INDEX FOR ()-[n1:R]-(n2:A) ON (n2.name)"
-          |                                  ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("""Invalid input 'n2': expected ")"""")
+      case Antlr => _.withSyntaxError(
+          """Invalid input 'n2': expected ')' (line 1, column 34 (offset: 33))
+            |"CREATE TEXT INDEX FOR ()-[n1:R]-(n2:A) ON (n2.name)"
+            |                                  ^""".stripMargin
+        )
+    }
   }
 
   test("CREATE POINT INDEX FOR n1:Person ON (n2.name)") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(
+    failsParsing[Statements].in {
+      case JavaCc =>
         _.withMessageStart("Invalid input 'n1': expected \"FOR\" or \"IF\" (line 1, column 24 (offset: 23))")
-      )
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input 'n1': expected '(', 'IF NOT EXISTS' or 'FOR' (line 1, column 24 (offset: 23))
-          |"CREATE POINT INDEX FOR n1:Person ON (n2.name)"
-          |                        ^""".stripMargin
-      ))
+
+      case Antlr => _.withSyntaxError(
+          """Invalid input 'n1': expected '(', 'IF NOT EXISTS' or 'FOR' (line 1, column 24 (offset: 23))
+            |"CREATE POINT INDEX FOR n1:Person ON (n2.name)"
+            |                        ^""".stripMargin
+        )
+    }
   }
 
   test("CREATE POINT INDEX FOR (n1) ON (n2.name)") {
     // missing label
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("Invalid input ')': expected \":\" (line 1, column 27 (offset: 26))"))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input ')': expected ':' (line 1, column 27 (offset: 26))
-          |"CREATE POINT INDEX FOR (n1) ON (n2.name)"
-          |                           ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("Invalid input ')': expected \":\" (line 1, column 27 (offset: 26))")
+      case Antlr => _.withSyntaxError(
+          """Invalid input ')': expected ':' (line 1, column 27 (offset: 26))
+            |"CREATE POINT INDEX FOR (n1) ON (n2.name)"
+            |                           ^""".stripMargin
+        )
+    }
   }
 
   test("CREATE POINT INDEX FOR ()-[n1]-() ON (n2.name)") {
     // missing relationship type
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("Invalid input ']': expected \":\" (line 1, column 30 (offset: 29))"))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input ']': expected ':' (line 1, column 30 (offset: 29))
-          |"CREATE POINT INDEX FOR ()-[n1]-() ON (n2.name)"
-          |                              ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("Invalid input ']': expected \":\" (line 1, column 30 (offset: 29))")
+      case Antlr => _.withSyntaxError(
+          """Invalid input ']': expected ':' (line 1, column 30 (offset: 29))
+            |"CREATE POINT INDEX FOR ()-[n1]-() ON (n2.name)"
+            |                              ^""".stripMargin
+        )
+    }
   }
 
   test("CREATE POINT INDEX FOR -[r1:R]-() ON (r2.name)") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(
+    failsParsing[Statements].in {
+      case JavaCc =>
         _.withMessageStart("Invalid input '-': expected \"FOR\" or \"IF\" (line 1, column 24 (offset: 23))")
-      )
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input '-': expected '(', 'IF NOT EXISTS' or 'FOR' (line 1, column 24 (offset: 23))
-          |"CREATE POINT INDEX FOR -[r1:R]-() ON (r2.name)"
-          |                        ^""".stripMargin
-      ))
+
+      case Antlr => _.withSyntaxError(
+          """Invalid input '-': expected '(', 'IF NOT EXISTS' or 'FOR' (line 1, column 24 (offset: 23))
+            |"CREATE POINT INDEX FOR -[r1:R]-() ON (r2.name)"
+            |                        ^""".stripMargin
+        )
+    }
   }
 
   test("CREATE POINT INDEX FOR ()-[r1:R]- ON (r2.name)") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart(
-        "Invalid input 'ON': expected \"(\", \">\" or <ARROW_RIGHT_HEAD> (line 1, column 35 (offset: 34))"
-      ))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input 'ON': expected '(' or '>' (line 1, column 35 (offset: 34))
-          |"CREATE POINT INDEX FOR ()-[r1:R]- ON (r2.name)"
-          |                                   ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart(
+          "Invalid input 'ON': expected \"(\", \">\" or <ARROW_RIGHT_HEAD> (line 1, column 35 (offset: 34))"
+        )
+      case Antlr => _.withSyntaxError(
+          """Invalid input 'ON': expected '(' or '>' (line 1, column 35 (offset: 34))
+            |"CREATE POINT INDEX FOR ()-[r1:R]- ON (r2.name)"
+            |                                   ^""".stripMargin
+        )
+    }
   }
 
   test("CREATE POINT INDEX FOR -[r1:R]- ON (r2.name)") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(
+    failsParsing[Statements].in {
+      case JavaCc =>
         _.withMessageStart("Invalid input '-': expected \"FOR\" or \"IF\" (line 1, column 24 (offset: 23))")
-      )
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input '-': expected '(', 'IF NOT EXISTS' or 'FOR' (line 1, column 24 (offset: 23))
-          |"CREATE POINT INDEX FOR -[r1:R]- ON (r2.name)"
-          |                        ^""".stripMargin
-      ))
+
+      case Antlr => _.withSyntaxError(
+          """Invalid input '-': expected '(', 'IF NOT EXISTS' or 'FOR' (line 1, column 24 (offset: 23))
+            |"CREATE POINT INDEX FOR -[r1:R]- ON (r2.name)"
+            |                        ^""".stripMargin
+        )
+    }
   }
 
   test("CREATE POINT INDEX FOR [r1:R] ON (r2.name)") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(
+    failsParsing[Statements].in {
+      case JavaCc =>
         _.withMessageStart("Invalid input '[': expected \"FOR\" or \"IF\" (line 1, column 24 (offset: 23))")
-      )
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input '[': expected '(', 'IF NOT EXISTS' or 'FOR' (line 1, column 24 (offset: 23))
-          |"CREATE POINT INDEX FOR [r1:R] ON (r2.name)"
-          |                        ^""".stripMargin
-      ))
+
+      case Antlr => _.withSyntaxError(
+          """Invalid input '[': expected '(', 'IF NOT EXISTS' or 'FOR' (line 1, column 24 (offset: 23))
+            |"CREATE POINT INDEX FOR [r1:R] ON (r2.name)"
+            |                        ^""".stripMargin
+        )
+    }
   }
 
   test("CREATE POINT INDEX FOR (:A)-[n1:R]-() ON (n2.name)") {
     // label on node
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("""Invalid input ':': expected ")" or an identifier"""))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input ':': expected a variable name or ')' (line 1, column 25 (offset: 24))
-          |"CREATE POINT INDEX FOR (:A)-[n1:R]-() ON (n2.name)"
-          |                         ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("""Invalid input ':': expected ")" or an identifier""")
+      case Antlr => _.withSyntaxError(
+          """Invalid input ':': expected a variable name or ')' (line 1, column 25 (offset: 24))
+            |"CREATE POINT INDEX FOR (:A)-[n1:R]-() ON (n2.name)"
+            |                         ^""".stripMargin
+        )
+    }
   }
 
   test("CREATE POINT INDEX FOR ()-[n1:R]-(:A) ON (n2.name)") {
     // label on node
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("""Invalid input ':': expected ")""""))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input ':': expected ')' (line 1, column 35 (offset: 34))
-          |"CREATE POINT INDEX FOR ()-[n1:R]-(:A) ON (n2.name)"
-          |                                   ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("""Invalid input ':': expected ")"""")
+      case Antlr => _.withSyntaxError(
+          """Invalid input ':': expected ')' (line 1, column 35 (offset: 34))
+            |"CREATE POINT INDEX FOR ()-[n1:R]-(:A) ON (n2.name)"
+            |                                   ^""".stripMargin
+        )
+    }
   }
 
   test("CREATE POINT INDEX FOR (n2)-[n1:R]-() ON (n2.name)") {
     // variable on node
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("""Invalid input ')': expected ":""""))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input ')': expected ':' (line 1, column 27 (offset: 26))
-          |"CREATE POINT INDEX FOR (n2)-[n1:R]-() ON (n2.name)"
-          |                           ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("""Invalid input ')': expected ":"""")
+      case Antlr => _.withSyntaxError(
+          """Invalid input ')': expected ':' (line 1, column 27 (offset: 26))
+            |"CREATE POINT INDEX FOR (n2)-[n1:R]-() ON (n2.name)"
+            |                           ^""".stripMargin
+        )
+    }
   }
 
   test("CREATE POINT INDEX FOR ()-[n1:R]-(n2) ON (n2.name)") {
     // variable on node
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("""Invalid input 'n2': expected ")""""))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input 'n2': expected ')' (line 1, column 35 (offset: 34))
-          |"CREATE POINT INDEX FOR ()-[n1:R]-(n2) ON (n2.name)"
-          |                                   ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("""Invalid input 'n2': expected ")"""")
+      case Antlr => _.withSyntaxError(
+          """Invalid input 'n2': expected ')' (line 1, column 35 (offset: 34))
+            |"CREATE POINT INDEX FOR ()-[n1:R]-(n2) ON (n2.name)"
+            |                                   ^""".stripMargin
+        )
+    }
   }
 
   test("CREATE POINT INDEX FOR (n2:A)-[n1:R]-() ON (n2.name)") {
     // variable on node
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("""Invalid input '-': expected "ON""""))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input '-': expected 'ON' (line 1, column 30 (offset: 29))
-          |"CREATE POINT INDEX FOR (n2:A)-[n1:R]-() ON (n2.name)"
-          |                              ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("""Invalid input '-': expected "ON"""")
+      case Antlr => _.withSyntaxError(
+          """Invalid input '-': expected 'ON' (line 1, column 30 (offset: 29))
+            |"CREATE POINT INDEX FOR (n2:A)-[n1:R]-() ON (n2.name)"
+            |                              ^""".stripMargin
+        )
+    }
   }
 
   test("CREATE POINT INDEX FOR ()-[n1:R]-(n2:A) ON (n2.name)") {
     // variable on node
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("""Invalid input 'n2': expected ")""""))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input 'n2': expected ')' (line 1, column 35 (offset: 34))
-          |"CREATE POINT INDEX FOR ()-[n1:R]-(n2:A) ON (n2.name)"
-          |                                   ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("""Invalid input 'n2': expected ")"""")
+      case Antlr => _.withSyntaxError(
+          """Invalid input 'n2': expected ')' (line 1, column 35 (offset: 34))
+            |"CREATE POINT INDEX FOR ()-[n1:R]-(n2:A) ON (n2.name)"
+            |                                   ^""".stripMargin
+        )
+    }
   }
 
   test("CREATE VECTOR INDEX FOR n1:Person ON (n2.name)") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(
+    failsParsing[Statements].in {
+      case JavaCc =>
         _.withMessageStart("Invalid input 'n1': expected \"FOR\" or \"IF\" (line 1, column 25 (offset: 24))")
-      )
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input 'n1': expected '(', 'IF NOT EXISTS' or 'FOR' (line 1, column 25 (offset: 24))
-          |"CREATE VECTOR INDEX FOR n1:Person ON (n2.name)"
-          |                         ^""".stripMargin
-      ))
+
+      case Antlr => _.withSyntaxError(
+          """Invalid input 'n1': expected '(', 'IF NOT EXISTS' or 'FOR' (line 1, column 25 (offset: 24))
+            |"CREATE VECTOR INDEX FOR n1:Person ON (n2.name)"
+            |                         ^""".stripMargin
+        )
+    }
   }
 
   test("CREATE VECTOR INDEX FOR (n1) ON (n2.name)") {
     // missing label
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("Invalid input ')': expected \":\" (line 1, column 28 (offset: 27))"))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input ')': expected ':' (line 1, column 28 (offset: 27))
-          |"CREATE VECTOR INDEX FOR (n1) ON (n2.name)"
-          |                            ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("Invalid input ')': expected \":\" (line 1, column 28 (offset: 27))")
+      case Antlr => _.withSyntaxError(
+          """Invalid input ')': expected ':' (line 1, column 28 (offset: 27))
+            |"CREATE VECTOR INDEX FOR (n1) ON (n2.name)"
+            |                            ^""".stripMargin
+        )
+    }
   }
 
   test("CREATE VECTOR INDEX FOR ()-[n1]-() ON (n2.name)") {
     // missing relationship type
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("Invalid input ']': expected \":\" (line 1, column 31 (offset: 30))"))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input ']': expected ':' (line 1, column 31 (offset: 30))
-          |"CREATE VECTOR INDEX FOR ()-[n1]-() ON (n2.name)"
-          |                               ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("Invalid input ']': expected \":\" (line 1, column 31 (offset: 30))")
+      case Antlr => _.withSyntaxError(
+          """Invalid input ']': expected ':' (line 1, column 31 (offset: 30))
+            |"CREATE VECTOR INDEX FOR ()-[n1]-() ON (n2.name)"
+            |                               ^""".stripMargin
+        )
+    }
   }
 
   test("CREATE VECTOR INDEX FOR -[r1:R]-() ON (r2.name)") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(
+    failsParsing[Statements].in {
+      case JavaCc =>
         _.withMessageStart("Invalid input '-': expected \"FOR\" or \"IF\" (line 1, column 25 (offset: 24))")
-      )
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input '-': expected '(', 'IF NOT EXISTS' or 'FOR' (line 1, column 25 (offset: 24))
-          |"CREATE VECTOR INDEX FOR -[r1:R]-() ON (r2.name)"
-          |                         ^""".stripMargin
-      ))
+
+      case Antlr => _.withSyntaxError(
+          """Invalid input '-': expected '(', 'IF NOT EXISTS' or 'FOR' (line 1, column 25 (offset: 24))
+            |"CREATE VECTOR INDEX FOR -[r1:R]-() ON (r2.name)"
+            |                         ^""".stripMargin
+        )
+    }
   }
 
   test("CREATE VECTOR INDEX FOR ()-[r1:R]- ON (r2.name)") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart(
-        "Invalid input 'ON': expected \"(\", \">\" or <ARROW_RIGHT_HEAD> (line 1, column 36 (offset: 35))"
-      ))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input 'ON': expected '(' or '>' (line 1, column 36 (offset: 35))
-          |"CREATE VECTOR INDEX FOR ()-[r1:R]- ON (r2.name)"
-          |                                    ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart(
+          "Invalid input 'ON': expected \"(\", \">\" or <ARROW_RIGHT_HEAD> (line 1, column 36 (offset: 35))"
+        )
+      case Antlr => _.withSyntaxError(
+          """Invalid input 'ON': expected '(' or '>' (line 1, column 36 (offset: 35))
+            |"CREATE VECTOR INDEX FOR ()-[r1:R]- ON (r2.name)"
+            |                                    ^""".stripMargin
+        )
+    }
   }
 
   test("CREATE VECTOR INDEX FOR -[r1:R]- ON (r2.name)") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(
+    failsParsing[Statements].in {
+      case JavaCc =>
         _.withMessageStart("Invalid input '-': expected \"FOR\" or \"IF\" (line 1, column 25 (offset: 24))")
-      )
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input '-': expected '(', 'IF NOT EXISTS' or 'FOR' (line 1, column 25 (offset: 24))
-          |"CREATE VECTOR INDEX FOR -[r1:R]- ON (r2.name)"
-          |                         ^""".stripMargin
-      ))
+
+      case Antlr => _.withSyntaxError(
+          """Invalid input '-': expected '(', 'IF NOT EXISTS' or 'FOR' (line 1, column 25 (offset: 24))
+            |"CREATE VECTOR INDEX FOR -[r1:R]- ON (r2.name)"
+            |                         ^""".stripMargin
+        )
+    }
   }
 
   test("CREATE VECTOR INDEX FOR [r1:R] ON (r2.name)") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(
+    failsParsing[Statements].in {
+      case JavaCc =>
         _.withMessageStart("Invalid input '[': expected \"FOR\" or \"IF\" (line 1, column 25 (offset: 24))")
-      )
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input '[': expected '(', 'IF NOT EXISTS' or 'FOR' (line 1, column 25 (offset: 24))
-          |"CREATE VECTOR INDEX FOR [r1:R] ON (r2.name)"
-          |                         ^""".stripMargin
-      ))
+
+      case Antlr => _.withSyntaxError(
+          """Invalid input '[': expected '(', 'IF NOT EXISTS' or 'FOR' (line 1, column 25 (offset: 24))
+            |"CREATE VECTOR INDEX FOR [r1:R] ON (r2.name)"
+            |                         ^""".stripMargin
+        )
+    }
   }
 
   test("CREATE VECTOR INDEX FOR (:A)-[n1:R]-() ON (n2.name)") {
     // label on node
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("""Invalid input ':': expected ")" or an identifier"""))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input ':': expected a variable name or ')' (line 1, column 26 (offset: 25))
-          |"CREATE VECTOR INDEX FOR (:A)-[n1:R]-() ON (n2.name)"
-          |                          ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("""Invalid input ':': expected ")" or an identifier""")
+      case Antlr => _.withSyntaxError(
+          """Invalid input ':': expected a variable name or ')' (line 1, column 26 (offset: 25))
+            |"CREATE VECTOR INDEX FOR (:A)-[n1:R]-() ON (n2.name)"
+            |                          ^""".stripMargin
+        )
+    }
   }
 
   test("CREATE VECTOR INDEX FOR ()-[n1:R]-(:A) ON (n2.name)") {
     // label on node
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("""Invalid input ':': expected ")""""))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input ':': expected ')' (line 1, column 36 (offset: 35))
-          |"CREATE VECTOR INDEX FOR ()-[n1:R]-(:A) ON (n2.name)"
-          |                                    ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("""Invalid input ':': expected ")"""")
+      case Antlr => _.withSyntaxError(
+          """Invalid input ':': expected ')' (line 1, column 36 (offset: 35))
+            |"CREATE VECTOR INDEX FOR ()-[n1:R]-(:A) ON (n2.name)"
+            |                                    ^""".stripMargin
+        )
+    }
   }
 
   test("CREATE VECTOR INDEX FOR (n2)-[n1:R]-() ON (n2.name)") {
     // variable on node
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("""Invalid input ')': expected ":""""))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input ')': expected ':' (line 1, column 28 (offset: 27))
-          |"CREATE VECTOR INDEX FOR (n2)-[n1:R]-() ON (n2.name)"
-          |                            ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("""Invalid input ')': expected ":"""")
+      case Antlr => _.withSyntaxError(
+          """Invalid input ')': expected ':' (line 1, column 28 (offset: 27))
+            |"CREATE VECTOR INDEX FOR (n2)-[n1:R]-() ON (n2.name)"
+            |                            ^""".stripMargin
+        )
+    }
   }
 
   test("CREATE VECTOR INDEX FOR ()-[n1:R]-(n2) ON (n2.name)") {
     // variable on node
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("""Invalid input 'n2': expected ")""""))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input 'n2': expected ')' (line 1, column 36 (offset: 35))
-          |"CREATE VECTOR INDEX FOR ()-[n1:R]-(n2) ON (n2.name)"
-          |                                    ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("""Invalid input 'n2': expected ")"""")
+      case Antlr => _.withSyntaxError(
+          """Invalid input 'n2': expected ')' (line 1, column 36 (offset: 35))
+            |"CREATE VECTOR INDEX FOR ()-[n1:R]-(n2) ON (n2.name)"
+            |                                    ^""".stripMargin
+        )
+    }
   }
 
   test("CREATE VECTOR INDEX FOR (n2:A)-[n1:R]-() ON (n2.name)") {
     // variable on node
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("""Invalid input '-': expected "ON""""))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input '-': expected 'ON' (line 1, column 31 (offset: 30))
-          |"CREATE VECTOR INDEX FOR (n2:A)-[n1:R]-() ON (n2.name)"
-          |                               ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("""Invalid input '-': expected "ON"""")
+      case Antlr => _.withSyntaxError(
+          """Invalid input '-': expected 'ON' (line 1, column 31 (offset: 30))
+            |"CREATE VECTOR INDEX FOR (n2:A)-[n1:R]-() ON (n2.name)"
+            |                               ^""".stripMargin
+        )
+    }
   }
 
   test("CREATE VECTOR INDEX FOR ()-[n1:R]-(n2:A) ON (n2.name)") {
     // variable on node
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("""Invalid input 'n2': expected ")""""))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input 'n2': expected ')' (line 1, column 36 (offset: 35))
-          |"CREATE VECTOR INDEX FOR ()-[n1:R]-(n2:A) ON (n2.name)"
-          |                                    ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("""Invalid input 'n2': expected ")"""")
+      case Antlr => _.withSyntaxError(
+          """Invalid input 'n2': expected ')' (line 1, column 36 (offset: 35))
+            |"CREATE VECTOR INDEX FOR ()-[n1:R]-(n2:A) ON (n2.name)"
+            |                                    ^""".stripMargin
+        )
+    }
   }
 
   test("CREATE LOOKUP INDEX FOR n1 ON EACH labels(n2)") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(
+    failsParsing[Statements].in {
+      case JavaCc =>
         _.withMessageStart("Invalid input 'n1': expected \"FOR\" or \"IF\" (line 1, column 25 (offset: 24))")
-      )
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input 'n1': expected '(', 'IF NOT EXISTS' or 'FOR' (line 1, column 25 (offset: 24))
-          |"CREATE LOOKUP INDEX FOR n1 ON EACH labels(n2)"
-          |                         ^""".stripMargin
-      ))
+
+      case Antlr => _.withSyntaxError(
+          """Invalid input 'n1': expected '(', 'IF NOT EXISTS' or 'FOR' (line 1, column 25 (offset: 24))
+            |"CREATE LOOKUP INDEX FOR n1 ON EACH labels(n2)"
+            |                         ^""".stripMargin
+        )
+    }
   }
 
   test("CREATE LOOKUP INDEX FOR -[r1]-() ON EACH type(r2)") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(
+    failsParsing[Statements].in {
+      case JavaCc =>
         _.withMessageStart("Invalid input '-': expected \"FOR\" or \"IF\" (line 1, column 25 (offset: 24))")
-      )
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input '-': expected '(', 'IF NOT EXISTS' or 'FOR' (line 1, column 25 (offset: 24))
-          |"CREATE LOOKUP INDEX FOR -[r1]-() ON EACH type(r2)"
-          |                         ^""".stripMargin
-      ))
+
+      case Antlr => _.withSyntaxError(
+          """Invalid input '-': expected '(', 'IF NOT EXISTS' or 'FOR' (line 1, column 25 (offset: 24))
+            |"CREATE LOOKUP INDEX FOR -[r1]-() ON EACH type(r2)"
+            |                         ^""".stripMargin
+        )
+    }
   }
 
   test("CREATE LOOKUP INDEX FOR ()-[r1]- ON EACH type(r2)") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart(
-        "Invalid input 'ON': expected \"(\", \">\" or <ARROW_RIGHT_HEAD> (line 1, column 34 (offset: 33))"
-      ))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input 'ON': expected '>' or '(' (line 1, column 34 (offset: 33))
-          |"CREATE LOOKUP INDEX FOR ()-[r1]- ON EACH type(r2)"
-          |                                  ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart(
+          "Invalid input 'ON': expected \"(\", \">\" or <ARROW_RIGHT_HEAD> (line 1, column 34 (offset: 33))"
+        )
+      case Antlr => _.withSyntaxError(
+          """Invalid input 'ON': expected '>' or '(' (line 1, column 34 (offset: 33))
+            |"CREATE LOOKUP INDEX FOR ()-[r1]- ON EACH type(r2)"
+            |                                  ^""".stripMargin
+        )
+    }
   }
 
   test("CREATE LOOKUP INDEX FOR -[r1]- ON EACH type(r2)") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(
+    failsParsing[Statements].in {
+      case JavaCc =>
         _.withMessageStart("Invalid input '-': expected \"FOR\" or \"IF\" (line 1, column 25 (offset: 24))")
-      )
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input '-': expected '(', 'IF NOT EXISTS' or 'FOR' (line 1, column 25 (offset: 24))
-          |"CREATE LOOKUP INDEX FOR -[r1]- ON EACH type(r2)"
-          |                         ^""".stripMargin
-      ))
+
+      case Antlr => _.withSyntaxError(
+          """Invalid input '-': expected '(', 'IF NOT EXISTS' or 'FOR' (line 1, column 25 (offset: 24))
+            |"CREATE LOOKUP INDEX FOR -[r1]- ON EACH type(r2)"
+            |                         ^""".stripMargin
+        )
+    }
   }
 
   test("CREATE LOOKUP INDEX FOR [r1] ON EACH type(r2)") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(
+    failsParsing[Statements].in {
+      case JavaCc =>
         _.withMessageStart("Invalid input '[': expected \"FOR\" or \"IF\" (line 1, column 25 (offset: 24))")
-      )
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input '[': expected '(', 'IF NOT EXISTS' or 'FOR' (line 1, column 25 (offset: 24))
-          |"CREATE LOOKUP INDEX FOR [r1] ON EACH type(r2)"
-          |                         ^""".stripMargin
-      ))
+
+      case Antlr => _.withSyntaxError(
+          """Invalid input '[': expected '(', 'IF NOT EXISTS' or 'FOR' (line 1, column 25 (offset: 24))
+            |"CREATE LOOKUP INDEX FOR [r1] ON EACH type(r2)"
+            |                         ^""".stripMargin
+        )
+    }
   }
 
   test("CREATE LOOKUP INDEX FOR (n1) EACH labels(n1)") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("Invalid input 'EACH': expected \"ON\" (line 1, column 30 (offset: 29))"))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input 'EACH': expected 'ON EACH' (line 1, column 30 (offset: 29))
-          |"CREATE LOOKUP INDEX FOR (n1) EACH labels(n1)"
-          |                              ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("Invalid input 'EACH': expected \"ON\" (line 1, column 30 (offset: 29))")
+      case Antlr => _.withSyntaxError(
+          """Invalid input 'EACH': expected 'ON EACH' (line 1, column 30 (offset: 29))
+            |"CREATE LOOKUP INDEX FOR (n1) EACH labels(n1)"
+            |                              ^""".stripMargin
+        )
+    }
   }
 
   test("CREATE LOOKUP INDEX FOR ()-[r1]-() EACH type(r2)") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("Invalid input 'EACH': expected \"ON\" (line 1, column 36 (offset: 35))"))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input 'EACH': expected 'ON' (line 1, column 36 (offset: 35))
-          |"CREATE LOOKUP INDEX FOR ()-[r1]-() EACH type(r2)"
-          |                                    ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("Invalid input 'EACH': expected \"ON\" (line 1, column 36 (offset: 35))")
+      case Antlr => _.withSyntaxError(
+          """Invalid input 'EACH': expected 'ON' (line 1, column 36 (offset: 35))
+            |"CREATE LOOKUP INDEX FOR ()-[r1]-() EACH type(r2)"
+            |                                    ^""".stripMargin
+        )
+    }
   }
 
   test("CREATE LOOKUP INDEX FOR (n1) ON labels(n2)") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("Invalid input 'labels': expected \"EACH\" (line 1, column 33 (offset: 32))"))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input 'labels': expected 'EACH' (line 1, column 33 (offset: 32))
-          |"CREATE LOOKUP INDEX FOR (n1) ON labels(n2)"
-          |                                 ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("Invalid input 'labels': expected \"EACH\" (line 1, column 33 (offset: 32))")
+      case Antlr => _.withSyntaxError(
+          """Invalid input 'labels': expected 'EACH' (line 1, column 33 (offset: 32))
+            |"CREATE LOOKUP INDEX FOR (n1) ON labels(n2)"
+            |                                 ^""".stripMargin
+        )
+    }
   }
 
   test("CREATE INDEX FOR (n1) ON EACH labels(n2)") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("Invalid input ')': expected \":\" (line 1, column 21 (offset: 20))"))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input ')': expected ':' (line 1, column 21 (offset: 20))
-          |"CREATE INDEX FOR (n1) ON EACH labels(n2)"
-          |                     ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("Invalid input ')': expected \":\" (line 1, column 21 (offset: 20))")
+      case Antlr => _.withSyntaxError(
+          """Invalid input ')': expected ':' (line 1, column 21 (offset: 20))
+            |"CREATE INDEX FOR (n1) ON EACH labels(n2)"
+            |                     ^""".stripMargin
+        )
+    }
   }
 
   test("CREATE INDEX FOR ()-[r1]-() ON EACH type(r2)") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("Invalid input ']': expected \":\" (line 1, column 24 (offset: 23))"))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input ']': expected ':' (line 1, column 24 (offset: 23))
-          |"CREATE INDEX FOR ()-[r1]-() ON EACH type(r2)"
-          |                        ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("Invalid input ']': expected \":\" (line 1, column 24 (offset: 23))")
+      case Antlr => _.withSyntaxError(
+          """Invalid input ']': expected ':' (line 1, column 24 (offset: 23))
+            |"CREATE INDEX FOR ()-[r1]-() ON EACH type(r2)"
+            |                        ^""".stripMargin
+        )
+    }
   }
 
   test("CREATE FULLTEXT INDEX FOR (n1) ON EACH [n2.x]") {
     // missing label
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("Invalid input ')': expected \":\" (line 1, column 30 (offset: 29))"))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input ')': expected ':' (line 1, column 30 (offset: 29))
-          |"CREATE FULLTEXT INDEX FOR (n1) ON EACH [n2.x]"
-          |                              ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("Invalid input ')': expected \":\" (line 1, column 30 (offset: 29))")
+      case Antlr => _.withSyntaxError(
+          """Invalid input ')': expected ':' (line 1, column 30 (offset: 29))
+            |"CREATE FULLTEXT INDEX FOR (n1) ON EACH [n2.x]"
+            |                              ^""".stripMargin
+        )
+    }
   }
 
   test("CREATE FULLTEXT INDEX FOR ()-[n1]-() ON EACH [n2.x]") {
     // missing relationship type
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("Invalid input ']': expected \":\" (line 1, column 33 (offset: 32))"))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input ']': expected ':' (line 1, column 33 (offset: 32))
-          |"CREATE FULLTEXT INDEX FOR ()-[n1]-() ON EACH [n2.x]"
-          |                                 ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("Invalid input ']': expected \":\" (line 1, column 33 (offset: 32))")
+      case Antlr => _.withSyntaxError(
+          """Invalid input ']': expected ':' (line 1, column 33 (offset: 32))
+            |"CREATE FULLTEXT INDEX FOR ()-[n1]-() ON EACH [n2.x]"
+            |                                 ^""".stripMargin
+        )
+    }
   }
 
   test("CREATE FULLTEXT INDEX FOR (n1|:A) ON EACH [n2.x]") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("Invalid input '|': expected \":\" (line 1, column 30 (offset: 29))"))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input '|': expected ':' (line 1, column 30 (offset: 29))
-          |"CREATE FULLTEXT INDEX FOR (n1|:A) ON EACH [n2.x]"
-          |                              ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("Invalid input '|': expected \":\" (line 1, column 30 (offset: 29))")
+      case Antlr => _.withSyntaxError(
+          """Invalid input '|': expected ':' (line 1, column 30 (offset: 29))
+            |"CREATE FULLTEXT INDEX FOR (n1|:A) ON EACH [n2.x]"
+            |                              ^""".stripMargin
+        )
+    }
   }
 
   test("CREATE FULLTEXT INDEX FOR ()-[n1|:R]-() ON EACH [n2.x]") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("Invalid input '|': expected \":\" (line 1, column 33 (offset: 32))"))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input '|': expected ':' (line 1, column 33 (offset: 32))
-          |"CREATE FULLTEXT INDEX FOR ()-[n1|:R]-() ON EACH [n2.x]"
-          |                                 ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("Invalid input '|': expected \":\" (line 1, column 33 (offset: 32))")
+      case Antlr => _.withSyntaxError(
+          """Invalid input '|': expected ':' (line 1, column 33 (offset: 32))
+            |"CREATE FULLTEXT INDEX FOR ()-[n1|:R]-() ON EACH [n2.x]"
+            |                                 ^""".stripMargin
+        )
+    }
   }
 
   test("CREATE FULLTEXT INDEX FOR (n1:A|:B) ON EACH [n2.x]") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("Invalid input ':': expected an identifier (line 1, column 33 (offset: 32))"))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input ':': expected an identifier (line 1, column 33 (offset: 32))
-          |"CREATE FULLTEXT INDEX FOR (n1:A|:B) ON EACH [n2.x]"
-          |                                 ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("Invalid input ':': expected an identifier (line 1, column 33 (offset: 32))")
+      case Antlr => _.withSyntaxError(
+          """Invalid input ':': expected an identifier (line 1, column 33 (offset: 32))
+            |"CREATE FULLTEXT INDEX FOR (n1:A|:B) ON EACH [n2.x]"
+            |                                 ^""".stripMargin
+        )
+    }
   }
 
   test("CREATE FULLTEXT INDEX FOR ()-[n1:R|:S]-() ON EACH [n2.x]") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("Invalid input ':': expected an identifier (line 1, column 36 (offset: 35))"))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input ':': expected an identifier (line 1, column 36 (offset: 35))
-          |"CREATE FULLTEXT INDEX FOR ()-[n1:R|:S]-() ON EACH [n2.x]"
-          |                                    ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("Invalid input ':': expected an identifier (line 1, column 36 (offset: 35))")
+      case Antlr => _.withSyntaxError(
+          """Invalid input ':': expected an identifier (line 1, column 36 (offset: 35))
+            |"CREATE FULLTEXT INDEX FOR ()-[n1:R|:S]-() ON EACH [n2.x]"
+            |                                    ^""".stripMargin
+        )
+    }
   }
 
   test("CREATE FULLTEXT INDEX FOR (n1:A||B) ON EACH [n2.x]") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(
+    failsParsing[Statements].in {
+      case JavaCc =>
         _.withMessageStart("Invalid input '||': expected \")\" or \"|\" (line 1, column 32 (offset: 31))")
-      )
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input '||': expected ')' or '|' (line 1, column 32 (offset: 31))
-          |"CREATE FULLTEXT INDEX FOR (n1:A||B) ON EACH [n2.x]"
-          |                                ^""".stripMargin
-      ))
+
+      case Antlr => _.withSyntaxError(
+          """Invalid input '||': expected ')' or '|' (line 1, column 32 (offset: 31))
+            |"CREATE FULLTEXT INDEX FOR (n1:A||B) ON EACH [n2.x]"
+            |                                ^""".stripMargin
+        )
+    }
   }
 
   test("CREATE FULLTEXT INDEX FOR ()-[n1:R||S]-() ON EACH [n2.x]") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(
+    failsParsing[Statements].in {
+      case JavaCc =>
         _.withMessageStart("Invalid input '||': expected \"]\" or \"|\" (line 1, column 35 (offset: 34))")
-      )
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input '||': expected ']' or '|' (line 1, column 35 (offset: 34))
-          |"CREATE FULLTEXT INDEX FOR ()-[n1:R||S]-() ON EACH [n2.x]"
-          |                                   ^""".stripMargin
-      ))
+
+      case Antlr => _.withSyntaxError(
+          """Invalid input '||': expected ']' or '|' (line 1, column 35 (offset: 34))
+            |"CREATE FULLTEXT INDEX FOR ()-[n1:R||S]-() ON EACH [n2.x]"
+            |                                   ^""".stripMargin
+        )
+    }
   }
 
   test("CREATE FULLTEXT INDEX FOR (n1:A:B) ON EACH [n2.x]") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(
+    failsParsing[Statements].in {
+      case JavaCc =>
         _.withMessageStart("Invalid input ':': expected \")\" or \"|\" (line 1, column 32 (offset: 31))")
-      )
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input ':': expected ')' or '|' (line 1, column 32 (offset: 31))
-          |"CREATE FULLTEXT INDEX FOR (n1:A:B) ON EACH [n2.x]"
-          |                                ^""".stripMargin
-      ))
+
+      case Antlr => _.withSyntaxError(
+          """Invalid input ':': expected ')' or '|' (line 1, column 32 (offset: 31))
+            |"CREATE FULLTEXT INDEX FOR (n1:A:B) ON EACH [n2.x]"
+            |                                ^""".stripMargin
+        )
+    }
   }
 
   test("CREATE FULLTEXT INDEX FOR ()-[n1:R:S]-() ON EACH [n2.x]") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(
+    failsParsing[Statements].in {
+      case JavaCc =>
         _.withMessageStart("Invalid input ':': expected \"]\" or \"|\" (line 1, column 35 (offset: 34))")
-      )
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input ':': expected ']' or '|' (line 1, column 35 (offset: 34))
-          |"CREATE FULLTEXT INDEX FOR ()-[n1:R:S]-() ON EACH [n2.x]"
-          |                                   ^""".stripMargin
-      ))
+
+      case Antlr => _.withSyntaxError(
+          """Invalid input ':': expected ']' or '|' (line 1, column 35 (offset: 34))
+            |"CREATE FULLTEXT INDEX FOR ()-[n1:R:S]-() ON EACH [n2.x]"
+            |                                   ^""".stripMargin
+        )
+    }
   }
 
   test("CREATE FULLTEXT INDEX FOR (n1:A&B) ON EACH [n2.x]") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(
+    failsParsing[Statements].in {
+      case JavaCc =>
         _.withMessageStart("Invalid input '&': expected \")\" or \"|\" (line 1, column 32 (offset: 31))")
-      )
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input '&': expected ')' or '|' (line 1, column 32 (offset: 31))
-          |"CREATE FULLTEXT INDEX FOR (n1:A&B) ON EACH [n2.x]"
-          |                                ^""".stripMargin
-      ))
+
+      case Antlr => _.withSyntaxError(
+          """Invalid input '&': expected ')' or '|' (line 1, column 32 (offset: 31))
+            |"CREATE FULLTEXT INDEX FOR (n1:A&B) ON EACH [n2.x]"
+            |                                ^""".stripMargin
+        )
+    }
   }
 
   test("CREATE FULLTEXT INDEX FOR ()-[n1:R&S]-() ON EACH [n2.x]") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(
+    failsParsing[Statements].in {
+      case JavaCc =>
         _.withMessageStart("Invalid input '&': expected \"]\" or \"|\" (line 1, column 35 (offset: 34))")
-      )
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input '&': expected ']' or '|' (line 1, column 35 (offset: 34))
-          |"CREATE FULLTEXT INDEX FOR ()-[n1:R&S]-() ON EACH [n2.x]"
-          |                                   ^""".stripMargin
-      ))
+
+      case Antlr => _.withSyntaxError(
+          """Invalid input '&': expected ']' or '|' (line 1, column 35 (offset: 34))
+            |"CREATE FULLTEXT INDEX FOR ()-[n1:R&S]-() ON EACH [n2.x]"
+            |                                   ^""".stripMargin
+        )
+    }
   }
 
   test("CREATE FULLTEXT INDEX FOR (n1:A B) ON EACH [n2.x]") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(
+    failsParsing[Statements].in {
+      case JavaCc =>
         _.withMessageStart("Invalid input 'B': expected \")\" or \"|\" (line 1, column 33 (offset: 32))")
-      )
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input 'B': expected ')' or '|' (line 1, column 33 (offset: 32))
-          |"CREATE FULLTEXT INDEX FOR (n1:A B) ON EACH [n2.x]"
-          |                                 ^""".stripMargin
-      ))
+
+      case Antlr => _.withSyntaxError(
+          """Invalid input 'B': expected ')' or '|' (line 1, column 33 (offset: 32))
+            |"CREATE FULLTEXT INDEX FOR (n1:A B) ON EACH [n2.x]"
+            |                                 ^""".stripMargin
+        )
+    }
   }
 
   test("CREATE FULLTEXT INDEX FOR ()-[n1:R S]-() ON EACH [n2.x]") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(
+    failsParsing[Statements].in {
+      case JavaCc =>
         _.withMessageStart("Invalid input 'S': expected \"]\" or \"|\" (line 1, column 36 (offset: 35))")
-      )
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input 'S': expected ']' or '|' (line 1, column 36 (offset: 35))
-          |"CREATE FULLTEXT INDEX FOR ()-[n1:R S]-() ON EACH [n2.x]"
-          |                                    ^""".stripMargin
-      ))
+
+      case Antlr => _.withSyntaxError(
+          """Invalid input 'S': expected ']' or '|' (line 1, column 36 (offset: 35))
+            |"CREATE FULLTEXT INDEX FOR ()-[n1:R S]-() ON EACH [n2.x]"
+            |                                    ^""".stripMargin
+        )
+    }
   }
 
   test("CREATE FULLTEXT INDEX FOR (:A)-[n1:R]-() ON EACH [n2.name]") {
     // label on node
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("""Invalid input ':': expected ")" or an identifier"""))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input ':': expected a variable name or ')' (line 1, column 28 (offset: 27))
-          |"CREATE FULLTEXT INDEX FOR (:A)-[n1:R]-() ON EACH [n2.name]"
-          |                            ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("""Invalid input ':': expected ")" or an identifier""")
+      case Antlr => _.withSyntaxError(
+          """Invalid input ':': expected a variable name or ')' (line 1, column 28 (offset: 27))
+            |"CREATE FULLTEXT INDEX FOR (:A)-[n1:R]-() ON EACH [n2.name]"
+            |                            ^""".stripMargin
+        )
+    }
   }
 
   test("CREATE FULLTEXT INDEX FOR ()-[n1:R]-(:A) ON EACH [n2.name]") {
     // label on node
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("""Invalid input ':': expected ")""""))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input ':': expected ')' (line 1, column 38 (offset: 37))
-          |"CREATE FULLTEXT INDEX FOR ()-[n1:R]-(:A) ON EACH [n2.name]"
-          |                                      ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("""Invalid input ':': expected ")"""")
+      case Antlr => _.withSyntaxError(
+          """Invalid input ':': expected ')' (line 1, column 38 (offset: 37))
+            |"CREATE FULLTEXT INDEX FOR ()-[n1:R]-(:A) ON EACH [n2.name]"
+            |                                      ^""".stripMargin
+        )
+    }
   }
 
   test("CREATE FULLTEXT INDEX FOR (n2)-[n1:R]-() ON EACH [n2.name]") {
     // variable on node
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("""Invalid input ')': expected ":""""))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input ')': expected ':' (line 1, column 30 (offset: 29))
-          |"CREATE FULLTEXT INDEX FOR (n2)-[n1:R]-() ON EACH [n2.name]"
-          |                              ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("""Invalid input ')': expected ":"""")
+      case Antlr => _.withSyntaxError(
+          """Invalid input ')': expected ':' (line 1, column 30 (offset: 29))
+            |"CREATE FULLTEXT INDEX FOR (n2)-[n1:R]-() ON EACH [n2.name]"
+            |                              ^""".stripMargin
+        )
+    }
   }
 
   test("CREATE FULLTEXT INDEX FOR ()-[n1:R]-(n2) ON EACH [n2.name]") {
     // variable on node
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("""Invalid input 'n2': expected ")""""))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input 'n2': expected ')' (line 1, column 38 (offset: 37))
-          |"CREATE FULLTEXT INDEX FOR ()-[n1:R]-(n2) ON EACH [n2.name]"
-          |                                      ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("""Invalid input 'n2': expected ")"""")
+      case Antlr => _.withSyntaxError(
+          """Invalid input 'n2': expected ')' (line 1, column 38 (offset: 37))
+            |"CREATE FULLTEXT INDEX FOR ()-[n1:R]-(n2) ON EACH [n2.name]"
+            |                                      ^""".stripMargin
+        )
+    }
   }
 
   test("CREATE FULLTEXT INDEX FOR (n2:A)-[n1:R]-() ON EACH [n2.name]") {
     // variable on node
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("""Invalid input '-': expected "ON""""))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input '-': expected 'ON' (line 1, column 33 (offset: 32))
-          |"CREATE FULLTEXT INDEX FOR (n2:A)-[n1:R]-() ON EACH [n2.name]"
-          |                                 ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("""Invalid input '-': expected "ON"""")
+      case Antlr => _.withSyntaxError(
+          """Invalid input '-': expected 'ON' (line 1, column 33 (offset: 32))
+            |"CREATE FULLTEXT INDEX FOR (n2:A)-[n1:R]-() ON EACH [n2.name]"
+            |                                 ^""".stripMargin
+        )
+    }
   }
 
   test("CREATE FULLTEXT INDEX FOR ()-[n1:R]-(n2:A) ON EACH [n2.name]") {
     // variable on node
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("""Invalid input 'n2': expected ")""""))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input 'n2': expected ')' (line 1, column 38 (offset: 37))
-          |"CREATE FULLTEXT INDEX FOR ()-[n1:R]-(n2:A) ON EACH [n2.name]"
-          |                                      ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("""Invalid input 'n2': expected ")"""")
+      case Antlr => _.withSyntaxError(
+          """Invalid input 'n2': expected ')' (line 1, column 38 (offset: 37))
+            |"CREATE FULLTEXT INDEX FOR ()-[n1:R]-(n2:A) ON EACH [n2.name]"
+            |                                      ^""".stripMargin
+        )
+    }
   }
 
   test("CREATE UNKNOWN INDEX FOR (n1:Person) ON (n2.name)") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart(
-        "Invalid input 'UNKNOWN': expected \"(\", \"ALL\", \"ANY\" or \"SHORTEST\" (line 1, column 8 (offset: 7))"
-      ))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input 'INDEX': expected a graph pattern (line 1, column 16 (offset: 15))
-          |"CREATE UNKNOWN INDEX FOR (n1:Person) ON (n2.name)"
-          |                ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart(
+          "Invalid input 'UNKNOWN': expected \"(\", \"ALL\", \"ANY\" or \"SHORTEST\" (line 1, column 8 (offset: 7))"
+        )
+      case Antlr => _.withSyntaxError(
+          """Invalid input 'INDEX': expected a graph pattern (line 1, column 16 (offset: 15))
+            |"CREATE UNKNOWN INDEX FOR (n1:Person) ON (n2.name)"
+            |                ^""".stripMargin
+        )
+    }
   }
 
   test("CREATE BUILT IN INDEX FOR (n1:Person) ON (n2.name)") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart(
-        "Invalid input 'BUILT': expected \"(\", \"ALL\", \"ANY\" or \"SHORTEST\" (line 1, column 8 (offset: 7))"
-      ))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input 'IN': expected a graph pattern (line 1, column 14 (offset: 13))
-          |"CREATE BUILT IN INDEX FOR (n1:Person) ON (n2.name)"
-          |              ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart(
+          "Invalid input 'BUILT': expected \"(\", \"ALL\", \"ANY\" or \"SHORTEST\" (line 1, column 8 (offset: 7))"
+        )
+      case Antlr => _.withSyntaxError(
+          """Invalid input 'IN': expected a graph pattern (line 1, column 14 (offset: 13))
+            |"CREATE BUILT IN INDEX FOR (n1:Person) ON (n2.name)"
+            |              ^""".stripMargin
+        )
+    }
   }
 
   // Drop index
@@ -3294,111 +3386,117 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   }
 
   test("DROP INDEX my_index ON :Person(name)") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart(
-        "Invalid input 'ON': expected \"IF\" or <EOF> (line 1, column 21 (offset: 20))"
-      ))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input 'ON': expected 'IF EXISTS' or <EOF> (line 1, column 21 (offset: 20))
-          |"DROP INDEX my_index ON :Person(name)"
-          |                     ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart(
+          "Invalid input 'ON': expected \"IF\" or <EOF> (line 1, column 21 (offset: 20))"
+        )
+      case Antlr => _.withSyntaxError(
+          """Invalid input 'ON': expected 'IF EXISTS' or <EOF> (line 1, column 21 (offset: 20))
+            |"DROP INDEX my_index ON :Person(name)"
+            |                     ^""".stripMargin
+        )
+    }
   }
 
   test("DROP INDEX ON (:Person(name))") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(
-        _.withMessageStart("Invalid input '(': expected \"IF\" or <EOF> (line 1, column 15 (offset: 14))")
-      )
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input '(': expected ':', 'IF EXISTS' or <EOF> (line 1, column 15 (offset: 14))
-          |"DROP INDEX ON (:Person(name))"
-          |               ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("Invalid input '(': expected \"IF\" or <EOF> (line 1, column 15 (offset: 14))")
+      case Antlr => _.withSyntaxError(
+          """Invalid input '(': expected ':', 'IF EXISTS' or <EOF> (line 1, column 15 (offset: 14))
+            |"DROP INDEX ON (:Person(name))"
+            |               ^""".stripMargin
+        )
+    }
   }
 
   test("DROP INDEX ON (:Person {name})") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(
+    failsParsing[Statements].in {
+      case JavaCc =>
         _.withMessageStart("Invalid input '(': expected \"IF\" or <EOF> (line 1, column 15 (offset: 14))")
-      )
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input '(': expected ':', 'IF EXISTS' or <EOF> (line 1, column 15 (offset: 14))
-          |"DROP INDEX ON (:Person {name})"
-          |               ^""".stripMargin
-      ))
+      case Antlr => _.withSyntaxError(
+          """Invalid input '(': expected ':', 'IF EXISTS' or <EOF> (line 1, column 15 (offset: 14))
+            |"DROP INDEX ON (:Person {name})"
+            |               ^""".stripMargin
+        )
+    }
   }
 
   test("DROP INDEX ON [:Person(name)]") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(
+    failsParsing[Statements].in {
+      case JavaCc =>
         _.withMessageStart("Invalid input '[': expected \"IF\" or <EOF> (line 1, column 15 (offset: 14))")
-      )
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input '[': expected ':', 'IF EXISTS' or <EOF> (line 1, column 15 (offset: 14))
-          |"DROP INDEX ON [:Person(name)]"
-          |               ^""".stripMargin
-      ))
+
+      case Antlr => _.withSyntaxError(
+          """Invalid input '[': expected ':', 'IF EXISTS' or <EOF> (line 1, column 15 (offset: 14))
+            |"DROP INDEX ON [:Person(name)]"
+            |               ^""".stripMargin
+        )
+    }
   }
 
   test("DROP INDEX ON -[:Person(name)]-") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(
+    failsParsing[Statements].in {
+      case JavaCc =>
         _.withMessageStart("Invalid input '-': expected \"IF\" or <EOF> (line 1, column 15 (offset: 14))")
-      )
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input '-': expected ':', 'IF EXISTS' or <EOF> (line 1, column 15 (offset: 14))
-          |"DROP INDEX ON -[:Person(name)]-"
-          |               ^""".stripMargin
-      ))
+
+      case Antlr => _.withSyntaxError(
+          """Invalid input '-': expected ':', 'IF EXISTS' or <EOF> (line 1, column 15 (offset: 14))
+            |"DROP INDEX ON -[:Person(name)]-"
+            |               ^""".stripMargin
+        )
+    }
   }
 
   test("DROP INDEX ON ()-[:Person(name)]-()") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(
+    failsParsing[Statements].in {
+      case JavaCc =>
         _.withMessageStart("Invalid input '(': expected \"IF\" or <EOF> (line 1, column 15 (offset: 14))")
-      )
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input '(': expected ':', 'IF EXISTS' or <EOF> (line 1, column 15 (offset: 14))
-          |"DROP INDEX ON ()-[:Person(name)]-()"
-          |               ^""".stripMargin
-      ))
+
+      case Antlr => _.withSyntaxError(
+          """Invalid input '(': expected ':', 'IF EXISTS' or <EOF> (line 1, column 15 (offset: 14))
+            |"DROP INDEX ON ()-[:Person(name)]-()"
+            |               ^""".stripMargin
+        )
+    }
   }
 
   test("DROP INDEX ON [:Person {name}]") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(
+    failsParsing[Statements].in {
+      case JavaCc =>
         _.withMessageStart("Invalid input '[': expected \"IF\" or <EOF> (line 1, column 15 (offset: 14))")
-      )
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input '[': expected ':', 'IF EXISTS' or <EOF> (line 1, column 15 (offset: 14))
-          |"DROP INDEX ON [:Person {name}]"
-          |               ^""".stripMargin
-      ))
+
+      case Antlr => _.withSyntaxError(
+          """Invalid input '[': expected ':', 'IF EXISTS' or <EOF> (line 1, column 15 (offset: 14))
+            |"DROP INDEX ON [:Person {name}]"
+            |               ^""".stripMargin
+        )
+    }
   }
 
   test("DROP INDEX ON -[:Person {name}]-") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(
+    failsParsing[Statements].in {
+      case JavaCc =>
         _.withMessageStart("Invalid input '-': expected \"IF\" or <EOF> (line 1, column 15 (offset: 14))")
-      )
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input '-': expected ':', 'IF EXISTS' or <EOF> (line 1, column 15 (offset: 14))
-          |"DROP INDEX ON -[:Person {name}]-"
-          |               ^""".stripMargin
-      ))
+
+      case Antlr => _.withSyntaxError(
+          """Invalid input '-': expected ':', 'IF EXISTS' or <EOF> (line 1, column 15 (offset: 14))
+            |"DROP INDEX ON -[:Person {name}]-"
+            |               ^""".stripMargin
+        )
+    }
   }
 
   test("DROP INDEX ON ()-[:Person {name}]-()") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(
+    failsParsing[Statements].in {
+      case JavaCc =>
         _.withMessageStart("Invalid input '(': expected \"IF\" or <EOF> (line 1, column 15 (offset: 14))")
-      )
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input '(': expected ':', 'IF EXISTS' or <EOF> (line 1, column 15 (offset: 14))
-          |"DROP INDEX ON ()-[:Person {name}]-()"
-          |               ^""".stripMargin
-      ))
+
+      case Antlr => _.withSyntaxError(
+          """Invalid input '(': expected ':', 'IF EXISTS' or <EOF> (line 1, column 15 (offset: 14))
+            |"DROP INDEX ON ()-[:Person {name}]-()"
+            |               ^""".stripMargin
+        )
+    }
   }
 
   test("DROP INDEX on IF EXISTS") {

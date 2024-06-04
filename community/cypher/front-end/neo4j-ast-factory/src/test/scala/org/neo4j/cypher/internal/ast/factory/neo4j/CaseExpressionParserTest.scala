@@ -26,7 +26,6 @@ import org.neo4j.cypher.internal.expressions.InvalidNotEquals
 import org.neo4j.cypher.internal.expressions.NFCNormalForm
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.symbols.IntegerType
-import org.neo4j.exceptions.SyntaxException
 
 class CaseExpressionParserTest extends AstParsingTestBase {
 
@@ -316,53 +315,58 @@ class CaseExpressionParserTest extends AstParsingTestBase {
   }
 
   test("RETURN CASE when(v1) + 1 WHEN THEN v2 ELSE null END") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("Invalid input 'v2'"))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input 'v2': expected an expression, ',' or 'THEN' (line 1, column 36 (offset: 35))
-          |"RETURN CASE when(v1) + 1 WHEN THEN v2 ELSE null END"
-          |                                    ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("Invalid input 'v2'")
+      case Antlr => _.withSyntaxError(
+          """Invalid input 'v2': expected an expression, ',' or 'THEN' (line 1, column 36 (offset: 35))
+            |"RETURN CASE when(v1) + 1 WHEN THEN v2 ELSE null END"
+            |                                    ^""".stripMargin
+        )
+    }
   }
 
   test("RETURN CASE ELSE null END") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("Invalid input 'ELSE'"))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input 'ELSE': expected an expression, 'FOREACH', ',', 'AS', 'ORDER BY', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'LIMIT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'SKIP', 'UNION', 'UNWIND', 'USE', 'WITH' or <EOF> (line 1, column 13 (offset: 12))
-          |"RETURN CASE ELSE null END"
-          |             ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("Invalid input 'ELSE'")
+      case Antlr => _.withSyntaxError(
+          """Invalid input 'ELSE': expected an expression, 'FOREACH', ',', 'AS', 'ORDER BY', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'LIMIT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'SKIP', 'UNION', 'UNWIND', 'USE', 'WITH' or <EOF> (line 1, column 13 (offset: 12))
+            |"RETURN CASE ELSE null END"
+            |             ^""".stripMargin
+        )
+    }
   }
 
   test("RETURN CASE WHEN THEN v2 ELSE null END") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("Invalid input 'v2'"))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input 'WHEN': expected an expression, 'FOREACH', ',', 'AS', 'ORDER BY', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'LIMIT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'SKIP', 'UNION', 'UNWIND', 'USE', 'WITH' or <EOF> (line 1, column 13 (offset: 12))
-          |"RETURN CASE WHEN THEN v2 ELSE null END"
-          |             ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("Invalid input 'v2'")
+      case Antlr => _.withSyntaxError(
+          """Invalid input 'WHEN': expected an expression, 'FOREACH', ',', 'AS', 'ORDER BY', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'LIMIT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'SKIP', 'UNION', 'UNWIND', 'USE', 'WITH' or <EOF> (line 1, column 13 (offset: 12))
+            |"RETURN CASE WHEN THEN v2 ELSE null END"
+            |             ^""".stripMargin
+        )
+    }
   }
 
   test("RETURN CASE WHEN true, false THEN v2 ELSE null END") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("Invalid input ','"))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input 'WHEN': expected an expression, 'FOREACH', ',', 'AS', 'ORDER BY', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'LIMIT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'SKIP', 'UNION', 'UNWIND', 'USE', 'WITH' or <EOF> (line 1, column 13 (offset: 12))
-          |"RETURN CASE WHEN true, false THEN v2 ELSE null END"
-          |             ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("Invalid input ','")
+      case Antlr => _.withSyntaxError(
+          """Invalid input 'WHEN': expected an expression, 'FOREACH', ',', 'AS', 'ORDER BY', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'LIMIT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'SKIP', 'UNION', 'UNWIND', 'USE', 'WITH' or <EOF> (line 1, column 13 (offset: 12))
+            |"RETURN CASE WHEN true, false THEN v2 ELSE null END"
+            |             ^""".stripMargin
+        )
+    }
   }
 
   test("RETURN CASE n WHEN true, false, THEN 1 ELSE null END") {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("Invalid input '1'"))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input '1': expected an expression, ',' or 'THEN' (line 1, column 38 (offset: 37))
-          |"RETURN CASE n WHEN true, false, THEN 1 ELSE null END"
-          |                                      ^""".stripMargin
-      ))
+    failsParsing[Statements].in {
+      case JavaCc => _.withMessageStart("Invalid input '1'")
+      case Antlr => _.withSyntaxError(
+          """Invalid input '1': expected an expression, ',' or 'THEN' (line 1, column 38 (offset: 37))
+            |"RETURN CASE n WHEN true, false, THEN 1 ELSE null END"
+            |                                      ^""".stripMargin
+        )
+    }
   }
 
   test("case expression combinations") {
