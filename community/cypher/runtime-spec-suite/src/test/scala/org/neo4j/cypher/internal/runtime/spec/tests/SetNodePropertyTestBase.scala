@@ -467,6 +467,9 @@ abstract class SetNodePropertyTestBase[CONTEXT <: RuntimeContext](
     invalidateCachedPropsTest(7) { builder =>
       builder.setPropertiesFromMap("n", "{prop: n.prop + 1}", removeOtherProps = true)
     }
+    invalidateCachedPropsTest(8) { builder =>
+      builder.setDynamicProperty("n", "'prop'", "n.prop + 1")
+    }
   }
 
   private def invalidateCachedPropsTest(expected: Long)(setOp: LogicalQueryBuilder => LogicalQueryBuilder): Unit = {
