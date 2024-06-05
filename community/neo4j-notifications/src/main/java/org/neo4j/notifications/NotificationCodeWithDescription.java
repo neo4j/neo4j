@@ -19,6 +19,7 @@
  */
 package org.neo4j.notifications;
 
+import java.util.List;
 import org.neo4j.gqlstatus.Condition;
 import org.neo4j.gqlstatus.GqlStatus;
 import org.neo4j.gqlstatus.GqlStatusInfoNotifications;
@@ -348,15 +349,17 @@ public enum NotificationCodeWithDescription {
     }
 
     public static NotificationImplementation joinHintUnfulfillable(
-            InputPosition position, String oldDetail, String variableNames) {
+            InputPosition position, String oldDetail, List<String> variableNames) {
+        String variableNameString = String.join(", ", variableNames);
         return JOIN_HINT_UNFULFILLABLE.notificationWithParameters(
-                position, new String[] {oldDetail}, new String[] {variableNames});
+                position, new String[] {oldDetail}, new String[] {variableNameString});
     }
 
     public static NotificationImplementation indexLookupForDynamicProperty(
-            InputPosition position, String oldDetails, String parameters) {
+            InputPosition position, String oldDetails, List<String> parameters) {
+        String parametersString = String.join(", ", parameters);
         return INDEX_LOOKUP_FOR_DYNAMIC_PROPERTY.notificationWithParameters(
-                position, new String[] {oldDetails}, new String[] {parameters});
+                position, new String[] {oldDetails}, new String[] {parametersString});
     }
 
     public static NotificationImplementation deprecatedFunctionWithoutReplacement(
@@ -513,15 +516,18 @@ public enum NotificationCodeWithDescription {
         return UNBOUNDED_SHORTEST_PATH.notificationWithParameters(position, new String[] {}, new String[] {pattern});
     }
 
-    public static NotificationImplementation exhaustiveShortestPath(InputPosition position, String pathPredicates) {
+    public static NotificationImplementation exhaustiveShortestPath(
+            InputPosition position, List<String> pathPredicates) {
+        String pathPredicatesString = String.join(", ", pathPredicates);
         return EXHAUSTIVE_SHORTEST_PATH.notificationWithParameters(
-                position, new String[] {}, new String[] {pathPredicates});
+                position, new String[] {}, new String[] {pathPredicatesString});
     }
 
     public static NotificationImplementation missingParameterForExplain(
-            InputPosition position, String oldDetails, String parameters) {
+            InputPosition position, String oldDetails, List<String> parameters) {
+        String parametersString = String.join(", ", parameters);
         return MISSING_PARAMETERS_FOR_EXPLAIN.notificationWithParameters(
-                position, new String[] {oldDetails}, new String[] {parameters});
+                position, new String[] {oldDetails}, new String[] {parametersString});
     }
 
     public static NotificationImplementation codeGenerationFailed(
@@ -622,9 +628,13 @@ public enum NotificationCodeWithDescription {
         return NO_DATABASES_REALLOCATED.notification(position);
     }
 
-    public static NotificationImplementation cordonedServersExist(InputPosition position, String servers) {
+    public static NotificationImplementation cordonedServersExist(InputPosition position, List<String> servers) {
+        // Keep description without spaces to avoid breaking change
+        String serverStringWithoutSpaces = String.join(",", servers);
+
+        String serverString = String.join(", ", servers);
         return CORDONED_SERVERS_EXISTED_DURING_ALLOCATION.notificationWithParameters(
-                position, new String[] {servers}, new String[] {servers});
+                position, new String[] {serverStringWithoutSpaces}, new String[] {serverString});
     }
 
     public static NotificationImplementation requestedTopologyMatchedCurrentTopology(InputPosition position) {

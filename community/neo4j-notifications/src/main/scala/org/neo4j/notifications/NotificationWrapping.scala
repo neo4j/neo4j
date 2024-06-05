@@ -97,21 +97,19 @@ object NotificationWrapping {
       NotificationCodeWithDescription.joinHintUnfulfillable(
         graphdb.InputPosition.empty,
         NotificationDetail.joinKey(javaVariables),
-        NotificationDetail.commaSeparated(javaVariables)
+        javaVariables
       )
     case NodeIndexLookupUnfulfillableNotification(labels) =>
-      val javaLabels = labels.asJava
       NotificationCodeWithDescription.indexLookupForDynamicProperty(
         graphdb.InputPosition.empty,
-        NotificationDetail.nodeIndexSeekOrScan(javaLabels),
-        NotificationDetail.commaSeparated(javaLabels)
+        NotificationDetail.nodeIndexSeekOrScan(labels.asJava),
+        labels.toSeq.asJava
       )
     case RelationshipIndexLookupUnfulfillableNotification(relTypes) =>
-      val javaRelTypes = relTypes.asJava
       NotificationCodeWithDescription.indexLookupForDynamicProperty(
         graphdb.InputPosition.empty,
-        NotificationDetail.relationshipIndexSeekOrScan(javaRelTypes),
-        NotificationDetail.commaSeparated(javaRelTypes)
+        NotificationDetail.relationshipIndexSeekOrScan(relTypes.asJava),
+        relTypes.toSeq.asJava
       )
     case EagerLoadCsvNotification =>
       NotificationCodeWithDescription.eagerLoadCsv(graphdb.InputPosition.empty)
@@ -143,7 +141,7 @@ object NotificationWrapping {
     case ExhaustiveShortestPathForbiddenNotification(pos, pathPredicates) =>
       NotificationCodeWithDescription.exhaustiveShortestPath(
         pos.withOffset(offset).asInputPosition,
-        NotificationDetail.commaSeparated(pathPredicates.asJava)
+        pathPredicates.toSeq.asJava
       )
     case DeprecatedFunctionNotification(pos, oldName, newName) =>
       if (newName.isEmpty || newName.get.trim.isEmpty)
@@ -225,11 +223,10 @@ object NotificationWrapping {
         name
       )
     case MissingParametersNotification(parameters) =>
-      val javaParameters = parameters.asJava
       NotificationCodeWithDescription.missingParameterForExplain(
         graphdb.InputPosition.empty,
-        NotificationDetail.missingParameters(javaParameters),
-        NotificationDetail.parameters(javaParameters)
+        NotificationDetail.missingParameters(parameters.asJava),
+        parameters.map(parameter => "$" + parameter).asJava
       )
     case CodeGenerationFailedNotification(failingConf, fallbackRuntimeConf, cause) =>
       NotificationCodeWithDescription.codeGenerationFailed(
@@ -388,7 +385,7 @@ object NotificationWrapping {
     case CordonedServersExistedDuringAllocation(servers) =>
       NotificationCodeWithDescription.cordonedServersExist(
         graphdb.InputPosition.empty,
-        servers
+        servers.asJava
       )
 
     case RequestedTopologyMatchedCurrentTopology() =>

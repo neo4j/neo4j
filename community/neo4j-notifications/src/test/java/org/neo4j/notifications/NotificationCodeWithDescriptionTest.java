@@ -223,9 +223,7 @@ class NotificationCodeWithDescriptionTest {
     @Test
     void shouldConstructNotificationsFor_JOIN_HINT_UNFULFILLABLE() {
         NotificationImplementation notification = joinHintUnfulfillable(
-                InputPosition.empty,
-                NotificationDetail.joinKey(List.of("n", "node2")),
-                NotificationDetail.commaSeparated(List.of("n", "node2")));
+                InputPosition.empty, NotificationDetail.joinKey(List.of("n", "node2")), List.of("n", "node2"));
 
         verifyNotification(
                 notification,
@@ -301,9 +299,7 @@ class NotificationCodeWithDescriptionTest {
     @Test
     void shouldConstructNotificationsFor_INDEX_LOOKUP_FOR_DYNAMIC_PROPERTY() {
         NotificationImplementation notification = indexLookupForDynamicProperty(
-                InputPosition.empty,
-                NotificationDetail.nodeIndexSeekOrScan(Set.of("A")),
-                NotificationDetail.commaSeparated(Set.of("A")));
+                InputPosition.empty, NotificationDetail.nodeIndexSeekOrScan(Set.of("A")), List.of("A"));
 
         verifyNotification(
                 notification,
@@ -655,8 +651,7 @@ class NotificationCodeWithDescriptionTest {
 
     @Test
     void shouldConstructNotificationsFor_EXHAUSTIVE_SHORTEST_PATH() {
-        NotificationImplementation notification =
-                exhaustiveShortestPath(InputPosition.empty, NotificationDetail.commaSeparated(Set.of("length(p) > 1")));
+        NotificationImplementation notification = exhaustiveShortestPath(InputPosition.empty, List.of("length(p) > 1"));
 
         verifyNotification(
                 notification,
@@ -678,9 +673,7 @@ class NotificationCodeWithDescriptionTest {
     @Test
     void shouldConstructNotificationsFor_MISSING_PARAMETER_FOR_EXPLAIN() {
         NotificationImplementation notification = missingParameterForExplain(
-                InputPosition.empty,
-                NotificationDetail.missingParameters(List.of("param1")),
-                NotificationDetail.parameters(List.of("param1")));
+                InputPosition.empty, NotificationDetail.missingParameters(List.of("param1")), List.of("$param1"));
 
         verifyNotification(
                 notification,
@@ -701,7 +694,7 @@ class NotificationCodeWithDescriptionTest {
         NotificationImplementation notification = missingParameterForExplain(
                 InputPosition.empty,
                 NotificationDetail.missingParameters(List.of("param1", "param2")),
-                NotificationDetail.parameters(List.of("param1", "param2")));
+                List.of("$param1", "$param2"));
 
         verifyNotification(
                 notification,
@@ -1064,7 +1057,7 @@ class NotificationCodeWithDescriptionTest {
     @Test
     void shouldConstructNotificationsFor_CORDONED_SERVERS_EXIST() {
         NotificationImplementation notification =
-                cordonedServersExist(InputPosition.empty, "server-1,server-2,server-3");
+                cordonedServersExist(InputPosition.empty, List.of("server-1", "server-2", "server-3"));
 
         verifyNotification(
                 notification,
@@ -1076,7 +1069,7 @@ class NotificationCodeWithDescriptionTest {
                 NotificationClassification.TOPOLOGY,
                 "00N83",
                 new DiagnosticRecord(info, topology, -1, -1, -1, Map.of()).asMap(),
-                "note: successful completion - cordoned servers existed during allocation. Cordoned servers existed when making an allocation decision. Server(s) `server-1,server-2,server-3` are cordoned. This can impact allocation decisions.");
+                "note: successful completion - cordoned servers existed during allocation. Cordoned servers existed when making an allocation decision. Server(s) `server-1, server-2, server-3` are cordoned. This can impact allocation decisions.");
     }
 
     @Test

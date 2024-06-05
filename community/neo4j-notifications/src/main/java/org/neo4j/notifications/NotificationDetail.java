@@ -66,10 +66,6 @@ public class NotificationDetail {
         return createNotificationDetail("index", indexFormatString, true);
     }
 
-    public static String parameters(final List<String> parameters) {
-        return parameters.stream().map(parameter -> "$" + parameter).collect(Collectors.joining(", "));
-    }
-
     public static String missingLabel(final String labelName) {
         return createNotificationDetail("the missing label name", labelName, true);
     }
