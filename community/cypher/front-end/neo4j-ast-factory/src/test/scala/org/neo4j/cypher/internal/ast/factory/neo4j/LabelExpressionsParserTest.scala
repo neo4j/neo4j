@@ -22,7 +22,7 @@ import org.neo4j.cypher.internal.ast.ReturnItems
 import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.UnaliasedReturnItem
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Cypher5JavaCc
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTestSupport
 import org.neo4j.cypher.internal.expressions.And
@@ -728,7 +728,7 @@ class ExpressionLabelExpressionsParserTest extends AstParsingTestBase with Legac
   // JavaCc lookahead fails to parse this properly
   test("RETURN [x IN [1,2,3] WHERE n:A | (b | x)]") {
     parsesIn[Statements] {
-      case JavaCc => _.withAnyFailure.withMessageStart(
+      case Cypher5JavaCc => _.withAnyFailure.withMessageStart(
           "Invalid input '(': expected \"+\" or \"-\" (line 1, column 34 (offset: 33))"
         )
       case _ => _.toAst(
@@ -768,7 +768,7 @@ class ExpressionLabelExpressionsParserTest extends AstParsingTestBase with Legac
   // JavaCc lookahead fails to parse this properly
   test("RETURN [x IN [1,2,3] WHERE n:A|B AND n:C|D | x]") {
     parsesIn[Statements] {
-      case JavaCc => _.withAnyFailure.withMessageStart("Invalid input '|'")
+      case Cypher5JavaCc => _.withAnyFailure.withMessageStart("Invalid input '|'")
       case _ => _.toAst(
           Statements(Seq(SingleQuery(Seq(Return(
             distinct = false,

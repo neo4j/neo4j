@@ -22,8 +22,7 @@ import org.neo4j.cypher.internal.ast.factory.neo4j.LiteralsParserTest.escapeSequ
 import org.neo4j.cypher.internal.ast.factory.neo4j.LiteralsParserTest.genCodepoint
 import org.neo4j.cypher.internal.ast.factory.neo4j.LiteralsParserTest.genCypherUnicodeEscape
 import org.neo4j.cypher.internal.ast.factory.neo4j.LiteralsParserTest.toCypherHex
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Cypher5JavaCc
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
 import org.neo4j.cypher.internal.expressions.DecimalDoubleLiteral
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
@@ -91,8 +90,8 @@ class LiteralsParserTest extends AstParsingTestBase
     }
     "- 1.4" should parseTo[NumberLiteral](DecimalDoubleLiteral("-1.4")(pos))
     "--1.0" should notParse[NumberLiteral].in {
-      case JavaCc => _.withMessageStart("Encountered \" \"-\" \"-\"\" at line 1, column 2.")
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc => _.withMessageStart("Encountered \" \"-\" \"-\"\" at line 1, column 2.")
+      case _ => _.withSyntaxError(
           """Invalid input '-': expected a number (line 1, column 2 (offset: 1))
             |"--1.0"
             |  ^""".stripMargin
@@ -109,8 +108,8 @@ class LiteralsParserTest extends AstParsingTestBase
       Statements(Seq(singleQuery(return_(returnItem(varFor("Ox"), "Ox")))))
     )
     "RETURN 0_.0" should notParse[Statements].in {
-      case JavaCc => _.withMessageStart("Invalid input '.0'")
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc => _.withMessageStart("Invalid input '.0'")
+      case _ => _.withSyntaxError(
           """Invalid input '.0': expected an expression, 'FOREACH', ',', 'AS', 'ORDER BY', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'LIMIT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'SKIP', 'UNION', 'UNWIND', 'USE', 'WITH' or <EOF> (line 1, column 10 (offset: 9))
             |"RETURN 0_.0"
             |          ^""".stripMargin
@@ -120,10 +119,10 @@ class LiteralsParserTest extends AstParsingTestBase
       Statements(Seq(singleQuery(return_(returnItem(prop(SignedDecimalIntegerLiteral("1_")(pos), "_1"), "1_._1")))))
     )
     "RETURN ._2" should notParse[Statements].in {
-      case JavaCc => _.withMessageStart(
+      case Cypher5JavaCc => _.withMessageStart(
           "Invalid input '.': expected \"*\", \"DISTINCT\" or an expression (line 1, column 8 (offset: 7))"
         )
-      case Antlr => _.withSyntaxError(
+      case _ => _.withSyntaxError(
           """Invalid input '.': expected an expression, '*' or 'DISTINCT' (line 1, column 8 (offset: 7))
             |"RETURN ._2"
             |        ^""".stripMargin
@@ -147,16 +146,16 @@ class LiteralsParserTest extends AstParsingTestBase
     "$1gibberish" should parseTo(parameter("1gibberish", CTAny))
 
     "$0_2" should notParse[Parameter].in {
-      case JavaCc => _.withMessageStart("Encountered")
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc => _.withMessageStart("Encountered")
+      case _ => _.withSyntaxError(
           """Invalid input '0_2': expected an identifier or an integer value (line 1, column 2 (offset: 1))
             |"$0_2"
             |  ^""".stripMargin
         )
     }
     "return $1.0f" should notParse[Statements].in {
-      case JavaCc => _.withMessageStart("Invalid input '$': expected \"+\" or \"-\"")
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc => _.withMessageStart("Invalid input '$': expected \"+\" or \"-\"")
+      case _ => _.withSyntaxError(
           """Invalid input '1.0f': expected an identifier or an integer value (line 1, column 9 (offset: 8))
             |"return $1.0f"
             |         ^""".stripMargin
@@ -191,14 +190,14 @@ class LiteralsParserTest extends AstParsingTestBase
     }
 
     "'\\'" should notParse[Literal].in {
-      case JavaCc => _.withMessageStart("Lexical error")
-      case Antlr => _.withSyntaxErrorContaining(
+      case Cypher5JavaCc => _.withMessageStart("Lexical error")
+      case _ => _.withSyntaxErrorContaining(
           "Failed to parse string literal. The query must contain an even number of non-escaped quotes."
         )
     }
     "'\\\\\\'" should notParse[Literal].in {
-      case JavaCc => _.withMessageStart("Lexical error")
-      case Antlr => _.withSyntaxErrorContaining(
+      case Cypher5JavaCc => _.withMessageStart("Lexical error")
+      case _ => _.withSyntaxErrorContaining(
           "Failed to parse string literal. The query must contain an even number of non-escaped quotes."
         )
     }
@@ -216,8 +215,8 @@ class LiteralsParserTest extends AstParsingTestBase
 
     s"RETURN '${toCypherHex('\\')}'" should notParse[Statements]
     s"RETURN '${toCypherHex('\'')}'" should notParse[Statements].in {
-      case JavaCc => _.withMessageStart("Lexical error")
-      case Antlr => _.withSyntaxErrorContaining(
+      case Cypher5JavaCc => _.withMessageStart("Lexical error")
+      case _ => _.withSyntaxErrorContaining(
           """Failed to parse string literal. The query must contain an even number of non-escaped quotes. (line 1, column 15 (offset: 14))"""
         )
     }
@@ -227,20 +226,20 @@ class LiteralsParserTest extends AstParsingTestBase
     "'\\U123'" should parseTo[Literal](literalString("\\U123"))
 
     "'\\u1'" should notParse[Literal].in {
-      case JavaCc => _.withMessageStart("Invalid input ''': expected four hexadecimal digits")
-      case Antlr  => _.withSyntaxErrorContaining("Invalid input '1'': expected four hexadecimal digits")
+      case Cypher5JavaCc => _.withMessageStart("Invalid input ''': expected four hexadecimal digits")
+      case _             => _.withSyntaxErrorContaining("Invalid input '1'': expected four hexadecimal digits")
     }
     "'\\u12'" should notParse[Literal].in {
-      case JavaCc => _.withMessageStart("Invalid input ''': expected four hexadecimal digits")
-      case Antlr  => _.withSyntaxErrorContaining("Invalid input '12'': expected four hexadecimal digits")
+      case Cypher5JavaCc => _.withMessageStart("Invalid input ''': expected four hexadecimal digits")
+      case _             => _.withSyntaxErrorContaining("Invalid input '12'': expected four hexadecimal digits")
     }
     "'\\u123'" should notParse[Literal].in {
-      case JavaCc => _.withMessageStart("Invalid input ''': expected four hexadecimal digits")
-      case Antlr  => _.withSyntaxErrorContaining("Invalid input '123'': expected four hexadecimal digits")
+      case Cypher5JavaCc => _.withMessageStart("Invalid input ''': expected four hexadecimal digits")
+      case _             => _.withSyntaxErrorContaining("Invalid input '123'': expected four hexadecimal digits")
     }
     "'\\ux111'" should notParse[Literal].in {
-      case JavaCc => _.withMessageStart("Invalid input 'x': expected four hexadecimal digits")
-      case Antlr  => _.withSyntaxErrorContaining("Invalid input 'x111': expected four hexadecimal digits")
+      case Cypher5JavaCc => _.withMessageStart("Invalid input 'x': expected four hexadecimal digits")
+      case _             => _.withSyntaxErrorContaining("Invalid input 'x111': expected four hexadecimal digits")
     }
   }
 

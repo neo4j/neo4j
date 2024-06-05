@@ -17,8 +17,7 @@
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.ast.Statements
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Cypher5JavaCc
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
 import org.neo4j.cypher.internal.expressions.Expression
 
@@ -68,10 +67,10 @@ class NormalizeFunctionParserTest extends AstParsingTestBase {
   // Failing tests
   test("RETURN normalize(\"hello\", \"NFC\")") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
+      case Cypher5JavaCc => _.withMessageStart(
           "Invalid input 'NFC': expected \"NFC\", \"NFD\", \"NFKC\" or \"NFKD\" (line 1, column 27 (offset: 26))"
         )
-      case Antlr => _.withMessage(
+      case _ => _.withMessage(
           """Invalid normal form, expected NFC, NFD, NFKC, NFKD (line 1, column 27 (offset: 26))
             |"RETURN normalize("hello", "NFC")"
             |                           ^""".stripMargin
@@ -81,10 +80,10 @@ class NormalizeFunctionParserTest extends AstParsingTestBase {
 
   test("RETURN normalize(\"hello\", null)") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
+      case Cypher5JavaCc => _.withMessageStart(
           "Invalid input 'null': expected \"NFC\", \"NFD\", \"NFKC\" or \"NFKD\" (line 1, column 27 (offset: 26))"
         )
-      case Antlr => _.withSyntaxError(
+      case _ => _.withSyntaxError(
           """Invalid normal form, expected NFC, NFD, NFKC, NFKD (line 1, column 27 (offset: 26))
             |"RETURN normalize("hello", null)"
             |                           ^""".stripMargin
@@ -94,10 +93,10 @@ class NormalizeFunctionParserTest extends AstParsingTestBase {
 
   test("RETURN normalize(\"hello\", NFF)") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
+      case Cypher5JavaCc => _.withMessageStart(
           "Invalid input 'NFF': expected \"NFC\", \"NFD\", \"NFKC\" or \"NFKD\" (line 1, column 27 (offset: 26))"
         )
-      case Antlr => _.withSyntaxError(
+      case _ => _.withSyntaxError(
           """Invalid normal form, expected NFC, NFD, NFKC, NFKD (line 1, column 27 (offset: 26))
             |"RETURN normalize("hello", NFF)"
             |                           ^""".stripMargin
@@ -107,15 +106,15 @@ class NormalizeFunctionParserTest extends AstParsingTestBase {
 
   test("normalize(\"hello\", NFC, anotherVar)") {
     parsesIn[Expression] {
-      case JavaCc => _.withAnyFailure
-      case _      => _.withoutErrors
+      case Cypher5JavaCc => _.withAnyFailure
+      case _             => _.withoutErrors
     }
   }
 
   test("normalize()") {
     parsesIn[Expression] {
-      case JavaCc => _.withAnyFailure
-      case _      => _.withoutErrors
+      case Cypher5JavaCc => _.withAnyFailure
+      case _             => _.withoutErrors
     }
   }
 }

@@ -18,8 +18,7 @@ package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.Statements
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Cypher5JavaCc
 
 class ShowUserAdministrationCommandParserTest extends UserAdministrationCommandParserTestBase {
 
@@ -164,10 +163,10 @@ class ShowUserAdministrationCommandParserTest extends UserAdministrationCommandP
 
   test("SHOW CURRENT USERS") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessage(
+      case Cypher5JavaCc => _.withMessage(
           """Invalid input 'USERS': expected "USER" (line 1, column 14 (offset: 13))"""
         )
-      case Antlr => _.withSyntaxError(
+      case _ => _.withSyntaxError(
           """Invalid input 'USERS': expected 'USER' (line 1, column 14 (offset: 13))
             |"SHOW CURRENT USERS"
             |              ^""".stripMargin
@@ -177,10 +176,10 @@ class ShowUserAdministrationCommandParserTest extends UserAdministrationCommandP
 
   test("SHOW CURRENT USERS YIELD *") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessage(
+      case Cypher5JavaCc => _.withMessage(
           """Invalid input 'USERS': expected "USER" (line 1, column 14 (offset: 13))"""
         )
-      case Antlr => _.withSyntaxError(
+      case _ => _.withSyntaxError(
           """Invalid input 'USERS': expected 'USER' (line 1, column 14 (offset: 13))
             |"SHOW CURRENT USERS YIELD *"
             |              ^""".stripMargin
@@ -190,10 +189,10 @@ class ShowUserAdministrationCommandParserTest extends UserAdministrationCommandP
 
   test("SHOW CURRENT USERS WHERE user = 'GRANTED'") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessage(
+      case Cypher5JavaCc => _.withMessage(
           """Invalid input 'USERS': expected "USER" (line 1, column 14 (offset: 13))"""
         )
-      case Antlr => _.withSyntaxError(
+      case _ => _.withSyntaxError(
           """Invalid input 'USERS': expected 'USER' (line 1, column 14 (offset: 13))
             |"SHOW CURRENT USERS WHERE user = 'GRANTED'"
             |              ^""".stripMargin

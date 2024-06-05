@@ -18,8 +18,7 @@ package org.neo4j.cypher.internal.ast.factory.neo4j.test.util
 
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.Statements
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Cypher5JavaCc
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.util.ASTNode
@@ -100,14 +99,14 @@ trait LegacyAstParsingTestSupport {
    */
   @deprecated("Use methods from AstParsingTestBase", "-")
   def failsToParseOnlyJavaCC[T <: ASTNode : ClassTag](query: String)(implicit p: Parsers[T]): Unit =
-    assertFailsOnlyJavaCC(query)
+    assertFailsOnlyJavaCC[T](query)
 
   /**
    * @deprecated use [[parsesIn]], `parsesIn[T] { case JavaCc =>_.withAnyFailure)` }.
    */
   @deprecated("Use methods from AstParsingTestBase", "-")
   def failsToParseOnlyJavaCC[T <: ASTNode : ClassTag]()(implicit p: Parsers[T]): Unit =
-    assertFailsOnlyJavaCC(testName)
+    assertFailsOnlyJavaCC[T](testName)
 
   /**
    * @deprecated use [[parseIn]], `"cypher" should parseIn[T] { case JavaCc =>_.withAnyFailure }`.
@@ -115,8 +114,8 @@ trait LegacyAstParsingTestSupport {
   @deprecated("Use methods from AstParsingTestBase", "-")
   def assertFailsOnlyJavaCC[T <: ASTNode : ClassTag](s: String)(implicit p: Parsers[T]): Unit = {
     s should parseIn[T] {
-      case Antlr  => _.withoutErrors
-      case JavaCc => _.withAnyFailure
+      case Cypher5JavaCc => _.withAnyFailure
+      case _             => _.withoutErrors
     }
   }
 
@@ -131,8 +130,8 @@ trait LegacyAstParsingTestSupport {
   )(implicit p: Parsers[T]): Unit = {
     if (failsOnlyJavaCC)
       cypher should parseIn[T] {
-        case Antlr  => _.withoutErrors
-        case JavaCc => _.withAnyFailure.withMessage(expectedMessage)
+        case Cypher5JavaCc => _.withAnyFailure.withMessage(expectedMessage)
+        case _             => _.withoutErrors
       }
     else
       cypher should notParse[T].withMessage(expectedMessage)
@@ -149,8 +148,8 @@ trait LegacyAstParsingTestSupport {
   )(implicit p: Parsers[T]): Unit = {
     if (failsOnlyJavaCC)
       cypher should parseIn[T] {
-        case Antlr  => _.withoutErrors
-        case JavaCc => _.withAnyFailure.withMessageStart(expectedMessage)
+        case Cypher5JavaCc => _.withAnyFailure.withMessageStart(expectedMessage)
+        case _             => _.withoutErrors
       }
     else
       cypher should notParse[T].withMessageStart(expectedMessage)

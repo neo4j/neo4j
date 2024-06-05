@@ -55,8 +55,7 @@ import org.neo4j.cypher.internal.ast.ShowServerAction
 import org.neo4j.cypher.internal.ast.ShowUserAction
 import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.factory.neo4j.AdministrationAndSchemaCommandParserTestBase
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Cypher5JavaCc
 
 class DbmsPrivilegeAdministrationCommandParserTest extends AdministrationAndSchemaCommandParserTestBase {
 
@@ -122,10 +121,10 @@ class DbmsPrivilegeAdministrationCommandParserTest extends AdministrationAndSche
             test(s"$command$immutableString $privilege ON DATABASE $preposition role") {
               val offset = command.length + immutableString.length + 5 + privilege.length
               failsParsing[Statements].in {
-                case JavaCc => _.withMessageStart(
+                case Cypher5JavaCc => _.withMessageStart(
                     s"""Invalid input 'DATABASE': expected "DBMS" (line 1, column ${offset + 1} (offset: $offset))"""
                   )
-                case Antlr => _.withSyntaxErrorContaining(
+                case _ => _.withSyntaxErrorContaining(
                     """Invalid input 'DATABASE': expected 'DBMS'"""
                   )
               }
@@ -134,10 +133,10 @@ class DbmsPrivilegeAdministrationCommandParserTest extends AdministrationAndSche
             test(s"$command$immutableString $privilege ON HOME DATABASE $preposition role") {
               val offset = command.length + immutableString.length + 5 + privilege.length
               failsParsing[Statements].in {
-                case JavaCc => _.withMessageStart(
+                case Cypher5JavaCc => _.withMessageStart(
                     s"""Invalid input 'HOME': expected "DBMS" (line 1, column ${offset + 1} (offset: $offset))"""
                   )
-                case Antlr => _.withSyntaxErrorContaining(
+                case _ => _.withSyntaxErrorContaining(
                     """Invalid input 'HOME': expected 'DBMS'"""
                   )
               }
@@ -159,18 +158,18 @@ class DbmsPrivilegeAdministrationCommandParserTest extends AdministrationAndSche
                 case _ => s"Invalid input 'DBMS': expected 'ON DBMS' (line 1, column ${offset + 1} (offset: $offset))"
               }
               failsParsing[Statements].in {
-                case JavaCc => _.withMessageStart(expected)
-                case Antlr  => _.withSyntaxErrorContaining(antlrExpected)
+                case Cypher5JavaCc => _.withMessageStart(expected)
+                case _             => _.withSyntaxErrorContaining(antlrExpected)
               }
             }
 
             test(s"$command$immutableString $privilege ON $preposition role") {
               val offset = command.length + immutableString.length + 5 + privilege.length
               failsParsing[Statements].in {
-                case JavaCc => _.withMessageStart(
+                case Cypher5JavaCc => _.withMessageStart(
                     s"""Invalid input '$preposition': expected "DBMS" (line 1, column ${offset + 1} (offset: $offset))"""
                   )
-                case Antlr => _.withSyntaxErrorContaining(
+                case _ => _.withSyntaxErrorContaining(
                     s"""Invalid input '$preposition': expected 'DBMS' (line 1, column ${offset + 1} (offset: $offset))"""
                   )
               }
@@ -179,10 +178,10 @@ class DbmsPrivilegeAdministrationCommandParserTest extends AdministrationAndSche
             test(s"$command$immutableString $privilege ON DBMS $preposition r:ole") {
               val offset = command.length + immutableString.length + 12 + privilege.length + preposition.length
               failsParsing[Statements].in {
-                case JavaCc => _.withMessageStart(
+                case Cypher5JavaCc => _.withMessageStart(
                     s"""Invalid input ':': expected "," or <EOF> (line 1, column ${offset + 1} (offset: $offset))"""
                   )
-                case Antlr => _.withSyntaxErrorContaining(
+                case _ => _.withSyntaxErrorContaining(
                     s"""Invalid input ':': expected ',' or <EOF> (line 1, column ${offset + 1} (offset: $offset))"""
                   )
               }
@@ -191,10 +190,10 @@ class DbmsPrivilegeAdministrationCommandParserTest extends AdministrationAndSche
             test(s"$command$immutableString $privilege ON DBMS $preposition") {
               val offset = command.length + immutableString.length + 10 + privilege.length + preposition.length
               failsParsing[Statements].in {
-                case JavaCc => _.withMessageStart(
+                case Cypher5JavaCc => _.withMessageStart(
                     s"""Invalid input '': expected a parameter or an identifier (line 1, column ${offset + 1} (offset: $offset))"""
                   )
-                case Antlr => _.withSyntaxErrorContaining(
+                case _ => _.withSyntaxErrorContaining(
                     s"""Invalid input '': expected a parameter or an identifier (line 1, column ${offset + 1} (offset: $offset))"""
                   )
               }
@@ -203,10 +202,10 @@ class DbmsPrivilegeAdministrationCommandParserTest extends AdministrationAndSche
             test(s"$command$immutableString $privilege ON DBMS") {
               val offset = command.length + immutableString.length + 9 + privilege.length
               failsParsing[Statements].in {
-                case JavaCc => _.withMessageStart(
+                case Cypher5JavaCc => _.withMessageStart(
                     s"""Invalid input '': expected "$preposition" (line 1, column ${offset + 1} (offset: $offset))"""
                   )
-                case Antlr => _.withSyntaxErrorContaining(
+                case _ => _.withSyntaxErrorContaining(
                     s"""Invalid input '': expected '$preposition' (line 1, column ${offset + 1} (offset: $offset))"""
                   )
               }
@@ -241,10 +240,10 @@ class DbmsPrivilegeAdministrationCommandParserTest extends AdministrationAndSche
 
         test(s"$command$immutableString ALL DBMS PRIVILEGES ON DATABASE $preposition role") {
           failsParsing[Statements].in {
-            case JavaCc => _.withMessage(
+            case Cypher5JavaCc => _.withMessage(
                 s"""Invalid input 'DATABASE': expected "DBMS" (line 1, column ${offset + 24} (offset: ${offset + 23}))"""
               )
-            case Antlr => _.withSyntaxErrorContaining(
+            case _ => _.withSyntaxErrorContaining(
                 s"""Invalid input 'DATABASE': expected "DBMS" (line 1, column ${offset + 24} (offset: ${offset + 23}))"""
               )
           }
@@ -252,10 +251,10 @@ class DbmsPrivilegeAdministrationCommandParserTest extends AdministrationAndSche
 
         test(s"$command$immutableString ALL DBMS PRIVILEGES ON HOME DATABASE $preposition role") {
           failsParsing[Statements].in {
-            case JavaCc => _.withMessage(
+            case Cypher5JavaCc => _.withMessage(
                 s"""Invalid input 'HOME': expected "DBMS" (line 1, column ${offset + 24} (offset: ${offset + 23}))"""
               )
-            case Antlr => _.withSyntaxErrorContaining(
+            case _ => _.withSyntaxErrorContaining(
                 s"""Invalid input 'HOME': expected "DBMS" (line 1, column ${offset + 24} (offset: ${offset + 23}))"""
               )
           }
@@ -263,10 +262,10 @@ class DbmsPrivilegeAdministrationCommandParserTest extends AdministrationAndSche
 
         test(s"$command$immutableString ALL DBMS PRIVILEGES DBMS $preposition role") {
           failsParsing[Statements].in {
-            case JavaCc => _.withMessage(
+            case Cypher5JavaCc => _.withMessage(
                 s"""Invalid input 'DBMS': expected "ON" (line 1, column ${offset + 21} (offset: ${offset + 20}))"""
               )
-            case Antlr => _.withSyntaxErrorContaining(
+            case _ => _.withSyntaxErrorContaining(
                 s"""Invalid input 'DBMS': expected 'ON' (line 1, column ${offset + 21} (offset: ${offset + 20}))"""
               )
           }
@@ -274,10 +273,10 @@ class DbmsPrivilegeAdministrationCommandParserTest extends AdministrationAndSche
 
         test(s"$command$immutableString ALL DBMS PRIVILEGES $preposition") {
           failsParsing[Statements].in {
-            case JavaCc => _.withMessage(
+            case Cypher5JavaCc => _.withMessage(
                 s"""Invalid input '$preposition': expected "ON" (line 1, column ${offset + 21} (offset: ${offset + 20}))"""
               )
-            case Antlr => _.withSyntaxErrorContaining(
+            case _ => _.withSyntaxErrorContaining(
                 s"""Invalid input '$preposition': expected 'ON' (line 1, column ${offset + 21} (offset: ${offset + 20}))"""
               )
           }
@@ -285,7 +284,7 @@ class DbmsPrivilegeAdministrationCommandParserTest extends AdministrationAndSche
 
         test(s"$command$immutableString ALL DBMS PRIVILEGES ON $preposition") {
           failsParsing[Statements].in {
-            case JavaCc => _.withMessage(
+            case Cypher5JavaCc => _.withMessage(
                 s"""Invalid input '$preposition': expected
                    |  "DATABASE"
                    |  "DATABASES"
@@ -295,7 +294,7 @@ class DbmsPrivilegeAdministrationCommandParserTest extends AdministrationAndSche
                    |  "GRAPHS"
                    |  "HOME" (line 1, column ${offset + 24} (offset: ${offset + 23}))""".stripMargin
               )
-            case Antlr => _.withSyntaxErrorContaining(
+            case _ => _.withSyntaxErrorContaining(
                 s"""Invalid input '$preposition': expected 'DATABASE', 'DATABASES', 'DBMS', 'DEFAULT', 'GRAPH', 'GRAPHS' or 'HOME' (line 1, column ${offset + 24} (offset: ${offset + 23}))"""
               )
           }
@@ -304,10 +303,10 @@ class DbmsPrivilegeAdministrationCommandParserTest extends AdministrationAndSche
         test(s"$command$immutableString ALL DBMS PRIVILEGES ON DBMS $preposition r:ole") {
           val finalOffset = offset + 30 + preposition.length
           failsParsing[Statements].in {
-            case JavaCc => _.withMessage(
+            case Cypher5JavaCc => _.withMessage(
                 s"""Invalid input ':': expected "," or <EOF> (line 1, column ${finalOffset + 1} (offset: $finalOffset))"""
               )
-            case Antlr => _.withSyntaxErrorContaining(
+            case _ => _.withSyntaxErrorContaining(
                 s"""Invalid input ':': expected ',' or <EOF> (line 1, column ${finalOffset + 1} (offset: $finalOffset))"""
               )
           }
@@ -316,10 +315,10 @@ class DbmsPrivilegeAdministrationCommandParserTest extends AdministrationAndSche
         test(s"$command$immutableString ALL DBMS PRIVILEGES ON DBMS $preposition") {
           val finalOffset = offset + 28 + preposition.length
           failsParsing[Statements].in {
-            case JavaCc => _.withMessage(
+            case Cypher5JavaCc => _.withMessage(
                 s"""Invalid input '': expected a parameter or an identifier (line 1, column ${finalOffset + 1} (offset: $finalOffset))"""
               )
-            case Antlr => _.withSyntaxErrorContaining(
+            case _ => _.withSyntaxErrorContaining(
                 s"""Invalid input '': expected a parameter or an identifier (line 1, column ${finalOffset + 1} (offset: $finalOffset))"""
               )
           }
@@ -327,10 +326,10 @@ class DbmsPrivilegeAdministrationCommandParserTest extends AdministrationAndSche
 
         test(s"$command$immutableString ALL DBMS PRIVILEGES ON DBMS") {
           failsParsing[Statements].in {
-            case JavaCc => _.withMessage(
+            case Cypher5JavaCc => _.withMessage(
                 s"""Invalid input '': expected "$preposition" (line 1, column ${offset + 28} (offset: ${offset + 27}))"""
               )
-            case Antlr => _.withSyntaxErrorContaining(
+            case _ => _.withSyntaxErrorContaining(
                 s"""Invalid input '': expected '$preposition' (line 1, column ${offset + 28} (offset: ${offset + 27}))"""
               )
           }
@@ -340,10 +339,10 @@ class DbmsPrivilegeAdministrationCommandParserTest extends AdministrationAndSche
 
         test(s"$command$immutableString DATABASE ALIAS MANAGEMENT ON DBMS $preposition role") {
           failsParsing[Statements].in {
-            case JavaCc => _.withMessage(
+            case Cypher5JavaCc => _.withMessage(
                 s"""Invalid input 'ALIAS': expected "MANAGEMENT" (line 1, column ${offset + 10} (offset: ${offset + 9}))"""
               )
-            case Antlr => _.withSyntaxErrorContaining(
+            case _ => _.withSyntaxErrorContaining(
                 s"""Invalid input 'ALIAS': expected 'MANAGEMENT' (line 1, column ${offset + 10} (offset: ${offset + 9}))"""
               )
           }
@@ -351,10 +350,10 @@ class DbmsPrivilegeAdministrationCommandParserTest extends AdministrationAndSche
 
         test(s"$command$immutableString CREATE DATABASE ALIAS ON DBMS $preposition role") {
           failsParsing[Statements].in {
-            case JavaCc => _.withMessage(
+            case Cypher5JavaCc => _.withMessage(
                 s"""Invalid input 'ALIAS': expected "ON" (line 1, column ${offset + 17} (offset: ${offset + 16}))"""
               )
-            case Antlr => _.withSyntaxErrorContaining(
+            case _ => _.withSyntaxErrorContaining(
                 s"""Invalid input 'ALIAS': expected 'ON DBMS' (line 1, column ${offset + 17} (offset: ${offset + 16}))"""
               )
           }
@@ -362,10 +361,10 @@ class DbmsPrivilegeAdministrationCommandParserTest extends AdministrationAndSche
 
         test(s"$command$immutableString DROP DATABASE ALIAS ON DBMS $preposition role") {
           failsParsing[Statements].in {
-            case JavaCc => _.withMessage(
+            case Cypher5JavaCc => _.withMessage(
                 s"""Invalid input 'ALIAS': expected "ON" (line 1, column ${offset + 15} (offset: ${offset + 14}))"""
               )
-            case Antlr => _.withSyntaxErrorContaining(
+            case _ => _.withSyntaxErrorContaining(
                 s"""Invalid input 'ALIAS': expected 'ON DBMS' (line 1, column ${offset + 15} (offset: ${offset + 14}))"""
               )
           }
@@ -373,10 +372,10 @@ class DbmsPrivilegeAdministrationCommandParserTest extends AdministrationAndSche
 
         test(s"$command$immutableString ALTER DATABASE ALIAS ON DBMS $preposition role") {
           failsParsing[Statements].in {
-            case JavaCc => _.withMessage(
+            case Cypher5JavaCc => _.withMessage(
                 s"""Invalid input 'ALIAS': expected "ON" (line 1, column ${offset + 16} (offset: ${offset + 15}))"""
               )
-            case Antlr => _.withSyntaxErrorContaining(
+            case _ => _.withSyntaxErrorContaining(
                 s"""Invalid input 'ALIAS': expected 'ON DBMS' (line 1, column ${offset + 16} (offset: ${offset + 15}))"""
               )
           }
@@ -384,7 +383,7 @@ class DbmsPrivilegeAdministrationCommandParserTest extends AdministrationAndSche
 
         test(s"$command$immutableString SHOW DATABASE ALIAS ON DBMS $preposition role") {
           failsParsing[Statements].in {
-            case JavaCc => _.withMessage(
+            case Cypher5JavaCc => _.withMessage(
                 s"""Invalid input 'DATABASE': expected
                    |  "ALIAS"
                    |  "CONSTRAINT"
@@ -401,7 +400,7 @@ class DbmsPrivilegeAdministrationCommandParserTest extends AdministrationAndSche
                    |  "TRANSACTIONS"
                    |  "USER" (line 1, column ${offset + 6} (offset: ${offset + 5}))""".stripMargin
               )
-            case Antlr => _.withSyntaxErrorContaining(
+            case _ => _.withSyntaxErrorContaining(
                 s"""Invalid input 'DATABASE': expected 'ALIAS', 'CONSTRAINT', 'CONSTRAINTS', 'INDEX', 'INDEXES', 'PRIVILEGE', 'ROLE', 'SERVER', 'SERVERS', 'SETTING', 'SETTINGS', 'TRANSACTION', 'TRANSACTIONS' or 'USER' (line 1, column ${offset + 6} (offset: ${offset + 5}))"""
               )
           }

@@ -17,8 +17,7 @@
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.ast.Statements
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Cypher5JavaCc
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
 import org.neo4j.cypher.internal.expressions.Expression
 
@@ -43,8 +42,9 @@ class ListLiteralParserTest extends AstParsingTestBase {
 
   test("list without comma separation should not parse") {
     "RETURN ['value' 42]" should notParse[Statements].in {
-      case JavaCc => _.withMessageStart("Invalid input '[': expected \"+\" or \"-\" (line 1, column 8 (offset: 7))")
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc =>
+        _.withMessageStart("Invalid input '[': expected \"+\" or \"-\" (line 1, column 8 (offset: 7))")
+      case _ => _.withSyntaxError(
           """Invalid input '42': expected an expression, ',' or ']' (line 1, column 17 (offset: 16))
             |"RETURN ['value' 42]"
             |                 ^""".stripMargin
@@ -54,8 +54,9 @@ class ListLiteralParserTest extends AstParsingTestBase {
 
   test("list with invalid start comma should not parse") {
     "RETURN [, 'value']" should notParse[Statements].in {
-      case JavaCc => _.withMessageStart("Invalid input '[': expected \"+\" or \"-\" (line 1, column 8 (offset: 7))")
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc =>
+        _.withMessageStart("Invalid input '[': expected \"+\" or \"-\" (line 1, column 8 (offset: 7))")
+      case _ => _.withSyntaxError(
           """Invalid input ',': expected an expression (line 1, column 9 (offset: 8))
             |"RETURN [, 'value']"
             |         ^""".stripMargin

@@ -19,8 +19,7 @@ package org.neo4j.cypher.internal.ast.factory.neo4j
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.factory.neo4j.TypePredicateExpressionParserTest.allCombinations
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Cypher5JavaCc
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.util.InputPosition
@@ -57,8 +56,8 @@ class TypePredicateExpressionParserTest extends AstParsingTestBase
 
   test("RETURN x :: BOOLEAN NOT NULL NOT NULL") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart("Invalid input 'NOT'")
-      case Antlr => _.withMessage(
+      case Cypher5JavaCc => _.withMessageStart("Invalid input 'NOT'")
+      case _ => _.withMessage(
           """Invalid input 'NOT': expected an expression, 'FOREACH', ',', 'AS', 'ORDER BY', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'LIMIT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'SKIP', 'UNION', 'UNWIND', 'USE', 'WITH' or <EOF> (line 1, column 30 (offset: 29))
             |"RETURN x :: BOOLEAN NOT NULL NOT NULL"
             |                              ^""".stripMargin
@@ -68,8 +67,8 @@ class TypePredicateExpressionParserTest extends AstParsingTestBase
 
   test("RETURN x :: BOOLEAN! NOT NULL") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart("Invalid input 'NOT'")
-      case Antlr => _.withMessage(
+      case Cypher5JavaCc => _.withMessageStart("Invalid input 'NOT'")
+      case _ => _.withMessage(
           """Invalid input 'NOT': expected an expression, 'FOREACH', ',', 'AS', 'ORDER BY', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'LIMIT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'SKIP', 'UNION', 'UNWIND', 'USE', 'WITH' or <EOF> (line 1, column 22 (offset: 21))
             |"RETURN x :: BOOLEAN! NOT NULL"
             |                      ^""".stripMargin
@@ -79,8 +78,8 @@ class TypePredicateExpressionParserTest extends AstParsingTestBase
 
   test("RETURN x :: BOOLEAN NOT NULL!") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart("Invalid input '!'")
-      case Antlr => _.withMessage(
+      case Cypher5JavaCc => _.withMessageStart("Invalid input '!'")
+      case _ => _.withMessage(
           """Invalid input '!': expected an expression, 'FOREACH', ',', 'AS', 'ORDER BY', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'LIMIT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'SKIP', 'UNION', 'UNWIND', 'USE', 'WITH' or <EOF> (line 1, column 29 (offset: 28))
             |"RETURN x :: BOOLEAN NOT NULL!"
             |                             ^""".stripMargin
@@ -90,8 +89,8 @@ class TypePredicateExpressionParserTest extends AstParsingTestBase
 
   test("RETURN x :: BOOLEAN!!") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart("Invalid input '!'")
-      case Antlr => _.withMessage(
+      case Cypher5JavaCc => _.withMessageStart("Invalid input '!'")
+      case _ => _.withMessage(
           """Invalid input '!': expected an expression, 'FOREACH', ',', 'AS', 'ORDER BY', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'LIMIT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'SKIP', 'UNION', 'UNWIND', 'USE', 'WITH' or <EOF> (line 1, column 21 (offset: 20))
             |"RETURN x :: BOOLEAN!!"
             |                     ^""".stripMargin
@@ -101,8 +100,8 @@ class TypePredicateExpressionParserTest extends AstParsingTestBase
 
   test("RETURN x :: LIST<BOOLEAN> NOT NULL NOT NULL") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart("Invalid input 'NOT'")
-      case Antlr => _.withMessage(
+      case Cypher5JavaCc => _.withMessageStart("Invalid input 'NOT'")
+      case _ => _.withMessage(
           """Invalid input 'NOT': expected an expression, 'FOREACH', ',', 'AS', 'ORDER BY', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'LIMIT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'SKIP', 'UNION', 'UNWIND', 'USE', 'WITH' or <EOF> (line 1, column 36 (offset: 35))
             |"RETURN x :: LIST<BOOLEAN> NOT NULL NOT NULL"
             |                                    ^""".stripMargin
@@ -112,8 +111,8 @@ class TypePredicateExpressionParserTest extends AstParsingTestBase
 
   test("RETURN x :: LIST<BOOLEAN>! NOT NULL") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart("Invalid input 'NOT'")
-      case Antlr => _.withMessage(
+      case Cypher5JavaCc => _.withMessageStart("Invalid input 'NOT'")
+      case _ => _.withMessage(
           """Invalid input 'NOT': expected an expression, 'FOREACH', ',', 'AS', 'ORDER BY', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'LIMIT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'SKIP', 'UNION', 'UNWIND', 'USE', 'WITH' or <EOF> (line 1, column 28 (offset: 27))
             |"RETURN x :: LIST<BOOLEAN>! NOT NULL"
             |                            ^""".stripMargin
@@ -123,8 +122,8 @@ class TypePredicateExpressionParserTest extends AstParsingTestBase
 
   test("RETURN x :: LIST<BOOLEAN> NOT NULL!") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart("Invalid input '!'")
-      case Antlr => _.withMessage(
+      case Cypher5JavaCc => _.withMessageStart("Invalid input '!'")
+      case _ => _.withMessage(
           """Invalid input '!': expected an expression, 'FOREACH', ',', 'AS', 'ORDER BY', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'LIMIT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'SKIP', 'UNION', 'UNWIND', 'USE', 'WITH' or <EOF> (line 1, column 35 (offset: 34))
             |"RETURN x :: LIST<BOOLEAN> NOT NULL!"
             |                                   ^""".stripMargin
@@ -134,8 +133,8 @@ class TypePredicateExpressionParserTest extends AstParsingTestBase
 
   test("RETURN x :: LIST<BOOLEAN>!!") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart("Invalid input '!'")
-      case Antlr => _.withMessage(
+      case Cypher5JavaCc => _.withMessageStart("Invalid input '!'")
+      case _ => _.withMessage(
           """Invalid input '!': expected an expression, 'FOREACH', ',', 'AS', 'ORDER BY', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'LIMIT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'SKIP', 'UNION', 'UNWIND', 'USE', 'WITH' or <EOF> (line 1, column 27 (offset: 26))
             |"RETURN x :: LIST<BOOLEAN>!!"
             |                           ^""".stripMargin
@@ -145,8 +144,8 @@ class TypePredicateExpressionParserTest extends AstParsingTestBase
 
   test("RETURN x :: BOOLEAN LIST NOT NULL NOT NULL") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart("Invalid input 'NOT'")
-      case Antlr => _.withMessage(
+      case Cypher5JavaCc => _.withMessageStart("Invalid input 'NOT'")
+      case _ => _.withMessage(
           """Invalid input 'NOT': expected an expression, 'FOREACH', ',', 'AS', 'ORDER BY', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'LIMIT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'SKIP', 'UNION', 'UNWIND', 'USE', 'WITH' or <EOF> (line 1, column 35 (offset: 34))
             |"RETURN x :: BOOLEAN LIST NOT NULL NOT NULL"
             |                                   ^""".stripMargin
@@ -156,8 +155,8 @@ class TypePredicateExpressionParserTest extends AstParsingTestBase
 
   test("RETURN x :: BOOLEAN LIST! NOT NULL") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart("Invalid input 'NOT'")
-      case Antlr => _.withMessage(
+      case Cypher5JavaCc => _.withMessageStart("Invalid input 'NOT'")
+      case _ => _.withMessage(
           """Invalid input 'NOT': expected an expression, 'FOREACH', ',', 'AS', 'ORDER BY', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'LIMIT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'SKIP', 'UNION', 'UNWIND', 'USE', 'WITH' or <EOF> (line 1, column 27 (offset: 26))
             |"RETURN x :: BOOLEAN LIST! NOT NULL"
             |                           ^""".stripMargin
@@ -167,8 +166,8 @@ class TypePredicateExpressionParserTest extends AstParsingTestBase
 
   test("RETURN x :: BOOLEAN LIST NOT NULL !") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart("Invalid input '!'")
-      case Antlr => _.withMessage(
+      case Cypher5JavaCc => _.withMessageStart("Invalid input '!'")
+      case _ => _.withMessage(
           """Invalid input '!': expected an expression, 'FOREACH', ',', 'AS', 'ORDER BY', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'LIMIT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'SKIP', 'UNION', 'UNWIND', 'USE', 'WITH' or <EOF> (line 1, column 35 (offset: 34))
             |"RETURN x :: BOOLEAN LIST NOT NULL !"
             |                                   ^""".stripMargin
@@ -178,8 +177,8 @@ class TypePredicateExpressionParserTest extends AstParsingTestBase
 
   test("RETURN x :: BOOLEAN LIST!!") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart("Invalid input '!'")
-      case Antlr => _.withMessage(
+      case Cypher5JavaCc => _.withMessageStart("Invalid input '!'")
+      case _ => _.withMessage(
           """Invalid input '!': expected an expression, 'FOREACH', ',', 'AS', 'ORDER BY', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'LIMIT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'SKIP', 'UNION', 'UNWIND', 'USE', 'WITH' or <EOF> (line 1, column 26 (offset: 25))
             |"RETURN x :: BOOLEAN LIST!!"
             |                          ^""".stripMargin
@@ -193,8 +192,8 @@ class TypePredicateExpressionParserTest extends AstParsingTestBase
         "Closed Dynamic Union Types can not be appended with `NOT NULL`, specify `NOT NULL` on all inner types instead."
       )
       .in {
-        case JavaCc => _.throws[OpenCypherExceptionFactory.SyntaxException]
-        case Antlr  => _.throws[SyntaxException]
+        case Cypher5JavaCc => _.throws[OpenCypherExceptionFactory.SyntaxException]
+        case _             => _.throws[SyntaxException]
       }
   }
 
@@ -204,8 +203,8 @@ class TypePredicateExpressionParserTest extends AstParsingTestBase
         "Closed Dynamic Union Types can not be appended with `NOT NULL`, specify `NOT NULL` on all inner types instead."
       )
       .in {
-        case JavaCc => _.throws[OpenCypherExceptionFactory.SyntaxException]
-        case Antlr  => _.throws[SyntaxException]
+        case Cypher5JavaCc => _.throws[OpenCypherExceptionFactory.SyntaxException]
+        case _             => _.throws[SyntaxException]
       }
   }
 
@@ -215,8 +214,8 @@ class TypePredicateExpressionParserTest extends AstParsingTestBase
         "Closed Dynamic Union Types can not be appended with `NOT NULL`, specify `NOT NULL` on all inner types instead."
       )
       .in {
-        case JavaCc => _.throws[OpenCypherExceptionFactory.SyntaxException]
-        case Antlr  => _.throws[SyntaxException]
+        case Cypher5JavaCc => _.throws[OpenCypherExceptionFactory.SyntaxException]
+        case _             => _.throws[SyntaxException]
       }
   }
 
@@ -226,8 +225,8 @@ class TypePredicateExpressionParserTest extends AstParsingTestBase
         "Closed Dynamic Union Types can not be appended with `NOT NULL`, specify `NOT NULL` on all inner types instead."
       )
       .in {
-        case JavaCc => _.throws[OpenCypherExceptionFactory.SyntaxException]
-        case Antlr  => _.throws[SyntaxException]
+        case Cypher5JavaCc => _.throws[OpenCypherExceptionFactory.SyntaxException]
+        case _             => _.throws[SyntaxException]
       }
   }
 
@@ -237,8 +236,8 @@ class TypePredicateExpressionParserTest extends AstParsingTestBase
         "Closed Dynamic Union Types can not be appended with `NOT NULL`, specify `NOT NULL` on all inner types instead."
       )
       .in {
-        case JavaCc => _.throws[OpenCypherExceptionFactory.SyntaxException]
-        case Antlr  => _.throws[SyntaxException]
+        case Cypher5JavaCc => _.throws[OpenCypherExceptionFactory.SyntaxException]
+        case _             => _.throws[SyntaxException]
       }
   }
 
@@ -248,8 +247,8 @@ class TypePredicateExpressionParserTest extends AstParsingTestBase
         "Closed Dynamic Union Types can not be appended with `NOT NULL`, specify `NOT NULL` on all inner types instead."
       )
       .in {
-        case JavaCc => _.throws[OpenCypherExceptionFactory.SyntaxException]
-        case Antlr  => _.throws[SyntaxException]
+        case Cypher5JavaCc => _.throws[OpenCypherExceptionFactory.SyntaxException]
+        case _             => _.throws[SyntaxException]
       }
   }
 
@@ -259,8 +258,8 @@ class TypePredicateExpressionParserTest extends AstParsingTestBase
         "Closed Dynamic Union Types can not be appended with `NOT NULL`, specify `NOT NULL` on all inner types instead."
       )
       .in {
-        case JavaCc => _.throws[OpenCypherExceptionFactory.SyntaxException]
-        case Antlr  => _.throws[SyntaxException]
+        case Cypher5JavaCc => _.throws[OpenCypherExceptionFactory.SyntaxException]
+        case _             => _.throws[SyntaxException]
       }
   }
 
@@ -270,15 +269,15 @@ class TypePredicateExpressionParserTest extends AstParsingTestBase
         "Closed Dynamic Union Types can not be appended with `NOT NULL`, specify `NOT NULL` on all inner types instead."
       )
       .in {
-        case JavaCc => _.throws[OpenCypherExceptionFactory.SyntaxException]
-        case Antlr  => _.throws[SyntaxException]
+        case Cypher5JavaCc => _.throws[OpenCypherExceptionFactory.SyntaxException]
+        case _             => _.throws[SyntaxException]
       }
   }
 
   test("RETURN x :: ANY VALUE<>") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart("Invalid input ''")
-      case Antlr => _.withMessage(
+      case Cypher5JavaCc => _.withMessageStart("Invalid input ''")
+      case _ => _.withMessage(
           """Invalid input '': expected an expression (line 1, column 24 (offset: 23))
             |"RETURN x :: ANY VALUE<>"
             |                        ^""".stripMargin
@@ -288,8 +287,8 @@ class TypePredicateExpressionParserTest extends AstParsingTestBase
 
   test("RETURN x :: ANY <>") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart("Invalid input ''")
-      case Antlr => _.withMessage(
+      case Cypher5JavaCc => _.withMessageStart("Invalid input ''")
+      case _ => _.withMessage(
           """Invalid input '': expected an expression (line 1, column 19 (offset: 18))
             |"RETURN x :: ANY <>"
             |                   ^""".stripMargin
@@ -299,8 +298,8 @@ class TypePredicateExpressionParserTest extends AstParsingTestBase
 
   test("RETURN x :: ") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart("Invalid input ''")
-      case Antlr => _.withMessage(
+      case Cypher5JavaCc => _.withMessageStart("Invalid input ''")
+      case _ => _.withMessage(
           """Invalid input '': expected 'ARRAY', 'LIST', 'ANY', 'BOOL', 'BOOLEAN', 'DATE', 'DURATION', 'EDGE', 'FLOAT', 'INT', 'INTEGER', 'LOCAL', 'MAP', 'NODE', 'NOTHING', 'NULL', 'PATH', 'PATHS', 'POINT', 'RELATIONSHIP', 'SIGNED', 'STRING', 'TIME', 'TIMESTAMP', 'PROPERTY VALUE', 'VARCHAR', 'VERTEX' or 'ZONED' (line 1, column 12 (offset: 11))
             |"RETURN x ::"
             |            ^""".stripMargin
@@ -310,8 +309,8 @@ class TypePredicateExpressionParserTest extends AstParsingTestBase
 
   test("RETURN x :: ANY VALUE<> NOT NULL") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart("Invalid input 'NULL'")
-      case Antlr => _.withMessage(
+      case Cypher5JavaCc => _.withMessageStart("Invalid input 'NULL'")
+      case _ => _.withMessage(
           """Invalid input 'NULL': expected an expression, 'FOREACH', ',', 'AS', 'ORDER BY', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'LIMIT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'SKIP', 'UNION', 'UNWIND', 'USE', 'WITH' or <EOF> (line 1, column 29 (offset: 28))
             |"RETURN x :: ANY VALUE<> NOT NULL"
             |                             ^""".stripMargin
@@ -321,8 +320,8 @@ class TypePredicateExpressionParserTest extends AstParsingTestBase
 
   test("RETURN x :: ANY <> NOT NULL") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart("Invalid input 'NULL'")
-      case Antlr => _.withMessage(
+      case Cypher5JavaCc => _.withMessageStart("Invalid input 'NULL'")
+      case _ => _.withMessage(
           """Invalid input 'NULL': expected an expression, 'FOREACH', ',', 'AS', 'ORDER BY', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'LIMIT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'SKIP', 'UNION', 'UNWIND', 'USE', 'WITH' or <EOF> (line 1, column 24 (offset: 23))
             |"RETURN x :: ANY <> NOT NULL"
             |                        ^""".stripMargin
@@ -332,8 +331,8 @@ class TypePredicateExpressionParserTest extends AstParsingTestBase
 
   test("RETURN x :: NOT NULL") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart("Invalid input 'NOT'")
-      case Antlr => _.withMessage(
+      case Cypher5JavaCc => _.withMessageStart("Invalid input 'NOT'")
+      case _ => _.withMessage(
           """Invalid input 'NOT': expected 'ARRAY', 'LIST', 'ANY', 'BOOL', 'BOOLEAN', 'DATE', 'DURATION', 'EDGE', 'FLOAT', 'INT', 'INTEGER', 'LOCAL', 'MAP', 'NODE', 'NOTHING', 'NULL', 'PATH', 'PATHS', 'POINT', 'RELATIONSHIP', 'SIGNED', 'STRING', 'TIME', 'TIMESTAMP', 'PROPERTY VALUE', 'VARCHAR', 'VERTEX' or 'ZONED' (line 1, column 13 (offset: 12))
             |"RETURN x :: NOT NULL"
             |             ^""".stripMargin
@@ -343,8 +342,8 @@ class TypePredicateExpressionParserTest extends AstParsingTestBase
 
   test("RETURN x :: LIST<>") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart("Invalid input '<>': expected \"<\" (line 1, column 17 (offset: 16))")
-      case Antlr => _.withMessage(
+      case Cypher5JavaCc => _.withMessageStart("Invalid input '<>': expected \"<\" (line 1, column 17 (offset: 16))")
+      case _ => _.withMessage(
           """Invalid input '<>': expected '<' (line 1, column 17 (offset: 16))
             |"RETURN x :: LIST<>"
             |                 ^""".stripMargin
@@ -354,8 +353,8 @@ class TypePredicateExpressionParserTest extends AstParsingTestBase
 
   test("RETURN x :: LIST") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart("Invalid input '': expected \"<\" (line 1, column 17 (offset: 16))")
-      case Antlr => _.withMessage(
+      case Cypher5JavaCc => _.withMessageStart("Invalid input '': expected \"<\" (line 1, column 17 (offset: 16))")
+      case _ => _.withMessage(
           """Invalid input '': expected '<' (line 1, column 17 (offset: 16))
             |"RETURN x :: LIST"
             |                 ^""".stripMargin
@@ -365,8 +364,8 @@ class TypePredicateExpressionParserTest extends AstParsingTestBase
 
   test("RETURN x :: ARRAY") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart("Invalid input '': expected \"<\" (line 1, column 18 (offset: 17))")
-      case Antlr => _.withMessage(
+      case Cypher5JavaCc => _.withMessageStart("Invalid input '': expected \"<\" (line 1, column 18 (offset: 17))")
+      case _ => _.withMessage(
           """Invalid input '': expected '<' (line 1, column 18 (offset: 17))
             |"RETURN x :: ARRAY"
             |                  ^""".stripMargin
@@ -376,8 +375,8 @@ class TypePredicateExpressionParserTest extends AstParsingTestBase
 
   test("RETURN x :: ARRAY<>") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart("Invalid input '<>': expected \"<\" (line 1, column 18 (offset: 17))")
-      case Antlr => _.withMessage(
+      case Cypher5JavaCc => _.withMessageStart("Invalid input '<>': expected \"<\" (line 1, column 18 (offset: 17))")
+      case _ => _.withMessage(
           """Invalid input '<>': expected '<' (line 1, column 18 (offset: 17))
             |"RETURN x :: ARRAY<>"
             |                  ^""".stripMargin

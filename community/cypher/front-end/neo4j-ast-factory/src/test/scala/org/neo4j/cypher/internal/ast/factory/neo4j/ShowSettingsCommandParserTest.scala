@@ -20,8 +20,7 @@ import org.neo4j.cypher.internal.ast.OrderBy
 import org.neo4j.cypher.internal.ast.ShowSettingsClause
 import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.Statements
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Cypher5JavaCc
 import org.neo4j.cypher.internal.expressions.AllIterablePredicate
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.IntegerType
@@ -538,7 +537,7 @@ class ShowSettingsCommandParserTest extends AdministrationAndSchemaCommandParser
 
   test("SHOW ALL SETTINGS") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
+      case Cypher5JavaCc => _.withMessageStart(
           """Invalid input 'SETTINGS': expected
             |  "CONSTRAINT"
             |  "CONSTRAINTS"
@@ -551,7 +550,7 @@ class ShowSettingsCommandParserTest extends AdministrationAndSchemaCommandParser
             |  "ROLE"
             |  "ROLES"""".stripMargin
         )
-      case Antlr => _.withSyntaxError(
+      case _ => _.withSyntaxError(
           """Invalid input 'SETTINGS': expected 'CONSTRAINT', 'CONSTRAINTS', 'FUNCTION', 'FUNCTIONS', 'INDEX', 'INDEXES', 'PRIVILEGE', 'PRIVILEGES', 'ROLE' or 'ROLES' (line 1, column 10 (offset: 9))
             |"SHOW ALL SETTINGS"
             |          ^""".stripMargin
@@ -561,12 +560,12 @@ class ShowSettingsCommandParserTest extends AdministrationAndSchemaCommandParser
 
   test("SHOW SETTING $foo, $bar") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
+      case Cypher5JavaCc => _.withMessageStart(
           """Invalid input ',': expected
             |  "!="
             |  "%"""".stripMargin
         )
-      case Antlr => _.withSyntaxError(
+      case _ => _.withSyntaxError(
           """Invalid input ',': expected an expression, 'SHOW', 'TERMINATE', 'WHERE', 'YIELD' or <EOF> (line 1, column 18 (offset: 17))
             |"SHOW SETTING $foo, $bar"
             |                  ^""".stripMargin
@@ -576,12 +575,12 @@ class ShowSettingsCommandParserTest extends AdministrationAndSchemaCommandParser
 
   test("SHOW SETTING $foo $bar") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
+      case Cypher5JavaCc => _.withMessageStart(
           """Invalid input '$': expected
             |  "!="
             |  "%"""".stripMargin
         )
-      case Antlr => _.withSyntaxError(
+      case _ => _.withSyntaxError(
           """Invalid input '$': expected an expression, 'SHOW', 'TERMINATE', 'WHERE', 'YIELD' or <EOF> (line 1, column 19 (offset: 18))
             |"SHOW SETTING $foo $bar"
             |                   ^""".stripMargin
@@ -591,10 +590,9 @@ class ShowSettingsCommandParserTest extends AdministrationAndSchemaCommandParser
 
   test("SHOW SETTING 'bar', $foo") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
-          """Invalid input '$': expected "\"" or "\'" """
-        )
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc =>
+        _.withMessageStart("""Invalid input '$': expected "\"" or "\'" """)
+      case _ => _.withSyntaxError(
           """Invalid input '$': expected a string (line 1, column 21 (offset: 20))
             |"SHOW SETTING 'bar', $foo"
             |                     ^""".stripMargin
@@ -604,12 +602,12 @@ class ShowSettingsCommandParserTest extends AdministrationAndSchemaCommandParser
 
   test("SHOW SETTING $foo, 'bar'") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
+      case Cypher5JavaCc => _.withMessageStart(
           """Invalid input ',': expected
             |  "!="
             |  "%"""".stripMargin
         )
-      case Antlr => _.withSyntaxError(
+      case _ => _.withSyntaxError(
           """Invalid input ',': expected an expression, 'SHOW', 'TERMINATE', 'WHERE', 'YIELD' or <EOF> (line 1, column 18 (offset: 17))
             |"SHOW SETTING $foo, 'bar'"
             |                  ^""".stripMargin
@@ -619,12 +617,12 @@ class ShowSettingsCommandParserTest extends AdministrationAndSchemaCommandParser
 
   test("SHOW SETTING 'foo' 'bar'") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
+      case Cypher5JavaCc => _.withMessageStart(
           """Invalid input 'bar': expected
             |  "!="
             |  "%"""".stripMargin
         )
-      case Antlr => _.withSyntaxError(
+      case _ => _.withSyntaxError(
           """Invalid input ''bar'': expected an expression, ',', 'SHOW', 'TERMINATE', 'WHERE', 'YIELD' or <EOF> (line 1, column 20 (offset: 19))
             |"SHOW SETTING 'foo' 'bar'"
             |                    ^""".stripMargin

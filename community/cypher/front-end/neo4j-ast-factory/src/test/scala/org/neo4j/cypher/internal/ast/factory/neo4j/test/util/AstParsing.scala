@@ -26,8 +26,8 @@ import org.neo4j.cypher.internal.ast.UseGraph
 import org.neo4j.cypher.internal.ast.factory.ParameterType
 import org.neo4j.cypher.internal.ast.factory.neo4j.Neo4jASTExceptionFactory
 import org.neo4j.cypher.internal.ast.factory.neo4j.Neo4jASTFactory
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Cypher5
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Cypher5JavaCc
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.ParseFailure
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.ParseResult
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.ParseResults
@@ -88,10 +88,12 @@ object AstParsing extends AstParsing {
   sealed trait ParserInTest
 
   object ParserInTest {
-    val AllParsers: Seq[ParserInTest] = Seq(JavaCc, Antlr)
+    val AllParsers: Seq[ParserInTest] = Seq(Cypher5JavaCc, Cypher5) // TODO Add Cypher6
   }
-  case object JavaCc extends ParserInTest
-  case object Antlr extends ParserInTest
+  case object Cypher5JavaCc extends ParserInTest
+  case object Cypher5 extends ParserInTest
+  // Note, there is no cypher 6 parser yet, only added here as a preparation
+  case object Cypher6 extends ParserInTest
 
   case class ParseResults[T](cypher: String, result: Map[ParserInTest, ParseResult]) {
     def apply(parser: ParserInTest): ParseResult = result(parser)
@@ -177,12 +179,15 @@ object Parsers {
     implicit val LiteralParsers: Parsers[Literal] = from(_.literal())
   }
 
-  private val factories = Map[ParserInTest, ParserFactory](Antlr -> Cypher5, JavaCc -> Cypher5JavaCc)
+  private val factories = Map[ParserInTest, ParserFactory](
+    Cypher5 -> Cypher5Factory,
+    Cypher5JavaCc -> Cypher5JavaCcFactory
+  )
 
   private def from[T <: ASTNode](f: ParserFactory => Parser[T]): Parsers[T] =
     Parsers(ParserInTest.AllParsers.map(p => p -> f.apply(factories(p))).toMap)
 
-  private object Cypher5 extends ParserFactory {
+  private object Cypher5Factory extends ParserFactory {
 
     private def parse[T <: ASTNode](f: CypherParser => AstRuleCtx): Parser[T] = (cypher: String) => {
       new CypherAstParser(cypher, Neo4jCypherExceptionFactory(cypher, None), None).parse(f)
@@ -214,7 +219,7 @@ object Parsers {
     override def quantifiedPath(): Parser[QuantifiedPath] = parse(_.parenthesizedPath())
   }
 
-  private object Cypher5JavaCc extends ParserFactory {
+  private object Cypher5JavaCcFactory extends ParserFactory {
 
     // ParserFactory is only really needed to create the Parser type alias above without writing down all 30+ type parameters
     trait JavaCcParserFactory[P] {

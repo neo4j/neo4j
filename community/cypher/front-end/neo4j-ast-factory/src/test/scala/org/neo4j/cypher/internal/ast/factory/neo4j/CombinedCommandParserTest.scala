@@ -18,8 +18,7 @@ package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.Statements
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Cypher5JavaCc
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.SignedHexIntegerLiteral
 import org.neo4j.cypher.internal.expressions.SignedOctalIntegerLiteral
@@ -1994,8 +1993,8 @@ class CombinedCommandParserTest extends AdministrationAndSchemaCommandParserTest
 
   test("MATCH (n) TERMINATE TRANSACTION") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart("Invalid input")
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc => _.withMessageStart("Invalid input")
+      case _ => _.withSyntaxError(
           """Invalid input 'TERMINATE': expected a graph pattern, 'FOREACH', ',', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'UNION', 'UNWIND', 'USE', 'USING', 'WHERE', 'WITH' or <EOF> (line 1, column 11 (offset: 10))
             |"MATCH (n) TERMINATE TRANSACTION"
             |           ^""".stripMargin

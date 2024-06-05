@@ -23,8 +23,7 @@ import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.UnaliasedReturnItem
 import org.neo4j.cypher.internal.ast.UnionDistinct
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Cypher5JavaCc
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTestSupport
 import org.neo4j.cypher.internal.expressions.AllIterablePredicate
@@ -541,8 +540,8 @@ class CountExpressionParserTest extends AstParsingTestBase with LegacyAstParsing
       |RETURN m""".stripMargin
   ) {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart("Invalid input 'WHERE'")
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc => _.withMessageStart("Invalid input 'WHERE'")
+      case _ => _.withSyntaxError(
           """Invalid input 'WHERE': expected an expression, 'FOREACH', ',', 'AS', 'ORDER BY', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'LIMIT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'SKIP', 'UNION', 'UNWIND', 'USE', 'WITH' or '}' (line 2, column 34 (offset: 43))
             |"WHERE COUNT { MATCH (b) RETURN b WHERE true } >= 1"
             |                                  ^""".stripMargin
@@ -556,8 +555,8 @@ class CountExpressionParserTest extends AstParsingTestBase with LegacyAstParsing
       |RETURN m""".stripMargin
   ) {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart("Invalid input 'RETURN'")
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc => _.withMessageStart("Invalid input 'RETURN'")
+      case _ => _.withSyntaxError(
           """Invalid input 'RETURN': expected an expression or '}' (line 2, column 45 (offset: 54))
             |"WHERE COUNT { (a)-[r]->(b) WHERE a.prop = 1 RETURN r } > 1"
             |                                             ^""".stripMargin

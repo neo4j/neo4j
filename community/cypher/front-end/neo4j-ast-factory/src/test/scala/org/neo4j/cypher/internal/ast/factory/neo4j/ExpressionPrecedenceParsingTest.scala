@@ -20,8 +20,7 @@ import org.neo4j.cypher.internal.ast.CollectExpression
 import org.neo4j.cypher.internal.ast.CountExpression
 import org.neo4j.cypher.internal.ast.ExistsExpression
 import org.neo4j.cypher.internal.ast.Statements
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Cypher5JavaCc
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTestSupport
 import org.neo4j.cypher.internal.expressions.AllPropertiesSelector
@@ -212,9 +211,9 @@ class ExpressionPrecedenceParsingTest extends AstParsingTestBase with LegacyAstP
 
     // (2 + 3) IN [(2 - 1)]
     "2 + 3 IN [2 - 1]" should parse[Expression].toAsts {
-      case JavaCc =>
+      case Cypher5JavaCc =>
         in(add(literalInt(2), literalInt(3)), listOf(subtract(literalInt(2), literalInt(1))))
-      case Antlr =>
+      case _ =>
         in(add(literalInt(2), literalInt(3)), listOf(subtract(literalInt(2), literalInt(1))))
     }
     // (1 + 2) IS NOT NULL

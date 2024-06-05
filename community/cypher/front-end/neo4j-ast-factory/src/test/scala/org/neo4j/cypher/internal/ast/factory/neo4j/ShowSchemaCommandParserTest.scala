@@ -42,8 +42,7 @@ import org.neo4j.cypher.internal.ast.TextIndexes
 import org.neo4j.cypher.internal.ast.UniqueConstraints
 import org.neo4j.cypher.internal.ast.ValidSyntax
 import org.neo4j.cypher.internal.ast.VectorIndexes
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Cypher5JavaCc
 import org.neo4j.cypher.internal.expressions.AllIterablePredicate
 import org.neo4j.cypher.internal.util.symbols.IntegerType
 
@@ -680,7 +679,7 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
 
   test("SHOW ALL BTREE INDEXES") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
+      case Cypher5JavaCc => _.withMessageStart(
           """Invalid input 'BTREE': expected
             |  "CONSTRAINT"
             |  "CONSTRAINTS"
@@ -693,7 +692,7 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
             |  "ROLE"
             |  "ROLES" (line 1, column 10 (offset: 9))""".stripMargin
         )
-      case Antlr => _.withSyntaxError(
+      case _ => _.withSyntaxError(
           """|Invalid input 'BTREE': expected 'CONSTRAINT', 'CONSTRAINTS', 'FUNCTION', 'FUNCTIONS', 'INDEX', 'INDEXES', 'PRIVILEGE', 'PRIVILEGES', 'ROLE' or 'ROLES' (line 1, column 10 (offset: 9))
              |"SHOW ALL BTREE INDEXES"
              |          ^""".stripMargin
@@ -819,8 +818,8 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
 
   test("SHOW UNKNOWN INDEXES") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart("""Invalid input 'UNKNOWN': expected""")
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc => _.withMessageStart("""Invalid input 'UNKNOWN': expected""")
+      case _ => _.withSyntaxError(
           """Invalid input 'UNKNOWN': expected 'ALIAS', 'ALIASES', 'ALL', 'BTREE', 'CONSTRAINT', 'CONSTRAINTS', 'DATABASE', 'DEFAULT DATABASE', 'HOME DATABASE', 'DATABASES', 'EXIST', 'EXISTENCE', 'EXISTS', 'FULLTEXT', 'FUNCTION', 'FUNCTIONS', 'BUILT IN', 'INDEX', 'INDEXES', 'KEY', 'LOOKUP', 'NODE', 'POINT', 'POPULATED', 'PRIVILEGE', 'PRIVILEGES', 'PROCEDURE', 'PROCEDURES', 'PROPERTY', 'RANGE', 'REL', 'RELATIONSHIP', 'ROLE', 'ROLES', 'SERVER', 'SERVERS', 'SETTING', 'SETTINGS', 'SUPPORTED', 'TEXT', 'TRANSACTION', 'TRANSACTIONS', 'UNIQUE', 'UNIQUENESS', 'USER', 'CURRENT USER', 'USERS' or 'VECTOR' (line 1, column 6 (offset: 5))
             |"SHOW UNKNOWN INDEXES"
             |      ^""".stripMargin
@@ -830,10 +829,9 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
 
   test("SHOW BUILT IN INDEXES") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
-          """Invalid input 'INDEXES': expected "FUNCTION" or "FUNCTIONS""""
-        )
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc =>
+        _.withMessageStart("""Invalid input 'INDEXES': expected "FUNCTION" or "FUNCTIONS"""")
+      case _ => _.withSyntaxError(
           """Invalid input 'INDEXES': expected 'FUNCTION' or 'FUNCTIONS' (line 1, column 15 (offset: 14))
             |"SHOW BUILT IN INDEXES"
             |               ^""".stripMargin
@@ -1337,7 +1335,7 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
 
   test("SHOW NODES EXIST CONSTRAINTS") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
+      case Cypher5JavaCc => _.withMessageStart(
           """Invalid input 'NODES': expected
             |  "ALIAS"
             |  "ALIASES"
@@ -1388,7 +1386,7 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
             |  "USERS"
             |  "VECTOR" (line 1, column 6 (offset: 5))""".stripMargin
         )
-      case Antlr => _.withSyntaxError(
+      case _ => _.withSyntaxError(
           """|Invalid input 'NODES': expected 'ALIAS', 'ALIASES', 'ALL', 'BTREE', 'CONSTRAINT', 'CONSTRAINTS', 'DATABASE', 'DEFAULT DATABASE', 'HOME DATABASE', 'DATABASES', 'EXIST', 'EXISTENCE', 'EXISTS', 'FULLTEXT', 'FUNCTION', 'FUNCTIONS', 'BUILT IN', 'INDEX', 'INDEXES', 'KEY', 'LOOKUP', 'NODE', 'POINT', 'POPULATED', 'PRIVILEGE', 'PRIVILEGES', 'PROCEDURE', 'PROCEDURES', 'PROPERTY', 'RANGE', 'REL', 'RELATIONSHIP', 'ROLE', 'ROLES', 'SERVER', 'SERVERS', 'SETTING', 'SETTINGS', 'SUPPORTED', 'TEXT', 'TRANSACTION', 'TRANSACTIONS', 'UNIQUE', 'UNIQUENESS', 'USER', 'CURRENT USER', 'USERS' or 'VECTOR' (line 1, column 6 (offset: 5))
              |"SHOW NODES EXIST CONSTRAINTS"
              |      ^""".stripMargin
@@ -1406,7 +1404,7 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
 
   test("SHOW RELATIONSHIPS EXIST CONSTRAINTS") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
+      case Cypher5JavaCc => _.withMessageStart(
           """Invalid input 'RELATIONSHIPS': expected
             |  "ALIAS"
             |  "ALIASES"
@@ -1457,7 +1455,7 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
             |  "USERS"
             |  "VECTOR" (line 1, column 6 (offset: 5))""".stripMargin
         )
-      case Antlr => _.withSyntaxError(
+      case _ => _.withSyntaxError(
           """|Invalid input 'RELATIONSHIPS': expected 'ALIAS', 'ALIASES', 'ALL', 'BTREE', 'CONSTRAINT', 'CONSTRAINTS', 'DATABASE', 'DEFAULT DATABASE', 'HOME DATABASE', 'DATABASES', 'EXIST', 'EXISTENCE', 'EXISTS', 'FULLTEXT', 'FUNCTION', 'FUNCTIONS', 'BUILT IN', 'INDEX', 'INDEXES', 'KEY', 'LOOKUP', 'NODE', 'POINT', 'POPULATED', 'PRIVILEGE', 'PRIVILEGES', 'PROCEDURE', 'PROCEDURES', 'PROPERTY', 'RANGE', 'REL', 'RELATIONSHIP', 'ROLE', 'ROLES', 'SERVER', 'SERVERS', 'SETTING', 'SETTINGS', 'SUPPORTED', 'TEXT', 'TRANSACTION', 'TRANSACTIONS', 'UNIQUE', 'UNIQUENESS', 'USER', 'CURRENT USER', 'USERS' or 'VECTOR' (line 1, column 6 (offset: 5))
              |"SHOW RELATIONSHIPS EXIST CONSTRAINTS"
              |      ^""".stripMargin
@@ -1467,7 +1465,7 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
 
   test("SHOW REL EXISTS CONSTRAINTS") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
+      case Cypher5JavaCc => _.withMessageStart(
           """Invalid input 'EXISTS': expected
             |  "EXIST"
             |  "EXISTENCE"
@@ -1476,7 +1474,7 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
             |  "UNIQUE"
             |  "UNIQUENESS" (line 1, column 10 (offset: 9))""".stripMargin
         )
-      case Antlr => _.withSyntaxError(
+      case _ => _.withSyntaxError(
           """Invalid input 'EXISTS': expected 'EXIST', 'EXISTENCE', 'KEY', 'PROPERTY', 'UNIQUE' or 'UNIQUENESS' (line 1, column 10 (offset: 9))
             |"SHOW REL EXISTS CONSTRAINTS"
             |          ^""".stripMargin
@@ -1625,8 +1623,8 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
 
   test("SHOW UNKNOWN CONSTRAINTS") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart("Invalid input 'UNKNOWN': expected")
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc => _.withMessageStart("Invalid input 'UNKNOWN': expected")
+      case _ => _.withSyntaxError(
           """|Invalid input 'UNKNOWN': expected 'ALIAS', 'ALIASES', 'ALL', 'BTREE', 'CONSTRAINT', 'CONSTRAINTS', 'DATABASE', 'DEFAULT DATABASE', 'HOME DATABASE', 'DATABASES', 'EXIST', 'EXISTENCE', 'EXISTS', 'FULLTEXT', 'FUNCTION', 'FUNCTIONS', 'BUILT IN', 'INDEX', 'INDEXES', 'KEY', 'LOOKUP', 'NODE', 'POINT', 'POPULATED', 'PRIVILEGE', 'PRIVILEGES', 'PROCEDURE', 'PROCEDURES', 'PROPERTY', 'RANGE', 'REL', 'RELATIONSHIP', 'ROLE', 'ROLES', 'SERVER', 'SERVERS', 'SETTING', 'SETTINGS', 'SUPPORTED', 'TEXT', 'TRANSACTION', 'TRANSACTIONS', 'UNIQUE', 'UNIQUENESS', 'USER', 'CURRENT USER', 'USERS' or 'VECTOR' (line 1, column 6 (offset: 5))
              |"SHOW UNKNOWN CONSTRAINTS"
              |      ^""".stripMargin
@@ -1636,8 +1634,8 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
 
   test("SHOW BUILT IN CONSTRAINTS") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart("""Invalid input 'CONSTRAINTS': expected "FUNCTION" or "FUNCTIONS"""")
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc => _.withMessageStart("""Invalid input 'CONSTRAINTS': expected "FUNCTION" or "FUNCTIONS"""")
+      case _ => _.withSyntaxError(
           """Invalid input 'CONSTRAINTS': expected 'FUNCTION' or 'FUNCTIONS' (line 1, column 15 (offset: 14))
             |"SHOW BUILT IN CONSTRAINTS"
             |               ^""".stripMargin
@@ -1654,8 +1652,8 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
     test(s"$prefix SHOW $entity YIELD * WITH * MATCH (n) RETURN n") {
       // Can't parse WITH after SHOW
       failsParsing[Statements].in {
-        case JavaCc => _.withMessageStart("Invalid input 'WITH': expected")
-        case Antlr => _.withSyntaxErrorContaining(
+        case Cypher5JavaCc => _.withMessageStart("Invalid input 'WITH': expected")
+        case _ => _.withSyntaxErrorContaining(
             """Invalid input 'WITH': expected 'ORDER BY'""".stripMargin
           )
       }
@@ -1664,8 +1662,8 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
     test(s"$prefix UNWIND range(1,10) as b SHOW $entity YIELD * RETURN *") {
       // Can't parse SHOW  after UNWIND
       failsParsing[Statements].in {
-        case JavaCc => _.withMessageStart("Invalid input 'SHOW': expected")
-        case Antlr => _.withSyntaxErrorContaining(
+        case Cypher5JavaCc => _.withMessageStart("Invalid input 'SHOW': expected")
+        case _ => _.withSyntaxErrorContaining(
             """Invalid input 'SHOW': expected 'FOREACH', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'UNION', 'UNWIND', 'USE', 'WITH' or <EOF>"""
           )
       }
@@ -1674,8 +1672,8 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
     test(s"$prefix SHOW $entity WITH name, type RETURN *") {
       // Can't parse WITH after SHOW
       failsParsing[Statements].in {
-        case JavaCc => _.withMessageStart("Invalid input 'WITH': expected")
-        case Antlr => _.withSyntaxErrorContaining(
+        case Cypher5JavaCc => _.withMessageStart("Invalid input 'WITH': expected")
+        case _ => _.withSyntaxErrorContaining(
             """Invalid input 'WITH': expected 'BRIEF', 'SHOW', 'TERMINATE', 'VERBOSE', 'WHERE', 'YIELD' or <EOF>"""
           )
       }
@@ -1683,8 +1681,8 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
 
     test(s"$prefix WITH 'n' as n SHOW $entity YIELD name RETURN name as numIndexes") {
       failsParsing[Statements].in {
-        case JavaCc => _.withMessageStart("Invalid input 'SHOW': expected")
-        case Antlr => _.withSyntaxErrorContaining(
+        case Cypher5JavaCc => _.withMessageStart("Invalid input 'SHOW': expected")
+        case _ => _.withSyntaxErrorContaining(
             """Invalid input 'SHOW': expected 'FOREACH', ',', 'ORDER BY', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'LIMIT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'SKIP', 'UNION', 'UNWIND', 'USE', 'WHERE', 'WITH' or <EOF>"""
           )
       }
@@ -1692,8 +1690,8 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
 
     test(s"$prefix SHOW $entity RETURN name as numIndexes") {
       failsParsing[Statements].in {
-        case JavaCc => _.withMessageStart("Invalid input 'RETURN': expected")
-        case Antlr => _.withSyntaxErrorContaining(
+        case Cypher5JavaCc => _.withMessageStart("Invalid input 'RETURN': expected")
+        case _ => _.withSyntaxErrorContaining(
             """Invalid input 'RETURN': expected 'BRIEF', 'SHOW', 'TERMINATE', 'VERBOSE', 'WHERE', 'YIELD' or <EOF>"""
           )
       }
@@ -1701,8 +1699,8 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
 
     test(s"$prefix SHOW $entity WITH 1 as c RETURN name as numIndexes") {
       failsParsing[Statements].in {
-        case JavaCc => _.withMessageStart("Invalid input 'WITH': expected")
-        case Antlr => _.withSyntaxErrorContaining(
+        case Cypher5JavaCc => _.withMessageStart("Invalid input 'WITH': expected")
+        case _ => _.withSyntaxErrorContaining(
             """Invalid input 'WITH': expected 'BRIEF', 'SHOW', 'TERMINATE', 'VERBOSE', 'WHERE', 'YIELD' or <EOF>"""
           )
       }
@@ -1710,8 +1708,8 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
 
     test(s"$prefix SHOW $entity WITH 1 as c") {
       failsParsing[Statements].in {
-        case JavaCc => _.withMessageStart("Invalid input 'WITH': expected")
-        case Antlr => _.withSyntaxErrorContaining(
+        case Cypher5JavaCc => _.withMessageStart("Invalid input 'WITH': expected")
+        case _ => _.withSyntaxErrorContaining(
             """Invalid input 'WITH': expected 'BRIEF', 'SHOW', 'TERMINATE', 'VERBOSE', 'WHERE', 'YIELD' or <EOF>"""
           )
       }
@@ -1719,8 +1717,8 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
 
     test(s"$prefix SHOW $entity YIELD a WITH a RETURN a") {
       failsParsing[Statements].in {
-        case JavaCc => _.withMessageStart("Invalid input 'WITH': expected")
-        case Antlr => _.withSyntaxErrorContaining(
+        case Cypher5JavaCc => _.withMessageStart("Invalid input 'WITH': expected")
+        case _ => _.withSyntaxErrorContaining(
             """Invalid input 'WITH': expected ',', 'AS', 'ORDER BY', 'LIMIT', 'RETURN', 'SHOW', 'SKIP', 'TERMINATE', 'WHERE' or <EOF>"""
           )
       }
@@ -1728,8 +1726,8 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
 
     test(s"$prefix SHOW $entity YIELD as UNWIND as as a RETURN a") {
       failsParsing[Statements].in {
-        case JavaCc => _.withMessageStart("Invalid input 'UNWIND': expected")
-        case Antlr => _.withSyntaxErrorContaining(
+        case Cypher5JavaCc => _.withMessageStart("Invalid input 'UNWIND': expected")
+        case _ => _.withSyntaxErrorContaining(
             """Invalid input 'UNWIND': expected ',', 'AS', 'ORDER BY', 'LIMIT', 'RETURN', 'SHOW', 'SKIP', 'TERMINATE', 'WHERE' or <EOF>"""
           )
       }
@@ -1737,8 +1735,8 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
 
     test(s"$prefix SHOW $entity RETURN name2 YIELD name2") {
       failsParsing[Statements].in {
-        case JavaCc => _.withMessageStart("Invalid input 'RETURN': expected")
-        case Antlr => _.withSyntaxErrorContaining(
+        case Cypher5JavaCc => _.withMessageStart("Invalid input 'RETURN': expected")
+        case _ => _.withSyntaxErrorContaining(
             """Invalid input 'RETURN': expected 'BRIEF', 'SHOW', 'TERMINATE', 'VERBOSE', 'WHERE', 'YIELD' or <EOF>"""
           )
       }

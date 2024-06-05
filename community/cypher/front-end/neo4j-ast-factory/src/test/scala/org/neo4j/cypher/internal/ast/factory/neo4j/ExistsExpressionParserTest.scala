@@ -20,8 +20,7 @@ import org.neo4j.cypher.internal.ast.ExistsExpression
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.UnionDistinct
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Cypher5JavaCc
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
 import org.neo4j.cypher.internal.expressions.AllIterablePredicate
 import org.neo4j.cypher.internal.expressions.Equals
@@ -318,10 +317,9 @@ class ExistsExpressionParserTest extends AstParsingTestBase {
       |RETURN m""".stripMargin
   ) {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
-          "Invalid input 'RETURN'"
-        )
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc =>
+        _.withMessageStart("Invalid input 'RETURN'")
+      case _ => _.withSyntaxError(
           """Invalid input 'RETURN': expected an expression or '}' (line 2, column 46 (offset: 55))
             |"WHERE EXISTS { (a)-[r]->(b) WHERE a.prop = 1 RETURN r }"
             |                                              ^""".stripMargin

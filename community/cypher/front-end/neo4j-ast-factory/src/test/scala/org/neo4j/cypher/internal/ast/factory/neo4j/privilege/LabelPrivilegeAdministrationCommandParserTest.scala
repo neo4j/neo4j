@@ -19,8 +19,7 @@ package org.neo4j.cypher.internal.ast.factory.neo4j.privilege
 import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.factory.neo4j.AdministrationAndSchemaCommandParserTestBase
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Cypher5JavaCc
 
 class LabelPrivilegeAdministrationCommandParserTest extends AdministrationAndSchemaCommandParserTestBase {
   private val labelResource = ast.LabelsResource(Seq("label"))(_)
@@ -188,8 +187,8 @@ class LabelPrivilegeAdministrationCommandParserTest extends AdministrationAndSch
 
               test(s"$verb$immutableString $setOrRemove LABEL label ON DATABASES * $preposition role") {
                 failsParsing[Statements].in {
-                  case JavaCc => _.withMessageStart("""Invalid input 'DATABASES': expected""")
-                  case Antlr => _.withSyntaxErrorContaining(
+                  case Cypher5JavaCc => _.withMessageStart("""Invalid input 'DATABASES': expected""")
+                  case _ => _.withSyntaxErrorContaining(
                       """Invalid input 'DATABASES': expected"""
                     )
                 }
@@ -197,8 +196,8 @@ class LabelPrivilegeAdministrationCommandParserTest extends AdministrationAndSch
 
               test(s"$verb$immutableString $setOrRemove LABEL label ON DATABASE foo $preposition role") {
                 failsParsing[Statements].in {
-                  case JavaCc => _.withMessageStart("""Invalid input 'DATABASE': expected""")
-                  case Antlr => _.withSyntaxErrorContaining(
+                  case Cypher5JavaCc => _.withMessageStart("""Invalid input 'DATABASE': expected""")
+                  case _ => _.withSyntaxErrorContaining(
                       """Invalid input 'DATABASE': expected"""
                     )
                 }

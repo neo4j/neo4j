@@ -19,8 +19,7 @@ package org.neo4j.cypher.internal.ast.factory.neo4j
 import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.Match
 import org.neo4j.cypher.internal.ast.Statements
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Cypher5JavaCc
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTestSupport
 import org.neo4j.cypher.internal.expressions.FixedQuantifier
@@ -391,8 +390,8 @@ class QuantifiedPathPatternInMatchParserTest extends AstParsingTestBase with Leg
   // pattern expressions are not implemented, yet
   test("MATCH (n) WITH [ p = (n)--(m) ((a)-->(b))+ | p ] as paths RETURN *") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart("Invalid input '(': expected\n  \"!=\"\n  \"%\"\n  \"*\"")
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc => _.withMessageStart("Invalid input '(': expected\n  \"!=\"\n  \"%\"\n  \"*\"")
+      case _ => _.withSyntaxError(
           """Invalid input '(': expected an expression (line 1, column 31 (offset: 30))
             |"MATCH (n) WITH [ p = (n)--(m) ((a)-->(b))+ | p ] as paths RETURN *"
             |                               ^""".stripMargin
@@ -403,8 +402,8 @@ class QuantifiedPathPatternInMatchParserTest extends AstParsingTestBase with Leg
   // pattern expression are not implemented, yet
   test("MATCH (n), (m) WHERE (n) ((a)-->(b))+ (m) RETURN *") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart("Invalid input '('")
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc => _.withMessageStart("Invalid input '('")
+      case _ => _.withSyntaxError(
           """Invalid input '(': expected an expression, 'FOREACH', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'UNION', 'UNWIND', 'USE', 'WITH' or <EOF> (line 1, column 26 (offset: 25))
             |"MATCH (n), (m) WHERE (n) ((a)-->(b))+ (m) RETURN *"
             |                          ^""".stripMargin
@@ -415,8 +414,8 @@ class QuantifiedPathPatternInMatchParserTest extends AstParsingTestBase with Leg
   // node abbreviations are not implemented, yet
   test("MATCH (n)--((a)-->(b))+") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart("Invalid input '(': expected \":\" or an identifier")
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc => _.withMessageStart("Invalid input '(': expected \":\" or an identifier")
+      case _ => _.withSyntaxError(
           """Invalid input '(': expected a parameter, a variable name, ')', ':', 'IS', 'WHERE' or '{' (line 1, column 13 (offset: 12))
             |"MATCH (n)--((a)-->(b))+"
             |             ^""".stripMargin

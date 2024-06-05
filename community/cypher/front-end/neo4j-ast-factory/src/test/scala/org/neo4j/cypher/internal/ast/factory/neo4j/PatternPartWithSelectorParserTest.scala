@@ -22,8 +22,7 @@ import org.neo4j.cypher.internal.ast.ExistsExpression
 import org.neo4j.cypher.internal.ast.Match
 import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.SubqueryCall
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Cypher5JavaCc
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
 import org.neo4j.cypher.internal.expressions.MatchMode
 import org.neo4j.cypher.internal.expressions.NamedPatternPart
@@ -286,8 +285,8 @@ class PatternPartWithSelectorParserTest extends AstParsingTestBase {
     withClue(s"selector = ${selector._1}") {
       test(s"MATCH shortestPath(${selector._1} (a)-[r]->(b))") {
         failsParsing[Statements].in {
-          case JavaCc => _.withMessageStart("Invalid input")
-          case _      => _.withSyntaxErrorContaining("Invalid input")
+          case Cypher5JavaCc => _.withMessageStart("Invalid input")
+          case _             => _.withSyntaxErrorContaining("Invalid input")
         }
       }
     }
@@ -297,8 +296,8 @@ class PatternPartWithSelectorParserTest extends AstParsingTestBase {
     withClue(s"selector = ${selector._1}") {
       test(s"MATCH allShortestPaths(${selector._1} (a)-[r]->(b))") {
         failsParsing[Statements].in {
-          case JavaCc => _.withMessageStart("Invalid input 'allShortestPaths'")
-          case _      => _.withSyntaxErrorContaining("Invalid input")
+          case Cypher5JavaCc => _.withMessageStart("Invalid input 'allShortestPaths'")
+          case _             => _.withSyntaxErrorContaining("Invalid input")
         }
       }
     }
@@ -318,8 +317,8 @@ class PatternPartWithSelectorParserTest extends AstParsingTestBase {
   test("MATCH $selector (() ($selector (a)-[r]->(b))* ()-->())") {
     selectors.foreach { case selector -> _ =>
       s"MATCH $selector (() ($selector (a)-[r]->(b))* ()-->())" should notParse[Clause].in {
-        case JavaCc => _.withMessageStart("Path selectors such as")
-        case _      => _.withSyntaxErrorContaining("Path selectors such as")
+        case Cypher5JavaCc => _.withMessageStart("Path selectors such as")
+        case _             => _.withSyntaxErrorContaining("Path selectors such as")
       }
     }
   }
@@ -327,8 +326,8 @@ class PatternPartWithSelectorParserTest extends AstParsingTestBase {
   test("CREATE $selector (a)-[r]->(b)") {
     selectors.foreach { case selector -> _ =>
       s"CREATE $selector (a)-[r]->(b)" should notParse[Clause].in {
-        case JavaCc => _.withMessageStart("Path selectors such as")
-        case _      => _.withSyntaxErrorContaining("Path selectors such as")
+        case Cypher5JavaCc => _.withMessageStart("Path selectors such as")
+        case _             => _.withSyntaxErrorContaining("Path selectors such as")
       }
     }
   }
@@ -336,8 +335,8 @@ class PatternPartWithSelectorParserTest extends AstParsingTestBase {
   test("MERGE $selector (a)-[r]->(b)") {
     selectors.foreach { case selector -> _ =>
       s"MERGE $selector (a)-[r]->(b)" should notParse[Clause].in {
-        case JavaCc => _.withMessageStart("Path selectors such as")
-        case Antlr  => _.withSyntaxErrorContaining("Path selectors such as")
+        case Cypher5JavaCc => _.withMessageStart("Path selectors such as")
+        case _             => _.withSyntaxErrorContaining("Path selectors such as")
       }
     }
   }

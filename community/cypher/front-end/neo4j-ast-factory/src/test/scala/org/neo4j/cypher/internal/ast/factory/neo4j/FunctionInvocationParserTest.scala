@@ -17,8 +17,7 @@
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.ast.Statements
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Cypher5JavaCc
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 
@@ -55,8 +54,8 @@ class FunctionInvocationParserTest extends AstParsingTestBase {
 
   test("function parameters without comma separation should not parse") {
     "return foo('test' 42)" should notParse[Statements].in {
-      case JavaCc => _.withMessageStart("Invalid input '42': expected")
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc => _.withMessageStart("Invalid input '42': expected")
+      case _ => _.withSyntaxError(
           """Invalid input '42': expected an expression, ')' or ',' (line 1, column 19 (offset: 18))
             |"return foo('test' 42)"
             |                   ^""".stripMargin
@@ -66,8 +65,8 @@ class FunctionInvocationParserTest extends AstParsingTestBase {
 
   test("function parameters with invalid start comma should not parse") {
     "return foo(, 'test', 42)" should notParse[Statements].in {
-      case JavaCc => _.withMessageStart("Invalid input ',': expected")
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc => _.withMessageStart("Invalid input ',': expected")
+      case _ => _.withSyntaxError(
           """Invalid input '(': expected an expression, 'FOREACH', ',', 'AS', 'ORDER BY', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'LIMIT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'SKIP', 'UNION', 'UNWIND', 'USE', 'WITH' or <EOF> (line 1, column 11 (offset: 10))
             |"return foo(, 'test', 42)"
             |           ^""".stripMargin

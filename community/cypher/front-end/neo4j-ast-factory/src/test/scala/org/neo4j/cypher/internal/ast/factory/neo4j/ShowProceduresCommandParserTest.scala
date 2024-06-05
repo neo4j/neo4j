@@ -24,8 +24,7 @@ import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.User
 import org.neo4j.cypher.internal.ast.Where
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Cypher5JavaCc
 import org.neo4j.cypher.internal.expressions.AllIterablePredicate
 import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.StringLiteral
@@ -417,7 +416,7 @@ class ShowProceduresCommandParserTest extends AdministrationAndSchemaCommandPars
 
   test("SHOW EXECUTABLE PROCEDURE") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
+      case Cypher5JavaCc => _.withMessageStart(
           """Invalid input 'EXECUTABLE': expected
             |  "ALIAS"
             |  "ALIASES"
@@ -468,7 +467,7 @@ class ShowProceduresCommandParserTest extends AdministrationAndSchemaCommandPars
             |  "USERS"
             |  "VECTOR" (line 1, column 6 (offset: 5))""".stripMargin
         )
-      case Antlr => _.withSyntaxError(
+      case _ => _.withSyntaxError(
           """Invalid input 'EXECUTABLE': expected 'ALIAS', 'ALIASES', 'ALL', 'BTREE', 'CONSTRAINT', 'CONSTRAINTS', 'DATABASE', 'DEFAULT DATABASE', 'HOME DATABASE', 'DATABASES', 'EXIST', 'EXISTENCE', 'EXISTS', 'FULLTEXT', 'FUNCTION', 'FUNCTIONS', 'BUILT IN', 'INDEX', 'INDEXES', 'KEY', 'LOOKUP', 'NODE', 'POINT', 'POPULATED', 'PRIVILEGE', 'PRIVILEGES', 'PROCEDURE', 'PROCEDURES', 'PROPERTY', 'RANGE', 'REL', 'RELATIONSHIP', 'ROLE', 'ROLES', 'SERVER', 'SERVERS', 'SETTING', 'SETTINGS', 'SUPPORTED', 'TEXT', 'TRANSACTION', 'TRANSACTIONS', 'UNIQUE', 'UNIQUENESS', 'USER', 'CURRENT USER', 'USERS' or 'VECTOR' (line 1, column 6 (offset: 5))
             |"SHOW EXECUTABLE PROCEDURE"
             |      ^""".stripMargin
@@ -486,7 +485,7 @@ class ShowProceduresCommandParserTest extends AdministrationAndSchemaCommandPars
 
   test("SHOW PROCEDURE EXEC") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
+      case Cypher5JavaCc => _.withMessageStart(
           """Invalid input 'EXEC': expected
             |  "EXECUTABLE"
             |  "SHOW"
@@ -495,7 +494,7 @@ class ShowProceduresCommandParserTest extends AdministrationAndSchemaCommandPars
             |  "YIELD"
             |  <EOF> (line 1, column 16 (offset: 15))""".stripMargin
         )
-      case Antlr => _.withSyntaxError(
+      case _ => _.withSyntaxError(
           """Invalid input 'EXEC': expected 'EXECUTABLE', 'SHOW', 'TERMINATE', 'WHERE', 'YIELD' or <EOF> (line 1, column 16 (offset: 15))
             |"SHOW PROCEDURE EXEC"
             |                ^""".stripMargin
@@ -541,10 +540,10 @@ class ShowProceduresCommandParserTest extends AdministrationAndSchemaCommandPars
 
   test("SHOW user PROCEDURE") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
+      case Cypher5JavaCc => _.withMessageStart(
           """Invalid input '': expected ",", "PRIVILEGE" or "PRIVILEGES" (line 1, column 20 (offset: 19))"""
         )
-      case Antlr => _.withSyntaxError(
+      case _ => _.withSyntaxError(
           """Invalid input '': expected 'PRIVILEGE' or 'PRIVILEGES' (line 1, column 20 (offset: 19))
             |"SHOW user PROCEDURE"
             |                    ^""".stripMargin
@@ -554,10 +553,10 @@ class ShowProceduresCommandParserTest extends AdministrationAndSchemaCommandPars
 
   test("SHOW USER user PROCEDURE") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
+      case Cypher5JavaCc => _.withMessageStart(
           """Invalid input 'PROCEDURE': expected ",", "PRIVILEGE" or "PRIVILEGES" (line 1, column 16 (offset: 15))"""
         )
-      case Antlr => _.withSyntaxError(
+      case _ => _.withSyntaxError(
           """Invalid input 'PROCEDURE': expected 'PRIVILEGE' or 'PRIVILEGES' (line 1, column 16 (offset: 15))
             |"SHOW USER user PROCEDURE"
             |                ^""".stripMargin
@@ -583,8 +582,8 @@ class ShowProceduresCommandParserTest extends AdministrationAndSchemaCommandPars
     test(s"$prefix SHOW PROCEDURES YIELD * WITH * MATCH (n) RETURN n") {
       // Can't parse WITH after SHOW
       failsParsing[Statements].in {
-        case JavaCc => _.withMessageStart("Invalid input 'WITH': expected")
-        case Antlr => _.withSyntaxErrorContaining(
+        case Cypher5JavaCc => _.withMessageStart("Invalid input 'WITH': expected")
+        case _ => _.withSyntaxErrorContaining(
             """Invalid input 'WITH': expected 'ORDER BY'""".stripMargin
           )
       }
@@ -594,8 +593,8 @@ class ShowProceduresCommandParserTest extends AdministrationAndSchemaCommandPars
     test(s"$prefix UNWIND range(1,10) as b SHOW PROCEDURES YIELD * RETURN *") {
       // Can't parse SHOW  after UNWIND
       failsParsing[Statements].in {
-        case JavaCc => _.withMessageStart("Invalid input 'SHOW': expected")
-        case Antlr => _.withSyntaxErrorContaining(
+        case Cypher5JavaCc => _.withMessageStart("Invalid input 'SHOW': expected")
+        case _ => _.withSyntaxErrorContaining(
             """Invalid input 'SHOW': expected 'FOREACH', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'UNION', 'UNWIND', 'USE', 'WITH' or <EOF>""".stripMargin
           )
       }
@@ -605,8 +604,8 @@ class ShowProceduresCommandParserTest extends AdministrationAndSchemaCommandPars
     test(s"$prefix SHOW PROCEDURES WITH name, type RETURN *") {
       // Can't parse WITH after SHOW
       failsParsing[Statements].in {
-        case JavaCc => _.withMessageStart("Invalid input 'WITH': expected")
-        case Antlr => _.withSyntaxErrorContaining(
+        case Cypher5JavaCc => _.withMessageStart("Invalid input 'WITH': expected")
+        case _ => _.withSyntaxErrorContaining(
             """Invalid input 'WITH': expected 'EXECUTABLE'""".stripMargin
           )
       }
@@ -615,8 +614,8 @@ class ShowProceduresCommandParserTest extends AdministrationAndSchemaCommandPars
 
     test(s"$prefix WITH 'n' as n SHOW PROCEDURES YIELD name RETURN name as numIndexes") {
       failsParsing[Statements].in {
-        case JavaCc => _.withMessageStart("Invalid input 'SHOW': expected")
-        case Antlr => _.withSyntaxErrorContaining(
+        case Cypher5JavaCc => _.withMessageStart("Invalid input 'SHOW': expected")
+        case _ => _.withSyntaxErrorContaining(
             """Invalid input 'SHOW': expected 'FOREACH', ',', 'ORDER BY', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'LIMIT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'SKIP', 'UNION', 'UNWIND', 'USE', 'WHERE', 'WITH' or <EOF>""".stripMargin
           )
       }
@@ -625,8 +624,8 @@ class ShowProceduresCommandParserTest extends AdministrationAndSchemaCommandPars
 
     test(s"$prefix SHOW PROCEDURES RETURN name as numIndexes") {
       failsParsing[Statements].in {
-        case JavaCc => _.withMessageStart("Invalid input 'RETURN': expected")
-        case Antlr => _.withSyntaxErrorContaining(
+        case Cypher5JavaCc => _.withMessageStart("Invalid input 'RETURN': expected")
+        case _ => _.withSyntaxErrorContaining(
             """Invalid input 'RETURN': expected 'EXECUTABLE'""".stripMargin
           )
       }
@@ -635,8 +634,8 @@ class ShowProceduresCommandParserTest extends AdministrationAndSchemaCommandPars
 
     test(s"$prefix SHOW PROCEDURES WITH 1 as c RETURN name as numIndexes") {
       failsParsing[Statements].in {
-        case JavaCc => _.withMessageStart("Invalid input 'WITH': expected")
-        case Antlr => _.withSyntaxErrorContaining(
+        case Cypher5JavaCc => _.withMessageStart("Invalid input 'WITH': expected")
+        case _ => _.withSyntaxErrorContaining(
             """Invalid input 'WITH': expected 'EXECUTABLE'""".stripMargin
           )
       }
@@ -645,8 +644,8 @@ class ShowProceduresCommandParserTest extends AdministrationAndSchemaCommandPars
 
     test(s"$prefix SHOW PROCEDURES WITH 1 as c") {
       failsParsing[Statements].in {
-        case JavaCc => _.withMessageStart("Invalid input 'WITH': expected")
-        case Antlr => _.withSyntaxErrorContaining(
+        case Cypher5JavaCc => _.withMessageStart("Invalid input 'WITH': expected")
+        case _ => _.withSyntaxErrorContaining(
             """Invalid input 'WITH': expected 'EXECUTABLE'""".stripMargin
           )
       }
@@ -655,8 +654,8 @@ class ShowProceduresCommandParserTest extends AdministrationAndSchemaCommandPars
 
     test(s"$prefix SHOW PROCEDURES YIELD a WITH a RETURN a") {
       failsParsing[Statements].in {
-        case JavaCc => _.withMessageStart("Invalid input 'WITH': expected")
-        case Antlr => _.withSyntaxErrorContaining(
+        case Cypher5JavaCc => _.withMessageStart("Invalid input 'WITH': expected")
+        case _ => _.withSyntaxErrorContaining(
             """Invalid input 'WITH': expected ',', 'AS', 'ORDER BY', 'LIMIT', 'RETURN', 'SHOW', 'SKIP', 'TERMINATE', 'WHERE' or <EOF>""".stripMargin
           )
       }
@@ -665,8 +664,8 @@ class ShowProceduresCommandParserTest extends AdministrationAndSchemaCommandPars
 
     test(s"$prefix SHOW PROCEDURES YIELD as UNWIND as as a RETURN a") {
       failsParsing[Statements].in {
-        case JavaCc => _.withMessageStart("Invalid input 'UNWIND': expected")
-        case Antlr => _.withSyntaxErrorContaining(
+        case Cypher5JavaCc => _.withMessageStart("Invalid input 'UNWIND': expected")
+        case _ => _.withSyntaxErrorContaining(
             """Invalid input 'UNWIND': expected ',', 'AS', 'ORDER BY', 'LIMIT', 'RETURN', 'SHOW', 'SKIP', 'TERMINATE', 'WHERE' or <EOF>""".stripMargin
           )
       }
@@ -675,8 +674,8 @@ class ShowProceduresCommandParserTest extends AdministrationAndSchemaCommandPars
 
     test(s"$prefix SHOW PROCEDURES RETURN name2 YIELD name2") {
       failsParsing[Statements].in {
-        case JavaCc => _.withMessageStart("Invalid input 'RETURN': expected")
-        case Antlr => _.withSyntaxErrorContaining(
+        case Cypher5JavaCc => _.withMessageStart("Invalid input 'RETURN': expected")
+        case _ => _.withSyntaxErrorContaining(
             """Invalid input 'RETURN': expected 'EXECUTABLE'""".stripMargin
           )
       }
@@ -732,7 +731,7 @@ class ShowProceduresCommandParserTest extends AdministrationAndSchemaCommandPars
 
   test("SHOW PROCEDURE YIELD name ORDER BY name AST RETURN *") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
+      case Cypher5JavaCc => _.withMessageStart(
           """Invalid input 'AST': expected
             |  "!="
             |  "%"
@@ -771,7 +770,7 @@ class ShowProceduresCommandParserTest extends AdministrationAndSchemaCommandPars
             |  "||"
             |  <EOF> (line 1, column 41 (offset: 40))""".stripMargin
         )
-      case Antlr => _.withSyntaxError(
+      case _ => _.withSyntaxError(
           """Invalid input 'AST': expected an expression, ',', 'ASC', 'ASCENDING', 'DESC', 'DESCENDING', 'LIMIT', 'RETURN', 'SHOW', 'SKIP', 'TERMINATE', 'WHERE' or <EOF> (line 1, column 41 (offset: 40))
             |"SHOW PROCEDURE YIELD name ORDER BY name AST RETURN *"
             |                                         ^""".stripMargin

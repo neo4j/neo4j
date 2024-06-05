@@ -27,8 +27,7 @@ import org.neo4j.cypher.internal.ast.NoWait
 import org.neo4j.cypher.internal.ast.OptionsMap
 import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.TimeoutAfter
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Cypher5JavaCc
 
 class CompositeDatabaseParserTest extends AdministrationAndSchemaCommandParserTestBase {
 
@@ -89,7 +88,7 @@ class CompositeDatabaseParserTest extends AdministrationAndSchemaCommandParserTe
 
   test("CREATE COMPOSITE DATABASE name TOPOLOGY 1 PRIMARY") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
+      case Cypher5JavaCc => _.withMessageStart(
           """Invalid input 'TOPOLOGY': expected
             |  "."
             |  "IF"
@@ -98,7 +97,7 @@ class CompositeDatabaseParserTest extends AdministrationAndSchemaCommandParserTe
             |  "WAIT"
             |  <EOF> (line 1, column 32 (offset: 31))""".stripMargin
         )
-      case Antlr => _.withSyntaxError(
+      case _ => _.withSyntaxError(
           """Invalid input 'TOPOLOGY': expected a database name, 'IF NOT EXISTS', 'NOWAIT', 'OPTIONS', 'WAIT' or <EOF> (line 1, column 32 (offset: 31))
             |"CREATE COMPOSITE DATABASE name TOPOLOGY 1 PRIMARY"
             |                                ^""".stripMargin

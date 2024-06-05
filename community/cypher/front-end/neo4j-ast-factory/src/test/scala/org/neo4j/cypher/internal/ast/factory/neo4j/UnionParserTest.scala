@@ -18,8 +18,7 @@ package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.Statements
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Cypher5JavaCc
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
 
 class UnionParserTest extends AstParsingTestBase {
@@ -170,8 +169,8 @@ class UnionParserTest extends AstParsingTestBase {
 
   test("RETURN 1 AS a UNION UNION RETURN 2 AS a") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart("Invalid input 'UNION'")
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc => _.withMessageStart("Invalid input 'UNION'")
+      case _ => _.withSyntaxError(
           """Invalid input 'UNION': expected 'FOREACH', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'UNWIND', 'USE' or 'WITH' (line 1, column 21 (offset: 20))
             |"RETURN 1 AS a UNION UNION RETURN 2 AS a"
             |                     ^""".stripMargin

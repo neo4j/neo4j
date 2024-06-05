@@ -28,8 +28,7 @@ import org.neo4j.cypher.internal.ast.IfExistsThrowError
 import org.neo4j.cypher.internal.ast.ShowAliases
 import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.factory.ASTExceptionFactory
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Cypher5JavaCc
 import org.neo4j.cypher.internal.util.symbols.CTMap
 
 class AliasAdministrationCommandParserTest extends AdministrationAndSchemaCommandParserTestBase {
@@ -208,10 +207,9 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
 
   test("CREATE ALIAS IF") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessage(
-          """Invalid input '': expected ".", "FOR" or "IF" (line 1, column 16 (offset: 15))"""
-        )
-      case Antlr => _.withMessage(
+      case Cypher5JavaCc =>
+        _.withMessage("""Invalid input '': expected ".", "FOR" or "IF" (line 1, column 16 (offset: 15))""")
+      case _ => _.withMessage(
           """Invalid input '': expected a database name, 'FOR DATABASE' or 'IF NOT EXISTS' (line 1, column 16 (offset: 15))
             |"CREATE ALIAS IF"
             |                ^""".stripMargin
@@ -221,10 +219,10 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
 
   test("CREATE ALIAS") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
+      case Cypher5JavaCc => _.withMessageStart(
           """Invalid input '': expected a parameter or an identifier (line 1, column 13 (offset: 12))"""
         )
-      case Antlr => _.withSyntaxError(
+      case _ => _.withSyntaxError(
           """Invalid input '': expected a database name, a graph pattern or a parameter (line 1, column 13 (offset: 12))
             |"CREATE ALIAS"
             |             ^""".stripMargin
@@ -234,10 +232,10 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
 
   test("CREATE ALIAS #Malmö FOR DATABASE db1") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
+      case Cypher5JavaCc => _.withMessageStart(
           s"""Invalid input '#': expected a parameter or an identifier (line 1, column 14 (offset: 13))""".stripMargin
         )
-      case Antlr => _.withMessage(
+      case _ => _.withMessage(
           """Invalid input '#': expected a database name, a graph pattern or a parameter (line 1, column 14 (offset: 13))
             |"CREATE ALIAS #Malmö FOR DATABASE db1"
             |              ^""".stripMargin
@@ -247,10 +245,9 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
 
   test("CREATE ALIAS Mal#mö FOR DATABASE db1") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
-          s"""Invalid input '#': expected ".", "FOR" or "IF" (line 1, column 17 (offset: 16))"""
-        )
-      case Antlr => _.withMessage(
+      case Cypher5JavaCc =>
+        _.withMessageStart(s"""Invalid input '#': expected ".", "FOR" or "IF" (line 1, column 17 (offset: 16))""")
+      case _ => _.withMessage(
           """Invalid input '#': expected a database name, 'FOR DATABASE' or 'IF NOT EXISTS' (line 1, column 17 (offset: 16))
             |"CREATE ALIAS Mal#mö FOR DATABASE db1"
             |                 ^""".stripMargin
@@ -272,10 +269,10 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
 
   test("CREATE ALIAS name FOR DATABASE") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
+      case Cypher5JavaCc => _.withMessageStart(
           s"""Invalid input '': expected a parameter or an identifier (line 1, column 31 (offset: 30))"""
         )
-      case Antlr => _.withSyntaxError(
+      case _ => _.withSyntaxError(
           """Invalid input '': expected a database name or a parameter (line 1, column 31 (offset: 30))
             |"CREATE ALIAS name FOR DATABASE"
             |                               ^""".stripMargin
@@ -285,10 +282,10 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
 
   test("""CREATE ALIAS name FOR DATABASE target PROPERTY { key: 'val' }""") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
+      case Cypher5JavaCc => _.withMessageStart(
           """Invalid input 'PROPERTY': expected ".", "AT", "PROPERTIES" or <EOF> (line 1, column 39 (offset: 38))"""
         )
-      case Antlr => _.withSyntaxError(
+      case _ => _.withSyntaxError(
           """Invalid input 'PROPERTY': expected a database name, 'AT', 'PROPERTIES' or <EOF> (line 1, column 39 (offset: 38))
             |"CREATE ALIAS name FOR DATABASE target PROPERTY { key: 'val' }"
             |                                       ^""".stripMargin
@@ -298,10 +295,9 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
 
   test("""CREATE ALIAS name FOR DATABASE target PROPERTIES""") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
-          "Invalid input '': expected \"{\" or a parameter (line 1, column 49 (offset: 48))"
-        )
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc =>
+        _.withMessageStart("Invalid input '': expected \"{\" or a parameter (line 1, column 49 (offset: 48))")
+      case _ => _.withSyntaxError(
           """Invalid input '': expected a parameter or '{' (line 1, column 49 (offset: 48))
             |"CREATE ALIAS name FOR DATABASE target PROPERTIES"
             |                                                 ^""".stripMargin
@@ -379,10 +375,10 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
 
   test("""CREATE ALIAS name FOR DATABASE target AT neo4j://serverA:7687" USER user PASSWORD 'password'""") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
+      case Cypher5JavaCc => _.withMessageStart(
           "Invalid input 'neo4j': expected \"\\\"\", \"\\'\" or a parameter (line 1, column 42 (offset: 41))"
         )
-      case Antlr => _.withSyntaxError(
+      case _ => _.withSyntaxError(
           """Invalid input 'neo4j': expected a parameter or a string (line 1, column 42 (offset: 41))
             |"CREATE ALIAS name FOR DATABASE target AT neo4j://serverA:7687" USER user PASSWORD 'password'"
             |                                          ^""".stripMargin
@@ -436,8 +432,8 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
       |USER user PASSWORD 'password'""".stripMargin
   ) {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart("""Invalid input 'PROPERTIES': expected "USER"""")
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc => _.withMessageStart("""Invalid input 'PROPERTIES': expected "USER"""")
+      case _ => _.withSyntaxError(
           """Invalid input 'PROPERTIES': expected 'USER' (line 2, column 1 (offset: 74))
             |"PROPERTIES { key:'value', anotherkey:'anotherValue' }"
             | ^""".stripMargin
@@ -631,8 +627,8 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
     """CREATE ALIAS name FOR DATABASE target AT "bar" USER user PASSWORD "password" PROPERTIES { bar: true } DRIVER { foo: 1.0 }"""
   ) {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart("""Invalid input 'DRIVER': expected <EOF>""")
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc => _.withMessageStart("""Invalid input 'DRIVER': expected <EOF>""")
+      case _ => _.withSyntaxError(
           """Invalid input 'DRIVER': expected <EOF> (line 1, column 103 (offset: 102))
             |"CREATE ALIAS name FOR DATABASE target AT "bar" USER user PASSWORD "password" PROPERTIES { bar: true } DRIVER { foo: 1.0 }"
             |                                                                                                       ^""".stripMargin
@@ -642,10 +638,10 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
 
   test("Should fail to parse CREATE ALIAS with driver settings but no remote url") {
     "CREATE ALIAS name FOR DATABASE target DRIVER { ssl_enforced: true }" should notParse[Statements].in {
-      case JavaCc => _.withMessageStart(
+      case Cypher5JavaCc => _.withMessageStart(
           "Invalid input 'DRIVER': expected \".\", \"AT\", \"PROPERTIES\" or <EOF> (line 1, column 39 (offset: 38))"
         )
-      case Antlr => _.withSyntaxError(
+      case _ => _.withSyntaxError(
           """Invalid input 'DRIVER': expected a database name, 'AT', 'PROPERTIES' or <EOF> (line 1, column 39 (offset: 38))
             |"CREATE ALIAS name FOR DATABASE target DRIVER { ssl_enforced: true }"
             |                                       ^""".stripMargin
@@ -655,10 +651,9 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
 
   test("""CREATE ALIAS name FOR DATABASE target AT "bar" OPTIONS { foo: 1.0 }""") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
-          "Invalid input 'OPTIONS': expected \"USER\" (line 1, column 48 (offset: 47))"
-        )
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc =>
+        _.withMessageStart("Invalid input 'OPTIONS': expected \"USER\" (line 1, column 48 (offset: 47))")
+      case _ => _.withSyntaxError(
           """Invalid input 'OPTIONS': expected 'USER' (line 1, column 48 (offset: 47))
             |"CREATE ALIAS name FOR DATABASE target AT "bar" OPTIONS { foo: 1.0 }"
             |                                                ^""".stripMargin
@@ -704,10 +699,9 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
 
   test("""CREATE ALIAS name FOR DATABASE target AT "url" USER user PASSWORD "password" DRIVER""") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
-          "Invalid input '': expected \"{\" or a parameter (line 1, column 84 (offset: 83))"
-        )
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc =>
+        _.withMessageStart("Invalid input '': expected \"{\" or a parameter (line 1, column 84 (offset: 83))")
+      case _ => _.withSyntaxError(
           """Invalid input '': expected a parameter or '{' (line 1, column 84 (offset: 83))
             |"CREATE ALIAS name FOR DATABASE target AT "url" USER user PASSWORD "password" DRIVER"
             |                                                                                    ^""".stripMargin
@@ -717,10 +711,10 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
 
   test("""CREATE ALIAS name FOR DATABASE target AT "url" USER user PASSWORD "password" PROPERTY { key: 'val' }""") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
+      case Cypher5JavaCc => _.withMessageStart(
           """Invalid input 'PROPERTY': expected "DRIVER", "PROPERTIES" or <EOF> (line 1, column 78 (offset: 77))"""
         )
-      case Antlr => _.withSyntaxError(
+      case _ => _.withSyntaxError(
           """Invalid input 'PROPERTY': expected 'DRIVER', 'PROPERTIES' or <EOF> (line 1, column 78 (offset: 77))
             |"CREATE ALIAS name FOR DATABASE target AT "url" USER user PASSWORD "password" PROPERTY { key: 'val' }"
             |                                                                              ^""".stripMargin
@@ -730,10 +724,9 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
 
   test("""CREATE ALIAS name FOR DATABASE target AT "url" USER user PASSWORD "password" PROPERTIES""") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
-          "Invalid input '': expected \"{\" or a parameter (line 1, column 88 (offset: 87))"
-        )
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc =>
+        _.withMessageStart("Invalid input '': expected \"{\" or a parameter (line 1, column 88 (offset: 87))")
+      case _ => _.withSyntaxError(
           """Invalid input '': expected a parameter or '{' (line 1, column 88 (offset: 87))
             |"CREATE ALIAS name FOR DATABASE target AT "url" USER user PASSWORD "password" PROPERTIES"
             |                                                                                        ^""".stripMargin
@@ -780,10 +773,9 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
 
   test("DROP ALIAS name") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
-          "Invalid input '': expected \".\", \"FOR\" or \"IF\" (line 1, column 16 (offset: 15))"
-        )
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc =>
+        _.withMessageStart("Invalid input '': expected \".\", \"FOR\" or \"IF\" (line 1, column 16 (offset: 15))")
+      case _ => _.withSyntaxError(
           """Invalid input '': expected a database name, 'FOR DATABASE' or 'IF EXISTS' (line 1, column 16 (offset: 15))
             |"DROP ALIAS name"
             |                ^""".stripMargin
@@ -793,10 +785,9 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
 
   test("DROP ALIAS name IF EXISTS") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
-          "Invalid input '': expected \"FOR\" (line 1, column 26 (offset: 25))"
-        )
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc =>
+        _.withMessageStart("Invalid input '': expected \"FOR\" (line 1, column 26 (offset: 25))")
+      case _ => _.withSyntaxError(
           """Invalid input '': expected 'FOR DATABASE' (line 1, column 26 (offset: 25))
             |"DROP ALIAS name IF EXISTS"
             |                          ^""".stripMargin
@@ -849,10 +840,9 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
 
   test("ALTER ALIAS name if exists SET db TARGET") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
-          """Invalid input 'db': expected "DATABASE" (line 1, column 32 (offset: 31))"""
-        )
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc =>
+        _.withMessageStart("""Invalid input 'db': expected "DATABASE" (line 1, column 32 (offset: 31))""")
+      case _ => _.withSyntaxError(
           """Invalid input 'db': expected 'DATABASE' (line 1, column 32 (offset: 31))
             |"ALTER ALIAS name if exists SET db TARGET"
             |                                ^""".stripMargin
@@ -862,10 +852,9 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
 
   test("ALTER ALIAS name SET TARGET db") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
-          """Invalid input 'TARGET': expected "DATABASE" (line 1, column 22 (offset: 21))"""
-        )
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc =>
+        _.withMessageStart("""Invalid input 'TARGET': expected "DATABASE" (line 1, column 22 (offset: 21))""")
+      case _ => _.withSyntaxError(
           """Invalid input 'TARGET': expected 'DATABASE' (line 1, column 22 (offset: 21))
             |"ALTER ALIAS name SET TARGET db"
             |                      ^""".stripMargin
@@ -875,10 +864,10 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
 
   test("ALTER DATABASE ALIAS name SET TARGET db") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
+      case Cypher5JavaCc => _.withMessageStart(
           """Invalid input 'name': expected ".", "IF", "REMOVE" or "SET" (line 1, column 22 (offset: 21))"""
         )
-      case Antlr => _.withSyntaxError(
+      case _ => _.withSyntaxError(
           """Invalid input 'name': expected a database name, 'IF EXISTS', 'REMOVE OPTION' or 'SET' (line 1, column 22 (offset: 21))
             |"ALTER DATABASE ALIAS name SET TARGET db"
             |                      ^""".stripMargin
@@ -888,7 +877,7 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
 
   test("ALTER ALIAS name SET DATABASE") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
+      case Cypher5JavaCc => _.withMessageStart(
           """Invalid input '': expected
             |  "DRIVER"
             |  "PASSWORD"
@@ -896,7 +885,7 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
             |  "TARGET"
             |  "USER" (line 1, column 30 (offset: 29))""".stripMargin
         )
-      case Antlr => _.withSyntaxError(
+      case _ => _.withSyntaxError(
           """Invalid input '': expected 'DRIVER', 'PASSWORD', 'PROPERTIES', 'TARGET' or 'USER' (line 1, column 30 (offset: 29))
             |"ALTER ALIAS name SET DATABASE"
             |                              ^""".stripMargin
@@ -906,7 +895,7 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
 
   test("ALTER RANDOM name") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
+      case Cypher5JavaCc => _.withMessageStart(
           """Invalid input 'RANDOM': expected
             |  "ALIAS"
             |  "CURRENT"
@@ -914,7 +903,7 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
             |  "SERVER"
             |  "USER" (line 1, column 7 (offset: 6))""".stripMargin
         )
-      case Antlr => _.withSyntaxError(
+      case _ => _.withSyntaxError(
           """Invalid input 'RANDOM': expected 'ALIAS', 'DATABASE', 'CURRENT USER SET PASSWORD FROM', 'SERVER' or 'USER' (line 1, column 7 (offset: 6))
             |"ALTER RANDOM name"
             |       ^""".stripMargin
@@ -943,10 +932,9 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
   localAliasClauses.foreach(clause => {
     test(s"""ALTER ALIAS name SET DATABASE $clause $clause""") {
       failsParsing[Statements].in {
-        case JavaCc => _.withMessageStart(
-            s"Duplicate SET DATABASE ${clause.substring(0, clause.indexOf(" "))} clause"
-          )
-        case Antlr => _.withSyntaxErrorContaining(
+        case Cypher5JavaCc =>
+          _.withMessageStart(s"Duplicate SET DATABASE ${clause.substring(0, clause.indexOf(" "))} clause")
+        case _ => _.withSyntaxErrorContaining(
             s"Duplicate ${clause.substring(0, clause.indexOf(" "))} clause"
           )
       }
@@ -1038,10 +1026,9 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
   remoteAliasClauses.foreach(clause => {
     test(s"""ALTER ALIAS name SET DATABASE $clause $clause""") {
       failsParsing[Statements].in {
-        case JavaCc => _.withMessageStart(
-            s"Duplicate SET DATABASE ${clause.substring(0, clause.indexOf(" "))} clause"
-          )
-        case Antlr => _.withSyntaxErrorContaining(
+        case Cypher5JavaCc =>
+          _.withMessageStart(s"Duplicate SET DATABASE ${clause.substring(0, clause.indexOf(" "))} clause")
+        case _ => _.withSyntaxErrorContaining(
             s"Duplicate ${clause.substring(0, clause.indexOf(" "))} clause"
           )
       }
@@ -1063,10 +1050,9 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
     "ALTER ALIAS $name IF EXISTS SET DATABASE TARGET $target AT $url USER $user PASSWORD $password TARGET $target DRIVER $driver"
   ) {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
-          "Duplicate SET DATABASE TARGET clause (line 1, column 95 (offset: 94))"
-        )
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc =>
+        _.withMessageStart("Duplicate SET DATABASE TARGET clause (line 1, column 95 (offset: 94))")
+      case _ => _.withSyntaxError(
           """Duplicate TARGET clause (line 1, column 95 (offset: 94))
             |"ALTER ALIAS $name IF EXISTS SET DATABASE TARGET $target AT $url USER $user PASSWORD $password TARGET $target DRIVER $driver"
             |                                                                                               ^""".stripMargin
@@ -1076,10 +1062,9 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
 
   test("ALTER ALIAS name SET DATABASE TARGET AT 'url'") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
-          "Invalid input 'url': expected"
-        )
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc =>
+        _.withMessageStart("Invalid input 'url': expected")
+      case _ => _.withSyntaxError(
           """Invalid input ''url'': expected a database name, 'AT', 'DRIVER', 'PASSWORD', 'PROPERTIES', 'TARGET', 'USER' or <EOF> (line 1, column 41 (offset: 40))
             |"ALTER ALIAS name SET DATABASE TARGET AT 'url'"
             |                                         ^""".stripMargin
@@ -1089,7 +1074,7 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
 
   test("ALTER ALIAS name SET DATABASE AT 'url'") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
+      case Cypher5JavaCc => _.withMessageStart(
           """Invalid input 'AT': expected
             |  "DRIVER"
             |  "PASSWORD"
@@ -1097,7 +1082,7 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
             |  "TARGET"
             |  "USER" (line 1, column 31 (offset: 30))""".stripMargin
         )
-      case Antlr => _.withSyntaxError(
+      case _ => _.withSyntaxError(
           """Invalid input 'AT': expected 'DRIVER', 'PASSWORD', 'PROPERTIES', 'TARGET' or 'USER' (line 1, column 31 (offset: 30))
             |"ALTER ALIAS name SET DATABASE AT 'url'"
             |                               ^""".stripMargin
@@ -1207,10 +1192,9 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
     "ALTER ALIAS name SET DATABASE TARGET target AT 'neo4j://serverA:7687' TARGET target AT 'neo4j://serverA:7687'"
   ) {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
-          "Duplicate SET DATABASE TARGET clause (line 1, column 71 (offset: 70))"
-        )
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc =>
+        _.withMessageStart("Duplicate SET DATABASE TARGET clause (line 1, column 71 (offset: 70))")
+      case _ => _.withSyntaxError(
           """Duplicate TARGET clause (line 1, column 71 (offset: 70))
             |"ALTER ALIAS name SET DATABASE TARGET target AT 'neo4j://serverA:7687' TARGET target AT 'neo4j://serverA:7687'"
             |                                                                       ^""".stripMargin
@@ -1233,8 +1217,8 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
 
   test("ALTER ALIAS name SET DATABASE USER $user USER $user") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart("Duplicate SET DATABASE USER clause (line 1, column 42 (offset: 41))")
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc => _.withMessageStart("Duplicate SET DATABASE USER clause (line 1, column 42 (offset: 41))")
+      case _ => _.withSyntaxError(
           """Duplicate USER clause (line 1, column 42 (offset: 41))
             |"ALTER ALIAS name SET DATABASE USER $user USER $user"
             |                                          ^""".stripMargin
@@ -1265,10 +1249,10 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
 
   test("ALTER ALIAS name IF EXISTS SET DATABASE PASSWORD password") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
+      case Cypher5JavaCc => _.withMessageStart(
           "Invalid input 'password': expected \"\\\"\", \"\\'\" or a parameter (line 1, column 50 (offset: 49))"
         )
-      case Antlr => _.withSyntaxError(
+      case _ => _.withSyntaxError(
           """Invalid input 'password': expected a parameter or a string (line 1, column 50 (offset: 49))
             |"ALTER ALIAS name IF EXISTS SET DATABASE PASSWORD password"
             |                                                  ^""".stripMargin
@@ -1278,10 +1262,9 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
 
   test("ALTER ALIAS name SET DATABASE PASSWORD $password PASSWORD $password") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
-          "Duplicate SET DATABASE PASSWORD clause (line 1, column 50 (offset: 49))"
-        )
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc =>
+        _.withMessageStart("Duplicate SET DATABASE PASSWORD clause (line 1, column 50 (offset: 49))")
+      case _ => _.withSyntaxError(
           """Duplicate PASSWORD clause (line 1, column 50 (offset: 49))
             |"ALTER ALIAS name SET DATABASE PASSWORD $password PASSWORD $password"
             |                                                  ^""".stripMargin
@@ -1336,10 +1319,9 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
 
   test("""ALTER ALIAS name SET DATABASE DRIVER $driver DRIVER $driver""") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
-          "Duplicate SET DATABASE DRIVER clause (line 1, column 46 (offset: 45))"
-        )
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc =>
+        _.withMessageStart("Duplicate SET DATABASE DRIVER clause (line 1, column 46 (offset: 45))")
+      case _ => _.withSyntaxError(
           """Duplicate DRIVER clause (line 1, column 46 (offset: 45))
             |"ALTER ALIAS name SET DATABASE DRIVER $driver DRIVER $driver"
             |                                              ^""".stripMargin
@@ -1349,7 +1331,7 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
 
   test("""ALTER ALIAS name SET DATABASE PROPERTY { key: 'val' }""") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
+      case Cypher5JavaCc => _.withMessageStart(
           """Invalid input 'PROPERTY': expected
             |  "DRIVER"
             |  "PASSWORD"
@@ -1357,7 +1339,7 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
             |  "TARGET"
             |  "USER" (line 1, column 31 (offset: 30))""".stripMargin
         )
-      case Antlr => _.withSyntaxError(
+      case _ => _.withSyntaxError(
           """Invalid input 'PROPERTY': expected 'DRIVER', 'PASSWORD', 'PROPERTIES', 'TARGET' or 'USER' (line 1, column 31 (offset: 30))
             |"ALTER ALIAS name SET DATABASE PROPERTY { key: 'val' }"
             |                               ^""".stripMargin
@@ -1367,10 +1349,9 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
 
   test("""ALTER ALIAS name SET DATABASE PROPERTIES""") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
-          "Invalid input '': expected \"{\" or a parameter (line 1, column 41 (offset: 40))"
-        )
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc =>
+        _.withMessageStart("Invalid input '': expected \"{\" or a parameter (line 1, column 41 (offset: 40))")
+      case _ => _.withSyntaxError(
           """Invalid input '': expected a parameter or '{' (line 1, column 41 (offset: 40))
             |"ALTER ALIAS name SET DATABASE PROPERTIES"
             |                                         ^""".stripMargin
@@ -1462,10 +1443,10 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
 
   test("SHOW ALIASES FOR DATABASE RETURN *") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
+      case Cypher5JavaCc => _.withMessageStart(
           "Invalid input 'RETURN': expected \"WHERE\", \"YIELD\" or <EOF> (line 1, column 27 (offset: 26))"
         )
-      case Antlr => _.withSyntaxError(
+      case _ => _.withSyntaxError(
           """Invalid input 'RETURN': expected 'WHERE', 'YIELD' or <EOF> (line 1, column 27 (offset: 26))
             |"SHOW ALIASES FOR DATABASE RETURN *"
             |                           ^""".stripMargin
@@ -1475,10 +1456,9 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
 
   test("SHOW ALIASES FOR DATABASE YIELD") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
-          "Invalid input '': expected \"*\" or an identifier (line 1, column 32 (offset: 31))"
-        )
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc =>
+        _.withMessageStart("Invalid input '': expected \"*\" or an identifier (line 1, column 32 (offset: 31))")
+      case _ => _.withSyntaxError(
           """Invalid input '': expected a variable name or '*' (line 1, column 32 (offset: 31))
             |"SHOW ALIASES FOR DATABASE YIELD"
             |                                ^""".stripMargin
@@ -1488,10 +1468,9 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
 
   test("SHOW ALIASES FOR DATABASE YIELD (123 + xyz)") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
-          "Invalid input '(': expected \"*\" or an identifier (line 1, column 33 (offset: 32))"
-        )
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc =>
+        _.withMessageStart("Invalid input '(': expected \"*\" or an identifier (line 1, column 33 (offset: 32))")
+      case _ => _.withSyntaxError(
           """Invalid input '(': expected a variable name or '*' (line 1, column 33 (offset: 32))
             |"SHOW ALIASES FOR DATABASE YIELD (123 + xyz)"
             |                                 ^""".stripMargin
@@ -1501,10 +1480,9 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
 
   test("SHOW ALIASES FOR DATABASE YIELD (123 + xyz) AS foo") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
-          "Invalid input '(': expected \"*\" or an identifier (line 1, column 33 (offset: 32))"
-        )
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc =>
+        _.withMessageStart("Invalid input '(': expected \"*\" or an identifier (line 1, column 33 (offset: 32))")
+      case _ => _.withSyntaxError(
           """Invalid input '(': expected a variable name or '*' (line 1, column 33 (offset: 32))
             |"SHOW ALIASES FOR DATABASE YIELD (123 + xyz) AS foo"
             |                                 ^""".stripMargin
@@ -1514,8 +1492,8 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
 
   test("SHOW ALIAS") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart("Invalid input '': expected \"FOR\" (line 1, column 11 (offset: 10))")
-      case Antlr => _.withMessage(
+      case Cypher5JavaCc => _.withMessageStart("Invalid input '': expected \"FOR\" (line 1, column 11 (offset: 10))")
+      case _ => _.withMessage(
           """Invalid input '': expected a database name, a parameter or 'FOR' (line 1, column 11 (offset: 10))
             |"SHOW ALIAS"
             |           ^""".stripMargin
@@ -1525,8 +1503,8 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
 
   test("SHOW ALIAS foo, bar FOR DATABASES") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart("Invalid input 'foo': expected \"FOR\"")
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc => _.withMessageStart("Invalid input 'foo': expected \"FOR\"")
+      case _ => _.withSyntaxError(
           """Invalid input ',': expected a database name or 'FOR' (line 1, column 15 (offset: 14))
             |"SHOW ALIAS foo, bar FOR DATABASES"
             |               ^""".stripMargin

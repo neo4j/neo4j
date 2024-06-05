@@ -17,8 +17,7 @@
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.ast.Statements
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Cypher5JavaCc
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
 import org.neo4j.cypher.internal.expressions.CaseExpression
 import org.neo4j.cypher.internal.expressions.Expression
@@ -316,8 +315,8 @@ class CaseExpressionParserTest extends AstParsingTestBase {
 
   test("RETURN CASE when(v1) + 1 WHEN THEN v2 ELSE null END") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart("Invalid input 'v2'")
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc => _.withMessageStart("Invalid input 'v2'")
+      case _ => _.withSyntaxError(
           """Invalid input 'v2': expected an expression, ',' or 'THEN' (line 1, column 36 (offset: 35))
             |"RETURN CASE when(v1) + 1 WHEN THEN v2 ELSE null END"
             |                                    ^""".stripMargin
@@ -327,8 +326,8 @@ class CaseExpressionParserTest extends AstParsingTestBase {
 
   test("RETURN CASE ELSE null END") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart("Invalid input 'ELSE'")
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc => _.withMessageStart("Invalid input 'ELSE'")
+      case _ => _.withSyntaxError(
           """Invalid input 'ELSE': expected an expression, 'FOREACH', ',', 'AS', 'ORDER BY', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'LIMIT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'SKIP', 'UNION', 'UNWIND', 'USE', 'WITH' or <EOF> (line 1, column 13 (offset: 12))
             |"RETURN CASE ELSE null END"
             |             ^""".stripMargin
@@ -338,8 +337,8 @@ class CaseExpressionParserTest extends AstParsingTestBase {
 
   test("RETURN CASE WHEN THEN v2 ELSE null END") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart("Invalid input 'v2'")
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc => _.withMessageStart("Invalid input 'v2'")
+      case _ => _.withSyntaxError(
           """Invalid input 'WHEN': expected an expression, 'FOREACH', ',', 'AS', 'ORDER BY', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'LIMIT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'SKIP', 'UNION', 'UNWIND', 'USE', 'WITH' or <EOF> (line 1, column 13 (offset: 12))
             |"RETURN CASE WHEN THEN v2 ELSE null END"
             |             ^""".stripMargin
@@ -349,8 +348,8 @@ class CaseExpressionParserTest extends AstParsingTestBase {
 
   test("RETURN CASE WHEN true, false THEN v2 ELSE null END") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart("Invalid input ','")
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc => _.withMessageStart("Invalid input ','")
+      case _ => _.withSyntaxError(
           """Invalid input 'WHEN': expected an expression, 'FOREACH', ',', 'AS', 'ORDER BY', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'LIMIT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'SKIP', 'UNION', 'UNWIND', 'USE', 'WITH' or <EOF> (line 1, column 13 (offset: 12))
             |"RETURN CASE WHEN true, false THEN v2 ELSE null END"
             |             ^""".stripMargin
@@ -360,8 +359,8 @@ class CaseExpressionParserTest extends AstParsingTestBase {
 
   test("RETURN CASE n WHEN true, false, THEN 1 ELSE null END") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart("Invalid input '1'")
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc => _.withMessageStart("Invalid input '1'")
+      case _ => _.withSyntaxError(
           """Invalid input '1': expected an expression, ',' or 'THEN' (line 1, column 38 (offset: 37))
             |"RETURN CASE n WHEN true, false, THEN 1 ELSE null END"
             |                                      ^""".stripMargin

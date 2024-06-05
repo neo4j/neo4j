@@ -18,8 +18,7 @@ package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.Statements
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Cypher5JavaCc
 
 class RenameUserAdministrationCommandParserTest extends UserAdministrationCommandParserTestBase {
 
@@ -67,10 +66,10 @@ class RenameUserAdministrationCommandParserTest extends UserAdministrationComman
 
   test("RENAME USER foo TO") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessage(
+      case Cypher5JavaCc => _.withMessage(
           "Invalid input '': expected a parameter or an identifier (line 1, column 19 (offset: 18))"
         )
-      case Antlr => _.withSyntaxError(
+      case _ => _.withSyntaxError(
           """Invalid input '': expected a parameter or an identifier (line 1, column 19 (offset: 18))
             |"RENAME USER foo TO"
             |                   ^""".stripMargin
@@ -80,10 +79,10 @@ class RenameUserAdministrationCommandParserTest extends UserAdministrationComman
 
   test("RENAME USER TO bar") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessage(
+      case Cypher5JavaCc => _.withMessage(
           "Invalid input 'bar': expected \"IF\" or \"TO\" (line 1, column 16 (offset: 15))"
         )
-      case Antlr => _.withSyntaxError(
+      case _ => _.withSyntaxError(
           """Invalid input 'bar': expected 'IF EXISTS' or 'TO' (line 1, column 16 (offset: 15))
             |"RENAME USER TO bar"
             |                ^""".stripMargin
@@ -93,10 +92,10 @@ class RenameUserAdministrationCommandParserTest extends UserAdministrationComman
 
   test("RENAME USER TO") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessage(
+      case Cypher5JavaCc => _.withMessage(
           "Invalid input '': expected \"IF\" or \"TO\" (line 1, column 15 (offset: 14))"
         )
-      case Antlr => _.withSyntaxError(
+      case _ => _.withSyntaxError(
           """Invalid input '': expected 'IF EXISTS' or 'TO' (line 1, column 15 (offset: 14))
             |"RENAME USER TO"
             |               ^""".stripMargin
@@ -106,10 +105,10 @@ class RenameUserAdministrationCommandParserTest extends UserAdministrationComman
 
   test("RENAME USER foo SET NAME TO bar") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessage(
+      case Cypher5JavaCc => _.withMessage(
           "Invalid input 'SET': expected \"IF\" or \"TO\" (line 1, column 17 (offset: 16))"
         )
-      case Antlr => _.withSyntaxError(
+      case _ => _.withSyntaxError(
           """Invalid input 'SET': expected 'IF EXISTS' or 'TO' (line 1, column 17 (offset: 16))
             |"RENAME USER foo SET NAME TO bar"
             |                 ^""".stripMargin
@@ -119,10 +118,10 @@ class RenameUserAdministrationCommandParserTest extends UserAdministrationComman
 
   test("RENAME USER foo SET NAME bar") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessage(
+      case Cypher5JavaCc => _.withMessage(
           "Invalid input 'SET': expected \"IF\" or \"TO\" (line 1, column 17 (offset: 16))"
         )
-      case Antlr => _.withSyntaxError(
+      case _ => _.withSyntaxError(
           """Invalid input 'SET': expected 'IF EXISTS' or 'TO' (line 1, column 17 (offset: 16))
             |"RENAME USER foo SET NAME bar"
             |                 ^""".stripMargin
@@ -132,10 +131,10 @@ class RenameUserAdministrationCommandParserTest extends UserAdministrationComman
 
   test("RENAME USER foo IF EXIST TO bar") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessage(
+      case Cypher5JavaCc => _.withMessage(
           "Invalid input 'EXIST': expected \"EXISTS\" (line 1, column 20 (offset: 19))"
         )
-      case Antlr => _.withSyntaxError(
+      case _ => _.withSyntaxError(
           """Invalid input 'EXIST': expected 'EXISTS' (line 1, column 20 (offset: 19))
             |"RENAME USER foo IF EXIST TO bar"
             |                    ^""".stripMargin
@@ -145,10 +144,10 @@ class RenameUserAdministrationCommandParserTest extends UserAdministrationComman
 
   test("RENAME USER foo IF NOT EXISTS TO bar") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessage(
+      case Cypher5JavaCc => _.withMessage(
           "Invalid input 'NOT': expected \"EXISTS\" (line 1, column 20 (offset: 19))"
         )
-      case Antlr => _.withSyntaxError(
+      case _ => _.withSyntaxError(
           """Invalid input 'NOT': expected 'EXISTS' (line 1, column 20 (offset: 19))
             |"RENAME USER foo IF NOT EXISTS TO bar"
             |                    ^""".stripMargin
@@ -158,10 +157,10 @@ class RenameUserAdministrationCommandParserTest extends UserAdministrationComman
 
   test("RENAME USER foo TO bar IF EXISTS") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessage(
+      case Cypher5JavaCc => _.withMessage(
           "Invalid input 'IF': expected <EOF> (line 1, column 24 (offset: 23))"
         )
-      case Antlr => _.withSyntaxError(
+      case _ => _.withSyntaxError(
           """Invalid input 'IF': expected <EOF> (line 1, column 24 (offset: 23))
             |"RENAME USER foo TO bar IF EXISTS"
             |                        ^""".stripMargin
@@ -171,10 +170,10 @@ class RenameUserAdministrationCommandParserTest extends UserAdministrationComman
 
   test("RENAME IF EXISTS USER foo TO bar") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessage(
+      case Cypher5JavaCc => _.withMessage(
           "Invalid input 'IF': expected \"ROLE\", \"SERVER\" or \"USER\" (line 1, column 8 (offset: 7))"
         )
-      case Antlr => _.withSyntaxError(
+      case _ => _.withSyntaxError(
           """Invalid input 'IF': expected 'ROLE', 'SERVER' or 'USER' (line 1, column 8 (offset: 7))
             |"RENAME IF EXISTS USER foo TO bar"
             |        ^""".stripMargin
@@ -184,10 +183,10 @@ class RenameUserAdministrationCommandParserTest extends UserAdministrationComman
 
   test("RENAME OR REPLACE USER foo TO bar") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessage(
+      case Cypher5JavaCc => _.withMessage(
           "Invalid input 'OR': expected \"ROLE\", \"SERVER\" or \"USER\" (line 1, column 8 (offset: 7))"
         )
-      case Antlr => _.withSyntaxError(
+      case _ => _.withSyntaxError(
           """Invalid input 'OR': expected 'ROLE', 'SERVER' or 'USER' (line 1, column 8 (offset: 7))
             |"RENAME OR REPLACE USER foo TO bar"
             |        ^""".stripMargin

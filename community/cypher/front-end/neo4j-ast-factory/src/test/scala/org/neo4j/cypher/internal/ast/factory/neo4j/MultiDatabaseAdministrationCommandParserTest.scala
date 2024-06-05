@@ -23,8 +23,7 @@ import org.neo4j.cypher.internal.ast.OptionsMap
 import org.neo4j.cypher.internal.ast.ReadOnlyAccess
 import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.Topology
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Cypher5JavaCc
 import org.neo4j.cypher.internal.expressions.ExplicitParameter
 import org.neo4j.cypher.internal.expressions.Null
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
@@ -165,10 +164,9 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
 
   test("SHOW DEFAULT DATABASES") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
-          """Invalid input 'DATABASES': expected "DATABASE" (line 1, column 14 (offset: 13))"""
-        )
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc =>
+        _.withMessageStart("""Invalid input 'DATABASES': expected "DATABASE" (line 1, column 14 (offset: 13))""")
+      case _ => _.withSyntaxError(
           """Invalid input 'DATABASES': expected 'DATABASE' (line 1, column 14 (offset: 13))
             |"SHOW DEFAULT DATABASES"
             |              ^""".stripMargin
@@ -178,10 +176,9 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
 
   test("SHOW DEFAULT DATABASES YIELD *") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
-          """Invalid input 'DATABASES': expected "DATABASE" (line 1, column 14 (offset: 13))"""
-        )
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc =>
+        _.withMessageStart("""Invalid input 'DATABASES': expected "DATABASE" (line 1, column 14 (offset: 13))""")
+      case _ => _.withSyntaxError(
           """Invalid input 'DATABASES': expected 'DATABASE' (line 1, column 14 (offset: 13))
             |"SHOW DEFAULT DATABASES YIELD *"
             |              ^""".stripMargin
@@ -191,10 +188,9 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
 
   test("SHOW DEFAULT DATABASES WHERE name STARTS WITH 'foo'") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
-          """Invalid input 'DATABASES': expected "DATABASE" (line 1, column 14 (offset: 13))"""
-        )
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc =>
+        _.withMessageStart("""Invalid input 'DATABASES': expected "DATABASE" (line 1, column 14 (offset: 13))""")
+      case _ => _.withSyntaxError(
           """Invalid input 'DATABASES': expected 'DATABASE' (line 1, column 14 (offset: 13))
             |"SHOW DEFAULT DATABASES WHERE name STARTS WITH 'foo'"
             |              ^""".stripMargin
@@ -204,10 +200,9 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
 
   test("SHOW HOME DATABASES") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
-          """Invalid input 'DATABASES': expected "DATABASE" (line 1, column 11 (offset: 10))"""
-        )
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc =>
+        _.withMessageStart("""Invalid input 'DATABASES': expected "DATABASE" (line 1, column 11 (offset: 10))""")
+      case _ => _.withSyntaxError(
           """Invalid input 'DATABASES': expected 'DATABASE' (line 1, column 11 (offset: 10))
             |"SHOW HOME DATABASES"
             |           ^""".stripMargin
@@ -217,10 +212,9 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
 
   test("SHOW HOME DATABASES YIELD *") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
-          """Invalid input 'DATABASES': expected "DATABASE" (line 1, column 11 (offset: 10))"""
-        )
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc =>
+        _.withMessageStart("""Invalid input 'DATABASES': expected "DATABASE" (line 1, column 11 (offset: 10))""")
+      case _ => _.withSyntaxError(
           """Invalid input 'DATABASES': expected 'DATABASE' (line 1, column 11 (offset: 10))
             |"SHOW HOME DATABASES YIELD *"
             |           ^""".stripMargin
@@ -230,10 +224,9 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
 
   test("SHOW HOME DATABASES WHERE name STARTS WITH 'foo'") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
-          """Invalid input 'DATABASES': expected "DATABASE" (line 1, column 11 (offset: 10))"""
-        )
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc =>
+        _.withMessageStart("""Invalid input 'DATABASES': expected "DATABASE" (line 1, column 11 (offset: 10))""")
+      case _ => _.withSyntaxError(
           """Invalid input 'DATABASES': expected 'DATABASE' (line 1, column 11 (offset: 10))
             |"SHOW HOME DATABASES WHERE name STARTS WITH 'foo'"
             |           ^""".stripMargin
@@ -456,10 +449,10 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
   test("CREATE DATABASE") {
     // missing db name but parses as 'normal' cypher CREATE...
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
+      case Cypher5JavaCc => _.withMessageStart(
           s"""Invalid input '': expected a parameter or an identifier (line 1, column 16 (offset: 15))"""
         )
-      case Antlr => _.withSyntaxError(
+      case _ => _.withSyntaxError(
           """Invalid input '': expected a database name, a graph pattern or a parameter (line 1, column 16 (offset: 15))
             |"CREATE DATABASE"
             |                ^""".stripMargin
@@ -499,8 +492,8 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
          |  <EOF> (line 1, column 21 (offset: 20))""".stripMargin
 
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(exceptionMessage)
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc => _.withMessageStart(exceptionMessage)
+      case _ => _.withSyntaxError(
           """Invalid input 'NOT': expected a database name, 'IF NOT EXISTS', 'NOWAIT', 'OPTIONS', 'TOPOLOGY', 'WAIT' or <EOF> (line 1, column 21 (offset: 20))
             |"CREATE DATABASE  IF NOT EXISTS"
             |                     ^""".stripMargin
@@ -518,10 +511,10 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
 
   test("CREATE DATABASE foo WAIT 3.14") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
+      case Cypher5JavaCc => _.withMessageStart(
           "Invalid input '3.14': expected <EOF> or <UNSIGNED_DECIMAL_INTEGER> (line 1, column 26 (offset: 25))"
         )
-      case Antlr => _.withSyntaxError(
+      case _ => _.withSyntaxError(
           """Invalid input '3.14': expected <EOF> or an integer value (line 1, column 26 (offset: 25))
             |"CREATE DATABASE foo WAIT 3.14"
             |                          ^""".stripMargin
@@ -539,10 +532,10 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
 
   test("CREATE OR REPLACE DATABASE") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
+      case Cypher5JavaCc => _.withMessageStart(
           s"""Invalid input '': expected a parameter or an identifier (line 1, column 27 (offset: 26))"""
         )
-      case Antlr => _.withSyntaxError(
+      case _ => _.withSyntaxError(
           """Invalid input '': expected a database name or a parameter (line 1, column 27 (offset: 26))
             |"CREATE OR REPLACE DATABASE"
             |                           ^""".stripMargin
@@ -602,7 +595,7 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
 
   test("CREATE DATABASE foo SET OPTION key value") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
+      case Cypher5JavaCc => _.withMessageStart(
           """Invalid input 'SET': expected
             |  "."
             |  "IF"
@@ -612,7 +605,7 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
             |  "WAIT"
             |  <EOF> (line 1, column 21 (offset: 20))""".stripMargin
         )
-      case Antlr => _.withSyntaxError(
+      case _ => _.withSyntaxError(
           """Invalid input 'SET': expected a database name, 'IF NOT EXISTS', 'NOWAIT', 'OPTIONS', 'TOPOLOGY', 'WAIT' or <EOF> (line 1, column 21 (offset: 20))
             |"CREATE DATABASE foo SET OPTION key value"
             |                     ^""".stripMargin
@@ -622,7 +615,7 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
 
   test("CREATE DATABASE foo OPTION {key: value}") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
+      case Cypher5JavaCc => _.withMessageStart(
           """Invalid input 'OPTION': expected
             |  "."
             |  "IF"
@@ -632,7 +625,7 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
             |  "WAIT"
             |  <EOF> (line 1, column 21 (offset: 20))""".stripMargin
         )
-      case Antlr => _.withSyntaxError(
+      case _ => _.withSyntaxError(
           """Invalid input 'OPTION': expected a database name, 'IF NOT EXISTS', 'NOWAIT', 'OPTIONS', 'TOPOLOGY', 'WAIT' or <EOF> (line 1, column 21 (offset: 20))
             |"CREATE DATABASE foo OPTION {key: value}"
             |                     ^""".stripMargin
@@ -642,7 +635,7 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
 
   test("CREATE DATABASE foo SET OPTIONS key value") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
+      case Cypher5JavaCc => _.withMessageStart(
           """Invalid input 'SET': expected
             |  "."
             |  "IF"
@@ -652,7 +645,7 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
             |  "WAIT"
             |  <EOF> (line 1, column 21 (offset: 20))""".stripMargin
         )
-      case Antlr => _.withSyntaxError(
+      case _ => _.withSyntaxError(
           """Invalid input 'SET': expected a database name, 'IF NOT EXISTS', 'NOWAIT', 'OPTIONS', 'TOPOLOGY', 'WAIT' or <EOF> (line 1, column 21 (offset: 20))
             |"CREATE DATABASE foo SET OPTIONS key value"
             |                     ^""".stripMargin
@@ -662,10 +655,10 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
 
   test("CREATE DATABASE foo OPTIONS key value") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
+      case Cypher5JavaCc => _.withMessageStart(
           """Invalid input 'key': expected "{" or a parameter (line 1, column 29 (offset: 28))""".stripMargin
         )
-      case Antlr => _.withSyntaxError(
+      case _ => _.withSyntaxError(
           """Invalid input 'key': expected a parameter or '{' (line 1, column 29 (offset: 28))
             |"CREATE DATABASE foo OPTIONS key value"
             |                             ^""".stripMargin
@@ -735,7 +728,7 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
 
   test("CREATE DATABASE foo TOPOLOGY 1 PRIMARY TOPOLOGY 1 SECONDARY") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
+      case Cypher5JavaCc => _.withMessageStart(
           """Invalid input 'TOPOLOGY': expected
             |  "NOWAIT"
             |  "OPTIONS"
@@ -743,7 +736,7 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
             |  <EOF>
             |  <UNSIGNED_DECIMAL_INTEGER> (line 1, column 40 (offset: 39))""".stripMargin
         )
-      case Antlr => _.withSyntaxError(
+      case _ => _.withSyntaxError(
           """Invalid input 'TOPOLOGY': expected 'NOWAIT', 'OPTIONS', 'WAIT', <EOF> or an integer value (line 1, column 40 (offset: 39))
             |"CREATE DATABASE foo TOPOLOGY 1 PRIMARY TOPOLOGY 1 SECONDARY"
             |                                        ^""".stripMargin
@@ -753,10 +746,9 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
 
   test("CREATE DATABASE foo TOPOLOGY 1 PRIMARY 1 PRIMARY") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
-          """Duplicate PRIMARY clause (line 1, column 42 (offset: 41))""".stripMargin
-        )
-      case Antlr => _.withSyntaxErrorContaining(
+      case Cypher5JavaCc =>
+        _.withMessageStart("""Duplicate PRIMARY clause (line 1, column 42 (offset: 41))""".stripMargin)
+      case _ => _.withSyntaxErrorContaining(
           """Duplicate PRIMARY clause (line 1, column 40 (offset: 39))""".stripMargin
         )
     }
@@ -764,10 +756,9 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
 
   test("CREATE DATABASE foo TOPOLOGY 2 PRIMARIES 1 PRIMARY") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
-          """Duplicate PRIMARY clause (line 1, column 44 (offset: 43))""".stripMargin
-        )
-      case Antlr => _.withSyntaxErrorContaining(
+      case Cypher5JavaCc =>
+        _.withMessageStart("""Duplicate PRIMARY clause (line 1, column 44 (offset: 43))""".stripMargin)
+      case _ => _.withSyntaxErrorContaining(
           """Duplicate PRIMARY clause (line 1, column 42 (offset: 41))"""
         )
     }
@@ -775,10 +766,9 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
 
   test("CREATE DATABASE foo TOPOLOGY 2 SECONDARIES 1 SECONDARY") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
-          """Duplicate SECONDARY clause (line 1, column 46 (offset: 45))""".stripMargin
-        )
-      case Antlr => _.withSyntaxErrorContaining(
+      case Cypher5JavaCc =>
+        _.withMessageStart("""Duplicate SECONDARY clause (line 1, column 46 (offset: 45))""".stripMargin)
+      case _ => _.withSyntaxErrorContaining(
           """Duplicate SECONDARY clause (line 1, column 44 (offset: 43))""".stripMargin
         )
     }
@@ -786,10 +776,9 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
 
   test("CREATE DATABASE foo TOPOLOGY 1 PRIMARY 1 SECONDARY 2 SECONDARY") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
-          """Duplicate SECONDARY clause (line 1, column 54 (offset: 53))""".stripMargin
-        )
-      case Antlr => _.withSyntaxErrorContaining(
+      case Cypher5JavaCc =>
+        _.withMessageStart("""Duplicate SECONDARY clause (line 1, column 54 (offset: 53))""".stripMargin)
+      case _ => _.withSyntaxErrorContaining(
           """Duplicate SECONDARY clause (line 1, column 52 (offset: 51))""".stripMargin
         )
     }
@@ -797,10 +786,10 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
 
   test("CREATE DATABASE foo TOPOLOGY -1 PRIMARY") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
+      case Cypher5JavaCc => _.withMessageStart(
           """Invalid input '-': expected <UNSIGNED_DECIMAL_INTEGER> (line 1, column 30 (offset: 29))""".stripMargin
         )
-      case Antlr => _.withSyntaxError(
+      case _ => _.withSyntaxError(
           """Invalid input '-': expected an integer value (line 1, column 30 (offset: 29))
             |"CREATE DATABASE foo TOPOLOGY -1 PRIMARY"
             |                              ^""".stripMargin
@@ -810,7 +799,7 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
 
   test("CREATE DATABASE foo TOPOLOGY 1 PRIMARY -1 SECONDARY") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
+      case Cypher5JavaCc => _.withMessageStart(
           """Invalid input '-': expected
             |  "NOWAIT"
             |  "OPTIONS"
@@ -818,7 +807,7 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
             |  <EOF>
             |  <UNSIGNED_DECIMAL_INTEGER> (line 1, column 40 (offset: 39))""".stripMargin
         )
-      case Antlr => _.withSyntaxError(
+      case _ => _.withSyntaxError(
           """Invalid input '-': expected 'NOWAIT', 'OPTIONS', 'WAIT', <EOF> or an integer value (line 1, column 40 (offset: 39))
             |"CREATE DATABASE foo TOPOLOGY 1 PRIMARY -1 SECONDARY"
             |                                        ^""".stripMargin
@@ -828,11 +817,11 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
 
   test("CREATE DATABASE foo TOPOLOGY -1 SECONDARY 1 PRIMARY") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
+      case Cypher5JavaCc => _.withMessageStart(
           """Invalid input '-': expected <UNSIGNED_DECIMAL_INTEGER> (line 1, column 30 (offset: 29))"""
         )
       // Modify update error message. -1 is an integer...
-      case Antlr => _.withSyntaxError(
+      case _ => _.withSyntaxError(
           """Invalid input '-': expected an integer value (line 1, column 30 (offset: 29))
             |"CREATE DATABASE foo TOPOLOGY -1 SECONDARY 1 PRIMARY"
             |                              ^""".stripMargin
@@ -842,8 +831,8 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
 
   test("CREATE DATABASE foo TOPOLOGY 1 SECONDARY 1 SECONDARY") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart("""Duplicate SECONDARY clause (line 1, column 44 (offset: 43))""")
-      case Antlr  => _.withSyntaxErrorContaining("""Duplicate SECONDARY clause (line 1, column 42 (offset: 41))""")
+      case Cypher5JavaCc => _.withMessageStart("""Duplicate SECONDARY clause (line 1, column 44 (offset: 43))""")
+      case _ => _.withSyntaxErrorContaining("""Duplicate SECONDARY clause (line 1, column 42 (offset: 41))""")
     }
   }
 
@@ -861,10 +850,10 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
 
   test("CREATE DATABASE foo TOPOLOGY $param PRIMARY") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
+      case Cypher5JavaCc => _.withMessageStart(
           """Invalid input '$': expected <UNSIGNED_DECIMAL_INTEGER> (line 1, column 30 (offset: 29))"""
         )
-      case Antlr => _.withSyntaxError(
+      case _ => _.withSyntaxError(
           """Invalid input '$': expected an integer value (line 1, column 30 (offset: 29))
             |"CREATE DATABASE foo TOPOLOGY $param PRIMARY"
             |                              ^""".stripMargin
@@ -874,7 +863,7 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
 
   test("CREATE DATABASE foo TOPOLOGY 1 PRIMARY $param SECONDARY") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
+      case Cypher5JavaCc => _.withMessageStart(
           """Invalid input '$': expected
             |  "NOWAIT"
             |  "OPTIONS"
@@ -882,7 +871,7 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
             |  <EOF>
             |  <UNSIGNED_DECIMAL_INTEGER> (line 1, column 40 (offset: 39))""".stripMargin
         )
-      case Antlr => _.withSyntaxError(
+      case _ => _.withSyntaxError(
           """Invalid input '$': expected 'NOWAIT', 'OPTIONS', 'WAIT', <EOF> or an integer value (line 1, column 40 (offset: 39))
             |"CREATE DATABASE foo TOPOLOGY 1 PRIMARY $param SECONDARY"
             |                                        ^""".stripMargin
@@ -892,10 +881,10 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
 
   test("CREATE DATABASE foo TOPOLOGY") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
+      case Cypher5JavaCc => _.withMessageStart(
           """Invalid input '': expected <UNSIGNED_DECIMAL_INTEGER> (line 1, column 29 (offset: 28))"""
         )
-      case Antlr => _.withSyntaxError(
+      case _ => _.withSyntaxError(
           """Invalid input '': expected an integer value (line 1, column 29 (offset: 28))
             |"CREATE DATABASE foo TOPOLOGY"
             |                             ^""".stripMargin
@@ -1099,10 +1088,10 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
 
   test("DROP DATABASE") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
+      case Cypher5JavaCc => _.withMessageStart(
           s"""Invalid input '': expected a parameter or an identifier (line 1, column 14 (offset: 13))"""
         )
-      case Antlr => _.withSyntaxError(
+      case _ => _.withSyntaxError(
           """Invalid input '': expected a database name or a parameter (line 1, column 14 (offset: 13))
             |"DROP DATABASE"
             |              ^""".stripMargin
@@ -1130,8 +1119,8 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
          |  <EOF> (line 1, column 20 (offset: 19))""".stripMargin
 
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(exceptionMessage)
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc => _.withMessageStart(exceptionMessage)
+      case _ => _.withSyntaxError(
           """Invalid input 'DATA': expected a database name, 'DESTROY', 'DUMP', 'IF EXISTS', 'NOWAIT', 'WAIT' or <EOF> (line 1, column 20 (offset: 19))
             |"DROP DATABASE KEEP DATA"
             |                    ^""".stripMargin
@@ -1211,10 +1200,9 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
 
   test("ALTER DATABASE") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
-          "Invalid input '': expected a parameter or an identifier (line 1, column 15 (offset: 14))"
-        )
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc =>
+        _.withMessageStart("Invalid input '': expected a parameter or an identifier (line 1, column 15 (offset: 14))")
+      case _ => _.withSyntaxError(
           """Invalid input '': expected a database name or a parameter (line 1, column 15 (offset: 14))
             |"ALTER DATABASE"
             |               ^""".stripMargin
@@ -1224,10 +1212,10 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
 
   test("ALTER DATABASE foo") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
+      case Cypher5JavaCc => _.withMessageStart(
           "Invalid input '': expected \".\", \"IF\", \"REMOVE\" or \"SET\" (line 1, column 19 (offset: 18))"
         )
-      case Antlr => _.withSyntaxError(
+      case _ => _.withSyntaxError(
           """Invalid input '': expected a database name, 'IF EXISTS', 'REMOVE OPTION' or 'SET' (line 1, column 19 (offset: 18))
             |"ALTER DATABASE foo"
             |                   ^""".stripMargin
@@ -1237,10 +1225,10 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
 
   test("ALTER DATABASE foo SET READ ONLY") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
+      case Cypher5JavaCc => _.withMessageStart(
           "Invalid input 'READ': expected \"ACCESS\", \"OPTION\" or \"TOPOLOGY\" (line 1, column 24 (offset: 23))"
         )
-      case Antlr => _.withSyntaxError(
+      case _ => _.withSyntaxError(
           """Invalid input 'READ': expected 'OPTION', 'ACCESS READ' or 'TOPOLOGY' (line 1, column 24 (offset: 23))
             |"ALTER DATABASE foo SET READ ONLY"
             |                        ^""".stripMargin
@@ -1250,10 +1238,10 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
 
   test("ALTER DATABASE foo ACCESS READ WRITE") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
+      case Cypher5JavaCc => _.withMessageStart(
           "Invalid input 'ACCESS': expected \".\", \"IF\", \"REMOVE\" or \"SET\" (line 1, column 20 (offset: 19))"
         )
-      case Antlr => _.withSyntaxError(
+      case _ => _.withSyntaxError(
           """Invalid input 'ACCESS': expected a database name, 'IF EXISTS', 'REMOVE OPTION' or 'SET' (line 1, column 20 (offset: 19))
             |"ALTER DATABASE foo ACCESS READ WRITE"
             |                    ^""".stripMargin
@@ -1263,10 +1251,9 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
 
   test("ALTER DATABASE foo SET ACCESS READ") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
-          "Invalid input '': expected \"ONLY\" or \"WRITE\" (line 1, column 35 (offset: 34))"
-        )
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc =>
+        _.withMessageStart("Invalid input '': expected \"ONLY\" or \"WRITE\" (line 1, column 35 (offset: 34))")
+      case _ => _.withSyntaxError(
           """Invalid input '': expected 'ONLY' or 'WRITE' (line 1, column 35 (offset: 34))
             |"ALTER DATABASE foo SET ACCESS READ"
             |                                   ^""".stripMargin
@@ -1276,10 +1263,9 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
 
   test("ALTER DATABASE foo SET ACCESS READWRITE'") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
-          "Invalid input 'READWRITE': expected \"READ\" (line 1, column 31 (offset: 30))"
-        )
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc =>
+        _.withMessageStart("Invalid input 'READWRITE': expected \"READ\" (line 1, column 31 (offset: 30))")
+      case _ => _.withSyntaxError(
           """Invalid input 'READWRITE': expected 'READ' (line 1, column 31 (offset: 30))
             |"ALTER DATABASE foo SET ACCESS READWRITE'"
             |                               ^""".stripMargin
@@ -1289,10 +1275,9 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
 
   test("ALTER DATABASE foo SET ACCESS READ_ONLY") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
-          "Invalid input 'READ_ONLY': expected \"READ\" (line 1, column 31 (offset: 30))"
-        )
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc =>
+        _.withMessageStart("Invalid input 'READ_ONLY': expected \"READ\" (line 1, column 31 (offset: 30))")
+      case _ => _.withSyntaxError(
           """Invalid input 'READ_ONLY': expected 'READ' (line 1, column 31 (offset: 30))
             |"ALTER DATABASE foo SET ACCESS READ_ONLY"
             |                               ^""".stripMargin
@@ -1302,10 +1287,9 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
 
   test("ALTER DATABASE foo SET ACCESS WRITE") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
-          "Invalid input 'WRITE': expected \"READ\" (line 1, column 31 (offset: 30))"
-        )
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc =>
+        _.withMessageStart("Invalid input 'WRITE': expected \"READ\" (line 1, column 31 (offset: 30))")
+      case _ => _.withSyntaxError(
           """Invalid input 'WRITE': expected 'READ' (line 1, column 31 (offset: 30))
             |"ALTER DATABASE foo SET ACCESS WRITE"
             |                               ^""".stripMargin
@@ -1316,8 +1300,8 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
   // Set ACCESS multiple times in the same command
   test("ALTER DATABASE foo SET ACCESS READ ONLY SET ACCESS READ WRITE") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart("Duplicate SET ACCESS clause (line 1, column 41 (offset: 40))")
-      case Antlr => _.withSyntaxErrorContaining(
+      case Cypher5JavaCc => _.withMessageStart("Duplicate SET ACCESS clause (line 1, column 41 (offset: 40))")
+      case _ => _.withSyntaxErrorContaining(
           """Duplicate ACCESS clause (line 1, column 45 (offset: 44))"""
         )
     }
@@ -1326,10 +1310,10 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
   // Wrong order between IF EXISTS and SET
   test("ALTER DATABASE foo SET ACCESS READ ONLY IF EXISTS") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
+      case Cypher5JavaCc => _.withMessageStart(
           "Invalid input 'IF': expected \"NOWAIT\", \"SET\", \"WAIT\" or <EOF> (line 1, column 41 (offset: 40))"
         )
-      case Antlr => _.withSyntaxError(
+      case _ => _.withSyntaxError(
           """Invalid input 'IF': expected 'NOWAIT', 'SET', 'WAIT' or <EOF> (line 1, column 41 (offset: 40))
             |"ALTER DATABASE foo SET ACCESS READ ONLY IF EXISTS"
             |                                         ^""".stripMargin
@@ -1340,10 +1324,9 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
   // IF NOT EXISTS instead of IF EXISTS
   test("ALTER DATABASE foo IF NOT EXISTS SET ACCESS READ ONLY") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
-          "Invalid input 'NOT': expected \"EXISTS\" (line 1, column 23 (offset: 22))"
-        )
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc =>
+        _.withMessageStart("Invalid input 'NOT': expected \"EXISTS\" (line 1, column 23 (offset: 22))")
+      case _ => _.withSyntaxError(
           """Invalid input 'NOT': expected 'EXISTS' (line 1, column 23 (offset: 22))
             |"ALTER DATABASE foo IF NOT EXISTS SET ACCESS READ ONLY"
             |                       ^""".stripMargin
@@ -1354,10 +1337,10 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
   // ALTER with OPTIONS
   test("ALTER DATABASE foo SET ACCESS READ WRITE OPTIONS {existingData: 'use'}") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
+      case Cypher5JavaCc => _.withMessageStart(
           "Invalid input 'OPTIONS': expected \"NOWAIT\", \"SET\", \"WAIT\" or <EOF> (line 1, column 42 (offset: 41))"
         )
-      case Antlr => _.withSyntaxError(
+      case _ => _.withSyntaxError(
           """Invalid input 'OPTIONS': expected 'NOWAIT', 'SET', 'WAIT' or <EOF> (line 1, column 42 (offset: 41))
             |"ALTER DATABASE foo SET ACCESS READ WRITE OPTIONS {existingData: 'use'}"
             |                                          ^""".stripMargin
@@ -1468,10 +1451,9 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
 
   test("ALTER DATABASE foo REMOVE OPTION key REMOVE OPTION key") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
-          """Duplicate 'REMOVE OPTION key' clause (line 1, column 38 (offset: 37))"""
-        )
-      case Antlr => _.withSyntaxErrorContaining(
+      case Cypher5JavaCc =>
+        _.withMessageStart("""Duplicate 'REMOVE OPTION key' clause (line 1, column 38 (offset: 37))""")
+      case _ => _.withSyntaxErrorContaining(
           """Duplicate 'REMOVE OPTION key' clause (line 1, column 52 (offset: 51))"""
         )
     }
@@ -1479,10 +1461,10 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
 
   test("ALTER DATABASE foo SET ACCESS READ ONLY REMOVE OPTION key") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
+      case Cypher5JavaCc => _.withMessageStart(
           """Invalid input 'REMOVE': expected "NOWAIT", "SET", "WAIT" or <EOF> (line 1, column 41 (offset: 40))"""
         )
-      case Antlr => _.withSyntaxError(
+      case _ => _.withSyntaxError(
           """Invalid input 'REMOVE': expected 'NOWAIT', 'SET', 'WAIT' or <EOF> (line 1, column 41 (offset: 40))
             |"ALTER DATABASE foo SET ACCESS READ ONLY REMOVE OPTION key"
             |                                         ^""".stripMargin
@@ -1492,10 +1474,10 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
 
   test("ALTER DATABASE foo SET OPTIONS {key: value}") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
+      case Cypher5JavaCc => _.withMessageStart(
           """Invalid input 'OPTIONS': expected "ACCESS", "OPTION" or "TOPOLOGY" (line 1, column 24 (offset: 23))"""
         )
-      case Antlr => _.withSyntaxError(
+      case _ => _.withSyntaxError(
           """Invalid input 'OPTIONS': expected 'OPTION', 'ACCESS READ' or 'TOPOLOGY' (line 1, column 24 (offset: 23))
             |"ALTER DATABASE foo SET OPTIONS {key: value}"
             |                        ^""".stripMargin
@@ -1505,10 +1487,9 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
 
   test("ALTER DATABASE foo SET OPTION {key: value}") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
-          """Invalid input '{': expected an identifier (line 1, column 31 (offset: 30))"""
-        )
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc =>
+        _.withMessageStart("""Invalid input '{': expected an identifier (line 1, column 31 (offset: 30))""")
+      case _ => _.withSyntaxError(
           """Invalid input '{': expected an identifier (line 1, column 31 (offset: 30))
             |"ALTER DATABASE foo SET OPTION {key: value}"
             |                               ^""".stripMargin
@@ -1518,10 +1499,10 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
 
   test("ALTER DATABASE foo SET OPTIONS key value") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
+      case Cypher5JavaCc => _.withMessageStart(
           """Invalid input 'OPTIONS': expected "ACCESS", "OPTION" or "TOPOLOGY" (line 1, column 24 (offset: 23))"""
         )
-      case Antlr => _.withSyntaxError(
+      case _ => _.withSyntaxError(
           """Invalid input 'OPTIONS': expected 'OPTION', 'ACCESS READ' or 'TOPOLOGY' (line 1, column 24 (offset: 23))
             |"ALTER DATABASE foo SET OPTIONS key value"
             |                        ^""".stripMargin
@@ -1531,7 +1512,7 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
 
   test("ALTER DATABASE foo SET OPTION key value key2 value") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
+      case Cypher5JavaCc => _.withMessageStart(
           """Invalid input 'key2': expected
             |  "!="
             |  "%"
@@ -1562,7 +1543,7 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
             |  "||"
             |  <EOF> (line 1, column 41 (offset: 40))""".stripMargin
         )
-      case Antlr => _.withSyntaxError(
+      case _ => _.withSyntaxError(
           """Invalid input 'key2': expected an expression, 'NOWAIT', 'SET', 'WAIT' or <EOF> (line 1, column 41 (offset: 40))
             |"ALTER DATABASE foo SET OPTION key value key2 value"
             |                                         ^""".stripMargin
@@ -1572,7 +1553,7 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
 
   test("ALTER DATABASE foo SET OPTION key value, key2 value") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
+      case Cypher5JavaCc => _.withMessageStart(
           """Invalid input ',': expected
             |  "!="
             |  "%"
@@ -1603,7 +1584,7 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
             |  "||"
             |  <EOF> (line 1, column 40 (offset: 39))""".stripMargin
         )
-      case Antlr => _.withSyntaxError(
+      case _ => _.withSyntaxError(
           """Invalid input ',': expected an expression, 'NOWAIT', 'SET', 'WAIT' or <EOF> (line 1, column 40 (offset: 39))
             |"ALTER DATABASE foo SET OPTION key value, key2 value"
             |                                        ^""".stripMargin
@@ -1613,10 +1594,10 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
 
   test("ALTER DATABASE foo REMOVE OPTION key key2") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
+      case Cypher5JavaCc => _.withMessageStart(
           """Invalid input 'key2': expected "NOWAIT", "REMOVE", "WAIT" or <EOF> (line 1, column 38 (offset: 37))"""
         )
-      case Antlr => _.withSyntaxError(
+      case _ => _.withSyntaxError(
           """Invalid input 'key2': expected 'NOWAIT', 'REMOVE OPTION', 'WAIT' or <EOF> (line 1, column 38 (offset: 37))
             |"ALTER DATABASE foo REMOVE OPTION key key2"
             |                                      ^""".stripMargin
@@ -1626,10 +1607,10 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
 
   test("ALTER DATABASE foo REMOVE OPTION key, key2") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
+      case Cypher5JavaCc => _.withMessageStart(
           """Invalid input ',': expected "NOWAIT", "REMOVE", "WAIT" or <EOF> (line 1, column 37 (offset: 36))"""
         )
-      case Antlr => _.withSyntaxError(
+      case _ => _.withSyntaxError(
           """Invalid input ',': expected 'NOWAIT', 'REMOVE OPTION', 'WAIT' or <EOF> (line 1, column 37 (offset: 36))
             |"ALTER DATABASE foo REMOVE OPTION key, key2"
             |                                     ^""".stripMargin
@@ -1639,10 +1620,9 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
 
   test("ALTER DATABASE foo REMOVE OPTIONS key") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
-          """Invalid input 'OPTIONS': expected "OPTION" (line 1, column 27 (offset: 26))"""
-        )
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc =>
+        _.withMessageStart("""Invalid input 'OPTIONS': expected "OPTION" (line 1, column 27 (offset: 26))""")
+      case _ => _.withSyntaxError(
           """Invalid input 'OPTIONS': expected 'OPTION' (line 1, column 27 (offset: 26))
             |"ALTER DATABASE foo REMOVE OPTIONS key"
             |                           ^""".stripMargin
@@ -1652,10 +1632,9 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
 
   test("ALTER DATABASE foo SET OPTION txLogEnrichment 'FULL' SET OPTION txLogEnrichment 'FULL'") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
-          "Duplicate 'SET OPTION txLogEnrichment' clause (line 1, column 54 (offset: 53))"
-        )
-      case Antlr => _.withSyntaxErrorContaining(
+      case Cypher5JavaCc =>
+        _.withMessageStart("Duplicate 'SET OPTION txLogEnrichment' clause (line 1, column 54 (offset: 53))")
+      case _ => _.withSyntaxErrorContaining(
           """Duplicate 'SET OPTION txLogEnrichment' clause (line 1, column 58 (offset: 57))"""
         )
     }
@@ -1663,7 +1642,7 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
 
   test("ALTER DATABASE foo SET OPTION txLogEnrichment 'FULL' REMOVE OPTION txLogEnrichment") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
+      case Cypher5JavaCc => _.withMessageStart(
           """Invalid input 'REMOVE': expected
             |  "!="
             |  "%"
@@ -1694,7 +1673,7 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
             |  "||"
             |  <EOF> (line 1, column 54 (offset: 53))""".stripMargin
         )
-      case Antlr => _.withSyntaxError(
+      case _ => _.withSyntaxError(
           """Invalid input 'REMOVE': expected an expression, 'NOWAIT', 'SET', 'WAIT' or <EOF> (line 1, column 54 (offset: 53))
             |"ALTER DATABASE foo SET OPTION txLogEnrichment 'FULL' REMOVE OPTION txLogEnrichment"
             |                                                      ^""".stripMargin
@@ -1704,10 +1683,10 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
 
   test("ALTER DATABASE foo REMOVE OPTION txLogEnrichment SET OPTION txLogEnrichment 'FULL'") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
+      case Cypher5JavaCc => _.withMessageStart(
           "Invalid input 'SET': expected \"NOWAIT\", \"REMOVE\", \"WAIT\" or <EOF> (line 1, column 50 (offset: 49))"
         )
-      case Antlr => _.withSyntaxError(
+      case _ => _.withSyntaxError(
           """Invalid input 'SET': expected 'NOWAIT', 'REMOVE OPTION', 'WAIT' or <EOF> (line 1, column 50 (offset: 49))
             |"ALTER DATABASE foo REMOVE OPTION txLogEnrichment SET OPTION txLogEnrichment 'FULL'"
             |                                                  ^""".stripMargin
@@ -1718,7 +1697,7 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
   // ALTER OR REPLACE
   test("ALTER OR REPLACE DATABASE foo SET ACCESS READ WRITE") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
+      case Cypher5JavaCc => _.withMessageStart(
           """Invalid input 'OR': expected
             |  "ALIAS"
             |  "CURRENT"
@@ -1726,7 +1705,7 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
             |  "SERVER"
             |  "USER" (line 1, column 7 (offset: 6))""".stripMargin
         )
-      case Antlr => _.withSyntaxError(
+      case _ => _.withSyntaxError(
           """Invalid input 'OR': expected 'ALIAS', 'DATABASE', 'CURRENT USER SET PASSWORD FROM', 'SERVER' or 'USER' (line 1, column 7 (offset: 6))
             |"ALTER OR REPLACE DATABASE foo SET ACCESS READ WRITE"
             |       ^""".stripMargin
@@ -1750,10 +1729,10 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
 
   test("ALTER DATABASE foo SET TOPOLOGY $param PRIMARY") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
+      case Cypher5JavaCc => _.withMessageStart(
           """Invalid input '$': expected <UNSIGNED_DECIMAL_INTEGER> (line 1, column 33 (offset: 32))"""
         )
-      case Antlr => _.withSyntaxError(
+      case _ => _.withSyntaxError(
           """Invalid input '$': expected an integer value (line 1, column 33 (offset: 32))
             |"ALTER DATABASE foo SET TOPOLOGY $param PRIMARY"
             |                                 ^""".stripMargin
@@ -1763,7 +1742,7 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
 
   test("ALTER DATABASE foo SET TOPOLOGY 1 PRIMARY $param SECONDARY") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
+      case Cypher5JavaCc => _.withMessageStart(
           """Invalid input '$': expected
             |  "NOWAIT"
             |  "SET"
@@ -1771,7 +1750,7 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
             |  <EOF>
             |  <UNSIGNED_DECIMAL_INTEGER> (line 1, column 43 (offset: 42))""".stripMargin
         )
-      case Antlr => _.withSyntaxError(
+      case _ => _.withSyntaxError(
           """Invalid input '$': expected 'NOWAIT', 'SET', 'WAIT', <EOF> or an integer value (line 1, column 43 (offset: 42))
             |"ALTER DATABASE foo SET TOPOLOGY 1 PRIMARY $param SECONDARY"
             |                                           ^""".stripMargin
@@ -1809,10 +1788,9 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
 
   test("ALTER DATABASE foo SET TOPOLOGY 2 PRIMARIES 1 PRIMARY") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
-          """Duplicate PRIMARY clause (line 1, column 47 (offset: 46))""".stripMargin
-        )
-      case Antlr => _.withSyntaxErrorContaining(
+      case Cypher5JavaCc =>
+        _.withMessageStart("""Duplicate PRIMARY clause (line 1, column 47 (offset: 46))""".stripMargin)
+      case _ => _.withSyntaxErrorContaining(
           """Duplicate PRIMARY clause (line 1, column 45 (offset: 44))""".stripMargin
         )
     }
@@ -1820,10 +1798,9 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
 
   test("ALTER DATABASE foo SET TOPOLOGY 2 SECONDARIES 1 SECONDARY") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
-          """Duplicate SECONDARY clause (line 1, column 49 (offset: 48))""".stripMargin
-        )
-      case Antlr => _.withSyntaxErrorContaining(
+      case Cypher5JavaCc =>
+        _.withMessageStart("""Duplicate SECONDARY clause (line 1, column 49 (offset: 48))""".stripMargin)
+      case _ => _.withSyntaxErrorContaining(
           """Duplicate SECONDARY clause (line 1, column 47 (offset: 46))""".stripMargin
         )
     }
@@ -1831,10 +1808,9 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
 
   test("ALTER DATABASE foo SET TOPOLOGY 5 PRIMARIES 10 PRIMARIES 1 PRIMARY 2 SECONDARIES") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
-          """Duplicate PRIMARY clause (line 1, column 48 (offset: 47))"""
-        )
-      case Antlr => _.withSyntaxErrorContaining(
+      case Cypher5JavaCc =>
+        _.withMessageStart("""Duplicate PRIMARY clause (line 1, column 48 (offset: 47))""")
+      case _ => _.withSyntaxErrorContaining(
           """Duplicate PRIMARY clause (line 1, column 45 (offset: 44))"""
         )
     }
@@ -1842,10 +1818,9 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
 
   test("ALTER DATABASE foo SET TOPOLOGY 1 PRIMARY 2 SECONDARIES 1 SECONDARIES") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
-          """Duplicate SECONDARY clause (line 1, column 59 (offset: 58))"""
-        )
-      case Antlr => _.withSyntaxErrorContaining(
+      case Cypher5JavaCc =>
+        _.withMessageStart("""Duplicate SECONDARY clause (line 1, column 59 (offset: 58))""")
+      case _ => _.withSyntaxErrorContaining(
           """Duplicate SECONDARY clause (line 1, column 57 (offset: 56))"""
         )
     }
@@ -1965,8 +1940,8 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
 
   test("ALTER DATABASE foo SET TOPOLOGY 1 PRIMARY SET TOPOLOGY 1 SECONDARY") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart("Duplicate SET TOPOLOGY clause (line 1, column 43 (offset: 42))")
-      case Antlr => _.withSyntaxErrorContaining(
+      case Cypher5JavaCc => _.withMessageStart("Duplicate SET TOPOLOGY clause (line 1, column 43 (offset: 42))")
+      case _ => _.withSyntaxErrorContaining(
           """Duplicate TOPOLOGY clause (line 1, column 47 (offset: 46))"""
         )
     }
@@ -1974,10 +1949,9 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
 
   test("ALTER DATABASE foo SET TOPOLOGY 1 PRIMARY 1 PRIMARY") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
-          """Duplicate PRIMARY clause (line 1, column 45 (offset: 44))""".stripMargin
-        )
-      case Antlr => _.withSyntaxErrorContaining(
+      case Cypher5JavaCc =>
+        _.withMessageStart("""Duplicate PRIMARY clause (line 1, column 45 (offset: 44))""".stripMargin)
+      case _ => _.withSyntaxErrorContaining(
           """Duplicate PRIMARY clause (line 1, column 43 (offset: 42))"""
         )
     }
@@ -1985,10 +1959,9 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
 
   test("ALTER DATABASE foo SET TOPOLOGY 1 PRIMARY 1 SECONDARY 2 SECONDARY") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
-          """Duplicate SECONDARY clause (line 1, column 57 (offset: 56))""".stripMargin
-        )
-      case Antlr => _.withSyntaxErrorContaining(
+      case Cypher5JavaCc =>
+        _.withMessageStart("""Duplicate SECONDARY clause (line 1, column 57 (offset: 56))""".stripMargin)
+      case _ => _.withSyntaxErrorContaining(
           """Duplicate SECONDARY clause (line 1, column 55 (offset: 54))"""
         )
     }
@@ -1996,10 +1969,10 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
 
   test("ALTER DATABASE foo SET TOPOLOGY -1 PRIMARY") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
+      case Cypher5JavaCc => _.withMessageStart(
           """Invalid input '-': expected <UNSIGNED_DECIMAL_INTEGER> (line 1, column 33 (offset: 32))""".stripMargin
         )
-      case Antlr => _.withSyntaxError(
+      case _ => _.withSyntaxError(
           """Invalid input '-': expected an integer value (line 1, column 33 (offset: 32))
             |"ALTER DATABASE foo SET TOPOLOGY -1 PRIMARY"
             |                                 ^""".stripMargin
@@ -2009,7 +1982,7 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
 
   test("ALTER DATABASE foo SET TOPOLOGY 1 PRIMARY -1 SECONDARY") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
+      case Cypher5JavaCc => _.withMessageStart(
           """Invalid input '-': expected
             |  "NOWAIT"
             |  "SET"
@@ -2017,7 +1990,7 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
             |  <EOF>
             |  <UNSIGNED_DECIMAL_INTEGER> (line 1, column 43 (offset: 42))""".stripMargin
         )
-      case Antlr => _.withSyntaxError(
+      case _ => _.withSyntaxError(
           """Invalid input '-': expected 'NOWAIT', 'SET', 'WAIT', <EOF> or an integer value (line 1, column 43 (offset: 42))
             |"ALTER DATABASE foo SET TOPOLOGY 1 PRIMARY -1 SECONDARY"
             |                                           ^""".stripMargin
@@ -2027,10 +2000,10 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
 
   test("ALTER DATABASE foo SET TOPOLOGY -1 SECONDARY 1 PRIMARY") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
+      case Cypher5JavaCc => _.withMessageStart(
           """Invalid input '-': expected <UNSIGNED_DECIMAL_INTEGER> (line 1, column 33 (offset: 32))""".stripMargin
         )
-      case Antlr => _.withSyntaxError(
+      case _ => _.withSyntaxError(
           """Invalid input '-': expected an integer value (line 1, column 33 (offset: 32))
             |"ALTER DATABASE foo SET TOPOLOGY -1 SECONDARY 1 PRIMARY"
             |                                 ^""".stripMargin
@@ -2040,10 +2013,9 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
 
   test("ALTER DATABASE foo SET TOPOLOGY 1 SECONDARY 1 SECONDARY") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
-          """Duplicate SECONDARY clause (line 1, column 47 (offset: 46))""".stripMargin
-        )
-      case Antlr => _.withSyntaxErrorContaining(
+      case Cypher5JavaCc =>
+        _.withMessageStart("""Duplicate SECONDARY clause (line 1, column 47 (offset: 46))""".stripMargin)
+      case _ => _.withSyntaxErrorContaining(
           """Duplicate SECONDARY clause (line 1, column 45 (offset: 44))""".stripMargin
         )
     }
@@ -2065,10 +2037,10 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
 
   test("ALTER DATABASE foo SET TOPOLOGY") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
+      case Cypher5JavaCc => _.withMessageStart(
           """Invalid input '': expected <UNSIGNED_DECIMAL_INTEGER> (line 1, column 32 (offset: 31))"""
         )
-      case Antlr => _.withSyntaxError(
+      case _ => _.withSyntaxError(
           """Invalid input '': expected an integer value (line 1, column 32 (offset: 31))
             |"ALTER DATABASE foo SET TOPOLOGY"
             |                                ^""".stripMargin
@@ -2120,10 +2092,9 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
 
   test("START DATABASE") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
-          "Invalid input '': expected a parameter or an identifier (line 1, column 15 (offset: 14))"
-        )
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc =>
+        _.withMessageStart("Invalid input '': expected a parameter or an identifier (line 1, column 15 (offset: 14))")
+      case _ => _.withSyntaxError(
           """Invalid input '': expected a database name or a parameter (line 1, column 15 (offset: 14))
             |"START DATABASE"
             |               ^""".stripMargin
@@ -2175,10 +2146,9 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
 
   test("STOP DATABASE") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
-          "Invalid input '': expected a parameter or an identifier (line 1, column 14 (offset: 13))"
-        )
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc =>
+        _.withMessageStart("Invalid input '': expected a parameter or an identifier (line 1, column 14 (offset: 13))")
+      case _ => _.withSyntaxError(
           """Invalid input '': expected a database name or a parameter (line 1, column 14 (offset: 13))
             |"STOP DATABASE"
             |              ^""".stripMargin

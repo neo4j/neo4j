@@ -19,8 +19,7 @@ package org.neo4j.cypher.internal.ast.factory.neo4j.privilege
 import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.factory.neo4j.AdministrationAndSchemaCommandParserTestBase
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Cypher5JavaCc
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.util.InputPosition
 
@@ -118,8 +117,8 @@ class LoadPrivilegeParserTest extends AdministrationAndSchemaCommandParserTestBa
   test("GRANT LOAD ON CIDR $x TO \u0885") {
     // the `\u0885` needs to be escaped to be able to be parsed
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart("Invalid input '\u0885': expected a parameter or an identifier")
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc => _.withMessageStart("Invalid input '\u0885': expected a parameter or an identifier")
+      case _ => _.withSyntaxError(
           """Invalid input '\u0885': expected a parameter or an identifier (line 1, column 26 (offset: 25))
             |"GRANT LOAD ON CIDR $x TO \u0885"
             |                          ^""".stripMargin
@@ -130,8 +129,8 @@ class LoadPrivilegeParserTest extends AdministrationAndSchemaCommandParserTestBa
   test("GRANT LOAD ON CIDR $x TO x\u0885y") {
     // the `\u0885` needs to be escaped to be able to be parsed
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart("Invalid input '\u0885': expected \",\" or <EOF>")
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc => _.withMessageStart("Invalid input '\u0885': expected \",\" or <EOF>")
+      case _ => _.withSyntaxError(
           """Invalid input '\u0885': expected ',' or <EOF> (line 1, column 27 (offset: 26))
             |"GRANT LOAD ON CIDR $x TO x\u0885y"
             |                           ^""".stripMargin
@@ -141,8 +140,8 @@ class LoadPrivilegeParserTest extends AdministrationAndSchemaCommandParserTestBa
 
   test("""GRANT LOAD ON DATABASE foo TO role""") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart("""Invalid input 'DATABASE': expected""")
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc => _.withMessageStart("""Invalid input 'DATABASE': expected""")
+      case _ => _.withSyntaxError(
           """Invalid input 'DATABASE': expected 'CIDR', 'ALL DATA' or 'URL' (line 1, column 15 (offset: 14))
             |"GRANT LOAD ON DATABASE foo TO role"
             |               ^""".stripMargin
@@ -152,8 +151,8 @@ class LoadPrivilegeParserTest extends AdministrationAndSchemaCommandParserTestBa
 
   test("""DENY LOAD ON HOME GRAPH TO role""") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart("""Invalid input 'HOME': expected""")
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc => _.withMessageStart("""Invalid input 'HOME': expected""")
+      case _ => _.withSyntaxError(
           """Invalid input 'HOME': expected 'CIDR', 'ALL DATA' or 'URL' (line 1, column 14 (offset: 13))
             |"DENY LOAD ON HOME GRAPH TO role"
             |              ^""".stripMargin
@@ -163,8 +162,8 @@ class LoadPrivilegeParserTest extends AdministrationAndSchemaCommandParserTestBa
 
   test("""REVOKE GRANT LOAD ON DBMS ON ALL DATA FROM role""") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart("""Invalid input 'DBMS': expected""")
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc => _.withMessageStart("""Invalid input 'DBMS': expected""")
+      case _ => _.withSyntaxError(
           """Invalid input 'DBMS': expected 'CIDR', 'ALL DATA' or 'URL' (line 1, column 22 (offset: 21))
             |"REVOKE GRANT LOAD ON DBMS ON ALL DATA FROM role"
             |                      ^""".stripMargin
@@ -174,8 +173,8 @@ class LoadPrivilegeParserTest extends AdministrationAndSchemaCommandParserTestBa
 
   test("""GRANT LOAD ON CIDR TO role""") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart("""Invalid input 'TO': expected""")
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc => _.withMessageStart("""Invalid input 'TO': expected""")
+      case _ => _.withSyntaxError(
           """Invalid input 'TO': expected a parameter or a string (line 1, column 20 (offset: 19))
             |"GRANT LOAD ON CIDR TO role"
             |                    ^""".stripMargin
@@ -185,8 +184,8 @@ class LoadPrivilegeParserTest extends AdministrationAndSchemaCommandParserTestBa
 
   test("""GRANT LOAD ON URL TO role""") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart("""Invalid input 'TO': expected""")
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc => _.withMessageStart("""Invalid input 'TO': expected""")
+      case _ => _.withSyntaxError(
           """Invalid input 'TO': expected a parameter or a string (line 1, column 19 (offset: 18))
             |"GRANT LOAD ON URL TO role"
             |                   ^""".stripMargin
@@ -196,8 +195,8 @@ class LoadPrivilegeParserTest extends AdministrationAndSchemaCommandParserTestBa
 
   test("""DENY LOAD TO role""") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart("""Invalid input 'TO': expected""")
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc => _.withMessageStart("""Invalid input 'TO': expected""")
+      case _ => _.withSyntaxError(
           """Invalid input 'TO': expected 'ON' (line 1, column 11 (offset: 10))
             |"DENY LOAD TO role"
             |           ^""".stripMargin
@@ -207,8 +206,8 @@ class LoadPrivilegeParserTest extends AdministrationAndSchemaCommandParserTestBa
 
   test("""GRANT LOAD ON CIDR "1.2.3.4/22" URL "https://example.com" TO role""") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart("""Invalid input 'URL': expected""")
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc => _.withMessageStart("""Invalid input 'URL': expected""")
+      case _ => _.withSyntaxError(
           """Invalid input 'URL': expected 'TO' (line 1, column 33 (offset: 32))
             |"GRANT LOAD ON CIDR "1.2.3.4/22" URL "https://example.com" TO role"
             |                                 ^""".stripMargin
@@ -218,8 +217,8 @@ class LoadPrivilegeParserTest extends AdministrationAndSchemaCommandParserTestBa
 
   test("""DENY LOAD ON CIDR "1.2.3.4/22" ON URL "https://example.com" TO role""") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart("""Invalid input 'ON': expected""")
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc => _.withMessageStart("""Invalid input 'ON': expected""")
+      case _ => _.withSyntaxError(
           """Invalid input 'ON': expected 'TO' (line 1, column 32 (offset: 31))
             |"DENY LOAD ON CIDR "1.2.3.4/22" ON URL "https://example.com" TO role"
             |                                ^""".stripMargin
@@ -229,8 +228,8 @@ class LoadPrivilegeParserTest extends AdministrationAndSchemaCommandParserTestBa
 
   test("""GRANT LOAD ON URL "https://www.badger.com","file:///test.csv" TO role""") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart("""Invalid input ',': expected""")
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc => _.withMessageStart("""Invalid input ',': expected""")
+      case _ => _.withSyntaxError(
           """Invalid input ',': expected 'TO' (line 1, column 43 (offset: 42))
             |"GRANT LOAD ON URL "https://www.badger.com","file:///test.csv" TO role"
             |                                           ^""".stripMargin
@@ -240,8 +239,8 @@ class LoadPrivilegeParserTest extends AdministrationAndSchemaCommandParserTestBa
 
   test("""REVOKE DENY LOAD ON CIDR "1.2.3.4/22","1.2.3.4/22" FROM role""") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart("""Invalid input ',': expected""")
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc => _.withMessageStart("""Invalid input ',': expected""")
+      case _ => _.withSyntaxError(
           """Invalid input ',': expected 'FROM' (line 1, column 38 (offset: 37))
             |"REVOKE DENY LOAD ON CIDR "1.2.3.4/22","1.2.3.4/22" FROM role"
             |                                      ^""".stripMargin
@@ -251,8 +250,8 @@ class LoadPrivilegeParserTest extends AdministrationAndSchemaCommandParserTestBa
 
   test("""REVOKE DENY LOAD ON ALL DATA "1.2.3.4/22" FROM role""") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart("""Invalid input '1.2.3.4/22': expected""")
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc => _.withMessageStart("""Invalid input '1.2.3.4/22': expected""")
+      case _ => _.withSyntaxError(
           """Invalid input '"1.2.3.4/22"': expected 'FROM' (line 1, column 30 (offset: 29))
             |"REVOKE DENY LOAD ON ALL DATA "1.2.3.4/22" FROM role"
             |                              ^""".stripMargin
@@ -262,8 +261,8 @@ class LoadPrivilegeParserTest extends AdministrationAndSchemaCommandParserTestBa
 
   test("GRANT LOAD ON CIDR 'x'+'y' TO role") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart("""Invalid input '+': expected "TO""")
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc => _.withMessageStart("""Invalid input '+': expected "TO""")
+      case _ => _.withSyntaxError(
           """Invalid input '+': expected 'TO' (line 1, column 23 (offset: 22))
             |"GRANT LOAD ON CIDR 'x'+'y' TO role"
             |                       ^""".stripMargin
@@ -273,8 +272,8 @@ class LoadPrivilegeParserTest extends AdministrationAndSchemaCommandParserTestBa
 
   test("GRANT LOAD ON URL ['x'] TO role") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart("""Invalid input '[': expected "\"", "\'" or a parameter""")
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc => _.withMessageStart("""Invalid input '[': expected "\"", "\'" or a parameter""")
+      case _ => _.withSyntaxError(
           """Invalid input '[': expected a parameter or a string (line 1, column 19 (offset: 18))
             |"GRANT LOAD ON URL ['x'] TO role"
             |                   ^""".stripMargin

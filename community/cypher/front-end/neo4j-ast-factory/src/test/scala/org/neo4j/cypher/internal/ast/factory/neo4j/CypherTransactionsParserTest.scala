@@ -27,8 +27,7 @@ import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorFail
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsParameters
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsReportParameters
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Cypher5JavaCc
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTestSupport
 import org.neo4j.cypher.internal.expressions.Variable
@@ -366,10 +365,9 @@ class CypherTransactionsParserTest extends AstParsingTestBase with LegacyAstPars
 
   test("CALL { CREATE (n) } IN TRANSACTIONS ON ERROR BREAK CONTINUE") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
-          "Invalid input 'CONTINUE'"
-        )
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc =>
+        _.withMessageStart("Invalid input 'CONTINUE'")
+      case _ => _.withSyntaxError(
           """Invalid input 'CONTINUE': expected 'FOREACH', 'REPORT STATUS AS', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'ON ERROR', 'FINISH', 'INSERT', 'MATCH', 'MERGE', 'NODETACH', 'OF', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'UNION', 'UNWIND', 'USE', 'WITH' or <EOF> (line 1, column 52 (offset: 51))
             |"CALL { CREATE (n) } IN TRANSACTIONS ON ERROR BREAK CONTINUE"
             |                                                    ^""".stripMargin
@@ -386,8 +384,8 @@ class CypherTransactionsParserTest extends AstParsingTestBase with LegacyAstPars
     failsParsing[Statements]
       .withMessageStart("Duplicated REPORT STATUS parameter")
       .in {
-        case JavaCc => _.throws[OpenCypherExceptionFactory.SyntaxException]
-        case _      => _.throws[SyntaxException]
+        case Cypher5JavaCc => _.throws[OpenCypherExceptionFactory.SyntaxException]
+        case _             => _.throws[SyntaxException]
       }
   }
 
@@ -395,8 +393,8 @@ class CypherTransactionsParserTest extends AstParsingTestBase with LegacyAstPars
     failsParsing[Statements]
       .withMessageStart("Duplicated OF ROWS parameter")
       .in {
-        case JavaCc => _.throws[OpenCypherExceptionFactory.SyntaxException]
-        case _      => _.throws[SyntaxException]
+        case Cypher5JavaCc => _.throws[OpenCypherExceptionFactory.SyntaxException]
+        case _             => _.throws[SyntaxException]
       }
   }
 }

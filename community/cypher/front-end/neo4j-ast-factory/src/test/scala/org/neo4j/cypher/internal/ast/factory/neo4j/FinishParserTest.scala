@@ -19,8 +19,7 @@ package org.neo4j.cypher.internal.ast.factory.neo4j
 import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.Statements
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Cypher5JavaCc
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
 
 class FinishParserTest extends AstParsingTestBase {
@@ -44,8 +43,8 @@ class FinishParserTest extends AstParsingTestBase {
 
   test("FINISH *") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart("Invalid input '*'")
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc => _.withMessageStart("Invalid input '*'")
+      case _ => _.withSyntaxError(
           """Invalid input '*': expected 'FOREACH', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'UNION', 'UNWIND', 'USE', 'WITH' or <EOF> (line 1, column 8 (offset: 7))
             |"FINISH *"
             |        ^""".stripMargin
@@ -55,8 +54,8 @@ class FinishParserTest extends AstParsingTestBase {
 
   test("FINISH a, b") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart("Invalid input 'a'")
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc => _.withMessageStart("Invalid input 'a'")
+      case _ => _.withSyntaxError(
           """Invalid input 'a': expected 'FOREACH', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'UNION', 'UNWIND', 'USE', 'WITH' or <EOF> (line 1, column 8 (offset: 7))
             |"FINISH a, b"
             |        ^""".stripMargin
@@ -67,8 +66,8 @@ class FinishParserTest extends AstParsingTestBase {
 
   test("FINISH DISTINCT *") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart("Invalid input 'DISTINCT'")
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc => _.withMessageStart("Invalid input 'DISTINCT'")
+      case _ => _.withSyntaxError(
           """Invalid input 'DISTINCT': expected 'FOREACH', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'UNION', 'UNWIND', 'USE', 'WITH' or <EOF> (line 1, column 8 (offset: 7))
             |"FINISH DISTINCT *"
             |        ^""".stripMargin
@@ -78,8 +77,8 @@ class FinishParserTest extends AstParsingTestBase {
 
   test("FINISH DISTINCT a, b") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart("Invalid input 'DISTINCT'")
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc => _.withMessageStart("Invalid input 'DISTINCT'")
+      case _ => _.withSyntaxError(
           """Invalid input 'DISTINCT': expected 'FOREACH', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'UNION', 'UNWIND', 'USE', 'WITH' or <EOF> (line 1, column 8 (offset: 7))
             |"FINISH DISTINCT a, b"
             |        ^""".stripMargin
@@ -89,8 +88,8 @@ class FinishParserTest extends AstParsingTestBase {
 
   test("FINISH n:A") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart("Invalid input 'n'")
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc => _.withMessageStart("Invalid input 'n'")
+      case _ => _.withSyntaxError(
           """Invalid input 'n': expected 'FOREACH', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'UNION', 'UNWIND', 'USE', 'WITH' or <EOF> (line 1, column 8 (offset: 7))
             |"FINISH n:A"
             |        ^""".stripMargin
@@ -100,8 +99,8 @@ class FinishParserTest extends AstParsingTestBase {
 
   test("FINISH n:A&B") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart("Invalid input 'n'")
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc => _.withMessageStart("Invalid input 'n'")
+      case _ => _.withSyntaxError(
           """Invalid input 'n': expected 'FOREACH', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'UNION', 'UNWIND', 'USE', 'WITH' or <EOF> (line 1, column 8 (offset: 7))
             |"FINISH n:A&B"
             |        ^""".stripMargin

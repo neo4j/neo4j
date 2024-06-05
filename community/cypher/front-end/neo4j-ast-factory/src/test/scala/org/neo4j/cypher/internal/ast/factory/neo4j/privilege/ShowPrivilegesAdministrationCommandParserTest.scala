@@ -19,8 +19,7 @@ package org.neo4j.cypher.internal.ast.factory.neo4j.privilege
 import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.factory.neo4j.AdministrationAndSchemaCommandParserTestBase
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Cypher5JavaCc
 import org.neo4j.cypher.internal.expressions.Expression
 
 class ShowPrivilegesAdministrationCommandParserTest extends AdministrationAndSchemaCommandParserTestBase {
@@ -668,8 +667,8 @@ class ShowPrivilegesAdministrationCommandParserTest extends AdministrationAndSch
          |  "VECTOR" (line 1, column 6 (offset: 5))""".stripMargin
 
     failsParsing[Statements].in {
-      case JavaCc => _.withMessage(exceptionMessage)
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc => _.withMessage(exceptionMessage)
+      case _ => _.withSyntaxError(
           """Invalid input 'PRIVILAGES': expected 'ALIAS', 'ALIASES', 'ALL', 'BTREE', 'CONSTRAINT', 'CONSTRAINTS', 'DATABASE', 'DEFAULT DATABASE', 'HOME DATABASE', 'DATABASES', 'EXIST', 'EXISTENCE', 'EXISTS', 'FULLTEXT', 'FUNCTION', 'FUNCTIONS', 'BUILT IN', 'INDEX', 'INDEXES', 'KEY', 'LOOKUP', 'NODE', 'POINT', 'POPULATED', 'PRIVILEGE', 'PRIVILEGES', 'PROCEDURE', 'PROCEDURES', 'PROPERTY', 'RANGE', 'REL', 'RELATIONSHIP', 'ROLE', 'ROLES', 'SERVER', 'SERVERS', 'SETTING', 'SETTINGS', 'SUPPORTED', 'TEXT', 'TRANSACTION', 'TRANSACTIONS', 'UNIQUE', 'UNIQUENESS', 'USER', 'CURRENT USER', 'USERS' or 'VECTOR' (line 1, column 6 (offset: 5))
             |"SHOW PRIVILAGES"
             |      ^""".stripMargin
@@ -700,8 +699,8 @@ class ShowPrivilegesAdministrationCommandParserTest extends AdministrationAndSch
          |  "ROLES" (line 1, column 10 (offset: 9))""".stripMargin
 
     failsParsing[Statements].in {
-      case JavaCc => _.withMessage(exceptionMessage)
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc => _.withMessage(exceptionMessage)
+      case _ => _.withSyntaxError(
           """|Invalid input 'USER': expected 'CONSTRAINT', 'CONSTRAINTS', 'FUNCTION', 'FUNCTIONS', 'INDEX', 'INDEXES', 'PRIVILEGE', 'PRIVILEGES', 'ROLE' or 'ROLES' (line 1, column 10 (offset: 9))
              |"SHOW ALL USER user PRIVILEGES"
              |          ^""".stripMargin
@@ -711,10 +710,10 @@ class ShowPrivilegesAdministrationCommandParserTest extends AdministrationAndSch
 
   test("SHOW USER us%er PRIVILEGES") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessage(
+      case Cypher5JavaCc => _.withMessage(
           """Invalid input '%': expected ",", "PRIVILEGE" or "PRIVILEGES" (line 1, column 13 (offset: 12))"""
         )
-      case Antlr => _.withSyntaxError(
+      case _ => _.withSyntaxError(
           """Invalid input '%': expected 'PRIVILEGE' or 'PRIVILEGES' (line 1, column 13 (offset: 12))
             |"SHOW USER us%er PRIVILEGES"
             |             ^""".stripMargin
@@ -724,10 +723,10 @@ class ShowPrivilegesAdministrationCommandParserTest extends AdministrationAndSch
 
   test("SHOW ROLE PRIVILEGES") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessage(
+      case Cypher5JavaCc => _.withMessage(
           """Invalid input '': expected ",", "PRIVILEGE" or "PRIVILEGES" (line 1, column 21 (offset: 20))"""
         )
-      case Antlr => _.withSyntaxError(
+      case _ => _.withSyntaxError(
           """Invalid input '': expected 'PRIVILEGE' or 'PRIVILEGES' (line 1, column 21 (offset: 20))
             |"SHOW ROLE PRIVILEGES"
             |                     ^""".stripMargin
@@ -737,10 +736,10 @@ class ShowPrivilegesAdministrationCommandParserTest extends AdministrationAndSch
 
   test("SHOW ALL ROLE role PRIVILEGES") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessage(
+      case Cypher5JavaCc => _.withMessage(
           s"""Invalid input 'role': expected "WHERE", "WITH", "YIELD" or <EOF> (line 1, column 15 (offset: 14))"""
         )
-      case Antlr => _.withSyntaxError(
+      case _ => _.withSyntaxError(
           """Invalid input 'role': expected 'WHERE', 'WITH', 'YIELD' or <EOF> (line 1, column 15 (offset: 14))
             |"SHOW ALL ROLE role PRIVILEGES"
             |               ^""".stripMargin
@@ -763,8 +762,8 @@ class ShowPrivilegesAdministrationCommandParserTest extends AdministrationAndSch
          |  <EOF> (line 1, column 34 (offset: 33))""".stripMargin
 
     failsParsing[Statements].in {
-      case JavaCc => _.withMessage(exceptionMessage)
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc => _.withMessage(exceptionMessage)
+      case _ => _.withSyntaxError(
           """Invalid input ',': expected 'ORDER BY', 'LIMIT', 'RETURN', 'SKIP', 'WHERE' or <EOF> (line 1, column 34 (offset: 33))
             |"SHOW USER user PRIVILEGES YIELD *, blah RETURN user"
             |                                  ^""".stripMargin

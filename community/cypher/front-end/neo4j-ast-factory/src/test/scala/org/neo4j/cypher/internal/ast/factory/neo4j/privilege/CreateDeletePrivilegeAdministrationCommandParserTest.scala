@@ -19,8 +19,7 @@ package org.neo4j.cypher.internal.ast.factory.neo4j.privilege
 import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.factory.neo4j.AdministrationAndSchemaCommandParserTestBase
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Cypher5JavaCc
 
 class CreateDeletePrivilegeAdministrationCommandParserTest extends AdministrationAndSchemaCommandParserTestBase {
 
@@ -165,10 +164,10 @@ class CreateDeletePrivilegeAdministrationCommandParserTest extends Administratio
               test(s"$verb$immutableString $createOrDelete ON DATABASE blah $preposition role") {
                 val offset = verb.length + immutableString.length + createOrDelete.length + 5
                 failsParsing[Statements].in {
-                  case JavaCc => _.withMessageStart(
+                  case Cypher5JavaCc => _.withMessageStart(
                       s"""Invalid input 'DATABASE': expected "DEFAULT", "GRAPH", "GRAPHS" or "HOME" (line 1, column ${offset + 1} (offset: $offset))"""
                     )
-                  case Antlr => _.withSyntaxErrorContaining(
+                  case _ => _.withSyntaxErrorContaining(
                       s"""Invalid input 'DATABASE': expected 'GRAPH', 'DEFAULT GRAPH', 'HOME GRAPH' or 'GRAPHS' (line 1, column ${offset + 1} (offset: $offset))"""
                     )
                 }

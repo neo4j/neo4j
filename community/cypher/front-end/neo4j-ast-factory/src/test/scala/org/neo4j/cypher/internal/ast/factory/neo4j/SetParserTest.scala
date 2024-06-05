@@ -20,8 +20,7 @@ import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.SetDynamicPropertyItem
 import org.neo4j.cypher.internal.ast.SetPropertyItem
 import org.neo4j.cypher.internal.ast.Statements
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Cypher5JavaCc
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
 
 class SetParserTest extends AstParsingTestBase {
@@ -166,8 +165,8 @@ class SetParserTest extends AstParsingTestBase {
 
   test("SET listOfNodes[0][toUpper(\"prop\")] = 'neo4j'") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart("Invalid input '['")
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc => _.withMessageStart("Invalid input '['")
+      case _ => _.withSyntaxError(
           """Invalid input '[': expected '=' (line 1, column 19 (offset: 18))
             |"SET listOfNodes[0][toUpper("prop")] = 'neo4j'"
             |                   ^""".stripMargin

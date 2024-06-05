@@ -19,8 +19,7 @@ package org.neo4j.cypher.internal.ast.factory.neo4j.privilege
 import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.factory.neo4j.AdministrationAndSchemaCommandParserTestBase
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Cypher5JavaCc
 
 class WritePrivilegeAdministrationCommandParserTest extends AdministrationAndSchemaCommandParserTestBase {
 
@@ -221,10 +220,10 @@ class WritePrivilegeAdministrationCommandParserTest extends AdministrationAndSch
           test(s"$verb$immutableString WRITE ON HOME GRAPHS $preposition role") {
             val offset = verb.length + immutableString.length + 15
             failsParsing[Statements].in {
-              case JavaCc => _.withMessage(
+              case Cypher5JavaCc => _.withMessage(
                   s"""Invalid input 'GRAPHS': expected "GRAPH" (line 1, column ${offset + 1} (offset: $offset))"""
                 )
-              case Antlr => _.withSyntaxErrorContaining(
+              case _ => _.withSyntaxErrorContaining(
                   s"""Invalid input 'GRAPHS': expected 'GRAPH' (line 1, column ${offset + 1} (offset: $offset))"""
                 )
             }
@@ -233,10 +232,10 @@ class WritePrivilegeAdministrationCommandParserTest extends AdministrationAndSch
           test(s"$verb$immutableString WRITE ON DEFAULT GRAPHS $preposition role") {
             val offset = verb.length + immutableString.length + 18
             failsParsing[Statements].in {
-              case JavaCc => _.withMessage(
+              case Cypher5JavaCc => _.withMessage(
                   s"""Invalid input 'GRAPHS': expected "GRAPH" (line 1, column ${offset + 1} (offset: $offset))"""
                 )
-              case Antlr => _.withSyntaxErrorContaining(
+              case _ => _.withSyntaxErrorContaining(
                   s"""Invalid input 'GRAPHS': expected 'GRAPH' (line 1, column ${offset + 1} (offset: $offset))"""
                 )
             }
@@ -267,10 +266,10 @@ class WritePrivilegeAdministrationCommandParserTest extends AdministrationAndSch
           test(s"$verb$immutableString WRITE ON DATABASES * $preposition role") {
             val offset = verb.length + immutableString.length + 10
             failsParsing[Statements].in {
-              case JavaCc => _.withMessage(
+              case Cypher5JavaCc => _.withMessage(
                   s"""Invalid input 'DATABASES': expected "DEFAULT", "GRAPH", "GRAPHS" or "HOME" (line 1, column ${offset + 1} (offset: $offset))"""
                 )
-              case Antlr => _.withSyntaxErrorContaining(
+              case _ => _.withSyntaxErrorContaining(
                   s"""Invalid input 'DATABASES': expected 'GRAPH', 'DEFAULT GRAPH', 'HOME GRAPH' or 'GRAPHS' (line 1, column ${offset + 1} (offset: $offset))"""
                 )
             }
@@ -279,10 +278,10 @@ class WritePrivilegeAdministrationCommandParserTest extends AdministrationAndSch
           test(s"$verb$immutableString WRITE ON DATABASE foo $preposition role") {
             val offset = verb.length + immutableString.length + 10
             failsParsing[Statements].in {
-              case JavaCc => _.withMessage(
+              case Cypher5JavaCc => _.withMessage(
                   s"""Invalid input 'DATABASE': expected "DEFAULT", "GRAPH", "GRAPHS" or "HOME" (line 1, column ${offset + 1} (offset: $offset))"""
                 )
-              case Antlr => _.withSyntaxErrorContaining(
+              case _ => _.withSyntaxErrorContaining(
                   s"""Invalid input 'DATABASE': expected 'GRAPH', 'DEFAULT GRAPH', 'HOME GRAPH' or 'GRAPHS' (line 1, column ${offset + 1} (offset: $offset))"""
                 )
             }

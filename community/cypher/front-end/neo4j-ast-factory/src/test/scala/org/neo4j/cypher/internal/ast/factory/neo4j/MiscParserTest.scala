@@ -30,8 +30,7 @@ import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.UnaliasedReturnItem
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Cypher5JavaCc
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.ParseSuccess
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTestSupport
@@ -222,8 +221,8 @@ class MiscParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport
 
   test("should not parse pattern comprehensions with single nodes") {
     "[p = (x) | p]" should notParse[PatternComprehension].in {
-      case JavaCc => _.withMessageStart("Encountered \" \"|\" \"|\"\" at line 1, column 10.")
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc => _.withMessageStart("Encountered \" \"|\" \"|\"\" at line 1, column 10.")
+      case _ => _.withSyntaxError(
           """Invalid input '|': expected '-' (line 1, column 10 (offset: 9))
             |"[p = (x) | p]"
             |          ^""".stripMargin
@@ -454,10 +453,10 @@ class MiscParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport
 
   test("MATCH (a)->(b) RETURN *") {
     failsParsing[Statements].in {
-      case JavaCc => (a: Parses[Statements]) =>
+      case Cypher5JavaCc => (a: Parses[Statements]) =>
           a.throws[OpenCypherExceptionFactory.SyntaxException]
             .withMessageStart("Invalid input '-': expected")
-      case Antlr => (a: Parses[Statements]) =>
+      case _ => (a: Parses[Statements]) =>
           a.throws[SyntaxException]
             .withMessage(
               """Invalid input '>': expected '-' (line 1, column 11 (offset: 10))
@@ -469,10 +468,10 @@ class MiscParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport
 
   test("MATCH (a)--->(b) RETURN *") {
     failsParsing[Statements].in {
-      case JavaCc =>
+      case Cypher5JavaCc =>
         _.throws[OpenCypherExceptionFactory.SyntaxException]
           .withMessageStart("Invalid input '-': expected")
-      case Antlr =>
+      case _ =>
         _.throws[SyntaxException]
           .withMessage(
             """Invalid input '-': expected '(' (line 1, column 12 (offset: 11))
@@ -484,10 +483,10 @@ class MiscParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport
 
   test("RETURN RETURN 1") {
     failsParsing[Statements].in {
-      case JavaCc =>
+      case Cypher5JavaCc =>
         _.throws[OpenCypherExceptionFactory.SyntaxException]
           .withMessageStart("Invalid input '1': expected")
-      case Antlr =>
+      case _ =>
         _.throws[SyntaxException]
           .withMessage(
             """Invalid input '1': expected an expression, 'FOREACH', ',', 'AS', 'ORDER BY', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'LIMIT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'SKIP', 'UNION', 'UNWIND', 'USE', 'WITH' or <EOF> (line 1, column 15 (offset: 14))
@@ -499,10 +498,10 @@ class MiscParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport
 
   test("RETURN 'hell") {
     failsParsing[Statements].in {
-      case JavaCc =>
+      case Cypher5JavaCc =>
         _.throws[TokenMgrException]
           .withMessageStart("Lexical error at line 1, column 13.  Encountered: <EOF> after : \"\"")
-      case Antlr =>
+      case _ =>
         _.throws[SyntaxException]
           .withMessage(
             """Failed to parse string literal. The query must contain an even number of non-escaped quotes. (line 1, column 8 (offset: 7))
@@ -515,11 +514,11 @@ class MiscParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport
   test("correct positions in errors with unicode escapes and comments") {
     val query = "/* \\u003A\\u0029 */  MATCH /* */ (a)/* */->/* */(b)/* */RETURN *"
     query should notParse[Statements].in {
-      case JavaCc =>
+      case Cypher5JavaCc =>
         _.throws[OpenCypherExceptionFactory.SyntaxException]
           .withMessageStart("Invalid input '-': expected")
           .withMessageContaining("(line 1, column 41 (offset: 40))")
-      case Antlr =>
+      case _ =>
         _.withSyntaxError(
           s"""Invalid input '>': expected '-' (line 1, column 42 (offset: 41))
              |"$query"
@@ -530,8 +529,8 @@ class MiscParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport
 
   test("MATCH (n) WHERE n.prop = 'ab + 1") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart("Lexical error at")
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc => _.withMessageStart("Lexical error at")
+      case _ => _.withSyntaxError(
           """Failed to parse string literal. The query must contain an even number of non-escaped quotes. (line 1, column 26 (offset: 25))
             |"MATCH (n) WHERE n.prop = 'ab + 1"
             |                          ^""".stripMargin
@@ -541,8 +540,8 @@ class MiscParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport
 
   test("MATCH (n) WHERE n.prop = 'ab'' + 1") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart("Lexical error at")
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc => _.withMessageStart("Lexical error at")
+      case _ => _.withSyntaxError(
           """Failed to parse string literal. The query must contain an even number of non-escaped quotes. (line 1, column 30 (offset: 29))
             |"MATCH (n) WHERE n.prop = 'ab'' + 1"
             |                              ^""".stripMargin
@@ -552,8 +551,8 @@ class MiscParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport
 
   test("MATCH (n) WHERE n.prop = '") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart("Lexical error at")
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc => _.withMessageStart("Lexical error at")
+      case _ => _.withSyntaxError(
           """Failed to parse string literal. The query must contain an even number of non-escaped quotes. (line 1, column 26 (offset: 25))
             |"MATCH (n) WHERE n.prop = '"
             |                          ^""".stripMargin
@@ -563,8 +562,8 @@ class MiscParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport
 
   test("MATCH (n) WHERE n.'prop") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart("Lexical error at")
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc => _.withMessageStart("Lexical error at")
+      case _ => _.withSyntaxError(
           """Failed to parse string literal. The query must contain an even number of non-escaped quotes. (line 1, column 19 (offset: 18))
             |"MATCH (n) WHERE n.'prop"
             |                   ^""".stripMargin
@@ -574,8 +573,8 @@ class MiscParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport
 
   test("SHOW SETTING 'a', 'b''") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart("Lexical error at")
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc => _.withMessageStart("Lexical error at")
+      case _ => _.withSyntaxError(
           """Failed to parse string literal. The query must contain an even number of non-escaped quotes. (line 1, column 22 (offset: 21))
             |"SHOW SETTING 'a', 'b''"
             |                      ^""".stripMargin
@@ -586,8 +585,8 @@ class MiscParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport
 
   test("MATCH (n) WHERE n.prop = 'ab\\'c' AND 'b\\'c' AND 'c\\'") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart("Lexical error at line 1, column 53")
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc => _.withMessageStart("Lexical error at line 1, column 53")
+      case _ => _.withSyntaxError(
           """Failed to parse string literal. The query must contain an even number of non-escaped quotes. (line 1, column 49 (offset: 48))
             |"MATCH (n) WHERE n.prop = 'ab\'c' AND 'b\'c' AND 'c\'"
             |                                                 ^""".stripMargin
@@ -611,8 +610,8 @@ class MiscParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport
 
   test("RETURN /* abc */ 1 /*'") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart("Lexical error at line 1, column 23.")
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc => _.withMessageStart("Lexical error at line 1, column 23.")
+      case _ => _.withSyntaxError(
           """Failed to parse comment. A comment starting on `/*` must have a closing `*/`. (line 1, column 21 (offset: 20))
             |"RETURN /* abc */ 1 /*'"
             |                     ^""".stripMargin

@@ -21,8 +21,7 @@ import org.neo4j.cypher.internal.ast.ExecuteFunctionAction
 import org.neo4j.cypher.internal.ast.FunctionQualifier
 import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.factory.neo4j.AdministrationAndSchemaCommandParserTestBase
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Cypher5JavaCc
 import org.neo4j.cypher.internal.util.InputPosition
 
 class ExecuteFunctionPrivilegeAdministrationCommandParserTest extends AdministrationAndSchemaCommandParserTestBase {
@@ -219,7 +218,7 @@ class ExecuteFunctionPrivilegeAdministrationCommandParserTest extends Administra
               test(s"$verb$immutableString $execute * $preposition role") {
                 val offset = testName.length
                 failsParsing[Statements].in {
-                  case JavaCc => _.withMessage(
+                  case Cypher5JavaCc => _.withMessage(
                       s"""Invalid input '': expected
                          |  "*"
                          |  "."
@@ -227,7 +226,7 @@ class ExecuteFunctionPrivilegeAdministrationCommandParserTest extends Administra
                          |  "ON"
                          |  an identifier (line 1, column ${offset + 1} (offset: $offset))""".stripMargin
                     )
-                  case Antlr => _.withSyntaxErrorContaining(
+                  case _ => _.withSyntaxErrorContaining(
                       s"""Invalid input '': expected an identifier, '*', ',', '.', '?' or 'ON DBMS' (line 1, column ${offset + 1} (offset: $offset))"""
                     )
                 }
@@ -236,7 +235,7 @@ class ExecuteFunctionPrivilegeAdministrationCommandParserTest extends Administra
               test(s"$verb$immutableString $execute * ON DATABASE * $preposition role") {
                 val offset = testName.length
                 failsParsing[Statements].in {
-                  case JavaCc => _.withMessage(
+                  case Cypher5JavaCc => _.withMessage(
                       s"""Invalid input '': expected
                          |  "*"
                          |  "."
@@ -244,7 +243,7 @@ class ExecuteFunctionPrivilegeAdministrationCommandParserTest extends Administra
                          |  "ON"
                          |  an identifier (line 1, column ${offset + 1} (offset: $offset))""".stripMargin
                     )
-                  case Antlr => _.withSyntaxErrorContaining(
+                  case _ => _.withSyntaxErrorContaining(
                       s"""Invalid input '': expected an identifier, '*', ',', '.', '?' or 'ON DBMS' (line 1, column ${offset + 1} (offset: $offset))"""
                     )
                 }
@@ -255,10 +254,10 @@ class ExecuteFunctionPrivilegeAdministrationCommandParserTest extends Administra
               test(s"$verb$immutableString $execute `ab?`* ON DBMS $preposition role") {
                 val offset = s"$verb$immutableString $execute ".length
                 failsParsing[Statements].in {
-                  case JavaCc => _.withMessage(
+                  case Cypher5JavaCc => _.withMessage(
                       s"""Invalid input 'ab?': expected "*", ".", "?" or an identifier (line 1, column ${offset + 1} (offset: $offset))""".stripMargin
                     )
-                  case Antlr => _.withSyntaxErrorContaining(
+                  case _ => _.withSyntaxErrorContaining(
                       """Each part of the glob (a block of text up until a dot) must either be fully escaped or not escaped at all."""
                     )
                 }
@@ -267,7 +266,7 @@ class ExecuteFunctionPrivilegeAdministrationCommandParserTest extends Administra
               test(s"$verb$immutableString $execute a`ab?` ON DBMS $preposition role") {
                 val offset = s"$verb$immutableString $execute a".length
                 failsParsing[Statements].in {
-                  case JavaCc => _.withMessage(
+                  case Cypher5JavaCc => _.withMessage(
                       s"""Invalid input 'ab?': expected
                          |  "*"
                          |  "."
@@ -275,7 +274,7 @@ class ExecuteFunctionPrivilegeAdministrationCommandParserTest extends Administra
                          |  "ON"
                          |  an identifier (line 1, column ${offset + 1} (offset: $offset))""".stripMargin
                     )
-                  case Antlr => _.withSyntaxErrorContaining(
+                  case _ => _.withSyntaxErrorContaining(
                       s"""Invalid input '`ab?`': expected an identifier, '*', ',', '.', '?' or 'ON DBMS' (line 1, column ${offset + 1} (offset: $offset))"""
                     )
                 }
@@ -284,7 +283,7 @@ class ExecuteFunctionPrivilegeAdministrationCommandParserTest extends Administra
               test(s"$verb$immutableString $execute ab?`%ab`* ON DBMS $preposition role") {
                 val offset = s"$verb$immutableString $execute ab?".length
                 failsParsing[Statements].in {
-                  case JavaCc => _.withMessage(
+                  case Cypher5JavaCc => _.withMessage(
                       s"""Invalid input '%ab': expected
                          |  "*"
                          |  "."
@@ -293,7 +292,7 @@ class ExecuteFunctionPrivilegeAdministrationCommandParserTest extends Administra
                          |  "ON"
                          |  an identifier (line 1, column ${offset + 1} (offset: $offset))""".stripMargin
                     )
-                  case Antlr => _.withSyntaxErrorContaining(
+                  case _ => _.withSyntaxErrorContaining(
                       s"Invalid input '`%ab`': expected an identifier, '*', ',', '.', '?' or 'ON DBMS' (line 1, column ${offset + 1} (offset: $offset))"
                     )
                 }
@@ -302,7 +301,7 @@ class ExecuteFunctionPrivilegeAdministrationCommandParserTest extends Administra
               test(s"$verb$immutableString $execute apoc.`*`ab? ON DBMS $preposition role") {
                 val offset = s"$verb$immutableString $execute apoc.".length
                 failsParsing[Statements].in {
-                  case JavaCc => _.withMessage(
+                  case Cypher5JavaCc => _.withMessage(
                       s"""Invalid input '*': expected
                          |  "*"
                          |  "."
@@ -310,7 +309,7 @@ class ExecuteFunctionPrivilegeAdministrationCommandParserTest extends Administra
                          |  "NFKD"
                          |  an identifier (line 1, column ${offset + 1} (offset: $offset))""".stripMargin
                     )
-                  case Antlr => _.withSyntaxErrorContaining(
+                  case _ => _.withSyntaxErrorContaining(
                       """Each part of the glob (a block of text up until a dot) must either be fully escaped or not escaped at all."""
                     )
                 }
@@ -319,7 +318,7 @@ class ExecuteFunctionPrivilegeAdministrationCommandParserTest extends Administra
               test(s"$verb$immutableString $execute apoc.*`ab?` ON DBMS $preposition role") {
                 val offset = s"$verb$immutableString $execute apoc.*".length
                 failsParsing[Statements].in {
-                  case JavaCc => _.withMessage(
+                  case Cypher5JavaCc => _.withMessage(
                       s"""Invalid input 'ab?': expected
                          |  "*"
                          |  "."
@@ -327,7 +326,7 @@ class ExecuteFunctionPrivilegeAdministrationCommandParserTest extends Administra
                          |  "ON"
                          |  an identifier (line 1, column ${offset + 1} (offset: $offset))""".stripMargin
                     )
-                  case Antlr => _.withSyntaxErrorContaining(
+                  case _ => _.withSyntaxErrorContaining(
                       s"Invalid input '`ab?`': expected an identifier, '*', ',', '.', '?' or 'ON DBMS' (line 1, column ${offset + 1} (offset: $offset))"
                     )
                 }
@@ -336,10 +335,10 @@ class ExecuteFunctionPrivilegeAdministrationCommandParserTest extends Administra
               test(s"$verb$immutableString $execute `ap`oc.ab? ON DBMS $preposition role") {
                 val offset = s"$verb$immutableString $execute ".length
                 failsParsing[Statements].in {
-                  case JavaCc => _.withMessage(
+                  case Cypher5JavaCc => _.withMessage(
                       s"""Invalid input 'ap': expected "*", ".", "?" or an identifier (line 1, column ${offset + 1} (offset: $offset))""".stripMargin
                     )
-                  case Antlr => _.withSyntaxErrorContaining(
+                  case _ => _.withSyntaxErrorContaining(
                       """Each part of the glob (a block of text up until a dot) must either be fully escaped or not escaped at all."""
                     )
                 }
@@ -348,7 +347,7 @@ class ExecuteFunctionPrivilegeAdministrationCommandParserTest extends Administra
               test(s"$verb$immutableString $execute ap`oc`.ab? ON DBMS $preposition role") {
                 val offset = s"$verb$immutableString $execute ap".length
                 failsParsing[Statements].in {
-                  case JavaCc => _.withMessage(
+                  case Cypher5JavaCc => _.withMessage(
                       s"""Invalid input 'oc': expected
                          |  "*"
                          |  "."
@@ -356,7 +355,7 @@ class ExecuteFunctionPrivilegeAdministrationCommandParserTest extends Administra
                          |  "ON"
                          |  an identifier (line 1, column ${offset + 1} (offset: $offset))""".stripMargin
                     )
-                  case Antlr => _.withSyntaxErrorContaining(
+                  case _ => _.withSyntaxErrorContaining(
                       s"""Invalid input '`oc`': expected an identifier, '*', ',', '.', '?' or 'ON DBMS' (line 1, column ${offset + 1} (offset: $offset))"""
                     )
                 }
@@ -365,7 +364,7 @@ class ExecuteFunctionPrivilegeAdministrationCommandParserTest extends Administra
           test(s"$verb$immutableString EXECUTE DEFINED FUNCTION * ON DATABASE * $preposition role") {
             val offset = s"$verb$immutableString EXECUTE ".length
             failsParsing[Statements].in {
-              case JavaCc => _.withMessage(
+              case Cypher5JavaCc => _.withMessage(
                   s"""Invalid input 'DEFINED': expected
                      |  "ADMIN"
                      |  "ADMINISTRATOR"
@@ -376,7 +375,7 @@ class ExecuteFunctionPrivilegeAdministrationCommandParserTest extends Administra
                      |  "PROCEDURES"
                      |  "USER" (line 1, column ${offset + 1} (offset: $offset))""".stripMargin
                 )
-              case Antlr => _.withSyntaxErrorContaining(
+              case _ => _.withSyntaxErrorContaining(
                   s"""Invalid input 'DEFINED': expected 'ADMIN', 'ADMINISTRATOR', 'BOOSTED', 'FUNCTION', 'FUNCTIONS', 'PROCEDURE', 'PROCEDURES' or 'USER' (line 1, column ${offset + 1} (offset: $offset))"""
                 )
             }

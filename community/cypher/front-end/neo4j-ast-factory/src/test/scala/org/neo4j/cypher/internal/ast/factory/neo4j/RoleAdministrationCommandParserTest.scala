@@ -18,8 +18,7 @@ package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.Statements
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Cypher5JavaCc
 import org.neo4j.cypher.internal.util.InputPosition
 
 class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommandParserTestBase {
@@ -219,10 +218,10 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
 
   test("SHOW ROLE role") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
+      case Cypher5JavaCc => _.withMessageStart(
           "Invalid input '': expected \",\", \"PRIVILEGE\" or \"PRIVILEGES\" (line 1, column 15 (offset: 14))"
         )
-      case Antlr => _.withSyntaxError(
+      case _ => _.withSyntaxError(
           """Invalid input '': expected 'PRIVILEGE' or 'PRIVILEGES' (line 1, column 15 (offset: 14))
             |"SHOW ROLE role"
             |               ^""".stripMargin
@@ -240,10 +239,10 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
 
   test("SHOW ALL ROLES YIELD role RETURN") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
+      case Cypher5JavaCc => _.withMessageStart(
           "Invalid input '': expected \"*\", \"DISTINCT\" or an expression (line 1, column 33 (offset: 32))"
         )
-      case Antlr => _.withSyntaxError(
+      case _ => _.withSyntaxError(
           """Invalid input '': expected an expression, '*' or 'DISTINCT' (line 1, column 33 (offset: 32))
             |"SHOW ALL ROLES YIELD role RETURN"
             |                                 ^""".stripMargin
@@ -253,10 +252,10 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
 
   test("SHOW ROLES WITH USER user") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
+      case Cypher5JavaCc => _.withMessageStart(
           """Invalid input 'user': expected "WHERE", "YIELD" or <EOF> (line 1, column 22 (offset: 21))"""
         )
-      case Antlr => _.withSyntaxError(
+      case _ => _.withSyntaxError(
           """Invalid input 'user': expected 'WHERE', 'YIELD' or <EOF> (line 1, column 22 (offset: 21))
             |"SHOW ROLES WITH USER user"
             |                      ^""".stripMargin
@@ -274,8 +273,8 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
          |  "WHERE"
          |  <EOF> (line 1, column 29 (offset: 28))""".stripMargin
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(exceptionMessage)
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc => _.withMessageStart(exceptionMessage)
+      case _ => _.withSyntaxError(
           """Invalid input ',': expected 'ORDER BY', 'LIMIT', 'RETURN', 'SKIP', 'WHERE' or <EOF> (line 1, column 29 (offset: 28))
             |"SHOW POPULATED ROLES YIELD *,blah RETURN role"
             |                             ^""".stripMargin
@@ -359,10 +358,9 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
 
   test("CREATE OR REPLACE ROLE ") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
-          "Invalid input '': expected a parameter or an identifier (line 1, column 23 (offset: 22))"
-        )
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc =>
+        _.withMessageStart("Invalid input '': expected a parameter or an identifier (line 1, column 23 (offset: 22))")
+      case _ => _.withSyntaxError(
           """Invalid input '': expected a parameter or an identifier (line 1, column 23 (offset: 22))
             |"CREATE OR REPLACE ROLE"
             |                       ^""".stripMargin
@@ -372,10 +370,9 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
 
   test("CREATE ROLE foo AS COPY OF") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
-          "Invalid input '': expected a parameter or an identifier (line 1, column 27 (offset: 26))"
-        )
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc =>
+        _.withMessageStart("Invalid input '': expected a parameter or an identifier (line 1, column 27 (offset: 26))")
+      case _ => _.withSyntaxError(
           """Invalid input '': expected a parameter or an identifier (line 1, column 27 (offset: 26))
             |"CREATE ROLE foo AS COPY OF"
             |                           ^""".stripMargin
@@ -385,10 +382,9 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
 
   test("CREATE ROLE foo IF NOT EXISTS AS COPY OF") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
-          "Invalid input '': expected a parameter or an identifier (line 1, column 41 (offset: 40))"
-        )
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc =>
+        _.withMessageStart("Invalid input '': expected a parameter or an identifier (line 1, column 41 (offset: 40))")
+      case _ => _.withSyntaxError(
           """Invalid input '': expected a parameter or an identifier (line 1, column 41 (offset: 40))
             |"CREATE ROLE foo IF NOT EXISTS AS COPY OF"
             |                                         ^""".stripMargin
@@ -398,10 +394,9 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
 
   test("CREATE OR REPLACE ROLE foo AS COPY OF") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
-          "Invalid input '': expected a parameter or an identifier (line 1, column 38 (offset: 37))"
-        )
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc =>
+        _.withMessageStart("Invalid input '': expected a parameter or an identifier (line 1, column 38 (offset: 37))")
+      case _ => _.withSyntaxError(
           """Invalid input '': expected a parameter or an identifier (line 1, column 38 (offset: 37))
             |"CREATE OR REPLACE ROLE foo AS COPY OF"
             |                                      ^""".stripMargin
@@ -411,10 +406,9 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
 
   test("CREATE ROLE foo UNION CREATE ROLE foo2") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
-          "Invalid input 'UNION': expected \"AS\", \"IF\" or <EOF> (line 1, column 17 (offset: 16))"
-        )
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc =>
+        _.withMessageStart("Invalid input 'UNION': expected \"AS\", \"IF\" or <EOF> (line 1, column 17 (offset: 16))")
+      case _ => _.withSyntaxError(
           """Invalid input 'UNION': expected 'IF NOT EXISTS', 'AS COPY OF' or <EOF> (line 1, column 17 (offset: 16))
             |"CREATE ROLE foo UNION CREATE ROLE foo2"
             |                 ^""".stripMargin
@@ -466,10 +460,9 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
 
   test("RENAME ROLE foo TO") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
-          "Invalid input '': expected a parameter or an identifier (line 1, column 19 (offset: 18))"
-        )
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc =>
+        _.withMessageStart("Invalid input '': expected a parameter or an identifier (line 1, column 19 (offset: 18))")
+      case _ => _.withSyntaxError(
           """Invalid input '': expected a parameter or an identifier (line 1, column 19 (offset: 18))
             |"RENAME ROLE foo TO"
             |                   ^""".stripMargin
@@ -479,10 +472,9 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
 
   test("RENAME ROLE TO bar") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
-          "Invalid input 'bar': expected \"IF\" or \"TO\" (line 1, column 16 (offset: 15))"
-        )
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc =>
+        _.withMessageStart("Invalid input 'bar': expected \"IF\" or \"TO\" (line 1, column 16 (offset: 15))")
+      case _ => _.withSyntaxError(
           """Invalid input 'bar': expected 'IF EXISTS' or 'TO' (line 1, column 16 (offset: 15))
             |"RENAME ROLE TO bar"
             |                ^""".stripMargin
@@ -492,10 +484,9 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
 
   test("RENAME ROLE TO") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
-          "Invalid input '': expected \"IF\" or \"TO\" (line 1, column 15 (offset: 14))"
-        )
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc =>
+        _.withMessageStart("Invalid input '': expected \"IF\" or \"TO\" (line 1, column 15 (offset: 14))")
+      case _ => _.withSyntaxError(
           """Invalid input '': expected 'IF EXISTS' or 'TO' (line 1, column 15 (offset: 14))
             |"RENAME ROLE TO"
             |               ^""".stripMargin
@@ -505,10 +496,9 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
 
   test("RENAME ROLE foo SET NAME TO bar") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
-          "Invalid input 'SET': expected \"IF\" or \"TO\" (line 1, column 17 (offset: 16))"
-        )
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc =>
+        _.withMessageStart("Invalid input 'SET': expected \"IF\" or \"TO\" (line 1, column 17 (offset: 16))")
+      case _ => _.withSyntaxError(
           """Invalid input 'SET': expected 'IF EXISTS' or 'TO' (line 1, column 17 (offset: 16))
             |"RENAME ROLE foo SET NAME TO bar"
             |                 ^""".stripMargin
@@ -518,10 +508,9 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
 
   test("RENAME ROLE foo SET NAME bar") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
-          "Invalid input 'SET': expected \"IF\" or \"TO\" (line 1, column 17 (offset: 16))"
-        )
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc =>
+        _.withMessageStart("Invalid input 'SET': expected \"IF\" or \"TO\" (line 1, column 17 (offset: 16))")
+      case _ => _.withSyntaxError(
           """Invalid input 'SET': expected 'IF EXISTS' or 'TO' (line 1, column 17 (offset: 16))
             |"RENAME ROLE foo SET NAME bar"
             |                 ^""".stripMargin
@@ -531,7 +520,7 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
 
   test("ALTER ROLE foo SET NAME bar") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
+      case Cypher5JavaCc => _.withMessageStart(
           """Invalid input 'ROLE': expected
             |  "ALIAS"
             |  "CURRENT"
@@ -539,7 +528,7 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
             |  "SERVER"
             |  "USER" (line 1, column 7 (offset: 6))""".stripMargin
         )
-      case Antlr => _.withSyntaxError(
+      case _ => _.withSyntaxError(
           """Invalid input 'ROLE': expected 'ALIAS', 'DATABASE', 'CURRENT USER SET PASSWORD FROM', 'SERVER' or 'USER' (line 1, column 7 (offset: 6))
             |"ALTER ROLE foo SET NAME bar"
             |       ^""".stripMargin
@@ -549,10 +538,9 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
 
   test("RENAME ROLE foo IF EXIST TO bar") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
-          "Invalid input 'EXIST': expected \"EXISTS\" (line 1, column 20 (offset: 19))"
-        )
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc =>
+        _.withMessageStart("Invalid input 'EXIST': expected \"EXISTS\" (line 1, column 20 (offset: 19))")
+      case _ => _.withSyntaxError(
           """Invalid input 'EXIST': expected 'EXISTS' (line 1, column 20 (offset: 19))
             |"RENAME ROLE foo IF EXIST TO bar"
             |                    ^""".stripMargin
@@ -562,10 +550,9 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
 
   test("RENAME ROLE foo IF NOT EXISTS TO bar") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
-          "Invalid input 'NOT': expected \"EXISTS\" (line 1, column 20 (offset: 19))"
-        )
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc =>
+        _.withMessageStart("Invalid input 'NOT': expected \"EXISTS\" (line 1, column 20 (offset: 19))")
+      case _ => _.withSyntaxError(
           """Invalid input 'NOT': expected 'EXISTS' (line 1, column 20 (offset: 19))
             |"RENAME ROLE foo IF NOT EXISTS TO bar"
             |                    ^""".stripMargin
@@ -575,8 +562,8 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
 
   test("RENAME ROLE foo TO bar IF EXISTS") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart("Invalid input 'IF': expected <EOF> (line 1, column 24 (offset: 23))")
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc => _.withMessageStart("Invalid input 'IF': expected <EOF> (line 1, column 24 (offset: 23))")
+      case _ => _.withSyntaxError(
           """Invalid input 'IF': expected <EOF> (line 1, column 24 (offset: 23))
             |"RENAME ROLE foo TO bar IF EXISTS"
             |                        ^""".stripMargin
@@ -586,10 +573,10 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
 
   test("RENAME IF EXISTS ROLE foo TO bar") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
+      case Cypher5JavaCc => _.withMessageStart(
           "Invalid input 'IF': expected \"ROLE\", \"SERVER\" or \"USER\" (line 1, column 8 (offset: 7))"
         )
-      case Antlr => _.withSyntaxError(
+      case _ => _.withSyntaxError(
           """Invalid input 'IF': expected 'ROLE', 'SERVER' or 'USER' (line 1, column 8 (offset: 7))
             |"RENAME IF EXISTS ROLE foo TO bar"
             |        ^""".stripMargin
@@ -599,10 +586,10 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
 
   test("RENAME OR REPLACE ROLE foo TO bar") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
+      case Cypher5JavaCc => _.withMessageStart(
           "Invalid input 'OR': expected \"ROLE\", \"SERVER\" or \"USER\" (line 1, column 8 (offset: 7))"
         )
-      case Antlr => _.withSyntaxError(
+      case _ => _.withSyntaxError(
           """Invalid input 'OR': expected 'ROLE', 'SERVER' or 'USER' (line 1, column 8 (offset: 7))
             |"RENAME OR REPLACE ROLE foo TO bar"
             |        ^""".stripMargin
@@ -634,10 +621,9 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
 
   test("DROP ROLE ") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
-          "Invalid input '': expected a parameter or an identifier (line 1, column 10 (offset: 9))"
-        )
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc =>
+        _.withMessageStart("Invalid input '': expected a parameter or an identifier (line 1, column 10 (offset: 9))")
+      case _ => _.withSyntaxError(
           """Invalid input '': expected a parameter or an identifier (line 1, column 10 (offset: 9))
             |"DROP ROLE"
             |          ^""".stripMargin
@@ -720,15 +706,15 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
             }
 
             failsParsing[Statements].in {
-              case JavaCc => _.withMessageStart(javaCcExpected)
-              case Antlr  => _.withSyntaxErrorContaining(antlrExpected)
+              case Cypher5JavaCc => _.withMessageStart(javaCcExpected)
+              case _             => _.withSyntaxErrorContaining(antlrExpected)
             }
           }
 
           test(s"$verb $roleKeyword foo") {
             failsParsing[Statements].in {
-              case JavaCc => _.withMessageStart(s"""Invalid input '': expected "," or "$preposition"""")
-              case Antlr => _.withSyntaxErrorContaining(
+              case Cypher5JavaCc => _.withMessageStart(s"""Invalid input '': expected "," or "$preposition"""")
+              case _ => _.withSyntaxErrorContaining(
                   s"""Invalid input '': expected ',' or '$preposition'"""
                 )
             }
@@ -736,8 +722,8 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
 
           test(s"$verb $roleKeyword foo $preposition") {
             failsParsing[Statements].in {
-              case JavaCc => _.withMessageStart("Invalid input '': expected a parameter or an identifier")
-              case Antlr => _.withSyntaxErrorContaining(
+              case Cypher5JavaCc => _.withMessageStart("Invalid input '': expected a parameter or an identifier")
+              case _ => _.withSyntaxErrorContaining(
                   """Invalid input '': expected a parameter or an identifier""".stripMargin
                 )
             }
@@ -795,8 +781,8 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
 
   test(s"DENY ROLE foo TO abc") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart("""Invalid input 'foo': expected "MANAGEMENT"""")
-      case Antlr => _.withSyntaxError(
+      case Cypher5JavaCc => _.withMessageStart("""Invalid input 'foo': expected "MANAGEMENT"""")
+      case _ => _.withSyntaxError(
           """Invalid input 'foo': expected 'MANAGEMENT' (line 1, column 11 (offset: 10))
             |"DENY ROLE foo TO abc"
             |           ^""".stripMargin
@@ -806,7 +792,7 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
 
   test("DENY ROLES foo TO abc") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart(
+      case Cypher5JavaCc => _.withMessageStart(
           """Invalid input 'ROLES': expected
             |  "ACCESS"
             |  "ALIAS"
@@ -818,7 +804,7 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
             |  "CONSTRAINTS"
             |  "CREATE"""".stripMargin
         )
-      case Antlr => _.withSyntaxError(
+      case _ => _.withSyntaxError(
           """Invalid input 'ROLES': expected 'ACCESS', 'ALIAS', 'ALL', 'ALTER', 'ASSIGN', 'COMPOSITE', 'CONSTRAINT', 'CONSTRAINTS', 'CREATE', 'DATABASE', 'DELETE', 'DROP', 'EXECUTE', 'IMPERSONATE', 'INDEX', 'INDEXES', 'MATCH', 'MERGE', 'NAME', 'LOAD ON', 'WRITE ON', 'PRIVILEGE', 'READ', 'REMOVE', 'RENAME', 'ROLE', 'SERVER', 'SET', 'SHOW', 'START', 'STOP', 'TERMINATE', 'TRANSACTION', 'TRAVERSE' or 'USER' (line 1, column 6 (offset: 5))
             |"DENY ROLES foo TO abc"
             |      ^""".stripMargin

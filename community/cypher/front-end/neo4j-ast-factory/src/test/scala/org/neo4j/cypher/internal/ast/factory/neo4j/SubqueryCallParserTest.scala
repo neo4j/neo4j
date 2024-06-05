@@ -17,8 +17,7 @@
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.ast.Statements
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Cypher5JavaCc
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
 
 class SubqueryCallParserTest extends AstParsingTestBase {
@@ -40,8 +39,8 @@ class SubqueryCallParserTest extends AstParsingTestBase {
 
   test("CALL { }") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart("Invalid input '}'")
-      case Antlr => _.withMessage(
+      case Cypher5JavaCc => _.withMessageStart("Invalid input '}'")
+      case _ => _.withMessage(
           """Invalid input '}': expected 'FOREACH', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'UNWIND', 'USE' or 'WITH' (line 1, column 8 (offset: 7))
             |"CALL { }"
             |        ^""".stripMargin

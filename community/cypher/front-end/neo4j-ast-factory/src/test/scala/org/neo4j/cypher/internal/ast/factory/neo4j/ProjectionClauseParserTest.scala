@@ -19,8 +19,7 @@ package org.neo4j.cypher.internal.ast.factory.neo4j
 import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.Statements
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Cypher5JavaCc
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
 
 class ProjectionClauseParserTest extends AstParsingTestBase {
@@ -45,8 +44,8 @@ class ProjectionClauseParserTest extends AstParsingTestBase {
 
   test("WITH ") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart("Invalid input '': expected \"*\", \"DISTINCT\" or an expression")
-      case Antlr => _.withMessage(
+      case Cypher5JavaCc => _.withMessageStart("Invalid input '': expected \"*\", \"DISTINCT\" or an expression")
+      case _ => _.withMessage(
           """Invalid input '': expected an expression, '*' or 'DISTINCT' (line 1, column 5 (offset: 4))
             |"WITH"
             |     ^""".stripMargin
@@ -74,8 +73,8 @@ class ProjectionClauseParserTest extends AstParsingTestBase {
 
   test("RETURN ") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart("Invalid input '': expected \"*\", \"DISTINCT\" or an expression")
-      case Antlr => _.withMessage(
+      case Cypher5JavaCc => _.withMessageStart("Invalid input '': expected \"*\", \"DISTINCT\" or an expression")
+      case _ => _.withMessage(
           """Invalid input '': expected an expression, '*' or 'DISTINCT' (line 1, column 7 (offset: 6))
             |"RETURN"
             |       ^""".stripMargin
@@ -85,8 +84,8 @@ class ProjectionClauseParserTest extends AstParsingTestBase {
 
   test("RETURN GRAPH *") {
     failsParsing[Statements].in {
-      case JavaCc => _.withMessageStart("Invalid input '': expected \"+\" or \"-\"")
-      case Antlr => _.withMessage(
+      case Cypher5JavaCc => _.withMessageStart("Invalid input '': expected \"+\" or \"-\"")
+      case _ => _.withMessage(
           """Invalid input '': expected an expression (line 1, column 15 (offset: 14))
             |"RETURN GRAPH *"
             |               ^""".stripMargin
