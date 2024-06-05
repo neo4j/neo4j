@@ -1828,6 +1828,37 @@ private[internal] class TransactionBoundReadQueryContext(
 
     private[this] val cache = collection.mutable.Map.empty[AnyValue, AnyValue]
 
+    override def needsRebinding(value: AnyValue): Boolean = value match {
+      case _: NodeEntityWrappingNodeValue =>
+        true
+      case _: RelationshipEntityWrappingValue =>
+        true
+      case _: PathWrappingPathValue =>
+        true
+
+      case m: MapValue if !m.isEmpty =>
+        m.foreach((_, v) => {
+          if (needsRebinding(v)) {
+            return true
+          }
+        })
+        false
+
+      case _: IntegralRangeListValue =>
+        false
+
+      case l: ListValue if !l.isEmpty =>
+        l.forEach(v => {
+          if (needsRebinding(v)) {
+            return true
+          }
+        })
+        false
+
+      case _ =>
+        false
+    }
+
     override def rebindEntityWrappingValue(value: AnyValue): AnyValue = value match {
 
       case n: NodeEntityWrappingNodeValue =>
@@ -1864,10 +1895,10 @@ private[internal] class TransactionBoundReadQueryContext(
     }
 
     private def rebindNode(node: Node): VirtualNodeValue =
-      ValueUtils.fromNodeEntity(entityAccessor.newNodeEntity(node.getId))
+      VirtualValues.node(node.getId)
 
     private def rebindRelationship(relationship: Relationship): VirtualRelationshipValue =
-      ValueUtils.fromRelationshipEntity(entityAccessor.newRelationshipEntity(relationship.getId))
+      VirtualValues.relationship(relationship.getId)
   }
 }
 

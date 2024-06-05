@@ -938,10 +938,12 @@ class RelationshipValueHit(val inner: RelationshipValueIndexCursor, val values: 
 }
 
 trait EntityTransformer {
+  def needsRebinding(value: AnyValue): Boolean
   def rebindEntityWrappingValue(value: AnyValue): AnyValue
 }
 
 class NoopEntityTransformer extends EntityTransformer {
+  override def needsRebinding(value: AnyValue): Boolean = false
   override def rebindEntityWrappingValue(value: AnyValue): AnyValue = value
 }
 

@@ -94,6 +94,9 @@ trait CypherRow extends ReadWriteRow with Measurable {
   /** Create a copy of this row, with all values transformed by the given function (including cached values)  */
   def copyMapped(func: AnyValue => AnyValue): CypherRow
 
+  /** Does a value satisfying the given predicate exist in the row? */
+  def valueExists(p: AnyValue => Boolean): Boolean
+
   def isNull(key: String): Boolean
 
   /**
@@ -253,6 +256,10 @@ class MapCypherRow(
     val row = new MapCypherRow(newMap, newCachedProperties)
     row.setLinenumberIfEmpty(getLinenumber)
     row
+  }
+
+  override def valueExists(p: AnyValue => Boolean): Boolean = {
+    m.valuesIterator.exists(p)
   }
 
   override def createClone(): CypherRow = cloneFromMap(m.clone())

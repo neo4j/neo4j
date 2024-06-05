@@ -158,7 +158,7 @@ case class SlottedRow(slots: SlotConfiguration) extends CypherRow {
     }
   }
 
-  def copyMapped(func: AnyValue => AnyValue): CypherRow = {
+  override def copyMapped(func: AnyValue => AnyValue): CypherRow = {
     val clone = SlottedRow(slots)
     clone.copyAllFrom(this)
     clone.transformRefs(func)
@@ -166,14 +166,24 @@ case class SlottedRow(slots: SlotConfiguration) extends CypherRow {
   }
 
   private def transformRefs(func: AnyValue => AnyValue): Unit = {
-    slots.foreachSlot {
-      case (_, slot: RefSlot) =>
-        val refValue = getRefAt(slot.offset)
-        val newRefValue = func(refValue)
-        setRefAt(slot.offset, newRefValue)
-      case _ =>
-        ()
+    var i = 0
+    while (i < refs.length) {
+      val refValue = getRefAt(i)
+      val newRefValue = func(refValue)
+      setRefAt(i, newRefValue)
+      i += i
     }
+  }
+
+  override def valueExists(p: AnyValue => Boolean): Boolean = {
+    var i = 0
+    while (i < refs.length) {
+      if (refs(i) != null && p(refs(i))) {
+        return true
+      }
+      i += 1
+    }
+    false
   }
 
   override def copyFromOffset(

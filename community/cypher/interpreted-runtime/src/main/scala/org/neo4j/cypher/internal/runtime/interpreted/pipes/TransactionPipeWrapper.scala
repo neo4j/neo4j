@@ -292,15 +292,15 @@ object TransactionPipeWrapper {
   /**
    * Recursively finds entity wrappers and rebinds the entities to the current transaction
    */
-  // TODO: Remove rebinding here, and transform wrappers to Reference:s
-  // Currently, replacing e.g. NodeEntityWrappingNodeValue with NodeReference causes failures downstream.
-  // We can for example end up in PathValueBuilder, which assumes that we have NodeValue and not NodeReference.
-  // We can also still get entity values with transaction references streaming in and out of procedures.
-  // Always copying the row should not be necessary. We could optimize this by first doing a dry-run to detect if anything actually needs to be rebound.
   class CypherRowEntityTransformer(entityTransformer: EntityTransformer) {
 
-    def copyWithEntityWrappingValuesRebound(row: CypherRow): CypherRow =
-      row.copyMapped(entityTransformer.rebindEntityWrappingValue)
+    def copyWithEntityWrappingValuesRebound(row: CypherRow): CypherRow = {
+      if (row.valueExists(entityTransformer.needsRebinding)) {
+        row.copyMapped(entityTransformer.rebindEntityWrappingValue)
+      } else {
+        row
+      }
+    }
   }
 
   def evaluateBatchSize(batchSize: Expression, state: QueryState): Long = {
