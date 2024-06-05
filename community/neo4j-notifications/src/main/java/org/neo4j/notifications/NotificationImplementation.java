@@ -19,8 +19,12 @@
  */
 package org.neo4j.notifications;
 
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import org.neo4j.exceptions.InvalidArgumentException;
 import org.neo4j.gqlstatus.Condition;
 import org.neo4j.gqlstatus.DiagnosticRecord;
 import org.neo4j.gqlstatus.GqlStatus;
@@ -51,7 +55,8 @@ public final class NotificationImplementation implements Notification {
             String description,
             String message,
             String subCondition,
-            Condition condition) {
+            Condition condition,
+            Map<String, Object> statusParameters) {
 
         this.neo4jStatus = notificationCodeWithDescription.getStatus();
 
@@ -73,7 +78,7 @@ public final class NotificationImplementation implements Notification {
                 position.getOffset(),
                 position.getLine(),
                 position.getColumn(),
-                Map.of());
+                statusParameters);
         this.gqlStatus = gqlStatus;
         this.position = position;
         this.title = title;
@@ -91,6 +96,7 @@ public final class NotificationImplementation implements Notification {
         private final String subCondition;
         private final Condition condition;
         private String[] messageParameters;
+        private Map<String, Object> statusParameters;
         private String[] notificationDetails;
 
         public NotificationBuilder(NotificationCodeWithDescription notificationCodeWithDescription) {
@@ -121,9 +127,54 @@ public final class NotificationImplementation implements Notification {
             return this;
         }
 
-        public NotificationBuilder setMessageParameters(String... parameters) {
-            this.messageParameters = parameters;
+        public NotificationBuilder setMessageParameters(Object[] parameterValues) {
+            String[] parameterKeys = notificationCodeWithDescription.getStatusParameterKeys();
+            this.statusParameters = new HashMap<>();
+            this.messageParameters = new String[parameterValues.length];
+
+            if (parameterKeys.length != parameterValues.length) {
+                throw new InvalidArgumentException(String.format(
+                        "Expected parameterKeys: %s and parameterValues: %s to have the same length.",
+                        Arrays.toString(parameterKeys), Arrays.toString(parameterValues)));
+            }
+
+            for (int i = 0; i < parameterKeys.length; i++) {
+                String key = parameterKeys[i];
+                Object value = parameterValues[i];
+
+                if (value instanceof String s) {
+                    this.statusParameters.put(key, value);
+                    this.messageParameters[i] = s;
+                } else if (value instanceof Boolean b) {
+                    this.statusParameters.put(key, value);
+                    this.messageParameters[i] = b.toString();
+                } else if (value instanceof Integer nbr) {
+                    this.statusParameters.put(key, value);
+                    this.messageParameters[i] = nbr.toString();
+                } else if (isListOfString(value)) {
+                    this.statusParameters.put(key, value);
+
+                    //noinspection unchecked
+                    this.messageParameters[i] = String.join(", ", ((List<String>) value));
+                } else {
+                    throw new InvalidArgumentException(String.format(
+                            "Expected parameter to be String, Boolean, Integer or List<String> but was %s", value));
+                }
+            }
             return this;
+        }
+
+        private boolean isListOfString(Object obj) {
+            if (!(obj instanceof List<?> list)) {
+                return false;
+            }
+
+            for (Object element : list) {
+                if (!(element instanceof String)) {
+                    return false;
+                }
+            }
+            return true;
         }
 
         public NotificationImplementation build() {
@@ -144,7 +195,8 @@ public final class NotificationImplementation implements Notification {
                     detailedDescription,
                     detailedMessage,
                     subCondition,
-                    condition);
+                    condition,
+                    statusParameters);
         }
     }
 

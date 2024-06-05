@@ -330,6 +330,10 @@ public enum NotificationCodeWithDescription {
         return gqlStatusInfo.getCondition();
     }
 
+    public String[] getStatusParameterKeys() {
+        return gqlStatusInfo.getStatusParameterKeys();
+    }
+
     public static NotificationImplementation cartesianProduct(
             InputPosition position, String oldDetail, String pattern) {
         return CARTESIAN_PRODUCT.notificationWithParameters(position, new String[] {oldDetail}, new String[] {pattern});
@@ -350,16 +354,14 @@ public enum NotificationCodeWithDescription {
 
     public static NotificationImplementation joinHintUnfulfillable(
             InputPosition position, String oldDetail, List<String> variableNames) {
-        String variableNameString = String.join(", ", variableNames);
         return JOIN_HINT_UNFULFILLABLE.notificationWithParameters(
-                position, new String[] {oldDetail}, new String[] {variableNameString});
+                position, new String[] {oldDetail}, new List[] {variableNames});
     }
 
     public static NotificationImplementation indexLookupForDynamicProperty(
             InputPosition position, String oldDetails, List<String> parameters) {
-        String parametersString = String.join(", ", parameters);
         return INDEX_LOOKUP_FOR_DYNAMIC_PROPERTY.notificationWithParameters(
-                position, new String[] {oldDetails}, new String[] {parametersString});
+                position, new String[] {oldDetails}, new List[] {parameters});
     }
 
     public static NotificationImplementation deprecatedFunctionWithoutReplacement(
@@ -518,16 +520,14 @@ public enum NotificationCodeWithDescription {
 
     public static NotificationImplementation exhaustiveShortestPath(
             InputPosition position, List<String> pathPredicates) {
-        String pathPredicatesString = String.join(", ", pathPredicates);
         return EXHAUSTIVE_SHORTEST_PATH.notificationWithParameters(
-                position, new String[] {}, new String[] {pathPredicatesString});
+                position, new String[] {}, new List[] {pathPredicates});
     }
 
     public static NotificationImplementation missingParameterForExplain(
             InputPosition position, String oldDetails, List<String> parameters) {
-        String parametersString = String.join(", ", parameters);
         return MISSING_PARAMETERS_FOR_EXPLAIN.notificationWithParameters(
-                position, new String[] {oldDetails}, new String[] {parametersString});
+                position, new String[] {oldDetails}, new List[] {parameters});
     }
 
     public static NotificationImplementation codeGenerationFailed(
@@ -632,9 +632,8 @@ public enum NotificationCodeWithDescription {
         // Keep description without spaces to avoid breaking change
         String serverStringWithoutSpaces = String.join(",", servers);
 
-        String serverString = String.join(", ", servers);
         return CORDONED_SERVERS_EXISTED_DURING_ALLOCATION.notificationWithParameters(
-                position, new String[] {serverStringWithoutSpaces}, new String[] {serverString});
+                position, new String[] {serverStringWithoutSpaces}, new List[] {servers});
     }
 
     public static NotificationImplementation requestedTopologyMatchedCurrentTopology(InputPosition position) {
@@ -658,22 +657,22 @@ public enum NotificationCodeWithDescription {
     }
 
     private NotificationImplementation notificationWithParameters(
-            InputPosition position, String[] oldDetails, String[] parameters) {
+            InputPosition position, String[] oldDetails, Object[] parameterValues) {
         return new NotificationImplementation.NotificationBuilder(this)
                 .setPosition(position)
                 .setNotificationDetails(oldDetails)
-                .setMessageParameters(parameters)
+                .setMessageParameters(parameterValues)
                 .build();
     }
 
     private NotificationImplementation notificationWithTitleAndDescriptionDetails(
-            InputPosition position, String titleDetail, String[] descriptionDetails, String[] parameters) {
+            InputPosition position, String titleDetail, String[] descriptionDetails, Object[] parameterValues) {
         // Allows a single detail in the title and multiple in the description
         return new NotificationImplementation.NotificationBuilder(this)
                 .setPosition(position)
                 .setTitleDetails(titleDetail)
                 .setNotificationDetails(descriptionDetails)
-                .setMessageParameters(parameters)
+                .setMessageParameters(parameterValues)
                 .build();
     }
 }

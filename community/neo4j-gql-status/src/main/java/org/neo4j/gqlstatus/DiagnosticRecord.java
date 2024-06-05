@@ -29,38 +29,13 @@ public class DiagnosticRecord {
 
     private final Map<String, Object> innerDiagnosticRecord;
 
-    /*
-     * Constructor for notifications where the OPERATION and OPERATION_CODE are known
-     */
-    public DiagnosticRecord(
-            String operation,
-            int operationCode,
-            String severity,
-            String classification,
-            int offset,
-            int line,
-            int column,
-            Map<String, String> statusParameters) {
-        innerDiagnosticRecord = new HashMap<>();
-        innerDiagnosticRecord.put("CURRENT_SCHEMA", CURRENT_SCHEMA_DEFAULT);
-        innerDiagnosticRecord.put("OPERATION", operation);
-        innerDiagnosticRecord.put("OPERATION_CODE", operationCode);
-        innerDiagnosticRecord.put("_severity", severity);
-        innerDiagnosticRecord.put("_classification", classification);
-        innerDiagnosticRecord.put("_position", Map.of("offset", offset, "line", line, "column", column));
-        innerDiagnosticRecord.put("_status_parameters", statusParameters);
-    }
-
-    /*
-     * Constructor for notifications where the OPERATION and OPERATION_CODE are unknown
-     */
     public DiagnosticRecord(
             String severity,
             String classification,
             int offset,
             int line,
             int column,
-            Map<String, String> statusParameters) {
+            Map<String, Object> statusParameters) {
         innerDiagnosticRecord = new HashMap<>();
         innerDiagnosticRecord.put("CURRENT_SCHEMA", CURRENT_SCHEMA_DEFAULT);
         innerDiagnosticRecord.put("OPERATION", OPERATION_DEFAULT);
