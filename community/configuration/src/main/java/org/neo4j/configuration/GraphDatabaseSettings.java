@@ -243,9 +243,12 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
     }
 
     @Description(
-            "Allow label inference during cardinality estimation. During cardinality estimation, if the planner can"
-                    + "logically deduce that a node has a label that was not explicitly expressed in the query, the planner"
-                    + "will use this information during cardinality estimation.")
+            "Allow label inference during cardinality estimation. If the planner can logically deduce that a node has "
+                    + "a label not explicitly expressed in the query, the planner will use this information "
+                    + "during cardinality estimation.\n"
+                    + "This setting controls to what extent the planner should do that:\n"
+                    + "* `OFF`: No predicates are inferred.\n"
+                    + "* `MOST_SELECTIVE_LABEL`: Relationship types are used to infer labels on the relationships' end nodes. The planner only infers at most one label per node. If more than one label can be inferred for a given node, the planner keeps the most selective one, the one corresponding to the smallest number of nodes in the graph.")
     public static final Setting<InferSchemaPartsStrategy> cypher_infer_schema_parts_strategy = newBuilder(
                     "dbms.cypher.infer_schema_parts",
                     ofEnum(InferSchemaPartsStrategy.class),
