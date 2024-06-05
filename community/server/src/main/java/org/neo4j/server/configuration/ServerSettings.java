@@ -152,14 +152,14 @@ public class ServerSettings implements SettingsDeclaration {
             .build();
 
     @Description(
-            "Defines the set of modules loaded into the Neo4j web server. The enterprise management endpoints are only available in the enterprise edition.")
+            "Defines the set of modules loaded into the Neo4j web server. The enterprise management endpoints are only available in the Еnterprise edition.")
     public static final Setting<Set<ConfigurableServerModules>> http_enabled_modules = newBuilder(
                     "server.http_enabled_modules",
                     setOfEnums(ConfigurableServerModules.class),
                     EnumSet.complementOf(EnumSet.of(ConfigurableServerModules.QUERY_API_ENDPOINTS)))
             .build();
 
-    @Description("Defines the set of transports available on the HTTP server")
+    @Description("Defines the set of transports available on the HTTP server.")
     public static final Setting<Set<ConfigurableTransports>> http_enabled_transports = newBuilder(
                     "server.http_enabled_transports",
                     setOfEnums(ConfigurableTransports.class),

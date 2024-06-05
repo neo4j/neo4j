@@ -184,18 +184,19 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
     public static final Setting<String> db_format =
             newBuilder("db.format", STRING, "aligned").dynamic().build();
 
-    @Description("Routing strategy for neo4j:// protocol connections.\n"
-            + "Default is `CLIENT`, using client-side routing, with server-side routing as a fallback (if enabled).\n"
-            + "When set to `SERVER`, client-side routing is short-circuited, and requests will rely on server-side routing "
-            + "(which must be enabled for proper operation, i.e. `dbms.routing.enabled=true`).\n"
-            + "Can be overridden by `dbms.routing.client_side.enforce_for_domains`.")
+    @Description(
+            "Routing strategy for `neo4j://` protocol connections.\n"
+                    + "Default is `CLIENT`, using client-side routing, with server-side routing as a fallback (if enabled).\n"
+                    + "When set to `SERVER`, client-side routing is short-circuited, and requests rely on server-side routing "
+                    + "(which must be enabled for proper operation, i.e. `dbms.routing.enabled=true`).\n"
+                    + "Can be overridden by `<<config_dbms.routing.client_side.enforce_for_domains,dbms.routing.client_side.enforce_for_domains>>`.")
     public static final Setting<RoutingMode> routing_default_router = newBuilder(
                     "dbms.routing.default_router", ofEnum(RoutingMode.class), RoutingMode.CLIENT)
             .build();
 
     @Description(
-            "Always use client side routing (regardless of the default router) for neo4j:// protocol connections to these domains. "
-                    + "A comma separated list of domains. Wildcards (*) are supported.")
+            "Always use client-side routing (regardless of the default router) for `neo4j://` protocol connections to these domains. "
+                    + "A comma-separated list of domains. Wildcards (`*`) are supported.")
     public static final Setting<Set<String>> client_side_router_enforce_for_domains = newBuilder(
                     "dbms.routing.client_side.enforce_for_domains", setOf(STRING), Set.of())
             .dynamic()
@@ -903,7 +904,8 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
             .dynamic()
             .build();
 
-    @Description("How long callers should cache the response of the routing procedure `dbms.routing.getRoutingTable()`")
+    @Description(
+            "How long callers should cache the response of the routing procedure `dbms.routing.getRoutingTable()`.")
     public static final Setting<Duration> routing_ttl = newBuilder("dbms.routing_ttl", DURATION, ofSeconds(300))
             .addConstraint(min(ofSeconds(1)))
             .build();
@@ -987,18 +989,18 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
             .build();
 
     @Description("Enable server-side routing in clusters using an additional bolt connector.\n"
-            + "When configured, this allows requests to be forwarded from one cluster member to another, if the requests can't be "
+            + "When configured, this allows requests to be forwarded from one cluster member to another, if the requests cannot be "
             + "satisfied by the first member (e.g. write requests received by a non-leader).")
     public static final Setting<Boolean> routing_enabled =
             newBuilder("dbms.routing.enabled", BOOL, true).build();
 
-    @Description("The address the routing connector should bind to")
+    @Description("Address routing connector should bind to.")
     public static final Setting<SocketAddress> routing_listen_address = newBuilder(
                     "server.routing.listen_address", SOCKET_ADDRESS, new SocketAddress(DEFAULT_ROUTING_CONNECTOR_PORT))
             .setDependency(default_listen_address)
             .build();
 
-    @Description("Sets level for driver internal logging.")
+    @Description("Sets the level for the driver's internal logging.")
     public static final Setting<Level> routing_driver_logging_level = newBuilder(
                     "dbms.routing.driver.logging.level", ofEnum(Level.class), Level.INFO)
             .build();
@@ -1011,12 +1013,12 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
             newBuilder("dbms.routing.driver.connection.pool.max_size", INT, -1).build();
 
     @Description("Pooled connections that have been idle in the pool for longer than this timeout "
-            + "will be tested before they are used again, to ensure they are still alive.\n"
-            + "If this option is set too low, an additional network call will be incurred when acquiring a connection, which causes a performance hit.\n"
-            + "If this is set high, no longer live connections might be used which might lead to errors.\n"
-            + "Hence, this parameter tunes a balance between the likelihood of experiencing connection problems and performance.\n"
-            + "Normally, this parameter should not need tuning.\n"
-            + "Value 0 means connections will always be tested for validity.\n"
+            + "will be tested to ensure they are still alive before being used again.\n"
+            + "If the value of this option is too low, acquiring a connection will require an additional network call, which will cause a performance hit.\n"
+            + "If the value of this option is too high, live connections might no longer be used, leading to errors.\n"
+            + "Hence, this parameter balances the likelihood of experiencing connection problems and performance.\n"
+            + "Usually, this parameter should not need tuning.\n"
+            + "Value `0` means connections will always be tested for validity.\n"
             + "No connection liveliness check is done by default.")
     public static final Setting<Duration> routing_driver_idle_time_before_connection_test = newBuilder(
                     "dbms.routing.driver.connection.pool.idle_test", DURATION, null)
@@ -1032,11 +1034,11 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
             .build();
 
     @Description("Maximum amount of time spent attempting to acquire a connection from the connection pool.\n"
-            + "This timeout only kicks in when all existing connections are being used and no new "
-            + "connections can be created because maximum connection pool size has been reached.\n"
-            + "Error is raised when connection can't be acquired within configured time.\n"
-            + "Negative values are allowed and result in unlimited acquisition timeout. Value of 0 is allowed "
-            + "and results in no timeout and immediate failure when connection is unavailable")
+            + "This timeout only kicks in when all existing connections are being used, and no new "
+            + "connections can be created because the maximum connection pool size has been reached.\n"
+            + "An error is raised when no connection can be acquired within the configured time.\n"
+            + "Negative values are allowed, which results in an unlimited acquisition timeout. A value of 0 is allowed, "
+            + "resulting in no timeout and immediate failure when the connection is unavailable.")
     public static final Setting<Duration> routing_driver_connection_acquisition_timeout = newBuilder(
                     "dbms.routing.driver.connection.pool.acquisition_timeout", DURATION, ofSeconds(60))
             .build();

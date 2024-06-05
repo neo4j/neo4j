@@ -38,16 +38,16 @@ public final class HttpConnector implements SettingsDeclaration {
     public static final int DEFAULT_PORT = 7474;
     public static final String NAME = "http";
 
-    @Description("Enable the http connector")
+    @Description("Enable the HTTP connector.")
     public static final Setting<Boolean> enabled = ConnectorDefaults.http_enabled;
 
-    @Description("Address the connector should bind to")
+    @Description("Address the connector should bind to.")
     public static final Setting<SocketAddress> listen_address = newBuilder(
                     "server.http.listen_address", SOCKET_ADDRESS, new SocketAddress(DEFAULT_PORT))
             .setDependency(default_listen_address)
             .build();
 
-    @Description("Advertised address for this connector")
+    @Description("Advertised address for this connector.")
     public static final Setting<SocketAddress> advertised_address = newBuilder(
                     "server.http.advertised_address", SOCKET_ADDRESS, new SocketAddress(DEFAULT_PORT))
             .addConstraint(NO_ALL_INTERFACES_ADDRESS)
