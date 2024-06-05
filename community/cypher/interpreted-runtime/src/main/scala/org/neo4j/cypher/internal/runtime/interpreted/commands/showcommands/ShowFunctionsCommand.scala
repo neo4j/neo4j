@@ -47,6 +47,7 @@ import org.neo4j.internal.kernel.api.security.AdminActionOnResource
 import org.neo4j.internal.kernel.api.security.AdminActionOnResource.DatabaseScope
 import org.neo4j.internal.kernel.api.security.PrivilegeAction.SHOW_ROLE
 import org.neo4j.internal.kernel.api.security.Segment
+import org.neo4j.kernel.api.CypherScope
 import org.neo4j.kernel.impl.query.FunctionInformation
 import org.neo4j.kernel.impl.query.FunctionInformation.InputInformation
 import org.neo4j.values.AnyValue
@@ -111,14 +112,15 @@ case class ShowFunctionsCommand(
     }
 
     // gets you all non-aggregating functions that are registered in the db (incl. those from libs like apoc)
-    val loadedFunctions = txContext.procedures.functionGetAll().iterator.asScala
+    val loadedFunctions = txContext.procedures.functionGetAll(CypherScope.CYPHER_5).iterator.asScala
 
     // filters out functions annotated with @Internal and gets the FunctionInfo
     val loadedFunctionsInfo =
       loadedFunctions.filter(f => !f.internal).map(f => FunctionInfo(f, aggregating = false)).toList
 
     // gets you all aggregation functions that are registered in the db (incl. those from libs like apoc)
-    val loadedAggregationFunctions = txContext.procedures.aggregationFunctionGetAll().iterator.asScala
+    val loadedAggregationFunctions =
+      txContext.procedures.aggregationFunctionGetAll(CypherScope.CYPHER_5).iterator.asScala
 
     // filters out functions annotated with @Internal and gets the FunctionInfo
     val loadedAggregationFunctionsInfo =

@@ -59,6 +59,7 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.kernel.api.CypherScope;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.IndexUsageStats;
 import org.neo4j.kernel.api.index.ValueIndexReader;
@@ -430,32 +431,32 @@ class DefaultRelationshipTraversalCursorTest {
         }
 
         @Override
-        public UserFunctionHandle functionGet(QualifiedName name) {
+        public UserFunctionHandle functionGet(QualifiedName name, CypherScope scope) {
             return null;
         }
 
         @Override
-        public Stream<UserFunctionSignature> functionGetAll() {
+        public Stream<UserFunctionSignature> functionGetAll(CypherScope scope) {
             return null;
         }
 
         @Override
-        public UserFunctionHandle aggregationFunctionGet(QualifiedName name) {
+        public UserFunctionHandle aggregationFunctionGet(QualifiedName name, CypherScope scope) {
             return null;
         }
 
         @Override
-        public Stream<UserFunctionSignature> aggregationFunctionGetAll() {
+        public Stream<UserFunctionSignature> aggregationFunctionGetAll(CypherScope scope) {
             return null;
         }
 
         @Override
-        public ProcedureHandle procedureGet(QualifiedName name) {
+        public ProcedureHandle procedureGet(QualifiedName name, CypherScope scope) {
             return null;
         }
 
         @Override
-        public Stream<ProcedureSignature> proceduresGetAll() {
+        public Stream<ProcedureSignature> proceduresGetAll(CypherScope scope) {
             return null;
         }
 

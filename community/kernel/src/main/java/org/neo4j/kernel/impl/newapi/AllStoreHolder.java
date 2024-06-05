@@ -63,6 +63,7 @@ import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.kernel.api.CypherScope;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.IndexUsageStats;
 import org.neo4j.kernel.api.index.TokenIndexReader;
@@ -857,39 +858,39 @@ public abstract class AllStoreHolder extends Read {
     }
 
     @Override
-    public UserFunctionHandle functionGet(QualifiedName name) {
+    public UserFunctionHandle functionGet(QualifiedName name, CypherScope scope) {
         performCheckBeforeOperation();
-        return getProcedureCaller().procedureView.function(name);
+        return getProcedureCaller().procedureView.function(name, scope);
     }
 
     @Override
-    public Stream<UserFunctionSignature> functionGetAll() {
+    public Stream<UserFunctionSignature> functionGetAll(CypherScope scope) {
         performCheckBeforeOperation();
-        return getProcedureCaller().procedureView.getAllNonAggregatingFunctions();
+        return getProcedureCaller().procedureView.getAllNonAggregatingFunctions(scope);
     }
 
     @Override
-    public ProcedureHandle procedureGet(QualifiedName name) throws ProcedureException {
+    public ProcedureHandle procedureGet(QualifiedName name, CypherScope scope) throws ProcedureException {
         performCheckBeforeOperation();
-        return getProcedureCaller().procedureView.procedure(name);
+        return getProcedureCaller().procedureView.procedure(name, scope);
     }
 
     @Override
-    public Stream<ProcedureSignature> proceduresGetAll() {
+    public Stream<ProcedureSignature> proceduresGetAll(CypherScope scope) {
         performCheckBeforeOperation();
-        return getProcedureCaller().procedureView.getAllProcedures();
+        return getProcedureCaller().procedureView.getAllProcedures(scope);
     }
 
     @Override
-    public UserFunctionHandle aggregationFunctionGet(QualifiedName name) {
+    public UserFunctionHandle aggregationFunctionGet(QualifiedName name, CypherScope scope) {
         performCheckBeforeOperation();
-        return getProcedureCaller().procedureView.aggregationFunction(name);
+        return getProcedureCaller().procedureView.aggregationFunction(name, scope);
     }
 
     @Override
-    public Stream<UserFunctionSignature> aggregationFunctionGetAll() {
+    public Stream<UserFunctionSignature> aggregationFunctionGetAll(CypherScope scope) {
         performCheckBeforeOperation();
-        return getProcedureCaller().procedureView.getAllAggregatingFunctions();
+        return getProcedureCaller().procedureView.getAllAggregatingFunctions(scope);
     }
 
     @Override

@@ -42,6 +42,7 @@ import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.CypherScope;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.internal.Version;
@@ -62,7 +63,10 @@ class SystemBuiltInProceduresIT extends KernelIntegrationTest implements Procedu
         try (var statement = kernelTransaction.acquireStatement()) {
 
             RawIterator<AnyValue[], ProcedureException> stream = procs.procedureCallRead(
-                    procs.procedureGet(procedureName("db", "info")).id(), new AnyValue[0], EMPTY);
+                    procs.procedureGet(procedureName("db", "info"), CypherScope.CYPHER_5)
+                            .id(),
+                    new AnyValue[0],
+                    EMPTY);
 
             var procedureResult = asList(stream);
             assertFalse(procedureResult.isEmpty());
@@ -78,7 +82,10 @@ class SystemBuiltInProceduresIT extends KernelIntegrationTest implements Procedu
         try (var statement = kernelTransaction.acquireStatement()) {
 
             RawIterator<AnyValue[], ProcedureException> stream = procs.procedureCallRead(
-                    procs.procedureGet(procedureName("dbms", "info")).id(), new AnyValue[0], EMPTY);
+                    procs.procedureGet(procedureName("dbms", "info"), CypherScope.CYPHER_5)
+                            .id(),
+                    new AnyValue[0],
+                    EMPTY);
 
             var procedureResult = asList(stream);
             assertFalse(procedureResult.isEmpty());
@@ -140,7 +147,10 @@ class SystemBuiltInProceduresIT extends KernelIntegrationTest implements Procedu
         Procedures procs = procs();
         try (var statement = kernelTransaction.acquireStatement()) {
             RawIterator<AnyValue[], ProcedureException> stream = procs.procedureCallRead(
-                    procs.procedureGet(procedureName("dbms", "components")).id(), new AnyValue[0], EMPTY);
+                    procs.procedureGet(procedureName("dbms", "components"), CypherScope.CYPHER_5)
+                            .id(),
+                    new AnyValue[0],
+                    EMPTY);
 
             // Then
             assertThat(asList(stream)).containsExactly(new AnyValue[] {

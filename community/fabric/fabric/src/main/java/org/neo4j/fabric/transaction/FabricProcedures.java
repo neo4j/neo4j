@@ -35,6 +35,7 @@ import org.neo4j.internal.kernel.api.procs.UserAggregationReducer;
 import org.neo4j.internal.kernel.api.procs.UserFunctionHandle;
 import org.neo4j.internal.kernel.api.procs.UserFunctionSignature;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
+import org.neo4j.kernel.api.CypherScope;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.procedure.Context;
 import org.neo4j.kernel.api.procedure.ProcedureView;
@@ -63,34 +64,34 @@ public class FabricProcedures implements Procedures {
     }
 
     @Override
-    public UserFunctionHandle functionGet(QualifiedName name) {
-        return view.function(name);
+    public UserFunctionHandle functionGet(QualifiedName name, CypherScope scope) {
+        return view.function(name, scope);
     }
 
     @Override
-    public Stream<UserFunctionSignature> functionGetAll() {
+    public Stream<UserFunctionSignature> functionGetAll(CypherScope scope) {
         return notAvailable();
     }
 
     @Override
-    public UserFunctionHandle aggregationFunctionGet(QualifiedName name) {
+    public UserFunctionHandle aggregationFunctionGet(QualifiedName name, CypherScope scope) {
         return notAvailable();
     }
 
     @Override
-    public Stream<UserFunctionSignature> aggregationFunctionGetAll() {
+    public Stream<UserFunctionSignature> aggregationFunctionGetAll(CypherScope scope) {
         return notAvailable();
     }
 
     @Override
-    public ProcedureHandle procedureGet(QualifiedName name) throws ProcedureException {
+    public ProcedureHandle procedureGet(QualifiedName name, CypherScope scope) throws ProcedureException {
         // Note:  Bolt checks connections by invoking `dbms.routing.getRoutingTable`.
         // This means that we have to be able to resolve this symbol in the planning step.
-        return view.procedure(name);
+        return view.procedure(name, scope);
     }
 
     @Override
-    public Stream<ProcedureSignature> proceduresGetAll() throws ProcedureException {
+    public Stream<ProcedureSignature> proceduresGetAll(CypherScope scope) throws ProcedureException {
         return notAvailable();
     }
 

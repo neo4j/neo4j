@@ -56,6 +56,7 @@ import org.neo4j.internal.schema.ConstraintDescriptor
 import org.neo4j.internal.schema.SchemaDescriptor
 import org.neo4j.internal.schema.SchemaDescriptors
 import org.neo4j.internal.schema.constraints.SchemaValueType
+import org.neo4j.kernel.api.CypherScope
 import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.logging.InternalLog
@@ -84,7 +85,7 @@ object TransactionBoundPlanContext {
   def procedureSignature(tx: KernelTransaction, name: QualifiedName): ProcedureSignature = {
     val kn = new procs.QualifiedName(name.namespace.asJava, name.name)
     val procedures = tx.procedures()
-    val handle = procedures.procedureGet(kn)
+    val handle = procedures.procedureGet(kn, CypherScope.CYPHER_5)
 
     asCypherProcedureSignature(name, handle.id(), handle.signature())
   }
@@ -92,11 +93,11 @@ object TransactionBoundPlanContext {
   def functionSignature(tx: KernelTransaction, name: QualifiedName): Option[UserFunctionSignature] = {
     val kn = new procs.QualifiedName(name.namespace.asJava, name.name)
     val procedures = tx.procedures()
-    val func = procedures.functionGet(kn)
+    val func = procedures.functionGet(kn, CypherScope.CYPHER_5)
 
     val (fcn, aggregation) =
       if (func != null) (func, false)
-      else (procedures.aggregationFunctionGet(kn), true)
+      else (procedures.aggregationFunctionGet(kn, CypherScope.CYPHER_5), true)
     if (fcn == null) None
     else {
       val signature = fcn.signature()

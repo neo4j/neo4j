@@ -37,6 +37,7 @@ import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
 import org.neo4j.internal.schema.IndexPrototype;
+import org.neo4j.kernel.api.CypherScope;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.impl.api.integrationtest.KernelIntegrationTest;
@@ -57,7 +58,7 @@ class SchemaProcedureIT extends KernelIntegrationTest {
         try (var statement = kernelTransaction.acquireStatement()) {
 
             RawIterator<AnyValue[], ProcedureException> stream = procs.procedureCallRead(
-                    procs.procedureGet(procedureName("db", "schema", "visualization"))
+                    procs.procedureGet(procedureName("db", "schema", "visualization"), CypherScope.CYPHER_5)
                             .id(),
                     new AnyValue[0],
                     ProcedureCallContext.EMPTY);
@@ -93,7 +94,7 @@ class SchemaProcedureIT extends KernelIntegrationTest {
         Procedures procs = procs();
         try (var statement = kernelTransaction.acquireStatement()) {
             RawIterator<AnyValue[], ProcedureException> stream = procs.procedureCallRead(
-                    procs.procedureGet(procedureName("db", "schema", "visualization"))
+                    procs.procedureGet(procedureName("db", "schema", "visualization"), CypherScope.CYPHER_5)
                             .id(),
                     new AnyValue[0],
                     ProcedureCallContext.EMPTY);
@@ -137,7 +138,7 @@ class SchemaProcedureIT extends KernelIntegrationTest {
         Procedures procs = procs();
         try (var statement = kernelTransaction.acquireStatement()) {
             RawIterator<AnyValue[], ProcedureException> stream = procs.procedureCallRead(
-                    procs.procedureGet(procedureName("db", "schema", "visualization"))
+                    procs.procedureGet(procedureName("db", "schema", "visualization"), CypherScope.CYPHER_5)
                             .id(),
                     new AnyValue[0],
                     ProcedureCallContext.EMPTY);

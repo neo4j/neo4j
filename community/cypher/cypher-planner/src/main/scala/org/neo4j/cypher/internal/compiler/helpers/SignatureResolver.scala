@@ -58,6 +58,7 @@ import org.neo4j.internal.kernel.api.procs.Neo4jTypes
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes.AnyType
 import org.neo4j.internal.kernel.api.procs.ProcedureHandle
 import org.neo4j.internal.kernel.api.procs.UserFunctionHandle
+import org.neo4j.kernel.api.CypherScope
 import org.neo4j.kernel.api.procedure.ProcedureView
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.procedure.Mode
@@ -87,7 +88,11 @@ class SignatureResolver(
 object SignatureResolver {
 
   def from(procedures: Procedures) =
-    new SignatureResolver(procedures.procedureGet, procedures.functionGet, procedures.signatureVersion())
+    new SignatureResolver(
+      (name: procs.QualifiedName) => procedures.procedureGet(name, CypherScope.CYPHER_5),
+      (name: procs.QualifiedName) => procedures.functionGet(name, CypherScope.CYPHER_5),
+      procedures.signatureVersion()
+    )
 
   // Note: Typically the signature resolver should be derived from a transaction bound Procedures object.
   // In some testing situations this can be troublesome to reach, and thus we provide this escape hatch.

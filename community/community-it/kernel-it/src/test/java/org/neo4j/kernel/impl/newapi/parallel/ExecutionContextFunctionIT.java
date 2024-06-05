@@ -45,6 +45,7 @@ import org.neo4j.internal.kernel.api.procs.QualifiedName;
 import org.neo4j.internal.kernel.api.procs.UserAggregationReducer;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
+import org.neo4j.kernel.api.CypherScope;
 import org.neo4j.kernel.api.ExecutionContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
@@ -279,7 +280,7 @@ class ExecutionContextFunctionIT {
                 Statement statement = acquireStatement(transaction);
                 ExecutionContext executionContext = createExecutionContext(transaction)) {
             try {
-                var handle = executionContext.procedures().functionGet(getName("plus"));
+                var handle = executionContext.procedures().functionGet(getName("plus"), CypherScope.CYPHER_5);
                 var procContext = new ProcedureCallContext(handle.id(), new String[0], false, "", false, RUNTIME_USED);
 
                 transaction.rollback();
@@ -329,7 +330,7 @@ class ExecutionContextFunctionIT {
                 Statement statement = acquireStatement(transaction);
                 ExecutionContext executionContext = createExecutionContext(transaction)) {
             try {
-                var handle = executionContext.procedures().aggregationFunctionGet(getName("sum"));
+                var handle = executionContext.procedures().aggregationFunctionGet(getName("sum"), CypherScope.CYPHER_5);
                 transaction.rollback();
                 assertThatThrownBy(() -> executionContext
                                 .procedures()
@@ -345,7 +346,9 @@ class ExecutionContextFunctionIT {
     @Test
     void testBuiltInFunction() throws ProcedureException {
         doWithExecutionContext(executionContext -> {
-            var handle = executionContext.procedures().functionGet(new QualifiedName(List.of(), "date"));
+            var handle = executionContext
+                    .procedures()
+                    .functionGet(new QualifiedName(List.of(), "date"), CypherScope.CYPHER_5);
             var procContext = new ProcedureCallContext(handle.id(), new String[0], false, "", false, RUNTIME_USED);
 
             AnyValue result = executionContext
@@ -359,7 +362,9 @@ class ExecutionContextFunctionIT {
     void testRealClockTemporalFunction() throws ProcedureException {
         doWithExecutionContext((ktx, executionContext) -> {
             ZonedDateTime referenceDateTime = ZonedDateTime.now();
-            var handle = executionContext.procedures().functionGet(new QualifiedName(List.of("datetime"), "realtime"));
+            var handle = executionContext
+                    .procedures()
+                    .functionGet(new QualifiedName(List.of("datetime"), "realtime"), CypherScope.CYPHER_5);
             var procContext = new ProcedureCallContext(handle.id(), new String[0], false, "", false, RUNTIME_USED);
 
             AnyValue result =
@@ -374,8 +379,9 @@ class ExecutionContextFunctionIT {
     @Test
     void testTransactionClockTemporalFunction() throws ProcedureException {
         doWithExecutionContext((ktx, executionContext) -> {
-            var handle =
-                    executionContext.procedures().functionGet(new QualifiedName(List.of("datetime"), "transaction"));
+            var handle = executionContext
+                    .procedures()
+                    .functionGet(new QualifiedName(List.of("datetime"), "transaction"), CypherScope.CYPHER_5);
             var procContext = new ProcedureCallContext(handle.id(), new String[0], false, "", false, RUNTIME_USED);
 
             AnyValue result =
@@ -389,7 +395,9 @@ class ExecutionContextFunctionIT {
     @Test
     void testStatementClockTemporalFunction() throws ProcedureException {
         doWithExecutionContext((ktx, executionContext) -> {
-            var handle = executionContext.procedures().functionGet(new QualifiedName(List.of("datetime"), "statement"));
+            var handle = executionContext
+                    .procedures()
+                    .functionGet(new QualifiedName(List.of("datetime"), "statement"), CypherScope.CYPHER_5);
             var procContext = new ProcedureCallContext(handle.id(), new String[0], false, "", false, RUNTIME_USED);
 
             AnyValue result =
@@ -403,7 +411,9 @@ class ExecutionContextFunctionIT {
     @Test
     void testDefaultClockTemporalFunction() throws ProcedureException {
         doWithExecutionContext((ktx, executionContext) -> {
-            var handle = executionContext.procedures().functionGet(new QualifiedName(List.of(), "datetime"));
+            var handle = executionContext
+                    .procedures()
+                    .functionGet(new QualifiedName(List.of(), "datetime"), CypherScope.CYPHER_5);
             var procContext = new ProcedureCallContext(handle.id(), new String[0], false, "", false, RUNTIME_USED);
 
             AnyValue result =
@@ -446,7 +456,7 @@ class ExecutionContextFunctionIT {
 
     private AnyValue invokeUserFunction(ExecutionContext executionContext, String name, AnyValue... args)
             throws ProcedureException {
-        var handle = executionContext.procedures().functionGet(getName(name));
+        var handle = executionContext.procedures().functionGet(getName(name), CypherScope.CYPHER_5);
         var procContext = new ProcedureCallContext(handle.id(), new String[0], false, "", false, RUNTIME_USED);
 
         return executionContext.procedures().functionCall(handle.id(), args, procContext);
@@ -454,7 +464,7 @@ class ExecutionContextFunctionIT {
 
     private UserAggregationReducer prepareUserAggregationFunction(ExecutionContext executionContext, String name)
             throws ProcedureException {
-        var handle = executionContext.procedures().aggregationFunctionGet(getName(name));
+        var handle = executionContext.procedures().aggregationFunctionGet(getName(name), CypherScope.CYPHER_5);
         return executionContext.procedures().aggregationFunction(handle.id(), ProcedureCallContext.EMPTY);
     }
 

@@ -66,7 +66,8 @@ class ProceduresKernelIT extends KernelIntegrationTest {
         internalKernel().registerProcedure(procedure);
 
         // When
-        ProcedureSignature found = procs().procedureGet(new QualifiedName(new String[] {"example"}, "exampleProc"))
+        ProcedureSignature found = procs().procedureGet(
+                        new QualifiedName(new String[] {"example"}, "exampleProc"), CypherScope.CYPHER_5)
                 .signature();
 
         // Then
@@ -77,8 +78,8 @@ class ProceduresKernelIT extends KernelIntegrationTest {
     @Test
     void shouldGetBuiltInProcedureByName() throws Throwable {
         // When
-        ProcedureSignature found =
-                procs().procedureGet(procedureName("db", "labels")).signature();
+        ProcedureSignature found = procs().procedureGet(procedureName("db", "labels"), CypherScope.CYPHER_5)
+                .signature();
 
         // Then
         assertThat(found)
@@ -102,8 +103,10 @@ class ProceduresKernelIT extends KernelIntegrationTest {
                         .build()));
 
         // When
-        List<ProcedureSignature> signatures =
-                newTransaction().procedures().proceduresGetAll().toList();
+        List<ProcedureSignature> signatures = newTransaction()
+                .procedures()
+                .proceduresGetAll(CypherScope.CYPHER_5)
+                .toList();
 
         // Then
         assertThat(signatures)
@@ -135,7 +138,7 @@ class ProceduresKernelIT extends KernelIntegrationTest {
         Procedures procs = procs();
         try (var statement = kernelTransaction.acquireStatement()) {
             RawIterator<AnyValue[], ProcedureException> found = procs.procedureCallRead(
-                    procs.procedureGet(new QualifiedName(new String[] {"example"}, "exampleProc"))
+                    procs.procedureGet(new QualifiedName(new String[] {"example"}, "exampleProc"), CypherScope.CYPHER_5)
                             .id(),
                     new AnyValue[] {longValue(1337)},
                     ProcedureCallContext.EMPTY);
@@ -163,7 +166,7 @@ class ProceduresKernelIT extends KernelIntegrationTest {
         Procedures procs = procs();
         try (var statement = kernelTransaction.acquireStatement()) {
             RawIterator<AnyValue[], ProcedureException> stream = procs.procedureCallRead(
-                    procs.procedureGet(signature.name()).id(),
+                    procs.procedureGet(signature.name(), CypherScope.CYPHER_5).id(),
                     new AnyValue[] {Values.EMPTY_STRING},
                     ProcedureCallContext.EMPTY);
 
@@ -180,8 +183,10 @@ class ProceduresKernelIT extends KernelIntegrationTest {
         internalKernel().registerProcedure(futureProcedure);
 
         // When
-        List<ProcedureSignature> signatures =
-                newTransaction().procedures().proceduresGetAll().toList();
+        List<ProcedureSignature> signatures = newTransaction()
+                .procedures()
+                .proceduresGetAll(CypherScope.CYPHER_5)
+                .toList();
 
         // Then
         assertThat(signatures).contains(procedure.signature());

@@ -46,6 +46,7 @@ import org.neo4j.internal.kernel.api.security.AuthSubject
 import org.neo4j.internal.kernel.api.security.PermissionState
 import org.neo4j.internal.kernel.api.security.PrivilegeAction.SHOW_ROLE
 import org.neo4j.internal.kernel.api.security.Segment
+import org.neo4j.kernel.api.CypherScope
 import org.neo4j.kernel.impl.query.FunctionInformation
 import org.neo4j.kernel.impl.query.FunctionInformation.InputInformation
 import org.neo4j.values.AnyValue
@@ -224,8 +225,8 @@ class ShowFunctionsCommandTest extends ShowCommandTestBase {
   }
 
   private def returnDefaultFunctions(): Unit = {
-    when(procedures.functionGetAll()).thenReturn(List(func1, func3).asJava.stream())
-    when(procedures.aggregationFunctionGetAll()).thenReturn(List(func2, func4).asJava.stream())
+    when(procedures.functionGetAll(CypherScope.CYPHER_5)).thenReturn(List(func1, func3).asJava.stream())
+    when(procedures.aggregationFunctionGetAll(CypherScope.CYPHER_5)).thenReturn(List(func2, func4).asJava.stream())
     when(ctx.providedLanguageFunctions).thenReturn(List(func5, func6))
   }
 
@@ -626,8 +627,8 @@ class ShowFunctionsCommandTest extends ShowCommandTestBase {
 
   test("show functions should return the functions sorted on name") {
     // Set-up which functions to return, not ordered by name:
-    when(procedures.functionGetAll()).thenReturn(List(func3, func1).asJava.stream())
-    when(procedures.aggregationFunctionGetAll()).thenReturn(List(func4, func2).asJava.stream())
+    when(procedures.functionGetAll(CypherScope.CYPHER_5)).thenReturn(List(func3, func1).asJava.stream())
+    when(procedures.aggregationFunctionGetAll(CypherScope.CYPHER_5)).thenReturn(List(func4, func2).asJava.stream())
     when(ctx.providedLanguageFunctions).thenReturn(List(func6, func5))
 
     // When
@@ -673,8 +674,11 @@ class ShowFunctionsCommandTest extends ShowCommandTestBase {
       true,
       false
     )
-    when(procedures.functionGetAll()).thenReturn(List(func1, internalFunc).asJava.stream())
-    when(procedures.aggregationFunctionGetAll()).thenReturn(List(func2, internalAggregatingFunc).asJava.stream())
+    when(procedures.functionGetAll(CypherScope.CYPHER_5)).thenReturn(List(func1, internalFunc).asJava.stream())
+    when(procedures.aggregationFunctionGetAll(CypherScope.CYPHER_5)).thenReturn(List(
+      func2,
+      internalAggregatingFunc
+    ).asJava.stream())
     when(ctx.providedLanguageFunctions).thenReturn(List.empty)
 
     // When
@@ -753,8 +757,11 @@ class ShowFunctionsCommandTest extends ShowCommandTestBase {
       deprecated = true,
       deprecatedByString = null
     )
-    when(procedures.functionGetAll()).thenReturn(List(deprecatedFunc, deprecatedFuncWithoutReplacement).asJava.stream())
-    when(procedures.aggregationFunctionGetAll()).thenReturn(List(
+    when(procedures.functionGetAll(CypherScope.CYPHER_5)).thenReturn(List(
+      deprecatedFunc,
+      deprecatedFuncWithoutReplacement
+    ).asJava.stream())
+    when(procedures.aggregationFunctionGetAll(CypherScope.CYPHER_5)).thenReturn(List(
       deprecatedAggregatingFunc,
       deprecatedAggregatingFuncWithoutReplacement
     ).asJava.stream())

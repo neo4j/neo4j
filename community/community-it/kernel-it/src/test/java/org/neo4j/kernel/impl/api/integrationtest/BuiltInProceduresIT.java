@@ -45,6 +45,7 @@ import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptors;
+import org.neo4j.kernel.api.CypherScope;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.impl.api.index.IndexSamplingMode;
@@ -69,7 +70,8 @@ class BuiltInProceduresIT extends KernelIntegrationTest implements ProcedureITBa
         Procedures procs = procs();
         try (var statement = kernelTransaction.acquireStatement()) {
             RawIterator<AnyValue[], ProcedureException> stream = procs.procedureCallRead(
-                    procs.procedureGet(procedureName("db", "labels")).id(),
+                    procs.procedureGet(procedureName("db", "labels"), CypherScope.CYPHER_5)
+                            .id(),
                     new AnyValue[0],
                     ProcedureCallContext.EMPTY);
 
@@ -83,7 +85,10 @@ class BuiltInProceduresIT extends KernelIntegrationTest implements ProcedureITBa
         Procedures procs = procs();
         try (var statement = kernelTransaction.acquireStatement()) {
             RawIterator<AnyValue[], ProcedureException> stream = procs.procedureCallRead(
-                    procs.procedureGet(procedureName("db", "info")).id(), new AnyValue[0], EMPTY);
+                    procs.procedureGet(procedureName("db", "info"), CypherScope.CYPHER_5)
+                            .id(),
+                    new AnyValue[0],
+                    EMPTY);
 
             var procedureResult = asList(stream);
             assertFalse(procedureResult.isEmpty());
@@ -98,7 +103,10 @@ class BuiltInProceduresIT extends KernelIntegrationTest implements ProcedureITBa
         Procedures procs = procs();
         try (var statement = kernelTransaction.acquireStatement()) {
             RawIterator<AnyValue[], ProcedureException> stream = procs.procedureCallRead(
-                    procs.procedureGet(procedureName("dbms", "info")).id(), new AnyValue[0], EMPTY);
+                    procs.procedureGet(procedureName("dbms", "info"), CypherScope.CYPHER_5)
+                            .id(),
+                    new AnyValue[0],
+                    EMPTY);
 
             var procedureResult = asList(stream);
             assertFalse(procedureResult.isEmpty());
@@ -142,7 +150,8 @@ class BuiltInProceduresIT extends KernelIntegrationTest implements ProcedureITBa
         Procedures procs = procs();
         try (var statement = kernelTransaction.acquireStatement()) {
             RawIterator<AnyValue[], ProcedureException> stream = procs.procedureCallRead(
-                    procs.procedureGet(procedureName("db", "labels")).id(),
+                    procs.procedureGet(procedureName("db", "labels"), CypherScope.CYPHER_5)
+                            .id(),
                     new AnyValue[0],
                     ProcedureCallContext.EMPTY);
 
@@ -168,7 +177,8 @@ class BuiltInProceduresIT extends KernelIntegrationTest implements ProcedureITBa
         Procedures procs = procs();
         try (var statement = kernelTransaction.acquireStatement()) {
             RawIterator<AnyValue[], ProcedureException> stream = procs.procedureCallRead(
-                    procs.procedureGet(procedureName("db", "propertyKeys")).id(),
+                    procs.procedureGet(procedureName("db", "propertyKeys"), CypherScope.CYPHER_5)
+                            .id(),
                     new AnyValue[0],
                     ProcedureCallContext.EMPTY);
 
@@ -191,7 +201,8 @@ class BuiltInProceduresIT extends KernelIntegrationTest implements ProcedureITBa
         Procedures procs = procs();
         try (var statement = kernelTransaction.acquireStatement()) {
             RawIterator<AnyValue[], ProcedureException> stream = procs.procedureCallRead(
-                    procs.procedureGet(procedureName("db", "relationshipTypes")).id(),
+                    procs.procedureGet(procedureName("db", "relationshipTypes"), CypherScope.CYPHER_5)
+                            .id(),
                     new AnyValue[0],
                     ProcedureCallContext.EMPTY);
 
@@ -218,7 +229,8 @@ class BuiltInProceduresIT extends KernelIntegrationTest implements ProcedureITBa
         Procedures procs = procs();
         try (var statement = kernelTransaction.acquireStatement()) {
             RawIterator<AnyValue[], ProcedureException> stream = procs.procedureCallRead(
-                    procs.procedureGet(procedureName("dbms", "components")).id(),
+                    procs.procedureGet(procedureName("dbms", "components"), CypherScope.CYPHER_5)
+                            .id(),
                     new AnyValue[0],
                     ProcedureCallContext.EMPTY);
 
