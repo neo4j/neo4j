@@ -196,13 +196,13 @@ public class TransactionLogsRecovery extends LifecycleAdapter {
                                         monitor.batchApplySkipped(nextCommandBatch);
                                         if (!rollbackIncompleteTransactions) {
                                             if (lastHighestTransactionBatchInfo == null) {
-                                                // there is nothing to recover so we are done for this round.
-                                                // TODO:misha
-                                                // Can this possible mean that we actually have broken metadata stores
-                                                // and
-                                                // we
-                                                // need to get info from the checkpoint to reset into that?
-                                                return;
+                                                var checkpointInfo = recoveryStartInformation.getCheckpointInfo();
+                                                var transactionId = checkpointInfo.transactionId();
+                                                lastBatchInfo = new CommittedCommandBatch.BatchInformation(
+                                                        transactionId, checkpointInfo.appendIndex());
+                                                lastHighestTransactionBatchInfo =
+                                                        new CommittedCommandBatch.BatchInformation(
+                                                                transactionId, transactionId.appendIndex());
                                             }
                                             fullRecovery = false;
                                             incompleteBatchEncountered = true;
@@ -245,7 +245,7 @@ public class TransactionLogsRecovery extends LifecycleAdapter {
                 }
                 appendIndexProvider = new RecoveryRollbackAppendIndexProvider(lastBatchInfo);
                 if (rollbackIncompleteTransactions) {
-                    logsTruncator.truncate(recoveryToPosition, recoveryStartInformation.getCheckpoint());
+                    logsTruncator.truncate(recoveryToPosition, recoveryStartInformation.getCheckpointInfo());
                     var rollbackTransactionInfo = recoveryService.rollbackTransactions(
                             recoveryToPosition,
                             transactionIdTracker,

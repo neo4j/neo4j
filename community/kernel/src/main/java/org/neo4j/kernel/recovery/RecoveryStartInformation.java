@@ -29,24 +29,24 @@ public class RecoveryStartInformation {
 
     private final long firstAppendIndexAfterLastCheckPoint;
     private final LogPosition transactionLogPosition;
-    private final CheckpointInfo checkpointPosition;
+    private final CheckpointInfo checkpointInfo;
     private final boolean missingLogs;
 
     public RecoveryStartInformation(
             LogPosition transactionLogPosition,
-            CheckpointInfo checkpointPosition,
+            CheckpointInfo checkpointInfo,
             long firstAppendIndexAfterLastCheckPoint) {
-        this(transactionLogPosition, checkpointPosition, firstAppendIndexAfterLastCheckPoint, false);
+        this(transactionLogPosition, checkpointInfo, firstAppendIndexAfterLastCheckPoint, false);
     }
 
     private RecoveryStartInformation(
             LogPosition transactionLogPosition,
-            CheckpointInfo checkpointPosition,
+            CheckpointInfo checkpointInfo,
             long firstAppendIndexAfterLastCheckPoint,
             boolean missingLogs) {
         this.firstAppendIndexAfterLastCheckPoint = firstAppendIndexAfterLastCheckPoint;
         this.transactionLogPosition = transactionLogPosition;
-        this.checkpointPosition = checkpointPosition;
+        this.checkpointInfo = checkpointInfo;
         this.missingLogs = missingLogs;
     }
 
@@ -63,11 +63,11 @@ public class RecoveryStartInformation {
     }
 
     public LogPosition getCheckpointPosition() {
-        return checkpointPosition != null ? checkpointPosition.checkpointEntryPosition() : LogPosition.UNSPECIFIED;
+        return checkpointInfo != null ? checkpointInfo.checkpointEntryPosition() : LogPosition.UNSPECIFIED;
     }
 
-    public CheckpointInfo getCheckpoint() {
-        return checkpointPosition;
+    public CheckpointInfo getCheckpointInfo() {
+        return checkpointInfo;
     }
 
     boolean isMissingLogs() {

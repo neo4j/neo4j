@@ -25,6 +25,7 @@ import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 import org.neo4j.storageengine.api.CommandBatch;
+import org.neo4j.storageengine.api.TransactionId;
 
 public interface CommittedCommandBatch {
 
@@ -63,5 +64,15 @@ public interface CommittedCommandBatch {
             int checksum,
             long timeWritten,
             long consensusIndex,
-            long appendIndex) {}
+            long appendIndex) {
+        public BatchInformation(TransactionId transactionId, long appendIndex) {
+            this(
+                    transactionId.id(),
+                    transactionId.kernelVersion(),
+                    transactionId.checksum(),
+                    transactionId.commitTimestamp(),
+                    transactionId.consensusIndex(),
+                    appendIndex);
+        }
+    }
 }
