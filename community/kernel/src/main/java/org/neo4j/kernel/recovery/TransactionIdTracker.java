@@ -19,6 +19,10 @@
  */
 package org.neo4j.kernel.recovery;
 
+import static org.neo4j.kernel.recovery.TransactionStatus.INCOMPLETE;
+import static org.neo4j.kernel.recovery.TransactionStatus.RECOVERABLE;
+import static org.neo4j.kernel.recovery.TransactionStatus.ROLLED_BACK;
+
 import org.eclipse.collections.api.factory.primitive.LongSets;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
@@ -30,8 +34,14 @@ public class TransactionIdTracker {
     private final MutableLongSet rollbackTransactions = LongSets.mutable.empty();
     private final MutableLongSet notCompletedTransactions = LongSets.mutable.empty();
 
-    boolean replayTransaction(long transactionId) {
-        return !(notCompletedTransactions.contains(transactionId) || rollbackTransactions.contains(transactionId));
+    TransactionStatus transactionStatus(long transactionId) {
+        if (notCompletedTransactions.contains(transactionId)) {
+            return INCOMPLETE;
+        }
+        if (rollbackTransactions.contains(transactionId)) {
+            return ROLLED_BACK;
+        }
+        return RECOVERABLE;
     }
 
     long[] notCompletedTransactions() {

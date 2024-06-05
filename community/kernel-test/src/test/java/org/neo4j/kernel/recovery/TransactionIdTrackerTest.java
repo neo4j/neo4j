@@ -20,10 +20,12 @@
 package org.neo4j.kernel.recovery;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.kernel.recovery.TransactionStatus.INCOMPLETE;
+import static org.neo4j.kernel.recovery.TransactionStatus.RECOVERABLE;
+import static org.neo4j.kernel.recovery.TransactionStatus.ROLLED_BACK;
 
 import org.junit.jupiter.api.Test;
 import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
@@ -43,10 +45,10 @@ class TransactionIdTrackerTest {
         transactionIdTracker.trackBatch(commandBatch2);
         transactionIdTracker.trackBatch(commandBatch4);
 
-        assertTrue(transactionIdTracker.replayTransaction(1));
-        assertTrue(transactionIdTracker.replayTransaction(2));
-        assertTrue(transactionIdTracker.replayTransaction(3));
-        assertTrue(transactionIdTracker.replayTransaction(4));
+        assertEquals(RECOVERABLE, transactionIdTracker.transactionStatus(1));
+        assertEquals(RECOVERABLE, transactionIdTracker.transactionStatus(2));
+        assertEquals(RECOVERABLE, transactionIdTracker.transactionStatus(3));
+        assertEquals(RECOVERABLE, transactionIdTracker.transactionStatus(4));
     }
 
     @Test
@@ -73,9 +75,9 @@ class TransactionIdTrackerTest {
         transactionIdTracker.trackBatch(commandBatch32);
         transactionIdTracker.trackBatch(commandBatch31);
 
-        assertTrue(transactionIdTracker.replayTransaction(1));
-        assertTrue(transactionIdTracker.replayTransaction(2));
-        assertTrue(transactionIdTracker.replayTransaction(3));
+        assertEquals(RECOVERABLE, transactionIdTracker.transactionStatus(1));
+        assertEquals(RECOVERABLE, transactionIdTracker.transactionStatus(2));
+        assertEquals(RECOVERABLE, transactionIdTracker.transactionStatus(3));
     }
 
     @Test
@@ -96,9 +98,9 @@ class TransactionIdTrackerTest {
         transactionIdTracker.trackBatch(commandBatch32);
         transactionIdTracker.trackBatch(commandBatch31);
 
-        assertFalse(transactionIdTracker.replayTransaction(1));
-        assertFalse(transactionIdTracker.replayTransaction(2));
-        assertFalse(transactionIdTracker.replayTransaction(3));
+        assertEquals(INCOMPLETE, transactionIdTracker.transactionStatus(1));
+        assertEquals(INCOMPLETE, transactionIdTracker.transactionStatus(2));
+        assertEquals(INCOMPLETE, transactionIdTracker.transactionStatus(3));
     }
 
     @Test
@@ -139,14 +141,14 @@ class TransactionIdTrackerTest {
         transactionIdTracker.trackBatch(commandBatch31);
         transactionIdTracker.trackBatch(commandBatch41);
 
-        assertTrue(transactionIdTracker.replayTransaction(1));
-        assertTrue(transactionIdTracker.replayTransaction(2));
-        assertTrue(transactionIdTracker.replayTransaction(4));
-        assertTrue(transactionIdTracker.replayTransaction(5));
-        assertTrue(transactionIdTracker.replayTransaction(7));
+        assertEquals(RECOVERABLE, transactionIdTracker.transactionStatus(1));
+        assertEquals(RECOVERABLE, transactionIdTracker.transactionStatus(2));
+        assertEquals(RECOVERABLE, transactionIdTracker.transactionStatus(4));
+        assertEquals(RECOVERABLE, transactionIdTracker.transactionStatus(5));
+        assertEquals(RECOVERABLE, transactionIdTracker.transactionStatus(7));
 
-        assertFalse(transactionIdTracker.replayTransaction(3));
-        assertFalse(transactionIdTracker.replayTransaction(6));
+        assertEquals(INCOMPLETE, transactionIdTracker.transactionStatus(3));
+        assertEquals(INCOMPLETE, transactionIdTracker.transactionStatus(6));
     }
 
     @Test
@@ -181,10 +183,10 @@ class TransactionIdTrackerTest {
 
         transactionIdTracker.trackBatch(commandBatch31);
 
-        assertFalse(transactionIdTracker.replayTransaction(1));
-        assertTrue(transactionIdTracker.replayTransaction(2));
-        assertFalse(transactionIdTracker.replayTransaction(3));
-        assertTrue(transactionIdTracker.replayTransaction(4));
+        assertEquals(ROLLED_BACK, transactionIdTracker.transactionStatus(1));
+        assertEquals(RECOVERABLE, transactionIdTracker.transactionStatus(2));
+        assertEquals(ROLLED_BACK, transactionIdTracker.transactionStatus(3));
+        assertEquals(RECOVERABLE, transactionIdTracker.transactionStatus(4));
     }
 
     @Test

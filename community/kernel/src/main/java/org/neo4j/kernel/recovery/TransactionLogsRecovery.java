@@ -112,7 +112,7 @@ public class TransactionLogsRecovery extends LifecycleAdapter {
         CommittedCommandBatch.BatchInformation lastHighestTransactionBatchInfo = null;
         CommittedCommandBatch.BatchInformation lastBatchInfo = null;
         RecoveryRollbackAppendIndexProvider appendIndexProvider = null;
-        boolean nonAvailableBatchEncountered = false;
+        boolean incompleteBatchEncountered = false;
         try {
             if (!recoveryStartInformation.isMissingLogs()) {
                 try {
@@ -186,25 +186,30 @@ public class TransactionLogsRecovery extends LifecycleAdapter {
                                 }
                             } else {
                                 recoveryStartupChecker.checkIfCanceled();
-                                if (transactionIdTracker.replayTransaction(nextCommandBatch.txId())) {
-                                    recoveryVisitor.visit(nextCommandBatch);
-                                    monitor.batchRecovered(nextCommandBatch);
-                                } else {
-                                    monitor.batchApplySkipped(nextCommandBatch);
-                                    if (!rollbackIncompleteTransactions) {
-                                        if (lastHighestTransactionBatchInfo == null) {
-                                            // there is nothing to recover so we are done for this round.
-                                            // TODO:misha
-                                            // Can this possible mean that we actually have broken metadata stores and
-                                            // we
-                                            // need to get info from the checkpoint to reset into that?
-                                            return;
+                                switch (transactionIdTracker.transactionStatus(nextCommandBatch.txId())) {
+                                    case RECOVERABLE -> {
+                                        recoveryVisitor.visit(nextCommandBatch);
+                                        monitor.batchRecovered(nextCommandBatch);
+                                    }
+                                    case ROLLED_BACK -> monitor.batchApplySkipped(nextCommandBatch);
+                                    case INCOMPLETE -> {
+                                        monitor.batchApplySkipped(nextCommandBatch);
+                                        if (!rollbackIncompleteTransactions) {
+                                            if (lastHighestTransactionBatchInfo == null) {
+                                                // there is nothing to recover so we are done for this round.
+                                                // TODO:misha
+                                                // Can this possible mean that we actually have broken metadata stores
+                                                // and
+                                                // we
+                                                // need to get info from the checkpoint to reset into that?
+                                                return;
+                                            }
+                                            fullRecovery = false;
+                                            incompleteBatchEncountered = true;
                                         }
-                                        fullRecovery = false;
-                                        nonAvailableBatchEncountered = true;
                                     }
                                 }
-                                if (!nonAvailableBatchEncountered) {
+                                if (!incompleteBatchEncountered) {
                                     if (lastHighestTransactionBatchInfo == null
                                             || lastHighestTransactionBatchInfo.txId() < nextCommandBatch.txId()) {
                                         lastHighestTransactionBatchInfo = nextCommandBatch.batchInformation();
