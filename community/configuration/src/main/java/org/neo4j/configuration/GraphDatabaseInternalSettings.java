@@ -733,13 +733,6 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
             .build();
 
     @Internal
-    @Description("An identifier that uniquely identifies this graph database instance within this JVM. "
-            + "Defaults to an auto-generated number depending on how many instance are started in this JVM.")
-    public static final Setting<String> forced_kernel_id = newBuilder("internal.dbms.kernel_id", STRING, null)
-            .addConstraint(SettingConstraints.matches("[a-zA-Z0-9]*", "has to be a valid kernel identifier"))
-            .build();
-
-    @Internal
     @Description("Enable disable the GC stall monitor.")
     public static final Setting<Boolean> vm_pause_monitor_enabled =
             newBuilder("internal.vm_pause_monitor.enabled", BOOL, true).build();

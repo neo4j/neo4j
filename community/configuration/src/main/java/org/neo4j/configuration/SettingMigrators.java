@@ -243,7 +243,9 @@ public final class SettingMigrators {
                 "unsupported.cypher.splitting_top_behavior",
                 "internal.cypher.number_of_workers",
                 "internal.dbms.cluster.info_service_deallocated_enabled",
-                "internal.dbms.cluster.discovery.parallel_enabled");
+                "internal.dbms.cluster.discovery.parallel_enabled",
+                "unsupported.dbms.kernel_id",
+                "internal.dbms.kernel_id");
 
         private static final Collection<Mapping> LEGACY_UNSUPPORTED_SETTINGS_MAPPING = List.of(
                 new Mapping("dbms.capabilities.blocked", "internal.dbms.capabilities.blocked"),
@@ -513,7 +515,6 @@ public final class SettingMigrators {
                 new Mapping(
                         "unsupported.dbms.io.controller.consider.external.enabled",
                         "internal.dbms.io.controller.consider.external.enabled"),
-                new Mapping("unsupported.dbms.kernel_id", "internal.dbms.kernel_id"),
                 new Mapping(
                         "unsupported.dbms.lock_manager.verbose_deadlocks",
                         "internal.dbms.lock_manager.verbose_deadlocks"),

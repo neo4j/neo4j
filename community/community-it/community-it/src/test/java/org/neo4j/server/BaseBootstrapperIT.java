@@ -25,7 +25,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.configuration.GraphDatabaseInternalSettings.forced_kernel_id;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.batch_inserter_batch_size;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.data_directory;
 import static org.neo4j.configuration.GraphDatabaseSettings.dense_node_threshold;
@@ -122,7 +122,7 @@ public abstract class BaseBootstrapperIT extends ExclusiveWebContainerTestBase {
         // Given
         Path configFile = testDirectory.file(Config.DEFAULT_CONFIG_FILE_NAME);
 
-        Map<String, String> properties = stringMap(forced_kernel_id.name(), "ourcustomvalue");
+        Map<String, String> properties = stringMap(batch_inserter_batch_size.name(), "95137");
         properties.putAll(getDefaultRelativeProperties(testDirectory.homePath()));
         properties.putAll(connectorsOnRandomPortsConfig());
 
@@ -138,8 +138,8 @@ public abstract class BaseBootstrapperIT extends ExclusiveWebContainerTestBase {
 
         // Then
         var dependencyResolver = getDependencyResolver();
-        assertThat(dependencyResolver.resolveDependency(Config.class).get(forced_kernel_id))
-                .isEqualTo("ourcustomvalue");
+        assertThat(dependencyResolver.resolveDependency(Config.class).get(batch_inserter_batch_size))
+                .isEqualTo(95137);
     }
 
     @Test
@@ -147,7 +147,7 @@ public abstract class BaseBootstrapperIT extends ExclusiveWebContainerTestBase {
         // Given
         Path configFile = testDirectory.file(Config.DEFAULT_CONFIG_FILE_NAME);
 
-        Map<String, String> properties = stringMap(forced_kernel_id.name(), "thisshouldnotshowup");
+        Map<String, String> properties = stringMap(batch_inserter_batch_size.name(), "95137");
         properties.putAll(getDefaultRelativeProperties(testDirectory.homePath()));
         properties.putAll(connectorsOnRandomPortsConfig());
 
@@ -161,12 +161,12 @@ public abstract class BaseBootstrapperIT extends ExclusiveWebContainerTestBase {
                 "--config-dir",
                 configFile.getParent().toAbsolutePath().toString(),
                 "-c",
-                configOption(forced_kernel_id, "mycustomvalue"));
+                configOption(batch_inserter_batch_size, "42"));
 
         // Then
         var dependencyResolver = getDependencyResolver();
-        assertThat(dependencyResolver.resolveDependency(Config.class).get(forced_kernel_id))
-                .isEqualTo("mycustomvalue");
+        assertThat(dependencyResolver.resolveDependency(Config.class).get(batch_inserter_batch_size))
+                .isEqualTo(42);
     }
 
     @Test
