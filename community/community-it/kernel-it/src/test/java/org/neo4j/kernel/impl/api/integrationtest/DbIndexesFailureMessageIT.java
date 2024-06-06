@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.api.integrationtest;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.InstanceOfAssertFactories.LIST;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
 import static org.neo4j.kernel.impl.index.schema.FailingNativeIndexProviderFactory.FailureType.POPULATION;
@@ -90,8 +91,14 @@ class DbIndexesFailureMessageIT extends KernelIntegrationTest {
                     .isEqualTo(null);
             assertThat(result.getString("type")).as("type").isEqualTo("RANGE");
             assertThat(result.getString("entityType")).as("entityType").isEqualTo("NODE");
-            assertThat(result.get("labelsOrTypes")).asList().as("labelsOrTypes").containsExactly(labelName);
-            assertThat(result.get("properties")).asList().as("properties").containsExactly(propertyKey);
+            assertThat(result.get("labelsOrTypes"))
+                    .asInstanceOf(LIST)
+                    .as("labelsOrTypes")
+                    .containsExactly(labelName);
+            assertThat(result.get("properties"))
+                    .asInstanceOf(LIST)
+                    .as("properties")
+                    .containsExactly(propertyKey);
             assertThat(result.getString("indexProvider")).as("indexProvider").isEqualTo(indexProvider);
             assertThat(result.get("options"))
                     .extracting("indexConfig", InstanceOfAssertFactories.map(String.class, Object.class))
