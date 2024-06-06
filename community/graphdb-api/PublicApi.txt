@@ -477,6 +477,7 @@ org.neo4j.graphdb.schema.IndexSetting::spatial_Wgs84_3D_Min() org.neo4j.graphdb.
 org.neo4j.graphdb.schema.IndexSetting::spatial_Wgs84_Max() org.neo4j.graphdb.schema.IndexSetting public static
 org.neo4j.graphdb.schema.IndexSetting::spatial_Wgs84_Min() org.neo4j.graphdb.schema.IndexSetting public static
 org.neo4j.graphdb.schema.IndexSetting::vector_Dimensions() org.neo4j.graphdb.schema.IndexSetting public static
+org.neo4j.graphdb.schema.IndexSetting::vector_Quantization() org.neo4j.graphdb.schema.IndexSetting public static
 org.neo4j.graphdb.schema.IndexSetting::vector_Similarity_Function() org.neo4j.graphdb.schema.IndexSetting public static
 org.neo4j.graphdb.schema.IndexType public final enum extends java.lang.Enum<org.neo4j.graphdb.schema.IndexType>
 org.neo4j.graphdb.schema.IndexType::FULLTEXT org.neo4j.graphdb.schema.IndexType public static final
