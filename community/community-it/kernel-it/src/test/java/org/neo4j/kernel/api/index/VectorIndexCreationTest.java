@@ -323,6 +323,73 @@ public class VectorIndexCreationTest {
             }
         }
 
+        @Nested
+        class Quantization extends TestBase {
+            Quantization() {
+                super(
+                        Entity.this.factory,
+                        inclusiveVersionRangeFrom(max(minimumVersionForEntity, VectorIndexVersion.V2_0)));
+            }
+
+            @ParameterizedTest
+            @MethodSource
+            void shouldAcceptSupported(VectorIndexVersion version, VectorQuantization quantization) {
+                final var settings = defaultSettings().withQuantization(quantization);
+                assertDoesNotThrow(() -> createVectorIndex(version, settings, propKeyIds[0]));
+            }
+
+            Iterable<Arguments> shouldAcceptSupported() {
+                return validVersions().asLazy().flatCollect(version -> supported(version)
+                        .asLazy()
+                        .collect(similarityFunction -> Arguments.of(version, similarityFunction)));
+            }
+
+            @ParameterizedTest
+            @MethodSource
+            @EnabledIf("latestIsValid")
+            void shouldAcceptSupportedCoreAPI(VectorQuantization quantization) {
+                final var settings = defaultSettings().withQuantization(quantization);
+                assertDoesNotThrow(() -> createVectorIndex(settings, PROP_KEYS.get(1)));
+            }
+
+            Iterable<VectorQuantization> shouldAcceptSupportedCoreAPI() {
+                return supported(LATEST);
+            }
+
+            RichIterable<VectorQuantization> supported(VectorIndexVersion version) {
+                return version.supportedQuantizations();
+            }
+
+            @ParameterizedTest
+            @MethodSource("validVersions")
+            void shouldRejectUnsupported(VectorIndexVersion version) {
+                final var quantizationName = "ClearlyThisIsNotAQuantization";
+                final var settings = defaultSettings().withQuantization(quantizationName);
+                assertUnsupported(version, () -> createVectorIndex(version, settings, propKeyIds[0]));
+            }
+
+            @Test
+            @EnabledIf("latestIsValid")
+            void shouldRejectUnsupportedCoreAPI() {
+                final var quantizationName = "ClearlyThisIsNotAQuantization";
+                final var settings = defaultSettings().withQuantization(quantizationName);
+                assertUnsupported(LATEST, () -> createVectorIndex(settings, PROP_KEYS.get(1)));
+            }
+
+            private static void assertUnsupported(VectorIndexVersion version, ThrowingCallable callable) {
+                assertThatThrownBy(callable)
+                        .isInstanceOf(IllegalArgumentException.class)
+                        .hasMessageContainingAll(
+                                "is an unsupported",
+                                IndexSetting.vector_Quantization().getSettingName(),
+                                "Supported",
+                                version.supportedQuantizations()
+                                        .asLazy()
+                                        .collect(VectorQuantization::name)
+                                        .toString());
+            }
+        }
+
         private static void assertDoesNotThrow(ThrowingCallable callable) {
             assertThatCode(callable).doesNotThrowAnyException();
         }
