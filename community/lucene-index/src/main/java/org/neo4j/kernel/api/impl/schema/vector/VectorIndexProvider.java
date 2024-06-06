@@ -109,7 +109,7 @@ public class VectorIndexProvider extends AbstractLuceneIndexProvider {
                 settingsValidator.trustIsValidToVectorIndexConfig(new IndexConfigAccessor(descriptor.getIndexConfig()));
         final var dimensions = vectorIndexConfig.dimensions();
 
-        final var codec = new VectorCodecV2(dimensions);
+        final var codec = new VectorCodecV2(dimensions, vectorIndexConfig.quantization());
         final var writerConfigBuilder = new IndexWriterConfigBuilder(VectorModes.POPULATION, config).withCodec(codec);
         final var luceneIndex = VectorIndexBuilder.create(
                         descriptor, vectorIndexConfig, documentStructure, readOnlyChecker, config)
