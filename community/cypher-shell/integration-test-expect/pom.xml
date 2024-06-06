@@ -18,7 +18,6 @@
     <properties>
         <moduleName>org.neo4j.shell.it</moduleName>
         <default.jupiter.test.mode>concurrent</default.jupiter.test.mode>
-        <testcontainers.version>1.19.7</testcontainers.version>
     </properties>
 
     <scm>
