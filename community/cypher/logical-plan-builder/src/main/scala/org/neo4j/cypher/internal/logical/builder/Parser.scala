@@ -42,7 +42,7 @@ import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.CoerceToPredicate
 import org.neo4j.cypher.internal.logical.plans.ColumnOrder
 import org.neo4j.cypher.internal.logical.plans.Descending
-import org.neo4j.cypher.internal.parser.v5.ast.factory.ast.CypherAstParser
+import org.neo4j.cypher.internal.parser.v5.ast.factory.Cypher5AstParser
 import org.neo4j.cypher.internal.rewriting.rewriters.LabelExpressionPredicateNormalizer
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.CancellationChecker
@@ -120,7 +120,7 @@ object Parser {
     }.toMap
   }
 
-  def astParser(cypher: String) = new CypherAstParser(cypher, Neo4jCypherExceptionFactory(cypher, None), None)
+  def astParser(cypher: String) = new Cypher5AstParser(cypher, Neo4jCypherExceptionFactory(cypher, None), None)
 
   def parseExpression(text: String): Expression = {
     Try(astParser(text).expression()) match {

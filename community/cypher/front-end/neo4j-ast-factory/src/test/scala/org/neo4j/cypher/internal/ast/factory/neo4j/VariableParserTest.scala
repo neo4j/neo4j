@@ -21,7 +21,7 @@ import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Cypher5J
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
 import org.neo4j.cypher.internal.expressions
 import org.neo4j.cypher.internal.expressions.Variable
-import org.neo4j.cypher.internal.parser.v5.CypherParser
+import org.neo4j.cypher.internal.parser.v5.Cypher5Parser
 import org.neo4j.cypher.internal.util.DummyPosition
 import org.neo4j.cypher.internal.util.test_helpers.CypherScalaCheckDrivenPropertyChecks
 
@@ -104,7 +104,7 @@ class VariableParserTest extends AstParsingTestBase
   }
 
   test("keywords can be variables") {
-    val vocab = CypherParser.VOCABULARY
+    val vocab = Cypher5Parser.VOCABULARY
     Range.inclusive(1, vocab.getMaxTokenType)
       .flatMap { tokenType =>
         Option(vocab.getSymbolicName(tokenType)) ++

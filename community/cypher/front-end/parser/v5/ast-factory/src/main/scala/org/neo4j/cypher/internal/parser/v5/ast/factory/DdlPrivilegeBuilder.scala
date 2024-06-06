@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.neo4j.cypher.internal.parser.v5.ast.factory.ast
+package org.neo4j.cypher.internal.parser.v5.ast.factory
 
 import org.antlr.v4.runtime.tree.ParseTree
 import org.antlr.v4.runtime.tree.RuleNode
@@ -157,16 +157,16 @@ import org.neo4j.cypher.internal.parser.ast.util.Util.child
 import org.neo4j.cypher.internal.parser.ast.util.Util.ctxChild
 import org.neo4j.cypher.internal.parser.ast.util.Util.nodeChild
 import org.neo4j.cypher.internal.parser.ast.util.Util.pos
-import org.neo4j.cypher.internal.parser.v5.CypherParser
-import org.neo4j.cypher.internal.parser.v5.CypherParserListener
+import org.neo4j.cypher.internal.parser.v5.Cypher5Parser
+import org.neo4j.cypher.internal.parser.v5.Cypher5ParserListener
 import org.neo4j.cypher.internal.util.InputPosition
 
 import scala.collection.immutable.ArraySeq
 
-trait DdlPrivilegeBuilder extends CypherParserListener {
+trait DdlPrivilegeBuilder extends Cypher5ParserListener {
 
   final override def exitGrantCommand(
-    ctx: CypherParser.GrantCommandContext
+    ctx: Cypher5Parser.GrantCommandContext
   ): Unit = {
     val p = pos(ctx)
     ctx.ast = if (ctx.privilege() != null) {
@@ -182,7 +182,7 @@ trait DdlPrivilegeBuilder extends CypherParserListener {
   }
 
   final override def exitGrantRole(
-    ctx: CypherParser.GrantRoleContext
+    ctx: Cypher5Parser.GrantRoleContext
   ): Unit = {
     ctx.ast = (
       ctx.roleNames.ast[Seq[Expression]](),
@@ -191,7 +191,7 @@ trait DdlPrivilegeBuilder extends CypherParserListener {
   }
 
   final override def exitDenyCommand(
-    ctx: CypherParser.DenyCommandContext
+    ctx: Cypher5Parser.DenyCommandContext
   ): Unit = {
     val p = pos(ctx)
     val (privilegeType, resource, qualifier) =
@@ -201,7 +201,7 @@ trait DdlPrivilegeBuilder extends CypherParserListener {
   }
 
   final override def exitRevokeCommand(
-    ctx: CypherParser.RevokeCommandContext
+    ctx: Cypher5Parser.RevokeCommandContext
   ): Unit = {
     val p = pos(ctx)
     ctx.ast = if (ctx.privilege() != null) {
@@ -221,7 +221,7 @@ trait DdlPrivilegeBuilder extends CypherParserListener {
   }
 
   final override def exitRevokeRole(
-    ctx: CypherParser.RevokeRoleContext
+    ctx: Cypher5Parser.RevokeRoleContext
   ): Unit = {
     ctx.ast = (
       ctx.roleNames.ast[Seq[Either[String, Parameter]]](),
@@ -230,16 +230,16 @@ trait DdlPrivilegeBuilder extends CypherParserListener {
   }
 
   final override def exitPrivilege(
-    ctx: CypherParser.PrivilegeContext
+    ctx: Cypher5Parser.PrivilegeContext
   ): Unit = {
     ctx.ast = ctxChild(ctx, 0).ast
   }
 
   final override def exitAllPrivilege(
-    ctx: CypherParser.AllPrivilegeContext
+    ctx: Cypher5Parser.AllPrivilegeContext
   ): Unit = {
     ctx.ast = ctx.allPrivilegeTarget() match {
-      case c: CypherParser.DefaultTargetContext =>
+      case c: Cypher5Parser.DefaultTargetContext =>
         if (c.DATABASE() != null) {
           val scope = if (c.DEFAULT() != null) DefaultDatabaseScope()(pos(ctx)) else HomeDatabaseScope()(pos(ctx))
           allDbQualifier(DatabasePrivilege(AllDatabaseAction, scope)(pos(ctx)), None)
@@ -247,32 +247,32 @@ trait DdlPrivilegeBuilder extends CypherParserListener {
           val scope = if (c.DEFAULT() != null) DefaultGraphScope()(pos(ctx)) else HomeGraphScope()(pos(ctx))
           allQualifier(GraphPrivilege(AllGraphAction, scope)(pos(ctx)), None)
         }
-      case c: CypherParser.DatabaseVariableTargetContext =>
+      case c: Cypher5Parser.DatabaseVariableTargetContext =>
         val scope =
           if (c.TIMES() != null) AllDatabasesScope()(pos(ctx))
           else NamedDatabasesScope(c.symbolicAliasNameList().ast())(pos(ctx))
         allDbQualifier(DatabasePrivilege(AllDatabaseAction, scope)(pos(ctx)), None)
-      case c: CypherParser.GraphVariableTargetContext =>
+      case c: Cypher5Parser.GraphVariableTargetContext =>
         val scope =
           if (c.TIMES() != null) AllGraphsScope()(pos(ctx))
           else NamedGraphsScope(c.symbolicAliasNameList().ast())(pos(ctx))
         allQualifier(GraphPrivilege(AllGraphAction, scope)(pos(ctx)), None)
-      case _: CypherParser.DBMSTargetContext =>
+      case _: Cypher5Parser.DBMSTargetContext =>
         allQualifier(DbmsPrivilege(AllDbmsAction)(pos(ctx)), None)
       case _ => throw new IllegalStateException("Unexpected privilege all command")
     }
   }
 
   final override def exitAllPrivilegeTarget(
-    ctx: CypherParser.AllPrivilegeTargetContext
+    ctx: Cypher5Parser.AllPrivilegeTargetContext
   ): Unit = {}
 
   final override def exitAllPrivilegeType(
-    ctx: CypherParser.AllPrivilegeTypeContext
+    ctx: Cypher5Parser.AllPrivilegeTypeContext
   ): Unit = {}
 
   final override def exitCreatePrivilege(
-    ctx: CypherParser.CreatePrivilegeContext
+    ctx: Cypher5Parser.CreatePrivilegeContext
   ): Unit = {
 
     ctx.ast = if (ctx.databaseScope() != null) {
@@ -290,37 +290,37 @@ trait DdlPrivilegeBuilder extends CypherParserListener {
   }
 
   final override def exitCreatePrivilegeForDatabase(
-    ctx: CypherParser.CreatePrivilegeForDatabaseContext
+    ctx: Cypher5Parser.CreatePrivilegeForDatabaseContext
   ): Unit = {
     ctx.ast = ctxChild(ctx, 0).ast
   }
 
-  override def exitActionForDBMS(ctx: CypherParser.ActionForDBMSContext): Unit = {
-    val isCreate = ctx.parent.getRuleIndex == CypherParser.RULE_createPrivilege
+  override def exitActionForDBMS(ctx: Cypher5Parser.ActionForDBMSContext): Unit = {
+    val isCreate = ctx.parent.getRuleIndex == Cypher5Parser.RULE_createPrivilege
     ctx.ast = nodeChild(ctx, 0).getSymbol.getType match {
-      case CypherParser.ALIAS     => if (isCreate) CreateAliasAction else DropAliasAction
-      case CypherParser.COMPOSITE => if (isCreate) CreateCompositeDatabaseAction else DropCompositeDatabaseAction
-      case CypherParser.DATABASE  => if (isCreate) CreateDatabaseAction else DropDatabaseAction
-      case CypherParser.ROLE      => if (isCreate) CreateRoleAction else DropRoleAction
-      case CypherParser.USER      => if (isCreate) CreateUserAction else DropUserAction
-      case _                      => throw new IllegalStateException("Unexpected DBMS token")
+      case Cypher5Parser.ALIAS     => if (isCreate) CreateAliasAction else DropAliasAction
+      case Cypher5Parser.COMPOSITE => if (isCreate) CreateCompositeDatabaseAction else DropCompositeDatabaseAction
+      case Cypher5Parser.DATABASE  => if (isCreate) CreateDatabaseAction else DropDatabaseAction
+      case Cypher5Parser.ROLE      => if (isCreate) CreateRoleAction else DropRoleAction
+      case Cypher5Parser.USER      => if (isCreate) CreateUserAction else DropUserAction
+      case _                       => throw new IllegalStateException("Unexpected DBMS token")
     }
   }
 
   final override def exitDatabasePrivilege(
-    ctx: CypherParser.DatabasePrivilegeContext
+    ctx: Cypher5Parser.DatabasePrivilegeContext
   ): Unit = {
     val (action, qualifier) =
       child[ParseTree](ctx, 0) match {
-        case _: CypherParser.ConstraintTokenContext => withQualifier(AllConstraintActions)
-        case _: CypherParser.IndexTokenContext      => withQualifier(AllIndexActions)
+        case _: Cypher5Parser.ConstraintTokenContext => withQualifier(AllConstraintActions)
+        case _: Cypher5Parser.IndexTokenContext      => withQualifier(AllIndexActions)
         case c: TerminalNode =>
           c.getSymbol.getType match {
-            case CypherParser.ACCESS => withQualifier(AccessDatabaseAction)
-            case CypherParser.NAME   => withQualifier(AllTokenActions)
-            case CypherParser.START  => withQualifier(StartDatabaseAction)
-            case CypherParser.STOP   => withQualifier(StopDatabaseAction)
-            case CypherParser.TERMINATE =>
+            case Cypher5Parser.ACCESS => withQualifier(AccessDatabaseAction)
+            case Cypher5Parser.NAME   => withQualifier(AllTokenActions)
+            case Cypher5Parser.START  => withQualifier(StartDatabaseAction)
+            case Cypher5Parser.STOP   => withQualifier(StopDatabaseAction)
+            case Cypher5Parser.TERMINATE =>
               (
                 TerminateTransactionAction,
                 astOpt[List[DatabasePrivilegeQualifier]](
@@ -328,7 +328,7 @@ trait DdlPrivilegeBuilder extends CypherParserListener {
                   List(UserAllQualifier()(InputPosition.NONE))
                 )
               )
-            case CypherParser.TRANSACTION =>
+            case Cypher5Parser.TRANSACTION =>
               (
                 AllTransactionActions,
                 astOpt[List[DatabasePrivilegeQualifier]](
@@ -349,28 +349,28 @@ trait DdlPrivilegeBuilder extends CypherParserListener {
   }
 
   final override def exitDbmsPrivilege(
-    ctx: CypherParser.DbmsPrivilegeContext
+    ctx: Cypher5Parser.DbmsPrivilegeContext
   ): Unit = {
     val (action, qualifier) =
       child[ParseTree](ctx, 0) match {
-        case _: CypherParser.DbmsPrivilegeExecuteContext =>
+        case _: Cypher5Parser.DbmsPrivilegeExecuteContext =>
           ctx.dbmsPrivilegeExecute().ast[(DbmsAction, List[PrivilegeQualifier])]
         case c: TerminalNode => c.getSymbol.getType match {
-            case CypherParser.ALIAS => withQualifier(AllAliasManagementActions)
-            case CypherParser.ALTER => nodeChild(ctx, 1).getSymbol.getType match {
-                case CypherParser.ALIAS    => withQualifier(AlterAliasAction)
-                case CypherParser.DATABASE => withQualifier(AlterDatabaseAction)
-                case CypherParser.USER     => withQualifier(AlterUserAction)
-                case _                     => throw new IllegalStateException()
-              }
-            case CypherParser.ASSIGN => nodeChild(ctx, 1).getSymbol.getType match {
-                case CypherParser.PRIVILEGE => withQualifier(AssignPrivilegeAction)
-                case CypherParser.ROLE      => withQualifier(AssignRoleAction)
+            case Cypher5Parser.ALIAS => withQualifier(AllAliasManagementActions)
+            case Cypher5Parser.ALTER => nodeChild(ctx, 1).getSymbol.getType match {
+                case Cypher5Parser.ALIAS    => withQualifier(AlterAliasAction)
+                case Cypher5Parser.DATABASE => withQualifier(AlterDatabaseAction)
+                case Cypher5Parser.USER     => withQualifier(AlterUserAction)
                 case _                      => throw new IllegalStateException()
               }
-            case CypherParser.COMPOSITE => withQualifier(CompositeDatabaseManagementActions)
-            case CypherParser.DATABASE  => withQualifier(AllDatabaseManagementActions)
-            case CypherParser.IMPERSONATE =>
+            case Cypher5Parser.ASSIGN => nodeChild(ctx, 1).getSymbol.getType match {
+                case Cypher5Parser.PRIVILEGE => withQualifier(AssignPrivilegeAction)
+                case Cypher5Parser.ROLE      => withQualifier(AssignRoleAction)
+                case _                       => throw new IllegalStateException()
+              }
+            case Cypher5Parser.COMPOSITE => withQualifier(CompositeDatabaseManagementActions)
+            case Cypher5Parser.DATABASE  => withQualifier(AllDatabaseManagementActions)
+            case Cypher5Parser.IMPERSONATE =>
               (
                 ImpersonateUserAction,
                 astOpt[List[DatabasePrivilegeQualifier]](
@@ -378,23 +378,23 @@ trait DdlPrivilegeBuilder extends CypherParserListener {
                   List(UserAllQualifier()(InputPosition.NONE))
                 )
               )
-            case CypherParser.PRIVILEGE => withQualifier(AllPrivilegeActions)
-            case CypherParser.RENAME => nodeChild(ctx, 1).getSymbol.getType match {
-                case CypherParser.ROLE => withQualifier(RenameRoleAction)
-                case CypherParser.USER => withQualifier(RenameUserAction)
-                case _                 => throw new IllegalStateException()
+            case Cypher5Parser.PRIVILEGE => withQualifier(AllPrivilegeActions)
+            case Cypher5Parser.RENAME => nodeChild(ctx, 1).getSymbol.getType match {
+                case Cypher5Parser.ROLE => withQualifier(RenameRoleAction)
+                case Cypher5Parser.USER => withQualifier(RenameUserAction)
+                case _                  => throw new IllegalStateException()
               }
-            case CypherParser.ROLE   => withQualifier(AllRoleActions)
-            case CypherParser.SERVER => withQualifier(ServerManagementAction)
-            case CypherParser.USER   => withQualifier(AllUserActions)
-            case _                   => throw new IllegalStateException()
+            case Cypher5Parser.ROLE   => withQualifier(AllRoleActions)
+            case Cypher5Parser.SERVER => withQualifier(ServerManagementAction)
+            case Cypher5Parser.USER   => withQualifier(AllUserActions)
+            case _                    => throw new IllegalStateException()
           }
         case _ => throw new IllegalStateException()
       }
     ctx.ast = (DbmsPrivilege(action)(pos(ctx)), None, qualifier)
   }
 
-  override def exitDbmsPrivilegeExecute(ctx: CypherParser.DbmsPrivilegeExecuteContext): Unit = {
+  override def exitDbmsPrivilegeExecute(ctx: Cypher5Parser.DbmsPrivilegeExecuteContext): Unit = {
     ctx.ast = if (ctx.adminToken() != null) {
       withQualifier(ExecuteAdminProcedureAction)
     } else if (ctx.procedureToken() != null) {
@@ -407,7 +407,7 @@ trait DdlPrivilegeBuilder extends CypherParserListener {
   }
 
   final override def exitDropPrivilege(
-    ctx: CypherParser.DropPrivilegeContext
+    ctx: Cypher5Parser.DropPrivilegeContext
   ): Unit = {
     ctx.ast = if (ctx.databaseScope() != null) {
       val action = if (ctx.indexToken() != null) DropIndexAction else DropConstraintAction
@@ -419,7 +419,7 @@ trait DdlPrivilegeBuilder extends CypherParserListener {
   }
 
   final override def exitLoadPrivilege(
-    ctx: CypherParser.LoadPrivilegeContext
+    ctx: Cypher5Parser.LoadPrivilegeContext
   ): Unit = {
     ctx.ast = if (ctx.ALL() != null) {
       (
@@ -443,7 +443,7 @@ trait DdlPrivilegeBuilder extends CypherParserListener {
   }
 
   final override def exitQualifiedGraphPrivileges(
-    ctx: CypherParser.QualifiedGraphPrivilegesContext
+    ctx: Cypher5Parser.QualifiedGraphPrivilegesContext
   ): Unit = {
     val (action, resource) = {
       if (ctx.DELETE() != null) {
@@ -460,7 +460,7 @@ trait DdlPrivilegeBuilder extends CypherParserListener {
   }
 
   final override def exitQualifiedGraphPrivilegesWithProperty(
-    ctx: CypherParser.QualifiedGraphPrivilegesWithPropertyContext
+    ctx: Cypher5Parser.QualifiedGraphPrivilegesWithPropertyContext
   ): Unit = {
     val (action, resource) = {
       if (ctx.TRAVERSE() != null) {
@@ -480,14 +480,14 @@ trait DdlPrivilegeBuilder extends CypherParserListener {
   }
 
   final override def exitShowPrivilege(
-    ctx: CypherParser.ShowPrivilegeContext
+    ctx: Cypher5Parser.ShowPrivilegeContext
   ): Unit = {
     val p = pos(ctx)
     ctx.ast = if (ctx.databaseScope() != null) {
       val (action, qualifier): (DatabaseAction, List[DatabasePrivilegeQualifier]) = ctxChild(ctx, 1) match {
-        case _: CypherParser.ConstraintTokenContext => withQualifier(ShowConstraintAction)
-        case _: CypherParser.IndexTokenContext      => withQualifier(ShowIndexAction)
-        case _: CypherParser.TransactionTokenContext =>
+        case _: Cypher5Parser.ConstraintTokenContext => withQualifier(ShowConstraintAction)
+        case _: Cypher5Parser.IndexTokenContext      => withQualifier(ShowIndexAction)
+        case _: Cypher5Parser.TransactionTokenContext =>
           (
             ShowTransactionAction,
             astOpt[List[DatabasePrivilegeQualifier]](ctx.userQualifier(), List(UserAllQualifier()(InputPosition.NONE)))
@@ -499,14 +499,14 @@ trait DdlPrivilegeBuilder extends CypherParserListener {
     } else {
       val (action, qualifier): (DbmsAction, List[PrivilegeQualifier]) = ctx.getChild(1) match {
         case t: TerminalNode => t.getSymbol.getType match {
-            case CypherParser.ALIAS                         => withQualifier(ShowAliasAction)
-            case CypherParser.PRIVILEGE                     => withQualifier(ShowPrivilegeAction)
-            case CypherParser.ROLE                          => withQualifier(ShowRoleAction)
-            case CypherParser.SERVER | CypherParser.SERVERS => withQualifier(ShowServerAction)
-            case CypherParser.USER                          => withQualifier(ShowUserAction)
-            case _                                          => throw new IllegalStateException()
+            case Cypher5Parser.ALIAS                          => withQualifier(ShowAliasAction)
+            case Cypher5Parser.PRIVILEGE                      => withQualifier(ShowPrivilegeAction)
+            case Cypher5Parser.ROLE                           => withQualifier(ShowRoleAction)
+            case Cypher5Parser.SERVER | Cypher5Parser.SERVERS => withQualifier(ShowServerAction)
+            case Cypher5Parser.USER                           => withQualifier(ShowUserAction)
+            case _                                            => throw new IllegalStateException()
           }
-        case r: RuleNode if r.getRuleContext.getRuleIndex == CypherParser.RULE_settingToken =>
+        case r: RuleNode if r.getRuleContext.getRuleIndex == Cypher5Parser.RULE_settingToken =>
           (ShowSettingAction, ctx.settingQualifier().ast[List[SettingQualifier]]())
         case _ => throw new IllegalStateException()
       }
@@ -515,7 +515,7 @@ trait DdlPrivilegeBuilder extends CypherParserListener {
   }
 
   final override def exitSetPrivilege(
-    ctx: CypherParser.SetPrivilegeContext
+    ctx: Cypher5Parser.SetPrivilegeContext
   ): Unit = {
     val p = pos(ctx)
     ctx.ast = if (ctx.DBMS() != null) {
@@ -541,7 +541,7 @@ trait DdlPrivilegeBuilder extends CypherParserListener {
   }
 
   final override def exitRemovePrivilege(
-    ctx: CypherParser.RemovePrivilegeContext
+    ctx: Cypher5Parser.RemovePrivilegeContext
   ): Unit = {
     val p = pos(ctx)
     ctx.ast = if (ctx.DBMS() != null) {
@@ -558,20 +558,20 @@ trait DdlPrivilegeBuilder extends CypherParserListener {
   }
 
   final override def exitWritePrivilege(
-    ctx: CypherParser.WritePrivilegeContext
+    ctx: Cypher5Parser.WritePrivilegeContext
   ): Unit = {
     val scope = ctx.graphScope().ast[GraphScope]()
     ctx.ast = (GraphPrivilege(WriteAction, scope)(pos(ctx)), None, List(ElementsAllQualifier()(pos(ctx))))
   }
 
-  final override def exitNonEmptyStringList(ctx: CypherParser.NonEmptyStringListContext): Unit = {
+  final override def exitNonEmptyStringList(ctx: Cypher5Parser.NonEmptyStringListContext): Unit = {
     ctx.ast = astSeq[String](ctx.symbolicNameString())
   }
 
   // RESOURCES
 
   final override def exitLabelsResource(
-    ctx: CypherParser.LabelsResourceContext
+    ctx: Cypher5Parser.LabelsResourceContext
   ): Unit = {
     ctx.ast = if (ctx.TIMES() != null) {
       Some(AllLabelResource()(pos(ctx)))
@@ -581,7 +581,7 @@ trait DdlPrivilegeBuilder extends CypherParserListener {
   }
 
   final override def exitPropertiesResource(
-    ctx: CypherParser.PropertiesResourceContext
+    ctx: Cypher5Parser.PropertiesResourceContext
   ): Unit = {
     ctx.ast = if (ctx.TIMES() != null) {
       Some(AllPropertyResource()(pos(ctx)))
@@ -593,25 +593,25 @@ trait DdlPrivilegeBuilder extends CypherParserListener {
   // QUALIFIER CONTEXTS AND HELP METHODS
 
   final override def exitExecuteFunctionQualifier(
-    ctx: CypherParser.ExecuteFunctionQualifierContext
+    ctx: Cypher5Parser.ExecuteFunctionQualifierContext
   ): Unit = {
     ctx.ast = ctx.globs().ast[Seq[String]].map(FunctionQualifier(_)(pos(ctx))).toList
   }
 
   final override def exitExecuteProcedureQualifier(
-    ctx: CypherParser.ExecuteProcedureQualifierContext
+    ctx: Cypher5Parser.ExecuteProcedureQualifierContext
   ): Unit = {
     ctx.ast = ctx.globs().ast[Seq[String]].map(ProcedureQualifier(_)(pos(ctx))).toList
   }
 
   final override def exitGlobs(
-    ctx: CypherParser.GlobsContext
+    ctx: Cypher5Parser.GlobsContext
   ): Unit = {
     ctx.ast = astSeq[String](ctx.glob())
   }
 
   final override def exitGlob(
-    ctx: CypherParser.GlobContext
+    ctx: Cypher5Parser.GlobContext
   ): Unit = {
     val str = astOpt[String](ctx.escapedSymbolicNameString(), "")
     val glob = astOpt[String](ctx.globRecursive(), "")
@@ -619,13 +619,13 @@ trait DdlPrivilegeBuilder extends CypherParserListener {
   }
 
   final override def exitGlobRecursive(
-    ctx: CypherParser.GlobRecursiveContext
+    ctx: Cypher5Parser.GlobRecursiveContext
   ): Unit = {
     ctx.ast = ctx.globPart().ast[String]() + astOpt[String](ctx.globRecursive(), "")
   }
 
   final override def exitGlobPart(
-    ctx: CypherParser.GlobPartContext
+    ctx: Cypher5Parser.GlobPartContext
   ): Unit = {
     ctx.ast = if (ctx.DOT() != null) "." + astOpt[String](ctx.escapedSymbolicNameString(), "")
     else if (ctx.QUESTION() != null) "?"
@@ -634,7 +634,7 @@ trait DdlPrivilegeBuilder extends CypherParserListener {
   }
 
   final override def exitGraphQualifier(
-    ctx: CypherParser.GraphQualifierContext
+    ctx: Cypher5Parser.GraphQualifierContext
   ): Unit = {
     val token = ctx.graphQualifierToken()
     ctx.ast = if (token != null) {
@@ -666,22 +666,22 @@ trait DdlPrivilegeBuilder extends CypherParserListener {
   final private case object NodeGraphToken extends GraphToken
   final private case object ElementGraphToken extends GraphToken
 
-  override def exitGraphQualifierToken(ctx: CypherParser.GraphQualifierTokenContext): Unit = {
+  override def exitGraphQualifierToken(ctx: Cypher5Parser.GraphQualifierTokenContext): Unit = {
     ctx.ast = ctxChild(ctx, 0) match {
-      case _: CypherParser.RelTokenContext     => RelGraphToken
-      case _: CypherParser.NodeTokenContext    => NodeGraphToken
-      case _: CypherParser.ElementTokenContext => ElementGraphToken
-      case _                                   => throw new IllegalStateException("Unexpected token in Graph Qualifier")
+      case _: Cypher5Parser.RelTokenContext     => RelGraphToken
+      case _: Cypher5Parser.NodeTokenContext    => NodeGraphToken
+      case _: Cypher5Parser.ElementTokenContext => ElementGraphToken
+      case _ => throw new IllegalStateException("Unexpected token in Graph Qualifier")
     }
   }
 
   final override def exitSettingQualifier(
-    ctx: CypherParser.SettingQualifierContext
+    ctx: Cypher5Parser.SettingQualifierContext
   ): Unit = {
     ctx.ast = ctx.globs().ast[ArraySeq[String]]().map(SettingQualifier(_)(pos(ctx))).toList
   }
 
-  override def exitUserQualifier(ctx: CypherParser.UserQualifierContext): Unit = {
+  override def exitUserQualifier(ctx: Cypher5Parser.UserQualifierContext): Unit = {
     ctx.ast = if (ctx.userNames != null) {
       ctx.userNames.ast[ArraySeq[Expression]]().map(
         UserQualifier(_)(InputPosition.NONE)
@@ -723,49 +723,49 @@ trait DdlPrivilegeBuilder extends CypherParserListener {
     (privilege, resource, List(LabelAllQualifier()(pos)))
   }
 
-  override def exitRoleNames(ctx: CypherParser.RoleNamesContext): Unit = {
+  override def exitRoleNames(ctx: Cypher5Parser.RoleNamesContext): Unit = {
     ctx.ast = ctx.symbolicNameOrStringParameterList().ast[ArraySeq[Expression]]()
   }
 
-  override def exitUserNames(ctx: CypherParser.UserNamesContext): Unit = {
+  override def exitUserNames(ctx: Cypher5Parser.UserNamesContext): Unit = {
     ctx.ast = ctx.symbolicNameOrStringParameterList().ast[ArraySeq[Expression]]()
   }
 
   // TOKEN CONTEXTS
-  override def exitAdminToken(ctx: CypherParser.AdminTokenContext): Unit = {}
+  override def exitAdminToken(ctx: Cypher5Parser.AdminTokenContext): Unit = {}
 
-  override def exitConstraintToken(ctx: CypherParser.ConstraintTokenContext): Unit = {
+  override def exitConstraintToken(ctx: Cypher5Parser.ConstraintTokenContext): Unit = {
     ctx.ast = CreateConstraintAction
   }
 
-  override def exitCreateNodePrivilegeToken(ctx: CypherParser.CreateNodePrivilegeTokenContext): Unit = {
+  override def exitCreateNodePrivilegeToken(ctx: Cypher5Parser.CreateNodePrivilegeTokenContext): Unit = {
     ctx.ast = CreateNodeLabelAction
   }
 
-  override def exitCreatePropertyPrivilegeToken(ctx: CypherParser.CreatePropertyPrivilegeTokenContext): Unit = {
+  override def exitCreatePropertyPrivilegeToken(ctx: Cypher5Parser.CreatePropertyPrivilegeTokenContext): Unit = {
     ctx.ast = CreatePropertyKeyAction
   }
 
-  override def exitCreateRelPrivilegeToken(ctx: CypherParser.CreateRelPrivilegeTokenContext): Unit = {
+  override def exitCreateRelPrivilegeToken(ctx: Cypher5Parser.CreateRelPrivilegeTokenContext): Unit = {
     ctx.ast = CreateRelationshipTypeAction
   }
-  override def exitElementToken(ctx: CypherParser.ElementTokenContext): Unit = {}
-  override def exitIndexToken(ctx: CypherParser.IndexTokenContext): Unit = { ctx.ast = CreateIndexAction }
-  override def exitNodeToken(ctx: CypherParser.NodeTokenContext): Unit = {}
-  override def exitPasswordToken(ctx: CypherParser.PasswordTokenContext): Unit = {}
-  override def exitPrivilegeToken(ctx: CypherParser.PrivilegeTokenContext): Unit = {}
-  override def exitProcedureToken(ctx: CypherParser.ProcedureTokenContext): Unit = {}
-  override def exitRelToken(ctx: CypherParser.RelTokenContext): Unit = {}
-  override def exitRoleToken(ctx: CypherParser.RoleTokenContext): Unit = {}
-  override def exitTransactionToken(ctx: CypherParser.TransactionTokenContext): Unit = {}
-  override def exitFunctionToken(ctx: CypherParser.FunctionTokenContext): Unit = {}
-  override def exitAscToken(ctx: CypherParser.AscTokenContext): Unit = {}
-  override def exitDescToken(ctx: CypherParser.DescTokenContext): Unit = {}
-  override def exitSettingToken(ctx: CypherParser.SettingTokenContext): Unit = {}
-  override def exitPrimaryToken(ctx: CypherParser.PrimaryTokenContext): Unit = {}
-  override def exitSecondaryToken(ctx: CypherParser.SecondaryTokenContext): Unit = {}
-  override def exitSecondsToken(ctx: CypherParser.SecondsTokenContext): Unit = {}
-  override def exitGroupToken(ctx: CypherParser.GroupTokenContext): Unit = {}
-  override def exitPathToken(ctx: CypherParser.PathTokenContext): Unit = {}
+  override def exitElementToken(ctx: Cypher5Parser.ElementTokenContext): Unit = {}
+  override def exitIndexToken(ctx: Cypher5Parser.IndexTokenContext): Unit = { ctx.ast = CreateIndexAction }
+  override def exitNodeToken(ctx: Cypher5Parser.NodeTokenContext): Unit = {}
+  override def exitPasswordToken(ctx: Cypher5Parser.PasswordTokenContext): Unit = {}
+  override def exitPrivilegeToken(ctx: Cypher5Parser.PrivilegeTokenContext): Unit = {}
+  override def exitProcedureToken(ctx: Cypher5Parser.ProcedureTokenContext): Unit = {}
+  override def exitRelToken(ctx: Cypher5Parser.RelTokenContext): Unit = {}
+  override def exitRoleToken(ctx: Cypher5Parser.RoleTokenContext): Unit = {}
+  override def exitTransactionToken(ctx: Cypher5Parser.TransactionTokenContext): Unit = {}
+  override def exitFunctionToken(ctx: Cypher5Parser.FunctionTokenContext): Unit = {}
+  override def exitAscToken(ctx: Cypher5Parser.AscTokenContext): Unit = {}
+  override def exitDescToken(ctx: Cypher5Parser.DescTokenContext): Unit = {}
+  override def exitSettingToken(ctx: Cypher5Parser.SettingTokenContext): Unit = {}
+  override def exitPrimaryToken(ctx: Cypher5Parser.PrimaryTokenContext): Unit = {}
+  override def exitSecondaryToken(ctx: Cypher5Parser.SecondaryTokenContext): Unit = {}
+  override def exitSecondsToken(ctx: Cypher5Parser.SecondsTokenContext): Unit = {}
+  override def exitGroupToken(ctx: Cypher5Parser.GroupTokenContext): Unit = {}
+  override def exitPathToken(ctx: Cypher5Parser.PathTokenContext): Unit = {}
 
 }

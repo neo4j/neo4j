@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.neo4j.cypher.internal.parser.v5.ast.factory.ast
+package org.neo4j.cypher.internal.parser.v5.ast.factory
 
 import org.neo4j.cypher.internal.ast.AllDatabasesScope
 import org.neo4j.cypher.internal.ast.AllGraphsScope
@@ -97,8 +97,8 @@ import org.neo4j.cypher.internal.parser.ast.util.Util.lastChild
 import org.neo4j.cypher.internal.parser.ast.util.Util.nodeChild
 import org.neo4j.cypher.internal.parser.ast.util.Util.pos
 import org.neo4j.cypher.internal.parser.ast.util.Util.rangePos
-import org.neo4j.cypher.internal.parser.v5.CypherParser
-import org.neo4j.cypher.internal.parser.v5.CypherParserListener
+import org.neo4j.cypher.internal.parser.v5.Cypher5Parser
+import org.neo4j.cypher.internal.parser.v5.Cypher5ParserListener
 import org.neo4j.cypher.internal.util.symbols.CTString
 import org.neo4j.exceptions.SyntaxException
 
@@ -106,9 +106,9 @@ import java.nio.charset.StandardCharsets
 
 import scala.collection.immutable.ArraySeq
 
-trait DdlBuilder extends CypherParserListener {
+trait DdlBuilder extends Cypher5ParserListener {
 
-  override def exitCommandOptions(ctx: CypherParser.CommandOptionsContext): Unit = {
+  override def exitCommandOptions(ctx: Cypher5Parser.CommandOptionsContext): Unit = {
     val map = ctx.mapOrParameter().ast[Either[Map[String, Expression], Parameter]]()
     ctx.ast = map match {
       case Left(m)  => OptionsMap(m)
@@ -117,7 +117,7 @@ trait DdlBuilder extends CypherParserListener {
   }
 
   final override def exitMapOrParameter(
-    ctx: CypherParser.MapOrParameterContext
+    ctx: Cypher5Parser.MapOrParameterContext
   ): Unit = {
     val map = ctx.map()
     ctx.ast = if (map != null) {
@@ -128,16 +128,16 @@ trait DdlBuilder extends CypherParserListener {
   }
 
   final override def exitCommand(
-    ctx: CypherParser.CommandContext
+    ctx: Cypher5Parser.CommandContext
   ): Unit = {
     val useCtx = ctx.useClause()
     ctx.ast = lastChild[AstRuleCtx](ctx) match {
-      case c: CypherParser.ShowCommandContext => c.ast match {
+      case c: Cypher5Parser.ShowCommandContext => c.ast match {
           case sQ: SingleQuery if useCtx != null => SingleQuery(useCtx.ast[UseGraph]() +: sQ.clauses)(pos(ctx))
           case command: StatementWithGraph if useCtx != null => command.withGraph(Some(useCtx.ast()))
           case a                                             => a
         }
-      case c: CypherParser.TerminateCommandContext =>
+      case c: Cypher5Parser.TerminateCommandContext =>
         if (useCtx != null) SingleQuery(useCtx.ast[UseGraph]() +: c.ast[Seq[Clause]]())(pos(ctx))
         else SingleQuery(c.ast[Seq[Clause]]())(pos(ctx))
       case c => c.ast[StatementWithGraph].withGraph(astOpt[UseGraph](useCtx))
@@ -145,37 +145,37 @@ trait DdlBuilder extends CypherParserListener {
   }
 
   final override def exitDropCommand(
-    ctx: CypherParser.DropCommandContext
+    ctx: Cypher5Parser.DropCommandContext
   ): Unit = {
     ctx.ast = ctxChild(ctx, 1).ast
   }
 
   final override def exitAlterCommand(
-    ctx: CypherParser.AlterCommandContext
+    ctx: Cypher5Parser.AlterCommandContext
   ): Unit = {
     ctx.ast = ctxChild(ctx, 1).ast
   }
 
   final override def exitTerminateCommand(
-    ctx: CypherParser.TerminateCommandContext
+    ctx: Cypher5Parser.TerminateCommandContext
   ): Unit = {
     ctx.ast = ctxChild(ctx, 1).ast
   }
 
   final override def exitRenameCommand(
-    ctx: CypherParser.RenameCommandContext
+    ctx: Cypher5Parser.RenameCommandContext
   ): Unit = {
     ctx.ast = ctxChild(ctx, 1).ast
   }
 
   final override def exitEnableServerCommand(
-    ctx: CypherParser.EnableServerCommandContext
+    ctx: Cypher5Parser.EnableServerCommandContext
   ): Unit = {
     ctx.ast = EnableServer(ctx.stringOrParameter().ast(), astOpt[Options](ctx.commandOptions(), NoOptions))(pos(ctx))
   }
 
   final override def exitAllocationCommand(
-    ctx: CypherParser.AllocationCommandContext
+    ctx: Cypher5Parser.AllocationCommandContext
   ): Unit = {
     val dryRun = ctx.DRYRUN() != null
     ctx.ast = if (ctx.reallocateDatabases() != null) {
@@ -189,7 +189,7 @@ trait DdlBuilder extends CypherParserListener {
   }
 
   final override def exitDropDatabase(
-    ctx: CypherParser.DropDatabaseContext
+    ctx: Cypher5Parser.DropDatabaseContext
   ): Unit = {
     val additionalAction = if (ctx.DUMP() != null) DumpData else DestroyData
     ctx.ast = DropDatabase(
@@ -202,7 +202,7 @@ trait DdlBuilder extends CypherParserListener {
   }
 
   final override def exitAlterDatabase(
-    ctx: CypherParser.AlterDatabaseContext
+    ctx: Cypher5Parser.AlterDatabaseContext
   ): Unit = {
     val dbName = ctx.symbolicAliasNameOrParameter().ast[DatabaseName]()
     val waitUntilComplete = astOpt[WaitUntilComplete](ctx.waitClause(), NoWait)
@@ -223,7 +223,7 @@ trait DdlBuilder extends CypherParserListener {
     }
   }
 
-  final override def exitAlterDatabaseAccess(ctx: CypherParser.AlterDatabaseAccessContext): Unit = {
+  final override def exitAlterDatabaseAccess(ctx: Cypher5Parser.AlterDatabaseAccessContext): Unit = {
     ctx.ast = if (ctx.ONLY() != null) {
       ReadOnlyAccess
     } else {
@@ -231,7 +231,7 @@ trait DdlBuilder extends CypherParserListener {
     }
   }
 
-  final override def exitAlterDatabaseTopology(ctx: CypherParser.AlterDatabaseTopologyContext): Unit = {
+  final override def exitAlterDatabaseTopology(ctx: Cypher5Parser.AlterDatabaseTopologyContext): Unit = {
     ctx.ast =
       if (ctx.TOPOLOGY() != null) {
         val pT = astOptFromList[Int](ctx.primaryTopology(), None)
@@ -240,12 +240,12 @@ trait DdlBuilder extends CypherParserListener {
       } else None
   }
 
-  final override def exitAlterDatabaseOption(ctx: CypherParser.AlterDatabaseOptionContext): Unit = {
+  final override def exitAlterDatabaseOption(ctx: Cypher5Parser.AlterDatabaseOptionContext): Unit = {
     ctx.ast = Map((ctx.symbolicNameString().ast[String], ctx.expression().ast[Expression]))
   }
 
   final override def exitStartDatabase(
-    ctx: CypherParser.StartDatabaseContext
+    ctx: Cypher5Parser.StartDatabaseContext
   ): Unit = {
     ctx.ast = StartDatabase(
       ctx.symbolicAliasNameOrParameter().ast(),
@@ -254,7 +254,7 @@ trait DdlBuilder extends CypherParserListener {
   }
 
   final override def exitStopDatabase(
-    ctx: CypherParser.StopDatabaseContext
+    ctx: Cypher5Parser.StopDatabaseContext
   ): Unit = {
     ctx.ast = StopDatabase(
       ctx.symbolicAliasNameOrParameter().ast(),
@@ -263,11 +263,11 @@ trait DdlBuilder extends CypherParserListener {
   }
 
   final override def exitWaitClause(
-    ctx: CypherParser.WaitClauseContext
+    ctx: Cypher5Parser.WaitClauseContext
   ): Unit = {
     ctx.ast = nodeChild(ctx, 0).getSymbol.getType match {
-      case CypherParser.NOWAIT => NoWait
-      case CypherParser.WAIT => ctx.UNSIGNED_DECIMAL_INTEGER() match {
+      case Cypher5Parser.NOWAIT => NoWait
+      case Cypher5Parser.WAIT => ctx.UNSIGNED_DECIMAL_INTEGER() match {
           case null    => IndefiniteWait
           case seconds => TimeoutAfter(seconds.getText.toLong)
         }
@@ -275,7 +275,7 @@ trait DdlBuilder extends CypherParserListener {
   }
 
   final override def exitDatabaseScope(
-    ctx: CypherParser.DatabaseScopeContext
+    ctx: Cypher5Parser.DatabaseScopeContext
   ): Unit = {
     ctx.ast = if (ctx.DEFAULT() != null) {
       DefaultDatabaseScope()(pos(ctx))
@@ -289,7 +289,7 @@ trait DdlBuilder extends CypherParserListener {
   }
 
   final override def exitGraphScope(
-    ctx: CypherParser.GraphScopeContext
+    ctx: Cypher5Parser.GraphScopeContext
   ): Unit = {
     ctx.ast = if (ctx.DEFAULT() != null) {
       DefaultGraphScope()(pos(ctx))
@@ -303,7 +303,7 @@ trait DdlBuilder extends CypherParserListener {
   }
 
   final override def exitDropAlias(
-    ctx: CypherParser.DropAliasContext
+    ctx: Cypher5Parser.DropAliasContext
   ): Unit = {
     ctx.ast = DropDatabaseAlias(ctx.symbolicAliasNameOrParameter().ast[DatabaseName](), ctx.EXISTS() != null)(pos(
       ctx.getParent
@@ -311,7 +311,7 @@ trait DdlBuilder extends CypherParserListener {
   }
 
   final override def exitAlterAlias(
-    ctx: CypherParser.AlterAliasContext
+    ctx: Cypher5Parser.AlterAliasContext
   ): Unit = {
     val aliasName = ctx.symbolicAliasNameOrParameter().ast[DatabaseName]()
     val aliasTargetCtx = ctx.alterAliasTarget()
@@ -343,36 +343,36 @@ trait DdlBuilder extends CypherParserListener {
     }
   }
 
-  override def exitAlterAliasTarget(ctx: CypherParser.AlterAliasTargetContext): Unit = {
+  override def exitAlterAliasTarget(ctx: Cypher5Parser.AlterAliasTargetContext): Unit = {
     val target = ctx.symbolicAliasNameOrParameter().ast[DatabaseName]()
     val url = astOpt[Either[String, Parameter]](ctx.stringOrParameter())
     ctx.ast = (target, url)
   }
 
-  override def exitAlterAliasUser(ctx: CypherParser.AlterAliasUserContext): Unit = {
+  override def exitAlterAliasUser(ctx: Cypher5Parser.AlterAliasUserContext): Unit = {
     ctx.ast = ctxChild(ctx, 1).ast
   }
 
-  override def exitAlterAliasPassword(ctx: CypherParser.AlterAliasPasswordContext): Unit = {
+  override def exitAlterAliasPassword(ctx: Cypher5Parser.AlterAliasPasswordContext): Unit = {
     ctx.ast = ctxChild(ctx, 1).ast
   }
 
-  override def exitAlterAliasDriver(ctx: CypherParser.AlterAliasDriverContext): Unit = {
+  override def exitAlterAliasDriver(ctx: Cypher5Parser.AlterAliasDriverContext): Unit = {
     ctx.ast = ctxChild(ctx, 1).ast
   }
 
-  override def exitAlterAliasProperties(ctx: CypherParser.AlterAliasPropertiesContext): Unit = {
+  override def exitAlterAliasProperties(ctx: Cypher5Parser.AlterAliasPropertiesContext): Unit = {
     ctx.ast = ctxChild(ctx, 1).ast
   }
 
   final override def exitSymbolicAliasNameList(
-    ctx: CypherParser.SymbolicAliasNameListContext
+    ctx: Cypher5Parser.SymbolicAliasNameListContext
   ): Unit = {
     ctx.ast = astSeq[DatabaseName](ctx.symbolicAliasNameOrParameter())
   }
 
   final override def exitSymbolicAliasNameOrParameter(
-    ctx: CypherParser.SymbolicAliasNameOrParameterContext
+    ctx: Cypher5Parser.SymbolicAliasNameOrParameterContext
   ): Unit = {
     val symbAliasName = ctx.symbolicAliasName()
     ctx.ast =
@@ -384,7 +384,7 @@ trait DdlBuilder extends CypherParserListener {
   }
 
   final override def exitCommandNodePattern(
-    ctx: CypherParser.CommandNodePatternContext
+    ctx: Cypher5Parser.CommandNodePatternContext
   ): Unit = {
     ctx.ast = (
       ctx.variable().ast[Variable](),
@@ -393,7 +393,7 @@ trait DdlBuilder extends CypherParserListener {
   }
 
   final override def exitCommandRelPattern(
-    ctx: CypherParser.CommandRelPatternContext
+    ctx: Cypher5Parser.CommandRelPatternContext
   ): Unit = {
     ctx.ast = (
       ctx.variable().ast[Variable](),
@@ -402,7 +402,7 @@ trait DdlBuilder extends CypherParserListener {
   }
 
   final override def exitDropConstraint(
-    ctx: CypherParser.DropConstraintContext
+    ctx: Cypher5Parser.DropConstraintContext
   ): Unit = {
     val p = pos(ctx.getParent)
     val constraintName = ctx.symbolicNameOrStringParameter()
@@ -435,7 +435,7 @@ trait DdlBuilder extends CypherParserListener {
   }
 
   final override def exitDropIndex(
-    ctx: CypherParser.DropIndexContext
+    ctx: Cypher5Parser.DropIndexContext
   ): Unit = {
     val indexName = ctx.symbolicNameOrStringParameter()
     ctx.ast = if (indexName != null) {
@@ -452,7 +452,7 @@ trait DdlBuilder extends CypherParserListener {
   }
 
   final override def exitPropertyList(
-    ctx: CypherParser.PropertyListContext
+    ctx: Cypher5Parser.PropertyListContext
   ): Unit = {
     val enclosed = ctx.enclosedPropertyList()
     ctx.ast =
@@ -461,14 +461,14 @@ trait DdlBuilder extends CypherParserListener {
   }
 
   final override def exitEnclosedPropertyList(
-    ctx: CypherParser.EnclosedPropertyListContext
+    ctx: Cypher5Parser.EnclosedPropertyListContext
   ): Unit = {
     ctx.ast = astPairs[Expression, PropertyKeyName](ctx.variable(), ctx.property())
       .map { case (e, p) => Property(e, p)(e.position) }
   }
 
   final override def exitAlterServer(
-    ctx: CypherParser.AlterServerContext
+    ctx: Cypher5Parser.AlterServerContext
   ): Unit = {
     ctx.ast = AlterServer(
       ctx.stringOrParameter().ast[Either[String, Parameter]](),
@@ -477,7 +477,7 @@ trait DdlBuilder extends CypherParserListener {
   }
 
   final override def exitRenameServer(
-    ctx: CypherParser.RenameServerContext
+    ctx: Cypher5Parser.RenameServerContext
   ): Unit = {
     val names = ctx.stringOrParameter()
     ctx.ast = RenameServer(
@@ -487,49 +487,49 @@ trait DdlBuilder extends CypherParserListener {
   }
 
   final override def exitDropServer(
-    ctx: CypherParser.DropServerContext
+    ctx: Cypher5Parser.DropServerContext
   ): Unit = {
     ctx.ast = DropServer(ctx.stringOrParameter().ast[Either[String, Parameter]])(pos(ctx.getParent))
   }
 
   final override def exitDeallocateDatabaseFromServers(
-    ctx: CypherParser.DeallocateDatabaseFromServersContext
+    ctx: Cypher5Parser.DeallocateDatabaseFromServersContext
   ): Unit = {
     ctx.ast = astSeq[Either[String, Parameter]](ctx.stringOrParameter())
   }
 
   final override def exitReallocateDatabases(
-    ctx: CypherParser.ReallocateDatabasesContext
+    ctx: Cypher5Parser.ReallocateDatabasesContext
   ): Unit = {}
 
   final override def exitDropRole(
-    ctx: CypherParser.DropRoleContext
+    ctx: Cypher5Parser.DropRoleContext
   ): Unit = {
     ctx.ast = DropRole(ctx.commandNameExpression().ast(), ctx.EXISTS() != null)(pos(ctx.getParent))
   }
 
   final override def exitRenameRole(
-    ctx: CypherParser.RenameRoleContext
+    ctx: Cypher5Parser.RenameRoleContext
   ): Unit = {
     val names = ctx.commandNameExpression()
     ctx.ast = RenameRole(names.get(0).ast(), names.get(1).ast(), ctx.EXISTS() != null)(pos(ctx.getParent))
   }
 
   final override def exitDropUser(
-    ctx: CypherParser.DropUserContext
+    ctx: Cypher5Parser.DropUserContext
   ): Unit = {
     ctx.ast = DropUser(ctx.commandNameExpression().ast(), ctx.EXISTS() != null)(pos(ctx.getParent))
   }
 
   final override def exitRenameUser(
-    ctx: CypherParser.RenameUserContext
+    ctx: Cypher5Parser.RenameUserContext
   ): Unit = {
     val names = ctx.commandNameExpression()
     ctx.ast = RenameUser(names.get(0).ast(), names.get(1).ast(), ctx.EXISTS() != null)(pos(ctx.getParent))
   }
 
   final override def exitAlterCurrentUser(
-    ctx: CypherParser.AlterCurrentUserContext
+    ctx: Cypher5Parser.AlterCurrentUserContext
   ): Unit = {
     ctx.ast = SetOwnPassword(
       ctx.passwordExpression(1).ast[Expression](),
@@ -538,7 +538,7 @@ trait DdlBuilder extends CypherParserListener {
   }
 
   final override def exitAlterUser(
-    ctx: CypherParser.AlterUserContext
+    ctx: Cypher5Parser.AlterUserContext
   ): Unit = {
     val username = ctx.commandNameExpression().ast[Expression]()
     val passCtx = ctx.password()
@@ -560,10 +560,10 @@ trait DdlBuilder extends CypherParserListener {
     ctx.ast = AlterUser(username, isEncrypted, initPass, userOptions, ctx.EXISTS() != null)(pos(ctx.getParent))
   }
 
-  override def exitPassword(ctx: CypherParser.PasswordContext): Unit = {}
+  override def exitPassword(ctx: Cypher5Parser.PasswordContext): Unit = {}
 
   final override def exitPasswordExpression(
-    ctx: CypherParser.PasswordExpressionContext
+    ctx: Cypher5Parser.PasswordExpressionContext
   ): Unit = {
     val str = ctx.stringLiteral()
     ctx.ast = if (str != null) {
@@ -576,32 +576,32 @@ trait DdlBuilder extends CypherParserListener {
   }
 
   final override def exitPasswordChangeRequired(
-    ctx: CypherParser.PasswordChangeRequiredContext
+    ctx: Cypher5Parser.PasswordChangeRequiredContext
   ): Unit = {
     ctx.ast = ctx.NOT() == null
   }
 
   final override def exitUserStatus(
-    ctx: CypherParser.UserStatusContext
+    ctx: Cypher5Parser.UserStatusContext
   ): Unit = {
     ctx.ast = ctx.SUSPENDED() != null
   }
 
   final override def exitHomeDatabase(
-    ctx: CypherParser.HomeDatabaseContext
+    ctx: Cypher5Parser.HomeDatabaseContext
   ): Unit = {
     val dbName = ctx.symbolicAliasNameOrParameter().ast[DatabaseName]()
     ctx.ast = SetHomeDatabaseAction(dbName)
   }
 
   final override def exitSymbolicNameOrStringParameterList(
-    ctx: CypherParser.SymbolicNameOrStringParameterListContext
+    ctx: Cypher5Parser.SymbolicNameOrStringParameterListContext
   ): Unit = {
     ctx.ast = astSeq[Expression](ctx.commandNameExpression())
   }
 
   final override def exitCommandNameExpression(
-    ctx: CypherParser.CommandNameExpressionContext
+    ctx: Cypher5Parser.CommandNameExpressionContext
   ): Unit = {
     val name = ctx.symbolicNameString()
     ctx.ast = if (name != null) {
@@ -612,7 +612,7 @@ trait DdlBuilder extends CypherParserListener {
   }
 
   final override def exitSymbolicNameOrStringParameter(
-    ctx: CypherParser.SymbolicNameOrStringParameterContext
+    ctx: Cypher5Parser.SymbolicNameOrStringParameterContext
   ): Unit = {
     ctx.ast = if (ctx.symbolicNameString() != null) {
       Left(ctx.symbolicNameString().ast[String]())
@@ -622,7 +622,7 @@ trait DdlBuilder extends CypherParserListener {
   }
 
   final override def exitStringOrParameter(
-    ctx: CypherParser.StringOrParameterContext
+    ctx: Cypher5Parser.StringOrParameterContext
   ): Unit = {
     ctx.ast = if (ctx.stringLiteral() != null) {
       Left(ctx.stringLiteral().ast[StringLiteral]().value)

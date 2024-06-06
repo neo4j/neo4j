@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.cypher.internal.parser.v5.ast.factory.ast
+package org.neo4j.cypher.internal.parser.v5.ast.factory
 
 import org.antlr.v4.runtime.misc.Interval
 import org.antlr.v4.runtime.tree.TerminalNode
@@ -36,41 +36,41 @@ import org.neo4j.cypher.internal.parser.ast.util.Util.astSeq
 import org.neo4j.cypher.internal.parser.ast.util.Util.lastChild
 import org.neo4j.cypher.internal.parser.ast.util.Util.pos
 import org.neo4j.cypher.internal.parser.ast.util.Util.rangePos
-import org.neo4j.cypher.internal.parser.v5.CypherParser
-import org.neo4j.cypher.internal.parser.v5.CypherParserListener
-import org.neo4j.cypher.internal.parser.v5.ast.factory.ast.LiteralBuilder.cypherStringToString
+import org.neo4j.cypher.internal.parser.v5.Cypher5Parser
+import org.neo4j.cypher.internal.parser.v5.Cypher5ParserListener
+import org.neo4j.cypher.internal.parser.v5.ast.factory.LiteralBuilder.cypherStringToString
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.InputPosition
 
-trait LiteralBuilder extends CypherParserListener {
+trait LiteralBuilder extends Cypher5ParserListener {
 
   protected def exceptionFactory: CypherExceptionFactory
 
-  override def exitLiteral(ctx: CypherParser.LiteralContext): Unit = {
+  override def exitLiteral(ctx: Cypher5Parser.LiteralContext): Unit = {
     ctx.ast = ctx.children.get(0) match {
       case rule: AstRuleCtx => rule.ast
       case token: TerminalNode => token.getSymbol.getType match {
-          case CypherParser.TRUE                        => True()(pos(ctx))
-          case CypherParser.FALSE                       => False()(pos(ctx))
-          case CypherParser.INF | CypherParser.INFINITY => Infinity()(pos(ctx))
-          case CypherParser.NAN                         => NaN()(pos(ctx))
-          case CypherParser.NULL                        => Null()(pos(ctx))
+          case Cypher5Parser.TRUE                         => True()(pos(ctx))
+          case Cypher5Parser.FALSE                        => False()(pos(ctx))
+          case Cypher5Parser.INF | Cypher5Parser.INFINITY => Infinity()(pos(ctx))
+          case Cypher5Parser.NAN                          => NaN()(pos(ctx))
+          case Cypher5Parser.NULL                         => Null()(pos(ctx))
         }
       case other => throw new IllegalStateException(s"Unexpected child $other")
     }
   }
 
-  final override def exitNumberLiteral(ctx: CypherParser.NumberLiteralContext): Unit = {
+  final override def exitNumberLiteral(ctx: Cypher5Parser.NumberLiteralContext): Unit = {
     ctx.ast = lastChild[TerminalNode](ctx).getSymbol.getType match {
-      case CypherParser.UNSIGNED_DECIMAL_INTEGER => SignedDecimalIntegerLiteral(ctx.getText)(pos(ctx))
-      case CypherParser.DECIMAL_DOUBLE           => DecimalDoubleLiteral(ctx.getText)(pos(ctx))
-      case CypherParser.UNSIGNED_HEX_INTEGER     => SignedHexIntegerLiteral(ctx.getText)(pos(ctx))
-      case CypherParser.UNSIGNED_OCTAL_INTEGER   => SignedOctalIntegerLiteral(ctx.getText)(pos(ctx))
+      case Cypher5Parser.UNSIGNED_DECIMAL_INTEGER => SignedDecimalIntegerLiteral(ctx.getText)(pos(ctx))
+      case Cypher5Parser.DECIMAL_DOUBLE           => DecimalDoubleLiteral(ctx.getText)(pos(ctx))
+      case Cypher5Parser.UNSIGNED_HEX_INTEGER     => SignedHexIntegerLiteral(ctx.getText)(pos(ctx))
+      case Cypher5Parser.UNSIGNED_OCTAL_INTEGER   => SignedOctalIntegerLiteral(ctx.getText)(pos(ctx))
     }
   }
 
   final override def exitSignedIntegerLiteral(
-    ctx: CypherParser.SignedIntegerLiteralContext
+    ctx: Cypher5Parser.SignedIntegerLiteralContext
   ): Unit = {
     ctx.ast = if (ctx.MINUS() != null) {
       SignedDecimalIntegerLiteral("-" + ctx.UNSIGNED_DECIMAL_INTEGER().getText)(pos(ctx))
@@ -80,12 +80,12 @@ trait LiteralBuilder extends CypherParserListener {
   }
 
   final override def exitListLiteral(
-    ctx: CypherParser.ListLiteralContext
+    ctx: Cypher5Parser.ListLiteralContext
   ): Unit = {
     ctx.ast = ListLiteral(astSeq[Expression](ctx.expression()))(pos(ctx))
   }
 
-  override def exitStringLiteral(ctx: CypherParser.StringLiteralContext): Unit = {
+  override def exitStringLiteral(ctx: Cypher5Parser.StringLiteralContext): Unit = {
     val text = ctx.start.getInputStream.getText(new Interval(ctx.start.getStartIndex + 1, ctx.stop.getStopIndex - 1))
     ctx.ast = StringLiteral(cypherStringToString(text, pos(ctx), exceptionFactory))(rangePos(ctx))
   }

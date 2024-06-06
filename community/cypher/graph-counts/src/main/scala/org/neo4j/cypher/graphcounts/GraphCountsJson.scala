@@ -34,7 +34,7 @@ import org.neo4j.cypher.internal.expressions.MapExpression
 import org.neo4j.cypher.internal.expressions.NumberLiteral
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.StringLiteral
-import org.neo4j.cypher.internal.parser.v5.ast.factory.ast.CypherAstParser
+import org.neo4j.cypher.internal.parser.v5.ast.factory.Cypher5AstParser
 import org.neo4j.cypher.internal.util.Neo4jCypherExceptionFactory
 import org.neo4j.internal.schema.ConstraintType
 import org.neo4j.internal.schema.IndexProviderDescriptor
@@ -96,7 +96,7 @@ object GraphCountsJson {
   }
 
   def parseAsGraphCountDataFromCypherMapString(mapString: String): GraphCountData = {
-    val mapExpression = new CypherAstParser(mapString, Neo4jCypherExceptionFactory(mapString, None), None).expression()
+    val mapExpression = new Cypher5AstParser(mapString, Neo4jCypherExceptionFactory(mapString, None), None).expression()
     val json = mapLiteralToJson(mapExpression)
     GraphCountsJson.parseAsGraphCountDataFromString(json)
   }

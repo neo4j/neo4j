@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.cypher.internal.parser.v5.ast.factory.ast
+package org.neo4j.cypher.internal.parser.v5.ast.factory
 
 import org.antlr.v4.runtime.tree.TerminalNode
 import org.neo4j.cypher.internal.expressions
@@ -42,22 +42,22 @@ import org.neo4j.cypher.internal.parser.ast.util.Util.ctxChild
 import org.neo4j.cypher.internal.parser.ast.util.Util.lastChild
 import org.neo4j.cypher.internal.parser.ast.util.Util.nodeChild
 import org.neo4j.cypher.internal.parser.ast.util.Util.pos
-import org.neo4j.cypher.internal.parser.v5.CypherParser
-import org.neo4j.cypher.internal.parser.v5.CypherParser.AnyLabelContext
-import org.neo4j.cypher.internal.parser.v5.CypherParser.AnyLabelIsContext
-import org.neo4j.cypher.internal.parser.v5.CypherParser.LabelNameContext
-import org.neo4j.cypher.internal.parser.v5.CypherParser.LabelNameIsContext
-import org.neo4j.cypher.internal.parser.v5.CypherParser.ParenthesizedLabelExpressionContext
-import org.neo4j.cypher.internal.parser.v5.CypherParser.ParenthesizedLabelExpressionIsContext
-import org.neo4j.cypher.internal.parser.v5.CypherParserListener
+import org.neo4j.cypher.internal.parser.v5.Cypher5Parser
+import org.neo4j.cypher.internal.parser.v5.Cypher5Parser.AnyLabelContext
+import org.neo4j.cypher.internal.parser.v5.Cypher5Parser.AnyLabelIsContext
+import org.neo4j.cypher.internal.parser.v5.Cypher5Parser.LabelNameContext
+import org.neo4j.cypher.internal.parser.v5.Cypher5Parser.LabelNameIsContext
+import org.neo4j.cypher.internal.parser.v5.Cypher5Parser.ParenthesizedLabelExpressionContext
+import org.neo4j.cypher.internal.parser.v5.Cypher5Parser.ParenthesizedLabelExpressionIsContext
+import org.neo4j.cypher.internal.parser.v5.Cypher5ParserListener
 
 import scala.collection.immutable.ArraySeq
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 
-trait LabelExpressionBuilder extends CypherParserListener {
+trait LabelExpressionBuilder extends Cypher5ParserListener {
 
   final override def exitNodePattern(
-    ctx: CypherParser.NodePatternContext
+    ctx: Cypher5Parser.NodePatternContext
   ): Unit = {
     val variable = astOpt[LogicalVariable](ctx.variable())
     val labelExpression = astOpt[LabelExpression](ctx.labelExpression())
@@ -67,7 +67,7 @@ trait LabelExpressionBuilder extends CypherParserListener {
   }
 
   final override def exitRelationshipPattern(
-    ctx: CypherParser.RelationshipPatternContext
+    ctx: Cypher5Parser.RelationshipPatternContext
   ): Unit = {
     val variable = astOpt[LogicalVariable](ctx.variable())
     val labelExpression = astOpt[LabelExpression](ctx.labelExpression())
@@ -84,45 +84,45 @@ trait LabelExpressionBuilder extends CypherParserListener {
     ctx.ast = RelationshipPattern(variable, labelExpression, pathLength, properties, expression, direction)(pos(ctx))
   }
 
-  final override def exitNodeLabels(ctx: CypherParser.NodeLabelsContext): Unit = {
+  final override def exitNodeLabels(ctx: Cypher5Parser.NodeLabelsContext): Unit = {
     ctx.ast = astSeq[LabelName](ctx.labelType())
   }
 
-  final override def exitNodeLabelsIs(ctx: CypherParser.NodeLabelsIsContext): Unit = {
+  final override def exitNodeLabelsIs(ctx: Cypher5Parser.NodeLabelsIsContext): Unit = {
     val symString = ctx.symbolicNameString()
     ctx.ast =
       ArraySeq(LabelName(symString.ast[String]())(pos(symString))) ++
         astSeq[LabelName](ctx.labelType())
   }
 
-  final override def exitLabelType(ctx: CypherParser.LabelTypeContext): Unit = {
+  final override def exitLabelType(ctx: Cypher5Parser.LabelTypeContext): Unit = {
     val child = ctxChild(ctx, 1)
     ctx.ast = LabelName(child.ast())(pos(child))
   }
 
-  override def exitRelType(ctx: CypherParser.RelTypeContext): Unit = {
+  override def exitRelType(ctx: Cypher5Parser.RelTypeContext): Unit = {
     val child = ctxChild(ctx, 1)
     ctx.ast = RelTypeName(child.ast())(pos(child))
   }
 
-  final override def exitLabelOrRelType(ctx: CypherParser.LabelOrRelTypeContext): Unit = {
+  final override def exitLabelOrRelType(ctx: Cypher5Parser.LabelOrRelTypeContext): Unit = {
     val child = ctxChild(ctx, 1)
     ctx.ast = LabelOrRelTypeName(child.ast())(pos(child))
   }
 
-  final override def exitLabelExpression(ctx: CypherParser.LabelExpressionContext): Unit = {
+  final override def exitLabelExpression(ctx: Cypher5Parser.LabelExpressionContext): Unit = {
     ctx.ast = ctxChild(ctx, 1).ast
   }
 
-  final override def exitLabelExpression4(ctx: CypherParser.LabelExpression4Context): Unit = {
+  final override def exitLabelExpression4(ctx: Cypher5Parser.LabelExpression4Context): Unit = {
     val children = ctx.children; val size = children.size()
     var result = children.get(0).asInstanceOf[AstRuleCtx].ast[LabelExpression]()
     var colon = false
     var i = 1
     while (i < size) {
       children.get(i) match {
-        case node: TerminalNode if node.getSymbol.getType == CypherParser.COLON => colon = true
-        case lblCtx: CypherParser.LabelExpression3Context =>
+        case node: TerminalNode if node.getSymbol.getType == Cypher5Parser.COLON => colon = true
+        case lblCtx: Cypher5Parser.LabelExpression3Context =>
           val rhs = lblCtx.ast[LabelExpression]()
           if (colon) {
             result = ColonDisjunction(result, rhs)(pos(nodeChild(ctx, i - 2)))
@@ -138,7 +138,7 @@ trait LabelExpressionBuilder extends CypherParserListener {
   }
 
   final override def exitLabelExpression4Is(
-    ctx: CypherParser.LabelExpression4IsContext
+    ctx: Cypher5Parser.LabelExpression4IsContext
   ): Unit = {
     val children = ctx.children; val size = children.size()
     var result = children.get(0).asInstanceOf[AstRuleCtx].ast[LabelExpression]()
@@ -146,8 +146,8 @@ trait LabelExpressionBuilder extends CypherParserListener {
     var i = 1
     while (i < size) {
       children.get(i) match {
-        case node: TerminalNode if node.getSymbol.getType == CypherParser.COLON => colon = true
-        case lblCtx: CypherParser.LabelExpression3IsContext =>
+        case node: TerminalNode if node.getSymbol.getType == Cypher5Parser.COLON => colon = true
+        case lblCtx: Cypher5Parser.LabelExpression3IsContext =>
           val rhs = lblCtx.ast[LabelExpression]()
           if (colon) {
             result = ColonDisjunction(result, rhs, containsIs = true)(pos(nodeChild(ctx, i - 2)))
@@ -162,7 +162,7 @@ trait LabelExpressionBuilder extends CypherParserListener {
     ctx.ast = result
   }
 
-  final override def exitLabelExpression3(ctx: CypherParser.LabelExpression3Context): Unit = {
+  final override def exitLabelExpression3(ctx: Cypher5Parser.LabelExpression3Context): Unit = {
     val children = ctx.children; val size = children.size()
     // Left most LE2
     var result = children.get(0).asInstanceOf[AstRuleCtx].ast[LabelExpression]()
@@ -170,8 +170,8 @@ trait LabelExpressionBuilder extends CypherParserListener {
     var i = 1
     while (i < size) {
       children.get(i) match {
-        case node: TerminalNode if node.getSymbol.getType == CypherParser.COLON => colon = true
-        case lblCtx: CypherParser.LabelExpression2Context =>
+        case node: TerminalNode if node.getSymbol.getType == Cypher5Parser.COLON => colon = true
+        case lblCtx: Cypher5Parser.LabelExpression2Context =>
           val rhs = lblCtx.ast[LabelExpression]()
           if (colon) {
             result = ColonConjunction(result, rhs)(pos(nodeChild(ctx, i - 1)))
@@ -187,7 +187,7 @@ trait LabelExpressionBuilder extends CypherParserListener {
   }
 
   final override def exitLabelExpression3Is(
-    ctx: CypherParser.LabelExpression3IsContext
+    ctx: Cypher5Parser.LabelExpression3IsContext
   ): Unit = {
     val children = ctx.children; val size = children.size()
     // Left most LE2
@@ -196,8 +196,8 @@ trait LabelExpressionBuilder extends CypherParserListener {
     var i = 1
     while (i < size) {
       children.get(i) match {
-        case node: TerminalNode if node.getSymbol.getType == CypherParser.COLON => colon = true
-        case lblCtx: CypherParser.LabelExpression2IsContext =>
+        case node: TerminalNode if node.getSymbol.getType == Cypher5Parser.COLON => colon = true
+        case lblCtx: Cypher5Parser.LabelExpression2IsContext =>
           val rhs = lblCtx.ast[LabelExpression]()
           if (colon) {
             result = ColonConjunction(result, rhs, containsIs = true)(pos(nodeChild(ctx, i - 1)))
@@ -212,7 +212,7 @@ trait LabelExpressionBuilder extends CypherParserListener {
     ctx.ast = result
   }
 
-  final override def exitLabelExpression2(ctx: CypherParser.LabelExpression2Context): Unit = {
+  final override def exitLabelExpression2(ctx: Cypher5Parser.LabelExpression2Context): Unit = {
     ctx.ast = ctx.children.size match {
       case 1 => ctxChild(ctx, 0).ast
       case 2 => Negation(astChild(ctx, 1))(pos(ctx))
@@ -224,7 +224,7 @@ trait LabelExpressionBuilder extends CypherParserListener {
   }
 
   final override def exitLabelExpression2Is(
-    ctx: CypherParser.LabelExpression2IsContext
+    ctx: Cypher5Parser.LabelExpression2IsContext
   ): Unit = {
     ctx.ast = ctx.children.size match {
       case 1 => ctxChild(ctx, 0).ast
@@ -236,7 +236,7 @@ trait LabelExpressionBuilder extends CypherParserListener {
     }
   }
 
-  final override def exitLabelExpression1(ctx: CypherParser.LabelExpression1Context): Unit = {
+  final override def exitLabelExpression1(ctx: Cypher5Parser.LabelExpression1Context): Unit = {
     ctx.ast = ctx match {
       case ctx: ParenthesizedLabelExpressionContext =>
         ctx.labelExpression4().ast
@@ -246,9 +246,9 @@ trait LabelExpressionBuilder extends CypherParserListener {
         var parent = ctx.parent
         var isLabel = 0
         while (isLabel == 0) {
-          if (parent == null || parent.getRuleIndex == CypherParser.RULE_postFix) isLabel = 3
-          else if (parent.getRuleIndex == CypherParser.RULE_nodePattern) isLabel = 1
-          else if (parent.getRuleIndex == CypherParser.RULE_relationshipPattern) isLabel = 2
+          if (parent == null || parent.getRuleIndex == Cypher5Parser.RULE_postFix) isLabel = 3
+          else if (parent.getRuleIndex == Cypher5Parser.RULE_nodePattern) isLabel = 1
+          else if (parent.getRuleIndex == Cypher5Parser.RULE_relationshipPattern) isLabel = 2
           else parent = parent.getParent
         }
         isLabel match {
@@ -271,7 +271,7 @@ trait LabelExpressionBuilder extends CypherParserListener {
   }
 
   final override def exitLabelExpression1Is(
-    ctx: CypherParser.LabelExpression1IsContext
+    ctx: Cypher5Parser.LabelExpression1IsContext
   ): Unit = {
     ctx.ast = ctx match {
       case ctx: ParenthesizedLabelExpressionIsContext =>
@@ -282,9 +282,9 @@ trait LabelExpressionBuilder extends CypherParserListener {
         var parent = ctx.parent
         var isLabel = 0
         while (isLabel == 0) {
-          if (parent == null || parent.getRuleIndex == CypherParser.RULE_postFix) isLabel = 3
-          else if (parent.getRuleIndex == CypherParser.RULE_nodePattern) isLabel = 1
-          else if (parent.getRuleIndex == CypherParser.RULE_relationshipPattern) isLabel = 2
+          if (parent == null || parent.getRuleIndex == Cypher5Parser.RULE_postFix) isLabel = 3
+          else if (parent.getRuleIndex == Cypher5Parser.RULE_nodePattern) isLabel = 1
+          else if (parent.getRuleIndex == Cypher5Parser.RULE_relationshipPattern) isLabel = 2
           else parent = parent.getParent
         }
         isLabel match {
@@ -310,7 +310,7 @@ trait LabelExpressionBuilder extends CypherParserListener {
   }
 
   final override def exitInsertNodePattern(
-    ctx: CypherParser.InsertNodePatternContext
+    ctx: Cypher5Parser.InsertNodePatternContext
   ): Unit = {
     val variable =
       if (ctx.variable() != null) Some(ctx.variable().ast[LogicalVariable]()) else None
@@ -324,7 +324,7 @@ trait LabelExpressionBuilder extends CypherParserListener {
   }
 
   final override def exitInsertNodeLabelExpression(
-    ctx: CypherParser.InsertNodeLabelExpressionContext
+    ctx: Cypher5Parser.InsertNodeLabelExpressionContext
   ): Unit = {
 //    ctx.ast = Leaf(ctx.insertLabelConjunction().ast(), containsIs = ctx.IS != null)
     val containsIs = ctx.IS != null
@@ -337,8 +337,8 @@ trait LabelExpressionBuilder extends CypherParserListener {
       var i = 2
       while (i < size) {
         children.get(i) match {
-          case node: TerminalNode if node.getSymbol.getType == CypherParser.COLON => colon = true
-          case lblCtx: CypherParser.SymbolicNameStringContext =>
+          case node: TerminalNode if node.getSymbol.getType == Cypher5Parser.COLON => colon = true
+          case lblCtx: Cypher5Parser.SymbolicNameStringContext =>
             val rhs = Leaf(LabelName(lblCtx.ast())(pos(lblCtx)), containsIs = ctx.IS != null)
             if (colon) {
               result = ColonConjunction(result, rhs, containsIs)(pos(nodeChild(ctx, i - 1)))
@@ -356,7 +356,7 @@ trait LabelExpressionBuilder extends CypherParserListener {
   }
 
   final override def exitInsertRelationshipPattern(
-    ctx: CypherParser.InsertRelationshipPatternContext
+    ctx: Cypher5Parser.InsertRelationshipPatternContext
   ): Unit = {
     val hasRightArrow = ctx.rightArrow() != null
     val hasLeftArrow = ctx.leftArrow() != null
@@ -379,22 +379,22 @@ trait LabelExpressionBuilder extends CypherParserListener {
   }
 
   final override def exitInsertRelationshipLabelExpression(
-    ctx: CypherParser.InsertRelationshipLabelExpressionContext
+    ctx: Cypher5Parser.InsertRelationshipLabelExpressionContext
   ): Unit = {
     val symbolicNameString = ctx.symbolicNameString()
     ctx.ast = Leaf(RelTypeName(symbolicNameString.ast())(pos(symbolicNameString)), containsIs = ctx.IS != null)
   }
 
   final override def exitLeftArrow(
-    ctx: CypherParser.LeftArrowContext
+    ctx: Cypher5Parser.LeftArrowContext
   ): Unit = {}
 
   final override def exitArrowLine(
-    ctx: CypherParser.ArrowLineContext
+    ctx: Cypher5Parser.ArrowLineContext
   ): Unit = {}
 
   final override def exitRightArrow(
-    ctx: CypherParser.RightArrowContext
+    ctx: Cypher5Parser.RightArrowContext
   ): Unit = {}
 
 }

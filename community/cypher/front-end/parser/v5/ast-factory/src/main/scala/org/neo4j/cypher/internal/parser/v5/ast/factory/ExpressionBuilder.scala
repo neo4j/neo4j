@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.cypher.internal.parser.v5.ast.factory.ast
+package org.neo4j.cypher.internal.parser.v5.ast.factory
 
 import org.antlr.v4.runtime.misc.Interval
 import org.antlr.v4.runtime.tree.ParseTree
@@ -135,8 +135,8 @@ import org.neo4j.cypher.internal.parser.ast.util.Util.optUnsignedDecimalInt
 import org.neo4j.cypher.internal.parser.ast.util.Util.pos
 import org.neo4j.cypher.internal.parser.ast.util.Util.unsignedDecimalInt
 import org.neo4j.cypher.internal.parser.deprecation.DeprecatedChars
-import org.neo4j.cypher.internal.parser.v5.CypherParser
-import org.neo4j.cypher.internal.parser.v5.CypherParserListener
+import org.neo4j.cypher.internal.parser.v5.Cypher5Parser
+import org.neo4j.cypher.internal.parser.v5.Cypher5ParserListener
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.DeprecatedIdentifierUnicode
 import org.neo4j.cypher.internal.util.DeprecatedIdentifierWhitespaceUnicode
@@ -175,39 +175,41 @@ import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 import scala.jdk.CollectionConverters.IterableHasAsScala
 
-trait ExpressionBuilder extends CypherParserListener {
+trait ExpressionBuilder extends Cypher5ParserListener {
 
   protected def exceptionFactory: CypherExceptionFactory
 
-  final override def exitQuantifier(ctx: CypherParser.QuantifierContext): Unit = {
+  final override def exitQuantifier(ctx: Cypher5Parser.QuantifierContext): Unit = {
     val firstToken = nodeChild(ctx, 0).getSymbol
     ctx.ast = firstToken.getType match {
-      case CypherParser.LCURLY =>
+      case Cypher5Parser.LCURLY =>
         if (ctx.from != null || ctx.to != null || ctx.COMMA() != null) {
           IntervalQuantifier(optUnsignedDecimalInt(ctx.from), optUnsignedDecimalInt(ctx.to))(pos(ctx))
         } else {
           FixedQuantifier(unsignedDecimalInt(nodeChild(ctx, 1).getSymbol))(pos(firstToken))
         }
-      case CypherParser.PLUS  => PlusQuantifier()(pos(firstToken))
-      case CypherParser.TIMES => StarQuantifier()(pos(firstToken))
+      case Cypher5Parser.PLUS  => PlusQuantifier()(pos(firstToken))
+      case Cypher5Parser.TIMES => StarQuantifier()(pos(firstToken))
     }
   }
 
-  final override def exitAnonymousPattern(ctx: CypherParser.AnonymousPatternContext): Unit = {
+  final override def exitAnonymousPattern(ctx: Cypher5Parser.AnonymousPatternContext): Unit = {
     ctx.ast = ctxChild(ctx, 0) match {
-      case peCtx: CypherParser.PatternElementContext      => PathPatternPart(peCtx.ast())
-      case spCtx: CypherParser.ShortestPathPatternContext => spCtx.ast
-      case _                                              => throw new IllegalStateException(s"Unexpected context $ctx")
+      case peCtx: Cypher5Parser.PatternElementContext      => PathPatternPart(peCtx.ast())
+      case spCtx: Cypher5Parser.ShortestPathPatternContext => spCtx.ast
+      case _ => throw new IllegalStateException(s"Unexpected context $ctx")
     }
   }
 
-  final override def exitShortestPathPattern(ctx: CypherParser.ShortestPathPatternContext): Unit = {
+  final override def exitShortestPathPattern(ctx: Cypher5Parser.ShortestPathPatternContext): Unit = {
     val first = nodeChild(ctx, 0).getSymbol
     ctx.ast =
-      ShortestPathsPatternPart(ctx.patternElement().ast(), first.getType != CypherParser.ALL_SHORTEST_PATHS)(pos(first))
+      ShortestPathsPatternPart(ctx.patternElement().ast(), first.getType != Cypher5Parser.ALL_SHORTEST_PATHS)(pos(
+        first
+      ))
   }
 
-  final override def exitPatternElement(ctx: CypherParser.PatternElementContext): Unit = {
+  final override def exitPatternElement(ctx: Cypher5Parser.PatternElementContext): Unit = {
     val size = ctx.children.size()
     if (size == 1) {
       ctx.ast = ctxChild(ctx, 0).ast[PathFactor]()
@@ -218,7 +220,7 @@ trait ExpressionBuilder extends CypherParserListener {
       var i = 0
       while (i < size) {
         ctx.children.get(i) match {
-          case nCtx: CypherParser.NodePatternContext =>
+          case nCtx: Cypher5Parser.NodePatternContext =>
             val nodePattern = nCtx.ast[NodePattern]()
             if (relPattern != null) {
               val lhs = parts.removeLast().asInstanceOf[SimplePattern]
@@ -227,15 +229,15 @@ trait ExpressionBuilder extends CypherParserListener {
             } else {
               parts.addOne(nodePattern)
             }
-          case relCtx: CypherParser.RelationshipPatternContext =>
+          case relCtx: Cypher5Parser.RelationshipPatternContext =>
             relPattern = relCtx.ast[RelationshipPattern]()
-          case qCtx: CypherParser.QuantifierContext =>
+          case qCtx: Cypher5Parser.QuantifierContext =>
             val emptyNodePattern = NodePattern(None, None, None, None)(relPattern.position)
             val part =
               PathPatternPart(RelationshipChain(emptyNodePattern, relPattern, emptyNodePattern)(relPattern.position))
             parts.addOne(QuantifiedPath(part, qCtx.ast(), None)(relPattern.position))
             relPattern = null
-          case parenCtx: CypherParser.ParenthesizedPathContext =>
+          case parenCtx: Cypher5Parser.ParenthesizedPathContext =>
             parts.addOne(parenCtx.ast[ParenthesizedPath]())
           case other => throw new IllegalStateException(s"Unexpected child $other")
         }
@@ -251,24 +253,24 @@ trait ExpressionBuilder extends CypherParserListener {
     if (node == null) UnsignedDecimalIntegerLiteral("1")(p)
     else UnsignedDecimalIntegerLiteral(node.getText)(pos(node))
 
-  final override def exitSelector(ctx: CypherParser.SelectorContext): Unit = {
+  final override def exitSelector(ctx: Cypher5Parser.SelectorContext): Unit = {
     val p = pos(ctx)
     ctx.ast = ctx match {
-      case anyShortestCtx: CypherParser.AnyShortestPathContext =>
+      case anyShortestCtx: Cypher5Parser.AnyShortestPathContext =>
         PatternPart.AnyShortestPath(selectorCount(anyShortestCtx.UNSIGNED_DECIMAL_INTEGER(), p))(p)
-      case allShortestCtx: CypherParser.AllShortestPathContext =>
+      case allShortestCtx: Cypher5Parser.AllShortestPathContext =>
         PatternPart.AllShortestPaths()(pos(allShortestCtx))
-      case anyCtx: CypherParser.AnyPathContext =>
+      case anyCtx: Cypher5Parser.AnyPathContext =>
         PatternPart.AnyPath(selectorCount(anyCtx.UNSIGNED_DECIMAL_INTEGER(), p))(p)
-      case shortestGrpCtx: CypherParser.ShortestGroupContext =>
+      case shortestGrpCtx: Cypher5Parser.ShortestGroupContext =>
         PatternPart.ShortestGroups(selectorCount(shortestGrpCtx.UNSIGNED_DECIMAL_INTEGER(), p))(p)
-      case allPathCtx: CypherParser.AllPathContext =>
+      case allPathCtx: Cypher5Parser.AllPathContext =>
         PatternPart.AllPaths()(p)
       case _ => throw new IllegalStateException(s"Unexpected context $ctx")
     }
   }
 
-  final override def exitParenthesizedPath(ctx: CypherParser.ParenthesizedPathContext): Unit = {
+  final override def exitParenthesizedPath(ctx: Cypher5Parser.ParenthesizedPathContext): Unit = {
     val p = pos(ctx)
     val pattern = astChild[PatternPart](ctx, 1) match {
       case p: NonPrefixedPatternPart => p
@@ -285,13 +287,13 @@ trait ExpressionBuilder extends CypherParserListener {
   }
 
   final override def exitProperties(
-    ctx: CypherParser.PropertiesContext
+    ctx: Cypher5Parser.PropertiesContext
   ): Unit = {
     ctx.ast = ctxChild(ctx, 0).ast
   }
 
   final override def exitPathLength(
-    ctx: CypherParser.PathLengthContext
+    ctx: Cypher5Parser.PathLengthContext
   ): Unit = {
     // This is weird, we should refactor range to be more sensible and not use nested options
     ctx.ast = if (ctx.DOTDOT() != null) {
@@ -304,22 +306,22 @@ trait ExpressionBuilder extends CypherParserListener {
     } else None
   }
 
-  final override def exitExpression(ctx: CypherParser.ExpressionContext): Unit = {
+  final override def exitExpression(ctx: Cypher5Parser.ExpressionContext): Unit = {
     AssertMacros.checkOnlyWhenAssertionsAreEnabled(ctx.getChildCount % 2 == 1)
     ctx.ast = astBinaryFold[Expression](ctx, (lhs, token, rhs) => Or(lhs, rhs)(pos(token)))
   }
 
-  final override def exitExpression11(ctx: CypherParser.Expression11Context): Unit = {
+  final override def exitExpression11(ctx: Cypher5Parser.Expression11Context): Unit = {
     AssertMacros.checkOnlyWhenAssertionsAreEnabled(ctx.getChildCount % 2 == 1)
     ctx.ast = astBinaryFold[Expression](ctx, (lhs, token, rhs) => Xor(lhs, rhs)(pos(token)))
   }
 
-  final override def exitExpression10(ctx: CypherParser.Expression10Context): Unit = {
+  final override def exitExpression10(ctx: Cypher5Parser.Expression10Context): Unit = {
     AssertMacros.checkOnlyWhenAssertionsAreEnabled(ctx.getChildCount % 2 == 1)
     ctx.ast = astBinaryFold[Expression](ctx, (lhs, token, rhs) => And(lhs, rhs)(pos(token)))
   }
 
-  final override def exitExpression9(ctx: CypherParser.Expression9Context): Unit = {
+  final override def exitExpression9(ctx: Cypher5Parser.Expression9Context): Unit = {
     AssertMacros.checkOnlyWhenAssertionsAreEnabled(ctx.expression8() == lastChild(ctx))
     ctx.ast = ctx.children.size match {
       case 1 => ctxChild(ctx, 0).ast
@@ -330,7 +332,7 @@ trait ExpressionBuilder extends CypherParserListener {
     }
   }
 
-  final override def exitExpression8(ctx: CypherParser.Expression8Context): Unit = {
+  final override def exitExpression8(ctx: Cypher5Parser.Expression8Context): Unit = {
     AssertMacros.checkOnlyWhenAssertionsAreEnabled(ctx.getChildCount % 2 == 1)
     ctx.ast = ctx.children.size match {
       case 1 => ctxChild(ctx, 0).ast
@@ -345,29 +347,29 @@ trait ExpressionBuilder extends CypherParserListener {
 
   private def binaryPredicate(lhs: Expression, token: TerminalNode, rhs: AstRuleCtx): Expression = {
     token.getSymbol.getType match {
-      case CypherParser.EQ          => Equals(lhs, rhs.ast())(pos(token.getSymbol))
-      case CypherParser.INVALID_NEQ => InvalidNotEquals(lhs, rhs.ast())(pos(token.getSymbol))
-      case CypherParser.NEQ         => NotEquals(lhs, rhs.ast())(pos(token.getSymbol))
-      case CypherParser.LE          => LessThanOrEqual(lhs, rhs.ast())(pos(token.getSymbol))
-      case CypherParser.GE          => GreaterThanOrEqual(lhs, rhs.ast())(pos(token.getSymbol))
-      case CypherParser.LT          => LessThan(lhs, rhs.ast())(pos(token.getSymbol))
-      case CypherParser.GT          => GreaterThan(lhs, rhs.ast())(pos(token.getSymbol))
+      case Cypher5Parser.EQ          => Equals(lhs, rhs.ast())(pos(token.getSymbol))
+      case Cypher5Parser.INVALID_NEQ => InvalidNotEquals(lhs, rhs.ast())(pos(token.getSymbol))
+      case Cypher5Parser.NEQ         => NotEquals(lhs, rhs.ast())(pos(token.getSymbol))
+      case Cypher5Parser.LE          => LessThanOrEqual(lhs, rhs.ast())(pos(token.getSymbol))
+      case Cypher5Parser.GE          => GreaterThanOrEqual(lhs, rhs.ast())(pos(token.getSymbol))
+      case Cypher5Parser.LT          => LessThan(lhs, rhs.ast())(pos(token.getSymbol))
+      case Cypher5Parser.GT          => GreaterThan(lhs, rhs.ast())(pos(token.getSymbol))
     }
   }
 
-  final override def exitExpression7(ctx: CypherParser.Expression7Context): Unit = {
+  final override def exitExpression7(ctx: Cypher5Parser.Expression7Context): Unit = {
     ctx.ast = ctx.children.size match {
       case 1 => ctxChild(ctx, 0).ast
       case _ =>
         val lhs = ctxChild(ctx, 0).ast[Expression]()
         ctxChild(ctx, 1) match {
-          case strCtx: CypherParser.StringAndListComparisonContext =>
+          case strCtx: Cypher5Parser.StringAndListComparisonContext =>
             stringAndListComparisonExpression(lhs, strCtx)
-          case nullCtx: CypherParser.NullComparisonContext =>
+          case nullCtx: Cypher5Parser.NullComparisonContext =>
             nullComparisonExpression(lhs, nullCtx)
-          case typeCtx: CypherParser.TypeComparisonContext =>
+          case typeCtx: Cypher5Parser.TypeComparisonContext =>
             typeComparisonExpression(lhs, typeCtx)
-          case nfCtx: CypherParser.NormalFormComparisonContext =>
+          case nfCtx: Cypher5Parser.NormalFormComparisonContext =>
             normalFormComparisonExpression(lhs, nfCtx.normalForm(), nfCtx.NOT() != null, pos(nfCtx))
           case _ => throw new IllegalStateException(s"Unexpected parse result $ctx")
         }
@@ -376,37 +378,37 @@ trait ExpressionBuilder extends CypherParserListener {
 
   private def stringAndListComparisonExpression(lhs: Expression, ctx: AstRuleCtx): Expression = {
     AssertMacros.checkOnlyWhenAssertionsAreEnabled(
-      ctx.isInstanceOf[CypherParser.StringAndListComparisonContext] ||
-        ctx.isInstanceOf[CypherParser.WhenStringOrListContext]
+      ctx.isInstanceOf[Cypher5Parser.StringAndListComparisonContext] ||
+        ctx.isInstanceOf[Cypher5Parser.WhenStringOrListContext]
     )
     val token = child[TerminalNode](ctx, 0).getSymbol
     val rhs = lastChild[AstRuleCtx](ctx).ast[Expression]()
     token.getType match {
-      case CypherParser.REGEQ    => RegexMatch(lhs, rhs)(pos(token))
-      case CypherParser.STARTS   => StartsWith(lhs, rhs)(pos(token))
-      case CypherParser.ENDS     => EndsWith(lhs, rhs)(pos(token))
-      case CypherParser.CONTAINS => Contains(lhs, rhs)(pos(token))
-      case CypherParser.IN       => In(lhs, rhs)(pos(token))
+      case Cypher5Parser.REGEQ    => RegexMatch(lhs, rhs)(pos(token))
+      case Cypher5Parser.STARTS   => StartsWith(lhs, rhs)(pos(token))
+      case Cypher5Parser.ENDS     => EndsWith(lhs, rhs)(pos(token))
+      case Cypher5Parser.CONTAINS => Contains(lhs, rhs)(pos(token))
+      case Cypher5Parser.IN       => In(lhs, rhs)(pos(token))
     }
   }
 
   private def nullComparisonExpression(lhs: Expression, ctx: AstRuleCtx): Expression = {
     AssertMacros.checkOnlyWhenAssertionsAreEnabled(
-      ctx.isInstanceOf[CypherParser.NullComparisonContext] ||
-        ctx.isInstanceOf[CypherParser.WhenNullContext]
+      ctx.isInstanceOf[Cypher5Parser.NullComparisonContext] ||
+        ctx.isInstanceOf[Cypher5Parser.WhenNullContext]
     )
-    if (nodeChildType(ctx, 1) != CypherParser.NOT) IsNull(lhs)(pos(ctx))
+    if (nodeChildType(ctx, 1) != Cypher5Parser.NOT) IsNull(lhs)(pos(ctx))
     else IsNotNull(lhs)(pos(ctx))
   }
 
   private def typeComparisonExpression(lhs: Expression, ctx: AstRuleCtx): Expression = {
     AssertMacros.checkOnlyWhenAssertionsAreEnabled(
-      ctx.isInstanceOf[CypherParser.TypeComparisonContext] ||
-        ctx.isInstanceOf[CypherParser.WhenTypeContext]
+      ctx.isInstanceOf[Cypher5Parser.TypeComparisonContext] ||
+        ctx.isInstanceOf[Cypher5Parser.WhenTypeContext]
     )
     val cypherType = lastChild[AstRuleCtx](ctx).ast[CypherType]()
     val not = child[ParseTree](ctx, 1) match {
-      case n: TerminalNode => n.getSymbol.getType == CypherParser.NOT
+      case n: TerminalNode => n.getSymbol.getType == Cypher5Parser.NOT
       case _               => false
     }
     if (not) IsNotTyped(lhs, cypherType)(pos(ctx))
@@ -415,7 +417,7 @@ trait ExpressionBuilder extends CypherParserListener {
 
   private def normalFormComparisonExpression(
     lhs: Expression,
-    nfCtx: CypherParser.NormalFormContext,
+    nfCtx: Cypher5Parser.NormalFormContext,
     not: Boolean,
     p: InputPosition
   ): Expression = {
@@ -424,49 +426,49 @@ trait ExpressionBuilder extends CypherParserListener {
     else IsNormalized(lhs, nf)(p)
   }
 
-  final override def exitComparisonExpression6(ctx: CypherParser.ComparisonExpression6Context): Unit = {}
+  final override def exitComparisonExpression6(ctx: Cypher5Parser.ComparisonExpression6Context): Unit = {}
 
-  final override def exitNormalForm(ctx: CypherParser.NormalFormContext): Unit = {
+  final override def exitNormalForm(ctx: Cypher5Parser.NormalFormContext): Unit = {
     ctx.ast = child[TerminalNode](ctx, 0).getSymbol.getType match {
-      case CypherParser.NFC  => NFCNormalForm
-      case CypherParser.NFD  => NFDNormalForm
-      case CypherParser.NFKC => NFKCNormalForm
-      case CypherParser.NFKD => NFKDNormalForm
+      case Cypher5Parser.NFC  => NFCNormalForm
+      case Cypher5Parser.NFD  => NFDNormalForm
+      case Cypher5Parser.NFKC => NFKCNormalForm
+      case Cypher5Parser.NFKD => NFKDNormalForm
     }
 
   }
 
-  final override def exitExpression6(ctx: CypherParser.Expression6Context): Unit = {
+  final override def exitExpression6(ctx: Cypher5Parser.Expression6Context): Unit = {
     AssertMacros.checkOnlyWhenAssertionsAreEnabled(ctx.getChildCount % 2 == 1)
     ctx.ast = astBinaryFold(ctx, binaryAdditive)
   }
 
   private def binaryAdditive(lhs: Expression, token: TerminalNode, rhs: Expression): Expression = {
     token.getSymbol.getType match {
-      case CypherParser.PLUS      => Add(lhs, rhs)(pos(token.getSymbol))
-      case CypherParser.MINUS     => Subtract(lhs, rhs)(pos(token.getSymbol))
-      case CypherParser.DOUBLEBAR => Concatenate(lhs, rhs)(pos(token.getSymbol))
+      case Cypher5Parser.PLUS      => Add(lhs, rhs)(pos(token.getSymbol))
+      case Cypher5Parser.MINUS     => Subtract(lhs, rhs)(pos(token.getSymbol))
+      case Cypher5Parser.DOUBLEBAR => Concatenate(lhs, rhs)(pos(token.getSymbol))
     }
   }
 
-  final override def exitExpression5(ctx: CypherParser.Expression5Context): Unit = {
+  final override def exitExpression5(ctx: Cypher5Parser.Expression5Context): Unit = {
     ctx.ast = astBinaryFold(ctx, binaryMultiplicative)
   }
 
   private def binaryMultiplicative(lhs: Expression, token: TerminalNode, rhs: Expression): Expression = {
     token.getSymbol.getType match {
-      case CypherParser.TIMES   => Multiply(lhs, rhs)(pos(token.getSymbol))
-      case CypherParser.DIVIDE  => Divide(lhs, rhs)(pos(token.getSymbol))
-      case CypherParser.PERCENT => Modulo(lhs, rhs)(pos(token.getSymbol))
+      case Cypher5Parser.TIMES   => Multiply(lhs, rhs)(pos(token.getSymbol))
+      case Cypher5Parser.DIVIDE  => Divide(lhs, rhs)(pos(token.getSymbol))
+      case Cypher5Parser.PERCENT => Modulo(lhs, rhs)(pos(token.getSymbol))
     }
   }
 
-  final override def exitExpression4(ctx: CypherParser.Expression4Context): Unit = {
+  final override def exitExpression4(ctx: Cypher5Parser.Expression4Context): Unit = {
     AssertMacros.checkOnlyWhenAssertionsAreEnabled(ctx.getChildCount % 2 == 1)
     ctx.ast = astBinaryFold[Expression](ctx, (lhs, token, rhs) => Pow(lhs, rhs)(pos(token.getSymbol)))
   }
 
-  final override def exitExpression3(ctx: CypherParser.Expression3Context): Unit = {
+  final override def exitExpression3(ctx: Cypher5Parser.Expression3Context): Unit = {
     ctx.ast = ctx.children.size match {
       case 1 => ctxChild(ctx, 0).ast()
       case _ =>
@@ -476,7 +478,7 @@ trait ExpressionBuilder extends CypherParserListener {
   }
 
   final override def exitExpression2(
-    ctx: CypherParser.Expression2Context
+    ctx: Cypher5Parser.Expression2Context
   ): Unit = {
     ctx.ast = ctx.children.size() match {
       case 1 => ctxChild(ctx, 0).ast
@@ -485,30 +487,30 @@ trait ExpressionBuilder extends CypherParserListener {
   }
 
   // TODO All postfix should probably have positions that work in the same manner
-  private def postFix(lhs: Expression, rhs: CypherParser.PostFixContext): Expression = {
+  private def postFix(lhs: Expression, rhs: Cypher5Parser.PostFixContext): Expression = {
     val p = lhs.position
     rhs match {
-      case propCtx: CypherParser.PropertyPostfixContext => Property(lhs, ctxChild(propCtx, 0).ast())(p)
-      case indexCtx: CypherParser.IndexPostfixContext =>
+      case propCtx: Cypher5Parser.PropertyPostfixContext => Property(lhs, ctxChild(propCtx, 0).ast())(p)
+      case indexCtx: Cypher5Parser.IndexPostfixContext =>
         ContainerIndex(lhs, ctxChild(indexCtx, 1).ast())(pos(ctxChild(indexCtx, 1)))
-      case labelCtx: CypherParser.LabelPostfixContext => LabelExpressionPredicate(lhs, ctxChild(labelCtx, 0).ast())(p)
-      case rangeCtx: CypherParser.RangePostfixContext =>
+      case labelCtx: Cypher5Parser.LabelPostfixContext => LabelExpressionPredicate(lhs, ctxChild(labelCtx, 0).ast())(p)
+      case rangeCtx: Cypher5Parser.RangePostfixContext =>
         ListSlice(lhs, astOpt(rangeCtx.fromExp), astOpt(rangeCtx.toExp))(pos(rhs))
       case _ => throw new IllegalStateException(s"Unexpected rhs $rhs")
     }
   }
 
-  final override def exitPostFix(ctx: CypherParser.PostFixContext): Unit = {}
+  final override def exitPostFix(ctx: Cypher5Parser.PostFixContext): Unit = {}
 
-  final override def exitProperty(ctx: CypherParser.PropertyContext): Unit = {
+  final override def exitProperty(ctx: Cypher5Parser.PropertyContext): Unit = {
     ctx.ast = ctxChild(ctx, 1).ast[PropertyKeyName]()
   }
 
-  def exitDynamicProperty(ctx: CypherParser.DynamicPropertyContext): Unit = {
+  def exitDynamicProperty(ctx: Cypher5Parser.DynamicPropertyContext): Unit = {
     ctx.ast = ctxChild(ctx, 1).ast()
   }
 
-  final override def exitPropertyExpression(ctx: CypherParser.PropertyExpressionContext): Unit = {
+  final override def exitPropertyExpression(ctx: Cypher5Parser.PropertyExpressionContext): Unit = {
     var result = Property(ctxChild(ctx, 0).ast(), ctxChild(ctx, 1).ast())(pos(ctx))
     val size = ctx.children.size(); var i = 2
     while (i < size) {
@@ -519,12 +521,12 @@ trait ExpressionBuilder extends CypherParserListener {
     ctx.ast = result
   }
 
-  final override def exitDynamicPropertyExpression(ctx: CypherParser.DynamicPropertyExpressionContext): Unit = {
+  final override def exitDynamicPropertyExpression(ctx: Cypher5Parser.DynamicPropertyExpressionContext): Unit = {
     val index = ctxChild(ctx, 1).ast[Expression]()
     ctx.ast = ContainerIndex(ctxChild(ctx, 0).ast(), index)(index.position)
   }
 
-  final override def exitExpression1(ctx: CypherParser.Expression1Context): Unit = {
+  final override def exitExpression1(ctx: Cypher5Parser.Expression1Context): Unit = {
     ctx.ast = ctx.children.size match {
       case 1 => ctxChild(ctx, 0).ast()
       case _ => throw new IllegalStateException("Unexpected expression")
@@ -532,7 +534,7 @@ trait ExpressionBuilder extends CypherParserListener {
   }
 
   final override def exitCaseExpression(
-    ctx: CypherParser.CaseExpressionContext
+    ctx: Cypher5Parser.CaseExpressionContext
   ): Unit = {
     ctx.ast = CaseExpression(
       expression = None,
@@ -541,11 +543,11 @@ trait ExpressionBuilder extends CypherParserListener {
     )(pos(ctx))
   }
 
-  final override def exitCaseAlternative(ctx: CypherParser.CaseAlternativeContext): Unit = {
+  final override def exitCaseAlternative(ctx: Cypher5Parser.CaseAlternativeContext): Unit = {
     ctx.ast = (ctxChild(ctx, 1).ast, ctxChild(ctx, 3).ast)
   }
 
-  final override def exitExtendedCaseExpression(ctx: CypherParser.ExtendedCaseExpressionContext): Unit = {
+  final override def exitExtendedCaseExpression(ctx: Cypher5Parser.ExtendedCaseExpressionContext): Unit = {
     val caseExp = astChild[Expression](ctx, 1)
     ctx.ast = CaseExpression(
       expression = Some(caseExp),
@@ -556,7 +558,7 @@ trait ExpressionBuilder extends CypherParserListener {
 
   private def extendedCaseAlts(
     lhs: Expression,
-    ctxs: java.util.List[CypherParser.ExtendedCaseAlternativeContext]
+    ctxs: java.util.List[Cypher5Parser.ExtendedCaseAlternativeContext]
   ): ArraySeq[(Expression, Expression)] = {
     val size = ctxs.size()
     val resultBuffer = new ArrayBuffer[(Expression, Expression)](size)
@@ -571,26 +573,26 @@ trait ExpressionBuilder extends CypherParserListener {
   private def extendedCaseAlt(
     buffer: ArrayBuffer[(Expression, Expression)],
     lhs: Expression,
-    ctx: CypherParser.ExtendedCaseAlternativeContext
+    ctx: Cypher5Parser.ExtendedCaseAlternativeContext
   ): Unit = {
     val size = ctx.children.size()
     var i = 1
     val thenExp = lastChild[AstRuleCtx](ctx).ast[Expression]()
     while (i < size) {
       ctx.children.get(i) match {
-        case whenCtx: CypherParser.ExtendedWhenContext =>
+        case whenCtx: Cypher5Parser.ExtendedWhenContext =>
           val newWhen = whenCtx match {
-            case _: CypherParser.WhenEqualsContext =>
+            case _: Cypher5Parser.WhenEqualsContext =>
               Equals(lhs, astChild(whenCtx, 0))(pos(nodeChild(ctx, i - 1)))
-            case _: CypherParser.WhenComparatorContext =>
+            case _: Cypher5Parser.WhenComparatorContext =>
               binaryPredicate(lhs, nodeChild(whenCtx, 0), ctxChild(whenCtx, 1))
-            case _: CypherParser.WhenStringOrListContext =>
+            case _: Cypher5Parser.WhenStringOrListContext =>
               stringAndListComparisonExpression(lhs, whenCtx)
-            case _: CypherParser.WhenNullContext =>
+            case _: Cypher5Parser.WhenNullContext =>
               nullComparisonExpression(lhs, whenCtx)
-            case _: CypherParser.WhenTypeContext =>
+            case _: Cypher5Parser.WhenTypeContext =>
               typeComparisonExpression(lhs, whenCtx)
-            case formCtx: CypherParser.WhenFormContext =>
+            case formCtx: Cypher5Parser.WhenFormContext =>
               normalFormComparisonExpression(lhs, formCtx.normalForm(), formCtx.NOT() != null, pos(formCtx))
             case _ => throw new IllegalStateException(s"Unexepected context $whenCtx")
           }
@@ -601,11 +603,11 @@ trait ExpressionBuilder extends CypherParserListener {
     }
   }
 
-  final override def exitExtendedCaseAlternative(ctx: CypherParser.ExtendedCaseAlternativeContext): Unit = {}
+  final override def exitExtendedCaseAlternative(ctx: Cypher5Parser.ExtendedCaseAlternativeContext): Unit = {}
 
-  final override def exitExtendedWhen(ctx: CypherParser.ExtendedWhenContext): Unit = {}
+  final override def exitExtendedWhen(ctx: Cypher5Parser.ExtendedWhenContext): Unit = {}
 
-  final override def exitListComprehension(ctx: CypherParser.ListComprehensionContext): Unit = {
+  final override def exitListComprehension(ctx: Cypher5Parser.ListComprehensionContext): Unit = {
     ctx.ast = ListComprehension(
       variable = ctxChild(ctx, 1).ast(),
       expression = ctxChild(ctx, 3).ast(),
@@ -615,7 +617,7 @@ trait ExpressionBuilder extends CypherParserListener {
   }
 
   final override def exitPatternComprehension(
-    ctx: CypherParser.PatternComprehensionContext
+    ctx: Cypher5Parser.PatternComprehensionContext
   ): Unit = {
     val variable = if (ctx.variable() != null) Some(ctx.variable().ast[LogicalVariable]()) else None
     val pathPatternNonEmpty = ctx.pathPatternNonEmpty().ast[RelationshipsPattern]()
@@ -625,7 +627,7 @@ trait ExpressionBuilder extends CypherParserListener {
   }
 
   final override def exitPathPatternNonEmpty(
-    ctx: CypherParser.PathPatternNonEmptyContext
+    ctx: Cypher5Parser.PathPatternNonEmptyContext
   ): Unit = {
     val first = ctxChild(ctx, 0).ast[PathFactor]()
     val size = ctx.children.size()
@@ -634,8 +636,8 @@ trait ExpressionBuilder extends CypherParserListener {
     var relPattern: RelationshipPattern = null
     while (i < size) {
       ctxChild(ctx, i) match {
-        case relCtx: CypherParser.RelationshipPatternContext => relPattern = relCtx.ast()
-        case nodeCtx: CypherParser.NodePatternContext =>
+        case relCtx: Cypher5Parser.RelationshipPatternContext => relPattern = relCtx.ast()
+        case nodeCtx: Cypher5Parser.NodePatternContext =>
           part = RelationshipChain(
             part.asInstanceOf[SimplePattern],
             relPattern,
@@ -649,13 +651,13 @@ trait ExpressionBuilder extends CypherParserListener {
   }
 
   final override def exitPatternExpression(
-    ctx: CypherParser.PatternExpressionContext
+    ctx: Cypher5Parser.PatternExpressionContext
   ): Unit = {
     ctx.ast = PatternExpression(ctxChild(ctx, 0).ast())(None, None)
   }
 
   final override def exitReduceExpression(
-    ctx: CypherParser.ReduceExpressionContext
+    ctx: Cypher5Parser.ReduceExpressionContext
   ): Unit = {
     val accumulator = ctxChild(ctx, 2).ast[LogicalVariable]()
     val variable = ctxChild(ctx, 6).ast[LogicalVariable]()
@@ -665,37 +667,37 @@ trait ExpressionBuilder extends CypherParserListener {
     ctx.ast = ReduceExpression(ReduceScope(accumulator, variable, expression)(pos(ctx)), init, collection)(pos(ctx))
   }
 
-  final override def exitListItemsPredicate(ctx: CypherParser.ListItemsPredicateContext): Unit = {
+  final override def exitListItemsPredicate(ctx: Cypher5Parser.ListItemsPredicateContext): Unit = {
     val p = pos(ctx)
     val variable = ctx.variable().ast[Variable]()
     val inExp = ctx.inExp.ast[Expression]()
     val where = astOpt[Expression](ctx.whereExp)
     ctx.ast = nodeChild(ctx, 0).getSymbol.getType match {
-      case CypherParser.ALL    => AllIterablePredicate(variable, inExp, where)(p)
-      case CypherParser.ANY    => AnyIterablePredicate(variable, inExp, where)(p)
-      case CypherParser.NONE   => NoneIterablePredicate(variable, inExp, where)(p)
-      case CypherParser.SINGLE => SingleIterablePredicate(variable, inExp, where)(p)
+      case Cypher5Parser.ALL    => AllIterablePredicate(variable, inExp, where)(p)
+      case Cypher5Parser.ANY    => AnyIterablePredicate(variable, inExp, where)(p)
+      case Cypher5Parser.NONE   => NoneIterablePredicate(variable, inExp, where)(p)
+      case Cypher5Parser.SINGLE => SingleIterablePredicate(variable, inExp, where)(p)
     }
   }
 
-  final override def exitShortestPathExpression(ctx: CypherParser.ShortestPathExpressionContext): Unit = {
+  final override def exitShortestPathExpression(ctx: Cypher5Parser.ShortestPathExpressionContext): Unit = {
     ctx.ast = ShortestPathExpression(astChild(ctx, 0))
   }
 
   final override def exitParenthesizedExpression(
-    ctx: CypherParser.ParenthesizedExpressionContext
+    ctx: Cypher5Parser.ParenthesizedExpressionContext
   ): Unit = {
     ctx.ast = ctxChild(ctx, 1).ast
   }
 
   final override def exitMapProjection(
-    ctx: CypherParser.MapProjectionContext
+    ctx: Cypher5Parser.MapProjectionContext
   ): Unit = {
     ctx.ast = MapProjection(ctx.variable().ast[Variable](), astSeq(ctx.mapProjectionElement()))(pos(ctx.LCURLY()))
   }
 
   final override def exitMapProjectionElement(
-    ctx: CypherParser.MapProjectionElementContext
+    ctx: Cypher5Parser.MapProjectionElementContext
   ): Unit = {
     val colon = ctx.COLON()
     val variable = ctx.variable()
@@ -716,13 +718,13 @@ trait ExpressionBuilder extends CypherParserListener {
   }
 
   final override def exitCountStar(
-    ctx: CypherParser.CountStarContext
+    ctx: Cypher5Parser.CountStarContext
   ): Unit = {
     ctx.ast = CountStar()(pos(ctx))
   }
 
   final override def exitExistsExpression(
-    ctx: CypherParser.ExistsExpressionContext
+    ctx: Cypher5Parser.ExistsExpressionContext
   ): Unit = {
     ctx.ast = ExistsExpression(subqueryBuilder(
       ctx.regularQuery(),
@@ -733,7 +735,7 @@ trait ExpressionBuilder extends CypherParserListener {
   }
 
   final override def exitCountExpression(
-    ctx: CypherParser.CountExpressionContext
+    ctx: Cypher5Parser.CountExpressionContext
   ): Unit = {
     ctx.ast = CountExpression(subqueryBuilder(
       ctx.regularQuery(),
@@ -744,10 +746,10 @@ trait ExpressionBuilder extends CypherParserListener {
   }
 
   private def subqueryBuilder(
-    regQuery: CypherParser.RegularQueryContext,
-    matchMode: CypherParser.MatchModeContext,
-    whereClause: CypherParser.WhereClauseContext,
-    patternList: CypherParser.PatternListContext
+    regQuery: Cypher5Parser.RegularQueryContext,
+    matchMode: Cypher5Parser.MatchModeContext,
+    whereClause: Cypher5Parser.WhereClauseContext,
+    patternList: Cypher5Parser.PatternListContext
   ): Query = {
     if (regQuery != null) regQuery.ast[Query]()
     else {
@@ -770,36 +772,36 @@ trait ExpressionBuilder extends CypherParserListener {
   }
 
   final override def exitCollectExpression(
-    ctx: CypherParser.CollectExpressionContext
+    ctx: Cypher5Parser.CollectExpressionContext
   ): Unit = {
     ctx.ast = CollectExpression(ctx.regularQuery().ast[Query]())(pos(ctx), None, None)
   }
 
-  final override def exitPropertyKeyName(ctx: CypherParser.PropertyKeyNameContext): Unit = {
+  final override def exitPropertyKeyName(ctx: Cypher5Parser.PropertyKeyNameContext): Unit = {
     ctx.ast = PropertyKeyName(ctxChild(ctx, 0).ast())(pos(ctx))
   }
 
-  final override def exitParameter(ctx: CypherParser.ParameterContext): Unit = {
+  final override def exitParameter(ctx: Cypher5Parser.ParameterContext): Unit = {
     val ast = ctx.parameterName().ast[ExplicitParameter]()
     ctx.ast = ast.copy()(position = pos(ctx))
   }
 
-  final override def exitParameterName(ctx: CypherParser.ParameterNameContext): Unit = {
+  final override def exitParameterName(ctx: Cypher5Parser.ParameterNameContext): Unit = {
     val parameterType = ctx.paramType match {
       case "STRING" => CTString
       case "MAP"    => CTMap
       case _        => CTAny
     }
     val name: String = child[ParseTree](ctx, 0) match {
-      case strCtx: CypherParser.SymbolicNameStringContext => strCtx.ast()
-      case node: TerminalNode                             => node.getText
-      case _                                              => throw new IllegalStateException(s"Unexpected ctx $ctx")
+      case strCtx: Cypher5Parser.SymbolicNameStringContext => strCtx.ast()
+      case node: TerminalNode                              => node.getText
+      case _                                               => throw new IllegalStateException(s"Unexpected ctx $ctx")
     }
     ctx.ast = ExplicitParameter(name, parameterType)(pos(ctx))
   }
 
   final override def exitFunctionInvocation(
-    ctx: CypherParser.FunctionInvocationContext
+    ctx: Cypher5Parser.FunctionInvocationContext
   ): Unit = {
     val functionName = ctx.functionName().ast[FunctionName]
     val distinct = if (ctx.DISTINCT() != null) true else false
@@ -810,12 +812,12 @@ trait ExpressionBuilder extends CypherParserListener {
       distinct,
       expressions,
       ArgumentUnordered,
-      ctx.parent.isInstanceOf[CypherParser.GraphReferenceContext]
+      ctx.parent.isInstanceOf[Cypher5Parser.GraphReferenceContext]
     )(functionName.namespace.position)
   }
 
   final override def exitFunctionName(
-    ctx: CypherParser.FunctionNameContext
+    ctx: Cypher5Parser.FunctionNameContext
   ): Unit = {
     val namespace = ctx.namespace().ast[Namespace]
     val functionNameCtx = ctx.symbolicNameString()
@@ -824,24 +826,24 @@ trait ExpressionBuilder extends CypherParserListener {
   }
 
   final override def exitFunctionArgument(
-    ctx: CypherParser.FunctionArgumentContext
+    ctx: Cypher5Parser.FunctionArgumentContext
   ): Unit = {
     ctx.ast = ctx.expression().ast[Expression]()
   }
 
   final override def exitNamespace(
-    ctx: CypherParser.NamespaceContext
+    ctx: Cypher5Parser.NamespaceContext
   ): Unit = {
     ctx.ast = Namespace(astSeq[String](ctx.symbolicNameString()).toList)(pos(ctx))
   }
 
   final override def exitVariable(
-    ctx: CypherParser.VariableContext
+    ctx: Cypher5Parser.VariableContext
   ): Unit = {
     ctx.ast = Variable(name = ctx.symbolicNameString().ast())(pos(ctx))
   }
 
-  final override def exitType(ctx: CypherParser.TypeContext): Unit = {
+  final override def exitType(ctx: Cypher5Parser.TypeContext): Unit = {
     val cypherType = ctx.children.size() match {
       case 1 => ctxChild(ctx, 0).ast[CypherType]
       case _ =>
@@ -851,7 +853,7 @@ trait ExpressionBuilder extends CypherParserListener {
     ctx.ast = cypherType.simplify
   }
 
-  final override def exitTypePart(ctx: CypherParser.TypePartContext): Unit = {
+  final override def exitTypePart(ctx: Cypher5Parser.TypePartContext): Unit = {
     var cypherType = ctx.typeName().ast[CypherType]()
     if (ctx.typeNullability() != null) cypherType = cypherType.withIsNullable(false)
     ctx.typeListSuffix().forEach { list =>
@@ -860,70 +862,70 @@ trait ExpressionBuilder extends CypherParserListener {
     ctx.ast = cypherType
   }
 
-  final override def exitTypeName(ctx: CypherParser.TypeNameContext): Unit = {
+  final override def exitTypeName(ctx: Cypher5Parser.TypeNameContext): Unit = {
     val size = ctx.children.size
     val p = pos(ctx)
     val firstToken = nodeChild(ctx, 0).getSymbol.getType
     ctx.ast = size match {
       case 1 => firstToken match {
-          case CypherParser.NOTHING                          => NothingType()(p)
-          case CypherParser.NULL                             => NullType()(p)
-          case CypherParser.BOOL | CypherParser.BOOLEAN      => BooleanType(true)(p)
-          case CypherParser.STRING | CypherParser.VARCHAR    => StringType(true)(p)
-          case CypherParser.INT | CypherParser.INTEGER       => IntegerType(true)(p)
-          case CypherParser.FLOAT                            => FloatType(true)(p)
-          case CypherParser.DATE                             => DateType(true)(p)
-          case CypherParser.DURATION                         => DurationType(true)(p)
-          case CypherParser.POINT                            => PointType(true)(p)
-          case CypherParser.NODE | CypherParser.VERTEX       => NodeType(true)(p)
-          case CypherParser.RELATIONSHIP | CypherParser.EDGE => RelationshipType(true)(p)
-          case CypherParser.MAP                              => MapType(true)(p)
-          case CypherParser.PATH | CypherParser.PATHS        => PathType(true)(p)
-          case CypherParser.ANY                              => AnyType(true)(p)
+          case Cypher5Parser.NOTHING                           => NothingType()(p)
+          case Cypher5Parser.NULL                              => NullType()(p)
+          case Cypher5Parser.BOOL | Cypher5Parser.BOOLEAN      => BooleanType(true)(p)
+          case Cypher5Parser.STRING | Cypher5Parser.VARCHAR    => StringType(true)(p)
+          case Cypher5Parser.INT | Cypher5Parser.INTEGER       => IntegerType(true)(p)
+          case Cypher5Parser.FLOAT                             => FloatType(true)(p)
+          case Cypher5Parser.DATE                              => DateType(true)(p)
+          case Cypher5Parser.DURATION                          => DurationType(true)(p)
+          case Cypher5Parser.POINT                             => PointType(true)(p)
+          case Cypher5Parser.NODE | Cypher5Parser.VERTEX       => NodeType(true)(p)
+          case Cypher5Parser.RELATIONSHIP | Cypher5Parser.EDGE => RelationshipType(true)(p)
+          case Cypher5Parser.MAP                               => MapType(true)(p)
+          case Cypher5Parser.PATH | Cypher5Parser.PATHS        => PathType(true)(p)
+          case Cypher5Parser.ANY                               => AnyType(true)(p)
           case _ => throw new IllegalStateException(s"Unexpected context $ctx (first token type $firstToken)")
         }
       case 2 => firstToken match {
-          case CypherParser.SIGNED   => IntegerType(true)(p)
-          case CypherParser.PROPERTY => PropertyValueType(true)(p)
-          case CypherParser.LOCAL => nodeChild(ctx, 1).getSymbol.getType match {
-              case CypherParser.TIME     => LocalTimeType(true)(p)
-              case CypherParser.DATETIME => LocalDateTimeType(true)(p)
+          case Cypher5Parser.SIGNED   => IntegerType(true)(p)
+          case Cypher5Parser.PROPERTY => PropertyValueType(true)(p)
+          case Cypher5Parser.LOCAL => nodeChild(ctx, 1).getSymbol.getType match {
+              case Cypher5Parser.TIME     => LocalTimeType(true)(p)
+              case Cypher5Parser.DATETIME => LocalDateTimeType(true)(p)
               case _ => throw new IllegalStateException(s"Unexpected context $ctx (first token type $firstToken)")
             }
-          case CypherParser.ZONED => nodeChild(ctx, 1).getSymbol.getType match {
-              case CypherParser.TIME     => ZonedTimeType(true)(p)
-              case CypherParser.DATETIME => ZonedDateTimeType(true)(p)
+          case Cypher5Parser.ZONED => nodeChild(ctx, 1).getSymbol.getType match {
+              case Cypher5Parser.TIME     => ZonedTimeType(true)(p)
+              case Cypher5Parser.DATETIME => ZonedDateTimeType(true)(p)
               case _ => throw new IllegalStateException(s"Unexpected context $ctx (first token type $firstToken)")
             }
-          case CypherParser.ANY => nodeChild(ctx, 1).getSymbol.getType match {
-              case CypherParser.NODE | CypherParser.VERTEX       => NodeType(true)(p)
-              case CypherParser.RELATIONSHIP | CypherParser.EDGE => RelationshipType(true)(p)
-              case CypherParser.MAP                              => MapType(true)(p)
-              case CypherParser.VALUE                            => AnyType(true)(p)
+          case Cypher5Parser.ANY => nodeChild(ctx, 1).getSymbol.getType match {
+              case Cypher5Parser.NODE | Cypher5Parser.VERTEX       => NodeType(true)(p)
+              case Cypher5Parser.RELATIONSHIP | Cypher5Parser.EDGE => RelationshipType(true)(p)
+              case Cypher5Parser.MAP                               => MapType(true)(p)
+              case Cypher5Parser.VALUE                             => AnyType(true)(p)
               case _ => throw new IllegalStateException(s"Unexpected context $ctx (first token type $firstToken)")
             }
           case _ => throw new IllegalStateException(s"Unexpected context $ctx (first token type $firstToken)")
         }
       case 3 => firstToken match {
-          case CypherParser.TIME => nodeChild(ctx, 1).getSymbol.getType match {
-              case CypherParser.WITH    => ZonedTimeType(true)(p)
-              case CypherParser.WITHOUT => LocalTimeType(true)(p)
+          case Cypher5Parser.TIME => nodeChild(ctx, 1).getSymbol.getType match {
+              case Cypher5Parser.WITH    => ZonedTimeType(true)(p)
+              case Cypher5Parser.WITHOUT => LocalTimeType(true)(p)
               case _ => throw new IllegalStateException(s"Unexpected context $ctx (first token type $firstToken)")
             }
-          case CypherParser.TIMESTAMP => nodeChild(ctx, 1).getSymbol.getType match {
-              case CypherParser.WITH    => ZonedDateTimeType(true)(p)
-              case CypherParser.WITHOUT => LocalDateTimeType(true)(p)
+          case Cypher5Parser.TIMESTAMP => nodeChild(ctx, 1).getSymbol.getType match {
+              case Cypher5Parser.WITH    => ZonedDateTimeType(true)(p)
+              case Cypher5Parser.WITHOUT => LocalDateTimeType(true)(p)
               case _ => throw new IllegalStateException(s"Unexpected context $ctx (first token type $firstToken)")
             }
-          case CypherParser.ANY => nodeChild(ctx, 1).getSymbol.getType match {
-              case CypherParser.PROPERTY => PropertyValueType(true)(p)
+          case Cypher5Parser.ANY => nodeChild(ctx, 1).getSymbol.getType match {
+              case Cypher5Parser.PROPERTY => PropertyValueType(true)(p)
               case _ => throw new IllegalStateException(s"Unexpected context $ctx (first token type $firstToken)")
             }
           case _ => throw new IllegalStateException(s"Unexpected context $ctx (first token type $firstToken)")
         }
       case _ => firstToken match {
-          case CypherParser.LIST | CypherParser.ARRAY => ListType(ctx.`type`().ast(), true)(p)
-          case CypherParser.ANY =>
+          case Cypher5Parser.LIST | Cypher5Parser.ARRAY => ListType(ctx.`type`().ast(), true)(p)
+          case Cypher5Parser.ANY =>
             AssertMacros.checkOnlyWhenAssertionsAreEnabled(ctx.LT() != null && ctx.GT() != null)
             ctx.`type`().ast[CypherType]() match {
               case du: ClosedDynamicUnionType => du
@@ -935,22 +937,22 @@ trait ExpressionBuilder extends CypherParserListener {
     }
   }
 
-  final override def exitTypeNullability(ctx: CypherParser.TypeNullabilityContext): Unit = {}
+  final override def exitTypeNullability(ctx: Cypher5Parser.TypeNullabilityContext): Unit = {}
 
-  final override def exitTypeListSuffix(ctx: CypherParser.TypeListSuffixContext): Unit = {
+  final override def exitTypeListSuffix(ctx: Cypher5Parser.TypeListSuffixContext): Unit = {
     ctx.ast = ctx.typeNullability() == null
   }
 
-  final override def exitMap(ctx: CypherParser.MapContext): Unit =
+  final override def exitMap(ctx: Cypher5Parser.MapContext): Unit =
     ctx.ast = MapExpression(astPairs(ctx.propertyKeyName(), ctx.expression()))(pos(ctx))
 
   final override def exitSymbolicNameString(
-    ctx: CypherParser.SymbolicNameStringContext
+    ctx: Cypher5Parser.SymbolicNameStringContext
   ): Unit = {
     ctx.ast = ctxChild(ctx, 0).ast
   }
 
-  final override def exitEscapedSymbolicNameString(ctx: CypherParser.EscapedSymbolicNameStringContext): Unit = {
+  final override def exitEscapedSymbolicNameString(ctx: Cypher5Parser.EscapedSymbolicNameStringContext): Unit = {
     ctx.ast = ctx.start.getInputStream
       .getText(new Interval(ctx.start.getStartIndex + 1, ctx.stop.getStopIndex - 1)).replace("``", "`")
   }
@@ -967,26 +969,26 @@ trait ExpressionBuilder extends CypherParserListener {
     }
   }
 
-  final override def exitUnescapedSymbolicNameString(ctx: CypherParser.UnescapedSymbolicNameStringContext): Unit = {
+  final override def exitUnescapedSymbolicNameString(ctx: Cypher5Parser.UnescapedSymbolicNameStringContext): Unit = {
     val text = ctx.getText
     if (DeprecatedChars.containsDeprecatedChar(text)) reportDeprecatedChars(text, pos(ctx))
     ctx.ast = text
   }
 
   final override def exitSymbolicLabelNameString(
-    ctx: CypherParser.SymbolicLabelNameStringContext
+    ctx: Cypher5Parser.SymbolicLabelNameStringContext
   ): Unit = {
     ctx.ast = ctxChild(ctx, 0).ast
   }
 
   final override def exitUnescapedLabelSymbolicNameString(
-    ctx: CypherParser.UnescapedLabelSymbolicNameStringContext
+    ctx: Cypher5Parser.UnescapedLabelSymbolicNameStringContext
   ): Unit = {
     ctx.ast = ctx.getText
   }
 
   final override def exitNormalizeFunction(
-    ctx: CypherParser.NormalizeFunctionContext
+    ctx: Cypher5Parser.NormalizeFunctionContext
   ): Unit = {
     val expression = ctx.expression().ast[Expression]()
     val normalFormCtx = ctx.normalForm()
@@ -1001,7 +1003,7 @@ trait ExpressionBuilder extends CypherParserListener {
   }
 
   final override def exitTrimFunction(
-    ctx: CypherParser.TrimFunctionContext
+    ctx: Cypher5Parser.TrimFunctionContext
   ): Unit = {
     val trimSource = ctx.trimSource.ast[Expression]()
     val trimCharacterString = astOpt[Expression](ctx.trimCharacterString)

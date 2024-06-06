@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.neo4j.cypher.internal.parser.v5.ast.factory.ast
+package org.neo4j.cypher.internal.parser.v5.ast.factory
 
 import org.neo4j.cypher.internal.ast.AliasedReturnItem
 import org.neo4j.cypher.internal.ast.AllConstraints
@@ -101,18 +101,18 @@ import org.neo4j.cypher.internal.parser.ast.util.Util.astSeq
 import org.neo4j.cypher.internal.parser.ast.util.Util.ctxChild
 import org.neo4j.cypher.internal.parser.ast.util.Util.nodeChild
 import org.neo4j.cypher.internal.parser.ast.util.Util.pos
-import org.neo4j.cypher.internal.parser.v5.CypherParser
-import org.neo4j.cypher.internal.parser.v5.CypherParser.ShowConstraintMultiContext
-import org.neo4j.cypher.internal.parser.v5.CypherParserListener
-import org.neo4j.cypher.internal.parser.v5.ast.factory.ast.DdlShowBuilder.ShowWrapper
+import org.neo4j.cypher.internal.parser.v5.Cypher5Parser
+import org.neo4j.cypher.internal.parser.v5.Cypher5Parser.ShowConstraintMultiContext
+import org.neo4j.cypher.internal.parser.v5.Cypher5ParserListener
+import org.neo4j.cypher.internal.parser.v5.ast.factory.DdlShowBuilder.ShowWrapper
 import org.neo4j.cypher.internal.util.InputPosition
 
 import scala.collection.immutable.ArraySeq
 
-trait DdlShowBuilder extends CypherParserListener {
+trait DdlShowBuilder extends Cypher5ParserListener {
 
   final override def exitShowCommand(
-    ctx: CypherParser.ShowCommandContext
+    ctx: Cypher5Parser.ShowCommandContext
   ): Unit = {
     ctx.ast = ctxChild(ctx, 1).ast match {
       case ast: Seq[Clause @unchecked] => SingleQuery(ast)(pos(ctx))
@@ -150,7 +150,7 @@ trait DdlShowBuilder extends CypherParserListener {
   }
 
   final override def exitYieldItem(
-    ctx: CypherParser.YieldItemContext
+    ctx: Cypher5Parser.YieldItemContext
   ): Unit = {
     val variables = ctx.variable()
     val returnItem = variables.get(0).ast[Variable]()
@@ -161,20 +161,20 @@ trait DdlShowBuilder extends CypherParserListener {
     }
   }
 
-  final override def exitYieldSkip(ctx: CypherParser.YieldSkipContext): Unit = {
+  final override def exitYieldSkip(ctx: Cypher5Parser.YieldSkipContext): Unit = {
     ctx.ast = Skip(ctx.signedIntegerLiteral().ast[Expression]())(pos(ctx))
   }
 
-  final override def exitYieldLimit(ctx: CypherParser.YieldLimitContext): Unit = {
+  final override def exitYieldLimit(ctx: Cypher5Parser.YieldLimitContext): Unit = {
     ctx.ast = Limit(ctx.signedIntegerLiteral().ast[Expression]())(pos(ctx))
   }
 
-  final override def exitOrderBy(ctx: CypherParser.OrderByContext): Unit = {
+  final override def exitOrderBy(ctx: Cypher5Parser.OrderByContext): Unit = {
     ctx.ast = OrderBy(astSeq[SortItem](ctx.orderItem()))(pos(ctx.ORDER().getSymbol))
   }
 
   final override def exitYieldClause(
-    ctx: CypherParser.YieldClauseContext
+    ctx: Cypher5Parser.YieldClauseContext
   ): Unit = {
     val returnItems =
       if (ctx.TIMES() != null)
@@ -192,7 +192,7 @@ trait DdlShowBuilder extends CypherParserListener {
   }
 
   final override def exitShowBriefAndYield(
-    ctx: CypherParser.ShowBriefAndYieldContext
+    ctx: Cypher5Parser.ShowBriefAndYieldContext
   ): Unit = {
     val yieldClause = ctx.yieldClause()
     val (yieldAll, yieldedItems, y) =
@@ -210,7 +210,7 @@ trait DdlShowBuilder extends CypherParserListener {
   }
 
   final override def exitShowCommandYield(
-    ctx: CypherParser.ShowCommandYieldContext
+    ctx: Cypher5Parser.ShowCommandYieldContext
   ): Unit = {
     val yieldClause = ctx.yieldClause()
     val whereClause = ctx.whereClause()
@@ -226,7 +226,7 @@ trait DdlShowBuilder extends CypherParserListener {
   // Show Command Contexts
 
   final override def exitShowAliases(
-    ctx: CypherParser.ShowAliasesContext
+    ctx: Cypher5Parser.ShowAliasesContext
   ): Unit = {
     ctx.ast = ShowAliases(
       astOpt[DatabaseName](ctx.symbolicAliasNameOrParameter()),
@@ -234,14 +234,14 @@ trait DdlShowBuilder extends CypherParserListener {
     )(pos(ctx))
   }
 
-  override def exitShowConstraintCommand(ctx: CypherParser.ShowConstraintCommandContext): Unit = {
+  override def exitShowConstraintCommand(ctx: Cypher5Parser.ShowConstraintCommandContext): Unit = {
     val parentPos = pos(ctx.getParent)
     ctx.ast = ctx match {
-      case c: CypherParser.ShowConstraintMultiContext =>
+      case c: Cypher5Parser.ShowConstraintMultiContext =>
         val constraintType = c.constraintAllowYieldType().ast[ShowConstraintType]()
         c.showConstraintsAllowYield().ast[ShowWrapper]().buildConstraintClauses(constraintType, parentPos)
 
-      case c: CypherParser.ShowConstraintUniqueContext =>
+      case c: Cypher5Parser.ShowConstraintUniqueContext =>
         val entityType = if (c.NODE() != null) Node else Rel
         val constraintType = entityType match {
           case Node     => NodeUniqueConstraints
@@ -250,7 +250,7 @@ trait DdlShowBuilder extends CypherParserListener {
         }
         c.showConstraintsAllowYield().ast[ShowWrapper]().buildConstraintClauses(constraintType, parentPos)
 
-      case c: CypherParser.ShowConstraintKeyContext =>
+      case c: Cypher5Parser.ShowConstraintKeyContext =>
         val entityType = if (c.RELATIONSHIP() != null || c.REL() != null) Rel else NoEntity
         val constraintType = entityType match {
           case Rel      => RelKeyConstraints
@@ -259,11 +259,11 @@ trait DdlShowBuilder extends CypherParserListener {
         }
         c.showConstraintsAllowYield().ast[ShowWrapper]().buildConstraintClauses(constraintType, parentPos)
 
-      case c: CypherParser.ShowConstraintRelExistContext =>
+      case c: Cypher5Parser.ShowConstraintRelExistContext =>
         val constraintType = RelExistsConstraints(ValidSyntax)
         c.showConstraintsAllowYield().ast[ShowWrapper]().buildConstraintClauses(constraintType, parentPos)
 
-      case c: CypherParser.ShowConstraintOldExistsContext =>
+      case c: Cypher5Parser.ShowConstraintOldExistsContext =>
         val entityType = if (c.NODE() != null) Node else if (c.RELATIONSHIP() != null) Rel else NoEntity
         val constraintType = entityType match {
           case Node     => NodeExistsConstraints(RemovedSyntax)
@@ -272,7 +272,7 @@ trait DdlShowBuilder extends CypherParserListener {
         }
         c.showConstraintsAllowBrief().ast[ShowWrapper].buildConstraintClauses(constraintType, parentPos)
 
-      case c: CypherParser.ShowConstraintBriefAndYieldContext =>
+      case c: Cypher5Parser.ShowConstraintBriefAndYieldContext =>
         val constraintType = astOpt[ShowConstraintType](c.constraintBriefAndYieldType(), AllConstraints)
         c.showConstraintsAllowBriefAndYield().ast[ShowWrapper]()
           .buildConstraintClauses(constraintType, parentPos)
@@ -281,7 +281,7 @@ trait DdlShowBuilder extends CypherParserListener {
   }
 
   override def exitConstraintAllowYieldType(
-    ctx: CypherParser.ConstraintAllowYieldTypeContext
+    ctx: Cypher5Parser.ConstraintAllowYieldTypeContext
   ): Unit = {
     val parent = ctx.getParent.asInstanceOf[ShowConstraintMultiContext]
     val entityType =
@@ -300,19 +300,19 @@ trait DdlShowBuilder extends CypherParserListener {
   }
 
   override def exitConstraintExistType(
-    ctx: CypherParser.ConstraintExistTypeContext
+    ctx: Cypher5Parser.ConstraintExistTypeContext
   ): Unit = {}
 
   override def exitConstraintBriefAndYieldType(
-    ctx: CypherParser.ConstraintBriefAndYieldTypeContext
+    ctx: Cypher5Parser.ConstraintBriefAndYieldTypeContext
   ): Unit = {
     ctx.ast = nodeChild(ctx, 0).getSymbol.getType match {
-      case CypherParser.ALL    => AllConstraints
-      case CypherParser.UNIQUE => UniqueConstraints
-      case CypherParser.EXIST  => ExistsConstraints(ValidSyntax)
-      case CypherParser.NODE =>
+      case Cypher5Parser.ALL    => AllConstraints
+      case Cypher5Parser.UNIQUE => UniqueConstraints
+      case Cypher5Parser.EXIST  => ExistsConstraints(ValidSyntax)
+      case Cypher5Parser.NODE =>
         if (ctx.EXIST() != null) NodeExistsConstraints(ValidSyntax) else NodeKeyConstraints
-      case CypherParser.RELATIONSHIP =>
+      case Cypher5Parser.RELATIONSHIP =>
         RelExistsConstraints(ValidSyntax)
     }
   }
@@ -323,7 +323,7 @@ trait DdlShowBuilder extends CypherParserListener {
   private case object NoEntity extends ConstraintEntity
 
   final override def exitShowConstraintsAllowBriefAndYield(
-    ctx: CypherParser.ShowConstraintsAllowBriefAndYieldContext
+    ctx: Cypher5Parser.ShowConstraintsAllowBriefAndYieldContext
   ): Unit = {
     ctx.ast =
       astOpt[ShowWrapper](ctx.showBriefAndYield(), ShowWrapper())
@@ -331,7 +331,7 @@ trait DdlShowBuilder extends CypherParserListener {
   }
 
   final override def exitShowConstraintsAllowBrief(
-    ctx: CypherParser.ShowConstraintsAllowBriefContext
+    ctx: Cypher5Parser.ShowConstraintsAllowBriefContext
   ): Unit = {
     ctx.ast = ShowWrapper(
       ctx.BRIEF() != null,
@@ -346,14 +346,14 @@ trait DdlShowBuilder extends CypherParserListener {
   }
 
   final override def exitShowConstraintsAllowYield(
-    ctx: CypherParser.ShowConstraintsAllowYieldContext
+    ctx: Cypher5Parser.ShowConstraintsAllowYieldContext
   ): Unit = {
     ctx.ast = decomposeYield(astOpt(ctx.showCommandYield()))
       .copy(composableClauses = astOpt[Seq[Clause]](ctx.composableCommandClauses()))
   }
 
   final override def exitShowCurrentUser(
-    ctx: CypherParser.ShowCurrentUserContext
+    ctx: Cypher5Parser.ShowCurrentUserContext
   ): Unit = {
     ctx.ast = ShowCurrentUser(
       astOpt[Either[(Yield, Option[Return]), Where]](ctx.showCommandYield())
@@ -361,7 +361,7 @@ trait DdlShowBuilder extends CypherParserListener {
   }
 
   final override def exitShowDatabase(
-    ctx: CypherParser.ShowDatabaseContext
+    ctx: Cypher5Parser.ShowDatabaseContext
   ): Unit = {
     val dbName = ctx.symbolicAliasNameOrParameter()
     val dbScope =
@@ -376,7 +376,7 @@ trait DdlShowBuilder extends CypherParserListener {
   }
 
   final override def exitShowFunctions(
-    ctx: CypherParser.ShowFunctionsContext
+    ctx: Cypher5Parser.ShowFunctionsContext
   ): Unit = {
     ctx.ast = decomposeYield(astOpt(ctx.showCommandYield()))
       .copy(composableClauses = astOpt[Seq[Clause]](ctx.composableCommandClauses()))
@@ -388,19 +388,19 @@ trait DdlShowBuilder extends CypherParserListener {
   }
 
   override def exitShowIndexCommand(
-    ctx: CypherParser.ShowIndexCommandContext
+    ctx: Cypher5Parser.ShowIndexCommandContext
   ): Unit = {
     val noBrief = ctx.showIndexesNoBrief()
     val parentPos = pos(ctx.getParent)
     ctx.ast = if (noBrief != null) {
       val indexType = nodeChild(ctx, 0).getSymbol.getType match {
-        case CypherParser.FULLTEXT => FulltextIndexes
-        case CypherParser.LOOKUP   => LookupIndexes
-        case CypherParser.POINT    => PointIndexes
-        case CypherParser.RANGE    => RangeIndexes
-        case CypherParser.TEXT     => TextIndexes
-        case CypherParser.VECTOR   => VectorIndexes
-        case _                     => throw new IllegalStateException("Unexpected index type")
+        case Cypher5Parser.FULLTEXT => FulltextIndexes
+        case Cypher5Parser.LOOKUP   => LookupIndexes
+        case Cypher5Parser.POINT    => PointIndexes
+        case Cypher5Parser.RANGE    => RangeIndexes
+        case Cypher5Parser.TEXT     => TextIndexes
+        case Cypher5Parser.VECTOR   => VectorIndexes
+        case _                      => throw new IllegalStateException("Unexpected index type")
       }
       ctx.showIndexesNoBrief().ast[ShowWrapper].buildIndexClauses(indexType, parentPos)
     } else {
@@ -410,21 +410,21 @@ trait DdlShowBuilder extends CypherParserListener {
   }
 
   final override def exitShowIndexesAllowBrief(
-    ctx: CypherParser.ShowIndexesAllowBriefContext
+    ctx: Cypher5Parser.ShowIndexesAllowBriefContext
   ): Unit = {
     ctx.ast = astOpt[ShowWrapper](ctx.showBriefAndYield(), ShowWrapper())
       .copy(composableClauses = astOpt[Seq[Clause]](ctx.composableCommandClauses()))
   }
 
   final override def exitShowIndexesNoBrief(
-    ctx: CypherParser.ShowIndexesNoBriefContext
+    ctx: Cypher5Parser.ShowIndexesNoBriefContext
   ): Unit = {
     ctx.ast = decomposeYield(astOpt(ctx.showCommandYield()))
       .copy(composableClauses = astOpt[Seq[Clause]](ctx.composableCommandClauses()))
   }
 
   final override def exitShowPrivileges(
-    ctx: CypherParser.ShowPrivilegesContext
+    ctx: Cypher5Parser.ShowPrivilegesContext
   ): Unit = {
     val (asCommand, asRevoke) = astOpt[(Boolean, Boolean)](ctx.privilegeAsCommand(), (false, false))
     val cmdYield = astOpt[Either[(Yield, Option[Return]), Where]](ctx.showCommandYield())
@@ -436,7 +436,7 @@ trait DdlShowBuilder extends CypherParserListener {
   }
 
   final override def exitShowSupportedPrivileges(
-    ctx: CypherParser.ShowSupportedPrivilegesContext
+    ctx: Cypher5Parser.ShowSupportedPrivilegesContext
   ): Unit = {
     ctx.ast = ShowSupportedPrivilegeCommand(
       astOpt[Either[(Yield, Option[Return]), Where]](ctx.showCommandYield())
@@ -444,7 +444,7 @@ trait DdlShowBuilder extends CypherParserListener {
   }
 
   final override def exitShowRolePrivileges(
-    ctx: CypherParser.ShowRolePrivilegesContext
+    ctx: Cypher5Parser.ShowRolePrivilegesContext
   ): Unit = {
     val (asCommand, asRevoke) = astOpt[(Boolean, Boolean)](ctx.privilegeAsCommand(), (false, false))
     val cmdYield = astOpt[Either[(Yield, Option[Return]), Where]](ctx.showCommandYield())
@@ -459,7 +459,7 @@ trait DdlShowBuilder extends CypherParserListener {
   }
 
   final override def exitShowUserPrivileges(
-    ctx: CypherParser.ShowUserPrivilegesContext
+    ctx: Cypher5Parser.ShowUserPrivilegesContext
   ): Unit = {
     val (asCommand, asRevoke) = astOpt[(Boolean, Boolean)](ctx.privilegeAsCommand(), (false, false))
     val namesList = ctx.userNames
@@ -474,12 +474,12 @@ trait DdlShowBuilder extends CypherParserListener {
     }
   }
 
-  override def exitPrivilegeAsCommand(ctx: CypherParser.PrivilegeAsCommandContext): Unit = {
+  override def exitPrivilegeAsCommand(ctx: Cypher5Parser.PrivilegeAsCommandContext): Unit = {
     ctx.ast = (ctx.AS() != null, ctx.REVOKE() != null)
   }
 
   final override def exitShowProcedures(
-    ctx: CypherParser.ShowProceduresContext
+    ctx: Cypher5Parser.ShowProceduresContext
   ): Unit = {
     ctx.ast = decomposeYield(astOpt(ctx.showCommandYield()))
       .copy(composableClauses = astOpt[Seq[Clause]](ctx.composableCommandClauses()))
@@ -487,7 +487,7 @@ trait DdlShowBuilder extends CypherParserListener {
   }
 
   final override def exitShowRoles(
-    ctx: CypherParser.ShowRolesContext
+    ctx: Cypher5Parser.ShowRolesContext
   ): Unit = {
     ctx.ast = ShowRoles(
       ctx.WITH() != null,
@@ -497,7 +497,7 @@ trait DdlShowBuilder extends CypherParserListener {
   }
 
   final override def exitShowServers(
-    ctx: CypherParser.ShowServersContext
+    ctx: Cypher5Parser.ShowServersContext
   ): Unit = {
     ctx.ast = ShowServers(
       astOpt[Either[(Yield, Option[Return]), Where]](ctx.showCommandYield())
@@ -505,25 +505,25 @@ trait DdlShowBuilder extends CypherParserListener {
   }
 
   final override def exitShowSettings(
-    ctx: CypherParser.ShowSettingsContext
+    ctx: Cypher5Parser.ShowSettingsContext
   ): Unit = {
     ctx.ast = ctx.namesAndClauses().ast[ShowWrapper]().buildSettingsClauses(pos(ctx.getParent))
   }
 
   final override def exitShowTransactions(
-    ctx: CypherParser.ShowTransactionsContext
+    ctx: Cypher5Parser.ShowTransactionsContext
   ): Unit = {
     ctx.ast = ctx.namesAndClauses().ast[ShowWrapper]().buildShowTransactions(pos(ctx.getParent))
   }
 
   final override def exitTerminateTransactions(
-    ctx: CypherParser.TerminateTransactionsContext
+    ctx: Cypher5Parser.TerminateTransactionsContext
   ): Unit = {
     ctx.ast = ctx.namesAndClauses().ast[ShowWrapper]().buildTerminateTransaction(pos(ctx.getParent))
   }
 
   final override def exitShowFunctionsType(
-    ctx: CypherParser.ShowFunctionsTypeContext
+    ctx: Cypher5Parser.ShowFunctionsTypeContext
   ): Unit = {
     ctx.ast = if (ctx.BUILT() != null) {
       BuiltInFunctions
@@ -533,14 +533,14 @@ trait DdlShowBuilder extends CypherParserListener {
   }
 
   final override def exitShowUsers(
-    ctx: CypherParser.ShowUsersContext
+    ctx: Cypher5Parser.ShowUsersContext
   ): Unit = {
     ctx.ast = ShowUsers(
       astOpt[Either[(Yield, Option[Return]), Where]](ctx.showCommandYield())
     )(pos(ctx))
   }
 
-  final override def exitExecutableBy(ctx: CypherParser.ExecutableByContext): Unit = {
+  final override def exitExecutableBy(ctx: Cypher5Parser.ExecutableByContext): Unit = {
     val name = ctx.symbolicNameString()
     ctx.ast =
       if (name != null) {
@@ -549,7 +549,7 @@ trait DdlShowBuilder extends CypherParserListener {
   }
 
   override def exitNamesAndClauses(
-    ctx: CypherParser.NamesAndClausesContext
+    ctx: Cypher5Parser.NamesAndClausesContext
   ): Unit = {
     ctx.ast = decomposeYield(astOpt(ctx.showCommandYield()))
       .copy(
@@ -559,7 +559,7 @@ trait DdlShowBuilder extends CypherParserListener {
   }
 
   final override def exitStringsOrExpression(
-    ctx: CypherParser.StringsOrExpressionContext
+    ctx: Cypher5Parser.StringsOrExpressionContext
   ): Unit = {
     val stringList = ctx.stringList()
     ctx.ast = if (stringList != null) {
@@ -572,19 +572,19 @@ trait DdlShowBuilder extends CypherParserListener {
   }
 
   final override def exitStringList(
-    ctx: CypherParser.StringListContext
+    ctx: Cypher5Parser.StringListContext
   ): Unit = {
     ctx.ast = astSeq[StringLiteral](ctx.stringLiteral())
   }
 
   override def exitComposableShowCommandClauses(
-    ctx: CypherParser.ComposableShowCommandClausesContext
+    ctx: Cypher5Parser.ComposableShowCommandClausesContext
   ): Unit = {
     ctx.ast = ctxChild(ctx, 1).ast
   }
 
   final override def exitComposableCommandClauses(
-    ctx: CypherParser.ComposableCommandClausesContext
+    ctx: Cypher5Parser.ComposableCommandClausesContext
   ): Unit = {
     ctx.ast = ctxChild(ctx, 0).ast
   }

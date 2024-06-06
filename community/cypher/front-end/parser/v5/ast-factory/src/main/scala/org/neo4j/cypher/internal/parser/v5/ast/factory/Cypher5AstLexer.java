@@ -16,7 +16,6 @@
  */
 package org.neo4j.cypher.internal.parser.v5.ast.factory;
 
-import java.io.IOException;
 import org.antlr.v4.runtime.ANTLRErrorListener;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.LexerNoViableAltException;
@@ -25,14 +24,16 @@ import org.antlr.v4.runtime.misc.Interval;
 import org.neo4j.cypher.internal.parser.lexer.CypherQueryAccess;
 import org.neo4j.cypher.internal.parser.lexer.CypherToken;
 import org.neo4j.cypher.internal.parser.lexer.UnicodeEscapeReplacementReader;
-import org.neo4j.cypher.internal.parser.v5.CypherLexer;
+import org.neo4j.cypher.internal.parser.v5.Cypher5Lexer;
 import org.neo4j.util.VisibleForTesting;
 
-public final class CypherAstLexer extends CypherLexer implements CypherQueryAccess {
+import java.io.IOException;
+
+public final class Cypher5AstLexer extends Cypher5Lexer implements CypherQueryAccess {
     private final String inputQuery; // Note, not always identical to what the parser sees.
     private final int[] offsetTable;
 
-    private CypherAstLexer(CharStream input, String inputQuery, int[] offsetTable) {
+    private Cypher5AstLexer(CharStream input, String inputQuery, int[] offsetTable) {
         super(input);
         this.inputQuery = inputQuery;
         this.offsetTable = offsetTable;
@@ -67,15 +68,15 @@ public final class CypherAstLexer extends CypherLexer implements CypherQueryAcce
      * @param fullTokens if false the lexer produces optimised ThinCypherTokens, if true full tokens are produced,
      *                   that are needed for some error handling.
      */
-    public static CypherAstLexer fromString(final String cypher, boolean fullTokens) throws IOException {
+    public static Cypher5AstLexer fromString(final String cypher, boolean fullTokens) throws IOException {
         return fromString(cypher, UnicodeEscapeReplacementReader.DEFAULT_BUFFER_SIZE, fullTokens);
     }
 
     @VisibleForTesting
-    public static CypherAstLexer fromString(final String cypher, int bufferSize, boolean fullTokens)
+    public static Cypher5AstLexer fromString(final String cypher, int bufferSize, boolean fullTokens)
             throws IOException {
         final var read = UnicodeEscapeReplacementReader.read(cypher, bufferSize);
-        final var lexer = new CypherAstLexer(read.charStream(), cypher, read.offsetTable());
+        final var lexer = new Cypher5AstLexer(read.charStream(), cypher, read.offsetTable());
         lexer.setTokenFactory(CypherToken.factory(fullTokens));
         return lexer;
     }

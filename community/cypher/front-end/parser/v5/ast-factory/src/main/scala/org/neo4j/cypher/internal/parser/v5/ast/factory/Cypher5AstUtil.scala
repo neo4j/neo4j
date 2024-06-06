@@ -14,20 +14,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.cypher.internal.parser.v5.ast.factory.ast
+package org.neo4j.cypher.internal.parser.v5.ast.factory
 
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.parser.ast.util.Util.pos
-import org.neo4j.cypher.internal.parser.v5.CypherParser
+import org.neo4j.cypher.internal.parser.v5.Cypher5Parser
 
 import scala.collection.immutable.ArraySeq
 import scala.jdk.CollectionConverters.IterableHasAsScala
 
 object Cypher5AstUtil {
 
-  def nonEmptyPropertyKeyName(list: CypherParser.NonEmptyNameListContext): ArraySeq[PropertyKeyName] = {
+  def nonEmptyPropertyKeyName(list: Cypher5Parser.NonEmptyNameListContext): ArraySeq[PropertyKeyName] = {
     ArraySeq.from(list.symbolicNameString().asScala.collect {
-      case s: CypherParser.SymbolicNameStringContext => PropertyKeyName(s.ast())(pos(s))
+      case s: Cypher5Parser.SymbolicNameStringContext => PropertyKeyName(s.ast())(pos(s))
     })
   }
 }

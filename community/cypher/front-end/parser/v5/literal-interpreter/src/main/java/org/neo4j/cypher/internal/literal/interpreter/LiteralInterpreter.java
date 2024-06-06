@@ -41,8 +41,8 @@ import org.antlr.v4.runtime.tree.ErrorNode;
 import org.antlr.v4.runtime.tree.ParseTreeListener;
 import org.antlr.v4.runtime.tree.TerminalNode;
 import org.neo4j.cypher.internal.parser.AstRuleCtx;
-import org.neo4j.cypher.internal.parser.v5.CypherLexer;
-import org.neo4j.cypher.internal.parser.v5.CypherParser;
+import org.neo4j.cypher.internal.parser.v5.Cypher5Lexer;
+import org.neo4j.cypher.internal.parser.v5.Cypher5Parser;
 import org.neo4j.exceptions.SyntaxException;
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.values.storable.DateTimeValue;
@@ -62,9 +62,9 @@ public class LiteralInterpreter {
 
     public static Object parseExpression(String cypherExpression) {
         final var builder = new LiteralInterpreterBuilder();
-        var cypherLexer = new CypherLexer(CharStreams.fromString(cypherExpression));
+        var cypherLexer = new Cypher5Lexer(CharStreams.fromString(cypherExpression));
         var tokenStream = new CommonTokenStream(cypherLexer);
-        var parser = new CypherParser(tokenStream);
+        var parser = new Cypher5Parser(tokenStream);
         parser.removeErrorListeners();
         var errorStrategy = new DefaultErrorStrategy();
         parser.setErrorHandler(errorStrategy);
@@ -126,37 +126,38 @@ class LiteralInterpreterBuilder implements ParseTreeListener {
         }
         ((AstRuleCtx) ctx).ast = missingAst;
         switch (ctx.getRuleIndex()) {
-            case CypherParser.RULE_numberLiteral -> exitNumberLiteral((CypherParser.NumberLiteralContext) ctx);
-            case CypherParser.RULE_literal -> exitLiteral((CypherParser.LiteralContext) ctx);
-            case CypherParser.RULE_stringLiteral -> exitStringLiteral((CypherParser.StringLiteralContext) ctx);
-            case CypherParser.RULE_listLiteral -> exitListLiteral((CypherParser.ListLiteralContext) ctx);
-            case CypherParser.RULE_map -> exitMap((CypherParser.MapContext) ctx);
-            case CypherParser.RULE_propertyKeyName -> exitPropertyKeyName((CypherParser.PropertyKeyNameContext) ctx);
-            case CypherParser.RULE_symbolicNameString -> exitSymbolicNameString(
-                    (CypherParser.SymbolicNameStringContext) ctx);
-            case CypherParser.RULE_escapedSymbolicNameString -> exitEscapedSymbolicNameString(
-                    (CypherParser.EscapedSymbolicNameStringContext) ctx);
-            case CypherParser.RULE_unescapedSymbolicNameString -> exitUnescapedSymbolicNameString(
-                    (CypherParser.UnescapedSymbolicNameStringContext) ctx);
-            case CypherParser.RULE_functionInvocation -> exitFunctionInvocation(
-                    (CypherParser.FunctionInvocationContext) ctx);
-            case CypherParser.RULE_functionArgument -> exitFunctionArgument((CypherParser.FunctionArgumentContext) ctx);
-            case CypherParser.RULE_functionName -> exitFunctionName((CypherParser.FunctionNameContext) ctx);
-            case CypherParser.RULE_expression -> exitDefault((AstRuleCtx) ctx);
-            case CypherParser.RULE_expression1 -> exitExpression1((CypherParser.Expression1Context) ctx);
-            case CypherParser.RULE_expression2 -> exitDefault((AstRuleCtx) ctx);
-            case CypherParser.RULE_expression3 -> exitDefault((AstRuleCtx) ctx);
-            case CypherParser.RULE_expression4 -> exitDefault((AstRuleCtx) ctx);
-            case CypherParser.RULE_expression5 -> exitDefault((AstRuleCtx) ctx);
-            case CypherParser.RULE_expression6 -> exitDefault((AstRuleCtx) ctx);
-            case CypherParser.RULE_expression7 -> exitDefault((AstRuleCtx) ctx);
-            case CypherParser.RULE_expression8 -> exitDefault((AstRuleCtx) ctx);
-            case CypherParser.RULE_expression9 -> exitDefault((AstRuleCtx) ctx);
-            case CypherParser.RULE_expression10 -> exitDefault((AstRuleCtx) ctx);
-            case CypherParser.RULE_expression11 -> exitDefault((AstRuleCtx) ctx);
-            case CypherParser.RULE_namespace -> exitNameSpace((CypherParser.NamespaceContext) ctx);
-            case CypherParser.RULE_unescapedLabelSymbolicNameString -> exitUnescapedLabelSymbolicNameString(
-                    (CypherParser.UnescapedLabelSymbolicNameStringContext) ctx);
+            case Cypher5Parser.RULE_numberLiteral -> exitNumberLiteral((Cypher5Parser.NumberLiteralContext) ctx);
+            case Cypher5Parser.RULE_literal -> exitLiteral((Cypher5Parser.LiteralContext) ctx);
+            case Cypher5Parser.RULE_stringLiteral -> exitStringLiteral((Cypher5Parser.StringLiteralContext) ctx);
+            case Cypher5Parser.RULE_listLiteral -> exitListLiteral((Cypher5Parser.ListLiteralContext) ctx);
+            case Cypher5Parser.RULE_map -> exitMap((Cypher5Parser.MapContext) ctx);
+            case Cypher5Parser.RULE_propertyKeyName -> exitPropertyKeyName((Cypher5Parser.PropertyKeyNameContext) ctx);
+            case Cypher5Parser.RULE_symbolicNameString -> exitSymbolicNameString(
+                    (Cypher5Parser.SymbolicNameStringContext) ctx);
+            case Cypher5Parser.RULE_escapedSymbolicNameString -> exitEscapedSymbolicNameString(
+                    (Cypher5Parser.EscapedSymbolicNameStringContext) ctx);
+            case Cypher5Parser.RULE_unescapedSymbolicNameString -> exitUnescapedSymbolicNameString(
+                    (Cypher5Parser.UnescapedSymbolicNameStringContext) ctx);
+            case Cypher5Parser.RULE_functionInvocation -> exitFunctionInvocation(
+                    (Cypher5Parser.FunctionInvocationContext) ctx);
+            case Cypher5Parser.RULE_functionArgument -> exitFunctionArgument(
+                    (Cypher5Parser.FunctionArgumentContext) ctx);
+            case Cypher5Parser.RULE_functionName -> exitFunctionName((Cypher5Parser.FunctionNameContext) ctx);
+            case Cypher5Parser.RULE_expression -> exitDefault((AstRuleCtx) ctx);
+            case Cypher5Parser.RULE_expression1 -> exitExpression1((Cypher5Parser.Expression1Context) ctx);
+            case Cypher5Parser.RULE_expression2 -> exitDefault((AstRuleCtx) ctx);
+            case Cypher5Parser.RULE_expression3 -> exitDefault((AstRuleCtx) ctx);
+            case Cypher5Parser.RULE_expression4 -> exitDefault((AstRuleCtx) ctx);
+            case Cypher5Parser.RULE_expression5 -> exitDefault((AstRuleCtx) ctx);
+            case Cypher5Parser.RULE_expression6 -> exitDefault((AstRuleCtx) ctx);
+            case Cypher5Parser.RULE_expression7 -> exitDefault((AstRuleCtx) ctx);
+            case Cypher5Parser.RULE_expression8 -> exitDefault((AstRuleCtx) ctx);
+            case Cypher5Parser.RULE_expression9 -> exitDefault((AstRuleCtx) ctx);
+            case Cypher5Parser.RULE_expression10 -> exitDefault((AstRuleCtx) ctx);
+            case Cypher5Parser.RULE_expression11 -> exitDefault((AstRuleCtx) ctx);
+            case Cypher5Parser.RULE_namespace -> exitNameSpace((Cypher5Parser.NamespaceContext) ctx);
+            case Cypher5Parser.RULE_unescapedLabelSymbolicNameString -> exitUnescapedLabelSymbolicNameString(
+                    (Cypher5Parser.UnescapedLabelSymbolicNameStringContext) ctx);
 
             default -> exitDefault((AstRuleCtx) ctx);
         }
@@ -165,13 +166,13 @@ class LiteralInterpreterBuilder implements ParseTreeListener {
         }
     }
 
-    private void exitFunctionArgument(CypherParser.FunctionArgumentContext ctx) {
+    private void exitFunctionArgument(Cypher5Parser.FunctionArgumentContext ctx) {
         if (ctx.getChildCount() == 1 && ctx.getChild(0) instanceof AstRuleCtx childCtx) {
             ctx.ast = childCtx.ast;
         }
     }
 
-    private void exitFunctionInvocation(CypherParser.FunctionInvocationContext ctx) {
+    private void exitFunctionInvocation(Cypher5Parser.FunctionInvocationContext ctx) {
         final ZoneId DEFAULT_ZONE_ID = ZoneId.systemDefault();
 
         if (ctx.functionName().ast instanceof String functionName) {
@@ -297,13 +298,13 @@ class LiteralInterpreterBuilder implements ParseTreeListener {
         }
     }
 
-    private void exitFunctionName(CypherParser.FunctionNameContext ctx) {
+    private void exitFunctionName(Cypher5Parser.FunctionNameContext ctx) {
         if (ctx.getChildCount() == 2 && ctx.getChild(1) instanceof AstRuleCtx childCtx) {
             ctx.ast = childCtx.ast;
         }
     }
 
-    private void exitExpression1(CypherParser.Expression1Context ctx) {
+    private void exitExpression1(Cypher5Parser.Expression1Context ctx) {
         if (ctx.literal() != null) {
             ctx.ast = ctx.literal().ast;
         } else if (ctx.listLiteral() != null) {
@@ -313,20 +314,20 @@ class LiteralInterpreterBuilder implements ParseTreeListener {
         }
     }
 
-    private void exitListLiteral(CypherParser.ListLiteralContext ctx) {
+    private void exitListLiteral(Cypher5Parser.ListLiteralContext ctx) {
         ctx.ast = ctx.expression().stream().map(AstRuleCtx::ast).toList();
     }
 
-    private void exitLiteral(CypherParser.LiteralContext ctx) {
-        if (ctx instanceof CypherParser.NummericLiteralContext nctx) {
+    private void exitLiteral(Cypher5Parser.LiteralContext ctx) {
+        if (ctx instanceof Cypher5Parser.NummericLiteralContext nctx) {
             ctx.ast = nctx.numberLiteral().ast;
-        } else if (ctx instanceof CypherParser.StringsLiteralContext sctx) {
+        } else if (ctx instanceof Cypher5Parser.StringsLiteralContext sctx) {
             ctx.ast = sctx.stringLiteral().ast;
-        } else if (ctx instanceof CypherParser.OtherLiteralContext octx) {
+        } else if (ctx instanceof Cypher5Parser.OtherLiteralContext octx) {
             ctx.ast = octx.map().ast;
-        } else if (ctx instanceof CypherParser.BooleanLiteralContext bctx) {
+        } else if (ctx instanceof Cypher5Parser.BooleanLiteralContext bctx) {
             ctx.ast = bctx.TRUE() != null ? Boolean.TRUE : Boolean.FALSE;
-        } else if (ctx instanceof CypherParser.KeywordLiteralContext kctx) {
+        } else if (ctx instanceof Cypher5Parser.KeywordLiteralContext kctx) {
             if (kctx.INF() != null || kctx.INFINITY() != null) {
                 ctx.ast = Double.POSITIVE_INFINITY;
             } else if (kctx.NAN() != null) {
@@ -337,7 +338,7 @@ class LiteralInterpreterBuilder implements ParseTreeListener {
         }
     }
 
-    private void exitMap(CypherParser.MapContext ctx) {
+    private void exitMap(Cypher5Parser.MapContext ctx) {
         var values = ctx.expression();
         var keys = ctx.propertyKeyName();
         int n = values.size();
@@ -348,7 +349,7 @@ class LiteralInterpreterBuilder implements ParseTreeListener {
         ctx.ast = map;
     }
 
-    private void exitNumberLiteral(CypherParser.NumberLiteralContext ctx) {
+    private void exitNumberLiteral(Cypher5Parser.NumberLiteralContext ctx) {
         if (ctx.DECIMAL_DOUBLE() != null) {
             ctx.ast = Double.parseDouble(ctx.getText());
         } else if (ctx.UNSIGNED_DECIMAL_INTEGER() != null) {
@@ -363,33 +364,33 @@ class LiteralInterpreterBuilder implements ParseTreeListener {
         }
     }
 
-    private void exitStringLiteral(CypherParser.StringLiteralContext ctx) {
+    private void exitStringLiteral(Cypher5Parser.StringLiteralContext ctx) {
         ctx.ast = cypherStringToString(ctx.getText().substring(1, ctx.getText().length() - 1));
     }
 
-    private void exitPropertyKeyName(CypherParser.PropertyKeyNameContext ctx) {
+    private void exitPropertyKeyName(Cypher5Parser.PropertyKeyNameContext ctx) {
         ctx.ast = ctx.symbolicNameString().ast;
     }
 
-    private void exitSymbolicNameString(CypherParser.SymbolicNameStringContext ctx) {
+    private void exitSymbolicNameString(Cypher5Parser.SymbolicNameStringContext ctx) {
         ctx.ast = ctx.escapedSymbolicNameString() != null
                 ? ctx.escapedSymbolicNameString().ast
                 : ctx.unescapedSymbolicNameString().ast;
     }
 
-    private void exitEscapedSymbolicNameString(CypherParser.EscapedSymbolicNameStringContext ctx) {
+    private void exitEscapedSymbolicNameString(Cypher5Parser.EscapedSymbolicNameStringContext ctx) {
         ctx.ast = ctx.getText().substring(1, ctx.getText().length() - 1);
     }
 
-    private void exitUnescapedSymbolicNameString(CypherParser.UnescapedSymbolicNameStringContext ctx) {
+    private void exitUnescapedSymbolicNameString(Cypher5Parser.UnescapedSymbolicNameStringContext ctx) {
         ctx.ast = ctx.getText();
     }
 
-    private void exitUnescapedLabelSymbolicNameString(CypherParser.UnescapedLabelSymbolicNameStringContext ctx) {
+    private void exitUnescapedLabelSymbolicNameString(Cypher5Parser.UnescapedLabelSymbolicNameStringContext ctx) {
         ctx.ast = ctx.getText();
     }
 
-    private void exitNameSpace(CypherParser.NamespaceContext ctx) {
+    private void exitNameSpace(Cypher5Parser.NamespaceContext ctx) {
         if (ctx.getChildCount() > 0) {
             throwUnsupportedQuery();
         }

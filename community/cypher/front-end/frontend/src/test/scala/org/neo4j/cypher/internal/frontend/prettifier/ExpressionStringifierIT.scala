@@ -22,7 +22,7 @@ import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.parser.javacc.Cypher
 import org.neo4j.cypher.internal.parser.javacc.CypherCharStream
-import org.neo4j.cypher.internal.parser.v5.ast.factory.ast.CypherAstParser
+import org.neo4j.cypher.internal.parser.v5.ast.factory.Cypher5AstParser
 import org.neo4j.cypher.internal.util.Neo4jCypherExceptionFactory
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.WindowsStringSafe
@@ -183,7 +183,7 @@ class ExpressionStringifierIT extends CypherFunSuite {
   }
 
   private def parseAntlr(cypher: String): Expression =
-    new CypherAstParser(cypher, Neo4jCypherExceptionFactory(cypher, None), None).expression()
+    new Cypher5AstParser(cypher, Neo4jCypherExceptionFactory(cypher, None), None).expression()
 
   // noinspection TypeAnnotation
   private def parseJavaCc(cypher: String): Expression = {

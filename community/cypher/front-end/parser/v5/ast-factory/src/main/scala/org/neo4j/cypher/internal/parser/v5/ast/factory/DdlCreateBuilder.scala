@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.cypher.internal.parser.v5.ast.factory.ast
+package org.neo4j.cypher.internal.parser.v5.ast.factory
 
 import org.neo4j.cypher.internal.ast.ConstraintVersion
 import org.neo4j.cypher.internal.ast.ConstraintVersion0
@@ -74,30 +74,30 @@ import org.neo4j.cypher.internal.parser.ast.util.Util.ifExistsDo
 import org.neo4j.cypher.internal.parser.ast.util.Util.lastChild
 import org.neo4j.cypher.internal.parser.ast.util.Util.nodeChild
 import org.neo4j.cypher.internal.parser.ast.util.Util.pos
-import org.neo4j.cypher.internal.parser.v5.CypherParser
-import org.neo4j.cypher.internal.parser.v5.CypherParser.ConstraintExistsContext
-import org.neo4j.cypher.internal.parser.v5.CypherParser.ConstraintIsNotNullContext
-import org.neo4j.cypher.internal.parser.v5.CypherParser.ConstraintIsUniqueContext
-import org.neo4j.cypher.internal.parser.v5.CypherParser.ConstraintKeyContext
-import org.neo4j.cypher.internal.parser.v5.CypherParser.ConstraintTypedContext
-import org.neo4j.cypher.internal.parser.v5.CypherParser.CreateCommandContext
-import org.neo4j.cypher.internal.parser.v5.CypherParser.CreateIndexContext
-import org.neo4j.cypher.internal.parser.v5.CypherParserListener
-import org.neo4j.cypher.internal.parser.v5.ast.factory.ast.Cypher5AstUtil.nonEmptyPropertyKeyName
+import org.neo4j.cypher.internal.parser.v5.Cypher5Parser
+import org.neo4j.cypher.internal.parser.v5.Cypher5Parser.ConstraintExistsContext
+import org.neo4j.cypher.internal.parser.v5.Cypher5Parser.ConstraintIsNotNullContext
+import org.neo4j.cypher.internal.parser.v5.Cypher5Parser.ConstraintIsUniqueContext
+import org.neo4j.cypher.internal.parser.v5.Cypher5Parser.ConstraintKeyContext
+import org.neo4j.cypher.internal.parser.v5.Cypher5Parser.ConstraintTypedContext
+import org.neo4j.cypher.internal.parser.v5.Cypher5Parser.CreateCommandContext
+import org.neo4j.cypher.internal.parser.v5.Cypher5Parser.CreateIndexContext
+import org.neo4j.cypher.internal.parser.v5.Cypher5ParserListener
+import org.neo4j.cypher.internal.parser.v5.ast.factory.Cypher5AstUtil.nonEmptyPropertyKeyName
 import org.neo4j.cypher.internal.util.symbols.CypherType
 
 import scala.collection.immutable.ArraySeq
 
-trait DdlCreateBuilder extends CypherParserListener {
+trait DdlCreateBuilder extends Cypher5ParserListener {
 
   final override def exitCreateCommand(
-    ctx: CypherParser.CreateCommandContext
+    ctx: Cypher5Parser.CreateCommandContext
   ): Unit = {
     ctx.ast = lastChild[AstRuleCtx](ctx).ast
   }
 
   final override def exitCreateAlias(
-    ctx: CypherParser.CreateAliasContext
+    ctx: Cypher5Parser.CreateAliasContext
   ): Unit = {
     val parent = ctx.getParent.asInstanceOf[CreateCommandContext]
     val aliasName = ctx.symbolicAliasNameOrParameter(0).ast[DatabaseName]()
@@ -131,7 +131,7 @@ trait DdlCreateBuilder extends CypherParserListener {
   }
 
   final override def exitCreateCompositeDatabase(
-    ctx: CypherParser.CreateCompositeDatabaseContext
+    ctx: Cypher5Parser.CreateCompositeDatabaseContext
   ): Unit = {
     val parent = ctx.getParent.asInstanceOf[CreateCommandContext]
     ctx.ast = CreateCompositeDatabase(
@@ -143,7 +143,7 @@ trait DdlCreateBuilder extends CypherParserListener {
   }
 
   final override def exitCreateConstraint(
-    ctx: CypherParser.CreateConstraintContext
+    ctx: Cypher5Parser.CreateConstraintContext
   ): Unit = {
     val parent = ctx.getParent.asInstanceOf[CreateCommandContext]
     val nodePattern = ctx.commandNodePattern()
@@ -259,7 +259,7 @@ trait DdlCreateBuilder extends CypherParserListener {
     }
   }
 
-  override def exitConstraintType(ctx: CypherParser.ConstraintTypeContext): Unit = {
+  override def exitConstraintType(ctx: Cypher5Parser.ConstraintTypeContext): Unit = {
     ctx.ast = ctx match {
       case cTC: ConstraintExistsContext =>
         val constraintVersion = ConstraintVersion0
@@ -291,7 +291,7 @@ trait DdlCreateBuilder extends CypherParserListener {
   }
 
   final override def exitCreateDatabase(
-    ctx: CypherParser.CreateDatabaseContext
+    ctx: Cypher5Parser.CreateDatabaseContext
   ): Unit = {
     val parent = ctx.getParent.asInstanceOf[CreateCommandContext]
     val topology =
@@ -309,22 +309,22 @@ trait DdlCreateBuilder extends CypherParserListener {
     )(pos(parent))
   }
 
-  final override def exitPrimaryTopology(ctx: CypherParser.PrimaryTopologyContext): Unit = {
+  final override def exitPrimaryTopology(ctx: Cypher5Parser.PrimaryTopologyContext): Unit = {
     ctx.ast = nodeChild(ctx, 0).getText.toInt
   }
 
-  final override def exitSecondaryTopology(ctx: CypherParser.SecondaryTopologyContext): Unit = {
+  final override def exitSecondaryTopology(ctx: Cypher5Parser.SecondaryTopologyContext): Unit = {
     ctx.ast = nodeChild(ctx, 0).getText.toInt
   }
 
   final override def exitCreateIndex(
-    ctx: CypherParser.CreateIndexContext
+    ctx: Cypher5Parser.CreateIndexContext
   ): Unit = {
     ctx.ast = lastChild[AstRuleCtx](ctx).ast[CreateIndex]()
   }
 
   final override def exitOldCreateIndex(
-    ctx: CypherParser.OldCreateIndexContext
+    ctx: Cypher5Parser.OldCreateIndexContext
   ): Unit = {
     val grandparent = ctx.getParent.getParent.asInstanceOf[CreateCommandContext]
     ctx.ast = CreateIndexOldSyntax(
@@ -334,7 +334,7 @@ trait DdlCreateBuilder extends CypherParserListener {
   }
 
   final override def exitCreateIndex_(
-    ctx: CypherParser.CreateIndex_Context
+    ctx: Cypher5Parser.CreateIndex_Context
   ): Unit = {
 
     val grandparent = ctx.getParent.getParent.asInstanceOf[CreateCommandContext]
@@ -354,7 +354,7 @@ trait DdlCreateBuilder extends CypherParserListener {
     val token = nodeChild(parent, 0).getSymbol.getType
 
     ctx.ast = token match {
-      case CypherParser.BTREE =>
+      case Cypher5Parser.BTREE =>
         if (isNode) {
           val label = labelOrRelType.asInstanceOf[LabelName]
           CreateBtreeNodeIndex(
@@ -376,7 +376,7 @@ trait DdlCreateBuilder extends CypherParserListener {
             options
           )(pos(grandparent))
         }
-      case CypherParser.RANGE | CypherParser.INDEX =>
+      case Cypher5Parser.RANGE | Cypher5Parser.INDEX =>
         if (isNode) {
           val label = labelOrRelType.asInstanceOf[LabelName]
           CreateRangeNodeIndex(
@@ -386,7 +386,7 @@ trait DdlCreateBuilder extends CypherParserListener {
             indexName,
             existsDo,
             options,
-            fromDefault = token == CypherParser.INDEX
+            fromDefault = token == Cypher5Parser.INDEX
           )(pos(grandparent))
         } else {
           val relType = labelOrRelType.asInstanceOf[RelTypeName]
@@ -397,10 +397,10 @@ trait DdlCreateBuilder extends CypherParserListener {
             indexName,
             existsDo,
             options,
-            fromDefault = token == CypherParser.INDEX
+            fromDefault = token == Cypher5Parser.INDEX
           )(pos(grandparent))
         }
-      case CypherParser.TEXT =>
+      case Cypher5Parser.TEXT =>
         if (isNode) {
           val label = labelOrRelType.asInstanceOf[LabelName]
           CreateTextNodeIndex(
@@ -422,7 +422,7 @@ trait DdlCreateBuilder extends CypherParserListener {
             options
           )(pos(grandparent))
         }
-      case CypherParser.POINT =>
+      case Cypher5Parser.POINT =>
         if (isNode) {
           val label = labelOrRelType.asInstanceOf[LabelName]
           CreatePointNodeIndex(
@@ -444,7 +444,7 @@ trait DdlCreateBuilder extends CypherParserListener {
             options
           )(pos(grandparent))
         }
-      case CypherParser.VECTOR =>
+      case Cypher5Parser.VECTOR =>
         if (isNode) {
           val label = labelOrRelType.asInstanceOf[LabelName]
           CreateVectorNodeIndex(
@@ -470,7 +470,7 @@ trait DdlCreateBuilder extends CypherParserListener {
   }
 
   final override def exitCreateFulltextIndex(
-    ctx: CypherParser.CreateFulltextIndexContext
+    ctx: Cypher5Parser.CreateFulltextIndexContext
   ): Unit = {
     val grandparent = ctx.getParent.getParent.asInstanceOf[CreateCommandContext]
     val existsDo = ifExistsDo(grandparent.REPLACE() != null, ctx.EXISTS() != null)
@@ -502,30 +502,30 @@ trait DdlCreateBuilder extends CypherParserListener {
     }
   }
 
-  def exitFulltextNodePattern(ctx: CypherParser.FulltextNodePatternContext): Unit = {
+  def exitFulltextNodePattern(ctx: Cypher5Parser.FulltextNodePatternContext): Unit = {
     ctx.ast = (
       ctx.variable().ast[Variable](),
       astSeqPositioned[LabelName, String](ctx.symbolicNameString(), LabelName.apply).toList
     )
   }
 
-  def exitFulltextRelPattern(ctx: CypherParser.FulltextRelPatternContext): Unit = {
+  def exitFulltextRelPattern(ctx: Cypher5Parser.FulltextRelPatternContext): Unit = {
     ctx.ast = (
       ctx.variable().ast[Variable](),
       astSeqPositioned[RelTypeName, String](ctx.symbolicNameString(), RelTypeName.apply).toList
     )
   }
 
-  def exitLookupIndexNodePattern(ctx: CypherParser.LookupIndexNodePatternContext): Unit = {
+  def exitLookupIndexNodePattern(ctx: Cypher5Parser.LookupIndexNodePatternContext): Unit = {
     ctx.ast = ctx.variable().ast[Variable]()
   }
 
-  def exitLookupIndexRelPattern(ctx: CypherParser.LookupIndexRelPatternContext): Unit = {
+  def exitLookupIndexRelPattern(ctx: Cypher5Parser.LookupIndexRelPatternContext): Unit = {
     ctx.ast = ctx.variable().ast[Variable]()
   }
 
   final override def exitCreateLookupIndex(
-    ctx: CypherParser.CreateLookupIndexContext
+    ctx: Cypher5Parser.CreateLookupIndexContext
   ): Unit = {
     val grandparent = ctx.getParent.getParent.asInstanceOf[CreateCommandContext]
     val existsDo = ifExistsDo(grandparent.REPLACE() != null, ctx.EXISTS() != null)
@@ -554,7 +554,7 @@ trait DdlCreateBuilder extends CypherParserListener {
   }
 
   final override def exitCreateRole(
-    ctx: CypherParser.CreateRoleContext
+    ctx: Cypher5Parser.CreateRoleContext
   ): Unit = {
     val parent = ctx.getParent.asInstanceOf[CreateCommandContext]
     val nameExpressions = ctx.commandNameExpression()
@@ -572,7 +572,7 @@ trait DdlCreateBuilder extends CypherParserListener {
   }
 
   final override def exitCreateUser(
-    ctx: CypherParser.CreateUserContext
+    ctx: Cypher5Parser.CreateUserContext
   ): Unit = {
     val parent = ctx.getParent.asInstanceOf[CreateCommandContext]
     val passCtx = ctx.password()

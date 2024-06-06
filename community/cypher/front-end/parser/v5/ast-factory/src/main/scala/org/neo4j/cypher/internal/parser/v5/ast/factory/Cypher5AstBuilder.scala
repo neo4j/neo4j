@@ -14,13 +14,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.cypher.internal.parser.v5.ast.factory.ast
+package org.neo4j.cypher.internal.parser.v5.ast.factory
 
 import org.antlr.v4.runtime.ParserRuleContext
 import org.antlr.v4.runtime.tree.ErrorNode
 import org.antlr.v4.runtime.tree.TerminalNode
-import org.neo4j.cypher.internal.parser.v5.AbstractAstBuilder
-import org.neo4j.cypher.internal.parser.v5.CypherParser
+import org.neo4j.cypher.internal.parser.v5.AbstractCypher5AstBuilder
+import org.neo4j.cypher.internal.parser.v5.Cypher5Parser
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.InternalNotificationLogger
 
@@ -31,10 +31,10 @@ import org.neo4j.cypher.internal.util.InternalNotificationLogger
  * - Set [[org.neo4j.cypher.internal.parser.AstRuleCtx]].ast of their context.
  * - When antlr grammar do not exactly match neo4j ast, create transient ASTNode classes in [[TransientAstNode]].
  */
-final class AstBuilder(
+final class Cypher5AstBuilder(
   override val notificationLogger: Option[InternalNotificationLogger],
   override val exceptionFactory: CypherExceptionFactory
-) extends AbstractAstBuilder
+) extends AbstractCypher5AstBuilder
     with LiteralBuilder
     with LabelExpressionBuilder
     with DdlBuilder
@@ -46,5 +46,5 @@ final class AstBuilder(
   override def visitTerminal(node: TerminalNode): Unit = {}
   override def visitErrorNode(node: ErrorNode): Unit = {}
   override def enterEveryRule(ctx: ParserRuleContext): Unit = {}
-  override def exitEndOfFile(ctx: CypherParser.EndOfFileContext): Unit = {}
+  override def exitEndOfFile(ctx: Cypher5Parser.EndOfFileContext): Unit = {}
 }

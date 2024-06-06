@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.cypher.internal.parser.v5.ast.factory.ast
+package org.neo4j.cypher.internal.parser.v5.ast.factory
 
 import org.antlr.v4.runtime.tree.TerminalNode
 import org.neo4j.cypher.internal.ast.AliasedReturnItem
@@ -108,9 +108,9 @@ import org.neo4j.cypher.internal.parser.ast.util.Util.inputText
 import org.neo4j.cypher.internal.parser.ast.util.Util.lastChild
 import org.neo4j.cypher.internal.parser.ast.util.Util.nodeChild
 import org.neo4j.cypher.internal.parser.ast.util.Util.pos
-import org.neo4j.cypher.internal.parser.v5.CypherParser
-import org.neo4j.cypher.internal.parser.v5.CypherParserListener
-import org.neo4j.cypher.internal.parser.v5.ast.factory.ast.Cypher5AstUtil.nonEmptyPropertyKeyName
+import org.neo4j.cypher.internal.parser.v5.Cypher5Parser
+import org.neo4j.cypher.internal.parser.v5.Cypher5ParserListener
+import org.neo4j.cypher.internal.parser.v5.ast.factory.Cypher5AstUtil.nonEmptyPropertyKeyName
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.NonEmptyList
@@ -120,34 +120,34 @@ import java.util.stream.Collectors
 import scala.collection.immutable.ArraySeq
 import scala.jdk.CollectionConverters.IterableHasAsScala
 
-trait StatementBuilder extends CypherParserListener {
+trait StatementBuilder extends Cypher5ParserListener {
 
   protected def exceptionFactory: CypherExceptionFactory
 
-  final override def exitStatements(ctx: CypherParser.StatementsContext): Unit = {
+  final override def exitStatements(ctx: Cypher5Parser.StatementsContext): Unit = {
     ctx.ast = Statements(astSeq(ctx.statement()))
   }
 
-  final override def exitStatement(ctx: CypherParser.StatementContext): Unit = {
+  final override def exitStatement(ctx: Cypher5Parser.StatementContext): Unit = {
     ctx.ast = lastChild[AstRuleCtx](ctx).ast
   }
 
-  final override def exitRegularQuery(ctx: CypherParser.RegularQueryContext): Unit = {
+  final override def exitRegularQuery(ctx: Cypher5Parser.RegularQueryContext): Unit = {
     var result: Query = ctxChild(ctx, 0).ast[SingleQuery]()
     val size = ctx.children.size()
     if (size != 1) {
       var i = 1; var all = false; var p: InputPosition = null
       while (i < size) {
         ctx.children.get(i) match {
-          case sqCtx: CypherParser.SingleQueryContext =>
+          case sqCtx: Cypher5Parser.SingleQueryContext =>
             val rhs = sqCtx.ast[SingleQuery]()
             result = if (all) UnionAll(result, rhs)(p) else UnionDistinct(result, rhs)(p)
             all = false
           case node: TerminalNode => node.getSymbol.getType match {
-              case CypherParser.ALL      => all = true
-              case CypherParser.DISTINCT => all = false
-              case CypherParser.UNION    => p = pos(node)
-              case _                     => throw new IllegalStateException(s"Unexpected token $node")
+              case Cypher5Parser.ALL      => all = true
+              case Cypher5Parser.DISTINCT => all = false
+              case Cypher5Parser.UNION    => p = pos(node)
+              case _                      => throw new IllegalStateException(s"Unexpected token $node")
             }
           case _ => throw new IllegalStateException(s"Unexpected ctx $ctx")
         }
@@ -157,38 +157,38 @@ trait StatementBuilder extends CypherParserListener {
     ctx.ast = result
   }
 
-  final override def exitSingleQuery(ctx: CypherParser.SingleQueryContext): Unit = {
+  final override def exitSingleQuery(ctx: Cypher5Parser.SingleQueryContext): Unit = {
     ctx.ast = SingleQuery(astSeq[Clause](ctx.children))(pos(ctx))
   }
 
-  final override def exitClause(ctx: CypherParser.ClauseContext): Unit = {
+  final override def exitClause(ctx: Cypher5Parser.ClauseContext): Unit = {
     ctx.ast = ctxChild(ctx, 0).ast
   }
 
-  final override def exitUseClause(ctx: CypherParser.UseClauseContext): Unit = {
+  final override def exitUseClause(ctx: Cypher5Parser.UseClauseContext): Unit = {
     ctx.ast = UseGraph(ctx.graphReference().ast())(pos(ctx))
   }
 
-  final override def exitGraphReference(ctx: CypherParser.GraphReferenceContext): Unit = {
+  final override def exitGraphReference(ctx: Cypher5Parser.GraphReferenceContext): Unit = {
     ctx.ast =
       if (ctx.graphReference() != null) ctx.graphReference().ast
       else if (ctx.functionInvocation() != null) GraphFunctionReference(ctx.functionInvocation().ast())(pos(ctx))
       else GraphDirectReference(CatalogName(ctx.symbolicAliasName().ast[ArraySeq[String]](): _*))(pos(ctx))
   }
 
-  final override def exitSymbolicAliasName(ctx: CypherParser.SymbolicAliasNameContext): Unit = {
+  final override def exitSymbolicAliasName(ctx: Cypher5Parser.SymbolicAliasNameContext): Unit = {
     ctx.ast = astSeq[String](ctx.symbolicNameString())
   }
 
-  final override def exitReturnClause(ctx: CypherParser.ReturnClauseContext): Unit = {
+  final override def exitReturnClause(ctx: Cypher5Parser.ReturnClauseContext): Unit = {
     ctx.ast = ctxChild(ctx, 1).ast[Return]().copy()(pos(ctx))
   }
 
-  final override def exitFinishClause(ctx: CypherParser.FinishClauseContext): Unit = {
+  final override def exitFinishClause(ctx: Cypher5Parser.FinishClauseContext): Unit = {
     ctx.ast = Finish()(pos(ctx))
   }
 
-  final override def exitReturnBody(ctx: CypherParser.ReturnBodyContext): Unit = {
+  final override def exitReturnBody(ctx: Cypher5Parser.ReturnBodyContext): Unit = {
     ctx.ast = Return(
       ctx.DISTINCT() != null,
       ctx.returnItems().ast[ReturnItems](),
@@ -198,14 +198,14 @@ trait StatementBuilder extends CypherParserListener {
     )(pos(ctx))
   }
 
-  final override def exitReturnItems(ctx: CypherParser.ReturnItemsContext): Unit = {
+  final override def exitReturnItems(ctx: Cypher5Parser.ReturnItemsContext): Unit = {
     ctx.ast = ReturnItems(
       includeExisting = ctx.TIMES() != null,
       items = astSeq(ctx.returnItem())
     )(pos(ctx))
   }
 
-  final override def exitReturnItem(ctx: CypherParser.ReturnItemContext): Unit = {
+  final override def exitReturnItem(ctx: Cypher5Parser.ReturnItemContext): Unit = {
     val position = pos(ctx)
     val expression = ctx.expression()
     val variable = ctx.variable()
@@ -214,7 +214,7 @@ trait StatementBuilder extends CypherParserListener {
       else UnaliasedReturnItem(expression.ast(), inputText(expression))(position)
   }
 
-  final override def exitOrderItem(ctx: CypherParser.OrderItemContext): Unit = {
+  final override def exitOrderItem(ctx: Cypher5Parser.OrderItemContext): Unit = {
     ctx.ast = if (ctx.children.size() == 1 || ctx.ascToken() != null) {
       AscSortItem(astChild(ctx, 0))(pos(ctx))
     } else {
@@ -222,23 +222,23 @@ trait StatementBuilder extends CypherParserListener {
     }
   }
 
-  final override def exitSkip(ctx: CypherParser.SkipContext): Unit = ctx.ast = Skip(astChild(ctx, 1))(pos(ctx))
+  final override def exitSkip(ctx: Cypher5Parser.SkipContext): Unit = ctx.ast = Skip(astChild(ctx, 1))(pos(ctx))
 
-  final override def exitLimit(ctx: CypherParser.LimitContext): Unit = ctx.ast = Limit(astChild(ctx, 1))(pos(ctx))
+  final override def exitLimit(ctx: Cypher5Parser.LimitContext): Unit = ctx.ast = Limit(astChild(ctx, 1))(pos(ctx))
 
-  final override def exitWhereClause(ctx: CypherParser.WhereClauseContext): Unit = {
+  final override def exitWhereClause(ctx: Cypher5Parser.WhereClauseContext): Unit = {
     ctx.ast = Where(astChild(ctx, 1))(pos(ctx))
   }
 
   final override def exitWithClause(
-    ctx: CypherParser.WithClauseContext
+    ctx: Cypher5Parser.WithClauseContext
   ): Unit = {
     val r = ctx.returnBody().ast[Return]()
     val where = astOpt(ctx.whereClause())
     ctx.ast = With(r.distinct, r.returnItems, r.orderBy, r.skip, r.limit, where)(pos(ctx))
   }
 
-  final override def exitCreateClause(ctx: CypherParser.CreateClauseContext): Unit = {
+  final override def exitCreateClause(ctx: Cypher5Parser.CreateClauseContext): Unit = {
     val patternList = ctx.patternList()
     val nonPrefixedPatternPartList = patternList.ast[ArraySeq[PatternPart]]().map {
       case p: NonPrefixedPatternPart => p
@@ -251,7 +251,7 @@ trait StatementBuilder extends CypherParserListener {
   }
 
   final override def exitInsertClause(
-    ctx: CypherParser.InsertClauseContext
+    ctx: Cypher5Parser.InsertClauseContext
   ): Unit = {
     val insertPatternList = ctx.insertPatternList()
     ctx.ast = Insert(
@@ -259,57 +259,57 @@ trait StatementBuilder extends CypherParserListener {
     )(pos(ctx))
   }
 
-  final override def exitSetClause(ctx: CypherParser.SetClauseContext): Unit = {
+  final override def exitSetClause(ctx: Cypher5Parser.SetClauseContext): Unit = {
     ctx.ast = SetClause(astSeq(ctx.children, offset = 1, step = 2))(pos(ctx))
   }
 
-  final override def exitSetItem(ctx: CypherParser.SetItemContext): Unit = {
+  final override def exitSetItem(ctx: Cypher5Parser.SetItemContext): Unit = {
     ctx.ast = ctx match {
-      case _: CypherParser.SetPropContext =>
+      case _: Cypher5Parser.SetPropContext =>
         SetPropertyItem(ctxChild(ctx, 0).ast(), ctxChild(ctx, 2).ast())(pos(ctx))
-      case _: CypherParser.SetDynamicPropContext =>
+      case _: Cypher5Parser.SetDynamicPropContext =>
         val dynamicProp = ctxChild(ctx, 0).ast[ContainerIndex]()
         SetDynamicPropertyItem(dynamicProp, ctxChild(ctx, 2).ast())(dynamicProp.position)
-      case _: CypherParser.SetPropsContext =>
+      case _: Cypher5Parser.SetPropsContext =>
         SetExactPropertiesFromMapItem(ctxChild(ctx, 0).ast(), ctxChild(ctx, 2).ast())(pos(ctx))
-      case _: CypherParser.AddPropContext =>
+      case _: Cypher5Parser.AddPropContext =>
         SetIncludingPropertiesFromMapItem(ctxChild(ctx, 0).ast(), ctxChild(ctx, 2).ast())(pos(ctx))
-      case _: CypherParser.SetLabelsContext =>
+      case _: Cypher5Parser.SetLabelsContext =>
         SetLabelItem(ctxChild(ctx, 0).ast(), ctxChild(ctx, 1).ast(), containsIs = false)(pos(ctx))
-      case _: CypherParser.SetLabelsIsContext =>
+      case _: Cypher5Parser.SetLabelsIsContext =>
         SetLabelItem(ctxChild(ctx, 0).ast(), ctxChild(ctx, 1).ast(), containsIs = true)(pos(ctx))
       case _ => throw new IllegalStateException(s"Unexpected context $ctx")
     }
   }
 
   final override def exitRemoveClause(
-    ctx: CypherParser.RemoveClauseContext
+    ctx: Cypher5Parser.RemoveClauseContext
   ): Unit = {
     ctx.ast = Remove(astSeq(ctx.removeItem()))(pos(ctx))
   }
 
-  final override def exitRemoveItem(ctx: CypherParser.RemoveItemContext): Unit = {
+  final override def exitRemoveItem(ctx: Cypher5Parser.RemoveItemContext): Unit = {
     ctx.ast = ctx match {
-      case r: CypherParser.RemovePropContext =>
+      case r: Cypher5Parser.RemovePropContext =>
         RemovePropertyItem(ctxChild(r, 0).ast())
-      case r: CypherParser.RemoveDynamicPropContext =>
+      case r: Cypher5Parser.RemoveDynamicPropContext =>
         RemoveDynamicPropertyItem(ctxChild(r, 0).ast())
-      case r: CypherParser.RemoveLabelsContext =>
+      case r: Cypher5Parser.RemoveLabelsContext =>
         RemoveLabelItem(ctxChild(r, 0).ast(), ctxChild(r, 1).ast(), containsIs = false)(pos(ctx))
-      case r: CypherParser.RemoveLabelsIsContext =>
+      case r: Cypher5Parser.RemoveLabelsIsContext =>
         RemoveLabelItem(ctxChild(r, 0).ast(), ctxChild(r, 1).ast(), containsIs = true)(pos(ctx))
       case _ => throw new IllegalStateException(s"Unexpected context $ctx")
     }
   }
 
   final override def exitDeleteClause(
-    ctx: CypherParser.DeleteClauseContext
+    ctx: Cypher5Parser.DeleteClauseContext
   ): Unit = {
     val detach = ctx.DETACH() != null
     ctx.ast = Delete(astSeq(ctx.expression()), detach)(pos(ctx))
   }
 
-  final override def exitMatchClause(ctx: CypherParser.MatchClauseContext): Unit = {
+  final override def exitMatchClause(ctx: Cypher5Parser.MatchClauseContext): Unit = {
     val patternParts = ctx.patternList()
     val patternPartsWithSelector = patternParts.ast[ArraySeq[PatternPart]]().map {
       case part: PatternPartWithSelector => part
@@ -321,7 +321,7 @@ trait StatementBuilder extends CypherParserListener {
     val patternPos = if (ctx.OPTIONAL() != null) ctxChild(ctx, 2) else ctxChild(ctx, 1)
 
     ctx.ast = Match(
-      optional = nodeChild(ctx, 0).getSymbol.getType == CypherParser.OPTIONAL,
+      optional = nodeChild(ctx, 0).getSymbol.getType == Cypher5Parser.OPTIONAL,
       matchMode = astOpt(ctx.matchMode(), MatchMode.default(position)),
       pattern =
         Pattern.ForMatch(patternPartsWithSelector)(pos(patternPos)),
@@ -330,45 +330,45 @@ trait StatementBuilder extends CypherParserListener {
     )(position)
   }
 
-  final override def exitMatchMode(ctx: CypherParser.MatchModeContext): Unit = {
+  final override def exitMatchMode(ctx: Cypher5Parser.MatchModeContext): Unit = {
     val firstToken = nodeChild(ctx, 0).getSymbol
     ctx.ast = firstToken.getType match {
-      case CypherParser.REPEATABLE => MatchMode.RepeatableElements()(pos(firstToken))
-      case CypherParser.DIFFERENT  => MatchMode.DifferentRelationships()(pos(firstToken))
+      case Cypher5Parser.REPEATABLE => MatchMode.RepeatableElements()(pos(firstToken))
+      case Cypher5Parser.DIFFERENT  => MatchMode.DifferentRelationships()(pos(firstToken))
       case _ => throw new IllegalStateException(s"Unexpected context $ctx (first token $firstToken)")
     }
   }
 
-  final override def exitHint(ctx: CypherParser.HintContext): Unit = {
+  final override def exitHint(ctx: Cypher5Parser.HintContext): Unit = {
     val secondToken = nodeChild(ctx, 1).getSymbol
     ctx.ast = secondToken.getType match {
-      case CypherParser.INDEX => indexHint(ctx, UsingAnyIndexType)
-      case CypherParser.BTREE => throw exceptionFactory.syntaxException(
+      case Cypher5Parser.INDEX => indexHint(ctx, UsingAnyIndexType)
+      case Cypher5Parser.BTREE => throw exceptionFactory.syntaxException(
           ASTExceptionFactory.invalidHintIndexType(HintIndexType.BTREE),
           pos(secondToken)
         )
-      case CypherParser.TEXT  => indexHint(ctx, UsingTextIndexType)
-      case CypherParser.RANGE => indexHint(ctx, UsingRangeIndexType)
-      case CypherParser.POINT => indexHint(ctx, UsingPointIndexType)
-      case CypherParser.JOIN  => UsingJoinHint(nonEmptyVariables(ctx.nonEmptyNameList()))(pos(ctx))
-      case CypherParser.SCAN  => UsingScanHint(ctx.variable().ast(), ctx.labelOrRelType().ast())(pos(ctx))
-      case _                  => throw new IllegalStateException(s"Unexpected token $secondToken")
+      case Cypher5Parser.TEXT  => indexHint(ctx, UsingTextIndexType)
+      case Cypher5Parser.RANGE => indexHint(ctx, UsingRangeIndexType)
+      case Cypher5Parser.POINT => indexHint(ctx, UsingPointIndexType)
+      case Cypher5Parser.JOIN  => UsingJoinHint(nonEmptyVariables(ctx.nonEmptyNameList()))(pos(ctx))
+      case Cypher5Parser.SCAN  => UsingScanHint(ctx.variable().ast(), ctx.labelOrRelType().ast())(pos(ctx))
+      case _                   => throw new IllegalStateException(s"Unexpected token $secondToken")
     }
   }
 
-  final override def exitNonEmptyNameList(ctx: CypherParser.NonEmptyNameListContext): Unit = {
+  final override def exitNonEmptyNameList(ctx: Cypher5Parser.NonEmptyNameListContext): Unit = {
     ctx.ast = astSeqPositioned[PropertyKeyName, String](ctx.symbolicNameString(), PropertyKeyName.apply)
   }
 
-  private def nonEmptyVariables(list: CypherParser.NonEmptyNameListContext): NonEmptyList[Variable] = {
+  private def nonEmptyVariables(list: Cypher5Parser.NonEmptyNameListContext): NonEmptyList[Variable] = {
     NonEmptyList.from(
       list.children.asScala.collect {
-        case nameCtx: CypherParser.SymbolicNameStringContext => Variable(nameCtx.ast())(pos(nameCtx))
+        case nameCtx: Cypher5Parser.SymbolicNameStringContext => Variable(nameCtx.ast())(pos(nameCtx))
       }
     )
   }
 
-  private def indexHint(ctx: CypherParser.HintContext, hintType: UsingIndexHintType): UsingIndexHint = {
+  private def indexHint(ctx: Cypher5Parser.HintContext, hintType: UsingIndexHintType): UsingIndexHint = {
     checkOnlyWhenAssertionsAreEnabled(
       ctx.INDEX() != null && ctx.LPAREN() != null && ctx.LPAREN() != null && ctx.getChildCount <= 9
     )
@@ -382,7 +382,7 @@ trait StatementBuilder extends CypherParserListener {
     )(pos(ctx))
   }
 
-  final override def exitMergeClause(ctx: CypherParser.MergeClauseContext): Unit = {
+  final override def exitMergeClause(ctx: Cypher5Parser.MergeClauseContext): Unit = {
     val patternPart = ctxChild(ctx, 1)
     val nonPrefixedPatternPart = patternPart.ast[PatternPart]() match {
       case p: NonPrefixedPatternPart => p
@@ -395,21 +395,21 @@ trait StatementBuilder extends CypherParserListener {
     ctx.ast = Merge(nonPrefixedPatternPart, astSeq(ctx.children, 2))(pos(ctx))
   }
 
-  final override def exitMergeAction(ctx: CypherParser.MergeActionContext): Unit = {
+  final override def exitMergeAction(ctx: Cypher5Parser.MergeActionContext): Unit = {
     ctx.ast = nodeChild(ctx, 1).getSymbol.getType match {
-      case CypherParser.MATCH  => OnMatch(ctxChild(ctx, 2).ast())(pos(ctx))
-      case CypherParser.CREATE => OnCreate(ctxChild(ctx, 2).ast())(pos(ctx))
+      case Cypher5Parser.MATCH  => OnMatch(ctxChild(ctx, 2).ast())(pos(ctx))
+      case Cypher5Parser.CREATE => OnCreate(ctxChild(ctx, 2).ast())(pos(ctx))
     }
   }
 
   final override def exitUnwindClause(
-    ctx: CypherParser.UnwindClauseContext
+    ctx: Cypher5Parser.UnwindClauseContext
   ): Unit = {
     ctx.ast = Unwind(ctxChild(ctx, 1).ast(), ctxChild(ctx, 3).ast())(pos(ctx))
   }
 
   final override def exitCallClause(
-    ctx: CypherParser.CallClauseContext
+    ctx: Cypher5Parser.CallClauseContext
   ): Unit = {
     val (namespace, procedureName) = ctx.procedureName.ast[(Namespace, ProcedureName)]()
     val procedureArguments =
@@ -430,7 +430,7 @@ trait StatementBuilder extends CypherParserListener {
   }
 
   final override def exitProcedureName(
-    ctx: CypherParser.ProcedureNameContext
+    ctx: Cypher5Parser.ProcedureNameContext
   ): Unit = {
     val namespace = ctx.namespace().ast[Namespace]()
     val procedureName = ProcedureName(ctx.symbolicNameString().ast())(pos(ctx.symbolicNameString()))
@@ -438,13 +438,13 @@ trait StatementBuilder extends CypherParserListener {
   }
 
   final override def exitProcedureArgument(
-    ctx: CypherParser.ProcedureArgumentContext
+    ctx: Cypher5Parser.ProcedureArgumentContext
   ): Unit = {
     ctx.ast = ctx.expression()
   }
 
   final override def exitProcedureResultItem(
-    ctx: CypherParser.ProcedureResultItemContext
+    ctx: Cypher5Parser.ProcedureResultItemContext
   ): Unit = {
     val str = ctx.symbolicNameString().ast[String]()
     ctx.ast = if (ctx.variable() == null) ProcedureResultItem(Variable(str)(pos(ctx)))(pos(ctx))
@@ -455,7 +455,7 @@ trait StatementBuilder extends CypherParserListener {
   }
 
   final override def exitLoadCSVClause(
-    ctx: CypherParser.LoadCSVClauseContext
+    ctx: Cypher5Parser.LoadCSVClauseContext
   ): Unit = {
     val withHeaders = ctx.HEADERS() != null
     ctx.ast =
@@ -463,19 +463,19 @@ trait StatementBuilder extends CypherParserListener {
   }
 
   final override def exitForeachClause(
-    ctx: CypherParser.ForeachClauseContext
+    ctx: Cypher5Parser.ForeachClauseContext
   ): Unit = {
     ctx.ast = Foreach(ctxChild(ctx, 2).ast(), ctxChild(ctx, 4).ast(), astSeq(ctx.clause()))(pos(ctx))
   }
 
   final override def exitSubqueryClause(
-    ctx: CypherParser.SubqueryClauseContext
+    ctx: Cypher5Parser.SubqueryClauseContext
   ): Unit = {
     ctx.ast = SubqueryCall(ctxChild(ctx, 2).ast(), astOpt(ctx.subqueryInTransactionsParameters()))(pos(ctx))
   }
 
   final override def exitSubqueryInTransactionsParameters(
-    ctx: CypherParser.SubqueryInTransactionsParametersContext
+    ctx: Cypher5Parser.SubqueryInTransactionsParametersContext
   ): Unit = {
     val batch = ctx.subqueryInTransactionsBatchParameters()
     val error = ctx.subqueryInTransactionsErrorParameters()
@@ -494,37 +494,37 @@ trait StatementBuilder extends CypherParserListener {
   }
 
   final override def exitSubqueryInTransactionsBatchParameters(
-    ctx: CypherParser.SubqueryInTransactionsBatchParametersContext
+    ctx: Cypher5Parser.SubqueryInTransactionsBatchParametersContext
   ): Unit = {
     ctx.ast = SubqueryCall.InTransactionsBatchParameters(ctxChild(ctx, 1).ast())(pos(ctx))
   }
 
   final override def exitSubqueryInTransactionsErrorParameters(
-    ctx: CypherParser.SubqueryInTransactionsErrorParametersContext
+    ctx: Cypher5Parser.SubqueryInTransactionsErrorParametersContext
   ): Unit = {
     val behaviour = nodeChild(ctx, 2).getSymbol.getType match {
-      case CypherParser.CONTINUE => OnErrorContinue
-      case CypherParser.BREAK    => OnErrorBreak
-      case CypherParser.FAIL     => OnErrorFail
+      case Cypher5Parser.CONTINUE => OnErrorContinue
+      case Cypher5Parser.BREAK    => OnErrorBreak
+      case Cypher5Parser.FAIL     => OnErrorFail
     }
     ctx.ast = SubqueryCall.InTransactionsErrorParameters(behaviour)(pos(ctx))
   }
 
   final override def exitSubqueryInTransactionsReportParameters(
-    ctx: CypherParser.SubqueryInTransactionsReportParametersContext
+    ctx: Cypher5Parser.SubqueryInTransactionsReportParametersContext
   ): Unit = {
     ctx.ast = SubqueryCall.InTransactionsReportParameters(ctxChild(ctx, 3).ast())(pos(ctx))
   }
 
   final override def exitPeriodicCommitQueryHintFailure(
-    ctx: CypherParser.PeriodicCommitQueryHintFailureContext
+    ctx: Cypher5Parser.PeriodicCommitQueryHintFailureContext
   ): Unit = {}
 
-  final override def exitPatternList(ctx: CypherParser.PatternListContext): Unit = {
+  final override def exitPatternList(ctx: Cypher5Parser.PatternListContext): Unit = {
     ctx.ast = astSeq[PatternPart](ctx.pattern())
   }
 
-  final override def exitPattern(ctx: CypherParser.PatternContext): Unit = {
+  final override def exitPattern(ctx: Cypher5Parser.PatternContext): Unit = {
     val variable = ctx.variable()
     val selector = ctx.selector()
     var pattern = ctx.anonymousPattern().ast[PatternPart]()
@@ -539,11 +539,11 @@ trait StatementBuilder extends CypherParserListener {
     ctx.ast = pattern
   }
 
-  override def exitInsertPatternList(ctx: CypherParser.InsertPatternListContext): Unit = {
+  override def exitInsertPatternList(ctx: Cypher5Parser.InsertPatternListContext): Unit = {
     ctx.ast = astSeq[PathPatternPart](ctx.insertPattern())
   }
 
-  override def exitInsertPattern(ctx: CypherParser.InsertPatternContext): Unit = {
+  override def exitInsertPattern(ctx: Cypher5Parser.InsertPatternContext): Unit = {
     if (ctx.EQ == null) {
       val size = ctx.children.size()
       if (size == 1) {
@@ -555,7 +555,7 @@ trait StatementBuilder extends CypherParserListener {
         var i = 0
         while (i < size) {
           ctx.children.get(i) match {
-            case nCtx: CypherParser.InsertNodePatternContext =>
+            case nCtx: Cypher5Parser.InsertNodePatternContext =>
               val nodePattern = nCtx.ast[NodePattern]()
               if (relPattern != null) {
                 part = RelationshipChain(part, relPattern, nodePattern)(p)
@@ -563,7 +563,7 @@ trait StatementBuilder extends CypherParserListener {
               } else {
                 part = nodePattern
               }
-            case relCtx: CypherParser.InsertRelationshipPatternContext =>
+            case relCtx: Cypher5Parser.InsertRelationshipPatternContext =>
               relPattern = relCtx.ast[RelationshipPattern]()
             case other => throw new IllegalStateException(s"Unexpected child $other")
           }

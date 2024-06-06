@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.evaluator.SimpleInternalExpressionEvaluator.CON
 import org.neo4j.cypher.internal.evaluator.SimpleInternalExpressionEvaluator.NULL_CURSOR_FACTORY
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Parameter
-import org.neo4j.cypher.internal.parser.v5.ast.factory.ast.CypherAstParser
+import org.neo4j.cypher.internal.parser.v5.ast.factory.Cypher5AstParser
 import org.neo4j.cypher.internal.planner.spi.ReadTokenContext
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.CypherRuntimeConfiguration
@@ -156,7 +156,7 @@ object SimpleInternalExpressionEvaluator {
   object ExpressionParser {
 
     def parse(text: String): Expression =
-      new CypherAstParser(text, Neo4jCypherExceptionFactory(text, None), None).expression()
+      new Cypher5AstParser(text, Neo4jCypherExceptionFactory(text, None), None).expression()
   }
 
   private val NULL_CURSOR_FACTORY = new CursorFactory {

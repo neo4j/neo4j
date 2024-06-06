@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.factory.neo4j.JavaCCParser
 import org.neo4j.cypher.internal.expressions.Or
 import org.neo4j.cypher.internal.expressions.Ors
-import org.neo4j.cypher.internal.parser.v5.ast.factory.ast.CypherAstParser
+import org.neo4j.cypher.internal.parser.v5.ast.factory.Cypher5AstParser
 import org.neo4j.cypher.internal.util.Neo4jCypherExceptionFactory
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
 import org.neo4j.cypher.internal.util.Rewriter
@@ -79,7 +79,7 @@ class AntlrParserTckTests extends FeatureTest with FeatureQueryTest with Matcher
   }
 
   private def parseAntlr(query: String): Statement = {
-    new CypherAstParser(query, Neo4jCypherExceptionFactory(query, None), None).singleStatement()
+    new Cypher5AstParser(query, Neo4jCypherExceptionFactory(query, None), None).singleStatement()
   }
 
   private def normaliseToString(ast: Any): String = ast.toString

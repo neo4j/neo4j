@@ -54,8 +54,8 @@ import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.parser.AstRuleCtx
 import org.neo4j.cypher.internal.parser.javacc.Cypher
 import org.neo4j.cypher.internal.parser.javacc.CypherCharStream
-import org.neo4j.cypher.internal.parser.v5.CypherParser
-import org.neo4j.cypher.internal.parser.v5.ast.factory.ast.CypherAstParser
+import org.neo4j.cypher.internal.parser.v5.Cypher5Parser
+import org.neo4j.cypher.internal.parser.v5.ast.factory.Cypher5AstParser
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.Neo4jCypherExceptionFactory
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
@@ -189,8 +189,8 @@ object Parsers {
 
   private object Cypher5Factory extends ParserFactory {
 
-    private def parse[T <: ASTNode](f: CypherParser => AstRuleCtx): Parser[T] = (cypher: String) => {
-      new CypherAstParser(cypher, Neo4jCypherExceptionFactory(cypher, None), None).parse(f)
+    private def parse[T <: ASTNode](f: Cypher5Parser => AstRuleCtx): Parser[T] = (cypher: String) => {
+      new Cypher5AstParser(cypher, Neo4jCypherExceptionFactory(cypher, None), None).parse(f)
     }
     override def statements(): Parser[Statements] = parse(_.statements())
     override def statement(): Parser[Statement] = parse(_.statement())

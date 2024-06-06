@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.ast.UnaliasedReturnItem
 import org.neo4j.cypher.internal.ast.factory.neo4j.JavaCCParser
 import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.ast.prettifier.Prettifier
-import org.neo4j.cypher.internal.parser.v5.ast.factory.ast.CypherAstParser
+import org.neo4j.cypher.internal.parser.v5.ast.factory.Cypher5AstParser
 import org.neo4j.cypher.internal.util.Neo4jCypherExceptionFactory
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
 import org.neo4j.cypher.internal.util.Rewriter
@@ -43,7 +43,7 @@ import scala.util.Try
 class PrettifierTCKTest extends PrettifierTCKTestBase {
 
   override protected def parseStatements(query: String): Statement =
-    new CypherAstParser(query, Neo4jCypherExceptionFactory(query, None), None).singleStatement()
+    new Cypher5AstParser(query, Neo4jCypherExceptionFactory(query, None), None).singleStatement()
 }
 
 class PrettifierJavaCcTCKTest extends PrettifierTCKTestBase {

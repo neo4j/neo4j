@@ -42,7 +42,7 @@ import org.neo4j.cypher.internal.logical.plans.Projection
 import org.neo4j.cypher.internal.logical.plans.PruningVarExpand
 import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.logical.plans.VarExpand
-import org.neo4j.cypher.internal.parser.v5.ast.factory.ast.CypherAstParser
+import org.neo4j.cypher.internal.parser.v5.ast.factory.Cypher5AstParser
 import org.neo4j.cypher.internal.runtime.ast.ConstantExpressionVariable
 import org.neo4j.cypher.internal.runtime.ast.ExpressionVariable
 import org.neo4j.cypher.internal.runtime.ast.RuntimeConstant
@@ -509,5 +509,5 @@ class ExpressionVariableAllocationTest extends CypherFunSuite with AstConstructi
 class ExpressionParser {
 
   def parse(text: String): Expression =
-    new CypherAstParser(text, Neo4jCypherExceptionFactory(text, None), None).expression()
+    new Cypher5AstParser(text, Neo4jCypherExceptionFactory(text, None), None).expression()
 }

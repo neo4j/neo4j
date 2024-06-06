@@ -32,16 +32,16 @@ import org.neo4j.cypher.internal.parser.ast.util.Util.cast
 import org.neo4j.cypher.internal.parser.ast.util.Util.ctxChild
 import org.neo4j.cypher.internal.parser.ast.util.Util.nodeChild
 import org.neo4j.cypher.internal.parser.ast.util.Util.pos
-import org.neo4j.cypher.internal.parser.v5.CypherParser
-import org.neo4j.cypher.internal.parser.v5.CypherParser.ConstraintExistsContext
-import org.neo4j.cypher.internal.parser.v5.CypherParser.ConstraintIsNotNullContext
-import org.neo4j.cypher.internal.parser.v5.CypherParser.ConstraintIsUniqueContext
-import org.neo4j.cypher.internal.parser.v5.CypherParser.ConstraintKeyContext
-import org.neo4j.cypher.internal.parser.v5.CypherParser.ConstraintTypedContext
-import org.neo4j.cypher.internal.parser.v5.CypherParser.DropConstraintContext
-import org.neo4j.cypher.internal.parser.v5.CypherParser.GlobContext
-import org.neo4j.cypher.internal.parser.v5.CypherParser.GlobRecursiveContext
-import org.neo4j.cypher.internal.parser.v5.CypherParser.SymbolicAliasNameOrParameterContext
+import org.neo4j.cypher.internal.parser.v5.Cypher5Parser
+import org.neo4j.cypher.internal.parser.v5.Cypher5Parser.ConstraintExistsContext
+import org.neo4j.cypher.internal.parser.v5.Cypher5Parser.ConstraintIsNotNullContext
+import org.neo4j.cypher.internal.parser.v5.Cypher5Parser.ConstraintIsUniqueContext
+import org.neo4j.cypher.internal.parser.v5.Cypher5Parser.ConstraintKeyContext
+import org.neo4j.cypher.internal.parser.v5.Cypher5Parser.ConstraintTypedContext
+import org.neo4j.cypher.internal.parser.v5.Cypher5Parser.DropConstraintContext
+import org.neo4j.cypher.internal.parser.v5.Cypher5Parser.GlobContext
+import org.neo4j.cypher.internal.parser.v5.Cypher5Parser.GlobRecursiveContext
+import org.neo4j.cypher.internal.parser.v5.Cypher5Parser.SymbolicAliasNameOrParameterContext
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.ClosedDynamicUnionType
@@ -61,28 +61,28 @@ final class Cypher5SyntaxChecker(exceptionFactory: CypherExceptionFactory) exten
     // Note, this has been shown to be significantly faster than using the generated listener.
     // Compiles into a lookupswitch (or possibly tableswitch)
     ctx.getRuleIndex match {
-      case CypherParser.RULE_periodicCommitQueryHintFailure   => checkPeriodicCommitQueryHintFailure(cast(ctx))
-      case CypherParser.RULE_subqueryInTransactionsParameters => checkSubqueryInTransactionsParameters(cast(ctx))
-      case CypherParser.RULE_createCommand                    => checkCreateCommand(cast(ctx))
-      case CypherParser.RULE_createConstraint                 => checkCreateConstraint(cast(ctx))
-      case CypherParser.RULE_enclosedPropertyList             => checkEnclosedPropertyList(cast(ctx))
-      case CypherParser.RULE_dropConstraint                   => checkDropConstraint(cast(ctx))
-      case CypherParser.RULE_createLookupIndex                => checkCreateLookupIndex(cast(ctx))
-      case CypherParser.RULE_createUser                       => checkCreateUser(cast(ctx))
-      case CypherParser.RULE_alterUser                        => checkAlterUser(cast(ctx))
-      case CypherParser.RULE_allPrivilege                     => checkAllPrivilege(cast(ctx))
-      case CypherParser.RULE_createDatabase                   => checkCreateDatabase(cast(ctx))
-      case CypherParser.RULE_alterDatabase                    => checkAlterDatabase(cast(ctx))
-      case CypherParser.RULE_alterDatabaseTopology            => checkAlterDatabaseTopology(cast(ctx))
-      case CypherParser.RULE_createAlias                      => checkCreateAlias(cast(ctx))
-      case CypherParser.RULE_alterAlias                       => checkAlterAlias(cast(ctx))
-      case CypherParser.RULE_globPart                         => checkGlobPart(cast(ctx))
-      case CypherParser.RULE_insertPattern                    => checkInsertPattern(cast(ctx))
-      case CypherParser.RULE_insertNodeLabelExpression        => checkInsertLabelConjunction(cast(ctx))
-      case CypherParser.RULE_functionInvocation               => checkFunctionInvocation(cast(ctx))
-      case CypherParser.RULE_typePart                         => checkTypePart(cast(ctx))
-      case CypherParser.RULE_hint                             => checkHint(cast(ctx))
-      case _                                                  =>
+      case Cypher5Parser.RULE_periodicCommitQueryHintFailure   => checkPeriodicCommitQueryHintFailure(cast(ctx))
+      case Cypher5Parser.RULE_subqueryInTransactionsParameters => checkSubqueryInTransactionsParameters(cast(ctx))
+      case Cypher5Parser.RULE_createCommand                    => checkCreateCommand(cast(ctx))
+      case Cypher5Parser.RULE_createConstraint                 => checkCreateConstraint(cast(ctx))
+      case Cypher5Parser.RULE_enclosedPropertyList             => checkEnclosedPropertyList(cast(ctx))
+      case Cypher5Parser.RULE_dropConstraint                   => checkDropConstraint(cast(ctx))
+      case Cypher5Parser.RULE_createLookupIndex                => checkCreateLookupIndex(cast(ctx))
+      case Cypher5Parser.RULE_createUser                       => checkCreateUser(cast(ctx))
+      case Cypher5Parser.RULE_alterUser                        => checkAlterUser(cast(ctx))
+      case Cypher5Parser.RULE_allPrivilege                     => checkAllPrivilege(cast(ctx))
+      case Cypher5Parser.RULE_createDatabase                   => checkCreateDatabase(cast(ctx))
+      case Cypher5Parser.RULE_alterDatabase                    => checkAlterDatabase(cast(ctx))
+      case Cypher5Parser.RULE_alterDatabaseTopology            => checkAlterDatabaseTopology(cast(ctx))
+      case Cypher5Parser.RULE_createAlias                      => checkCreateAlias(cast(ctx))
+      case Cypher5Parser.RULE_alterAlias                       => checkAlterAlias(cast(ctx))
+      case Cypher5Parser.RULE_globPart                         => checkGlobPart(cast(ctx))
+      case Cypher5Parser.RULE_insertPattern                    => checkInsertPattern(cast(ctx))
+      case Cypher5Parser.RULE_insertNodeLabelExpression        => checkInsertLabelConjunction(cast(ctx))
+      case Cypher5Parser.RULE_functionInvocation               => checkFunctionInvocation(cast(ctx))
+      case Cypher5Parser.RULE_typePart                         => checkTypePart(cast(ctx))
+      case Cypher5Parser.RULE_hint                             => checkHint(cast(ctx))
+      case _                                                   =>
     }
   }
 
@@ -158,19 +158,20 @@ final class Cypher5SyntaxChecker(exceptionFactory: CypherExceptionFactory) exten
     }
   }
 
-  private def checkSubqueryInTransactionsParameters(ctx: CypherParser.SubqueryInTransactionsParametersContext): Unit = {
+  private def checkSubqueryInTransactionsParameters(ctx: Cypher5Parser.SubqueryInTransactionsParametersContext)
+    : Unit = {
     errorOnDuplicateRule(ctx.subqueryInTransactionsBatchParameters(), "OF ROWS", isParam = true)
     errorOnDuplicateRule(ctx.subqueryInTransactionsErrorParameters(), "ON ERROR", isParam = true)
     errorOnDuplicateRule(ctx.subqueryInTransactionsReportParameters(), "REPORT STATUS", isParam = true)
   }
 
-  private def checkCreateAlias(ctx: CypherParser.CreateAliasContext): Unit = {
+  private def checkCreateAlias(ctx: Cypher5Parser.CreateAliasContext): Unit = {
     if (ctx.stringOrParameter() != null)
       errorOnAliasNameContainingDots(ctx.symbolicAliasNameOrParameter())
 
   }
 
-  private def checkAlterAlias(ctx: CypherParser.AlterAliasContext): Unit = {
+  private def checkAlterAlias(ctx: Cypher5Parser.AlterAliasContext): Unit = {
     val aliasTargets = ctx.alterAliasTarget()
     val hasUrl = !aliasTargets.isEmpty && aliasTargets.get(0).AT() != null
     val usernames = ctx.alterAliasUser()
@@ -188,7 +189,7 @@ final class Cypher5SyntaxChecker(exceptionFactory: CypherExceptionFactory) exten
     errorOnDuplicateCtx(aliasTargets, "TARGET")
   }
 
-  private def checkCreateUser(ctx: CypherParser.CreateUserContext): Unit = {
+  private def checkCreateUser(ctx: Cypher5Parser.CreateUserContext): Unit = {
     val changeRequired = ctx.password().passwordChangeRequired()
     if (changeRequired != null && !ctx.PASSWORD().isEmpty) {
       errorOnDuplicate(ctx.PASSWORD().get(0).getSymbol, "SET PASSWORD CHANGE [NOT] REQUIRED")
@@ -199,7 +200,7 @@ final class Cypher5SyntaxChecker(exceptionFactory: CypherExceptionFactory) exten
     errorOnDuplicateRule(ctx.homeDatabase(), "SET HOME DATABASE")
   }
 
-  private def checkAlterUser(ctx: CypherParser.AlterUserContext): Unit = {
+  private def checkAlterUser(ctx: Cypher5Parser.AlterUserContext): Unit = {
     val pass = ctx.password()
     val passSize = pass.size()
     val nbrSetPass = ctx.PASSWORD().size + pass.size()
@@ -220,7 +221,7 @@ final class Cypher5SyntaxChecker(exceptionFactory: CypherExceptionFactory) exten
     errorOnDuplicateRule(ctx.homeDatabase(), "SET HOME DATABASE")
   }
 
-  private def checkAllPrivilege(ctx: CypherParser.AllPrivilegeContext): Unit = {
+  private def checkAllPrivilege(ctx: Cypher5Parser.AllPrivilegeContext): Unit = {
     val privilegeType = ctx.allPrivilegeType()
     val privilegeTarget = ctx.allPrivilegeTarget()
 
@@ -232,7 +233,7 @@ final class Cypher5SyntaxChecker(exceptionFactory: CypherExceptionFactory) exten
         else None
 
       val target = privilegeTarget match {
-        case c: CypherParser.DefaultTargetContext =>
+        case c: Cypher5Parser.DefaultTargetContext =>
           privilege match {
             case Some("DBMS") =>
               if (c.HOME() != null) ("HOME", c.HOME().getSymbol)
@@ -241,13 +242,13 @@ final class Cypher5SyntaxChecker(exceptionFactory: CypherExceptionFactory) exten
               if (c.GRAPH() != null) ("GRAPH", c.GRAPH().getSymbol)
               else ("DATABASE", c.DATABASE().getSymbol)
           }
-        case c: CypherParser.DatabaseVariableTargetContext =>
+        case c: Cypher5Parser.DatabaseVariableTargetContext =>
           if (c.DATABASE() != null) ("DATABASE", c.DATABASE().getSymbol)
           else ("DATABASES", c.DATABASES().getSymbol)
-        case c: CypherParser.GraphVariableTargetContext =>
+        case c: Cypher5Parser.GraphVariableTargetContext =>
           if (c.GRAPH() != null) ("GRAPH", c.GRAPH().getSymbol)
           else ("GRAPHS", c.GRAPHS().getSymbol)
-        case c: CypherParser.DBMSTargetContext =>
+        case c: Cypher5Parser.DBMSTargetContext =>
           ("DBMS", c.DBMS().getSymbol)
         case _ => throw new IllegalStateException("Unexpected privilege all command")
       }
@@ -265,7 +266,7 @@ final class Cypher5SyntaxChecker(exceptionFactory: CypherExceptionFactory) exten
     }
   }
 
-  private def checkGlobPart(ctx: CypherParser.GlobPartContext): Unit = {
+  private def checkGlobPart(ctx: Cypher5Parser.GlobPartContext): Unit = {
     if (ctx.DOT() == null) {
       ctx.parent.parent match {
         case r: GlobRecursiveContext if r.globPart().escapedSymbolicNameString() != null =>
@@ -286,7 +287,7 @@ final class Cypher5SyntaxChecker(exceptionFactory: CypherExceptionFactory) exten
     }
   }
 
-  private def checkCreateConstraint(ctx: CypherParser.CreateConstraintContext): Unit = {
+  private def checkCreateConstraint(ctx: Cypher5Parser.CreateConstraintContext): Unit = {
 
     ctx.constraintType() match {
       case c: ConstraintIsUniqueContext =>
@@ -324,7 +325,7 @@ final class Cypher5SyntaxChecker(exceptionFactory: CypherExceptionFactory) exten
     }
   }
 
-  private def checkEnclosedPropertyList(ctx: CypherParser.EnclosedPropertyListContext): Unit = {
+  private def checkEnclosedPropertyList(ctx: Cypher5Parser.EnclosedPropertyListContext): Unit = {
     if (ctx.property().size() > 1 && ctx.getParent != null) {
       val secondProperty = ctx.property(1).start
       ctx.getParent.getParent match {
@@ -353,7 +354,7 @@ final class Cypher5SyntaxChecker(exceptionFactory: CypherExceptionFactory) exten
     }
   }
 
-  private def checkDropConstraint(ctx: CypherParser.DropConstraintContext): Unit = {
+  private def checkDropConstraint(ctx: Cypher5Parser.DropConstraintContext): Unit = {
     val relPattern = ctx.commandRelPattern()
     if (relPattern != null) {
       val errorMessageEnd = "does not allow relationship patterns"
@@ -378,15 +379,15 @@ final class Cypher5SyntaxChecker(exceptionFactory: CypherExceptionFactory) exten
     }
   }
 
-  private def checkCreateDatabase(ctx: CypherParser.CreateDatabaseContext): Unit = {
-    errorOnDuplicateRule[CypherParser.PrimaryTopologyContext](ctx.primaryTopology(), "PRIMARY")
-    errorOnDuplicateRule[CypherParser.SecondaryTopologyContext](ctx.secondaryTopology(), "SECONDARY")
+  private def checkCreateDatabase(ctx: Cypher5Parser.CreateDatabaseContext): Unit = {
+    errorOnDuplicateRule[Cypher5Parser.PrimaryTopologyContext](ctx.primaryTopology(), "PRIMARY")
+    errorOnDuplicateRule[Cypher5Parser.SecondaryTopologyContext](ctx.secondaryTopology(), "SECONDARY")
   }
 
-  private def checkAlterDatabase(ctx: CypherParser.AlterDatabaseContext): Unit = {
+  private def checkAlterDatabase(ctx: Cypher5Parser.AlterDatabaseContext): Unit = {
     if (!ctx.REMOVE().isEmpty) {
       val keyNames = astSeq[String](ctx.symbolicNameString())
-      val keySet = mutable.Set.empty[String]
+      val keySet = scala.collection.mutable.Set.empty[String]
       var i = 0
       keyNames.foreach(k =>
         if (keySet.contains(k)) {
@@ -426,12 +427,12 @@ final class Cypher5SyntaxChecker(exceptionFactory: CypherExceptionFactory) exten
     errorOnDuplicateCtx(topology, "TOPOLOGY")
   }
 
-  private def checkAlterDatabaseTopology(ctx: CypherParser.AlterDatabaseTopologyContext): Unit = {
-    errorOnDuplicateRule[CypherParser.PrimaryTopologyContext](ctx.primaryTopology(), "PRIMARY")
-    errorOnDuplicateRule[CypherParser.SecondaryTopologyContext](ctx.secondaryTopology(), "SECONDARY")
+  private def checkAlterDatabaseTopology(ctx: Cypher5Parser.AlterDatabaseTopologyContext): Unit = {
+    errorOnDuplicateRule[Cypher5Parser.PrimaryTopologyContext](ctx.primaryTopology(), "PRIMARY")
+    errorOnDuplicateRule[Cypher5Parser.SecondaryTopologyContext](ctx.secondaryTopology(), "SECONDARY")
   }
 
-  private def checkPeriodicCommitQueryHintFailure(ctx: CypherParser.PeriodicCommitQueryHintFailureContext): Unit = {
+  private def checkPeriodicCommitQueryHintFailure(ctx: Cypher5Parser.PeriodicCommitQueryHintFailureContext): Unit = {
     val periodic = ctx.PERIODIC().getSymbol
 
     _errors :+= exceptionFactory.syntaxException(
@@ -440,7 +441,7 @@ final class Cypher5SyntaxChecker(exceptionFactory: CypherExceptionFactory) exten
     )
   }
 
-  private def checkCreateCommand(ctx: CypherParser.CreateCommandContext): Unit = {
+  private def checkCreateCommand(ctx: Cypher5Parser.CreateCommandContext): Unit = {
     val createIndex = ctx.createIndex()
     val replace = ctx.REPLACE()
 
@@ -454,7 +455,7 @@ final class Cypher5SyntaxChecker(exceptionFactory: CypherExceptionFactory) exten
     }
   }
 
-  private def checkCreateLookupIndex(ctx: CypherParser.CreateLookupIndexContext): Unit = {
+  private def checkCreateLookupIndex(ctx: Cypher5Parser.CreateLookupIndexContext): Unit = {
     val functionName = ctx.symbolicNameString()
     /* This should not be valid:
          CREATE LOOKUP INDEX FOR ()-[x]-() ON EACH(x)
@@ -472,7 +473,7 @@ final class Cypher5SyntaxChecker(exceptionFactory: CypherExceptionFactory) exten
     }
   }
 
-  private def checkInsertPattern(ctx: CypherParser.InsertPatternContext): Unit = {
+  private def checkInsertPattern(ctx: Cypher5Parser.InsertPatternContext): Unit = {
     if (ctx.EQ() != null) {
       _errors :+= exceptionFactory.syntaxException(
         "Named patterns are not allowed in `INSERT`. Use `CREATE` instead or remove the name.",
@@ -481,9 +482,9 @@ final class Cypher5SyntaxChecker(exceptionFactory: CypherExceptionFactory) exten
     }
   }
 
-  private def checkInsertLabelConjunction(ctx: CypherParser.InsertNodeLabelExpressionContext): Unit = {
+  private def checkInsertLabelConjunction(ctx: Cypher5Parser.InsertNodeLabelExpressionContext): Unit = {
     val colons = ctx.COLON()
-    val firstIsColon = nodeChild(ctx, 0).getSymbol.getType == CypherParser.COLON
+    val firstIsColon = nodeChild(ctx, 0).getSymbol.getType == Cypher5Parser.COLON
 
     if (firstIsColon && colons.size > 1) {
       _errors :+= exceptionFactory.syntaxException(
@@ -498,7 +499,7 @@ final class Cypher5SyntaxChecker(exceptionFactory: CypherExceptionFactory) exten
     }
   }
 
-  private def checkFunctionInvocation(ctx: CypherParser.FunctionInvocationContext): Unit = {
+  private def checkFunctionInvocation(ctx: Cypher5Parser.FunctionInvocationContext): Unit = {
     val functionName = ctx.functionName().ast[FunctionName]()
     if (
       functionName.name == "normalize" &&
@@ -512,7 +513,7 @@ final class Cypher5SyntaxChecker(exceptionFactory: CypherExceptionFactory) exten
     }
   }
 
-  private def checkTypePart(ctx: CypherParser.TypePartContext): Unit = {
+  private def checkTypePart(ctx: Cypher5Parser.TypePartContext): Unit = {
     val cypherType = ctx.typeName().ast
     if (cypherType.isInstanceOf[ClosedDynamicUnionType] && ctx.typeNullability() != null) {
       _errors :+= exceptionFactory.syntaxException(
@@ -522,9 +523,9 @@ final class Cypher5SyntaxChecker(exceptionFactory: CypherExceptionFactory) exten
     }
   }
 
-  private def checkHint(ctx: CypherParser.HintContext): Unit = {
+  private def checkHint(ctx: Cypher5Parser.HintContext): Unit = {
     nodeChild(ctx, 1).getSymbol.getType match {
-      case CypherParser.BTREE => _errors :+= exceptionFactory.syntaxException(
+      case Cypher5Parser.BTREE => _errors :+= exceptionFactory.syntaxException(
           ASTExceptionFactory.invalidHintIndexType(HintIndexType.BTREE),
           pos(nodeChild(ctx, 1))
         )

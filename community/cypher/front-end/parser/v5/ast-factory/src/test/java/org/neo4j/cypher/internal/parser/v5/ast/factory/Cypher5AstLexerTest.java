@@ -41,7 +41,7 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 
 @ExtendWith({RandomExtension.class})
-public class CypherAstLexerTest {
+public class Cypher5AstLexerTest {
     @Inject
     private RandomSupport rand;
 
@@ -88,7 +88,7 @@ public class CypherAstLexerTest {
         final var expectedLine = lines.size();
         final var expectedCol = lines.get(lines.size() - 1).indexOf("ohno") + 1;
 
-        assertThatThrownBy(() -> CypherAstLexer.fromString(in, rand.nextInt(in.length()) + 2, rand.nextBoolean()))
+        assertThatThrownBy(() -> Cypher5AstLexer.fromString(in, rand.nextInt(in.length()) + 2, rand.nextBoolean()))
                 .isInstanceOf(InvalidUnicodeLiteral.class)
                 .hasMessage("Invalid input 'ohno': expected four hexadecimal digits specifying a unicode character")
                 .extracting("offset", "column", "line")
@@ -153,14 +153,14 @@ public class CypherAstLexerTest {
     }
 
     private Read read(String in) throws IOException {
-        final var lexer = CypherAstLexer.fromString(in, rand.nextInt(4096) + 64, rand.nextBoolean());
+        final var lexer = Cypher5AstLexer.fromString(in, rand.nextInt(4096) + 64, rand.nextBoolean());
         final var stream = (CodePointCharStream) lexer.getInputStream();
         final var codepoints =
                 IntStream.range(0, stream.size()).map(i -> stream.LA(i + 1)).toArray();
         return new Read(in, lexer, codepoints);
     }
 
-    private record Read(String input, CypherAstLexer lexer, int[] result) {}
+    private record Read(String input, Cypher5AstLexer lexer, int[] result) {}
 
     private void assertReasonableInputPositions(Read read) {
         final var in = read.input;

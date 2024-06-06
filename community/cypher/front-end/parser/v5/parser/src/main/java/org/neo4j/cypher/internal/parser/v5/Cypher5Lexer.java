@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-// Generated from org/neo4j/cypher/internal/parser/v5/CypherLexer.g4 by ANTLR 4.13.1
+// Generated from org/neo4j/cypher/internal/parser/v5/Cypher5Lexer.g4 by ANTLR 4.13.1
 package org.neo4j.cypher.internal.parser.v5;
 
 import org.antlr.v4.runtime.*;
@@ -25,7 +25,7 @@ import org.antlr.v4.runtime.dfa.DFA;
 import org.antlr.v4.runtime.misc.*;
 
 @SuppressWarnings({"all", "warnings", "unchecked", "unused", "cast", "CheckReturnValue", "this-escape"})
-public class CypherLexer extends Lexer {
+public class Cypher5Lexer extends Lexer {
     static {
         RuntimeMetaData.checkVersion("4.13.1", RuntimeMetaData.VERSION);
     }
@@ -1051,14 +1051,14 @@ public class CypherLexer extends Lexer {
         return VOCABULARY;
     }
 
-    public CypherLexer(CharStream input) {
+    public Cypher5Lexer(CharStream input) {
         super(input);
         _interp = new LexerATNSimulator(this, _ATN, _decisionToDFA, _sharedContextCache);
     }
 
     @Override
     public String getGrammarFileName() {
-        return "CypherLexer.g4";
+        return "Cypher5Lexer.g4";
     }
 
     @Override

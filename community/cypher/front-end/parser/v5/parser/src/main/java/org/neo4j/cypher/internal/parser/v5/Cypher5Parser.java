@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-// Generated from org/neo4j/cypher/internal/parser/v5/CypherParser.g4 by ANTLR 4.13.1
+// Generated from org/neo4j/cypher/internal/parser/v5/Cypher5Parser.g4 by ANTLR 4.13.1
 package org.neo4j.cypher.internal.parser.v5;
 
 import java.util.List;
@@ -25,7 +25,7 @@ import org.antlr.v4.runtime.misc.*;
 import org.antlr.v4.runtime.tree.*;
 
 @SuppressWarnings({"all", "warnings", "unchecked", "unused", "cast", "CheckReturnValue"})
-public class CypherParser extends Parser {
+public class Cypher5Parser extends Parser {
     static {
         RuntimeMetaData.checkVersion("4.13.1", RuntimeMetaData.VERSION);
     }
@@ -1353,7 +1353,7 @@ public class CypherParser extends Parser {
 
     @Override
     public String getGrammarFileName() {
-        return "CypherParser.g4";
+        return "Cypher5Parser.g4";
     }
 
     @Override
@@ -1371,7 +1371,7 @@ public class CypherParser extends Parser {
         return _ATN;
     }
 
-    public CypherParser(TokenStream input) {
+    public Cypher5Parser(TokenStream input) {
         super(input);
         _interp = new ParserATNSimulator(this, _ATN, _decisionToDFA, _sharedContextCache);
     }
@@ -1387,15 +1387,15 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode EOF() {
-            return getToken(CypherParser.EOF, 0);
+            return getToken(Cypher5Parser.EOF, 0);
         }
 
         public List<TerminalNode> SEMICOLON() {
-            return getTokens(CypherParser.SEMICOLON);
+            return getTokens(Cypher5Parser.SEMICOLON);
         }
 
         public TerminalNode SEMICOLON(int i) {
-            return getToken(CypherParser.SEMICOLON, i);
+            return getToken(Cypher5Parser.SEMICOLON, i);
         }
 
         public StatementsContext(ParserRuleContext parent, int invokingState) {
@@ -1530,19 +1530,19 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class PeriodicCommitQueryHintFailureContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode USING() {
-            return getToken(CypherParser.USING, 0);
+            return getToken(Cypher5Parser.USING, 0);
         }
 
         public TerminalNode PERIODIC() {
-            return getToken(CypherParser.PERIODIC, 0);
+            return getToken(Cypher5Parser.PERIODIC, 0);
         }
 
         public TerminalNode COMMIT() {
-            return getToken(CypherParser.COMMIT, 0);
+            return getToken(Cypher5Parser.COMMIT, 0);
         }
 
         public TerminalNode UNSIGNED_DECIMAL_INTEGER() {
-            return getToken(CypherParser.UNSIGNED_DECIMAL_INTEGER, 0);
+            return getToken(Cypher5Parser.UNSIGNED_DECIMAL_INTEGER, 0);
         }
 
         public PeriodicCommitQueryHintFailureContext(ParserRuleContext parent, int invokingState) {
@@ -1599,27 +1599,27 @@ public class CypherParser extends Parser {
         }
 
         public List<TerminalNode> UNION() {
-            return getTokens(CypherParser.UNION);
+            return getTokens(Cypher5Parser.UNION);
         }
 
         public TerminalNode UNION(int i) {
-            return getToken(CypherParser.UNION, i);
+            return getToken(Cypher5Parser.UNION, i);
         }
 
         public List<TerminalNode> ALL() {
-            return getTokens(CypherParser.ALL);
+            return getTokens(Cypher5Parser.ALL);
         }
 
         public TerminalNode ALL(int i) {
-            return getToken(CypherParser.ALL, i);
+            return getToken(Cypher5Parser.ALL, i);
         }
 
         public List<TerminalNode> DISTINCT() {
-            return getTokens(CypherParser.DISTINCT);
+            return getTokens(Cypher5Parser.DISTINCT);
         }
 
         public TerminalNode DISTINCT(int i) {
-            return getToken(CypherParser.DISTINCT, i);
+            return getToken(Cypher5Parser.DISTINCT, i);
         }
 
         public RegularQueryContext(ParserRuleContext parent, int invokingState) {
@@ -1949,7 +1949,7 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class UseClauseContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode USE() {
-            return getToken(CypherParser.USE, 0);
+            return getToken(Cypher5Parser.USE, 0);
         }
 
         public GraphReferenceContext graphReference() {
@@ -1957,7 +1957,7 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode GRAPH() {
-            return getToken(CypherParser.GRAPH, 0);
+            return getToken(Cypher5Parser.GRAPH, 0);
         }
 
         public UseClauseContext(ParserRuleContext parent, int invokingState) {
@@ -2004,7 +2004,7 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class GraphReferenceContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode LPAREN() {
-            return getToken(CypherParser.LPAREN, 0);
+            return getToken(Cypher5Parser.LPAREN, 0);
         }
 
         public GraphReferenceContext graphReference() {
@@ -2012,7 +2012,7 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode RPAREN() {
-            return getToken(CypherParser.RPAREN, 0);
+            return getToken(Cypher5Parser.RPAREN, 0);
         }
 
         public FunctionInvocationContext functionInvocation() {
@@ -2079,7 +2079,7 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class FinishClauseContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode FINISH() {
-            return getToken(CypherParser.FINISH, 0);
+            return getToken(Cypher5Parser.FINISH, 0);
         }
 
         public FinishClauseContext(ParserRuleContext parent, int invokingState) {
@@ -2114,7 +2114,7 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class ReturnClauseContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode RETURN() {
-            return getToken(CypherParser.RETURN, 0);
+            return getToken(Cypher5Parser.RETURN, 0);
         }
 
         public ReturnBodyContext returnBody() {
@@ -2159,7 +2159,7 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode DISTINCT() {
-            return getToken(CypherParser.DISTINCT, 0);
+            return getToken(Cypher5Parser.DISTINCT, 0);
         }
 
         public OrderByContext orderBy() {
@@ -2250,7 +2250,7 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode AS() {
-            return getToken(CypherParser.AS, 0);
+            return getToken(Cypher5Parser.AS, 0);
         }
 
         public VariableContext variable() {
@@ -2301,7 +2301,7 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class ReturnItemsContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode TIMES() {
-            return getToken(CypherParser.TIMES, 0);
+            return getToken(Cypher5Parser.TIMES, 0);
         }
 
         public List<ReturnItemContext> returnItem() {
@@ -2313,11 +2313,11 @@ public class CypherParser extends Parser {
         }
 
         public List<TerminalNode> COMMA() {
-            return getTokens(CypherParser.COMMA);
+            return getTokens(Cypher5Parser.COMMA);
         }
 
         public TerminalNode COMMA(int i) {
-            return getToken(CypherParser.COMMA, i);
+            return getToken(Cypher5Parser.COMMA, i);
         }
 
         public ReturnItemsContext(ParserRuleContext parent, int invokingState) {
@@ -2748,11 +2748,11 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class AscTokenContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode ASC() {
-            return getToken(CypherParser.ASC, 0);
+            return getToken(Cypher5Parser.ASC, 0);
         }
 
         public TerminalNode ASCENDING() {
-            return getToken(CypherParser.ASCENDING, 0);
+            return getToken(Cypher5Parser.ASCENDING, 0);
         }
 
         public AscTokenContext(ParserRuleContext parent, int invokingState) {
@@ -2795,11 +2795,11 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class DescTokenContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode DESC() {
-            return getToken(CypherParser.DESC, 0);
+            return getToken(Cypher5Parser.DESC, 0);
         }
 
         public TerminalNode DESCENDING() {
-            return getToken(CypherParser.DESCENDING, 0);
+            return getToken(Cypher5Parser.DESCENDING, 0);
         }
 
         public DescTokenContext(ParserRuleContext parent, int invokingState) {
@@ -2842,11 +2842,11 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class OrderByContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode ORDER() {
-            return getToken(CypherParser.ORDER, 0);
+            return getToken(Cypher5Parser.ORDER, 0);
         }
 
         public TerminalNode BY() {
-            return getToken(CypherParser.BY, 0);
+            return getToken(Cypher5Parser.BY, 0);
         }
 
         public List<OrderItemContext> orderItem() {
@@ -2858,11 +2858,11 @@ public class CypherParser extends Parser {
         }
 
         public List<TerminalNode> COMMA() {
-            return getTokens(CypherParser.COMMA);
+            return getTokens(Cypher5Parser.COMMA);
         }
 
         public TerminalNode COMMA(int i) {
-            return getToken(CypherParser.COMMA, i);
+            return getToken(Cypher5Parser.COMMA, i);
         }
 
         public OrderByContext(ParserRuleContext parent, int invokingState) {
@@ -2918,7 +2918,7 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class SkipContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode SKIPROWS() {
-            return getToken(CypherParser.SKIPROWS, 0);
+            return getToken(Cypher5Parser.SKIPROWS, 0);
         }
 
         public ExpressionContext expression() {
@@ -2959,7 +2959,7 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class LimitContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode LIMITROWS() {
-            return getToken(CypherParser.LIMITROWS, 0);
+            return getToken(Cypher5Parser.LIMITROWS, 0);
         }
 
         public ExpressionContext expression() {
@@ -3000,7 +3000,7 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class WhereClauseContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode WHERE() {
-            return getToken(CypherParser.WHERE, 0);
+            return getToken(Cypher5Parser.WHERE, 0);
         }
 
         public ExpressionContext expression() {
@@ -3041,7 +3041,7 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class WithClauseContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode WITH() {
-            return getToken(CypherParser.WITH, 0);
+            return getToken(Cypher5Parser.WITH, 0);
         }
 
         public ReturnBodyContext returnBody() {
@@ -3096,7 +3096,7 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class CreateClauseContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode CREATE() {
-            return getToken(CypherParser.CREATE, 0);
+            return getToken(Cypher5Parser.CREATE, 0);
         }
 
         public PatternListContext patternList() {
@@ -3137,7 +3137,7 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class InsertClauseContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode INSERT() {
-            return getToken(CypherParser.INSERT, 0);
+            return getToken(Cypher5Parser.INSERT, 0);
         }
 
         public InsertPatternListContext insertPatternList() {
@@ -3178,7 +3178,7 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class SetClauseContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode SET() {
-            return getToken(CypherParser.SET, 0);
+            return getToken(Cypher5Parser.SET, 0);
         }
 
         public List<SetItemContext> setItem() {
@@ -3190,11 +3190,11 @@ public class CypherParser extends Parser {
         }
 
         public List<TerminalNode> COMMA() {
-            return getTokens(CypherParser.COMMA);
+            return getTokens(Cypher5Parser.COMMA);
         }
 
         public TerminalNode COMMA(int i) {
-            return getToken(CypherParser.COMMA, i);
+            return getToken(Cypher5Parser.COMMA, i);
         }
 
         public SetClauseContext(ParserRuleContext parent, int invokingState) {
@@ -3270,7 +3270,7 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode EQ() {
-            return getToken(CypherParser.EQ, 0);
+            return getToken(Cypher5Parser.EQ, 0);
         }
 
         public ExpressionContext expression() {
@@ -3289,7 +3289,7 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode PLUSEQUAL() {
-            return getToken(CypherParser.PLUSEQUAL, 0);
+            return getToken(Cypher5Parser.PLUSEQUAL, 0);
         }
 
         public ExpressionContext expression() {
@@ -3308,7 +3308,7 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode EQ() {
-            return getToken(CypherParser.EQ, 0);
+            return getToken(Cypher5Parser.EQ, 0);
         }
 
         public ExpressionContext expression() {
@@ -3327,7 +3327,7 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode EQ() {
-            return getToken(CypherParser.EQ, 0);
+            return getToken(Cypher5Parser.EQ, 0);
         }
 
         public ExpressionContext expression() {
@@ -3458,7 +3458,7 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class RemoveClauseContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode REMOVE() {
-            return getToken(CypherParser.REMOVE, 0);
+            return getToken(Cypher5Parser.REMOVE, 0);
         }
 
         public List<RemoveItemContext> removeItem() {
@@ -3470,11 +3470,11 @@ public class CypherParser extends Parser {
         }
 
         public List<TerminalNode> COMMA() {
-            return getTokens(CypherParser.COMMA);
+            return getTokens(Cypher5Parser.COMMA);
         }
 
         public TerminalNode COMMA(int i) {
-            return getToken(CypherParser.COMMA, i);
+            return getToken(Cypher5Parser.COMMA, i);
         }
 
         public RemoveClauseContext(ParserRuleContext parent, int invokingState) {
@@ -3652,7 +3652,7 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class DeleteClauseContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode DELETE() {
-            return getToken(CypherParser.DELETE, 0);
+            return getToken(Cypher5Parser.DELETE, 0);
         }
 
         public List<ExpressionContext> expression() {
@@ -3664,19 +3664,19 @@ public class CypherParser extends Parser {
         }
 
         public List<TerminalNode> COMMA() {
-            return getTokens(CypherParser.COMMA);
+            return getTokens(Cypher5Parser.COMMA);
         }
 
         public TerminalNode COMMA(int i) {
-            return getToken(CypherParser.COMMA, i);
+            return getToken(Cypher5Parser.COMMA, i);
         }
 
         public TerminalNode DETACH() {
-            return getToken(CypherParser.DETACH, 0);
+            return getToken(Cypher5Parser.DETACH, 0);
         }
 
         public TerminalNode NODETACH() {
-            return getToken(CypherParser.NODETACH, 0);
+            return getToken(Cypher5Parser.NODETACH, 0);
         }
 
         public DeleteClauseContext(ParserRuleContext parent, int invokingState) {
@@ -3747,7 +3747,7 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class MatchClauseContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode MATCH() {
-            return getToken(CypherParser.MATCH, 0);
+            return getToken(Cypher5Parser.MATCH, 0);
         }
 
         public PatternListContext patternList() {
@@ -3755,7 +3755,7 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode OPTIONAL() {
-            return getToken(CypherParser.OPTIONAL, 0);
+            return getToken(Cypher5Parser.OPTIONAL, 0);
         }
 
         public MatchModeContext matchMode() {
@@ -3852,31 +3852,31 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class MatchModeContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode REPEATABLE() {
-            return getToken(CypherParser.REPEATABLE, 0);
+            return getToken(Cypher5Parser.REPEATABLE, 0);
         }
 
         public TerminalNode ELEMENT() {
-            return getToken(CypherParser.ELEMENT, 0);
+            return getToken(Cypher5Parser.ELEMENT, 0);
         }
 
         public TerminalNode ELEMENTS() {
-            return getToken(CypherParser.ELEMENTS, 0);
+            return getToken(Cypher5Parser.ELEMENTS, 0);
         }
 
         public TerminalNode BINDINGS() {
-            return getToken(CypherParser.BINDINGS, 0);
+            return getToken(Cypher5Parser.BINDINGS, 0);
         }
 
         public TerminalNode DIFFERENT() {
-            return getToken(CypherParser.DIFFERENT, 0);
+            return getToken(Cypher5Parser.DIFFERENT, 0);
         }
 
         public TerminalNode RELATIONSHIP() {
-            return getToken(CypherParser.RELATIONSHIP, 0);
+            return getToken(Cypher5Parser.RELATIONSHIP, 0);
         }
 
         public TerminalNode RELATIONSHIPS() {
-            return getToken(CypherParser.RELATIONSHIPS, 0);
+            return getToken(Cypher5Parser.RELATIONSHIPS, 0);
         }
 
         public MatchModeContext(ParserRuleContext parent, int invokingState) {
@@ -3982,15 +3982,15 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class HintContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode USING() {
-            return getToken(CypherParser.USING, 0);
+            return getToken(Cypher5Parser.USING, 0);
         }
 
         public TerminalNode JOIN() {
-            return getToken(CypherParser.JOIN, 0);
+            return getToken(Cypher5Parser.JOIN, 0);
         }
 
         public TerminalNode ON() {
-            return getToken(CypherParser.ON, 0);
+            return getToken(Cypher5Parser.ON, 0);
         }
 
         public NonEmptyNameListContext nonEmptyNameList() {
@@ -3998,7 +3998,7 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode SCAN() {
-            return getToken(CypherParser.SCAN, 0);
+            return getToken(Cypher5Parser.SCAN, 0);
         }
 
         public VariableContext variable() {
@@ -4010,35 +4010,35 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode LPAREN() {
-            return getToken(CypherParser.LPAREN, 0);
+            return getToken(Cypher5Parser.LPAREN, 0);
         }
 
         public TerminalNode RPAREN() {
-            return getToken(CypherParser.RPAREN, 0);
+            return getToken(Cypher5Parser.RPAREN, 0);
         }
 
         public TerminalNode INDEX() {
-            return getToken(CypherParser.INDEX, 0);
+            return getToken(Cypher5Parser.INDEX, 0);
         }
 
         public TerminalNode BTREE() {
-            return getToken(CypherParser.BTREE, 0);
+            return getToken(Cypher5Parser.BTREE, 0);
         }
 
         public TerminalNode TEXT() {
-            return getToken(CypherParser.TEXT, 0);
+            return getToken(Cypher5Parser.TEXT, 0);
         }
 
         public TerminalNode RANGE() {
-            return getToken(CypherParser.RANGE, 0);
+            return getToken(Cypher5Parser.RANGE, 0);
         }
 
         public TerminalNode POINT() {
-            return getToken(CypherParser.POINT, 0);
+            return getToken(Cypher5Parser.POINT, 0);
         }
 
         public TerminalNode SEEK() {
-            return getToken(CypherParser.SEEK, 0);
+            return getToken(Cypher5Parser.SEEK, 0);
         }
 
         public HintContext(ParserRuleContext parent, int invokingState) {
@@ -4173,7 +4173,7 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class MergeClauseContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode MERGE() {
-            return getToken(CypherParser.MERGE, 0);
+            return getToken(Cypher5Parser.MERGE, 0);
         }
 
         public PatternContext pattern() {
@@ -4237,7 +4237,7 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class MergeActionContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode ON() {
-            return getToken(CypherParser.ON, 0);
+            return getToken(Cypher5Parser.ON, 0);
         }
 
         public SetClauseContext setClause() {
@@ -4245,11 +4245,11 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode MATCH() {
-            return getToken(CypherParser.MATCH, 0);
+            return getToken(Cypher5Parser.MATCH, 0);
         }
 
         public TerminalNode CREATE() {
-            return getToken(CypherParser.CREATE, 0);
+            return getToken(Cypher5Parser.CREATE, 0);
         }
 
         public MergeActionContext(ParserRuleContext parent, int invokingState) {
@@ -4296,7 +4296,7 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class UnwindClauseContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode UNWIND() {
-            return getToken(CypherParser.UNWIND, 0);
+            return getToken(Cypher5Parser.UNWIND, 0);
         }
 
         public ExpressionContext expression() {
@@ -4304,7 +4304,7 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode AS() {
-            return getToken(CypherParser.AS, 0);
+            return getToken(Cypher5Parser.AS, 0);
         }
 
         public VariableContext variable() {
@@ -4349,7 +4349,7 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class CallClauseContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode CALL() {
-            return getToken(CypherParser.CALL, 0);
+            return getToken(Cypher5Parser.CALL, 0);
         }
 
         public ProcedureNameContext procedureName() {
@@ -4357,19 +4357,19 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode LPAREN() {
-            return getToken(CypherParser.LPAREN, 0);
+            return getToken(Cypher5Parser.LPAREN, 0);
         }
 
         public TerminalNode RPAREN() {
-            return getToken(CypherParser.RPAREN, 0);
+            return getToken(Cypher5Parser.RPAREN, 0);
         }
 
         public TerminalNode YIELD() {
-            return getToken(CypherParser.YIELD, 0);
+            return getToken(Cypher5Parser.YIELD, 0);
         }
 
         public TerminalNode TIMES() {
-            return getToken(CypherParser.TIMES, 0);
+            return getToken(Cypher5Parser.TIMES, 0);
         }
 
         public List<ProcedureResultItemContext> procedureResultItem() {
@@ -4389,11 +4389,11 @@ public class CypherParser extends Parser {
         }
 
         public List<TerminalNode> COMMA() {
-            return getTokens(CypherParser.COMMA);
+            return getTokens(Cypher5Parser.COMMA);
         }
 
         public TerminalNode COMMA(int i) {
-            return getToken(CypherParser.COMMA, i);
+            return getToken(Cypher5Parser.COMMA, i);
         }
 
         public WhereClauseContext whereClause() {
@@ -4867,7 +4867,7 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode AS() {
-            return getToken(CypherParser.AS, 0);
+            return getToken(Cypher5Parser.AS, 0);
         }
 
         public VariableContext variable() {
@@ -4918,15 +4918,15 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class LoadCSVClauseContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode LOAD() {
-            return getToken(CypherParser.LOAD, 0);
+            return getToken(Cypher5Parser.LOAD, 0);
         }
 
         public TerminalNode CSV() {
-            return getToken(CypherParser.CSV, 0);
+            return getToken(Cypher5Parser.CSV, 0);
         }
 
         public TerminalNode FROM() {
-            return getToken(CypherParser.FROM, 0);
+            return getToken(Cypher5Parser.FROM, 0);
         }
 
         public ExpressionContext expression() {
@@ -4934,7 +4934,7 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode AS() {
-            return getToken(CypherParser.AS, 0);
+            return getToken(Cypher5Parser.AS, 0);
         }
 
         public VariableContext variable() {
@@ -4942,15 +4942,15 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode WITH() {
-            return getToken(CypherParser.WITH, 0);
+            return getToken(Cypher5Parser.WITH, 0);
         }
 
         public TerminalNode HEADERS() {
-            return getToken(CypherParser.HEADERS, 0);
+            return getToken(Cypher5Parser.HEADERS, 0);
         }
 
         public TerminalNode FIELDTERMINATOR() {
-            return getToken(CypherParser.FIELDTERMINATOR, 0);
+            return getToken(Cypher5Parser.FIELDTERMINATOR, 0);
         }
 
         public StringLiteralContext stringLiteral() {
@@ -5023,11 +5023,11 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class ForeachClauseContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode FOREACH() {
-            return getToken(CypherParser.FOREACH, 0);
+            return getToken(Cypher5Parser.FOREACH, 0);
         }
 
         public TerminalNode LPAREN() {
-            return getToken(CypherParser.LPAREN, 0);
+            return getToken(Cypher5Parser.LPAREN, 0);
         }
 
         public VariableContext variable() {
@@ -5035,7 +5035,7 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode IN() {
-            return getToken(CypherParser.IN, 0);
+            return getToken(Cypher5Parser.IN, 0);
         }
 
         public ExpressionContext expression() {
@@ -5043,11 +5043,11 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode BAR() {
-            return getToken(CypherParser.BAR, 0);
+            return getToken(Cypher5Parser.BAR, 0);
         }
 
         public TerminalNode RPAREN() {
-            return getToken(CypherParser.RPAREN, 0);
+            return getToken(Cypher5Parser.RPAREN, 0);
         }
 
         public List<ClauseContext> clause() {
@@ -5120,11 +5120,11 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class SubqueryClauseContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode CALL() {
-            return getToken(CypherParser.CALL, 0);
+            return getToken(Cypher5Parser.CALL, 0);
         }
 
         public TerminalNode LCURLY() {
-            return getToken(CypherParser.LCURLY, 0);
+            return getToken(Cypher5Parser.LCURLY, 0);
         }
 
         public RegularQueryContext regularQuery() {
@@ -5132,7 +5132,7 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode RCURLY() {
-            return getToken(CypherParser.RCURLY, 0);
+            return getToken(Cypher5Parser.RCURLY, 0);
         }
 
         public SubqueryInTransactionsParametersContext subqueryInTransactionsParameters() {
@@ -5187,15 +5187,15 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class SubqueryInTransactionsParametersContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode IN() {
-            return getToken(CypherParser.IN, 0);
+            return getToken(Cypher5Parser.IN, 0);
         }
 
         public TerminalNode TRANSACTIONS() {
-            return getToken(CypherParser.TRANSACTIONS, 0);
+            return getToken(Cypher5Parser.TRANSACTIONS, 0);
         }
 
         public TerminalNode CONCURRENT() {
-            return getToken(CypherParser.CONCURRENT, 0);
+            return getToken(Cypher5Parser.CONCURRENT, 0);
         }
 
         public List<SubqueryInTransactionsBatchParametersContext> subqueryInTransactionsBatchParameters() {
@@ -5318,7 +5318,7 @@ public class CypherParser extends Parser {
     public static class SubqueryInTransactionsBatchParametersContext
             extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode OF() {
-            return getToken(CypherParser.OF, 0);
+            return getToken(Cypher5Parser.OF, 0);
         }
 
         public ExpressionContext expression() {
@@ -5326,11 +5326,11 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode ROW() {
-            return getToken(CypherParser.ROW, 0);
+            return getToken(Cypher5Parser.ROW, 0);
         }
 
         public TerminalNode ROWS() {
-            return getToken(CypherParser.ROWS, 0);
+            return getToken(Cypher5Parser.ROWS, 0);
         }
 
         public SubqueryInTransactionsBatchParametersContext(ParserRuleContext parent, int invokingState) {
@@ -5380,23 +5380,23 @@ public class CypherParser extends Parser {
     public static class SubqueryInTransactionsErrorParametersContext
             extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode ON() {
-            return getToken(CypherParser.ON, 0);
+            return getToken(Cypher5Parser.ON, 0);
         }
 
         public TerminalNode ERROR() {
-            return getToken(CypherParser.ERROR, 0);
+            return getToken(Cypher5Parser.ERROR, 0);
         }
 
         public TerminalNode CONTINUE() {
-            return getToken(CypherParser.CONTINUE, 0);
+            return getToken(Cypher5Parser.CONTINUE, 0);
         }
 
         public TerminalNode BREAK() {
-            return getToken(CypherParser.BREAK, 0);
+            return getToken(Cypher5Parser.BREAK, 0);
         }
 
         public TerminalNode FAIL() {
-            return getToken(CypherParser.FAIL, 0);
+            return getToken(Cypher5Parser.FAIL, 0);
         }
 
         public SubqueryInTransactionsErrorParametersContext(ParserRuleContext parent, int invokingState) {
@@ -5446,15 +5446,15 @@ public class CypherParser extends Parser {
     public static class SubqueryInTransactionsReportParametersContext
             extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode REPORT() {
-            return getToken(CypherParser.REPORT, 0);
+            return getToken(Cypher5Parser.REPORT, 0);
         }
 
         public TerminalNode STATUS() {
-            return getToken(CypherParser.STATUS, 0);
+            return getToken(Cypher5Parser.STATUS, 0);
         }
 
         public TerminalNode AS() {
-            return getToken(CypherParser.AS, 0);
+            return getToken(Cypher5Parser.AS, 0);
         }
 
         public VariableContext variable() {
@@ -5509,11 +5509,11 @@ public class CypherParser extends Parser {
         }
 
         public List<TerminalNode> COMMA() {
-            return getTokens(CypherParser.COMMA);
+            return getTokens(Cypher5Parser.COMMA);
         }
 
         public TerminalNode COMMA(int i) {
-            return getToken(CypherParser.COMMA, i);
+            return getToken(Cypher5Parser.COMMA, i);
         }
 
         public PatternListContext(ParserRuleContext parent, int invokingState) {
@@ -5573,11 +5573,11 @@ public class CypherParser extends Parser {
         }
 
         public List<TerminalNode> COMMA() {
-            return getTokens(CypherParser.COMMA);
+            return getTokens(Cypher5Parser.COMMA);
         }
 
         public TerminalNode COMMA(int i) {
-            return getToken(CypherParser.COMMA, i);
+            return getToken(Cypher5Parser.COMMA, i);
         }
 
         public InsertPatternListContext(ParserRuleContext parent, int invokingState) {
@@ -5637,7 +5637,7 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode EQ() {
-            return getToken(CypherParser.EQ, 0);
+            return getToken(Cypher5Parser.EQ, 0);
         }
 
         public SelectorContext selector() {
@@ -5711,7 +5711,7 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode EQ() {
-            return getToken(CypherParser.EQ, 0);
+            return getToken(Cypher5Parser.EQ, 0);
         }
 
         public List<InsertRelationshipPatternContext> insertRelationshipPattern() {
@@ -5790,31 +5790,31 @@ public class CypherParser extends Parser {
         public Token to;
 
         public TerminalNode LCURLY() {
-            return getToken(CypherParser.LCURLY, 0);
+            return getToken(Cypher5Parser.LCURLY, 0);
         }
 
         public List<TerminalNode> UNSIGNED_DECIMAL_INTEGER() {
-            return getTokens(CypherParser.UNSIGNED_DECIMAL_INTEGER);
+            return getTokens(Cypher5Parser.UNSIGNED_DECIMAL_INTEGER);
         }
 
         public TerminalNode UNSIGNED_DECIMAL_INTEGER(int i) {
-            return getToken(CypherParser.UNSIGNED_DECIMAL_INTEGER, i);
+            return getToken(Cypher5Parser.UNSIGNED_DECIMAL_INTEGER, i);
         }
 
         public TerminalNode RCURLY() {
-            return getToken(CypherParser.RCURLY, 0);
+            return getToken(Cypher5Parser.RCURLY, 0);
         }
 
         public TerminalNode COMMA() {
-            return getToken(CypherParser.COMMA, 0);
+            return getToken(Cypher5Parser.COMMA, 0);
         }
 
         public TerminalNode PLUS() {
-            return getToken(CypherParser.PLUS, 0);
+            return getToken(Cypher5Parser.PLUS, 0);
         }
 
         public TerminalNode TIMES() {
-            return getToken(CypherParser.TIMES, 0);
+            return getToken(Cypher5Parser.TIMES, 0);
         }
 
         public QuantifierContext(ParserRuleContext parent, int invokingState) {
@@ -5960,7 +5960,7 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class ShortestPathPatternContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode LPAREN() {
-            return getToken(CypherParser.LPAREN, 0);
+            return getToken(Cypher5Parser.LPAREN, 0);
         }
 
         public PatternElementContext patternElement() {
@@ -5968,15 +5968,15 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode RPAREN() {
-            return getToken(CypherParser.RPAREN, 0);
+            return getToken(Cypher5Parser.RPAREN, 0);
         }
 
         public TerminalNode SHORTEST_PATH() {
-            return getToken(CypherParser.SHORTEST_PATH, 0);
+            return getToken(Cypher5Parser.SHORTEST_PATH, 0);
         }
 
         public TerminalNode ALL_SHORTEST_PATHS() {
-            return getToken(CypherParser.ALL_SHORTEST_PATHS, 0);
+            return getToken(Cypher5Parser.ALL_SHORTEST_PATHS, 0);
         }
 
         public ShortestPathPatternContext(ParserRuleContext parent, int invokingState) {
@@ -6157,11 +6157,11 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class AllShortestPathContext extends SelectorContext {
         public TerminalNode ALL() {
-            return getToken(CypherParser.ALL, 0);
+            return getToken(Cypher5Parser.ALL, 0);
         }
 
         public TerminalNode SHORTEST() {
-            return getToken(CypherParser.SHORTEST, 0);
+            return getToken(Cypher5Parser.SHORTEST, 0);
         }
 
         public PathTokenContext pathToken() {
@@ -6176,11 +6176,11 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class AnyPathContext extends SelectorContext {
         public TerminalNode ANY() {
-            return getToken(CypherParser.ANY, 0);
+            return getToken(Cypher5Parser.ANY, 0);
         }
 
         public TerminalNode UNSIGNED_DECIMAL_INTEGER() {
-            return getToken(CypherParser.UNSIGNED_DECIMAL_INTEGER, 0);
+            return getToken(Cypher5Parser.UNSIGNED_DECIMAL_INTEGER, 0);
         }
 
         public PathTokenContext pathToken() {
@@ -6195,7 +6195,7 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class ShortestGroupContext extends SelectorContext {
         public TerminalNode SHORTEST() {
-            return getToken(CypherParser.SHORTEST, 0);
+            return getToken(Cypher5Parser.SHORTEST, 0);
         }
 
         public GroupTokenContext groupToken() {
@@ -6203,7 +6203,7 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode UNSIGNED_DECIMAL_INTEGER() {
-            return getToken(CypherParser.UNSIGNED_DECIMAL_INTEGER, 0);
+            return getToken(Cypher5Parser.UNSIGNED_DECIMAL_INTEGER, 0);
         }
 
         public PathTokenContext pathToken() {
@@ -6218,11 +6218,11 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class AnyShortestPathContext extends SelectorContext {
         public TerminalNode ANY() {
-            return getToken(CypherParser.ANY, 0);
+            return getToken(Cypher5Parser.ANY, 0);
         }
 
         public TerminalNode SHORTEST() {
-            return getToken(CypherParser.SHORTEST, 0);
+            return getToken(Cypher5Parser.SHORTEST, 0);
         }
 
         public PathTokenContext pathToken() {
@@ -6230,7 +6230,7 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode UNSIGNED_DECIMAL_INTEGER() {
-            return getToken(CypherParser.UNSIGNED_DECIMAL_INTEGER, 0);
+            return getToken(Cypher5Parser.UNSIGNED_DECIMAL_INTEGER, 0);
         }
 
         public AnyShortestPathContext(SelectorContext ctx) {
@@ -6241,7 +6241,7 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class AllPathContext extends SelectorContext {
         public TerminalNode ALL() {
-            return getToken(CypherParser.ALL, 0);
+            return getToken(Cypher5Parser.ALL, 0);
         }
 
         public PathTokenContext pathToken() {
@@ -6406,11 +6406,11 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class GroupTokenContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode GROUP() {
-            return getToken(CypherParser.GROUP, 0);
+            return getToken(Cypher5Parser.GROUP, 0);
         }
 
         public TerminalNode GROUPS() {
-            return getToken(CypherParser.GROUPS, 0);
+            return getToken(Cypher5Parser.GROUPS, 0);
         }
 
         public GroupTokenContext(ParserRuleContext parent, int invokingState) {
@@ -6453,11 +6453,11 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class PathTokenContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode PATH() {
-            return getToken(CypherParser.PATH, 0);
+            return getToken(Cypher5Parser.PATH, 0);
         }
 
         public TerminalNode PATHS() {
-            return getToken(CypherParser.PATHS, 0);
+            return getToken(Cypher5Parser.PATHS, 0);
         }
 
         public PathTokenContext(ParserRuleContext parent, int invokingState) {
@@ -6570,11 +6570,11 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class NodePatternContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode LPAREN() {
-            return getToken(CypherParser.LPAREN, 0);
+            return getToken(Cypher5Parser.LPAREN, 0);
         }
 
         public TerminalNode RPAREN() {
-            return getToken(CypherParser.RPAREN, 0);
+            return getToken(Cypher5Parser.RPAREN, 0);
         }
 
         public VariableContext variable() {
@@ -6590,7 +6590,7 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode WHERE() {
-            return getToken(CypherParser.WHERE, 0);
+            return getToken(Cypher5Parser.WHERE, 0);
         }
 
         public ExpressionContext expression() {
@@ -6674,11 +6674,11 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class InsertNodePatternContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode LPAREN() {
-            return getToken(CypherParser.LPAREN, 0);
+            return getToken(Cypher5Parser.LPAREN, 0);
         }
 
         public TerminalNode RPAREN() {
-            return getToken(CypherParser.RPAREN, 0);
+            return getToken(Cypher5Parser.RPAREN, 0);
         }
 
         public VariableContext variable() {
@@ -6758,7 +6758,7 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class ParenthesizedPathContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode LPAREN() {
-            return getToken(CypherParser.LPAREN, 0);
+            return getToken(Cypher5Parser.LPAREN, 0);
         }
 
         public PatternContext pattern() {
@@ -6766,11 +6766,11 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode RPAREN() {
-            return getToken(CypherParser.RPAREN, 0);
+            return getToken(Cypher5Parser.RPAREN, 0);
         }
 
         public TerminalNode WHERE() {
-            return getToken(CypherParser.WHERE, 0);
+            return getToken(Cypher5Parser.WHERE, 0);
         }
 
         public ExpressionContext expression() {
@@ -6891,7 +6891,7 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class NodeLabelsIsContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode IS() {
-            return getToken(CypherParser.IS, 0);
+            return getToken(Cypher5Parser.IS, 0);
         }
 
         public SymbolicNameStringContext symbolicNameString() {
@@ -6955,7 +6955,7 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class LabelTypeContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode COLON() {
-            return getToken(CypherParser.COLON, 0);
+            return getToken(Cypher5Parser.COLON, 0);
         }
 
         public SymbolicNameStringContext symbolicNameString() {
@@ -6996,7 +6996,7 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class RelTypeContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode COLON() {
-            return getToken(CypherParser.COLON, 0);
+            return getToken(Cypher5Parser.COLON, 0);
         }
 
         public SymbolicNameStringContext symbolicNameString() {
@@ -7037,7 +7037,7 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class LabelOrRelTypeContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode COLON() {
-            return getToken(CypherParser.COLON, 0);
+            return getToken(Cypher5Parser.COLON, 0);
         }
 
         public SymbolicNameStringContext symbolicNameString() {
@@ -7144,11 +7144,11 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode LBRACKET() {
-            return getToken(CypherParser.LBRACKET, 0);
+            return getToken(Cypher5Parser.LBRACKET, 0);
         }
 
         public TerminalNode RBRACKET() {
-            return getToken(CypherParser.RBRACKET, 0);
+            return getToken(Cypher5Parser.RBRACKET, 0);
         }
 
         public RightArrowContext rightArrow() {
@@ -7172,7 +7172,7 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode WHERE() {
-            return getToken(CypherParser.WHERE, 0);
+            return getToken(Cypher5Parser.WHERE, 0);
         }
 
         public ExpressionContext expression() {
@@ -7305,7 +7305,7 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode LBRACKET() {
-            return getToken(CypherParser.LBRACKET, 0);
+            return getToken(Cypher5Parser.LBRACKET, 0);
         }
 
         public InsertRelationshipLabelExpressionContext insertRelationshipLabelExpression() {
@@ -7313,7 +7313,7 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode RBRACKET() {
-            return getToken(CypherParser.RBRACKET, 0);
+            return getToken(Cypher5Parser.RBRACKET, 0);
         }
 
         public LeftArrowContext leftArrow() {
@@ -7412,11 +7412,11 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class LeftArrowContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode LT() {
-            return getToken(CypherParser.LT, 0);
+            return getToken(Cypher5Parser.LT, 0);
         }
 
         public TerminalNode ARROW_LEFT_HEAD() {
-            return getToken(CypherParser.ARROW_LEFT_HEAD, 0);
+            return getToken(Cypher5Parser.ARROW_LEFT_HEAD, 0);
         }
 
         public LeftArrowContext(ParserRuleContext parent, int invokingState) {
@@ -7459,11 +7459,11 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class ArrowLineContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode ARROW_LINE() {
-            return getToken(CypherParser.ARROW_LINE, 0);
+            return getToken(Cypher5Parser.ARROW_LINE, 0);
         }
 
         public TerminalNode MINUS() {
-            return getToken(CypherParser.MINUS, 0);
+            return getToken(Cypher5Parser.MINUS, 0);
         }
 
         public ArrowLineContext(ParserRuleContext parent, int invokingState) {
@@ -7506,11 +7506,11 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class RightArrowContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode GT() {
-            return getToken(CypherParser.GT, 0);
+            return getToken(Cypher5Parser.GT, 0);
         }
 
         public TerminalNode ARROW_RIGHT_HEAD() {
-            return getToken(CypherParser.ARROW_RIGHT_HEAD, 0);
+            return getToken(Cypher5Parser.ARROW_RIGHT_HEAD, 0);
         }
 
         public RightArrowContext(ParserRuleContext parent, int invokingState) {
@@ -7557,19 +7557,19 @@ public class CypherParser extends Parser {
         public Token single;
 
         public TerminalNode TIMES() {
-            return getToken(CypherParser.TIMES, 0);
+            return getToken(Cypher5Parser.TIMES, 0);
         }
 
         public TerminalNode DOTDOT() {
-            return getToken(CypherParser.DOTDOT, 0);
+            return getToken(Cypher5Parser.DOTDOT, 0);
         }
 
         public List<TerminalNode> UNSIGNED_DECIMAL_INTEGER() {
-            return getTokens(CypherParser.UNSIGNED_DECIMAL_INTEGER);
+            return getTokens(Cypher5Parser.UNSIGNED_DECIMAL_INTEGER);
         }
 
         public TerminalNode UNSIGNED_DECIMAL_INTEGER(int i) {
-            return getToken(CypherParser.UNSIGNED_DECIMAL_INTEGER, i);
+            return getToken(Cypher5Parser.UNSIGNED_DECIMAL_INTEGER, i);
         }
 
         public PathLengthContext(ParserRuleContext parent, int invokingState) {
@@ -7640,7 +7640,7 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class LabelExpressionContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode COLON() {
-            return getToken(CypherParser.COLON, 0);
+            return getToken(Cypher5Parser.COLON, 0);
         }
 
         public LabelExpression4Context labelExpression4() {
@@ -7648,7 +7648,7 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode IS() {
-            return getToken(CypherParser.IS, 0);
+            return getToken(Cypher5Parser.IS, 0);
         }
 
         public LabelExpression4IsContext labelExpression4Is() {
@@ -7714,19 +7714,19 @@ public class CypherParser extends Parser {
         }
 
         public List<TerminalNode> BAR() {
-            return getTokens(CypherParser.BAR);
+            return getTokens(Cypher5Parser.BAR);
         }
 
         public TerminalNode BAR(int i) {
-            return getToken(CypherParser.BAR, i);
+            return getToken(Cypher5Parser.BAR, i);
         }
 
         public List<TerminalNode> COLON() {
-            return getTokens(CypherParser.COLON);
+            return getTokens(Cypher5Parser.COLON);
         }
 
         public TerminalNode COLON(int i) {
-            return getToken(CypherParser.COLON, i);
+            return getToken(Cypher5Parser.COLON, i);
         }
 
         public LabelExpression4Context(ParserRuleContext parent, int invokingState) {
@@ -7799,19 +7799,19 @@ public class CypherParser extends Parser {
         }
 
         public List<TerminalNode> BAR() {
-            return getTokens(CypherParser.BAR);
+            return getTokens(Cypher5Parser.BAR);
         }
 
         public TerminalNode BAR(int i) {
-            return getToken(CypherParser.BAR, i);
+            return getToken(Cypher5Parser.BAR, i);
         }
 
         public List<TerminalNode> COLON() {
-            return getTokens(CypherParser.COLON);
+            return getTokens(Cypher5Parser.COLON);
         }
 
         public TerminalNode COLON(int i) {
-            return getToken(CypherParser.COLON, i);
+            return getToken(Cypher5Parser.COLON, i);
         }
 
         public LabelExpression4IsContext(ParserRuleContext parent, int invokingState) {
@@ -7884,19 +7884,19 @@ public class CypherParser extends Parser {
         }
 
         public List<TerminalNode> AMPERSAND() {
-            return getTokens(CypherParser.AMPERSAND);
+            return getTokens(Cypher5Parser.AMPERSAND);
         }
 
         public TerminalNode AMPERSAND(int i) {
-            return getToken(CypherParser.AMPERSAND, i);
+            return getToken(Cypher5Parser.AMPERSAND, i);
         }
 
         public List<TerminalNode> COLON() {
-            return getTokens(CypherParser.COLON);
+            return getTokens(Cypher5Parser.COLON);
         }
 
         public TerminalNode COLON(int i) {
-            return getToken(CypherParser.COLON, i);
+            return getToken(Cypher5Parser.COLON, i);
         }
 
         public LabelExpression3Context(ParserRuleContext parent, int invokingState) {
@@ -7966,19 +7966,19 @@ public class CypherParser extends Parser {
         }
 
         public List<TerminalNode> AMPERSAND() {
-            return getTokens(CypherParser.AMPERSAND);
+            return getTokens(Cypher5Parser.AMPERSAND);
         }
 
         public TerminalNode AMPERSAND(int i) {
-            return getToken(CypherParser.AMPERSAND, i);
+            return getToken(Cypher5Parser.AMPERSAND, i);
         }
 
         public List<TerminalNode> COLON() {
-            return getTokens(CypherParser.COLON);
+            return getTokens(Cypher5Parser.COLON);
         }
 
         public TerminalNode COLON(int i) {
-            return getToken(CypherParser.COLON, i);
+            return getToken(Cypher5Parser.COLON, i);
         }
 
         public LabelExpression3IsContext(ParserRuleContext parent, int invokingState) {
@@ -8044,11 +8044,11 @@ public class CypherParser extends Parser {
         }
 
         public List<TerminalNode> EXCLAMATION_MARK() {
-            return getTokens(CypherParser.EXCLAMATION_MARK);
+            return getTokens(Cypher5Parser.EXCLAMATION_MARK);
         }
 
         public TerminalNode EXCLAMATION_MARK(int i) {
-            return getToken(CypherParser.EXCLAMATION_MARK, i);
+            return getToken(Cypher5Parser.EXCLAMATION_MARK, i);
         }
 
         public LabelExpression2Context(ParserRuleContext parent, int invokingState) {
@@ -8102,11 +8102,11 @@ public class CypherParser extends Parser {
         }
 
         public List<TerminalNode> EXCLAMATION_MARK() {
-            return getTokens(CypherParser.EXCLAMATION_MARK);
+            return getTokens(Cypher5Parser.EXCLAMATION_MARK);
         }
 
         public TerminalNode EXCLAMATION_MARK(int i) {
-            return getToken(CypherParser.EXCLAMATION_MARK, i);
+            return getToken(Cypher5Parser.EXCLAMATION_MARK, i);
         }
 
         public LabelExpression2IsContext(ParserRuleContext parent, int invokingState) {
@@ -8174,7 +8174,7 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class AnyLabelContext extends LabelExpression1Context {
         public TerminalNode PERCENT() {
-            return getToken(CypherParser.PERCENT, 0);
+            return getToken(Cypher5Parser.PERCENT, 0);
         }
 
         public AnyLabelContext(LabelExpression1Context ctx) {
@@ -8196,7 +8196,7 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class ParenthesizedLabelExpressionContext extends LabelExpression1Context {
         public TerminalNode LPAREN() {
-            return getToken(CypherParser.LPAREN, 0);
+            return getToken(Cypher5Parser.LPAREN, 0);
         }
 
         public LabelExpression4Context labelExpression4() {
@@ -8204,7 +8204,7 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode RPAREN() {
-            return getToken(CypherParser.RPAREN, 0);
+            return getToken(Cypher5Parser.RPAREN, 0);
         }
 
         public ParenthesizedLabelExpressionContext(LabelExpression1Context ctx) {
@@ -8539,7 +8539,7 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class ParenthesizedLabelExpressionIsContext extends LabelExpression1IsContext {
         public TerminalNode LPAREN() {
-            return getToken(CypherParser.LPAREN, 0);
+            return getToken(Cypher5Parser.LPAREN, 0);
         }
 
         public LabelExpression4IsContext labelExpression4Is() {
@@ -8547,7 +8547,7 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode RPAREN() {
-            return getToken(CypherParser.RPAREN, 0);
+            return getToken(Cypher5Parser.RPAREN, 0);
         }
 
         public ParenthesizedLabelExpressionIsContext(LabelExpression1IsContext ctx) {
@@ -8558,7 +8558,7 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class AnyLabelIsContext extends LabelExpression1IsContext {
         public TerminalNode PERCENT() {
-            return getToken(CypherParser.PERCENT, 0);
+            return getToken(Cypher5Parser.PERCENT, 0);
         }
 
         public AnyLabelIsContext(LabelExpression1IsContext ctx) {
@@ -8886,23 +8886,23 @@ public class CypherParser extends Parser {
         }
 
         public List<TerminalNode> COLON() {
-            return getTokens(CypherParser.COLON);
+            return getTokens(Cypher5Parser.COLON);
         }
 
         public TerminalNode COLON(int i) {
-            return getToken(CypherParser.COLON, i);
+            return getToken(Cypher5Parser.COLON, i);
         }
 
         public TerminalNode IS() {
-            return getToken(CypherParser.IS, 0);
+            return getToken(Cypher5Parser.IS, 0);
         }
 
         public List<TerminalNode> AMPERSAND() {
-            return getTokens(CypherParser.AMPERSAND);
+            return getTokens(Cypher5Parser.AMPERSAND);
         }
 
         public TerminalNode AMPERSAND(int i) {
-            return getToken(CypherParser.AMPERSAND, i);
+            return getToken(Cypher5Parser.AMPERSAND, i);
         }
 
         public InsertNodeLabelExpressionContext(ParserRuleContext parent, int invokingState) {
@@ -8974,11 +8974,11 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode COLON() {
-            return getToken(CypherParser.COLON, 0);
+            return getToken(Cypher5Parser.COLON, 0);
         }
 
         public TerminalNode IS() {
-            return getToken(CypherParser.IS, 0);
+            return getToken(Cypher5Parser.IS, 0);
         }
 
         public InsertRelationshipLabelExpressionContext(ParserRuleContext parent, int invokingState) {
@@ -9033,11 +9033,11 @@ public class CypherParser extends Parser {
         }
 
         public List<TerminalNode> OR() {
-            return getTokens(CypherParser.OR);
+            return getTokens(Cypher5Parser.OR);
         }
 
         public TerminalNode OR(int i) {
-            return getToken(CypherParser.OR, i);
+            return getToken(Cypher5Parser.OR, i);
         }
 
         public ExpressionContext(ParserRuleContext parent, int invokingState) {
@@ -9097,11 +9097,11 @@ public class CypherParser extends Parser {
         }
 
         public List<TerminalNode> XOR() {
-            return getTokens(CypherParser.XOR);
+            return getTokens(Cypher5Parser.XOR);
         }
 
         public TerminalNode XOR(int i) {
-            return getToken(CypherParser.XOR, i);
+            return getToken(Cypher5Parser.XOR, i);
         }
 
         public Expression11Context(ParserRuleContext parent, int invokingState) {
@@ -9161,11 +9161,11 @@ public class CypherParser extends Parser {
         }
 
         public List<TerminalNode> AND() {
-            return getTokens(CypherParser.AND);
+            return getTokens(Cypher5Parser.AND);
         }
 
         public TerminalNode AND(int i) {
-            return getToken(CypherParser.AND, i);
+            return getToken(Cypher5Parser.AND, i);
         }
 
         public Expression10Context(ParserRuleContext parent, int invokingState) {
@@ -9221,11 +9221,11 @@ public class CypherParser extends Parser {
         }
 
         public List<TerminalNode> NOT() {
-            return getTokens(CypherParser.NOT);
+            return getTokens(Cypher5Parser.NOT);
         }
 
         public TerminalNode NOT(int i) {
-            return getToken(CypherParser.NOT, i);
+            return getToken(Cypher5Parser.NOT, i);
         }
 
         public Expression9Context(ParserRuleContext parent, int invokingState) {
@@ -9285,59 +9285,59 @@ public class CypherParser extends Parser {
         }
 
         public List<TerminalNode> EQ() {
-            return getTokens(CypherParser.EQ);
+            return getTokens(Cypher5Parser.EQ);
         }
 
         public TerminalNode EQ(int i) {
-            return getToken(CypherParser.EQ, i);
+            return getToken(Cypher5Parser.EQ, i);
         }
 
         public List<TerminalNode> INVALID_NEQ() {
-            return getTokens(CypherParser.INVALID_NEQ);
+            return getTokens(Cypher5Parser.INVALID_NEQ);
         }
 
         public TerminalNode INVALID_NEQ(int i) {
-            return getToken(CypherParser.INVALID_NEQ, i);
+            return getToken(Cypher5Parser.INVALID_NEQ, i);
         }
 
         public List<TerminalNode> NEQ() {
-            return getTokens(CypherParser.NEQ);
+            return getTokens(Cypher5Parser.NEQ);
         }
 
         public TerminalNode NEQ(int i) {
-            return getToken(CypherParser.NEQ, i);
+            return getToken(Cypher5Parser.NEQ, i);
         }
 
         public List<TerminalNode> LE() {
-            return getTokens(CypherParser.LE);
+            return getTokens(Cypher5Parser.LE);
         }
 
         public TerminalNode LE(int i) {
-            return getToken(CypherParser.LE, i);
+            return getToken(Cypher5Parser.LE, i);
         }
 
         public List<TerminalNode> GE() {
-            return getTokens(CypherParser.GE);
+            return getTokens(Cypher5Parser.GE);
         }
 
         public TerminalNode GE(int i) {
-            return getToken(CypherParser.GE, i);
+            return getToken(Cypher5Parser.GE, i);
         }
 
         public List<TerminalNode> LT() {
-            return getTokens(CypherParser.LT);
+            return getTokens(Cypher5Parser.LT);
         }
 
         public TerminalNode LT(int i) {
-            return getToken(CypherParser.LT, i);
+            return getToken(Cypher5Parser.LT, i);
         }
 
         public List<TerminalNode> GT() {
-            return getTokens(CypherParser.GT);
+            return getTokens(Cypher5Parser.GT);
         }
 
         public TerminalNode GT(int i) {
-            return getToken(CypherParser.GT, i);
+            return getToken(Cypher5Parser.GT, i);
         }
 
         public Expression8Context(ParserRuleContext parent, int invokingState) {
@@ -9471,19 +9471,19 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode IS() {
-            return getToken(CypherParser.IS, 0);
+            return getToken(Cypher5Parser.IS, 0);
         }
 
         public TerminalNode COLONCOLON() {
-            return getToken(CypherParser.COLONCOLON, 0);
+            return getToken(Cypher5Parser.COLONCOLON, 0);
         }
 
         public TerminalNode TYPED() {
-            return getToken(CypherParser.TYPED, 0);
+            return getToken(Cypher5Parser.TYPED, 0);
         }
 
         public TerminalNode NOT() {
-            return getToken(CypherParser.NOT, 0);
+            return getToken(Cypher5Parser.NOT, 0);
         }
 
         public TypeComparisonContext(ComparisonExpression6Context ctx) {
@@ -9498,27 +9498,27 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode REGEQ() {
-            return getToken(CypherParser.REGEQ, 0);
+            return getToken(Cypher5Parser.REGEQ, 0);
         }
 
         public TerminalNode STARTS() {
-            return getToken(CypherParser.STARTS, 0);
+            return getToken(Cypher5Parser.STARTS, 0);
         }
 
         public TerminalNode WITH() {
-            return getToken(CypherParser.WITH, 0);
+            return getToken(Cypher5Parser.WITH, 0);
         }
 
         public TerminalNode ENDS() {
-            return getToken(CypherParser.ENDS, 0);
+            return getToken(Cypher5Parser.ENDS, 0);
         }
 
         public TerminalNode CONTAINS() {
-            return getToken(CypherParser.CONTAINS, 0);
+            return getToken(Cypher5Parser.CONTAINS, 0);
         }
 
         public TerminalNode IN() {
-            return getToken(CypherParser.IN, 0);
+            return getToken(Cypher5Parser.IN, 0);
         }
 
         public StringAndListComparisonContext(ComparisonExpression6Context ctx) {
@@ -9529,15 +9529,15 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class NormalFormComparisonContext extends ComparisonExpression6Context {
         public TerminalNode IS() {
-            return getToken(CypherParser.IS, 0);
+            return getToken(Cypher5Parser.IS, 0);
         }
 
         public TerminalNode NORMALIZED() {
-            return getToken(CypherParser.NORMALIZED, 0);
+            return getToken(Cypher5Parser.NORMALIZED, 0);
         }
 
         public TerminalNode NOT() {
-            return getToken(CypherParser.NOT, 0);
+            return getToken(Cypher5Parser.NOT, 0);
         }
 
         public NormalFormContext normalForm() {
@@ -9552,15 +9552,15 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class NullComparisonContext extends ComparisonExpression6Context {
         public TerminalNode IS() {
-            return getToken(CypherParser.IS, 0);
+            return getToken(Cypher5Parser.IS, 0);
         }
 
         public TerminalNode NULL() {
-            return getToken(CypherParser.NULL, 0);
+            return getToken(Cypher5Parser.NULL, 0);
         }
 
         public TerminalNode NOT() {
-            return getToken(CypherParser.NOT, 0);
+            return getToken(Cypher5Parser.NOT, 0);
         }
 
         public NullComparisonContext(ComparisonExpression6Context ctx) {
@@ -9733,19 +9733,19 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class NormalFormContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode NFC() {
-            return getToken(CypherParser.NFC, 0);
+            return getToken(Cypher5Parser.NFC, 0);
         }
 
         public TerminalNode NFD() {
-            return getToken(CypherParser.NFD, 0);
+            return getToken(Cypher5Parser.NFD, 0);
         }
 
         public TerminalNode NFKC() {
-            return getToken(CypherParser.NFKC, 0);
+            return getToken(Cypher5Parser.NFKC, 0);
         }
 
         public TerminalNode NFKD() {
-            return getToken(CypherParser.NFKD, 0);
+            return getToken(Cypher5Parser.NFKD, 0);
         }
 
         public NormalFormContext(ParserRuleContext parent, int invokingState) {
@@ -9796,27 +9796,27 @@ public class CypherParser extends Parser {
         }
 
         public List<TerminalNode> PLUS() {
-            return getTokens(CypherParser.PLUS);
+            return getTokens(Cypher5Parser.PLUS);
         }
 
         public TerminalNode PLUS(int i) {
-            return getToken(CypherParser.PLUS, i);
+            return getToken(Cypher5Parser.PLUS, i);
         }
 
         public List<TerminalNode> MINUS() {
-            return getTokens(CypherParser.MINUS);
+            return getTokens(Cypher5Parser.MINUS);
         }
 
         public TerminalNode MINUS(int i) {
-            return getToken(CypherParser.MINUS, i);
+            return getToken(Cypher5Parser.MINUS, i);
         }
 
         public List<TerminalNode> DOUBLEBAR() {
-            return getTokens(CypherParser.DOUBLEBAR);
+            return getTokens(Cypher5Parser.DOUBLEBAR);
         }
 
         public TerminalNode DOUBLEBAR(int i) {
-            return getToken(CypherParser.DOUBLEBAR, i);
+            return getToken(Cypher5Parser.DOUBLEBAR, i);
         }
 
         public Expression6Context(ParserRuleContext parent, int invokingState) {
@@ -9883,27 +9883,27 @@ public class CypherParser extends Parser {
         }
 
         public List<TerminalNode> TIMES() {
-            return getTokens(CypherParser.TIMES);
+            return getTokens(Cypher5Parser.TIMES);
         }
 
         public TerminalNode TIMES(int i) {
-            return getToken(CypherParser.TIMES, i);
+            return getToken(Cypher5Parser.TIMES, i);
         }
 
         public List<TerminalNode> DIVIDE() {
-            return getTokens(CypherParser.DIVIDE);
+            return getTokens(Cypher5Parser.DIVIDE);
         }
 
         public TerminalNode DIVIDE(int i) {
-            return getToken(CypherParser.DIVIDE, i);
+            return getToken(Cypher5Parser.DIVIDE, i);
         }
 
         public List<TerminalNode> PERCENT() {
-            return getTokens(CypherParser.PERCENT);
+            return getTokens(Cypher5Parser.PERCENT);
         }
 
         public TerminalNode PERCENT(int i) {
-            return getToken(CypherParser.PERCENT, i);
+            return getToken(Cypher5Parser.PERCENT, i);
         }
 
         public Expression5Context(ParserRuleContext parent, int invokingState) {
@@ -9970,11 +9970,11 @@ public class CypherParser extends Parser {
         }
 
         public List<TerminalNode> POW() {
-            return getTokens(CypherParser.POW);
+            return getTokens(Cypher5Parser.POW);
         }
 
         public TerminalNode POW(int i) {
-            return getToken(CypherParser.POW, i);
+            return getToken(Cypher5Parser.POW, i);
         }
 
         public Expression4Context(ParserRuleContext parent, int invokingState) {
@@ -10030,11 +10030,11 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode PLUS() {
-            return getToken(CypherParser.PLUS, 0);
+            return getToken(Cypher5Parser.PLUS, 0);
         }
 
         public TerminalNode MINUS() {
-            return getToken(CypherParser.MINUS, 0);
+            return getToken(Cypher5Parser.MINUS, 0);
         }
 
         public Expression3Context(ParserRuleContext parent, int invokingState) {
@@ -10170,7 +10170,7 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class IndexPostfixContext extends PostFixContext {
         public TerminalNode LBRACKET() {
-            return getToken(CypherParser.LBRACKET, 0);
+            return getToken(Cypher5Parser.LBRACKET, 0);
         }
 
         public ExpressionContext expression() {
@@ -10178,7 +10178,7 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode RBRACKET() {
-            return getToken(CypherParser.RBRACKET, 0);
+            return getToken(Cypher5Parser.RBRACKET, 0);
         }
 
         public IndexPostfixContext(PostFixContext ctx) {
@@ -10214,15 +10214,15 @@ public class CypherParser extends Parser {
         public ExpressionContext toExp;
 
         public TerminalNode LBRACKET() {
-            return getToken(CypherParser.LBRACKET, 0);
+            return getToken(Cypher5Parser.LBRACKET, 0);
         }
 
         public TerminalNode DOTDOT() {
-            return getToken(CypherParser.DOTDOT, 0);
+            return getToken(Cypher5Parser.DOTDOT, 0);
         }
 
         public TerminalNode RBRACKET() {
-            return getToken(CypherParser.RBRACKET, 0);
+            return getToken(Cypher5Parser.RBRACKET, 0);
         }
 
         public List<ExpressionContext> expression() {
@@ -10328,7 +10328,7 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class PropertyContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode DOT() {
-            return getToken(CypherParser.DOT, 0);
+            return getToken(Cypher5Parser.DOT, 0);
         }
 
         public PropertyKeyNameContext propertyKeyName() {
@@ -10369,7 +10369,7 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class DynamicPropertyContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode LBRACKET() {
-            return getToken(CypherParser.LBRACKET, 0);
+            return getToken(Cypher5Parser.LBRACKET, 0);
         }
 
         public ExpressionContext expression() {
@@ -10377,7 +10377,7 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode RBRACKET() {
-            return getToken(CypherParser.RBRACKET, 0);
+            return getToken(Cypher5Parser.RBRACKET, 0);
         }
 
         public DynamicPropertyContext(ParserRuleContext parent, int invokingState) {
@@ -10805,11 +10805,11 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class BooleanLiteralContext extends LiteralContext {
         public TerminalNode TRUE() {
-            return getToken(CypherParser.TRUE, 0);
+            return getToken(Cypher5Parser.TRUE, 0);
         }
 
         public TerminalNode FALSE() {
-            return getToken(CypherParser.FALSE, 0);
+            return getToken(Cypher5Parser.FALSE, 0);
         }
 
         public BooleanLiteralContext(LiteralContext ctx) {
@@ -10820,19 +10820,19 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class KeywordLiteralContext extends LiteralContext {
         public TerminalNode INF() {
-            return getToken(CypherParser.INF, 0);
+            return getToken(Cypher5Parser.INF, 0);
         }
 
         public TerminalNode INFINITY() {
-            return getToken(CypherParser.INFINITY, 0);
+            return getToken(Cypher5Parser.INFINITY, 0);
         }
 
         public TerminalNode NAN() {
-            return getToken(CypherParser.NAN, 0);
+            return getToken(Cypher5Parser.NAN, 0);
         }
 
         public TerminalNode NULL() {
-            return getToken(CypherParser.NULL, 0);
+            return getToken(Cypher5Parser.NULL, 0);
         }
 
         public KeywordLiteralContext(LiteralContext ctx) {
@@ -10962,11 +10962,11 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class CaseExpressionContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode CASE() {
-            return getToken(CypherParser.CASE, 0);
+            return getToken(Cypher5Parser.CASE, 0);
         }
 
         public TerminalNode END() {
-            return getToken(CypherParser.END, 0);
+            return getToken(Cypher5Parser.END, 0);
         }
 
         public List<CaseAlternativeContext> caseAlternative() {
@@ -10978,7 +10978,7 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode ELSE() {
-            return getToken(CypherParser.ELSE, 0);
+            return getToken(Cypher5Parser.ELSE, 0);
         }
 
         public ExpressionContext expression() {
@@ -11046,7 +11046,7 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class CaseAlternativeContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode WHEN() {
-            return getToken(CypherParser.WHEN, 0);
+            return getToken(Cypher5Parser.WHEN, 0);
         }
 
         public List<ExpressionContext> expression() {
@@ -11058,7 +11058,7 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode THEN() {
-            return getToken(CypherParser.THEN, 0);
+            return getToken(Cypher5Parser.THEN, 0);
         }
 
         public CaseAlternativeContext(ParserRuleContext parent, int invokingState) {
@@ -11101,7 +11101,7 @@ public class CypherParser extends Parser {
         public ExpressionContext elseExp;
 
         public TerminalNode CASE() {
-            return getToken(CypherParser.CASE, 0);
+            return getToken(Cypher5Parser.CASE, 0);
         }
 
         public List<ExpressionContext> expression() {
@@ -11113,7 +11113,7 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode END() {
-            return getToken(CypherParser.END, 0);
+            return getToken(Cypher5Parser.END, 0);
         }
 
         public List<ExtendedCaseAlternativeContext> extendedCaseAlternative() {
@@ -11125,7 +11125,7 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode ELSE() {
-            return getToken(CypherParser.ELSE, 0);
+            return getToken(Cypher5Parser.ELSE, 0);
         }
 
         public ExtendedCaseExpressionContext(ParserRuleContext parent, int invokingState) {
@@ -11191,7 +11191,7 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class ExtendedCaseAlternativeContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode WHEN() {
-            return getToken(CypherParser.WHEN, 0);
+            return getToken(Cypher5Parser.WHEN, 0);
         }
 
         public List<ExtendedWhenContext> extendedWhen() {
@@ -11203,7 +11203,7 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode THEN() {
-            return getToken(CypherParser.THEN, 0);
+            return getToken(Cypher5Parser.THEN, 0);
         }
 
         public ExpressionContext expression() {
@@ -11211,11 +11211,11 @@ public class CypherParser extends Parser {
         }
 
         public List<TerminalNode> COMMA() {
-            return getTokens(CypherParser.COMMA);
+            return getTokens(Cypher5Parser.COMMA);
         }
 
         public TerminalNode COMMA(int i) {
-            return getToken(CypherParser.COMMA, i);
+            return getToken(Cypher5Parser.COMMA, i);
         }
 
         public ExtendedCaseAlternativeContext(ParserRuleContext parent, int invokingState) {
@@ -11295,19 +11295,19 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode REGEQ() {
-            return getToken(CypherParser.REGEQ, 0);
+            return getToken(Cypher5Parser.REGEQ, 0);
         }
 
         public TerminalNode STARTS() {
-            return getToken(CypherParser.STARTS, 0);
+            return getToken(Cypher5Parser.STARTS, 0);
         }
 
         public TerminalNode WITH() {
-            return getToken(CypherParser.WITH, 0);
+            return getToken(Cypher5Parser.WITH, 0);
         }
 
         public TerminalNode ENDS() {
-            return getToken(CypherParser.ENDS, 0);
+            return getToken(Cypher5Parser.ENDS, 0);
         }
 
         public WhenStringOrListContext(ExtendedWhenContext ctx) {
@@ -11322,19 +11322,19 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode IS() {
-            return getToken(CypherParser.IS, 0);
+            return getToken(Cypher5Parser.IS, 0);
         }
 
         public TerminalNode TYPED() {
-            return getToken(CypherParser.TYPED, 0);
+            return getToken(Cypher5Parser.TYPED, 0);
         }
 
         public TerminalNode COLONCOLON() {
-            return getToken(CypherParser.COLONCOLON, 0);
+            return getToken(Cypher5Parser.COLONCOLON, 0);
         }
 
         public TerminalNode NOT() {
-            return getToken(CypherParser.NOT, 0);
+            return getToken(Cypher5Parser.NOT, 0);
         }
 
         public WhenTypeContext(ExtendedWhenContext ctx) {
@@ -11345,15 +11345,15 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class WhenFormContext extends ExtendedWhenContext {
         public TerminalNode IS() {
-            return getToken(CypherParser.IS, 0);
+            return getToken(Cypher5Parser.IS, 0);
         }
 
         public TerminalNode NORMALIZED() {
-            return getToken(CypherParser.NORMALIZED, 0);
+            return getToken(Cypher5Parser.NORMALIZED, 0);
         }
 
         public TerminalNode NOT() {
-            return getToken(CypherParser.NOT, 0);
+            return getToken(Cypher5Parser.NOT, 0);
         }
 
         public NormalFormContext normalForm() {
@@ -11368,15 +11368,15 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class WhenNullContext extends ExtendedWhenContext {
         public TerminalNode IS() {
-            return getToken(CypherParser.IS, 0);
+            return getToken(Cypher5Parser.IS, 0);
         }
 
         public TerminalNode NULL() {
-            return getToken(CypherParser.NULL, 0);
+            return getToken(Cypher5Parser.NULL, 0);
         }
 
         public TerminalNode NOT() {
-            return getToken(CypherParser.NOT, 0);
+            return getToken(Cypher5Parser.NOT, 0);
         }
 
         public WhenNullContext(ExtendedWhenContext ctx) {
@@ -11402,31 +11402,31 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode EQ() {
-            return getToken(CypherParser.EQ, 0);
+            return getToken(Cypher5Parser.EQ, 0);
         }
 
         public TerminalNode NEQ() {
-            return getToken(CypherParser.NEQ, 0);
+            return getToken(Cypher5Parser.NEQ, 0);
         }
 
         public TerminalNode INVALID_NEQ() {
-            return getToken(CypherParser.INVALID_NEQ, 0);
+            return getToken(Cypher5Parser.INVALID_NEQ, 0);
         }
 
         public TerminalNode LE() {
-            return getToken(CypherParser.LE, 0);
+            return getToken(Cypher5Parser.LE, 0);
         }
 
         public TerminalNode GE() {
-            return getToken(CypherParser.GE, 0);
+            return getToken(Cypher5Parser.GE, 0);
         }
 
         public TerminalNode LT() {
-            return getToken(CypherParser.LT, 0);
+            return getToken(Cypher5Parser.LT, 0);
         }
 
         public TerminalNode GT() {
-            return getToken(CypherParser.GT, 0);
+            return getToken(Cypher5Parser.GT, 0);
         }
 
         public WhenComparatorContext(ExtendedWhenContext ctx) {
@@ -11608,7 +11608,7 @@ public class CypherParser extends Parser {
         public ExpressionContext barExp;
 
         public TerminalNode LBRACKET() {
-            return getToken(CypherParser.LBRACKET, 0);
+            return getToken(Cypher5Parser.LBRACKET, 0);
         }
 
         public VariableContext variable() {
@@ -11616,7 +11616,7 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode IN() {
-            return getToken(CypherParser.IN, 0);
+            return getToken(Cypher5Parser.IN, 0);
         }
 
         public List<ExpressionContext> expression() {
@@ -11628,15 +11628,15 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode RBRACKET() {
-            return getToken(CypherParser.RBRACKET, 0);
+            return getToken(Cypher5Parser.RBRACKET, 0);
         }
 
         public TerminalNode BAR() {
-            return getToken(CypherParser.BAR, 0);
+            return getToken(Cypher5Parser.BAR, 0);
         }
 
         public TerminalNode WHERE() {
-            return getToken(CypherParser.WHERE, 0);
+            return getToken(Cypher5Parser.WHERE, 0);
         }
 
         public ListComprehensionContext(ParserRuleContext parent, int invokingState) {
@@ -11722,7 +11722,7 @@ public class CypherParser extends Parser {
         public ExpressionContext barExp;
 
         public TerminalNode LBRACKET() {
-            return getToken(CypherParser.LBRACKET, 0);
+            return getToken(Cypher5Parser.LBRACKET, 0);
         }
 
         public PathPatternNonEmptyContext pathPatternNonEmpty() {
@@ -11730,11 +11730,11 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode BAR() {
-            return getToken(CypherParser.BAR, 0);
+            return getToken(Cypher5Parser.BAR, 0);
         }
 
         public TerminalNode RBRACKET() {
-            return getToken(CypherParser.RBRACKET, 0);
+            return getToken(Cypher5Parser.RBRACKET, 0);
         }
 
         public List<ExpressionContext> expression() {
@@ -11750,11 +11750,11 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode EQ() {
-            return getToken(CypherParser.EQ, 0);
+            return getToken(Cypher5Parser.EQ, 0);
         }
 
         public TerminalNode WHERE() {
-            return getToken(CypherParser.WHERE, 0);
+            return getToken(Cypher5Parser.WHERE, 0);
         }
 
         public PatternComprehensionContext(ParserRuleContext parent, int invokingState) {
@@ -11826,11 +11826,11 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class ReduceExpressionContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode REDUCE() {
-            return getToken(CypherParser.REDUCE, 0);
+            return getToken(Cypher5Parser.REDUCE, 0);
         }
 
         public TerminalNode LPAREN() {
-            return getToken(CypherParser.LPAREN, 0);
+            return getToken(Cypher5Parser.LPAREN, 0);
         }
 
         public List<VariableContext> variable() {
@@ -11842,7 +11842,7 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode EQ() {
-            return getToken(CypherParser.EQ, 0);
+            return getToken(Cypher5Parser.EQ, 0);
         }
 
         public List<ExpressionContext> expression() {
@@ -11854,19 +11854,19 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode COMMA() {
-            return getToken(CypherParser.COMMA, 0);
+            return getToken(Cypher5Parser.COMMA, 0);
         }
 
         public TerminalNode IN() {
-            return getToken(CypherParser.IN, 0);
+            return getToken(Cypher5Parser.IN, 0);
         }
 
         public TerminalNode BAR() {
-            return getToken(CypherParser.BAR, 0);
+            return getToken(Cypher5Parser.BAR, 0);
         }
 
         public TerminalNode RPAREN() {
-            return getToken(CypherParser.RPAREN, 0);
+            return getToken(Cypher5Parser.RPAREN, 0);
         }
 
         public ReduceExpressionContext(ParserRuleContext parent, int invokingState) {
@@ -11926,7 +11926,7 @@ public class CypherParser extends Parser {
         public ExpressionContext whereExp;
 
         public TerminalNode LPAREN() {
-            return getToken(CypherParser.LPAREN, 0);
+            return getToken(Cypher5Parser.LPAREN, 0);
         }
 
         public VariableContext variable() {
@@ -11934,27 +11934,27 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode IN() {
-            return getToken(CypherParser.IN, 0);
+            return getToken(Cypher5Parser.IN, 0);
         }
 
         public TerminalNode RPAREN() {
-            return getToken(CypherParser.RPAREN, 0);
+            return getToken(Cypher5Parser.RPAREN, 0);
         }
 
         public TerminalNode ALL() {
-            return getToken(CypherParser.ALL, 0);
+            return getToken(Cypher5Parser.ALL, 0);
         }
 
         public TerminalNode ANY() {
-            return getToken(CypherParser.ANY, 0);
+            return getToken(Cypher5Parser.ANY, 0);
         }
 
         public TerminalNode NONE() {
-            return getToken(CypherParser.NONE, 0);
+            return getToken(Cypher5Parser.NONE, 0);
         }
 
         public TerminalNode SINGLE() {
-            return getToken(CypherParser.SINGLE, 0);
+            return getToken(Cypher5Parser.SINGLE, 0);
         }
 
         public List<ExpressionContext> expression() {
@@ -11966,7 +11966,7 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode WHERE() {
-            return getToken(CypherParser.WHERE, 0);
+            return getToken(Cypher5Parser.WHERE, 0);
         }
 
         public ListItemsPredicateContext(ParserRuleContext parent, int invokingState) {
@@ -12031,11 +12031,11 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class NormalizeFunctionContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode NORMALIZE() {
-            return getToken(CypherParser.NORMALIZE, 0);
+            return getToken(Cypher5Parser.NORMALIZE, 0);
         }
 
         public TerminalNode LPAREN() {
-            return getToken(CypherParser.LPAREN, 0);
+            return getToken(Cypher5Parser.LPAREN, 0);
         }
 
         public ExpressionContext expression() {
@@ -12043,11 +12043,11 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode RPAREN() {
-            return getToken(CypherParser.RPAREN, 0);
+            return getToken(Cypher5Parser.RPAREN, 0);
         }
 
         public TerminalNode COMMA() {
-            return getToken(CypherParser.COMMA, 0);
+            return getToken(Cypher5Parser.COMMA, 0);
         }
 
         public NormalFormContext normalForm() {
@@ -12108,15 +12108,15 @@ public class CypherParser extends Parser {
         public ExpressionContext trimSource;
 
         public TerminalNode TRIM() {
-            return getToken(CypherParser.TRIM, 0);
+            return getToken(Cypher5Parser.TRIM, 0);
         }
 
         public TerminalNode LPAREN() {
-            return getToken(CypherParser.LPAREN, 0);
+            return getToken(Cypher5Parser.LPAREN, 0);
         }
 
         public TerminalNode RPAREN() {
-            return getToken(CypherParser.RPAREN, 0);
+            return getToken(Cypher5Parser.RPAREN, 0);
         }
 
         public List<ExpressionContext> expression() {
@@ -12128,19 +12128,19 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode FROM() {
-            return getToken(CypherParser.FROM, 0);
+            return getToken(Cypher5Parser.FROM, 0);
         }
 
         public TerminalNode BOTH() {
-            return getToken(CypherParser.BOTH, 0);
+            return getToken(Cypher5Parser.BOTH, 0);
         }
 
         public TerminalNode LEADING() {
-            return getToken(CypherParser.LEADING, 0);
+            return getToken(Cypher5Parser.LEADING, 0);
         }
 
         public TerminalNode TRAILING() {
-            return getToken(CypherParser.TRAILING, 0);
+            return getToken(Cypher5Parser.TRAILING, 0);
         }
 
         public TrimFunctionContext(ParserRuleContext parent, int invokingState) {
@@ -12289,7 +12289,7 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class ParenthesizedExpressionContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode LPAREN() {
-            return getToken(CypherParser.LPAREN, 0);
+            return getToken(Cypher5Parser.LPAREN, 0);
         }
 
         public ExpressionContext expression() {
@@ -12297,7 +12297,7 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode RPAREN() {
-            return getToken(CypherParser.RPAREN, 0);
+            return getToken(Cypher5Parser.RPAREN, 0);
         }
 
         public ParenthesizedExpressionContext(ParserRuleContext parent, int invokingState) {
@@ -12340,11 +12340,11 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode LCURLY() {
-            return getToken(CypherParser.LCURLY, 0);
+            return getToken(Cypher5Parser.LCURLY, 0);
         }
 
         public TerminalNode RCURLY() {
-            return getToken(CypherParser.RCURLY, 0);
+            return getToken(Cypher5Parser.RCURLY, 0);
         }
 
         public List<MapProjectionElementContext> mapProjectionElement() {
@@ -12356,11 +12356,11 @@ public class CypherParser extends Parser {
         }
 
         public List<TerminalNode> COMMA() {
-            return getTokens(CypherParser.COMMA);
+            return getTokens(Cypher5Parser.COMMA);
         }
 
         public TerminalNode COMMA(int i) {
-            return getToken(CypherParser.COMMA, i);
+            return getToken(Cypher5Parser.COMMA, i);
         }
 
         public MapProjectionContext(ParserRuleContext parent, int invokingState) {
@@ -12434,7 +12434,7 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode COLON() {
-            return getToken(CypherParser.COLON, 0);
+            return getToken(Cypher5Parser.COLON, 0);
         }
 
         public ExpressionContext expression() {
@@ -12450,11 +12450,11 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode DOT() {
-            return getToken(CypherParser.DOT, 0);
+            return getToken(Cypher5Parser.DOT, 0);
         }
 
         public TerminalNode TIMES() {
-            return getToken(CypherParser.TIMES, 0);
+            return getToken(Cypher5Parser.TIMES, 0);
         }
 
         public MapProjectionElementContext(ParserRuleContext parent, int invokingState) {
@@ -12522,19 +12522,19 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class CountStarContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode COUNT() {
-            return getToken(CypherParser.COUNT, 0);
+            return getToken(Cypher5Parser.COUNT, 0);
         }
 
         public TerminalNode LPAREN() {
-            return getToken(CypherParser.LPAREN, 0);
+            return getToken(Cypher5Parser.LPAREN, 0);
         }
 
         public TerminalNode TIMES() {
-            return getToken(CypherParser.TIMES, 0);
+            return getToken(Cypher5Parser.TIMES, 0);
         }
 
         public TerminalNode RPAREN() {
-            return getToken(CypherParser.RPAREN, 0);
+            return getToken(Cypher5Parser.RPAREN, 0);
         }
 
         public CountStarContext(ParserRuleContext parent, int invokingState) {
@@ -12575,15 +12575,15 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class ExistsExpressionContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode EXISTS() {
-            return getToken(CypherParser.EXISTS, 0);
+            return getToken(Cypher5Parser.EXISTS, 0);
         }
 
         public TerminalNode LCURLY() {
-            return getToken(CypherParser.LCURLY, 0);
+            return getToken(Cypher5Parser.LCURLY, 0);
         }
 
         public TerminalNode RCURLY() {
-            return getToken(CypherParser.RCURLY, 0);
+            return getToken(Cypher5Parser.RCURLY, 0);
         }
 
         public RegularQueryContext regularQuery() {
@@ -12674,15 +12674,15 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class CountExpressionContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode COUNT() {
-            return getToken(CypherParser.COUNT, 0);
+            return getToken(Cypher5Parser.COUNT, 0);
         }
 
         public TerminalNode LCURLY() {
-            return getToken(CypherParser.LCURLY, 0);
+            return getToken(Cypher5Parser.LCURLY, 0);
         }
 
         public TerminalNode RCURLY() {
-            return getToken(CypherParser.RCURLY, 0);
+            return getToken(Cypher5Parser.RCURLY, 0);
         }
 
         public RegularQueryContext regularQuery() {
@@ -12773,11 +12773,11 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class CollectExpressionContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode COLLECT() {
-            return getToken(CypherParser.COLLECT, 0);
+            return getToken(Cypher5Parser.COLLECT, 0);
         }
 
         public TerminalNode LCURLY() {
-            return getToken(CypherParser.LCURLY, 0);
+            return getToken(Cypher5Parser.LCURLY, 0);
         }
 
         public RegularQueryContext regularQuery() {
@@ -12785,7 +12785,7 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode RCURLY() {
-            return getToken(CypherParser.RCURLY, 0);
+            return getToken(Cypher5Parser.RCURLY, 0);
         }
 
         public CollectExpressionContext(ParserRuleContext parent, int invokingState) {
@@ -12826,23 +12826,23 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class NumberLiteralContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode DECIMAL_DOUBLE() {
-            return getToken(CypherParser.DECIMAL_DOUBLE, 0);
+            return getToken(Cypher5Parser.DECIMAL_DOUBLE, 0);
         }
 
         public TerminalNode UNSIGNED_DECIMAL_INTEGER() {
-            return getToken(CypherParser.UNSIGNED_DECIMAL_INTEGER, 0);
+            return getToken(Cypher5Parser.UNSIGNED_DECIMAL_INTEGER, 0);
         }
 
         public TerminalNode UNSIGNED_HEX_INTEGER() {
-            return getToken(CypherParser.UNSIGNED_HEX_INTEGER, 0);
+            return getToken(Cypher5Parser.UNSIGNED_HEX_INTEGER, 0);
         }
 
         public TerminalNode UNSIGNED_OCTAL_INTEGER() {
-            return getToken(CypherParser.UNSIGNED_OCTAL_INTEGER, 0);
+            return getToken(Cypher5Parser.UNSIGNED_OCTAL_INTEGER, 0);
         }
 
         public TerminalNode MINUS() {
-            return getToken(CypherParser.MINUS, 0);
+            return getToken(Cypher5Parser.MINUS, 0);
         }
 
         public NumberLiteralContext(ParserRuleContext parent, int invokingState) {
@@ -12895,11 +12895,11 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class SignedIntegerLiteralContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode UNSIGNED_DECIMAL_INTEGER() {
-            return getToken(CypherParser.UNSIGNED_DECIMAL_INTEGER, 0);
+            return getToken(Cypher5Parser.UNSIGNED_DECIMAL_INTEGER, 0);
         }
 
         public TerminalNode MINUS() {
-            return getToken(CypherParser.MINUS, 0);
+            return getToken(Cypher5Parser.MINUS, 0);
         }
 
         public SignedIntegerLiteralContext(ParserRuleContext parent, int invokingState) {
@@ -12945,11 +12945,11 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class ListLiteralContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode LBRACKET() {
-            return getToken(CypherParser.LBRACKET, 0);
+            return getToken(Cypher5Parser.LBRACKET, 0);
         }
 
         public TerminalNode RBRACKET() {
-            return getToken(CypherParser.RBRACKET, 0);
+            return getToken(Cypher5Parser.RBRACKET, 0);
         }
 
         public List<ExpressionContext> expression() {
@@ -12961,11 +12961,11 @@ public class CypherParser extends Parser {
         }
 
         public List<TerminalNode> COMMA() {
-            return getTokens(CypherParser.COMMA);
+            return getTokens(Cypher5Parser.COMMA);
         }
 
         public TerminalNode COMMA(int i) {
-            return getToken(CypherParser.COMMA, i);
+            return getToken(Cypher5Parser.COMMA, i);
         }
 
         public ListLiteralContext(ParserRuleContext parent, int invokingState) {
@@ -13070,7 +13070,7 @@ public class CypherParser extends Parser {
         public String paramType;
 
         public TerminalNode DOLLAR() {
-            return getToken(CypherParser.DOLLAR, 0);
+            return getToken(Cypher5Parser.DOLLAR, 0);
         }
 
         public ParameterNameContext parameterName() {
@@ -13122,7 +13122,7 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode UNSIGNED_DECIMAL_INTEGER() {
-            return getToken(CypherParser.UNSIGNED_DECIMAL_INTEGER, 0);
+            return getToken(Cypher5Parser.UNSIGNED_DECIMAL_INTEGER, 0);
         }
 
         public ParameterNameContext(ParserRuleContext parent, int invokingState) {
@@ -13440,11 +13440,11 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode LPAREN() {
-            return getToken(CypherParser.LPAREN, 0);
+            return getToken(Cypher5Parser.LPAREN, 0);
         }
 
         public TerminalNode RPAREN() {
-            return getToken(CypherParser.RPAREN, 0);
+            return getToken(Cypher5Parser.RPAREN, 0);
         }
 
         public List<FunctionArgumentContext> functionArgument() {
@@ -13456,19 +13456,19 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode DISTINCT() {
-            return getToken(CypherParser.DISTINCT, 0);
+            return getToken(Cypher5Parser.DISTINCT, 0);
         }
 
         public TerminalNode ALL() {
-            return getToken(CypherParser.ALL, 0);
+            return getToken(Cypher5Parser.ALL, 0);
         }
 
         public List<TerminalNode> COMMA() {
-            return getTokens(CypherParser.COMMA);
+            return getTokens(Cypher5Parser.COMMA);
         }
 
         public TerminalNode COMMA(int i) {
-            return getToken(CypherParser.COMMA, i);
+            return getToken(Cypher5Parser.COMMA, i);
         }
 
         public FunctionInvocationContext(ParserRuleContext parent, int invokingState) {
@@ -13639,11 +13639,11 @@ public class CypherParser extends Parser {
         }
 
         public List<TerminalNode> DOT() {
-            return getTokens(CypherParser.DOT);
+            return getTokens(Cypher5Parser.DOT);
         }
 
         public TerminalNode DOT(int i) {
-            return getToken(CypherParser.DOT, i);
+            return getToken(Cypher5Parser.DOT, i);
         }
 
         public NamespaceContext(ParserRuleContext parent, int invokingState) {
@@ -13738,11 +13738,11 @@ public class CypherParser extends Parser {
         }
 
         public List<TerminalNode> COMMA() {
-            return getTokens(CypherParser.COMMA);
+            return getTokens(Cypher5Parser.COMMA);
         }
 
         public TerminalNode COMMA(int i) {
-            return getToken(CypherParser.COMMA, i);
+            return getToken(Cypher5Parser.COMMA, i);
         }
 
         public NonEmptyNameListContext(ParserRuleContext parent, int invokingState) {
@@ -13976,7 +13976,7 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class CreateCommandContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode CREATE() {
-            return getToken(CypherParser.CREATE, 0);
+            return getToken(Cypher5Parser.CREATE, 0);
         }
 
         public CreateAliasContext createAlias() {
@@ -14008,11 +14008,11 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode OR() {
-            return getToken(CypherParser.OR, 0);
+            return getToken(Cypher5Parser.OR, 0);
         }
 
         public TerminalNode REPLACE() {
-            return getToken(CypherParser.REPLACE, 0);
+            return getToken(Cypher5Parser.REPLACE, 0);
         }
 
         public CreateCommandContext(ParserRuleContext parent, int invokingState) {
@@ -14115,7 +14115,7 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class DropCommandContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode DROP() {
-            return getToken(CypherParser.DROP, 0);
+            return getToken(Cypher5Parser.DROP, 0);
         }
 
         public DropAliasContext dropAlias() {
@@ -14227,7 +14227,7 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class AlterCommandContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode ALTER() {
-            return getToken(CypherParser.ALTER, 0);
+            return getToken(Cypher5Parser.ALTER, 0);
         }
 
         public AlterAliasContext alterAlias() {
@@ -14318,7 +14318,7 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class RenameCommandContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode RENAME() {
-            return getToken(CypherParser.RENAME, 0);
+            return getToken(Cypher5Parser.RENAME, 0);
         }
 
         public RenameRoleContext renameRole() {
@@ -14389,7 +14389,7 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class ShowCommandContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode SHOW() {
-            return getToken(CypherParser.SHOW, 0);
+            return getToken(Cypher5Parser.SHOW, 0);
         }
 
         public ShowAliasesContext showAliases() {
@@ -14664,7 +14664,7 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode AS() {
-            return getToken(CypherParser.AS, 0);
+            return getToken(Cypher5Parser.AS, 0);
         }
 
         public YieldItemContext(ParserRuleContext parent, int invokingState) {
@@ -14711,7 +14711,7 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class YieldSkipContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode SKIPROWS() {
-            return getToken(CypherParser.SKIPROWS, 0);
+            return getToken(Cypher5Parser.SKIPROWS, 0);
         }
 
         public SignedIntegerLiteralContext signedIntegerLiteral() {
@@ -14752,7 +14752,7 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class YieldLimitContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode LIMITROWS() {
-            return getToken(CypherParser.LIMITROWS, 0);
+            return getToken(Cypher5Parser.LIMITROWS, 0);
         }
 
         public SignedIntegerLiteralContext signedIntegerLiteral() {
@@ -14793,11 +14793,11 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class YieldClauseContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode YIELD() {
-            return getToken(CypherParser.YIELD, 0);
+            return getToken(Cypher5Parser.YIELD, 0);
         }
 
         public TerminalNode TIMES() {
-            return getToken(CypherParser.TIMES, 0);
+            return getToken(Cypher5Parser.TIMES, 0);
         }
 
         public List<YieldItemContext> yieldItem() {
@@ -14825,11 +14825,11 @@ public class CypherParser extends Parser {
         }
 
         public List<TerminalNode> COMMA() {
-            return getTokens(CypherParser.COMMA);
+            return getTokens(Cypher5Parser.COMMA);
         }
 
         public TerminalNode COMMA(int i) {
-            return getToken(CypherParser.COMMA, i);
+            return getToken(Cypher5Parser.COMMA, i);
         }
 
         public YieldClauseContext(ParserRuleContext parent, int invokingState) {
@@ -15196,15 +15196,15 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class ShowBriefAndYieldContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode BRIEF() {
-            return getToken(CypherParser.BRIEF, 0);
+            return getToken(Cypher5Parser.BRIEF, 0);
         }
 
         public TerminalNode VERBOSE() {
-            return getToken(CypherParser.VERBOSE, 0);
+            return getToken(Cypher5Parser.VERBOSE, 0);
         }
 
         public TerminalNode OUTPUT() {
-            return getToken(CypherParser.OUTPUT, 0);
+            return getToken(Cypher5Parser.OUTPUT, 0);
         }
 
         public YieldClauseContext yieldClause() {
@@ -15304,27 +15304,27 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode FULLTEXT() {
-            return getToken(CypherParser.FULLTEXT, 0);
+            return getToken(Cypher5Parser.FULLTEXT, 0);
         }
 
         public TerminalNode LOOKUP() {
-            return getToken(CypherParser.LOOKUP, 0);
+            return getToken(Cypher5Parser.LOOKUP, 0);
         }
 
         public TerminalNode POINT() {
-            return getToken(CypherParser.POINT, 0);
+            return getToken(Cypher5Parser.POINT, 0);
         }
 
         public TerminalNode RANGE() {
-            return getToken(CypherParser.RANGE, 0);
+            return getToken(Cypher5Parser.RANGE, 0);
         }
 
         public TerminalNode TEXT() {
-            return getToken(CypherParser.TEXT, 0);
+            return getToken(Cypher5Parser.TEXT, 0);
         }
 
         public TerminalNode VECTOR() {
-            return getToken(CypherParser.VECTOR, 0);
+            return getToken(Cypher5Parser.VECTOR, 0);
         }
 
         public ShowIndexesAllowBriefContext showIndexesAllowBrief() {
@@ -15332,11 +15332,11 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode ALL() {
-            return getToken(CypherParser.ALL, 0);
+            return getToken(Cypher5Parser.ALL, 0);
         }
 
         public TerminalNode BTREE() {
-            return getToken(CypherParser.BTREE, 0);
+            return getToken(Cypher5Parser.BTREE, 0);
         }
 
         public ShowIndexCommandContext(ParserRuleContext parent, int invokingState) {
@@ -15570,7 +15570,7 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class ShowConstraintUniqueContext extends ShowConstraintCommandContext {
         public TerminalNode UNIQUE() {
-            return getToken(CypherParser.UNIQUE, 0);
+            return getToken(Cypher5Parser.UNIQUE, 0);
         }
 
         public ShowConstraintsAllowYieldContext showConstraintsAllowYield() {
@@ -15578,15 +15578,15 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode NODE() {
-            return getToken(CypherParser.NODE, 0);
+            return getToken(Cypher5Parser.NODE, 0);
         }
 
         public TerminalNode RELATIONSHIP() {
-            return getToken(CypherParser.RELATIONSHIP, 0);
+            return getToken(Cypher5Parser.RELATIONSHIP, 0);
         }
 
         public TerminalNode REL() {
-            return getToken(CypherParser.REL, 0);
+            return getToken(Cypher5Parser.REL, 0);
         }
 
         public ShowConstraintUniqueContext(ShowConstraintCommandContext ctx) {
@@ -15605,15 +15605,15 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode NODE() {
-            return getToken(CypherParser.NODE, 0);
+            return getToken(Cypher5Parser.NODE, 0);
         }
 
         public TerminalNode RELATIONSHIP() {
-            return getToken(CypherParser.RELATIONSHIP, 0);
+            return getToken(Cypher5Parser.RELATIONSHIP, 0);
         }
 
         public TerminalNode REL() {
-            return getToken(CypherParser.REL, 0);
+            return getToken(Cypher5Parser.REL, 0);
         }
 
         public ShowConstraintMultiContext(ShowConstraintCommandContext ctx) {
@@ -15624,11 +15624,11 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class ShowConstraintRelExistContext extends ShowConstraintCommandContext {
         public TerminalNode REL() {
-            return getToken(CypherParser.REL, 0);
+            return getToken(Cypher5Parser.REL, 0);
         }
 
         public TerminalNode EXIST() {
-            return getToken(CypherParser.EXIST, 0);
+            return getToken(Cypher5Parser.EXIST, 0);
         }
 
         public ShowConstraintsAllowYieldContext showConstraintsAllowYield() {
@@ -15643,7 +15643,7 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class ShowConstraintOldExistsContext extends ShowConstraintCommandContext {
         public TerminalNode EXISTS() {
-            return getToken(CypherParser.EXISTS, 0);
+            return getToken(Cypher5Parser.EXISTS, 0);
         }
 
         public ShowConstraintsAllowBriefContext showConstraintsAllowBrief() {
@@ -15651,11 +15651,11 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode NODE() {
-            return getToken(CypherParser.NODE, 0);
+            return getToken(Cypher5Parser.NODE, 0);
         }
 
         public TerminalNode RELATIONSHIP() {
-            return getToken(CypherParser.RELATIONSHIP, 0);
+            return getToken(Cypher5Parser.RELATIONSHIP, 0);
         }
 
         public ShowConstraintOldExistsContext(ShowConstraintCommandContext ctx) {
@@ -15681,7 +15681,7 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class ShowConstraintKeyContext extends ShowConstraintCommandContext {
         public TerminalNode KEY() {
-            return getToken(CypherParser.KEY, 0);
+            return getToken(Cypher5Parser.KEY, 0);
         }
 
         public ShowConstraintsAllowYieldContext showConstraintsAllowYield() {
@@ -15689,11 +15689,11 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode RELATIONSHIP() {
-            return getToken(CypherParser.RELATIONSHIP, 0);
+            return getToken(Cypher5Parser.RELATIONSHIP, 0);
         }
 
         public TerminalNode REL() {
-            return getToken(CypherParser.REL, 0);
+            return getToken(Cypher5Parser.REL, 0);
         }
 
         public ShowConstraintKeyContext(ShowConstraintCommandContext ctx) {
@@ -15854,7 +15854,7 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class ConstraintAllowYieldTypeContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode UNIQUENESS() {
-            return getToken(CypherParser.UNIQUENESS, 0);
+            return getToken(Cypher5Parser.UNIQUENESS, 0);
         }
 
         public ConstraintExistTypeContext constraintExistType() {
@@ -15862,11 +15862,11 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode PROPERTY() {
-            return getToken(CypherParser.PROPERTY, 0);
+            return getToken(Cypher5Parser.PROPERTY, 0);
         }
 
         public TerminalNode TYPE() {
-            return getToken(CypherParser.TYPE, 0);
+            return getToken(Cypher5Parser.TYPE, 0);
         }
 
         public ConstraintAllowYieldTypeContext(ParserRuleContext parent, int invokingState) {
@@ -15923,15 +15923,15 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class ConstraintExistTypeContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode EXISTENCE() {
-            return getToken(CypherParser.EXISTENCE, 0);
+            return getToken(Cypher5Parser.EXISTENCE, 0);
         }
 
         public TerminalNode PROPERTY() {
-            return getToken(CypherParser.PROPERTY, 0);
+            return getToken(Cypher5Parser.PROPERTY, 0);
         }
 
         public TerminalNode EXIST() {
-            return getToken(CypherParser.EXIST, 0);
+            return getToken(Cypher5Parser.EXIST, 0);
         }
 
         public ConstraintExistTypeContext(ParserRuleContext parent, int invokingState) {
@@ -15990,27 +15990,27 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class ConstraintBriefAndYieldTypeContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode ALL() {
-            return getToken(CypherParser.ALL, 0);
+            return getToken(Cypher5Parser.ALL, 0);
         }
 
         public TerminalNode UNIQUE() {
-            return getToken(CypherParser.UNIQUE, 0);
+            return getToken(Cypher5Parser.UNIQUE, 0);
         }
 
         public TerminalNode EXIST() {
-            return getToken(CypherParser.EXIST, 0);
+            return getToken(Cypher5Parser.EXIST, 0);
         }
 
         public TerminalNode NODE() {
-            return getToken(CypherParser.NODE, 0);
+            return getToken(Cypher5Parser.NODE, 0);
         }
 
         public TerminalNode KEY() {
-            return getToken(CypherParser.KEY, 0);
+            return getToken(Cypher5Parser.KEY, 0);
         }
 
         public TerminalNode RELATIONSHIP() {
-            return getToken(CypherParser.RELATIONSHIP, 0);
+            return getToken(Cypher5Parser.RELATIONSHIP, 0);
         }
 
         public ConstraintBriefAndYieldTypeContext(ParserRuleContext parent, int invokingState) {
@@ -16165,15 +16165,15 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode BRIEF() {
-            return getToken(CypherParser.BRIEF, 0);
+            return getToken(Cypher5Parser.BRIEF, 0);
         }
 
         public TerminalNode VERBOSE() {
-            return getToken(CypherParser.VERBOSE, 0);
+            return getToken(Cypher5Parser.VERBOSE, 0);
         }
 
         public TerminalNode OUTPUT() {
-            return getToken(CypherParser.OUTPUT, 0);
+            return getToken(Cypher5Parser.OUTPUT, 0);
         }
 
         public ShowConstraintsAllowBriefContext(ParserRuleContext parent, int invokingState) {
@@ -16307,11 +16307,11 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class ShowProceduresContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode PROCEDURE() {
-            return getToken(CypherParser.PROCEDURE, 0);
+            return getToken(Cypher5Parser.PROCEDURE, 0);
         }
 
         public TerminalNode PROCEDURES() {
-            return getToken(CypherParser.PROCEDURES, 0);
+            return getToken(Cypher5Parser.PROCEDURES, 0);
         }
 
         public ExecutableByContext executableBy() {
@@ -16486,11 +16486,11 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class FunctionTokenContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode FUNCTION() {
-            return getToken(CypherParser.FUNCTION, 0);
+            return getToken(Cypher5Parser.FUNCTION, 0);
         }
 
         public TerminalNode FUNCTIONS() {
-            return getToken(CypherParser.FUNCTIONS, 0);
+            return getToken(Cypher5Parser.FUNCTIONS, 0);
         }
 
         public FunctionTokenContext(ParserRuleContext parent, int invokingState) {
@@ -16533,19 +16533,19 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class ExecutableByContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode EXECUTABLE() {
-            return getToken(CypherParser.EXECUTABLE, 0);
+            return getToken(Cypher5Parser.EXECUTABLE, 0);
         }
 
         public TerminalNode BY() {
-            return getToken(CypherParser.BY, 0);
+            return getToken(Cypher5Parser.BY, 0);
         }
 
         public TerminalNode CURRENT() {
-            return getToken(CypherParser.CURRENT, 0);
+            return getToken(Cypher5Parser.CURRENT, 0);
         }
 
         public TerminalNode USER() {
-            return getToken(CypherParser.USER, 0);
+            return getToken(Cypher5Parser.USER, 0);
         }
 
         public SymbolicNameStringContext symbolicNameString() {
@@ -16612,23 +16612,23 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class ShowFunctionsTypeContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode ALL() {
-            return getToken(CypherParser.ALL, 0);
+            return getToken(Cypher5Parser.ALL, 0);
         }
 
         public TerminalNode BUILT() {
-            return getToken(CypherParser.BUILT, 0);
+            return getToken(Cypher5Parser.BUILT, 0);
         }
 
         public TerminalNode IN() {
-            return getToken(CypherParser.IN, 0);
+            return getToken(Cypher5Parser.IN, 0);
         }
 
         public TerminalNode USER() {
-            return getToken(CypherParser.USER, 0);
+            return getToken(Cypher5Parser.USER, 0);
         }
 
         public TerminalNode DEFINED() {
-            return getToken(CypherParser.DEFINED, 0);
+            return getToken(Cypher5Parser.DEFINED, 0);
         }
 
         public ShowFunctionsTypeContext(ParserRuleContext parent, int invokingState) {
@@ -16730,7 +16730,7 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class TerminateCommandContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode TERMINATE() {
-            return getToken(CypherParser.TERMINATE, 0);
+            return getToken(Cypher5Parser.TERMINATE, 0);
         }
 
         public TerminateTransactionsContext terminateTransactions() {
@@ -16853,11 +16853,11 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class SettingTokenContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode SETTING() {
-            return getToken(CypherParser.SETTING, 0);
+            return getToken(Cypher5Parser.SETTING, 0);
         }
 
         public TerminalNode SETTINGS() {
-            return getToken(CypherParser.SETTINGS, 0);
+            return getToken(Cypher5Parser.SETTINGS, 0);
         }
 
         public SettingTokenContext(ParserRuleContext parent, int invokingState) {
@@ -17037,7 +17037,7 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class ComposableShowCommandClausesContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode SHOW() {
-            return getToken(CypherParser.SHOW, 0);
+            return getToken(Cypher5Parser.SHOW, 0);
         }
 
         public ShowIndexCommandContext showIndexCommand() {
@@ -17196,11 +17196,11 @@ public class CypherParser extends Parser {
         }
 
         public List<TerminalNode> BAR() {
-            return getTokens(CypherParser.BAR);
+            return getTokens(Cypher5Parser.BAR);
         }
 
         public TerminalNode BAR(int i) {
-            return getToken(CypherParser.BAR, i);
+            return getToken(Cypher5Parser.BAR, i);
         }
 
         public TypeContext(ParserRuleContext parent, int invokingState) {
@@ -17326,111 +17326,111 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class TypeNameContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode NOTHING() {
-            return getToken(CypherParser.NOTHING, 0);
+            return getToken(Cypher5Parser.NOTHING, 0);
         }
 
         public TerminalNode NULL() {
-            return getToken(CypherParser.NULL, 0);
+            return getToken(Cypher5Parser.NULL, 0);
         }
 
         public TerminalNode BOOL() {
-            return getToken(CypherParser.BOOL, 0);
+            return getToken(Cypher5Parser.BOOL, 0);
         }
 
         public TerminalNode BOOLEAN() {
-            return getToken(CypherParser.BOOLEAN, 0);
+            return getToken(Cypher5Parser.BOOLEAN, 0);
         }
 
         public TerminalNode VARCHAR() {
-            return getToken(CypherParser.VARCHAR, 0);
+            return getToken(Cypher5Parser.VARCHAR, 0);
         }
 
         public TerminalNode STRING() {
-            return getToken(CypherParser.STRING, 0);
+            return getToken(Cypher5Parser.STRING, 0);
         }
 
         public TerminalNode INT() {
-            return getToken(CypherParser.INT, 0);
+            return getToken(Cypher5Parser.INT, 0);
         }
 
         public TerminalNode INTEGER() {
-            return getToken(CypherParser.INTEGER, 0);
+            return getToken(Cypher5Parser.INTEGER, 0);
         }
 
         public TerminalNode SIGNED() {
-            return getToken(CypherParser.SIGNED, 0);
+            return getToken(Cypher5Parser.SIGNED, 0);
         }
 
         public TerminalNode FLOAT() {
-            return getToken(CypherParser.FLOAT, 0);
+            return getToken(Cypher5Parser.FLOAT, 0);
         }
 
         public TerminalNode DATE() {
-            return getToken(CypherParser.DATE, 0);
+            return getToken(Cypher5Parser.DATE, 0);
         }
 
         public TerminalNode LOCAL() {
-            return getToken(CypherParser.LOCAL, 0);
+            return getToken(Cypher5Parser.LOCAL, 0);
         }
 
         public TerminalNode TIME() {
-            return getToken(CypherParser.TIME, 0);
+            return getToken(Cypher5Parser.TIME, 0);
         }
 
         public TerminalNode DATETIME() {
-            return getToken(CypherParser.DATETIME, 0);
+            return getToken(Cypher5Parser.DATETIME, 0);
         }
 
         public TerminalNode ZONED() {
-            return getToken(CypherParser.ZONED, 0);
+            return getToken(Cypher5Parser.ZONED, 0);
         }
 
         public TerminalNode WITHOUT() {
-            return getToken(CypherParser.WITHOUT, 0);
+            return getToken(Cypher5Parser.WITHOUT, 0);
         }
 
         public TerminalNode TIMEZONE() {
-            return getToken(CypherParser.TIMEZONE, 0);
+            return getToken(Cypher5Parser.TIMEZONE, 0);
         }
 
         public TerminalNode WITH() {
-            return getToken(CypherParser.WITH, 0);
+            return getToken(Cypher5Parser.WITH, 0);
         }
 
         public TerminalNode TIMESTAMP() {
-            return getToken(CypherParser.TIMESTAMP, 0);
+            return getToken(Cypher5Parser.TIMESTAMP, 0);
         }
 
         public TerminalNode DURATION() {
-            return getToken(CypherParser.DURATION, 0);
+            return getToken(Cypher5Parser.DURATION, 0);
         }
 
         public TerminalNode POINT() {
-            return getToken(CypherParser.POINT, 0);
+            return getToken(Cypher5Parser.POINT, 0);
         }
 
         public TerminalNode NODE() {
-            return getToken(CypherParser.NODE, 0);
+            return getToken(Cypher5Parser.NODE, 0);
         }
 
         public TerminalNode VERTEX() {
-            return getToken(CypherParser.VERTEX, 0);
+            return getToken(Cypher5Parser.VERTEX, 0);
         }
 
         public TerminalNode RELATIONSHIP() {
-            return getToken(CypherParser.RELATIONSHIP, 0);
+            return getToken(Cypher5Parser.RELATIONSHIP, 0);
         }
 
         public TerminalNode EDGE() {
-            return getToken(CypherParser.EDGE, 0);
+            return getToken(Cypher5Parser.EDGE, 0);
         }
 
         public TerminalNode MAP() {
-            return getToken(CypherParser.MAP, 0);
+            return getToken(Cypher5Parser.MAP, 0);
         }
 
         public TerminalNode LT() {
-            return getToken(CypherParser.LT, 0);
+            return getToken(Cypher5Parser.LT, 0);
         }
 
         public TypeContext type() {
@@ -17438,35 +17438,35 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode GT() {
-            return getToken(CypherParser.GT, 0);
+            return getToken(Cypher5Parser.GT, 0);
         }
 
         public TerminalNode LIST() {
-            return getToken(CypherParser.LIST, 0);
+            return getToken(Cypher5Parser.LIST, 0);
         }
 
         public TerminalNode ARRAY() {
-            return getToken(CypherParser.ARRAY, 0);
+            return getToken(Cypher5Parser.ARRAY, 0);
         }
 
         public TerminalNode PATH() {
-            return getToken(CypherParser.PATH, 0);
+            return getToken(Cypher5Parser.PATH, 0);
         }
 
         public TerminalNode PATHS() {
-            return getToken(CypherParser.PATHS, 0);
+            return getToken(Cypher5Parser.PATHS, 0);
         }
 
         public TerminalNode PROPERTY() {
-            return getToken(CypherParser.PROPERTY, 0);
+            return getToken(Cypher5Parser.PROPERTY, 0);
         }
 
         public TerminalNode VALUE() {
-            return getToken(CypherParser.VALUE, 0);
+            return getToken(Cypher5Parser.VALUE, 0);
         }
 
         public TerminalNode ANY() {
-            return getToken(CypherParser.ANY, 0);
+            return getToken(Cypher5Parser.ANY, 0);
         }
 
         public TypeNameContext(ParserRuleContext parent, int invokingState) {
@@ -17842,15 +17842,15 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class TypeNullabilityContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode NOT() {
-            return getToken(CypherParser.NOT, 0);
+            return getToken(Cypher5Parser.NOT, 0);
         }
 
         public TerminalNode NULL() {
-            return getToken(CypherParser.NULL, 0);
+            return getToken(Cypher5Parser.NULL, 0);
         }
 
         public TerminalNode EXCLAMATION_MARK() {
-            return getToken(CypherParser.EXCLAMATION_MARK, 0);
+            return getToken(Cypher5Parser.EXCLAMATION_MARK, 0);
         }
 
         public TypeNullabilityContext(ParserRuleContext parent, int invokingState) {
@@ -17902,11 +17902,11 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class TypeListSuffixContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode LIST() {
-            return getToken(CypherParser.LIST, 0);
+            return getToken(Cypher5Parser.LIST, 0);
         }
 
         public TerminalNode ARRAY() {
-            return getToken(CypherParser.ARRAY, 0);
+            return getToken(Cypher5Parser.ARRAY, 0);
         }
 
         public TypeNullabilityContext typeNullability() {
@@ -17962,7 +17962,7 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class CommandNodePatternContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode LPAREN() {
-            return getToken(CypherParser.LPAREN, 0);
+            return getToken(Cypher5Parser.LPAREN, 0);
         }
 
         public VariableContext variable() {
@@ -17974,7 +17974,7 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode RPAREN() {
-            return getToken(CypherParser.RPAREN, 0);
+            return getToken(Cypher5Parser.RPAREN, 0);
         }
 
         public CommandNodePatternContext(ParserRuleContext parent, int invokingState) {
@@ -18015,19 +18015,19 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class CommandRelPatternContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public List<TerminalNode> LPAREN() {
-            return getTokens(CypherParser.LPAREN);
+            return getTokens(Cypher5Parser.LPAREN);
         }
 
         public TerminalNode LPAREN(int i) {
-            return getToken(CypherParser.LPAREN, i);
+            return getToken(Cypher5Parser.LPAREN, i);
         }
 
         public List<TerminalNode> RPAREN() {
-            return getTokens(CypherParser.RPAREN);
+            return getTokens(Cypher5Parser.RPAREN);
         }
 
         public TerminalNode RPAREN(int i) {
-            return getToken(CypherParser.RPAREN, i);
+            return getToken(Cypher5Parser.RPAREN, i);
         }
 
         public List<ArrowLineContext> arrowLine() {
@@ -18039,7 +18039,7 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode LBRACKET() {
-            return getToken(CypherParser.LBRACKET, 0);
+            return getToken(Cypher5Parser.LBRACKET, 0);
         }
 
         public VariableContext variable() {
@@ -18051,7 +18051,7 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode RBRACKET() {
-            return getToken(CypherParser.RBRACKET, 0);
+            return getToken(Cypher5Parser.RBRACKET, 0);
         }
 
         public LeftArrowContext leftArrow() {
@@ -18133,7 +18133,7 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class CreateConstraintContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode CONSTRAINT() {
-            return getToken(CypherParser.CONSTRAINT, 0);
+            return getToken(Cypher5Parser.CONSTRAINT, 0);
         }
 
         public ConstraintTypeContext constraintType() {
@@ -18141,11 +18141,11 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode ON() {
-            return getToken(CypherParser.ON, 0);
+            return getToken(Cypher5Parser.ON, 0);
         }
 
         public TerminalNode FOR() {
-            return getToken(CypherParser.FOR, 0);
+            return getToken(Cypher5Parser.FOR, 0);
         }
 
         public CommandNodePatternContext commandNodePattern() {
@@ -18161,15 +18161,15 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode IF() {
-            return getToken(CypherParser.IF, 0);
+            return getToken(Cypher5Parser.IF, 0);
         }
 
         public TerminalNode NOT() {
-            return getToken(CypherParser.NOT, 0);
+            return getToken(Cypher5Parser.NOT, 0);
         }
 
         public TerminalNode EXISTS() {
-            return getToken(CypherParser.EXISTS, 0);
+            return getToken(Cypher5Parser.EXISTS, 0);
         }
 
         public CommandOptionsContext commandOptions() {
@@ -18295,23 +18295,23 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode REQUIRE() {
-            return getToken(CypherParser.REQUIRE, 0);
+            return getToken(Cypher5Parser.REQUIRE, 0);
         }
 
         public TerminalNode ASSERT() {
-            return getToken(CypherParser.ASSERT, 0);
+            return getToken(Cypher5Parser.ASSERT, 0);
         }
 
         public TerminalNode COLONCOLON() {
-            return getToken(CypherParser.COLONCOLON, 0);
+            return getToken(Cypher5Parser.COLONCOLON, 0);
         }
 
         public TerminalNode IS() {
-            return getToken(CypherParser.IS, 0);
+            return getToken(Cypher5Parser.IS, 0);
         }
 
         public TerminalNode TYPED() {
-            return getToken(CypherParser.TYPED, 0);
+            return getToken(Cypher5Parser.TYPED, 0);
         }
 
         public ConstraintTypedContext(ConstraintTypeContext ctx) {
@@ -18322,11 +18322,11 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class ConstraintExistsContext extends ConstraintTypeContext {
         public TerminalNode ASSERT() {
-            return getToken(CypherParser.ASSERT, 0);
+            return getToken(Cypher5Parser.ASSERT, 0);
         }
 
         public TerminalNode EXISTS() {
-            return getToken(CypherParser.EXISTS, 0);
+            return getToken(Cypher5Parser.EXISTS, 0);
         }
 
         public PropertyListContext propertyList() {
@@ -18345,31 +18345,31 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode IS() {
-            return getToken(CypherParser.IS, 0);
+            return getToken(Cypher5Parser.IS, 0);
         }
 
         public TerminalNode KEY() {
-            return getToken(CypherParser.KEY, 0);
+            return getToken(Cypher5Parser.KEY, 0);
         }
 
         public TerminalNode REQUIRE() {
-            return getToken(CypherParser.REQUIRE, 0);
+            return getToken(Cypher5Parser.REQUIRE, 0);
         }
 
         public TerminalNode ASSERT() {
-            return getToken(CypherParser.ASSERT, 0);
+            return getToken(Cypher5Parser.ASSERT, 0);
         }
 
         public TerminalNode NODE() {
-            return getToken(CypherParser.NODE, 0);
+            return getToken(Cypher5Parser.NODE, 0);
         }
 
         public TerminalNode RELATIONSHIP() {
-            return getToken(CypherParser.RELATIONSHIP, 0);
+            return getToken(Cypher5Parser.RELATIONSHIP, 0);
         }
 
         public TerminalNode REL() {
-            return getToken(CypherParser.REL, 0);
+            return getToken(Cypher5Parser.REL, 0);
         }
 
         public ConstraintKeyContext(ConstraintTypeContext ctx) {
@@ -18384,23 +18384,23 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode IS() {
-            return getToken(CypherParser.IS, 0);
+            return getToken(Cypher5Parser.IS, 0);
         }
 
         public TerminalNode NOT() {
-            return getToken(CypherParser.NOT, 0);
+            return getToken(Cypher5Parser.NOT, 0);
         }
 
         public TerminalNode NULL() {
-            return getToken(CypherParser.NULL, 0);
+            return getToken(Cypher5Parser.NULL, 0);
         }
 
         public TerminalNode REQUIRE() {
-            return getToken(CypherParser.REQUIRE, 0);
+            return getToken(Cypher5Parser.REQUIRE, 0);
         }
 
         public TerminalNode ASSERT() {
-            return getToken(CypherParser.ASSERT, 0);
+            return getToken(Cypher5Parser.ASSERT, 0);
         }
 
         public ConstraintIsNotNullContext(ConstraintTypeContext ctx) {
@@ -18415,31 +18415,31 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode IS() {
-            return getToken(CypherParser.IS, 0);
+            return getToken(Cypher5Parser.IS, 0);
         }
 
         public TerminalNode UNIQUE() {
-            return getToken(CypherParser.UNIQUE, 0);
+            return getToken(Cypher5Parser.UNIQUE, 0);
         }
 
         public TerminalNode REQUIRE() {
-            return getToken(CypherParser.REQUIRE, 0);
+            return getToken(Cypher5Parser.REQUIRE, 0);
         }
 
         public TerminalNode ASSERT() {
-            return getToken(CypherParser.ASSERT, 0);
+            return getToken(Cypher5Parser.ASSERT, 0);
         }
 
         public TerminalNode NODE() {
-            return getToken(CypherParser.NODE, 0);
+            return getToken(Cypher5Parser.NODE, 0);
         }
 
         public TerminalNode RELATIONSHIP() {
-            return getToken(CypherParser.RELATIONSHIP, 0);
+            return getToken(Cypher5Parser.RELATIONSHIP, 0);
         }
 
         public TerminalNode REL() {
-            return getToken(CypherParser.REL, 0);
+            return getToken(Cypher5Parser.REL, 0);
         }
 
         public ConstraintIsUniqueContext(ConstraintTypeContext ctx) {
@@ -18628,15 +18628,15 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class DropConstraintContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode CONSTRAINT() {
-            return getToken(CypherParser.CONSTRAINT, 0);
+            return getToken(Cypher5Parser.CONSTRAINT, 0);
         }
 
         public TerminalNode ON() {
-            return getToken(CypherParser.ON, 0);
+            return getToken(Cypher5Parser.ON, 0);
         }
 
         public TerminalNode ASSERT() {
-            return getToken(CypherParser.ASSERT, 0);
+            return getToken(Cypher5Parser.ASSERT, 0);
         }
 
         public SymbolicNameOrStringParameterContext symbolicNameOrStringParameter() {
@@ -18652,7 +18652,7 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode EXISTS() {
-            return getToken(CypherParser.EXISTS, 0);
+            return getToken(Cypher5Parser.EXISTS, 0);
         }
 
         public PropertyListContext propertyList() {
@@ -18660,31 +18660,31 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode IS() {
-            return getToken(CypherParser.IS, 0);
+            return getToken(Cypher5Parser.IS, 0);
         }
 
         public TerminalNode IF() {
-            return getToken(CypherParser.IF, 0);
+            return getToken(Cypher5Parser.IF, 0);
         }
 
         public TerminalNode UNIQUE() {
-            return getToken(CypherParser.UNIQUE, 0);
+            return getToken(Cypher5Parser.UNIQUE, 0);
         }
 
         public TerminalNode NODE() {
-            return getToken(CypherParser.NODE, 0);
+            return getToken(Cypher5Parser.NODE, 0);
         }
 
         public TerminalNode KEY() {
-            return getToken(CypherParser.KEY, 0);
+            return getToken(Cypher5Parser.KEY, 0);
         }
 
         public TerminalNode NOT() {
-            return getToken(CypherParser.NOT, 0);
+            return getToken(Cypher5Parser.NOT, 0);
         }
 
         public TerminalNode NULL() {
-            return getToken(CypherParser.NULL, 0);
+            return getToken(Cypher5Parser.NULL, 0);
         }
 
         public DropConstraintContext(ParserRuleContext parent, int invokingState) {
@@ -18813,11 +18813,11 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class CreateIndexContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode BTREE() {
-            return getToken(CypherParser.BTREE, 0);
+            return getToken(Cypher5Parser.BTREE, 0);
         }
 
         public TerminalNode INDEX() {
-            return getToken(CypherParser.INDEX, 0);
+            return getToken(Cypher5Parser.INDEX, 0);
         }
 
         public CreateIndex_Context createIndex_() {
@@ -18825,23 +18825,23 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode RANGE() {
-            return getToken(CypherParser.RANGE, 0);
+            return getToken(Cypher5Parser.RANGE, 0);
         }
 
         public TerminalNode TEXT() {
-            return getToken(CypherParser.TEXT, 0);
+            return getToken(Cypher5Parser.TEXT, 0);
         }
 
         public TerminalNode POINT() {
-            return getToken(CypherParser.POINT, 0);
+            return getToken(Cypher5Parser.POINT, 0);
         }
 
         public TerminalNode VECTOR() {
-            return getToken(CypherParser.VECTOR, 0);
+            return getToken(Cypher5Parser.VECTOR, 0);
         }
 
         public TerminalNode LOOKUP() {
-            return getToken(CypherParser.LOOKUP, 0);
+            return getToken(Cypher5Parser.LOOKUP, 0);
         }
 
         public CreateLookupIndexContext createLookupIndex() {
@@ -18849,7 +18849,7 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode FULLTEXT() {
-            return getToken(CypherParser.FULLTEXT, 0);
+            return getToken(Cypher5Parser.FULLTEXT, 0);
         }
 
         public CreateFulltextIndexContext createFulltextIndex() {
@@ -18857,7 +18857,7 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode ON() {
-            return getToken(CypherParser.ON, 0);
+            return getToken(Cypher5Parser.ON, 0);
         }
 
         public OldCreateIndexContext oldCreateIndex() {
@@ -19003,7 +19003,7 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode LPAREN() {
-            return getToken(CypherParser.LPAREN, 0);
+            return getToken(Cypher5Parser.LPAREN, 0);
         }
 
         public NonEmptyNameListContext nonEmptyNameList() {
@@ -19011,7 +19011,7 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode RPAREN() {
-            return getToken(CypherParser.RPAREN, 0);
+            return getToken(Cypher5Parser.RPAREN, 0);
         }
 
         public OldCreateIndexContext(ParserRuleContext parent, int invokingState) {
@@ -19052,11 +19052,11 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class CreateIndex_Context extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode FOR() {
-            return getToken(CypherParser.FOR, 0);
+            return getToken(Cypher5Parser.FOR, 0);
         }
 
         public TerminalNode ON() {
-            return getToken(CypherParser.ON, 0);
+            return getToken(Cypher5Parser.ON, 0);
         }
 
         public PropertyListContext propertyList() {
@@ -19076,15 +19076,15 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode IF() {
-            return getToken(CypherParser.IF, 0);
+            return getToken(Cypher5Parser.IF, 0);
         }
 
         public TerminalNode NOT() {
-            return getToken(CypherParser.NOT, 0);
+            return getToken(Cypher5Parser.NOT, 0);
         }
 
         public TerminalNode EXISTS() {
-            return getToken(CypherParser.EXISTS, 0);
+            return getToken(Cypher5Parser.EXISTS, 0);
         }
 
         public CommandOptionsContext commandOptions() {
@@ -19177,19 +19177,19 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class CreateFulltextIndexContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode FOR() {
-            return getToken(CypherParser.FOR, 0);
+            return getToken(Cypher5Parser.FOR, 0);
         }
 
         public TerminalNode ON() {
-            return getToken(CypherParser.ON, 0);
+            return getToken(Cypher5Parser.ON, 0);
         }
 
         public TerminalNode EACH() {
-            return getToken(CypherParser.EACH, 0);
+            return getToken(Cypher5Parser.EACH, 0);
         }
 
         public TerminalNode LBRACKET() {
-            return getToken(CypherParser.LBRACKET, 0);
+            return getToken(Cypher5Parser.LBRACKET, 0);
         }
 
         public EnclosedPropertyListContext enclosedPropertyList() {
@@ -19197,7 +19197,7 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode RBRACKET() {
-            return getToken(CypherParser.RBRACKET, 0);
+            return getToken(Cypher5Parser.RBRACKET, 0);
         }
 
         public FulltextNodePatternContext fulltextNodePattern() {
@@ -19213,15 +19213,15 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode IF() {
-            return getToken(CypherParser.IF, 0);
+            return getToken(Cypher5Parser.IF, 0);
         }
 
         public TerminalNode NOT() {
-            return getToken(CypherParser.NOT, 0);
+            return getToken(Cypher5Parser.NOT, 0);
         }
 
         public TerminalNode EXISTS() {
-            return getToken(CypherParser.EXISTS, 0);
+            return getToken(Cypher5Parser.EXISTS, 0);
         }
 
         public CommandOptionsContext commandOptions() {
@@ -19320,7 +19320,7 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class FulltextNodePatternContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode LPAREN() {
-            return getToken(CypherParser.LPAREN, 0);
+            return getToken(Cypher5Parser.LPAREN, 0);
         }
 
         public VariableContext variable() {
@@ -19328,7 +19328,7 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode COLON() {
-            return getToken(CypherParser.COLON, 0);
+            return getToken(Cypher5Parser.COLON, 0);
         }
 
         public List<SymbolicNameStringContext> symbolicNameString() {
@@ -19340,15 +19340,15 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode RPAREN() {
-            return getToken(CypherParser.RPAREN, 0);
+            return getToken(Cypher5Parser.RPAREN, 0);
         }
 
         public List<TerminalNode> BAR() {
-            return getTokens(CypherParser.BAR);
+            return getTokens(Cypher5Parser.BAR);
         }
 
         public TerminalNode BAR(int i) {
-            return getToken(CypherParser.BAR, i);
+            return getToken(Cypher5Parser.BAR, i);
         }
 
         public FulltextNodePatternContext(ParserRuleContext parent, int invokingState) {
@@ -19408,19 +19408,19 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class FulltextRelPatternContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public List<TerminalNode> LPAREN() {
-            return getTokens(CypherParser.LPAREN);
+            return getTokens(Cypher5Parser.LPAREN);
         }
 
         public TerminalNode LPAREN(int i) {
-            return getToken(CypherParser.LPAREN, i);
+            return getToken(Cypher5Parser.LPAREN, i);
         }
 
         public List<TerminalNode> RPAREN() {
-            return getTokens(CypherParser.RPAREN);
+            return getTokens(Cypher5Parser.RPAREN);
         }
 
         public TerminalNode RPAREN(int i) {
-            return getToken(CypherParser.RPAREN, i);
+            return getToken(Cypher5Parser.RPAREN, i);
         }
 
         public List<ArrowLineContext> arrowLine() {
@@ -19432,7 +19432,7 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode LBRACKET() {
-            return getToken(CypherParser.LBRACKET, 0);
+            return getToken(Cypher5Parser.LBRACKET, 0);
         }
 
         public VariableContext variable() {
@@ -19440,7 +19440,7 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode COLON() {
-            return getToken(CypherParser.COLON, 0);
+            return getToken(Cypher5Parser.COLON, 0);
         }
 
         public List<SymbolicNameStringContext> symbolicNameString() {
@@ -19452,7 +19452,7 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode RBRACKET() {
-            return getToken(CypherParser.RBRACKET, 0);
+            return getToken(Cypher5Parser.RBRACKET, 0);
         }
 
         public LeftArrowContext leftArrow() {
@@ -19460,11 +19460,11 @@ public class CypherParser extends Parser {
         }
 
         public List<TerminalNode> BAR() {
-            return getTokens(CypherParser.BAR);
+            return getTokens(Cypher5Parser.BAR);
         }
 
         public TerminalNode BAR(int i) {
-            return getToken(CypherParser.BAR, i);
+            return getToken(Cypher5Parser.BAR, i);
         }
 
         public RightArrowContext rightArrow() {
@@ -19560,7 +19560,7 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class CreateLookupIndexContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode FOR() {
-            return getToken(CypherParser.FOR, 0);
+            return getToken(Cypher5Parser.FOR, 0);
         }
 
         public SymbolicNameStringContext symbolicNameString() {
@@ -19568,7 +19568,7 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode LPAREN() {
-            return getToken(CypherParser.LPAREN, 0);
+            return getToken(Cypher5Parser.LPAREN, 0);
         }
 
         public VariableContext variable() {
@@ -19576,7 +19576,7 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode RPAREN() {
-            return getToken(CypherParser.RPAREN, 0);
+            return getToken(Cypher5Parser.RPAREN, 0);
         }
 
         public LookupIndexNodePatternContext lookupIndexNodePattern() {
@@ -19592,15 +19592,15 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode IF() {
-            return getToken(CypherParser.IF, 0);
+            return getToken(Cypher5Parser.IF, 0);
         }
 
         public TerminalNode NOT() {
-            return getToken(CypherParser.NOT, 0);
+            return getToken(Cypher5Parser.NOT, 0);
         }
 
         public TerminalNode EXISTS() {
-            return getToken(CypherParser.EXISTS, 0);
+            return getToken(Cypher5Parser.EXISTS, 0);
         }
 
         public CommandOptionsContext commandOptions() {
@@ -19697,7 +19697,7 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class LookupIndexNodePatternContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode LPAREN() {
-            return getToken(CypherParser.LPAREN, 0);
+            return getToken(Cypher5Parser.LPAREN, 0);
         }
 
         public VariableContext variable() {
@@ -19705,15 +19705,15 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode RPAREN() {
-            return getToken(CypherParser.RPAREN, 0);
+            return getToken(Cypher5Parser.RPAREN, 0);
         }
 
         public TerminalNode ON() {
-            return getToken(CypherParser.ON, 0);
+            return getToken(Cypher5Parser.ON, 0);
         }
 
         public TerminalNode EACH() {
-            return getToken(CypherParser.EACH, 0);
+            return getToken(Cypher5Parser.EACH, 0);
         }
 
         public LookupIndexNodePatternContext(ParserRuleContext parent, int invokingState) {
@@ -19756,19 +19756,19 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class LookupIndexRelPatternContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public List<TerminalNode> LPAREN() {
-            return getTokens(CypherParser.LPAREN);
+            return getTokens(Cypher5Parser.LPAREN);
         }
 
         public TerminalNode LPAREN(int i) {
-            return getToken(CypherParser.LPAREN, i);
+            return getToken(Cypher5Parser.LPAREN, i);
         }
 
         public List<TerminalNode> RPAREN() {
-            return getTokens(CypherParser.RPAREN);
+            return getTokens(Cypher5Parser.RPAREN);
         }
 
         public TerminalNode RPAREN(int i) {
-            return getToken(CypherParser.RPAREN, i);
+            return getToken(Cypher5Parser.RPAREN, i);
         }
 
         public List<ArrowLineContext> arrowLine() {
@@ -19780,7 +19780,7 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode LBRACKET() {
-            return getToken(CypherParser.LBRACKET, 0);
+            return getToken(Cypher5Parser.LBRACKET, 0);
         }
 
         public VariableContext variable() {
@@ -19788,11 +19788,11 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode RBRACKET() {
-            return getToken(CypherParser.RBRACKET, 0);
+            return getToken(Cypher5Parser.RBRACKET, 0);
         }
 
         public TerminalNode ON() {
-            return getToken(CypherParser.ON, 0);
+            return getToken(Cypher5Parser.ON, 0);
         }
 
         public LeftArrowContext leftArrow() {
@@ -19804,7 +19804,7 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode EACH() {
-            return getToken(CypherParser.EACH, 0);
+            return getToken(Cypher5Parser.EACH, 0);
         }
 
         public LookupIndexRelPatternContext(ParserRuleContext parent, int invokingState) {
@@ -19888,11 +19888,11 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class DropIndexContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode INDEX() {
-            return getToken(CypherParser.INDEX, 0);
+            return getToken(Cypher5Parser.INDEX, 0);
         }
 
         public TerminalNode ON() {
-            return getToken(CypherParser.ON, 0);
+            return getToken(Cypher5Parser.ON, 0);
         }
 
         public LabelTypeContext labelType() {
@@ -19900,7 +19900,7 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode LPAREN() {
-            return getToken(CypherParser.LPAREN, 0);
+            return getToken(Cypher5Parser.LPAREN, 0);
         }
 
         public NonEmptyNameListContext nonEmptyNameList() {
@@ -19908,7 +19908,7 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode RPAREN() {
-            return getToken(CypherParser.RPAREN, 0);
+            return getToken(Cypher5Parser.RPAREN, 0);
         }
 
         public SymbolicNameOrStringParameterContext symbolicNameOrStringParameter() {
@@ -19916,11 +19916,11 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode IF() {
-            return getToken(CypherParser.IF, 0);
+            return getToken(Cypher5Parser.IF, 0);
         }
 
         public TerminalNode EXISTS() {
-            return getToken(CypherParser.EXISTS, 0);
+            return getToken(Cypher5Parser.EXISTS, 0);
         }
 
         public DropIndexContext(ParserRuleContext parent, int invokingState) {
@@ -19999,7 +19999,7 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode LPAREN() {
-            return getToken(CypherParser.LPAREN, 0);
+            return getToken(Cypher5Parser.LPAREN, 0);
         }
 
         public EnclosedPropertyListContext enclosedPropertyList() {
@@ -20007,7 +20007,7 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode RPAREN() {
-            return getToken(CypherParser.RPAREN, 0);
+            return getToken(Cypher5Parser.RPAREN, 0);
         }
 
         public PropertyListContext(ParserRuleContext parent, int invokingState) {
@@ -20337,11 +20337,11 @@ public class CypherParser extends Parser {
         }
 
         public List<TerminalNode> COMMA() {
-            return getTokens(CypherParser.COMMA);
+            return getTokens(Cypher5Parser.COMMA);
         }
 
         public TerminalNode COMMA(int i) {
-            return getToken(CypherParser.COMMA, i);
+            return getToken(Cypher5Parser.COMMA, i);
         }
 
         public EnclosedPropertyListContext(ParserRuleContext parent, int invokingState) {
@@ -20397,11 +20397,11 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class EnableServerCommandContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode ENABLE() {
-            return getToken(CypherParser.ENABLE, 0);
+            return getToken(Cypher5Parser.ENABLE, 0);
         }
 
         public TerminalNode SERVER() {
-            return getToken(CypherParser.SERVER, 0);
+            return getToken(Cypher5Parser.SERVER, 0);
         }
 
         public StringOrParameterContext stringOrParameter() {
@@ -20458,7 +20458,7 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class AlterServerContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode SERVER() {
-            return getToken(CypherParser.SERVER, 0);
+            return getToken(Cypher5Parser.SERVER, 0);
         }
 
         public StringOrParameterContext stringOrParameter() {
@@ -20466,7 +20466,7 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode SET() {
-            return getToken(CypherParser.SET, 0);
+            return getToken(Cypher5Parser.SET, 0);
         }
 
         public CommandOptionsContext commandOptions() {
@@ -20511,7 +20511,7 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class RenameServerContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode SERVER() {
-            return getToken(CypherParser.SERVER, 0);
+            return getToken(Cypher5Parser.SERVER, 0);
         }
 
         public List<StringOrParameterContext> stringOrParameter() {
@@ -20523,7 +20523,7 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode TO() {
-            return getToken(CypherParser.TO, 0);
+            return getToken(Cypher5Parser.TO, 0);
         }
 
         public RenameServerContext(ParserRuleContext parent, int invokingState) {
@@ -20564,7 +20564,7 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class DropServerContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode SERVER() {
-            return getToken(CypherParser.SERVER, 0);
+            return getToken(Cypher5Parser.SERVER, 0);
         }
 
         public StringOrParameterContext stringOrParameter() {
@@ -20605,11 +20605,11 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class ShowServersContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode SERVER() {
-            return getToken(CypherParser.SERVER, 0);
+            return getToken(Cypher5Parser.SERVER, 0);
         }
 
         public TerminalNode SERVERS() {
-            return getToken(CypherParser.SERVERS, 0);
+            return getToken(Cypher5Parser.SERVERS, 0);
         }
 
         public ShowCommandYieldContext showCommandYield() {
@@ -20673,7 +20673,7 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode DRYRUN() {
-            return getToken(CypherParser.DRYRUN, 0);
+            return getToken(Cypher5Parser.DRYRUN, 0);
         }
 
         public AllocationCommandContext(ParserRuleContext parent, int invokingState) {
@@ -20735,11 +20735,11 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class DeallocateDatabaseFromServersContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode DEALLOCATE() {
-            return getToken(CypherParser.DEALLOCATE, 0);
+            return getToken(Cypher5Parser.DEALLOCATE, 0);
         }
 
         public TerminalNode FROM() {
-            return getToken(CypherParser.FROM, 0);
+            return getToken(Cypher5Parser.FROM, 0);
         }
 
         public List<StringOrParameterContext> stringOrParameter() {
@@ -20751,27 +20751,27 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode DATABASE() {
-            return getToken(CypherParser.DATABASE, 0);
+            return getToken(Cypher5Parser.DATABASE, 0);
         }
 
         public TerminalNode DATABASES() {
-            return getToken(CypherParser.DATABASES, 0);
+            return getToken(Cypher5Parser.DATABASES, 0);
         }
 
         public TerminalNode SERVER() {
-            return getToken(CypherParser.SERVER, 0);
+            return getToken(Cypher5Parser.SERVER, 0);
         }
 
         public TerminalNode SERVERS() {
-            return getToken(CypherParser.SERVERS, 0);
+            return getToken(Cypher5Parser.SERVERS, 0);
         }
 
         public List<TerminalNode> COMMA() {
-            return getTokens(CypherParser.COMMA);
+            return getTokens(Cypher5Parser.COMMA);
         }
 
         public TerminalNode COMMA(int i) {
-            return getToken(CypherParser.COMMA, i);
+            return getToken(Cypher5Parser.COMMA, i);
         }
 
         public DeallocateDatabaseFromServersContext(ParserRuleContext parent, int invokingState) {
@@ -20845,15 +20845,15 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class ReallocateDatabasesContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode REALLOCATE() {
-            return getToken(CypherParser.REALLOCATE, 0);
+            return getToken(Cypher5Parser.REALLOCATE, 0);
         }
 
         public TerminalNode DATABASE() {
-            return getToken(CypherParser.DATABASE, 0);
+            return getToken(Cypher5Parser.DATABASE, 0);
         }
 
         public TerminalNode DATABASES() {
-            return getToken(CypherParser.DATABASES, 0);
+            return getToken(Cypher5Parser.DATABASES, 0);
         }
 
         public ReallocateDatabasesContext(ParserRuleContext parent, int invokingState) {
@@ -20898,7 +20898,7 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class CreateRoleContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode ROLE() {
-            return getToken(CypherParser.ROLE, 0);
+            return getToken(Cypher5Parser.ROLE, 0);
         }
 
         public List<CommandNameExpressionContext> commandNameExpression() {
@@ -20910,27 +20910,27 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode IF() {
-            return getToken(CypherParser.IF, 0);
+            return getToken(Cypher5Parser.IF, 0);
         }
 
         public TerminalNode NOT() {
-            return getToken(CypherParser.NOT, 0);
+            return getToken(Cypher5Parser.NOT, 0);
         }
 
         public TerminalNode EXISTS() {
-            return getToken(CypherParser.EXISTS, 0);
+            return getToken(Cypher5Parser.EXISTS, 0);
         }
 
         public TerminalNode AS() {
-            return getToken(CypherParser.AS, 0);
+            return getToken(Cypher5Parser.AS, 0);
         }
 
         public TerminalNode COPY() {
-            return getToken(CypherParser.COPY, 0);
+            return getToken(Cypher5Parser.COPY, 0);
         }
 
         public TerminalNode OF() {
-            return getToken(CypherParser.OF, 0);
+            return getToken(Cypher5Parser.OF, 0);
         }
 
         public CreateRoleContext(ParserRuleContext parent, int invokingState) {
@@ -20997,7 +20997,7 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class DropRoleContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode ROLE() {
-            return getToken(CypherParser.ROLE, 0);
+            return getToken(Cypher5Parser.ROLE, 0);
         }
 
         public CommandNameExpressionContext commandNameExpression() {
@@ -21005,11 +21005,11 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode IF() {
-            return getToken(CypherParser.IF, 0);
+            return getToken(Cypher5Parser.IF, 0);
         }
 
         public TerminalNode EXISTS() {
-            return getToken(CypherParser.EXISTS, 0);
+            return getToken(Cypher5Parser.EXISTS, 0);
         }
 
         public DropRoleContext(ParserRuleContext parent, int invokingState) {
@@ -21058,7 +21058,7 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class RenameRoleContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode ROLE() {
-            return getToken(CypherParser.ROLE, 0);
+            return getToken(Cypher5Parser.ROLE, 0);
         }
 
         public List<CommandNameExpressionContext> commandNameExpression() {
@@ -21070,15 +21070,15 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode TO() {
-            return getToken(CypherParser.TO, 0);
+            return getToken(Cypher5Parser.TO, 0);
         }
 
         public TerminalNode IF() {
-            return getToken(CypherParser.IF, 0);
+            return getToken(Cypher5Parser.IF, 0);
         }
 
         public TerminalNode EXISTS() {
-            return getToken(CypherParser.EXISTS, 0);
+            return getToken(Cypher5Parser.EXISTS, 0);
         }
 
         public RenameRoleContext(ParserRuleContext parent, int invokingState) {
@@ -21136,7 +21136,7 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode WITH() {
-            return getToken(CypherParser.WITH, 0);
+            return getToken(Cypher5Parser.WITH, 0);
         }
 
         public ShowCommandYieldContext showCommandYield() {
@@ -21144,19 +21144,19 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode ALL() {
-            return getToken(CypherParser.ALL, 0);
+            return getToken(Cypher5Parser.ALL, 0);
         }
 
         public TerminalNode POPULATED() {
-            return getToken(CypherParser.POPULATED, 0);
+            return getToken(Cypher5Parser.POPULATED, 0);
         }
 
         public TerminalNode USER() {
-            return getToken(CypherParser.USER, 0);
+            return getToken(Cypher5Parser.USER, 0);
         }
 
         public TerminalNode USERS() {
-            return getToken(CypherParser.USERS, 0);
+            return getToken(Cypher5Parser.USERS, 0);
         }
 
         public ShowRolesContext(ParserRuleContext parent, int invokingState) {
@@ -21237,11 +21237,11 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class RoleTokenContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode ROLES() {
-            return getToken(CypherParser.ROLES, 0);
+            return getToken(Cypher5Parser.ROLES, 0);
         }
 
         public TerminalNode ROLE() {
-            return getToken(CypherParser.ROLE, 0);
+            return getToken(Cypher5Parser.ROLE, 0);
         }
 
         public RoleTokenContext(ParserRuleContext parent, int invokingState) {
@@ -21284,7 +21284,7 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class CreateUserContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode USER() {
-            return getToken(CypherParser.USER, 0);
+            return getToken(Cypher5Parser.USER, 0);
         }
 
         public CommandNameExpressionContext commandNameExpression() {
@@ -21292,11 +21292,11 @@ public class CypherParser extends Parser {
         }
 
         public List<TerminalNode> SET() {
-            return getTokens(CypherParser.SET);
+            return getTokens(Cypher5Parser.SET);
         }
 
         public TerminalNode SET(int i) {
-            return getToken(CypherParser.SET, i);
+            return getToken(Cypher5Parser.SET, i);
         }
 
         public PasswordContext password() {
@@ -21304,23 +21304,23 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode IF() {
-            return getToken(CypherParser.IF, 0);
+            return getToken(Cypher5Parser.IF, 0);
         }
 
         public TerminalNode NOT() {
-            return getToken(CypherParser.NOT, 0);
+            return getToken(Cypher5Parser.NOT, 0);
         }
 
         public TerminalNode EXISTS() {
-            return getToken(CypherParser.EXISTS, 0);
+            return getToken(Cypher5Parser.EXISTS, 0);
         }
 
         public List<TerminalNode> PASSWORD() {
-            return getTokens(CypherParser.PASSWORD);
+            return getTokens(Cypher5Parser.PASSWORD);
         }
 
         public TerminalNode PASSWORD(int i) {
-            return getToken(CypherParser.PASSWORD, i);
+            return getToken(Cypher5Parser.PASSWORD, i);
         }
 
         public List<PasswordChangeRequiredContext> passwordChangeRequired() {
@@ -21440,7 +21440,7 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class DropUserContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode USER() {
-            return getToken(CypherParser.USER, 0);
+            return getToken(Cypher5Parser.USER, 0);
         }
 
         public CommandNameExpressionContext commandNameExpression() {
@@ -21448,11 +21448,11 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode IF() {
-            return getToken(CypherParser.IF, 0);
+            return getToken(Cypher5Parser.IF, 0);
         }
 
         public TerminalNode EXISTS() {
-            return getToken(CypherParser.EXISTS, 0);
+            return getToken(Cypher5Parser.EXISTS, 0);
         }
 
         public DropUserContext(ParserRuleContext parent, int invokingState) {
@@ -21501,7 +21501,7 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class RenameUserContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode USER() {
-            return getToken(CypherParser.USER, 0);
+            return getToken(Cypher5Parser.USER, 0);
         }
 
         public List<CommandNameExpressionContext> commandNameExpression() {
@@ -21513,15 +21513,15 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode TO() {
-            return getToken(CypherParser.TO, 0);
+            return getToken(Cypher5Parser.TO, 0);
         }
 
         public TerminalNode IF() {
-            return getToken(CypherParser.IF, 0);
+            return getToken(Cypher5Parser.IF, 0);
         }
 
         public TerminalNode EXISTS() {
-            return getToken(CypherParser.EXISTS, 0);
+            return getToken(Cypher5Parser.EXISTS, 0);
         }
 
         public RenameUserContext(ParserRuleContext parent, int invokingState) {
@@ -21575,23 +21575,23 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class AlterCurrentUserContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode CURRENT() {
-            return getToken(CypherParser.CURRENT, 0);
+            return getToken(Cypher5Parser.CURRENT, 0);
         }
 
         public TerminalNode USER() {
-            return getToken(CypherParser.USER, 0);
+            return getToken(Cypher5Parser.USER, 0);
         }
 
         public TerminalNode SET() {
-            return getToken(CypherParser.SET, 0);
+            return getToken(Cypher5Parser.SET, 0);
         }
 
         public TerminalNode PASSWORD() {
-            return getToken(CypherParser.PASSWORD, 0);
+            return getToken(Cypher5Parser.PASSWORD, 0);
         }
 
         public TerminalNode FROM() {
-            return getToken(CypherParser.FROM, 0);
+            return getToken(Cypher5Parser.FROM, 0);
         }
 
         public List<PasswordExpressionContext> passwordExpression() {
@@ -21603,7 +21603,7 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode TO() {
-            return getToken(CypherParser.TO, 0);
+            return getToken(Cypher5Parser.TO, 0);
         }
 
         public AlterCurrentUserContext(ParserRuleContext parent, int invokingState) {
@@ -21652,7 +21652,7 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class AlterUserContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode USER() {
-            return getToken(CypherParser.USER, 0);
+            return getToken(Cypher5Parser.USER, 0);
         }
 
         public CommandNameExpressionContext commandNameExpression() {
@@ -21660,31 +21660,31 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode REMOVE() {
-            return getToken(CypherParser.REMOVE, 0);
+            return getToken(Cypher5Parser.REMOVE, 0);
         }
 
         public TerminalNode HOME() {
-            return getToken(CypherParser.HOME, 0);
+            return getToken(Cypher5Parser.HOME, 0);
         }
 
         public TerminalNode DATABASE() {
-            return getToken(CypherParser.DATABASE, 0);
+            return getToken(Cypher5Parser.DATABASE, 0);
         }
 
         public TerminalNode IF() {
-            return getToken(CypherParser.IF, 0);
+            return getToken(Cypher5Parser.IF, 0);
         }
 
         public TerminalNode EXISTS() {
-            return getToken(CypherParser.EXISTS, 0);
+            return getToken(Cypher5Parser.EXISTS, 0);
         }
 
         public List<TerminalNode> SET() {
-            return getTokens(CypherParser.SET);
+            return getTokens(Cypher5Parser.SET);
         }
 
         public TerminalNode SET(int i) {
-            return getToken(CypherParser.SET, i);
+            return getToken(Cypher5Parser.SET, i);
         }
 
         public List<PasswordContext> password() {
@@ -21696,11 +21696,11 @@ public class CypherParser extends Parser {
         }
 
         public List<TerminalNode> PASSWORD() {
-            return getTokens(CypherParser.PASSWORD);
+            return getTokens(Cypher5Parser.PASSWORD);
         }
 
         public TerminalNode PASSWORD(int i) {
-            return getToken(CypherParser.PASSWORD, i);
+            return getToken(Cypher5Parser.PASSWORD, i);
         }
 
         public List<PasswordChangeRequiredContext> passwordChangeRequired() {
@@ -21838,7 +21838,7 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class PasswordContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode PASSWORD() {
-            return getToken(CypherParser.PASSWORD, 0);
+            return getToken(Cypher5Parser.PASSWORD, 0);
         }
 
         public PasswordExpressionContext passwordExpression() {
@@ -21850,11 +21850,11 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode PLAINTEXT() {
-            return getToken(CypherParser.PLAINTEXT, 0);
+            return getToken(Cypher5Parser.PLAINTEXT, 0);
         }
 
         public TerminalNode ENCRYPTED() {
-            return getToken(CypherParser.ENCRYPTED, 0);
+            return getToken(Cypher5Parser.ENCRYPTED, 0);
         }
 
         public PasswordContext(ParserRuleContext parent, int invokingState) {
@@ -21973,15 +21973,15 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class PasswordChangeRequiredContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode CHANGE() {
-            return getToken(CypherParser.CHANGE, 0);
+            return getToken(Cypher5Parser.CHANGE, 0);
         }
 
         public TerminalNode REQUIRED() {
-            return getToken(CypherParser.REQUIRED, 0);
+            return getToken(Cypher5Parser.REQUIRED, 0);
         }
 
         public TerminalNode NOT() {
-            return getToken(CypherParser.NOT, 0);
+            return getToken(Cypher5Parser.NOT, 0);
         }
 
         public PasswordChangeRequiredContext(ParserRuleContext parent, int invokingState) {
@@ -22029,15 +22029,15 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class UserStatusContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode STATUS() {
-            return getToken(CypherParser.STATUS, 0);
+            return getToken(Cypher5Parser.STATUS, 0);
         }
 
         public TerminalNode SUSPENDED() {
-            return getToken(CypherParser.SUSPENDED, 0);
+            return getToken(Cypher5Parser.SUSPENDED, 0);
         }
 
         public TerminalNode ACTIVE() {
-            return getToken(CypherParser.ACTIVE, 0);
+            return getToken(Cypher5Parser.ACTIVE, 0);
         }
 
         public UserStatusContext(ParserRuleContext parent, int invokingState) {
@@ -22082,11 +22082,11 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class HomeDatabaseContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode HOME() {
-            return getToken(CypherParser.HOME, 0);
+            return getToken(Cypher5Parser.HOME, 0);
         }
 
         public TerminalNode DATABASE() {
-            return getToken(CypherParser.DATABASE, 0);
+            return getToken(Cypher5Parser.DATABASE, 0);
         }
 
         public SymbolicAliasNameOrParameterContext symbolicAliasNameOrParameter() {
@@ -22129,11 +22129,11 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class ShowUsersContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode USER() {
-            return getToken(CypherParser.USER, 0);
+            return getToken(Cypher5Parser.USER, 0);
         }
 
         public TerminalNode USERS() {
-            return getToken(CypherParser.USERS, 0);
+            return getToken(Cypher5Parser.USERS, 0);
         }
 
         public ShowCommandYieldContext showCommandYield() {
@@ -22189,11 +22189,11 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class ShowCurrentUserContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode CURRENT() {
-            return getToken(CypherParser.CURRENT, 0);
+            return getToken(Cypher5Parser.CURRENT, 0);
         }
 
         public TerminalNode USER() {
-            return getToken(CypherParser.USER, 0);
+            return getToken(Cypher5Parser.USER, 0);
         }
 
         public ShowCommandYieldContext showCommandYield() {
@@ -22248,7 +22248,7 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode ALL() {
-            return getToken(CypherParser.ALL, 0);
+            return getToken(Cypher5Parser.ALL, 0);
         }
 
         public PrivilegeAsCommandContext privilegeAsCommand() {
@@ -22321,7 +22321,7 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class ShowSupportedPrivilegesContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode SUPPORTED() {
-            return getToken(CypherParser.SUPPORTED, 0);
+            return getToken(Cypher5Parser.SUPPORTED, 0);
         }
 
         public PrivilegeTokenContext privilegeToken() {
@@ -22384,11 +22384,11 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode ROLE() {
-            return getToken(CypherParser.ROLE, 0);
+            return getToken(Cypher5Parser.ROLE, 0);
         }
 
         public TerminalNode ROLES() {
-            return getToken(CypherParser.ROLES, 0);
+            return getToken(Cypher5Parser.ROLES, 0);
         }
 
         public PrivilegeAsCommandContext privilegeAsCommand() {
@@ -22466,11 +22466,11 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode USER() {
-            return getToken(CypherParser.USER, 0);
+            return getToken(Cypher5Parser.USER, 0);
         }
 
         public TerminalNode USERS() {
-            return getToken(CypherParser.USERS, 0);
+            return getToken(Cypher5Parser.USERS, 0);
         }
 
         public UserNamesContext userNames() {
@@ -22556,19 +22556,19 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class PrivilegeAsCommandContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode AS() {
-            return getToken(CypherParser.AS, 0);
+            return getToken(Cypher5Parser.AS, 0);
         }
 
         public TerminalNode COMMAND() {
-            return getToken(CypherParser.COMMAND, 0);
+            return getToken(Cypher5Parser.COMMAND, 0);
         }
 
         public TerminalNode COMMANDS() {
-            return getToken(CypherParser.COMMANDS, 0);
+            return getToken(Cypher5Parser.COMMANDS, 0);
         }
 
         public TerminalNode REVOKE() {
-            return getToken(CypherParser.REVOKE, 0);
+            return getToken(Cypher5Parser.REVOKE, 0);
         }
 
         public PrivilegeAsCommandContext(ParserRuleContext parent, int invokingState) {
@@ -22623,11 +22623,11 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class PrivilegeTokenContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode PRIVILEGE() {
-            return getToken(CypherParser.PRIVILEGE, 0);
+            return getToken(Cypher5Parser.PRIVILEGE, 0);
         }
 
         public TerminalNode PRIVILEGES() {
-            return getToken(CypherParser.PRIVILEGES, 0);
+            return getToken(Cypher5Parser.PRIVILEGES, 0);
         }
 
         public PrivilegeTokenContext(ParserRuleContext parent, int invokingState) {
@@ -22670,7 +22670,7 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class GrantCommandContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode GRANT() {
-            return getToken(CypherParser.GRANT, 0);
+            return getToken(Cypher5Parser.GRANT, 0);
         }
 
         public PrivilegeContext privilege() {
@@ -22678,7 +22678,7 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode TO() {
-            return getToken(CypherParser.TO, 0);
+            return getToken(Cypher5Parser.TO, 0);
         }
 
         public RoleNamesContext roleNames() {
@@ -22694,7 +22694,7 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode IMMUTABLE() {
-            return getToken(CypherParser.IMMUTABLE, 0);
+            return getToken(Cypher5Parser.IMMUTABLE, 0);
         }
 
         public GrantCommandContext(ParserRuleContext parent, int invokingState) {
@@ -22766,7 +22766,7 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode TO() {
-            return getToken(CypherParser.TO, 0);
+            return getToken(Cypher5Parser.TO, 0);
         }
 
         public UserNamesContext userNames() {
@@ -22879,7 +22879,7 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class DenyCommandContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode DENY() {
-            return getToken(CypherParser.DENY, 0);
+            return getToken(Cypher5Parser.DENY, 0);
         }
 
         public PrivilegeContext privilege() {
@@ -22887,7 +22887,7 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode TO() {
-            return getToken(CypherParser.TO, 0);
+            return getToken(Cypher5Parser.TO, 0);
         }
 
         public RoleNamesContext roleNames() {
@@ -22895,7 +22895,7 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode IMMUTABLE() {
-            return getToken(CypherParser.IMMUTABLE, 0);
+            return getToken(Cypher5Parser.IMMUTABLE, 0);
         }
 
         public DenyCommandContext(ParserRuleContext parent, int invokingState) {
@@ -22947,7 +22947,7 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class RevokeCommandContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode REVOKE() {
-            return getToken(CypherParser.REVOKE, 0);
+            return getToken(Cypher5Parser.REVOKE, 0);
         }
 
         public PrivilegeContext privilege() {
@@ -22955,7 +22955,7 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode FROM() {
-            return getToken(CypherParser.FROM, 0);
+            return getToken(Cypher5Parser.FROM, 0);
         }
 
         public RoleNamesContext roleNames() {
@@ -22971,15 +22971,15 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode IMMUTABLE() {
-            return getToken(CypherParser.IMMUTABLE, 0);
+            return getToken(Cypher5Parser.IMMUTABLE, 0);
         }
 
         public TerminalNode DENY() {
-            return getToken(CypherParser.DENY, 0);
+            return getToken(Cypher5Parser.DENY, 0);
         }
 
         public TerminalNode GRANT() {
-            return getToken(CypherParser.GRANT, 0);
+            return getToken(Cypher5Parser.GRANT, 0);
         }
 
         public RevokeCommandContext(ParserRuleContext parent, int invokingState) {
@@ -23068,7 +23068,7 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode FROM() {
-            return getToken(CypherParser.FROM, 0);
+            return getToken(Cypher5Parser.FROM, 0);
         }
 
         public UserNamesContext userNames() {
@@ -23298,11 +23298,11 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class AllPrivilegeContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode ALL() {
-            return getToken(CypherParser.ALL, 0);
+            return getToken(Cypher5Parser.ALL, 0);
         }
 
         public TerminalNode ON() {
-            return getToken(CypherParser.ON, 0);
+            return getToken(Cypher5Parser.ON, 0);
         }
 
         public AllPrivilegeTargetContext allPrivilegeTarget() {
@@ -23361,19 +23361,19 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class AllPrivilegeTypeContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode PRIVILEGES() {
-            return getToken(CypherParser.PRIVILEGES, 0);
+            return getToken(Cypher5Parser.PRIVILEGES, 0);
         }
 
         public TerminalNode DATABASE() {
-            return getToken(CypherParser.DATABASE, 0);
+            return getToken(Cypher5Parser.DATABASE, 0);
         }
 
         public TerminalNode GRAPH() {
-            return getToken(CypherParser.GRAPH, 0);
+            return getToken(Cypher5Parser.GRAPH, 0);
         }
 
         public TerminalNode DBMS() {
-            return getToken(CypherParser.DBMS, 0);
+            return getToken(Cypher5Parser.DBMS, 0);
         }
 
         public AllPrivilegeTypeContext(ParserRuleContext parent, int invokingState) {
@@ -23444,19 +23444,19 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class DefaultTargetContext extends AllPrivilegeTargetContext {
         public TerminalNode DEFAULT() {
-            return getToken(CypherParser.DEFAULT, 0);
+            return getToken(Cypher5Parser.DEFAULT, 0);
         }
 
         public TerminalNode HOME() {
-            return getToken(CypherParser.HOME, 0);
+            return getToken(Cypher5Parser.HOME, 0);
         }
 
         public TerminalNode DATABASE() {
-            return getToken(CypherParser.DATABASE, 0);
+            return getToken(Cypher5Parser.DATABASE, 0);
         }
 
         public TerminalNode GRAPH() {
-            return getToken(CypherParser.GRAPH, 0);
+            return getToken(Cypher5Parser.GRAPH, 0);
         }
 
         public DefaultTargetContext(AllPrivilegeTargetContext ctx) {
@@ -23467,15 +23467,15 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class DatabaseVariableTargetContext extends AllPrivilegeTargetContext {
         public TerminalNode DATABASE() {
-            return getToken(CypherParser.DATABASE, 0);
+            return getToken(Cypher5Parser.DATABASE, 0);
         }
 
         public TerminalNode DATABASES() {
-            return getToken(CypherParser.DATABASES, 0);
+            return getToken(Cypher5Parser.DATABASES, 0);
         }
 
         public TerminalNode TIMES() {
-            return getToken(CypherParser.TIMES, 0);
+            return getToken(Cypher5Parser.TIMES, 0);
         }
 
         public SymbolicAliasNameListContext symbolicAliasNameList() {
@@ -23490,15 +23490,15 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class GraphVariableTargetContext extends AllPrivilegeTargetContext {
         public TerminalNode GRAPH() {
-            return getToken(CypherParser.GRAPH, 0);
+            return getToken(Cypher5Parser.GRAPH, 0);
         }
 
         public TerminalNode GRAPHS() {
-            return getToken(CypherParser.GRAPHS, 0);
+            return getToken(Cypher5Parser.GRAPHS, 0);
         }
 
         public TerminalNode TIMES() {
-            return getToken(CypherParser.TIMES, 0);
+            return getToken(Cypher5Parser.TIMES, 0);
         }
 
         public SymbolicAliasNameListContext symbolicAliasNameList() {
@@ -23513,7 +23513,7 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class DBMSTargetContext extends AllPrivilegeTargetContext {
         public TerminalNode DBMS() {
-            return getToken(CypherParser.DBMS, 0);
+            return getToken(Cypher5Parser.DBMS, 0);
         }
 
         public DBMSTargetContext(AllPrivilegeTargetContext ctx) {
@@ -24164,7 +24164,7 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class CreatePrivilegeContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode CREATE() {
-            return getToken(CypherParser.CREATE, 0);
+            return getToken(Cypher5Parser.CREATE, 0);
         }
 
         public CreatePrivilegeForDatabaseContext createPrivilegeForDatabase() {
@@ -24172,7 +24172,7 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode ON() {
-            return getToken(CypherParser.ON, 0);
+            return getToken(Cypher5Parser.ON, 0);
         }
 
         public DatabaseScopeContext databaseScope() {
@@ -24184,7 +24184,7 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode DBMS() {
-            return getToken(CypherParser.DBMS, 0);
+            return getToken(Cypher5Parser.DBMS, 0);
         }
 
         public GraphScopeContext graphScope() {
@@ -24356,19 +24356,19 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class CreateNodePrivilegeTokenContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode NEW() {
-            return getToken(CypherParser.NEW, 0);
+            return getToken(Cypher5Parser.NEW, 0);
         }
 
         public TerminalNode LABEL() {
-            return getToken(CypherParser.LABEL, 0);
+            return getToken(Cypher5Parser.LABEL, 0);
         }
 
         public TerminalNode LABELS() {
-            return getToken(CypherParser.LABELS, 0);
+            return getToken(Cypher5Parser.LABELS, 0);
         }
 
         public TerminalNode NODE() {
-            return getToken(CypherParser.NODE, 0);
+            return getToken(Cypher5Parser.NODE, 0);
         }
 
         public CreateNodePrivilegeTokenContext(ParserRuleContext parent, int invokingState) {
@@ -24423,19 +24423,19 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class CreateRelPrivilegeTokenContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode NEW() {
-            return getToken(CypherParser.NEW, 0);
+            return getToken(Cypher5Parser.NEW, 0);
         }
 
         public TerminalNode TYPE() {
-            return getToken(CypherParser.TYPE, 0);
+            return getToken(Cypher5Parser.TYPE, 0);
         }
 
         public TerminalNode TYPES() {
-            return getToken(CypherParser.TYPES, 0);
+            return getToken(Cypher5Parser.TYPES, 0);
         }
 
         public TerminalNode RELATIONSHIP() {
-            return getToken(CypherParser.RELATIONSHIP, 0);
+            return getToken(Cypher5Parser.RELATIONSHIP, 0);
         }
 
         public CreateRelPrivilegeTokenContext(ParserRuleContext parent, int invokingState) {
@@ -24490,19 +24490,19 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class CreatePropertyPrivilegeTokenContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode NEW() {
-            return getToken(CypherParser.NEW, 0);
+            return getToken(Cypher5Parser.NEW, 0);
         }
 
         public TerminalNode NAME() {
-            return getToken(CypherParser.NAME, 0);
+            return getToken(Cypher5Parser.NAME, 0);
         }
 
         public TerminalNode NAMES() {
-            return getToken(CypherParser.NAMES, 0);
+            return getToken(Cypher5Parser.NAMES, 0);
         }
 
         public TerminalNode PROPERTY() {
-            return getToken(CypherParser.PROPERTY, 0);
+            return getToken(Cypher5Parser.PROPERTY, 0);
         }
 
         public CreatePropertyPrivilegeTokenContext(ParserRuleContext parent, int invokingState) {
@@ -24557,23 +24557,23 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class ActionForDBMSContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode ALIAS() {
-            return getToken(CypherParser.ALIAS, 0);
+            return getToken(Cypher5Parser.ALIAS, 0);
         }
 
         public TerminalNode DATABASE() {
-            return getToken(CypherParser.DATABASE, 0);
+            return getToken(Cypher5Parser.DATABASE, 0);
         }
 
         public TerminalNode COMPOSITE() {
-            return getToken(CypherParser.COMPOSITE, 0);
+            return getToken(Cypher5Parser.COMPOSITE, 0);
         }
 
         public TerminalNode ROLE() {
-            return getToken(CypherParser.ROLE, 0);
+            return getToken(Cypher5Parser.ROLE, 0);
         }
 
         public TerminalNode USER() {
-            return getToken(CypherParser.USER, 0);
+            return getToken(Cypher5Parser.USER, 0);
         }
 
         public ActionForDBMSContext(ParserRuleContext parent, int invokingState) {
@@ -24649,11 +24649,11 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class DropPrivilegeContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode DROP() {
-            return getToken(CypherParser.DROP, 0);
+            return getToken(Cypher5Parser.DROP, 0);
         }
 
         public TerminalNode ON() {
-            return getToken(CypherParser.ON, 0);
+            return getToken(Cypher5Parser.ON, 0);
         }
 
         public DatabaseScopeContext databaseScope() {
@@ -24665,7 +24665,7 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode DBMS() {
-            return getToken(CypherParser.DBMS, 0);
+            return getToken(Cypher5Parser.DBMS, 0);
         }
 
         public IndexTokenContext indexToken() {
@@ -24759,11 +24759,11 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class LoadPrivilegeContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode LOAD() {
-            return getToken(CypherParser.LOAD, 0);
+            return getToken(Cypher5Parser.LOAD, 0);
         }
 
         public TerminalNode ON() {
-            return getToken(CypherParser.ON, 0);
+            return getToken(Cypher5Parser.ON, 0);
         }
 
         public StringOrParameterContext stringOrParameter() {
@@ -24771,19 +24771,19 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode ALL() {
-            return getToken(CypherParser.ALL, 0);
+            return getToken(Cypher5Parser.ALL, 0);
         }
 
         public TerminalNode DATA() {
-            return getToken(CypherParser.DATA, 0);
+            return getToken(Cypher5Parser.DATA, 0);
         }
 
         public TerminalNode URL() {
-            return getToken(CypherParser.URL, 0);
+            return getToken(Cypher5Parser.URL, 0);
         }
 
         public TerminalNode CIDR() {
-            return getToken(CypherParser.CIDR, 0);
+            return getToken(Cypher5Parser.CIDR, 0);
         }
 
         public LoadPrivilegeContext(ParserRuleContext parent, int invokingState) {
@@ -24851,11 +24851,11 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class ShowPrivilegeContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode SHOW() {
-            return getToken(CypherParser.SHOW, 0);
+            return getToken(Cypher5Parser.SHOW, 0);
         }
 
         public TerminalNode ON() {
-            return getToken(CypherParser.ON, 0);
+            return getToken(Cypher5Parser.ON, 0);
         }
 
         public DatabaseScopeContext databaseScope() {
@@ -24863,7 +24863,7 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode DBMS() {
-            return getToken(CypherParser.DBMS, 0);
+            return getToken(Cypher5Parser.DBMS, 0);
         }
 
         public IndexTokenContext indexToken() {
@@ -24879,23 +24879,23 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode ALIAS() {
-            return getToken(CypherParser.ALIAS, 0);
+            return getToken(Cypher5Parser.ALIAS, 0);
         }
 
         public TerminalNode PRIVILEGE() {
-            return getToken(CypherParser.PRIVILEGE, 0);
+            return getToken(Cypher5Parser.PRIVILEGE, 0);
         }
 
         public TerminalNode ROLE() {
-            return getToken(CypherParser.ROLE, 0);
+            return getToken(Cypher5Parser.ROLE, 0);
         }
 
         public TerminalNode SERVER() {
-            return getToken(CypherParser.SERVER, 0);
+            return getToken(Cypher5Parser.SERVER, 0);
         }
 
         public TerminalNode SERVERS() {
-            return getToken(CypherParser.SERVERS, 0);
+            return getToken(Cypher5Parser.SERVERS, 0);
         }
 
         public SettingTokenContext settingToken() {
@@ -24907,7 +24907,7 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode USER() {
-            return getToken(CypherParser.USER, 0);
+            return getToken(Cypher5Parser.USER, 0);
         }
 
         public UserQualifierContext userQualifier() {
@@ -25068,19 +25068,19 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class SetPrivilegeContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode SET() {
-            return getToken(CypherParser.SET, 0);
+            return getToken(Cypher5Parser.SET, 0);
         }
 
         public TerminalNode ON() {
-            return getToken(CypherParser.ON, 0);
+            return getToken(Cypher5Parser.ON, 0);
         }
 
         public TerminalNode DBMS() {
-            return getToken(CypherParser.DBMS, 0);
+            return getToken(Cypher5Parser.DBMS, 0);
         }
 
         public TerminalNode LABEL() {
-            return getToken(CypherParser.LABEL, 0);
+            return getToken(Cypher5Parser.LABEL, 0);
         }
 
         public LabelsResourceContext labelsResource() {
@@ -25092,7 +25092,7 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode PROPERTY() {
-            return getToken(CypherParser.PROPERTY, 0);
+            return getToken(Cypher5Parser.PROPERTY, 0);
         }
 
         public PropertiesResourceContext propertiesResource() {
@@ -25108,23 +25108,23 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode USER() {
-            return getToken(CypherParser.USER, 0);
+            return getToken(Cypher5Parser.USER, 0);
         }
 
         public TerminalNode DATABASE() {
-            return getToken(CypherParser.DATABASE, 0);
+            return getToken(Cypher5Parser.DATABASE, 0);
         }
 
         public TerminalNode ACCESS() {
-            return getToken(CypherParser.ACCESS, 0);
+            return getToken(Cypher5Parser.ACCESS, 0);
         }
 
         public TerminalNode STATUS() {
-            return getToken(CypherParser.STATUS, 0);
+            return getToken(Cypher5Parser.STATUS, 0);
         }
 
         public TerminalNode HOME() {
-            return getToken(CypherParser.HOME, 0);
+            return getToken(Cypher5Parser.HOME, 0);
         }
 
         public SetPrivilegeContext(ParserRuleContext parent, int invokingState) {
@@ -25249,11 +25249,11 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class PasswordTokenContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode PASSWORD() {
-            return getToken(CypherParser.PASSWORD, 0);
+            return getToken(Cypher5Parser.PASSWORD, 0);
         }
 
         public TerminalNode PASSWORDS() {
-            return getToken(CypherParser.PASSWORDS, 0);
+            return getToken(Cypher5Parser.PASSWORDS, 0);
         }
 
         public PasswordTokenContext(ParserRuleContext parent, int invokingState) {
@@ -25296,19 +25296,19 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class RemovePrivilegeContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode REMOVE() {
-            return getToken(CypherParser.REMOVE, 0);
+            return getToken(Cypher5Parser.REMOVE, 0);
         }
 
         public TerminalNode ON() {
-            return getToken(CypherParser.ON, 0);
+            return getToken(Cypher5Parser.ON, 0);
         }
 
         public TerminalNode DBMS() {
-            return getToken(CypherParser.DBMS, 0);
+            return getToken(Cypher5Parser.DBMS, 0);
         }
 
         public TerminalNode LABEL() {
-            return getToken(CypherParser.LABEL, 0);
+            return getToken(Cypher5Parser.LABEL, 0);
         }
 
         public LabelsResourceContext labelsResource() {
@@ -25320,11 +25320,11 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode PRIVILEGE() {
-            return getToken(CypherParser.PRIVILEGE, 0);
+            return getToken(Cypher5Parser.PRIVILEGE, 0);
         }
 
         public TerminalNode ROLE() {
-            return getToken(CypherParser.ROLE, 0);
+            return getToken(Cypher5Parser.ROLE, 0);
         }
 
         public RemovePrivilegeContext(ParserRuleContext parent, int invokingState) {
@@ -25396,11 +25396,11 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class WritePrivilegeContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode WRITE() {
-            return getToken(CypherParser.WRITE, 0);
+            return getToken(Cypher5Parser.WRITE, 0);
         }
 
         public TerminalNode ON() {
-            return getToken(CypherParser.ON, 0);
+            return getToken(Cypher5Parser.ON, 0);
         }
 
         public GraphScopeContext graphScope() {
@@ -25443,7 +25443,7 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class DatabasePrivilegeContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode ON() {
-            return getToken(CypherParser.ON, 0);
+            return getToken(Cypher5Parser.ON, 0);
         }
 
         public DatabaseScopeContext databaseScope() {
@@ -25451,15 +25451,15 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode ACCESS() {
-            return getToken(CypherParser.ACCESS, 0);
+            return getToken(Cypher5Parser.ACCESS, 0);
         }
 
         public TerminalNode START() {
-            return getToken(CypherParser.START, 0);
+            return getToken(Cypher5Parser.START, 0);
         }
 
         public TerminalNode STOP() {
-            return getToken(CypherParser.STOP, 0);
+            return getToken(Cypher5Parser.STOP, 0);
         }
 
         public IndexTokenContext indexToken() {
@@ -25471,15 +25471,15 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode NAME() {
-            return getToken(CypherParser.NAME, 0);
+            return getToken(Cypher5Parser.NAME, 0);
         }
 
         public TerminalNode TRANSACTION() {
-            return getToken(CypherParser.TRANSACTION, 0);
+            return getToken(Cypher5Parser.TRANSACTION, 0);
         }
 
         public TerminalNode TERMINATE() {
-            return getToken(CypherParser.TERMINATE, 0);
+            return getToken(Cypher5Parser.TERMINATE, 0);
         }
 
         public TransactionTokenContext transactionToken() {
@@ -25487,7 +25487,7 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode MANAGEMENT() {
-            return getToken(CypherParser.MANAGEMENT, 0);
+            return getToken(Cypher5Parser.MANAGEMENT, 0);
         }
 
         public UserQualifierContext userQualifier() {
@@ -25639,23 +25639,23 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class DbmsPrivilegeContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode ON() {
-            return getToken(CypherParser.ON, 0);
+            return getToken(Cypher5Parser.ON, 0);
         }
 
         public TerminalNode DBMS() {
-            return getToken(CypherParser.DBMS, 0);
+            return getToken(Cypher5Parser.DBMS, 0);
         }
 
         public TerminalNode ALTER() {
-            return getToken(CypherParser.ALTER, 0);
+            return getToken(Cypher5Parser.ALTER, 0);
         }
 
         public TerminalNode ASSIGN() {
-            return getToken(CypherParser.ASSIGN, 0);
+            return getToken(Cypher5Parser.ASSIGN, 0);
         }
 
         public TerminalNode MANAGEMENT() {
-            return getToken(CypherParser.MANAGEMENT, 0);
+            return getToken(Cypher5Parser.MANAGEMENT, 0);
         }
 
         public DbmsPrivilegeExecuteContext dbmsPrivilegeExecute() {
@@ -25663,35 +25663,35 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode RENAME() {
-            return getToken(CypherParser.RENAME, 0);
+            return getToken(Cypher5Parser.RENAME, 0);
         }
 
         public TerminalNode IMPERSONATE() {
-            return getToken(CypherParser.IMPERSONATE, 0);
+            return getToken(Cypher5Parser.IMPERSONATE, 0);
         }
 
         public TerminalNode ALIAS() {
-            return getToken(CypherParser.ALIAS, 0);
+            return getToken(Cypher5Parser.ALIAS, 0);
         }
 
         public TerminalNode DATABASE() {
-            return getToken(CypherParser.DATABASE, 0);
+            return getToken(Cypher5Parser.DATABASE, 0);
         }
 
         public TerminalNode USER() {
-            return getToken(CypherParser.USER, 0);
+            return getToken(Cypher5Parser.USER, 0);
         }
 
         public TerminalNode PRIVILEGE() {
-            return getToken(CypherParser.PRIVILEGE, 0);
+            return getToken(Cypher5Parser.PRIVILEGE, 0);
         }
 
         public TerminalNode ROLE() {
-            return getToken(CypherParser.ROLE, 0);
+            return getToken(Cypher5Parser.ROLE, 0);
         }
 
         public TerminalNode SERVER() {
-            return getToken(CypherParser.SERVER, 0);
+            return getToken(Cypher5Parser.SERVER, 0);
         }
 
         public UserQualifierContext userQualifier() {
@@ -25699,7 +25699,7 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode COMPOSITE() {
-            return getToken(CypherParser.COMPOSITE, 0);
+            return getToken(Cypher5Parser.COMPOSITE, 0);
         }
 
         public DbmsPrivilegeContext(ParserRuleContext parent, int invokingState) {
@@ -25874,7 +25874,7 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class DbmsPrivilegeExecuteContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode EXECUTE() {
-            return getToken(CypherParser.EXECUTE, 0);
+            return getToken(Cypher5Parser.EXECUTE, 0);
         }
 
         public AdminTokenContext adminToken() {
@@ -25882,7 +25882,7 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode PROCEDURES() {
-            return getToken(CypherParser.PROCEDURES, 0);
+            return getToken(Cypher5Parser.PROCEDURES, 0);
         }
 
         public ProcedureTokenContext procedureToken() {
@@ -25902,15 +25902,15 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode BOOSTED() {
-            return getToken(CypherParser.BOOSTED, 0);
+            return getToken(Cypher5Parser.BOOSTED, 0);
         }
 
         public TerminalNode USER() {
-            return getToken(CypherParser.USER, 0);
+            return getToken(Cypher5Parser.USER, 0);
         }
 
         public TerminalNode DEFINED() {
-            return getToken(CypherParser.DEFINED, 0);
+            return getToken(Cypher5Parser.DEFINED, 0);
         }
 
         public DbmsPrivilegeExecuteContext(ParserRuleContext parent, int invokingState) {
@@ -26024,11 +26024,11 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class AdminTokenContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode ADMIN() {
-            return getToken(CypherParser.ADMIN, 0);
+            return getToken(Cypher5Parser.ADMIN, 0);
         }
 
         public TerminalNode ADMINISTRATOR() {
-            return getToken(CypherParser.ADMINISTRATOR, 0);
+            return getToken(Cypher5Parser.ADMINISTRATOR, 0);
         }
 
         public AdminTokenContext(ParserRuleContext parent, int invokingState) {
@@ -26071,11 +26071,11 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class ProcedureTokenContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode PROCEDURE() {
-            return getToken(CypherParser.PROCEDURE, 0);
+            return getToken(Cypher5Parser.PROCEDURE, 0);
         }
 
         public TerminalNode PROCEDURES() {
-            return getToken(CypherParser.PROCEDURES, 0);
+            return getToken(Cypher5Parser.PROCEDURES, 0);
         }
 
         public ProcedureTokenContext(ParserRuleContext parent, int invokingState) {
@@ -26118,11 +26118,11 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class IndexTokenContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode INDEX() {
-            return getToken(CypherParser.INDEX, 0);
+            return getToken(Cypher5Parser.INDEX, 0);
         }
 
         public TerminalNode INDEXES() {
-            return getToken(CypherParser.INDEXES, 0);
+            return getToken(Cypher5Parser.INDEXES, 0);
         }
 
         public IndexTokenContext(ParserRuleContext parent, int invokingState) {
@@ -26165,11 +26165,11 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class ConstraintTokenContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode CONSTRAINT() {
-            return getToken(CypherParser.CONSTRAINT, 0);
+            return getToken(Cypher5Parser.CONSTRAINT, 0);
         }
 
         public TerminalNode CONSTRAINTS() {
-            return getToken(CypherParser.CONSTRAINTS, 0);
+            return getToken(Cypher5Parser.CONSTRAINTS, 0);
         }
 
         public ConstraintTokenContext(ParserRuleContext parent, int invokingState) {
@@ -26212,11 +26212,11 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class TransactionTokenContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode TRANSACTION() {
-            return getToken(CypherParser.TRANSACTION, 0);
+            return getToken(Cypher5Parser.TRANSACTION, 0);
         }
 
         public TerminalNode TRANSACTIONS() {
-            return getToken(CypherParser.TRANSACTIONS, 0);
+            return getToken(Cypher5Parser.TRANSACTIONS, 0);
         }
 
         public TransactionTokenContext(ParserRuleContext parent, int invokingState) {
@@ -26259,15 +26259,15 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class UserQualifierContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode LPAREN() {
-            return getToken(CypherParser.LPAREN, 0);
+            return getToken(Cypher5Parser.LPAREN, 0);
         }
 
         public TerminalNode RPAREN() {
-            return getToken(CypherParser.RPAREN, 0);
+            return getToken(Cypher5Parser.RPAREN, 0);
         }
 
         public TerminalNode TIMES() {
-            return getToken(CypherParser.TIMES, 0);
+            return getToken(Cypher5Parser.TIMES, 0);
         }
 
         public UserNamesContext userNames() {
@@ -26698,11 +26698,11 @@ public class CypherParser extends Parser {
         }
 
         public List<TerminalNode> COMMA() {
-            return getTokens(CypherParser.COMMA);
+            return getTokens(Cypher5Parser.COMMA);
         }
 
         public TerminalNode COMMA(int i) {
-            return getToken(CypherParser.COMMA, i);
+            return getToken(Cypher5Parser.COMMA, i);
         }
 
         public GlobsContext(ParserRuleContext parent, int invokingState) {
@@ -26755,7 +26755,7 @@ public class CypherParser extends Parser {
     public static class QualifiedGraphPrivilegesWithPropertyContext
             extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode ON() {
-            return getToken(CypherParser.ON, 0);
+            return getToken(Cypher5Parser.ON, 0);
         }
 
         public GraphScopeContext graphScope() {
@@ -26767,7 +26767,7 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode TRAVERSE() {
-            return getToken(CypherParser.TRAVERSE, 0);
+            return getToken(Cypher5Parser.TRAVERSE, 0);
         }
 
         public PropertiesResourceContext propertiesResource() {
@@ -26775,23 +26775,23 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode READ() {
-            return getToken(CypherParser.READ, 0);
+            return getToken(Cypher5Parser.READ, 0);
         }
 
         public TerminalNode MATCH() {
-            return getToken(CypherParser.MATCH, 0);
+            return getToken(Cypher5Parser.MATCH, 0);
         }
 
         public TerminalNode LPAREN() {
-            return getToken(CypherParser.LPAREN, 0);
+            return getToken(Cypher5Parser.LPAREN, 0);
         }
 
         public TerminalNode TIMES() {
-            return getToken(CypherParser.TIMES, 0);
+            return getToken(Cypher5Parser.TIMES, 0);
         }
 
         public TerminalNode RPAREN() {
-            return getToken(CypherParser.RPAREN, 0);
+            return getToken(Cypher5Parser.RPAREN, 0);
         }
 
         public QualifiedGraphPrivilegesWithPropertyContext(ParserRuleContext parent, int invokingState) {
@@ -26874,7 +26874,7 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class QualifiedGraphPrivilegesContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode ON() {
-            return getToken(CypherParser.ON, 0);
+            return getToken(Cypher5Parser.ON, 0);
         }
 
         public GraphScopeContext graphScope() {
@@ -26886,11 +26886,11 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode DELETE() {
-            return getToken(CypherParser.DELETE, 0);
+            return getToken(Cypher5Parser.DELETE, 0);
         }
 
         public TerminalNode MERGE() {
-            return getToken(CypherParser.MERGE, 0);
+            return getToken(Cypher5Parser.MERGE, 0);
         }
 
         public PropertiesResourceContext propertiesResource() {
@@ -26953,7 +26953,7 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class LabelsResourceContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode TIMES() {
-            return getToken(CypherParser.TIMES, 0);
+            return getToken(Cypher5Parser.TIMES, 0);
         }
 
         public NonEmptyStringListContext nonEmptyStringList() {
@@ -27265,15 +27265,15 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class PropertiesResourceContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode LCURLY() {
-            return getToken(CypherParser.LCURLY, 0);
+            return getToken(Cypher5Parser.LCURLY, 0);
         }
 
         public TerminalNode RCURLY() {
-            return getToken(CypherParser.RCURLY, 0);
+            return getToken(Cypher5Parser.RCURLY, 0);
         }
 
         public TerminalNode TIMES() {
-            return getToken(CypherParser.TIMES, 0);
+            return getToken(Cypher5Parser.TIMES, 0);
         }
 
         public NonEmptyStringListContext nonEmptyStringList() {
@@ -27598,11 +27598,11 @@ public class CypherParser extends Parser {
         }
 
         public List<TerminalNode> COMMA() {
-            return getTokens(CypherParser.COMMA);
+            return getTokens(Cypher5Parser.COMMA);
         }
 
         public TerminalNode COMMA(int i) {
-            return getToken(CypherParser.COMMA, i);
+            return getToken(Cypher5Parser.COMMA, i);
         }
 
         public NonEmptyStringListContext(ParserRuleContext parent, int invokingState) {
@@ -27658,15 +27658,15 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode FOR() {
-            return getToken(CypherParser.FOR, 0);
+            return getToken(Cypher5Parser.FOR, 0);
         }
 
         public TerminalNode LPAREN() {
-            return getToken(CypherParser.LPAREN, 0);
+            return getToken(Cypher5Parser.LPAREN, 0);
         }
 
         public TerminalNode TIMES() {
-            return getToken(CypherParser.TIMES, 0);
+            return getToken(Cypher5Parser.TIMES, 0);
         }
 
         public NonEmptyStringListContext nonEmptyStringList() {
@@ -27674,11 +27674,11 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode RPAREN() {
-            return getToken(CypherParser.RPAREN, 0);
+            return getToken(Cypher5Parser.RPAREN, 0);
         }
 
         public TerminalNode WHERE() {
-            return getToken(CypherParser.WHERE, 0);
+            return getToken(Cypher5Parser.WHERE, 0);
         }
 
         public ExpressionContext expression() {
@@ -27690,7 +27690,7 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode COLON() {
-            return getToken(CypherParser.COLON, 0);
+            return getToken(Cypher5Parser.COLON, 0);
         }
 
         public List<SymbolicNameStringContext> symbolicNameString() {
@@ -27706,11 +27706,11 @@ public class CypherParser extends Parser {
         }
 
         public List<TerminalNode> BAR() {
-            return getTokens(CypherParser.BAR);
+            return getTokens(Cypher5Parser.BAR);
         }
 
         public TerminalNode BAR(int i) {
-            return getToken(CypherParser.BAR, i);
+            return getToken(Cypher5Parser.BAR, i);
         }
 
         public GraphQualifierContext(ParserRuleContext parent, int invokingState) {
@@ -28198,11 +28198,11 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class RelTokenContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode RELATIONSHIP() {
-            return getToken(CypherParser.RELATIONSHIP, 0);
+            return getToken(Cypher5Parser.RELATIONSHIP, 0);
         }
 
         public TerminalNode RELATIONSHIPS() {
-            return getToken(CypherParser.RELATIONSHIPS, 0);
+            return getToken(Cypher5Parser.RELATIONSHIPS, 0);
         }
 
         public RelTokenContext(ParserRuleContext parent, int invokingState) {
@@ -28245,11 +28245,11 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class ElementTokenContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode ELEMENT() {
-            return getToken(CypherParser.ELEMENT, 0);
+            return getToken(Cypher5Parser.ELEMENT, 0);
         }
 
         public TerminalNode ELEMENTS() {
-            return getToken(CypherParser.ELEMENTS, 0);
+            return getToken(Cypher5Parser.ELEMENTS, 0);
         }
 
         public ElementTokenContext(ParserRuleContext parent, int invokingState) {
@@ -28292,11 +28292,11 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class NodeTokenContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode NODE() {
-            return getToken(CypherParser.NODE, 0);
+            return getToken(Cypher5Parser.NODE, 0);
         }
 
         public TerminalNode NODES() {
-            return getToken(CypherParser.NODES, 0);
+            return getToken(Cypher5Parser.NODES, 0);
         }
 
         public NodeTokenContext(ParserRuleContext parent, int invokingState) {
@@ -28339,11 +28339,11 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class CreateCompositeDatabaseContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode COMPOSITE() {
-            return getToken(CypherParser.COMPOSITE, 0);
+            return getToken(Cypher5Parser.COMPOSITE, 0);
         }
 
         public TerminalNode DATABASE() {
-            return getToken(CypherParser.DATABASE, 0);
+            return getToken(Cypher5Parser.DATABASE, 0);
         }
 
         public SymbolicAliasNameOrParameterContext symbolicAliasNameOrParameter() {
@@ -28351,15 +28351,15 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode IF() {
-            return getToken(CypherParser.IF, 0);
+            return getToken(Cypher5Parser.IF, 0);
         }
 
         public TerminalNode NOT() {
-            return getToken(CypherParser.NOT, 0);
+            return getToken(Cypher5Parser.NOT, 0);
         }
 
         public TerminalNode EXISTS() {
-            return getToken(CypherParser.EXISTS, 0);
+            return getToken(Cypher5Parser.EXISTS, 0);
         }
 
         public CommandOptionsContext commandOptions() {
@@ -28440,7 +28440,7 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class CreateDatabaseContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode DATABASE() {
-            return getToken(CypherParser.DATABASE, 0);
+            return getToken(Cypher5Parser.DATABASE, 0);
         }
 
         public SymbolicAliasNameOrParameterContext symbolicAliasNameOrParameter() {
@@ -28448,19 +28448,19 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode IF() {
-            return getToken(CypherParser.IF, 0);
+            return getToken(Cypher5Parser.IF, 0);
         }
 
         public TerminalNode NOT() {
-            return getToken(CypherParser.NOT, 0);
+            return getToken(Cypher5Parser.NOT, 0);
         }
 
         public TerminalNode EXISTS() {
-            return getToken(CypherParser.EXISTS, 0);
+            return getToken(Cypher5Parser.EXISTS, 0);
         }
 
         public TerminalNode TOPOLOGY() {
-            return getToken(CypherParser.TOPOLOGY, 0);
+            return getToken(Cypher5Parser.TOPOLOGY, 0);
         }
 
         public CommandOptionsContext commandOptions() {
@@ -28591,7 +28591,7 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class PrimaryTopologyContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode UNSIGNED_DECIMAL_INTEGER() {
-            return getToken(CypherParser.UNSIGNED_DECIMAL_INTEGER, 0);
+            return getToken(Cypher5Parser.UNSIGNED_DECIMAL_INTEGER, 0);
         }
 
         public PrimaryTokenContext primaryToken() {
@@ -28632,11 +28632,11 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class PrimaryTokenContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode PRIMARY() {
-            return getToken(CypherParser.PRIMARY, 0);
+            return getToken(Cypher5Parser.PRIMARY, 0);
         }
 
         public TerminalNode PRIMARIES() {
-            return getToken(CypherParser.PRIMARIES, 0);
+            return getToken(Cypher5Parser.PRIMARIES, 0);
         }
 
         public PrimaryTokenContext(ParserRuleContext parent, int invokingState) {
@@ -28679,7 +28679,7 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class SecondaryTopologyContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode UNSIGNED_DECIMAL_INTEGER() {
-            return getToken(CypherParser.UNSIGNED_DECIMAL_INTEGER, 0);
+            return getToken(Cypher5Parser.UNSIGNED_DECIMAL_INTEGER, 0);
         }
 
         public SecondaryTokenContext secondaryToken() {
@@ -28720,11 +28720,11 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class SecondaryTokenContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode SECONDARY() {
-            return getToken(CypherParser.SECONDARY, 0);
+            return getToken(Cypher5Parser.SECONDARY, 0);
         }
 
         public TerminalNode SECONDARIES() {
-            return getToken(CypherParser.SECONDARIES, 0);
+            return getToken(Cypher5Parser.SECONDARIES, 0);
         }
 
         public SecondaryTokenContext(ParserRuleContext parent, int invokingState) {
@@ -28767,7 +28767,7 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class DropDatabaseContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode DATABASE() {
-            return getToken(CypherParser.DATABASE, 0);
+            return getToken(Cypher5Parser.DATABASE, 0);
         }
 
         public SymbolicAliasNameOrParameterContext symbolicAliasNameOrParameter() {
@@ -28775,19 +28775,19 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode COMPOSITE() {
-            return getToken(CypherParser.COMPOSITE, 0);
+            return getToken(Cypher5Parser.COMPOSITE, 0);
         }
 
         public TerminalNode IF() {
-            return getToken(CypherParser.IF, 0);
+            return getToken(Cypher5Parser.IF, 0);
         }
 
         public TerminalNode EXISTS() {
-            return getToken(CypherParser.EXISTS, 0);
+            return getToken(Cypher5Parser.EXISTS, 0);
         }
 
         public TerminalNode DATA() {
-            return getToken(CypherParser.DATA, 0);
+            return getToken(Cypher5Parser.DATA, 0);
         }
 
         public WaitClauseContext waitClause() {
@@ -28795,11 +28795,11 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode DUMP() {
-            return getToken(CypherParser.DUMP, 0);
+            return getToken(Cypher5Parser.DUMP, 0);
         }
 
         public TerminalNode DESTROY() {
-            return getToken(CypherParser.DESTROY, 0);
+            return getToken(Cypher5Parser.DESTROY, 0);
         }
 
         public DropDatabaseContext(ParserRuleContext parent, int invokingState) {
@@ -28887,7 +28887,7 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class AlterDatabaseContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode DATABASE() {
-            return getToken(CypherParser.DATABASE, 0);
+            return getToken(Cypher5Parser.DATABASE, 0);
         }
 
         public SymbolicAliasNameOrParameterContext symbolicAliasNameOrParameter() {
@@ -28895,11 +28895,11 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode IF() {
-            return getToken(CypherParser.IF, 0);
+            return getToken(Cypher5Parser.IF, 0);
         }
 
         public TerminalNode EXISTS() {
-            return getToken(CypherParser.EXISTS, 0);
+            return getToken(Cypher5Parser.EXISTS, 0);
         }
 
         public WaitClauseContext waitClause() {
@@ -28907,27 +28907,27 @@ public class CypherParser extends Parser {
         }
 
         public List<TerminalNode> SET() {
-            return getTokens(CypherParser.SET);
+            return getTokens(Cypher5Parser.SET);
         }
 
         public TerminalNode SET(int i) {
-            return getToken(CypherParser.SET, i);
+            return getToken(Cypher5Parser.SET, i);
         }
 
         public List<TerminalNode> REMOVE() {
-            return getTokens(CypherParser.REMOVE);
+            return getTokens(Cypher5Parser.REMOVE);
         }
 
         public TerminalNode REMOVE(int i) {
-            return getToken(CypherParser.REMOVE, i);
+            return getToken(Cypher5Parser.REMOVE, i);
         }
 
         public List<TerminalNode> OPTION() {
-            return getTokens(CypherParser.OPTION);
+            return getTokens(Cypher5Parser.OPTION);
         }
 
         public TerminalNode OPTION(int i) {
-            return getToken(CypherParser.OPTION, i);
+            return getToken(Cypher5Parser.OPTION, i);
         }
 
         public List<SymbolicNameStringContext> symbolicNameString() {
@@ -29088,19 +29088,19 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class AlterDatabaseAccessContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode ACCESS() {
-            return getToken(CypherParser.ACCESS, 0);
+            return getToken(Cypher5Parser.ACCESS, 0);
         }
 
         public TerminalNode READ() {
-            return getToken(CypherParser.READ, 0);
+            return getToken(Cypher5Parser.READ, 0);
         }
 
         public TerminalNode ONLY() {
-            return getToken(CypherParser.ONLY, 0);
+            return getToken(Cypher5Parser.ONLY, 0);
         }
 
         public TerminalNode WRITE() {
-            return getToken(CypherParser.WRITE, 0);
+            return getToken(Cypher5Parser.WRITE, 0);
         }
 
         public AlterDatabaseAccessContext(ParserRuleContext parent, int invokingState) {
@@ -29147,7 +29147,7 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class AlterDatabaseTopologyContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode TOPOLOGY() {
-            return getToken(CypherParser.TOPOLOGY, 0);
+            return getToken(Cypher5Parser.TOPOLOGY, 0);
         }
 
         public List<PrimaryTopologyContext> primaryTopology() {
@@ -29225,7 +29225,7 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class AlterDatabaseOptionContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode OPTION() {
-            return getToken(CypherParser.OPTION, 0);
+            return getToken(Cypher5Parser.OPTION, 0);
         }
 
         public SymbolicNameStringContext symbolicNameString() {
@@ -29272,11 +29272,11 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class StartDatabaseContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode START() {
-            return getToken(CypherParser.START, 0);
+            return getToken(Cypher5Parser.START, 0);
         }
 
         public TerminalNode DATABASE() {
-            return getToken(CypherParser.DATABASE, 0);
+            return getToken(Cypher5Parser.DATABASE, 0);
         }
 
         public SymbolicAliasNameOrParameterContext symbolicAliasNameOrParameter() {
@@ -29333,11 +29333,11 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class StopDatabaseContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode STOP() {
-            return getToken(CypherParser.STOP, 0);
+            return getToken(Cypher5Parser.STOP, 0);
         }
 
         public TerminalNode DATABASE() {
-            return getToken(CypherParser.DATABASE, 0);
+            return getToken(Cypher5Parser.DATABASE, 0);
         }
 
         public SymbolicAliasNameOrParameterContext symbolicAliasNameOrParameter() {
@@ -29394,11 +29394,11 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class WaitClauseContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode WAIT() {
-            return getToken(CypherParser.WAIT, 0);
+            return getToken(Cypher5Parser.WAIT, 0);
         }
 
         public TerminalNode UNSIGNED_DECIMAL_INTEGER() {
-            return getToken(CypherParser.UNSIGNED_DECIMAL_INTEGER, 0);
+            return getToken(Cypher5Parser.UNSIGNED_DECIMAL_INTEGER, 0);
         }
 
         public SecondsTokenContext secondsToken() {
@@ -29406,7 +29406,7 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode NOWAIT() {
-            return getToken(CypherParser.NOWAIT, 0);
+            return getToken(Cypher5Parser.NOWAIT, 0);
         }
 
         public WaitClauseContext(ParserRuleContext parent, int invokingState) {
@@ -29475,15 +29475,15 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class SecondsTokenContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode SEC() {
-            return getToken(CypherParser.SEC, 0);
+            return getToken(Cypher5Parser.SEC, 0);
         }
 
         public TerminalNode SECOND() {
-            return getToken(CypherParser.SECOND, 0);
+            return getToken(Cypher5Parser.SECOND, 0);
         }
 
         public TerminalNode SECONDS() {
-            return getToken(CypherParser.SECONDS, 0);
+            return getToken(Cypher5Parser.SECONDS, 0);
         }
 
         public SecondsTokenContext(ParserRuleContext parent, int invokingState) {
@@ -29526,15 +29526,15 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class ShowDatabaseContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode DATABASE() {
-            return getToken(CypherParser.DATABASE, 0);
+            return getToken(Cypher5Parser.DATABASE, 0);
         }
 
         public TerminalNode DEFAULT() {
-            return getToken(CypherParser.DEFAULT, 0);
+            return getToken(Cypher5Parser.DEFAULT, 0);
         }
 
         public TerminalNode HOME() {
-            return getToken(CypherParser.HOME, 0);
+            return getToken(Cypher5Parser.HOME, 0);
         }
 
         public ShowCommandYieldContext showCommandYield() {
@@ -29542,7 +29542,7 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode DATABASES() {
-            return getToken(CypherParser.DATABASES, 0);
+            return getToken(Cypher5Parser.DATABASES, 0);
         }
 
         public SymbolicAliasNameOrParameterContext symbolicAliasNameOrParameter() {
@@ -29643,23 +29643,23 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class DatabaseScopeContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode DATABASE() {
-            return getToken(CypherParser.DATABASE, 0);
+            return getToken(Cypher5Parser.DATABASE, 0);
         }
 
         public TerminalNode DEFAULT() {
-            return getToken(CypherParser.DEFAULT, 0);
+            return getToken(Cypher5Parser.DEFAULT, 0);
         }
 
         public TerminalNode HOME() {
-            return getToken(CypherParser.HOME, 0);
+            return getToken(Cypher5Parser.HOME, 0);
         }
 
         public TerminalNode DATABASES() {
-            return getToken(CypherParser.DATABASES, 0);
+            return getToken(Cypher5Parser.DATABASES, 0);
         }
 
         public TerminalNode TIMES() {
-            return getToken(CypherParser.TIMES, 0);
+            return getToken(Cypher5Parser.TIMES, 0);
         }
 
         public SymbolicAliasNameListContext symbolicAliasNameList() {
@@ -30009,23 +30009,23 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class GraphScopeContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode GRAPH() {
-            return getToken(CypherParser.GRAPH, 0);
+            return getToken(Cypher5Parser.GRAPH, 0);
         }
 
         public TerminalNode DEFAULT() {
-            return getToken(CypherParser.DEFAULT, 0);
+            return getToken(Cypher5Parser.DEFAULT, 0);
         }
 
         public TerminalNode HOME() {
-            return getToken(CypherParser.HOME, 0);
+            return getToken(Cypher5Parser.HOME, 0);
         }
 
         public TerminalNode GRAPHS() {
-            return getToken(CypherParser.GRAPHS, 0);
+            return getToken(Cypher5Parser.GRAPHS, 0);
         }
 
         public TerminalNode TIMES() {
-            return getToken(CypherParser.TIMES, 0);
+            return getToken(Cypher5Parser.TIMES, 0);
         }
 
         public SymbolicAliasNameListContext symbolicAliasNameList() {
@@ -30375,7 +30375,7 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class CommandOptionsContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode OPTIONS() {
-            return getToken(CypherParser.OPTIONS, 0);
+            return getToken(Cypher5Parser.OPTIONS, 0);
         }
 
         public MapOrParameterContext mapOrParameter() {
@@ -31040,7 +31040,7 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class CreateAliasContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode ALIAS() {
-            return getToken(CypherParser.ALIAS, 0);
+            return getToken(Cypher5Parser.ALIAS, 0);
         }
 
         public List<SymbolicAliasNameOrParameterContext> symbolicAliasNameOrParameter() {
@@ -31052,27 +31052,27 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode FOR() {
-            return getToken(CypherParser.FOR, 0);
+            return getToken(Cypher5Parser.FOR, 0);
         }
 
         public TerminalNode DATABASE() {
-            return getToken(CypherParser.DATABASE, 0);
+            return getToken(Cypher5Parser.DATABASE, 0);
         }
 
         public TerminalNode IF() {
-            return getToken(CypherParser.IF, 0);
+            return getToken(Cypher5Parser.IF, 0);
         }
 
         public TerminalNode NOT() {
-            return getToken(CypherParser.NOT, 0);
+            return getToken(Cypher5Parser.NOT, 0);
         }
 
         public TerminalNode EXISTS() {
-            return getToken(CypherParser.EXISTS, 0);
+            return getToken(Cypher5Parser.EXISTS, 0);
         }
 
         public TerminalNode AT() {
-            return getToken(CypherParser.AT, 0);
+            return getToken(Cypher5Parser.AT, 0);
         }
 
         public StringOrParameterContext stringOrParameter() {
@@ -31080,7 +31080,7 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode USER() {
-            return getToken(CypherParser.USER, 0);
+            return getToken(Cypher5Parser.USER, 0);
         }
 
         public CommandNameExpressionContext commandNameExpression() {
@@ -31088,7 +31088,7 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode PASSWORD() {
-            return getToken(CypherParser.PASSWORD, 0);
+            return getToken(Cypher5Parser.PASSWORD, 0);
         }
 
         public PasswordExpressionContext passwordExpression() {
@@ -31096,7 +31096,7 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode PROPERTIES() {
-            return getToken(CypherParser.PROPERTIES, 0);
+            return getToken(Cypher5Parser.PROPERTIES, 0);
         }
 
         public List<MapOrParameterContext> mapOrParameter() {
@@ -31108,7 +31108,7 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode DRIVER() {
-            return getToken(CypherParser.DRIVER, 0);
+            return getToken(Cypher5Parser.DRIVER, 0);
         }
 
         public CreateAliasContext(ParserRuleContext parent, int invokingState) {
@@ -31208,7 +31208,7 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class DropAliasContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode ALIAS() {
-            return getToken(CypherParser.ALIAS, 0);
+            return getToken(Cypher5Parser.ALIAS, 0);
         }
 
         public SymbolicAliasNameOrParameterContext symbolicAliasNameOrParameter() {
@@ -31216,19 +31216,19 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode FOR() {
-            return getToken(CypherParser.FOR, 0);
+            return getToken(Cypher5Parser.FOR, 0);
         }
 
         public TerminalNode DATABASE() {
-            return getToken(CypherParser.DATABASE, 0);
+            return getToken(Cypher5Parser.DATABASE, 0);
         }
 
         public TerminalNode IF() {
-            return getToken(CypherParser.IF, 0);
+            return getToken(Cypher5Parser.IF, 0);
         }
 
         public TerminalNode EXISTS() {
-            return getToken(CypherParser.EXISTS, 0);
+            return getToken(Cypher5Parser.EXISTS, 0);
         }
 
         public DropAliasContext(ParserRuleContext parent, int invokingState) {
@@ -31282,7 +31282,7 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class AlterAliasContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode ALIAS() {
-            return getToken(CypherParser.ALIAS, 0);
+            return getToken(Cypher5Parser.ALIAS, 0);
         }
 
         public SymbolicAliasNameOrParameterContext symbolicAliasNameOrParameter() {
@@ -31290,19 +31290,19 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode SET() {
-            return getToken(CypherParser.SET, 0);
+            return getToken(Cypher5Parser.SET, 0);
         }
 
         public TerminalNode DATABASE() {
-            return getToken(CypherParser.DATABASE, 0);
+            return getToken(Cypher5Parser.DATABASE, 0);
         }
 
         public TerminalNode IF() {
-            return getToken(CypherParser.IF, 0);
+            return getToken(Cypher5Parser.IF, 0);
         }
 
         public TerminalNode EXISTS() {
-            return getToken(CypherParser.EXISTS, 0);
+            return getToken(Cypher5Parser.EXISTS, 0);
         }
 
         public List<AlterAliasTargetContext> alterAliasTarget() {
@@ -31442,7 +31442,7 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class AlterAliasTargetContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode TARGET() {
-            return getToken(CypherParser.TARGET, 0);
+            return getToken(Cypher5Parser.TARGET, 0);
         }
 
         public SymbolicAliasNameOrParameterContext symbolicAliasNameOrParameter() {
@@ -31450,7 +31450,7 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode AT() {
-            return getToken(CypherParser.AT, 0);
+            return getToken(Cypher5Parser.AT, 0);
         }
 
         public StringOrParameterContext stringOrParameter() {
@@ -31503,7 +31503,7 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class AlterAliasUserContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode USER() {
-            return getToken(CypherParser.USER, 0);
+            return getToken(Cypher5Parser.USER, 0);
         }
 
         public CommandNameExpressionContext commandNameExpression() {
@@ -31544,7 +31544,7 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class AlterAliasPasswordContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode PASSWORD() {
-            return getToken(CypherParser.PASSWORD, 0);
+            return getToken(Cypher5Parser.PASSWORD, 0);
         }
 
         public PasswordExpressionContext passwordExpression() {
@@ -31585,7 +31585,7 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class AlterAliasDriverContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode DRIVER() {
-            return getToken(CypherParser.DRIVER, 0);
+            return getToken(Cypher5Parser.DRIVER, 0);
         }
 
         public MapOrParameterContext mapOrParameter() {
@@ -31626,7 +31626,7 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class AlterAliasPropertiesContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode PROPERTIES() {
-            return getToken(CypherParser.PROPERTIES, 0);
+            return getToken(Cypher5Parser.PROPERTIES, 0);
         }
 
         public MapOrParameterContext mapOrParameter() {
@@ -31667,23 +31667,23 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class ShowAliasesContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode FOR() {
-            return getToken(CypherParser.FOR, 0);
+            return getToken(Cypher5Parser.FOR, 0);
         }
 
         public TerminalNode ALIAS() {
-            return getToken(CypherParser.ALIAS, 0);
+            return getToken(Cypher5Parser.ALIAS, 0);
         }
 
         public TerminalNode ALIASES() {
-            return getToken(CypherParser.ALIASES, 0);
+            return getToken(Cypher5Parser.ALIASES, 0);
         }
 
         public TerminalNode DATABASE() {
-            return getToken(CypherParser.DATABASE, 0);
+            return getToken(Cypher5Parser.DATABASE, 0);
         }
 
         public TerminalNode DATABASES() {
-            return getToken(CypherParser.DATABASES, 0);
+            return getToken(Cypher5Parser.DATABASES, 0);
         }
 
         public SymbolicAliasNameOrParameterContext symbolicAliasNameOrParameter() {
@@ -31772,11 +31772,11 @@ public class CypherParser extends Parser {
         }
 
         public List<TerminalNode> COMMA() {
-            return getTokens(CypherParser.COMMA);
+            return getTokens(Cypher5Parser.COMMA);
         }
 
         public TerminalNode COMMA(int i) {
-            return getToken(CypherParser.COMMA, i);
+            return getToken(Cypher5Parser.COMMA, i);
         }
 
         public SymbolicAliasNameListContext(ParserRuleContext parent, int invokingState) {
@@ -32148,11 +32148,11 @@ public class CypherParser extends Parser {
         }
 
         public List<TerminalNode> DOT() {
-            return getTokens(CypherParser.DOT);
+            return getTokens(Cypher5Parser.DOT);
         }
 
         public TerminalNode DOT(int i) {
-            return getToken(CypherParser.DOT, i);
+            return getToken(Cypher5Parser.DOT, i);
         }
 
         public SymbolicAliasNameContext(ParserRuleContext parent, int invokingState) {
@@ -32212,11 +32212,11 @@ public class CypherParser extends Parser {
         }
 
         public List<TerminalNode> COMMA() {
-            return getTokens(CypherParser.COMMA);
+            return getTokens(Cypher5Parser.COMMA);
         }
 
         public TerminalNode COMMA(int i) {
-            return getToken(CypherParser.COMMA, i);
+            return getToken(Cypher5Parser.COMMA, i);
         }
 
         public SymbolicNameOrStringParameterListContext(ParserRuleContext parent, int invokingState) {
@@ -32643,7 +32643,7 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class GlobPartContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode DOT() {
-            return getToken(CypherParser.DOT, 0);
+            return getToken(Cypher5Parser.DOT, 0);
         }
 
         public EscapedSymbolicNameStringContext escapedSymbolicNameString() {
@@ -32651,11 +32651,11 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode QUESTION() {
-            return getToken(CypherParser.QUESTION, 0);
+            return getToken(Cypher5Parser.QUESTION, 0);
         }
 
         public TerminalNode TIMES() {
-            return getToken(CypherParser.TIMES, 0);
+            return getToken(Cypher5Parser.TIMES, 0);
         }
 
         public UnescapedSymbolicNameStringContext unescapedSymbolicNameString() {
@@ -32998,11 +32998,11 @@ public class CypherParser extends Parser {
         }
 
         public List<TerminalNode> COMMA() {
-            return getTokens(CypherParser.COMMA);
+            return getTokens(Cypher5Parser.COMMA);
         }
 
         public TerminalNode COMMA(int i) {
-            return getToken(CypherParser.COMMA, i);
+            return getToken(Cypher5Parser.COMMA, i);
         }
 
         public StringListContext(ParserRuleContext parent, int invokingState) {
@@ -33054,11 +33054,11 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class StringLiteralContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode STRING_LITERAL1() {
-            return getToken(CypherParser.STRING_LITERAL1, 0);
+            return getToken(Cypher5Parser.STRING_LITERAL1, 0);
         }
 
         public TerminalNode STRING_LITERAL2() {
-            return getToken(CypherParser.STRING_LITERAL2, 0);
+            return getToken(Cypher5Parser.STRING_LITERAL2, 0);
         }
 
         public StringLiteralContext(ParserRuleContext parent, int invokingState) {
@@ -33210,11 +33210,11 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class MapContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode LCURLY() {
-            return getToken(CypherParser.LCURLY, 0);
+            return getToken(Cypher5Parser.LCURLY, 0);
         }
 
         public TerminalNode RCURLY() {
-            return getToken(CypherParser.RCURLY, 0);
+            return getToken(Cypher5Parser.RCURLY, 0);
         }
 
         public List<PropertyKeyNameContext> propertyKeyName() {
@@ -33226,11 +33226,11 @@ public class CypherParser extends Parser {
         }
 
         public List<TerminalNode> COLON() {
-            return getTokens(CypherParser.COLON);
+            return getTokens(Cypher5Parser.COLON);
         }
 
         public TerminalNode COLON(int i) {
-            return getToken(CypherParser.COLON, i);
+            return getToken(Cypher5Parser.COLON, i);
         }
 
         public List<ExpressionContext> expression() {
@@ -33242,11 +33242,11 @@ public class CypherParser extends Parser {
         }
 
         public List<TerminalNode> COMMA() {
-            return getTokens(CypherParser.COMMA);
+            return getTokens(Cypher5Parser.COMMA);
         }
 
         public TerminalNode COMMA(int i) {
-            return getToken(CypherParser.COMMA, i);
+            return getToken(Cypher5Parser.COMMA, i);
         }
 
         public MapContext(ParserRuleContext parent, int invokingState) {
@@ -33633,7 +33633,7 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class EscapedSymbolicNameStringContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode ESCAPED_SYMBOLIC_NAME() {
-            return getToken(CypherParser.ESCAPED_SYMBOLIC_NAME, 0);
+            return getToken(Cypher5Parser.ESCAPED_SYMBOLIC_NAME, 0);
         }
 
         public EscapedSymbolicNameStringContext(ParserRuleContext parent, int invokingState) {
@@ -33672,35 +33672,35 @@ public class CypherParser extends Parser {
         }
 
         public TerminalNode NOT() {
-            return getToken(CypherParser.NOT, 0);
+            return getToken(Cypher5Parser.NOT, 0);
         }
 
         public TerminalNode NULL() {
-            return getToken(CypherParser.NULL, 0);
+            return getToken(Cypher5Parser.NULL, 0);
         }
 
         public TerminalNode TYPED() {
-            return getToken(CypherParser.TYPED, 0);
+            return getToken(Cypher5Parser.TYPED, 0);
         }
 
         public TerminalNode NORMALIZED() {
-            return getToken(CypherParser.NORMALIZED, 0);
+            return getToken(Cypher5Parser.NORMALIZED, 0);
         }
 
         public TerminalNode NFC() {
-            return getToken(CypherParser.NFC, 0);
+            return getToken(Cypher5Parser.NFC, 0);
         }
 
         public TerminalNode NFD() {
-            return getToken(CypherParser.NFD, 0);
+            return getToken(Cypher5Parser.NFD, 0);
         }
 
         public TerminalNode NFKC() {
-            return getToken(CypherParser.NFKC, 0);
+            return getToken(Cypher5Parser.NFKC, 0);
         }
 
         public TerminalNode NFKD() {
-            return getToken(CypherParser.NFKD, 0);
+            return getToken(Cypher5Parser.NFKD, 0);
         }
 
         public UnescapedSymbolicNameStringContext(ParserRuleContext parent, int invokingState) {
@@ -34351,1003 +34351,1003 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class UnescapedLabelSymbolicNameStringContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode IDENTIFIER() {
-            return getToken(CypherParser.IDENTIFIER, 0);
+            return getToken(Cypher5Parser.IDENTIFIER, 0);
         }
 
         public TerminalNode ACCESS() {
-            return getToken(CypherParser.ACCESS, 0);
+            return getToken(Cypher5Parser.ACCESS, 0);
         }
 
         public TerminalNode ACTIVE() {
-            return getToken(CypherParser.ACTIVE, 0);
+            return getToken(Cypher5Parser.ACTIVE, 0);
         }
 
         public TerminalNode ADMIN() {
-            return getToken(CypherParser.ADMIN, 0);
+            return getToken(Cypher5Parser.ADMIN, 0);
         }
 
         public TerminalNode ADMINISTRATOR() {
-            return getToken(CypherParser.ADMINISTRATOR, 0);
+            return getToken(Cypher5Parser.ADMINISTRATOR, 0);
         }
 
         public TerminalNode ALIAS() {
-            return getToken(CypherParser.ALIAS, 0);
+            return getToken(Cypher5Parser.ALIAS, 0);
         }
 
         public TerminalNode ALIASES() {
-            return getToken(CypherParser.ALIASES, 0);
+            return getToken(Cypher5Parser.ALIASES, 0);
         }
 
         public TerminalNode ALL_SHORTEST_PATHS() {
-            return getToken(CypherParser.ALL_SHORTEST_PATHS, 0);
+            return getToken(Cypher5Parser.ALL_SHORTEST_PATHS, 0);
         }
 
         public TerminalNode ALL() {
-            return getToken(CypherParser.ALL, 0);
+            return getToken(Cypher5Parser.ALL, 0);
         }
 
         public TerminalNode ALTER() {
-            return getToken(CypherParser.ALTER, 0);
+            return getToken(Cypher5Parser.ALTER, 0);
         }
 
         public TerminalNode AND() {
-            return getToken(CypherParser.AND, 0);
+            return getToken(Cypher5Parser.AND, 0);
         }
 
         public TerminalNode ANY() {
-            return getToken(CypherParser.ANY, 0);
+            return getToken(Cypher5Parser.ANY, 0);
         }
 
         public TerminalNode ARRAY() {
-            return getToken(CypherParser.ARRAY, 0);
+            return getToken(Cypher5Parser.ARRAY, 0);
         }
 
         public TerminalNode AS() {
-            return getToken(CypherParser.AS, 0);
+            return getToken(Cypher5Parser.AS, 0);
         }
 
         public TerminalNode ASC() {
-            return getToken(CypherParser.ASC, 0);
+            return getToken(Cypher5Parser.ASC, 0);
         }
 
         public TerminalNode ASCENDING() {
-            return getToken(CypherParser.ASCENDING, 0);
+            return getToken(Cypher5Parser.ASCENDING, 0);
         }
 
         public TerminalNode ASSERT() {
-            return getToken(CypherParser.ASSERT, 0);
+            return getToken(Cypher5Parser.ASSERT, 0);
         }
 
         public TerminalNode ASSIGN() {
-            return getToken(CypherParser.ASSIGN, 0);
+            return getToken(Cypher5Parser.ASSIGN, 0);
         }
 
         public TerminalNode AT() {
-            return getToken(CypherParser.AT, 0);
+            return getToken(Cypher5Parser.AT, 0);
         }
 
         public TerminalNode BINDINGS() {
-            return getToken(CypherParser.BINDINGS, 0);
+            return getToken(Cypher5Parser.BINDINGS, 0);
         }
 
         public TerminalNode BOOL() {
-            return getToken(CypherParser.BOOL, 0);
+            return getToken(Cypher5Parser.BOOL, 0);
         }
 
         public TerminalNode BOOLEAN() {
-            return getToken(CypherParser.BOOLEAN, 0);
+            return getToken(Cypher5Parser.BOOLEAN, 0);
         }
 
         public TerminalNode BOOSTED() {
-            return getToken(CypherParser.BOOSTED, 0);
+            return getToken(Cypher5Parser.BOOSTED, 0);
         }
 
         public TerminalNode BOTH() {
-            return getToken(CypherParser.BOTH, 0);
+            return getToken(Cypher5Parser.BOTH, 0);
         }
 
         public TerminalNode BREAK() {
-            return getToken(CypherParser.BREAK, 0);
+            return getToken(Cypher5Parser.BREAK, 0);
         }
 
         public TerminalNode BRIEF() {
-            return getToken(CypherParser.BRIEF, 0);
+            return getToken(Cypher5Parser.BRIEF, 0);
         }
 
         public TerminalNode BTREE() {
-            return getToken(CypherParser.BTREE, 0);
+            return getToken(Cypher5Parser.BTREE, 0);
         }
 
         public TerminalNode BUILT() {
-            return getToken(CypherParser.BUILT, 0);
+            return getToken(Cypher5Parser.BUILT, 0);
         }
 
         public TerminalNode BY() {
-            return getToken(CypherParser.BY, 0);
+            return getToken(Cypher5Parser.BY, 0);
         }
 
         public TerminalNode CALL() {
-            return getToken(CypherParser.CALL, 0);
+            return getToken(Cypher5Parser.CALL, 0);
         }
 
         public TerminalNode CASE() {
-            return getToken(CypherParser.CASE, 0);
+            return getToken(Cypher5Parser.CASE, 0);
         }
 
         public TerminalNode CHANGE() {
-            return getToken(CypherParser.CHANGE, 0);
+            return getToken(Cypher5Parser.CHANGE, 0);
         }
 
         public TerminalNode CIDR() {
-            return getToken(CypherParser.CIDR, 0);
+            return getToken(Cypher5Parser.CIDR, 0);
         }
 
         public TerminalNode COLLECT() {
-            return getToken(CypherParser.COLLECT, 0);
+            return getToken(Cypher5Parser.COLLECT, 0);
         }
 
         public TerminalNode COMMAND() {
-            return getToken(CypherParser.COMMAND, 0);
+            return getToken(Cypher5Parser.COMMAND, 0);
         }
 
         public TerminalNode COMMANDS() {
-            return getToken(CypherParser.COMMANDS, 0);
+            return getToken(Cypher5Parser.COMMANDS, 0);
         }
 
         public TerminalNode COMMIT() {
-            return getToken(CypherParser.COMMIT, 0);
+            return getToken(Cypher5Parser.COMMIT, 0);
         }
 
         public TerminalNode COMPOSITE() {
-            return getToken(CypherParser.COMPOSITE, 0);
+            return getToken(Cypher5Parser.COMPOSITE, 0);
         }
 
         public TerminalNode CONCURRENT() {
-            return getToken(CypherParser.CONCURRENT, 0);
+            return getToken(Cypher5Parser.CONCURRENT, 0);
         }
 
         public TerminalNode CONSTRAINT() {
-            return getToken(CypherParser.CONSTRAINT, 0);
+            return getToken(Cypher5Parser.CONSTRAINT, 0);
         }
 
         public TerminalNode CONSTRAINTS() {
-            return getToken(CypherParser.CONSTRAINTS, 0);
+            return getToken(Cypher5Parser.CONSTRAINTS, 0);
         }
 
         public TerminalNode CONTAINS() {
-            return getToken(CypherParser.CONTAINS, 0);
+            return getToken(Cypher5Parser.CONTAINS, 0);
         }
 
         public TerminalNode CONTINUE() {
-            return getToken(CypherParser.CONTINUE, 0);
+            return getToken(Cypher5Parser.CONTINUE, 0);
         }
 
         public TerminalNode COPY() {
-            return getToken(CypherParser.COPY, 0);
+            return getToken(Cypher5Parser.COPY, 0);
         }
 
         public TerminalNode COUNT() {
-            return getToken(CypherParser.COUNT, 0);
+            return getToken(Cypher5Parser.COUNT, 0);
         }
 
         public TerminalNode CREATE() {
-            return getToken(CypherParser.CREATE, 0);
+            return getToken(Cypher5Parser.CREATE, 0);
         }
 
         public TerminalNode CSV() {
-            return getToken(CypherParser.CSV, 0);
+            return getToken(Cypher5Parser.CSV, 0);
         }
 
         public TerminalNode CURRENT() {
-            return getToken(CypherParser.CURRENT, 0);
+            return getToken(Cypher5Parser.CURRENT, 0);
         }
 
         public TerminalNode DATA() {
-            return getToken(CypherParser.DATA, 0);
+            return getToken(Cypher5Parser.DATA, 0);
         }
 
         public TerminalNode DATABASE() {
-            return getToken(CypherParser.DATABASE, 0);
+            return getToken(Cypher5Parser.DATABASE, 0);
         }
 
         public TerminalNode DATABASES() {
-            return getToken(CypherParser.DATABASES, 0);
+            return getToken(Cypher5Parser.DATABASES, 0);
         }
 
         public TerminalNode DATE() {
-            return getToken(CypherParser.DATE, 0);
+            return getToken(Cypher5Parser.DATE, 0);
         }
 
         public TerminalNode DATETIME() {
-            return getToken(CypherParser.DATETIME, 0);
+            return getToken(Cypher5Parser.DATETIME, 0);
         }
 
         public TerminalNode DBMS() {
-            return getToken(CypherParser.DBMS, 0);
+            return getToken(Cypher5Parser.DBMS, 0);
         }
 
         public TerminalNode DEALLOCATE() {
-            return getToken(CypherParser.DEALLOCATE, 0);
+            return getToken(Cypher5Parser.DEALLOCATE, 0);
         }
 
         public TerminalNode DEFAULT() {
-            return getToken(CypherParser.DEFAULT, 0);
+            return getToken(Cypher5Parser.DEFAULT, 0);
         }
 
         public TerminalNode DEFINED() {
-            return getToken(CypherParser.DEFINED, 0);
+            return getToken(Cypher5Parser.DEFINED, 0);
         }
 
         public TerminalNode DELETE() {
-            return getToken(CypherParser.DELETE, 0);
+            return getToken(Cypher5Parser.DELETE, 0);
         }
 
         public TerminalNode DENY() {
-            return getToken(CypherParser.DENY, 0);
+            return getToken(Cypher5Parser.DENY, 0);
         }
 
         public TerminalNode DESC() {
-            return getToken(CypherParser.DESC, 0);
+            return getToken(Cypher5Parser.DESC, 0);
         }
 
         public TerminalNode DESCENDING() {
-            return getToken(CypherParser.DESCENDING, 0);
+            return getToken(Cypher5Parser.DESCENDING, 0);
         }
 
         public TerminalNode DESTROY() {
-            return getToken(CypherParser.DESTROY, 0);
+            return getToken(Cypher5Parser.DESTROY, 0);
         }
 
         public TerminalNode DETACH() {
-            return getToken(CypherParser.DETACH, 0);
+            return getToken(Cypher5Parser.DETACH, 0);
         }
 
         public TerminalNode DIFFERENT() {
-            return getToken(CypherParser.DIFFERENT, 0);
+            return getToken(Cypher5Parser.DIFFERENT, 0);
         }
 
         public TerminalNode DISTINCT() {
-            return getToken(CypherParser.DISTINCT, 0);
+            return getToken(Cypher5Parser.DISTINCT, 0);
         }
 
         public TerminalNode DRIVER() {
-            return getToken(CypherParser.DRIVER, 0);
+            return getToken(Cypher5Parser.DRIVER, 0);
         }
 
         public TerminalNode DROP() {
-            return getToken(CypherParser.DROP, 0);
+            return getToken(Cypher5Parser.DROP, 0);
         }
 
         public TerminalNode DRYRUN() {
-            return getToken(CypherParser.DRYRUN, 0);
+            return getToken(Cypher5Parser.DRYRUN, 0);
         }
 
         public TerminalNode DUMP() {
-            return getToken(CypherParser.DUMP, 0);
+            return getToken(Cypher5Parser.DUMP, 0);
         }
 
         public TerminalNode DURATION() {
-            return getToken(CypherParser.DURATION, 0);
+            return getToken(Cypher5Parser.DURATION, 0);
         }
 
         public TerminalNode EACH() {
-            return getToken(CypherParser.EACH, 0);
+            return getToken(Cypher5Parser.EACH, 0);
         }
 
         public TerminalNode EDGE() {
-            return getToken(CypherParser.EDGE, 0);
+            return getToken(Cypher5Parser.EDGE, 0);
         }
 
         public TerminalNode ELEMENT() {
-            return getToken(CypherParser.ELEMENT, 0);
+            return getToken(Cypher5Parser.ELEMENT, 0);
         }
 
         public TerminalNode ELEMENTS() {
-            return getToken(CypherParser.ELEMENTS, 0);
+            return getToken(Cypher5Parser.ELEMENTS, 0);
         }
 
         public TerminalNode ELSE() {
-            return getToken(CypherParser.ELSE, 0);
+            return getToken(Cypher5Parser.ELSE, 0);
         }
 
         public TerminalNode ENABLE() {
-            return getToken(CypherParser.ENABLE, 0);
+            return getToken(Cypher5Parser.ENABLE, 0);
         }
 
         public TerminalNode ENCRYPTED() {
-            return getToken(CypherParser.ENCRYPTED, 0);
+            return getToken(Cypher5Parser.ENCRYPTED, 0);
         }
 
         public TerminalNode END() {
-            return getToken(CypherParser.END, 0);
+            return getToken(Cypher5Parser.END, 0);
         }
 
         public TerminalNode ENDS() {
-            return getToken(CypherParser.ENDS, 0);
+            return getToken(Cypher5Parser.ENDS, 0);
         }
 
         public TerminalNode ERROR() {
-            return getToken(CypherParser.ERROR, 0);
+            return getToken(Cypher5Parser.ERROR, 0);
         }
 
         public TerminalNode EXECUTABLE() {
-            return getToken(CypherParser.EXECUTABLE, 0);
+            return getToken(Cypher5Parser.EXECUTABLE, 0);
         }
 
         public TerminalNode EXECUTE() {
-            return getToken(CypherParser.EXECUTE, 0);
+            return getToken(Cypher5Parser.EXECUTE, 0);
         }
 
         public TerminalNode EXIST() {
-            return getToken(CypherParser.EXIST, 0);
+            return getToken(Cypher5Parser.EXIST, 0);
         }
 
         public TerminalNode EXISTENCE() {
-            return getToken(CypherParser.EXISTENCE, 0);
+            return getToken(Cypher5Parser.EXISTENCE, 0);
         }
 
         public TerminalNode EXISTS() {
-            return getToken(CypherParser.EXISTS, 0);
+            return getToken(Cypher5Parser.EXISTS, 0);
         }
 
         public TerminalNode FAIL() {
-            return getToken(CypherParser.FAIL, 0);
+            return getToken(Cypher5Parser.FAIL, 0);
         }
 
         public TerminalNode FALSE() {
-            return getToken(CypherParser.FALSE, 0);
+            return getToken(Cypher5Parser.FALSE, 0);
         }
 
         public TerminalNode FIELDTERMINATOR() {
-            return getToken(CypherParser.FIELDTERMINATOR, 0);
+            return getToken(Cypher5Parser.FIELDTERMINATOR, 0);
         }
 
         public TerminalNode FINISH() {
-            return getToken(CypherParser.FINISH, 0);
+            return getToken(Cypher5Parser.FINISH, 0);
         }
 
         public TerminalNode FLOAT() {
-            return getToken(CypherParser.FLOAT, 0);
+            return getToken(Cypher5Parser.FLOAT, 0);
         }
 
         public TerminalNode FOREACH() {
-            return getToken(CypherParser.FOREACH, 0);
+            return getToken(Cypher5Parser.FOREACH, 0);
         }
 
         public TerminalNode FOR() {
-            return getToken(CypherParser.FOR, 0);
+            return getToken(Cypher5Parser.FOR, 0);
         }
 
         public TerminalNode FROM() {
-            return getToken(CypherParser.FROM, 0);
+            return getToken(Cypher5Parser.FROM, 0);
         }
 
         public TerminalNode FULLTEXT() {
-            return getToken(CypherParser.FULLTEXT, 0);
+            return getToken(Cypher5Parser.FULLTEXT, 0);
         }
 
         public TerminalNode FUNCTION() {
-            return getToken(CypherParser.FUNCTION, 0);
+            return getToken(Cypher5Parser.FUNCTION, 0);
         }
 
         public TerminalNode FUNCTIONS() {
-            return getToken(CypherParser.FUNCTIONS, 0);
+            return getToken(Cypher5Parser.FUNCTIONS, 0);
         }
 
         public TerminalNode GRANT() {
-            return getToken(CypherParser.GRANT, 0);
+            return getToken(Cypher5Parser.GRANT, 0);
         }
 
         public TerminalNode GRAPH() {
-            return getToken(CypherParser.GRAPH, 0);
+            return getToken(Cypher5Parser.GRAPH, 0);
         }
 
         public TerminalNode GRAPHS() {
-            return getToken(CypherParser.GRAPHS, 0);
+            return getToken(Cypher5Parser.GRAPHS, 0);
         }
 
         public TerminalNode GROUP() {
-            return getToken(CypherParser.GROUP, 0);
+            return getToken(Cypher5Parser.GROUP, 0);
         }
 
         public TerminalNode GROUPS() {
-            return getToken(CypherParser.GROUPS, 0);
+            return getToken(Cypher5Parser.GROUPS, 0);
         }
 
         public TerminalNode HEADERS() {
-            return getToken(CypherParser.HEADERS, 0);
+            return getToken(Cypher5Parser.HEADERS, 0);
         }
 
         public TerminalNode HOME() {
-            return getToken(CypherParser.HOME, 0);
+            return getToken(Cypher5Parser.HOME, 0);
         }
 
         public TerminalNode IF() {
-            return getToken(CypherParser.IF, 0);
+            return getToken(Cypher5Parser.IF, 0);
         }
 
         public TerminalNode IMMUTABLE() {
-            return getToken(CypherParser.IMMUTABLE, 0);
+            return getToken(Cypher5Parser.IMMUTABLE, 0);
         }
 
         public TerminalNode IMPERSONATE() {
-            return getToken(CypherParser.IMPERSONATE, 0);
+            return getToken(Cypher5Parser.IMPERSONATE, 0);
         }
 
         public TerminalNode IN() {
-            return getToken(CypherParser.IN, 0);
+            return getToken(Cypher5Parser.IN, 0);
         }
 
         public TerminalNode INDEX() {
-            return getToken(CypherParser.INDEX, 0);
+            return getToken(Cypher5Parser.INDEX, 0);
         }
 
         public TerminalNode INDEXES() {
-            return getToken(CypherParser.INDEXES, 0);
+            return getToken(Cypher5Parser.INDEXES, 0);
         }
 
         public TerminalNode INF() {
-            return getToken(CypherParser.INF, 0);
+            return getToken(Cypher5Parser.INF, 0);
         }
 
         public TerminalNode INFINITY() {
-            return getToken(CypherParser.INFINITY, 0);
+            return getToken(Cypher5Parser.INFINITY, 0);
         }
 
         public TerminalNode INSERT() {
-            return getToken(CypherParser.INSERT, 0);
+            return getToken(Cypher5Parser.INSERT, 0);
         }
 
         public TerminalNode INT() {
-            return getToken(CypherParser.INT, 0);
+            return getToken(Cypher5Parser.INT, 0);
         }
 
         public TerminalNode INTEGER() {
-            return getToken(CypherParser.INTEGER, 0);
+            return getToken(Cypher5Parser.INTEGER, 0);
         }
 
         public TerminalNode IS() {
-            return getToken(CypherParser.IS, 0);
+            return getToken(Cypher5Parser.IS, 0);
         }
 
         public TerminalNode JOIN() {
-            return getToken(CypherParser.JOIN, 0);
+            return getToken(Cypher5Parser.JOIN, 0);
         }
 
         public TerminalNode KEY() {
-            return getToken(CypherParser.KEY, 0);
+            return getToken(Cypher5Parser.KEY, 0);
         }
 
         public TerminalNode LABEL() {
-            return getToken(CypherParser.LABEL, 0);
+            return getToken(Cypher5Parser.LABEL, 0);
         }
 
         public TerminalNode LABELS() {
-            return getToken(CypherParser.LABELS, 0);
+            return getToken(Cypher5Parser.LABELS, 0);
         }
 
         public TerminalNode LEADING() {
-            return getToken(CypherParser.LEADING, 0);
+            return getToken(Cypher5Parser.LEADING, 0);
         }
 
         public TerminalNode LIMITROWS() {
-            return getToken(CypherParser.LIMITROWS, 0);
+            return getToken(Cypher5Parser.LIMITROWS, 0);
         }
 
         public TerminalNode LIST() {
-            return getToken(CypherParser.LIST, 0);
+            return getToken(Cypher5Parser.LIST, 0);
         }
 
         public TerminalNode LOAD() {
-            return getToken(CypherParser.LOAD, 0);
+            return getToken(Cypher5Parser.LOAD, 0);
         }
 
         public TerminalNode LOCAL() {
-            return getToken(CypherParser.LOCAL, 0);
+            return getToken(Cypher5Parser.LOCAL, 0);
         }
 
         public TerminalNode LOOKUP() {
-            return getToken(CypherParser.LOOKUP, 0);
+            return getToken(Cypher5Parser.LOOKUP, 0);
         }
 
         public TerminalNode MATCH() {
-            return getToken(CypherParser.MATCH, 0);
+            return getToken(Cypher5Parser.MATCH, 0);
         }
 
         public TerminalNode MANAGEMENT() {
-            return getToken(CypherParser.MANAGEMENT, 0);
+            return getToken(Cypher5Parser.MANAGEMENT, 0);
         }
 
         public TerminalNode MAP() {
-            return getToken(CypherParser.MAP, 0);
+            return getToken(Cypher5Parser.MAP, 0);
         }
 
         public TerminalNode MERGE() {
-            return getToken(CypherParser.MERGE, 0);
+            return getToken(Cypher5Parser.MERGE, 0);
         }
 
         public TerminalNode NAME() {
-            return getToken(CypherParser.NAME, 0);
+            return getToken(Cypher5Parser.NAME, 0);
         }
 
         public TerminalNode NAMES() {
-            return getToken(CypherParser.NAMES, 0);
+            return getToken(Cypher5Parser.NAMES, 0);
         }
 
         public TerminalNode NAN() {
-            return getToken(CypherParser.NAN, 0);
+            return getToken(Cypher5Parser.NAN, 0);
         }
 
         public TerminalNode NEW() {
-            return getToken(CypherParser.NEW, 0);
+            return getToken(Cypher5Parser.NEW, 0);
         }
 
         public TerminalNode NODE() {
-            return getToken(CypherParser.NODE, 0);
+            return getToken(Cypher5Parser.NODE, 0);
         }
 
         public TerminalNode NODETACH() {
-            return getToken(CypherParser.NODETACH, 0);
+            return getToken(Cypher5Parser.NODETACH, 0);
         }
 
         public TerminalNode NODES() {
-            return getToken(CypherParser.NODES, 0);
+            return getToken(Cypher5Parser.NODES, 0);
         }
 
         public TerminalNode NONE() {
-            return getToken(CypherParser.NONE, 0);
+            return getToken(Cypher5Parser.NONE, 0);
         }
 
         public TerminalNode NORMALIZE() {
-            return getToken(CypherParser.NORMALIZE, 0);
+            return getToken(Cypher5Parser.NORMALIZE, 0);
         }
 
         public TerminalNode NOTHING() {
-            return getToken(CypherParser.NOTHING, 0);
+            return getToken(Cypher5Parser.NOTHING, 0);
         }
 
         public TerminalNode NOWAIT() {
-            return getToken(CypherParser.NOWAIT, 0);
+            return getToken(Cypher5Parser.NOWAIT, 0);
         }
 
         public TerminalNode OF() {
-            return getToken(CypherParser.OF, 0);
+            return getToken(Cypher5Parser.OF, 0);
         }
 
         public TerminalNode ON() {
-            return getToken(CypherParser.ON, 0);
+            return getToken(Cypher5Parser.ON, 0);
         }
 
         public TerminalNode ONLY() {
-            return getToken(CypherParser.ONLY, 0);
+            return getToken(Cypher5Parser.ONLY, 0);
         }
 
         public TerminalNode OPTIONAL() {
-            return getToken(CypherParser.OPTIONAL, 0);
+            return getToken(Cypher5Parser.OPTIONAL, 0);
         }
 
         public TerminalNode OPTIONS() {
-            return getToken(CypherParser.OPTIONS, 0);
+            return getToken(Cypher5Parser.OPTIONS, 0);
         }
 
         public TerminalNode OPTION() {
-            return getToken(CypherParser.OPTION, 0);
+            return getToken(Cypher5Parser.OPTION, 0);
         }
 
         public TerminalNode OR() {
-            return getToken(CypherParser.OR, 0);
+            return getToken(Cypher5Parser.OR, 0);
         }
 
         public TerminalNode ORDER() {
-            return getToken(CypherParser.ORDER, 0);
+            return getToken(Cypher5Parser.ORDER, 0);
         }
 
         public TerminalNode OUTPUT() {
-            return getToken(CypherParser.OUTPUT, 0);
+            return getToken(Cypher5Parser.OUTPUT, 0);
         }
 
         public TerminalNode PASSWORD() {
-            return getToken(CypherParser.PASSWORD, 0);
+            return getToken(Cypher5Parser.PASSWORD, 0);
         }
 
         public TerminalNode PASSWORDS() {
-            return getToken(CypherParser.PASSWORDS, 0);
+            return getToken(Cypher5Parser.PASSWORDS, 0);
         }
 
         public TerminalNode PATH() {
-            return getToken(CypherParser.PATH, 0);
+            return getToken(Cypher5Parser.PATH, 0);
         }
 
         public TerminalNode PATHS() {
-            return getToken(CypherParser.PATHS, 0);
+            return getToken(Cypher5Parser.PATHS, 0);
         }
 
         public TerminalNode PERIODIC() {
-            return getToken(CypherParser.PERIODIC, 0);
+            return getToken(Cypher5Parser.PERIODIC, 0);
         }
 
         public TerminalNode PLAINTEXT() {
-            return getToken(CypherParser.PLAINTEXT, 0);
+            return getToken(Cypher5Parser.PLAINTEXT, 0);
         }
 
         public TerminalNode POINT() {
-            return getToken(CypherParser.POINT, 0);
+            return getToken(Cypher5Parser.POINT, 0);
         }
 
         public TerminalNode POPULATED() {
-            return getToken(CypherParser.POPULATED, 0);
+            return getToken(Cypher5Parser.POPULATED, 0);
         }
 
         public TerminalNode PRIMARY() {
-            return getToken(CypherParser.PRIMARY, 0);
+            return getToken(Cypher5Parser.PRIMARY, 0);
         }
 
         public TerminalNode PRIMARIES() {
-            return getToken(CypherParser.PRIMARIES, 0);
+            return getToken(Cypher5Parser.PRIMARIES, 0);
         }
 
         public TerminalNode PRIVILEGE() {
-            return getToken(CypherParser.PRIVILEGE, 0);
+            return getToken(Cypher5Parser.PRIVILEGE, 0);
         }
 
         public TerminalNode PRIVILEGES() {
-            return getToken(CypherParser.PRIVILEGES, 0);
+            return getToken(Cypher5Parser.PRIVILEGES, 0);
         }
 
         public TerminalNode PROCEDURE() {
-            return getToken(CypherParser.PROCEDURE, 0);
+            return getToken(Cypher5Parser.PROCEDURE, 0);
         }
 
         public TerminalNode PROCEDURES() {
-            return getToken(CypherParser.PROCEDURES, 0);
+            return getToken(Cypher5Parser.PROCEDURES, 0);
         }
 
         public TerminalNode PROPERTIES() {
-            return getToken(CypherParser.PROPERTIES, 0);
+            return getToken(Cypher5Parser.PROPERTIES, 0);
         }
 
         public TerminalNode PROPERTY() {
-            return getToken(CypherParser.PROPERTY, 0);
+            return getToken(Cypher5Parser.PROPERTY, 0);
         }
 
         public TerminalNode RANGE() {
-            return getToken(CypherParser.RANGE, 0);
+            return getToken(Cypher5Parser.RANGE, 0);
         }
 
         public TerminalNode READ() {
-            return getToken(CypherParser.READ, 0);
+            return getToken(Cypher5Parser.READ, 0);
         }
 
         public TerminalNode REALLOCATE() {
-            return getToken(CypherParser.REALLOCATE, 0);
+            return getToken(Cypher5Parser.REALLOCATE, 0);
         }
 
         public TerminalNode REDUCE() {
-            return getToken(CypherParser.REDUCE, 0);
+            return getToken(Cypher5Parser.REDUCE, 0);
         }
 
         public TerminalNode REL() {
-            return getToken(CypherParser.REL, 0);
+            return getToken(Cypher5Parser.REL, 0);
         }
 
         public TerminalNode RELATIONSHIP() {
-            return getToken(CypherParser.RELATIONSHIP, 0);
+            return getToken(Cypher5Parser.RELATIONSHIP, 0);
         }
 
         public TerminalNode RELATIONSHIPS() {
-            return getToken(CypherParser.RELATIONSHIPS, 0);
+            return getToken(Cypher5Parser.RELATIONSHIPS, 0);
         }
 
         public TerminalNode REMOVE() {
-            return getToken(CypherParser.REMOVE, 0);
+            return getToken(Cypher5Parser.REMOVE, 0);
         }
 
         public TerminalNode RENAME() {
-            return getToken(CypherParser.RENAME, 0);
+            return getToken(Cypher5Parser.RENAME, 0);
         }
 
         public TerminalNode REPEATABLE() {
-            return getToken(CypherParser.REPEATABLE, 0);
+            return getToken(Cypher5Parser.REPEATABLE, 0);
         }
 
         public TerminalNode REPLACE() {
-            return getToken(CypherParser.REPLACE, 0);
+            return getToken(Cypher5Parser.REPLACE, 0);
         }
 
         public TerminalNode REPORT() {
-            return getToken(CypherParser.REPORT, 0);
+            return getToken(Cypher5Parser.REPORT, 0);
         }
 
         public TerminalNode REQUIRE() {
-            return getToken(CypherParser.REQUIRE, 0);
+            return getToken(Cypher5Parser.REQUIRE, 0);
         }
 
         public TerminalNode REQUIRED() {
-            return getToken(CypherParser.REQUIRED, 0);
+            return getToken(Cypher5Parser.REQUIRED, 0);
         }
 
         public TerminalNode RETURN() {
-            return getToken(CypherParser.RETURN, 0);
+            return getToken(Cypher5Parser.RETURN, 0);
         }
 
         public TerminalNode REVOKE() {
-            return getToken(CypherParser.REVOKE, 0);
+            return getToken(Cypher5Parser.REVOKE, 0);
         }
 
         public TerminalNode ROLE() {
-            return getToken(CypherParser.ROLE, 0);
+            return getToken(Cypher5Parser.ROLE, 0);
         }
 
         public TerminalNode ROLES() {
-            return getToken(CypherParser.ROLES, 0);
+            return getToken(Cypher5Parser.ROLES, 0);
         }
 
         public TerminalNode ROW() {
-            return getToken(CypherParser.ROW, 0);
+            return getToken(Cypher5Parser.ROW, 0);
         }
 
         public TerminalNode ROWS() {
-            return getToken(CypherParser.ROWS, 0);
+            return getToken(Cypher5Parser.ROWS, 0);
         }
 
         public TerminalNode SCAN() {
-            return getToken(CypherParser.SCAN, 0);
+            return getToken(Cypher5Parser.SCAN, 0);
         }
 
         public TerminalNode SECONDARY() {
-            return getToken(CypherParser.SECONDARY, 0);
+            return getToken(Cypher5Parser.SECONDARY, 0);
         }
 
         public TerminalNode SECONDARIES() {
-            return getToken(CypherParser.SECONDARIES, 0);
+            return getToken(Cypher5Parser.SECONDARIES, 0);
         }
 
         public TerminalNode SEC() {
-            return getToken(CypherParser.SEC, 0);
+            return getToken(Cypher5Parser.SEC, 0);
         }
 
         public TerminalNode SECOND() {
-            return getToken(CypherParser.SECOND, 0);
+            return getToken(Cypher5Parser.SECOND, 0);
         }
 
         public TerminalNode SECONDS() {
-            return getToken(CypherParser.SECONDS, 0);
+            return getToken(Cypher5Parser.SECONDS, 0);
         }
 
         public TerminalNode SEEK() {
-            return getToken(CypherParser.SEEK, 0);
+            return getToken(Cypher5Parser.SEEK, 0);
         }
 
         public TerminalNode SERVER() {
-            return getToken(CypherParser.SERVER, 0);
+            return getToken(Cypher5Parser.SERVER, 0);
         }
 
         public TerminalNode SERVERS() {
-            return getToken(CypherParser.SERVERS, 0);
+            return getToken(Cypher5Parser.SERVERS, 0);
         }
 
         public TerminalNode SET() {
-            return getToken(CypherParser.SET, 0);
+            return getToken(Cypher5Parser.SET, 0);
         }
 
         public TerminalNode SETTING() {
-            return getToken(CypherParser.SETTING, 0);
+            return getToken(Cypher5Parser.SETTING, 0);
         }
 
         public TerminalNode SETTINGS() {
-            return getToken(CypherParser.SETTINGS, 0);
+            return getToken(Cypher5Parser.SETTINGS, 0);
         }
 
         public TerminalNode SHORTEST() {
-            return getToken(CypherParser.SHORTEST, 0);
+            return getToken(Cypher5Parser.SHORTEST, 0);
         }
 
         public TerminalNode SHORTEST_PATH() {
-            return getToken(CypherParser.SHORTEST_PATH, 0);
+            return getToken(Cypher5Parser.SHORTEST_PATH, 0);
         }
 
         public TerminalNode SHOW() {
-            return getToken(CypherParser.SHOW, 0);
+            return getToken(Cypher5Parser.SHOW, 0);
         }
 
         public TerminalNode SIGNED() {
-            return getToken(CypherParser.SIGNED, 0);
+            return getToken(Cypher5Parser.SIGNED, 0);
         }
 
         public TerminalNode SINGLE() {
-            return getToken(CypherParser.SINGLE, 0);
+            return getToken(Cypher5Parser.SINGLE, 0);
         }
 
         public TerminalNode SKIPROWS() {
-            return getToken(CypherParser.SKIPROWS, 0);
+            return getToken(Cypher5Parser.SKIPROWS, 0);
         }
 
         public TerminalNode START() {
-            return getToken(CypherParser.START, 0);
+            return getToken(Cypher5Parser.START, 0);
         }
 
         public TerminalNode STARTS() {
-            return getToken(CypherParser.STARTS, 0);
+            return getToken(Cypher5Parser.STARTS, 0);
         }
 
         public TerminalNode STATUS() {
-            return getToken(CypherParser.STATUS, 0);
+            return getToken(Cypher5Parser.STATUS, 0);
         }
 
         public TerminalNode STOP() {
-            return getToken(CypherParser.STOP, 0);
+            return getToken(Cypher5Parser.STOP, 0);
         }
 
         public TerminalNode VARCHAR() {
-            return getToken(CypherParser.VARCHAR, 0);
+            return getToken(Cypher5Parser.VARCHAR, 0);
         }
 
         public TerminalNode STRING() {
-            return getToken(CypherParser.STRING, 0);
+            return getToken(Cypher5Parser.STRING, 0);
         }
 
         public TerminalNode SUPPORTED() {
-            return getToken(CypherParser.SUPPORTED, 0);
+            return getToken(Cypher5Parser.SUPPORTED, 0);
         }
 
         public TerminalNode SUSPENDED() {
-            return getToken(CypherParser.SUSPENDED, 0);
+            return getToken(Cypher5Parser.SUSPENDED, 0);
         }
 
         public TerminalNode TARGET() {
-            return getToken(CypherParser.TARGET, 0);
+            return getToken(Cypher5Parser.TARGET, 0);
         }
 
         public TerminalNode TERMINATE() {
-            return getToken(CypherParser.TERMINATE, 0);
+            return getToken(Cypher5Parser.TERMINATE, 0);
         }
 
         public TerminalNode TEXT() {
-            return getToken(CypherParser.TEXT, 0);
+            return getToken(Cypher5Parser.TEXT, 0);
         }
 
         public TerminalNode THEN() {
-            return getToken(CypherParser.THEN, 0);
+            return getToken(Cypher5Parser.THEN, 0);
         }
 
         public TerminalNode TIME() {
-            return getToken(CypherParser.TIME, 0);
+            return getToken(Cypher5Parser.TIME, 0);
         }
 
         public TerminalNode TIMESTAMP() {
-            return getToken(CypherParser.TIMESTAMP, 0);
+            return getToken(Cypher5Parser.TIMESTAMP, 0);
         }
 
         public TerminalNode TIMEZONE() {
-            return getToken(CypherParser.TIMEZONE, 0);
+            return getToken(Cypher5Parser.TIMEZONE, 0);
         }
 
         public TerminalNode TO() {
-            return getToken(CypherParser.TO, 0);
+            return getToken(Cypher5Parser.TO, 0);
         }
 
         public TerminalNode TOPOLOGY() {
-            return getToken(CypherParser.TOPOLOGY, 0);
+            return getToken(Cypher5Parser.TOPOLOGY, 0);
         }
 
         public TerminalNode TRAILING() {
-            return getToken(CypherParser.TRAILING, 0);
+            return getToken(Cypher5Parser.TRAILING, 0);
         }
 
         public TerminalNode TRANSACTION() {
-            return getToken(CypherParser.TRANSACTION, 0);
+            return getToken(Cypher5Parser.TRANSACTION, 0);
         }
 
         public TerminalNode TRANSACTIONS() {
-            return getToken(CypherParser.TRANSACTIONS, 0);
+            return getToken(Cypher5Parser.TRANSACTIONS, 0);
         }
 
         public TerminalNode TRAVERSE() {
-            return getToken(CypherParser.TRAVERSE, 0);
+            return getToken(Cypher5Parser.TRAVERSE, 0);
         }
 
         public TerminalNode TRIM() {
-            return getToken(CypherParser.TRIM, 0);
+            return getToken(Cypher5Parser.TRIM, 0);
         }
 
         public TerminalNode TRUE() {
-            return getToken(CypherParser.TRUE, 0);
+            return getToken(Cypher5Parser.TRUE, 0);
         }
 
         public TerminalNode TYPE() {
-            return getToken(CypherParser.TYPE, 0);
+            return getToken(Cypher5Parser.TYPE, 0);
         }
 
         public TerminalNode TYPES() {
-            return getToken(CypherParser.TYPES, 0);
+            return getToken(Cypher5Parser.TYPES, 0);
         }
 
         public TerminalNode UNION() {
-            return getToken(CypherParser.UNION, 0);
+            return getToken(Cypher5Parser.UNION, 0);
         }
 
         public TerminalNode UNIQUE() {
-            return getToken(CypherParser.UNIQUE, 0);
+            return getToken(Cypher5Parser.UNIQUE, 0);
         }
 
         public TerminalNode UNIQUENESS() {
-            return getToken(CypherParser.UNIQUENESS, 0);
+            return getToken(Cypher5Parser.UNIQUENESS, 0);
         }
 
         public TerminalNode UNWIND() {
-            return getToken(CypherParser.UNWIND, 0);
+            return getToken(Cypher5Parser.UNWIND, 0);
         }
 
         public TerminalNode URL() {
-            return getToken(CypherParser.URL, 0);
+            return getToken(Cypher5Parser.URL, 0);
         }
 
         public TerminalNode USE() {
-            return getToken(CypherParser.USE, 0);
+            return getToken(Cypher5Parser.USE, 0);
         }
 
         public TerminalNode USER() {
-            return getToken(CypherParser.USER, 0);
+            return getToken(Cypher5Parser.USER, 0);
         }
 
         public TerminalNode USERS() {
-            return getToken(CypherParser.USERS, 0);
+            return getToken(Cypher5Parser.USERS, 0);
         }
 
         public TerminalNode USING() {
-            return getToken(CypherParser.USING, 0);
+            return getToken(Cypher5Parser.USING, 0);
         }
 
         public TerminalNode VALUE() {
-            return getToken(CypherParser.VALUE, 0);
+            return getToken(Cypher5Parser.VALUE, 0);
         }
 
         public TerminalNode VECTOR() {
-            return getToken(CypherParser.VECTOR, 0);
+            return getToken(Cypher5Parser.VECTOR, 0);
         }
 
         public TerminalNode VERBOSE() {
-            return getToken(CypherParser.VERBOSE, 0);
+            return getToken(Cypher5Parser.VERBOSE, 0);
         }
 
         public TerminalNode VERTEX() {
-            return getToken(CypherParser.VERTEX, 0);
+            return getToken(Cypher5Parser.VERTEX, 0);
         }
 
         public TerminalNode WAIT() {
-            return getToken(CypherParser.WAIT, 0);
+            return getToken(Cypher5Parser.WAIT, 0);
         }
 
         public TerminalNode WHEN() {
-            return getToken(CypherParser.WHEN, 0);
+            return getToken(Cypher5Parser.WHEN, 0);
         }
 
         public TerminalNode WHERE() {
-            return getToken(CypherParser.WHERE, 0);
+            return getToken(Cypher5Parser.WHERE, 0);
         }
 
         public TerminalNode WITH() {
-            return getToken(CypherParser.WITH, 0);
+            return getToken(Cypher5Parser.WITH, 0);
         }
 
         public TerminalNode WITHOUT() {
-            return getToken(CypherParser.WITHOUT, 0);
+            return getToken(Cypher5Parser.WITHOUT, 0);
         }
 
         public TerminalNode WRITE() {
-            return getToken(CypherParser.WRITE, 0);
+            return getToken(Cypher5Parser.WRITE, 0);
         }
 
         public TerminalNode XOR() {
-            return getToken(CypherParser.XOR, 0);
+            return getToken(Cypher5Parser.XOR, 0);
         }
 
         public TerminalNode YIELD() {
-            return getToken(CypherParser.YIELD, 0);
+            return getToken(Cypher5Parser.YIELD, 0);
         }
 
         public TerminalNode ZONED() {
-            return getToken(CypherParser.ZONED, 0);
+            return getToken(Cypher5Parser.ZONED, 0);
         }
 
         public UnescapedLabelSymbolicNameStringContext(ParserRuleContext parent, int invokingState) {
@@ -35396,7 +35396,7 @@ public class CypherParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class EndOfFileContext extends org.neo4j.cypher.internal.parser.AstRuleCtx {
         public TerminalNode EOF() {
-            return getToken(CypherParser.EOF, 0);
+            return getToken(Cypher5Parser.EOF, 0);
         }
 
         public EndOfFileContext(ParserRuleContext parent, int invokingState) {
