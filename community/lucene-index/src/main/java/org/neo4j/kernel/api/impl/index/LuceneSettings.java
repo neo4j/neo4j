@@ -77,6 +77,11 @@ public class LuceneSettings implements SettingsDeclaration {
 
     @Internal
     @Description("Setting for the matching lucene IndexWriterConfig config")
+    public static final Setting<Double> lucene_max_merge =
+            newBuilder("internal.dbms.index.lucene.max_merge", DOUBLE, 2048D).build();
+
+    @Internal
+    @Description("Setting for the matching lucene IndexWriterConfig config")
     public static final Setting<Double> lucene_standard_ram_buffer_size = newBuilder(
                     "internal.dbms.index.lucene.standard_ram_buffer_size",
                     DOUBLE,

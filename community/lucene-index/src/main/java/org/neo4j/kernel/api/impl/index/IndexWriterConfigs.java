@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
+import static org.neo4j.kernel.api.impl.index.LuceneSettings.lucene_max_merge;
 import static org.neo4j.kernel.api.impl.index.LuceneSettings.lucene_merge_factor;
 import static org.neo4j.kernel.api.impl.index.LuceneSettings.lucene_min_merge;
 import static org.neo4j.kernel.api.impl.index.LuceneSettings.lucene_nocfs_ratio;
@@ -76,6 +77,7 @@ public final class IndexWriterConfigs {
         final var mergePolicy = new LogByteSizeMergePolicy();
         mergePolicy.setNoCFSRatio(config.get(lucene_nocfs_ratio));
         mergePolicy.setMinMergeMB(config.get(lucene_min_merge));
+        mergePolicy.setMaxMergeMB(config.get(lucene_max_merge));
         mergePolicy.setMergeFactor(config.get(index == VECTOR ? vector_standard_merge_factor : lucene_merge_factor));
         writerConfig.setMergePolicy(mergePolicy);
 
