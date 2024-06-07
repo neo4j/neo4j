@@ -1766,7 +1766,7 @@ object LogicalPlanToPlanBuilderString {
     case SetPropertyPattern(entityExpression, propertyKey, value) =>
       s"setProperty(${wrapInQuotationsAndMkString(Seq(expressionStringifier(entityExpression), propertyKey.name, expressionStringifier(value)))})"
     case SetDynamicPropertyPattern(entityExpression, propertyKey, value) =>
-      s"setProperty(${wrapInQuotationsAndMkString(Seq(expressionStringifier(entityExpression), expressionStringifier(propertyKey), expressionStringifier(value)))})"
+      s"setDynamicProperty(${wrapInQuotationsAndMkString(Seq(expressionStringifier(entityExpression), expressionStringifier(propertyKey), expressionStringifier(value)))})"
     case SetPropertiesFromMapPattern(entityExpression, map, removeOtherProps) =>
       s"setPropertyFromMap(${wrapInQuotationsAndMkString(Seq(expressionStringifier(entityExpression), expressionStringifier(map)))}, $removeOtherProps)"
     case SetPropertiesPattern(entity, items) =>
