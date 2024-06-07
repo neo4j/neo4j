@@ -1956,10 +1956,10 @@
     "rolesBoostedExecution": [
       "admin"
     ],
-    "isDeprecated": false,
-    "deprecatedBy": null,
+    "isDeprecated": true,
+    "deprecatedBy": "dbms.routing.getRoutingTable",
     "option": {
-      "deprecated": false
+      "deprecated": true
     },
     "enterpriseOnly": false
   },

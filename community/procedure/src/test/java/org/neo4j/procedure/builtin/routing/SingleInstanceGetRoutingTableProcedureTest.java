@@ -44,7 +44,6 @@ import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTString;
 import static org.neo4j.kernel.api.exceptions.Status.Database.DatabaseNotFound;
 import static org.neo4j.kernel.api.exceptions.Status.General.DatabaseUnavailable;
 import static org.neo4j.kernel.database.DatabaseIdFactory.from;
-import static org.neo4j.procedure.builtin.routing.RoutingProcedureInstaller.DEFAULT_NAMESPACE;
 import static org.neo4j.values.storable.Values.stringValue;
 
 import java.lang.annotation.ElementType;
@@ -274,7 +273,8 @@ public class SingleInstanceGetRoutingTableProcedureTest {
         var procedure =
                 newProcedure(databaseAvailabilityChecker, databaseReferenceRepo, portRegister, config, logProvider);
         var expectedMessage =
-                "An address key is included in the query string provided to the GetRoutingTableProcedure, but its value could not be parsed.";
+                "An address key is included in the query string provided to the GetRoutingTableProcedure, but its"
+                        + " value could not be parsed.";
 
         // when/then
         assertThrows(ProcedureException.class, () -> invoke(procedure, ID, ctx), expectedMessage);
@@ -300,7 +300,8 @@ public class SingleInstanceGetRoutingTableProcedureTest {
         var procedure =
                 newProcedure(databaseAvailabilityChecker, databaseReferenceRepo, portRegister, config, logProvider);
         var expectedMessage =
-                "An address key is included in the query string provided to the GetRoutingTableProcedure, but its value could not be parsed.";
+                "An address key is included in the query string provided to the GetRoutingTableProcedure, but its"
+                        + " value could not be parsed.";
 
         // when/then
         assertThrows(ProcedureException.class, () -> invoke(procedure, ID, ctx), expectedMessage);
@@ -404,7 +405,8 @@ public class SingleInstanceGetRoutingTableProcedureTest {
         var procedure =
                 newProcedure(databaseAvailabilityChecker, databaseReferenceRepo, portRegister, config, logProvider);
         var expectedMessage =
-                "An address key is included in the query string provided to the GetRoutingTableProcedure, but its value could not be parsed.";
+                "An address key is included in the query string provided to the GetRoutingTableProcedure, but its"
+                        + " value could not be parsed.";
 
         // when
         assertThrows(ProcedureException.class, () -> invoke(procedure, ID, ctx), expectedMessage);
@@ -435,7 +437,8 @@ public class SingleInstanceGetRoutingTableProcedureTest {
         var procedure =
                 newProcedure(databaseAvailabilityChecker, databaseReferenceRepo, portRegister, config, logProvider);
         var expectedMessage =
-                "An address key is included in the query string provided to the GetRoutingTableProcedure, but its value could not be parsed.";
+                "An address key is included in the query string provided to the GetRoutingTableProcedure, but its"
+                        + " value could not be parsed.";
 
         // when
         assertThrows(ProcedureException.class, () -> invoke(procedure, ID, ctx), expectedMessage);
@@ -551,7 +554,8 @@ public class SingleInstanceGetRoutingTableProcedureTest {
                 databaseReferenceRepo,
                 true);
 
-        return new GetRoutingTableProcedure(DEFAULT_NAMESPACE, routingService, logProvider);
+        var routingTableProcedures = GetRoutingTableProcedure.from(routingService, logProvider);
+        return routingTableProcedures.current();
     }
 
     protected List<SocketAddress> expectedWriters(SocketAddress selfAddress) {

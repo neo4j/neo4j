@@ -19,21 +19,17 @@
  */
 package org.neo4j.procedure.builtin.routing;
 
-import java.util.List;
 import org.neo4j.dbms.routing.RoutingService;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.logging.InternalLogProvider;
 
-public abstract class RoutingProcedureInstaller {
-    public static final List<String> DEFAULT_NAMESPACE = List.of("dbms", "routing");
-    private static final List<String> LEGACY_NAMESPACE = List.of("dbms", "cluster", "routing");
-
+public class RoutingProcedureInstaller {
     public static void install(
             GlobalProcedures globalProcedures, RoutingService routingService, InternalLogProvider logProvider)
             throws ProcedureException {
-        // make procedure available as with both `dbms.routing` and old `dbms.cluster.routing` namespaces
-        globalProcedures.register(new GetRoutingTableProcedure(DEFAULT_NAMESPACE, routingService, logProvider));
-        globalProcedures.register(new GetRoutingTableProcedure(LEGACY_NAMESPACE, routingService, logProvider));
+        var getRoutingTableProcedures = GetRoutingTableProcedure.from(routingService, logProvider);
+        globalProcedures.register(getRoutingTableProcedures.old());
+        globalProcedures.register(getRoutingTableProcedures.current());
     }
 }

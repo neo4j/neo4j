@@ -47,18 +47,40 @@ import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.virtual.MapValue;
 
 public final class GetRoutingTableProcedure implements CallableProcedure {
+    public static final List<String> DEFAULT_NAMESPACE = List.of("dbms", "routing");
+    public static final List<String> LEGACY_NAMESPACE = List.of("dbms", "cluster", "routing");
+
     private static final String NAME = "getRoutingTable";
     private static final String DESCRIPTION =
-            "Returns the advertised bolt capable endpoints for a given database, divided by each endpoint's capabilities. For example, an endpoint may serve read queries, write queries, and/or future `getRoutingTable` requests.";
+            "Returns the advertised bolt capable endpoints for a given database, divided by each endpoint's"
+                    + " capabilities. For example, an endpoint may serve read queries, write queries, and/or future"
+                    + " `getRoutingTable` requests.";
 
     private final RoutingService routingService;
     private final ProcedureSignature signature;
     private final InternalLog log;
 
+    public record GetRoutingTableProcedures(GetRoutingTableProcedure old, GetRoutingTableProcedure current) {}
+
+    public static GetRoutingTableProcedures from(RoutingService routingService, InternalLogProvider logProvider) {
+        var currentSignature = createSignature(DEFAULT_NAMESPACE).build();
+        var currentProcedureFullName = currentSignature.name().toString();
+        var currentProcedure = new GetRoutingTableProcedure(routingService, currentSignature, logProvider);
+
+        var oldSignatureBuilder = createSignature(LEGACY_NAMESPACE);
+        var oldSignature = oldSignatureBuilder
+                .isDeprecated(true)
+                .deprecatedBy(currentProcedureFullName)
+                .build();
+        var oldProcedure = new GetRoutingTableProcedure(routingService, oldSignature, logProvider);
+
+        return new GetRoutingTableProcedures(oldProcedure, currentProcedure);
+    }
+
     public GetRoutingTableProcedure(
-            List<String> namespace, RoutingService routingService, InternalLogProvider logProvider) {
+            RoutingService routingService, ProcedureSignature signature, InternalLogProvider logProvider) {
         this.routingService = routingService;
-        this.signature = buildSignature(namespace);
+        this.signature = signature;
         this.log = logProvider.getLog(getClass());
     }
 
@@ -107,7 +129,7 @@ public final class GetRoutingTableProcedure implements CallableProcedure {
         }
     }
 
-    private static ProcedureSignature buildSignature(List<String> namespace) {
+    public static ProcedureSignature.Builder createSignature(List<String> namespace) {
         return procedureSignature(new QualifiedName(namespace, NAME))
                 .in(CONTEXT.parameterName(), Neo4jTypes.NTMap)
                 .in(DATABASE.parameterName(), Neo4jTypes.NTString, nullValue(Neo4jTypes.NTString))
@@ -116,7 +138,6 @@ public final class GetRoutingTableProcedure implements CallableProcedure {
                 .mode(Mode.DBMS)
                 .description(GetRoutingTableProcedure.DESCRIPTION)
                 .systemProcedure()
-                .allowExpiredCredentials()
-                .build();
+                .allowExpiredCredentials();
     }
 }
