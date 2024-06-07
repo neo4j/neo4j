@@ -327,7 +327,7 @@ case class SetDynamicPropertyOperation(
   valueExpression: Expression
 ) extends AbstractSetPropertyOperation {
 
-  override def name: String = "SetProperty"
+  override def name: String = "SetDynamicProperty"
 
   override def set(executionContext: CypherRow, state: QueryState): Long = {
     val entity = entityExpression(executionContext, state)
