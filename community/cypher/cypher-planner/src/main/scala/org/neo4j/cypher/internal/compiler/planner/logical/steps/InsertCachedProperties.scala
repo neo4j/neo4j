@@ -700,6 +700,10 @@ object RestrictedCaching {
     def shouldCache(property: Property): Boolean = true
   }
 
+  case object CacheNone extends ProtectedProperties {
+    def shouldCache(property: Property): Boolean = false
+  }
+
   private def findPropertyReads(foldable: Foldable, entityName: String, propertyName: String): Seq[Property] = {
     foldable.folder.treeCollect {
       case p @ Property(LogicalVariable(`entityName`), PropertyKeyName(`propertyName`)) => p
@@ -709,7 +713,7 @@ object RestrictedCaching {
   private def protectedProperties(entity: Expression, values: Seq[(String, Expression)]): ProtectedProperties = {
     entity match {
       case LogicalVariable(entityName) => protectedProperties(entityName, values)
-      case _                           => CacheAll
+      case _                           => CacheNone
     }
   }
 
@@ -733,10 +737,9 @@ object RestrictedCaching {
       case SetPropertiesFromMap(_, entity, value: MapExpression, _) =>
         Some(protectedProperties(entity, value.items.map(byName)))
       case _: SetPropertiesFromMap =>
-        // Only protect properties when there is a direct dependency, which only happens when value is a MapExpression
-        Some(CacheAll)
+        Some(CacheNone)
       case _: SetDynamicProperty =>
-        Some(CacheAll)
+        Some(CacheNone)
       case SetNodeProperty(_, entity, key, value) =>
         Some(protectedProperties(entity, Seq(key.name -> value)))
       case SetNodeProperties(_, entity, items) =>
@@ -744,8 +747,7 @@ object RestrictedCaching {
       case SetNodePropertiesFromMap(_, entity, value: MapExpression, _) =>
         Some(protectedProperties(entity, value.items.map(byName)))
       case _: SetNodePropertiesFromMap =>
-        // Only protect properties when there is a direct dependency, which only happens when value is a MapExpression
-        Some(CacheAll)
+        Some(CacheNone)
       case SetRelationshipProperty(_, entity, key, value) =>
         Some(protectedProperties(entity, Seq(key.name -> value)))
       case SetRelationshipProperties(_, entity, items) =>
@@ -753,23 +755,22 @@ object RestrictedCaching {
       case SetRelationshipPropertiesFromMap(_, entity, value: MapExpression, _) =>
         Some(protectedProperties(entity, value.items.map(byName)))
       case _: SetRelationshipPropertiesFromMap =>
-        // Only protect properties when there is a direct dependency, which only happens when value is a MapExpression
-        Some(CacheAll)
+        Some(CacheNone)
       case merge: Merge =>
         val protectedMergeProps = merge.onMatch.map {
           case SetPropertyPattern(e, key, value)             => protectedProperties(e, Seq(key.name -> value))
-          case _: SetDynamicPropertyPattern                  => CacheAll
+          case _: SetDynamicPropertyPattern                  => CacheNone
           case SetPropertiesPattern(e, ps)                   => protectedProperties(e, ps.map(byName))
           case SetRelationshipPropertyPattern(e, key, value) => protectedProperties(e, Seq(key.name -> value))
           case SetRelationshipPropertiesPattern(e, ps)       => protectedProperties(e, ps.map(byName))
           case SetNodePropertiesFromMapPattern(e, map: MapExpression, _) =>
             protectedProperties(e, map.items.map(byName))
-          case _: SetNodePropertiesFromMapPattern => CacheAll
+          case _: SetNodePropertiesFromMapPattern => CacheNone
           case SetRelationshipPropertiesFromMapPattern(e, map: MapExpression, _) =>
             protectedProperties(e, map.items.map(byName))
-          case _: SetRelationshipPropertiesFromMapPattern            => CacheAll
+          case _: SetRelationshipPropertiesFromMapPattern            => CacheNone
           case SetPropertiesFromMapPattern(e, map: MapExpression, _) => protectedProperties(e, map.items.map(byName))
-          case _: SetPropertiesFromMapPattern                        => CacheAll
+          case _: SetPropertiesFromMapPattern                        => CacheNone
           case SetNodePropertyPattern(e, key, value)                 => protectedProperties(e, Seq(key.name -> value))
           case SetNodePropertiesPattern(e, ps)                       => protectedProperties(e, ps.map(byName))
           case _: SetLabelPattern                                    => CacheAll
