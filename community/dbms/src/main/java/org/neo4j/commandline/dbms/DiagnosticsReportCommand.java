@@ -194,34 +194,39 @@ public class DiagnosticsReportCommand extends AbstractAdminCommand {
         reporter.registerAllOfflineProviders(config, fs, databaseNames);
 
         // Register sources provided by this tool
-        try {
-            Path[] configs = fs.listFiles(ctx.confDir(), path -> {
-                String fileName = path.getFileName().toString();
-                return fileName.startsWith("neo4j") && fileName.endsWith(".conf");
-            });
+        if (fs.isDirectory(ctx.confDir())) {
+            try {
+                Path[] configs = fs.listFiles(ctx.confDir(), path -> {
+                    String fileName = path.getFileName().toString();
+                    return fileName.startsWith("neo4j") && fileName.endsWith(".conf");
+                });
 
-            for (Path cfg : configs) {
-                String destination = "config/" + cfg.getFileName();
-                if (fs.isDirectory(cfg)) {
-                    // Likely a kubernetes config
-                    DiagnosticsReportSources.newDiagnosticsMatchingFiles(
-                                    destination + "/",
-                                    fs,
-                                    cfg,
-                                    path -> !fs.isDirectory(path)
-                                            && !path.getFileName().toString().startsWith("."))
-                            .forEach(conf -> reporter.registerSource("config", conf));
-                } else {
-                    // Normal config file
-                    reporter.registerSource(
-                            "config", DiagnosticsReportSources.newDiagnosticsFile(destination, fs, cfg));
+                for (Path cfg : configs) {
+                    String destination = "config/" + cfg.getFileName();
+                    if (fs.isDirectory(cfg)) {
+                        // Likely a kubernetes config
+                        DiagnosticsReportSources.newDiagnosticsMatchingFiles(
+                                        destination + "/",
+                                        fs,
+                                        cfg,
+                                        path -> !fs.isDirectory(path)
+                                                && !path.getFileName()
+                                                        .toString()
+                                                        .startsWith("."))
+                                .forEach(conf -> reporter.registerSource("config", conf));
+                    } else {
+                        // Normal config file
+                        reporter.registerSource(
+                                "config", DiagnosticsReportSources.newDiagnosticsFile(destination, fs, cfg));
+                    }
                 }
+            } catch (IOException e) {
+                reporter.registerSource(
+                        "config",
+                        newDiagnosticsString(
+                                "config error", () -> "Error reading files in directory: " + e.getMessage()));
+                throw new RuntimeException(e);
             }
-        } catch (IOException e) {
-            reporter.registerSource(
-                    "config",
-                    newDiagnosticsString("config error", () -> "Error reading files in directory: " + e.getMessage()));
-            throw new RuntimeException(e);
         }
 
         Path serverLogsConfig = config.get(GraphDatabaseSettings.server_logging_config_path);
