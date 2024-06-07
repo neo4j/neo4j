@@ -177,24 +177,6 @@ public class LazyProcedures implements GlobalProcedures, Consumer<Supplier<Globa
         }
 
         @Override
-        public ProcedureHandle procedure(QualifiedName name) throws ProcedureException {
-            initView();
-            return view.procedure(name);
-        }
-
-        @Override
-        public UserFunctionHandle function(QualifiedName name) {
-            initView();
-            return view.function(name);
-        }
-
-        @Override
-        public UserFunctionHandle aggregationFunction(QualifiedName name) {
-            initView();
-            return view.aggregationFunction(name);
-        }
-
-        @Override
         public ProcedureHandle procedure(QualifiedName name, CypherScope scope) throws ProcedureException {
             initView();
             return view.procedure(name, scope);
@@ -210,24 +192,6 @@ public class LazyProcedures implements GlobalProcedures, Consumer<Supplier<Globa
         public UserFunctionHandle aggregationFunction(QualifiedName name, CypherScope scope) {
             initView();
             return view.aggregationFunction(name, scope);
-        }
-
-        @Override
-        public Stream<ProcedureSignature> getAllProcedures() {
-            initView();
-            return view.getAllProcedures();
-        }
-
-        @Override
-        public Stream<UserFunctionSignature> getAllNonAggregatingFunctions() {
-            initView();
-            return view.getAllNonAggregatingFunctions();
-        }
-
-        @Override
-        public Stream<UserFunctionSignature> getAllAggregatingFunctions() {
-            initView();
-            return view.getAllAggregatingFunctions();
         }
 
         @Override

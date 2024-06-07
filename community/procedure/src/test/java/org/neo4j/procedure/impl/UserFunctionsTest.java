@@ -37,6 +37,7 @@ import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
 import org.neo4j.internal.kernel.api.procs.UserAggregator;
 import org.neo4j.internal.kernel.api.procs.UserFunctionHandle;
 import org.neo4j.internal.kernel.api.procs.UserFunctionSignature;
+import org.neo4j.kernel.api.CypherScope;
 import org.neo4j.kernel.api.procedure.CallableUserAggregationFunction;
 import org.neo4j.kernel.api.procedure.CallableUserFunction;
 import org.neo4j.kernel.api.procedure.Context;
@@ -61,7 +62,8 @@ class UserFunctionsTest {
         var view = procs.getCurrentView();
 
         // Then
-        assertThat(view.function(signature.name()).signature()).isEqualTo(signature);
+        assertThat(view.function(signature.name(), CypherScope.CYPHER_5).signature())
+                .isEqualTo(signature);
     }
 
     @Test
@@ -76,8 +78,8 @@ class UserFunctionsTest {
         var view = procs.getCurrentView();
 
         // Then
-        List<UserFunctionSignature> signatures =
-                Iterables.asList(view.getAllNonAggregatingFunctions().collect(Collectors.toSet()));
+        List<UserFunctionSignature> signatures = Iterables.asList(
+                view.getAllNonAggregatingFunctions(CypherScope.CYPHER_5).collect(Collectors.toSet()));
         assertThat(signatures)
                 .contains(
                         functionSignature("org", "myproc1")
@@ -91,7 +93,8 @@ class UserFunctionsTest {
                                 .build());
 
         // And
-        signatures = Iterables.asList(view.getAllAggregatingFunctions().collect(Collectors.toSet()));
+        signatures = Iterables.asList(
+                view.getAllAggregatingFunctions(CypherScope.CYPHER_5).collect(Collectors.toSet()));
         assertThat(signatures).isEmpty();
     }
 
@@ -107,8 +110,8 @@ class UserFunctionsTest {
         var view = procs.getCurrentView();
 
         // Then
-        List<UserFunctionSignature> signatures =
-                Iterables.asList(view.getAllNonAggregatingFunctions().collect(Collectors.toSet()));
+        List<UserFunctionSignature> signatures = Iterables.asList(
+                view.getAllNonAggregatingFunctions(CypherScope.CYPHER_5).collect(Collectors.toSet()));
         assertThat(signatures)
                 .contains(
                         functionSignature("org", "myfunc1")
@@ -119,7 +122,8 @@ class UserFunctionsTest {
                                 .build());
 
         // And
-        signatures = Iterables.asList(view.getAllAggregatingFunctions().collect(Collectors.toSet()));
+        signatures = Iterables.asList(
+                view.getAllAggregatingFunctions(CypherScope.CYPHER_5).collect(Collectors.toSet()));
         assertThat(signatures)
                 .contains(functionSignature("org", "myaggrfunc1")
                         .out(Neo4jTypes.NTAny)
@@ -131,7 +135,7 @@ class UserFunctionsTest {
         // Given
         procs.register(function);
         var view = procs.getCurrentView();
-        int functionId = view.function(signature.name()).id();
+        int functionId = view.function(signature.name(), CypherScope.CYPHER_5).id();
 
         // When
         Object result = view.callFunction(prepareContext(), functionId, new AnyValue[] {numberValue(1337)});
@@ -143,7 +147,7 @@ class UserFunctionsTest {
     @Test
     void shouldNotAllowCallingNonExistingFunction() {
         var view = procs.getCurrentView();
-        UserFunctionHandle functionHandle = view.function(signature.name());
+        UserFunctionHandle functionHandle = view.function(signature.name(), CypherScope.CYPHER_5);
         ProcedureException exception = assertThrows(
                 ProcedureException.class,
                 () -> view.callFunction(
@@ -167,7 +171,8 @@ class UserFunctionsTest {
     @Test
     void shouldSignalNonExistingFunction() {
         // When
-        assertThat(procs.getCurrentView().function(signature.name())).isNull();
+        assertThat(procs.getCurrentView().function(signature.name(), CypherScope.CYPHER_5))
+                .isNull();
     }
 
     @Test
@@ -182,7 +187,7 @@ class UserFunctionsTest {
         var view = procs.getCurrentView();
 
         Context ctx = prepareContext();
-        int functionId = view.function(signature.name()).id();
+        int functionId = view.function(signature.name(), CypherScope.CYPHER_5).id();
 
         // When
         Object result = view.callFunction(ctx, functionId, new AnyValue[0]);

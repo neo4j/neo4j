@@ -456,7 +456,7 @@ trait GraphDatabaseTestSupport
     val namespace = parts.reverse.tail.reverse
     val name = parts.last
     val procs = globalProcedures
-    procs.getCurrentView.function(new QualifiedName(namespace, name))
+    procs.getCurrentView.function(new QualifiedName(namespace, name), org.neo4j.kernel.api.CypherScope.CYPHER_5)
   }
 
   def kernelMonitors: Monitors = graph.getDependencyResolver.resolveDependency(classOf[Monitors])

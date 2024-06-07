@@ -174,11 +174,6 @@ public class ProcedureRegistry {
         }
     }
 
-    @Deprecated(forRemoval = true)
-    public ProcedureHandle procedure(QualifiedName name) throws ProcedureException {
-        return procedure(name, CypherScope.CYPHER_5);
-    }
-
     public ProcedureHandle procedure(QualifiedName name, CypherScope scope) throws ProcedureException {
         CallableProcedure proc = procedures.getByKey(name, scope);
         if (proc == null) {
@@ -187,22 +182,12 @@ public class ProcedureRegistry {
         return new ProcedureHandle(proc.signature(), procedures.idOfKey(name, scope));
     }
 
-    @Deprecated(forRemoval = true)
-    public UserFunctionHandle function(QualifiedName name) {
-        return function(name, CypherScope.CYPHER_5);
-    }
-
     public UserFunctionHandle function(QualifiedName name, CypherScope scope) {
         CallableUserFunction func = functions.getByKey(name, scope);
         if (func == null) {
             return null;
         }
         return new UserFunctionHandle(func.signature(), functions.idOfKey(name, scope));
-    }
-
-    @Deprecated(forRemoval = true)
-    public UserFunctionHandle aggregationFunction(QualifiedName name) {
-        return aggregationFunction(name, CypherScope.CYPHER_5);
     }
 
     public UserFunctionHandle aggregationFunction(QualifiedName name, CypherScope scope) {

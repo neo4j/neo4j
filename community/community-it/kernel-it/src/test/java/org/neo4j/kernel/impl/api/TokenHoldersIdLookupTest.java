@@ -31,6 +31,7 @@ import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.internal.kernel.api.procs.QualifiedName;
 import org.neo4j.internal.kernel.api.procs.UserFunctionHandle;
 import org.neo4j.internal.kernel.api.security.LoginContext;
+import org.neo4j.kernel.api.CypherScope;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
@@ -55,20 +56,21 @@ class TokenHoldersIdLookupTest {
         reg.registerAggregationFunction(TestProcedures.class);
         var procs = reg.getCurrentView();
         procName2id = new HashMap<>();
-        for (ProcedureSignature signature : procs.getAllProcedures().toList()) {
+        for (ProcedureSignature signature :
+                procs.getAllProcedures(CypherScope.CYPHER_5).toList()) {
             QualifiedName name = signature.name();
-            ProcedureHandle procedure = procs.procedure(name);
+            ProcedureHandle procedure = procs.procedure(name, CypherScope.CYPHER_5);
             procName2id.put(name.toString(), procedure.id());
         }
         funcName2id = new HashMap<>();
-        procs.getAllNonAggregatingFunctions().forEach(signature -> {
+        procs.getAllNonAggregatingFunctions(CypherScope.CYPHER_5).forEach(signature -> {
             QualifiedName name = signature.name();
-            UserFunctionHandle function = procs.function(name);
+            UserFunctionHandle function = procs.function(name, CypherScope.CYPHER_5);
             funcName2id.put(name.toString(), function.id());
         });
-        procs.getAllAggregatingFunctions().forEach(signature -> {
+        procs.getAllAggregatingFunctions(CypherScope.CYPHER_5).forEach(signature -> {
             QualifiedName name = signature.name();
-            UserFunctionHandle function = procs.aggregationFunction(name);
+            UserFunctionHandle function = procs.aggregationFunction(name, CypherScope.CYPHER_5);
             funcName2id.put(name.toString(), function.id());
         });
         idLookup = new TokenHoldersIdLookup(mockedTokenHolders(), procs, () -> false);

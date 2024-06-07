@@ -83,6 +83,7 @@ import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.kernel.api.CypherScope;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.procedure.Context;
@@ -565,9 +566,9 @@ class BuiltInProceduresTest {
         GlobalProcedures reg = new GlobalProceduresRegistry();
         TemporalFunction.registerTemporalFunctions(reg, ProcedureConfig.DEFAULT);
         var view = reg.getCurrentView();
-        assertThat(view.getAllNonAggregatingFunctions().filter(f -> !f.isBuiltIn()))
+        assertThat(view.getAllNonAggregatingFunctions(CypherScope.CYPHER_5).filter(f -> !f.isBuiltIn()))
                 .isEmpty();
-        assertThat(view.getAllAggregatingFunctions().filter(f -> !f.isBuiltIn()))
+        assertThat(view.getAllAggregatingFunctions(CypherScope.CYPHER_5).filter(f -> !f.isBuiltIn()))
                 .isEmpty();
     }
 
@@ -628,7 +629,7 @@ class BuiltInProceduresTest {
                 .thenReturn(PopulationProgress.DONE);
         AnyValue[] input = Arrays.stream(args).map(ValueUtils::of).toArray(AnyValue[]::new);
         var view = procs.getCurrentView();
-        int procId = view.procedure(ProcedureSignature.procedureName(name.split("\\.")))
+        int procId = view.procedure(ProcedureSignature.procedureName(name.split("\\.")), CypherScope.CYPHER_5)
                 .id();
         List<AnyValue[]> anyValues = Iterators.asList(view.callProcedure(ctx, procId, input, EMPTY_RESOURCE_TRACKER));
         List<Object[]> toReturn = new ArrayList<>(anyValues.size());

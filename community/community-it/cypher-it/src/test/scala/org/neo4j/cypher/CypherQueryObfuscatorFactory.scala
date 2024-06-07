@@ -119,7 +119,7 @@ class CypherQueryObfuscatorFactory {
 
     override def procedureSignature(name: QualifiedName): ProcedureSignature = {
       val neo4jName = new org.neo4j.internal.kernel.api.procs.QualifiedName(name.namespace.toArray, name.name)
-      val handle = procedures.getCurrentView().procedure(neo4jName)
+      val handle = procedures.getCurrentView().procedure(neo4jName, org.neo4j.kernel.api.CypherScope.CYPHER_5)
       asCypherProcedureSignature(name, handle.id(), handle.signature())
     }
 

@@ -40,6 +40,7 @@ import org.neo4j.common.DependencyResolver;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.ProcedureHandle;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
+import org.neo4j.kernel.api.CypherScope;
 import org.neo4j.kernel.api.ResourceMonitor;
 import org.neo4j.kernel.api.procedure.CallableProcedure;
 import org.neo4j.kernel.api.procedure.Context;
@@ -62,7 +63,9 @@ class ProceduresTest {
         procs.register(procedure);
 
         // Then
-        assertThat(procs.getCurrentView().procedure(signature.name()).signature())
+        assertThat(procs.getCurrentView()
+                        .procedure(signature.name(), CypherScope.CYPHER_5)
+                        .signature())
                 .isEqualTo(signature);
     }
 
@@ -78,7 +81,8 @@ class ProceduresTest {
         var view = procs.getCurrentView();
 
         // Then
-        List<ProcedureSignature> signatures = view.getAllProcedures().toList();
+        List<ProcedureSignature> signatures =
+                view.getAllProcedures(CypherScope.CYPHER_5).toList();
         assertThat(signatures)
                 .contains(
                         procedureSignature("org", "myproc1")
@@ -97,7 +101,7 @@ class ProceduresTest {
         // Given
         procs.register(procedure);
         var view = procs.getCurrentView();
-        ProcedureHandle procHandle = view.procedure(signature.name());
+        ProcedureHandle procHandle = view.procedure(signature.name(), CypherScope.CYPHER_5);
 
         // When
         RawIterator<AnyValue[], ProcedureException> result = view.callProcedure(
@@ -112,8 +116,8 @@ class ProceduresTest {
 
     @Test
     void shouldNotAllowCallingNonExistingProcedure() {
-        ProcedureException exception = assertThrows(
-                ProcedureException.class, () -> procs.getCurrentView().procedure(signature.name()));
+        ProcedureException exception = assertThrows(ProcedureException.class, () -> procs.getCurrentView()
+                .procedure(signature.name(), CypherScope.CYPHER_5));
         assertThat(exception.getMessage())
                 .isEqualTo(
                         "There is no procedure with the name `org.myproc` registered for this database instance. Please ensure you've spelled the "
@@ -158,8 +162,8 @@ class ProceduresTest {
 
     @Test
     void shouldSignalNonExistingProcedure() {
-        ProcedureException exception = assertThrows(
-                ProcedureException.class, () -> procs.getCurrentView().procedure(signature.name()));
+        ProcedureException exception = assertThrows(ProcedureException.class, () -> procs.getCurrentView()
+                .procedure(signature.name(), CypherScope.CYPHER_5));
         assertThat(exception.getMessage())
                 .isEqualTo(
                         "There is no procedure with the name `org.myproc` registered for this database instance. Please ensure you've spelled the "
@@ -181,7 +185,7 @@ class ProceduresTest {
         var view = procs.getCurrentView();
 
         Context ctx = prepareContext();
-        ProcedureHandle procedureHandle = view.procedure(signature.name());
+        ProcedureHandle procedureHandle = view.procedure(signature.name(), CypherScope.CYPHER_5);
 
         // When
         RawIterator<AnyValue[], ProcedureException> result =

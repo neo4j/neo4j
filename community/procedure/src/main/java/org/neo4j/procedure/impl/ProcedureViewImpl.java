@@ -105,21 +105,6 @@ public class ProcedureViewImpl implements ProcedureView {
     }
 
     @Override
-    public ProcedureHandle procedure(QualifiedName name) throws ProcedureException {
-        return procedure(name, CypherScope.CYPHER_5);
-    }
-
-    @Override
-    public UserFunctionHandle function(QualifiedName name) {
-        return function(name, CypherScope.CYPHER_5);
-    }
-
-    @Override
-    public UserFunctionHandle aggregationFunction(QualifiedName name) {
-        return aggregationFunction(name, CypherScope.CYPHER_5);
-    }
-
-    @Override
     public ProcedureHandle procedure(QualifiedName name, CypherScope scope) throws ProcedureException {
         return registry.procedure(name, scope);
     }
@@ -132,21 +117,6 @@ public class ProcedureViewImpl implements ProcedureView {
     @Override
     public UserFunctionHandle aggregationFunction(QualifiedName name, CypherScope scope) {
         return registry.aggregationFunction(name, scope);
-    }
-
-    @Override
-    public Stream<ProcedureSignature> getAllProcedures() {
-        return getAllProcedures(CypherScope.CYPHER_5);
-    }
-
-    @Override
-    public Stream<UserFunctionSignature> getAllNonAggregatingFunctions() {
-        return getAllNonAggregatingFunctions(CypherScope.CYPHER_5);
-    }
-
-    @Override
-    public Stream<UserFunctionSignature> getAllAggregatingFunctions() {
-        return getAllAggregatingFunctions(CypherScope.CYPHER_5);
     }
 
     @Override

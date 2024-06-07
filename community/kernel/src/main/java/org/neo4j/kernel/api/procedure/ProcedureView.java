@@ -34,30 +34,11 @@ import org.neo4j.kernel.api.ResourceMonitor;
 import org.neo4j.values.AnyValue;
 
 public interface ProcedureView {
-
-    @Deprecated(forRemoval = true)
-    ProcedureHandle procedure(QualifiedName name) throws ProcedureException;
-
-    @Deprecated(forRemoval = true)
-    UserFunctionHandle function(QualifiedName name);
-
-    @Deprecated(forRemoval = true)
-    UserFunctionHandle aggregationFunction(QualifiedName name);
-
     ProcedureHandle procedure(QualifiedName name, CypherScope scope) throws ProcedureException;
 
     UserFunctionHandle function(QualifiedName name, CypherScope scope);
 
     UserFunctionHandle aggregationFunction(QualifiedName name, CypherScope scope);
-
-    @Deprecated(forRemoval = true)
-    Stream<ProcedureSignature> getAllProcedures();
-
-    @Deprecated(forRemoval = true)
-    Stream<UserFunctionSignature> getAllNonAggregatingFunctions();
-
-    @Deprecated(forRemoval = true)
-    Stream<UserFunctionSignature> getAllAggregatingFunctions();
 
     Stream<ProcedureSignature> getAllProcedures(CypherScope scope);
 

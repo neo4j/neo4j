@@ -65,6 +65,7 @@ import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
 import org.neo4j.internal.kernel.api.procs.QualifiedName;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.GraphDatabaseQueryService;
+import org.neo4j.kernel.api.CypherScope;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.QueryRegistry;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
@@ -830,8 +831,9 @@ class Neo4jTransactionalContextIT {
         var innerCtx = ctx.contextWithNewTransaction();
 
         var procsRegistry = databaseAPI.getDependencyResolver().resolveDependency(GlobalProcedures.class);
-        var txSetMetaData =
-                procsRegistry.getCurrentView().procedure(new QualifiedName(new String[] {"tx"}, "setMetaData"));
+        var txSetMetaData = procsRegistry
+                .getCurrentView()
+                .procedure(new QualifiedName(new String[] {"tx"}, "setMetaData"), CypherScope.CYPHER_5);
         var id = txSetMetaData.id();
         var procContext = new ProcedureCallContext(id, EMPTY_STRING_ARRAY, false, "", false, "runtimeUsed");
 

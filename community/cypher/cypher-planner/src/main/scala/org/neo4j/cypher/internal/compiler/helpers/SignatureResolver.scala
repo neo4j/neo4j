@@ -98,7 +98,11 @@ object SignatureResolver {
   // In some testing situations this can be troublesome to reach, and thus we provide this escape hatch.
   @VisibleForTesting
   def from(procedureView: ProcedureView) =
-    new SignatureResolver(procedureView.procedure, procedureView.function, procedureView.signatureVersion())
+    new SignatureResolver(
+      (name: procs.QualifiedName) => procedureView.procedure(name, org.neo4j.kernel.api.CypherScope.CYPHER_5),
+      (name: procs.QualifiedName) => procedureView.function(name, org.neo4j.kernel.api.CypherScope.CYPHER_5),
+      procedureView.signatureVersion()
+    )
 
   def toCypherProcedure(handle: ProcedureHandle): ProcedureSignature = {
     val signature = handle.signature()
