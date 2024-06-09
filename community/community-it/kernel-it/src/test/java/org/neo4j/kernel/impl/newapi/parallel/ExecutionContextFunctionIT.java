@@ -346,9 +346,7 @@ class ExecutionContextFunctionIT {
     @Test
     void testBuiltInFunction() throws ProcedureException {
         doWithExecutionContext(executionContext -> {
-            var handle = executionContext
-                    .procedures()
-                    .functionGet(new QualifiedName(List.of(), "date"), CypherScope.CYPHER_5);
+            var handle = executionContext.procedures().functionGet(new QualifiedName("date"), CypherScope.CYPHER_5);
             var procContext = new ProcedureCallContext(handle.id(), new String[0], false, "", false, RUNTIME_USED);
 
             AnyValue result = executionContext
@@ -364,7 +362,7 @@ class ExecutionContextFunctionIT {
             ZonedDateTime referenceDateTime = ZonedDateTime.now();
             var handle = executionContext
                     .procedures()
-                    .functionGet(new QualifiedName(List.of("datetime"), "realtime"), CypherScope.CYPHER_5);
+                    .functionGet(new QualifiedName("datetime", "realtime"), CypherScope.CYPHER_5);
             var procContext = new ProcedureCallContext(handle.id(), new String[0], false, "", false, RUNTIME_USED);
 
             AnyValue result =
@@ -381,7 +379,7 @@ class ExecutionContextFunctionIT {
         doWithExecutionContext((ktx, executionContext) -> {
             var handle = executionContext
                     .procedures()
-                    .functionGet(new QualifiedName(List.of("datetime"), "transaction"), CypherScope.CYPHER_5);
+                    .functionGet(new QualifiedName("datetime", "transaction"), CypherScope.CYPHER_5);
             var procContext = new ProcedureCallContext(handle.id(), new String[0], false, "", false, RUNTIME_USED);
 
             AnyValue result =
@@ -397,7 +395,7 @@ class ExecutionContextFunctionIT {
         doWithExecutionContext((ktx, executionContext) -> {
             var handle = executionContext
                     .procedures()
-                    .functionGet(new QualifiedName(List.of("datetime"), "statement"), CypherScope.CYPHER_5);
+                    .functionGet(new QualifiedName("datetime", "statement"), CypherScope.CYPHER_5);
             var procContext = new ProcedureCallContext(handle.id(), new String[0], false, "", false, RUNTIME_USED);
 
             AnyValue result =
@@ -411,9 +409,7 @@ class ExecutionContextFunctionIT {
     @Test
     void testDefaultClockTemporalFunction() throws ProcedureException {
         doWithExecutionContext((ktx, executionContext) -> {
-            var handle = executionContext
-                    .procedures()
-                    .functionGet(new QualifiedName(List.of(), "datetime"), CypherScope.CYPHER_5);
+            var handle = executionContext.procedures().functionGet(new QualifiedName("datetime"), CypherScope.CYPHER_5);
             var procContext = new ProcedureCallContext(handle.id(), new String[0], false, "", false, RUNTIME_USED);
 
             AnyValue result =
@@ -469,7 +465,7 @@ class ExecutionContextFunctionIT {
     }
 
     private QualifiedName getName(String name) {
-        return new QualifiedName(List.of("execution", "context", "test", "function"), name);
+        return new QualifiedName("execution", "context", "test", "function", name);
     }
 
     private ExecutionContext createExecutionContext(Transaction transaction) {

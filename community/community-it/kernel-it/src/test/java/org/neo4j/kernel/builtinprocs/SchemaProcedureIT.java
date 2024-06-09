@@ -22,7 +22,6 @@ package org.neo4j.kernel.builtinprocs;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.internal.helpers.collection.Iterators.asList;
-import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureName;
 import static org.neo4j.internal.schema.IndexPrototype.uniqueForSchema;
 import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
 import static org.neo4j.values.storable.Values.stringValue;
@@ -36,6 +35,7 @@ import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
+import org.neo4j.internal.kernel.api.procs.QualifiedName;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.kernel.api.CypherScope;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -58,7 +58,7 @@ class SchemaProcedureIT extends KernelIntegrationTest {
         try (var statement = kernelTransaction.acquireStatement()) {
 
             RawIterator<AnyValue[], ProcedureException> stream = procs.procedureCallRead(
-                    procs.procedureGet(procedureName("db", "schema", "visualization"), CypherScope.CYPHER_5)
+                    procs.procedureGet(new QualifiedName("db", "schema", "visualization"), CypherScope.CYPHER_5)
                             .id(),
                     new AnyValue[0],
                     ProcedureCallContext.EMPTY);
@@ -94,7 +94,7 @@ class SchemaProcedureIT extends KernelIntegrationTest {
         Procedures procs = procs();
         try (var statement = kernelTransaction.acquireStatement()) {
             RawIterator<AnyValue[], ProcedureException> stream = procs.procedureCallRead(
-                    procs.procedureGet(procedureName("db", "schema", "visualization"), CypherScope.CYPHER_5)
+                    procs.procedureGet(new QualifiedName("db", "schema", "visualization"), CypherScope.CYPHER_5)
                             .id(),
                     new AnyValue[0],
                     ProcedureCallContext.EMPTY);
@@ -138,7 +138,7 @@ class SchemaProcedureIT extends KernelIntegrationTest {
         Procedures procs = procs();
         try (var statement = kernelTransaction.acquireStatement()) {
             RawIterator<AnyValue[], ProcedureException> stream = procs.procedureCallRead(
-                    procs.procedureGet(procedureName("db", "schema", "visualization"), CypherScope.CYPHER_5)
+                    procs.procedureGet(new QualifiedName("db", "schema", "visualization"), CypherScope.CYPHER_5)
                             .id(),
                     new AnyValue[0],
                     ProcedureCallContext.EMPTY);

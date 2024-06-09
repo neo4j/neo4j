@@ -37,6 +37,7 @@ import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.Relationship
 import org.neo4j.graphdb.RelationshipType
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes
+import org.neo4j.internal.kernel.api.procs.QualifiedName
 import org.neo4j.internal.kernel.api.procs.UserAggregationReducer
 import org.neo4j.internal.kernel.api.procs.UserAggregationUpdater
 import org.neo4j.internal.kernel.api.procs.UserAggregator
@@ -57,7 +58,7 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
 
   override protected def beforeEach(): Unit = {
     super.beforeEach()
-    registerFunction(new BasicUserFunction(UserFunctionSignature.functionSignature("runtimeName")
+    registerFunction(new BasicUserFunction(UserFunctionSignature.functionSignature(new QualifiedName("runtimeName"))
       .out(Neo4jTypes.NTString).threadSafe().build()) {
 
       override def apply(ctx: Context, input: Array[AnyValue]): AnyValue = {
@@ -66,7 +67,10 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
     })
 
     registerUserAggregation(
-      new BasicUserAggregationFunction(UserFunctionSignature.functionSignature("aggregate", "runtimeName")
+      new BasicUserAggregationFunction(UserFunctionSignature.functionSignature(new QualifiedName(
+        "aggregate",
+        "runtimeName"
+      ))
         .out(Neo4jTypes.NTString).threadSafe.build()) {
         override def createReducer(ctx: Context): UserAggregationReducer =
           new UserAggregationReducer with UserAggregationUpdater {

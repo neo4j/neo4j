@@ -20,7 +20,6 @@
 package org.neo4j.internal.kernel.api.procs;
 
 import static java.util.Collections.unmodifiableList;
-import static org.apache.commons.lang3.ArrayUtils.EMPTY_STRING_ARRAY;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -319,8 +318,8 @@ public class ProcedureSignature {
 
         private Set<CypherScope> supportedCypherScopes = CypherScope.ALL_SCOPES;
 
-        public Builder(String[] namespace, String name) {
-            this.name = new QualifiedName(namespace, name);
+        public Builder(QualifiedName name) {
+            this.name = name;
             this.threadSafe = true;
         }
 
@@ -433,23 +432,7 @@ public class ProcedureSignature {
         }
     }
 
-    public static Builder procedureSignature(String... namespaceAndName) {
-        String[] namespace = namespaceAndName.length > 1
-                ? Arrays.copyOf(namespaceAndName, namespaceAndName.length - 1)
-                : EMPTY_STRING_ARRAY;
-        String name = namespaceAndName[namespaceAndName.length - 1];
-        return procedureSignature(namespace, name);
-    }
-
     public static Builder procedureSignature(QualifiedName name) {
-        return new Builder(name.namespace(), name.name());
-    }
-
-    public static Builder procedureSignature(String[] namespace, String name) {
-        return new Builder(namespace, name);
-    }
-
-    public static QualifiedName procedureName(String... namespaceAndName) {
-        return procedureSignature(namespaceAndName).build().name();
+        return new Builder(name);
     }
 }

@@ -51,6 +51,7 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
+import org.neo4j.internal.kernel.api.procs.QualifiedName;
 import org.neo4j.kernel.api.CypherScope;
 import org.neo4j.kernel.api.procedure.CallableUserFunction;
 import org.neo4j.kernel.api.procedure.CypherVersionScope;
@@ -108,7 +109,7 @@ public class UserFunctionTest {
         // Then
         assertEquals(1, function.size());
         assertThat(function.get(0).signature())
-                .isEqualTo(functionSignature("org", "neo4j", "procedure", "impl", "listCoolPeople")
+                .isEqualTo(functionSignature(new QualifiedName("org", "neo4j", "procedure", "impl", "listCoolPeople"))
                         .out(Neo4jTypes.NTList(Neo4jTypes.NTAny))
                         .build());
     }

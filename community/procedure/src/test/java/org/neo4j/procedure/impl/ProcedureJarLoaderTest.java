@@ -67,6 +67,7 @@ import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
+import org.neo4j.internal.kernel.api.procs.QualifiedName;
 import org.neo4j.kernel.api.procedure.CallableProcedure;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.util.DefaultValueMapper;
@@ -95,6 +96,10 @@ public class ProcedureJarLoaderTest {
     private final InternalLog log = mock(InternalLog.class);
     private final DependencyResolver dependencyResolver = new Dependencies();
     private final ValueMapper<Object> valueMapper = new DefaultValueMapper(mock(InternalTransaction.class));
+    private static final QualifiedName PROCEDURE_NAME =
+            new QualifiedName("org", "neo4j", "procedure", "impl", "myProcedure");
+    private static final QualifiedName OTHER_PROCEDURE_NAME =
+            new QualifiedName("org", "neo4j", "procedure", "impl", "myOtherProcedure");
 
     private AssertableLogProvider logProvider;
     private ProcedureJarLoader jarloader;
@@ -122,7 +127,7 @@ public class ProcedureJarLoaderTest {
         List<ProcedureSignature> signatures =
                 procedures.stream().map(CallableProcedure::signature).toList();
         assertThat(signatures)
-                .containsExactly(procedureSignature("org", "neo4j", "procedure", "impl", "myProcedure")
+                .containsExactly(procedureSignature(PROCEDURE_NAME)
                         .out("someNumber", NTInteger)
                         .build());
 
@@ -143,7 +148,7 @@ public class ProcedureJarLoaderTest {
         List<ProcedureSignature> signatures =
                 procedures.stream().map(CallableProcedure::signature).toList();
         assertThat(signatures)
-                .containsExactly(procedureSignature("org", "neo4j", "procedure", "impl", "myProcedure")
+                .containsExactly(procedureSignature(PROCEDURE_NAME)
                         .out("someNumber", NTInteger)
                         .build());
 
@@ -164,7 +169,7 @@ public class ProcedureJarLoaderTest {
         List<ProcedureSignature> signatures =
                 procedures.stream().map(CallableProcedure::signature).toList();
         assertThat(signatures)
-                .containsExactly(procedureSignature("org", "neo4j", "procedure", "impl", "myProcedure")
+                .containsExactly(procedureSignature(PROCEDURE_NAME)
                         .in("value", NTInteger)
                         .out("someNumber", NTInteger)
                         .build());
@@ -193,10 +198,10 @@ public class ProcedureJarLoaderTest {
                 procedures.stream().map(CallableProcedure::signature).toList();
         assertThat(signatures)
                 .contains(
-                        procedureSignature("org", "neo4j", "procedure", "impl", "myOtherProcedure")
+                        procedureSignature(OTHER_PROCEDURE_NAME)
                                 .out("someNumber", NTInteger)
                                 .build(),
-                        procedureSignature("org", "neo4j", "procedure", "impl", "myProcedure")
+                        procedureSignature(PROCEDURE_NAME)
                                 .out("someNumber", NTInteger)
                                 .build());
     }
@@ -234,10 +239,10 @@ public class ProcedureJarLoaderTest {
                 procedures.stream().map(CallableProcedure::signature).toList();
         assertThat(signatures)
                 .contains(
-                        procedureSignature("org", "neo4j", "procedure", "impl", "myOtherProcedure")
+                        procedureSignature(OTHER_PROCEDURE_NAME)
                                 .out("someNumber", NTInteger)
                                 .build(),
-                        procedureSignature("org", "neo4j", "procedure", "impl", "myProcedure")
+                        procedureSignature(PROCEDURE_NAME)
                                 .out("someNumber", NTInteger)
                                 .build());
     }
@@ -255,7 +260,7 @@ public class ProcedureJarLoaderTest {
 
         // then
         assertThat(signatures)
-                .containsExactly(procedureSignature("org", "neo4j", "procedure", "impl", "myProcedure")
+                .containsExactly(procedureSignature(PROCEDURE_NAME)
                         .out("someNumber", NTInteger)
                         .build());
 
@@ -277,7 +282,7 @@ public class ProcedureJarLoaderTest {
 
         // then
         assertThat(signatures)
-                .containsExactly(procedureSignature("org", "neo4j", "procedure", "impl", "myProcedure")
+                .containsExactly(procedureSignature(PROCEDURE_NAME)
                         .out("someNumber", NTInteger)
                         .build());
 

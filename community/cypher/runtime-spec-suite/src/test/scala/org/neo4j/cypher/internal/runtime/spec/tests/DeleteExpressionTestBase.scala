@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.graphdb.ConstraintViolationException
 import org.neo4j.internal.helpers.collection.Iterables
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes
+import org.neo4j.internal.kernel.api.procs.QualifiedName
 import org.neo4j.internal.kernel.api.procs.UserFunctionSignature
 import org.neo4j.kernel.api.procedure.CallableUserFunction.BasicUserFunction
 import org.neo4j.kernel.api.procedure.Context
@@ -50,7 +51,7 @@ abstract class DeleteExpressionTestBase[CONTEXT <: RuntimeContext](
 ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   private val function =
-    new BasicUserFunction(UserFunctionSignature.functionSignature("findNodeToDelete")
+    new BasicUserFunction(UserFunctionSignature.functionSignature(new QualifiedName("findNodeToDelete"))
       .in("nodes", Neo4jTypes.NTList(Neo4jTypes.NTNode))
       .out(Neo4jTypes.NTList(Neo4jTypes.NTNode)).build()) {
 

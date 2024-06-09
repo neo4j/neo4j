@@ -39,6 +39,7 @@ import org.neo4j.graphdb.schema.IndexType
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature
+import org.neo4j.internal.kernel.api.procs.QualifiedName
 import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.api.ResourceMonitor
 import org.neo4j.kernel.api.procedure.CallableProcedure.BasicProcedure
@@ -2216,7 +2217,7 @@ trait NonParallelProfileRowsTestBase[CONTEXT <: RuntimeContext] {
 
   test("should profile rows of procedure call") {
     // given
-    registerProcedure(new BasicProcedure(ProcedureSignature.procedureSignature(Array[String](), "proc").mode(
+    registerProcedure(new BasicProcedure(ProcedureSignature.procedureSignature(new QualifiedName("proc")).mode(
       Mode.READ
     ).in("j", Neo4jTypes.NTInteger).out("i", Neo4jTypes.NTInteger).build()) {
       override def apply(

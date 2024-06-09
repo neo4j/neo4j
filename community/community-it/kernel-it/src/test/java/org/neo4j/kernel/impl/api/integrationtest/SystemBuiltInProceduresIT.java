@@ -27,7 +27,6 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 import static org.neo4j.internal.helpers.collection.Iterators.asList;
 import static org.neo4j.internal.kernel.api.procs.ProcedureCallContext.EMPTY;
-import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureName;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 import static org.neo4j.internal.schema.IndexPrototype.uniqueForSchema;
 import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
@@ -40,6 +39,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.internal.kernel.api.Procedures;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.procs.QualifiedName;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.CypherScope;
@@ -63,7 +63,7 @@ class SystemBuiltInProceduresIT extends KernelIntegrationTest implements Procedu
         try (var statement = kernelTransaction.acquireStatement()) {
 
             RawIterator<AnyValue[], ProcedureException> stream = procs.procedureCallRead(
-                    procs.procedureGet(procedureName("db", "info"), CypherScope.CYPHER_5)
+                    procs.procedureGet(new QualifiedName("db", "info"), CypherScope.CYPHER_5)
                             .id(),
                     new AnyValue[0],
                     EMPTY);
@@ -82,7 +82,7 @@ class SystemBuiltInProceduresIT extends KernelIntegrationTest implements Procedu
         try (var statement = kernelTransaction.acquireStatement()) {
 
             RawIterator<AnyValue[], ProcedureException> stream = procs.procedureCallRead(
-                    procs.procedureGet(procedureName("dbms", "info"), CypherScope.CYPHER_5)
+                    procs.procedureGet(new QualifiedName("dbms", "info"), CypherScope.CYPHER_5)
                             .id(),
                     new AnyValue[0],
                     EMPTY);
@@ -147,7 +147,7 @@ class SystemBuiltInProceduresIT extends KernelIntegrationTest implements Procedu
         Procedures procs = procs();
         try (var statement = kernelTransaction.acquireStatement()) {
             RawIterator<AnyValue[], ProcedureException> stream = procs.procedureCallRead(
-                    procs.procedureGet(procedureName("dbms", "components"), CypherScope.CYPHER_5)
+                    procs.procedureGet(new QualifiedName("dbms", "components"), CypherScope.CYPHER_5)
                             .id(),
                     new AnyValue[0],
                     EMPTY);

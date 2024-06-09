@@ -63,7 +63,7 @@ class ShowProceduresCommandTest extends ShowCommandTestBase {
       .columns
 
   private val proc1 = new ProcedureSignature(
-    new QualifiedName(List.empty[String].asJava, "proc1"),
+    new QualifiedName("proc1"),
     List.empty[FieldSignature].asJava,
     List.empty[FieldSignature].asJava,
     Mode.READ,
@@ -82,7 +82,7 @@ class ShowProceduresCommandTest extends ShowCommandTestBase {
   )
 
   private val proc2 = new ProcedureSignature(
-    new QualifiedName(List.empty[String].asJava, "proc2"),
+    new QualifiedName("proc2"),
     List(FieldSignature.inputField("input", NTString)).asJava,
     List(
       FieldSignature.outputField("booleanOutput", NTBoolean),
@@ -104,7 +104,7 @@ class ShowProceduresCommandTest extends ShowCommandTestBase {
   )
 
   private val proc3 = new ProcedureSignature(
-    new QualifiedName(List.empty[String].asJava, "proc3"),
+    new QualifiedName("proc3"),
     List(
       FieldSignature.inputField("input1", NTString, false, false, "Argument description"),
       FieldSignature.inputField("input2", NTBoolean)
@@ -128,7 +128,7 @@ class ShowProceduresCommandTest extends ShowCommandTestBase {
   )
 
   private val proc4 = new ProcedureSignature(
-    new QualifiedName(List("zzz").asJava, "proc4"),
+    new QualifiedName("zzz", "proc4"),
     List.empty[FieldSignature].asJava,
     List(FieldSignature.outputField("output", NTString)).asJava,
     Mode.DBMS,
@@ -516,7 +516,7 @@ class ShowProceduresCommandTest extends ShowCommandTestBase {
   test("show procedures should not return internal procedures") {
     // Set-up which procedures to return:
     val internalProc = new ProcedureSignature(
-      new QualifiedName(List("internal").asJava, "proc"),
+      new QualifiedName("internal", "proc"),
       List.empty[FieldSignature].asJava,
       List.empty[FieldSignature].asJava,
       Mode.READ,
@@ -547,7 +547,7 @@ class ShowProceduresCommandTest extends ShowCommandTestBase {
   test("show procedures should return deprecated procedures") {
     // Set-up which procedures to return:
     val deprecatedProc = new ProcedureSignature(
-      new QualifiedName(List("proc").asJava, "deprecated"),
+      new QualifiedName("proc", "deprecated"),
       List.empty[FieldSignature].asJava,
       List.empty[FieldSignature].asJava,
       Mode.READ,
@@ -565,7 +565,7 @@ class ShowProceduresCommandTest extends ShowCommandTestBase {
       CypherScope.ALL_SCOPES
     )
     val deprecatedProcWithoutReplacement = new ProcedureSignature(
-      new QualifiedName(List("proc").asJava, "deprecatedNoReplacement"),
+      new QualifiedName("proc", "deprecatedNoReplacement"),
       List.empty[FieldSignature].asJava,
       List.empty[FieldSignature].asJava,
       Mode.READ,

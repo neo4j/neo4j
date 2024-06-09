@@ -51,6 +51,7 @@ import org.neo4j.internal.kernel.api.procs.DefaultParameterValue.ntInteger
 import org.neo4j.internal.kernel.api.procs.DefaultParameterValue.ntMap
 import org.neo4j.internal.kernel.api.procs.DefaultParameterValue.ntString
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes
+import org.neo4j.internal.kernel.api.procs.QualifiedName
 import org.neo4j.internal.kernel.api.procs.UserAggregationReducer
 import org.neo4j.internal.kernel.api.procs.UserAggregationUpdater
 import org.neo4j.internal.kernel.api.procs.UserAggregator
@@ -2009,25 +2010,26 @@ trait UserDefinedAggregationSupport[CONTEXT <: RuntimeContext] extends BeforeAnd
   self: AggregationTestBase[CONTEXT] =>
 
   private val userAggregationFunctions = {
-    val noArgumentNonThreadSafe = UserFunctionSignature.functionSignature("test", "foo0NonThreadSafe")
-      .out(Neo4jTypes.NTInteger)
-      .build()
-    val noArgument = UserFunctionSignature.functionSignature("test", "foo0")
+    val noArgumentNonThreadSafe =
+      UserFunctionSignature.functionSignature(new QualifiedName("test", "foo0NonThreadSafe"))
+        .out(Neo4jTypes.NTInteger)
+        .build()
+    val noArgument = UserFunctionSignature.functionSignature(new QualifiedName("test", "foo0"))
       .out(Neo4jTypes.NTInteger)
       .threadSafe
       .build()
-    val oneArgument = UserFunctionSignature.functionSignature("test", "foo1")
+    val oneArgument = UserFunctionSignature.functionSignature(new QualifiedName("test", "foo1"))
       .out(Neo4jTypes.NTInteger)
       .in("in", Neo4jTypes.NTInteger)
       .threadSafe
       .build()
-    val twoArguments = UserFunctionSignature.functionSignature("test", "foo2")
+    val twoArguments = UserFunctionSignature.functionSignature(new QualifiedName("test", "foo2"))
       .out(Neo4jTypes.NTInteger)
       .in("in1", Neo4jTypes.NTInteger)
       .in("in2", Neo4jTypes.NTInteger)
       .threadSafe
       .build()
-    val defaultArgumets = UserFunctionSignature.functionSignature("test", "defaultValues")
+    val defaultArgumets = UserFunctionSignature.functionSignature(new QualifiedName("test", "defaultValues"))
       .out(Neo4jTypes.NTString)
       .in("in1", Neo4jTypes.NTInteger, ntInteger(0L))
       .in("in2", Neo4jTypes.NTFloat, ntFloat(Math.PI))
@@ -2037,14 +2039,16 @@ trait UserDefinedAggregationSupport[CONTEXT <: RuntimeContext] extends BeforeAnd
       .in("in6", Neo4jTypes.NTString, ntString("hello"))
       .threadSafe
       .build()
-    val countCreateReducerCalls = UserFunctionSignature.functionSignature("test", "countCreateReducerCalls")
-      .out(Neo4jTypes.NTInteger)
-      .threadSafe
-      .build()
-    val countNewUpdaterCalls = UserFunctionSignature.functionSignature("test", "countNewUpdaterCalls")
-      .out(Neo4jTypes.NTInteger)
-      .threadSafe
-      .build()
+    val countCreateReducerCalls =
+      UserFunctionSignature.functionSignature(new QualifiedName("test", "countCreateReducerCalls"))
+        .out(Neo4jTypes.NTInteger)
+        .threadSafe
+        .build()
+    val countNewUpdaterCalls =
+      UserFunctionSignature.functionSignature(new QualifiedName("test", "countNewUpdaterCalls"))
+        .out(Neo4jTypes.NTInteger)
+        .threadSafe
+        .build()
 
     Seq(
       new BasicUserAggregationFunction(noArgumentNonThreadSafe) {

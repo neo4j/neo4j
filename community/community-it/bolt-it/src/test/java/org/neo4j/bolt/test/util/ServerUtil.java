@@ -28,6 +28,7 @@ import org.neo4j.function.ThrowingFunction;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
+import org.neo4j.internal.kernel.api.procs.QualifiedName;
 import org.neo4j.kernel.api.ResourceMonitor;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.procedure.CallableProcedure;
@@ -92,7 +93,7 @@ public final class ServerUtil {
     public static void installSleepProcedure(Neo4jWithSocket server) throws ProcedureException {
         installProcedure(
                 server,
-                new CallableProcedure.BasicProcedure(procedureSignature("boltissue", "sleep")
+                new CallableProcedure.BasicProcedure(procedureSignature(new QualifiedName("boltissue", "sleep"))
                         .in("data", Neo4jTypes.NTInteger)
                         .out(ProcedureSignature.VOID)
                         .build()) {

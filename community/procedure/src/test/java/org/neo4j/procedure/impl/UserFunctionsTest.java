@@ -34,6 +34,7 @@ import org.neo4j.common.DependencyResolver;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
+import org.neo4j.internal.kernel.api.procs.QualifiedName;
 import org.neo4j.internal.kernel.api.procs.UserAggregator;
 import org.neo4j.internal.kernel.api.procs.UserFunctionHandle;
 import org.neo4j.internal.kernel.api.procs.UserFunctionSignature;
@@ -49,8 +50,14 @@ import org.neo4j.values.storable.Values;
 
 class UserFunctionsTest {
     private final GlobalProceduresRegistry procs = new GlobalProceduresRegistry();
+
+    private static final QualifiedName FUNC = new QualifiedName("org", "myfunc");
+    private static final QualifiedName FUNC1 = new QualifiedName("org", "myfunc1");
+    private static final QualifiedName FUNC2 = new QualifiedName("org", "myfunc2");
+    private static final QualifiedName FUNC3 = new QualifiedName("org", "myfunc3");
+    private static final QualifiedName AGGR = new QualifiedName("org", "myaggr");
     private final UserFunctionSignature signature =
-            functionSignature("org", "myproc").out(Neo4jTypes.NTAny).build();
+            functionSignature(FUNC).out(Neo4jTypes.NTAny).build();
     private final CallableUserFunction function = function(signature);
     private final DependencyResolver dependencyResolver = new Dependencies();
     private final ValueMapper<Object> valueMapper = new DefaultValueMapper(mock(InternalTransaction.class));
@@ -69,12 +76,9 @@ class UserFunctionsTest {
     @Test
     void shouldGetAllRegisteredFunctions() throws Throwable {
         // When
-        procs.register(function(
-                functionSignature("org", "myproc1").out(Neo4jTypes.NTAny).build()));
-        procs.register(function(
-                functionSignature("org", "myproc2").out(Neo4jTypes.NTAny).build()));
-        procs.register(function(
-                functionSignature("org", "myproc3").out(Neo4jTypes.NTAny).build()));
+        procs.register(function(functionSignature(FUNC1).out(Neo4jTypes.NTAny).build()));
+        procs.register(function(functionSignature(FUNC2).out(Neo4jTypes.NTAny).build()));
+        procs.register(function(functionSignature(FUNC3).out(Neo4jTypes.NTAny).build()));
         var view = procs.getCurrentView();
 
         // Then
@@ -82,15 +86,9 @@ class UserFunctionsTest {
                 view.getAllNonAggregatingFunctions(CypherScope.CYPHER_5).collect(Collectors.toSet()));
         assertThat(signatures)
                 .contains(
-                        functionSignature("org", "myproc1")
-                                .out(Neo4jTypes.NTAny)
-                                .build(),
-                        functionSignature("org", "myproc2")
-                                .out(Neo4jTypes.NTAny)
-                                .build(),
-                        functionSignature("org", "myproc3")
-                                .out(Neo4jTypes.NTAny)
-                                .build());
+                        functionSignature(FUNC1).out(Neo4jTypes.NTAny).build(),
+                        functionSignature(FUNC2).out(Neo4jTypes.NTAny).build(),
+                        functionSignature(FUNC3).out(Neo4jTypes.NTAny).build());
 
         // And
         signatures = Iterables.asList(
@@ -101,12 +99,10 @@ class UserFunctionsTest {
     @Test
     void shouldGetRegisteredAggregationFunctions() throws Throwable {
         // When
-        procs.register(function(
-                functionSignature("org", "myfunc1").out(Neo4jTypes.NTAny).build()));
-        procs.register(function(
-                functionSignature("org", "myfunc2").out(Neo4jTypes.NTAny).build()));
+        procs.register(function(functionSignature(FUNC1).out(Neo4jTypes.NTAny).build()));
+        procs.register(function(functionSignature(FUNC2).out(Neo4jTypes.NTAny).build()));
         procs.register(aggregationFunction(
-                functionSignature("org", "myaggrfunc1").out(Neo4jTypes.NTAny).build()));
+                functionSignature(AGGR).out(Neo4jTypes.NTAny).build()));
         var view = procs.getCurrentView();
 
         // Then
@@ -114,20 +110,14 @@ class UserFunctionsTest {
                 view.getAllNonAggregatingFunctions(CypherScope.CYPHER_5).collect(Collectors.toSet()));
         assertThat(signatures)
                 .contains(
-                        functionSignature("org", "myfunc1")
-                                .out(Neo4jTypes.NTAny)
-                                .build(),
-                        functionSignature("org", "myfunc2")
-                                .out(Neo4jTypes.NTAny)
-                                .build());
+                        functionSignature(FUNC1).out(Neo4jTypes.NTAny).build(),
+                        functionSignature(FUNC2).out(Neo4jTypes.NTAny).build());
 
         // And
         signatures = Iterables.asList(
                 view.getAllAggregatingFunctions(CypherScope.CYPHER_5).collect(Collectors.toSet()));
         assertThat(signatures)
-                .contains(functionSignature("org", "myaggrfunc1")
-                        .out(Neo4jTypes.NTAny)
-                        .build());
+                .contains(functionSignature(AGGR).out(Neo4jTypes.NTAny).build());
     }
 
     @Test
@@ -165,7 +155,7 @@ class UserFunctionsTest {
 
         ProcedureException exception = assertThrows(ProcedureException.class, () -> procs.register(function));
         assertThat(exception.getMessage())
-                .isEqualTo("Unable to register function, because the name `org.myproc` is already in use.");
+                .isEqualTo("Unable to register function, because the name `org.myfunc` is already in use.");
     }
 
     @Test

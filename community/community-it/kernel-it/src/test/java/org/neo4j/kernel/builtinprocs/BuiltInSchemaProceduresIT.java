@@ -23,7 +23,6 @@ import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.internal.helpers.collection.Iterators.asList;
-import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureName;
 import static org.neo4j.values.storable.Values.stringOrNoValue;
 import static org.neo4j.values.storable.Values.stringValue;
 
@@ -34,6 +33,7 @@ import org.neo4j.collection.RawIterator;
 import org.neo4j.internal.kernel.api.Procedures;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
+import org.neo4j.internal.kernel.api.procs.QualifiedName;
 import org.neo4j.kernel.api.CypherScope;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.security.AnonymousContext;
@@ -44,8 +44,8 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 class BuiltInSchemaProceduresIT extends KernelIntegrationTest {
-    private final String[] nodesProcedureName = {"db", "schema", "nodeTypeProperties"};
-    private final String[] relsProcedureName = {"db", "schema", "relTypeProperties"};
+    private final QualifiedName nodesProcedureName = new QualifiedName("db", "schema", "nodeTypeProperties");
+    private final QualifiedName relsProcedureName = new QualifiedName("db", "schema", "relTypeProperties");
 
     @Test
     void testWeirdLabelName() throws Throwable {
@@ -60,8 +60,7 @@ class BuiltInSchemaProceduresIT extends KernelIntegrationTest {
         try (var statement = kernelTransaction.acquireStatement()) {
 
             RawIterator<AnyValue[], ProcedureException> stream = procs.procedureCallRead(
-                    procs.procedureGet(procedureName(nodesProcedureName), CypherScope.CYPHER_5)
-                            .id(),
+                    procs.procedureGet(nodesProcedureName, CypherScope.CYPHER_5).id(),
                     new AnyValue[0],
                     ProcedureCallContext.EMPTY);
 
@@ -94,8 +93,7 @@ class BuiltInSchemaProceduresIT extends KernelIntegrationTest {
         try (var statement = kernelTransaction.acquireStatement()) {
 
             RawIterator<AnyValue[], ProcedureException> stream = procs.procedureCallRead(
-                    procs.procedureGet(procedureName(nodesProcedureName), CypherScope.CYPHER_5)
-                            .id(),
+                    procs.procedureGet(nodesProcedureName, CypherScope.CYPHER_5).id(),
                     new AnyValue[0],
                     ProcedureCallContext.EMPTY);
 
@@ -126,8 +124,7 @@ class BuiltInSchemaProceduresIT extends KernelIntegrationTest {
         try (var statement = kernelTransaction.acquireStatement()) {
 
             RawIterator<AnyValue[], ProcedureException> stream = procs.procedureCallRead(
-                    procs.procedureGet(procedureName(nodesProcedureName), CypherScope.CYPHER_5)
-                            .id(),
+                    procs.procedureGet(nodesProcedureName, CypherScope.CYPHER_5).id(),
                     new AnyValue[0],
                     ProcedureCallContext.EMPTY);
 
@@ -161,8 +158,7 @@ class BuiltInSchemaProceduresIT extends KernelIntegrationTest {
         try (var statement = kernelTransaction.acquireStatement()) {
 
             RawIterator<AnyValue[], ProcedureException> stream = procs.procedureCallRead(
-                    procs.procedureGet(procedureName(nodesProcedureName), CypherScope.CYPHER_5)
-                            .id(),
+                    procs.procedureGet(nodesProcedureName, CypherScope.CYPHER_5).id(),
                     new AnyValue[0],
                     ProcedureCallContext.EMPTY);
 
@@ -198,8 +194,7 @@ class BuiltInSchemaProceduresIT extends KernelIntegrationTest {
         try (var statement = kernelTransaction.acquireStatement()) {
 
             RawIterator<AnyValue[], ProcedureException> stream = procs.procedureCallRead(
-                    procs.procedureGet(procedureName(relsProcedureName), CypherScope.CYPHER_5)
-                            .id(),
+                    procs.procedureGet(relsProcedureName, CypherScope.CYPHER_5).id(),
                     new AnyValue[0],
                     ProcedureCallContext.EMPTY);
 
@@ -234,8 +229,7 @@ class BuiltInSchemaProceduresIT extends KernelIntegrationTest {
         try (var statement = kernelTransaction.acquireStatement()) {
 
             RawIterator<AnyValue[], ProcedureException> stream = procs.procedureCallRead(
-                    procs.procedureGet(procedureName(relsProcedureName), CypherScope.CYPHER_5)
-                            .id(),
+                    procs.procedureGet(relsProcedureName, CypherScope.CYPHER_5).id(),
                     new AnyValue[0],
                     ProcedureCallContext.EMPTY);
 
@@ -275,8 +269,7 @@ class BuiltInSchemaProceduresIT extends KernelIntegrationTest {
         try (var statement = kernelTransaction.acquireStatement()) {
 
             RawIterator<AnyValue[], ProcedureException> stream = procs.procedureCallRead(
-                    procs.procedureGet(procedureName(relsProcedureName), CypherScope.CYPHER_5)
-                            .id(),
+                    procs.procedureGet(relsProcedureName, CypherScope.CYPHER_5).id(),
                     new AnyValue[0],
                     ProcedureCallContext.EMPTY);
 
@@ -308,8 +301,7 @@ class BuiltInSchemaProceduresIT extends KernelIntegrationTest {
         try (var statement = kernelTransaction.acquireStatement()) {
 
             RawIterator<AnyValue[], ProcedureException> stream = procs.procedureCallRead(
-                    procs.procedureGet(procedureName(nodesProcedureName), CypherScope.CYPHER_5)
-                            .id(),
+                    procs.procedureGet(nodesProcedureName, CypherScope.CYPHER_5).id(),
                     new AnyValue[0],
                     ProcedureCallContext.EMPTY);
 
@@ -339,8 +331,7 @@ class BuiltInSchemaProceduresIT extends KernelIntegrationTest {
         try (var statement = kernelTransaction.acquireStatement()) {
 
             RawIterator<AnyValue[], ProcedureException> stream = procs.procedureCallRead(
-                    procs.procedureGet(procedureName(nodesProcedureName), CypherScope.CYPHER_5)
-                            .id(),
+                    procs.procedureGet(nodesProcedureName, CypherScope.CYPHER_5).id(),
                     new AnyValue[0],
                     ProcedureCallContext.EMPTY);
 
@@ -374,8 +365,7 @@ class BuiltInSchemaProceduresIT extends KernelIntegrationTest {
         try (var statement = kernelTransaction.acquireStatement()) {
 
             RawIterator<AnyValue[], ProcedureException> stream = procs.procedureCallRead(
-                    procs.procedureGet(procedureName(relsProcedureName), CypherScope.CYPHER_5)
-                            .id(),
+                    procs.procedureGet(relsProcedureName, CypherScope.CYPHER_5).id(),
                     new AnyValue[0],
                     ProcedureCallContext.EMPTY);
 
@@ -409,8 +399,7 @@ class BuiltInSchemaProceduresIT extends KernelIntegrationTest {
         try (var statement = kernelTransaction.acquireStatement()) {
 
             RawIterator<AnyValue[], ProcedureException> stream = procs.procedureCallRead(
-                    procs.procedureGet(procedureName(relsProcedureName), CypherScope.CYPHER_5)
-                            .id(),
+                    procs.procedureGet(relsProcedureName, CypherScope.CYPHER_5).id(),
                     new AnyValue[0],
                     ProcedureCallContext.EMPTY);
 
@@ -444,8 +433,7 @@ class BuiltInSchemaProceduresIT extends KernelIntegrationTest {
         try (var statement = kernelTransaction.acquireStatement()) {
 
             RawIterator<AnyValue[], ProcedureException> stream = procs.procedureCallRead(
-                    procs.procedureGet(procedureName(nodesProcedureName), CypherScope.CYPHER_5)
-                            .id(),
+                    procs.procedureGet(nodesProcedureName, CypherScope.CYPHER_5).id(),
                     new AnyValue[0],
                     ProcedureCallContext.EMPTY);
 
@@ -475,8 +463,7 @@ class BuiltInSchemaProceduresIT extends KernelIntegrationTest {
         try (var statement = kernelTransaction.acquireStatement()) {
 
             RawIterator<AnyValue[], ProcedureException> stream = procs.procedureCallRead(
-                    procs.procedureGet(procedureName(nodesProcedureName), CypherScope.CYPHER_5)
-                            .id(),
+                    procs.procedureGet(nodesProcedureName, CypherScope.CYPHER_5).id(),
                     new AnyValue[0],
                     ProcedureCallContext.EMPTY);
 
@@ -508,8 +495,7 @@ class BuiltInSchemaProceduresIT extends KernelIntegrationTest {
         Procedures procs = procs();
         try (var statement = kernelTransaction.acquireStatement()) {
             RawIterator<AnyValue[], ProcedureException> stream = procs.procedureCallRead(
-                    procs.procedureGet(procedureName(nodesProcedureName), CypherScope.CYPHER_5)
-                            .id(),
+                    procs.procedureGet(nodesProcedureName, CypherScope.CYPHER_5).id(),
                     new AnyValue[0],
                     ProcedureCallContext.EMPTY);
 
@@ -545,8 +531,7 @@ class BuiltInSchemaProceduresIT extends KernelIntegrationTest {
         try (var statement = kernelTransaction.acquireStatement()) {
 
             RawIterator<AnyValue[], ProcedureException> stream = procs.procedureCallRead(
-                    procs.procedureGet(procedureName(nodesProcedureName), CypherScope.CYPHER_5)
-                            .id(),
+                    procs.procedureGet(nodesProcedureName, CypherScope.CYPHER_5).id(),
                     new AnyValue[0],
                     ProcedureCallContext.EMPTY);
 
@@ -583,8 +568,7 @@ class BuiltInSchemaProceduresIT extends KernelIntegrationTest {
         try (var statement = kernelTransaction.acquireStatement()) {
 
             RawIterator<AnyValue[], ProcedureException> stream = procs.procedureCallRead(
-                    procs.procedureGet(procedureName(relsProcedureName), CypherScope.CYPHER_5)
-                            .id(),
+                    procs.procedureGet(relsProcedureName, CypherScope.CYPHER_5).id(),
                     new AnyValue[0],
                     ProcedureCallContext.EMPTY);
 
@@ -615,8 +599,7 @@ class BuiltInSchemaProceduresIT extends KernelIntegrationTest {
         try (var statement = kernelTransaction.acquireStatement()) {
 
             RawIterator<AnyValue[], ProcedureException> stream = procs.procedureCallRead(
-                    procs.procedureGet(procedureName(relsProcedureName), CypherScope.CYPHER_5)
-                            .id(),
+                    procs.procedureGet(relsProcedureName, CypherScope.CYPHER_5).id(),
                     new AnyValue[0],
                     ProcedureCallContext.EMPTY);
 
@@ -647,8 +630,7 @@ class BuiltInSchemaProceduresIT extends KernelIntegrationTest {
         try (var statement = kernelTransaction.acquireStatement()) {
 
             RawIterator<AnyValue[], ProcedureException> stream = procs.procedureCallRead(
-                    procs.procedureGet(procedureName(relsProcedureName), CypherScope.CYPHER_5)
-                            .id(),
+                    procs.procedureGet(relsProcedureName, CypherScope.CYPHER_5).id(),
                     new AnyValue[0],
                     ProcedureCallContext.EMPTY);
 
@@ -690,8 +672,7 @@ class BuiltInSchemaProceduresIT extends KernelIntegrationTest {
         try (var statement = kernelTransaction.acquireStatement()) {
 
             RawIterator<AnyValue[], ProcedureException> stream = procs.procedureCallRead(
-                    procs.procedureGet(procedureName(relsProcedureName), CypherScope.CYPHER_5)
-                            .id(),
+                    procs.procedureGet(relsProcedureName, CypherScope.CYPHER_5).id(),
                     new AnyValue[0],
                     ProcedureCallContext.EMPTY);
 
@@ -734,8 +715,7 @@ class BuiltInSchemaProceduresIT extends KernelIntegrationTest {
         try (var statement = kernelTransaction.acquireStatement()) {
 
             RawIterator<AnyValue[], ProcedureException> stream = procs.procedureCallRead(
-                    procs.procedureGet(procedureName(relsProcedureName), CypherScope.CYPHER_5)
-                            .id(),
+                    procs.procedureGet(relsProcedureName, CypherScope.CYPHER_5).id(),
                     new AnyValue[0],
                     ProcedureCallContext.EMPTY);
 
@@ -781,8 +761,7 @@ class BuiltInSchemaProceduresIT extends KernelIntegrationTest {
         try (var statement = kernelTransaction.acquireStatement()) {
 
             RawIterator<AnyValue[], ProcedureException> stream = procs.procedureCallRead(
-                    procs.procedureGet(procedureName(nodesProcedureName), CypherScope.CYPHER_5)
-                            .id(),
+                    procs.procedureGet(nodesProcedureName, CypherScope.CYPHER_5).id(),
                     new AnyValue[0],
                     ProcedureCallContext.EMPTY);
 

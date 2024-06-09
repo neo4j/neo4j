@@ -831,9 +831,8 @@ class Neo4jTransactionalContextIT {
         var innerCtx = ctx.contextWithNewTransaction();
 
         var procsRegistry = databaseAPI.getDependencyResolver().resolveDependency(GlobalProcedures.class);
-        var txSetMetaData = procsRegistry
-                .getCurrentView()
-                .procedure(new QualifiedName(new String[] {"tx"}, "setMetaData"), CypherScope.CYPHER_5);
+        var txSetMetaData =
+                procsRegistry.getCurrentView().procedure(new QualifiedName("tx", "setMetaData"), CypherScope.CYPHER_5);
         var id = txSetMetaData.id();
         var procContext = new ProcedureCallContext(id, EMPTY_STRING_ARRAY, false, "", false, "runtimeUsed");
 

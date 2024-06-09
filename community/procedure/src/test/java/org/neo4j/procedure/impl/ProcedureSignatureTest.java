@@ -28,11 +28,13 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.internal.kernel.api.procs.FieldSignature;
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
+import org.neo4j.internal.kernel.api.procs.QualifiedName;
 
 @SuppressWarnings("WeakerAccess")
 public class ProcedureSignatureTest {
+    private static final QualifiedName PROCEDURE_NAME = new QualifiedName("org", "myProcedure");
     private static final ProcedureSignature signature =
-            procedureSignature("asd").in("a", Neo4jTypes.NTAny).build();
+            procedureSignature(PROCEDURE_NAME).in("a", Neo4jTypes.NTAny).build();
 
     @Test
     void inputSignatureShouldNotBeModifiable() {
@@ -51,12 +53,12 @@ public class ProcedureSignatureTest {
     @Test
     void shouldHonorVoidInEquals() {
         ProcedureSignature sig1 =
-                procedureSignature("foo").in("a", Neo4jTypes.NTAny).build();
-        ProcedureSignature sig2 = procedureSignature("foo")
+                procedureSignature(PROCEDURE_NAME).in("a", Neo4jTypes.NTAny).build();
+        ProcedureSignature sig2 = procedureSignature(PROCEDURE_NAME)
                 .in("a", Neo4jTypes.NTAny)
                 .out(ProcedureSignature.VOID)
                 .build();
-        ProcedureSignature sig2clone = procedureSignature("foo")
+        ProcedureSignature sig2clone = procedureSignature(PROCEDURE_NAME)
                 .in("a", Neo4jTypes.NTAny)
                 .out(ProcedureSignature.VOID)
                 .build();
@@ -68,7 +70,7 @@ public class ProcedureSignatureTest {
     @Test
     void toStringShouldMatchCypherSyntax() {
         // When
-        String toStr = procedureSignature("org", "myProcedure")
+        String toStr = procedureSignature(PROCEDURE_NAME)
                 .in("inputArg", Neo4jTypes.NTList(Neo4jTypes.NTString))
                 .out("outputArg", Neo4jTypes.NTNumber)
                 .build()
@@ -81,7 +83,7 @@ public class ProcedureSignatureTest {
     @Test
     void toStringForVoidProcedureShouldMatchCypherSyntax() {
         // Given
-        ProcedureSignature proc = procedureSignature("org", "myProcedure")
+        ProcedureSignature proc = procedureSignature(PROCEDURE_NAME)
                 .in("inputArg", Neo4jTypes.NTList(Neo4jTypes.NTString))
                 .out(ProcedureSignature.VOID)
                 .build();

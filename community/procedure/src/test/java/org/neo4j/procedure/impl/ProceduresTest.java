@@ -40,6 +40,7 @@ import org.neo4j.common.DependencyResolver;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.ProcedureHandle;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
+import org.neo4j.internal.kernel.api.procs.QualifiedName;
 import org.neo4j.kernel.api.CypherScope;
 import org.neo4j.kernel.api.ResourceMonitor;
 import org.neo4j.kernel.api.procedure.CallableProcedure;
@@ -51,8 +52,9 @@ import org.neo4j.values.ValueMapper;
 
 class ProceduresTest {
     private final GlobalProceduresRegistry procs = new GlobalProceduresRegistry();
+    private static final QualifiedName PROC = new QualifiedName("org", "myproc");
     private final ProcedureSignature signature =
-            procedureSignature("org", "myproc").out("name", NTString).build();
+            procedureSignature(PROC).out("name", NTString).build();
     private final CallableProcedure procedure = procedure(signature);
     private final DependencyResolver dependencyResolver = new Dependencies();
     private final ValueMapper<Object> valueMapper = new DefaultValueMapper(mock(InternalTransaction.class));
@@ -72,12 +74,12 @@ class ProceduresTest {
     @Test
     void shouldGetAllRegisteredProcedures() throws Throwable {
         // When
-        procs.register(procedure(
-                procedureSignature("org", "myproc1").out("age", NTInteger).build()));
-        procs.register(procedure(
-                procedureSignature("org", "myproc2").out("age", NTInteger).build()));
-        procs.register(procedure(
-                procedureSignature("org", "myproc3").out("age", NTInteger).build()));
+        QualifiedName PROC1 = new QualifiedName("org", "myproc1");
+        QualifiedName PROC2 = new QualifiedName("org", "myproc2");
+        QualifiedName PROC3 = new QualifiedName("org", "myproc3");
+        procs.register(procedure(procedureSignature(PROC1).out("age", NTInteger).build()));
+        procs.register(procedure(procedureSignature(PROC2).out("age", NTInteger).build()));
+        procs.register(procedure(procedureSignature(PROC3).out("age", NTInteger).build()));
         var view = procs.getCurrentView();
 
         // Then
@@ -85,15 +87,9 @@ class ProceduresTest {
                 view.getAllProcedures(CypherScope.CYPHER_5).toList();
         assertThat(signatures)
                 .contains(
-                        procedureSignature("org", "myproc1")
-                                .out("age", NTInteger)
-                                .build(),
-                        procedureSignature("org", "myproc2")
-                                .out("age", NTInteger)
-                                .build(),
-                        procedureSignature("org", "myproc3")
-                                .out("age", NTInteger)
-                                .build());
+                        procedureSignature(PROC1).out("age", NTInteger).build(),
+                        procedureSignature(PROC2).out("age", NTInteger).build(),
+                        procedureSignature(PROC3).out("age", NTInteger).build());
     }
 
     @Test
@@ -139,10 +135,10 @@ class ProceduresTest {
         ProcedureException exception = assertThrows(
                 ProcedureException.class,
                 () -> procs.register(procedureWithSignature(
-                        procedureSignature("asd").in("a", NTAny).in("a", NTAny).build())));
+                        procedureSignature(PROC).in("a", NTAny).in("a", NTAny).build())));
         assertThat(exception.getMessage())
                 .isEqualTo(
-                        "Procedure `asd(a :: ANY, a :: ANY) :: ()` cannot be registered, because it contains a duplicated input field, 'a'. "
+                        "Procedure `org.myproc(a :: ANY, a :: ANY) :: ()` cannot be registered, because it contains a duplicated input field, 'a'. "
                                 + "You need to rename or remove one of the duplicate fields.");
     }
 
@@ -150,13 +146,11 @@ class ProceduresTest {
     void shouldNotAllowDuplicateFieldNamesInOutput() {
         ProcedureException exception = assertThrows(
                 ProcedureException.class,
-                () -> procs.register(procedureWithSignature(procedureSignature("asd")
-                        .out("a", NTAny)
-                        .out("a", NTAny)
-                        .build())));
+                () -> procs.register(procedureWithSignature(
+                        procedureSignature(PROC).out("a", NTAny).out("a", NTAny).build())));
         assertThat(exception.getMessage())
                 .isEqualTo(
-                        "Procedure `asd() :: (a :: ANY, a :: ANY)` cannot be registered, because it contains a duplicated output field, 'a'. "
+                        "Procedure `org.myproc() :: (a :: ANY, a :: ANY)` cannot be registered, because it contains a duplicated output field, 'a'. "
                                 + "You need to rename or remove one of the duplicate fields.");
     }
 

@@ -19,11 +19,10 @@
  */
 package org.neo4j.procedure.builtin;
 
-import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureName;
-
 import java.lang.management.ManagementFactory;
 import java.util.List;
 import java.util.function.Supplier;
+import org.neo4j.internal.kernel.api.procs.QualifiedName;
 import org.neo4j.kernel.api.procedure.CallableProcedure;
 
 /**
@@ -41,8 +40,9 @@ public class SpecialBuiltInProcedures implements Supplier<List<CallableProcedure
 
     public static SpecialBuiltInProcedures from(String neo4jVersion, String neo4jEdition) {
         return new SpecialBuiltInProcedures(List.of(
-                new ListComponentsProcedure(procedureName("dbms", "components"), neo4jVersion, neo4jEdition),
-                new JmxQueryProcedure(procedureName("dbms", "queryJmx"), ManagementFactory.getPlatformMBeanServer())));
+                new ListComponentsProcedure(new QualifiedName("dbms", "components"), neo4jVersion, neo4jEdition),
+                new JmxQueryProcedure(
+                        new QualifiedName("dbms", "queryJmx"), ManagementFactory.getPlatformMBeanServer())));
     }
 
     @Override

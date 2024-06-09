@@ -605,7 +605,7 @@ class ProcedureCompiler {
         if (!procName.isBlank()) {
             String[] split = procName.split("\\.");
             if (split.length == 1) {
-                return new QualifiedName(EMPTY_STRING_ARRAY, split[0]);
+                return new QualifiedName(split[0]);
             } else {
                 int lastElement = split.length - 1;
                 return new QualifiedName(Arrays.copyOf(split, lastElement), split[lastElement]);

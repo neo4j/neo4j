@@ -63,7 +63,6 @@ import org.neo4j.logging.InternalLog
 
 import scala.jdk.CollectionConverters.IteratorHasAsScala
 import scala.jdk.CollectionConverters.ListHasAsScala
-import scala.jdk.CollectionConverters.SeqHasAsJava
 
 object TransactionBoundPlanContext {
 
@@ -83,7 +82,7 @@ object TransactionBoundPlanContext {
   }
 
   def procedureSignature(tx: KernelTransaction, name: QualifiedName): ProcedureSignature = {
-    val kn = new procs.QualifiedName(name.namespace.asJava, name.name)
+    val kn = new procs.QualifiedName(name.namespace.toArray, name.name)
     val procedures = tx.procedures()
     val handle = procedures.procedureGet(kn, CypherScope.CYPHER_5)
 
@@ -91,7 +90,7 @@ object TransactionBoundPlanContext {
   }
 
   def functionSignature(tx: KernelTransaction, name: QualifiedName): Option[UserFunctionSignature] = {
-    val kn = new procs.QualifiedName(name.namespace.asJava, name.name)
+    val kn = new procs.QualifiedName(name.namespace.toArray, name.name)
     val procedures = tx.procedures()
     val func = procedures.functionGet(kn, CypherScope.CYPHER_5)
 

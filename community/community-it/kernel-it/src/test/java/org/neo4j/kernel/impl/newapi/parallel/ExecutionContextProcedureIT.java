@@ -402,7 +402,7 @@ class ExecutionContextProcedureIT {
     }
 
     private QualifiedName getName(String name) {
-        return new QualifiedName(List.of("execution", "context", "test", "procedure"), name);
+        return new QualifiedName("execution", "context", "test", "procedure", name);
     }
 
     private interface ExecutionContextLogic {

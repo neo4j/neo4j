@@ -27,7 +27,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 import static org.neo4j.internal.helpers.collection.Iterators.asList;
 import static org.neo4j.internal.kernel.api.procs.ProcedureCallContext.EMPTY;
-import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureName;
 import static org.neo4j.values.storable.Values.stringValue;
 
 import java.util.concurrent.CountDownLatch;
@@ -43,6 +42,7 @@ import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
+import org.neo4j.internal.kernel.api.procs.QualifiedName;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.kernel.api.CypherScope;
@@ -70,7 +70,7 @@ class BuiltInProceduresIT extends KernelIntegrationTest implements ProcedureITBa
         Procedures procs = procs();
         try (var statement = kernelTransaction.acquireStatement()) {
             RawIterator<AnyValue[], ProcedureException> stream = procs.procedureCallRead(
-                    procs.procedureGet(procedureName("db", "labels"), CypherScope.CYPHER_5)
+                    procs.procedureGet(new QualifiedName("db", "labels"), CypherScope.CYPHER_5)
                             .id(),
                     new AnyValue[0],
                     ProcedureCallContext.EMPTY);
@@ -85,7 +85,7 @@ class BuiltInProceduresIT extends KernelIntegrationTest implements ProcedureITBa
         Procedures procs = procs();
         try (var statement = kernelTransaction.acquireStatement()) {
             RawIterator<AnyValue[], ProcedureException> stream = procs.procedureCallRead(
-                    procs.procedureGet(procedureName("db", "info"), CypherScope.CYPHER_5)
+                    procs.procedureGet(new QualifiedName("db", "info"), CypherScope.CYPHER_5)
                             .id(),
                     new AnyValue[0],
                     EMPTY);
@@ -103,7 +103,7 @@ class BuiltInProceduresIT extends KernelIntegrationTest implements ProcedureITBa
         Procedures procs = procs();
         try (var statement = kernelTransaction.acquireStatement()) {
             RawIterator<AnyValue[], ProcedureException> stream = procs.procedureCallRead(
-                    procs.procedureGet(procedureName("dbms", "info"), CypherScope.CYPHER_5)
+                    procs.procedureGet(new QualifiedName("dbms", "info"), CypherScope.CYPHER_5)
                             .id(),
                     new AnyValue[0],
                     EMPTY);
@@ -150,7 +150,7 @@ class BuiltInProceduresIT extends KernelIntegrationTest implements ProcedureITBa
         Procedures procs = procs();
         try (var statement = kernelTransaction.acquireStatement()) {
             RawIterator<AnyValue[], ProcedureException> stream = procs.procedureCallRead(
-                    procs.procedureGet(procedureName("db", "labels"), CypherScope.CYPHER_5)
+                    procs.procedureGet(new QualifiedName("db", "labels"), CypherScope.CYPHER_5)
                             .id(),
                     new AnyValue[0],
                     ProcedureCallContext.EMPTY);
@@ -177,7 +177,7 @@ class BuiltInProceduresIT extends KernelIntegrationTest implements ProcedureITBa
         Procedures procs = procs();
         try (var statement = kernelTransaction.acquireStatement()) {
             RawIterator<AnyValue[], ProcedureException> stream = procs.procedureCallRead(
-                    procs.procedureGet(procedureName("db", "propertyKeys"), CypherScope.CYPHER_5)
+                    procs.procedureGet(new QualifiedName("db", "propertyKeys"), CypherScope.CYPHER_5)
                             .id(),
                     new AnyValue[0],
                     ProcedureCallContext.EMPTY);
@@ -201,7 +201,7 @@ class BuiltInProceduresIT extends KernelIntegrationTest implements ProcedureITBa
         Procedures procs = procs();
         try (var statement = kernelTransaction.acquireStatement()) {
             RawIterator<AnyValue[], ProcedureException> stream = procs.procedureCallRead(
-                    procs.procedureGet(procedureName("db", "relationshipTypes"), CypherScope.CYPHER_5)
+                    procs.procedureGet(new QualifiedName("db", "relationshipTypes"), CypherScope.CYPHER_5)
                             .id(),
                     new AnyValue[0],
                     ProcedureCallContext.EMPTY);
@@ -229,7 +229,7 @@ class BuiltInProceduresIT extends KernelIntegrationTest implements ProcedureITBa
         Procedures procs = procs();
         try (var statement = kernelTransaction.acquireStatement()) {
             RawIterator<AnyValue[], ProcedureException> stream = procs.procedureCallRead(
-                    procs.procedureGet(procedureName("dbms", "components"), CypherScope.CYPHER_5)
+                    procs.procedureGet(new QualifiedName("dbms", "components"), CypherScope.CYPHER_5)
                             .id(),
                     new AnyValue[0],
                     ProcedureCallContext.EMPTY);

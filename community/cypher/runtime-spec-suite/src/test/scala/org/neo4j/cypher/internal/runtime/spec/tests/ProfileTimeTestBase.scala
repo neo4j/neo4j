@@ -31,6 +31,7 @@ import org.neo4j.cypher.result.OperatorProfile
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature.VOID
+import org.neo4j.internal.kernel.api.procs.QualifiedName
 import org.neo4j.kernel.api.ResourceMonitor
 import org.neo4j.kernel.api.procedure.CallableProcedure.BasicProcedure
 import org.neo4j.kernel.api.procedure.Context
@@ -533,7 +534,7 @@ trait NonParallelProfileTimeTestBase[CONTEXT <: RuntimeContext] {
   test("should profile time of procedure call") {
     // given
     registerProcedure(new BasicProcedure(
-      ProcedureSignature.procedureSignature(Array[String](), "proc").mode(Mode.READ).out(VOID).build()
+      ProcedureSignature.procedureSignature(new QualifiedName("proc")).mode(Mode.READ).out(VOID).build()
     ) {
       override def apply(
         ctx: Context,

@@ -41,6 +41,7 @@ import org.neo4j.common.DependencyResolver;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
+import org.neo4j.internal.kernel.api.procs.QualifiedName;
 import org.neo4j.kernel.api.procedure.CallableProcedure;
 import org.neo4j.kernel.api.procedure.Context;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
@@ -65,7 +66,7 @@ public class ProcedureWithArgumentsTest {
         // Then
         assertEquals(1, procedures.size());
         assertThat(procedures.get(0).signature())
-                .isEqualTo(procedureSignature("org", "neo4j", "procedure", "impl", "listCoolPeople")
+                .isEqualTo(procedureSignature(new QualifiedName("org", "neo4j", "procedure", "impl", "listCoolPeople"))
                         .in("name", Neo4jTypes.NTString)
                         .in("age", Neo4jTypes.NTInteger)
                         .out("name", Neo4jTypes.NTString)

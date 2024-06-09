@@ -20,7 +20,6 @@
 package org.neo4j.procedure.impl.temporal;
 
 import static java.util.Collections.singletonList;
-import static org.apache.commons.lang3.ArrayUtils.EMPTY_STRING_ARRAY;
 import static org.neo4j.internal.helpers.collection.Iterables.single;
 import static org.neo4j.internal.kernel.api.procs.DefaultParameterValue.nullValue;
 import static org.neo4j.internal.kernel.api.procs.FieldSignature.inputField;
@@ -104,7 +103,7 @@ public abstract class TemporalFunction<T extends AnyValue> implements CallableUs
         assert result.getClass().getSimpleName().equals(basename + "Type") : "result type should match function name";
         Description description = getClass().getAnnotation(Description.class);
         this.signature = new UserFunctionSignature(
-                new QualifiedName(EMPTY_STRING_ARRAY, basename.toLowerCase(Locale.ROOT)),
+                new QualifiedName(basename.toLowerCase(Locale.ROOT)),
                 INPUT_SIGNATURE,
                 result,
                 false,
@@ -185,7 +184,7 @@ public abstract class TemporalFunction<T extends AnyValue> implements CallableUs
         SubFunction(TemporalFunction<T> base, String name, List<FieldSignature> input, String description) {
             this.function = base;
             this.signature = new UserFunctionSignature(
-                    new QualifiedName(new String[] {base.signature.name().name()}, name),
+                    new QualifiedName(base.signature.name().name(), name),
                     input,
                     base.signature.outputType(),
                     false,

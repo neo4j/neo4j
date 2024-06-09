@@ -96,7 +96,7 @@ class DateTimeFunction extends TemporalFunction<DateTimeValue> {
 
         private FromEpoch() {
             this.signature = new UserFunctionSignature(
-                    new QualifiedName(new String[] {"datetime"}, "fromepoch"),
+                    new QualifiedName("datetime", "fromepoch"),
                     SIGNATURE,
                     Neo4jTypes.NTDateTime,
                     false,
@@ -137,7 +137,7 @@ class DateTimeFunction extends TemporalFunction<DateTimeValue> {
 
         private FromEpochMillis() {
             this.signature = new UserFunctionSignature(
-                    new QualifiedName(new String[] {"datetime"}, "fromepochmillis"),
+                    new QualifiedName("datetime", "fromepochmillis"),
                     SIGNATURE,
                     Neo4jTypes.NTDateTime,
                     false,

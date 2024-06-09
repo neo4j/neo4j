@@ -80,7 +80,7 @@ import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
-import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
+import org.neo4j.internal.kernel.api.procs.QualifiedName;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.CypherScope;
@@ -629,8 +629,15 @@ class BuiltInProceduresTest {
                 .thenReturn(PopulationProgress.DONE);
         AnyValue[] input = Arrays.stream(args).map(ValueUtils::of).toArray(AnyValue[]::new);
         var view = procs.getCurrentView();
-        int procId = view.procedure(ProcedureSignature.procedureName(name.split("\\.")), CypherScope.CYPHER_5)
-                .id();
+        var split = name.split("\\.");
+        var qn =
+                switch (split.length) {
+                    case 1 -> new QualifiedName(split[0]);
+                    case 2 -> new QualifiedName(split[0], split[1]);
+                    case 3 -> new QualifiedName(split[0], split[1], split[2]);
+                    default -> throw new IllegalArgumentException("Oops, naughty test");
+                };
+        int procId = view.procedure(qn, CypherScope.CYPHER_5).id();
         List<AnyValue[]> anyValues = Iterators.asList(view.callProcedure(ctx, procId, input, EMPTY_RESOURCE_TRACKER));
         List<Object[]> toReturn = new ArrayList<>(anyValues.size());
         for (AnyValue[] anyValue : anyValues) {

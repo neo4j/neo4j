@@ -84,8 +84,8 @@ class SingleInstanceRoutingProcedureInstallerTest {
         verify(procedures, times(2)).register(any(GetRoutingTableProcedure.class));
 
         Set<QualifiedName> expectedNames = newSetWith(
-                new QualifiedName(new String[] {"dbms", "routing"}, "getRoutingTable"),
-                new QualifiedName(new String[] {"dbms", "cluster", "routing"}, "getRoutingTable"));
+                new QualifiedName("dbms", "routing", "getRoutingTable"),
+                new QualifiedName("dbms", "cluster", "routing", "getRoutingTable"));
 
         Set<QualifiedName> actualNames = procedures
                 .getCurrentView()

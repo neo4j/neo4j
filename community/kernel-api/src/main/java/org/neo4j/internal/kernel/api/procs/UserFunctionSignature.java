@@ -20,7 +20,6 @@
 package org.neo4j.internal.kernel.api.procs;
 
 import static java.util.Collections.unmodifiableList;
-import static org.apache.commons.lang3.ArrayUtils.EMPTY_STRING_ARRAY;
 
 import java.util.Arrays;
 import java.util.EnumSet;
@@ -219,8 +218,8 @@ public final class UserFunctionSignature {
         private boolean threadSafe;
         private Set<CypherScope> supportedCypherScopes = CypherScope.ALL_SCOPES;
 
-        public Builder(String[] namespace, String name) {
-            this.name = new QualifiedName(namespace, name);
+        public Builder(QualifiedName name) {
+            this.name = name;
         }
 
         public Builder description(String description) {
@@ -291,19 +290,7 @@ public final class UserFunctionSignature {
         }
     }
 
-    public static Builder functionSignature(String... namespaceAndName) {
-        String[] namespace = namespaceAndName.length > 1
-                ? Arrays.copyOf(namespaceAndName, namespaceAndName.length - 1)
-                : EMPTY_STRING_ARRAY;
-        String name = namespaceAndName[namespaceAndName.length - 1];
-        return functionSignature(namespace, name);
-    }
-
     public static Builder functionSignature(QualifiedName name) {
-        return new Builder(name.namespace(), name.name());
-    }
-
-    public static Builder functionSignature(String[] namespace, String name) {
-        return new Builder(namespace, name);
+        return new Builder(name);
     }
 }

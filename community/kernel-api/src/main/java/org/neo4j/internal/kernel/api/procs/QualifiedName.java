@@ -20,10 +20,10 @@
 package org.neo4j.internal.kernel.api.procs;
 
 import static java.util.Arrays.asList;
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_STRING_ARRAY;
 import static org.apache.commons.lang3.StringUtils.EMPTY;
 
 import java.util.Arrays;
-import java.util.List;
 import org.neo4j.internal.helpers.collection.Iterables;
 
 public class QualifiedName {
@@ -31,14 +31,30 @@ public class QualifiedName {
     private final String name;
     private final String description;
 
-    public QualifiedName(List<String> namespace, String name) {
-        this(namespace.toArray(new String[0]), name);
-    }
-
     public QualifiedName(String[] namespace, String name) {
         this.namespace = namespace;
         this.name = name;
         this.description = buildDescription(namespace, name);
+    }
+
+    public QualifiedName(String name) {
+        this(EMPTY_STRING_ARRAY, name);
+    }
+
+    public QualifiedName(String ns1, String name) {
+        this(new String[] {ns1}, name);
+    }
+
+    public QualifiedName(String ns1, String ns2, String name) {
+        this(new String[] {ns1, ns2}, name);
+    }
+
+    public QualifiedName(String ns1, String ns2, String ns3, String name) {
+        this(new String[] {ns1, ns2, ns3}, name);
+    }
+
+    public QualifiedName(String ns1, String ns2, String ns3, String ns4, String name) {
+        this(new String[] {ns1, ns2, ns3, ns4}, name);
     }
 
     public String[] namespace() {

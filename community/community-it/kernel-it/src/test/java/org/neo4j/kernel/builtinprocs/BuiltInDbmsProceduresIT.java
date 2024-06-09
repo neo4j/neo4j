@@ -30,7 +30,6 @@ import static org.neo4j.capabilities.Type.INTEGER;
 import static org.neo4j.configuration.SettingValueParsers.TRUE;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.internal.helpers.collection.Iterators.asList;
-import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureName;
 import static org.neo4j.values.storable.Values.stringValue;
 
 import java.util.List;
@@ -100,7 +99,7 @@ class BuiltInDbmsProceduresIT extends KernelIntegrationTest {
 
     @Test
     void listClientConfig() throws Exception {
-        QualifiedName procedureName = procedureName("dbms", "clientConfig");
+        QualifiedName procedureName = new QualifiedName("dbms", "clientConfig");
         Procedures procs = procs();
         try (var statement = kernelTransaction.acquireStatement()) {
             int procedureId =
@@ -153,7 +152,7 @@ class BuiltInDbmsProceduresIT extends KernelIntegrationTest {
 
     @Test
     void listCapabilities() throws KernelException {
-        QualifiedName procedureName = procedureName("dbms", "listCapabilities");
+        QualifiedName procedureName = new QualifiedName("dbms", "listCapabilities");
         Procedures procs = procs();
         try (var statement = kernelTransaction.acquireStatement()) {
             int procedureId =
@@ -178,7 +177,7 @@ class BuiltInDbmsProceduresIT extends KernelIntegrationTest {
         Config config = dependencyResolver.resolveDependency(Config.class);
         config.set(CapabilitiesSettings.dbms_capabilities_blocked, List.of("my.**"));
 
-        QualifiedName procedureName = procedureName("dbms", "listCapabilities");
+        QualifiedName procedureName = new QualifiedName("dbms", "listCapabilities");
         Procedures procs = procs();
         try (var statement = kernelTransaction.acquireStatement()) {
             int procedureId =
@@ -197,7 +196,7 @@ class BuiltInDbmsProceduresIT extends KernelIntegrationTest {
 
     @Test
     void listCapabilitiesShouldReturnDynamicValues() throws KernelException {
-        QualifiedName procedureName = procedureName("dbms", "listCapabilities");
+        QualifiedName procedureName = new QualifiedName("dbms", "listCapabilities");
         var procs = procs();
         int procedureId =
                 procs.procedureGet(procedureName, CypherScope.CYPHER_5).id();
@@ -238,7 +237,7 @@ class BuiltInDbmsProceduresIT extends KernelIntegrationTest {
 
     @Test
     void listAllCapabilities() throws KernelException {
-        QualifiedName procedureName = procedureName("dbms", "listAllCapabilities");
+        QualifiedName procedureName = new QualifiedName("dbms", "listAllCapabilities");
         Procedures procs = procs();
         try (var statement = kernelTransaction.acquireStatement()) {
             int procedureId =
@@ -270,7 +269,7 @@ class BuiltInDbmsProceduresIT extends KernelIntegrationTest {
         Config config = dependencyResolver.resolveDependency(Config.class);
         config.set(CapabilitiesSettings.dbms_capabilities_blocked, List.of("my.custom.**"));
 
-        QualifiedName procedureName = procedureName("dbms", "listAllCapabilities");
+        QualifiedName procedureName = new QualifiedName("dbms", "listAllCapabilities");
         Procedures procs = procs();
         try (var statement = kernelTransaction.acquireStatement()) {
 
@@ -297,7 +296,7 @@ class BuiltInDbmsProceduresIT extends KernelIntegrationTest {
     }
 
     private List<AnyValue[]> callListConfig(String searchString) throws KernelException {
-        QualifiedName procedureName = procedureName("dbms", "listConfig");
+        QualifiedName procedureName = new QualifiedName("dbms", "listConfig");
         Procedures procs = procs();
         try (var statement = kernelTransaction.acquireStatement()) {
             int procedureId =

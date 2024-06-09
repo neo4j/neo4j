@@ -71,7 +71,7 @@ class ShowFunctionsCommandTest extends ShowCommandTestBase {
       .columns
 
   private val func1 = new UserFunctionSignature(
-    new QualifiedName(List.empty[String].asJava, "func1"),
+    new QualifiedName("func1"),
     List.empty[FieldSignature].asJava,
     NTString,
     false,
@@ -85,7 +85,7 @@ class ShowFunctionsCommandTest extends ShowCommandTestBase {
   )
 
   private val func2 = new UserFunctionSignature(
-    new QualifiedName(List.empty[String].asJava, "func2"),
+    new QualifiedName("func2"),
     List(FieldSignature.inputField("input", NTAny)).asJava,
     NTBoolean,
     false,
@@ -99,7 +99,7 @@ class ShowFunctionsCommandTest extends ShowCommandTestBase {
   )
 
   private val func3 = new UserFunctionSignature(
-    new QualifiedName(List("zzz").asJava, "func3"),
+    new QualifiedName("zzz", "func3"),
     List(
       FieldSignature.inputField("intInput", NTInteger),
       FieldSignature.inputField("booleanInput", NTBoolean)
@@ -116,7 +116,7 @@ class ShowFunctionsCommandTest extends ShowCommandTestBase {
   )
 
   private val func4 = new UserFunctionSignature(
-    new QualifiedName(List("zzz", "zz").asJava, "func4"),
+    new QualifiedName("zzz", "zz", "func4"),
     List(
       FieldSignature.inputField("input", NTDuration)
     ).asJava,
@@ -649,7 +649,7 @@ class ShowFunctionsCommandTest extends ShowCommandTestBase {
   test("show functions should not return internal functions") {
     // Set-up which functions to return:
     val internalFunc = new UserFunctionSignature(
-      new QualifiedName(List("internal").asJava, "func"),
+      new QualifiedName("internal", "func"),
       List.empty[FieldSignature].asJava,
       NTString,
       false,
@@ -662,7 +662,7 @@ class ShowFunctionsCommandTest extends ShowCommandTestBase {
       false
     )
     val internalAggregatingFunc = new UserFunctionSignature(
-      new QualifiedName(List("internal.aggregating").asJava, "func"),
+      new QualifiedName("internal.aggregating", "func"),
       List.empty[FieldSignature].asJava,
       NTString,
       false,
@@ -695,7 +695,7 @@ class ShowFunctionsCommandTest extends ShowCommandTestBase {
   test("show functions should return deprecated functions") {
     // Set-up which functions to return:
     val deprecatedFunc = new UserFunctionSignature(
-      new QualifiedName(List("deprecated").asJava, "func"),
+      new QualifiedName("deprecated", "func"),
       List.empty[FieldSignature].asJava,
       NTString,
       true,
@@ -708,7 +708,7 @@ class ShowFunctionsCommandTest extends ShowCommandTestBase {
       false
     )
     val deprecatedFuncWithoutReplacement = new UserFunctionSignature(
-      new QualifiedName(List("deprecatedWithoutReplacement").asJava, "func"),
+      new QualifiedName("deprecatedWithoutReplacement", "func"),
       List.empty[FieldSignature].asJava,
       NTString,
       true,
@@ -721,7 +721,7 @@ class ShowFunctionsCommandTest extends ShowCommandTestBase {
       false
     )
     val deprecatedAggregatingFunc = new UserFunctionSignature(
-      new QualifiedName(List("deprecated.aggregating").asJava, "func"),
+      new QualifiedName("deprecated.aggregating", "func"),
       List.empty[FieldSignature].asJava,
       NTString,
       true,
@@ -734,7 +734,7 @@ class ShowFunctionsCommandTest extends ShowCommandTestBase {
       false
     )
     val deprecatedAggregatingFuncWithoutReplacement = new UserFunctionSignature(
-      new QualifiedName(List("deprecatedWithoutReplacement.aggregating").asJava, "func"),
+      new QualifiedName("deprecatedWithoutReplacement.aggregating", "func"),
       List.empty[FieldSignature].asJava,
       NTString,
       true,

@@ -36,7 +36,7 @@ class ProcedureHolderTest {
     void shouldGetProcedureFromHolder() {
         // given
         ProcedureHolder<String> procHolder = new ProcedureHolder<>();
-        QualifiedName qualifiedName = new QualifiedName(new String[0], "CaseSensitive");
+        QualifiedName qualifiedName = new QualifiedName("CaseSensitive");
         String item = "CaseSensitiveItem";
         procHolder.put(qualifiedName, CypherScope.ALL_SCOPES, item, false);
 
@@ -49,19 +49,17 @@ class ProcedureHolderTest {
     void okToHaveProcsOnlyDifferByCase() {
         // given
         ProcedureHolder<String> procHolder = new ProcedureHolder<>();
-        procHolder.put(
-                new QualifiedName(new String[0], "CASESENSITIVE"), CypherScope.ALL_SCOPES, "CASESENSITIVEItem", false);
-        procHolder.put(
-                new QualifiedName(new String[0], "CaseSensitive"), CypherScope.ALL_SCOPES, "CaseSensitiveItem", false);
+        procHolder.put(new QualifiedName("CASESENSITIVE"), CypherScope.ALL_SCOPES, "CASESENSITIVEItem", false);
+        procHolder.put(new QualifiedName("CaseSensitive"), CypherScope.ALL_SCOPES, "CaseSensitiveItem", false);
 
         // then
-        assertThat(procHolder.getByKey(new QualifiedName(new String[0], "CASESENSITIVE"), CypherScope.CYPHER_5))
+        assertThat(procHolder.getByKey(new QualifiedName("CASESENSITIVE"), CypherScope.CYPHER_5))
                 .isEqualTo("CASESENSITIVEItem");
-        assertThat(procHolder.getByKey(new QualifiedName(new String[0], "CaseSensitive"), CypherScope.CYPHER_5))
+        assertThat(procHolder.getByKey(new QualifiedName("CaseSensitive"), CypherScope.CYPHER_5))
                 .isEqualTo("CaseSensitiveItem");
-        assertThat(procHolder.idOfKey(new QualifiedName(new String[0], "CASESENSITIVE"), CypherScope.CYPHER_5))
+        assertThat(procHolder.idOfKey(new QualifiedName("CASESENSITIVE"), CypherScope.CYPHER_5))
                 .isEqualTo(0);
-        assertThat(procHolder.idOfKey(new QualifiedName(new String[0], "CaseSensitive"), CypherScope.CYPHER_5))
+        assertThat(procHolder.idOfKey(new QualifiedName("CaseSensitive"), CypherScope.CYPHER_5))
                 .isEqualTo(1);
     }
 
@@ -69,12 +67,12 @@ class ProcedureHolderTest {
     void shouldGetCaseInsensitiveFromHolder() {
         // given
         ProcedureHolder<String> procHolder = new ProcedureHolder<>();
-        QualifiedName qualifiedName = new QualifiedName(new String[0], "CaseInSensitive");
+        QualifiedName qualifiedName = new QualifiedName("CaseInSensitive");
         String item = "CaseInSensitiveItem";
         procHolder.put(qualifiedName, CypherScope.ALL_SCOPES, item, true);
 
         // then
-        QualifiedName lowerCaseName = new QualifiedName(new String[0], "caseinsensitive");
+        QualifiedName lowerCaseName = new QualifiedName("caseinsensitive");
         assertThat(procHolder.getByKey(lowerCaseName, CypherScope.CYPHER_5)).isEqualTo(item);
         assertThat(procHolder.idOfKey(lowerCaseName, CypherScope.CYPHER_5)).isEqualTo(0);
     }
@@ -83,12 +81,12 @@ class ProcedureHolderTest {
     void canOverwriteFunctionAndChangeCaseSensitivity() {
         // given
         ProcedureHolder<String> procHolder = new ProcedureHolder<>();
-        QualifiedName qualifiedName = new QualifiedName(new String[0], "CaseInSensitive");
+        QualifiedName qualifiedName = new QualifiedName("CaseInSensitive");
         String item = "CaseInSensitiveItem";
         procHolder.put(qualifiedName, CypherScope.ALL_SCOPES, item, true);
 
         // then
-        QualifiedName lowerCaseName = new QualifiedName(new String[0], "caseinsensitive");
+        QualifiedName lowerCaseName = new QualifiedName("caseinsensitive");
         assertThat(procHolder.getByKey(lowerCaseName, CypherScope.CYPHER_5)).isEqualTo(item);
         assertThat(procHolder.idOfKey(lowerCaseName, CypherScope.CYPHER_5)).isEqualTo(0);
 
@@ -102,7 +100,7 @@ class ProcedureHolderTest {
     void preservesIdsForUnregisteredItems() {
         // given
         ProcedureHolder<String> procHolder = new ProcedureHolder<>();
-        QualifiedName qn = new QualifiedName(new String[0], "CaseInSensitive");
+        QualifiedName qn = new QualifiedName("CaseInSensitive");
         int id = procHolder.put(qn, CypherScope.ALL_SCOPES, "value", true);
 
         // when
@@ -117,7 +115,7 @@ class ProcedureHolderTest {
     void tombstoneProcedureHolderPreservesRequested() {
         // given
         ProcedureHolder<String> procHolder = new ProcedureHolder<>();
-        QualifiedName qn = new QualifiedName(new String[0], "CaseInSensitive");
+        QualifiedName qn = new QualifiedName("CaseInSensitive");
         String item = "CaseInSensitiveItem";
 
         int id = procHolder.put(qn, CypherScope.ALL_SCOPES, item, true);
@@ -137,7 +135,7 @@ class ProcedureHolderTest {
     void tombstoneProcedureHolderRemovesOther() {
         // given
         ProcedureHolder<String> procHolder = new ProcedureHolder<>();
-        QualifiedName qn = new QualifiedName(new String[0], "CaseInSensitive");
+        QualifiedName qn = new QualifiedName("CaseInSensitive");
         String item = "CaseInSensitiveItem";
         int id = procHolder.put(qn, CypherScope.ALL_SCOPES, item, true);
 
@@ -156,8 +154,8 @@ class ProcedureHolderTest {
     void tombstoneProcedureHolderPreservesIdsAndNamesForRestoredEntries() {
         // given
         ProcedureHolder<String> procHolder = new ProcedureHolder<>();
-        QualifiedName qn = new QualifiedName(new String[0], "CaseInSensitive");
-        QualifiedName qn2 = new QualifiedName(new String[0], "qn2");
+        QualifiedName qn = new QualifiedName("CaseInSensitive");
+        QualifiedName qn2 = new QualifiedName("qn2");
         String item = "CaseInSensitiveItem";
         int removedId = procHolder.put(qn, CypherScope.ALL_SCOPES, item, true),
                 keptId = procHolder.put(qn2, CypherScope.ALL_SCOPES, item, true);
@@ -177,7 +175,7 @@ class ProcedureHolderTest {
     @Test
     void canAddSeparateScopes() {
         ProcedureHolder<String> procHolder = new ProcedureHolder<>();
-        QualifiedName qn = new QualifiedName(new String[0], "qn");
+        QualifiedName qn = new QualifiedName("qn");
         procHolder.put(qn, Set.of(CypherScope.CYPHER_5), "left", false);
         procHolder.put(qn, Set.of(CypherScope.CYPHER_FUTURE), "right", false);
         assertThat(procHolder.getByKey(qn, CypherScope.CYPHER_5)).isEqualTo("left");
@@ -187,7 +185,7 @@ class ProcedureHolderTest {
     @Test
     void canAddJointScope() {
         ProcedureHolder<String> procHolder = new ProcedureHolder<>();
-        QualifiedName qn = new QualifiedName(new String[0], "qn");
+        QualifiedName qn = new QualifiedName("qn");
         procHolder.put(qn, CypherScope.ALL_SCOPES, "both", false);
         assertThat(procHolder.getByKey(qn, CypherScope.CYPHER_5)).isEqualTo("both");
         assertThat(procHolder.getByKey(qn, CypherScope.CYPHER_FUTURE)).isEqualTo("both");
@@ -196,7 +194,7 @@ class ProcedureHolderTest {
     @Test
     void canUpdateToJointScope() {
         ProcedureHolder<String> procHolder = new ProcedureHolder<>();
-        QualifiedName qn = new QualifiedName(new String[0], "qn");
+        QualifiedName qn = new QualifiedName("qn");
         procHolder.put(qn, Set.of(CypherScope.CYPHER_5), "left", false);
         procHolder.put(qn, Set.of(CypherScope.CYPHER_FUTURE), "right", false);
         procHolder.put(qn, CypherScope.ALL_SCOPES, "both", false);
@@ -207,7 +205,7 @@ class ProcedureHolderTest {
     @Test
     void canUpdateToSeparateScopes() {
         ProcedureHolder<String> procHolder = new ProcedureHolder<>();
-        QualifiedName qn = new QualifiedName(new String[0], "qn");
+        QualifiedName qn = new QualifiedName("qn");
         procHolder.put(qn, CypherScope.ALL_SCOPES, "both", false);
         procHolder.put(qn, Set.of(CypherScope.CYPHER_5), "left", false);
         procHolder.put(qn, Set.of(CypherScope.CYPHER_FUTURE), "right", false);
@@ -219,7 +217,7 @@ class ProcedureHolderTest {
     void shouldBeAbleToQueryPerScope() {
         ProcedureHolder<String> procHolder = new ProcedureHolder<>();
         String value = "Hello";
-        QualifiedName qn = new QualifiedName(new String[0], "qn");
+        QualifiedName qn = new QualifiedName("qn");
         procHolder.put(qn, CypherScope.ALL_SCOPES, value, false);
         assertThat(procHolder.getByKey(qn, CypherScope.CYPHER_5)).isEqualTo(value);
         assertThat(procHolder.getByKey(qn, CypherScope.CYPHER_FUTURE)).isEqualTo(value);

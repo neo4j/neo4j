@@ -51,6 +51,7 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
+import org.neo4j.internal.kernel.api.procs.QualifiedName;
 import org.neo4j.kernel.api.CypherScope;
 import org.neo4j.kernel.api.procedure.CallableProcedure;
 import org.neo4j.kernel.api.procedure.CypherVersionScope;
@@ -108,7 +109,7 @@ public class ProcedureTest {
         // Then
         assertEquals(1, procedures.size());
         assertThat(procedures.get(0).signature())
-                .isEqualTo(procedureSignature("org", "neo4j", "procedure", "impl", "listCoolPeople")
+                .isEqualTo(procedureSignature(new QualifiedName("org", "neo4j", "procedure", "impl", "listCoolPeople"))
                         .out("name", Neo4jTypes.NTString)
                         .build());
     }

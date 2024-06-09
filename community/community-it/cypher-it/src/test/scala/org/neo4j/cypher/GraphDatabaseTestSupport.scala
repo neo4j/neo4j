@@ -41,6 +41,7 @@ import org.neo4j.internal.kernel.api.procs.UserFunctionSignature
 import org.neo4j.internal.kernel.api.security.LoginContext
 import org.neo4j.internal.schema.IndexProviderDescriptor
 import org.neo4j.kernel.GraphDatabaseQueryService
+import org.neo4j.kernel.api.CypherScope
 import org.neo4j.kernel.api.Kernel
 import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.api.KernelTransaction.Type
@@ -397,54 +398,39 @@ trait GraphDatabaseTestSupport
     (a, b, c, d)
   }
 
-  def registerProcedure[T <: CallableProcedure](qualifiedName: String)(f: ProcedureSignature.Builder => T): T = {
-    val parts = qualifiedName.split('.')
-    val namespace = parts.reverse.tail.reverse
-    val name = parts.last
-    registerProcedure(namespace: _*)(name)(f)
+  def asQualifiedName(fqn: String): QualifiedName = {
+    val parts = fqn.split('.')
+    if (fqn.isBlank) {
+      throw new IllegalArgumentException("QualifiedName must not be a blank string")
+    } else if (parts.length == 0) {
+      throw new IllegalArgumentException("QualifiedName must contain symbols other than '.'")
+    } else {
+      new QualifiedName(parts.slice(0, parts.length - 1), parts(parts.length - 1))
+    }
   }
 
-  def registerProcedure[T <: CallableProcedure](namespace: String*)(name: String)(f: ProcedureSignature.Builder => T)
-    : T = {
-    val builder = ProcedureSignature.procedureSignature(namespace.toArray, name)
+  def registerProcedure[T <: CallableProcedure](fqn: String)(f: ProcedureSignature.Builder => T): T = {
+    val builder = ProcedureSignature.procedureSignature(asQualifiedName(fqn))
     val proc = f(builder)
     kernelAPI.registerProcedure(proc)
     registeredCallables.addOne(proc.signature().name())
     proc
   }
 
-  def registerUserDefinedFunction[T <: CallableUserFunction](qualifiedName: String)(
+  def registerUserDefinedFunction[T <: CallableUserFunction](fqn: String)(
     f: UserFunctionSignature.Builder => T
   ): T = {
-    val parts = qualifiedName.split('.')
-    val namespace = parts.reverse.tail.reverse
-    val name = parts.last
-    registerUserFunction(namespace: _*)(name)(f)
-  }
-
-  def registerUserDefinedAggregationFunction[T <: CallableUserAggregationFunction](qualifiedName: String)(
-    f: UserFunctionSignature.Builder => T
-  ): T = {
-    val parts = qualifiedName.split('.')
-    val namespace = parts.reverse.tail.reverse
-    val name = parts.last
-    registerUserAggregationFunction(namespace: _*)(name)(f)
-  }
-
-  def registerUserFunction[T <: CallableUserFunction](namespace: String*)(name: String)(
-    f: UserFunctionSignature.Builder => T
-  ): T = {
-    val builder = UserFunctionSignature.functionSignature(namespace.toArray, name)
+    val builder = UserFunctionSignature.functionSignature(asQualifiedName(fqn))
     val func = f(builder)
     kernelAPI.registerUserFunction(func)
     registeredCallables.addOne(func.signature().name())
     func
   }
 
-  def registerUserAggregationFunction[T <: CallableUserAggregationFunction](namespace: String*)(name: String)(
+  def registerUserDefinedAggregationFunction[T <: CallableUserAggregationFunction](fqn: String)(
     f: UserFunctionSignature.Builder => T
   ): T = {
-    val builder = UserFunctionSignature.functionSignature(namespace.toArray, name)
+    val builder = UserFunctionSignature.functionSignature(asQualifiedName(fqn))
     val func = f(builder)
     kernelAPI.registerUserAggregationFunction(func)
     registeredCallables.addOne(func.signature().name())
@@ -452,11 +438,7 @@ trait GraphDatabaseTestSupport
   }
 
   def getUserFunctionHandle(qualifiedName: String): UserFunctionHandle = {
-    val parts = qualifiedName.split('.')
-    val namespace = parts.reverse.tail.reverse
-    val name = parts.last
-    val procs = globalProcedures
-    procs.getCurrentView.function(new QualifiedName(namespace, name), org.neo4j.kernel.api.CypherScope.CYPHER_5)
+    globalProcedures.getCurrentView.function(asQualifiedName(qualifiedName), CypherScope.CYPHER_5)
   }
 
   def kernelMonitors: Monitors = graph.getDependencyResolver.resolveDependency(classOf[Monitors])

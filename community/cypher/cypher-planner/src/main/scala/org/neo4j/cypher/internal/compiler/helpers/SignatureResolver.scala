@@ -67,7 +67,6 @@ import org.neo4j.util.VisibleForTesting
 import java.util.Optional
 
 import scala.jdk.CollectionConverters.ListHasAsScala
-import scala.jdk.CollectionConverters.SeqHasAsJava
 
 class SignatureResolver(
   getProc: Function[procs.QualifiedName, procs.ProcedureHandle],
@@ -80,7 +79,7 @@ class SignatureResolver(
       .map(fcn => SignatureResolver.toCypherFunction(fcn))
 
   override def procedureSignature(name: QualifiedName): ProcedureSignature = {
-    val kn = new procs.QualifiedName(name.namespace.asJava, name.name)
+    val kn = new procs.QualifiedName(name.namespace.toArray, name.name)
     SignatureResolver.toCypherProcedure(getProc(kn))
   }
 }

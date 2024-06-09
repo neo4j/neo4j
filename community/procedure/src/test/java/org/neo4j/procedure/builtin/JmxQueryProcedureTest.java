@@ -42,7 +42,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.collection.RawIterator;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
-import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
+import org.neo4j.internal.kernel.api.procs.QualifiedName;
 import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.values.AnyValue;
 
@@ -75,7 +75,7 @@ class JmxQueryProcedureTest {
     void shouldHandleBasicMBean() throws Throwable {
         // given
         when(jmxServer.getAttribute(beanName, "name")).thenReturn("Hello, world!");
-        JmxQueryProcedure procedure = new JmxQueryProcedure(ProcedureSignature.procedureName("bob"), jmxServer);
+        JmxQueryProcedure procedure = new JmxQueryProcedure(new QualifiedName("bob"), jmxServer);
 
         // when
         RawIterator<AnyValue[], ProcedureException> result =
@@ -103,7 +103,7 @@ class JmxQueryProcedureTest {
                 .thenThrow(new RuntimeMBeanException(
                         new UnsupportedOperationException("Haha, screw discoverable services!")));
 
-        JmxQueryProcedure procedure = new JmxQueryProcedure(ProcedureSignature.procedureName("bob"), jmxServer);
+        JmxQueryProcedure procedure = new JmxQueryProcedure(new QualifiedName("bob"), jmxServer);
 
         // when
         RawIterator<AnyValue[], ProcedureException> result =
@@ -143,7 +143,7 @@ class JmxQueryProcedureTest {
                                 new OpenType<?>[] {SimpleType.STRING, SimpleType.INTEGER}),
                         map("key1", "Hello", "key2", 123)));
 
-        JmxQueryProcedure procedure = new JmxQueryProcedure(ProcedureSignature.procedureName("bob"), jmxServer);
+        JmxQueryProcedure procedure = new JmxQueryProcedure(new QualifiedName("bob"), jmxServer);
 
         // when
         RawIterator<AnyValue[], ProcedureException> result =
@@ -172,7 +172,7 @@ class JmxQueryProcedureTest {
         // given
         MBeanServer jmxServer = ManagementFactory.getPlatformMBeanServer();
 
-        JmxQueryProcedure procedure = new JmxQueryProcedure(ProcedureSignature.procedureName("bob"), jmxServer);
+        JmxQueryProcedure procedure = new JmxQueryProcedure(new QualifiedName("bob"), jmxServer);
 
         // when
         RawIterator<AnyValue[], ProcedureException> result =

@@ -27,7 +27,6 @@ import static org.neo4j.internal.kernel.api.procs.DefaultParameterValue.nullValu
 import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureSignature;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 
-import java.util.List;
 import org.neo4j.collection.RawIterator;
 import org.neo4j.dbms.routing.RoutingException;
 import org.neo4j.dbms.routing.RoutingService;
@@ -47,8 +46,8 @@ import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.virtual.MapValue;
 
 public final class GetRoutingTableProcedure implements CallableProcedure {
-    public static final List<String> DEFAULT_NAMESPACE = List.of("dbms", "routing");
-    public static final List<String> LEGACY_NAMESPACE = List.of("dbms", "cluster", "routing");
+    public static final String[] DEFAULT_NAMESPACE = {"dbms", "routing"};
+    public static final String[] LEGACY_NAMESPACE = {"dbms", "cluster", "routing"};
 
     private static final String NAME = "getRoutingTable";
     private static final String DESCRIPTION =
@@ -129,7 +128,7 @@ public final class GetRoutingTableProcedure implements CallableProcedure {
         }
     }
 
-    public static ProcedureSignature.Builder createSignature(List<String> namespace) {
+    public static ProcedureSignature.Builder createSignature(String[] namespace) {
         return procedureSignature(new QualifiedName(namespace, NAME))
                 .in(CONTEXT.parameterName(), Neo4jTypes.NTMap)
                 .in(DATABASE.parameterName(), Neo4jTypes.NTString, nullValue(Neo4jTypes.NTString))

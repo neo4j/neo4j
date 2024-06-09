@@ -78,6 +78,7 @@ import org.neo4j.function.ThrowingFunction;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
+import org.neo4j.internal.kernel.api.procs.QualifiedName;
 import org.neo4j.internal.kernel.api.procs.UserAggregationReducer;
 import org.neo4j.internal.kernel.api.procs.UserFunctionSignature;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -108,6 +109,8 @@ import org.neo4j.values.virtual.MapValue;
 @SuppressWarnings({"unused", "WeakerAccess"})
 public class ProcedureCompilationTest {
     private static final AnyValue[] EMPTY = new AnyValue[0];
+
+    private static final QualifiedName FUNC_NAME = new QualifiedName("test", "foo");
     private static final DefaultValueMapper VALUE_MAPPER = new DefaultValueMapper(mock(InternalTransaction.class));
     private static final InternalTransaction TRANSACTION = mock(InternalTransaction.class);
     private static final KernelTransaction KTX = mock(KernelTransaction.class);
@@ -131,7 +134,7 @@ public class ProcedureCompilationTest {
     void shouldCallSimpleMethod() throws ProcedureException {
         // Given
         UserFunctionSignature signature =
-                functionSignature("test", "foo").out(NTInteger).build();
+                functionSignature(FUNC_NAME).out(NTInteger).build();
         // When
         CallableUserFunction longMethod = compileFunction(signature, emptyList(), method("longMethod"));
 
@@ -143,7 +146,7 @@ public class ProcedureCompilationTest {
     void shouldExposeUserFunctionSignature() throws ProcedureException {
         // Given
         UserFunctionSignature signature =
-                functionSignature("test", "foo").out(NTInteger).build();
+                functionSignature(FUNC_NAME).out(NTInteger).build();
         // When
         CallableUserFunction function = compileFunction(signature, emptyList(), method("longMethod"));
 
@@ -155,7 +158,7 @@ public class ProcedureCompilationTest {
     void functionShouldAccessContext() throws ProcedureException, NoSuchFieldException {
         // Given
         UserFunctionSignature signature =
-                functionSignature("test", "foo").out(NTInteger).build();
+                functionSignature(FUNC_NAME).out(NTInteger).build();
         FieldSetter setter1 = createSetter(
                 InnerClass.class, "transaction", ctx -> ctx.kernelTransaction().internalTransaction());
         FieldSetter setter2 = createSetter(InnerClass.class, "thread", Context::thread);
@@ -181,7 +184,7 @@ public class ProcedureCompilationTest {
     void shouldHandleThrowingUDF() throws ProcedureException {
         // Given
         UserFunctionSignature signature =
-                functionSignature("test", "foo").out(NTInteger).build();
+                functionSignature(FUNC_NAME).out(NTInteger).build();
 
         // When
         CallableUserFunction longMethod = compileFunction(signature, emptyList(), method("throwingLongMethod"));
@@ -193,7 +196,7 @@ public class ProcedureCompilationTest {
     @Test
     void shouldCallMethodWithParameters() throws ProcedureException {
         // Given
-        UserFunctionSignature signature = functionSignature("test", "foo")
+        UserFunctionSignature signature = functionSignature(FUNC_NAME)
                 .in("l", NTInteger)
                 .in("d", NTFloat)
                 .in("b", NTBoolean)
@@ -213,7 +216,7 @@ public class ProcedureCompilationTest {
     @Test
     void shouldCallMethodWithCompositeParameters() throws ProcedureException {
         // Given
-        UserFunctionSignature signature = functionSignature("test", "foo")
+        UserFunctionSignature signature = functionSignature(FUNC_NAME)
                 .in("l", NTList(NTAny))
                 .out(NTString)
                 .build();
@@ -231,7 +234,7 @@ public class ProcedureCompilationTest {
     void shouldHandleNulls() throws ProcedureException {
         // Given
         UserFunctionSignature signature =
-                functionSignature("test", "foo").in("b", NTBoolean).out(NTFloat).build();
+                functionSignature(FUNC_NAME).in("b", NTBoolean).out(NTFloat).build();
 
         // When
         CallableUserFunction nullyMethod =
@@ -245,7 +248,7 @@ public class ProcedureCompilationTest {
     @Test
     void shouldHandleNumberOutput() throws ProcedureException {
         // Given
-        UserFunctionSignature signature = functionSignature("test", "foo")
+        UserFunctionSignature signature = functionSignature(FUNC_NAME)
                 .in("numbers", NTList(NTNumber))
                 .out(NTNumber)
                 .build();
@@ -260,7 +263,7 @@ public class ProcedureCompilationTest {
     @Test
     void shouldHandleByteArrays() throws ProcedureException {
         // Given
-        UserFunctionSignature signature = functionSignature("test", "foo")
+        UserFunctionSignature signature = functionSignature(FUNC_NAME)
                 .in("bytes", NTByteArray)
                 .out(NTByteArray)
                 .build();
@@ -281,7 +284,7 @@ public class ProcedureCompilationTest {
     @Test
     void shouldHandleStrings() throws ProcedureException {
         // Given
-        UserFunctionSignature signature = functionSignature("test", "foo")
+        UserFunctionSignature signature = functionSignature(FUNC_NAME)
                 .in("string", NTString)
                 .out(NTString)
                 .build();
@@ -298,7 +301,7 @@ public class ProcedureCompilationTest {
     void shouldHandleAllTypes() throws ProcedureException {
         Map<Type, Method> allTypes = typeMaps();
         UserFunctionSignature signature =
-                functionSignature("test", "foo").in("in", NTAny).out(NTAny).build();
+                functionSignature(FUNC_NAME).in("in", NTAny).out(NTAny).build();
 
         for (Entry<Type, Method> entry : allTypes.entrySet()) {
 
@@ -322,7 +325,7 @@ public class ProcedureCompilationTest {
     @Test
     void shouldCallSimpleProcedure() throws ProcedureException {
         // Given
-        ProcedureSignature signature = ProcedureSignature.procedureSignature("test", "foo")
+        ProcedureSignature signature = ProcedureSignature.procedureSignature(FUNC_NAME)
                 .in("in", NTInteger)
                 .out(singletonList(inputField("name", NTInteger)))
                 .build();
@@ -339,7 +342,7 @@ public class ProcedureCompilationTest {
     @Test
     void shouldExposeProcedureSignature() throws ProcedureException {
         // Given
-        ProcedureSignature signature = ProcedureSignature.procedureSignature("test", "foo")
+        ProcedureSignature signature = ProcedureSignature.procedureSignature(FUNC_NAME)
                 .in("in", NTInteger)
                 .out(singletonList(inputField("name", NTInteger)))
                 .build();
@@ -353,7 +356,7 @@ public class ProcedureCompilationTest {
     @Test
     void procedureShouldAccessContext() throws ProcedureException, NoSuchFieldException {
         // Given
-        ProcedureSignature signature = ProcedureSignature.procedureSignature("test", "foo")
+        ProcedureSignature signature = ProcedureSignature.procedureSignature(FUNC_NAME)
                 .in("in", NTString)
                 .out(singletonList(inputField("name", NTString)))
                 .build();
@@ -390,7 +393,7 @@ public class ProcedureCompilationTest {
     void shouldHandleThrowingProcedure() throws ProcedureException {
         // Given
         ResourceTracker tracker = mock(ResourceTracker.class);
-        ProcedureSignature signature = ProcedureSignature.procedureSignature("test", "foo")
+        ProcedureSignature signature = ProcedureSignature.procedureSignature(FUNC_NAME)
                 .in("in", NTString)
                 .out(singletonList(inputField("name", NTString)))
                 .build();
@@ -410,7 +413,7 @@ public class ProcedureCompilationTest {
     void shouldCallVoidProcedure() throws ProcedureException, NoSuchFieldException {
         // Given
         ProcedureSignature signature =
-                ProcedureSignature.procedureSignature("test", "foo").build();
+                ProcedureSignature.procedureSignature(FUNC_NAME).build();
         // When
         FieldSetter setter = createSetter(
                 InnerClass.class, "transaction", ctx -> ctx.kernelTransaction().internalTransaction());
@@ -426,7 +429,7 @@ public class ProcedureCompilationTest {
     @Test
     void shouldHandleNonStaticInnerClasses() throws ProcedureException {
         // Given
-        ProcedureSignature signature = ProcedureSignature.procedureSignature("test", "foo")
+        ProcedureSignature signature = ProcedureSignature.procedureSignature(FUNC_NAME)
                 .out(singletonList(inputField("name", NTString)))
                 .build();
         // When
@@ -442,7 +445,7 @@ public class ProcedureCompilationTest {
     @Test
     void shouldHandleResultClassWithMultipleFields() throws ProcedureException {
         // Given
-        ProcedureSignature signature = ProcedureSignature.procedureSignature("test", "foo")
+        ProcedureSignature signature = ProcedureSignature.procedureSignature(FUNC_NAME)
                 .out(List.of(inputField("name", NTString), inputField("value", NTInteger)))
                 .build();
         // When
@@ -458,10 +461,8 @@ public class ProcedureCompilationTest {
     @Test
     void shouldCallAggregationFunction() throws ProcedureException {
         // Given
-        UserFunctionSignature signature = functionSignature("test", "foo")
-                .in("in", NTInteger)
-                .out(NTInteger)
-                .build();
+        UserFunctionSignature signature =
+                functionSignature(FUNC_NAME).in("in", NTInteger).out(NTInteger).build();
 
         // When
         CallableUserAggregationFunction adder = compileAggregation(
@@ -484,10 +485,8 @@ public class ProcedureCompilationTest {
     @Test
     void shouldExposeUserFunctionSignatureOnAggregations() throws ProcedureException {
         // Given
-        UserFunctionSignature signature = functionSignature("test", "foo")
-                .in("in", NTInteger)
-                .out(NTInteger)
-                .build();
+        UserFunctionSignature signature =
+                functionSignature(FUNC_NAME).in("in", NTInteger).out(NTInteger).build();
 
         // When
         CallableUserAggregationFunction adder = compileAggregation(
@@ -504,10 +503,8 @@ public class ProcedureCompilationTest {
     @Test
     void aggregationShouldAccessContext() throws ProcedureException, NoSuchFieldException {
         // Given
-        UserFunctionSignature signature = functionSignature("test", "foo")
-                .in("in", NTString)
-                .out(NTString)
-                .build();
+        UserFunctionSignature signature =
+                functionSignature(FUNC_NAME).in("in", NTString).out(NTString).build();
         FieldSetter setter = createSetter(InnerClass.class, "thread", Context::thread);
         String threadName = Thread.currentThread().getName();
         UserAggregationReducer aggregator = compileAggregation(
@@ -532,7 +529,7 @@ public class ProcedureCompilationTest {
     @Test
     void shouldHandleThrowingAggregations() throws ProcedureException {
         UserFunctionSignature signature =
-                functionSignature("test", "foo").out(NTInteger).build();
+                functionSignature(FUNC_NAME).out(NTInteger).build();
 
         UserAggregationReducer aggregator = compileAggregation(
                         signature,
@@ -550,7 +547,7 @@ public class ProcedureCompilationTest {
     void shouldCallAggregationFunctionWithObject() throws ProcedureException {
         // Given
         UserFunctionSignature signature =
-                functionSignature("test", "foo").in("in", NTAny).out(NTAny).build();
+                functionSignature(FUNC_NAME).in("in", NTAny).out(NTAny).build();
 
         // When
         CallableUserAggregationFunction first = compileAggregation(
@@ -574,7 +571,7 @@ public class ProcedureCompilationTest {
     void shouldCallResultOnAggregationOnlyOnceOnMapResults() throws ProcedureException {
         // Given
         UserFunctionSignature signature =
-                functionSignature("test", "foo").in("in", NTInteger).out(NTMap).build();
+                functionSignature(FUNC_NAME).in("in", NTInteger).out(NTMap).build();
 
         // When
         CallableUserAggregationFunction once = compileAggregation(

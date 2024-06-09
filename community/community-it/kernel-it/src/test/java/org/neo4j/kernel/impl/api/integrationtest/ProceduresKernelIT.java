@@ -24,7 +24,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.internal.helpers.collection.Iterators.asList;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTString;
-import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureName;
 import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureSignature;
 import static org.neo4j.values.storable.Values.longValue;
 
@@ -44,13 +43,14 @@ import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.Values;
 
 class ProceduresKernelIT extends KernelIntegrationTest {
-    private final ProcedureSignature signature = procedureSignature("example", "exampleProc")
+    private static final QualifiedName PROC = new QualifiedName("example", "exampleProc");
+    private final ProcedureSignature signature = procedureSignature(PROC)
             .supportedCypherScopes(CypherScope.CYPHER_5)
             .in("name", NTString)
             .out("name", NTString)
             .build();
 
-    private final ProcedureSignature futureSignature = procedureSignature("example", "exampleProc")
+    private final ProcedureSignature futureSignature = procedureSignature(PROC)
             .supportedCypherScopes(CypherScope.CYPHER_FUTURE)
             .in("firstName", NTString)
             .in("lastName", NTString)
@@ -66,9 +66,8 @@ class ProceduresKernelIT extends KernelIntegrationTest {
         internalKernel().registerProcedure(procedure);
 
         // When
-        ProcedureSignature found = procs().procedureGet(
-                        new QualifiedName(new String[] {"example"}, "exampleProc"), CypherScope.CYPHER_5)
-                .signature();
+        ProcedureSignature found =
+                procs().procedureGet(PROC, CypherScope.CYPHER_5).signature();
 
         // Then
         assertThat(found).isEqualTo(signature);
@@ -78,14 +77,13 @@ class ProceduresKernelIT extends KernelIntegrationTest {
     @Test
     void shouldGetBuiltInProcedureByName() throws Throwable {
         // When
-        ProcedureSignature found = procs().procedureGet(procedureName("db", "labels"), CypherScope.CYPHER_5)
-                .signature();
+        QualifiedName qn = new QualifiedName("db", "labels");
+        ProcedureSignature found =
+                procs().procedureGet(qn, CypherScope.CYPHER_5).signature();
 
         // Then
         assertThat(found)
-                .isEqualTo(procedureSignature(procedureName("db", "labels"))
-                        .out("label", NTString)
-                        .build());
+                .isEqualTo(procedureSignature(qn).out("label", NTString).build());
         commit();
     }
 
@@ -93,14 +91,14 @@ class ProceduresKernelIT extends KernelIntegrationTest {
     void shouldGetAllProcedures() throws Throwable {
         // Given
         internalKernel().registerProcedure(procedure);
+        QualifiedName proc2 = new QualifiedName("example", "exampleProc2");
+        QualifiedName proc3 = new QualifiedName("example", "exampleProc3");
         internalKernel()
-                .registerProcedure(procedure(procedureSignature("example", "exampleProc2")
-                        .out("name", NTString)
-                        .build()));
+                .registerProcedure(procedure(
+                        procedureSignature(proc2).out("name", NTString).build()));
         internalKernel()
-                .registerProcedure(procedure(procedureSignature("example", "exampleProc3")
-                        .out("name", NTString)
-                        .build()));
+                .registerProcedure(procedure(
+                        procedureSignature(proc3).out("name", NTString).build()));
 
         // When
         List<ProcedureSignature> signatures = newTransaction()
@@ -112,20 +110,16 @@ class ProceduresKernelIT extends KernelIntegrationTest {
         assertThat(signatures)
                 .contains(
                         procedure.signature(),
-                        procedureSignature("example", "exampleProc2")
-                                .out("name", NTString)
-                                .build(),
-                        procedureSignature("example", "exampleProc3")
-                                .out("name", NTString)
-                                .build());
+                        procedureSignature(proc2).out("name", NTString).build(),
+                        procedureSignature(proc3).out("name", NTString).build());
         commit();
     }
 
     @Test
     void shouldRefuseToRegisterNonVoidProcedureWithoutOutputs() throws ProcedureException {
         var e = assertThrows(ProcedureException.class, () -> internalKernel()
-                .registerProcedure(
-                        procedure(procedureSignature("example", "exampleProc2").build())));
+                .registerProcedure(procedure(procedureSignature(new QualifiedName("example", "exampleProc2"))
+                        .build())));
         assertThat(e.getMessage()).isEqualTo("Procedures with zero output fields must be declared as VOID");
     }
 
@@ -138,8 +132,7 @@ class ProceduresKernelIT extends KernelIntegrationTest {
         Procedures procs = procs();
         try (var statement = kernelTransaction.acquireStatement()) {
             RawIterator<AnyValue[], ProcedureException> found = procs.procedureCallRead(
-                    procs.procedureGet(new QualifiedName(new String[] {"example"}, "exampleProc"), CypherScope.CYPHER_5)
-                            .id(),
+                    procs.procedureGet(PROC, CypherScope.CYPHER_5).id(),
                     new AnyValue[] {longValue(1337)},
                     ProcedureCallContext.EMPTY);
             // Then

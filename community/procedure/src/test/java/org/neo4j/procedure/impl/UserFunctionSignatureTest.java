@@ -26,10 +26,11 @@ import static org.neo4j.internal.kernel.api.procs.UserFunctionSignature.function
 import org.junit.jupiter.api.Test;
 import org.neo4j.internal.kernel.api.procs.FieldSignature;
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
+import org.neo4j.internal.kernel.api.procs.QualifiedName;
 import org.neo4j.internal.kernel.api.procs.UserFunctionSignature;
 
 class UserFunctionSignatureTest {
-    private final UserFunctionSignature signature = functionSignature("asd")
+    private final UserFunctionSignature signature = functionSignature(new QualifiedName("asd"))
             .in("in", Neo4jTypes.NTAny)
             .out(Neo4jTypes.NTAny)
             .build();
@@ -44,7 +45,7 @@ class UserFunctionSignatureTest {
     @Test
     void toStringShouldMatchCypherSyntax() {
         // When
-        String toStr = functionSignature("org", "myProcedure")
+        String toStr = functionSignature(new QualifiedName("org", "myProcedure"))
                 .in("in", Neo4jTypes.NTList(Neo4jTypes.NTString))
                 .out(Neo4jTypes.NTNumber)
                 .build()

@@ -35,6 +35,7 @@ import org.neo4j.cypher.testing.impl.FeatureDatabaseManagementService
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException
 import org.neo4j.internal.kernel.api.procs
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes
+import org.neo4j.internal.kernel.api.procs.QualifiedName
 import org.neo4j.kernel.api.ResourceMonitor
 import org.neo4j.kernel.api.procedure.CallableProcedure.BasicProcedure
 import org.neo4j.kernel.api.procedure.Context
@@ -115,7 +116,10 @@ trait Neo4jProcedureAdapter extends ProcedureSupport {
   }
 
   private def asKernelSignature(parsedSignature: ProcedureSignature): procs.ProcedureSignature = {
-    val builder = procs.ProcedureSignature.procedureSignature(parsedSignature.namespace.toArray, parsedSignature.name)
+    val builder = procs.ProcedureSignature.procedureSignature(new QualifiedName(
+      parsedSignature.namespace.toArray,
+      parsedSignature.name
+    ))
     builder.mode(Mode.READ)
     parsedSignature.inputs.foreach { case (name, tpe) => builder.in(name, asKernelType(tpe)) }
     parsedSignature.outputs match {

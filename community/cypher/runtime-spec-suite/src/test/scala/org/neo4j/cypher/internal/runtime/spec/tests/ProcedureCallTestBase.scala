@@ -31,6 +31,7 @@ import org.neo4j.internal.kernel.api.procs.DefaultParameterValue.ntAny
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature.VOID
+import org.neo4j.internal.kernel.api.procs.QualifiedName
 import org.neo4j.kernel.api.ResourceMonitor
 import org.neo4j.kernel.api.procedure.CallableProcedure.BasicProcedure
 import org.neo4j.kernel.api.procedure.Context
@@ -52,7 +53,7 @@ abstract class ProcedureCallTestBase[CONTEXT <: RuntimeContext](
 
   private val procedures = Seq(
     new BasicProcedure(
-      ProcedureSignature.procedureSignature(Array[String](), "readVoidProc").mode(Mode.READ).out(VOID).build()
+      ProcedureSignature.procedureSignature(new QualifiedName("readVoidProc")).mode(Mode.READ).out(VOID).build()
     ) {
 
       override def apply(
@@ -65,7 +66,7 @@ abstract class ProcedureCallTestBase[CONTEXT <: RuntimeContext](
       }
     },
     new BasicProcedure(
-      ProcedureSignature.procedureSignature(Array[String](), "writeVoidProc").mode(Mode.WRITE).out(VOID).build()
+      ProcedureSignature.procedureSignature(new QualifiedName("writeVoidProc")).mode(Mode.WRITE).out(VOID).build()
     ) {
 
       override def apply(
@@ -77,10 +78,12 @@ abstract class ProcedureCallTestBase[CONTEXT <: RuntimeContext](
         RawIterator.empty[Array[AnyValue], ProcedureException]()
       }
     },
-    new BasicProcedure(ProcedureSignature.procedureSignature(Array[String](), "writeNonVoidProc").mode(Mode.WRITE).out(
-      "i",
-      Neo4jTypes.NTInteger
-    ).build()) {
+    new BasicProcedure(
+      ProcedureSignature.procedureSignature(new QualifiedName("writeNonVoidProc")).mode(Mode.WRITE).out(
+        "i",
+        Neo4jTypes.NTInteger
+      ).build()
+    ) {
 
       override def apply(
         ctx: Context,
@@ -91,7 +94,7 @@ abstract class ProcedureCallTestBase[CONTEXT <: RuntimeContext](
         RawIterator.of[Array[AnyValue], ProcedureException](Array(Values.of(42)), Array(Values.of(42)))
       }
     },
-    new BasicProcedure(ProcedureSignature.procedureSignature(Array[String](), "readIntProc").mode(Mode.READ).out(
+    new BasicProcedure(ProcedureSignature.procedureSignature(new QualifiedName("readIntProc")).mode(Mode.READ).out(
       "i",
       Neo4jTypes.NTInteger
     ).build()) {
@@ -105,7 +108,7 @@ abstract class ProcedureCallTestBase[CONTEXT <: RuntimeContext](
         RawIterator.of[Array[AnyValue], ProcedureException](Array(Values.of(testVarInt)), Array(Values.of(testVarInt)))
       }
     },
-    new BasicProcedure(ProcedureSignature.procedureSignature(Array[String](), "readIntIntProc").mode(Mode.READ).in(
+    new BasicProcedure(ProcedureSignature.procedureSignature(new QualifiedName("readIntIntProc")).mode(Mode.READ).in(
       "j",
       Neo4jTypes.NTInteger
     ).out("i", Neo4jTypes.NTInteger).build()) {
@@ -119,7 +122,7 @@ abstract class ProcedureCallTestBase[CONTEXT <: RuntimeContext](
         RawIterator.of[Array[AnyValue], ProcedureException](input.map(twice), input.map(twice))
       }
     },
-    new BasicProcedure(ProcedureSignature.procedureSignature(Array[String](), "cardinalityIncreasingProc").mode(
+    new BasicProcedure(ProcedureSignature.procedureSignature(new QualifiedName("cardinalityIncreasingProc")).mode(
       Mode.READ
     ).in("j", Neo4jTypes.NTInteger).out("i", Neo4jTypes.NTInteger).build()) {
 
@@ -135,7 +138,7 @@ abstract class ProcedureCallTestBase[CONTEXT <: RuntimeContext](
         ): _*)
       }
     },
-    new BasicProcedure(ProcedureSignature.procedureSignature(Array[String](), "echoProc").mode(Mode.READ).in(
+    new BasicProcedure(ProcedureSignature.procedureSignature(new QualifiedName("echoProc")).mode(Mode.READ).in(
       "j",
       Neo4jTypes.NTAny,
       ntAny("default")
@@ -150,7 +153,7 @@ abstract class ProcedureCallTestBase[CONTEXT <: RuntimeContext](
       }
     },
     new BasicProcedure(
-      ProcedureSignature.procedureSignature(Array[String](), "runtimeName").mode(Mode.READ).out(
+      ProcedureSignature.procedureSignature(new QualifiedName("runtimeName")).mode(Mode.READ).out(
         "runtime",
         Neo4jTypes.NTString
       ).build()

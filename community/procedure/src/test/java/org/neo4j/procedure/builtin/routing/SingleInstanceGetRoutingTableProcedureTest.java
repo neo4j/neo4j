@@ -173,7 +173,7 @@ public class SingleInstanceGetRoutingTableProcedureTest {
 
         var name = proc.signature().name();
 
-        assertEquals(new QualifiedName(new String[] {"dbms", "routing"}, "getRoutingTable"), name);
+        assertEquals(new QualifiedName("dbms", "routing", "getRoutingTable"), name);
     }
 
     @RoutingConfigsTest
