@@ -58,7 +58,7 @@ object Neo4jAdapter {
   )
 
   def apply(
-    executionPrefix: String,
+    prefix: QueryPrefix,
     databaseProvider: TestDatabaseProvider,
     dbConfig: collection.Map[Setting[_], Object],
     useBolt: Boolean,
@@ -78,11 +78,11 @@ object Neo4jAdapter {
         EmbeddedCypherExecutorFactory(managementService, config)
       }
     val dbms = FeatureDatabaseManagementService(managementService, executorFactory)
-    new Neo4jAdapter(dbms, executionPrefix, scenario)
+    new Neo4jAdapter(dbms, prefix, scenario)
   }
 }
 
-class Neo4jAdapter(var dbms: FeatureDatabaseManagementService, executionPrefix: String, scenario: Scenario)
+class Neo4jAdapter(var dbms: FeatureDatabaseManagementService, prefix: QueryPrefix, scenario: Scenario)
     extends Graph
     with Neo4jProcedureAdapter with Neo4jCsvFileCreationAdapter {
   private val explainPrefix = "EXPLAIN\n"
@@ -91,9 +91,8 @@ class Neo4jAdapter(var dbms: FeatureDatabaseManagementService, executionPrefix: 
     val neo4jParams = params.view.mapValues(v => TCKValueToNeo4jValue(v)).toMap
 
     val queryToExecute =
-      if (meta == ExecQuery) {
-        s"$executionPrefix $query"
-      } else query
+      if (meta == ExecQuery) s"${prefix.commonPrefix} ${prefix.executionPrefix} $query"
+      else s"${prefix.commonPrefix} $query"
     Try(dbms.execute(queryToExecute, neo4jParams, convertResult)) match {
       case Success(converted) =>
         converted

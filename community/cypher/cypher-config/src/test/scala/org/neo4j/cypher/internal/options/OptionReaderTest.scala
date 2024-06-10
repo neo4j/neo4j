@@ -26,6 +26,9 @@ import org.neo4j.configuration.GraphDatabaseInternalSettings.cypher_parallel_run
 import org.neo4j.cypher.internal.config.CypherConfiguration
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.exceptions.InvalidCypherOption
+import org.neo4j.graphdb.config.Setting
+
+import scala.jdk.CollectionConverters.MapHasAsJava
 
 class OptionReaderTest extends CypherFunSuite {
 
@@ -182,4 +185,31 @@ class OptionReaderTest extends CypherFunSuite {
     )
   }
 
+  test("Cypher version can be read") {
+    org.neo4j.cypher.internal.CypherVersion.All.foreach {
+      case experimentalVersion if experimentalVersion.experimental =>
+        intercept[InvalidCypherOption](defaultOptions("cypher version" -> experimentalVersion.name)) should
+          have message "6 is not a valid option for cypher version. Valid options are: 5"
+      case version =>
+        defaultOptions("cypher version" -> version.name).cypherVersion.actualVersion shouldBe version
+    }
+  }
+
+  test("Cypher version can be read with experimental versions") {
+    org.neo4j.cypher.internal.CypherVersion.All.foreach { version =>
+      options(
+        Map(GraphDatabaseInternalSettings.enable_experimental_cypher_versions -> java.lang.Boolean.TRUE),
+        "cypher version" -> version.name
+      ).cypherVersion.actualVersion shouldBe version
+    }
+  }
+
+  private def defaultOptions(queryOptions: (String, String)*): CypherQueryOptions = options(Map.empty, queryOptions: _*)
+
+  private def options(settings: Map[Setting[_], AnyRef], queryOptions: (String, String)*): CypherQueryOptions = {
+    CypherQueryOptions.fromValues(
+      CypherConfiguration.fromConfig(Config.newBuilder().set(settings.asJava).build()),
+      queryOptions.toSet
+    )
+  }
 }

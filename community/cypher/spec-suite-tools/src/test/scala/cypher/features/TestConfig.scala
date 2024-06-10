@@ -19,40 +19,50 @@
  */
 package cypher.features
 
-case class TestConfig(denylist: Option[String], executionPrefix: String, experimental: Boolean)
+case class QueryPrefix(commonPrefix: String, executionPrefix: String)
+
+object QueryPrefix {
+  def empty: QueryPrefix = QueryPrefix("", "")
+}
+case class TestConfig(denylist: Option[String], executionPrefix: QueryPrefix, experimental: Boolean)
 
 object TestConfig {
 
-  def apply(testClass: Class[_], denyListFilename: String, prefix: String, experimental: Boolean = false): TestConfig =
+  def apply(
+    testClass: Class[_],
+    denyListFilename: String,
+    prefix: QueryPrefix,
+    experimental: Boolean = false
+  ): TestConfig =
     TestConfig(Some(testClass.getPackageName.replace('.', '/') + "/denylist/" + denyListFilename), prefix, experimental)
 
-  def default(testClass: Class[_]): TestConfig = TestConfig(testClass, "default.txt", "")
+  def default(testClass: Class[_]): TestConfig = TestConfig(testClass, "default.txt", QueryPrefix.empty)
 
   def slotted(testClass: Class[_], denyList: String = "slotted.txt"): TestConfig =
-    TestConfig(testClass, denyList, "CYPHER planner=cost runtime=slotted")
+    TestConfig(testClass, denyList, QueryPrefix("", "CYPHER planner=cost runtime=slotted"))
 
   def slottedWithCompiledExpressions(testClass: Class[_]): TestConfig = TestConfig(
     testClass,
     "slotted-with-compiled-expressions.txt",
-    "CYPHER planner=cost runtime=slotted expressionEngine=COMPILED"
+    QueryPrefix("", "CYPHER planner=cost runtime=slotted expressionEngine=COMPILED")
   )
 
   def pipelined(testClass: Class[_]): TestConfig =
-    TestConfig(testClass, "pipelined-single-threaded.txt", "CYPHER planner=cost runtime=pipelined")
+    TestConfig(testClass, "pipelined-single-threaded.txt", QueryPrefix("", "CYPHER planner=cost runtime=pipelined"))
 
   def pipelinedFull(testClass: Class[_]): TestConfig = TestConfig(
     testClass,
     "pipelined-single-threaded-full.txt",
-    "CYPHER planner=cost runtime=pipelined interpretedPipesFallback=all",
+    QueryPrefix("", "CYPHER planner=cost runtime=pipelined interpretedPipesFallback=all"),
     experimental = true
   )
 
   def parallel(testClass: Class[_]): TestConfig =
-    TestConfig(testClass, "parallel.txt", "CYPHER planner=cost runtime=parallel")
+    TestConfig(testClass, "parallel.txt", QueryPrefix("", "CYPHER planner=cost runtime=parallel"))
 
   def interpreted(testClass: Class[_]): TestConfig =
-    TestConfig(testClass, "interpreted.txt", "CYPHER planner=cost runtime=legacy")
+    TestConfig(testClass, "interpreted.txt", QueryPrefix("", "CYPHER planner=cost runtime=legacy"))
 
-  def defaultSpd(testClass: Class[_]): TestConfig = TestConfig(testClass, "default-spd.txt", "")
+  def defaultSpd(testClass: Class[_]): TestConfig = TestConfig(testClass, "default-spd.txt", QueryPrefix.empty)
 
 }

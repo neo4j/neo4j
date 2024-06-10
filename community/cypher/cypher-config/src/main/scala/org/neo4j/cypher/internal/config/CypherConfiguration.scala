@@ -65,6 +65,9 @@ object CypherConfiguration {
 class CypherConfiguration private (val config: Config) {
 
   // static configurations
+  def enableExperimentalCypherVersions: Boolean =
+    config.get(GraphDatabaseInternalSettings.enable_experimental_cypher_versions)
+
   val planner: CypherPlannerOption = CypherPlannerOption.fromConfig(config)
   val runtime: CypherRuntimeOption = CypherRuntimeOption.fromConfig(config)
   val queryCacheSize: ObservableSetting[Integer] = new ObservableSetting(config, GraphDatabaseSettings.query_cache_size)

@@ -109,6 +109,13 @@ object CypherQueryOptions {
         if (options.debugOptions.generateJavaSourceEnabled && !config.allowSourceGeneration) {
           throw InvalidCypherOption.sourceGenerationDisabled()
         }
+        if (options.cypherVersion.actualVersion.experimental && !config.enableExperimentalCypherVersions) {
+          throw InvalidCypherOption.invalidOption(
+            options.cypherVersion.name,
+            CypherVersion.name,
+            CypherVersion.supportedValues.map(_.name): _*
+          )
+        }
         options
     }
   }
@@ -204,7 +211,12 @@ case object CypherVersion extends CypherOptionCompanion[CypherVersion](name = "c
     override def actualVersion: internal.CypherVersion = internal.CypherVersion.Cypher5
   }
 
-  override def values: Set[CypherVersion] = Set(cypher5)
+  case object cypher6 extends CypherVersion("6") {
+    override def actualVersion: internal.CypherVersion = internal.CypherVersion.Cypher6
+  }
+
+  override def values: Set[CypherVersion] = Set(cypher5, cypher6)
+  override def supportedValues: Seq[CypherVersion] = super.supportedValues.filterNot(_.actualVersion.experimental)
 
   implicit val hasDefault: OptionDefault[CypherVersion] = OptionDefault.create(default)
   implicit val renderer: OptionRenderer[CypherVersion] = OptionRenderer.create(_.render)

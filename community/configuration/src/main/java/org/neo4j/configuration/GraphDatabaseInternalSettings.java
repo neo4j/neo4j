@@ -57,6 +57,12 @@ import org.neo4j.graphdb.config.Setting;
 @ServiceProvider
 public class GraphDatabaseInternalSettings implements SettingsDeclaration {
 
+    @Internal
+    @Description("Enable use of experimental Cypher versions.")
+    public static final Setting<Boolean> enable_experimental_cypher_versions = newBuilder(
+                    "internal.dbms.cypher.enable_experimental_versions", BOOL, false)
+            .build();
+
     // =========================================================================
     // LOAD CSV and apoc.load.json input URI restrictions
     // =========================================================================

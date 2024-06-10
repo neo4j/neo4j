@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.ast.factory.neo4j.Neo4jASTExceptionFactory
 import org.neo4j.cypher.internal.ast.factory.neo4j.Neo4jASTFactory
 import org.neo4j.cypher.internal.ast.test.util.AstParsing.Cypher5
 import org.neo4j.cypher.internal.ast.test.util.AstParsing.Cypher5JavaCc
+import org.neo4j.cypher.internal.ast.test.util.AstParsing.Cypher6
 import org.neo4j.cypher.internal.ast.test.util.AstParsing.ParseFailure
 import org.neo4j.cypher.internal.ast.test.util.AstParsing.ParseResult
 import org.neo4j.cypher.internal.ast.test.util.AstParsing.ParseResults
@@ -56,6 +57,8 @@ import org.neo4j.cypher.internal.parser.javacc.Cypher
 import org.neo4j.cypher.internal.parser.javacc.CypherCharStream
 import org.neo4j.cypher.internal.parser.v5.Cypher5Parser
 import org.neo4j.cypher.internal.parser.v5.ast.factory.Cypher5AstParser
+import org.neo4j.cypher.internal.parser.v6.Cypher6Parser
+import org.neo4j.cypher.internal.parser.v6.ast.factory.Cypher6AstParser
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.Neo4jCypherExceptionFactory
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
@@ -88,11 +91,10 @@ object AstParsing extends AstParsing {
   sealed trait ParserInTest
 
   object ParserInTest {
-    val AllParsers: Seq[ParserInTest] = Seq(Cypher5JavaCc, Cypher5) // TODO Add Cypher6
+    val AllParsers: Seq[ParserInTest] = Seq(Cypher5JavaCc, Cypher5, Cypher6)
   }
   case object Cypher5JavaCc extends ParserInTest
   case object Cypher5 extends ParserInTest
-  // Note, there is no cypher 6 parser yet, only added here as a preparation
   case object Cypher6 extends ParserInTest
 
   case class ParseResults[T](cypher: String, result: Map[ParserInTest, ParseResult]) {
@@ -181,6 +183,7 @@ object Parsers {
 
   private val factories = Map[ParserInTest, ParserFactory](
     Cypher5 -> Cypher5Factory,
+    Cypher6 -> Cypher6Factory,
     Cypher5JavaCc -> Cypher5JavaCcFactory
   )
 
@@ -191,6 +194,38 @@ object Parsers {
 
     private def parse[T <: ASTNode](f: Cypher5Parser => AstRuleCtx): Parser[T] = (cypher: String) => {
       new Cypher5AstParser(cypher, Neo4jCypherExceptionFactory(cypher, None), None).parse(f)
+    }
+    override def statements(): Parser[Statements] = parse(_.statements())
+    override def statement(): Parser[Statement] = parse(_.statement())
+    override def expression(): Parser[Expression] = parse(_.expression())
+    override def callClause(): Parser[CallClause] = parse(_.callClause())
+    override def matchClause(): Parser[Match] = parse(_.matchClause())
+    override def caseExpression(): Parser[CaseExpression] = parse(_.caseExpression())
+    override def clause(): Parser[Clause] = parse(_.clause())
+    override def functionInvocation(): Parser[FunctionInvocation] = parse(_.functionInvocation())
+    override def listComprehension(): Parser[ListComprehension] = parse(_.listComprehension())
+    override def map(): Parser[MapExpression] = parse(_.map())
+    override def mapProjection(): Parser[MapProjection] = parse(_.mapProjection())
+    override def nodePattern(): Parser[NodePattern] = parse(_.nodePattern())
+    override def numberLiteral(): Parser[NumberLiteral] = parse(_.numberLiteral())
+    override def parameter(): Parser[Parameter] = parse(_.parameter("ANY"))
+    override def parenthesizedPath(): Parser[ParenthesizedPath] = parse(_.parenthesizedPath())
+    override def patternComprehension(): Parser[PatternComprehension] = parse(_.patternComprehension())
+    override def quantifier(): Parser[GraphPatternQuantifier] = parse(_.quantifier())
+    override def relationshipPattern(): Parser[RelationshipPattern] = parse(_.relationshipPattern())
+    override def pattern(): Parser[PatternPart] = parse(_.pattern())
+    override def useClause(): Parser[UseGraph] = parse(_.useClause())
+    override def stringLiteral(): Parser[StringLiteral] = parse(_.stringLiteral())
+    override def subqueryClause(): Parser[SubqueryCall] = parse(_.subqueryClause())
+    override def variable(): Parser[Variable] = parse(_.variable())
+    override def literal(): Parser[Literal] = parse(_.literal())
+    override def quantifiedPath(): Parser[QuantifiedPath] = parse(_.parenthesizedPath())
+  }
+
+  private object Cypher6Factory extends ParserFactory {
+
+    private def parse[T <: ASTNode](f: Cypher6Parser => AstRuleCtx): Parser[T] = (cypher: String) => {
+      new Cypher6AstParser(cypher, Neo4jCypherExceptionFactory(cypher, None), None).parse(f)
     }
     override def statements(): Parser[Statements] = parse(_.statements())
     override def statement(): Parser[Statement] = parse(_.statement())

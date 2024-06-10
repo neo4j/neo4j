@@ -22,13 +22,20 @@ package org.neo4j.cypher.internal
  */
 sealed trait CypherVersion {
   def name: String
+  def experimental: Boolean
 }
 
 object CypherVersion {
 
   case object Cypher5 extends CypherVersion {
-    def name: String = "5"
+    override def name: String = "5"
+    override def experimental: Boolean = false
+  }
+
+  case object Cypher6 extends CypherVersion {
+    override def name: String = "6"
+    override def experimental: Boolean = true
   }
   val Default: CypherVersion = Cypher5
-  val All: Set[CypherVersion] = Set(Cypher5)
+  val All: Set[CypherVersion] = Set(Cypher5, Cypher6)
 }

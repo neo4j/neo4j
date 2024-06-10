@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher
 
+import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
@@ -89,7 +90,8 @@ trait GraphDatabaseTestSupport
   }
 
   def databaseConfig(): Map[Setting[_], Object] = Map(
-    GraphDatabaseSettings.transaction_timeout -> Duration.ofMinutes(15)
+    GraphDatabaseSettings.transaction_timeout -> Duration.ofMinutes(15),
+    GraphDatabaseInternalSettings.enable_experimental_cypher_versions -> java.lang.Boolean.TRUE
   )
 
   def logProvider: InternalLogProvider = NullLogProvider.getInstance()

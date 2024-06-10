@@ -46,13 +46,19 @@ import scala.util.Try
 class PrettifierTCKTest extends PrettifierTCKTestBase {
 
   override protected def parseStatements(query: String): Statement =
-    AstParserFactory(CypherVersion.Default)(query, Neo4jCypherExceptionFactory(query, None), None).singleStatement()
+    AstParserFactory(CypherVersion.Cypher5)(query, Neo4jCypherExceptionFactory(query, None), None).singleStatement()
 
   @Test
   def allVersionsHaveCoverage(): Unit = {
     // If this starts to fail you need to add a new prettifyer test for the new version and adapt this test.
-    assertEquals(Set(CypherVersion.Default), CypherVersion.All)
+    assertEquals(Set(CypherVersion.Cypher5, CypherVersion.Cypher6), CypherVersion.All)
   }
+}
+
+class Cypher6PrettifierTCKTest extends PrettifierTCKTestBase {
+
+  override protected def parseStatements(query: String): Statement =
+    AstParserFactory(CypherVersion.Cypher6)(query, Neo4jCypherExceptionFactory(query, None), None).singleStatement()
 }
 
 class PrettifierJavaCcTCKTest extends PrettifierTCKTestBase {

@@ -95,6 +95,7 @@ abstract class CypherOptionCompanion[Opt <: CypherOption](
    * https://stackoverflow.com/questions/28151338/case-object-gets-initialized-to-null-how-is-that-even-possible
    */
   def values: Set[Opt]
+  def supportedValues: Seq[Opt] = values.toSeq.sortBy(_.name)
 
   /**
    * Read this option from config
@@ -148,7 +149,7 @@ abstract class CypherOptionCompanion[Opt <: CypherOption](
     case value => values.find(_.name == value).getOrElse(throw InvalidCypherOption.invalidOption(
         input,
         name,
-        values.map(_.name).toArray: _*
+        supportedValues.map(_.name): _*
       ))
 
   }

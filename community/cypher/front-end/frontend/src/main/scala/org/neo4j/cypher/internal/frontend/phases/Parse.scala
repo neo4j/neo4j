@@ -48,7 +48,10 @@ case class Parse(useAntlr: Boolean, version: CypherVersion) extends Phase[BaseCo
       AstParserFactory(version)(query, exceptionFactory, Some(notificationLogger)).singleStatement()
     } else {
       version match {
-        case CypherVersion.Cypher5 => JavaCCParser.parse(query, exceptionFactory, notificationLogger)
+        case CypherVersion.Cypher5 =>
+          JavaCCParser.parse(query, exceptionFactory, notificationLogger)
+        case CypherVersion.Cypher6 =>
+          throw new IllegalArgumentException(s"internal.cypher.parser.antlr_enabled=false is not allowed in Cypher 6")
       }
     }
   }

@@ -87,6 +87,7 @@ object CypherScope {
 
   def from(version: CypherVersion): CypherScope = version match {
     case CypherVersion.Cypher5 => CypherScope.Cypher5
+    case CypherVersion.Cypher6 => CypherScope.CypherFuture
   }
 
   def toKernelScope(scope: CypherScope): org.neo4j.kernel.api.CypherScope = scope match {
