@@ -36,6 +36,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentMatchers;
+import org.mockito.Mockito;
 import org.neo4j.bolt.protocol.common.message.AccessMode;
 import org.neo4j.bolt.protocol.common.message.request.connection.RoutingContext;
 import org.neo4j.configuration.Config;
@@ -47,6 +48,7 @@ import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.AbstractSecurityLog;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.database.DatabaseIdFactory;
+import org.neo4j.kernel.database.DatabaseReference;
 import org.neo4j.kernel.database.DatabaseReferenceImpl;
 import org.neo4j.kernel.database.NormalizedDatabaseName;
 import org.neo4j.kernel.impl.api.transaction.monitor.TransactionMonitor;
@@ -190,8 +192,11 @@ class RouterTransactionMonitorTest {
     }
 
     private TransactionInfo createTransactionInfo(Duration timeout) {
+        DatabaseReference sessionDatabase = Mockito.mock(DatabaseReferenceImpl.class);
+        Mockito.when(sessionDatabase.isComposite()).thenReturn(false);
+        Mockito.when(sessionDatabase.fullName()).thenReturn(databaseName);
         return new TransactionInfo(
-                databaseName,
+                sessionDatabase,
                 KernelTransaction.Type.EXPLICIT,
                 AUTH_DISABLED,
                 ClientConnectionInfo.EMBEDDED_CONNECTION,
@@ -200,7 +205,7 @@ class RouterTransactionMonitorTest {
                 AccessMode.READ,
                 Map.of(),
                 new RoutingContext(true, Map.of()),
-                QueryExecutionConfiguration.DEFAULT_CONFIG,
-                false); // Currently we only test query router for non-composite databases.
+                QueryExecutionConfiguration
+                        .DEFAULT_CONFIG); // Currently we only test query router for non-composite databases.
     }
 }

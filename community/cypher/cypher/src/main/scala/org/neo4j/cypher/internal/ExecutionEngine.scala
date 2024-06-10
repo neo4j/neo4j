@@ -37,6 +37,8 @@ import org.neo4j.internal.kernel.api.security.AccessMode
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.exceptions.Status
 import org.neo4j.kernel.api.exceptions.Status.HasStatus
+import org.neo4j.kernel.database.DatabaseReference
+import org.neo4j.kernel.database.NormalizedDatabaseName
 import org.neo4j.kernel.impl.query.FunctionInformation
 import org.neo4j.kernel.impl.query.FunctionInformation.InputInformation
 import org.neo4j.kernel.impl.query.QueryExecution
@@ -51,6 +53,7 @@ import org.neo4j.values.virtual.MapValue
 import java.lang
 import java.time.Clock
 import java.util.Optional
+import java.util.UUID
 
 import scala.jdk.CollectionConverters.SeqHasAsJava
 
@@ -271,7 +274,8 @@ abstract class ExecutionEngine(
     tracer: QueryCompilationEvent,
     transactionalContext: TransactionalContext,
     params: MapValue,
-    notificationLogger: InternalNotificationLogger
+    notificationLogger: InternalNotificationLogger,
+    sessionDatabase: DatabaseReference
   ): CompilerWithExpressionCodeGenOption[ExecutableQuery] = {
     val compiledExpressionCompiler =
       () =>
@@ -280,7 +284,8 @@ abstract class ExecutionEngine(
           tracer,
           transactionalContext,
           params,
-          notificationLogger
+          notificationLogger,
+          sessionDatabase
         )
     val interpretedExpressionCompiler =
       () =>
@@ -289,7 +294,8 @@ abstract class ExecutionEngine(
           tracer,
           transactionalContext,
           params,
-          notificationLogger
+          notificationLogger,
+          sessionDatabase
         )
 
     new CompilerWithExpressionCodeGenOption[ExecutableQuery] {
@@ -350,7 +356,49 @@ abstract class ExecutionEngine(
           forceReplan = false
           inputQuery = inputQuery.withReplanOption(CypherReplanOption.force)
         }
-        val compiler = compilerWithExpressionCodeGenOption(inputQuery, tracer, tc, params, notificationLogger)
+        val compiler = compilerWithExpressionCodeGenOption(
+          inputQuery,
+          tracer,
+          tc,
+          params,
+          notificationLogger,
+          new DatabaseReference {
+            override def alias(): NormalizedDatabaseName = throw new NotImplementedError()
+
+            /**
+           * @return the namespace that the alias is in, or empty if it is in the default namespace
+           */
+            override def namespace(): Optional[NormalizedDatabaseName] = throw new NotImplementedError()
+
+            /**
+           * @return whether the alias associated with this reference is the database's original/true name
+           */
+            override def isPrimary: Boolean = throw new NotImplementedError()
+
+            /**
+           * @return the unique identity for this reference
+           */
+            override def id(): UUID = throw new NotImplementedError()
+
+            /**
+           * @return Prettified String representaion
+           */
+            override def toPrettyString: String = throw new NotImplementedError()
+
+            /**
+           * @return the full normalized name of the dataspace, including the namespace.
+           */
+            override def fullName(): NormalizedDatabaseName = new NormalizedDatabaseName(context.databaseId().name())
+
+            /**
+           * @return true if this reference points to a Composite database, otherwise false
+           */
+            override def isComposite: Boolean = context.databaseMode().equals(DatabaseMode.COMPOSITE)
+
+            override def compareTo(o: DatabaseReference): Int = throw new NotImplementedError()
+          }
+        )
+
         val executableQuery = queryCache.computeIfAbsentOrStale(
           cacheKey,
           tc,

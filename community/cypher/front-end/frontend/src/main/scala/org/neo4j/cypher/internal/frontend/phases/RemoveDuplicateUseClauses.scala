@@ -37,7 +37,11 @@ import org.neo4j.cypher.internal.util.topDown
 case object RemoveDuplicateUseClauses extends StatementRewriter with StepSequencer.Step {
 
   override def instance(from: BaseState, context: BaseContext): Rewriter =
-    new UseClauseRewriter(context.targetsComposite, context.sessionDatabaseName, context.cancellationChecker)
+    new UseClauseRewriter(
+      if (context.sessionDatabase != null) context.sessionDatabase.isComposite else false,
+      if (context.sessionDatabase != null) context.sessionDatabase.fullName().name() else null,
+      context.cancellationChecker
+    )
 
   override def preConditions: Set[StepSequencer.Condition] = Set(BaseContains[Statement]())
 

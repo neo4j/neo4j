@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.internal.util.InternalNotificationLogger
+import org.neo4j.kernel.database.DatabaseReference
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.values.virtual.MapValue
 
@@ -63,7 +64,8 @@ trait MasterCompiler {
     tracer: CompilationPhaseTracer,
     transactionalContext: TransactionalContext,
     params: MapValue,
-    notificationLogger: InternalNotificationLogger
+    notificationLogger: InternalNotificationLogger,
+    sessionDatabase: DatabaseReference
   ): ExecutableQuery
 
   def supportsAdministrativeCommands(): Boolean
@@ -99,9 +101,10 @@ class SingleMasterCompiler(compiler: Compiler) extends MasterCompiler {
     tracer: CompilationPhaseTracer,
     transactionalContext: TransactionalContext,
     params: MapValue,
-    notificationLogger: InternalNotificationLogger
+    notificationLogger: InternalNotificationLogger,
+    sessionDatabase: DatabaseReference
   ): ExecutableQuery =
-    compiler.compile(query, tracer, transactionalContext, params, notificationLogger)
+    compiler.compile(query, tracer, transactionalContext, params, notificationLogger, sessionDatabase)
 
   def supportsAdministrativeCommands(): Boolean = false
 }
@@ -133,7 +136,8 @@ class LibraryMasterCompiler(compilerLibrary: CompilerLibrary) extends MasterComp
     tracer: CompilationPhaseTracer,
     transactionalContext: TransactionalContext,
     params: MapValue,
-    notificationLogger: InternalNotificationLogger
+    notificationLogger: InternalNotificationLogger,
+    sessionDatabase: DatabaseReference
   ): ExecutableQuery = {
 
     // Do the compilation
@@ -143,7 +147,7 @@ class LibraryMasterCompiler(compilerLibrary: CompilerLibrary) extends MasterComp
       query.options.materializedEntitiesMode
     )
 
-    compiler.compile(query, tracer, transactionalContext, params, notificationLogger)
+    compiler.compile(query, tracer, transactionalContext, params, notificationLogger, sessionDatabase)
   }
 
   def supportsAdministrativeCommands(): Boolean = compilerLibrary.supportsAdministrativeCommands()

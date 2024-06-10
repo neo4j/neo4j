@@ -295,7 +295,7 @@ class CypherPlannerTest extends CypherFunSuite {
     val tc = mock[TransactionalContext](org.mockito.Mockito.RETURNS_DEEP_STUBS)
 
     val statement = planner
-      .parseAndPlan(preParserQuery, NO_TRACING, tc, MapValue.EMPTY, InterpretedRuntime, devNullLogger)
+      .parseAndPlan(preParserQuery, NO_TRACING, tc, MapValue.EMPTY, InterpretedRuntime, devNullLogger, null)
       .logicalPlanState
       .statement
 

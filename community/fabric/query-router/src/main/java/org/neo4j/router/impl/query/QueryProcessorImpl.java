@@ -99,10 +99,9 @@ public class QueryProcessorImpl implements QueryProcessor {
             TargetService targetService,
             LocationService locationService,
             CancellationChecker cancellationChecker,
-            boolean targetsComposite,
-            String sessionDatabase) {
+            DatabaseReference sessionDatabase) {
 
-        var cachedValue = getFromCache(query, cancellationChecker, targetsComposite, sessionDatabase);
+        var cachedValue = getFromCache(query, cancellationChecker, sessionDatabase);
 
         var databaseReference = targetService.target(cachedValue.catalogInfo());
 
@@ -140,7 +139,7 @@ public class QueryProcessorImpl implements QueryProcessor {
     }
 
     private ProcessedQueryInfoCache.Value getFromCache(
-            Query query, CancellationChecker cancellationChecker, boolean targetsComposite, String sessionDatabase) {
+            Query query, CancellationChecker cancellationChecker, DatabaseReference sessionDatabase) {
         var notificationLogger = new RecordingNotificationLogger();
         var preParsedQuery = preParser.preParse(query.text(), notificationLogger);
 
@@ -148,7 +147,7 @@ public class QueryProcessorImpl implements QueryProcessor {
 
         if (cachedValue == null) {
             var preparedForCacheQuery = prepareQueryForCache(
-                    preParsedQuery, notificationLogger, query, cancellationChecker, targetsComposite, sessionDatabase);
+                    preParsedQuery, notificationLogger, query, cancellationChecker, sessionDatabase);
             cache.put(preParsedQuery, query.parameters(), preparedForCacheQuery);
             cachedValue = preparedForCacheQuery;
         }
@@ -160,20 +159,12 @@ public class QueryProcessorImpl implements QueryProcessor {
             RecordingNotificationLogger notificationLogger,
             Query query,
             CancellationChecker cancellationChecker,
-            boolean targetsComposite,
-            String sessionDatabase) {
+            DatabaseReference sessionDatabase) {
         var queryTracer = tracer.compileQuery(query.text());
         var resolver = SignatureResolver.from(globalProcedures.getCurrentView());
         var parsedQuery = parse(
-                query,
-                queryTracer,
-                preParsedQuery,
-                resolver,
-                notificationLogger,
-                cancellationChecker,
-                targetsComposite,
-                sessionDatabase);
-        var catalogInfo = resolveCatalogInfo(parsedQuery.statement(), targetsComposite);
+                query, queryTracer, preParsedQuery, resolver, notificationLogger, cancellationChecker, sessionDatabase);
+        var catalogInfo = resolveCatalogInfo(parsedQuery.statement(), sessionDatabase.isComposite());
         var rewrittenQueryText = rewriteQueryText(parsedQuery, preParsedQuery.options(), cancellationChecker);
         var maybeExtractedParams = formatMaybeExtractedParams(parsedQuery);
         var statementType = StatementType.of(parsedQuery.statement(), resolver);
@@ -275,8 +266,7 @@ public class QueryProcessorImpl implements QueryProcessor {
             ProcedureSignatureResolver resolver,
             RecordingNotificationLogger notificationLogger,
             CancellationChecker cancellationChecker,
-            boolean targetsComposite,
-            String sessionDatabase) {
+            DatabaseReference sessionDatabase) {
         return parsing.parseQuery(
                 preParsedQuery.statement(),
                 preParsedQuery.rawStatement(),
@@ -288,7 +278,6 @@ public class QueryProcessorImpl implements QueryProcessor {
                 query.parameters(),
                 cancellationChecker,
                 Some$.MODULE$.apply(resolver),
-                targetsComposite,
                 sessionDatabase);
     }
 

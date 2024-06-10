@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.util.ErrorMessageProvider
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.internal.util.NotImplementedErrorMessageProvider
+import org.neo4j.kernel.database.DatabaseReference
 
 sealed trait SemanticCheck {
 
@@ -183,16 +184,19 @@ object SemanticCheckResult {
 
 trait SemanticCheckContext {
   def errorMessageProvider: ErrorMessageProvider
+  def sessionDatabaseReference: DatabaseReference
 }
 
 object SemanticCheckContext {
 
   def default: SemanticCheckContext = new SemanticCheckContext {
     override def errorMessageProvider: ErrorMessageProvider = NotImplementedErrorMessageProvider
+    override def sessionDatabaseReference: DatabaseReference = null
   }
 
   def empty: SemanticCheckContext = new SemanticCheckContext {
     override def errorMessageProvider: ErrorMessageProvider = EmptyErrorMessageProvider
+    override def sessionDatabaseReference: DatabaseReference = null
   }
 }
 

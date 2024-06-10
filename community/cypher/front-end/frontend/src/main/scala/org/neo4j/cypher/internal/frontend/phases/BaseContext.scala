@@ -21,6 +21,7 @@ import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.ErrorMessageProvider
 import org.neo4j.cypher.internal.util.InternalNotificationLogger
+import org.neo4j.kernel.database.DatabaseReference
 
 trait BaseContext {
   def tracer: CompilationPhaseTracer
@@ -35,7 +36,5 @@ trait BaseContext {
 
   def internalSyntaxUsageStats: InternalSyntaxUsageStats
 
-  def targetsComposite: Boolean
-  def sessionDatabaseName: String
-
+  def sessionDatabase: DatabaseReference
 }

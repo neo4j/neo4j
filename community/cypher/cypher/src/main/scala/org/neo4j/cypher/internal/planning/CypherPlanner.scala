@@ -103,10 +103,10 @@ import org.neo4j.exceptions.Neo4jException
 import org.neo4j.exceptions.NotSystemDatabaseException
 import org.neo4j.exceptions.SyntaxException
 import org.neo4j.kernel.api.query.QueryObfuscator
+import org.neo4j.kernel.database.DatabaseReference
 import org.neo4j.kernel.database.DatabaseReferenceRepository
 import org.neo4j.kernel.impl.api.SchemaStateKey
 import org.neo4j.kernel.impl.query.TransactionalContext
-import org.neo4j.kernel.impl.query.TransactionalContext.DatabaseMode
 import org.neo4j.logging.InternalLog
 import org.neo4j.monitoring
 import org.neo4j.notifications.MissingParametersNotification
@@ -221,8 +221,7 @@ case class CypherPlanner(
     offset: InputPosition,
     tracer: CompilationPhaseTracer,
     cancellationChecker: CancellationChecker,
-    targetsComposite: Boolean,
-    sessionDatabase: String
+    sessionDatabase: DatabaseReference
   ): BaseState = {
     val key = AstCache.key(preParsedQuery, params, parsingConfig.useParameterSizeHint)
     val maybeValue = caches.astCache.get(key)
@@ -237,7 +236,6 @@ case class CypherPlanner(
         tracer,
         params,
         cancellationChecker,
-        targetsComposite,
         sessionDatabase
       )
       val value = AstCache.AstCacheValue(parsedQuery, notificationLogger.notifications)
@@ -276,7 +274,8 @@ case class CypherPlanner(
     transactionalContext: TransactionalContext,
     params: MapValue,
     runtime: CypherRuntime[_],
-    notificationLogger: InternalNotificationLogger
+    notificationLogger: InternalNotificationLogger,
+    sessionDatabase: DatabaseReference
   ): LogicalPlanResult = {
     val transactionalContextWrapper = TransactionalContextWrapper(transactionalContext)
     val syntacticQuery = getOrParse(
@@ -286,8 +285,7 @@ case class CypherPlanner(
       preParsedQuery.options.offset,
       tracer,
       transactionalContextWrapper.cancellationChecker,
-      DatabaseMode.COMPOSITE.equals(transactionalContext.databaseMode()),
-      transactionalContext.kernelTransaction().getDatabaseName
+      sessionDatabase = sessionDatabase
     )
 
     // The parser populates the notificationLogger as a side-effect of its work, therefore
@@ -403,7 +401,6 @@ case class CypherPlanner(
       log,
       internalNotificationStats,
       internalSyntaxUsageStats,
-      targetsComposite = false,
       null
     )
 

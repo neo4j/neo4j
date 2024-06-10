@@ -55,6 +55,7 @@ import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.StepSequencer.Condition
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.kernel.database.DatabaseReference
 import org.scalatestplus.mockito.MockitoSugar
 
 class CNFNormalizerTest extends CypherFunSuite with PredicateTestSupport {
@@ -284,7 +285,5 @@ class TestContext(override val monitors: Monitors) extends BaseContext {
 
   override def internalSyntaxUsageStats: InternalSyntaxUsageStats = InternalSyntaxUsageStatsNoOp
 
-  override def targetsComposite: Boolean = false
-
-  override def sessionDatabaseName: String = null
+  override def sessionDatabase: DatabaseReference = null
 }

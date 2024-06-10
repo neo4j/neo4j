@@ -23,16 +23,16 @@ import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.frontend.phases.InternalSyntaxUsageStats
 import org.neo4j.cypher.internal.frontend.phases.InternalSyntaxUsageStatsNoOp
 import org.neo4j.cypher.internal.frontend.phases.Monitors
-import org.neo4j.cypher.internal.util.CancellationChecker
-import org.neo4j.cypher.internal.util.CypherExceptionFactory
-import org.neo4j.cypher.internal.util.ErrorMessageProvider
-import org.neo4j.cypher.internal.util.NotImplementedErrorMessageProvider
-import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
-import org.neo4j.cypher.internal.util.devNullLogger
+import org.neo4j.cypher.internal.util._
+import org.neo4j.kernel.database.DatabaseReference
+import org.neo4j.kernel.database.NormalizedDatabaseName
 import org.scalatest.matchers.MatchResult
 import org.scalatest.matchers.Matcher
 
-class ErrorCollectingContext extends BaseContext {
+import java.util.Optional
+import java.util.UUID
+
+class ErrorCollectingContext(val isComposite: Boolean = false, databaseName: String = "mock") extends BaseContext {
 
   var errors: Seq[SemanticErrorDef] = Seq.empty
 
@@ -53,9 +53,26 @@ class ErrorCollectingContext extends BaseContext {
 
   override def internalSyntaxUsageStats: InternalSyntaxUsageStats = InternalSyntaxUsageStatsNoOp
 
-  override def sessionDatabaseName: String = null
+  override def sessionDatabase: DatabaseReference = {
+    val outerComposite = isComposite
+    new DatabaseReference {
+      override def alias(): NormalizedDatabaseName = ???
 
-  override def targetsComposite: Boolean = false
+      override def namespace(): Optional[NormalizedDatabaseName] = Optional.empty()
+
+      override def isPrimary: Boolean = true
+
+      override def id(): UUID = ???
+
+      override def toPrettyString: String = s"${fullName().name()} (isComposite: $isComposite)"
+
+      override def fullName(): NormalizedDatabaseName = new NormalizedDatabaseName(databaseName)
+
+      override def compareTo(o: DatabaseReference): Int = 0
+
+      override def isComposite: Boolean = outerComposite
+    }
+  }
 }
 
 object ErrorCollectingContext {

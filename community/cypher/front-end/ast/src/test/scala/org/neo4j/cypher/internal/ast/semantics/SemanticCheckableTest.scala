@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.util.ErrorMessageProvider
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.kernel.database.DatabaseReference
 
 class SemanticCheckableTest extends CypherFunSuite with SemanticAnalysisTooling with AstConstructionTestSupport {
 
@@ -383,6 +384,8 @@ class SemanticCheckableTest extends CypherFunSuite with SemanticAnalysisTooling 
           transactionalDefault: Boolean = false
         ): String = missingMsg
       }
+
+      override def sessionDatabaseReference: DatabaseReference = null
     }
 
     check.run(SemanticState.clean, context).errors.map(_.msg) shouldBe Seq(missingMsg, selfReferenceMsg)

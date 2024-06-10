@@ -102,6 +102,7 @@ import org.neo4j.cypher.messages.MessageUtilProvider
 import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.Relationship
 import org.neo4j.kernel.api.StatementConstants
+import org.neo4j.kernel.database.DatabaseReference
 import org.scalacheck.Gen
 
 import scala.language.implicitConversions
@@ -702,6 +703,7 @@ class LogicalPlanGenerator(
             semanticState,
             new SemanticCheckContext {
               override def errorMessageProvider: ErrorMessageProvider = MessageUtilProvider
+              override def sessionDatabaseReference: DatabaseReference = null
             }
           ).errors
           errors.isEmpty

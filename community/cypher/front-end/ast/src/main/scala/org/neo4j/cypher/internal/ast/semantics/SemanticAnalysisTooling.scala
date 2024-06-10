@@ -58,14 +58,16 @@ trait SemanticAnalysisTooling {
       original <- SemanticCheck.getState
       _ <- SemanticCheck.setState(state)
       checked <- check
-    } yield SemanticCheckResult(updateTargetGraph(original.state, checked.state), checked.errors)
+    } yield SemanticCheckResult(updateRecordedGraphs(original.state, checked.state), checked.errors)
   }
 
-  def updateTargetGraph(originalState: SemanticState, newState: SemanticState): SemanticState =
-    newState.targetGraph match {
+  def updateRecordedGraphs(originalState: SemanticState, newState: SemanticState): SemanticState = {
+    val recordedTargetGraphState = newState.targetGraph match {
       case Some(targetGraph) => originalState.recordTargetGraph(targetGraph)
       case None              => originalState
     }
+    recordedTargetGraphState.recordWorkingGraph(newState.workingGraph)
+  }
 
   def specifyType(
     typeGen: TypeGenerator,

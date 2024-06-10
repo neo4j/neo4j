@@ -419,6 +419,144 @@ class SemanticAnalysisTest extends SemanticAnalysisTestSuite {
     )
   }
 
+  test("redundant composite use clause should not be considered as nested use clause") {
+    val query = "USE comp CALL { USE comp.c1 RETURN 1 as n } RETURN n"
+    expectNoErrorsFrom(query, pipelineWithUseAsMultipleGraphsSelector, isComposite = true, "comp")
+  }
+
+  test("redundant composite use clause should not be considered as nested use clause (case insensitive)") {
+    val query = "USE comp CALL { USE COMP.c1 RETURN 1 as n } RETURN n"
+    expectNoErrorsFrom(query, pipelineWithUseAsMultipleGraphsSelector, isComposite = true, "comp")
+  }
+
+  test("nesting after redundant composite use clause should be considered as nesting") {
+    val query =
+      """USE comp
+        |CALL {
+        |  USE comp.c1
+        |  CALL {
+        |    USE comp.c2
+        |    RETURN 1 as n
+        |  }
+        |  RETURN n
+        |}
+        |RETURN n""".stripMargin
+    expectErrorsFrom(
+      query,
+      Set(
+        SemanticError(
+          "Nested subqueries must use the same graph as their parent query",
+          InputPosition(47, 5, 9)
+        )
+      ),
+      pipelineWithUseAsMultipleGraphsSelector,
+      isComposite = true,
+      "comp"
+    )
+  }
+
+  test("redundant composite use clause should not be considered as nested use clause with graph function") {
+    val query = "USE comp CALL { USE graph.byName('c1') RETURN 1 as n } return n"
+    expectNoErrorsFrom(query, pipelineWithUseAsMultipleGraphsSelector, isComposite = true, "comp")
+  }
+
+  test("identical static graph target should not be considered as nested use clause (case insensitive)") {
+    val query = "USE comp.c1 CALL { USE COMP.c1 RETURN 1 as n } return n"
+    expectNoErrorsFrom(query, pipelineWithUseAsMultipleGraphsSelector, isComposite = true, "comp")
+  }
+
+  test("identical dynamic graph target should not be considered as nested use clause") {
+    val query = "USE graph.byName('comp.c2') CALL { USE graph.byName('comp.c2') RETURN 1 as n } return n"
+    expectNoErrorsFrom(query, pipelineWithUseAsMultipleGraphsSelector, isComposite = true, "comp")
+  }
+
+  test("throw nested use clause exception with nested static use clauses") {
+    val query = "USE comp.c1 CALL { USE comp.c1.c2 RETURN 1 as n } return n"
+    expectErrorsFrom(
+      query,
+      Set(
+        SemanticError(
+          "Nested subqueries must use the same graph as their parent query",
+          InputPosition(23, 1, 24)
+        )
+      ),
+      pipelineWithUseAsMultipleGraphsSelector,
+      isComposite = true,
+      "comp"
+    )
+  }
+
+  test("throw nested use clause exception with nested dynamic use clauses") {
+    val query = "USE graph.byName('comp.c1') CALL { USE graph.byName('comp.c2') RETURN 1 as n } return n"
+    expectErrorsFrom(
+      query,
+      Set(
+        SemanticError(
+          "Nested subqueries must use the same graph as their parent query",
+          InputPosition(39, 1, 40)
+        )
+      ),
+      pipelineWithUseAsMultipleGraphsSelector,
+      isComposite = true,
+      "comp"
+    )
+  }
+
+  test("throw nested use clause exception with nested proper dynamic use clauses") {
+    val query = """WITH "local" AS i
+                  | CALL {
+                  |      WITH i
+                  |      USE graph.byName("comp." + i)
+                  |      WITH "neo4j" AS i
+                  |      CALL {
+                  |           WITH i
+                  |           USE graph.byName("comp." + i)
+                  |           MATCH (n)
+                  |           RETURN n.prop as prop
+                  |      }
+                  |      RETURN prop
+                  |}
+                  |RETURN prop""".stripMargin
+    expectErrorsFrom(
+      query,
+      Set(
+        SemanticError(
+          "Nested subqueries must use the same graph as their parent query",
+          InputPosition(145, 8, 16)
+        )
+      ),
+      pipelineWithUseAsMultipleGraphsSelector,
+      isComposite = true,
+      "comp"
+    )
+  }
+
+  test("allow nested use clause exception if inner catalog name has more than a length of 2") {
+    val query = "USE comp CALL { USE comp.c1.c2 RETURN 1 as n } return n"
+    expectNoErrorsFrom(
+      query,
+      pipelineWithUseAsMultipleGraphsSelector,
+      isComposite = true,
+      "comp"
+    )
+  }
+
+  test("throw exception multi database on single graph selector") {
+    val query = "USE comp CALL { USE comp.c1 RETURN 1 as n } return n"
+    expectErrorsFrom(
+      query,
+      Set(
+        SemanticError(
+          messageProvider.createMultipleGraphReferencesError("comp.c1"),
+          InputPosition(16, 1, 17)
+        )
+      ),
+      pipelineWithUseAsSingleGraphSelector,
+      isComposite = false,
+      "neo4j"
+    )
+  }
+
   test("should not allow USE when semantic feature is not set") {
     val query = "USE g RETURN 1"
     expectErrorMessagesFrom(
@@ -456,7 +594,7 @@ class SemanticAnalysisTest extends SemanticAnalysisTestSuite {
         |USE graph.byName($g, w($k))
         |RETURN 1
         |""".stripMargin
-    expectNoErrorsFrom(query, pipelineWithUseAsMultipleGraphsSelector)
+    expectNoErrorsFrom(query, pipelineWithUseAsMultipleGraphsSelector, isComposite = true)
   }
 
   test("Don't allow view invocation in USE when UseAsSingleGraphSelector feature is set") {
@@ -483,12 +621,12 @@ class SemanticAnalysisTest extends SemanticAnalysisTestSuite {
         |USE graph.byName($g, x.g(), x.v($k))
         |RETURN 1
         |""".stripMargin
-    expectNoErrorsFrom(query, pipelineWithUseAsMultipleGraphsSelector)
+    expectNoErrorsFrom(query, pipelineWithUseAsMultipleGraphsSelector, isComposite = true)
   }
 
   test("Allow expressions in view invocations (with feature flag)") {
     val query = "USE graph.byName(2, 'x', $x, $x+3) RETURN 1"
-    expectNoErrorsFrom(query, pipelineWithUseAsMultipleGraphsSelector)
+    expectNoErrorsFrom(query, pipelineWithUseAsMultipleGraphsSelector, isComposite = true)
   }
 
   test("Expressions in view invocations are checked (with feature flag)") {
@@ -496,7 +634,8 @@ class SemanticAnalysisTest extends SemanticAnalysisTestSuite {
     expectErrorsFrom(
       query,
       Set(SemanticError("Variable `y` not defined", InputPosition(25, 1, 26))),
-      pipelineWithUseAsMultipleGraphsSelector
+      pipelineWithUseAsMultipleGraphsSelector,
+      isComposite = true
     )
   }
 

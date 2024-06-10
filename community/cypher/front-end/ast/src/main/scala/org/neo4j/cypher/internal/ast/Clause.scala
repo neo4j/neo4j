@@ -120,6 +120,8 @@ import org.neo4j.cypher.internal.util.symbols.CTPath
 import org.neo4j.cypher.internal.util.symbols.CTRelationship
 import org.neo4j.cypher.internal.util.symbols.CTString
 import org.neo4j.cypher.internal.util.symbols.CypherType
+import org.neo4j.kernel.database.DatabaseReference
+import org.neo4j.kernel.database.NormalizedDatabaseName
 
 import scala.annotation.tailrec
 
@@ -445,10 +447,10 @@ final case class UseGraph(graphReference: GraphReference)(val position: InputPos
 
   override def clauseSpecificSemanticCheck: SemanticCheck =
     whenState(_.features(SemanticFeature.UseAsMultipleGraphsSelector))(
-      thenBranch = checkDynamicGraphSelector,
+      thenBranch = checkMultiGraphSelector,
       elseBranch = whenState(_.features(SemanticFeature.UseAsSingleGraphSelector))(
         // On clause level, this feature means that only static graph references are allowed
-        thenBranch = checkStaticGraphSelector,
+        thenBranch = checkSingleGraphSelector,
         elseBranch = unsupported()
       )
     )
@@ -457,20 +459,79 @@ final case class UseGraph(graphReference: GraphReference)(val position: InputPos
     SemanticCheckResult.error(semanticState, context.errorMessageProvider.createUseClauseUnsupportedError(), position)
   }
 
-  private def checkDynamicGraphSelector: SemanticCheck =
+  private def checkMultiGraphSelector: SemanticCheck = {
+    checkFunctionArguments chain checkWorkingGraph
+  }
+
+  private def checkFunctionArguments: SemanticCheck = {
     graphReference match {
-      case gr: GraphFunctionReference => gr.checkFunctionCall chain checkExpressions(gr.functionInvocation.args)
-      case _: GraphDirectReference    => success
+      case ref: GraphFunctionReference =>
+        ref.checkFunctionCall chain checkExpressions(ref.functionInvocation.args)
+      case _: GraphDirectReference =>
+        success
     }
+  }
+
+  private def checkWorkingGraph: SemanticCheck = {
+    SemanticCheck.fromFunctionWithContext((state, context) =>
+      if (state.workingGraph.isEmpty) {
+        // The session database reference is not forwarded in all places perform a semantic check.
+        // Only record the working graph for the nested check if we know the session database
+        if (
+          context.sessionDatabaseReference != null && !repeatsSessionDatabaseReference(context.sessionDatabaseReference)
+        ) {
+          SemanticCheckResult.success(state.recordWorkingGraph(Some(graphReference)))
+        } else {
+          SemanticCheckResult.success(state)
+        }
+      } else {
+        if (state.workingGraph.get.semanticallyEqual(graphReference)) {
+          SemanticCheckResult.success(state)
+        } else {
+          SemanticCheckResult.error(
+            state,
+            "Nested subqueries must use the same graph as their parent query",
+            graphReference.position
+          )
+        }
+      }
+    )
+  }
+
+  /**
+   * Checks if a use clause repeats the session database reference.
+   * For example, when connected to comp, this is valid:
+   *
+   * USE comp // repeats session database
+   * WITH "Pete" as pete
+   * CALL {
+   *   WITH pete
+   *   USE comp.constituent // does not repeat session database
+   *   MATCH (n { name: pete })
+   *   RETURN n
+   * }
+   * RETURN n
+   *
+   * @param sessionDatabaseReference
+   * @return
+   */
+  private def repeatsSessionDatabaseReference(sessionDatabaseReference: DatabaseReference): Boolean = {
+    graphReference match {
+      case GraphDirectReference(catalogName) =>
+        sessionDatabaseReference != null &&
+        new NormalizedDatabaseName(catalogName.qualifiedNameString).equals(sessionDatabaseReference.fullName())
+      case GraphFunctionReference(_) => false
+    }
+  }
 
   private def checkExpressions(expressions: Seq[Expression]): SemanticCheck =
     expressions.foldSemanticCheck(expr =>
       SemanticExpressionCheck.check(Expression.SemanticContext.Results, expr)
     )
 
-  private def checkStaticGraphSelector: SemanticCheck = {
+  private def checkSingleGraphSelector: SemanticCheck = {
     graphReference match {
-      case graphReference: GraphDirectReference => checkTargetGraph(graphReference)
+      case graphReference: GraphDirectReference => checkSingleTargetGraph(graphReference)
       case _: GraphFunctionReference =>
         SemanticCheck.fromFunctionWithContext { (semanticState, context) =>
           SemanticCheckResult.error(
@@ -482,11 +543,11 @@ final case class UseGraph(graphReference: GraphReference)(val position: InputPos
     }
   }
 
-  private def checkTargetGraph(graphReference: GraphDirectReference): SemanticCheck = {
+  private def checkSingleTargetGraph(graphReference: GraphDirectReference): SemanticCheck = {
     SemanticCheck.fromFunctionWithContext { (semanticState, context) =>
       semanticState.targetGraph match {
         case Some(existingTarget) =>
-          if (existingTarget.equals(graphReference.catalogName)) {
+          if (existingTarget.equals(graphReference)) {
             SemanticCheckResult.success(semanticState)
           } else {
             SemanticCheckResult.error(
@@ -496,7 +557,7 @@ final case class UseGraph(graphReference: GraphReference)(val position: InputPos
             )
           }
         case None =>
-          val newState = semanticState.recordTargetGraph(graphReference.catalogName)
+          val newState = semanticState.recordTargetGraph(graphReference)
           SemanticCheckResult.success(newState)
       }
     }
@@ -505,6 +566,7 @@ final case class UseGraph(graphReference: GraphReference)(val position: InputPos
 
 sealed trait GraphReference extends Expression with SemanticCheckable {
   override def semanticCheck: SemanticCheck = success
+  def semanticallyEqual(other: Any): Boolean
   def print: String
   def dependencies: Set[LogicalVariable]
 }
@@ -523,6 +585,12 @@ final case class GraphDirectReference(catalogName: CatalogName)(val position: In
 
   override def hashCode(): Int = {
     catalogName.hashCode()
+  }
+
+  override def semanticallyEqual(other: Any): Boolean = other match {
+    case GraphDirectReference(otherName) =>
+      catalogName.equals(otherName)
+    case _ => false
   }
 }
 
@@ -545,6 +613,14 @@ final case class GraphFunctionReference(functionInvocation: FunctionInvocation)(
     }
   }
   override def isConstantForQuery: Boolean = false
+
+  override def semanticallyEqual(other: Any): Boolean = other match {
+    case GraphFunctionReference(other) =>
+      other.equals(functionInvocation) &&
+      functionInvocation.arguments.forall(_.isConstantForQuery) &&
+      other.arguments.forall(_.isConstantForQuery)
+    case _ => false
+  }
 }
 
 trait SingleRelTypeCheck {

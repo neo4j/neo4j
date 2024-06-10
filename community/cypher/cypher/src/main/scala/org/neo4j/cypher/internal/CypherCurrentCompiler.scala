@@ -84,6 +84,7 @@ import org.neo4j.kernel.api.query.LookupIndexUsage
 import org.neo4j.kernel.api.query.QueryObfuscator
 import org.neo4j.kernel.api.query.RelationshipTypeIndexUsage
 import org.neo4j.kernel.api.query.SchemaIndexUsage
+import org.neo4j.kernel.database.DatabaseReference
 import org.neo4j.kernel.impl.query.NotificationConfiguration
 import org.neo4j.kernel.impl.query.QueryExecution
 import org.neo4j.kernel.impl.query.QueryExecutionMonitor
@@ -132,7 +133,8 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](
     tracer: CompilationPhaseTracer,
     transactionalContext: TransactionalContext,
     params: MapValue,
-    notificationLogger: InternalNotificationLogger
+    notificationLogger: InternalNotificationLogger,
+    sessionDatabase: DatabaseReference
   ): ExecutableQuery = {
 
     // we only pass in the runtime to be able to support checking against the correct CommandManagementRuntime
@@ -140,7 +142,15 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](
       case fullyParsedQuery: FullyParsedQuery =>
         planner.plan(fullyParsedQuery, tracer, transactionalContext, params, runtime, notificationLogger)
       case preParsedQuery: PreParsedQuery =>
-        planner.parseAndPlan(preParsedQuery, tracer, transactionalContext, params, runtime, notificationLogger)
+        planner.parseAndPlan(
+          preParsedQuery,
+          tracer,
+          transactionalContext,
+          params,
+          runtime,
+          notificationLogger,
+          sessionDatabase
+        )
     }
 
     AssertMacros.checkOnlyWhenAssertionsAreEnabled(

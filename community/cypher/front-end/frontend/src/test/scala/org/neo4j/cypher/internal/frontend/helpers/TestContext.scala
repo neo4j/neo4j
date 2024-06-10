@@ -27,13 +27,13 @@ import org.neo4j.cypher.internal.util.ErrorMessageProvider
 import org.neo4j.cypher.internal.util.InternalNotificationLogger
 import org.neo4j.cypher.internal.util.NotImplementedErrorMessageProvider
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
+import org.neo4j.kernel.database.DatabaseReference
 import org.scalatestplus.mockito.MockitoSugar.mock
 
 //noinspection TypeAnnotation
 case class TestContext(
   override val notificationLogger: InternalNotificationLogger = mock[InternalNotificationLogger],
-  override val targetsComposite: Boolean = false,
-  override val sessionDatabaseName: String = null
+  override val sessionDatabase: DatabaseReference = null
 ) extends BaseContext {
   override def tracer = CompilationPhaseTracer.NO_TRACING
 

@@ -180,13 +180,18 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
           recordCurrentScope(wth)
       )
 
+    val workingGraph = outer.workingGraph
+
     checkIllegalImportWith chain
       checkInitialGraphSelection(outer) chain
       semanticCheckAbstract(
         partitionedClauses.clausesExceptImportingWithAndInitialGraphSelection,
         importVariables chain checkClauses(_, Some(outer.currentScope.scope))
       ) chain
-      checkShadowedVariables(outer)
+      checkShadowedVariables(outer) chain
+      SemanticCheck.fromState(state =>
+        SemanticCheck.setState(state.recordWorkingGraph(workingGraph))
+      ) // resetWorkingGraph
   }
 
   private def checkInitialGraphSelection(outer: SemanticState): SemanticCheck =
@@ -582,17 +587,23 @@ sealed trait Union extends Query {
     def checkNestedQuery(query: Query): SemanticCheck =
       query match {
         case single: SingleQuery => checkSingleQuery(single)
-        case union: Union => withScopedState {
+        case union: Union =>
+          withScopedState {
             SemanticCheck.nestedCheck(union.checkRecursively(semanticCheck))
           }
       }
 
-    checkUnionAggregation chain
-      checkNestedQuery(lhs) chain
-      checkSingleQuery(rhs) chain
-      checkColumnNamesAgree chain
-      defineUnionVariables chain
-      SemanticState.recordCurrentScope(this)
+    SemanticCheck.fromState(state => {
+      checkUnionAggregation chain
+        checkNestedQuery(lhs) chain
+        SemanticCheck.fromState(newState =>
+          SemanticCheck.setState(newState.recordWorkingGraph(state.workingGraph))
+        ) chain
+        checkSingleQuery(rhs) chain
+        checkColumnNamesAgree chain
+        defineUnionVariables chain
+        SemanticState.recordCurrentScope(this)
+    })
   }
 
   def semanticCheck: SemanticCheck = checkRecursively(_.semanticCheck)

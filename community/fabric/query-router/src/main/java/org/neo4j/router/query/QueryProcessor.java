@@ -47,8 +47,7 @@ public interface QueryProcessor {
             TargetService targetService,
             LocationService locationService,
             CancellationChecker cancellationChecker,
-            boolean targetsComposite,
-            String sessionDatabase);
+            DatabaseReference sessionDatabase);
 
     long clearQueryCachesForDatabase(String databaseName);
 

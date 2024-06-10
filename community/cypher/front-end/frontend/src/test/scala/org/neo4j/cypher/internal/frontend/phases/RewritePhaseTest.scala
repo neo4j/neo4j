@@ -33,6 +33,11 @@ import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.kernel.database.DatabaseReference
+import org.neo4j.kernel.database.NormalizedDatabaseName
+
+import java.util.Optional
+import java.util.UUID
 
 trait RewritePhaseTest {
   self: CypherFunSuite with AstConstructionTestSupport =>
@@ -143,15 +148,34 @@ trait RewritePhaseTest {
     val fromAst = parseAndRewrite(from, features: _*)
     val initialState =
       InitialState(from, plannerName, new AnonymousVariableNameGenerator, maybeStatement = Some(fromAst))
-    val fromInState =
+    val databaseReference = new DatabaseReference {
+      override def alias(): NormalizedDatabaseName = ???
+
+      override def namespace(): Optional[NormalizedDatabaseName] = ???
+
+      override def isPrimary: Boolean = ???
+
+      override def id(): UUID = ???
+
+      override def toPrettyString: String = ???
+
+      override def fullName(): NormalizedDatabaseName = new NormalizedDatabaseName(sessionDatabase)
+
+      override def isComposite: Boolean = targetsComposite
+
+      override def compareTo(o: DatabaseReference): Int = ???
+    }
+
+    val fromInState = {
       if (astRewriteAndAnalyze) {
         preProcessPhase(features: _*).transform(
           initialState,
-          TestContext(targetsComposite = targetsComposite, sessionDatabaseName = sessionDatabase)
+          TestContext(sessionDatabase = databaseReference)
         )
       } else {
         initialState
       }
-    transformer.transform(fromInState, ContextHelper.create(targetsComposite, sessionDatabase))
+    }
+    transformer.transform(fromInState, ContextHelper.create(databaseReference))
   }
 }

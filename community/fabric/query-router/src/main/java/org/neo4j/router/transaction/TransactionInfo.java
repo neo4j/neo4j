@@ -34,6 +34,7 @@ import org.neo4j.fabric.transaction.StatementLifecycleTransactionInfo;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.database.DatabaseReference;
 import org.neo4j.kernel.database.NormalizedDatabaseName;
 import org.neo4j.kernel.impl.query.QueryExecutionConfiguration;
 
@@ -41,7 +42,7 @@ import org.neo4j.kernel.impl.query.QueryExecutionConfiguration;
  * Container for all the information given by the bolt server for a given transaction
  */
 public final class TransactionInfo {
-    private final NormalizedDatabaseName sessionDatabaseName;
+    private final DatabaseReference sessionDatabase;
     private final KernelTransaction.Type type;
     private final LoginContext loginContext;
     private final ClientConnectionInfo clientInfo;
@@ -51,10 +52,9 @@ public final class TransactionInfo {
     private Map<String, Object> txMetadata;
     private final RoutingContext routingContext;
     private final QueryExecutionConfiguration queryExecutionConfiguration;
-    private final boolean isComposite;
 
     public TransactionInfo(
-            NormalizedDatabaseName sessionDatabaseName,
+            DatabaseReference sessionDatabase,
             KernelTransaction.Type type,
             LoginContext loginContext,
             ClientConnectionInfo clientInfo,
@@ -63,9 +63,7 @@ public final class TransactionInfo {
             AccessMode accessMode,
             Map<String, Object> txMetadata,
             RoutingContext routingContext,
-            QueryExecutionConfiguration queryExecutionConfiguration,
-            boolean isComposite) {
-        this.sessionDatabaseName = sessionDatabaseName;
+            QueryExecutionConfiguration queryExecutionConfiguration) {
         this.type = type;
         this.loginContext = loginContext;
         this.clientInfo = clientInfo;
@@ -75,12 +73,12 @@ public final class TransactionInfo {
         this.txMetadata = txMetadata;
         this.routingContext = routingContext;
         this.queryExecutionConfiguration = queryExecutionConfiguration;
-        this.isComposite = isComposite;
+        this.sessionDatabase = sessionDatabase;
     }
 
     public TransactionInfo withDefaults(Config config) {
         return new TransactionInfo(
-                sessionDatabaseName,
+                sessionDatabase,
                 type,
                 loginContext,
                 clientInfo,
@@ -89,8 +87,7 @@ public final class TransactionInfo {
                 accessMode,
                 txMetadata != null ? txMetadata : emptyMap(),
                 routingContext,
-                queryExecutionConfiguration,
-                isComposite);
+                queryExecutionConfiguration);
     }
 
     public StatementLifecycleTransactionInfo statementLifecycleTransactionInfo() {
@@ -102,7 +99,7 @@ public final class TransactionInfo {
     }
 
     public NormalizedDatabaseName sessionDatabaseName() {
-        return sessionDatabaseName;
+        return sessionDatabase.fullName();
     }
 
     public KernelTransaction.Type type() {
@@ -142,7 +139,7 @@ public final class TransactionInfo {
     }
 
     public boolean isComposite() {
-        return isComposite;
+        return sessionDatabase.isComposite();
     }
 
     public boolean targetsSystemDatabase() {
@@ -154,7 +151,7 @@ public final class TransactionInfo {
         if (obj == this) return true;
         if (obj == null || obj.getClass() != this.getClass()) return false;
         var that = (TransactionInfo) obj;
-        return Objects.equals(this.sessionDatabaseName, that.sessionDatabaseName)
+        return Objects.equals(this.sessionDatabase.fullName(), that.sessionDatabase.fullName())
                 && Objects.equals(this.type, that.type)
                 && Objects.equals(this.loginContext, that.loginContext)
                 && Objects.equals(this.clientInfo, that.clientInfo)
@@ -169,7 +166,7 @@ public final class TransactionInfo {
     @Override
     public int hashCode() {
         return Objects.hash(
-                sessionDatabaseName,
+                sessionDatabase.fullName(),
                 type,
                 loginContext,
                 clientInfo,
@@ -184,7 +181,7 @@ public final class TransactionInfo {
     @Override
     public String toString() {
         return "TransactionInfo[" + "sessionDatabaseName="
-                + sessionDatabaseName + ", " + "type="
+                + sessionDatabase.fullName() + ", " + "type="
                 + type + ", " + "loginContext="
                 + loginContext + ", " + "clientInfo="
                 + clientInfo + ", " + "bookmarks="

@@ -36,6 +36,7 @@ import org.neo4j.cypher.internal.rewriting.rewriters.computeDependenciesForExpre
 import org.neo4j.cypher.internal.util.ErrorMessageProvider
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo
+import org.neo4j.kernel.database.DatabaseReference
 
 /**
  * Do variable binding, typing, type checking and other semantic checks.
@@ -51,6 +52,8 @@ case class SemanticAnalysis(warn: Boolean, features: SemanticFeature*)
 
     val checkContext = new SemanticCheckContext {
       override def errorMessageProvider: ErrorMessageProvider = context.errorMessageProvider
+
+      override def sessionDatabaseReference: DatabaseReference = context.sessionDatabase
     }
 
     val SemanticCheckResult(state, errors) = SemanticChecker.check(from.statement(), startState, checkContext)

@@ -42,6 +42,7 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.TestName
 
 case class SemanticAnalysisResult(context: ErrorCollectingContext, state: BaseState) {
+
   def errors: Seq[SemanticErrorDef] = context.errors
 
   def errorMessages: Seq[String] = errors.map(_.msg)
@@ -50,13 +51,19 @@ case class SemanticAnalysisResult(context: ErrorCollectingContext, state: BaseSt
 }
 
 trait SemanticAnalysisTestSuite extends CypherFunSuite {
+  private val defaultDatabaseName = "mock"
 
   type Pipeline = Transformer[BaseContext, BaseState, BaseState]
 
   def messageProvider: ErrorMessageProvider = NotImplementedErrorMessageProvider
 
-  def runSemanticAnalysisWithPipelineAndState(pipeline: Pipeline, initialState: BaseState): SemanticAnalysisResult = {
-    val context = new ErrorCollectingContext() {
+  def runSemanticAnalysisWithPipelineAndState(
+    pipeline: Pipeline,
+    initialState: BaseState,
+    isComposite: Boolean = false,
+    sessionDatabase: String = defaultDatabaseName
+  ): SemanticAnalysisResult = {
+    val context = new ErrorCollectingContext(isComposite, sessionDatabase) {
       override def errorMessageProvider: ErrorMessageProvider = messageProvider
     }
     val state = pipeline.transform(initialState, context)
@@ -66,8 +73,13 @@ trait SemanticAnalysisTestSuite extends CypherFunSuite {
   def initialStateWithQuery(query: String): InitialState =
     InitialState(query, NoPlannerName, new AnonymousVariableNameGenerator)
 
-  def runSemanticAnalysisWithPipeline(pipeline: Pipeline, query: String): SemanticAnalysisResult =
-    runSemanticAnalysisWithPipelineAndState(pipeline, initialStateWithQuery(query))
+  def runSemanticAnalysisWithPipeline(
+    pipeline: Pipeline,
+    query: String,
+    isComposite: Boolean = false,
+    sessionDatabase: String = defaultDatabaseName
+  ): SemanticAnalysisResult =
+    runSemanticAnalysisWithPipelineAndState(pipeline, initialStateWithQuery(query), isComposite, sessionDatabase)
 
   // This test invokes SemanticAnalysis twice because that's what the production pipeline does
   def pipelineWithSemanticFeatures(semanticFeatures: SemanticFeature*): Pipeline =
@@ -89,23 +101,37 @@ trait SemanticAnalysisTestSuite extends CypherFunSuite {
 
   def expectNoErrorsFrom(
     query: String,
-    pipeline: Transformer[BaseContext, BaseState, BaseState] = pipelineWithSemanticFeatures()
+    pipeline: Transformer[BaseContext, BaseState, BaseState] = pipelineWithSemanticFeatures(),
+    isComposite: Boolean = false,
+    databaseName: String = defaultDatabaseName
   ): Unit =
-    runSemanticAnalysisWithPipeline(pipeline, query).errors shouldBe empty
+    runSemanticAnalysisWithPipeline(pipeline, query, isComposite, databaseName).errors shouldBe empty
 
   def expectErrorsFrom(
     query: String,
     expectedErrors: Iterable[SemanticError],
-    pipeline: Transformer[BaseContext, BaseState, BaseState] = pipelineWithSemanticFeatures()
+    pipeline: Transformer[BaseContext, BaseState, BaseState] = pipelineWithSemanticFeatures(),
+    isComposite: Boolean = false,
+    databaseName: String = defaultDatabaseName
   ): Unit =
-    runSemanticAnalysisWithPipeline(pipeline, query).errors should contain theSameElementsAs expectedErrors
+    runSemanticAnalysisWithPipeline(
+      pipeline,
+      query,
+      isComposite,
+      databaseName
+    ).errors should contain theSameElementsAs expectedErrors
 
   def expectErrorMessagesFrom(
     query: String,
     expectedErrors: Iterable[String],
-    pipeline: Transformer[BaseContext, BaseState, BaseState] = pipelineWithSemanticFeatures()
+    pipeline: Transformer[BaseContext, BaseState, BaseState] = pipelineWithSemanticFeatures(),
+    isComposite: Boolean = false
   ): Unit =
-    runSemanticAnalysisWithPipeline(pipeline, query).errorMessages should contain theSameElementsAs expectedErrors
+    runSemanticAnalysisWithPipeline(
+      pipeline,
+      query,
+      isComposite
+    ).errorMessages should contain theSameElementsAs expectedErrors
 
   def expectNotificationsFrom(
     query: String,

@@ -21,7 +21,6 @@ package org.neo4j.router.impl.query;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -137,16 +136,6 @@ class ConstituentTransactionFactoryImplTest {
 
     private ConstituentTransactionFactory getConstituentTransactionFactory(
             CypherQueryOptions cypherQueryOptions, DatabaseTransaction innerTransaction) {
-        QueryProcessor queryProcessor = mock(QueryProcessor.class);
-        QueryOptions queryOptions = QueryOptions.apply(InputPosition.NONE(), cypherQueryOptions, false, false);
-        StatementType statementType = StatementType.of(StatementType.Query());
-        QueryProcessor.ProcessedQueryInfo processedQueryInfo = mock(QueryProcessor.ProcessedQueryInfo.class);
-        when(queryProcessor.processQuery(any(), any(), any(), any(), anyBoolean(), any()))
-                .thenReturn(processedQueryInfo);
-        when(processedQueryInfo.obfuscationMetadata()).thenReturn(Optional.of(ObfuscationMetadata.empty()));
-        when(processedQueryInfo.queryOptions()).thenReturn(queryOptions);
-        when(processedQueryInfo.statementType()).thenReturn(statementType);
-
         LocationService locationService = (databaseReference) -> mock(Location.Local.class);
         TransactionInfo transactionInfo = mock(TransactionInfo.class);
         RouterTransactionContext context = mock(RouterTransactionContext.class);
@@ -160,6 +149,16 @@ class ConstituentTransactionFactoryImplTest {
                 .thenReturn(Optional.of(mock(DatabaseReference.class)));
         when(sessionDatabase.toPrettyString()).thenReturn("composite");
         when(context.sessionDatabaseReference()).thenReturn(sessionDatabase);
+
+        QueryProcessor queryProcessor = mock(QueryProcessor.class);
+        QueryOptions queryOptions = QueryOptions.apply(InputPosition.NONE(), cypherQueryOptions, false, false);
+        StatementType statementType = StatementType.of(StatementType.Query());
+        QueryProcessor.ProcessedQueryInfo processedQueryInfo = mock(QueryProcessor.ProcessedQueryInfo.class);
+        when(queryProcessor.processQuery(any(), any(), any(), any(), any())).thenReturn(processedQueryInfo);
+        when(processedQueryInfo.obfuscationMetadata()).thenReturn(Optional.of(ObfuscationMetadata.empty()));
+        when(processedQueryInfo.queryOptions()).thenReturn(queryOptions);
+        when(processedQueryInfo.statementType()).thenReturn(statementType);
+
         QueryStatementLifecycles queryStatementLifecycles = mock(QueryStatementLifecycles.class);
         when(queryStatementLifecycles.create(any(), anyString(), any(), any()))
                 .thenReturn(mock(QueryStatementLifecycles.StatementLifecycle.class));

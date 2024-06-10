@@ -121,7 +121,7 @@ public class QueryRouterBoltSpi {
                         queryExecutionConfiguration);
             }
             TransactionInfo transactionInfo = new TransactionInfo(
-                    normalizedSessionDatabaseName,
+                    sessionDatabaseReference,
                     type,
                     loginContext,
                     clientInfo,
@@ -130,8 +130,7 @@ public class QueryRouterBoltSpi {
                     accessMode,
                     txMetadata,
                     TestOverrides.routingContext(routingContext),
-                    queryExecutionConfiguration,
-                    sessionDatabaseReference.isComposite());
+                    queryExecutionConfiguration);
 
             return new Transaction(queryRouter, queryRouter.beginTransaction(transactionInfo));
         }

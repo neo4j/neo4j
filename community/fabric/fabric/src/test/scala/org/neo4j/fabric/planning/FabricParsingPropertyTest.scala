@@ -60,6 +60,7 @@ import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.CypherScalaCheckDrivenPropertyChecks
 import org.neo4j.cypher.messages.MessageUtilProvider
+import org.neo4j.kernel.database.DatabaseReference
 import org.neo4j.monitoring.Monitors
 
 class FabricParsingPropertyTest extends CypherFunSuite
@@ -131,8 +132,7 @@ class FabricParsingPropertyTest extends CypherFunSuite
           override def cancellationChecker: CancellationChecker = CancellationChecker.NeverCancelled
           override def internalSyntaxUsageStats: InternalSyntaxUsageStats = InternalSyntaxUsageStatsNoOp
 
-          override def targetsComposite: Boolean = false
-          override def sessionDatabaseName: String = "ignore"
+          override def sessionDatabase: DatabaseReference = null
         }
 
         try {

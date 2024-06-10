@@ -116,7 +116,6 @@ case class FabricFrontEnd(
       WrappedMonitors(kernelMonitors),
       cancellationChecker,
       internalSyntaxUsageStats,
-      targetsComposite = false,
       null
     )
 

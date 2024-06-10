@@ -46,6 +46,7 @@ import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.InternalNotificationLogger
 import org.neo4j.graphdb.config.Setting
+import org.neo4j.kernel.database.DatabaseReference
 import org.neo4j.values.virtual.MapValue
 
 import java.time.Clock
@@ -79,10 +80,10 @@ case class CypherPlanner[Context <: PlannerContext](
 
   def normalizeQuery(state: BaseState, context: Context): BaseState = prepareForCaching.transform(state, context)
 
-  def planPreparedQuery(state: BaseState, context: Context): LogicalPlanState = {
+  def planPreparedQuery(state: BaseState, context: PlannerContext): LogicalPlanState = {
     val features: Seq[SemanticFeature] = CypherParsingConfig.getEnabledFeatures(
       parsingConfig.semanticFeatures,
-      context.config.targetsComposite,
+      Some(context.config.targetsComposite),
       parsingConfig.queryRouterEnabled,
       parsingConfig.queryRouterForCompositeEnabled
     )
@@ -107,8 +108,7 @@ case class CypherPlanner[Context <: PlannerContext](
     tracer: CompilationPhaseTracer,
     params: MapValue,
     cancellationChecker: CancellationChecker,
-    targetsComposite: Boolean,
-    sessionDatabase: String
+    sessionDatabase: DatabaseReference
   ): BaseState = {
     parsing.parseQuery(
       queryText,
@@ -120,7 +120,6 @@ case class CypherPlanner[Context <: PlannerContext](
       tracer,
       params,
       cancellationChecker,
-      targetsComposite = targetsComposite,
       sessionDatabase = sessionDatabase
     )
   }

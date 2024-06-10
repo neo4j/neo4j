@@ -45,6 +45,7 @@ import org.neo4j.cypher.internal.util.Neo4jCypherExceptionFactory
 import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
 import org.neo4j.cypher.internal.util.devNullLogger
+import org.neo4j.kernel.database.DatabaseReference
 import org.neo4j.kernel.database.DatabaseReferenceRepository
 import org.neo4j.kernel.database.NamedDatabaseId
 import org.neo4j.logging.NullLog
@@ -81,7 +82,8 @@ object ContextHelper extends MockitoSugar {
     databaseId: NamedDatabaseId = mock[NamedDatabaseId],
     internalNotificationStats: InternalNotificationStats = new InternalNotificationStats(),
     internalSyntaxUsageStats: InternalSyntaxUsageStats = InternalSyntaxUsageStats.newImpl(),
-    labelInferenceStrategy: LabelInferenceStrategy = NoInference
+    labelInferenceStrategy: LabelInferenceStrategy = NoInference,
+    sessionDatabase: DatabaseReference = null
   ): PlannerContext = {
     new PlannerContext(
       cypherExceptionFactory,
@@ -108,8 +110,7 @@ object ContextHelper extends MockitoSugar {
       internalNotificationStats,
       internalSyntaxUsageStats,
       labelInferenceStrategy,
-      false,
-      null
+      sessionDatabase
     )
   }
 

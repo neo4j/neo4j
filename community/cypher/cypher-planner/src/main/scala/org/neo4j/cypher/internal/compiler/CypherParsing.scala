@@ -43,6 +43,7 @@ import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.InternalNotificationLogger
+import org.neo4j.kernel.database.DatabaseReference
 import org.neo4j.values.virtual.MapValue
 
 class CypherParsing(
@@ -62,8 +63,7 @@ class CypherParsing(
     params: MapValue,
     cancellationChecker: CancellationChecker,
     resolver: Option[ProcedureSignatureResolver] = None,
-    targetsComposite: Boolean,
-    sessionDatabase: String
+    sessionDatabase: DatabaseReference
   ): BaseState = {
     val plannerName = PlannerNameFor(plannerNameText)
     val startState = InitialState(queryText, plannerName, new AnonymousVariableNameGenerator)
@@ -75,14 +75,13 @@ class CypherParsing(
       monitors,
       cancellationChecker,
       internalSyntaxUsageStats,
-      targetsComposite,
       sessionDatabase
     )
     val paramTypes = ParameterValueTypeHelper.asCypherTypeMap(params, config.useParameterSizeHint)
 
     val features = CypherParsingConfig.getEnabledFeatures(
       config.semanticFeatures,
-      targetsComposite,
+      if (sessionDatabase == null) None else Some(sessionDatabase.isComposite),
       config.queryRouterEnabled,
       config.queryRouterForCompositeEnabled
     )
@@ -171,11 +170,11 @@ object CypherParsingConfig {
 
   def getEnabledFeatures(
     semanticFeatures: Seq[SemanticFeature],
-    targetsCompositeInQueryRouter: Boolean,
+    targetsCompositeInQueryRouter: Option[Boolean],
     queryRouterEnabled: Boolean,
     queryRouterForCompositeEnabled: Boolean
   ): Seq[SemanticFeature] = {
-    if (targetsCompositeInQueryRouter && queryRouterEnabled && queryRouterForCompositeEnabled)
+    if (queryRouterEnabled && queryRouterForCompositeEnabled && targetsCompositeInQueryRouter.getOrElse(false))
       semanticFeatures ++ Seq(SemanticFeature.UseAsMultipleGraphsSelector, SemanticFeature.MultipleGraphs)
     else if (queryRouterEnabled)
       semanticFeatures ++ Seq(SemanticFeature.UseAsSingleGraphSelector)

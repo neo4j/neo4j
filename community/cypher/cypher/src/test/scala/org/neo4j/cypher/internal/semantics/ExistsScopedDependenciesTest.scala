@@ -43,6 +43,7 @@ import org.neo4j.cypher.internal.util.InternalNotificationLogger
 import org.neo4j.cypher.internal.util.devNullLogger
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.messages.MessageUtilProvider
+import org.neo4j.kernel.database.DatabaseReference
 import org.neo4j.monitoring.Monitors
 
 class ExistsScopedDependenciesTest extends CypherFunSuite with AstConstructionTestSupport {
@@ -68,8 +69,7 @@ class ExistsScopedDependenciesTest extends CypherFunSuite with AstConstructionTe
     override def cancellationChecker: CancellationChecker = CancellationChecker.NeverCancelled
     override def internalSyntaxUsageStats: InternalSyntaxUsageStats = InternalSyntaxUsageStatsNoOp
 
-    override def targetsComposite: Boolean = false
-    override def sessionDatabaseName: String = "ignore"
+    override def sessionDatabase: DatabaseReference = null
   }
 
   test(

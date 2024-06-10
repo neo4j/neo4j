@@ -156,7 +156,8 @@ class LogicalPlanCacheAcceptanceTest extends CypherFunSuite with GraphDatabaseTe
         noTracing,
         context,
         ValueUtils.asParameterMapValue(asJavaMapDeep(params)),
-        devNullLogger
+        devNullLogger,
+        null
       )
       val id = context.executingQuery().id()
       context.close()

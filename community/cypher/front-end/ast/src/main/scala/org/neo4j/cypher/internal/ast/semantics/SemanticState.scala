@@ -20,7 +20,7 @@ import com.github.benmanes.caffeine.cache.Cache
 import com.github.benmanes.caffeine.cache.Caffeine
 import org.neo4j.cypher.internal.ast.ASTAnnotationMap
 import org.neo4j.cypher.internal.ast.ASTAnnotationMap.ASTAnnotationMap
-import org.neo4j.cypher.internal.ast.CatalogName
+import org.neo4j.cypher.internal.ast.GraphReference
 import org.neo4j.cypher.internal.ast.semantics.Scope.DeclarationsAndDependencies
 import org.neo4j.cypher.internal.ast.semantics.SemanticState.ScopeLocation
 import org.neo4j.cypher.internal.expressions.Expression
@@ -318,7 +318,9 @@ case class SemanticState(
   features: Set[SemanticFeature] = Set.empty,
   declareVariablesToSuppressDuplicateErrors: Boolean = true,
   semanticCheckHasRunOnce: Boolean = false,
-  targetGraph: Option[CatalogName] = None
+  targetGraph: Option[GraphReference] =
+    None, // used to check different use clause targets given a regular session database
+  workingGraph: Option[GraphReference] = None // used for nested check given a composite session database
 ) {
 
   def scopeTree: Scope = currentScope.rootScope
@@ -443,5 +445,7 @@ case class SemanticState(
 
   def withFeature(feature: SemanticFeature): SemanticState = copy(features = features + feature)
 
-  def recordTargetGraph(targetGraph: CatalogName): SemanticState = copy(targetGraph = Some(targetGraph))
+  def recordTargetGraph(targetGraph: GraphReference): SemanticState = copy(targetGraph = Some(targetGraph))
+
+  def recordWorkingGraph(graph: Option[GraphReference]): SemanticState = copy(workingGraph = graph)
 }

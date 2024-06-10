@@ -25,11 +25,12 @@ import org.neo4j.cypher.internal.util.InternalNotificationLogger
 import org.neo4j.cypher.internal.util.NotImplementedErrorMessageProvider
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
 import org.neo4j.cypher.internal.util.devNullLogger
+import org.neo4j.kernel.database.DatabaseReference
 import org.scalatestplus.mockito.MockitoSugar
 
 object ContextHelper extends MockitoSugar {
 
-  def create(outerTargetsComposite: Boolean = false, sessionDatabase: String = null): BaseContext = {
+  def create(sessionDatabaseReference: DatabaseReference = null): BaseContext = {
     new BaseContext {
       override def tracer: CompilationPhaseTracer = NO_TRACING
 
@@ -49,9 +50,7 @@ object ContextHelper extends MockitoSugar {
 
       override def internalSyntaxUsageStats: InternalSyntaxUsageStats = InternalSyntaxUsageStatsNoOp
 
-      override def targetsComposite: Boolean = outerTargetsComposite
-
-      override def sessionDatabaseName: String = sessionDatabase
+      override def sessionDatabase: DatabaseReference = sessionDatabaseReference
     }
   }
 }
