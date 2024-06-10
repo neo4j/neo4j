@@ -71,6 +71,7 @@ public class ThreadExecutionContext implements ExecutionContext, AutoCloseable {
     private final ElementIdMapper elementIdMapper;
     private final List<AutoCloseable> otherResources;
     private final ExecutionContextProcedureKernelTransaction ktx;
+    private final Supplier<ClockContext> clockContextSupplier;
 
     public ThreadExecutionContext(
             DefaultPooledCursors cursors,
@@ -110,6 +111,7 @@ public class ThreadExecutionContext implements ExecutionContext, AutoCloseable {
         this.otherResources = otherResources;
         this.elementIdMapper = elementIdMapper;
         this.ktx = new ExecutionContextProcedureKernelTransaction(ktx, this);
+        this.clockContextSupplier = clockContextSupplier;
         this.allStoreHolder = new AllStoreHolder.ForThreadExecutionContextScope(
                 this,
                 storageReader,
@@ -129,6 +131,14 @@ public class ThreadExecutionContext implements ExecutionContext, AutoCloseable {
                 clockContextSupplier,
                 procedureView,
                 multiVersioned);
+    }
+
+    public Supplier<ClockContext> clockContextSupplier() {
+        return clockContextSupplier;
+    }
+
+    public OverridableSecurityContext overridableSecurityContext() {
+        return overridableSecurityContext;
     }
 
     @Override

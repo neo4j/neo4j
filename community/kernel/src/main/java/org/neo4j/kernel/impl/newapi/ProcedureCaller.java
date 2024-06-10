@@ -311,7 +311,7 @@ public abstract class ProcedureCaller {
         private final SecurityAuthorizationHandler securityAuthorizationHandler;
         private final Supplier<ClockContext> clockContextSupplier;
 
-        ForThreadExecutionContextScope(
+        public ForThreadExecutionContextScope(
                 ExecutionContext executionContext,
                 DependencyResolver databaseDependencies,
                 OverridableSecurityContext overridableSecurityContext,

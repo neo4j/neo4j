@@ -64,6 +64,7 @@ import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.ExecutionStatistics;
 import org.neo4j.internal.kernel.api.NodeCursor;
+import org.neo4j.internal.kernel.api.Procedures;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.Read;
@@ -1243,7 +1244,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     }
 
     @Override
-    public org.neo4j.internal.kernel.api.Procedures procedures() {
+    public Procedures procedures() {
         return operations.procedures();
     }
 
