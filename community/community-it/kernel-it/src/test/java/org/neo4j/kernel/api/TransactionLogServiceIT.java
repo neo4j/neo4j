@@ -349,7 +349,7 @@ class TransactionLogServiceIT {
         LogFile logFile = logFiles.getLogFile();
         var logFileInformation = logFile.getLogFileInformation();
         for (int version = (int) logVersionBefore + 1; version < logVersionBefore + appendIterations; version++) {
-            assertEquals(indexShift + version, logFileInformation.getFirstEntryId(version));
+            assertEquals(indexShift + version, logFileInformation.getFirstEntryAppendIndex(version));
             assertEquals(
                     indexShift - 1 + version, logFile.extractHeader(version).getLastAppendIndex());
         }

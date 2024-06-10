@@ -26,12 +26,12 @@ import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
 
 public final class EntryCountThreshold implements Threshold {
-    private final long maxTransactionCount;
+    private final long maxLogEntries;
     private final InternalLog log;
 
-    EntryCountThreshold(InternalLogProvider logProvider, long maxTransactionCount) {
+    EntryCountThreshold(InternalLogProvider logProvider, long maxLogEntries) {
         this.log = logProvider.getLog(getClass());
-        this.maxTransactionCount = maxTransactionCount;
+        this.maxLogEntries = maxLogEntries;
     }
 
     @Override
@@ -42,23 +42,27 @@ public final class EntryCountThreshold implements Threshold {
     @Override
     public boolean reached(Path ignored, long version, LogFileInformation source) {
         try {
-            long lastTx = source.getFirstEntryId(version);
-            if (lastTx == -1) {
-                log.warn("Failed to get id of the first entry in the transaction log file. Requested version: "
-                        + version);
+            long lastAppendIndex = source.getFirstEntryAppendIndex(version);
+            if (lastAppendIndex == -1) {
+                log.warn(
+                        "Failed to get append index of the first entry in the transaction log file. Requested version: "
+                                + version);
                 return false;
             }
 
-            long highest = source.getLastEntryId();
-            return highest - lastTx >= maxTransactionCount;
+            long highestAppendIndex = source.getLastEntryAppendIndex();
+            return highestAppendIndex - lastAppendIndex >= maxLogEntries;
         } catch (IOException e) {
-            log.warn("Error on attempt to get entry ids from transaction log files. Checked version: " + version, e);
+            log.warn(
+                    "Error on attempt to get entry append indexes from transaction log files. Checked version: "
+                            + version,
+                    e);
             return false;
         }
     }
 
     @Override
     public String toString() {
-        return maxTransactionCount + " entries";
+        return maxLogEntries + " entries";
     }
 }

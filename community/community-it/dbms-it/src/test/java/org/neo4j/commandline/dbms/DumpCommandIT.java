@@ -237,7 +237,7 @@ class DumpCommandIT {
                     LatestVersions.LATEST_KERNEL_VERSION,
                     0x123456789ABCDEFL,
                     4,
-                    logFile.getLogFileInformation().getLastEntryId() + 1,
+                    logFile.getLogFileInformation().getLastEntryAppendIndex() + 1,
                     BASE_TX_CHECKSUM,
                     new byte[] {0});
         }

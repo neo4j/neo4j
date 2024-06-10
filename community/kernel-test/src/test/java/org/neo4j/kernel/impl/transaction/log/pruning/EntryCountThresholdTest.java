@@ -40,8 +40,8 @@ class EntryCountThresholdTest {
     void shouldReportThresholdReachedWhenThresholdIsReached() throws Exception {
         long version = 10L;
 
-        when(info.getFirstEntryId(version)).thenReturn(1L);
-        when(info.getLastEntryId()).thenReturn(2L);
+        when(info.getFirstEntryAppendIndex(version)).thenReturn(1L);
+        when(info.getLastEntryAppendIndex()).thenReturn(2L);
 
         EntryCountThreshold threshold = createThreshold(1);
         boolean reached = threshold.reached(file, version, info);
@@ -53,9 +53,9 @@ class EntryCountThresholdTest {
     void shouldReportThresholdNotReachedWhenThresholdIsNotReached() throws Exception {
         long version = 10L;
 
-        when(info.getFirstEntryId(version)).thenReturn(1L);
+        when(info.getFirstEntryAppendIndex(version)).thenReturn(1L);
 
-        when(info.getLastEntryId()).thenReturn(1L);
+        when(info.getLastEntryAppendIndex()).thenReturn(1L);
 
         EntryCountThreshold threshold = createThreshold(1);
 
@@ -65,11 +65,11 @@ class EntryCountThresholdTest {
     @Test
     void shouldProperlyHandleCaseWithOneEntryPerLogFile() throws Exception {
         // Given 3 files with one entry each
-        when(info.getFirstEntryId(1L)).thenReturn(1L);
-        when(info.getFirstEntryId(2L)).thenReturn(2L);
-        when(info.getFirstEntryId(3L)).thenReturn(3L);
+        when(info.getFirstEntryAppendIndex(1L)).thenReturn(1L);
+        when(info.getFirstEntryAppendIndex(2L)).thenReturn(2L);
+        when(info.getFirstEntryAppendIndex(3L)).thenReturn(3L);
 
-        when(info.getLastEntryId()).thenReturn(3L);
+        when(info.getLastEntryAppendIndex()).thenReturn(3L);
 
         // When the threshold is 1 entries
         EntryCountThreshold threshold = createThreshold(1);
@@ -81,11 +81,11 @@ class EntryCountThresholdTest {
 
     @Test
     void shouldWorkWhenCalledMultipleTimesKeeping3Files() throws Exception {
-        when(info.getFirstEntryId(1L)).thenReturn(1L);
-        when(info.getFirstEntryId(2L)).thenReturn(5L);
-        when(info.getFirstEntryId(3L)).thenReturn(15L);
-        when(info.getFirstEntryId(4L)).thenReturn(18L);
-        when(info.getLastEntryId()).thenReturn(18L);
+        when(info.getFirstEntryAppendIndex(1L)).thenReturn(1L);
+        when(info.getFirstEntryAppendIndex(2L)).thenReturn(5L);
+        when(info.getFirstEntryAppendIndex(3L)).thenReturn(15L);
+        when(info.getFirstEntryAppendIndex(4L)).thenReturn(18L);
+        when(info.getLastEntryAppendIndex()).thenReturn(18L);
 
         EntryCountThreshold threshold = createThreshold(8);
 
@@ -97,11 +97,11 @@ class EntryCountThresholdTest {
 
     @Test
     void shouldWorkWhenCalledMultipleTimesKeeping4Files() throws Exception {
-        when(info.getFirstEntryId(1L)).thenReturn(1L);
-        when(info.getFirstEntryId(2L)).thenReturn(5L);
-        when(info.getFirstEntryId(3L)).thenReturn(15L);
-        when(info.getFirstEntryId(4L)).thenReturn(18L);
-        when(info.getLastEntryId()).thenReturn(18L);
+        when(info.getFirstEntryAppendIndex(1L)).thenReturn(1L);
+        when(info.getFirstEntryAppendIndex(2L)).thenReturn(5L);
+        when(info.getFirstEntryAppendIndex(3L)).thenReturn(15L);
+        when(info.getFirstEntryAppendIndex(4L)).thenReturn(18L);
+        when(info.getLastEntryAppendIndex()).thenReturn(18L);
 
         EntryCountThreshold threshold = createThreshold(15);
 
@@ -113,11 +113,11 @@ class EntryCountThresholdTest {
 
     @Test
     void shouldWorkWhenCalledMultipleTimesKeeping2FilesOnBoundary() throws Exception {
-        when(info.getFirstEntryId(1L)).thenReturn(1L);
-        when(info.getFirstEntryId(2L)).thenReturn(5L);
-        when(info.getFirstEntryId(3L)).thenReturn(15L);
-        when(info.getFirstEntryId(4L)).thenReturn(18L);
-        when(info.getLastEntryId()).thenReturn(18L);
+        when(info.getFirstEntryAppendIndex(1L)).thenReturn(1L);
+        when(info.getFirstEntryAppendIndex(2L)).thenReturn(5L);
+        when(info.getFirstEntryAppendIndex(3L)).thenReturn(15L);
+        when(info.getFirstEntryAppendIndex(4L)).thenReturn(18L);
+        when(info.getLastEntryAppendIndex()).thenReturn(18L);
 
         EntryCountThreshold threshold = createThreshold(3);
 
@@ -131,13 +131,13 @@ class EntryCountThresholdTest {
     void shouldSkipEmptyLogsBetweenLogsThatWillBeKept() throws Exception {
         // Given
         // 1, 3 and 4 are empty. 2 has 5 transactions, 5 has 8, 6 is the current version
-        when(info.getFirstEntryId(1L)).thenReturn(1L);
-        when(info.getFirstEntryId(2L)).thenReturn(1L);
-        when(info.getFirstEntryId(3L)).thenReturn(5L);
-        when(info.getFirstEntryId(4L)).thenReturn(5L);
-        when(info.getFirstEntryId(5L)).thenReturn(5L);
-        when(info.getFirstEntryId(6L)).thenReturn(13L);
-        when(info.getLastEntryId()).thenReturn(13L);
+        when(info.getFirstEntryAppendIndex(1L)).thenReturn(1L);
+        when(info.getFirstEntryAppendIndex(2L)).thenReturn(1L);
+        when(info.getFirstEntryAppendIndex(3L)).thenReturn(5L);
+        when(info.getFirstEntryAppendIndex(4L)).thenReturn(5L);
+        when(info.getFirstEntryAppendIndex(5L)).thenReturn(5L);
+        when(info.getFirstEntryAppendIndex(6L)).thenReturn(13L);
+        when(info.getLastEntryAppendIndex()).thenReturn(13L);
 
         // The threshold is 9, which is one more than what version 5 has, which means 2 should be kept
         EntryCountThreshold threshold = createThreshold(9);
@@ -154,13 +154,13 @@ class EntryCountThresholdTest {
     void shouldDeleteNonEmptyLogThatIsAfterASeriesOfEmptyLogs() throws Exception {
         // Given
         // 1, 3 and 4 are empty. 2 has 5 transactions, 5 has 8, 6 is the current version
-        when(info.getFirstEntryId(1L)).thenReturn(1L);
-        when(info.getFirstEntryId(2L)).thenReturn(1L);
-        when(info.getFirstEntryId(3L)).thenReturn(5L);
-        when(info.getFirstEntryId(4L)).thenReturn(5L);
-        when(info.getFirstEntryId(5L)).thenReturn(5L);
-        when(info.getFirstEntryId(6L)).thenReturn(13L);
-        when(info.getLastEntryId()).thenReturn(13L);
+        when(info.getFirstEntryAppendIndex(1L)).thenReturn(1L);
+        when(info.getFirstEntryAppendIndex(2L)).thenReturn(1L);
+        when(info.getFirstEntryAppendIndex(3L)).thenReturn(5L);
+        when(info.getFirstEntryAppendIndex(4L)).thenReturn(5L);
+        when(info.getFirstEntryAppendIndex(5L)).thenReturn(5L);
+        when(info.getFirstEntryAppendIndex(6L)).thenReturn(13L);
+        when(info.getLastEntryAppendIndex()).thenReturn(13L);
 
         // The threshold is 8, which is exactly what version 5 has, which means 2 should be deleted
         EntryCountThreshold threshold = createThreshold(8);
@@ -175,23 +175,24 @@ class EntryCountThresholdTest {
 
     @Test
     void thresholdNotReachedWhenEntryIdNotFound() throws IOException {
-        when(info.getFirstEntryId(1L)).thenReturn(-1L);
+        when(info.getFirstEntryAppendIndex(1L)).thenReturn(-1L);
         EntryCountThreshold threshold = createThreshold(0);
 
         assertFalse(threshold.reached(file, 1, info));
         assertThat(logProvider)
                 .containsMessages(
-                        "Failed to get id of the first entry in the transaction log file. Requested version: 1");
+                        "Failed to get append index of the first entry in the transaction log file. Requested version: 1");
     }
 
     @Test
     void thresholdNotReachedWhenFailToGetEntryId() throws IOException {
-        when(info.getFirstEntryId(1L)).thenThrow(new IOException("Exception."));
+        when(info.getFirstEntryAppendIndex(1L)).thenThrow(new IOException("Exception."));
         EntryCountThreshold threshold = createThreshold(0);
 
         assertFalse(threshold.reached(file, 1, info));
         assertThat(logProvider)
-                .containsMessages("Error on attempt to get entry ids from transaction log files. Checked version: 1");
+                .containsMessages(
+                        "Error on attempt to get entry append indexes from transaction log files. Checked version: 1");
     }
 
     private EntryCountThreshold createThreshold(int maxTxCount) {

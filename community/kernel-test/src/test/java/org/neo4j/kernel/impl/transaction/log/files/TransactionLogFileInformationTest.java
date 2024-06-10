@@ -61,23 +61,24 @@ class TransactionLogFileInformationTest {
     @Test
     void shouldReadAndCacheFirstCommittedTransactionIdForAGivenVersionWhenNotCached() throws Exception {
         TransactionLogFileInformation info = new TransactionLogFileInformation(logFiles, logHeaderCache, context);
-        long expected = 5;
+        long baseId = 5;
+        long expectedAppendIndex = baseId + 2;
 
         long version = 10L;
         when(logHeaderCache.getLogHeader(version)).thenReturn(null);
         when(logFiles.getLogFile().versionExists(version)).thenReturn(true);
         LogHeader expectedHeader = LATEST_LOG_FORMAT.newHeader(
                 2,
-                expected - 1L,
-                expected + 1L,
+                baseId - 1L,
+                baseId + 1L,
                 storeId,
                 UNKNOWN_LOG_SEGMENT_SIZE,
                 BASE_TX_CHECKSUM,
                 LATEST_KERNEL_VERSION);
         when(logFiles.getLogFile().extractHeader(version)).thenReturn(expectedHeader);
 
-        long firstCommittedTxId = info.getFirstEntryId(version);
-        assertEquals(expected, firstCommittedTxId);
+        long firstAppendIndex = info.getFirstEntryAppendIndex(version);
+        assertEquals(expectedAppendIndex, firstAppendIndex);
         verify(logHeaderCache).putHeader(version, expectedHeader);
     }
 
@@ -89,7 +90,7 @@ class TransactionLogFileInformationTest {
         when(logFiles.getLogFile().versionExists(version)).thenReturn(true);
         when(logFiles.getLogFile().extractHeader(version)).thenReturn(null);
 
-        assertEquals(-1, info.getFirstEntryId(version));
+        assertEquals(-1, info.getFirstEntryAppendIndex(version));
         verify(logHeaderCache, never()).putHeader(eq(version), any());
     }
 
@@ -107,27 +108,29 @@ class TransactionLogFileInformationTest {
     @Test
     void shouldReadFirstCommittedTransactionIdForAGivenVersionWhenCached() throws Exception {
         TransactionLogFileInformation info = new TransactionLogFileInformation(logFiles, logHeaderCache, context);
-        long expected = 5;
+        long baseId = 5;
+        long expectedAppendIndex = baseId + 2;
 
         long version = 10L;
         LogHeader expectedHeader = LATEST_LOG_FORMAT.newHeader(
                 2,
-                expected - 1L,
-                expected + 1L,
+                baseId - 1L,
+                baseId + 1L,
                 storeId,
                 UNKNOWN_LOG_SEGMENT_SIZE,
                 BASE_TX_CHECKSUM,
                 LATEST_KERNEL_VERSION);
         when(logHeaderCache.getLogHeader(version)).thenReturn(expectedHeader);
 
-        long firstCommittedTxId = info.getFirstEntryId(version);
-        assertEquals(expected, firstCommittedTxId);
+        long firstCommittedAppendIndex = info.getFirstEntryAppendIndex(version);
+        assertEquals(expectedAppendIndex, firstCommittedAppendIndex);
     }
 
     @Test
     void shouldReadAndCacheFirstCommittedTransactionIdWhenNotCached() throws Exception {
         TransactionLogFileInformation info = new TransactionLogFileInformation(logFiles, logHeaderCache, context);
-        long expected = 5;
+        long baseId = 5;
+        long expectedAppendIndex = baseId + 2L;
 
         long version = 10L;
         when(logFile.getHighestLogVersion()).thenReturn(version);
@@ -135,8 +138,8 @@ class TransactionLogFileInformationTest {
         when(logFile.versionExists(version)).thenReturn(true);
         LogHeader expectedHeader = LATEST_LOG_FORMAT.newHeader(
                 2,
-                expected - 1L,
-                expected + 1L,
+                baseId - 1L,
+                baseId + 1L,
                 storeId,
                 UNKNOWN_LOG_SEGMENT_SIZE,
                 BASE_TX_CHECKSUM,
@@ -144,15 +147,16 @@ class TransactionLogFileInformationTest {
         when(logFile.extractHeader(version)).thenReturn(expectedHeader);
         when(logFile.hasAnyEntries(version)).thenReturn(true);
 
-        long firstCommittedTxId = info.getFirstExistingEntryId();
-        assertEquals(expected, firstCommittedTxId);
+        long firstCommittedAppendIndex = info.getFirstExistingEntryAppendIndex();
+        assertEquals(expectedAppendIndex, firstCommittedAppendIndex);
         verify(logHeaderCache).putHeader(version, expectedHeader);
     }
 
     @Test
     void shouldReadFirstCommittedTransactionIdWhenCached() throws Exception {
         TransactionLogFileInformation info = new TransactionLogFileInformation(logFiles, logHeaderCache, context);
-        long expected = 5;
+        long baseId = 5;
+        long expectedAppendIndex = baseId + 2L;
 
         long version = 10L;
         when(logFile.getHighestLogVersion()).thenReturn(version);
@@ -160,8 +164,8 @@ class TransactionLogFileInformationTest {
 
         LogHeader expectedHeader = LATEST_LOG_FORMAT.newHeader(
                 2,
-                expected - 1L,
-                expected + 1L,
+                baseId - 1L,
+                baseId + 1L,
                 storeId,
                 UNKNOWN_LOG_SEGMENT_SIZE,
                 BASE_TX_CHECKSUM,
@@ -169,8 +173,8 @@ class TransactionLogFileInformationTest {
         when(logHeaderCache.getLogHeader(version)).thenReturn(expectedHeader);
         when(logFile.hasAnyEntries(version)).thenReturn(true);
 
-        long firstCommittedTxId = info.getFirstExistingEntryId();
-        assertEquals(expected, firstCommittedTxId);
+        long firstCommittedAppendIndex = info.getFirstExistingEntryAppendIndex();
+        assertEquals(expectedAppendIndex, firstCommittedAppendIndex);
     }
 
     @Test
@@ -181,8 +185,8 @@ class TransactionLogFileInformationTest {
         when(logFile.getHighestLogVersion()).thenReturn(version);
         when(logFile.hasAnyEntries(version)).thenReturn(false);
 
-        long firstCommittedTxId = info.getFirstExistingEntryId();
-        assertEquals(-1, firstCommittedTxId);
+        long firstCommittedAppendIndex = info.getFirstExistingEntryAppendIndex();
+        assertEquals(-1, firstCommittedAppendIndex);
     }
 
     @Test

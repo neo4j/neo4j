@@ -105,7 +105,7 @@ class ReadTransactionLogWritingTest {
                             .commandReaderFactory());
 
             long txLogRecordCount =
-                    logFiles.getLogFile().getLogFileInformation().getLastEntryId();
+                    logFiles.getLogFile().getLogFileInformation().getLastEntryAppendIndex();
 
             return logicalLogCounter.getCount() + txLogRecordCount;
         } catch (IOException e) {

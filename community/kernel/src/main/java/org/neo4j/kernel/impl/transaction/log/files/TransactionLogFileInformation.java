@@ -65,26 +65,26 @@ public class TransactionLogFileInformation implements LogFileInformation {
     }
 
     @Override
-    public long getFirstExistingEntryId() throws IOException {
+    public long getFirstExistingEntryAppendIndex() throws IOException {
         LogFile logFile = logFiles.getLogFile();
         long version = logFile.getHighestLogVersion();
-        long candidateFirstTx = -1;
+        long candidateFirstAppendIndex = -1;
         while (logFile.versionExists(version)) {
-            candidateFirstTx = getFirstEntryId(version);
+            candidateFirstAppendIndex = getFirstEntryAppendIndex(version);
             version--;
         }
         version++; // the loop above goes back one version too far.
 
         // OK, so we now have the oldest existing log version here. Open it and see if there's any transaction
         // in there. If there is then that transaction is the first one that we have.
-        return logFile.hasAnyEntries(version) ? candidateFirstTx : -1;
+        return logFile.hasAnyEntries(version) ? candidateFirstAppendIndex : -1;
     }
 
     @Override
-    public long getFirstEntryId(long version) throws IOException {
+    public long getFirstEntryAppendIndex(long version) throws IOException {
         LogHeader logHeader = logHeaderCache.getLogHeader(version);
         if (logHeader != null) { // It existed in cache
-            return logHeader.getLastCommittedTxId() + 1;
+            return logHeader.getLastAppendIndex() + 1;
         }
 
         // Wasn't cached, go look for it
@@ -93,15 +93,15 @@ public class TransactionLogFileInformation implements LogFileInformation {
             logHeader = logFile.extractHeader(version);
             if (logHeader != null) {
                 logHeaderCache.putHeader(version, logHeader);
-                return logHeader.getLastCommittedTxId() + 1;
+                return logHeader.getLastAppendIndex() + 1;
             }
         }
         return -1;
     }
 
     @Override
-    public long getLastEntryId() {
-        return logFileContext.getLastCommittedTransactionIdProvider().getLastCommittedTransactionId(logFiles);
+    public long getLastEntryAppendIndex() {
+        return logFileContext.getLastAppendIndexLogFilesProvider().getLastAppendIndex(logFiles);
     }
 
     @Override

@@ -25,19 +25,19 @@ public interface LogFileInformation {
     /**
      * @return the reachable entry that is farthest back of them all, in any existing version.
      */
-    long getFirstExistingEntryId() throws IOException;
+    long getFirstExistingEntryAppendIndex() throws IOException;
 
     /**
      * @param version the log version to get first committed tx for.
-     * @return the first committed entry id for the log with {@code version}.
+     * @return the first committed entry append index for the log with {@code version}.
      * If that log doesn't exist -1 is returned.
      */
-    long getFirstEntryId(long version) throws IOException;
+    long getFirstEntryAppendIndex(long version) throws IOException;
 
     /**
-     * @return the last committed entry id for this log.
+     * @return the last committed entry append index for this log.
      */
-    long getLastEntryId();
+    long getLastEntryAppendIndex();
 
     /**
      * @return the committing entry id for this log.
