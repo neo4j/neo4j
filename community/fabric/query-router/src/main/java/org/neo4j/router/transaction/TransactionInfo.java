@@ -143,7 +143,7 @@ public final class TransactionInfo {
     }
 
     public boolean targetsSystemDatabase() {
-        return sessionDatabaseName.equals(new NormalizedDatabaseName(SYSTEM_DATABASE_NAME));
+        return sessionDatabase.fullName().equals(new NormalizedDatabaseName(SYSTEM_DATABASE_NAME));
     }
 
     @Override
