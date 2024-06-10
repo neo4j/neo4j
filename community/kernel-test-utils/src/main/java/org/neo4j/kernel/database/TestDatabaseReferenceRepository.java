@@ -171,6 +171,12 @@ public final class TestDatabaseReferenceRepository {
             return getDatabaseReferences(DatabaseReferenceImpl.Composite.class);
         }
 
+        @Override
+        public Optional<DatabaseReferenceImpl.SPD> getSpdDatabaseReference() {
+            return getDatabaseReferences(DatabaseReferenceImpl.SPD.class).stream()
+                    .findAny();
+        }
+
         private <T extends DatabaseReference> Set<T> getDatabaseReferences(Class<T> type) {
             return databaseReferences.values().stream()
                     .filter(type::isInstance)

@@ -24,6 +24,7 @@ import java.util.Set;
 import org.neo4j.kernel.database.DatabaseReferenceImpl.Composite;
 import org.neo4j.kernel.database.DatabaseReferenceImpl.External;
 import org.neo4j.kernel.database.DatabaseReferenceImpl.Internal;
+import org.neo4j.kernel.database.DatabaseReferenceImpl.SPD;
 
 /**
  * Implementations of this interface allow for the retrieval of {@link DatabaseReference}s for databases which have not yet been dropped.
@@ -100,6 +101,12 @@ public interface DatabaseReferenceRepository {
      * Fetch all known {@link  Composite} references
      */
     Set<Composite> getCompositeDatabaseReferences();
+
+    /**
+     * Get an SPD database reference if there is one.
+     * Only one SPD database can be present in a DBMS.
+     */
+    Optional<SPD> getSpdDatabaseReference();
 
     interface Caching extends DatabaseReferenceRepository {
         void invalidateAll();

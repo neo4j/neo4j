@@ -52,4 +52,6 @@ public interface RouterTransactionContext {
     DatabaseReference sessionDatabaseReference();
 
     DatabaseTransaction sessionTransaction();
+
+    boolean isRpcCall();
 }

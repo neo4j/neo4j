@@ -39,7 +39,8 @@ public record RouterTransactionContextImpl(
         TargetService targetService,
         LocationService locationService,
         TransactionBookmarkManager txBookmarkManager,
-        DatabaseTransaction sessionTransaction)
+        DatabaseTransaction sessionTransaction,
+        boolean isRpcCall)
         implements RouterTransactionContext {
 
     @Override

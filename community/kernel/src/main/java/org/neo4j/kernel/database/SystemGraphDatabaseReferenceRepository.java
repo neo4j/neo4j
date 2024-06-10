@@ -71,6 +71,12 @@ public class SystemGraphDatabaseReferenceRepository implements DatabaseReference
         return execute(TopologyGraphDbmsModel::getAllCompositeDatabaseReferences);
     }
 
+    @Override
+    public Optional<DatabaseReferenceImpl.SPD> getSpdDatabaseReference() {
+        return execute(TopologyGraphDbmsModel::getAllShardedPropertyDatabaseReferences).stream()
+                .findFirst();
+    }
+
     private <T> T execute(Function<TopologyGraphDbmsModel, T> operation) {
         var databaseContext = systemDatabaseSupplier.get();
         var systemDb = databaseContext.databaseFacade();

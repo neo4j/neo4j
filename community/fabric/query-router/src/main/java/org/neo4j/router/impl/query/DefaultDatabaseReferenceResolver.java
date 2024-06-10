@@ -47,6 +47,14 @@ public class DefaultDatabaseReferenceResolver implements DatabaseReferenceResolv
                 .orElseThrow(databaseNotFound(name));
     }
 
+    @Override
+    public boolean isPropertyShardDatabase(NormalizedDatabaseName name) {
+        var maybeSpd = repository.getSpdDatabaseReference();
+        return maybeSpd.map(spd -> spd.entityDetailStores().values().stream()
+                        .anyMatch(shardReference -> shardReference.fullName().equals(name)))
+                .orElse(false);
+    }
+
     private Optional<DatabaseReference> getCompositeConstituentAlias(NormalizedDatabaseName name) {
         return repository.getCompositeDatabaseReferences().stream()
                 .flatMap(comp -> comp.constituents().stream())

@@ -78,6 +78,12 @@ public class MapCachingDatabaseReferenceRepository implements DatabaseReferenceR
     }
 
     @Override
+    public Optional<DatabaseReferenceImpl.SPD> getSpdDatabaseReference() {
+        // Can't cache SPD reference lookup
+        return delegate.getSpdDatabaseReference();
+    }
+
+    @Override
     public void invalidateAll() {
         this.databaseRefsByName = new ConcurrentHashMap<>();
     }
