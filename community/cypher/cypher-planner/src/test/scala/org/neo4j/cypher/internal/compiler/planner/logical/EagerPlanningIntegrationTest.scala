@@ -23,6 +23,7 @@ import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.configuration.GraphDatabaseInternalSettings.EagerAnalysisImplementation
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
+import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.compiler.ExecutionModel.Volcano
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
@@ -898,6 +899,53 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
     )
   }
 
+  test("Shortest match should produce an eager when there is an write/read conflict with set dynamic property") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(10)
+      .setRelationshipCardinality("()-[]->()", 10)
+      .addSemanticFeature(SemanticFeature.DynamicProperties)
+      .build()
+
+    val query =
+      "MATCH (a) SET a[$p] = 1 WITH a MATCH ANY SHORTEST (start)-[r]->(end) WHERE start.prop = 1 RETURN end.prop2"
+
+    val plan = planner.plan(query)
+    plan should equal(
+      planner.planBuilder()
+        .produceResults("`end.prop2`")
+        .projection("end.prop2 AS `end.prop2`")
+        .statefulShortestPath(
+          "start",
+          "end",
+          "SHORTEST 1 (start)-[r]->(end)",
+          None,
+          Set.empty,
+          Set.empty,
+          Set("end" -> "end"),
+          Set("r" -> "r"),
+          StatefulShortestPath.Selector.Shortest(1),
+          new TestNFABuilder(0, "start")
+            .addTransition(0, 1, "(start)-[r]->(end)")
+            .setFinalState(1)
+            .build(),
+          ExpandAll,
+          false,
+          1,
+          Some(1)
+        )
+        .filter("start.prop = 1")
+        .apply()
+        .|.allNodeScan("start", "a")
+        .eager(lpReasons(
+          EagernessReason.UnknownPropertyReadSetConflict.withConflict(EagernessReason.Conflict(Id(7), Id(1))),
+          EagernessReason.UnknownPropertyReadSetConflict.withConflict(EagernessReason.Conflict(Id(7), Id(3)))
+        ))
+        .setDynamicProperty("a", "$p", "1")
+        .allNodeScan("a")
+        .build()
+    )
+  }
+
   test("Shortest match should produce an eager when there is an write/read conflict with create relationship") {
     val planner = plannerBuilder()
       .setAllNodesCardinality(10)
@@ -1036,6 +1084,53 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
         .eager(lpReasons(PropertyReadSetConflict(propName("prop")).withConflict(Conflict(Id(2), Id(0)))))
         .setNodeProperty("end", "prop", "1")
         .eager(lpReasons(PropertyReadSetConflict(propName("prop")).withConflict(Conflict(Id(2), Id(5)))))
+        .statefulShortestPath(
+          "start",
+          "end",
+          "SHORTEST 1 (start)-[r]->(end)",
+          None,
+          Set.empty,
+          Set.empty,
+          Set("end" -> "end"),
+          Set("r" -> "r"),
+          StatefulShortestPath.Selector.Shortest(1),
+          new TestNFABuilder(0, "start")
+            .addTransition(0, 1, "(start)-[r:R]->(end)")
+            .setFinalState(1)
+            .build(),
+          ExpandAll,
+          false,
+          1,
+          Some(1)
+        )
+        .filter("start.prop = 1")
+        .allNodeScan("start")
+        .build()
+    )
+  }
+
+  test("Shortest match should produce an eager when there is a property overlap (dynamic)") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(10)
+      .setRelationshipCardinality("()-[:R]->()", 10)
+      .addSemanticFeature(SemanticFeature.DynamicProperties)
+      .build()
+
+    val query = "MATCH ANY SHORTEST (start{prop:1})-[r:R]->(end) SET end[$p] = 1 RETURN end"
+
+    val plan = planner.plan(query)
+    plan should equal(
+      planner.planBuilder()
+        .produceResults("end")
+        .eager(lpReasons(EagernessReason.UnknownPropertyReadSetConflict.withConflict(EagernessReason.Conflict(
+          Id(2),
+          Id(0)
+        ))))
+        .setDynamicProperty("end", "$p", "1")
+        .eager(lpReasons(EagernessReason.UnknownPropertyReadSetConflict.withConflict(EagernessReason.Conflict(
+          Id(2),
+          Id(5)
+        ))))
         .statefulShortestPath(
           "start",
           "end",
