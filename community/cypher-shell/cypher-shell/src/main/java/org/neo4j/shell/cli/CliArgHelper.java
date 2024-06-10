@@ -254,34 +254,40 @@ public class CliArgHelper {
                 .defaultFormatWidth(100)
                 .build()
                 .defaultHelp(true)
-                .description(format("A command line shell where you can execute Cypher against an instance of Neo4j. "
-                        + "By default the shell is interactive but you can use it for scripting by passing cypher "
-                        + "directly on the command line or by piping a file with cypher statements (requires Powershell on Windows)."
-                        + "%n%n"
-                        + "example of piping a file:%n"
-                        + "  cat some-cypher.txt | cypher-shell"));
+                .description(format(
+                        "Cypher Shell is a command-line tool used to run queries and perform administrative tasks "
+                                + "against a Neo4j instance. By default, the shell is interactive, but you can also use it for scripting "
+                                + "by passing Cypher directly on the command line or by piping a file with Cypher statements "
+                                + "(requires Powershell on Windows). "
+                                + "It communicates via the Bolt protocol."
+                                + "%n%n"
+                                + "Example of piping a file:%n"
+                                + "  cat some-cypher.txt | cypher-shell"));
 
         ArgumentGroup connGroup = parser.addArgumentGroup("connection arguments");
         connGroup
                 .addArgument("-a", "--address", "--uri")
                 .action(new OnceArgumentAction())
-                .help("address and port to connect to, defaults to " + DEFAULT_ADDRESS
-                        + ". Can also be specified using environment variable " + ADDRESS_ENV_VAR + " or "
-                        + URI_ENV_VAR);
+                .help("Address and port to connect to. Defaults to " + DEFAULT_ADDRESS
+                        + ". Can also be specified using the environment variable " + ADDRESS_ENV_VAR + " or "
+                        + URI_ENV_VAR
+                        + ".");
         connGroup
                 .addArgument("-u", "--username")
-                .help("username to connect as. Can also be specified using environment variable " + USERNAME_ENV_VAR);
-        connGroup.addArgument("--impersonate").help("user to impersonate.");
+                .help("Username to connect as. Can also be specified using the environment variable " + USERNAME_ENV_VAR
+                        + ".");
+        connGroup.addArgument("--impersonate").help("User to impersonate.");
         connGroup
                 .addArgument("-p", "--password")
-                .help("password to connect with. Can also be specified using environment variable " + PASSWORD_ENV_VAR);
+                .help("Password to connect with. Can also be specified using the environment variable "
+                        + PASSWORD_ENV_VAR + ".");
         connGroup
                 .addArgument("--encryption")
-                .help("whether the connection to Neo4j should be encrypted. This must be consistent with Neo4j's "
+                .help("Whether the connection to Neo4j should be encrypted. This must be consistent with the Neo4j's "
                         + "configuration. If choosing '"
                         + Encryption.DEFAULT.name().toLowerCase(Locale.ROOT)
-                        + "' the encryption setting is deduced from the specified address. "
-                        + "For example the 'neo4j+ssc' protocol would use encryption.")
+                        + "', the encryption setting is deduced from the specified address. "
+                        + "For example, the 'neo4j+ssc' protocol uses encryption.")
                 .choices(new CollectionArgumentChoice<>(
                         Encryption.TRUE.name().toLowerCase(Locale.ROOT),
                         Encryption.FALSE.name().toLowerCase(Locale.ROOT),
@@ -289,31 +295,36 @@ public class CliArgHelper {
                 .setDefault(Encryption.DEFAULT.name().toLowerCase(Locale.ROOT));
         connGroup
                 .addArgument("-d", "--database")
-                .help("database to connect to. Can also be specified using environment variable " + DATABASE_ENV_VAR);
+                .help("Database to connect to. Can also be specified using the environment variable " + DATABASE_ENV_VAR
+                        + ".");
         connGroup
                 .addArgument("--access-mode")
                 .dest("access-mode")
                 .type(Arguments.caseInsensitiveEnumStringType(AccessMode.class))
                 .setDefault(DEFAULT_ACCESS_MODE)
-                .help("access mode, defaults to " + DEFAULT_ACCESS_MODE.name());
+                .help("Access mode. Defaults to " + DEFAULT_ACCESS_MODE.name() + ".");
         MutuallyExclusiveGroup failGroup = parser.addMutuallyExclusiveGroup();
         failGroup
                 .addArgument("--fail-fast")
-                .help("exit and report failure on first error when reading from file (this is the default behavior)")
+                .help(
+                        "Exit and report failure on the first error when reading from a file (this is the default behavior).")
                 .dest("fail-behavior")
                 .setConst(FAIL_FAST)
                 .action(new StoreConstArgumentAction());
         failGroup
                 .addArgument("--fail-at-end")
-                .help("exit and report failures at end of input when reading from file")
+                .help("Exit and report failures at the end of the input when reading from a file.")
                 .dest("fail-behavior")
                 .setConst(FAIL_AT_END)
                 .action(new StoreConstArgumentAction());
         parser.setDefault("fail-behavior", FAIL_FAST);
 
         parser.addArgument("--format")
-                .help("desired output format, verbose displays results in tabular format and prints statistics, "
-                        + "plain displays data with minimal formatting")
+                .help(
+                        "Desired output format. Displays the results in tabular format if you use the shell interactively "
+                                + "and with minimal formatting if you use it for scripting.\n"
+                                + "`verbose` displays results in tabular format and prints statistics.\n"
+                                + "`plain` displays data with minimal formatting.")
                 .choices(new CollectionArgumentChoice<>(
                         Format.AUTO.name().toLowerCase(Locale.ROOT),
                         Format.VERBOSE.name().toLowerCase(Locale.ROOT),
@@ -328,58 +339,58 @@ public class CliArgHelper {
                 .setDefault(new ArrayList<ParameterService.RawParameters>());
 
         parser.addArgument("--non-interactive")
-                .help("force non-interactive mode, only useful if auto-detection fails (like on Windows)")
+                .help("Force non-interactive mode. Only useful when auto-detection fails (like on Windows).")
                 .dest("force-non-interactive")
                 .action(new StoreTrueArgumentAction());
 
         parser.addArgument("--sample-rows")
-                .help("number of rows sampled to compute table widths (only for format=VERBOSE)")
+                .help("Number of rows sampled to compute table widths (only for format=VERBOSE).")
                 .type(new PositiveIntegerType())
                 .dest("sample-rows")
                 .setDefault(CliArgs.DEFAULT_NUM_SAMPLE_ROWS);
 
         parser.addArgument("--wrap")
-                .help("wrap table column values if column is too narrow (only for format=VERBOSE)")
+                .help("Wrap table column values if column is too narrow (only for format=VERBOSE).")
                 .type(new BooleanArgumentType())
                 .setDefault(true);
 
         parser.addArgument("-v", "--version")
-                .help("print version of cypher-shell and exit")
+                .help("Print Cypher Shell version and exit.")
                 .action(new StoreTrueArgumentAction());
 
         parser.addArgument("--driver-version")
-                .help("print version of the Neo4j Driver used and exit")
+                .help("Print Neo4j Driver version and exit.")
                 .dest("driver-version")
                 .action(new StoreTrueArgumentAction());
 
-        parser.addArgument("cypher").nargs("?").help("an optional string of cypher to execute and then exit");
+        parser.addArgument("cypher").nargs("?").help("An optional string of Cypher to execute and then exit.");
         parser.addArgument("-f", "--file")
                 .help(
-                        "Pass a file with cypher statements to be executed. After the statements have been executed cypher-shell will be shutdown");
+                        "Pass a file with Cypher statements to be executed. After executing all statements, Cypher Shell shuts down.");
 
         parser.addArgument("--change-password")
                 .action(Arguments.storeTrue())
                 .dest("change-password")
-                .help("change neo4j user password and exit");
+                .help("Change the neo4j user password and exit.");
 
         parser.addArgument("--log")
                 .nargs("?")
                 .type(new LogHandlerType())
                 .dest("log-file")
-                .help("enable logging to the specified file, or standard error if the file is omitted")
+                .help("Enable logging to the specified file, or standard error if the file is omitted.")
                 .setDefault((LogHandlerType) null)
                 .setConst(new ConsoleHandler());
 
         parser.addArgument("--history")
                 .help(
-                        "file path of query and command history file or `in-memory` for in memory history. Defaults to <user home>/.neo4j/.cypher_shell_history. Can also be set using environmental variable "
-                                + HISTORY_ENV_VAR)
+                        "File path of a query and a command history file or `in-memory` for in-memory history. Defaults to <user home>/.neo4j/.cypher_shell_history. Can also be set using the environment variable "
+                                + HISTORY_ENV_VAR + ".")
                 .dest("history-behaviour")
                 .type(new HistoryBehaviourHandler())
                 .setDefault((CypherShellTerminal.HistoryBehaviour) null);
 
         parser.addArgument("--notifications")
-                .help("Enables notifications in interactive mode")
+                .help("Enable notifications in interactive mode.")
                 .dest("enable-notifications")
                 .action(Arguments.storeTrue());
 
