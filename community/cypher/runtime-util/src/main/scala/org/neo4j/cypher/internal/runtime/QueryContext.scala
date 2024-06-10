@@ -942,11 +942,6 @@ trait EntityTransformer {
   def rebindEntityWrappingValue(value: AnyValue): AnyValue
 }
 
-class NoopEntityTransformer extends EntityTransformer {
-  override def needsRebinding(value: AnyValue): Boolean = false
-  override def rebindEntityWrappingValue(value: AnyValue): AnyValue = value
-}
-
 case class IndexInformation(
   isNode: Boolean,
   indexType: IndexType,
