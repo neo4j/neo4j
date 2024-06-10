@@ -60,6 +60,11 @@ public abstract class MapValue extends VirtualValue {
         }
 
         @Override
+        public boolean entryExists(BiFunction<String, AnyValue, Boolean> p) {
+            return false;
+        }
+
+        @Override
         public boolean containsKey(String key) {
             return false;
         }
@@ -113,6 +118,16 @@ public abstract class MapValue extends VirtualValue {
             for (Map.Entry<String, AnyValue> entry : map.entrySet()) {
                 f.accept(entry.getKey(), entry.getValue());
             }
+        }
+
+        @Override
+        public boolean entryExists(BiFunction<String, AnyValue, Boolean> p) {
+            for (Map.Entry<String, AnyValue> entry : map.entrySet()) {
+                if (p.apply(entry.getKey(), entry.getValue())) {
+                    return true;
+                }
+            }
+            return false;
         }
 
         @Override
@@ -171,6 +186,16 @@ public abstract class MapValue extends VirtualValue {
                 if (filter.apply(s, anyValue)) {
                     f.accept(s, anyValue);
                 }
+            });
+        }
+
+        @Override
+        public boolean entryExists(BiFunction<String, AnyValue, Boolean> p) {
+            return map.entryExists((s, anyValue) -> {
+                if (filter.apply(s, anyValue)) {
+                    return p.apply(s, anyValue);
+                }
+                return false;
             });
         }
 
@@ -244,6 +269,11 @@ public abstract class MapValue extends VirtualValue {
         @Override
         public <E extends Exception> void foreach(ThrowingBiConsumer<String, AnyValue, E> f) throws E {
             map.foreach((s, anyValue) -> f.accept(s, mapFunction.apply(s, anyValue)));
+        }
+
+        @Override
+        public boolean entryExists(BiFunction<String, AnyValue, Boolean> p) {
+            return map.entryExists((s, anyValue) -> p.apply(s, mapFunction.apply(s, anyValue)));
         }
 
         @Override
@@ -327,6 +357,11 @@ public abstract class MapValue extends VirtualValue {
         }
 
         @Override
+        public boolean entryExists(BiFunction<String, AnyValue, Boolean> p) {
+            return map.entryExists(p) || p.apply(updatedKey, updatedValue);
+        }
+
+        @Override
         public boolean containsKey(String key) {
             if (updatedKey.equals(key)) {
                 return true;
@@ -399,6 +434,11 @@ public abstract class MapValue extends VirtualValue {
                     return null;
                 }
             };
+        }
+
+        @Override
+        public boolean entryExists(BiFunction<String, AnyValue, Boolean> p) {
+            return map1.entryExists(p) || map2.entryExists(p);
         }
 
         @Override
@@ -613,6 +653,8 @@ public abstract class MapValue extends VirtualValue {
     }
 
     public abstract <E extends Exception> void foreach(ThrowingBiConsumer<String, AnyValue, E> f) throws E;
+
+    public abstract boolean entryExists(BiFunction<String, AnyValue, Boolean> p);
 
     public abstract boolean containsKey(String key);
 

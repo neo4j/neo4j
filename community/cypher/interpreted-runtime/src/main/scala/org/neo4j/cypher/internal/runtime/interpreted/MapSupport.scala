@@ -98,6 +98,17 @@ class LazyMap[T, CURSOR](
     }
   }
 
+  override def entryExists(p: java.util.function.BiFunction[String, AnyValue, java.lang.Boolean]): Boolean = {
+    val it = allProps.entrySet().iterator()
+    while (it.hasNext) {
+      val entry = it.next()
+      if (p.apply(entry.getKey, entry.getValue)) {
+        return true
+      }
+    }
+    false
+  }
+
   override def containsKey(key: String): Boolean =
     ctx.getOptPropertyKeyId(key).exists(propertyKeyId => ops.hasProperty(id, propertyKeyId, cursor, propertyCursor))
 
