@@ -40,6 +40,7 @@ public class TransactionLogWriter {
 
     private KernelVersion previousKernelVersion;
     private final LogRotation logRotation;
+    private final LogPositionMarker logPositionMarker = new LogPositionMarker();
 
     public TransactionLogWriter(
             FlushableLogPositionAwareChannel channel,
@@ -60,6 +61,10 @@ public class TransactionLogWriter {
         this.versionProvider = versionProvider;
         this.previousKernelVersion = versionProvider.kernelVersion();
         this.logRotation = logRotation;
+    }
+
+    public LogPosition beforeAppendPosition() {
+        return logPositionMarker.newPosition();
     }
 
     /*
@@ -99,6 +104,7 @@ public class TransactionLogWriter {
                     logAppendEvent, kernelVersion, transactionId - 1, appendIndex - 1, previousChecksum);
             previousKernelVersion = kernelVersion;
         }
+        channel.getCurrentLogPosition(logPositionMarker);
 
         if (batch.isRollback()) {
             return writer.writeRollbackEntry(kernelVersion, transactionId, appendIndex, batch.getTimeCommitted());

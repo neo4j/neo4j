@@ -117,7 +117,6 @@ class BatchingTransactionAppender extends LifecycleAdapter implements Transactio
         // holding the logFile monitor, and a failure to append needs to be communicated with potential
         // log rotation, which will wait for all transactions closed or fail on kernel panic.
         try {
-            var logPositionBeforeCommit = transactionLogWriter.getCurrentPosition();
             transactionLogWriter.resetAppendedBytesCounter();
             long appendIndex = appendIndexProvider.nextAppendIndex();
             this.previousChecksum = transactionLogWriter.append(
@@ -128,6 +127,8 @@ class BatchingTransactionAppender extends LifecycleAdapter implements Transactio
                     previousChecksum,
                     commands.previousBatchLogPosition(),
                     logAppendEvent);
+
+            var logPositionBeforeCommit = transactionLogWriter.beforeAppendPosition();
             metadataCache.cacheTransactionMetadata(appendIndex, logPositionBeforeCommit);
             var logPositionAfterCommit = transactionLogWriter.getCurrentPosition();
             logAppendEvent.appendedBytes(transactionLogWriter.getAppendedBytes());

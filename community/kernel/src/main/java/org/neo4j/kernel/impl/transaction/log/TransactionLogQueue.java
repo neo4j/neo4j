@@ -302,7 +302,7 @@ public class TransactionLogQueue extends LifecycleAdapter {
             private void appendToLog(
                     CommandBatchToApply commandBatchToApply, long transactionId, LogAppendEvent logAppendEvent)
                     throws IOException {
-                var logPositionBeforeCommit = transactionLogWriter.getCurrentPosition();
+
                 transactionLogWriter.resetAppendedBytesCounter();
                 CommandBatch commandBatch = commandBatchToApply.commandBatch();
                 long appendIndex = appendIndexProvider.nextAppendIndex();
@@ -314,6 +314,7 @@ public class TransactionLogQueue extends LifecycleAdapter {
                         checksum,
                         commandBatchToApply.previousBatchLogPosition(),
                         logAppendEvent);
+                var logPositionBeforeCommit = transactionLogWriter.beforeAppendPosition();
                 metadataCache.cacheTransactionMetadata(appendIndex, logPositionBeforeCommit);
                 var logPositionAfterCommit = transactionLogWriter.getCurrentPosition();
                 logAppendEvent.appendedBytes(transactionLogWriter.getAppendedBytes());

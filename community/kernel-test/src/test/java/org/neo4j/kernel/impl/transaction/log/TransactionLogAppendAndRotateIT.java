@@ -23,6 +23,7 @@ import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.locks.LockSupport.parkNanos;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -71,6 +72,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommand;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
+import org.neo4j.kernel.impl.transaction.log.entry.LogFormat;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
@@ -227,6 +229,56 @@ class TransactionLogAppendAndRotateIT {
 
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
+    void rotateCommandHasCorrectPositionFromNewFile(boolean useQueueAppender) throws Throwable {
+        KernelVersionProvider startVersionProvider = () -> V5_11;
+
+        Setup setup = setupLogAppender(startVersionProvider, useQueueAppender);
+
+        setup.appender.append(
+                new TransactionToApply(
+                        txWithVersion(V5_11), NULL_CONTEXT, StoreCursors.NULL, Commitment.NO_COMMITMENT, EMPTY),
+                LogAppendEvent.NULL);
+
+        // position of append is in the initial file
+        var noRotationStartPosition1 = setup.metadataCache
+                .getTransactionMetadata(setup.appendIndexProvider.getLastAppendIndex())
+                .startPosition();
+        assertEquals(LogVersionRepository.INITIAL_LOG_VERSION, noRotationStartPosition1.getLogVersion());
+        assertEquals(LogFormat.BIGGEST_HEADER, noRotationStartPosition1.getByteOffset());
+
+        setup.appender.append(
+                new TransactionToApply(
+                        txWithVersion(V5_11), NULL_CONTEXT, StoreCursors.NULL, Commitment.NO_COMMITMENT, EMPTY),
+                LogAppendEvent.NULL);
+
+        // position of second append is still in the initial file
+        var noRotationStartPosition2 = setup.metadataCache
+                .getTransactionMetadata(setup.appendIndexProvider.getLastAppendIndex())
+                .startPosition();
+        assertEquals(LogVersionRepository.INITIAL_LOG_VERSION, noRotationStartPosition2.getLogVersion());
+        assertThat(noRotationStartPosition2.getByteOffset()).isGreaterThan(LogFormat.BIGGEST_HEADER);
+
+        // we have not rotations yet
+        assertThat(setup.monitoring.numberOfRotations()).isEqualTo(0);
+
+        setup.appender.append(
+                new TransactionToApply(
+                        txWithVersion(V5_12), NULL_CONTEXT, StoreCursors.NULL, Commitment.NO_COMMITMENT, EMPTY),
+                LogAppendEvent.NULL);
+
+        // now we did rotation
+        assertThat(setup.monitoring.numberOfRotations()).isEqualTo(1);
+
+        // position should be from the new file
+        var postRotationStartPosition = setup.metadataCache
+                .getTransactionMetadata(setup.appendIndexProvider.getLastAppendIndex())
+                .startPosition();
+        assertEquals(LogVersionRepository.INITIAL_LOG_VERSION + 1, postRotationStartPosition.getLogVersion());
+        assertEquals(LogFormat.BIGGEST_HEADER, postRotationStartPosition.getByteOffset());
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
     void rotatedFilesShouldGetTheHeaderMatchingTheVersion(boolean useQueueAppender) throws Throwable {
         // Start on version 5_11. This should mean rotation on first commit
 
@@ -294,12 +346,13 @@ class TransactionLogAppendAndRotateIT {
                 GLORIOUS_FUTURE.version(),
                 GraphDatabaseInternalSettings.latest_runtime_version,
                 DbmsRuntimeVersion.GLORIOUS_FUTURE.getVersion()));
+        SimpleAppendIndexProvider appendIndexProvider = new SimpleAppendIndexProvider();
         LogFiles logFiles = LogFilesBuilder.builder(databaseLayout, fileSystem, versionProvider)
                 .withLogVersionRepository(logVersionRepository)
                 .withRotationThreshold(ByteUnit.mebiBytes(1))
                 .withMonitors(monitors)
                 .withTransactionIdStore(new SimpleTransactionIdStore())
-                .withAppendIndexProvider(new SimpleAppendIndexProvider())
+                .withAppendIndexProvider(appendIndexProvider)
                 .withCommandReaderFactory(TestCommandReaderFactory.INSTANCE)
                 .withStoreId(storeId)
                 .withConfig(config)
@@ -311,25 +364,37 @@ class TransactionLogAppendAndRotateIT {
 
         TransactionIdStore txIdStore = new SimpleTransactionIdStore();
         Panic panic = new DatabaseHealth(mock(DatabaseHealthEventGenerator.class), NullLog.getInstance());
-        final TransactionAppender appender =
-                life.add(createBatchAppender(logFiles, txIdStore, panic, jobScheduler, config));
-        return new Setup(end, monitoring, appender, logFiles);
+        TransactionMetadataCache metadataCache = new TransactionMetadataCache();
+        final TransactionAppender appender = life.add(createBatchAppender(
+                logFiles, txIdStore, panic, jobScheduler, config, metadataCache, appendIndexProvider));
+        return new Setup(end, monitoring, appender, logFiles, metadataCache, appendIndexProvider);
     }
 
     private record Setup(
-            AtomicBoolean end, TestLogFileMonitor monitoring, TransactionAppender appender, LogFiles logFiles) {}
+            AtomicBoolean end,
+            TestLogFileMonitor monitoring,
+            TransactionAppender appender,
+            LogFiles logFiles,
+            TransactionMetadataCache metadataCache,
+            SimpleAppendIndexProvider appendIndexProvider) {}
 
     private TransactionAppender createBatchAppender(
-            LogFiles logFiles, TransactionIdStore txIdStore, Panic panic, JobScheduler jobScheduler, Config config) {
+            LogFiles logFiles,
+            TransactionIdStore txIdStore,
+            Panic panic,
+            JobScheduler jobScheduler,
+            Config config,
+            TransactionMetadataCache metadataCache,
+            SimpleAppendIndexProvider appendIndexProvider) {
         return createTransactionAppender(
                 logFiles,
                 txIdStore,
-                new SimpleAppendIndexProvider(),
+                appendIndexProvider,
                 config,
                 panic,
                 jobScheduler,
                 NullLogProvider.getInstance(),
-                new TransactionMetadataCache());
+                metadataCache);
     }
 
     private static Runnable endAfterMax(
