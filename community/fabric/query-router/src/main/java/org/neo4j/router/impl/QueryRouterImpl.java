@@ -57,6 +57,7 @@ import org.neo4j.router.impl.query.TransactionTargetService;
 import org.neo4j.router.impl.transaction.RouterTransactionContextImpl;
 import org.neo4j.router.impl.transaction.RouterTransactionImpl;
 import org.neo4j.router.impl.transaction.RouterTransactionManager;
+import org.neo4j.router.impl.transaction.database.LocalDatabaseTransaction;
 import org.neo4j.router.location.LocationService;
 import org.neo4j.router.query.DatabaseReferenceResolver;
 import org.neo4j.router.query.Query;
@@ -269,6 +270,10 @@ public class QueryRouterImpl implements QueryRouter {
             var databaseTransaction = context.transactionFor(
                     location,
                     TransactionMode.from(accessMode, executionMode, statementType.isReadQuery(), target.isComposite()));
+            if (databaseTransaction instanceof LocalDatabaseTransaction) {
+                ((LocalDatabaseTransaction) databaseTransaction)
+                        .setConstituentTransactionFactory(constituentTransactionFactory);
+            }
             return databaseTransaction.executeQuery(
                     processedQueryInfo.rewrittenQuery(), subscriber, statementLifecycle);
         } catch (RuntimeException e) {

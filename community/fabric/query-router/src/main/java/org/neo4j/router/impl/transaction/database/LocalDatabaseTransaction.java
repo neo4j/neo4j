@@ -55,7 +55,7 @@ public class LocalDatabaseTransaction implements DatabaseTransaction {
     private final QueryExecutionEngine queryExecutionEngine;
     private final TransactionBookmarkManager bookmarkManager;
     private final LocalGraphTransactionIdTracker transactionIdTracker;
-    private final ConstituentTransactionFactory constituentTransactionFactory;
+    private ConstituentTransactionFactory constituentTransactionFactory;
     private final Set<TransactionalContext> openExecutionContexts = ConcurrentHashMap.newKeySet();
 
     public LocalDatabaseTransaction(
@@ -74,6 +74,10 @@ public class LocalDatabaseTransaction implements DatabaseTransaction {
         this.queryExecutionEngine = queryExecutionEngine;
         this.bookmarkManager = bookmarkManager;
         this.transactionIdTracker = transactionIdTracker;
+        this.constituentTransactionFactory = constituentTransactionFactory;
+    }
+
+    public void setConstituentTransactionFactory(ConstituentTransactionFactory constituentTransactionFactory) {
         this.constituentTransactionFactory = constituentTransactionFactory;
     }
 
