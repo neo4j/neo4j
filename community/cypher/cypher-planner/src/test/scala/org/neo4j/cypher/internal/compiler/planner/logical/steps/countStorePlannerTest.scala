@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
-import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.planner.logical.QueryGraphProducer
@@ -35,8 +34,6 @@ import org.scalatest.matchers.MatchResult
 import org.scalatest.matchers.Matcher
 
 class countStorePlannerTest extends CypherFunSuite with LogicalPlanningTestSupport with QueryGraphProducer {
-
-  override val semanticFeatures: List[SemanticFeature] = List(SemanticFeature.GpmShortestPath)
 
   test("should ignore tail") {
     val context = newMockedLogicalPlanningContextWithFakeAttributes(mock[PlanContext])

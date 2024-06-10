@@ -37,7 +37,6 @@ class StatefulShortestPlanningHintsInserterTest extends CypherFunSuite with Logi
     with AstConstructionTestSupport {
 
   override val semanticFeatures: List[SemanticFeature] = List(
-    SemanticFeature.GpmShortestPath,
     SemanticFeature.MatchModes
   )
 

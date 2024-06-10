@@ -139,13 +139,7 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
                 ctx,
                 s"Path selectors such as `${normalised.selector.prettified}`",
                 normalised.selector.position
-              ) chain
-                whenState(!_.features.contains(SemanticFeature.GpmShortestPath)) {
-                  error(
-                    s"Path selectors such as `${normalised.selector.prettified}` are not supported yet",
-                    normalised.selector.position
-                  )
-                }
+              )
             } chain
             check(normalised.selector)
         }

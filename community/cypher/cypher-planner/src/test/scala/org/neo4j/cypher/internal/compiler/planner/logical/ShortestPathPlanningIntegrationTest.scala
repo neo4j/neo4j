@@ -25,7 +25,6 @@ import org.neo4j.configuration.GraphDatabaseInternalSettings.StatefulShortestPla
 import org.neo4j.configuration.GraphDatabaseInternalSettings.StatefulShortestPlanningMode.INTO_ONLY
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
-import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.compiler.ExecutionModel.Volcano
 import org.neo4j.cypher.internal.compiler.helpers.WindowsSafeAnyRef
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
@@ -99,7 +98,6 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
     .setRelationshipCardinality("(:B)-[]->(:N)", 10)
     .setRelationshipCardinality("()-[:T]->()", 10)
     .setRelationshipCardinality("(:N)-[]->()", 10)
-    .addSemanticFeature(SemanticFeature.GpmShortestPath)
     // This makes it deterministic which plans ends up on what side of a CartesianProduct.
     .setExecutionModel(Volcano)
 
@@ -2214,7 +2212,6 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       .setRelationshipCardinality("(:A)-[]->()", 20)
       .setRelationshipCardinality("(:A)-[]->(:B)", 20)
       .setRelationshipCardinality("()-[]->(:B)", 20)
-      .addSemanticFeature(SemanticFeature.GpmShortestPath)
       .withSetting(GraphDatabaseInternalSettings.stateful_shortest_planning_mode, ALL_IF_POSSIBLE)
       .build()
       .plan(query).stripProduceResults should equal(planLR)
@@ -2228,7 +2225,6 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       .setRelationshipCardinality("(:A)-[]->()", 20)
       .setRelationshipCardinality("(:A)-[]->(:B)", 20)
       .setRelationshipCardinality("()-[]->(:B)", 20)
-      .addSemanticFeature(SemanticFeature.GpmShortestPath)
       .withSetting(GraphDatabaseInternalSettings.stateful_shortest_planning_mode, ALL_IF_POSSIBLE)
       .build()
       .plan(query).stripProduceResults should equal(planRL)
@@ -3276,7 +3272,6 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
     .setRelationshipCardinality("(:A)-[]->(:B)", 500)
     .setRelationshipCardinality("()-[]->(:B)", 500)
     .setRelationshipCardinality("(:B)-[]->()", 500)
-    .addSemanticFeature(SemanticFeature.GpmShortestPath)
 
   test("may plan post-filter on boundary node as pre-filter") {
     val query =
@@ -3423,7 +3418,6 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .setRelationshipCardinality("(:A)-[]->()", 500)
         .setRelationshipCardinality("(:A)-[]->(:B)", 500)
         .setRelationshipCardinality("()-[]->(:B)", 500)
-        .addSemanticFeature(SemanticFeature.GpmShortestPath)
         .withSetting(GraphDatabaseInternalSettings.stateful_shortest_planning_mode, CARDINALITY_HEURISTIC)
         .build()
 
@@ -3464,7 +3458,6 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .setRelationshipCardinality("(:A)-[]->()", 500)
         .setRelationshipCardinality("(:A)-[]->(:B)", 500)
         .setRelationshipCardinality("()-[]->(:B)", 500)
-        .addSemanticFeature(SemanticFeature.GpmShortestPath)
         .withSetting(GraphDatabaseInternalSettings.stateful_shortest_planning_mode, CARDINALITY_HEURISTIC)
         .build()
 
@@ -3505,7 +3498,6 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .setRelationshipCardinality("(:A)-[]->()", 40)
         .setRelationshipCardinality("(:A)-[]->(:B)", 40)
         .setRelationshipCardinality("()-[]->(:B)", 40)
-        .addSemanticFeature(SemanticFeature.GpmShortestPath)
         .withSetting(GraphDatabaseInternalSettings.stateful_shortest_planning_mode, CARDINALITY_HEURISTIC)
         .build()
 
@@ -3556,7 +3548,6 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .setRelationshipCardinality("(:A)-[]->()", 500)
         .setRelationshipCardinality("(:A)-[]->(:B)", 500)
         .setRelationshipCardinality("()-[]->(:B)", 500)
-        .addSemanticFeature(SemanticFeature.GpmShortestPath)
         .withSetting(GraphDatabaseInternalSettings.stateful_shortest_planning_mode, CARDINALITY_HEURISTIC)
         .build()
 
@@ -3599,7 +3590,6 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .setRelationshipCardinality("(:A)-[]->()", 40)
         .setRelationshipCardinality("(:A)-[]->(:B)", 40)
         .setRelationshipCardinality("()-[]->(:B)", 40)
-        .addSemanticFeature(SemanticFeature.GpmShortestPath)
         .withSetting(GraphDatabaseInternalSettings.stateful_shortest_planning_mode, CARDINALITY_HEURISTIC)
         .build()
 
@@ -3648,7 +3638,6 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .setRelationshipCardinality("(:A)-[]->()", 500)
         .setRelationshipCardinality("(:A)-[]->(:B)", 500)
         .setRelationshipCardinality("()-[]->(:B)", 500)
-        .addSemanticFeature(SemanticFeature.GpmShortestPath)
         .withSetting(GraphDatabaseInternalSettings.stateful_shortest_planning_mode, CARDINALITY_HEURISTIC)
         .build()
 
@@ -3689,7 +3678,6 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .setRelationshipCardinality("(:A)-[]->()", 40)
         .setRelationshipCardinality("(:A)-[]->(:B)", 40)
         .setRelationshipCardinality("()-[]->(:B)", 40)
-        .addSemanticFeature(SemanticFeature.GpmShortestPath)
         .withSetting(GraphDatabaseInternalSettings.stateful_shortest_planning_mode, CARDINALITY_HEURISTIC)
         .build()
 
@@ -3738,7 +3726,6 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .setRelationshipCardinality("(:A)-[]->()", 500)
         .setRelationshipCardinality("(:A)-[]->(:B)", 500)
         .setRelationshipCardinality("()-[]->(:B)", 500)
-        .addSemanticFeature(SemanticFeature.GpmShortestPath)
         .withSetting(GraphDatabaseInternalSettings.stateful_shortest_planning_mode, CARDINALITY_HEURISTIC)
         .build()
 
@@ -3759,7 +3746,6 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .setRelationshipCardinality("(:A)-[]->()", 40)
         .setRelationshipCardinality("(:A)-[]->(:B)", 40)
         .setRelationshipCardinality("()-[]->(:B)", 40)
-        .addSemanticFeature(SemanticFeature.GpmShortestPath)
         .withSetting(GraphDatabaseInternalSettings.stateful_shortest_planning_mode, CARDINALITY_HEURISTIC)
         .build()
 
@@ -3795,7 +3781,6 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .setRelationshipCardinality("(:A)-[]->()", 500)
         .setRelationshipCardinality("(:A)-[]->(:B)", 500)
         .setRelationshipCardinality("()-[]->(:B)", 500)
-        .addSemanticFeature(SemanticFeature.GpmShortestPath)
         .withSetting(GraphDatabaseInternalSettings.stateful_shortest_planning_mode, CARDINALITY_HEURISTIC)
         .build()
 
@@ -3840,7 +3825,6 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .setRelationshipCardinality("(:A)-[]->()", 40)
         .setRelationshipCardinality("(:A)-[]->(:B)", 40)
         .setRelationshipCardinality("()-[]->(:B)", 40)
-        .addSemanticFeature(SemanticFeature.GpmShortestPath)
         .withSetting(GraphDatabaseInternalSettings.stateful_shortest_planning_mode, CARDINALITY_HEURISTIC)
         .build()
 
@@ -3907,7 +3891,6 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .setRelationshipCardinality("(:BB)-[]->(:B)", 10)
         .setRelationshipCardinality("(:AA)-[]->()", 10)
         .setRelationshipCardinality("(:AA)-[]->(:A)", 10)
-        .addSemanticFeature(SemanticFeature.GpmShortestPath)
         .withSetting(GraphDatabaseInternalSettings.stateful_shortest_planning_mode, CARDINALITY_HEURISTIC)
         .build()
 
@@ -3962,7 +3945,6 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .setRelationshipCardinality("(:BB)-[]->(:B)", 10)
         .setRelationshipCardinality("(:AA)-[]->()", 10)
         .setRelationshipCardinality("(:AA)-[]->(:A)", 10)
-        .addSemanticFeature(SemanticFeature.GpmShortestPath)
         .withSetting(GraphDatabaseInternalSettings.stateful_shortest_planning_mode, CARDINALITY_HEURISTIC)
         .build()
 
@@ -4023,7 +4005,6 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       .setRelationshipCardinality("(:A)-[]->()", 500)
       .setRelationshipCardinality("(:A)-[]->(:B)", 500)
       .setRelationshipCardinality("()-[]->(:B)", 500)
-      .addSemanticFeature(SemanticFeature.GpmShortestPath)
       .withSetting(GraphDatabaseInternalSettings.stateful_shortest_planning_mode, CARDINALITY_HEURISTIC)
       .build()
 
@@ -4085,7 +4066,6 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       .setRelationshipCardinality("(:A)-[:KNOWS]->()", 4)
       .setRelationshipCardinality("()-[:KNOWS]->()", 4)
       .setRelationshipCardinality("()-[:KNOWS]->(:B)", 4)
-      .addSemanticFeature(SemanticFeature.GpmShortestPath)
       .withSetting(GraphDatabaseInternalSettings.stateful_shortest_planning_mode, CARDINALITY_HEURISTIC)
       .build()
 
@@ -4142,7 +4122,6 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       .setRelationshipCardinality("()-[:MAKES_PAYMENTS_TO]->(:AccountHolder)", 911026)
       .setRelationshipCardinality("()-[:MAKES_PAYMENTS_TO]->()", 911026)
       .addNodeIndex("AccountHolder", Seq("accountHolderID"), 1.0, 1 / accountHolders, isUnique = true)
-      .addSemanticFeature(SemanticFeature.GpmShortestPath)
       .withSetting(GraphDatabaseInternalSettings.stateful_shortest_planning_mode, CARDINALITY_HEURISTIC)
       .build()
 

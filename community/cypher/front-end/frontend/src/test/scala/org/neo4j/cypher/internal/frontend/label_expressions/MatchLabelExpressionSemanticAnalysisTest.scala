@@ -16,7 +16,6 @@
  */
 package org.neo4j.cypher.internal.frontend.label_expressions
 
-import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.frontend.NameBasedSemanticAnalysisTestSuite
 
 class MatchLabelExpressionSemanticAnalysisTest extends NameBasedSemanticAnalysisTestSuite {
@@ -547,9 +546,7 @@ class MatchLabelExpressionSemanticAnalysisTest extends NameBasedSemanticAnalysis
   }
 
   test("MATCH p = SHORTEST 2 PATHS ()-[]-{1,5}() RETURN p") {
-    runSemanticAnalysisWithSemanticFeatures(
-      SemanticFeature.GpmShortestPath
-    ).errors shouldBe empty
+    runSemanticAnalysis().errors shouldBe empty
   }
 
   // GPM and non-GPM in separate statements
@@ -562,9 +559,7 @@ class MatchLabelExpressionSemanticAnalysisTest extends NameBasedSemanticAnalysis
   }
 
   test("MATCH p = shortestPath(()-[*1..5]-()) MATCH q = SHORTEST 2 PATHS ()-[]-{1,5}() RETURN nodes(p), nodes(q)") {
-    runSemanticAnalysisWithSemanticFeatures(
-      SemanticFeature.GpmShortestPath
-    ).errors shouldBe empty
+    runSemanticAnalysis().errors shouldBe empty
   }
 
   // GPM and non-GPM in unrelated features
@@ -577,9 +572,7 @@ class MatchLabelExpressionSemanticAnalysisTest extends NameBasedSemanticAnalysis
   }
 
   test("MATCH p = SHORTEST 2 PATHS (m)-[*0..5]-(n) RETURN p") {
-    runSemanticAnalysisWithSemanticFeatures(
-      SemanticFeature.GpmShortestPath
-    ).errors shouldBe empty
+    runSemanticAnalysis().errors shouldBe empty
   }
 
   // Mixed label expression in same statement

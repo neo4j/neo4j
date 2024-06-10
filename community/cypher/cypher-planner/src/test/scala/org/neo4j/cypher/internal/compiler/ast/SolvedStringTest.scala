@@ -19,16 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.ast
 
-import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.scalatest.prop.TableDrivenPropertyChecks
 
 class SolvedStringTest extends CypherFunSuite with LogicalPlanningTestSupport with TableDrivenPropertyChecks {
-
-  override val semanticFeatures: List[SemanticFeature] = List(
-    SemanticFeature.GpmShortestPath
-  )
 
   private val tests = Table(
     "Cypher" -> "Expected",

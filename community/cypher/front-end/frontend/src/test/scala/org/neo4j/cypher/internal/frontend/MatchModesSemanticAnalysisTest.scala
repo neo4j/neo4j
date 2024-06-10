@@ -30,7 +30,6 @@ class MatchModesSemanticAnalysisTest extends CypherFunSuite with SemanticAnalysi
 
   def errorsFromSemanticAnalysis: Seq[SemanticErrorDef] = {
     runSemanticAnalysisWithSemanticFeatures(
-      SemanticFeature.GpmShortestPath,
       SemanticFeature.MatchModes
     ).errors
   }
@@ -153,9 +152,7 @@ class MatchModesSemanticAnalysisTest extends CypherFunSuite with SemanticAnalysi
 
   test("SHORTEST 1 PATH (a)-[:REL*]->(b), (c)-[:REL]->(e)") {
     // running without SemanticFeature.MatchModes
-    runSemanticAnalysisWithSemanticFeatures(
-      SemanticFeature.GpmShortestPath
-    ).errors shouldEqual Seq(
+    runSemanticAnalysis().errors shouldEqual Seq(
       differentRelationshipsSelectivePathPatternSemanticError(InputPosition(22, 1, 23), semanticFeatureEnabled = false)
     )
   }

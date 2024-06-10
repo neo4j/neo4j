@@ -53,10 +53,6 @@ object SemanticFeature {
     override def name: String = "USE single graph selector"
   }
 
-  case object GpmShortestPath extends SemanticFeature with FeatureToString {
-    override def name: String = "Shortest path as defined for GQL"
-  }
-
   case object MatchModes extends SemanticFeature with FeatureToString {
     override def name: String = "Match modes"
   }
@@ -75,7 +71,6 @@ object SemanticFeature {
     UseAsMultipleGraphsSelector,
     UseAsSingleGraphSelector,
     ShowSetting,
-    GpmShortestPath,
     MatchModes,
     ComposableCommands,
     DynamicProperties

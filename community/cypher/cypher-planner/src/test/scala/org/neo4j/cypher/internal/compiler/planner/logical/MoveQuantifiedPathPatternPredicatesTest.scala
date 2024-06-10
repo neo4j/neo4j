@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
-import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.ir.NodeBinding
@@ -39,10 +38,6 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class MoveQuantifiedPathPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTestSupport
     with AstConstructionTestSupport {
-
-  override val semanticFeatures: List[SemanticFeature] = List(
-    SemanticFeature.GpmShortestPath
-  )
 
   private def buildSinglePlannerQueryAndRewrite(query: String): SinglePlannerQuery = {
     val q = buildSinglePlannerQuery(query)

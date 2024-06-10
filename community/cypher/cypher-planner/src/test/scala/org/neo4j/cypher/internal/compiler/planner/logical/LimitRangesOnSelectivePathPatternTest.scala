@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
-import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.expressions.Disjoint
 import org.neo4j.cypher.internal.expressions.Expression
@@ -50,10 +49,6 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class LimitRangesOnSelectivePathPatternTest extends CypherFunSuite with LogicalPlanningTestSupport
     with AstConstructionTestSupport {
-
-  override val semanticFeatures: List[SemanticFeature] = List(
-    SemanticFeature.GpmShortestPath
-  )
 
   test("should move QPP max limit from QPP to SPP predicate when above 100") {
     val rewrittenSpp =

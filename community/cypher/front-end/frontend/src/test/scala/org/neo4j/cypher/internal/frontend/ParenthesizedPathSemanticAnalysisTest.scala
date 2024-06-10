@@ -16,15 +16,12 @@
  */
 package org.neo4j.cypher.internal.frontend
 
-import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.util.test_helpers.WindowsStringSafe
 import org.scalatest.LoneElement
 
 class ParenthesizedPathSemanticAnalysisTest extends SemanticAnalysisTestSuite with LoneElement {
 
   implicit private val windowsStringSafe: WindowsStringSafe.type = WindowsStringSafe
-
-  private val gpmShortestPath: Seq[SemanticFeature] = Seq(SemanticFeature.GpmShortestPath)
 
   test("can use sub-path variable in WHERE") {
     val q =
@@ -33,7 +30,7 @@ class ParenthesizedPathSemanticAnalysisTest extends SemanticAnalysisTestSuite wi
         |RETURN b
         |""".stripMargin
 
-    runSemanticAnalysisWithSemanticFeatures(gpmShortestPath, q).errorMessages shouldBe empty
+    runSemanticAnalysis(q).errorMessages shouldBe empty
   }
 
   test("can not use path variable from the same MATCH clause in WHERE") {
@@ -43,7 +40,7 @@ class ParenthesizedPathSemanticAnalysisTest extends SemanticAnalysisTestSuite wi
         |RETURN b
         |""".stripMargin
 
-    runSemanticAnalysisWithSemanticFeatures(gpmShortestPath, q).errorMessages.loneElement shouldEqual
+    runSemanticAnalysis(q).errorMessages.loneElement shouldEqual
       """From within a parenthesized path pattern, one may only reference variables, that are already bound in a previous `MATCH` clause.
         |In this case, `p` is defined in the same `MATCH` clause as ((a) (()-[r]->())+ (b) WHERE length(p) % 2 = 0).""".stripMargin
   }
@@ -56,7 +53,7 @@ class ParenthesizedPathSemanticAnalysisTest extends SemanticAnalysisTestSuite wi
         |RETURN b
         |""".stripMargin
 
-    runSemanticAnalysisWithSemanticFeatures(gpmShortestPath, q).errorMessages shouldBe empty
+    runSemanticAnalysis(q).errorMessages shouldBe empty
   }
 
   test("can not use a variable from the same MATCH clause in a subquery expression") {
@@ -66,7 +63,7 @@ class ParenthesizedPathSemanticAnalysisTest extends SemanticAnalysisTestSuite wi
         |RETURN b
         |""".stripMargin
 
-    runSemanticAnalysisWithSemanticFeatures(gpmShortestPath, q).errorMessages.loneElement shouldEqual
+    runSemanticAnalysis(q).errorMessages.loneElement shouldEqual
       """From within a parenthesized path pattern, one may only reference variables, that are already bound in a previous `MATCH` clause.
         |In this case, `p` is defined in the same `MATCH` clause as ((a) (()-[r]->())+ (b) WHERE 0 = COUNT { MATCH (x)-->(y)
         |  WHERE length(p) % 2 = 0 }).""".stripMargin

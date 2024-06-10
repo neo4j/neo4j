@@ -24,7 +24,6 @@ import org.neo4j.configuration.GraphDatabaseInternalSettings.StatefulShortestPla
 import org.neo4j.configuration.GraphDatabaseInternalSettings.StatefulShortestPlanningMode.INTO_ONLY
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
-import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.compiler.ExecutionModel.Volcano
 import org.neo4j.cypher.internal.compiler.helpers.WindowsSafeAnyRef
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
@@ -59,7 +58,6 @@ class StatefulShortestToFindShortestIntegrationTest extends CypherFunSuite with 
     .setRelationshipCardinality("()-[]->(:User)", 10)
     .setRelationshipCardinality("(:User)-[]->(:User)", 10)
     .setRelationshipCardinality("(:User)-[]->()", 10)
-    .addSemanticFeature(SemanticFeature.GpmShortestPath)
     // This makes it deterministic which plans ends up on what side of a CartesianProduct.
     .setExecutionModel(Volcano)
 

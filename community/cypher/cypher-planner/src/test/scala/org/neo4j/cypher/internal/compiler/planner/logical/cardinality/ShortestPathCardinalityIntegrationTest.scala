@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.cardinality
 
-import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfiguration
 import org.neo4j.cypher.internal.compiler.planner.logical.PlannerDefaults
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -35,7 +34,6 @@ class ShortestPathCardinalityIntegrationTest extends CypherFunSuite with Cardina
 
   private val configuration: StatisticsBackedLogicalPlanningConfiguration =
     plannerBuilder()
-      .addSemanticFeature(SemanticFeature.GpmShortestPath)
       .setAllNodesCardinality(allNodes)
       .setLabelCardinality("Stop", stopNodes)
       .setAllRelationshipsCardinality(allRelationships)

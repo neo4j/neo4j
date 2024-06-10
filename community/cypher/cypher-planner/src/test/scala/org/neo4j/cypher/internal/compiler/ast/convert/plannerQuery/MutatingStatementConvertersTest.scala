@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.compiler.ast.convert.plannerQuery
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
-import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.RelTypeName
@@ -56,10 +55,6 @@ import org.scalatest.prop.TableDrivenPropertyChecks
 
 class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSupport with AppendedClues
     with TableDrivenPropertyChecks {
-
-  override val semanticFeatures: List[SemanticFeature] = List(
-    SemanticFeature.GpmShortestPath
-  )
 
   test("setting a node property: MATCH (n) SET n.prop = 42 RETURN n") {
     val query = buildSinglePlannerQuery("MATCH (n) SET n.prop = 42 RETURN n")

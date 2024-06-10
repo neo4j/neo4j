@@ -23,7 +23,6 @@ import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.configuration.GraphDatabaseInternalSettings.EagerAnalysisImplementation
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
-import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.compiler.ExecutionModel.Volcano
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
@@ -810,7 +809,6 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
     val planner = plannerBuilder()
       .setAllNodesCardinality(10)
       .setRelationshipCardinality("()-[]->()", 10)
-      .addSemanticFeature(SemanticFeature.GpmShortestPath)
       .build()
 
     val query = "MATCH ANY SHORTEST (start {prop: 5})-[r]->(end) CREATE (end)-[s:S]->() RETURN end"
@@ -836,7 +834,6 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
       .setAllNodesCardinality(10)
       .setRelationshipCardinality("()-[]->()", 10)
       .setRelationshipCardinality("()-[:R]->()", 10)
-      .addSemanticFeature(SemanticFeature.GpmShortestPath)
       .build()
 
     val query = "MATCH ANY SHORTEST (start {prop: 5})-[r:R]->(end) CREATE (end)-[s:S]->() RETURN end"
@@ -862,7 +859,6 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
     val planner = plannerBuilder()
       .setAllNodesCardinality(10)
       .setRelationshipCardinality("()-[]->()", 10)
-      .addSemanticFeature(SemanticFeature.GpmShortestPath)
       .build()
 
     val query =
@@ -906,7 +902,6 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
     val planner = plannerBuilder()
       .setAllNodesCardinality(10)
       .setRelationshipCardinality("()-[]->()", 10)
-      .addSemanticFeature(SemanticFeature.GpmShortestPath)
       .build()
 
     val query = "CREATE (a)-[s:S]->(b) WITH b MATCH ANY SHORTEST (start {prop: 5})-[r]->(end) RETURN end"
@@ -935,7 +930,6 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
       .setAllNodesCardinality(10)
       .setLabelCardinality("Label", 10)
       .setRelationshipCardinality("()-[]->()", 10)
-      .addSemanticFeature(SemanticFeature.GpmShortestPath)
       .build()
 
     val query = "MATCH (a:Label) DELETE a WITH * MATCH ANY SHORTEST (start {prop: 5})-[r]->(end) RETURN end"
@@ -976,7 +970,6 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
       .setAllNodesCardinality(10)
       .setRelationshipCardinality("()-[]->()", 10)
       .setRelationshipCardinality("()-[:R]->()", 10)
-      .addSemanticFeature(SemanticFeature.GpmShortestPath)
       .build()
 
     val query =
@@ -1032,7 +1025,6 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
     val planner = plannerBuilder()
       .setAllNodesCardinality(10)
       .setRelationshipCardinality("()-[:R]->()", 10)
-      .addSemanticFeature(SemanticFeature.GpmShortestPath)
       .build()
 
     val query = "MATCH ANY SHORTEST (start{prop:1})-[r:R]->(end) SET end.prop = 1 RETURN end"
@@ -1073,7 +1065,6 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
     val planner = plannerBuilder()
       .setAllNodesCardinality(10)
       .setRelationshipCardinality("()-[:R]->()", 10)
-      .addSemanticFeature(SemanticFeature.GpmShortestPath)
       .build()
 
     val query = "MATCH ANY SHORTEST (start {prop: 5})-[r:R]->(end) DETACH DELETE end RETURN 1"
@@ -1103,7 +1094,6 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
       .setAllNodesCardinality(10)
       .setRelationshipCardinality("()-[:T]->()", 10)
       .setRelationshipCardinality("()-[:R]->()", 10)
-      .addSemanticFeature(SemanticFeature.GpmShortestPath)
       .build()
 
     val query =
@@ -1133,7 +1123,6 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
       .setAllNodesCardinality(10)
       .setRelationshipCardinality("()-[:T]->()", 10)
       .setRelationshipCardinality("()-[:R]->()", 10)
-      .addSemanticFeature(SemanticFeature.GpmShortestPath)
       .build()
 
     val query =
@@ -1161,7 +1150,6 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
       .setLabelCardinality("Label", 10)
       .setRelationshipCardinality("()-[:R]->()", 10)
       .setRelationshipCardinality("()-[]->()", 10)
-      .addSemanticFeature(SemanticFeature.GpmShortestPath)
       .build()
 
     val query =
@@ -1212,7 +1200,6 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
       .setLabelCardinality("Label", 10)
       .setRelationshipCardinality("()-[:R]->()", 10)
       .setRelationshipCardinality("()-[]->()", 10)
-      .addSemanticFeature(SemanticFeature.GpmShortestPath)
       .build()
 
     val query =
