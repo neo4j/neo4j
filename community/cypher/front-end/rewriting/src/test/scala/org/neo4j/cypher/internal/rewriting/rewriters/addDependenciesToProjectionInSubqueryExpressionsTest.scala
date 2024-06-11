@@ -16,15 +16,18 @@
  */
 package org.neo4j.cypher.internal.rewriting.rewriters
 
-import org.neo4j.cypher.internal.ast.factory.neo4j.JavaCCParser
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheckContext
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
+import org.neo4j.cypher.internal.rewriting.AstRewritingTestSupport
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
 import org.neo4j.cypher.internal.util.inSequence
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.TestName
 
-class addDependenciesToProjectionInSubqueryExpressionsTest extends CypherFunSuite with TestName {
+class addDependenciesToProjectionInSubqueryExpressionsTest
+    extends CypherFunSuite
+    with TestName
+    with AstRewritingTestSupport {
 
   test("""WITH "Bosse" as x
          |MATCH (person:Person)
@@ -480,10 +483,8 @@ class addDependenciesToProjectionInSubqueryExpressionsTest extends CypherFunSuit
 
   private def assertRewrite(originalQuery: String, expectedQuery: String): Unit = {
     val cypherExceptionFactory = OpenCypherExceptionFactory(None)
-    val original =
-      JavaCCParser.parse(originalQuery, cypherExceptionFactory)
-    val expected =
-      JavaCCParser.parse(expectedQuery, cypherExceptionFactory)
+    val original = parse(originalQuery, cypherExceptionFactory)
+    val expected = parse(expectedQuery, cypherExceptionFactory)
 
     val normalizedWithAndReturnClauses =
       original.endoRewrite(normalizeWithAndReturnClauses.getRewriter(cypherExceptionFactory))

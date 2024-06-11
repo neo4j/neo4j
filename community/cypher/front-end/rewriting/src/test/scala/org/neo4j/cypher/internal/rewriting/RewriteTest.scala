@@ -17,7 +17,6 @@
 package org.neo4j.cypher.internal.rewriting
 
 import org.neo4j.cypher.internal.ast.Statement
-import org.neo4j.cypher.internal.ast.factory.neo4j.JavaCCParser
 import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.ast.prettifier.Prettifier
 import org.neo4j.cypher.internal.ast.semantics.SemanticChecker
@@ -25,7 +24,7 @@ import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-trait RewriteTest {
+trait RewriteTest extends AstRewritingTestSupport {
   self: CypherFunSuite =>
 
   def rewriterUnderTest: Rewriter
@@ -50,7 +49,7 @@ trait RewriteTest {
 
   protected def parseForRewriting(queryText: String): Statement = {
     val preparedQuery = queryText.replace("\r\n", "\n")
-    JavaCCParser.parse(preparedQuery, OpenCypherExceptionFactory(None))
+    parse(preparedQuery, OpenCypherExceptionFactory(None))
   }
 
   protected def rewrite(original: Statement): AnyRef =
@@ -60,7 +59,7 @@ trait RewriteTest {
     original.endoRewrite(rewriterUnderTest)
 
   protected def assertIsNotRewritten(query: String): Unit = {
-    val original = JavaCCParser.parse(query, OpenCypherExceptionFactory(None))
+    val original = parse(query, OpenCypherExceptionFactory(None))
     val result = original.rewrite(rewriterUnderTest)
     assert(
       result === original,

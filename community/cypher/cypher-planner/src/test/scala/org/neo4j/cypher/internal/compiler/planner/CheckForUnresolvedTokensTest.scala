@@ -23,7 +23,6 @@ import org.mockito.Mockito.when
 import org.neo4j.cypher.internal.ast.ASTAnnotationMap
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.Query
-import org.neo4j.cypher.internal.ast.factory.neo4j.JavaCCParser
 import org.neo4j.cypher.internal.ast.semantics.ExpressionTypeInfo
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
@@ -35,6 +34,7 @@ import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.PlannerQuery
+import org.neo4j.cypher.internal.parser.v5.ast.factory.Cypher5AstParser
 import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.InputPosition
@@ -300,11 +300,12 @@ class CheckForUnresolvedTokensTest extends CypherFunSuite with AstConstructionTe
     notificationLogger.notifications
   }
 
-  private def parse(query: String): Query =
-    JavaCCParser.parse(query, Neo4jCypherExceptionFactory(query, None)) match {
+  private def parse(query: String): Query = {
+    new Cypher5AstParser(query, Neo4jCypherExceptionFactory(query, None), None).singleStatement() match {
       case q: Query => q
       case _        => fail("Must be a Query")
     }
+  }
 
   private def functionAt(name: String, offset: Int): FunctionInvocation = {
     val functionPos = InputPosition(offset, 1, offset + 1)

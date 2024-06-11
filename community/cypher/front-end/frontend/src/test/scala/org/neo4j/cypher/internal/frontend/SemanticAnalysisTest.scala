@@ -20,7 +20,7 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticError
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.expressions.AutoExtractedParameter
 import org.neo4j.cypher.internal.expressions.StringLiteral
-import org.neo4j.cypher.internal.frontend.phases.OpenCypherJavaCCParsing
+import org.neo4j.cypher.internal.frontend.phases.Cypher5Parsing
 import org.neo4j.cypher.internal.frontend.phases.SemanticAnalysis
 import org.neo4j.cypher.internal.util.CartesianProductNotification
 import org.neo4j.cypher.internal.util.ErrorMessageProvider
@@ -225,7 +225,7 @@ class SemanticAnalysisTest extends SemanticAnalysisTestSuite {
   test("Should register uses in PathExpressions") {
     val query = "MATCH p = (a)-[r]-(b) RETURN p AS p"
 
-    val pipeline = OpenCypherJavaCCParsing andThen ProjectNamedPathsPhase andThen SemanticAnalysis(warn = true)
+    val pipeline = Cypher5Parsing andThen ProjectNamedPathsPhase andThen SemanticAnalysis(warn = true)
     val result = runSemanticAnalysisWithPipeline(pipeline, query)
     val scopeTree = result.state.semantics().scopeTree
 

@@ -26,7 +26,6 @@ import org.neo4j.cypher.internal.ast.Return
 import org.neo4j.cypher.internal.ast.ReturnItems
 import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.Where
-import org.neo4j.cypher.internal.ast.factory.neo4j.JavaCCParser
 import org.neo4j.cypher.internal.ast.semantics.SemanticChecker
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.planner.ResolveTokensTest.AllPathsPattern
@@ -46,6 +45,7 @@ import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.label_expressions.LabelExpression.Leaf
+import org.neo4j.cypher.internal.parser.v5.ast.factory.Cypher5AstParser
 import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.rewriting.rewriters.LabelExpressionPredicateNormalizer
 import org.neo4j.cypher.internal.rewriting.rewriters.normalizeHasLabelsAndHasType
@@ -228,8 +228,7 @@ class ResolveTokensTest extends CypherFunSuite {
   }
 
   def parseTest(queryText: String)(f: Query => Unit): Unit = test(queryText) {
-    val parsed =
-      JavaCCParser.parse(queryText, Neo4jCypherExceptionFactory(queryText, None))
+    val parsed = new Cypher5AstParser(queryText, Neo4jCypherExceptionFactory(queryText, None), None).singleStatement()
     val rewriter = LabelExpressionPredicateNormalizer.instance andThen
       normalizeHasLabelsAndHasType(SemanticChecker.check(parsed).state)
     rewriter(parsed) match {

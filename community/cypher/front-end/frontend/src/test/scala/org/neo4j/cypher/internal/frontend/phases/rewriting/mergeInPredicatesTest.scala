@@ -217,8 +217,8 @@ class mergeInPredicatesTest extends CypherFunSuite with AstRewritingTestSupport 
 
   private def shouldRewrite(from: String, to: String): Unit = {
     val exceptionFactory = OpenCypherExceptionFactory(None)
-    val original = parser.parse(from, exceptionFactory).asInstanceOf[Query]
-    val expected = parser.parse(to, exceptionFactory).asInstanceOf[Query]
+    val original = parse(from, exceptionFactory).asInstanceOf[Query]
+    val expected = parse(to, exceptionFactory).asInstanceOf[Query]
     val common: Rewriter = flattenBooleanOperators.instance(CancellationChecker.NeverCancelled)
     val result = mergeInPredicates.instance(original)
 

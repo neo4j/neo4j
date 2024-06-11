@@ -16,11 +16,10 @@
  */
 package org.neo4j.cypher.internal.ast.factory.query
 
-import org.neo4j.cypher.internal.ast.factory.neo4j.JavaCCParser
+import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.test.util.AstParsingTestBase
 import org.neo4j.cypher.internal.ast.test.util.LegacyAstParsingTestSupport
 import org.neo4j.cypher.internal.expressions.NodePattern
-import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
 
 class NodePatternPredicateParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport {
 
@@ -31,7 +30,7 @@ class NodePatternPredicateParserTest extends AstParsingTestBase with LegacyAstPa
       Seq(("", None), ("{prop: 'test'}", Some(mapOf("prop" -> literalString("test")))))
   } yield {
     test(s"MATCH (n$maybeLabelExpression $maybeProperties WHERE n.otherProp > 123)") {
-      parseNodePatterns(testName) shouldBe Seq(
+      parses[Statements].containing[NodePattern](
         nodePat(
           Some("n"),
           maybeLabelExpressionAst,
@@ -42,7 +41,7 @@ class NodePatternPredicateParserTest extends AstParsingTestBase with LegacyAstPa
     }
 
     test(s"MATCH ($maybeLabelExpression $maybeProperties WHERE true)") {
-      parseNodePatterns(testName) shouldBe Seq(
+      parses[Statements].containing[NodePattern](
         nodePat(
           None,
           maybeLabelExpressionAst,
@@ -54,14 +53,13 @@ class NodePatternPredicateParserTest extends AstParsingTestBase with LegacyAstPa
   }
 
   test("MATCH (n WHERE n.prop > 123)") {
-    val expected = Seq(
-      nodePat(
-        Some("n"),
-        predicates = Some(greaterThan(prop("n", "prop"), literalInt(123)))
-      )
+    val expected = nodePat(
+      Some("n"),
+      predicates = Some(greaterThan(prop("n", "prop"), literalInt(123)))
     )
-    parseNodePatterns(testName) shouldBe expected
-    parseNodePatterns(testName.replaceAllLiterally("WHERE", "wHeRe")) shouldBe expected
+
+    parses[Statements].containing[NodePattern](expected)
+    testName.replaceAllLiterally("WHERE", "wHeRe") should parse[Statements].containing(expected)
   }
 
   test("(n:A:B:C {prop: 42} WHERE n.otherProp < 123)") {
@@ -84,7 +82,7 @@ class NodePatternPredicateParserTest extends AstParsingTestBase with LegacyAstPa
   }
 
   test("MATCH (WHERE)") {
-    parseNodePatterns(testName) shouldBe Seq(nodePat(Some("WHERE")))
+    parses[Statements].containing[NodePattern](nodePat(Some("WHERE")))
   }
 
   /* This case is ambiguous from a language standpoint, it could be either
@@ -93,19 +91,19 @@ class NodePatternPredicateParserTest extends AstParsingTestBase with LegacyAstPa
    * As the second case is not just syntactically but also semantically correct, the parser has been programmed to prefer it.
    */
   test("MATCH (WHERE {prop: 123})") {
-    parseNodePatterns(testName) shouldBe Seq(
+    parses[Statements].containing[NodePattern](
       nodePat(Some("WHERE"), properties = Some(mapOf("prop" -> literal(123))))
     )
   }
 
   test("MATCH (WHERE WHERE {prop: 123})") {
-    parseNodePatterns(testName) shouldBe Seq(
+    parses[Statements].containing[NodePattern](
       nodePat(Some("WHERE"), predicates = Some(mapOf("prop" -> literal(123))))
     )
   }
 
   test("MATCH (WHERE {prop: 123} WHERE {prop: 123})") {
-    parseNodePatterns(testName) shouldBe Seq(
+    parses[Statements].containing[NodePattern](
       nodePat(
         Some("WHERE"),
         properties = Some(mapOf("prop" -> literal(123))),
@@ -115,7 +113,7 @@ class NodePatternPredicateParserTest extends AstParsingTestBase with LegacyAstPa
   }
 
   test("MATCH (WHERE WHERE WHERE.prop > 123)") {
-    parseNodePatterns(testName) shouldBe Seq(
+    parses[Statements].containing[NodePattern](
       nodePat(
         Some("WHERE"),
         predicates = Some(greaterThan(prop("WHERE", "prop"), literalInt(123)))
@@ -124,13 +122,13 @@ class NodePatternPredicateParserTest extends AstParsingTestBase with LegacyAstPa
   }
 
   test("MATCH (WHERE WHERE.WHERE='WHERE')") {
-    parseNodePatterns(testName) shouldBe Seq(
+    parses[Statements].containing[NodePattern](
       nodePat(predicates = Some(equals(prop("WHERE", "WHERE"), literalString("WHERE"))))
     )
   }
 
   test("RETURN [(n:A WHERE n.prop >= 123)-->(end WHERE end.prop < 42) | n]") {
-    parseNodePatterns(testName).toSet shouldBe Set(
+    parses[Statements].containing[NodePattern](
       nodePat(
         Some("n"),
         Some(labelLeaf("A")),
@@ -144,7 +142,7 @@ class NodePatternPredicateParserTest extends AstParsingTestBase with LegacyAstPa
   }
 
   test("RETURN exists((n {prop: 'test'} WHERE n.otherProp = 123)-->(end WHERE end.prop = 42)) AS result") {
-    parseNodePatterns(testName).toSet shouldBe Set(
+    parses[Statements].containing[NodePattern](
       nodePat(
         Some("n"),
         properties = Some(mapOf("prop" -> literalString("test"))),
@@ -155,13 +153,5 @@ class NodePatternPredicateParserTest extends AstParsingTestBase with LegacyAstPa
         predicates = Some(equals(prop("end", "prop"), literalInt(42)))
       )
     )
-  }
-
-  private val exceptionFactory = OpenCypherExceptionFactory(None)
-
-  private def parseNodePatterns(query: String): Seq[NodePattern] = {
-    // TODO! Parse in all parsers!!
-    val ast = JavaCCParser.parse(query, exceptionFactory)
-    ast.folder.findAllByClass[NodePattern]
   }
 }

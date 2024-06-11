@@ -17,7 +17,6 @@
 package org.neo4j.cypher.internal.rewriting
 
 import org.neo4j.cypher.internal.ast.Statement
-import org.neo4j.cypher.internal.ast.factory.neo4j.JavaCCParser
 import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.ast.prettifier.Prettifier
 import org.neo4j.cypher.internal.ast.semantics.SemanticChecker
@@ -34,7 +33,7 @@ import org.neo4j.cypher.internal.util.inSequence
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.TestName
 
-class normalizePredicatesTest extends CypherFunSuite with TestName {
+class normalizePredicatesTest extends CypherFunSuite with TestName with AstRewritingTestSupport {
 
   private val prettifier = Prettifier(ExpressionStringifier(_.asCanonicalStringVal))
 
@@ -63,7 +62,7 @@ class normalizePredicatesTest extends CypherFunSuite with TestName {
     )
   }
 
-  def parseForRewriting(queryText: String): Statement = JavaCCParser.parse(
+  def parseForRewriting(queryText: String): Statement = parse(
     queryText.replace("\r\n", "\n"),
     OpenCypherExceptionFactory(None)
   )

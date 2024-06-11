@@ -17,8 +17,13 @@
 package org.neo4j.cypher.internal.rewriting
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
-import org.neo4j.cypher.internal.ast.factory.neo4j.JavaCCParser
+import org.neo4j.cypher.internal.ast.Statement
+import org.neo4j.cypher.internal.parser.v5.ast.factory.Cypher5AstParser
+import org.neo4j.cypher.internal.util.CypherExceptionFactory
 
 trait AstRewritingTestSupport extends AstConstructionTestSupport {
-  val parser: JavaCCParser.type = JavaCCParser
+
+  def parse(query: String, exceptionFactory: CypherExceptionFactory): Statement = {
+    new Cypher5AstParser(query, exceptionFactory, None).singleStatement()
+  }
 }

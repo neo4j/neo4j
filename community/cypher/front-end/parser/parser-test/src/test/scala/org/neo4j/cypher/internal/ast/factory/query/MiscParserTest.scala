@@ -47,11 +47,13 @@ import org.neo4j.cypher.internal.expressions.NoneIterablePredicate
 import org.neo4j.cypher.internal.expressions.PathPatternPart
 import org.neo4j.cypher.internal.expressions.Pattern.ForMatch
 import org.neo4j.cypher.internal.expressions.PatternComprehension
+import org.neo4j.cypher.internal.expressions.PatternExpression
 import org.neo4j.cypher.internal.expressions.PatternPart.AllPaths
 import org.neo4j.cypher.internal.expressions.PatternPartWithSelector
 import org.neo4j.cypher.internal.expressions.Range
 import org.neo4j.cypher.internal.expressions.RelationshipChain
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
+import org.neo4j.cypher.internal.expressions.RelationshipsPattern
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.expressions.SensitiveLiteral
@@ -665,5 +667,25 @@ class MiscParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport
 
   test("unicode arrow line and head") {
     "MERGE (project)–[:HAS_FOLDER]-⟩(folder)" should parse[Statements]
+  }
+
+  test("MATCH (a) RETURN size ( (a)-[]->() )") {
+    parsesTo[Statements] {
+      singleQuery(
+        match_(nodePat(Some("a"))),
+        return_(
+          returnItem(
+            function(
+              "size",
+              PatternExpression(RelationshipsPattern(relationshipChain(nodePat(Some("a")), relPat(), nodePat()))(pos))(
+                None,
+                None
+              )
+            ),
+            "size ( (a)-[]->() )"
+          )
+        )
+      )
+    }
   }
 }

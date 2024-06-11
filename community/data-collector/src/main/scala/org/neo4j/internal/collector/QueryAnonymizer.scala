@@ -23,14 +23,15 @@ import org.neo4j.configuration.Config
 import org.neo4j.cypher.internal.CachingPreParser
 import org.neo4j.cypher.internal.PreParsedQuery
 import org.neo4j.cypher.internal.ast.Statement
-import org.neo4j.cypher.internal.ast.factory.neo4j.JavaCCParser
 import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.ast.prettifier.Prettifier
 import org.neo4j.cypher.internal.cache.ExecutorBasedCaffeineCacheFactory
 import org.neo4j.cypher.internal.cache.LFUCache
 import org.neo4j.cypher.internal.config.CypherConfiguration
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.parser.v5.ast.factory.Cypher5AstParser
 import org.neo4j.cypher.internal.rewriting.rewriters.anonymizeQuery
+import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.Neo4jCypherExceptionFactory
 import org.neo4j.cypher.internal.util.devNullLogger
 import org.neo4j.internal.kernel.api.TokenRead
@@ -62,12 +63,15 @@ object IdAnonymizer {
 
 case class IdAnonymizer(tokens: TokenRead) extends QueryAnonymizer {
 
-  private val parser = JavaCCParser
+  private def parse(query: String, exceptionFactory: CypherExceptionFactory): Statement = {
+    new Cypher5AstParser(query, exceptionFactory, None).singleStatement()
+  }
+
   private val prettifier = Prettifier(ExpressionStringifier(_.asCanonicalStringVal))
 
   override def queryText(queryText: String): String = {
     val preParsedQuery = IdAnonymizer.preParser.preParseQuery(queryText, devNullLogger)
-    val originalAst = parser.parse(
+    val originalAst = parse(
       preParsedQuery.statement,
       Neo4jCypherExceptionFactory(queryText, Some(preParsedQuery.options.offset))
     )

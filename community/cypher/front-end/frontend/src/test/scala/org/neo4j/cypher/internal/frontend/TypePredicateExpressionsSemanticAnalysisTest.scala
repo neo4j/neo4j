@@ -40,7 +40,7 @@ class TypePredicateExpressionsSemanticAnalysisTest extends CypherFunSuite with N
     val result = runSemanticAnalysis(query)
 
     result.errors.map(e => (e.msg, e.position.line, e.position.column)) should equal(List(
-      ("All types in a Closed Dynamic Union must be nullable, or be appended with `NOT NULL`", 1, 16)
+      ("All types in a Closed Dynamic Union must be nullable, or be appended with `NOT NULL`", 1, 20)
     ))
   }
 
@@ -52,7 +52,7 @@ class TypePredicateExpressionsSemanticAnalysisTest extends CypherFunSuite with N
     val result = runSemanticAnalysis(query)
 
     result.errors.map(e => (e.msg, e.position.line, e.position.column)) should equal(List(
-      ("All types in a Closed Dynamic Union must be nullable, or be appended with `NOT NULL`", 1, 21)
+      ("All types in a Closed Dynamic Union must be nullable, or be appended with `NOT NULL`", 1, 25)
     ))
   }
 
@@ -64,7 +64,7 @@ class TypePredicateExpressionsSemanticAnalysisTest extends CypherFunSuite with N
     val result = runSemanticAnalysis(query)
 
     result.errors.map(e => (e.msg, e.position.line, e.position.column)) should equal(List(
-      ("All types in a Closed Dynamic Union must be nullable, or be appended with `NOT NULL`", 1, 66)
+      ("All types in a Closed Dynamic Union must be nullable, or be appended with `NOT NULL`", 1, 70)
     ))
   }
 
@@ -76,7 +76,7 @@ class TypePredicateExpressionsSemanticAnalysisTest extends CypherFunSuite with N
     val result = runSemanticAnalysis(query)
 
     result.errors.map(e => (e.msg, e.position.line, e.position.column)) should equal(List(
-      ("All types in a Closed Dynamic Union must be nullable, or be appended with `NOT NULL`", 1, 16)
+      ("All types in a Closed Dynamic Union must be nullable, or be appended with `NOT NULL`", 1, 20)
     ))
   }
 
@@ -86,7 +86,7 @@ class TypePredicateExpressionsSemanticAnalysisTest extends CypherFunSuite with N
     val result = runSemanticAnalysis(query)
 
     result.errors.map(e => (e.msg, e.position.line, e.position.column)) should equal(List(
-      ("All types in a Closed Dynamic Union must be nullable, or be appended with `NOT NULL`", 1, 16)
+      ("All types in a Closed Dynamic Union must be nullable, or be appended with `NOT NULL`", 1, 20)
     ))
   }
 
@@ -96,7 +96,7 @@ class TypePredicateExpressionsSemanticAnalysisTest extends CypherFunSuite with N
     val result = runSemanticAnalysis(query)
 
     result.errors.map(e => (e.msg, e.position.line, e.position.column)) should equal(List(
-      ("All types in a Closed Dynamic Union must be nullable, or be appended with `NOT NULL`", 1, 16)
+      ("All types in a Closed Dynamic Union must be nullable, or be appended with `NOT NULL`", 1, 20)
     ))
   }
 

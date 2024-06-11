@@ -16,23 +16,20 @@
  */
 package org.neo4j.cypher.internal.rewriting
 
-import org.neo4j.cypher.internal.ast.factory.neo4j.JavaCCParser
 import org.neo4j.cypher.internal.rewriting.rewriters.nameAllPatternElements
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
 import org.neo4j.cypher.internal.util.helpers.NameDeduplicator.removeGeneratedNamesAndParamsOnTree
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class nameAllPatternElementsTest extends CypherFunSuite {
+class nameAllPatternElementsTest extends CypherFunSuite with AstRewritingTestSupport {
 
   private val exceptionFactory = OpenCypherExceptionFactory(None)
 
-  private val parser = JavaCCParser
-
   private def assertRewrite(originalQuery: String, expectedQuery: String): Unit = {
     val nameGenerator = new AnonymousVariableNameGenerator()
-    val original = parser.parse(originalQuery, exceptionFactory)
-    val expected = removeGeneratedNamesAndParamsOnTree(parser.parse(
+    val original = parse(originalQuery, exceptionFactory)
+    val expected = removeGeneratedNamesAndParamsOnTree(parse(
       expectedQuery,
       exceptionFactory
     ))
@@ -119,15 +116,14 @@ class nameAllPatternElementsTest extends CypherFunSuite {
   }
 
   test("should not change names of already named things") {
-    val original =
-      parser.parse("RETURN [p=(a)-[r]->(b) | 'foo'] AS foo", exceptionFactory)
+    val original = parse("RETURN [p=(a)-[r]->(b) | 'foo'] AS foo", exceptionFactory)
 
     val result = original.rewrite(nameAllPatternElements(new AnonymousVariableNameGenerator))
     assert(result === original)
   }
 
   test("should not name in shortest path expressions") {
-    val original = parser.parse(
+    val original = parse(
       """
         |MATCH (a:A), (b:B)
         |WITH shortestPath((a)-[:REL]->(b)) AS x

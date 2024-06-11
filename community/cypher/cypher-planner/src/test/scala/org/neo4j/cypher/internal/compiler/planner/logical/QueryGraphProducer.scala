@@ -71,7 +71,7 @@ trait QueryGraphProducer {
     val appendix = if (appendReturn) " RETURN 1 AS Result" else ""
     val q = query + appendix
     val exceptionFactory = Neo4jCypherExceptionFactory(q, None)
-    val ast = parser.parse(q, exceptionFactory)
+    val ast = parse(q, exceptionFactory)
     val cleanedStatement: Statement =
       ast.endoRewrite(inSequence(normalizeWithAndReturnClauses(exceptionFactory)))
     val onError = SyntaxExceptionCreator.throwOnError(exceptionFactory)

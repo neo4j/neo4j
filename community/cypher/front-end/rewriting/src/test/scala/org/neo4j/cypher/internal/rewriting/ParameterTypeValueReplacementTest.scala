@@ -17,7 +17,6 @@
 package org.neo4j.cypher.internal.rewriting
 
 import org.neo4j.cypher.internal.ast.Statement
-import org.neo4j.cypher.internal.ast.factory.neo4j.JavaCCParser
 import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.rewriting.rewriters.parameterValueTypeReplacement
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
@@ -27,7 +26,7 @@ import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo.BOOL
 import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo.INT
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class ParameterTypeValueReplacementTest extends CypherFunSuite {
+class ParameterTypeValueReplacementTest extends CypherFunSuite with AstRewritingTestSupport {
 
   test("single integer parameter should be rewritten") {
     val params = Map("param" -> INT)
@@ -63,7 +62,7 @@ class ParameterTypeValueReplacementTest extends CypherFunSuite {
 
   private def assertRewrite(originalQuery: String, parameterTypes: Map[String, ParameterTypeInfo]): Unit = {
     val exceptionFactory = OpenCypherExceptionFactory(None)
-    val original: Statement = JavaCCParser.parse(originalQuery, exceptionFactory)
+    val original: Statement = parse(originalQuery, exceptionFactory)
 
     original.folder.findAllByClass[Parameter].size should equal(
       parameterTypes.size

@@ -17,15 +17,15 @@
 package org.neo4j.cypher.internal.frontend.phases
 
 import org.neo4j.cypher.internal.ast.Statement
-import org.neo4j.cypher.internal.ast.factory.neo4j.JavaCCParser
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.PARSING
+import org.neo4j.cypher.internal.parser.v5.ast.factory.Cypher5AstParser
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
 
-case object OpenCypherJavaCCParsing extends Phase[BaseContext, BaseState, BaseState] {
+case object Cypher5Parsing extends Phase[BaseContext, BaseState, BaseState] {
   private val exceptionFactory = OpenCypherExceptionFactory(None)
 
   override def process(in: BaseState, context: BaseContext): BaseState = {
-    val statement = JavaCCParser.parse(in.queryText, exceptionFactory)
+    val statement = new Cypher5AstParser(in.queryText, exceptionFactory, None).singleStatement()
     in.withStatement(statement)
   }
 

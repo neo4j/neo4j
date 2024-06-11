@@ -16,10 +16,10 @@
  */
 package org.neo4j.cypher.internal.frontend.prettifier
 
-import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.factory.neo4j.JavaCCParser
 import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.ast.prettifier.Prettifier
+import org.neo4j.cypher.internal.parser.v5.ast.factory.Cypher5AstParser
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.WindowsStringSafe
@@ -2643,10 +2643,11 @@ class PrettifierIT extends CypherFunSuite {
   tests foreach {
     case (inputString, expected) =>
       test(inputString) {
-        val parsingResults: Statement =
-          JavaCCParser.parse(inputString, OpenCypherExceptionFactory(None))
-        val str = prettifier.asString(parsingResults)
-        str should equal(expected)
+        val statementJavaCc = JavaCCParser.parse(inputString, OpenCypherExceptionFactory(None))
+        val statementAntlr = new Cypher5AstParser(inputString, OpenCypherExceptionFactory(None), None).singleStatement()
+        statementJavaCc shouldBe statementAntlr
+        prettifier.asString(statementJavaCc) should equal(expected)
+        prettifier.asString(statementAntlr) should equal(expected)
       }
   }
 

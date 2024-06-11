@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.ast.Query
 import org.neo4j.cypher.internal.ast.Statement
-import org.neo4j.cypher.internal.ast.factory.neo4j.JavaCCParser
 import org.neo4j.cypher.internal.ast.semantics.SemanticChecker
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
@@ -29,6 +28,7 @@ import org.neo4j.cypher.internal.compiler.SyntaxExceptionCreator
 import org.neo4j.cypher.internal.compiler.ast.convert.plannerQuery.StatementConverters
 import org.neo4j.cypher.internal.compiler.helpers.WindowsSafeAnyRef
 import org.neo4j.cypher.internal.ir.PlannerQuery
+import org.neo4j.cypher.internal.parser.v5.ast.factory.Cypher5AstParser
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
@@ -43,7 +43,9 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 trait PlannerQueryRewriterTest {
   self: CypherFunSuite =>
 
-  private val parser = JavaCCParser
+  private def parse(query: String, exceptionFactory: CypherExceptionFactory): Statement = {
+    new Cypher5AstParser(query, exceptionFactory, None).singleStatement()
+  }
 
   def rewriter(anonymousVariableNameGenerator: AnonymousVariableNameGenerator): Rewriter
 
@@ -113,7 +115,7 @@ trait PlannerQueryRewriterTest {
     anonymousVariableNameGenerator: AnonymousVariableNameGenerator
   ): PlannerQuery = {
     val exceptionFactory = Neo4jCypherExceptionFactory(query, Some(DummyPosition(0)))
-    val astOriginal = parser.parse(query.replace("\r\n", "\n"), exceptionFactory)
+    val astOriginal = parse(query.replace("\r\n", "\n"), exceptionFactory)
     val ast = rewriteAST(astOriginal, exceptionFactory, anonymousVariableNameGenerator)
     val onError = SyntaxExceptionCreator.throwOnError(exceptionFactory)
     val result = SemanticChecker.check(ast, SemanticState.clean)

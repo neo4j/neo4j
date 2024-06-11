@@ -18,7 +18,6 @@ package org.neo4j.cypher.internal.frontend
 
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.StatementHelper.RichStatement
-import org.neo4j.cypher.internal.ast.factory.neo4j.JavaCCParser
 import org.neo4j.cypher.internal.ast.semantics.ScopeTestHelper.intCollectionCollectionSymbol
 import org.neo4j.cypher.internal.ast.semantics.ScopeTestHelper.intCollectionSymbol
 import org.neo4j.cypher.internal.ast.semantics.ScopeTestHelper.intSymbol
@@ -27,6 +26,7 @@ import org.neo4j.cypher.internal.ast.semantics.ScopeTestHelper.pathCollectionSym
 import org.neo4j.cypher.internal.ast.semantics.ScopeTestHelper.scope
 import org.neo4j.cypher.internal.ast.semantics.ScopeTestHelper.typedSymbol
 import org.neo4j.cypher.internal.frontend.phases.Namespacer
+import org.neo4j.cypher.internal.parser.v5.ast.factory.Cypher5AstParser
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
 import org.neo4j.cypher.internal.util.Ref
 import org.neo4j.cypher.internal.util.symbols.StorableType
@@ -319,7 +319,7 @@ class ScopeTreeTest extends CypherFunSuite {
   }
 
   def parse(queryText: String): Statement = {
-    val statement = JavaCCParser.parse(queryText, OpenCypherExceptionFactory(None))
+    val statement = new Cypher5AstParser(queryText, OpenCypherExceptionFactory(None), None).singleStatement()
     // We have to project unions to materialize the UnionMappings so that we can find the Variables in them.
     statement.endoRewrite(Namespacer.projectUnions)
   }

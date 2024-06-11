@@ -16,8 +16,6 @@
  */
 package org.neo4j.cypher.internal.rewriting
 
-import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
-import org.neo4j.cypher.internal.ast.factory.neo4j.JavaCCParser
 import org.neo4j.cypher.internal.expressions.AutoExtractedParameter
 import org.neo4j.cypher.internal.expressions.ExplicitParameter
 import org.neo4j.cypher.internal.rewriting.rewriters.Forced
@@ -35,7 +33,7 @@ import org.neo4j.cypher.internal.util.symbols.CTList
 import org.neo4j.cypher.internal.util.symbols.CTString
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class LiteralReplacementTest extends CypherFunSuite with AstConstructionTestSupport {
+class LiteralReplacementTest extends CypherFunSuite with AstRewritingTestSupport {
 
   test("should extract starts with patterns") {
     assertRewrite(
@@ -294,8 +292,8 @@ class LiteralReplacementTest extends CypherFunSuite with AstConstructionTestSupp
     extractLiterals: LiteralExtractionStrategy = Forced
   ): Unit = {
     val exceptionFactory = OpenCypherExceptionFactory(None)
-    val original = JavaCCParser.parse(originalQuery, exceptionFactory)
-    val expected = JavaCCParser.parse(expectedQuery, exceptionFactory)
+    val original = parse(originalQuery, exceptionFactory)
+    val expected = parse(expectedQuery, exceptionFactory)
 
     val (rewriter, actuallyReplacedLiterals) = literalReplacement(original, extractLiterals)
     val expectedReplacedLiterals = replacements.map {

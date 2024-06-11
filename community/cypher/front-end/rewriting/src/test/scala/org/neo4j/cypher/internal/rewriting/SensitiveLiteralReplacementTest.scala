@@ -18,7 +18,6 @@ package org.neo4j.cypher.internal.rewriting
 
 import org.neo4j.cypher.internal.ast.CreateUser
 import org.neo4j.cypher.internal.ast.SetOwnPassword
-import org.neo4j.cypher.internal.ast.factory.neo4j.JavaCCParser
 import org.neo4j.cypher.internal.expressions.AutoExtractedParameter
 import org.neo4j.cypher.internal.expressions.ExplicitParameter
 import org.neo4j.cypher.internal.expressions.SensitiveStringLiteral
@@ -30,7 +29,7 @@ import org.scalatest.matchers.Matcher
 
 import java.nio.charset.StandardCharsets
 
-class SensitiveLiteralReplacementTest extends CypherFunSuite {
+class SensitiveLiteralReplacementTest extends CypherFunSuite with AstRewritingTestSupport {
 
   private val exceptionFactory = OpenCypherExceptionFactory(None)
 
@@ -75,7 +74,7 @@ class SensitiveLiteralReplacementTest extends CypherFunSuite {
   test("should ignore queries with no passwords") {
     val query = "MATCH (n:Node{name:'foo'}) RETURN n"
 
-    val expected = JavaCCParser.parse(query, exceptionFactory)
+    val expected = parse(query, exceptionFactory)
     val expectedPattern: Matcher[Any] = matchPattern { case `expected` => }
 
     assertRewrite(query, expectedPattern, Map())
@@ -86,7 +85,7 @@ class SensitiveLiteralReplacementTest extends CypherFunSuite {
     matchExpectedPattern: Matcher[Any],
     replacements: Map[String, Any]
   ): Unit = {
-    val original = JavaCCParser.parse(originalQuery, exceptionFactory)
+    val original = parse(originalQuery, exceptionFactory)
 
     val (rewriter, replacedParameters) = sensitiveLiteralReplacement(original)
     val replacedLiterals = replacedParameters.map {

@@ -491,6 +491,21 @@ class ShowPrivilegesAdministrationCommandParserTest extends AdministrationAndSch
             )(pos))
           }
         }
+
+        test(s"SHOW $privType $privilegeOrPrivileges$optionalAsRev YIELD `access`") {
+          if (optionalAsRev.isEmpty) {
+            parsesTo[Statements](ast.ShowPrivileges(
+              privilege,
+              Some(Left((yieldClause(returnItems(returnItem(varFor("access"), "`access`"))), None)))
+            )(pos))
+          } else {
+            parsesTo[Statements](ast.ShowPrivilegeCommands(
+              privilege,
+              asRev,
+              Some(Left((yieldClause(returnItems(returnItem(varFor("access"), "`access`"))), None)))
+            )(pos))
+          }
+        }
       }
     }
 

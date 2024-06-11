@@ -19,7 +19,6 @@ package org.neo4j.cypher.internal.frontend.phases.rewriting.cnf
 import org.neo4j.cypher.internal.ast.IsNormalized
 import org.neo4j.cypher.internal.ast.IsTyped
 import org.neo4j.cypher.internal.ast.UnaliasedReturnItem
-import org.neo4j.cypher.internal.ast.factory.neo4j.JavaCCParser
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheckContext
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.expressions.AllIterablePredicate
@@ -40,6 +39,7 @@ import org.neo4j.cypher.internal.expressions.PatternExpression
 import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.expressions.True
 import org.neo4j.cypher.internal.logical.plans.CoerceToPredicate
+import org.neo4j.cypher.internal.rewriting.AstRewritingTestSupport
 import org.neo4j.cypher.internal.rewriting.conditions.noReferenceEqualityAmongVariables
 import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.InputPosition
@@ -52,7 +52,7 @@ import org.neo4j.cypher.internal.util.symbols.StringType
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.Extractors.SetExtractor
 
-class SimplifyPredicatesTest extends CypherFunSuite {
+class SimplifyPredicatesTest extends CypherFunSuite with AstRewritingTestSupport {
 
   test("double negation is removed by keeping an extra not") {
     // not(not(not(P))) <=> not(P)
@@ -271,7 +271,7 @@ class SimplifyPredicatesTest extends CypherFunSuite {
   private val exceptionFactory = new OpenCypherExceptionFactory(None)
 
   private def assertRewrittenMatches(originalQuery: String, matcher: PartialFunction[Any, Unit]): Unit = {
-    val original = JavaCCParser.parse("RETURN " + originalQuery, exceptionFactory)
+    val original = parse("RETURN " + originalQuery, exceptionFactory)
     val checkResult = original.semanticCheck.run(SemanticState.clean, SemanticCheckContext.default)
     val rewriter =
       flattenBooleanOperators.instance(CancellationChecker.NeverCancelled) andThen simplifyPredicates(

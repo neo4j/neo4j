@@ -18,9 +18,9 @@ package org.neo4j.cypher.internal.frontend
 
 import org.neo4j.cypher.internal.frontend.helpers.ErrorCollectingContext
 import org.neo4j.cypher.internal.frontend.helpers.NoPlannerName
+import org.neo4j.cypher.internal.frontend.phases.Cypher5Parsing
 import org.neo4j.cypher.internal.frontend.phases.InitialState
 import org.neo4j.cypher.internal.frontend.phases.ListCoercedToBooleanCheck
-import org.neo4j.cypher.internal.frontend.phases.OpenCypherJavaCCParsing
 import org.neo4j.cypher.internal.frontend.phases.PatternExpressionInNonExistenceCheck
 import org.neo4j.cypher.internal.frontend.phases.PreparatoryRewriting
 import org.neo4j.cypher.internal.frontend.phases.SemanticAnalysis
@@ -30,7 +30,7 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class SemanticTypeCheckTest extends CypherFunSuite {
 
-  private val pipeline = OpenCypherJavaCCParsing andThen
+  private val pipeline = Cypher5Parsing andThen
     PreparatoryRewriting andThen
     SemanticAnalysis(warn = false) andThen
     SemanticTypeCheck

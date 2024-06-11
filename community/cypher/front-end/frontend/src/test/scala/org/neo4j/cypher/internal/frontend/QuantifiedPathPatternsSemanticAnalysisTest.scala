@@ -566,7 +566,7 @@ class QuantifiedPathPatternsSemanticAnalysisTest extends NameBasedSemanticAnalys
     // quantified relationships are not implemented yet. Once this is the case, please change to the test below
     the[SyntaxException].thrownBy(
       runSemanticAnalysis()
-    ).getMessage should include("Invalid input '+': expected \"(\"")
+    ).getMessage should include("Invalid input '+': expected")
     // runSemanticAnalysis().errorMessages shouldEqual Seq(
     //   "Mixing variable-length relationships ('-[*]-') with quantified relationships ('()-->*()') or quantified path patterns ('(()-->())*') is not allowed. This relationship can be expressed as '--{3}'"
     // )

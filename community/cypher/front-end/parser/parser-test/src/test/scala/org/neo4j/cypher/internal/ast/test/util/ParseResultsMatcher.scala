@@ -249,7 +249,8 @@ object MatchResults {
     val message =
       """{0}
         |
-        |=== Failed assertion ===
+        |Failed assertion
+        |################
         |{1}
         |""".stripMargin
 
@@ -265,20 +266,24 @@ object MatchResults {
   }
 
   private def describe(parser: ParserInTest, parse: ParseResults[_]): String = {
-    s"""=== Parsing results ===
+    s"""Parsing results
+       |###############
+       |
        |Failing parser: $parser
        |${describe(parse)}""".stripMargin
   }
 
   def describe(results: ParseResults[_]): String = {
-    val parserLength = results.result.keys.map(_.toString.length).max
     val parserResults = results.result.toSeq.map {
-      case (parser, ParseSuccess(ast))       => s"${parser.toString.padTo(parserLength, ' ')}: $ast"
-      case (parser, ParseFailure(throwable)) => s"${parser.toString.padTo(parserLength, ' ')}: $throwable"
+      case (parser, ParseSuccess(ast)) =>
+        s"""$parser result
+           |${"-".repeat(parser.toString.length + 7)}
+           |${pprint.apply(ast).render}""".stripMargin
+      case (parser, ParseFailure(throwable)) => s"$parser:\n$throwable"
     }
     s"""Cypher:
        |${results.cypher}
-       |Results:
-       |${parserResults.mkString("  ", "\n  ", "")}""".stripMargin
+       |
+       |${parserResults.mkString("\n")}""".stripMargin
   }
 }

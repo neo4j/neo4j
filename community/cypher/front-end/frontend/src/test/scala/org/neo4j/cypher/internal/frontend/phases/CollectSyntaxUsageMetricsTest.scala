@@ -22,7 +22,7 @@ import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class CollectSyntaxUsageMetricsTest extends CypherFunSuite {
-  private val pipeline = OpenCypherJavaCCParsing andThen CollectSyntaxUsageMetrics
+  private val pipeline = Cypher5Parsing andThen CollectSyntaxUsageMetrics
 
   test("should find multiple things in one query") {
     val stats = runPipeline(

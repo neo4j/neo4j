@@ -17,7 +17,6 @@
 package org.neo4j.cypher.internal.rewriting
 
 import org.neo4j.cypher.internal.ast.AliasedReturnItem
-import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.Query
 import org.neo4j.cypher.internal.ast.Return
@@ -31,7 +30,6 @@ import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.TerminateTransactionsClause
 import org.neo4j.cypher.internal.ast.With
-import org.neo4j.cypher.internal.ast.factory.neo4j.JavaCCParser
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheckContext
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.rewriting.rewriters.expandShowWhere
@@ -43,7 +41,7 @@ import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
 import org.neo4j.cypher.internal.util.inSequence
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class ExpandStarTest extends CypherFunSuite with AstConstructionTestSupport {
+class ExpandStarTest extends CypherFunSuite with AstRewritingTestSupport {
 
   test("rewrites * in return") {
     assertRewrite(
@@ -347,7 +345,7 @@ class ExpandStarTest extends CypherFunSuite with AstConstructionTestSupport {
         )
       else
         inSequence(normalizeWithAndReturnClauses(exceptionFactory))
-    JavaCCParser.parse(q, exceptionFactory).endoRewrite(rewriter)
+    parse(q, exceptionFactory).endoRewrite(rewriter)
   }
 
   private def updateClauses(statement: Statement, updateClauses: Seq[Clause] => Seq[Clause]): Statement = {

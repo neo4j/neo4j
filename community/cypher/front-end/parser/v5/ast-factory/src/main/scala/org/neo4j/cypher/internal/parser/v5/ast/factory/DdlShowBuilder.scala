@@ -99,6 +99,7 @@ import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.parser.ast.util.Util.astOpt
 import org.neo4j.cypher.internal.parser.ast.util.Util.astSeq
 import org.neo4j.cypher.internal.parser.ast.util.Util.ctxChild
+import org.neo4j.cypher.internal.parser.ast.util.Util.inputText
 import org.neo4j.cypher.internal.parser.ast.util.Util.nodeChild
 import org.neo4j.cypher.internal.parser.ast.util.Util.pos
 import org.neo4j.cypher.internal.parser.v5.Cypher5Parser
@@ -155,7 +156,7 @@ trait DdlShowBuilder extends Cypher5ParserListener {
     val variables = ctx.variable()
     val returnItem = variables.get(0).ast[Variable]()
     ctx.ast = if (variables.size == 1) {
-      UnaliasedReturnItem(returnItem, returnItem.name)(pos(ctx))
+      UnaliasedReturnItem(returnItem, inputText(variables.get(0)))(pos(ctx))
     } else {
       AliasedReturnItem(returnItem, variables.get(1).ast[Variable]())(pos(ctx))
     }
