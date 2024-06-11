@@ -166,7 +166,7 @@ public class UserDataCollector extends LifecycleAdapter {
             return; // Don't report if explicitly disabled
         }
 
-        userLog.info("Anonymous Usage Data is being sent to Neo4j, see https://neo4j.com/docs/usage_data/");
+        userLog.info("Anonymous Usage Data is being sent to Neo4j, see https://neo4j.com/docs/usage-data/");
 
         jobHandle = jobScheduler.scheduleRecurring(
                 Group.UDC,
