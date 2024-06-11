@@ -67,7 +67,7 @@ trait ScenarioTestHelper extends FeatureTest {
 
   final override def denylist(): Seq[DenylistEntry] = denylistEntries
 
-  final override def runDenyListedScenario(scenario: Scenario): Seq[Executable] = {
+  override def runDenyListedScenario(scenario: Scenario): Seq[Executable] = {
     val name = scenario.toString()
     val scenarioExpectsError: Boolean = scenario.steps.exists(_.isInstanceOf[ExpectError])
     val executable: Executable = () => {

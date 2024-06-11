@@ -53,4 +53,6 @@ object TestConfig {
   def interpreted(testClass: Class[_]): TestConfig =
     TestConfig(testClass, "interpreted.txt", "CYPHER planner=cost runtime=legacy")
 
+  def defaultSpd(testClass: Class[_]): TestConfig = TestConfig(testClass, "default-spd.txt", "")
+
 }
