@@ -23,6 +23,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteOrder;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.stream.Collectors;
 import java.util.zip.CRC32;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.ZipException;
@@ -32,10 +34,13 @@ import org.neo4j.cli.AbstractAdminCommand;
 import org.neo4j.cli.CommandFailedException;
 import org.neo4j.cli.Converters;
 import org.neo4j.cli.ExecutionContext;
+import org.neo4j.configuration.helpers.DatabaseNamePattern;
 import org.neo4j.dbms.archive.DumpFormatSelector;
 import org.neo4j.dbms.archive.Dumper;
 import org.neo4j.dbms.archive.Loader;
 import org.neo4j.dbms.archive.Loader.SizeMeta;
+import org.neo4j.dbms.archive.backup.BackupDescription;
+import org.neo4j.dbms.archive.backup.BackupFormatSelector;
 import org.neo4j.export.aura.AuraClient;
 import org.neo4j.export.aura.AuraConsole;
 import org.neo4j.export.aura.AuraJsonMapper.SignedURIBodyResponse;
@@ -65,6 +70,7 @@ public class UploadCommand extends AbstractAdminCommand {
     private static final String ENV_NEO4J_USERNAME = "NEO4J_USERNAME";
     private static final String ENV_NEO4J_PASSWORD = "NEO4J_PASSWORD";
     private static final String TO_PASSWORD = "--to-password";
+    private static final String BACKUP_EXTENSION = ".backup";
     private final PushToCloudCLI pushToCloudCLI;
     private final AuraClient.AuraClientBuilder clientBuilder;
     private final AuraURLFactory auraURLFactory;
@@ -83,7 +89,7 @@ public class UploadCommand extends AbstractAdminCommand {
             description =
                     "'/path/to/directory-containing-dump' Path to a directory containing a database dump to upload.",
             required = true)
-    private Path dumpDirectory;
+    private Path archiveDirectory;
 
     @Option(
             names = "--to-uri",
@@ -139,18 +145,22 @@ public class UploadCommand extends AbstractAdminCommand {
         this.uploadURLFactory = uploadURLFactory;
     }
 
-    public static long readSizeFromDumpMetaData(ExecutionContext ctx, Path dump) {
+    public static long readSizeFromArchiveMetaData(ExecutionContext ctx, Path backup) {
         try {
             final var fileSystem = ctx.fs();
+
             Loader.DumpMetaData metaData = new Loader(fileSystem, System.out)
-                    .getMetaData(() -> fileSystem.openAsInputStream(dump), DumpFormatSelector::decompress);
+                    .getMetaData(
+                            () -> fileSystem.openAsInputStream(backup),
+                            streamSupplier -> DumpFormatSelector.decompressWithBackupSupport(streamSupplier, bd -> {}));
+
             SizeMeta sizeMeta = metaData.sizeMeta();
             if (sizeMeta != null) {
                 return sizeMeta.bytes();
             }
-            return fileSystem.getFileSize(dump);
+            return fileSystem.getFileSize(backup);
         } catch (IOException e) {
-            throw new CommandFailedException("Unable to check size of database dump.", e);
+            throw new CommandFailedException("Unable to check size of archive backup.", e);
         }
     }
 
@@ -168,7 +178,7 @@ public class UploadCommand extends AbstractAdminCommand {
         try (TarArchiveInputStream tais = new TarArchiveInputStream(maybeGzipped(tar, fileSystem))) {
             TarArchiveEntry entry;
             while ((entry = tais.getNextEntry()) != null) {
-                if (entry.getName().endsWith(dbName + ".dump")) {
+                if (entry.getName().endsWith(dbName + Dumper.DUMP_EXTENSION)) {
 
                     Loader.DumpMetaData metaData =
                             new Loader(fileSystem, System.out).getMetaData(() -> tais, DumpFormatSelector::decompress);
@@ -230,7 +240,7 @@ public class UploadCommand extends AbstractAdminCommand {
                     .withDefaults()
                     .build();
 
-            Uploader uploader = makeDumpUploader(dumpDirectory, database.name());
+            Uploader uploader = makeDumpUploader(archiveDirectory, database.name());
 
             uploader.process(auraClient);
         } catch (Exception e) {
@@ -244,30 +254,73 @@ public class UploadCommand extends AbstractAdminCommand {
         }
     }
 
-    public DumpUploader makeDumpUploader(Path dump, String database) {
-        if (!ctx.fs().isDirectory(dump)) {
-            throw new CommandFailedException(format("The provided source directory '%s' doesn't exist", dump));
-        }
-        Path dumpFile = dump.resolve(database + Dumper.DUMP_EXTENSION);
-        if (!ctx.fs().fileExists(dumpFile)) {
-            Path tarFile = dump.resolve(database + Dumper.TAR_EXTENSION);
-            if (!ctx.fs().fileExists(tarFile)) {
-                throw new CommandFailedException(format(
-                        "Dump files '%s' or '%s' do not exist", dumpFile.toAbsolutePath(), tarFile.toAbsolutePath()));
+    private ArrayList<Path> getBackupFiles(Path archivePath, String database) {
+        var result = new ArrayList<Path>();
+        try {
+            var pattern = new DatabaseNamePattern(database);
+            for (Path file : ctx.fs().listFiles(archivePath)) {
+                if (file.toString().endsWith(BACKUP_EXTENSION)) {
+                    try (var inputStream = ctx.fs().openAsInputStream(file)) {
+                        BackupDescription backupDescription = BackupFormatSelector.readDescription(inputStream);
+                        String dbName = backupDescription.getDatabaseName();
+                        if (pattern.matches(dbName) && backupDescription.isFull()) {
+                            result.add(file);
+                        }
+                    }
+                }
             }
-            dumpFile = tarFile;
+        } catch (IOException e) {
+            throw new CommandFailedException(format("Failed to list archive files in %s ", archivePath), e);
         }
-        return new DumpUploader(new Source(ctx.fs(), dumpFile, dumpSize(dumpFile, database)));
+
+        return result;
     }
 
-    private long dumpSize(Path dump, String database) {
-        long sizeInBytes;
-        if (dump.getFileName().toString().endsWith(".dump")) {
-            sizeInBytes = readSizeFromDumpMetaData(ctx, dump);
-        } else {
-            sizeInBytes = readSizeFromTarMetaData(ctx, dump, database);
+    public DumpUploader makeDumpUploader(Path archivePath, String database) {
+        if (!ctx.fs().isDirectory(archivePath)) {
+            throw new CommandFailedException(format("The provided source directory '%s' doesn't exist", archivePath));
         }
-        verbose("Determined DumpSize=%d bytes from dump at %s\n", sizeInBytes, dump);
+        Path dumpFile = archivePath.resolve(database + Dumper.DUMP_EXTENSION);
+
+        if (ctx.fs().fileExists(dumpFile)) {
+            ctx.out().println("Detected source dump file at: " + dumpFile);
+            return new DumpUploader(new Source(ctx.fs(), dumpFile, archiveSize(dumpFile, database)));
+        }
+
+        ArrayList<Path> backupFiles = getBackupFiles(archivePath, database);
+        if (backupFiles.size() > 1) {
+            String files = backupFiles.stream().map(Path::toString).collect(Collectors.joining(", "));
+            throw new CommandFailedException(format(
+                    "Found %d backup files for database %s in %s: %s. Expected one.",
+                    backupFiles.size(), database, archivePath, files));
+        }
+
+        if (!backupFiles.isEmpty() && ctx.fs().fileExists(backupFiles.get(0))) {
+            Path backupFile = backupFiles.get(0);
+            ctx.out().println("Detected source backup file at: " + backupFile);
+            return new DumpUploader(new Source(ctx.fs(), backupFile, archiveSize(backupFile, database)));
+        }
+
+        Path tarFile = archivePath.resolve(database + Dumper.TAR_EXTENSION);
+        if (!ctx.fs().fileExists(tarFile)) {
+            throw new CommandFailedException("Could not find any archive files");
+        }
+        return new DumpUploader(new Source(ctx.fs(), tarFile, archiveSize(tarFile, database)));
+    }
+
+    private long archiveSize(Path archive, String database) {
+        long sizeInBytes;
+        String fileName = archive.getFileName().toString();
+        if (fileName.endsWith(Dumper.DUMP_EXTENSION) || fileName.endsWith(BACKUP_EXTENSION)) {
+            sizeInBytes = readSizeFromArchiveMetaData(ctx, archive);
+        } else if (fileName.endsWith(Dumper.TAR_EXTENSION)) {
+            sizeInBytes = readSizeFromTarMetaData(ctx, archive, database);
+        } else {
+            throw new CommandFailedException(format(
+                    "Detected invalid file format at in file: %s. Expected Format to be one either %s,%s or %s",
+                    archive, Dumper.DUMP_EXTENSION, BACKUP_EXTENSION, Dumper.TAR_EXTENSION));
+        }
+        verbose("Determined DumpSize=%d bytes from archive at %s\n", sizeInBytes, archive);
         return sizeInBytes;
     }
 
@@ -318,18 +371,18 @@ public class UploadCommand extends AbstractAdminCommand {
             // Upload dumpFile
             verbose("Uploading data of %s to %s\n", sizeText(size()), consoleURL);
 
-            ctx.out().println("Generating crc32 of dump, this may take some time...");
+            ctx.out().println("Generating crc32 of archive, this may take some time...");
             long crc32Sum;
             try {
                 crc32Sum = source.crc32Sum();
 
             } catch (IOException e) {
-                throw new CommandFailedException("Failed to process dump file", e);
+                throw new CommandFailedException("Failed to process archive file", e);
             }
 
-            long dumpSize = IOCommon.getFileSize(source, ctx);
+            long archiveSize = IOCommon.getFileSize(source, ctx);
             SignedURIBodyResponse signedURIBodyResponse =
-                    auraClient.initatePresignedUpload(crc32Sum, dumpSize, size(), bearerToken);
+                    auraClient.initatePresignedUpload(crc32Sum, archiveSize, size(), bearerToken);
             SignedUpload signedUpload = uploadURLFactory.fromAuraResponse(signedURIBodyResponse, ctx, boltURI);
             signedUpload.copy(verbose, source);
 
@@ -345,7 +398,7 @@ public class UploadCommand extends AbstractAdminCommand {
             }
 
             ctx.out().println("Dump successfully uploaded to Aura");
-            ctx.out().println(String.format("Your dump at %s can now be deleted.", source.path()));
+            ctx.out().println(String.format("Your archive at %s can now be deleted.", source.path()));
         }
 
         private void triggerImportForDB(

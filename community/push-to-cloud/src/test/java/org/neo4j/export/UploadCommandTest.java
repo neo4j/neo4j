@@ -152,7 +152,7 @@ public class UploadCommandTest {
         ctx = new ExecutionContext(homeDir, confPath, nullOutputStream, nullOutputStream, directory.getFileSystem());
         dump = dumpDir.resolve(DBNAME + ".dump");
         ExportTestUtilities.createDump(homeDir, confPath, dumpDir, fs, DBNAME);
-        dbFullSize = UploadCommand.readSizeFromDumpMetaData(ctx, dump);
+        dbFullSize = UploadCommand.readSizeFromArchiveMetaData(ctx, dump);
     }
 
     @AfterEach
@@ -707,8 +707,7 @@ public class UploadCommandTest {
                 PushToCloudCLI.fakeCLI("neo4j", "abc", false));
         CommandLine.populateCommand(command, args);
         final var assertFailure = assertThatThrownBy(command::execute).isInstanceOf(CommandFailedException.class);
-        assertFailure.hasMessageContaining("otherdbname.tar' do not exist");
-        assertFailure.hasMessageContaining("otherdbname.dump");
+        assertFailure.hasMessageContaining("Could not find any archive files");
     }
 
     @Test

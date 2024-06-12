@@ -100,7 +100,7 @@ public class SignedUploadAWSTest {
     @BeforeEach
     public void setupEach() throws IOException {
         wireMockServer.start();
-        storeSize = UploadCommand.readSizeFromDumpMetaData(ctx, dump);
+        storeSize = UploadCommand.readSizeFromArchiveMetaData(ctx, dump);
         dumpFileSize = ctx.fs().getFileSize(dump);
         wiremockServerPort = wireMockServer.port();
         wireMockServerAddress = "http://localhost:" + wiremockServerPort;
