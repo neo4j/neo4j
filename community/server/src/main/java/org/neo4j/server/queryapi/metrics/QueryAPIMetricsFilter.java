@@ -19,8 +19,6 @@
  */
 package org.neo4j.server.queryapi.metrics;
 
-import static org.neo4j.server.queryapi.response.TypedJsonDriverResultWriter.TYPED_JSON_MIME_TYPE_VALUE;
-
 import java.io.IOException;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
@@ -29,61 +27,51 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.ws.rs.core.MediaType;
+import org.eclipse.jetty.http.HttpVersion;
 import org.neo4j.server.queryapi.QueryResource;
 
 public class QueryAPIMetricsFilter implements Filter {
 
     private final QueryAPIMetricsMonitor monitor;
-    private final String pathSpec;
 
-    public QueryAPIMetricsFilter(QueryAPIMetricsMonitor monitor, String pathSpec) {
+    public QueryAPIMetricsFilter(QueryAPIMetricsMonitor monitor) {
         this.monitor = monitor;
-        this.pathSpec = pathSpec;
     }
 
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
             throws IOException, ServletException {
+        var execStartTime = System.currentTimeMillis();
         chain.doFilter(request, response);
-
+        var totalExecutionTime = System.currentTimeMillis() - execStartTime;
         var httpServletRequest = (HttpServletRequest) request;
         var httpServletResponse = (HttpServletResponse) response;
 
         if (httpServletRequest.getRequestURI().endsWith(QueryResource.API_PATH_FRAGMENT)) {
             monitor.totalRequests();
-            meterStatusCode(httpServletResponse);
-            meterRequestedContentType(httpServletRequest);
-            meterReturnedContentType(httpServletResponse);
+            monitor.requestTimeTaken(totalExecutionTime);
+            meterRequest(httpServletRequest);
+            meterResponse(httpServletResponse);
         }
     }
 
-    private void meterRequestedContentType(HttpServletRequest httpServletRequest) {
+    private void meterRequest(HttpServletRequest httpServletRequest) {
         var contentType = httpServletRequest.getContentType();
-        if (contentType.contains(TYPED_JSON_MIME_TYPE_VALUE)) {
-            monitor.applicationVndNeo4jQueryRequests();
-        } else if (contentType.contains(MediaType.APPLICATION_JSON)) {
-            monitor.applicationJsonRequests();
-        }
+
+        monitor.requestContentType(contentType);
+        monitor.httpVersion(HttpVersion.fromString(httpServletRequest.getProtocol()));
     }
 
-    private void meterReturnedContentType(HttpServletResponse httpServletResponse) {
-        var contentType = httpServletResponse.getContentType();
-        if (contentType.contains(TYPED_JSON_MIME_TYPE_VALUE)) {
-            monitor.applicationVndNeo4jQueryResponses();
-        } else if (contentType.contains(MediaType.APPLICATION_JSON)) {
-            monitor.applicationJsonResponses();
+    private void meterResponse(HttpServletResponse response) {
+        if (response == null) {
+            return;
         }
-    }
+        monitor.responseStatusCode(response.getStatus());
+        var contentType = response.getContentType();
 
-    private void meterStatusCode(HttpServletResponse response) {
-        if (response != null) {
-            switch (response.getStatus() / 100) {
-                case 2 -> monitor.successStatus();
-                case 4 -> monitor.badRequestStatus();
-                case 5 -> monitor.serverErrorStatus();
-                default -> {}
-            }
+        if (contentType == null) {
+            return;
         }
+        monitor.responseContentType(contentType);
     }
 }

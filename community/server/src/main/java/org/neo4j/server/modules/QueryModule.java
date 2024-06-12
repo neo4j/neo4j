@@ -52,10 +52,7 @@ public class QueryModule implements ServerModule {
     public void start() {
         webServer.addJAXRSClasses(
                 jaxRsClasses(), config.get(ServerSettings.db_api_path).toString(), null);
-        webServer.addFilter(
-                new QueryAPIMetricsFilter(
-                        metricsMonitor, config.get(ServerSettings.db_api_path).toString()),
-                "/*");
+        webServer.addFilter(new QueryAPIMetricsFilter(metricsMonitor), "/*");
     }
 
     @Override

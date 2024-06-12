@@ -441,6 +441,7 @@ public abstract class AbstractNeoWebServer extends LifecycleAdapter implements N
         binder.addSingletonBinding(userLogProvider, InternalLogProvider.class);
         binder.addSingletonBinding(userLogProvider.getLog(NeoWebServer.class), InternalLog.class);
         binder.addLazyBinding(this::getOrCreateDriver, Driver.class);
+        binder.addSingletonBinding(metricsMonitor, QueryAPIMetricsMonitor.class);
 
         return binder;
     }

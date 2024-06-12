@@ -47,6 +47,8 @@ import org.neo4j.driver.exceptions.TransientException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.server.configuration.ServerSettings;
+import org.neo4j.server.queryapi.metrics.QueryAPIMetricsMonitor;
+import org.neo4j.server.queryapi.request.AccessMode;
 import org.neo4j.server.queryapi.request.QueryRequest;
 import org.neo4j.server.queryapi.request.ResultContainer;
 import org.neo4j.server.rest.dbms.AuthorizationHeaders;
@@ -61,10 +63,12 @@ public class QueryResource {
 
     private final Driver driver;
     private final InternalLog log;
+    private final QueryAPIMetricsMonitor monitor;
 
-    public QueryResource(@Context Driver driver, @Context InternalLog log) {
+    public QueryResource(@Context Driver driver, @Context InternalLog log, @Context QueryAPIMetricsMonitor monitor) {
         this.driver = driver;
         this.log = log;
+        this.monitor = monitor;
     }
 
     @POST
@@ -75,6 +79,7 @@ public class QueryResource {
             QueryRequest request,
             @Context HttpServletRequest rawRequest,
             @Context HttpHeaders headers) {
+        meterRequest(request);
         var sessionConfig = buildSessionConfig(request, databaseName);
         // The session will be closed after the result set has been serialized, it must not be closed in a
         // try-with-resources block here
@@ -112,6 +117,16 @@ public class QueryResource {
         }
 
         return response;
+    }
+
+    private void meterRequest(QueryRequest request) {
+
+        if (request.accessMode() != null && request.accessMode().equals(AccessMode.READ)) {
+            monitor.readRequest();
+        }
+        if (request.parameters() != null && !request.parameters().isEmpty()) {
+            monitor.parameter();
+        }
     }
 
     private void closeSession(Session session) {

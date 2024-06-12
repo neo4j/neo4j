@@ -19,9 +19,12 @@
  */
 package org.neo4j.server.queryapi.metrics;
 
-public interface QueryAPIMetricsMonitor {
+import org.eclipse.jetty.http.HttpVersion;
 
+public interface QueryAPIMetricsMonitor {
     void totalRequests();
+
+    void requestTimeTaken(long timeInMillis);
 
     void badRequestStatus();
 
@@ -29,11 +32,15 @@ public interface QueryAPIMetricsMonitor {
 
     void successStatus();
 
-    void applicationJsonRequests();
+    void requestContentType(String contentType);
 
-    void applicationJsonResponses();
+    void responseContentType(String contentType);
 
-    void applicationVndNeo4jQueryRequests();
+    void responseStatusCode(int code);
 
-    void applicationVndNeo4jQueryResponses();
+    void httpVersion(HttpVersion httpVersion);
+
+    void readRequest();
+
+    void parameter();
 }
