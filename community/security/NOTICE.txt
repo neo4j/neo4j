@@ -26,8 +26,12 @@ Third-party licenses
 --------------------
 
 Apache Software License, Version 2.0
+  Apache Commons Codec
+  Apache Commons Compress
   Apache Commons Configuration
+  Apache Commons IO
   Apache Commons Lang
+  Apache Commons Logging
   Apache Commons Text
   Apache Log4j API
   Apache Log4j Core
@@ -49,7 +53,16 @@ Apache Software License, Version 2.0
   Java Concurrency Tools Core Library
   Java Native Access
   Jettison
+  jPowerShell
+  jProcesses
   picocli
+  WMI4Java
+
+BSD License
+  Zstandard
+
+BSD License 2-clause
+  zstd-jni
 
 Eclipse Distribution License - v 1.0
   Eclipse Collections API
