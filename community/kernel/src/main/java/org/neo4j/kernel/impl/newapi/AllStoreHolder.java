@@ -119,7 +119,7 @@ public abstract class AllStoreHolder extends Read {
     private final EntityCounter entityCounter;
     private final boolean applyAccessModeToTxState;
 
-    private AllStoreHolder(
+    AllStoreHolder(
             StorageReader storageReader,
             TokenRead tokenRead,
             SchemaState schemaState,

@@ -21,6 +21,8 @@ package org.neo4j.kernel.impl.newapi;
 
 import static java.lang.String.format;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
+import static org.neo4j.kernel.impl.locking.ResourceIds.indexEntryResourceId;
+import static org.neo4j.lock.ResourceType.INDEX_ENTRY;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -53,6 +55,7 @@ import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.AssertOpen;
+import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
 import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
@@ -73,9 +76,7 @@ abstract class Read
                 org.neo4j.internal.kernel.api.SchemaRead,
                 org.neo4j.internal.kernel.api.Procedures,
                 org.neo4j.internal.kernel.api.Locks,
-                AssertOpen,
-                LockingNodeUniqueIndexSeek.UniqueNodeIndexSeeker<DefaultNodeValueIndexCursor>,
-                LockingRelationshipUniqueIndexSeek.UniqueRelationshipIndexSeeker<DefaultRelationshipValueIndexCursor> {
+                AssertOpen {
     protected final StorageReader storageReader;
     protected final DefaultPooledCursors cursors;
     private final TokenRead tokenRead;
@@ -183,8 +184,36 @@ abstract class Read
         assertIndexOnline(index);
         assertPredicatesMatchSchema(index, predicates);
 
-        return LockingNodeUniqueIndexSeek.apply(
-                getLockClient(), lockTracer, (DefaultNodeValueIndexCursor) cursor, this, this, index, predicates);
+        LockManager.Client locks = getLockClient();
+        int[] entityTokenIds = index.schema().getEntityTokenIds();
+        if (entityTokenIds.length != 1) {
+            throw new IndexNotApplicableKernelException("Multi-token index " + index + " does not support uniqueness.");
+        }
+        long indexEntryId = indexEntryResourceId(entityTokenIds[0], predicates);
+
+        // First try to find node under a shared lock
+        // if not found upgrade to exclusive and try again
+        locks.acquireShared(lockTracer, INDEX_ENTRY, indexEntryId);
+        try (IndexReaders readers = new IndexReaders(index, this)) {
+            nodeIndexSeekWithFreshIndexReader((DefaultNodeValueIndexCursor) cursor, readers.createReader(), predicates);
+            if (!cursor.next()) {
+                locks.releaseShared(INDEX_ENTRY, indexEntryId);
+                locks.acquireExclusive(lockTracer, INDEX_ENTRY, indexEntryId);
+                nodeIndexSeekWithFreshIndexReader(
+                        (DefaultNodeValueIndexCursor) cursor, readers.createReader(), predicates);
+                if (cursor.next()) {
+                    // we found it under the exclusive lock
+                    // downgrade to a shared lock
+                    locks.acquireShared(lockTracer, INDEX_ENTRY, indexEntryId);
+                    locks.releaseExclusive(INDEX_ENTRY, indexEntryId);
+                    return cursor.nodeReference();
+                } else {
+                    return StatementConstants.NO_SUCH_NODE;
+                }
+            }
+
+            return cursor.nodeReference();
+        }
     }
 
     @Override
@@ -194,17 +223,38 @@ abstract class Read
         assertIndexOnline(index);
         assertPredicatesMatchSchema(index, predicates);
 
-        return LockingRelationshipUniqueIndexSeek.apply(
-                getLockClient(),
-                lockTracer,
-                (DefaultRelationshipValueIndexCursor) cursor,
-                this,
-                this,
-                index,
-                predicates);
+        LockManager.Client locks = getLockClient();
+        int[] entityTokenIds = index.schema().getEntityTokenIds();
+        if (entityTokenIds.length != 1) {
+            throw new IndexNotApplicableKernelException("Multi-token index " + index + " does not support uniqueness.");
+        }
+        long indexEntryId = indexEntryResourceId(entityTokenIds[0], predicates);
+
+        // First try to find relationship under a shared lock
+        // if not found upgrade to exclusive and try again
+        locks.acquireShared(lockTracer, INDEX_ENTRY, indexEntryId);
+        try (IndexReaders readers = new IndexReaders(index, this)) {
+            DefaultRelationshipValueIndexCursor indexCursor = (DefaultRelationshipValueIndexCursor) cursor;
+            relationshipIndexSeekWithFreshIndexReader(indexCursor, readers.createReader(), predicates);
+            if (!cursor.next()) {
+                locks.releaseShared(INDEX_ENTRY, indexEntryId);
+                locks.acquireExclusive(lockTracer, INDEX_ENTRY, indexEntryId);
+                relationshipIndexSeekWithFreshIndexReader(indexCursor, readers.createReader(), predicates);
+                if (cursor.next()) {
+                    // we found it under the exclusive lock
+                    // downgrade to a shared lock
+                    locks.acquireShared(lockTracer, INDEX_ENTRY, indexEntryId);
+                    locks.releaseExclusive(INDEX_ENTRY, indexEntryId);
+                    return cursor.relationshipReference();
+                } else {
+                    return StatementConstants.NO_SUCH_RELATIONSHIP;
+                }
+            }
+
+            return cursor.relationshipReference();
+        }
     }
 
-    @Override // UniqueNodeIndexSeeker
     public void nodeIndexSeekWithFreshIndexReader(
             DefaultNodeValueIndexCursor cursor,
             ValueIndexReader indexReader,
@@ -214,7 +264,6 @@ abstract class Read
         indexReader.query(cursor, queryContext, unconstrained(), query);
     }
 
-    @Override
     public void relationshipIndexSeekWithFreshIndexReader(
             DefaultRelationshipValueIndexCursor cursor,
             ValueIndexReader indexReader,
