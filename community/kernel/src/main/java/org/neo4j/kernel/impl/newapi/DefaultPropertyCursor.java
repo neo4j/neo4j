@@ -304,10 +304,7 @@ public class DefaultPropertyCursor extends TraceableCursorImpl<DefaultPropertyCu
             return txStateValue.value();
         }
 
-        Value value = storeCursor.propertyValue();
-
-        read.assertOpen();
-        return value;
+        return storeCursor.propertyValue();
     }
 
     @Override

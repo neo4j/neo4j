@@ -54,7 +54,6 @@ import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
 import org.neo4j.kernel.api.index.ValueIndexReader;
@@ -75,8 +74,7 @@ abstract class Read
                 org.neo4j.internal.kernel.api.Read,
                 org.neo4j.internal.kernel.api.SchemaRead,
                 org.neo4j.internal.kernel.api.Procedures,
-                org.neo4j.internal.kernel.api.Locks,
-                AssertOpen {
+                org.neo4j.internal.kernel.api.Locks {
     protected final StorageReader storageReader;
     protected final DefaultPooledCursors cursors;
     private final TokenRead tokenRead;
@@ -751,11 +749,6 @@ abstract class Read
                         propertyIds[i], i, predicates[i].propertyKeyId()));
             }
         }
-    }
-
-    @Override
-    public void assertOpen() {
-        performCheckBeforeOperation();
     }
 
     @Override
