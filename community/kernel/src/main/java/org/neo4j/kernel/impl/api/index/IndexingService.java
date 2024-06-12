@@ -673,6 +673,30 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
         });
     }
 
+    @VisibleForTesting
+    public void forceIndexState(String indexName, InternalIndexState state) {
+        indexMapRef.modify(indexMap -> {
+            var descriptor = indexMap.getAllIndexProxies().stream()
+                    .map(IndexProxy::getDescriptor)
+                    .filter(id -> indexName.equals(id.getName()))
+                    .findFirst()
+                    .orElseThrow();
+            indexMap.removeIndexProxy(descriptor.getId());
+            indexMap.putIndexProxy(
+                    switch (state) {
+                        case ONLINE -> indexProxyCreator.createOnlineIndexProxy(descriptor);
+                        case POPULATING -> indexProxyCreator.createPopulatingIndexProxy(
+                                descriptor,
+                                IndexMonitor.NO_MONITOR,
+                                newIndexPopulationJob(descriptor.schema().entityType(), SYSTEM));
+                        case FAILED -> indexProxyCreator.createFailedIndexProxy(
+                                descriptor, failure("test forced failure"));
+                    });
+            return indexMap;
+        });
+        schemaState.clear();
+    }
+
     public void triggerIndexSampling(IndexSamplingMode mode) {
         internalLog.info("Manual trigger for sampling all indexes [" + mode + "]");
         monitor.indexSamplingTriggered(mode);
