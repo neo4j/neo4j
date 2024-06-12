@@ -21,12 +21,14 @@ package org.neo4j.router.impl;
 
 import static org.neo4j.fabric.executor.FabricExecutor.WRITING_IN_READ_NOT_ALLOWED_MSG;
 
+import java.util.Set;
 import java.util.function.Function;
 import org.neo4j.bolt.protocol.common.message.AccessMode;
 import org.neo4j.configuration.Config;
 import org.neo4j.cypher.internal.QueryOptions;
 import org.neo4j.cypher.internal.options.CypherExecutionMode;
 import org.neo4j.cypher.internal.util.CancellationChecker;
+import org.neo4j.cypher.internal.util.InputPosition;
 import org.neo4j.cypher.internal.util.ObfuscationMetadata;
 import org.neo4j.fabric.bookmark.BookmarkFormat;
 import org.neo4j.fabric.bookmark.LocalGraphTransactionIdTracker;
@@ -258,8 +260,9 @@ public class QueryRouterImpl implements QueryRouter {
             updateQueryRouterMetric(location);
             statementLifecycle.doneRouterProcessing(
                     processedQueryInfo.obfuscationMetadata().get(),
-                    queryOptions.offset().offset(),
-                    target.isComposite());
+                    queryOptions.offset(),
+                    target.isComposite(),
+                    processedQueryInfo.parsingNotifications());
 
             RouterTransaction routerTransaction = context.routerTransaction();
             var constituentTransactionFactory = getConstituentTransactionFactory(context, queryOptions);
@@ -291,7 +294,7 @@ public class QueryRouterImpl implements QueryRouter {
         var statementLifecycle = statementLifecycles.create(
                 transactionInfo.statementLifecycleTransactionInfo(), query.text(), query.parameters(), null);
         statementLifecycle.startProcessing();
-        statementLifecycle.doneRouterProcessing(ObfuscationMetadata.empty(), 0, false);
+        statementLifecycle.doneRouterProcessing(ObfuscationMetadata.empty(), InputPosition.NONE(), false, Set.of());
         try {
             return context.sessionTransaction().executeQuery(query, subscriber, statementLifecycle);
         } catch (RuntimeException e) {

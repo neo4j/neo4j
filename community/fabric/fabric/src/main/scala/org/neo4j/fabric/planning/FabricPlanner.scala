@@ -158,7 +158,8 @@ case class FabricPlanner(
         debugOptions = DebugOptions.noLogging(),
         obfuscationMetadata = prepared.obfuscationMetadata(),
         inCompositeContext = compositeContext,
-        notifications = pipeline.notifications
+        internalNotifications = pipeline.internalNotifications,
+        queryOptionsOffset = query.options.offset
       )
     }
 

@@ -129,6 +129,10 @@ public class QuerySnapshot {
         return query.getDeprecationNotificationsProvider();
     }
 
+    public DeprecationNotificationsProvider fabricDeprecationNotificationsProvider() {
+        return query.getFabricDeprecationNotificationsProvider();
+    }
+
     public String executingUsername() {
         return query.executingUsername();
     }

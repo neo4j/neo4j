@@ -100,8 +100,9 @@ public class ConstituentTransactionFactoryImpl implements ConstituentTransaction
                     query, targetService, (dbRef) -> location, cancellationChecker, sessionDatabase());
             statementLifecycle.doneRouterProcessing(
                     processedQuery.obfuscationMetadata().get(),
-                    processedQuery.queryOptions().offset().offset(),
-                    targetReference.isComposite());
+                    processedQuery.queryOptions().offset(),
+                    targetReference.isComposite(),
+                    processedQuery.parsingNotifications());
             TransactionMode mode = TransactionMode.from(
                     context.transactionInfo().accessMode(),
                     queryOptions.queryOptions().executionMode(),

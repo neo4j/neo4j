@@ -27,4 +27,6 @@ public interface DeprecationNotificationsProvider {
      * For each notification, invokes `consumer` with the internal notification name as the first argument, public Notification object as the second.
      */
     void forEachDeprecation(BiConsumer<String, Notification> consumer);
+
+    DeprecationNotificationsProvider EMPTY = consumer -> {};
 }

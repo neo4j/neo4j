@@ -80,6 +80,7 @@ public class ExecutingQuery implements QueryTransactionStatisticsAggregator {
     private MapValue obfuscatedQueryParameters;
     private Supplier<ExecutionPlanDescription> planDescriptionSupplier;
     private DeprecationNotificationsProvider deprecationNotificationsProvider;
+    private DeprecationNotificationsProvider fabricDeprecationNotificationsProvider;
     private volatile ExecutingQueryStatus status = SimpleState.parsing();
     private volatile ExecutingQuery previousQuery;
 
@@ -297,6 +298,11 @@ public class ExecutingQuery implements QueryTransactionStatisticsAggregator {
         this.status = SimpleState.planning();
     }
 
+    public void onFabricDeprecationNotificationsProviderReady(
+            DeprecationNotificationsProvider deprecationNotificationsProvider) {
+        this.fabricDeprecationNotificationsProvider = deprecationNotificationsProvider;
+    }
+
     public void onCompilationCompleted(
             CompilerInfo compilerInfo,
             Supplier<ExecutionPlanDescription> planDescriptionSupplier,
@@ -324,6 +330,7 @@ public class ExecutingQuery implements QueryTransactionStatisticsAggregator {
         this.compilationCompletedNanos = 0;
         this.planDescriptionSupplier = null;
         this.deprecationNotificationsProvider = null;
+        this.fabricDeprecationNotificationsProvider = null;
         this.memoryTracker = HeapHighWaterMarkTracker.NONE;
         this.obfuscatedQueryParameters = null;
         this.obfuscatedQueryText = null;
@@ -470,6 +477,10 @@ public class ExecutingQuery implements QueryTransactionStatisticsAggregator {
 
     public DeprecationNotificationsProvider getDeprecationNotificationsProvider() {
         return deprecationNotificationsProvider;
+    }
+
+    public DeprecationNotificationsProvider getFabricDeprecationNotificationsProvider() {
+        return fabricDeprecationNotificationsProvider;
     }
 
     public Optional<NamedDatabaseId> databaseId() {

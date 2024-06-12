@@ -20,11 +20,15 @@
 package org.neo4j.fabric.executor;
 
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.SettingChangeListener;
+import org.neo4j.cypher.internal.CypherDeprecationNotificationsProvider;
 import org.neo4j.cypher.internal.CypherQueryObfuscator;
+import org.neo4j.cypher.internal.util.InputPosition;
+import org.neo4j.cypher.internal.util.InternalNotification;
 import org.neo4j.cypher.internal.util.ObfuscationMetadata;
 import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseContextProvider;
@@ -108,6 +112,7 @@ public class QueryStatementLifecycles {
 
         public void doneFabricProcessing(FabricPlan plan, int preParserOffset) {
             executingQuery.onObfuscatorReady(CypherQueryObfuscator.apply(plan.obfuscationMetadata()), preParserOffset);
+            executingQuery.onFabricDeprecationNotificationsProviderReady(plan.deprecationNotificationsProvider());
 
             if (plan.inCompositeContext()) {
                 monitoringMode = new ParentChildMonitoringMode();
@@ -117,8 +122,13 @@ public class QueryStatementLifecycles {
         }
 
         public void doneRouterProcessing(
-                ObfuscationMetadata obfuscateMetadata, int preParserOffset, boolean inCompositeContext) {
-            executingQuery.onObfuscatorReady(CypherQueryObfuscator.apply(obfuscateMetadata), preParserOffset);
+                ObfuscationMetadata obfuscateMetadata,
+                InputPosition preParserOffset,
+                boolean inCompositeContext,
+                Set<InternalNotification> notifications) {
+            executingQuery.onObfuscatorReady(CypherQueryObfuscator.apply(obfuscateMetadata), preParserOffset.offset());
+            executingQuery.onFabricDeprecationNotificationsProviderReady(
+                    CypherDeprecationNotificationsProvider.fromJava(preParserOffset, notifications));
 
             if (inCompositeContext) {
                 monitoringMode = new ParentChildMonitoringMode();

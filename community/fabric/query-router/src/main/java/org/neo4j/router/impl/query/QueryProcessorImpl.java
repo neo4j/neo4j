@@ -125,7 +125,8 @@ public class QueryProcessorImpl implements QueryProcessor {
                 rewrittenQuery,
                 toJava(cachedValue.parsedQuery().maybeObfuscationMetadata()),
                 cachedValue.statementType(),
-                cachedValue.preParsedQuery().options());
+                cachedValue.preParsedQuery().options(),
+                cachedValue.parsingNotifications());
     }
 
     @Override

@@ -28,6 +28,8 @@ import org.neo4j.notifications.NotificationWrapping
 
 import java.util.function.BiConsumer
 
+import scala.jdk.CollectionConverters.SetHasAsScala
+
 final case class CypherDeprecationNotificationsProvider(
   queryOptionsOffset: InputPosition,
   notifications: Set[InternalNotification]
@@ -40,5 +42,18 @@ final case class CypherDeprecationNotificationsProvider(
         consumer.accept(n.notificationName, notification)
       }
     }
+  }
+}
+
+object CypherDeprecationNotificationsProvider {
+
+  def fromJava(
+    queryOptionsOffset: InputPosition,
+    notifications: java.util.Set[InternalNotification]
+  ): CypherDeprecationNotificationsProvider = {
+    CypherDeprecationNotificationsProvider(
+      queryOptionsOffset = queryOptionsOffset,
+      notifications = notifications.asScala.toSet
+    )
   }
 }

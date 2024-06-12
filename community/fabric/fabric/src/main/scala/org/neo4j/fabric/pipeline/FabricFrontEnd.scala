@@ -51,6 +51,7 @@ import org.neo4j.cypher.internal.tracing.CompilationTracer
 import org.neo4j.cypher.internal.tracing.TimingCompilationTracer
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.CancellationChecker
+import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.internal.util.InternalNotificationLogger
 import org.neo4j.cypher.rendering.QueryRenderer
 import org.neo4j.fabric.planning.FabricPlan
@@ -189,8 +190,7 @@ case class FabricFrontEnd(
       }
     }
 
-    def notifications: Seq[Notification] =
+    def internalNotifications: Set[InternalNotification] =
       context.notificationLogger.notifications
-        .toSeq.map(NotificationWrapping.asKernelNotification(Some(query.options.offset)))
   }
 }
