@@ -43,13 +43,13 @@ import java.util.Arrays;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.neo4j.cypher.internal.security.SecureHasher;
 import org.neo4j.internal.kernel.api.security.AuthenticationResult;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.api.security.AuthToken;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 import org.neo4j.kernel.impl.security.User;
+import org.neo4j.server.security.SecureHasher;
 import org.neo4j.server.security.systemgraph.BasicSystemGraphRealm;
 import org.neo4j.server.security.systemgraph.SystemGraphRealmHelper;
 

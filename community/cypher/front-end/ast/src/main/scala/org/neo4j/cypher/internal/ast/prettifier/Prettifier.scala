@@ -20,6 +20,7 @@ import org.neo4j.cypher.internal.ast.Access
 import org.neo4j.cypher.internal.ast.ActionResource
 import org.neo4j.cypher.internal.ast.AddedInRewrite
 import org.neo4j.cypher.internal.ast.AdministrationCommand
+import org.neo4j.cypher.internal.ast.AdministrationCommand.NATIVE_AUTH
 import org.neo4j.cypher.internal.ast.AliasedReturnItem
 import org.neo4j.cypher.internal.ast.AllDatabasesQualifier
 import org.neo4j.cypher.internal.ast.AllDatabasesScope
@@ -88,6 +89,7 @@ import org.neo4j.cypher.internal.ast.ElementQualifier
 import org.neo4j.cypher.internal.ast.ElementsAllQualifier
 import org.neo4j.cypher.internal.ast.EnableServer
 import org.neo4j.cypher.internal.ast.ExecutableBy
+import org.neo4j.cypher.internal.ast.ExternalAuth
 import org.neo4j.cypher.internal.ast.Finish
 import org.neo4j.cypher.internal.ast.Foreach
 import org.neo4j.cypher.internal.ast.FunctionAllQualifier
@@ -637,16 +639,24 @@ case class Prettifier(
         val (y: String, r: String) = showClausesAsString(yields)
         s"${x.name}$y$r"
 
-      case x @ CreateUser(userName, isEncryptedPassword, initialPassword, userOptions, ifExistsDo) =>
+      case x @ CreateUser(userName, userOptions, ifExistsDo, externalAuths, nativeAuth) =>
         val userNameString = Prettifier.escapeName(userName)
         val ifNotExists = ifExistsDo match {
           case IfExistsDoNothing | IfExistsInvalidSyntax => " IF NOT EXISTS"
           case _                                         => ""
         }
-        val setPasswordString = if (isEncryptedPassword) "SET ENCRYPTED PASSWORD" else "SET PASSWORD"
-        val password = expr.escapePassword(initialPassword)
-        val passwordString =
-          s"$setPasswordString $password CHANGE ${if (userOptions.requirePasswordChange.getOrElse(true)) "" else "NOT "}REQUIRED"
+        val (oldStyleNativeAuthString, setAuthNativeString) = nativeAuth.map {
+          auth =>
+            val setPasswordString = if (auth.password.get.isEncrypted) "SET ENCRYPTED PASSWORD" else "SET PASSWORD"
+            val password = expr.escapePassword(auth.password.get.password)
+            val changeRequired = s"CHANGE ${if (auth.changeRequired.getOrElse(true)) "" else "NOT "}REQUIRED"
+            if (x.useOldStyleNativeAuth)
+              (s" $setPasswordString $password $changeRequired", "")
+            else {
+              val ind: IndentingQueryPrettifier = base.indented()
+              ("", ind.getNativeAuthAsString(s"$setPasswordString $password", s"SET PASSWORD $changeRequired"))
+            }
+        }.getOrElse(("", ""))
         val statusString =
           if (userOptions.suspended.isDefined)
             s" SET STATUS ${if (userOptions.suspended.get) "SUSPENDED" else "ACTIVE"}"
@@ -655,7 +665,13 @@ case class Prettifier(
           case SetHomeDatabaseAction(name) => s" SET HOME DATABASE ${Prettifier.escapeName(name)}"
           case _                           => None
         }.getOrElse("")
-        s"${x.name} $userNameString$ifNotExists $passwordString$statusString$homeDatabaseString"
+
+        val externalAuthString = externalAuths.sortBy(_.provider).map { auth =>
+          val ind: IndentingQueryPrettifier = base.indented()
+          ind.asString(auth)
+        }.mkString
+
+        s"${x.name} $userNameString$ifNotExists$oldStyleNativeAuthString$statusString$homeDatabaseString$setAuthNativeString$externalAuthString"
 
       case x @ RenameUser(fromUserName, toUserName, ifExists) =>
         Prettifier.prettifyRename(x.name, fromUserName, toUserName, ifExists)
@@ -664,26 +680,67 @@ case class Prettifier(
         if (ifExists) s"${x.name} ${Prettifier.escapeName(userName)} IF EXISTS"
         else s"${x.name} ${Prettifier.escapeName(userName)}"
 
-      case x @ AlterUser(userName, isEncryptedPassword, initialPassword, userOptions, ifExists) =>
+      case x @ AlterUser(userName, userOptions, ifExists, externalAuths, nativeAuth, removeAuth) =>
         val userNameString = Prettifier.escapeName(userName)
         val ifExistsString = if (ifExists) " IF EXISTS" else ""
-        val passwordString = initialPassword.map(" " + expr.escapePassword(_)).getOrElse("")
-        val passwordModeString =
-          if (userOptions.requirePasswordChange.isDefined)
-            s" CHANGE ${if (!userOptions.requirePasswordChange.get) "NOT " else ""}REQUIRED"
-          else
-            ""
-        val setPasswordString = if (isEncryptedPassword.getOrElse(false)) "SET ENCRYPTED PASSWORD" else "SET PASSWORD"
-        val passwordPrefix = if (passwordString.nonEmpty || passwordModeString.nonEmpty) s" $setPasswordString" else ""
+
+        val removeAuthString = {
+          if (removeAuth.all) " REMOVE ALL AUTH PROVIDERS"
+          else if (!removeAuth.isEmpty)
+            removeAuth.auths.map(expr(_)).mkString(" REMOVE AUTH PROVIDERS ", " REMOVE AUTH PROVIDERS ", "")
+          else ""
+        }
+
+        val (oldStyleNativeAuthString, setAuthNativeString) = nativeAuth.map {
+          auth =>
+            val maybeChangeString =
+              auth.changeRequired.map(change => s" CHANGE ${if (!change) "NOT " else ""}REQUIRED")
+            (auth.password, maybeChangeString) match {
+              case (Some(password), changeString) =>
+                val setPasswordString = s"SET ${if (password.isEncrypted) "ENCRYPTED " else ""}PASSWORD"
+                val passwordString = expr.escapePassword(password.password)
+                val passwordClauseString = s"$setPasswordString $passwordString"
+
+                if (x.useOldStyleNativeAuth) (s" $passwordClauseString${changeString.getOrElse("")}", "")
+                else {
+                  val ind: IndentingQueryPrettifier = base.indented()
+                  val authString =
+                    if (changeString.nonEmpty)
+                      ind.getNativeAuthAsString(passwordClauseString, s"SET PASSWORD${changeString.get}")
+                    else ind.getNativeAuthAsString(passwordClauseString)
+                  ("", authString)
+                }
+
+              case (None, Some(changeString)) =>
+                if (x.useOldStyleNativeAuth) (s" SET PASSWORD$changeString", "")
+                else {
+                  val ind: IndentingQueryPrettifier = base.indented()
+                  ("", ind.getNativeAuthAsString(s"SET PASSWORD$changeString"))
+                }
+              case _ =>
+                // Should not get here as we have a native auth, but lets treat it as the orElse case
+                ("", "")
+            }
+        }.getOrElse(("", ""))
+
         val statusString =
           if (userOptions.suspended.isDefined)
             s" SET STATUS ${if (userOptions.suspended.get) "SUSPENDED" else "ACTIVE"}"
           else ""
-        val homeDatabaseString = userOptions.homeDatabase.map {
-          case SetHomeDatabaseAction(name) => s" SET HOME DATABASE ${Prettifier.escapeName(name)}"
-          case RemoveHomeDatabaseAction    => " REMOVE HOME DATABASE"
+
+        val removeHomeDatabase = userOptions.homeDatabase.collectFirst {
+          case RemoveHomeDatabaseAction => " REMOVE HOME DATABASE"
         }.getOrElse("")
-        s"${x.name} $userNameString$ifExistsString$passwordPrefix$passwordString$passwordModeString$statusString$homeDatabaseString"
+        val setHomeDatabaseString = userOptions.homeDatabase.collectFirst {
+          case SetHomeDatabaseAction(name) => s" SET HOME DATABASE ${Prettifier.escapeName(name)}"
+        }.getOrElse("")
+
+        val externalAuthString = externalAuths.sortBy(_.provider).map { auth =>
+          val ind: IndentingQueryPrettifier = base.indented()
+          ind.asString(auth)
+        }.mkString
+
+        s"${x.name} $userNameString$ifExistsString$removeHomeDatabase$removeAuthString$oldStyleNativeAuthString$statusString$setHomeDatabaseString$setAuthNativeString$externalAuthString"
 
       case x @ SetOwnPassword(newPassword, currentPassword) =>
         s"${x.name} FROM ${expr.escapePassword(currentPassword)} TO ${expr.escapePassword(newPassword)}"
@@ -1395,6 +1452,21 @@ case class Prettifier(
       val list = expr(foreach.expression)
       val updates = foreach.updates.map(dispatch).mkString(s"$NL  ", s"$NL  ", NL)
       s"${INDENT}FOREACH ( $varName IN $list |$updates)"
+    }
+
+    def asString(auth: ExternalAuth): String = {
+      val idString: String = expr(auth.id)
+      authAsString(auth.provider, s"SET ID $idString")
+    }
+
+    def getNativeAuthAsString(passwordClauses: String*): String = {
+      authAsString(NATIVE_AUTH, passwordClauses: _*)
+    }
+
+    private def authAsString(provider: String, innerClauses: String*): String = {
+      val providerString = expr.quote(provider)
+      val innerClausesString: String = innerClauses.mkString(s"$NL$INDENT$BASE_INDENT")
+      s"$NL${INDENT}SET AUTH PROVIDER $providerString {$NL$INDENT$BASE_INDENT$innerClausesString$NL$INDENT}"
     }
   }
 }

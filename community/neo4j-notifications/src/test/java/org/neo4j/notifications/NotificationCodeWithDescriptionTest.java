@@ -22,6 +22,7 @@ package org.neo4j.notifications;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.notifications.NotificationCodeWithDescription.authProviderNotDefined;
 import static org.neo4j.notifications.NotificationCodeWithDescription.cartesianProduct;
 import static org.neo4j.notifications.NotificationCodeWithDescription.codeGenerationFailed;
 import static org.neo4j.notifications.NotificationCodeWithDescription.commandHasNoEffectAssignPrivilege;
@@ -48,6 +49,7 @@ import static org.neo4j.notifications.NotificationCodeWithDescription.deprecated
 import static org.neo4j.notifications.NotificationCodeWithDescription.deprecatedTextIndexProvider;
 import static org.neo4j.notifications.NotificationCodeWithDescription.eagerLoadCsv;
 import static org.neo4j.notifications.NotificationCodeWithDescription.exhaustiveShortestPath;
+import static org.neo4j.notifications.NotificationCodeWithDescription.externalAuthNotEnabled;
 import static org.neo4j.notifications.NotificationCodeWithDescription.homeDatabaseNotPresent;
 import static org.neo4j.notifications.NotificationCodeWithDescription.impossibleRevokeCommand;
 import static org.neo4j.notifications.NotificationCodeWithDescription.indexHintUnfulfillable;
@@ -972,6 +974,44 @@ class NotificationCodeWithDescriptionTest {
     }
 
     @Test
+    void shouldConstructNotificationsFor_AUTH_PROVIDER_NOT_DEFINED() {
+        NotificationImplementation notification = authProviderNotDefined(InputPosition.empty, "foo");
+
+        verifyNotification(
+                notification,
+                "The auth provider is not defined.",
+                SeverityLevel.INFORMATION,
+                "Neo.ClientNotification.Security.AuthProviderNotDefined",
+                "The auth provider `foo` is not defined in the configuration. "
+                        + "Verify that the spelling is correct or define `foo` in the configuration.",
+                NotificationCategory.SECURITY,
+                NotificationClassification.SECURITY,
+                "00N72",
+                new DiagnosticRecord(info, security, -1, -1, -1, Map.of("provider", "foo")).asMap(),
+                "note: successful completion - auth provider not defined. "
+                        + "The auth provider `foo` is not defined in the configuration. "
+                        + "Verify that the spelling is correct or define `foo` in the configuration.");
+    }
+
+    @Test
+    void shouldConstructNotificationsFor_EXTERNAL_AUTH_NOT_ENABLED() {
+        NotificationImplementation notification = externalAuthNotEnabled(InputPosition.empty);
+
+        verifyNotification(
+                notification,
+                "External auth for user is not enabled.",
+                SeverityLevel.WARNING,
+                "Neo.ClientNotification.Security.ExternalAuthNotEnabled",
+                "Use setting `dbms.security.require_local_user` to enable external auth.",
+                NotificationCategory.SECURITY,
+                NotificationClassification.SECURITY,
+                "01N71",
+                new DiagnosticRecord(warning, security, -1, -1, -1, Map.of()).asMap(),
+                "warn: setting not enabled. External auth for user is not enabled. "
+                        + "Use setting `dbms.security.require_local_user` to enable external auth.");
+    }
+
+    @Test
     void shouldConstructNotificationsFor_COMMAND_HAD_NO_EFFECT_ASSIGN_PRIVILEGE() {
         NotificationImplementation notification =
                 commandHasNoEffectAssignPrivilege(InputPosition.empty, "GRANT WRITE ON GRAPH * TO editor");
@@ -1442,8 +1482,8 @@ class NotificationCodeWithDescriptionTest {
         byte[] notificationHash = DigestUtils.sha256(notificationBuilder.toString());
 
         byte[] expectedHash = new byte[] {
-            -5, -109, 78, 102, -112, -122, -102, 85, 106, -83, -90, 43, -4, -120, 88, 63, 79, -110, 60, -10, -35, 25,
-            61, 111, -4, -98, 96, 102, -69, -28, -84, 6
+            127, 100, -31, -52, 74, -73, -47, -115, 36, 12, 77, 118, 104, 35, 17, -103,
+            126, -45, 81, -25, 97, 24, 40, -40, -77, -43, -42, 75, -13, 82, -69, -111
         };
 
         if (!Arrays.equals(notificationHash, expectedHash)) {

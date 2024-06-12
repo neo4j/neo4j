@@ -19,25 +19,26 @@
  */
 package org.neo4j.server.security.systemgraph.versions;
 
-import static org.neo4j.server.security.systemgraph.UserSecurityGraphComponentVersion.COMMUNITY_SECURITY_41;
+import static org.neo4j.server.security.systemgraph.UserSecurityGraphComponentVersion.COMMUNITY_SECURITY_521;
 
+import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.security.AbstractSecurityLog;
 import org.neo4j.logging.Log;
 import org.neo4j.server.security.auth.UserRepository;
 
 /**
- * This is the UserSecurityComponent version for Neo4j 4.1
+ * This is the UserSecurityComponent version for Neo4j 5.0
  */
-public class CommunitySecurityComponentVersion_2_41 extends SupportedCommunitySecurityComponentVersion {
+public class CommunitySecurityComponentVersion_5_521 extends SupportedCommunitySecurityComponentVersion {
     private final KnownCommunitySecurityComponentVersion previous;
 
-    public CommunitySecurityComponentVersion_2_41(
+    public CommunitySecurityComponentVersion_5_521(
             Log debugLog,
             AbstractSecurityLog securityLog,
             UserRepository userRepository,
             KnownCommunitySecurityComponentVersion previous) {
-        super(COMMUNITY_SECURITY_41, userRepository, debugLog, securityLog);
+        super(COMMUNITY_SECURITY_521, userRepository, debugLog, securityLog);
         this.previous = previous;
     }
 
@@ -45,11 +46,28 @@ public class CommunitySecurityComponentVersion_2_41 extends SupportedCommunitySe
     public void upgradeSecurityGraph(Transaction tx, int fromVersion) throws Exception {
         if (fromVersion < version) {
             previous.upgradeSecurityGraph(tx, fromVersion);
-            // This version introduced the Version node
+            this.addAuthObjects(tx);
             this.setVersionProperty(tx, version);
         }
     }
 
     @Override
-    public void upgradeSecurityGraphSchema(Transaction tx, int fromVersion) {}
+    public void upgradeSecurityGraphSchema(Transaction tx, int fromVersion) throws Exception {
+        if (fromVersion < version) {
+            previous.upgradeSecurityGraphSchema(tx, fromVersion);
+            try {
+                tx.schema()
+                        .constraintFor(AUTH_LABEL)
+                        .assertPropertyIsUnique(AUTH_ID)
+                        .assertPropertyIsUnique(AUTH_PROVIDER)
+                        .withName(AUTH_CONSTRAINT)
+                        .create();
+            } catch (ConstraintViolationException e) {
+                // Makes the creation of constraints for security idempotent
+                if (!e.getMessage().startsWith("An equivalent constraint already exists")) {
+                    throw e;
+                }
+            }
+        }
+    }
 }

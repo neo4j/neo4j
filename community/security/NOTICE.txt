@@ -26,10 +26,7 @@ Third-party licenses
 --------------------
 
 Apache Software License, Version 2.0
-  Apache Commons Codec
-  Apache Commons Compress
   Apache Commons Configuration
-  Apache Commons IO
   Apache Commons Lang
   Apache Commons Text
   Apache Log4j API
@@ -52,27 +49,7 @@ Apache Software License, Version 2.0
   Java Concurrency Tools Core Library
   Java Native Access
   Jettison
-  jPowerShell
-  jProcesses
-  magnolia
   picocli
-  Scala Reflect
-  scala-collection-contrib
-  WMI4Java
-
-BSD - Scala License
-  Scala Library
-
-BSD License
-  ANTLR 4 Runtime
-  asm
-  asm-analysis
-  asm-tree
-  asm-util
-  Zstandard
-
-BSD License 2-clause
-  zstd-jni
 
 Eclipse Distribution License - v 1.0
   Eclipse Collections API
@@ -84,9 +61,6 @@ Eclipse Public License - v 1.0
 
 MIT License
   SLF4J API Module
-
-Mozilla Public License, Version 2.0
-  kiama
 
 Dependencies with multiple licenses
 -----------------------------------

@@ -350,6 +350,8 @@ public class CommunityEditionModule extends AbstractEditionModule implements Def
                 globalModule.getOtherMemoryPool().getPoolMemoryTracker());
 
         systemGraphComponentsBuilder.register(communityComponent);
+        Dependencies dependencies = globalModule.getGlobalDependencies();
+        dependencies.satisfyDependency(communityComponent);
     }
 
     @Override

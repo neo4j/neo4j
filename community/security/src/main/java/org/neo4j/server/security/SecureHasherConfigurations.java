@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.security;
+package org.neo4j.server.security;
 
 import java.util.Map;
 import org.neo4j.exceptions.InvalidArgumentException;

@@ -23,12 +23,12 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import org.neo4j.cypher.internal.security.FormatException;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.security.User;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.server.security.FormatException;
 
 /**
  * Stores user auth data. In memory, but backed by persistent storage so changes to this repository will survive

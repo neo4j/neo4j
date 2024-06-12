@@ -50,7 +50,7 @@ trait ParameterTransformerFunction {
 }
 
 case class ParameterTransformer(
-  genFunc: ParameterGenerationFunction = (_, _) => MapValue.EMPTY,
+  genFunc: ParameterGenerationFunction = (_, _, _) => MapValue.EMPTY,
   transformFunc: (Transaction, MapValue) => ParameterTransformerOutput = (_, params) => (params, Set.empty)
 ) extends ParameterTransformerFunction {
 
@@ -63,7 +63,7 @@ case class ParameterTransformer(
   }
 
   def generate(generator: ParameterGenerationFunction): ParameterTransformer = {
-    val newGenFunc: ParameterGenerationFunction = (tx, sc) => genFunc(tx, sc).updatedWith(generator(tx, sc))
+    val newGenFunc: ParameterGenerationFunction = (tx, sc, up) => genFunc(tx, sc, up).updatedWith(generator(tx, sc, up))
     ParameterTransformer(newGenFunc, transformFunc)
   }
 
@@ -89,15 +89,15 @@ case class ParameterTransformer(
     systemParams: MapValue,
     userParams: MapValue
   ): ParameterTransformerOutput = {
-    transformFunc.apply(tx, safeMergeParameters(systemParams, userParams, genFunc(tx, sc)))
+    transformFunc.apply(tx, safeMergeParameters(systemParams, userParams, genFunc(tx, sc, userParams)))
   }
 }
 
 object ParameterTransformer {
   type ParameterTransformerOutput = (MapValue, Set[InternalNotification])
   type ParameterConversionFunction = (Transaction, MapValue) => MapValue
-  type ParameterGenerationFunction = (Transaction, SecurityContext) => MapValue
+  type ParameterGenerationFunction = (Transaction, SecurityContext, MapValue) => MapValue
 
-  def apply(genFunc: (Transaction, SecurityContext) => MapValue): ParameterTransformer =
+  def apply(genFunc: (Transaction, SecurityContext, MapValue) => MapValue): ParameterTransformer =
     ParameterTransformer(genFunc, (_, params) => (params, Set.empty))
 }

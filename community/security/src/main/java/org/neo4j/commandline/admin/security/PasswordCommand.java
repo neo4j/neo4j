@@ -19,8 +19,8 @@
  */
 package org.neo4j.commandline.admin.security;
 
-import org.neo4j.cypher.internal.security.SecureHasher;
-import org.neo4j.cypher.internal.security.SystemGraphCredential;
+import org.neo4j.server.security.SecureHasher;
+import org.neo4j.server.security.SystemGraphCredential;
 
 public interface PasswordCommand {
     SecureHasher secureHasher = new SecureHasher();

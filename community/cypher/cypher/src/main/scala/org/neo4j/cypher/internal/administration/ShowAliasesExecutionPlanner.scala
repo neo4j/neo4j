@@ -108,7 +108,7 @@ case class ShowAliasesExecutionPlanner(
       aliasNameFields.map(anf => VirtualValues.map(anf.keys, anf.values)).getOrElse(VirtualValues.EMPTY_MAP),
       source = sourcePlan,
       parameterTransformer =
-        ParameterTransformer((_, sc) => generateVisibleAliases(sc)).convert(
+        ParameterTransformer((_, sc, _) => generateVisibleAliases(sc)).convert(
           aliasNameFields.map(_.nameConverter).getOrElse(IdentityConverter)
         )
           .validate(aliasNameFields.map(checkNamespaceExists).getOrElse((_, p) => (p, Set.empty)))

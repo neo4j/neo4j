@@ -46,7 +46,13 @@ case class DropUserExecutionPlanner(
       "DropUser",
       normalExecutionEngine,
       securityAuthorizationHandler,
-      s"""MATCH (user:User {name: $$`${userNameFields.nameKey}`}) DETACH DELETE user
+      s"""MATCH (user:User {name: $$`${userNameFields.nameKey}`})
+         |CALL {
+         |  WITH user
+         |  OPTIONAL MATCH (user)-[:HAS_AUTH]->(auth)
+         |  DETACH DELETE auth
+         |}
+         |DETACH DELETE user
          |RETURN 1 AS ignore""".stripMargin,
       VirtualValues.map(Array(userNameFields.nameKey), Array(userNameFields.nameValue)),
       QueryHandler

@@ -30,10 +30,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
-import org.neo4j.cypher.internal.security.FormatException;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemUtils;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.server.security.FormatException;
 import org.neo4j.string.UTF8;
 
 public abstract class FileRepositorySerializer<S> {

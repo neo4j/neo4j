@@ -82,6 +82,8 @@ public class NullAstFactory
                 NULL, // PRIVILEGE_TYPE,
                 NULL, // PRIVILEGE_RESOURCE,
                 NULL, // PRIVILEGE_QUALIFIER,
+                NULL, // AUTH,
+                NULL, // AUTH_ATTRIBUTE,
                 NULL, // SUBQUERY_IN_TRANSACTIONS_BATCH_PARAMETERS,
                 NULL, // SUBQUERY_IN_TRANSACTIONS_CONCURRENCY_PARAMETERS,
                 NULL, // SUBQUERY_IN_TRANSACTIONS_ERROR_PARAMETERS,
@@ -1102,11 +1104,10 @@ public class NullAstFactory
             boolean replace,
             boolean ifNotExists,
             SimpleEither<StringPos<NULL>, NULL> username,
-            NULL password,
-            boolean encrypted,
-            boolean changeRequired,
             Boolean suspended,
-            NULL homeDatabase) {
+            NULL homeDatabase,
+            List<NULL> auths,
+            List<NULL> systemAuthAttributes) {
         return null;
     }
 
@@ -1134,12 +1135,33 @@ public class NullAstFactory
             NULL p,
             boolean ifExists,
             SimpleEither<StringPos<NULL>, NULL> username,
-            NULL password,
-            boolean encrypted,
-            Boolean changeRequired,
             Boolean suspended,
             NULL homeDatabase,
-            boolean removeHome) {
+            boolean removeHome,
+            List<NULL> auths,
+            List<NULL> systemAuthAttributes,
+            boolean removeAllAuth,
+            List<NULL> removeAuths) {
+        return null;
+    }
+
+    @Override
+    public NULL auth(String provider, List<NULL> nulls, NULL p) {
+        return null;
+    }
+
+    @Override
+    public NULL authId(NULL s, NULL id) {
+        return null;
+    }
+
+    @Override
+    public NULL password(NULL p, NULL password, boolean encrypted) {
+        return null;
+    }
+
+    @Override
+    public NULL passwordChangeRequired(NULL p, boolean changeRequired) {
         return null;
     }
 

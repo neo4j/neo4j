@@ -1407,6 +1407,84 @@ class PrettifierIT extends CypherFunSuite {
       "CREATE USER abc SET PASSWORD $password CHANGE REQUIRED SET HOME DATABASE a.b",
     "create user abc set password $password set home database `a.b`" ->
       "CREATE USER abc SET PASSWORD $password CHANGE REQUIRED SET HOME DATABASE `a.b`",
+    "create user abc set auth 'native' { set password $password }" ->
+      """CREATE USER abc
+        |  SET AUTH PROVIDER "native" {
+        |    SET PASSWORD $password
+        |    SET PASSWORD CHANGE REQUIRED
+        |  }""".stripMargin,
+    "create user abc set auth 'native' { set password $password } set home database foo" ->
+      """CREATE USER abc SET HOME DATABASE foo
+        |  SET AUTH PROVIDER "native" {
+        |    SET PASSWORD $password
+        |    SET PASSWORD CHANGE REQUIRED
+        |  }""".stripMargin,
+    "create user abc set auth 'foo' { set id 'cba' }" ->
+      """CREATE USER abc
+        |  SET AUTH PROVIDER "foo" {
+        |    SET ID "cba"
+        |  }""".stripMargin,
+    "create user abc set auth 'foo' { set id $id }" ->
+      """CREATE USER abc
+        |  SET AUTH PROVIDER "foo" {
+        |    SET ID $id
+        |  }""".stripMargin,
+    "create user abc set auth 'foo' { set id 'cba' } set auth 'bar' { set id 'cba' }" ->
+      """CREATE USER abc
+        |  SET AUTH PROVIDER "bar" {
+        |    SET ID "cba"
+        |  }
+        |  SET AUTH PROVIDER "foo" {
+        |    SET ID "cba"
+        |  }""".stripMargin,
+    "create user abc set auth 'foo' { set id 'cba' } set password $password" ->
+      """CREATE USER abc SET PASSWORD $password CHANGE REQUIRED
+        |  SET AUTH PROVIDER "foo" {
+        |    SET ID "cba"
+        |  }""".stripMargin,
+    "create user abc set auth 'foo' { set id 'cba' } set auth 'native' {set password 'bar'}" ->
+      """CREATE USER abc
+        |  SET AUTH PROVIDER "native" {
+        |    SET PASSWORD '******'
+        |    SET PASSWORD CHANGE REQUIRED
+        |  }
+        |  SET AUTH PROVIDER "foo" {
+        |    SET ID "cba"
+        |  }""".stripMargin,
+    "create user abc set home database foo  set auth 'foo' { set id $id } set auth 'native' { set password change not required set password $password }" ->
+      """CREATE USER abc SET HOME DATABASE foo
+        |  SET AUTH PROVIDER "native" {
+        |    SET PASSWORD $password
+        |    SET PASSWORD CHANGE NOT REQUIRED
+        |  }
+        |  SET AUTH PROVIDER "foo" {
+        |    SET ID $id
+        |  }""".stripMargin,
+    "create user abc set auth 'foo' { set id 'cba' } set home database neo4j" ->
+      """CREATE USER abc SET HOME DATABASE neo4j
+        |  SET AUTH PROVIDER "foo" {
+        |    SET ID "cba"
+        |  }""".stripMargin,
+    """create user abc set auth "prov'id'er" { set id "i'd" }""" ->
+      """CREATE USER abc
+        |  SET AUTH PROVIDER "prov'id'er" {
+        |    SET ID "i'd"
+        |  }""".stripMargin,
+    """create user abc set auth 'prov"id"er' { set id 'i"d' }""" ->
+      """CREATE USER abc
+        |  SET AUTH PROVIDER 'prov"id"er' {
+        |    SET ID 'i"d'
+        |  }""".stripMargin,
+    """create user abc set auth "prov\"id\"er" { set id "i\"d" }""" ->
+      """CREATE USER abc
+        |  SET AUTH PROVIDER 'prov"id"er' {
+        |    SET ID 'i"d'
+        |  }""".stripMargin,
+    """create user abc set auth 'prov\'id\'er' { set id 'i\'d' }""" ->
+      """CREATE USER abc
+        |  SET AUTH PROVIDER "prov'id'er" {
+        |    SET ID "i'd"
+        |  }""".stripMargin,
     "rename user alice to bob" ->
       "RENAME USER alice TO bob",
     "rename user `a%i$e` if exists to `b!b`" ->
@@ -1461,6 +1539,139 @@ class PrettifierIT extends CypherFunSuite {
       "ALTER USER abc REMOVE HOME DATABASE",
     "alter user abc if exists remove home database" ->
       "ALTER USER abc IF EXISTS REMOVE HOME DATABASE",
+    "alter user abc remove home database set home database foo" ->
+      "ALTER USER abc SET HOME DATABASE foo",
+    "alter user abc remove home database set status suspended" ->
+      "ALTER USER abc REMOVE HOME DATABASE SET STATUS SUSPENDED",
+    "alter user abc set auth 'native' {set password 'foo'}" ->
+      """ALTER USER abc
+        |  SET AUTH PROVIDER "native" {
+        |    SET PASSWORD '******'
+        |  }""".stripMargin,
+    "alter user abc set auth 'native' {set password $password}" ->
+      """ALTER USER abc
+        |  SET AUTH PROVIDER "native" {
+        |    SET PASSWORD $password
+        |  }""".stripMargin,
+    "alter user abc set auth 'native' {set password change not required}" ->
+      """ALTER USER abc
+        |  SET AUTH PROVIDER "native" {
+        |    SET PASSWORD CHANGE NOT REQUIRED
+        |  }""".stripMargin,
+    "alter user abc set auth 'native' {set password change not required} set status active" ->
+      """ALTER USER abc SET STATUS ACTIVE
+        |  SET AUTH PROVIDER "native" {
+        |    SET PASSWORD CHANGE NOT REQUIRED
+        |  }""".stripMargin,
+    "alter user abc set auth 'native' {set password 'foo' set password change not required}" ->
+      """ALTER USER abc
+        |  SET AUTH PROVIDER "native" {
+        |    SET PASSWORD '******'
+        |    SET PASSWORD CHANGE NOT REQUIRED
+        |  }""".stripMargin,
+    "alter user abc set auth 'native' {set password change not required set password $password}" ->
+      """ALTER USER abc
+        |  SET AUTH PROVIDER "native" {
+        |    SET PASSWORD $password
+        |    SET PASSWORD CHANGE NOT REQUIRED
+        |  }""".stripMargin,
+    "alter user abc set auth 'foo' {set id 'bar'}" ->
+      """ALTER USER abc
+        |  SET AUTH PROVIDER "foo" {
+        |    SET ID "bar"
+        |  }""".stripMargin,
+    "alter user abc set auth 'foo' {set id $id}" ->
+      """ALTER USER abc
+        |  SET AUTH PROVIDER "foo" {
+        |    SET ID $id
+        |  }""".stripMargin,
+    "alter user abc set auth 'foo' {set id 'bar'} set password 'foo'" ->
+      """ALTER USER abc SET PASSWORD '******'
+        |  SET AUTH PROVIDER "foo" {
+        |    SET ID "bar"
+        |  }""".stripMargin,
+    "alter user abc set auth 'foo' {set id 'bar'} set auth 'native' {set password 'foo'}" ->
+      """ALTER USER abc
+        |  SET AUTH PROVIDER "native" {
+        |    SET PASSWORD '******'
+        |  }
+        |  SET AUTH PROVIDER "foo" {
+        |    SET ID "bar"
+        |  }""".stripMargin,
+    "alter user abc set auth 'foo' {set id $id} set auth 'native' {set password 'foo'} set home database foo" ->
+      """ALTER USER abc SET HOME DATABASE foo
+        |  SET AUTH PROVIDER "native" {
+        |    SET PASSWORD '******'
+        |  }
+        |  SET AUTH PROVIDER "foo" {
+        |    SET ID $id
+        |  }""".stripMargin,
+    "alter user abc set auth 'foo' {set id 'bar'} set home database neo4j set status active" ->
+      """ALTER USER abc SET STATUS ACTIVE SET HOME DATABASE neo4j
+        |  SET AUTH PROVIDER "foo" {
+        |    SET ID "bar"
+        |  }""".stripMargin,
+    """alter user abc set auth "prov'id'er" { set id "i'd" }""" ->
+      """ALTER USER abc
+        |  SET AUTH PROVIDER "prov'id'er" {
+        |    SET ID "i'd"
+        |  }""".stripMargin,
+    """alter user abc set auth 'prov"id"er' { set id 'i"d' }""" ->
+      """ALTER USER abc
+        |  SET AUTH PROVIDER 'prov"id"er' {
+        |    SET ID 'i"d'
+        |  }""".stripMargin,
+    """alter user abc set auth "prov\"id\"er" { set id "i\"d" }""" ->
+      """ALTER USER abc
+        |  SET AUTH PROVIDER 'prov"id"er' {
+        |    SET ID 'i"d'
+        |  }""".stripMargin,
+    """alter user abc set auth 'prov\'id\'er' { set id 'i\'d' }""" ->
+      """ALTER USER abc
+        |  SET AUTH PROVIDER "prov'id'er" {
+        |    SET ID "i'd"
+        |  }""".stripMargin,
+    "alter user abc remove all auth" ->
+      "ALTER USER abc REMOVE ALL AUTH PROVIDERS",
+    "alter user abc remove auth 'foo'" ->
+      """ALTER USER abc REMOVE AUTH PROVIDERS "foo"""",
+    "alter user abc remove auth ['foo', 'bar']" ->
+      """ALTER USER abc REMOVE AUTH PROVIDERS ["foo", "bar"]""",
+    "alter user abc remove all auth set auth 'foo' {set id 'bar'}" ->
+      """ALTER USER abc REMOVE ALL AUTH PROVIDERS
+        |  SET AUTH PROVIDER "foo" {
+        |    SET ID "bar"
+        |  }""".stripMargin,
+    "alter user abc remove auth $provider remove home database" ->
+      """ALTER USER abc REMOVE HOME DATABASE REMOVE AUTH PROVIDERS $provider""",
+    "alter user abc remove auth 'foo' remove home database set password $password" ->
+      """ALTER USER abc REMOVE HOME DATABASE REMOVE AUTH PROVIDERS "foo" SET PASSWORD $password""",
+    "alter user abc remove auth 'native' set password $password" ->
+      """ALTER USER abc REMOVE AUTH PROVIDERS "native" SET PASSWORD $password""",
+    "alter user abc remove all auth remove auth 'foo'" ->
+      """ALTER USER abc REMOVE ALL AUTH PROVIDERS""",
+    "alter user abc remove auth $param remove all auth" ->
+      """ALTER USER abc REMOVE ALL AUTH PROVIDERS""",
+    "alter user abc remove auth 'bar' remove auth 'foo'" ->
+      """ALTER USER abc REMOVE AUTH PROVIDERS "bar" REMOVE AUTH PROVIDERS "foo"""",
+    "alter user abc remove auth $param remove auth ['foo', 'bar'] remove auth 'foo'" ->
+      """ALTER USER abc REMOVE AUTH PROVIDERS $param REMOVE AUTH PROVIDERS ["foo", "bar"] REMOVE AUTH PROVIDERS "foo"""",
+    """alter user abc remove auth "prov'id'er" """ ->
+      """ALTER USER abc REMOVE AUTH PROVIDERS "prov'id'er"""".stripMargin,
+    """alter user abc remove auth 'prov"id"er' """ ->
+      """ALTER USER abc REMOVE AUTH PROVIDERS 'prov"id"er'""".stripMargin,
+    """alter user abc remove auth "prov\"id\"er" """ ->
+      """ALTER USER abc REMOVE AUTH PROVIDERS 'prov"id"er'""".stripMargin,
+    """alter user abc remove auth 'prov\'id\'er' """ ->
+      """ALTER USER abc REMOVE AUTH PROVIDERS "prov'id'er"""".stripMargin,
+    """alter user abc remove auth ["prov'id'er"] """ ->
+      """ALTER USER abc REMOVE AUTH PROVIDERS ["prov'id'er"]""".stripMargin,
+    """alter user abc remove auth ['prov"id"er'] """ ->
+      """ALTER USER abc REMOVE AUTH PROVIDERS ['prov"id"er']""".stripMargin,
+    """alter user abc remove auth ["prov\"id\"er"] """ ->
+      """ALTER USER abc REMOVE AUTH PROVIDERS ['prov"id"er']""".stripMargin,
+    """alter user abc remove auth ['prov\'id\'er'] """ ->
+      """ALTER USER abc REMOVE AUTH PROVIDERS ["prov'id'er"]""".stripMargin,
     "drop user abc" ->
       "DROP USER abc",
     "drop user $abc" ->
@@ -2534,6 +2745,8 @@ class PrettifierIT extends CypherFunSuite {
             s"$action SET PASSWORDS ON DBMS $preposition role",
           s"$action set passwords on dbms $preposition role" ->
             s"$action SET PASSWORDS ON DBMS $preposition role",
+          s"$action set auth on dbms $preposition role" ->
+            s"$action SET AUTH ON DBMS $preposition role",
           s"$action set user status on dbms $preposition role" ->
             s"$action SET USER STATUS ON DBMS $preposition role",
           s"$action set user home database on dbms $preposition role" ->

@@ -38,6 +38,12 @@ public enum GqlStatusInfoNotifications implements GqlStatusInfo {
             new String[] {"cmd"},
             "role or privilege not assigned",
             Condition.SUCCESSFUL_COMPLETION),
+    STATUS_00N72(
+            new GqlStatus("00N72"),
+            "The auth provider `%s` is not defined in the configuration. Verify that the spelling is correct or define `%s` in the configuration.",
+            new String[] {"provider", "provider"},
+            "auth provider not defined",
+            Condition.SUCCESSFUL_COMPLETION),
     STATUS_00N80(
             new GqlStatus("00N80"),
             "`ENABLE SERVER` has no effect. Server `%s` is already enabled. Verify that this is the intended server.",
@@ -164,6 +170,12 @@ public enum GqlStatusInfoNotifications implements GqlStatusInfo {
             "`%s` has no effect. %s Make sure nothing is misspelled. This notification will become an error in a future major version.",
             new String[] {"cmd", "msg"},
             "impossible revoke command",
+            Condition.WARNING),
+    STATUS_01N71(
+            new GqlStatus("01N71"),
+            "External auth for user is not enabled. Use setting `dbms.security.require_local_user` to enable external auth.",
+            new String[] {},
+            "setting not enabled",
             Condition.WARNING),
     STATUS_03N60(
             new GqlStatus("03N60"),

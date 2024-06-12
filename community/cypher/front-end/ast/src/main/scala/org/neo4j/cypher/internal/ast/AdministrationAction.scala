@@ -138,6 +138,8 @@ case object SetUserStatusAction extends UserManagementAction("SET USER STATUS")
 
 case object SetPasswordsAction extends UserManagementAction("SET PASSWORDS")
 
+case object SetAuthAction extends UserManagementAction("SET AUTH")
+
 case object SetUserHomeDatabaseAction extends UserManagementAction("SET USER HOME DATABASE")
 
 abstract class RoleManagementAction(override val name: String) extends DbmsAction(name)

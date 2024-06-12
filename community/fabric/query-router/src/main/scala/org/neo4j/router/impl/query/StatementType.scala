@@ -31,7 +31,7 @@ import org.neo4j.cypher.internal.frontend.phases.ResolvedCall
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.fabric.util.Folded.FoldableOps
 import org.neo4j.fabric.util.Folded.Stop
-import org.neo4j.router.impl.query.StatementType.CommandOrQueryType.AdministrationCommand
+import org.neo4j.router.impl.query.StatementType.CommandOrQueryType.AdminCommand
 import org.neo4j.router.impl.query.StatementType.CommandOrQueryType.CommandOrQueryType
 import org.neo4j.router.impl.query.StatementType.CommandOrQueryType.Query
 import org.neo4j.router.impl.query.StatementType.CommandOrQueryType.SchemaCommand
@@ -58,11 +58,11 @@ case class StatementType(statementType: CommandOrQueryType, private val mode: Mo
 
   override def toString: String = {
     statementType match {
-      case AdministrationCommand => "Administration command"
-      case SchemaCommand         => "Schema modification"
-      case Query if isReadQuery  => "Read query"
-      case Query if isWrite      => "Write query"
-      case _                     => "Read query (with unresolved procedures)"
+      case AdminCommand         => "Administration command"
+      case SchemaCommand        => "Schema modification"
+      case Query if isReadQuery => "Read query"
+      case Query if isWrite     => "Write query"
+      case _                    => "Read query (with unresolved procedures)"
     }
   }
 }
@@ -71,7 +71,7 @@ object StatementType {
 
   object CommandOrQueryType extends Enumeration {
     type CommandOrQueryType = Value
-    val AdministrationCommand, SchemaCommand, Query = Value
+    val AdminCommand, SchemaCommand, Query = Value
   }
 
   object Mode extends Enumeration {
@@ -80,7 +80,7 @@ object StatementType {
   }
 
   // Java access helpers
-  val AdministrationCommand: CommandOrQueryType = CommandOrQueryType.AdministrationCommand
+  val AdminCommand: CommandOrQueryType = CommandOrQueryType.AdminCommand
   private val SchemaCommand: CommandOrQueryType = CommandOrQueryType.SchemaCommand
   val Query: CommandOrQueryType = CommandOrQueryType.Query
 
@@ -100,7 +100,7 @@ object StatementType {
     statement match {
       case _: Query                 => StatementType(Query, maybeContainsUpdates)
       case _: SchemaCommand         => StatementType(SchemaCommand, maybeContainsUpdates)
-      case _: AdministrationCommand => StatementType(AdministrationCommand, maybeContainsUpdates)
+      case _: AdministrationCommand => StatementType(AdminCommand, maybeContainsUpdates)
     }
   }
 

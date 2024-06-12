@@ -56,6 +56,7 @@ import org.neo4j.cypher.internal.ast.LoadUrlAction
 import org.neo4j.cypher.internal.ast.LoadUrlQualifier
 import org.neo4j.cypher.internal.ast.LookupIndexes
 import org.neo4j.cypher.internal.ast.NamespacedName
+import org.neo4j.cypher.internal.ast.NativeAuth
 import org.neo4j.cypher.internal.ast.NoOptions
 import org.neo4j.cypher.internal.ast.NoResource
 import org.neo4j.cypher.internal.ast.NodeExistsConstraints
@@ -64,6 +65,8 @@ import org.neo4j.cypher.internal.ast.NodePropTypeConstraints
 import org.neo4j.cypher.internal.ast.NodeUniqueConstraints
 import org.neo4j.cypher.internal.ast.OptionsMap
 import org.neo4j.cypher.internal.ast.OptionsParam
+import org.neo4j.cypher.internal.ast.Password
+import org.neo4j.cypher.internal.ast.PasswordChange
 import org.neo4j.cypher.internal.ast.PatternQualifier
 import org.neo4j.cypher.internal.ast.PointIndexes
 import org.neo4j.cypher.internal.ast.ProcedureAllQualifier
@@ -78,6 +81,7 @@ import org.neo4j.cypher.internal.ast.RelExistsConstraints
 import org.neo4j.cypher.internal.ast.RelKeyConstraints
 import org.neo4j.cypher.internal.ast.RelPropTypeConstraints
 import org.neo4j.cypher.internal.ast.RelUniqueConstraints
+import org.neo4j.cypher.internal.ast.RemoveAuth
 import org.neo4j.cypher.internal.ast.ShowColumn
 import org.neo4j.cypher.internal.ast.ShowProceduresClause
 import org.neo4j.cypher.internal.ast.ShowUserAction
@@ -6831,11 +6835,11 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         CreateUser(
           privLhsLP,
           util.Left("name"),
-          isEncryptedPassword = false,
-          varFor("password"),
-          requirePasswordChange = false,
           suspended = None,
-          defaultDatabase = None
+          defaultDatabase = None,
+          nativeAuth =
+            Some(NativeAuth(List(Password(varFor("password"), false)(pos), PasswordChange(false)(pos)))(pos)),
+          externalAuths = Seq.empty
         ),
         1.0
       ),
@@ -6851,11 +6855,11 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         AlterUser(
           privLhsLP,
           util.Left("name"),
-          isEncryptedPassword = Some(true),
-          None,
-          requirePasswordChange = Some(true),
           suspended = Some(false),
-          defaultDatabase = None
+          defaultDatabase = None,
+          nativeAuth = Some(NativeAuth(List(PasswordChange(true)(pos)))(pos)),
+          Seq.empty,
+          RemoveAuth(false, List(stringLiteral("provider")))
         ),
         1.0
       ),

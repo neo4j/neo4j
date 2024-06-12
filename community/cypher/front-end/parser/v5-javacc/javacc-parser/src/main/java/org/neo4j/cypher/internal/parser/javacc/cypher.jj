@@ -111,6 +111,8 @@ public class Cypher<STATEMENTS,
                     PRIVILEGE_TYPE,
                     PRIVILEGE_RESOURCE,
                     PRIVILEGE_QUALIFIER,
+                    AUTH,
+                    AUTH_ATTRIBUTE,
                     SUBQUERY_IN_TRANSACTIONS_PARAMETERS,
                     SUBQUERY_IN_TRANSACTIONS_BATCH_PARAMETERS,
                     SUBQUERY_IN_TRANSACTIONS_CONCURRENCY_PARAMETERS,
@@ -164,6 +166,8 @@ public class Cypher<STATEMENTS,
                PRIVILEGE_TYPE,
                PRIVILEGE_RESOURCE,
                PRIVILEGE_QUALIFIER,
+               AUTH,
+               AUTH_ATTRIBUTE,
                SUBQUERY_IN_TRANSACTIONS_PARAMETERS,
                SUBQUERY_IN_TRANSACTIONS_BATCH_PARAMETERS,
                SUBQUERY_IN_TRANSACTIONS_CONCURRENCY_PARAMETERS,
@@ -218,6 +222,8 @@ public class Cypher<STATEMENTS,
                              PRIVILEGE_TYPE,
                              PRIVILEGE_RESOURCE,
                              PRIVILEGE_QUALIFIER,
+                             AUTH,
+                             AUTH_ATTRIBUTE,
                              SUBQUERY_IN_TRANSACTIONS_PARAMETERS,
                              SUBQUERY_IN_TRANSACTIONS_BATCH_PARAMETERS,
                              SUBQUERY_IN_TRANSACTIONS_CONCURRENCY_PARAMETERS,
@@ -430,6 +436,7 @@ TOKEN [IGNORE_CASE] :
     | < ASSERT: "ASSERT" >
     | < ASSIGN: "ASSIGN" >
     | < AT: "AT" >
+    | < AUTH: "AUTH" >
     | < BAR: "|" >
     | < BINDINGS: "BINDINGS" >
     | < BOOL: "BOOL" >
@@ -526,6 +533,7 @@ TOKEN [IGNORE_CASE] :
     | < GT: ">" >
     | < HEADERS: "HEADERS" >
     | < HOME: "HOME">
+    | < ID: "ID" >
     | < IF: "IF" >
     | < IMPERSONATE: "IMPERSONATE" >
     | < IMMUTABLE: "IMMUTABLE" >
@@ -610,6 +618,8 @@ TOKEN [IGNORE_CASE] :
     | < PROCEDURES: "PROCEDURES" >
     | < PROPERTIES: "PROPERTIES" >
     | < PROPERTY: "PROPERTY" >
+    | < PROVIDER: "PROVIDER" >
+    | < PROVIDERS: "PROVIDERS" >
     | < QUESTION: "?" >
     | < RANGE: "RANGE" >
     | < RBRACKET: "]" >
@@ -4197,6 +4207,19 @@ EXPRESSION ListLiteral() throws Exception:
     }
 }
 
+EXPRESSION StringListLiteral() throws Exception:
+{
+    Token t;
+    EXPRESSION e;
+    List<EXPRESSION> list = new ArrayList<>();
+}
+{
+    t=<LBRACKET> ( e=StringLiteral() { list.add( e ); } ( <COMMA> e=StringLiteral() { list.add( e ); } )* )? <RBRACKET>
+    {
+        return astFactory.listLiteral( pos( t ), list );
+    }
+}
+
 EXPRESSION MapLiteral() throws Exception:
 {
     Token t;
@@ -5876,34 +5899,38 @@ ADMINISTRATION_COMMAND RevokeRole(Token start):
 
 ADMINISTRATION_COMMAND CreateUser( Token start, boolean replace ) throws Exception:
 {
-    Token set = null;
+    Token token = null;
     SimpleEither<StringPos<POS>, PARAMETER> username = null;
-    EXPRESSION password = null;
     boolean ifNotExists = false;
-    boolean encrypted = false;
-    Optional<Boolean> changeRequired = Optional.empty();
     Optional<Boolean> suspended = Optional.empty();
     Optional<DATABASE_NAME> homeDatabase = Optional.empty();
+    AUTH auth = null;
+    List<AUTH> auths = new ArrayList<>();
+    List<AUTH_ATTRIBUTE> systemAuthAttributes = new ArrayList<>();
 }
 {
     <USER>
     username=SymbolicNameOrStringParameter()
     ( <IF> <NOT> <EXISTS> { ifNotExists = true; } )?
-    <SET> (
-        ( <PLAINTEXT> { encrypted = false; })
-        | ( <ENCRYPTED> { encrypted = true; })
-        )?
-        <PASSWORD> password=passwordExpression() ( changeRequired=PasswordChangeRequired( start, changeRequired ) )?
     (
-        set=<SET> (
-            <PASSWORD> changeRequired=PasswordChangeRequired( set, changeRequired )
-            | suspended=UserStatus( set, suspended )
-            | homeDatabase=HomeDatabase( set, homeDatabase )
+        token=<SET> (
+            token=<PLAINTEXT>
+                <PASSWORD> SetPassword(token, systemAuthAttributes, false) ( PasswordChangeRequired( systemAuthAttributes ) )?
+            | token=<ENCRYPTED>
+                <PASSWORD> SetPassword(token, systemAuthAttributes, true) ( PasswordChangeRequired( systemAuthAttributes ) )?
+            | token=<PASSWORD> (
+                PasswordChangeRequired( systemAuthAttributes )
+                | SetPassword(token, systemAuthAttributes, false) ( PasswordChangeRequired( systemAuthAttributes ) )?
+            )
+            | suspended=UserStatus( token, suspended )
+            | homeDatabase=HomeDatabase( token, homeDatabase )
+            | auth=UserAuthObjects() { auths.add(auth); }
         )
-    )*
+    )+
     {
-        return astFactory.createUser( pos( start ), replace, ifNotExists, username, password, encrypted,
-                                      changeRequired.orElse( true ), suspended.orElse( null ), homeDatabase.orElse( null ) );
+        return astFactory.createUser( pos( start ), replace, ifNotExists, username,
+                                      suspended.orElse( null ), homeDatabase.orElse( null ),
+                                      auths, systemAuthAttributes );
     }
 }
 
@@ -5952,56 +5979,63 @@ ADMINISTRATION_COMMAND AlterCurrentUser( Token start ) throws Exception:
 
 ADMINISTRATION_COMMAND AlterUser( Token start ) throws Exception:
 {
-    Token set = null;
+    Token token = null;
+    Token token2 = null;
     SimpleEither<StringPos<POS>, PARAMETER> username = null;
-    EXPRESSION password = null;
     boolean ifExists = false;
-    boolean encrypted = false;
-    Optional<Boolean> changeRequired = Optional.empty();
     Optional<Boolean> suspended = Optional.empty();
     Optional<DATABASE_NAME> homeDatabase = Optional.empty();
     boolean removeHome = false;
-    String passwordSetError = "Duplicate SET PASSWORD clause";
+    boolean removeAllAuth = false;
+    EXPRESSION provider = null;
+    List<EXPRESSION> removeAuths = new ArrayList<>();
+    AUTH auth = null;
+    List<AUTH> auths = new ArrayList<>();
+    List<AUTH_ATTRIBUTE> systemAuthAttributes = new ArrayList<>();
 }
 {
     <USER>
     username=SymbolicNameOrStringParameter()
     ( <IF> <EXISTS> { ifExists = true; } )?
     (
-        (
-            set=<SET> (
-                <PLAINTEXT> { assertNotAlreadySet( password, set, passwordSetError ); }
-                    <PASSWORD> password=SetPassword( set, password ) ( changeRequired=PasswordChangeRequired( set, changeRequired ) )?
-                | <ENCRYPTED> { assertNotAlreadySet( password, set, passwordSetError ); encrypted = true; }
-                    <PASSWORD> password=SetPassword( set, password ) ( changeRequired=PasswordChangeRequired( set, changeRequired ) )?
-                | <PASSWORD> (
-                    changeRequired=PasswordChangeRequired( set, changeRequired )
-                    | password=SetPassword( set, password ) ( changeRequired=PasswordChangeRequired( set, changeRequired ) )?
-                )
-                | suspended=UserStatus( set, suspended )
-                | homeDatabase=HomeDatabase( set, homeDatabase )
+        token=<REMOVE> (
+            <HOME> <DATABASE> { removeHome = true; }
+            | <ALL> <AUTH> (<PROVIDER> | <PROVIDERS>)? { removeAllAuth = true; }
+            | <AUTH> (<PROVIDER> | <PROVIDERS>)? (
+               provider=StringLiteral() | provider=Parameter( ParameterType.ANY ) | provider=StringListLiteral()
+            ) { removeAuths.add(provider); }
+        )
+    )*
+    (
+        token=<SET> (
+            token2=<PLAINTEXT>
+                <PASSWORD> SetPassword(token2, systemAuthAttributes, false) ( PasswordChangeRequired( systemAuthAttributes ) )?
+            | token2=<ENCRYPTED>
+                <PASSWORD> SetPassword(token2, systemAuthAttributes, true) ( PasswordChangeRequired( systemAuthAttributes ) )?
+            | token2=<PASSWORD> (
+                PasswordChangeRequired( systemAuthAttributes )
+                | SetPassword(token2, systemAuthAttributes, false) ( PasswordChangeRequired( systemAuthAttributes ) )?
             )
-        )+
-        | <REMOVE> <HOME> <DATABASE> { removeHome = true; }
-    )
+            | suspended=UserStatus( token, suspended )
+            | homeDatabase=HomeDatabase( token, homeDatabase )
+            | auth=UserAuthObjects() { auths.add(auth); }
+        )
+    )*
     {
-        return astFactory.alterUser( pos( start ), ifExists, username, password, encrypted,
-            changeRequired.orElse( null ), suspended.orElse( null ), homeDatabase.orElse( null ), removeHome );
+        return astFactory.alterUser( pos( start ), ifExists, username,
+            suspended.orElse( null ), homeDatabase.orElse( null ), removeHome,
+             auths, systemAuthAttributes, removeAllAuth, removeAuths );
     }
 }
 
-EXPRESSION SetPassword( Token start, EXPRESSION password ) throws Exception:
+void SetPassword( Token start, List<AUTH_ATTRIBUTE> attributes, boolean encrypted ) throws Exception:
 {
-    String errorMessage = "Duplicate SET PASSWORD clause";
     EXPRESSION newPassword = null;
 }
 {
     newPassword=passwordExpression()
     {
-        if ( password != null ) {
-            throw exceptionFactory.syntaxException( new ParseException( errorMessage ), start.beginOffset, start.beginLine, start.beginColumn );
-        }
-        return newPassword;
+        attributes.add(astFactory.password(pos(start), newPassword, encrypted));
     }
 }
 
@@ -6027,16 +6061,15 @@ EXPRESSION passwordExpression():
     }
 }
 
-Optional<Boolean> PasswordChangeRequired( Token start, Optional<Boolean> changeRequired ) throws Exception:
+void PasswordChangeRequired( List<AUTH_ATTRIBUTE> attributes ) throws Exception:
 {
-    String errorMessage = "Duplicate SET PASSWORD CHANGE [NOT] REQUIRED clause";
     boolean required = true;
+    Token token = null;
 }
 {
-    <CHANGE> ( <NOT> { required = false; } )? <REQUIRED>
+    token=<CHANGE> ( <NOT> { required = false; } )? <REQUIRED>
     {
-        assertNotAlreadySet( changeRequired.orElse(null), start, errorMessage );
-        return Optional.of( required );
+        attributes.add(astFactory.passwordChangeRequired( pos(token), required ));
     }
 }
 
@@ -6066,6 +6099,33 @@ Optional<DATABASE_NAME> HomeDatabase( Token start, Optional<DATABASE_NAME> homeD
     {
         assertNotAlreadySet( homeDatabase.orElse(null), start, errorMessage );
         return Optional.of( home.getLocalAliasName(astFactory) );
+    }
+}
+
+AUTH UserAuthObjects() throws Exception:
+{
+    Token start = null;
+    Token set = null;
+    Token provider = null;
+    EXPRESSION password = null;
+    boolean changeRequired = true;
+    EXPRESSION id = null;
+    List<AUTH_ATTRIBUTE> authAttributes = new ArrayList<>();
+}
+{
+    start=<AUTH> (<PROVIDER>)? provider=StringToken() <LCURLY> (
+        <SET> (
+            set=<ID> (id=StringLiteral() | id=Parameter( ParameterType.STRING )) { authAttributes.add(astFactory.authId(pos(set), id)); }
+            | set=<PLAINTEXT> <PASSWORD> SetPassword(set, authAttributes, false)
+            | set=<ENCRYPTED> <PASSWORD> SetPassword(set, authAttributes, true)
+            | set=<PASSWORD> (
+               PasswordChangeRequired(authAttributes)
+               | SetPassword(set, authAttributes, false)
+            )
+        )
+    )+ <RCURLY>
+    {
+        return astFactory.auth(provider.image, authAttributes, pos(start));
     }
 }
 
@@ -6472,6 +6532,7 @@ PRIVILEGE_TYPE setPrivilege(Token start, boolean immutable) throws Exception:
         (
             (
                 ( <PASSWORD> | <PASSWORDS> ) { action = astFactory.privilegeAction( ActionType.USER_PASSWORD ); }
+                | <AUTH> { action = astFactory.privilegeAction( ActionType.USER_AUTH ); }
                 | <USER> (
                     <STATUS> { action = astFactory.privilegeAction( ActionType.USER_STATUS ); }
                     | <HOME> <DATABASE> { action = astFactory.privilegeAction( ActionType.USER_HOME ); }
@@ -7422,6 +7483,7 @@ Token UnescapedLabelSymbolicNameString() :
         | t=<ASSERT>
         | t=<ASSIGN>
         | t=<AT>
+        | t=<AUTH>
         | t=<BINDINGS>
         | t=<BOOL>
         | t=<BOOLEAN>
@@ -7506,6 +7568,7 @@ Token UnescapedLabelSymbolicNameString() :
         | t=<GROUPS>
         | t=<HEADERS>
         | t=<HOME>
+        | t=<ID>
         | t=<IF>
         | t=<IMMUTABLE>
         | t=<IN>
@@ -7568,6 +7631,8 @@ Token UnescapedLabelSymbolicNameString() :
         | t=<PROCEDURES>
         | t=<PROPERTIES>
         | t=<PROPERTY>
+        | t=<PROVIDER>
+        | t=<PROVIDERS>
         | t=<RANGE>
         | t=<READ>
         | t=<REALLOCATE>

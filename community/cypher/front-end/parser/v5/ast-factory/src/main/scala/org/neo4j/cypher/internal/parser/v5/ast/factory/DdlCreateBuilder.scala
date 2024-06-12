@@ -16,6 +16,9 @@
  */
 package org.neo4j.cypher.internal.parser.v5.ast.factory
 
+import org.neo4j.cypher.internal.ast.AdministrationCommand.NATIVE_AUTH
+import org.neo4j.cypher.internal.ast.Auth
+import org.neo4j.cypher.internal.ast.AuthAttribute
 import org.neo4j.cypher.internal.ast.ConstraintVersion
 import org.neo4j.cypher.internal.ast.ConstraintVersion0
 import org.neo4j.cypher.internal.ast.ConstraintVersion1
@@ -54,6 +57,8 @@ import org.neo4j.cypher.internal.ast.HomeDatabaseAction
 import org.neo4j.cypher.internal.ast.NoOptions
 import org.neo4j.cypher.internal.ast.NoWait
 import org.neo4j.cypher.internal.ast.Options
+import org.neo4j.cypher.internal.ast.Password
+import org.neo4j.cypher.internal.ast.PasswordChange
 import org.neo4j.cypher.internal.ast.Topology
 import org.neo4j.cypher.internal.ast.UserOptions
 import org.neo4j.cypher.internal.ast.WaitUntilComplete
@@ -87,6 +92,7 @@ import org.neo4j.cypher.internal.parser.v5.ast.factory.Cypher5AstUtil.nonEmptyPr
 import org.neo4j.cypher.internal.util.symbols.CypherType
 
 import scala.collection.immutable.ArraySeq
+import scala.jdk.CollectionConverters.ListHasAsScala
 
 trait DdlCreateBuilder extends Cypher5ParserListener {
 
@@ -575,19 +581,24 @@ trait DdlCreateBuilder extends Cypher5ParserListener {
     ctx: Cypher5Parser.CreateUserContext
   ): Unit = {
     val parent = ctx.getParent.asInstanceOf[CreateCommandContext]
-    val passCtx = ctx.password()
-    val passwordReq =
-      if (passCtx.passwordChangeRequired() != null) {
-        Some(passCtx.passwordChangeRequired().ast[Boolean]())
-      } else astOptFromList[Boolean](ctx.passwordChangeRequired(), Some(true))
+    val nativePassAttributes = ctx.password().asScala.toList
+      .map(_.ast[(Password, Option[PasswordChange])]())
+      .foldLeft(List.empty[AuthAttribute]) { case (acc, (password, change)) => (acc :+ password) ++ change }
+    val nativeAuthAttr = ctx.passwordChangeRequired().asScala.toList
+      .map(c => PasswordChange(c.ast[Boolean]())(pos(c)))
+      .foldLeft(nativePassAttributes) { case (acc, changeReq) => acc :+ changeReq }
+      .sortBy(_.position)
+    val nativeAuth =
+      if (nativeAuthAttr.nonEmpty) Some(Auth(NATIVE_AUTH, nativeAuthAttr)(nativeAuthAttr.head.position)) else None
+    val setAuth = ctx.setAuthClause().asScala.toList.map(_.ast[Auth]())
     val suspended = astOptFromList[Boolean](ctx.userStatus(), None)
     val homeDatabaseAction = astOptFromList[HomeDatabaseAction](ctx.homeDatabase(), None)
     ctx.ast = CreateUser(
       ctx.commandNameExpression().ast[Expression](),
-      passCtx.ENCRYPTED() != null,
-      passCtx.passwordExpression().ast[Expression](),
-      UserOptions(passwordReq, suspended, homeDatabaseAction),
-      ifExistsDo(parent.REPLACE() != null, ctx.EXISTS() != null)
+      UserOptions(suspended, homeDatabaseAction),
+      ifExistsDo(parent.REPLACE() != null, ctx.EXISTS() != null),
+      setAuth,
+      nativeAuth
     )(pos(parent))
   }
 }

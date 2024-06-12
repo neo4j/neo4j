@@ -103,6 +103,7 @@ import org.neo4j.cypher.internal.ast.RevokePrivilege
 import org.neo4j.cypher.internal.ast.RevokeRolesFromUsers
 import org.neo4j.cypher.internal.ast.RevokeType
 import org.neo4j.cypher.internal.ast.ServerManagementAction
+import org.neo4j.cypher.internal.ast.SetAuthAction
 import org.neo4j.cypher.internal.ast.SetDatabaseAccessAction
 import org.neo4j.cypher.internal.ast.SetOwnPassword
 import org.neo4j.cypher.internal.ast.SetPasswordsAction
@@ -273,7 +274,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
       case su: ShowCurrentUser => Some(plans.ShowCurrentUser(su.defaultColumnNames.map(varFor), su.yields, su.returns))
 
       // CREATE [OR REPLACE] USER foo [IF NOT EXISTS] WITH [PLAINTEXT | ENCRYPTED] PASSWORD password
-      case c @ CreateUser(userName, isEncryptedPassword, initialPassword, userOptions, ifExistsDo) =>
+      case c @ CreateUser(userName, userOptions, ifExistsDo, externalAuths, nativeAuth) =>
         val source = ifExistsDo match {
           case IfExistsReplace => plans.DropUser(
               plans.AssertNotCurrentUser(
@@ -292,11 +293,10 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
           plans.CreateUser(
             source,
             userName,
-            isEncryptedPassword,
-            initialPassword,
-            userOptions.requirePasswordChange.getOrElse(true),
             userOptions.suspended,
-            userOptions.homeDatabase
+            userOptions.homeDatabase,
+            externalAuths,
+            nativeAuth
           ),
           prettifier.asString(c)
         ))
@@ -322,10 +322,11 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
         Some(plans.LogSystemCommand(plans.DropUser(source, userName), prettifier.asString(c)))
 
       // ALTER USER foo
-      case c @ AlterUser(userName, isEncryptedPassword, initialPassword, userOptions, ifExists) =>
+      case c @ AlterUser(userName, userOptions, ifExists, externalAuths, nativeAuth, removeAuth) =>
         val dbmsActions = Vector(
-          (initialPassword, SetPasswordsAction),
-          (userOptions.requirePasswordChange, SetPasswordsAction),
+          (nativeAuth, SetPasswordsAction),
+          (externalAuths.find(_ => true), SetAuthAction),
+          (if (removeAuth.isEmpty) None else Some(true), SetAuthAction),
           (userOptions.suspended, SetUserStatusAction),
           (userOptions.homeDatabase, SetUserHomeDatabaseAction)
         ).collect { case (Some(_), action) => action }.distinct
@@ -347,11 +348,11 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
           plans.AlterUser(
             ifExistsSubPlan,
             userName,
-            isEncryptedPassword,
-            initialPassword,
-            userOptions.requirePasswordChange,
             userOptions.suspended,
-            userOptions.homeDatabase
+            userOptions.homeDatabase,
+            nativeAuth,
+            externalAuths,
+            removeAuth
           ),
           prettifier.asString(c)
         ))

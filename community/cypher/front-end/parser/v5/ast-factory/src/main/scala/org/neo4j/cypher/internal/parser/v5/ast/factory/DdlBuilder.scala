@@ -17,6 +17,7 @@
 
 package org.neo4j.cypher.internal.parser.v5.ast.factory
 
+import org.neo4j.cypher.internal.ast.AdministrationCommand.NATIVE_AUTH
 import org.neo4j.cypher.internal.ast.AllDatabasesScope
 import org.neo4j.cypher.internal.ast.AllGraphsScope
 import org.neo4j.cypher.internal.ast.AlterDatabase
@@ -24,6 +25,9 @@ import org.neo4j.cypher.internal.ast.AlterLocalDatabaseAlias
 import org.neo4j.cypher.internal.ast.AlterRemoteDatabaseAlias
 import org.neo4j.cypher.internal.ast.AlterServer
 import org.neo4j.cypher.internal.ast.AlterUser
+import org.neo4j.cypher.internal.ast.Auth
+import org.neo4j.cypher.internal.ast.AuthAttribute
+import org.neo4j.cypher.internal.ast.AuthId
 import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.DatabaseName
 import org.neo4j.cypher.internal.ast.DeallocateServers
@@ -57,9 +61,12 @@ import org.neo4j.cypher.internal.ast.Options
 import org.neo4j.cypher.internal.ast.OptionsMap
 import org.neo4j.cypher.internal.ast.OptionsParam
 import org.neo4j.cypher.internal.ast.ParameterName
+import org.neo4j.cypher.internal.ast.Password
+import org.neo4j.cypher.internal.ast.PasswordChange
 import org.neo4j.cypher.internal.ast.ReadOnlyAccess
 import org.neo4j.cypher.internal.ast.ReadWriteAccess
 import org.neo4j.cypher.internal.ast.ReallocateDatabases
+import org.neo4j.cypher.internal.ast.RemoveAuth
 import org.neo4j.cypher.internal.ast.RemoveHomeDatabaseAction
 import org.neo4j.cypher.internal.ast.RenameRole
 import org.neo4j.cypher.internal.ast.RenameServer
@@ -78,6 +85,7 @@ import org.neo4j.cypher.internal.ast.WaitUntilComplete
 import org.neo4j.cypher.internal.expressions.ExplicitParameter
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LabelName
+import org.neo4j.cypher.internal.expressions.ListLiteral
 import org.neo4j.cypher.internal.expressions.MapExpression
 import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.expressions.Property
@@ -105,6 +113,7 @@ import org.neo4j.exceptions.SyntaxException
 import java.nio.charset.StandardCharsets
 
 import scala.collection.immutable.ArraySeq
+import scala.jdk.CollectionConverters.ListHasAsScala
 
 trait DdlBuilder extends Cypher5ParserListener {
 
@@ -541,26 +550,59 @@ trait DdlBuilder extends Cypher5ParserListener {
     ctx: Cypher5Parser.AlterUserContext
   ): Unit = {
     val username = ctx.commandNameExpression().ast[Expression]()
-    val passCtx = ctx.password()
-    val (isEncrypted, initPass) = if (!passCtx.isEmpty)
-      (Some(passCtx.get(0).ENCRYPTED() != null), Some(passCtx.get(0).passwordExpression().ast[Expression]()))
-    else (None, None)
-    val passwordReq =
-      if (passCtx.isEmpty && ctx.passwordChangeRequired().isEmpty) None
-      else if (!ctx.passwordChangeRequired().isEmpty) Some(ctx.passwordChangeRequired().get(0).ast[Boolean]())
-      else if (!passCtx.isEmpty) {
-        if (passCtx.get(0).passwordChangeRequired() != null)
-          Some(passCtx.get(0).passwordChangeRequired().ast[Boolean]())
-        else None
-      } else None
+    val nativePassAttributes = ctx.password().asScala.toList
+      .map(_.ast[(Password, Option[PasswordChange])]())
+      .foldLeft(List.empty[AuthAttribute]) { case (acc, (password, change)) => (acc :+ password) ++ change }
+    val nativeAuthAttr = ctx.passwordChangeRequired().asScala.toList
+      .map(c => PasswordChange(c.ast[Boolean]())(pos(c)))
+      .foldLeft(nativePassAttributes) { case (acc, changeReq) => acc :+ changeReq }
+      .sortBy(_.position)
     val suspended = astOptFromList[Boolean](ctx.userStatus(), None)
-    val homeDatabaseAction = if (ctx.REMOVE() != null) Some(RemoveHomeDatabaseAction)
-    else astOptFromList[HomeDatabaseAction](ctx.homeDatabase(), None)
-    val userOptions = UserOptions(passwordReq, suspended, homeDatabaseAction)
-    ctx.ast = AlterUser(username, isEncrypted, initPass, userOptions, ctx.EXISTS() != null)(pos(ctx.getParent))
+    val removeHome = if (!ctx.HOME().isEmpty) Some(RemoveHomeDatabaseAction) else None
+    val homeDatabaseAction = astOptFromList[HomeDatabaseAction](ctx.homeDatabase(), removeHome)
+    val userOptions = UserOptions(suspended, homeDatabaseAction)
+    val nativeAuth =
+      if (nativeAuthAttr.nonEmpty) Some(Auth(NATIVE_AUTH, nativeAuthAttr)(nativeAuthAttr.head.position)) else None
+    val removeAuth = RemoveAuth(!ctx.ALL().isEmpty, ctx.removeNamedProvider().asScala.toList.map(_.ast[Expression]()))
+    val setAuth = ctx.setAuthClause().asScala.toList.map(_.ast[Auth]())
+    ctx.ast =
+      AlterUser(username, userOptions, ctx.EXISTS() != null, setAuth, nativeAuth, removeAuth)(pos(ctx.getParent))
   }
 
-  override def exitPassword(ctx: Cypher5Parser.PasswordContext): Unit = {}
+  override def exitRemoveNamedProvider(ctx: Cypher5Parser.RemoveNamedProviderContext): Unit = {
+    ctx.ast = if (ctx.stringLiteral() != null) ctx.stringLiteral().ast[StringLiteral]()
+    else if (ctx.stringListLiteral() != null) ctx.stringListLiteral().ast[ListLiteral]()
+    else ctx.parameter().ast[Parameter]()
+  }
+
+  override def exitSetAuthClause(ctx: Cypher5Parser.SetAuthClauseContext): Unit = {
+    val provider = ctx.stringLiteral().ast[StringLiteral]()
+    val attributes = astSeq[AuthAttribute](ctx.userAuthAttribute()).toList
+    ctx.ast = Auth(provider.value, attributes)(pos(ctx))
+  }
+
+  override def exitUserAuthAttribute(ctx: Cypher5Parser.UserAuthAttributeContext): Unit = {
+    ctx.ast = if (ctx.ID() != null) {
+      AuthId(ctx.stringOrParameterExpression().ast())(pos(ctx.ID()))
+    } else if (ctx.passwordOnly() != null) {
+      ctx.passwordOnly().ast()
+    } else {
+      PasswordChange(ctx.passwordChangeRequired().ast[Boolean]())(pos(ctx.passwordChangeRequired()))
+    }
+  }
+
+  override def exitPasswordOnly(ctx: Cypher5Parser.PasswordOnlyContext): Unit = {
+    ctx.ast = Password(ctx.passwordExpression().ast[Expression](), ctx.ENCRYPTED() != null)(pos(ctx))
+  }
+
+  override def exitPassword(ctx: Cypher5Parser.PasswordContext): Unit = {
+    val password = Password(ctx.passwordExpression().ast[Expression](), ctx.ENCRYPTED() != null)(pos(ctx))
+    val passwordReq =
+      if (ctx.passwordChangeRequired() != null)
+        Some(PasswordChange(ctx.passwordChangeRequired().ast[Boolean]())(pos(ctx.passwordChangeRequired())))
+      else None
+    ctx.ast = (password, passwordReq)
+  }
 
   final override def exitPasswordExpression(
     ctx: Cypher5Parser.PasswordExpressionContext
@@ -618,6 +660,16 @@ trait DdlBuilder extends Cypher5ParserListener {
       Left(ctx.symbolicNameString().ast[String]())
     } else {
       Right(ctx.parameter().ast[Parameter]())
+    }
+  }
+
+  final override def exitStringOrParameterExpression(
+    ctx: Cypher5Parser.StringOrParameterExpressionContext
+  ): Unit = {
+    ctx.ast = if (ctx.stringLiteral() != null) {
+      ctx.stringLiteral().ast[StringLiteral]()
+    } else {
+      ctx.parameter().ast[Parameter]()
     }
   }
 

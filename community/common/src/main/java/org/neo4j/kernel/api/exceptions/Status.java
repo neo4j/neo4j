@@ -533,6 +533,16 @@ public interface Status {
         TokenExpired(ClientError, "The auth provider token has expired"),
 
         // Administration command
+        AuthProviderNotDefined(
+                ClientNotification,
+                "The auth provider is not defined.",
+                SeverityLevel.INFORMATION,
+                NotificationCategory.SECURITY),
+        ExternalAuthNotEnabled(
+                ClientNotification,
+                "External auth for user is not enabled.",
+                SeverityLevel.WARNING,
+                NotificationCategory.SECURITY),
         CommandHasNoEffect(
                 ClientNotification, "`%s` has no effect.", SeverityLevel.INFORMATION, NotificationCategory.SECURITY),
         ImpossibleRevokeCommand(

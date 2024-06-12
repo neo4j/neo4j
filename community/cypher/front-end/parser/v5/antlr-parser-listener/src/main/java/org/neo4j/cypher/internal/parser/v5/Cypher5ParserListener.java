@@ -445,7 +445,11 @@ public interface Cypher5ParserListener extends ParseTreeListener {
 
     void exitAlterUser(Cypher5Parser.AlterUserContext ctx);
 
+    void exitRemoveNamedProvider(Cypher5Parser.RemoveNamedProviderContext ctx);
+
     void exitPassword(Cypher5Parser.PasswordContext ctx);
+
+    void exitPasswordOnly(Cypher5Parser.PasswordOnlyContext ctx);
 
     void exitPasswordExpression(Cypher5Parser.PasswordExpressionContext ctx);
 
@@ -454,6 +458,10 @@ public interface Cypher5ParserListener extends ParseTreeListener {
     void exitUserStatus(Cypher5Parser.UserStatusContext ctx);
 
     void exitHomeDatabase(Cypher5Parser.HomeDatabaseContext ctx);
+
+    void exitSetAuthClause(Cypher5Parser.SetAuthClauseContext ctx);
+
+    void exitUserAuthAttribute(Cypher5Parser.UserAuthAttributeContext ctx);
 
     void exitShowUsers(Cypher5Parser.ShowUsersContext ctx);
 
@@ -639,9 +647,13 @@ public interface Cypher5ParserListener extends ParseTreeListener {
 
     void exitGlobPart(Cypher5Parser.GlobPartContext ctx);
 
+    void exitStringListLiteral(Cypher5Parser.StringListLiteralContext ctx);
+
     void exitStringList(Cypher5Parser.StringListContext ctx);
 
     void exitStringLiteral(Cypher5Parser.StringLiteralContext ctx);
+
+    void exitStringOrParameterExpression(Cypher5Parser.StringOrParameterExpressionContext ctx);
 
     void exitStringOrParameter(Cypher5Parser.StringOrParameterContext ctx);
 

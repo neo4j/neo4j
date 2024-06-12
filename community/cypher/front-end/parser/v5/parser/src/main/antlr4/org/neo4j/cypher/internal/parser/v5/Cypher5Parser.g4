@@ -1119,8 +1119,13 @@ showRoles
    ;
 
 createUser
-   : USER commandNameExpression (IF NOT EXISTS)? SET password (SET (PASSWORD passwordChangeRequired | userStatus | homeDatabase))*
-   ;
+   : USER commandNameExpression (IF NOT EXISTS)? (SET (
+      password
+      | PASSWORD passwordChangeRequired
+      | userStatus
+      | homeDatabase
+      | setAuthClause
+   ))+;
 
 dropUser
    : USER commandNameExpression (IF EXISTS)?
@@ -1135,16 +1140,29 @@ alterCurrentUser
    ;
 
 alterUser
-   : USER commandNameExpression (IF EXISTS)? ((SET (
+   : USER commandNameExpression (IF EXISTS)? (REMOVE (
+      HOME DATABASE
+      | ALL AUTH (PROVIDER | PROVIDERS)?
+      | removeNamedProvider
+   ))* (SET (
       password
       | PASSWORD passwordChangeRequired
       | userStatus
       | homeDatabase
-   ))+ | REMOVE HOME DATABASE)
+      | setAuthClause
+   ))*
+   ;
+
+removeNamedProvider
+   : AUTH (PROVIDER | PROVIDERS)? (stringLiteral | stringListLiteral | parameter["ANY"])
    ;
 
 password
    : (PLAINTEXT | ENCRYPTED)? PASSWORD passwordExpression passwordChangeRequired?
+   ;
+
+passwordOnly
+   : (PLAINTEXT | ENCRYPTED)? PASSWORD passwordExpression
    ;
 
 passwordExpression
@@ -1162,6 +1180,18 @@ userStatus
 
 homeDatabase
    : HOME DATABASE symbolicAliasNameOrParameter
+   ;
+
+setAuthClause
+   : AUTH PROVIDER? stringLiteral LCURLY (SET (
+      userAuthAttribute
+   ))+ RCURLY
+   ;
+
+userAuthAttribute
+   : ID stringOrParameterExpression
+   | passwordOnly
+   | PASSWORD passwordChangeRequired
    ;
 
 showUsers
@@ -1322,6 +1352,7 @@ setPrivilege
       (passwordToken | USER (STATUS | HOME DATABASE) | DATABASE ACCESS) ON DBMS
       | LABEL labelsResource ON graphScope
       | PROPERTY propertiesResource ON graphScope graphQualifier
+      | AUTH ON DBMS
    )
    ;
 
@@ -1638,6 +1669,10 @@ globPart
    | unescapedSymbolicNameString
    ;
 
+stringListLiteral
+   : LBRACKET (stringLiteral (COMMA stringLiteral)*)? RBRACKET
+   ;
+
 stringList
    : stringLiteral (COMMA stringLiteral)+
    ;
@@ -1647,6 +1682,13 @@ stringLiteral
    | STRING_LITERAL2
    ;
 
+// Should return an Expression
+stringOrParameterExpression
+   : stringLiteral
+   | parameter["STRING"]
+   ;
+
+// Should return an Either[String, Parameter]
 stringOrParameter
    : stringLiteral
    | parameter["STRING"]
@@ -1707,6 +1749,7 @@ unescapedLabelSymbolicNameString
    | ASSERT
    | ASSIGN
    | AT
+   | AUTH
    | BINDINGS
    | BOOL
    | BOOLEAN
@@ -1791,6 +1834,7 @@ unescapedLabelSymbolicNameString
    | GROUPS
    | HEADERS
    | HOME
+   | ID
    | IF
    | IMMUTABLE
    | IMPERSONATE
@@ -1853,6 +1897,8 @@ unescapedLabelSymbolicNameString
    | PROCEDURES
    | PROPERTIES
    | PROPERTY
+   | PROVIDER
+   | PROVIDERS
    | RANGE
    | READ
    | REALLOCATE

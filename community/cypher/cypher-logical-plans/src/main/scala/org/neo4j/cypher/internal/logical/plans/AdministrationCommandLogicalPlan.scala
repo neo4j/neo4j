@@ -28,11 +28,14 @@ import org.neo4j.cypher.internal.ast.DatabaseName
 import org.neo4j.cypher.internal.ast.DatabaseScope
 import org.neo4j.cypher.internal.ast.DbmsAction
 import org.neo4j.cypher.internal.ast.DropDatabaseAdditionalAction
+import org.neo4j.cypher.internal.ast.ExternalAuth
 import org.neo4j.cypher.internal.ast.GraphAction
 import org.neo4j.cypher.internal.ast.HomeDatabaseAction
 import org.neo4j.cypher.internal.ast.IfExistsDo
+import org.neo4j.cypher.internal.ast.NativeAuth
 import org.neo4j.cypher.internal.ast.Options
 import org.neo4j.cypher.internal.ast.PrivilegeQualifier
+import org.neo4j.cypher.internal.ast.RemoveAuth
 import org.neo4j.cypher.internal.ast.Return
 import org.neo4j.cypher.internal.ast.ShowPrivilegeScope
 import org.neo4j.cypher.internal.ast.Statement
@@ -95,11 +98,10 @@ case class ShowCurrentUser(
 case class CreateUser(
   source: SecurityAdministrationLogicalPlan,
   userName: Either[String, Parameter],
-  isEncryptedPassword: Boolean,
-  initialPassword: Expression,
-  requirePasswordChange: Boolean,
   suspended: Option[Boolean],
-  defaultDatabase: Option[HomeDatabaseAction]
+  defaultDatabase: Option[HomeDatabaseAction],
+  externalAuths: Seq[ExternalAuth],
+  nativeAuth: Option[NativeAuth]
 )(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
 
 case class RenameUser(
@@ -114,11 +116,11 @@ idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
 case class AlterUser(
   source: SecurityAdministrationLogicalPlan,
   userName: Either[String, Parameter],
-  isEncryptedPassword: Option[Boolean],
-  initialPassword: Option[Expression],
-  requirePasswordChange: Option[Boolean],
   suspended: Option[Boolean],
-  defaultDatabase: Option[HomeDatabaseAction]
+  defaultDatabase: Option[HomeDatabaseAction],
+  nativeAuth: Option[NativeAuth],
+  externalAuths: Seq[ExternalAuth],
+  removeAuth: RemoveAuth
 )(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
 
 case class SetOwnPassword(newPassword: Expression, currentPassword: Expression)(implicit idGen: IdGen)

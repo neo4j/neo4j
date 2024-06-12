@@ -20,6 +20,7 @@ import org.neo4j.cypher.internal.ast.Access
 import org.neo4j.cypher.internal.ast.AccessDatabaseAction
 import org.neo4j.cypher.internal.ast.ActionResource
 import org.neo4j.cypher.internal.ast.AdministrationCommand
+import org.neo4j.cypher.internal.ast.AdministrationCommand.NATIVE_AUTH
 import org.neo4j.cypher.internal.ast.AliasedReturnItem
 import org.neo4j.cypher.internal.ast.AllAliasManagementActions
 import org.neo4j.cypher.internal.ast.AllConstraintActions
@@ -53,6 +54,8 @@ import org.neo4j.cypher.internal.ast.AlterUserAction
 import org.neo4j.cypher.internal.ast.AscSortItem
 import org.neo4j.cypher.internal.ast.AssignPrivilegeAction
 import org.neo4j.cypher.internal.ast.AssignRoleAction
+import org.neo4j.cypher.internal.ast.Auth
+import org.neo4j.cypher.internal.ast.AuthId
 import org.neo4j.cypher.internal.ast.BuiltInFunctions
 import org.neo4j.cypher.internal.ast.CatalogName
 import org.neo4j.cypher.internal.ast.Clause
@@ -201,6 +204,8 @@ import org.neo4j.cypher.internal.ast.OptionsParam
 import org.neo4j.cypher.internal.ast.OrderBy
 import org.neo4j.cypher.internal.ast.ParameterName
 import org.neo4j.cypher.internal.ast.ParsedAsYield
+import org.neo4j.cypher.internal.ast.Password
+import org.neo4j.cypher.internal.ast.PasswordChange
 import org.neo4j.cypher.internal.ast.PatternQualifier
 import org.neo4j.cypher.internal.ast.PointIndexes
 import org.neo4j.cypher.internal.ast.PrivilegeCommand
@@ -223,6 +228,7 @@ import org.neo4j.cypher.internal.ast.RelUniqueConstraints
 import org.neo4j.cypher.internal.ast.RelationshipAllQualifier
 import org.neo4j.cypher.internal.ast.RelationshipQualifier
 import org.neo4j.cypher.internal.ast.Remove
+import org.neo4j.cypher.internal.ast.RemoveAuth
 import org.neo4j.cypher.internal.ast.RemoveHomeDatabaseAction
 import org.neo4j.cypher.internal.ast.RemoveItem
 import org.neo4j.cypher.internal.ast.RemoveLabelAction
@@ -246,6 +252,7 @@ import org.neo4j.cypher.internal.ast.RevokeRolesFromUsers
 import org.neo4j.cypher.internal.ast.RevokeType
 import org.neo4j.cypher.internal.ast.SchemaCommand
 import org.neo4j.cypher.internal.ast.ServerManagementAction
+import org.neo4j.cypher.internal.ast.SetAuthAction
 import org.neo4j.cypher.internal.ast.SetClause
 import org.neo4j.cypher.internal.ast.SetDatabaseAccessAction
 import org.neo4j.cypher.internal.ast.SetExactPropertiesFromMapItem
@@ -2364,16 +2371,12 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
 
   def _createUser: Gen[CreateUser] = for {
     userName <- _stringLiteralOrParameter
-    isEncryptedPassword <- boolean
-    password <- _password
-    requirePasswordChange <- boolean
+    oldNativeAuth <- _nativeAuth(mandatoryPassword = true)
+    newAuths <- _auths(mandatoryPassword = true, needsAuth = oldNativeAuth.isEmpty)
     suspended <- option(boolean)
     homeDatabase <- option(_setHomeDatabaseAction)
     ifExistsDo <- _ifExistsDo
-    // requirePasswordChange is parsed as 'Some(true)' if omitted in query,
-    // prettifier explicitly adds it so 'None' would be prettified and re-parsed to 'Some(true)'
-    // hence the explicit 'Some(requirePasswordChange)'
-  } yield CreateUser(userName, isEncryptedPassword, password, UserOptions(Some(requirePasswordChange), suspended, homeDatabase), ifExistsDo)(pos)
+  } yield CreateUser(userName, UserOptions(suspended, homeDatabase), ifExistsDo, newAuths, oldNativeAuth)(pos)
 
   def _renameUser: Gen[RenameUser] = for {
     fromUserName <- _stringLiteralOrParameter
@@ -2389,16 +2392,67 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
   def _alterUser: Gen[AlterUser] = for {
     userName <- _stringLiteralOrParameter
     ifExists <- boolean
-    password <- option(_password)
-    requirePasswordChange <- option(boolean)
-    isEncryptedPassword <- if (password.isEmpty) const(None) else some(boolean)
+    oldNativeAuth <- _nativeAuth(mandatoryPassword = false)
+    newAuths <- _auths(mandatoryPassword = false, needsAuth = false)
+    removeAuth <- _removeAuth()
     suspended <- option(boolean)
-    // All four are not allowed to be None and REMOVE HOME DATABASE is only valid by itself
+    // Need at least one SET or REMOVE clause
     homeDatabase <-
-      if (password.isEmpty && requirePasswordChange.isEmpty && suspended.isEmpty)
+      if (oldNativeAuth.isEmpty && newAuths.isEmpty && removeAuth.isEmpty && suspended.isEmpty)
         oneOf(some(_setHomeDatabaseAction), some(RemoveHomeDatabaseAction))
-      else option(_setHomeDatabaseAction)
-  } yield AlterUser(userName, isEncryptedPassword, password, UserOptions(requirePasswordChange, suspended, homeDatabase), ifExists)(pos)
+      else oneOf(option(_setHomeDatabaseAction), option(RemoveHomeDatabaseAction))
+  } yield AlterUser(userName, UserOptions(suspended, homeDatabase), ifExists, newAuths, oldNativeAuth, removeAuth)(pos)
+
+  def _passwordClause: Gen[Password] = for {
+    password <- _password
+    encrypted <- boolean
+  } yield Password(password, encrypted)(pos)
+
+  def _passwordChangeClause: Gen[PasswordChange] = for {
+    changeRequired <- boolean
+  } yield PasswordChange(changeRequired)(pos)
+
+  def _nativeAuth(mandatoryPassword: Boolean): Gen[Option[Auth]] = for {
+    password <- if (mandatoryPassword) some(_passwordClause) else option(_passwordClause)
+    changeRequired <- option(_passwordChangeClause)
+    // want to be able to have no native auth even if the password is mandatory when there is one
+    forceNone <- if (mandatoryPassword) boolean else const(false)
+  } yield {
+    if (forceNone) None
+    else (password, changeRequired) match {
+      case (Some(p), Some(c)) => Some(Auth(NATIVE_AUTH, List(p, c))(pos))
+      case (Some(p), None)    => Some(Auth(NATIVE_AUTH, List(p))(pos))
+      case (None, Some(c))    => Some(Auth(NATIVE_AUTH, List(c))(pos))
+      case _                  => None
+    }
+  }
+
+  def _authIds(): Gen[AuthId] = for {
+    id <- _stringLiteralOrParameter
+  } yield AuthId(id)(pos)
+
+  def _externalAuth(): Gen[Auth] = for {
+    provider <- string
+    attr <- oneOrMore(_authIds())
+  } yield Auth(provider, attr)(pos)
+
+  def _auths(mandatoryPassword: Boolean, needsAuth: Boolean): Gen[List[Auth]] = for {
+    nativeAuth <- _nativeAuth(mandatoryPassword)
+    externalAuths <- if (needsAuth && nativeAuth.isEmpty) oneOrMore(_externalAuth()) else zeroOrMore(_externalAuth())
+  } yield externalAuths ++ nativeAuth
+
+  def _removeAuthExpr(): Gen[Expression] = for {
+    s <- _stringLit
+    l <- _listOf(_stringLit)
+    p <- _parameter
+    auth <- oneOf(s, l, p)
+  } yield auth
+
+  def _removeAuth(): Gen[RemoveAuth] = for {
+    removeAll <- boolean
+    // prettifier removes any explicit remove in presence of remove all
+    auths <- if (!removeAll) oneOrMore(_removeAuthExpr()) else const(List.empty)
+  } yield RemoveAuth(removeAll, auths)
 
   def _setHomeDatabaseAction: Gen[SetHomeDatabaseAction] = _databaseName.map(db => SetHomeDatabaseAction(db))
 
@@ -2480,6 +2534,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     SetUserStatusAction,
     SetUserHomeDatabaseAction,
     SetPasswordsAction,
+    SetAuthAction,
     AlterUserAction,
     DropUserAction,
     AllRoleActions,

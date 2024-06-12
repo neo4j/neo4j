@@ -22,7 +22,6 @@ package org.neo4j.server.security.systemgraph;
 import static org.neo4j.kernel.api.security.AuthToken.invalidToken;
 
 import java.util.Map;
-import org.neo4j.cypher.internal.security.FormatException;
 import org.neo4j.exceptions.InvalidArgumentException;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.AuthenticationResult;
@@ -32,6 +31,7 @@ import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.api.security.AuthToken;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 import org.neo4j.kernel.impl.security.User;
+import org.neo4j.server.security.FormatException;
 import org.neo4j.server.security.auth.AuthenticationStrategy;
 import org.neo4j.server.security.auth.BasicLoginContext;
 

@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.ast.CreateRole
 import org.neo4j.cypher.internal.ast.CreateUser
 import org.neo4j.cypher.internal.ast.IfExistsThrowError
 import org.neo4j.cypher.internal.ast.NoOptions
+import org.neo4j.cypher.internal.ast.Password
 import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.SensitiveParameter
@@ -192,8 +193,11 @@ class FabricPlannerTest
       remote.query
         .should(not(include("*")))
 
-      parse(remote.query).as[CreateUser].initialPassword
-        .should(matchPattern { case _: SensitiveParameter => })
+      parse(remote.query).as[CreateUser] match {
+        case CreateUser(_, _, _, _, Some(nativeAuth)) =>
+          nativeAuth.password should matchPattern { case Some(Password(_: SensitiveParameter, _)) => }
+        case _ => fail("missing native auth")
+      }
 
       remote.extractedLiterals.values.toSeq.map(_.asInstanceOf[SensitiveStringLiteral].value).head
         .shouldEqual(UTF8.encode("secret"))

@@ -19,6 +19,7 @@ package org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheckContext
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheckResult
+import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.expressions.Add
 import org.neo4j.cypher.internal.expressions.And
@@ -41,26 +42,39 @@ import org.neo4j.cypher.internal.expressions.Not
 import org.neo4j.cypher.internal.expressions.NotEquals
 import org.neo4j.cypher.internal.expressions.Null
 import org.neo4j.cypher.internal.expressions.Or
+import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.expressions.PathPatternPart
 import org.neo4j.cypher.internal.expressions.Pattern.ForMatch
 import org.neo4j.cypher.internal.expressions.PatternPart.AllPaths
 import org.neo4j.cypher.internal.expressions.PatternPartWithSelector
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
+import org.neo4j.cypher.internal.expressions.SensitiveStringLiteral
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CTList
+import org.neo4j.cypher.internal.util.symbols.CTString
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.scalatest.prop.TableDrivenPropertyChecks._
 
+import java.nio.charset.StandardCharsets
+
 class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestSupport {
+  private val p = InputPosition.withLength(0, 0, 0, 0)
+  private val pos1 = InputPosition(0, 1, 0)
+  private val pos2 = InputPosition(0, 2, 0)
+  private val pos3 = InputPosition(0, 3, 0)
+  private val pos4 = InputPosition(0, 4, 0)
+
+  private val initialState =
+    SemanticState.clean
+      .withFeature(SemanticFeature.MultipleDatabases)
+      .withFeature(SemanticFeature.LinkedUsers)
 
   // Privilege command tests
-  private val p = InputPosition.withLength(0, 0, 0, 0)
-  private val initialState = SemanticState.clean
 
   test("it should not be possible to administer privileges pertaining to an unassignable action") {
 
@@ -134,6 +148,8 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
     privilege.semanticCheck.run(initialState, SemanticCheckContext.default) shouldBe SemanticCheckResult
       .error(initialState, "`ON DEFAULT DATABASE` is not supported. Use `ON HOME DATABASE` instead.", p)
   }
+
+  // Property Rules
 
   type QualifierFn = (Option[Variable], Expression) => List[PrivilegeQualifier]
   val allLabelPatternQualifier: QualifierFn = (v, e) => List(PatternQualifier(Seq(LabelAllQualifier()(p)), v, e))
@@ -961,5 +977,1350 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
           }) shouldBe true
         }
       })
+  }
+
+  // Create/Alter user
+
+  private def authId(id: String)(p: InputPosition): AuthId = authId(literalString(id))(p)
+  private def authId(id: Expression)(p: InputPosition): AuthId = AuthId(id)(p)
+
+  private def password(pass: Expression, isEncrypted: Boolean = false)(p: InputPosition): Password =
+    Password(pass, isEncrypted)(p)
+
+  private def passwordChange(requireChange: Boolean)(p: InputPosition): PasswordChange =
+    PasswordChange(requireChange)(p)
+
+  private val password: SensitiveStringLiteral =
+    SensitiveStringLiteral("password".getBytes(StandardCharsets.UTF_8))(p)
+
+  private val passwordEmpty: SensitiveStringLiteral =
+    SensitiveStringLiteral("".getBytes(StandardCharsets.UTF_8))(p)
+  private val paramPassword: Parameter = parameter("password", CTString)
+
+  test("CREATE USER foo SET PASSWORD 'password' SET PASSWORD 'password'") {
+    val createUser = CreateUser(
+      literalString("foo"),
+      UserOptions(None, None),
+      IfExistsThrowError,
+      List(),
+      Some(Auth("native", List(password(password)(pos1), password(password)(pos2)))(pos1))
+    )(p)
+
+    createUser.semanticCheck.run(initialState, SemanticCheckContext.default).errors shouldBe SemanticCheckResult
+      .error(initialState, "Duplicate `SET PASSWORD` clause.", pos2).errors
+  }
+
+  test("CREATE USER foo SET PASSWORD $password SET PASSWORD 'password'") {
+    val createUser = CreateUser(
+      literalString("foo"),
+      UserOptions(None, None),
+      IfExistsThrowError,
+      List(),
+      Some(Auth("native", List(password(paramPassword)(pos1), password(password)(pos2)))(pos1))
+    )(p)
+
+    createUser.semanticCheck.run(initialState, SemanticCheckContext.default).errors shouldBe SemanticCheckResult
+      .error(initialState, "Duplicate `SET PASSWORD` clause.", pos2).errors
+  }
+
+  test("CREATE OR REPLACE USER foo IF NOT EXISTS SET PASSWORD 'password'") {
+    val createUser = CreateUser(
+      literalString("foo"),
+      UserOptions(None, None),
+      IfExistsInvalidSyntax,
+      List(),
+      Some(Auth("native", List(password(password)(pos)))(pos))
+    )(p)
+
+    createUser.semanticCheck.run(initialState, SemanticCheckContext.default).errors shouldBe SemanticCheckResult
+      .error(
+        initialState,
+        "Failed to create the specified user 'foo': cannot have both `OR REPLACE` and `IF NOT EXISTS`.",
+        p
+      ).errors
+  }
+
+  test("CREATE OR REPLACE USER foo IF NOT EXISTS SET AUTH 'native' { SET PASSWORD 'password' }") {
+    val createUser = CreateUser(
+      literalString("foo"),
+      UserOptions(None, None),
+      IfExistsInvalidSyntax,
+      List(Auth("native", List(password(password)(pos)))(pos)),
+      None
+    )(p)
+
+    createUser.semanticCheck.run(initialState, SemanticCheckContext.default).errors shouldBe SemanticCheckResult
+      .error(
+        initialState,
+        "Failed to create the specified user 'foo': cannot have both `OR REPLACE` and `IF NOT EXISTS`.",
+        p
+      ).errors
+  }
+
+  test("CREATE OR REPLACE USER foo IF NOT EXISTS SET AUTH 'foo' { SET ID 'bar' }") {
+    val createUser = CreateUser(
+      literalString("foo"),
+      UserOptions(None, None),
+      IfExistsInvalidSyntax,
+      List(Auth("foo", List(authId("bar")(pos)))(pos)),
+      None
+    )(p)
+
+    createUser.semanticCheck.run(initialState, SemanticCheckContext.default).errors shouldBe SemanticCheckResult
+      .error(
+        initialState,
+        "Failed to create the specified user 'foo': cannot have both `OR REPLACE` and `IF NOT EXISTS`.",
+        p
+      ).errors
+  }
+
+  test("CREATE OR REPLACE USER $foo IF NOT EXISTS SET PASSWORD 'password'") {
+    val createUser = CreateUser(
+      parameter("foo", CTString),
+      UserOptions(None, None),
+      IfExistsInvalidSyntax,
+      List(),
+      Some(Auth("native", List(password(password)(pos)))(pos))
+    )(p)
+
+    createUser.semanticCheck.run(initialState, SemanticCheckContext.default).errors shouldBe SemanticCheckResult
+      .error(
+        initialState,
+        "Failed to create the specified user '$foo': cannot have both `OR REPLACE` and `IF NOT EXISTS`.",
+        p
+      ).errors
+  }
+
+  test("CREATE OR REPLACE USER $foo IF NOT EXISTS SET AUTH 'native' { SET PASSWORD 'password' }") {
+    val createUser = CreateUser(
+      parameter("foo", CTString),
+      UserOptions(None, None),
+      IfExistsInvalidSyntax,
+      List(Auth("native", List(password(password)(pos)))(pos)),
+      None
+    )(p)
+
+    createUser.semanticCheck.run(initialState, SemanticCheckContext.default).errors shouldBe SemanticCheckResult
+      .error(
+        initialState,
+        "Failed to create the specified user '$foo': cannot have both `OR REPLACE` and `IF NOT EXISTS`.",
+        p
+      ).errors
+  }
+
+  test("CREATE OR REPLACE USER $foo IF NOT EXISTS SET AUTH 'foo' { SET ID 'bar' }") {
+    val createUser = CreateUser(
+      literalString("foo"),
+      UserOptions(None, None),
+      IfExistsInvalidSyntax,
+      List(Auth("foo", List(authId("bar")(pos)))(pos)),
+      None
+    )(p)
+
+    createUser.semanticCheck.run(initialState, SemanticCheckContext.default).errors shouldBe SemanticCheckResult
+      .error(
+        initialState,
+        "Failed to create the specified user 'foo': cannot have both `OR REPLACE` and `IF NOT EXISTS`.",
+        p
+      ).errors
+  }
+
+  test("CREATE USER foo SET PASSWORD CHANGE REQUIRED") {
+    val createUser = CreateUser(
+      literalString("foo"),
+      UserOptions(None, None),
+      IfExistsThrowError,
+      List(),
+      Some(Auth("native", List(passwordChange(requireChange = true)(pos1)))(pos1))
+    )(p)
+
+    createUser.semanticCheck.run(initialState, SemanticCheckContext.default).errors shouldBe SemanticCheckResult
+      .error(initialState, "Clause `SET PASSWORD` is mandatory for auth provider `native`.", pos1).errors
+  }
+
+  test("CREATE USER foo SET STATUS SUSPENDED") {
+    val createUser = CreateUser(
+      literalString("foo"),
+      UserOptions(Some(true), None),
+      IfExistsThrowError,
+      List(),
+      None
+    )(p)
+
+    createUser.semanticCheck.run(initialState, SemanticCheckContext.default).errors shouldBe SemanticCheckResult
+      .error(initialState, "No auth given for user.", p).errors
+  }
+
+  test("CREATE USER foo SET PASSWORD CHANGE REQUIRED SET STATUS ACTIVE") {
+    val createUser = CreateUser(
+      literalString("foo"),
+      UserOptions(Some(false), None),
+      IfExistsThrowError,
+      List(),
+      Some(Auth("native", List(passwordChange(requireChange = true)(pos1)))(pos1))
+    )(p)
+
+    createUser.semanticCheck.run(initialState, SemanticCheckContext.default).errors shouldBe SemanticCheckResult
+      .error(initialState, "Clause `SET PASSWORD` is mandatory for auth provider `native`.", pos1).errors
+  }
+
+  test("CREATE USER foo IF NOT EXISTS SET PASSWORD CHANGE REQUIRED") {
+    val createUser = CreateUser(
+      literalString("foo"),
+      UserOptions(None, None),
+      IfExistsDoNothing,
+      List(),
+      Some(Auth("native", List(passwordChange(requireChange = true)(pos1)))(pos1))
+    )(p)
+
+    createUser.semanticCheck.run(initialState, SemanticCheckContext.default).errors shouldBe SemanticCheckResult
+      .error(initialState, "Clause `SET PASSWORD` is mandatory for auth provider `native`.", pos1).errors
+  }
+
+  test("CREATE USER foo IF NOT EXISTS SET STATUS ACTIVE") {
+    val createUser = CreateUser(
+      literalString("foo"),
+      UserOptions(Some(false), None),
+      IfExistsDoNothing,
+      List(),
+      None
+    )(p)
+
+    createUser.semanticCheck.run(initialState, SemanticCheckContext.default).errors shouldBe SemanticCheckResult
+      .error(initialState, "No auth given for user.", p).errors
+  }
+
+  test("CREATE USER foo IF NOT EXISTS SET PASSWORD CHANGE NOT REQUIRED SET STATUS SUSPENDED") {
+    val createUser = CreateUser(
+      literalString("foo"),
+      UserOptions(Some(true), None),
+      IfExistsDoNothing,
+      List(),
+      Some(Auth("native", List(passwordChange(requireChange = false)(pos1)))(pos1))
+    )(p)
+
+    createUser.semanticCheck.run(initialState, SemanticCheckContext.default).errors shouldBe SemanticCheckResult
+      .error(initialState, "Clause `SET PASSWORD` is mandatory for auth provider `native`.", pos1).errors
+  }
+
+  test("CREATE OR REPLACE USER foo SET PASSWORD CHANGE NOT REQUIRED") {
+    val createUser = CreateUser(
+      literalString("foo"),
+      UserOptions(None, None),
+      IfExistsReplace,
+      List(),
+      Some(Auth("native", List(passwordChange(requireChange = false)(pos1)))(pos1))
+    )(p)
+
+    createUser.semanticCheck.run(initialState, SemanticCheckContext.default).errors shouldBe SemanticCheckResult
+      .error(initialState, "Clause `SET PASSWORD` is mandatory for auth provider `native`.", pos1).errors
+  }
+
+  test("CREATE OR REPLACE USER foo SET STATUS SUSPENDED") {
+    val createUser = CreateUser(
+      literalString("foo"),
+      UserOptions(Some(true), None),
+      IfExistsReplace,
+      List(),
+      None
+    )(p)
+
+    createUser.semanticCheck.run(initialState, SemanticCheckContext.default).errors shouldBe SemanticCheckResult
+      .error(initialState, "No auth given for user.", p).errors
+  }
+
+  test("CREATE OR REPLACE USER foo SET PASSWORD CHANGE REQUIRED SET STATUS ACTIVE") {
+    val createUser = CreateUser(
+      literalString("foo"),
+      UserOptions(Some(false), None),
+      IfExistsReplace,
+      List(),
+      Some(Auth("native", List(passwordChange(requireChange = true)(pos1)))(pos1))
+    )(p)
+
+    createUser.semanticCheck.run(initialState, SemanticCheckContext.default).errors shouldBe SemanticCheckResult
+      .error(initialState, "Clause `SET PASSWORD` is mandatory for auth provider `native`.", pos1).errors
+  }
+
+  test("CREATE USER foo SET PASSWORD $password CHANGE NOT REQUIRED SET PASSWORD CHANGE REQUIRED") {
+    val createUser = CreateUser(
+      literalString("foo"),
+      UserOptions(None, None),
+      IfExistsThrowError,
+      List(),
+      Some(Auth(
+        "native",
+        List(
+          password(paramPassword)(pos1),
+          passwordChange(requireChange = false)(pos2),
+          passwordChange(requireChange = true)(pos3)
+        )
+      )(pos))
+    )(p)
+
+    createUser.semanticCheck.run(initialState, SemanticCheckContext.default).errors shouldBe SemanticCheckResult
+      .error(initialState, "Duplicate `SET PASSWORD CHANGE [NOT] REQUIRED` clause.", pos3).errors
+  }
+
+  test("CREATE USER foo SET AUTH PROVIDER 'native' { SET PASSWORD CHANGE REQUIRED }") {
+    val createUser = CreateUser(
+      literalString("foo"),
+      UserOptions(None, None),
+      IfExistsThrowError,
+      List(Auth("native", List(passwordChange(requireChange = true)(pos2)))(pos1)),
+      None
+    )(p)
+
+    createUser.semanticCheck.run(initialState, SemanticCheckContext.default).errors shouldBe SemanticCheckResult
+      .error(initialState, "Clause `SET PASSWORD` is mandatory for auth provider `native`.", pos1).errors
+  }
+
+  test("CREATE USER foo SET AUTH PROVIDER 'native' { SET ID 'foo' }") {
+    val createUser = CreateUser(
+      literalString("foo"),
+      UserOptions(None, None),
+      IfExistsThrowError,
+      List(Auth("native", List(authId("foo")(pos2)))(pos1)),
+      None
+    )(p)
+
+    val error1 = SemanticCheckResult.error(
+      initialState,
+      "Clause `SET PASSWORD` is mandatory for auth provider `native`.",
+      pos1
+    ).errors
+    val error2 =
+      SemanticCheckResult.error(initialState, "Auth provider `native` does not allow `SET ID` clause.", pos2).errors
+    createUser.semanticCheck.run(initialState, SemanticCheckContext.default).errors shouldBe error1 ++ error2
+  }
+
+  test("CREATE USER foo SET AUTH PROVIDER 'foo' { SET PASSWORD 'password' }") {
+    val createUser = CreateUser(
+      literalString("foo"),
+      UserOptions(None, None),
+      IfExistsThrowError,
+      List(Auth("foo", List(password(password)(pos2)))(pos1)),
+      None
+    )(p)
+
+    val error1 =
+      SemanticCheckResult.error(initialState, "Clause `SET ID` is mandatory for auth provider `foo`.", pos1).errors
+    val error2 =
+      SemanticCheckResult.error(initialState, "Auth provider `foo` does not allow `SET PASSWORD` clause.", pos2).errors
+    createUser.semanticCheck.run(initialState, SemanticCheckContext.default).errors shouldBe error1 ++ error2
+  }
+
+  test(
+    "CREATE USER foo SET AUTH PROVIDER 'native' { SET PASSWORD 'password' } " +
+      "SET AUTH PROVIDER 'native' { SET PASSWORD CHANGE REQUIRED }"
+  ) {
+    val createUser = CreateUser(
+      literalString("foo"),
+      UserOptions(None, None),
+      IfExistsThrowError,
+      List(
+        Auth("native", List(password(password)(pos2)))(pos1),
+        Auth("native", List(passwordChange(requireChange = true)(pos4)))(pos3)
+      ),
+      None
+    )(p)
+
+    val error1 = SemanticCheckResult.error(initialState, "Duplicate `SET AUTH 'native'` clause.", pos3).errors
+    val error2 = SemanticCheckResult.error(
+      initialState,
+      "Clause `SET PASSWORD` is mandatory for auth provider `native`.",
+      pos3
+    ).errors
+    createUser.semanticCheck.run(initialState, SemanticCheckContext.default).errors shouldBe error1 ++ error2
+  }
+
+  test(
+    "CREATE USER foo SET AUTH PROVIDER 'native' { SET PASSWORD CHANGE NOT REQUIRED } " +
+      "SET AUTH PROVIDER 'native' { SET PASSWORD CHANGE REQUIRED }"
+  ) {
+    val createUser = CreateUser(
+      literalString("foo"),
+      UserOptions(None, None),
+      IfExistsThrowError,
+      List(
+        Auth("native", List(passwordChange(requireChange = false)(pos2)))(pos1),
+        Auth("native", List(passwordChange(requireChange = true)(pos4)))(pos3)
+      ),
+      None
+    )(p)
+
+    val error1 = SemanticCheckResult.error(initialState, "Duplicate `SET AUTH 'native'` clause.", pos3).errors
+    val error2 = SemanticCheckResult.error(
+      initialState,
+      "Clause `SET PASSWORD` is mandatory for auth provider `native`.",
+      pos1
+    ).errors
+    val error3 = SemanticCheckResult.error(
+      initialState,
+      "Clause `SET PASSWORD` is mandatory for auth provider `native`.",
+      pos3
+    ).errors
+    createUser.semanticCheck.run(initialState, SemanticCheckContext.default).errors shouldBe error1 ++ error2 ++ error3
+  }
+
+  test("CREATE USER foo SET PASSWORD 'password' SET AUTH PROVIDER 'native' { SET PASSWORD 'password' }") {
+    val createUser = CreateUser(
+      literalString("foo"),
+      UserOptions(None, None),
+      IfExistsThrowError,
+      List(Auth("native", List(password(password)(pos3)))(pos2)),
+      Some(Auth("native", List(password(password)(pos1)))(pos1))
+    )(p)
+
+    val error = SemanticCheckResult.error(
+      initialState,
+      "Cannot combine old and new auth syntax for the same auth provider.",
+      pos1
+    ).errors
+    createUser.semanticCheck.run(initialState, SemanticCheckContext.default).errors shouldBe error
+  }
+
+  test("CREATE USER foo SET AUTH PROVIDER 'native' { SET PASSWORD 'password' } SET PASSWORD CHANGE REQUIRED") {
+    val createUser = CreateUser(
+      literalString("foo"),
+      UserOptions(None, None),
+      IfExistsThrowError,
+      List(Auth("native", List(password(password)(pos2)))(pos1)),
+      Some(Auth("native", List(passwordChange(requireChange = true)(pos3)))(pos3))
+    )(p)
+
+    val error1 = SemanticCheckResult.error(
+      initialState,
+      "Cannot combine old and new auth syntax for the same auth provider.",
+      pos3
+    ).errors
+    val error2 = SemanticCheckResult.error(
+      initialState,
+      "Clause `SET PASSWORD` is mandatory for auth provider `native`.",
+      pos3
+    ).errors
+    createUser.semanticCheck.run(initialState, SemanticCheckContext.default).errors shouldBe error1 ++ error2
+  }
+
+  test("CREATE USER foo SET PASSWORD 'password' SET AUTH PROVIDER 'native' { SET PASSWORD CHANGE REQUIRED }") {
+    val createUser = CreateUser(
+      literalString("foo"),
+      UserOptions(None, None),
+      IfExistsThrowError,
+      List(Auth("native", List(passwordChange(requireChange = true)(pos3)))(pos2)),
+      Some(Auth("native", List(password(password)(pos1)))(pos1))
+    )(p)
+
+    val error1 = SemanticCheckResult.error(
+      initialState,
+      "Cannot combine old and new auth syntax for the same auth provider.",
+      pos1
+    ).errors
+    val error2 = SemanticCheckResult.error(
+      initialState,
+      "Clause `SET PASSWORD` is mandatory for auth provider `native`.",
+      pos2
+    ).errors
+    createUser.semanticCheck.run(initialState, SemanticCheckContext.default).errors shouldBe error1 ++ error2
+  }
+
+  test("CREATE USER foo SET AUTH PROVIDER 'native' { SET PASSWORD CHANGE NOT REQUIRED } SET PASSWORD CHANGE REQUIRED") {
+    val createUser = CreateUser(
+      literalString("foo"),
+      UserOptions(None, None),
+      IfExistsThrowError,
+      List(Auth("native", List(passwordChange(requireChange = false)(pos2)))(pos1)),
+      Some(Auth("native", List(passwordChange(requireChange = true)(pos3)))(pos3))
+    )(p)
+
+    val error1 = SemanticCheckResult.error(
+      initialState,
+      "Cannot combine old and new auth syntax for the same auth provider.",
+      pos3
+    ).errors
+    val error2 = SemanticCheckResult.error(
+      initialState,
+      "Clause `SET PASSWORD` is mandatory for auth provider `native`.",
+      pos1
+    ).errors
+    val error3 = SemanticCheckResult.error(
+      initialState,
+      "Clause `SET PASSWORD` is mandatory for auth provider `native`.",
+      pos3
+    ).errors
+    createUser.semanticCheck.run(initialState, SemanticCheckContext.default).errors shouldBe error1 ++ error2 ++ error3
+  }
+
+  test("CREATE USER foo SET AUTH 'foo' { SET ID 'bar' } SET AUTH PROVIDER 'foo' { SET ID 'bar' }") {
+    val createUser = CreateUser(
+      literalString("foo"),
+      UserOptions(None, None),
+      IfExistsThrowError,
+      List(Auth("foo", List(authId("bar")(pos2)))(pos1), Auth("foo", List(authId("bar")(pos4)))(pos3)),
+      None
+    )(p)
+
+    createUser.semanticCheck.run(initialState, SemanticCheckContext.default).errors shouldBe SemanticCheckResult
+      .error(initialState, "Duplicate `SET AUTH 'foo'` clause.", pos3).errors
+  }
+
+  test("CREATE USER foo SET AUTH PROVIDER 'foo' { SET ID 'bar' } SET AUTH 'foo' { SET ID 'qux' }") {
+    val createUser = CreateUser(
+      literalString("foo"),
+      UserOptions(None, None),
+      IfExistsThrowError,
+      List(Auth("foo", List(authId("bar")(pos2)))(pos1), Auth("foo", List(authId("qux")(pos4)))(pos3)),
+      None
+    )(p)
+
+    createUser.semanticCheck.run(initialState, SemanticCheckContext.default).errors shouldBe SemanticCheckResult
+      .error(initialState, "Duplicate `SET AUTH 'foo'` clause.", pos3).errors
+  }
+
+  test("CREATE USER foo SET AUTH 'native' {SET PASSWORD 'password' SET PASSWORD 'password'}") {
+    val createUser = CreateUser(
+      literalString("foo"),
+      UserOptions(None, None),
+      IfExistsThrowError,
+      List(Auth("native", List(password(password)(pos2), password(password)(pos3)))(pos1)),
+      None
+    )(p)
+
+    createUser.semanticCheck.run(initialState, SemanticCheckContext.default).errors shouldBe SemanticCheckResult
+      .error(initialState, "Duplicate `SET PASSWORD` clause.", pos3).errors
+  }
+
+  test("CREATE USER foo SET AUTH 'native' {SET PASSWORD 'password' SET PASSWORD $password}") {
+    val createUser = CreateUser(
+      literalString("foo"),
+      UserOptions(None, None),
+      IfExistsThrowError,
+      List(Auth("native", List(password(password)(pos2), password(paramPassword)(pos3)))(pos1)),
+      None
+    )(p)
+
+    createUser.semanticCheck.run(initialState, SemanticCheckContext.default).errors shouldBe SemanticCheckResult
+      .error(initialState, "Duplicate `SET PASSWORD` clause.", pos3).errors
+  }
+
+  test("CREATE USER foo SET AUTH PROVIDER 'foo' { SET ID 'bar' SET ID $qux }") {
+    val createUser = CreateUser(
+      literalString("foo"),
+      UserOptions(None, None),
+      IfExistsThrowError,
+      List(Auth("foo", List(authId("bar")(pos1), authId(parameter("qux", CTString))(pos2)))(pos)),
+      None
+    )(p)
+
+    createUser.semanticCheck.run(initialState, SemanticCheckContext.default).errors shouldBe SemanticCheckResult
+      .error(initialState, "Duplicate `SET ID` clause.", pos2).errors
+  }
+
+  test("CREATE USER foo SET AUTH PROVIDER 'foo' { SET ID 'bar' SET PASSWORD 'password' }") {
+    val createUser = CreateUser(
+      literalString("foo"),
+      UserOptions(None, None),
+      IfExistsThrowError,
+      List(Auth("foo", List(authId("bar")(pos1), password(password)(pos2)))(pos)),
+      None
+    )(p)
+
+    createUser.semanticCheck.run(initialState, SemanticCheckContext.default).errors shouldBe SemanticCheckResult
+      .error(initialState, "Auth provider `foo` does not allow `SET PASSWORD` clause.", pos2).errors
+  }
+
+  test("CREATE USER foo SET AUTH PROVIDER 'native' { SET ID 'bar' SET PASSWORD 'password' }") {
+    val createUser = CreateUser(
+      literalString("foo"),
+      UserOptions(None, None),
+      IfExistsThrowError,
+      List(Auth("native", List(authId("bar")(pos1), password(password)(pos2)))(pos)),
+      None
+    )(p)
+
+    createUser.semanticCheck.run(initialState, SemanticCheckContext.default).errors shouldBe SemanticCheckResult
+      .error(initialState, "Auth provider `native` does not allow `SET ID` clause.", pos1).errors
+  }
+
+  test("CREATE USER foo SET AUTH PROVIDER 'foo' { SET ID 'bar' SET PASSWORD CHANGE REQUIRED }") {
+    val createUser = CreateUser(
+      literalString("foo"),
+      UserOptions(None, None),
+      IfExistsThrowError,
+      List(Auth("foo", List(authId("bar")(pos1), passwordChange(requireChange = true)(pos2)))(pos)),
+      None
+    )(p)
+
+    createUser.semanticCheck.run(initialState, SemanticCheckContext.default).errors shouldBe SemanticCheckResult
+      .error(
+        initialState,
+        "Auth provider `foo` does not allow `SET PASSWORD CHANGE [NOT] REQUIRED` clause.",
+        pos2
+      ).errors
+  }
+
+  test("CREATE USER foo SET AUTH PROVIDER 'foo' { SET ID 'bar' } SET PASSWORD CHANGE REQUIRED") {
+    val createUser = CreateUser(
+      literalString("foo"),
+      UserOptions(None, None),
+      IfExistsThrowError,
+      List(Auth("foo", List(authId("bar")(pos1)))(pos1)),
+      Some(Auth("native", List(passwordChange(requireChange = true)(pos2)))(pos2))
+    )(p)
+
+    createUser.semanticCheck.run(initialState, SemanticCheckContext.default).errors shouldBe SemanticCheckResult
+      .error(
+        initialState,
+        "Clause `SET PASSWORD` is mandatory for auth provider `native`.",
+        pos2
+      ).errors
+  }
+
+  test("CREATE USER foo SET AUTH PROVIDER 'native' { SET ID 'bar' SET PASSWORD CHANGE REQUIRED }") {
+    val createUser = CreateUser(
+      literalString("foo"),
+      UserOptions(None, None),
+      IfExistsThrowError,
+      List(Auth("native", List(authId("bar")(pos1), passwordChange(requireChange = true)(pos2)))(pos3)),
+      None
+    )(p)
+
+    val error1 =
+      SemanticCheckResult.error(
+        initialState,
+        "Clause `SET PASSWORD` is mandatory for auth provider `native`.",
+        pos3
+      ).errors
+    val error2 =
+      SemanticCheckResult.error(initialState, "Auth provider `native` does not allow `SET ID` clause.", pos1).errors
+    createUser.semanticCheck.run(initialState, SemanticCheckContext.default).errors shouldBe error1 ++ error2
+  }
+
+  test(
+    "CREATE USER foo SET AUTH PROVIDER 'native' { SET ID 'bar' SET PASSWORD CHANGE REQUIRED SET PASSWORD 'password' }"
+  ) {
+    val createUser = CreateUser(
+      literalString("foo"),
+      UserOptions(None, None),
+      IfExistsThrowError,
+      List(Auth(
+        "native",
+        List(authId("bar")(pos1), passwordChange(requireChange = true)(pos2), password(password)(pos4))
+      )(pos3)),
+      None
+    )(p)
+
+    createUser.semanticCheck.run(initialState, SemanticCheckContext.default).errors shouldBe SemanticCheckResult
+      .error(initialState, "Auth provider `native` does not allow `SET ID` clause.", pos1).errors
+  }
+
+  test(
+    "CREATE USER foo SET AUTH PROVIDER 'foo' { SET ID 'bar' SET PASSWORD 'password' SET PASSWORD CHANGE REQUIRED }"
+  ) {
+    val createUser = CreateUser(
+      literalString("foo"),
+      UserOptions(None, None),
+      IfExistsThrowError,
+      List(Auth(
+        "foo",
+        List(authId("bar")(pos1), password(password)(pos2), passwordChange(requireChange = true)(pos4))
+      )(pos3)),
+      None
+    )(p)
+
+    createUser.semanticCheck.run(initialState, SemanticCheckContext.default).errors shouldBe SemanticCheckResult
+      .error(initialState, "Auth provider `foo` does not allow `SET PASSWORD` clause.", pos2).errors
+  }
+
+  test("CREATE USER foo SET AUTH '' { SET PASSWORD '' }") {
+    val createUser = CreateUser(
+      literalString("foo"),
+      UserOptions(None, None),
+      IfExistsThrowError,
+      List(Auth("", List(password(passwordEmpty)(pos2)))(pos1)),
+      None
+    )(p)
+
+    val error1 =
+      SemanticCheckResult.error(initialState, "Clause `SET ID` is mandatory for auth provider ``.", pos1).errors
+    val error2 =
+      SemanticCheckResult.error(initialState, "Auth provider `` does not allow `SET PASSWORD` clause.", pos2).errors
+    val error3 = SemanticCheckResult.error(
+      initialState,
+      "Invalid input. Auth provider is not allowed to be an empty string.",
+      pos1
+    ).errors
+    createUser.semanticCheck.run(initialState, SemanticCheckContext.default).errors shouldBe error1 ++ error2 ++ error3
+  }
+
+  test("CREATE USER foo SET AUTH PROVIDER '' { SET ID '' }") {
+    val createUser = CreateUser(
+      literalString("foo"),
+      UserOptions(None, None),
+      IfExistsThrowError,
+      List(Auth("", List(authId("")(pos2)))(pos1)),
+      None
+    )(p)
+
+    createUser.semanticCheck.run(initialState, SemanticCheckContext.default).errors shouldBe SemanticCheckResult
+      .error(initialState, "Invalid input. Auth provider is not allowed to be an empty string.", pos1).errors
+  }
+
+  test("CREATE USER foo SET AUTH '' { SET PASSWORD 'password' }") {
+    val createUser = CreateUser(
+      literalString("foo"),
+      UserOptions(None, None),
+      IfExistsThrowError,
+      List(Auth("", List(password(password)(pos2)))(pos1)),
+      None
+    )(p)
+
+    val error1 =
+      SemanticCheckResult.error(initialState, "Clause `SET ID` is mandatory for auth provider ``.", pos1).errors
+    val error2 =
+      SemanticCheckResult.error(initialState, "Auth provider `` does not allow `SET PASSWORD` clause.", pos2).errors
+    val error3 = SemanticCheckResult.error(
+      initialState,
+      "Invalid input. Auth provider is not allowed to be an empty string.",
+      pos1
+    ).errors
+    createUser.semanticCheck.run(initialState, SemanticCheckContext.default).errors shouldBe error1 ++ error2 ++ error3
+  }
+
+  test("CREATE USER foo SET AUTH PROVIDER '' { SET ID 'bar' }") {
+    val createUser = CreateUser(
+      literalString("foo"),
+      UserOptions(None, None),
+      IfExistsThrowError,
+      List(Auth("", List(authId("bar")(pos2)))(pos1)),
+      None
+    )(p)
+
+    createUser.semanticCheck.run(initialState, SemanticCheckContext.default).errors shouldBe SemanticCheckResult
+      .error(initialState, "Invalid input. Auth provider is not allowed to be an empty string.", pos1).errors
+  }
+
+  test("CREATE USER foo SET AUTH PROVIDER 'foo' { SET ID 42 }") {
+    val createUser = CreateUser(
+      literalString("foo"),
+      UserOptions(None, None),
+      IfExistsThrowError,
+      List(Auth("foo", List(authId(literalInt(42, pos3))(pos2)))(pos1)),
+      None
+    )(p)
+
+    createUser.semanticCheck.run(initialState, SemanticCheckContext.default).errors shouldBe SemanticCheckResult
+      .error(initialState, "id must be a String, or a String parameter.", pos3).errors
+  }
+
+  test("ALTER USER foo") {
+    val alterUser = AlterUser(
+      literalString("foo"),
+      UserOptions(None, None),
+      ifExists = false,
+      List(),
+      None,
+      RemoveAuth(all = false, List.empty)
+    )(p)
+
+    alterUser.semanticCheck.run(initialState, SemanticCheckContext.default).errors shouldBe SemanticCheckResult
+      .error(initialState, "`ALTER USER` requires at least one clause.", p).errors
+  }
+
+  test("ALTER USER foo SET PASSWORD 'password' SET ENCRYPTED PASSWORD $password") {
+    val alterUser = AlterUser(
+      literalString("foo"),
+      UserOptions(None, None),
+      ifExists = false,
+      List(),
+      Some(Auth("native", List(password(password)(pos1), password(paramPassword, isEncrypted = true)(pos2)))(pos)),
+      RemoveAuth(all = false, List.empty)
+    )(p)
+
+    alterUser.semanticCheck.run(initialState, SemanticCheckContext.default).errors shouldBe SemanticCheckResult
+      .error(initialState, "Duplicate `SET PASSWORD` clause.", pos2).errors
+  }
+
+  test("ALTER USER foo SET PASSWORD $password SET PASSWORD 'password'") {
+    val alterUser = AlterUser(
+      literalString("foo"),
+      UserOptions(None, None),
+      ifExists = false,
+      List(),
+      Some(Auth("native", List(password(paramPassword)(pos1), password(password)(pos2)))(pos)),
+      RemoveAuth(all = false, List.empty)
+    )(p)
+
+    alterUser.semanticCheck.run(initialState, SemanticCheckContext.default).errors shouldBe SemanticCheckResult
+      .error(initialState, "Duplicate `SET PASSWORD` clause.", pos2).errors
+  }
+
+  test("ALTER USER foo SET PASSWORD 'password' SET PASSWORD 'password'") {
+    val alterUser = AlterUser(
+      literalString("foo"),
+      UserOptions(None, None),
+      ifExists = false,
+      List(),
+      Some(Auth("native", List(password(password)(pos1), password(password)(pos2)))(pos)),
+      RemoveAuth(all = false, List.empty)
+    )(p)
+
+    alterUser.semanticCheck.run(initialState, SemanticCheckContext.default).errors shouldBe SemanticCheckResult
+      .error(initialState, "Duplicate `SET PASSWORD` clause.", pos2).errors
+  }
+
+  test("ALTER USER foo SET PASSWORD CHANGE NOT REQUIRED SET PASSWORD CHANGE REQUIRED") {
+    val alterUser = AlterUser(
+      literalString("foo"),
+      UserOptions(None, None),
+      ifExists = false,
+      List(),
+      Some(Auth(
+        "native",
+        List(passwordChange(requireChange = false)(pos1), passwordChange(requireChange = true)(pos2))
+      )(pos)),
+      RemoveAuth(all = false, List.empty)
+    )(p)
+
+    alterUser.semanticCheck.run(initialState, SemanticCheckContext.default).errors shouldBe SemanticCheckResult
+      .error(initialState, "Duplicate `SET PASSWORD CHANGE [NOT] REQUIRED` clause.", pos2).errors
+  }
+
+  test("ALTER USER foo SET AUTH PROVIDER 'native' { SET ID 'foo' }") {
+    val alterUser = AlterUser(
+      literalString("foo"),
+      UserOptions(None, None),
+      ifExists = false,
+      List(Auth("native", List(authId("foo")(pos1)))(pos)),
+      None,
+      RemoveAuth(all = false, List.empty)
+    )(p)
+
+    alterUser.semanticCheck.run(initialState, SemanticCheckContext.default).errors shouldBe SemanticCheckResult
+      .error(initialState, "Auth provider `native` does not allow `SET ID` clause.", pos1).errors
+  }
+
+  test("ALTER USER foo SET AUTH PROVIDER 'foo' { SET PASSWORD 'password' }") {
+    val alterUser = AlterUser(
+      literalString("foo"),
+      UserOptions(None, None),
+      ifExists = false,
+      List(Auth("foo", List(password(password)(pos2)))(pos1)),
+      None,
+      RemoveAuth(all = false, List.empty)
+    )(p)
+
+    val error1 =
+      SemanticCheckResult.error(initialState, "Auth provider `foo` does not allow `SET PASSWORD` clause.", pos2).errors
+    val error2 =
+      SemanticCheckResult.error(initialState, "Clause `SET ID` is mandatory for auth provider `foo`.", pos1).errors
+    alterUser.semanticCheck.run(initialState, SemanticCheckContext.default).errors shouldBe error1 ++ error2
+  }
+
+  test(
+    "ALTER USER foo SET AUTH PROVIDER 'native' { SET PASSWORD 'password' } " +
+      "SET AUTH PROVIDER 'native' { SET PASSWORD CHANGE REQUIRED }"
+  ) {
+    val alterUser = AlterUser(
+      literalString("foo"),
+      UserOptions(None, None),
+      ifExists = false,
+      List(
+        Auth("native", List(password(password)(pos2)))(pos1),
+        Auth("native", List(passwordChange(requireChange = true)(pos4)))(pos3)
+      ),
+      None,
+      RemoveAuth(all = false, List.empty)
+    )(p)
+
+    alterUser.semanticCheck.run(initialState, SemanticCheckContext.default).errors shouldBe SemanticCheckResult
+      .error(initialState, "Duplicate `SET AUTH 'native'` clause.", pos3).errors
+  }
+
+  test(
+    "ALTER USER foo SET AUTH PROVIDER 'native' { SET PASSWORD CHANGE NOT REQUIRED } " +
+      "SET AUTH PROVIDER 'native' { SET PASSWORD CHANGE REQUIRED }"
+  ) {
+    val alterUser = AlterUser(
+      literalString("foo"),
+      UserOptions(None, None),
+      ifExists = false,
+      List(
+        Auth("native", List(passwordChange(requireChange = false)(pos2)))(pos1),
+        Auth("native", List(passwordChange(requireChange = true)(pos4)))(pos3)
+      ),
+      None,
+      RemoveAuth(all = false, List.empty)
+    )(p)
+
+    alterUser.semanticCheck.run(initialState, SemanticCheckContext.default).errors shouldBe SemanticCheckResult
+      .error(initialState, "Duplicate `SET AUTH 'native'` clause.", pos3).errors
+  }
+
+  test("ALTER USER foo SET AUTH PROVIDER 'native' { SET PASSWORD 'password' } SET PASSWORD 'password'") {
+    val alterUser = AlterUser(
+      literalString("foo"),
+      UserOptions(None, None),
+      ifExists = false,
+      List(Auth("native", List(password(password)(pos2)))(pos1)),
+      Some(Auth("native", List(password(password)(pos3)))(pos3)),
+      RemoveAuth(all = false, List.empty)
+    )(p)
+
+    alterUser.semanticCheck.run(initialState, SemanticCheckContext.default).errors shouldBe SemanticCheckResult
+      .error(initialState, "Cannot combine old and new auth syntax for the same auth provider.", pos3).errors
+  }
+
+  test("ALTER USER foo SET AUTH PROVIDER 'native' { SET PASSWORD 'password' } SET PASSWORD CHANGE REQUIRED") {
+    val alterUser = AlterUser(
+      literalString("foo"),
+      UserOptions(None, None),
+      ifExists = false,
+      List(Auth("native", List(password(password)(pos2)))(pos1)),
+      Some(Auth("native", List(passwordChange(requireChange = true)(pos3)))(pos3)),
+      RemoveAuth(all = false, List.empty)
+    )(p)
+
+    alterUser.semanticCheck.run(initialState, SemanticCheckContext.default).errors shouldBe SemanticCheckResult
+      .error(initialState, "Cannot combine old and new auth syntax for the same auth provider.", pos3).errors
+  }
+
+  test("ALTER USER foo SET PASSWORD 'password' SET AUTH PROVIDER 'native' { SET PASSWORD CHANGE REQUIRED }") {
+    val alterUser = AlterUser(
+      literalString("foo"),
+      UserOptions(None, None),
+      ifExists = false,
+      List(Auth("native", List(passwordChange(requireChange = true)(pos3)))(pos2)),
+      Some(Auth("native", List(password(password)(pos1)))(pos1)),
+      RemoveAuth(all = false, List.empty)
+    )(p)
+
+    alterUser.semanticCheck.run(initialState, SemanticCheckContext.default).errors shouldBe SemanticCheckResult
+      .error(initialState, "Cannot combine old and new auth syntax for the same auth provider.", pos1).errors
+  }
+
+  test("ALTER USER foo SET AUTH PROVIDER 'native' { SET PASSWORD CHANGE NOT REQUIRED } SET PASSWORD CHANGE REQUIRED") {
+    val alterUser = AlterUser(
+      literalString("foo"),
+      UserOptions(None, None),
+      ifExists = false,
+      List(Auth("native", List(passwordChange(requireChange = false)(pos2)))(pos1)),
+      Some(Auth("native", List(passwordChange(requireChange = true)(pos3)))(pos3)),
+      RemoveAuth(all = false, List.empty)
+    )(p)
+
+    alterUser.semanticCheck.run(initialState, SemanticCheckContext.default).errors shouldBe SemanticCheckResult
+      .error(initialState, "Cannot combine old and new auth syntax for the same auth provider.", pos3).errors
+  }
+
+  test("ALTER USER foo SET AUTH 'foo' { SET ID 'bar' } SET AUTH PROVIDER 'foo' { SET ID 'bar' }") {
+    val alterUser = AlterUser(
+      literalString("foo"),
+      UserOptions(None, None),
+      ifExists = false,
+      List(Auth("foo", List(authId("bar")(pos2)))(pos1), Auth("foo", List(authId("bar")(pos4)))(pos3)),
+      None,
+      RemoveAuth(all = false, List.empty)
+    )(p)
+
+    alterUser.semanticCheck.run(initialState, SemanticCheckContext.default).errors shouldBe SemanticCheckResult
+      .error(initialState, "Duplicate `SET AUTH 'foo'` clause.", pos3).errors
+  }
+
+  test("ALTER USER foo SET AUTH PROVIDER 'foo' { SET ID 'bar' } SET AUTH 'foo' { SET ID 'qux' }") {
+    val alterUser = AlterUser(
+      literalString("foo"),
+      UserOptions(None, None),
+      ifExists = false,
+      List(Auth("foo", List(authId("bar")(pos2)))(pos1), Auth("foo", List(authId("qux")(pos4)))(pos3)),
+      None,
+      RemoveAuth(all = false, List.empty)
+    )(p)
+
+    alterUser.semanticCheck.run(initialState, SemanticCheckContext.default).errors shouldBe SemanticCheckResult
+      .error(initialState, "Duplicate `SET AUTH 'foo'` clause.", pos3).errors
+  }
+
+  test("ALTER USER foo SET AUTH 'native' {SET PASSWORD 'password' SET PASSWORD 'password'}") {
+    val alterUser = AlterUser(
+      literalString("foo"),
+      UserOptions(None, None),
+      ifExists = false,
+      List(Auth("native", List(password(password)(pos2), password(password)(pos3)))(pos1)),
+      None,
+      RemoveAuth(all = false, List.empty)
+    )(p)
+
+    alterUser.semanticCheck.run(initialState, SemanticCheckContext.default).errors shouldBe SemanticCheckResult
+      .error(initialState, "Duplicate `SET PASSWORD` clause.", pos3).errors
+  }
+
+  test("ALTER USER foo SET AUTH 'native' {SET PASSWORD 'password' SET PASSWORD $password}") {
+    val alterUser = AlterUser(
+      literalString("foo"),
+      UserOptions(None, None),
+      ifExists = false,
+      List(Auth("native", List(password(password)(pos2), password(paramPassword)(pos3)))(pos1)),
+      None,
+      RemoveAuth(all = false, List.empty)
+    )(p)
+
+    alterUser.semanticCheck.run(initialState, SemanticCheckContext.default).errors shouldBe SemanticCheckResult
+      .error(initialState, "Duplicate `SET PASSWORD` clause.", pos3).errors
+  }
+
+  test("ALTER USER foo SET AUTH PROVIDER 'foo' { SET ID 'bar' SET ID 'qux' }") {
+    val alterUser = AlterUser(
+      literalString("foo"),
+      UserOptions(None, None),
+      ifExists = false,
+      List(Auth("foo", List(authId("bar")(pos1), authId("qux")(pos2)))(pos)),
+      None,
+      RemoveAuth(all = false, List.empty)
+    )(p)
+
+    alterUser.semanticCheck.run(initialState, SemanticCheckContext.default).errors shouldBe SemanticCheckResult
+      .error(initialState, "Duplicate `SET ID` clause.", pos2).errors
+  }
+
+  test("ALTER USER foo SET AUTH PROVIDER 'foo' { SET ID 'bar' SET ID $qux }") {
+    val alterUser = AlterUser(
+      literalString("foo"),
+      UserOptions(None, None),
+      ifExists = false,
+      List(Auth("foo", List(authId("bar")(pos1), authId(parameter("qux", CTString))(pos2)))(pos)),
+      None,
+      RemoveAuth(all = false, List.empty)
+    )(p)
+
+    alterUser.semanticCheck.run(initialState, SemanticCheckContext.default).errors shouldBe SemanticCheckResult
+      .error(initialState, "Duplicate `SET ID` clause.", pos2).errors
+  }
+
+  test("ALTER USER foo SET AUTH PROVIDER 'foo' { SET ID 'bar' SET PASSWORD 'password' }") {
+    val alterUser = AlterUser(
+      literalString("foo"),
+      UserOptions(None, None),
+      ifExists = false,
+      List(Auth("foo", List(authId("bar")(pos1), password(password)(pos2)))(pos)),
+      None,
+      RemoveAuth(all = false, List.empty)
+    )(p)
+
+    alterUser.semanticCheck.run(initialState, SemanticCheckContext.default).errors shouldBe SemanticCheckResult
+      .error(initialState, "Auth provider `foo` does not allow `SET PASSWORD` clause.", pos2).errors
+  }
+
+  test("ALTER USER foo SET AUTH PROVIDER 'native' { SET ID 'bar' SET PASSWORD 'password' }") {
+    val alterUser = AlterUser(
+      literalString("foo"),
+      UserOptions(None, None),
+      ifExists = false,
+      List(Auth("native", List(authId("bar")(pos1), password(password)(pos2)))(pos)),
+      None,
+      RemoveAuth(all = false, List.empty)
+    )(p)
+
+    alterUser.semanticCheck.run(initialState, SemanticCheckContext.default).errors shouldBe SemanticCheckResult
+      .error(initialState, "Auth provider `native` does not allow `SET ID` clause.", pos1).errors
+  }
+
+  test("ALTER USER foo SET AUTH PROVIDER 'foo' { SET ID 'bar' SET PASSWORD CHANGE NOT REQUIRED }") {
+    val alterUser = AlterUser(
+      literalString("foo"),
+      UserOptions(None, None),
+      ifExists = false,
+      List(Auth("foo", List(authId("bar")(pos1), passwordChange(requireChange = false)(pos2)))(pos)),
+      None,
+      RemoveAuth(all = false, List.empty)
+    )(p)
+
+    alterUser.semanticCheck.run(initialState, SemanticCheckContext.default).errors shouldBe SemanticCheckResult
+      .error(
+        initialState,
+        "Auth provider `foo` does not allow `SET PASSWORD CHANGE [NOT] REQUIRED` clause.",
+        pos2
+      ).errors
+  }
+
+  test("ALTER USER foo SET AUTH PROVIDER 'native' { SET ID 'bar' SET PASSWORD CHANGE NOT REQUIRED }") {
+    val alterUser = AlterUser(
+      literalString("foo"),
+      UserOptions(None, None),
+      ifExists = false,
+      List(Auth("native", List(authId("bar")(pos1), passwordChange(requireChange = false)(pos2)))(pos)),
+      None,
+      RemoveAuth(all = false, List.empty)
+    )(p)
+
+    alterUser.semanticCheck.run(initialState, SemanticCheckContext.default).errors shouldBe SemanticCheckResult
+      .error(initialState, "Auth provider `native` does not allow `SET ID` clause.", pos1).errors
+  }
+
+  test(
+    "ALTER USER foo SET AUTH PROVIDER 'native' { SET ID 'bar' SET PASSWORD CHANGE NOT REQUIRED SET PASSWORD 'password' }"
+  ) {
+    val alterUser = AlterUser(
+      literalString("foo"),
+      UserOptions(None, None),
+      ifExists = false,
+      List(Auth(
+        "native",
+        List(authId("bar")(pos1), passwordChange(requireChange = false)(pos2), password(password)(pos3))
+      )(pos)),
+      None,
+      RemoveAuth(all = false, List.empty)
+    )(p)
+
+    alterUser.semanticCheck.run(initialState, SemanticCheckContext.default).errors shouldBe SemanticCheckResult
+      .error(initialState, "Auth provider `native` does not allow `SET ID` clause.", pos1).errors
+  }
+
+  test(
+    "ALTER USER foo SET AUTH PROVIDER 'foo' { SET ID 'bar' SET PASSWORD CHANGE NOT REQUIRED SET PASSWORD 'password' }"
+  ) {
+    val alterUser = AlterUser(
+      literalString("foo"),
+      UserOptions(None, None),
+      ifExists = false,
+      List(Auth(
+        "foo",
+        List(authId("bar")(pos1), passwordChange(requireChange = false)(pos2), password(password)(pos3))
+      )(pos)),
+      None,
+      RemoveAuth(all = false, List.empty)
+    )(p)
+
+    alterUser.semanticCheck.run(initialState, SemanticCheckContext.default).errors shouldBe SemanticCheckResult
+      .error(initialState, "Auth provider `foo` does not allow `SET PASSWORD CHANGE [NOT] REQUIRED` clause.", pos2)
+      .errors
+  }
+
+  test("ALTER USER foo SET AUTH '' { SET PASSWORD '' }") {
+    val alterUser = AlterUser(
+      literalString("foo"),
+      UserOptions(None, None),
+      ifExists = false,
+      List(Auth("", List(password(passwordEmpty)(pos2)))(pos1)),
+      None,
+      RemoveAuth(all = false, List.empty)
+    )(p)
+
+    val error1 =
+      SemanticCheckResult.error(initialState, "Auth provider `` does not allow `SET PASSWORD` clause.", pos2).errors
+    val error2 = SemanticCheckResult.error(
+      initialState,
+      "Invalid input. Auth provider is not allowed to be an empty string.",
+      pos1
+    ).errors
+    val error3 =
+      SemanticCheckResult.error(initialState, "Clause `SET ID` is mandatory for auth provider ``.", pos1).errors
+    alterUser.semanticCheck.run(initialState, SemanticCheckContext.default).errors shouldBe error1 ++ error2 ++ error3
+  }
+
+  test("ALTER USER foo SET AUTH PROVIDER '' { SET ID '' }") {
+    val alterUser = AlterUser(
+      literalString("foo"),
+      UserOptions(None, None),
+      ifExists = false,
+      List(Auth("", List(authId("")(pos2)))(pos1)),
+      None,
+      RemoveAuth(all = false, List.empty)
+    )(p)
+
+    alterUser.semanticCheck.run(initialState, SemanticCheckContext.default).errors shouldBe SemanticCheckResult
+      .error(initialState, "Invalid input. Auth provider is not allowed to be an empty string.", pos1).errors
+  }
+
+  test("ALTER USER foo SET AUTH '' { SET PASSWORD 'password' }") {
+    val alterUser = AlterUser(
+      literalString("foo"),
+      UserOptions(None, None),
+      ifExists = false,
+      List(Auth("", List(password(password)(pos2)))(pos1)),
+      None,
+      RemoveAuth(all = false, List.empty)
+    )(p)
+
+    val error1 =
+      SemanticCheckResult.error(initialState, "Auth provider `` does not allow `SET PASSWORD` clause.", pos2).errors
+    val error2 = SemanticCheckResult.error(
+      initialState,
+      "Invalid input. Auth provider is not allowed to be an empty string.",
+      pos1
+    ).errors
+    val error3 =
+      SemanticCheckResult.error(initialState, "Clause `SET ID` is mandatory for auth provider ``.", pos1).errors
+    alterUser.semanticCheck.run(initialState, SemanticCheckContext.default).errors shouldBe error1 ++ error2 ++ error3
+  }
+
+  test("ALTER USER foo SET AUTH PROVIDER '' { SET ID 'bar' }") {
+    val alterUser = AlterUser(
+      literalString("foo"),
+      UserOptions(None, None),
+      ifExists = false,
+      List(Auth("", List(authId("bar")(pos2)))(pos1)),
+      None,
+      RemoveAuth(all = false, List.empty)
+    )(p)
+
+    alterUser.semanticCheck.run(initialState, SemanticCheckContext.default).errors shouldBe SemanticCheckResult
+      .error(initialState, "Invalid input. Auth provider is not allowed to be an empty string.", pos1).errors
+  }
+
+  test("ALTER USER foo SET AUTH PROVIDER 'foo' { SET ID 42 }") {
+    val alterUser = AlterUser(
+      literalString("foo"),
+      UserOptions(None, None),
+      ifExists = false,
+      List(Auth("foo", List(authId(literalInt(42, pos3))(pos2)))(pos1)),
+      None,
+      RemoveAuth(all = false, List.empty)
+    )(p)
+
+    alterUser.semanticCheck.run(initialState, SemanticCheckContext.default).errors shouldBe SemanticCheckResult
+      .error(initialState, "id must be a String, or a String parameter.", pos3).errors
+  }
+
+  test("ALTER USER foo REMOVE AUTH PROVIDER 42") {
+    val alterUser = AlterUser(
+      literalString("foo"),
+      UserOptions(None, None),
+      ifExists = false,
+      List.empty,
+      None,
+      RemoveAuth(all = false, List(literalInt(42, pos1)))
+    )(p)
+
+    alterUser.semanticCheck.run(initialState, SemanticCheckContext.default).errors shouldBe SemanticCheckResult
+      .error(
+        initialState,
+        "Expected a non-empty String, non-empty List of non-empty Strings, or Parameter.",
+        pos1
+      ).errors
+  }
+
+  test("ALTER USER foo REMOVE AUTH PROVIDER [42, 69]") {
+    val alterUser = AlterUser(
+      literalString("foo"),
+      UserOptions(None, None),
+      ifExists = false,
+      List.empty,
+      None,
+      RemoveAuth(all = false, List(listOfWithPosition(pos1, literalInt(42, pos2), literalInt(69, pos3))))
+    )(p)
+
+    alterUser.semanticCheck.run(initialState, SemanticCheckContext.default).errors shouldBe SemanticCheckResult
+      .error(
+        initialState,
+        "Expected a non-empty String, non-empty List of non-empty Strings, or Parameter.",
+        pos1
+      ).errors
+  }
+
+  test("ALTER USER foo REMOVE AUTH PROVIDER ['bar', 69]") {
+    val alterUser = AlterUser(
+      literalString("foo"),
+      UserOptions(None, None),
+      ifExists = false,
+      List.empty,
+      None,
+      RemoveAuth(all = false, List(listOfWithPosition(pos1, literalString("bar"), literalInt(69, pos3))))
+    )(p)
+
+    alterUser.semanticCheck.run(initialState, SemanticCheckContext.default).errors shouldBe SemanticCheckResult
+      .error(
+        initialState,
+        "Expected a non-empty String, non-empty List of non-empty Strings, or Parameter.",
+        pos1
+      ).errors
+  }
+
+  test("ALTER USER foo REMOVE AUTH PROVIDER [69, 'bar']") {
+    val alterUser = AlterUser(
+      literalString("foo"),
+      UserOptions(None, None),
+      ifExists = false,
+      List.empty,
+      None,
+      RemoveAuth(all = false, List(listOfWithPosition(pos1, literalInt(69, pos3), literalString("bar"))))
+    )(p)
+
+    alterUser.semanticCheck.run(initialState, SemanticCheckContext.default).errors shouldBe SemanticCheckResult
+      .error(
+        initialState,
+        "Expected a non-empty String, non-empty List of non-empty Strings, or Parameter.",
+        pos1
+      ).errors
+  }
+
+  test("ALTER USER foo REMOVE AUTH PROVIDER []") {
+    val alterUser = AlterUser(
+      literalString("foo"),
+      UserOptions(None, None),
+      ifExists = false,
+      List.empty,
+      None,
+      RemoveAuth(all = false, List(listOfWithPosition(pos1)))
+    )(p)
+
+    alterUser.semanticCheck.run(initialState, SemanticCheckContext.default).errors shouldBe SemanticCheckResult
+      .error(
+        initialState,
+        "Expected a non-empty String, non-empty List of non-empty Strings, or Parameter.",
+        pos1
+      ).errors
+  }
+
+  test("ALTER USER foo SET AUTH 'foo' {SET PASSWORD CHANGE NOT REQUIRED} SET AUTH 'foo' {SET ID 'bar'}") {
+    val alterUser = AlterUser(
+      literalString("foo"),
+      UserOptions(None, None),
+      ifExists = false,
+      List(
+        Auth("foo", List(PasswordChange(requireChange = false)(pos1)))(pos2),
+        Auth("foo", List(AuthId(literalString("bar"))(pos4)))(pos3)
+      ),
+      None,
+      RemoveAuth(all = false, List.empty)
+    )(p)
+
+    val error1 = SemanticCheckResult.error(initialState, "Duplicate `SET AUTH 'foo'` clause.", pos3).errors
+    val error2 = SemanticCheckResult.error(
+      initialState,
+      "Auth provider `foo` does not allow `SET PASSWORD CHANGE [NOT] REQUIRED` clause.",
+      pos1
+    ).errors
+    val error3 =
+      SemanticCheckResult.error(initialState, "Clause `SET ID` is mandatory for auth provider `foo`.", pos2).errors
+    alterUser.semanticCheck.run(initialState, SemanticCheckContext.default).errors shouldBe error1 ++ error2 ++ error3
+  }
+
+  test("ALTER USER foo REMOVE ALL AUTH SET AUTH PROVIDER 'foo' { SET ID 'bar' } SET AUTH 'foo' { SET ID 'qux' }") {
+    val alterUser = AlterUser(
+      literalString("foo"),
+      UserOptions(None, None),
+      ifExists = false,
+      List(Auth("foo", List(authId("bar")(pos2)))(pos1), Auth("foo", List(authId("qux")(pos4)))(pos3)),
+      None,
+      RemoveAuth(all = true, List.empty)
+    )(p)
+
+    alterUser.semanticCheck.run(initialState, SemanticCheckContext.default).errors shouldBe SemanticCheckResult
+      .error(initialState, "Duplicate `SET AUTH 'foo'` clause.", pos3).errors
+  }
+
+  test("ALTER USER foo REMOVE AUTH 'foo' SET AUTH PROVIDER 'foo' { SET ID 'bar' } SET AUTH 'foo' { SET ID 'qux' }") {
+    val alterUser = AlterUser(
+      literalString("foo"),
+      UserOptions(None, None),
+      ifExists = false,
+      List(Auth("foo", List(authId("bar")(pos2)))(pos1), Auth("foo", List(authId("qux")(pos4)))(pos3)),
+      None,
+      RemoveAuth(all = false, List(literalString("foo")))
+    )(p)
+
+    alterUser.semanticCheck.run(initialState, SemanticCheckContext.default).errors shouldBe SemanticCheckResult
+      .error(initialState, "Duplicate `SET AUTH 'foo'` clause.", pos3).errors
   }
 }

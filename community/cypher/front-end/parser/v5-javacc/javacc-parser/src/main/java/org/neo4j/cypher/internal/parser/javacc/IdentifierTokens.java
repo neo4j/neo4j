@@ -34,6 +34,7 @@ import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.ASCENDING;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.ASSERT;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.ASSIGN;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.AT;
+import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.AUTH;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.BINDINGS;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.BOOL;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.BOOLEAN;
@@ -119,6 +120,7 @@ import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.GROUP;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.GROUPS;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.HEADERS;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.HOME;
+import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.ID;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.IDENTIFIER;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.IF;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.IMMUTABLE;
@@ -189,6 +191,8 @@ import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.PROCEDURE;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.PROCEDURES;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.PROPERTIES;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.PROPERTY;
+import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.PROVIDER;
+import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.PROVIDERS;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.RANGE;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.READ;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.REALLOCATE;
@@ -302,6 +306,7 @@ public class IdentifierTokens {
             ASSERT,
             ASSIGN,
             AT,
+            AUTH,
             BINDINGS,
             BOOL,
             BOOLEAN,
@@ -387,6 +392,7 @@ public class IdentifierTokens {
             HEADERS,
             HOME,
             IDENTIFIER,
+            ID,
             IF,
             IMPERSONATE,
             IMMUTABLE,
@@ -456,6 +462,8 @@ public class IdentifierTokens {
             PROCEDURES,
             PROPERTIES,
             PROPERTY,
+            PROVIDER,
+            PROVIDERS,
             RANGE,
             READ,
             REALLOCATE,

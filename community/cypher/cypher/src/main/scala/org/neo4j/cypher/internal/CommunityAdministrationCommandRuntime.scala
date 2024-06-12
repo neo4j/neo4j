@@ -77,6 +77,7 @@ import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler
 import org.neo4j.internal.kernel.api.security.SecurityContext
 import org.neo4j.internal.kernel.api.security.Segment
 import org.neo4j.kernel.impl.api.security.RestrictedAccessMode
+import org.neo4j.server.security.systemgraph.UserSecurityGraphComponent
 import org.neo4j.values.storable.TextValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.MapValue
@@ -96,6 +97,9 @@ case class CommunityAdministrationCommandRuntime(
   private lazy val securityAuthorizationHandler =
     new SecurityAuthorizationHandler(resolver.resolveDependency(classOf[AbstractSecurityLog]))
   private val config: Config = resolver.resolveDependency(classOf[Config])
+
+  private lazy val userSecurity: UserSecurityGraphComponent =
+    resolver.resolveDependency(classOf[UserSecurityGraphComponent])
 
   def throwCantCompile(unknownPlan: LogicalPlan): Nothing = {
     throw new CantCompileQueryException(
@@ -249,7 +253,11 @@ case class CommunityAdministrationCommandRuntime(
     case createUser: CreateUser => context =>
         val sourcePlan: Option[ExecutionPlan] =
           Some(fullLogicalToExecutable.applyOrElse(createUser.source, throwCantCompile).apply(context))
-        CreateUserExecutionPlanner(normalExecutionEngine, securityAuthorizationHandler, config).planCreateUser(
+        CreateUserExecutionPlanner(
+          normalExecutionEngine,
+          securityAuthorizationHandler,
+          config
+        ).planCreateUser(
           createUser,
           sourcePlan
         )
@@ -272,7 +280,12 @@ case class CommunityAdministrationCommandRuntime(
     case alterUser: AlterUser => context =>
         val sourcePlan: Option[ExecutionPlan] =
           Some(fullLogicalToExecutable.applyOrElse(alterUser.source, throwCantCompile).apply(context))
-        AlterUserExecutionPlanner(normalExecutionEngine, securityAuthorizationHandler, config).planAlterUser(
+        AlterUserExecutionPlanner(
+          normalExecutionEngine,
+          securityAuthorizationHandler,
+          userSecurity,
+          config
+        ).planAlterUser(
           alterUser,
           sourcePlan
         )

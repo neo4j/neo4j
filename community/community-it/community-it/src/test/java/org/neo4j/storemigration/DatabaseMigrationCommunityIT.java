@@ -25,6 +25,9 @@ import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_NAME_LA
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.NAMESPACE_PROPERTY;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.NAME_PROPERTY;
 import static org.neo4j.graphdb.schema.IndexType.LOOKUP;
+import static org.neo4j.server.security.systemgraph.versions.KnownCommunitySecurityComponentVersion.AUTH_ID;
+import static org.neo4j.server.security.systemgraph.versions.KnownCommunitySecurityComponentVersion.AUTH_LABEL;
+import static org.neo4j.server.security.systemgraph.versions.KnownCommunitySecurityComponentVersion.AUTH_PROVIDER;
 import static org.neo4j.server.security.systemgraph.versions.KnownCommunitySecurityComponentVersion.USER_LABEL;
 
 import java.io.IOException;
@@ -131,13 +134,15 @@ public class DatabaseMigrationCommunityIT extends DatabaseMigrationITBase {
             verifyHasUniqueConstraint(constraints, DATABASE_LABEL, NAME_PROPERTY);
             verifyHasUniqueConstraint(constraints, USER_LABEL, "id");
             verifyHasUniqueConstraint(constraints, USER_LABEL, "name");
-            assertThat(constraints).hasSize(4);
+            verifyHasUniqueConstraint(constraints, AUTH_LABEL, AUTH_ID, AUTH_PROVIDER);
+            assertThat(constraints).hasSize(5);
 
             List<IndexDefinition> indexes = Iterables.asList(tx.schema().getIndexes());
             verifyHasIndex(indexes, DATABASE_NAME_LABEL, NAME_PROPERTY, NAMESPACE_PROPERTY);
             verifyHasIndex(indexes, DATABASE_LABEL, NAME_PROPERTY);
             verifyHasIndex(indexes, USER_LABEL, "id");
             verifyHasIndex(indexes, USER_LABEL, "name");
+            verifyHasIndex(indexes, AUTH_LABEL, AUTH_ID, AUTH_PROVIDER);
 
             assertThat(indexes).anySatisfy(indexDefinition -> {
                 assertThat(indexDefinition.getIndexType()).isEqualTo(LOOKUP);
@@ -149,9 +154,9 @@ public class DatabaseMigrationCommunityIT extends DatabaseMigrationITBase {
                     assertThat(indexDefinition.getIndexType()).isEqualTo(LOOKUP);
                     assertThat(indexDefinition.isRelationshipIndex()).isEqualTo(true);
                 });
-                assertThat(indexes).hasSize(6);
+                assertThat(indexes).hasSize(7);
             } else {
-                assertThat(indexes).hasSize(5);
+                assertThat(indexes).hasSize(6);
             }
             tx.commit();
         }

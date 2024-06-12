@@ -37,20 +37,21 @@ public enum UserSecurityGraphComponentVersion implements ComponentVersion {
      * Version 3 (Neo4j 4.3-drop04): - Introduced user ids
      * <p>
      * Version 4 (Neo4j 5.0): - Add constraint for user ids
+     * <p>
+     * Version 5 (Neo4j 5.21): - Introduced auth object for users
      */
-    COMMUNITY_SECURITY_40(1, SECURITY_USER_COMPONENT, ComponentVersion.Neo4jVersions.VERSION_40),
-    COMMUNITY_SECURITY_41(2, SECURITY_USER_COMPONENT, ComponentVersion.Neo4jVersions.VERSION_41),
     COMMUNITY_SECURITY_43D4(3, SECURITY_USER_COMPONENT, ComponentVersion.Neo4jVersions.VERSION_43D4),
     COMMUNITY_SECURITY_50(4, SECURITY_USER_COMPONENT, ComponentVersion.Neo4jVersions.VERSION_50),
+    COMMUNITY_SECURITY_521(5, SECURITY_USER_COMPONENT, ComponentVersion.Neo4jVersions.VERSION_521),
 
     COMMUNITY_SECURITY_UNKNOWN_VERSION(
             UNKNOWN_VERSION, SECURITY_USER_COMPONENT, String.format("no '%s' graph found", SECURITY_USER_COMPONENT));
 
     // Static variables for SECURITY_USER_COMPONENT versions
-    public static final int FIRST_VALID_COMMUNITY_SECURITY_COMPONENT_VERSION = COMMUNITY_SECURITY_40.getVersion();
+    public static final int FIRST_VALID_COMMUNITY_SECURITY_COMPONENT_VERSION = COMMUNITY_SECURITY_43D4.getVersion();
     public static final int FIRST_RUNTIME_SUPPORTED_COMMUNITY_SECURITY_COMPONENT_VERSION =
-            COMMUNITY_SECURITY_40.getVersion();
-    public static final int LATEST_COMMUNITY_SECURITY_COMPONENT_VERSION = COMMUNITY_SECURITY_50.getVersion();
+            COMMUNITY_SECURITY_43D4.getVersion();
+    public static final int LATEST_COMMUNITY_SECURITY_COMPONENT_VERSION = COMMUNITY_SECURITY_521.getVersion();
 
     private final SystemGraphComponent.Name componentName;
     private final int version;

@@ -249,7 +249,7 @@ public class QueryRouterImpl implements QueryRouter {
              * - DROP DATABASE <session database>
              * - CREATE OR REPLACE DATABASE <session database>
              */
-            if (statementType.statementType().equals(StatementType.AdministrationCommand())
+            if (statementType.statementType().equals(StatementType.AdminCommand())
                     && !transactionInfo.targetsSystemDatabase()) {
                 if (context.sessionTransaction() != null) {
                     context.routerTransaction().closeTransaction(context.sessionTransaction());

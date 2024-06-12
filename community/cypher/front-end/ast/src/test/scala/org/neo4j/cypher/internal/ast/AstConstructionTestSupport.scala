@@ -318,6 +318,9 @@ trait AstConstructionTestSupport {
   def listOf(expressions: Expression*): ListLiteral =
     ListLiteral(expressions)(pos)
 
+  def listOfWithPosition(position: InputPosition, expressions: Expression*): ListLiteral =
+    ListLiteral(expressions)(position)
+
   def listOfInt(values: Long*): ListLiteral =
     ListLiteral(values.toSeq.map(literalInt(_)))(pos)
 

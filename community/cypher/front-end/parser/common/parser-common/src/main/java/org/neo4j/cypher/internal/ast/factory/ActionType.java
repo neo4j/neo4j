@@ -47,6 +47,7 @@ public enum ActionType {
     USER_ALTER,
     USER_STATUS,
     USER_PASSWORD,
+    USER_AUTH,
     USER_HOME,
     USER_DROP,
     USER_IMPERSONATE,

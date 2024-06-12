@@ -79,6 +79,12 @@ trait LiteralBuilder extends Cypher5ParserListener {
     }
   }
 
+  final override def exitStringListLiteral(
+    ctx: Cypher5Parser.StringListLiteralContext
+  ): Unit = {
+    ctx.ast = ListLiteral(astSeq[StringLiteral](ctx.stringLiteral()))(pos(ctx))
+  }
+
   final override def exitListLiteral(
     ctx: Cypher5Parser.ListLiteralContext
   ): Unit = {

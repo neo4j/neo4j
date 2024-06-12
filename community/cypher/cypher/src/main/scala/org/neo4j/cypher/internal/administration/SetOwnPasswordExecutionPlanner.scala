@@ -36,8 +36,6 @@ import org.neo4j.cypher.internal.procs.NonTransactionalUpdatingSystemCommandExec
 import org.neo4j.cypher.internal.procs.ParameterTransformer
 import org.neo4j.cypher.internal.procs.QueryHandler
 import org.neo4j.cypher.internal.procs.ThrowException
-import org.neo4j.cypher.internal.security.SecureHasher
-import org.neo4j.cypher.internal.security.SystemGraphCredential
 import org.neo4j.exceptions.CypherExecutionException
 import org.neo4j.exceptions.DatabaseAdministrationOnFollowerException
 import org.neo4j.exceptions.InvalidArgumentException
@@ -45,6 +43,8 @@ import org.neo4j.exceptions.Neo4jException
 import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler
 import org.neo4j.kernel.api.exceptions.Status
 import org.neo4j.kernel.api.exceptions.Status.HasStatus
+import org.neo4j.server.security.SecureHasher
+import org.neo4j.server.security.SystemGraphCredential
 import org.neo4j.values.storable.ByteArray
 import org.neo4j.values.storable.TextValue
 import org.neo4j.values.storable.Value
@@ -124,7 +124,7 @@ case class SetOwnPasswordExecutionPlanner(
         p.get(newPw.bytesKey).asInstanceOf[ByteArray].zero()
         p.get(currentKeyBytes).asInstanceOf[ByteArray].zero()
       }),
-      parameterTransformer = ParameterTransformer((_, securityContext) =>
+      parameterTransformer = ParameterTransformer((_, securityContext, _) =>
         VirtualValues.map(Array(usernameKey), Array(Values.utf8Value(securityContext.subject().executingUser())))
       )
         .convert((tx, m) => newPw.mapValueConverter(tx, currentConverterBytes(m)))

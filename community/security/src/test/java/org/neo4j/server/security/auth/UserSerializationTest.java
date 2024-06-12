@@ -24,9 +24,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.List;
 import org.junit.jupiter.api.Test;
-import org.neo4j.cypher.internal.security.SecureHasher;
-import org.neo4j.cypher.internal.security.SystemGraphCredential;
 import org.neo4j.kernel.impl.security.User;
+import org.neo4j.server.security.SecureHasher;
+import org.neo4j.server.security.SystemGraphCredential;
 import org.neo4j.string.UTF8;
 
 class UserSerializationTest {

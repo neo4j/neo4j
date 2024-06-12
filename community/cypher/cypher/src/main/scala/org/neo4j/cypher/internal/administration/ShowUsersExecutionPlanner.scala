@@ -66,7 +66,7 @@ case class ShowUsersExecutionPlanner(
          |${AdministrationShowCommandUtils.generateReturnClause(symbols, yields, returns, Seq("user"))}
          |""".stripMargin,
       VirtualValues.EMPTY_MAP,
-      parameterTransformer = ParameterTransformer((_, securityContext) =>
+      parameterTransformer = ParameterTransformer((_, securityContext, _) =>
         VirtualValues.map(
           Array(currentUserKey),
           Array(Values.utf8Value(securityContext.subject().executingUser()))

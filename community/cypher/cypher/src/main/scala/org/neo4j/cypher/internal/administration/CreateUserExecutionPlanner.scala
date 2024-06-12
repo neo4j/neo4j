@@ -37,31 +37,35 @@ case class CreateUserExecutionPlanner(
 
   def planCreateUser(createUser: CreateUser, sourcePlan: Option[ExecutionPlan]): ExecutionPlan = {
 
-    def failWithError(command: String): PredicateExecutionPlan = {
+    def failWithError(commands: String*): PredicateExecutionPlan = {
+      val commandString = commands.mkString(", ")
+      val verb = if (commands.size == 1) "is" else "are"
       new PredicateExecutionPlan(
         (_, _) => false,
         sourcePlan,
         (params, _, _) => {
           val user = runtimeStringValue(createUser.userName, params)
           throw new CantCompileQueryException(
-            s"Failed to create the specified user '$user': '$command' is not available in community edition."
+            s"Failed to create the specified user '$user': $commandString $verb not available in community edition."
           )
         }
       )
     }
 
     if (createUser.suspended.isDefined) { // Users are always active in community
-      failWithError("SET STATUS")
+      failWithError("'SET STATUS'")
     } else if (createUser.defaultDatabase.isDefined) { // There is only one database in community
-      failWithError("HOME DATABASE")
+      failWithError("'HOME DATABASE'")
+    } else if (createUser.externalAuths.nonEmpty) { // There is no external auth in community
+      val disallowedAuths = createUser.externalAuths.map(e => s"`SET AUTH '${e.provider}'`")
+      failWithError(disallowedAuths: _*)
     } else {
       makeCreateUserExecutionPlan(
         createUser.userName,
-        createUser.isEncryptedPassword,
-        createUser.initialPassword,
-        createUser.requirePasswordChange,
         suspended = false,
-        defaultDatabase = None
+        defaultDatabase = None,
+        nativeAuth = createUser.nativeAuth,
+        externalAuths = Seq.empty
       )(sourcePlan, normalExecutionEngine, securityAuthorizationHandler, config)
     }
   }

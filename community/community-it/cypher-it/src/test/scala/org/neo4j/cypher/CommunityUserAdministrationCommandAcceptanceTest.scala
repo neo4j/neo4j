@@ -19,11 +19,10 @@
  */
 package org.neo4j.cypher
 
+import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME
 import org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME
 import org.neo4j.configuration.GraphDatabaseSettings.auth_enabled
-import org.neo4j.cypher.internal.security.SecureHasher
-import org.neo4j.cypher.internal.security.SystemGraphCredential
 import org.neo4j.exceptions.InvalidArgumentException
 import org.neo4j.exceptions.ParameterNotFoundException
 import org.neo4j.exceptions.ParameterWrongTypeException
@@ -36,6 +35,8 @@ import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.EMBEDDE
 import org.neo4j.internal.kernel.api.security.AuthenticationResult
 import org.neo4j.kernel.api.KernelTransaction.Type
 import org.neo4j.kernel.api.security.AuthManager
+import org.neo4j.server.security.SecureHasher
+import org.neo4j.server.security.SystemGraphCredential
 import org.neo4j.server.security.auth.SecurityTestUtils
 import org.scalatest.enablers.Messaging.messagingNatureOfThrowable
 
@@ -60,7 +61,10 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
   private val alterDefaultUserQuery = s"ALTER USER $defaultUsername SET PASSWORD '$password' CHANGE NOT REQUIRED"
 
   override def databaseConfig(): Map[Setting[_], Object] =
-    super.databaseConfig() ++ Map(auth_enabled -> java.lang.Boolean.TRUE)
+    super.databaseConfig() ++ Map(
+      auth_enabled -> java.lang.Boolean.TRUE,
+      GraphDatabaseInternalSettings.linked_users -> java.lang.Boolean.TRUE
+    )
 
   def authManager: AuthManager = graph.getDependencyResolver.resolveDependency(classOf[AuthManager])
 
@@ -415,6 +419,16 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
     testUserLogin(username, password, AuthenticationResult.PASSWORD_CHANGE_REQUIRED)
   }
 
+  test("should create user with password using SET AUTH syntax") {
+    // WHEN
+    execute(s"CREATE USER $username SET AUTH 'native' { SET PASSWORD '$password' }")
+
+    // THEN
+    execute("SHOW USERS").toSet shouldBe Set(defaultUser, userAlexandra)
+    testUserLogin(username, wrongPassword, AuthenticationResult.FAILURE)
+    testUserLogin(username, password, AuthenticationResult.PASSWORD_CHANGE_REQUIRED)
+  }
+
   test("should create non-existing user using if not exists") {
     // WHEN
     execute(s"CREATE USER $username IF NOT EXISTS SET PASSWORD '$password'")
@@ -525,6 +539,22 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
     testUserLogin(username, password, AuthenticationResult.SUCCESS)
   }
 
+  test("should create user with password change not required using SET AUTH syntax") {
+    // WHEN
+    execute(
+      s"""CREATE USER $username
+         |SET AUTH 'native' {
+         |  SET PASSWORD '$password'
+         |  SET PASSWORD CHANGE NOT REQUIRED
+         |}""".stripMargin
+    )
+
+    // THEN
+    execute("SHOW USERS").toSet shouldBe Set(defaultUser, user(username, passwordChangeRequired = false))
+    testUserLogin(username, wrongPassword, AuthenticationResult.FAILURE)
+    testUserLogin(username, password, AuthenticationResult.SUCCESS)
+  }
+
   test("should not be able to create user with explicit status active in community") {
     // WHEN
     assertFailure(
@@ -552,6 +582,29 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
     assertFailure(
       "CREATE USER foo SET PASSWORD 'password' SET HOME DATABASE foo",
       "Failed to create the specified user 'foo': 'HOME DATABASE' is not available in community edition."
+    )
+
+    // THEN
+    execute("SHOW USERS").toSet shouldBe Set(defaultUser)
+  }
+
+  test("should not be able to create user with an external auth in community") {
+    // WHEN
+    assertFailure(
+      "CREATE USER foo SET AUTH 'bar' { SET ID 'baz' }",
+      "Failed to create the specified user 'foo': `SET AUTH 'bar'` is not available in community edition."
+    )
+
+    // WHEN
+    assertFailure(
+      "CREATE USER foo SET AUTH 'bar' { SET ID 'baz' } SET AUTH 'baz' { SET ID 'qux' }",
+      "Failed to create the specified user 'foo': `SET AUTH 'bar'`, `SET AUTH 'baz'` are not available in community edition."
+    )
+
+    // WHEN
+    assertFailure(
+      "CREATE USER foo SET AUTH 'bar' { SET ID 'baz' } SET AUTH 'native' { SET PASSWORD 'password' }",
+      "Failed to create the specified user 'foo': `SET AUTH 'bar'` is not available in community edition."
     )
 
     // THEN
@@ -1167,6 +1220,18 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
     testUserLogin(username, password, AuthenticationResult.FAILURE)
   }
 
+  test("should alter user password using SET AUTH syntax") {
+    // GIVEN
+    prepareUser()
+
+    // WHEN
+    execute(s"ALTER USER $username SET AUTH 'native' { SET PASSWORD '$newPassword' }")
+
+    // THEN
+    testUserLogin(username, newPassword, AuthenticationResult.PASSWORD_CHANGE_REQUIRED)
+    testUserLogin(username, password, AuthenticationResult.FAILURE)
+  }
+
   test("should alter user password with same parameter as username") {
     // GIVEN
     prepareUser()
@@ -1257,6 +1322,17 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
     testUserLogin(username, password, AuthenticationResult.PASSWORD_CHANGE_REQUIRED)
   }
 
+  test("should alter user password mode using SET AUTH syntax") {
+    // GIVEN
+    prepareUser()
+
+    // WHEN
+    execute(s"ALTER USER $username SET AUTH 'native' { SET PASSWORD CHANGE NOT REQUIRED }")
+
+    // THEN
+    testUserLogin(username, password, AuthenticationResult.SUCCESS)
+  }
+
   test("should alter user password and mode") {
     // GIVEN
     prepareUser()
@@ -1275,6 +1351,24 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
 
     // WHEN
     execute(s"ALTER USER $username SET PASSWORD $$password CHANGE NOT REQUIRED", Map("password" -> newPassword))
+
+    // THEN
+    testUserLogin(username, password, AuthenticationResult.FAILURE)
+    testUserLogin(username, newPassword, AuthenticationResult.SUCCESS)
+  }
+
+  test("should alter user password and mode using SET AUTH syntax") {
+    // GIVEN
+    prepareUser()
+
+    // WHEN
+    execute(
+      s"""ALTER USER $username
+         |SET AUTH 'native' {
+         |  SET PASSWORD '$newPassword'
+         |  SET PASSWORD CHANGE NOT REQUIRED
+         |}""".stripMargin
+    )
 
     // THEN
     testUserLogin(username, password, AuthenticationResult.FAILURE)
@@ -1399,17 +1493,6 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
     testUserLogin(username, newPassword, AuthenticationResult.PASSWORD_CHANGE_REQUIRED)
   }
 
-  test("should fail on altering user status from community") {
-    assertFailure(
-      s"ALTER USER $defaultUsername SET STATUS ACTIVE",
-      s"Failed to alter the specified user '$defaultUsername': 'SET STATUS' is not available in community edition."
-    )
-    assertFailure(
-      s"ALTER USER $defaultUsername SET PASSWORD 'xxx' SET STATUS SUSPENDED",
-      s"Failed to alter the specified user '$defaultUsername': 'SET STATUS' is not available in community edition."
-    )
-  }
-
   test("should alter existing user using if exists") {
     // GIVEN
     prepareUser()
@@ -1438,6 +1521,17 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
     execute("SHOW USERS").toSet should be(Set(defaultUser))
   }
 
+  test("should not be able to alter user status in community") {
+    assertFailure(
+      s"ALTER USER $defaultUsername SET STATUS ACTIVE",
+      s"Failed to alter the specified user '$defaultUsername': 'SET STATUS' is not available in community edition."
+    )
+    assertFailure(
+      s"ALTER USER $defaultUsername SET PASSWORD 'xxx' SET STATUS SUSPENDED",
+      s"Failed to alter the specified user '$defaultUsername': 'SET STATUS' is not available in community edition."
+    )
+  }
+
   test("should not be able to alter a users home database in community") {
     // WHEN
     assertFailure(
@@ -1449,6 +1543,63 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
     assertFailure(
       "ALTER USER foo REMOVE HOME DATABASE",
       "Failed to alter the specified user 'foo': 'HOME DATABASE' is not available in community edition."
+    )
+
+    // THEN
+    execute("SHOW USERS").toSet shouldBe Set(defaultUser)
+  }
+
+  test("should not be able to alter external auths in community") {
+    // WHEN
+    assertFailure(
+      "ALTER USER foo SET AUTH 'bar' { SET ID 'baz' }",
+      "Failed to alter the specified user 'foo': `SET AUTH 'bar'` is not available in community edition."
+    )
+
+    // WHEN
+    assertFailure(
+      "ALTER USER foo SET AUTH 'bar' { SET ID 'baz' } SET AUTH 'baz' { SET ID 'qux' }",
+      "Failed to alter the specified user 'foo': `SET AUTH 'bar'`, `SET AUTH 'baz'` are not available in community edition."
+    )
+
+    // WHEN
+    assertFailure(
+      "ALTER USER foo SET AUTH 'bar' { SET ID 'baz' } SET AUTH 'native' { SET PASSWORD 'password' }",
+      "Failed to alter the specified user 'foo': `SET AUTH 'bar'` is not available in community edition."
+    )
+
+    // THEN
+    execute("SHOW USERS").toSet shouldBe Set(defaultUser)
+  }
+
+  test("should not be able to remove auths in community") {
+    // WHEN
+    assertFailure(
+      "ALTER USER foo REMOVE AUTH 'bar'",
+      "Failed to alter the specified user 'foo': `REMOVE AUTH` is not available in community edition."
+    )
+    // WHEN
+    assertFailure(
+      "ALTER USER foo REMOVE AUTH 'native'",
+      "Failed to alter the specified user 'foo': `REMOVE AUTH` is not available in community edition."
+    )
+
+    // WHEN
+    assertFailure(
+      "ALTER USER foo REMOVE AUTH ['bar', 'baz']",
+      "Failed to alter the specified user 'foo': `REMOVE AUTH` is not available in community edition."
+    )
+
+    // WHEN
+    assertFailure(
+      "ALTER USER foo REMOVE AUTH ['bar', 'native']",
+      "Failed to alter the specified user 'foo': `REMOVE AUTH` is not available in community edition."
+    )
+
+    // WHEN
+    assertFailure(
+      "ALTER USER foo REMOVE ALL AUTH",
+      "Failed to alter the specified user 'foo': `REMOVE AUTH` is not available in community edition."
     )
 
     // THEN

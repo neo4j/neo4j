@@ -16,535 +16,1018 @@
  */
 package org.neo4j.cypher.internal.ast.factory.ddl
 
-import org.neo4j.cypher.internal.ast
+import org.neo4j.cypher.internal.ast.Auth
+import org.neo4j.cypher.internal.ast.CreateUser
+import org.neo4j.cypher.internal.ast.IfExistsDoNothing
+import org.neo4j.cypher.internal.ast.IfExistsInvalidSyntax
+import org.neo4j.cypher.internal.ast.IfExistsReplace
+import org.neo4j.cypher.internal.ast.IfExistsThrowError
+import org.neo4j.cypher.internal.ast.SetHomeDatabaseAction
 import org.neo4j.cypher.internal.ast.Statements
+import org.neo4j.cypher.internal.ast.UserOptions
 import org.neo4j.cypher.internal.ast.test.util.AstParsing.Cypher5JavaCc
-import org.neo4j.cypher.internal.expressions.SensitiveParameter
-import org.neo4j.cypher.internal.expressions.SensitiveStringLiteral
 
-import java.util
+import scala.util.Random
 
 class CreateUserAdministrationCommandParserTest extends UserAdministrationCommandParserTestBase {
 
   test("CREATE USER foo SET PASSWORD 'password'") {
-    parsesTo[Statements](
-      ast.CreateUser(
-        literalFoo,
-        isEncryptedPassword = false,
-        password,
-        ast.UserOptions(Some(true), None, None),
-        ast.IfExistsThrowError
-      )(pos)
-    )
+    parsesTo[Statements](CreateUser(
+      literalFoo,
+      UserOptions(None, None),
+      IfExistsThrowError,
+      List(),
+      Some(Auth("native", List(password(password)))(pos))
+    )(pos))
   }
 
   test("CREATE USER $foo SET PASSWORD 'password'") {
-    parsesTo[Statements](
-      ast.CreateUser(
-        paramFoo,
-        isEncryptedPassword = false,
-        password,
-        ast.UserOptions(Some(true), None, None),
-        ast.IfExistsThrowError
-      )(pos)
-    )
+    parsesTo[Statements](CreateUser(
+      paramFoo,
+      UserOptions(None, None),
+      IfExistsThrowError,
+      List(),
+      Some(Auth("native", List(password(password)))(pos))
+    )(pos))
   }
 
   test("CREATE USER foo SET PLAINTEXT PASSWORD 'password'") {
-    parsesTo[Statements](
-      ast.CreateUser(
-        literalFoo,
-        isEncryptedPassword = false,
-        password,
-        ast.UserOptions(Some(true), None, None),
-        ast.IfExistsThrowError
-      )(pos)
-    )
+    parsesTo[Statements](CreateUser(
+      literalFoo,
+      UserOptions(None, None),
+      IfExistsThrowError,
+      List(),
+      Some(Auth("native", List(password(password)))(pos))
+    )(pos))
   }
 
   test(s"CREATE USER foo SET PLAINTEXT PASSWORD $pwParamString") {
-    parsesTo[Statements](
-      ast.CreateUser(
-        literalFoo,
-        isEncryptedPassword = false,
-        paramPassword,
-        ast.UserOptions(Some(true), None, None),
-        ast.IfExistsThrowError
-      )(pos)
-    )
+    parsesTo[Statements](CreateUser(
+      literalFoo,
+      UserOptions(None, None),
+      IfExistsThrowError,
+      List(),
+      Some(Auth("native", List(password(paramPassword)))(pos))
+    )(pos))
   }
 
   test(s"CREATE USER $paramString SET PASSWORD $pwParamString") {
-    parsesTo[Statements](
-      ast.CreateUser(
-        paramAst,
-        isEncryptedPassword = false,
-        paramPassword,
-        ast.UserOptions(Some(true), None, None),
-        ast.IfExistsThrowError
-      )(pos)
-    )
+    parsesTo[Statements](CreateUser(
+      paramAst,
+      UserOptions(None, None),
+      IfExistsThrowError,
+      List(),
+      Some(Auth("native", List(password(paramPassword)))(pos))
+    )(pos))
   }
 
   test("CREATE USER `foo` SET PASSwORD 'password'") {
-    parsesTo[Statements](ast.CreateUser(
+    parsesTo[Statements](CreateUser(
       literalFoo,
-      isEncryptedPassword = false,
-      password,
-      ast.UserOptions(Some(true), None, None),
-      ast.IfExistsThrowError
+      UserOptions(None, None),
+      IfExistsThrowError,
+      List(),
+      Some(Auth("native", List(password(password)))(pos))
     )(pos))
   }
 
   test("CREATE USER `!#\"~` SeT PASSWORD 'password'") {
-    parsesTo[Statements](ast.CreateUser(
+    parsesTo[Statements](CreateUser(
       literal("!#\"~"),
-      isEncryptedPassword = false,
-      password,
-      ast.UserOptions(Some(true), None, None),
-      ast.IfExistsThrowError
+      UserOptions(None, None),
+      IfExistsThrowError,
+      List(),
+      Some(Auth("native", List(password(password)))(pos))
     )(pos))
   }
 
   test("CREATE USER foo SeT PASSWORD 'pasS5Wor%d'") {
-    parsesTo[Statements](ast.CreateUser(
+    parsesTo[Statements](CreateUser(
       literalFoo,
-      isEncryptedPassword = false,
-      pw("pasS5Wor%d"),
-      ast.UserOptions(Some(true), None, None),
-      ast.IfExistsThrowError
+      UserOptions(None, None),
+      IfExistsThrowError,
+      List(),
+      Some(Auth("native", List(password(pw("pasS5Wor%d"))))(pos))
     )(pos))
   }
 
   test("CREATE USER foo SET PASSwORD ''") {
-    parsesTo[Statements](ast.CreateUser(
+    parsesTo[Statements](CreateUser(
       literalFoo,
-      isEncryptedPassword = false,
-      passwordEmpty,
-      ast.UserOptions(Some(true), None, None),
-      ast.IfExistsThrowError
+      UserOptions(None, None),
+      IfExistsThrowError,
+      List(),
+      Some(Auth("native", List(password(passwordEmpty)))(pos))
     )(pos))
   }
 
   test(s"CREATE uSER foo SET PASSWORD $pwParamString") {
-    parsesTo[Statements](ast.CreateUser(
+    parsesTo[Statements](CreateUser(
       literalFoo,
-      isEncryptedPassword = false,
-      paramPassword,
-      ast.UserOptions(Some(true), None, None),
-      ast.IfExistsThrowError
+      UserOptions(None, None),
+      IfExistsThrowError,
+      List(),
+      Some(Auth("native", List(password(paramPassword)))(pos))
     )(pos))
   }
 
   test("CREaTE USER foo SET PASSWORD 'password' CHANGE REQUIRED") {
-    parsesTo[Statements](ast.CreateUser(
+    parsesTo[Statements](CreateUser(
       literalFoo,
-      isEncryptedPassword = false,
-      password,
-      ast.UserOptions(Some(true), None, None),
-      ast.IfExistsThrowError
+      UserOptions(None, None),
+      IfExistsThrowError,
+      List(),
+      Some(Auth(
+        "native",
+        List(password(password), passwordChange(true))
+      )(pos))
     )(pos))
   }
 
   test(s"CREATE USER foo SET PASSWORD $pwParamString CHANGE REQUIRED") {
-    parsesTo[Statements](
-      ast.CreateUser(
-        literalFoo,
-        isEncryptedPassword = false,
-        paramPassword,
-        ast.UserOptions(Some(true), None, None),
-        ast.IfExistsThrowError
-      )(pos)
-    )
+    parsesTo[Statements](CreateUser(
+      literalFoo,
+      UserOptions(None, None),
+      IfExistsThrowError,
+      List(),
+      Some(Auth(
+        "native",
+        List(password(paramPassword), passwordChange(true))
+      )(pos))
+    )(pos))
   }
 
   test("CREATE USER foo SET PASSWORD 'password' SET PASSWORD CHANGE required") {
-    parsesTo[Statements](ast.CreateUser(
+    parsesTo[Statements](CreateUser(
       literalFoo,
-      isEncryptedPassword = false,
-      password,
-      ast.UserOptions(Some(true), None, None),
-      ast.IfExistsThrowError
+      UserOptions(None, None),
+      IfExistsThrowError,
+      List(),
+      Some(Auth(
+        "native",
+        List(password(password), passwordChange(true))
+      )(pos))
     )(pos))
   }
 
   test("CREATE USER foo SET PASSWORD 'password' CHAngE NOT REQUIRED") {
-    parsesTo[Statements](ast.CreateUser(
+    parsesTo[Statements](CreateUser(
       literalFoo,
-      isEncryptedPassword = false,
-      password,
-      ast.UserOptions(Some(false), None, None),
-      ast.IfExistsThrowError
+      UserOptions(None, None),
+      IfExistsThrowError,
+      List(),
+      Some(Auth(
+        "native",
+        List(password(password), passwordChange(false))
+      )(pos))
     )(pos))
   }
 
   test("CREATE USER foo SET PASSWORD 'password' SET PASSWORD CHANGE NOT REQUIRED") {
-    parsesTo[Statements](ast.CreateUser(
+    parsesTo[Statements](CreateUser(
       literalFoo,
-      isEncryptedPassword = false,
-      password,
-      ast.UserOptions(Some(false), None, None),
-      ast.IfExistsThrowError
+      UserOptions(None, None),
+      IfExistsThrowError,
+      List(),
+      Some(Auth(
+        "native",
+        List(password(password), passwordChange(false))
+      )(pos))
     )(pos))
   }
 
   test(s"CREATE USER foo SET PASSWORD $pwParamString SET  PASSWORD CHANGE NOT REQUIRED") {
-    parsesTo[Statements](ast.CreateUser(
+    parsesTo[Statements](CreateUser(
       literalFoo,
-      isEncryptedPassword = false,
-      paramPassword,
-      ast.UserOptions(Some(false), None, None),
-      ast.IfExistsThrowError
+      UserOptions(None, None),
+      IfExistsThrowError,
+      List(),
+      Some(Auth(
+        "native",
+        List(password(paramPassword), passwordChange(false))
+      )(pos))
     )(pos))
   }
 
   test("CREATE USER foo SET PASSWORD 'password' SET STATUS SUSPENDed") {
-    parsesTo[Statements](
-      ast.CreateUser(
-        literalFoo,
-        isEncryptedPassword = false,
-        password,
-        ast.UserOptions(Some(true), Some(true), None),
-        ast.IfExistsThrowError
-      )(pos)
-    )
+    parsesTo[Statements](CreateUser(
+      literalFoo,
+      UserOptions(Some(true), None),
+      IfExistsThrowError,
+      List(),
+      Some(Auth("native", List(password(password)))(pos))
+    )(pos))
   }
 
   test("CREATE USER foo SET PASSWORD 'password' SET STATUS ACtiVE") {
-    parsesTo[Statements](ast.CreateUser(
+    parsesTo[Statements](CreateUser(
       literalFoo,
-      isEncryptedPassword = false,
-      password,
-      ast.UserOptions(Some(true), Some(false), None),
-      ast.IfExistsThrowError
+      UserOptions(Some(false), None),
+      IfExistsThrowError,
+      List(),
+      Some(Auth("native", List(password(password)))(pos))
     )(pos))
   }
 
   test("CREATE USER foo SET PASSWORD 'password' SET PASSWORD CHANGE NOT REQUIRED SET   STATuS SUSPENDED") {
-    parsesTo[Statements](ast.CreateUser(
+    parsesTo[Statements](CreateUser(
       literalFoo,
-      isEncryptedPassword = false,
-      password,
-      ast.UserOptions(Some(false), Some(true), None),
-      ast.IfExistsThrowError
+      UserOptions(Some(true), None),
+      IfExistsThrowError,
+      List(),
+      Some(Auth(
+        "native",
+        List(password(password), passwordChange(false))
+      )(pos))
     )(pos))
   }
 
   test(s"CREATE USER foo SET PASSWORD $pwParamString CHANGE REQUIRED SET STATUS SUSPENDED") {
-    parsesTo[Statements](ast.CreateUser(
+    parsesTo[Statements](CreateUser(
       literalFoo,
-      isEncryptedPassword = false,
-      paramPassword,
-      ast.UserOptions(Some(true), Some(true), None),
-      ast.IfExistsThrowError
+      UserOptions(Some(true), None),
+      IfExistsThrowError,
+      List(),
+      Some(Auth(
+        "native",
+        List(password(paramPassword), passwordChange(true))
+      )(pos))
     )(pos))
   }
 
   test("CREATE USER `` SET PASSwORD 'password'") {
-    parsesTo[Statements](ast.CreateUser(
+    parsesTo[Statements](CreateUser(
       literalEmpty,
-      isEncryptedPassword = false,
-      password,
-      ast.UserOptions(Some(true), None, None),
-      ast.IfExistsThrowError
+      UserOptions(None, None),
+      IfExistsThrowError,
+      List(),
+      Some(Auth("native", List(password(password)))(pos))
     )(pos))
   }
 
   test("CREATE USER `f:oo` SET PASSWORD 'password'") {
-    parsesTo[Statements](ast.CreateUser(
+    parsesTo[Statements](CreateUser(
       literalFColonOo,
-      isEncryptedPassword = false,
-      password,
-      ast.UserOptions(Some(true), None, None),
-      ast.IfExistsThrowError
+      UserOptions(None, None),
+      IfExistsThrowError,
+      List(),
+      Some(Auth("native", List(password(password)))(pos))
     )(pos))
   }
 
   test("CREATE USER foo IF NOT EXISTS SET PASSWORD 'password'") {
-    parsesTo[Statements](
-      ast.CreateUser(
-        literalFoo,
-        isEncryptedPassword = false,
-        password,
-        ast.UserOptions(Some(true), None, None),
-        ast.IfExistsDoNothing
-      )(pos)
-    )
+    parsesTo[Statements](CreateUser(
+      literalFoo,
+      UserOptions(None, None),
+      IfExistsDoNothing,
+      List(),
+      Some(Auth("native", List(password(password)))(pos))
+    )(pos))
   }
 
   test(s"CREATE uSER foo IF NOT EXISTS SET PASSWORD $pwParamString") {
-    parsesTo[Statements](ast.CreateUser(
+    parsesTo[Statements](CreateUser(
       literalFoo,
-      isEncryptedPassword = false,
-      paramPassword,
-      ast.UserOptions(Some(true), None, None),
-      ast.IfExistsDoNothing
+      UserOptions(None, None),
+      IfExistsDoNothing,
+      List(),
+      Some(Auth("native", List(password(paramPassword)))(pos))
     )(pos))
   }
 
   test(s"CREATE USER foo IF NOT EXISTS SET PASSWORD $pwParamString CHANGE REQUIRED") {
-    parsesTo[Statements](
-      ast.CreateUser(
-        literalFoo,
-        isEncryptedPassword = false,
-        paramPassword,
-        ast.UserOptions(Some(true), None, None),
-        ast.IfExistsDoNothing
-      )(pos)
-    )
+    parsesTo[Statements](CreateUser(
+      literalFoo,
+      UserOptions(None, None),
+      IfExistsDoNothing,
+      List(),
+      Some(Auth(
+        "native",
+        List(password(paramPassword), passwordChange(true))
+      )(pos))
+    )(pos))
   }
 
   test(s"CREATE USER foo IF NOT EXISTS SET PASSWORD $pwParamString SET STATUS SUSPENDED") {
-    parsesTo[Statements](ast.CreateUser(
+    parsesTo[Statements](CreateUser(
       literalFoo,
-      isEncryptedPassword = false,
-      paramPassword,
-      ast.UserOptions(Some(true), Some(true), None),
-      ast.IfExistsDoNothing
+      UserOptions(Some(true), None),
+      IfExistsDoNothing,
+      List(),
+      Some(Auth("native", List(password(paramPassword)))(pos))
     )(pos))
   }
 
   test(s"CREATE USER foo IF NOT EXISTS SET PASSWORD $pwParamString CHANGE REQUIRED SET STATUS SUSPENDED") {
-    parsesTo[Statements](ast.CreateUser(
+    parsesTo[Statements](CreateUser(
       literalFoo,
-      isEncryptedPassword = false,
-      paramPassword,
-      ast.UserOptions(Some(true), Some(true), None),
-      ast.IfExistsDoNothing
+      UserOptions(Some(true), None),
+      IfExistsDoNothing,
+      List(),
+      Some(Auth(
+        "native",
+        List(password(paramPassword), passwordChange(true))
+      )(pos))
     )(pos))
   }
 
   test("CREATE OR REPLACE USER foo SET PASSWORD 'password'") {
-    parsesTo[Statements](
-      ast.CreateUser(
-        literalFoo,
-        isEncryptedPassword = false,
-        password,
-        ast.UserOptions(Some(true), None, None),
-        ast.IfExistsReplace
-      )(pos)
-    )
+    parsesTo[Statements](CreateUser(
+      literalFoo,
+      UserOptions(None, None),
+      IfExistsReplace,
+      List(),
+      Some(Auth("native", List(password(password)))(pos))
+    )(pos))
   }
 
   test(s"CREATE OR REPLACE uSER foo SET PASSWORD $pwParamString") {
-    parsesTo[Statements](ast.CreateUser(
+    parsesTo[Statements](CreateUser(
       literalFoo,
-      isEncryptedPassword = false,
-      paramPassword,
-      ast.UserOptions(Some(true), None, None),
-      ast.IfExistsReplace
+      UserOptions(None, None),
+      IfExistsReplace,
+      List(),
+      Some(Auth("native", List(password(paramPassword)))(pos))
     )(pos))
   }
 
   test(s"CREATE OR REPLACE USER foo SET PASSWORD $pwParamString CHANGE REQUIRED") {
-    parsesTo[Statements](
-      ast.CreateUser(
-        literalFoo,
-        isEncryptedPassword = false,
-        paramPassword,
-        ast.UserOptions(Some(true), None, None),
-        ast.IfExistsReplace
-      )(pos)
-    )
+    parsesTo[Statements](CreateUser(
+      literalFoo,
+      UserOptions(None, None),
+      IfExistsReplace,
+      List(),
+      Some(Auth(
+        "native",
+        List(password(paramPassword), passwordChange(true))
+      )(pos))
+    )(pos))
   }
 
   test(s"CREATE OR REPLACE USER foo SET PASSWORD $pwParamString SET STATUS SUSPENDED") {
-    parsesTo[Statements](ast.CreateUser(
+    parsesTo[Statements](CreateUser(
       literalFoo,
-      isEncryptedPassword = false,
-      paramPassword,
-      ast.UserOptions(Some(true), Some(true), None),
-      ast.IfExistsReplace
+      UserOptions(Some(true), None),
+      IfExistsReplace,
+      List(),
+      Some(Auth("native", List(password(paramPassword)))(pos))
     )(pos))
   }
 
   test(s"CREATE OR REPLACE USER foo SET PASSWORD $pwParamString CHANGE REQUIRED SET STATUS SUSPENDED") {
-    parsesTo[Statements](ast.CreateUser(
+    parsesTo[Statements](CreateUser(
       literalFoo,
-      isEncryptedPassword = false,
-      paramPassword,
-      ast.UserOptions(Some(true), Some(true), None),
-      ast.IfExistsReplace
-    )(pos))
-  }
-
-  test("CREATE OR REPLACE USER foo IF NOT EXISTS SET PASSWORD 'password'") {
-    parsesTo[Statements](ast.CreateUser(
-      literalFoo,
-      isEncryptedPassword = false,
-      password,
-      ast.UserOptions(Some(true), None, None),
-      ast.IfExistsInvalidSyntax
+      UserOptions(Some(true), None),
+      IfExistsReplace,
+      List(),
+      Some(Auth(
+        "native",
+        List(password(paramPassword), passwordChange(true))
+      )(pos))
     )(pos))
   }
 
   test(
     "CREATE USER foo SET ENCRYPTED PASSWORD '1,04773b8510aea96ca2085cb81764b0a2,75f4201d047191c17c5e236311b7c4d77e36877503fe60b1ca6d4016160782ab'"
   ) {
-    parsesTo[Statements](ast.CreateUser(
+    parsesTo[Statements](CreateUser(
       literalFoo,
-      isEncryptedPassword = true,
-      pw("1,04773b8510aea96ca2085cb81764b0a2,75f4201d047191c17c5e236311b7c4d77e36877503fe60b1ca6d4016160782ab"),
-      ast.UserOptions(Some(true), None, None),
-      ast.IfExistsThrowError
+      UserOptions(None, None),
+      IfExistsThrowError,
+      List(),
+      Some(Auth(
+        "native",
+        List(password(
+          pw("1,04773b8510aea96ca2085cb81764b0a2,75f4201d047191c17c5e236311b7c4d77e36877503fe60b1ca6d4016160782ab"),
+          isEncrypted = true
+        ))
+      )(pos))
     )(pos))
   }
 
   test("CREATE USER $foo SET encrYPTEd PASSWORD 'password'") {
-    parsesTo[Statements](
-      ast.CreateUser(
-        paramFoo,
-        isEncryptedPassword = true,
-        password,
-        ast.UserOptions(Some(true), None, None),
-        ast.IfExistsThrowError
-      )(pos)
-    )
+    parsesTo[Statements](CreateUser(
+      paramFoo,
+      UserOptions(None, None),
+      IfExistsThrowError,
+      List(),
+      Some(Auth("native", List(password(password, isEncrypted = true)))(pos))
+    )(pos))
   }
 
   test(s"CREATE USER $paramString SET ENCRYPTED Password $pwParamString") {
-    parsesTo[Statements](
-      ast.CreateUser(
-        paramAst,
-        isEncryptedPassword = true,
-        paramPassword,
-        ast.UserOptions(Some(true), None, None),
-        ast.IfExistsThrowError
-      )(pos)
-    )
+    parsesTo[Statements](CreateUser(
+      paramAst,
+      UserOptions(None, None),
+      IfExistsThrowError,
+      List(),
+      Some(Auth("native", List(password(paramPassword, isEncrypted = true)))(pos))
+    )(pos))
   }
 
   test("CREATE OR REPLACE USER foo SET encrypted password 'sha256,x1024,0x2460294fe,b3ddb287a'") {
-    parsesTo[Statements](ast.CreateUser(
+    parsesTo[Statements](CreateUser(
       literalFoo,
-      isEncryptedPassword = true,
-      pw("sha256,x1024,0x2460294fe,b3ddb287a"),
-      ast.UserOptions(Some(true), None, None),
-      ast.IfExistsReplace
+      UserOptions(None, None),
+      IfExistsReplace,
+      List(),
+      Some(Auth("native", List(password(pw("sha256,x1024,0x2460294fe,b3ddb287a"), isEncrypted = true)))(pos))
     )(pos))
   }
 
   test("CREATE USER foo SET password 'password' SET HOME DATABASE db1") {
-    parsesTo[Statements](ast.CreateUser(
+    parsesTo[Statements](CreateUser(
       literalFoo,
-      isEncryptedPassword = false,
-      password,
-      ast.UserOptions(Some(true), None, Some(ast.SetHomeDatabaseAction(namespacedName("db1")))),
-      ast.IfExistsThrowError
+      UserOptions(None, Some(SetHomeDatabaseAction(namespacedName("db1")))),
+      IfExistsThrowError,
+      List(),
+      Some(Auth("native", List(password(password)))(pos))
     )(pos))
   }
 
   test("CREATE USER foo SET password 'password' SET HOME DATABASE $db") {
-    parsesTo[Statements](ast.CreateUser(
+    parsesTo[Statements](CreateUser(
       literalFoo,
-      isEncryptedPassword = false,
-      password,
-      ast.UserOptions(Some(true), None, Some(ast.SetHomeDatabaseAction(paramDb))),
-      ast.IfExistsThrowError
+      UserOptions(None, Some(SetHomeDatabaseAction(paramDb))),
+      IfExistsThrowError,
+      List(),
+      Some(Auth("native", List(password(password)))(pos))
     )(pos))
   }
 
   test("CREATE OR REPLACE USER foo SET password 'password' SET HOME DATABASE db1") {
-    parsesTo[Statements](ast.CreateUser(
+    parsesTo[Statements](CreateUser(
       literalFoo,
-      isEncryptedPassword = false,
-      password,
-      ast.UserOptions(Some(true), None, Some(ast.SetHomeDatabaseAction(namespacedName("db1")))),
-      ast.IfExistsReplace
+      UserOptions(None, Some(SetHomeDatabaseAction(namespacedName("db1")))),
+      IfExistsReplace,
+      List(),
+      Some(Auth("native", List(password(password)))(pos))
     )(pos))
   }
 
   test("CREATE USER foo IF NOT EXISTS SET password 'password' SET HOME DATABASE db1") {
-    parsesTo[Statements](ast.CreateUser(
+    parsesTo[Statements](CreateUser(
       literalFoo,
-      isEncryptedPassword = false,
-      password,
-      ast.UserOptions(Some(true), None, Some(ast.SetHomeDatabaseAction(namespacedName("db1")))),
-      ast.IfExistsDoNothing
+      UserOptions(None, Some(SetHomeDatabaseAction(namespacedName("db1")))),
+      IfExistsDoNothing,
+      List(),
+      Some(Auth("native", List(password(password)))(pos))
     )(pos))
   }
 
   test("CREATE USER foo SET password 'password' SET PASSWORD CHANGE NOT REQUIRED SET HOME DAtabase $db") {
-    parsesTo[Statements](ast.CreateUser(
+    parsesTo[Statements](CreateUser(
       literalFoo,
-      isEncryptedPassword = false,
-      password,
-      ast.UserOptions(Some(false), None, Some(ast.SetHomeDatabaseAction(paramDb))),
-      ast.IfExistsThrowError
+      UserOptions(None, Some(SetHomeDatabaseAction(paramDb))),
+      IfExistsThrowError,
+      List(),
+      Some(Auth(
+        "native",
+        List(password(password), passwordChange(false))
+      )(pos))
     )(pos))
   }
 
   test("CREATE USER foo SET password 'password' SET HOME DATABASE `#dfkfop!`") {
-    parsesTo[Statements](ast.CreateUser(
+    parsesTo[Statements](CreateUser(
       literalFoo,
-      isEncryptedPassword = false,
-      password,
-      ast.UserOptions(Some(true), None, Some(ast.SetHomeDatabaseAction(namespacedName("#dfkfop!")))),
-      ast.IfExistsThrowError
+      UserOptions(None, Some(SetHomeDatabaseAction(namespacedName("#dfkfop!")))),
+      IfExistsThrowError,
+      List(),
+      Some(Auth("native", List(password(password)))(pos))
     )(pos))
   }
 
   test("CREATE USER foo SET password 'password' SET HOME DATABASE null") {
-    parsesTo[Statements](ast.CreateUser(
+    parsesTo[Statements](CreateUser(
       literalFoo,
-      isEncryptedPassword = false,
-      password,
-      ast.UserOptions(Some(true), None, Some(ast.SetHomeDatabaseAction(namespacedName("null")))),
-      ast.IfExistsThrowError
+      UserOptions(None, Some(SetHomeDatabaseAction(namespacedName("null")))),
+      IfExistsThrowError,
+      List(),
+      Some(Auth("native", List(password(password)))(pos))
+    )(pos))
+  }
+
+  test("CREATE USER foo SET AUTH PROVIDER 'native' { SET PASSWORD 'password' }") {
+    parsesTo[Statements](CreateUser(
+      literalFoo,
+      UserOptions(None, None),
+      IfExistsThrowError,
+      List(Auth("native", List(password(password)))(pos)),
+      None
+    )(pos))
+  }
+
+  test("CREATE USER foo SET AUTH 'native' { SET PASSWORD 'password' }") {
+    parsesTo[Statements](CreateUser(
+      literalFoo,
+      UserOptions(None, None),
+      IfExistsThrowError,
+      List(Auth("native", List(password(password)))(pos)),
+      None
+    )(pos))
+  }
+
+  test("CREATE USER foo IF NOT EXISTS SET AUTH 'native' { SET PLAINTEXT PASSWORD 'password' }") {
+    parsesTo[Statements](CreateUser(
+      literalFoo,
+      UserOptions(None, None),
+      IfExistsDoNothing,
+      List(Auth("native", List(password(password)))(pos)),
+      None
+    )(pos))
+  }
+
+  test("CREATE USER foo SET AUTH PROVIDER 'native' { SET PASSWORD 'password' SET PASSWORD CHANGE REQUIRED }") {
+    parsesTo[Statements](CreateUser(
+      literalFoo,
+      UserOptions(None, None),
+      IfExistsThrowError,
+      List(Auth("native", List(password(password), passwordChange(true)))(pos)),
+      None
+    )(pos))
+  }
+
+  test(
+    "CREATE USER foo SET AUTH 'native' { SET PASSWORD CHANGE NOT REQUIRED SET ENCRYPTED PASSWORD $password }"
+  ) {
+    parsesTo[Statements](CreateUser(
+      literalFoo,
+      UserOptions(None, None),
+      IfExistsThrowError,
+      List(Auth("native", List(passwordChange(false), password(paramPassword, isEncrypted = true)))(pos)),
+      None
+    )(pos))
+  }
+
+  test("CREATE USER foo SET AUTH PROVIDER 'foo' { SET ID 'bar' }") {
+    parsesTo[Statements](CreateUser(
+      literalFoo,
+      UserOptions(None, None),
+      IfExistsThrowError,
+      List(Auth("foo", List(authId("bar")))(pos)),
+      None
+    )(pos))
+  }
+
+  test("CREATE OR REPLACE USER foo SET AUTH PROVIDER 'foo' { SET ID 'bar' }") {
+    parsesTo[Statements](CreateUser(
+      literalFoo,
+      UserOptions(None, None),
+      IfExistsReplace,
+      List(Auth("foo", List(authId("bar")))(pos)),
+      None
+    )(pos))
+  }
+
+  test(s"CREATE USER foo SET AUTH 'foo' { SET ID $paramString }") {
+    parsesTo[Statements](CreateUser(
+      literalFoo,
+      UserOptions(None, None),
+      IfExistsThrowError,
+      List(Auth("foo", List(authId(paramAst)))(pos)),
+      None
+    )(pos))
+  }
+
+  test("CREATE USER foo SET AUTH 'foo' { SET ID 'bar' } SET AUTH PROVIDER 'baz' { SET ID 'qux' }") {
+    parsesTo[Statements](CreateUser(
+      literalFoo,
+      UserOptions(None, None),
+      IfExistsThrowError,
+      List(Auth("foo", List(authId("bar")))(pos), Auth("baz", List(authId("qux")))(pos)),
+      None
+    )(pos))
+  }
+
+  test("CREATE USER foo SET AUTH 'foo' { SET ID 'bar' } SET PASSWORD 'password'") {
+    parsesTo[Statements](CreateUser(
+      literalFoo,
+      UserOptions(None, None),
+      IfExistsThrowError,
+      List(Auth("foo", List(authId("bar")))(pos)),
+      Some(Auth("native", List(password(password)))(pos))
+    )(pos))
+  }
+
+  test(
+    "CREATE USER foo SET AUTH 'native' { SET PASSWORD 'password' } SET AUTH 'foo' { SET ID 'bar' }"
+  ) {
+    parsesTo[Statements](CreateUser(
+      literalFoo,
+      UserOptions(None, None),
+      IfExistsThrowError,
+      List(Auth("native", List(password(password)))(pos), Auth("foo", List(authId("bar")))(pos)),
+      None
+    )(pos))
+  }
+
+  test(
+    "CREATE USER foo SET AUTH 'foo' { SET ID 'bar' } SET PASSWORD 'password' SET AUTH PROVIDER 'baz' { SET ID 'qux' }"
+  ) {
+    parsesTo[Statements](CreateUser(
+      literalFoo,
+      UserOptions(None, None),
+      IfExistsThrowError,
+      List(Auth("foo", List(authId("bar")))(pos), Auth("baz", List(authId("qux")))(pos)),
+      Some(Auth("native", List(password(password)))(pos))
     )(pos))
   }
 
   // clause ordering tests
 
-  Seq(
-    ("CHANGE REQUIRED", "SET STATUS ACTIVE", "SET HOME DATABASE db1"),
-    ("CHANGE REQUIRED", "SET HOME DATABASE db1", "SET STATUS ACTIVE")
-  ).foreach {
-    case (first: String, second: String, third: String) =>
-      test(s"CREATE USER foo SET password 'password' $first $second $third") {
-        parsesTo[Statements](ast.CreateUser(
-          literalFoo,
-          isEncryptedPassword = false,
-          password,
-          ast.UserOptions(Some(true), Some(false), Some(ast.SetHomeDatabaseAction(namespacedName("db1")))),
-          ast.IfExistsThrowError
-        )(pos))
-      }
-  }
-
-  Seq("SET PASSWORD CHANGE REQUIRED", "SET STATUS ACTIVE", "SET HOME DATABASE db1")
-    .permutations.foreach {
+  // Test permutations with CHANGE REQUIRED as part of SET PASSWORD
+  Random.shuffle(setClausesOldPasswordVersion)
+    .take(10) // Limit the number of tests run (and time for test setup)
+    .foreach {
       clauses =>
-        test(s"CREATE USER foo SET password 'password' ${clauses.mkString(" ")}") {
-          parsesTo[Statements](ast.CreateUser(
+        test(s"CREATE USER foo ${clauses.mkString(" ")}") {
+          parsesTo[Statements](CreateUser(
             literalFoo,
-            isEncryptedPassword = false,
-            password,
-            ast.UserOptions(Some(true), Some(false), Some(ast.SetHomeDatabaseAction(namespacedName("db1")))),
-            ast.IfExistsThrowError
+            UserOptions(Some(false), Some(SetHomeDatabaseAction(namespacedName("db1")))),
+            IfExistsThrowError,
+            List(Auth("foo", List(authId("bar")))(pos)),
+            Some(Auth(
+              "native",
+              List(password(password), passwordChange(true))
+            )(pos))
+          )(pos))
+        }
+    }
+
+  // Test permutations with everything as individual clauses (old password syntax)
+  Random.shuffle(setClausesSplitPasswordVersion)
+    .take(10) // Limit the number of tests run (and time for test setup)
+    .foreach {
+      clauses =>
+        test(s"CREATE USER foo ${clauses.mkString(" ")}") {
+          parsesTo[Statements](CreateUser(
+            literalFoo,
+            UserOptions(Some(false), Some(SetHomeDatabaseAction(namespacedName("db1")))),
+            IfExistsThrowError,
+            List(Auth("foo", List(authId("bar")))(pos)),
+            Some(Auth("native", getNativeAuthAttributeList)(pos))
+          )(pos))
+        }
+    }
+
+  // Test permutations with everything as individual clauses (new password syntax)
+  Random.shuffle(setClausesNewPasswordVersion)
+    .take(10) // Limit the number of tests run (and time for test setup)
+    .foreach {
+      clauses =>
+        test(s"CREATE USER foo ${clauses.mkString(" ")}") {
+          parsesTo[Statements](CreateUser(
+            literalFoo,
+            UserOptions(Some(false), Some(SetHomeDatabaseAction(namespacedName("db1")))),
+            IfExistsThrowError,
+            getAuthListIncludingNewSyntaxNativeAuth,
+            None
+          )(pos))
+        }
+    }
+
+  // Test ordering of the inner clauses of SET AUTH (most of these will fail semantic checking)
+  Random.shuffle(innerNewSyntaxAtLeastTwoClauses)
+    .take(10) // Limit the number of tests run (and time for test setup)
+    .foreach {
+      case (clauses, authAttrList) =>
+        test(s"CREATE USER foo SET AUTH 'irrelevantInParsing' { ${clauses.mkString(" ")} }") {
+          parsesTo[Statements](CreateUser(
+            literalFoo,
+            UserOptions(None, None),
+            IfExistsThrowError,
+            List(Auth("irrelevantInParsing", authAttrList)(pos)),
+            None
           )(pos))
         }
     }
 
   // offset/position tests
 
-  test("CREATE command finds password literal at correct offset") {
-    parsing[Statements]("CREATE USER foo SET PASSWORD 'password'").shouldVerify { statement =>
-      val passwords = statement.folder.findAllByClass[SensitiveStringLiteral].map(l => (l.value, l.position.offset))
-      passwords.foreach { case (pw, offset) =>
-        withClue("Expecting password = password, offset = 29") {
-          util.Arrays.equals(toUtf8Bytes("password"), pw) shouldBe true
-          offset shouldBe 29
-        }
-      }
+  test("CREATE command finds password literal at correct offset - old syntax") {
+    "CREATE USER foo SET PASSWORD 'password'" should parse[Statements].withAstLike { statement =>
+      findPasswordLiteralOffset(statement) should equal(Seq("password" -> 29))
     }
   }
 
-  test("CREATE command finds password parameter at correct offset") {
-    parsing[Statements](s"CREATE USER foo SET PASSWORD $pwParamString").shouldVerify { statement =>
-      val passwords = statement.folder.findAllByClass[SensitiveParameter].map(p => (p.name, p.position.offset))
-      passwords should equal(Seq("password" -> 29))
+  test("CREATE command finds password literal at correct offset - new syntax") {
+    "CREATE USER foo SET AUTH 'native' {SET PASSWORD 'password'}" should parse[Statements].withAstLike { statement =>
+      findPasswordLiteralOffset(statement) should equal(Seq("password" -> 48))
     }
+    "CREATE USER foo SET AUTH 'bar' {SET PASSWORD 'password'}" should parse[Statements].withAstLike { statement =>
+      findPasswordLiteralOffset(statement) should equal(Seq("password" -> 45))
+    }
+  }
+
+  test("CREATE command finds password parameter at correct offset - old syntax") {
+    s"CREATE USER foo SET PASSWORD $pwParamString" should parse[Statements].withAstLike { statement =>
+      findPasswordParamOffset(statement) should equal(Seq("password" -> 29))
+    }
+  }
+
+  test("CREATE command finds password parameter at correct offset - new syntax") {
+    s"CREATE USER foo SET AUTH 'native' {SET PASSWORD $pwParamString}" should parse[Statements].withAstLike {
+      statement =>
+        findPasswordParamOffset(statement) should equal(Seq("password" -> 48))
+    }
+    s"CREATE USER foo SET AUTH 'bar' {SET PASSWORD $pwParamString}" should parse[Statements].withAstLike { statement =>
+      findPasswordParamOffset(statement) should equal(Seq("password" -> 45))
+    }
+  }
+
+  // success in parsing but failure in semantic check
+
+  test("CREATE OR REPLACE USER foo IF NOT EXISTS SET PASSWORD 'password'") {
+    parsesTo[Statements](CreateUser(
+      literalFoo,
+      UserOptions(None, None),
+      IfExistsInvalidSyntax,
+      List(),
+      Some(Auth("native", List(password(password)))(pos))
+    )(pos))
+  }
+
+  test("CREATE OR REPLACE USER foo IF NOT EXISTS SET AUTH 'native' { SET PASSWORD 'password' }") {
+    parsesTo[Statements](CreateUser(
+      literalFoo,
+      UserOptions(None, None),
+      IfExistsInvalidSyntax,
+      List(Auth("native", List(password(password)))(pos)),
+      None
+    )(pos))
+  }
+
+  test("CREATE OR REPLACE USER foo IF NOT EXISTS SET AUTH 'foo' { SET ID 'bar' }") {
+    parsesTo[Statements](CreateUser(
+      literalFoo,
+      UserOptions(None, None),
+      IfExistsInvalidSyntax,
+      List(Auth("foo", List(authId("bar")))(pos)),
+      None
+    )(pos))
+  }
+
+  test("CREATE USER foo SET PASSWORD CHANGE REQUIRED") {
+    parsesTo[Statements](CreateUser(
+      literalFoo,
+      UserOptions(None, None),
+      IfExistsThrowError,
+      List(),
+      Some(Auth("native", List(passwordChange(true)))(pos))
+    )(pos))
+  }
+
+  test("CREATE USER foo SET STATUS SUSPENDED") {
+    parsesTo[Statements](CreateUser(
+      literalFoo,
+      UserOptions(Some(true), None),
+      IfExistsThrowError,
+      List(),
+      None
+    )(pos))
+  }
+
+  test("CREATE USER foo SET PASSWORD CHANGE REQUIRED SET STATUS ACTIVE") {
+    parsesTo[Statements](CreateUser(
+      literalFoo,
+      UserOptions(Some(false), None),
+      IfExistsThrowError,
+      List(),
+      Some(Auth("native", List(passwordChange(true)))(pos))
+    )(pos))
+  }
+
+  test("CREATE USER foo IF NOT EXISTS SET PASSWORD CHANGE REQUIRED") {
+    parsesTo[Statements](CreateUser(
+      literalFoo,
+      UserOptions(None, None),
+      IfExistsDoNothing,
+      List(),
+      Some(Auth("native", List(passwordChange(true)))(pos))
+    )(pos))
+  }
+
+  test("CREATE USER foo IF NOT EXISTS SET STATUS ACTIVE") {
+    parsesTo[Statements](CreateUser(
+      literalFoo,
+      UserOptions(Some(false), None),
+      IfExistsDoNothing,
+      List(),
+      None
+    )(pos))
+  }
+
+  test("CREATE USER foo IF NOT EXISTS SET PASSWORD CHANGE NOT REQUIRED SET STATUS SUSPENDED") {
+    parsesTo[Statements](CreateUser(
+      literalFoo,
+      UserOptions(Some(true), None),
+      IfExistsDoNothing,
+      List(),
+      Some(Auth("native", List(passwordChange(false)))(pos))
+    )(pos))
+  }
+
+  test("CREATE OR REPLACE USER foo SET PASSWORD CHANGE NOT REQUIRED") {
+    parsesTo[Statements](CreateUser(
+      literalFoo,
+      UserOptions(None, None),
+      IfExistsReplace,
+      List(),
+      Some(Auth("native", List(passwordChange(false)))(pos))
+    )(pos))
+  }
+
+  test("CREATE OR REPLACE USER foo SET STATUS SUSPENDED") {
+    parsesTo[Statements](CreateUser(
+      literalFoo,
+      UserOptions(Some(true), None),
+      IfExistsReplace,
+      List(),
+      None
+    )(pos))
+  }
+
+  test("CREATE OR REPLACE USER foo SET PASSWORD CHANGE REQUIRED SET STATUS ACTIVE") {
+    parsesTo[Statements](CreateUser(
+      literalFoo,
+      UserOptions(Some(false), None),
+      IfExistsReplace,
+      List(),
+      Some(Auth("native", List(passwordChange(true)))(pos))
+    )(pos))
+  }
+
+  test("CREATE USER foo SET PASSWORD $password CHANGE NOT REQUIRED SET PASSWORD CHANGE REQUIRED") {
+    parsesTo[Statements](CreateUser(
+      literalFoo,
+      UserOptions(None, None),
+      IfExistsThrowError,
+      List(),
+      Some(Auth("native", List(password(paramPassword), passwordChange(false), passwordChange(true)))(pos))
+    )(pos))
+  }
+
+  test("CREATE USER foo SET AUTH PROVIDER 'native' { SET PASSWORD CHANGE REQUIRED }") {
+    parsesTo[Statements](CreateUser(
+      literalFoo,
+      UserOptions(None, None),
+      IfExistsThrowError,
+      List(Auth("native", List(passwordChange(true)))(pos)),
+      None
+    )(pos))
+  }
+
+  test("CREATE USER foo SET AUTH PROVIDER 'native' { SET ID 'foo' }") {
+    parsesTo[Statements](CreateUser(
+      literalFoo,
+      UserOptions(None, None),
+      IfExistsThrowError,
+      List(Auth("native", List(authId("foo")))(pos)),
+      None
+    )(pos))
+  }
+
+  test("CREATE USER foo SET AUTH PROVIDER 'foo' { SET PASSWORD 'password' }") {
+    parsesTo[Statements](CreateUser(
+      literalFoo,
+      UserOptions(None, None),
+      IfExistsThrowError,
+      List(Auth("foo", List(password(password)))(pos)),
+      None
+    )(pos))
+  }
+
+  test(
+    "CREATE USER foo SET AUTH PROVIDER 'native' { SET PASSWORD 'password' } SET AUTH PROVIDER 'native' { SET PASSWORD CHANGE REQUIRED }"
+  ) {
+    parsesTo[Statements](CreateUser(
+      literalFoo,
+      UserOptions(None, None),
+      IfExistsThrowError,
+      List(Auth("native", List(password(password)))(pos), Auth("native", List(passwordChange(true)))(pos)),
+      None
+    )(pos))
+  }
+
+  test("CREATE USER foo SET AUTH PROVIDER 'native' { SET PASSWORD 'password' } SET PASSWORD CHANGE REQUIRED") {
+    parsesTo[Statements](CreateUser(
+      literalFoo,
+      UserOptions(None, None),
+      IfExistsThrowError,
+      List(Auth("native", List(password(password)))(pos)),
+      Some(Auth("native", List(passwordChange(true)))(pos))
+    )(pos))
+  }
+
+  test("CREATE USER foo SET PASSWORD 'password' SET AUTH PROVIDER 'native' { SET PASSWORD CHANGE REQUIRED }") {
+    parsesTo[Statements](CreateUser(
+      literalFoo,
+      UserOptions(None, None),
+      IfExistsThrowError,
+      List(Auth("native", List(passwordChange(true)))(pos)),
+      Some(Auth("native", List(password(password)))(pos))
+    )(pos))
+  }
+
+  test("CREATE USER foo SET AUTH 'foo' { SET ID 'bar' } SET AUTH PROVIDER 'foo' { SET ID 'bar' }") {
+    parsesTo[Statements](CreateUser(
+      literalFoo,
+      UserOptions(None, None),
+      IfExistsThrowError,
+      List(Auth("foo", List(authId("bar")))(pos), Auth("foo", List(authId("bar")))(pos)),
+      None
+    )(pos))
+  }
+
+  test("CREATE USER foo SET AUTH PROVIDER 'foo' { SET ID 'bar' } SET AUTH 'foo' { SET ID 'qux' }") {
+    parsesTo[Statements](CreateUser(
+      literalFoo,
+      UserOptions(None, None),
+      IfExistsThrowError,
+      List(Auth("foo", List(authId("bar")))(pos), Auth("foo", List(authId("qux")))(pos)),
+      None
+    )(pos))
+  }
+
+  test("CREATE USER foo SET AUTH PROVIDER 'foo' { SET ID 'bar' SET ID 'qux' }") {
+    parsesTo[Statements](CreateUser(
+      literalFoo,
+      UserOptions(None, None),
+      IfExistsThrowError,
+      List(Auth("foo", List(authId("bar"), authId("qux")))(pos)),
+      None
+    )(pos))
+  }
+
+  test("CREATE USER foo SET AUTH PROVIDER 'foo' { SET ID 'bar' SET PASSWORD 'password' }") {
+    parsesTo[Statements](CreateUser(
+      literalFoo,
+      UserOptions(None, None),
+      IfExistsThrowError,
+      List(Auth("foo", List(authId("bar"), password(password)))(pos)),
+      None
+    )(pos))
+  }
+
+  test("CREATE USER foo SET AUTH PROVIDER 'native' { SET ID 'bar' SET PASSWORD 'password' }") {
+    parsesTo[Statements](CreateUser(
+      literalFoo,
+      UserOptions(None, None),
+      IfExistsThrowError,
+      List(Auth("native", List(authId("bar"), password(password)))(pos)),
+      None
+    )(pos))
+  }
+
+  test("CREATE USER foo SET PASSWORD 'password' SET PASSWORD 'password'") {
+    parsesTo[Statements](CreateUser(
+      literalFoo,
+      UserOptions(None, None),
+      IfExistsThrowError,
+      List(),
+      Some(Auth("native", List(password(password), password(password)))(pos))
+    )(pos))
+  }
+
+  test("CREATE USER foo SET AUTH '' { SET PASSWORD '' }") {
+    parsesTo[Statements](CreateUser(
+      literalFoo,
+      UserOptions(None, None),
+      IfExistsThrowError,
+      List(Auth("", List(password(passwordEmpty)))(pos)),
+      None
+    )(pos))
+  }
+
+  test("CREATE USER foo SET AUTH PROVIDER '' { SET ID '' }") {
+    parsesTo[Statements](CreateUser(
+      literalFoo,
+      UserOptions(None, None),
+      IfExistsThrowError,
+      List(Auth("", List(authId("")))(pos)),
+      None
+    )(pos))
+  }
+
+  test("CREATE USER foo SET AUTH PROVIDER 'native' { SET PASSWORD '' }") {
+    parsesTo[Statements](CreateUser(
+      literalFoo,
+      UserOptions(None, None),
+      IfExistsThrowError,
+      List(Auth("native", List(password(passwordEmpty)))(pos)),
+      None
+    )(pos))
+  }
+
+  test("CREATE USER foo SET AUTH 'foo' { SET ID '' }") {
+    parsesTo[Statements](CreateUser(
+      literalFoo,
+      UserOptions(None, None),
+      IfExistsThrowError,
+      List(Auth("foo", List(authId("")))(pos)),
+      None
+    )(pos))
   }
 
   // fails parsing
@@ -614,10 +1097,10 @@ class CreateUserAdministrationCommandParserTest extends UserAdministrationComman
   test("CREATE USER foo SET PASSWORD") {
     failsParsing[Statements].in {
       case Cypher5JavaCc => _.withMessageStart(
-          "Invalid input '': expected \"\\\"\", \"\\'\" or a parameter (line 1, column 29 (offset: 28))"
+          "Invalid input '': expected \"CHANGE\", \"\\\"\", \"\\'\" or a parameter (line 1, column 29 (offset: 28))"
         )
       case _ => _.withSyntaxError(
-          """Invalid input '': expected a parameter or a string (line 1, column 29 (offset: 28))
+          """Invalid input '': expected a parameter, a string or 'CHANGE' (line 1, column 29 (offset: 28))
             |"CREATE USER foo SET PASSWORD"
             |                             ^""".stripMargin
         )
@@ -666,12 +1149,12 @@ class CreateUserAdministrationCommandParserTest extends UserAdministrationComman
   test("CREATE USER foo SET PASSWORD 'password' SET ENCRYPTED PASSWORD") {
     failsParsing[Statements].in {
       case Cypher5JavaCc => _.withMessageStart(
-          "Invalid input 'ENCRYPTED': expected \"HOME\", \"PASSWORD\" or \"STATUS\" (line 1, column 45 (offset: 44))"
+          "Invalid input '': expected \"\\\"\", \"\\'\" or a parameter (line 1, column 63 (offset: 62))"
         )
       case _ => _.withSyntaxError(
-          """Invalid input 'ENCRYPTED': expected 'HOME DATABASE', 'PASSWORD' or 'STATUS' (line 1, column 45 (offset: 44))
+          """Invalid input '': expected a parameter or a string (line 1, column 63 (offset: 62))
             |"CREATE USER foo SET PASSWORD 'password' SET ENCRYPTED PASSWORD"
-            |                                             ^""".stripMargin
+            |                                                               ^""".stripMargin
         )
     }
   }
@@ -705,10 +1188,10 @@ class CreateUserAdministrationCommandParserTest extends UserAdministrationComman
   test("CREATE USER foo SET PASSWORD null CHANGE REQUIRED") {
     failsParsing[Statements].in {
       case Cypher5JavaCc => _.withMessageStart(
-          "Invalid input 'null': expected \"\\\"\", \"\\'\" or a parameter (line 1, column 30 (offset: 29))"
+          "Invalid input 'null': expected \"CHANGE\", \"\\\"\", \"\\'\" or a parameter (line 1, column 30 (offset: 29))"
         )
       case _ => _.withSyntaxError(
-          """Invalid input 'null': expected a parameter or a string (line 1, column 30 (offset: 29))
+          """Invalid input 'null': expected a parameter, a string or 'CHANGE' (line 1, column 30 (offset: 29))
             |"CREATE USER foo SET PASSWORD null CHANGE REQUIRED"
             |                              ^""".stripMargin
         )
@@ -754,10 +1237,16 @@ class CreateUserAdministrationCommandParserTest extends UserAdministrationComman
   test("CREATE USER foo SET PASSWORD 'password' SET DEFAULT DATABASE db1") {
     failsParsing[Statements].in {
       case Cypher5JavaCc => _.withMessageStart(
-          "Invalid input 'DEFAULT': expected \"HOME\", \"PASSWORD\" or \"STATUS\" (line 1, column 45 (offset: 44))"
+          """Invalid input 'DEFAULT': expected
+            |  "AUTH"
+            |  "ENCRYPTED"
+            |  "HOME"
+            |  "PASSWORD"
+            |  "PLAINTEXT"
+            |  "STATUS" (line 1, column 45 (offset: 44))""".stripMargin
         )
       case _ => _.withSyntaxError(
-          """Invalid input 'DEFAULT': expected 'HOME DATABASE', 'PASSWORD' or 'STATUS' (line 1, column 45 (offset: 44))
+          """Invalid input 'DEFAULT': expected 'AUTH', 'HOME DATABASE', 'ENCRYPTED', 'PASSWORD', 'PLAINTEXT' or 'STATUS' (line 1, column 45 (offset: 44))
             |"CREATE USER foo SET PASSWORD 'password' SET DEFAULT DATABASE db1"
             |                                             ^""".stripMargin
         )
@@ -767,10 +1256,16 @@ class CreateUserAdministrationCommandParserTest extends UserAdministrationComman
   test("CREATE USER foo SET PASSWORD 'password' SET STAUS ACTIVE") {
     failsParsing[Statements].in {
       case Cypher5JavaCc => _.withMessageStart(
-          "Invalid input 'STAUS': expected \"HOME\", \"PASSWORD\" or \"STATUS\" (line 1, column 45 (offset: 44))"
+          s"""Invalid input 'STAUS': expected
+             |  "AUTH"
+             |  "ENCRYPTED"
+             |  "HOME"
+             |  "PASSWORD"
+             |  "PLAINTEXT"
+             |  "STATUS" (line 1, column 45 (offset: 44))""".stripMargin
         )
       case _ => _.withSyntaxError(
-          """Invalid input 'STAUS': expected 'HOME DATABASE', 'PASSWORD' or 'STATUS' (line 1, column 45 (offset: 44))
+          """Invalid input 'STAUS': expected 'AUTH', 'HOME DATABASE', 'ENCRYPTED', 'PASSWORD', 'PLAINTEXT' or 'STATUS' (line 1, column 45 (offset: 44))
             |"CREATE USER foo SET PASSWORD 'password' SET STAUS ACTIVE"
             |                                             ^""".stripMargin
         )
@@ -802,45 +1297,6 @@ class CreateUserAdministrationCommandParserTest extends UserAdministrationComman
     }
   }
 
-  test("CREATE USER foo SET PASSWORD CHANGE REQUIRED") {
-    failsParsing[Statements].in {
-      case Cypher5JavaCc => _.withMessageStart(
-          "Invalid input 'CHANGE': expected \"\\\"\", \"\\'\" or a parameter (line 1, column 30 (offset: 29))"
-        )
-      case _ => _.withSyntaxError(
-          """Invalid input 'CHANGE': expected a parameter or a string (line 1, column 30 (offset: 29))
-            |"CREATE USER foo SET PASSWORD CHANGE REQUIRED"
-            |                              ^""".stripMargin
-        )
-    }
-  }
-
-  test("CREATE USER foo SET STATUS SUSPENDED") {
-    failsParsing[Statements].in {
-      case Cypher5JavaCc => _.withMessageStart(
-          "Invalid input 'STATUS': expected \"ENCRYPTED\", \"PASSWORD\" or \"PLAINTEXT\" (line 1, column 21 (offset: 20))"
-        )
-      case _ => _.withSyntaxError(
-          """Invalid input 'STATUS': expected 'ENCRYPTED', 'PASSWORD' or 'PLAINTEXT' (line 1, column 21 (offset: 20))
-            |"CREATE USER foo SET STATUS SUSPENDED"
-            |                     ^""".stripMargin
-        )
-    }
-  }
-
-  test("CREATE USER foo SET PASSWORD CHANGE REQUIRED SET STATUS ACTIVE") {
-    failsParsing[Statements].in {
-      case Cypher5JavaCc => _.withMessageStart(
-          "Invalid input 'CHANGE': expected \"\\\"\", \"\\'\" or a parameter (line 1, column 30 (offset: 29))"
-        )
-      case _ => _.withSyntaxError(
-          """Invalid input 'CHANGE': expected a parameter or a string (line 1, column 30 (offset: 29))
-            |"CREATE USER foo SET PASSWORD CHANGE REQUIRED SET STATUS ACTIVE"
-            |                              ^""".stripMargin
-        )
-    }
-  }
-
   test("CREATE USER foo IF EXISTS SET PASSWORD 'bar'") {
     failsParsing[Statements].in {
       case Cypher5JavaCc =>
@@ -867,51 +1323,12 @@ class CreateUserAdministrationCommandParserTest extends UserAdministrationComman
   test("CREATE USER foo IF NOT EXISTS SET PASSWORD") {
     failsParsing[Statements].in {
       case Cypher5JavaCc => _.withMessageStart(
-          "Invalid input '': expected \"\\\"\", \"\\'\" or a parameter (line 1, column 43 (offset: 42))"
+          "Invalid input '': expected \"CHANGE\", \"\\\"\", \"\\'\" or a parameter (line 1, column 43 (offset: 42))"
         )
       case _ => _.withSyntaxError(
-          """Invalid input '': expected a parameter or a string (line 1, column 43 (offset: 42))
+          """Invalid input '': expected a parameter, a string or 'CHANGE' (line 1, column 43 (offset: 42))
             |"CREATE USER foo IF NOT EXISTS SET PASSWORD"
             |                                           ^""".stripMargin
-        )
-    }
-  }
-
-  test("CREATE USER foo IF NOT EXISTS SET PASSWORD CHANGE REQUIRED") {
-    failsParsing[Statements].in {
-      case Cypher5JavaCc => _.withMessageStart(
-          "Invalid input 'CHANGE': expected \"\\\"\", \"\\'\" or a parameter (line 1, column 44 (offset: 43))"
-        )
-      case _ => _.withSyntaxError(
-          """Invalid input 'CHANGE': expected a parameter or a string (line 1, column 44 (offset: 43))
-            |"CREATE USER foo IF NOT EXISTS SET PASSWORD CHANGE REQUIRED"
-            |                                            ^""".stripMargin
-        )
-    }
-  }
-
-  test("CREATE USER foo IF NOT EXISTS SET STATUS ACTIVE") {
-    failsParsing[Statements].in {
-      case Cypher5JavaCc => _.withMessageStart(
-          "Invalid input 'STATUS': expected \"ENCRYPTED\", \"PASSWORD\" or \"PLAINTEXT\" (line 1, column 35 (offset: 34))"
-        )
-      case _ => _.withSyntaxError(
-          """Invalid input 'STATUS': expected 'ENCRYPTED', 'PASSWORD' or 'PLAINTEXT' (line 1, column 35 (offset: 34))
-            |"CREATE USER foo IF NOT EXISTS SET STATUS ACTIVE"
-            |                                   ^""".stripMargin
-        )
-    }
-  }
-
-  test("CREATE USER foo IF NOT EXISTS SET PASSWORD CHANGE NOT REQUIRED SET STATUS SUSPENDED") {
-    failsParsing[Statements].in {
-      case Cypher5JavaCc => _.withMessageStart(
-          "Invalid input 'CHANGE': expected \"\\\"\", \"\\'\" or a parameter (line 1, column 44 (offset: 43))"
-        )
-      case _ => _.withSyntaxError(
-          """Invalid input 'CHANGE': expected a parameter or a string (line 1, column 44 (offset: 43))
-            |"CREATE USER foo IF NOT EXISTS SET PASSWORD CHANGE NOT REQUIRED SET STATUS SUSPENDED"
-            |                                            ^""".stripMargin
         )
     }
   }
@@ -931,51 +1348,12 @@ class CreateUserAdministrationCommandParserTest extends UserAdministrationComman
   test("CREATE OR REPLACE USER foo SET PASSWORD") {
     failsParsing[Statements].in {
       case Cypher5JavaCc => _.withMessageStart(
-          "Invalid input '': expected \"\\\"\", \"\\'\" or a parameter (line 1, column 40 (offset: 39))"
+          "Invalid input '': expected \"CHANGE\", \"\\\"\", \"\\'\" or a parameter (line 1, column 40 (offset: 39))"
         )
       case _ => _.withSyntaxError(
-          """Invalid input '': expected a parameter or a string (line 1, column 40 (offset: 39))
+          """Invalid input '': expected a parameter, a string or 'CHANGE' (line 1, column 40 (offset: 39))
             |"CREATE OR REPLACE USER foo SET PASSWORD"
             |                                        ^""".stripMargin
-        )
-    }
-  }
-
-  test("CREATE OR REPLACE USER foo SET PASSWORD CHANGE NOT REQUIRED") {
-    failsParsing[Statements].in {
-      case Cypher5JavaCc => _.withMessageStart(
-          "Invalid input 'CHANGE': expected \"\\\"\", \"\\'\" or a parameter (line 1, column 41 (offset: 40))"
-        )
-      case _ => _.withSyntaxError(
-          """Invalid input 'CHANGE': expected a parameter or a string (line 1, column 41 (offset: 40))
-            |"CREATE OR REPLACE USER foo SET PASSWORD CHANGE NOT REQUIRED"
-            |                                         ^""".stripMargin
-        )
-    }
-  }
-
-  test("CREATE OR REPLACE USER foo SET STATUS SUSPENDED") {
-    failsParsing[Statements].in {
-      case Cypher5JavaCc => _.withMessageStart(
-          "Invalid input 'STATUS': expected \"ENCRYPTED\", \"PASSWORD\" or \"PLAINTEXT\" (line 1, column 32 (offset: 31))"
-        )
-      case _ => _.withSyntaxError(
-          """Invalid input 'STATUS': expected 'ENCRYPTED', 'PASSWORD' or 'PLAINTEXT' (line 1, column 32 (offset: 31))
-            |"CREATE OR REPLACE USER foo SET STATUS SUSPENDED"
-            |                                ^""".stripMargin
-        )
-    }
-  }
-
-  test("CREATE OR REPLACE USER foo SET PASSWORD CHANGE REQUIRED SET STATUS ACTIVE") {
-    failsParsing[Statements].in {
-      case Cypher5JavaCc => _.withMessageStart(
-          "Invalid input 'CHANGE': expected \"\\\"\", \"\\'\" or a parameter (line 1, column 41 (offset: 40))"
-        )
-      case _ => _.withSyntaxError(
-          """Invalid input 'CHANGE': expected a parameter or a string (line 1, column 41 (offset: 40))
-            |"CREATE OR REPLACE USER foo SET PASSWORD CHANGE REQUIRED SET STATUS ACTIVE"
-            |                                         ^""".stripMargin
         )
     }
   }
@@ -1004,19 +1382,6 @@ class CreateUserAdministrationCommandParserTest extends UserAdministrationComman
     }
   }
 
-  test("CREATE USER foo SET PASSWORD $password CHANGE NOT REQUIRED SET PASSWORD CHANGE REQUIRED") {
-    val exceptionMessage =
-      s"""Duplicate SET PASSWORD CHANGE [NOT] REQUIRED clause (line 1, column 60 (offset: 59))""".stripMargin
-    failsParsing[Statements].in {
-      case Cypher5JavaCc => _.withMessage(exceptionMessage)
-      case _ => _.withSyntaxError(
-          """Duplicate SET PASSWORD CHANGE [NOT] REQUIRED clause (line 1, column 64 (offset: 63))
-            |"CREATE USER foo SET PASSWORD $password CHANGE NOT REQUIRED SET PASSWORD CHANGE REQUIRED"
-            |                                                                ^""".stripMargin
-        )
-    }
-  }
-
   test("CREATE USER foo SET PASSWORD $password SET STATUS ACTIVE SET STATUS SUSPENDED") {
     val exceptionMessage =
       s"""Duplicate SET STATUS {SUSPENDED|ACTIVE} clause (line 1, column 58 (offset: 57))""".stripMargin
@@ -1040,6 +1405,93 @@ class CreateUserAdministrationCommandParserTest extends UserAdministrationComman
             |"CREATE USER foo SET PASSWORD $password SET HOME DATABASE db SET HOME DATABASE db"
             |                                                                 ^""".stripMargin
         )
+    }
+  }
+
+  test("CREATE USER foo SET AUTH PROVIDER 'foo' { }") {
+    failsParsing[Statements].in {
+      case Cypher5JavaCc => _.withMessageStart("""Invalid input '}': expected "SET" (line""")
+      case _             => _.withSyntaxErrorContaining("Invalid input '}': expected 'SET' (line")
+    }
+  }
+
+  test("CREATE USER foo SET AUTH PROVIDER 'native' { SET PASSWORD 'password' CHANGE REQUIRED }") {
+    failsParsing[Statements].in {
+      case Cypher5JavaCc => _.withMessageStart("""Invalid input 'CHANGE': expected "SET" or "}" (line""")
+      case _             => _.withSyntaxErrorContaining("Invalid input 'CHANGE': expected 'SET' or '}' (line")
+    }
+  }
+
+  test("CREATE USER foo SET AUTH PROVIDER 'foo' { SET PASSWORD 'password' CHANGE NOT REQUIRED }") {
+    failsParsing[Statements].in {
+      case Cypher5JavaCc => _.withMessageStart("""Invalid input 'CHANGE': expected "SET" or "}" (line""")
+      case _             => _.withSyntaxErrorContaining("Invalid input 'CHANGE': expected 'SET' or '}' (line")
+    }
+  }
+
+  test("CREATE USER foo SET AUTH PROVIDER $param { SET ID 'bar' }") {
+    failsParsing[Statements].in {
+      case Cypher5JavaCc => _.withMessageStart("""Invalid input '$': expected "\"" or "\'" (line""")
+      case _             => _.withSyntaxErrorContaining("Invalid input '$': expected a string (line")
+    }
+  }
+
+  test("CREATE USER foo SET AUTH PROVIDER foo { SET ID 'bar' }") {
+    failsParsing[Statements].in {
+      case Cypher5JavaCc => _.withMessageStart("""Invalid input 'foo': expected "\"" or "\'" (line""")
+      case _             => _.withSyntaxErrorContaining("Invalid input 'foo': expected a string (line")
+    }
+  }
+
+  test("CREATE USER foo SET AUTH PROVIDER 'foo' { SET ID bar }") {
+    failsParsing[Statements].in {
+      case Cypher5JavaCc => _.withMessageStart("""Invalid input 'bar': expected "\"", "\'" or a parameter (line""")
+      case _             => _.withSyntaxErrorContaining("Invalid input 'bar': expected a parameter or a string (line")
+    }
+  }
+
+  test("CREATE USER foo AUTH PROVIDER 'foo' { SET ID 'bar' }") {
+    failsParsing[Statements].in {
+      case Cypher5JavaCc => _.withMessageStart("""Invalid input 'AUTH': expected "IF" or "SET" (line""")
+      case _             => _.withSyntaxErrorContaining("Invalid input 'AUTH': expected 'IF NOT EXISTS' or 'SET' (line")
+    }
+  }
+
+  test("CREATE USER foo AUTH 'foo' { SET ID 'bar' }") {
+    failsParsing[Statements].in {
+      case Cypher5JavaCc => _.withMessageStart("""Invalid input 'AUTH': expected "IF" or "SET" (line""")
+      case _             => _.withSyntaxErrorContaining("Invalid input 'AUTH': expected 'IF NOT EXISTS' or 'SET' (line")
+    }
+  }
+
+  test("CREATE USER foo SET AUTH PROVIDERS 'foo' { SET ID 'bar' }") {
+    failsParsing[Statements].in {
+      case Cypher5JavaCc => _.withMessageStart("""Invalid input 'PROVIDERS': expected "PROVIDER", "\"" or "\'" (line""")
+      case _             => _.withSyntaxErrorContaining("Invalid input 'PROVIDERS': expected a string (line")
+    }
+  }
+
+  test("CREATE USER foo SET AUTH 'foo' { SET UNKNOWN 'bar' }") {
+    failsParsing[Statements].in {
+      case Cypher5JavaCc =>
+        _.withMessageStart("""Invalid input 'UNKNOWN': expected "ENCRYPTED", "ID", "PASSWORD" or "PLAINTEXT" (line""")
+      case _ => _.withSyntaxErrorContaining(
+          "Invalid input 'UNKNOWN': expected 'ENCRYPTED', 'ID', 'PASSWORD' or 'PLAINTEXT' (line"
+        )
+    }
+  }
+
+  test("CREATE USER foo SET AUTH PROVIDER 42 { SET ID 'bar' }") {
+    failsParsing[Statements].in {
+      case Cypher5JavaCc => _.withMessageStart("""Invalid input '42': expected "\"" or "\'" (line""")
+      case _             => _.withSyntaxErrorContaining("Invalid input '42': expected a string (line")
+    }
+  }
+
+  test("CREATE USER foo SET AUTH PROVIDER 'bar' { SET ID 42 }") {
+    failsParsing[Statements].in {
+      case Cypher5JavaCc => _.withMessageStart("""Invalid input '42': expected "\"", "\'" or a parameter (line""")
+      case _             => _.withSyntaxErrorContaining("Invalid input '42': expected a parameter or a string (line")
     }
   }
 }

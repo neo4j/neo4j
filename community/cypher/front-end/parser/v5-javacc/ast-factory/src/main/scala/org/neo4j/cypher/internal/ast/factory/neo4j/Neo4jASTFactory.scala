@@ -21,6 +21,7 @@ import org.neo4j.cypher.internal.ast.AccessDatabaseAction
 import org.neo4j.cypher.internal.ast.ActionResource
 import org.neo4j.cypher.internal.ast.AdministrationAction
 import org.neo4j.cypher.internal.ast.AdministrationCommand
+import org.neo4j.cypher.internal.ast.AdministrationCommand.NATIVE_AUTH
 import org.neo4j.cypher.internal.ast.AliasedReturnItem
 import org.neo4j.cypher.internal.ast.AllAliasManagementActions
 import org.neo4j.cypher.internal.ast.AllConstraintActions
@@ -54,6 +55,9 @@ import org.neo4j.cypher.internal.ast.AlterUserAction
 import org.neo4j.cypher.internal.ast.AscSortItem
 import org.neo4j.cypher.internal.ast.AssignPrivilegeAction
 import org.neo4j.cypher.internal.ast.AssignRoleAction
+import org.neo4j.cypher.internal.ast.Auth
+import org.neo4j.cypher.internal.ast.AuthAttribute
+import org.neo4j.cypher.internal.ast.AuthId
 import org.neo4j.cypher.internal.ast.BtreeIndexes
 import org.neo4j.cypher.internal.ast.BuiltInFunctions
 import org.neo4j.cypher.internal.ast.CatalogName
@@ -208,6 +212,8 @@ import org.neo4j.cypher.internal.ast.OptionsParam
 import org.neo4j.cypher.internal.ast.OrderBy
 import org.neo4j.cypher.internal.ast.ParameterName
 import org.neo4j.cypher.internal.ast.ParsedAsYield
+import org.neo4j.cypher.internal.ast.Password
+import org.neo4j.cypher.internal.ast.PasswordChange
 import org.neo4j.cypher.internal.ast.PatternQualifier
 import org.neo4j.cypher.internal.ast.PointIndexes
 import org.neo4j.cypher.internal.ast.PrivilegeQualifier
@@ -231,6 +237,7 @@ import org.neo4j.cypher.internal.ast.RelUniqueConstraints
 import org.neo4j.cypher.internal.ast.RelationshipAllQualifier
 import org.neo4j.cypher.internal.ast.RelationshipQualifier
 import org.neo4j.cypher.internal.ast.Remove
+import org.neo4j.cypher.internal.ast.RemoveAuth
 import org.neo4j.cypher.internal.ast.RemoveDynamicPropertyItem
 import org.neo4j.cypher.internal.ast.RemoveHomeDatabaseAction
 import org.neo4j.cypher.internal.ast.RemoveItem
@@ -255,6 +262,7 @@ import org.neo4j.cypher.internal.ast.RevokePrivilege
 import org.neo4j.cypher.internal.ast.RevokeRolesFromUsers
 import org.neo4j.cypher.internal.ast.SchemaCommand
 import org.neo4j.cypher.internal.ast.ServerManagementAction
+import org.neo4j.cypher.internal.ast.SetAuthAction
 import org.neo4j.cypher.internal.ast.SetClause
 import org.neo4j.cypher.internal.ast.SetDatabaseAccessAction
 import org.neo4j.cypher.internal.ast.SetDynamicPropertyItem
@@ -591,6 +599,8 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
       Privilege,
       ActionResource,
       PrivilegeQualifier,
+      Auth,
+      AuthAttribute,
       SubqueryCall.InTransactionsParameters,
       SubqueryCall.InTransactionsBatchParameters,
       SubqueryCall.InTransactionsConcurrencyParameters,
@@ -2344,20 +2354,26 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
     replace: Boolean,
     ifNotExists: Boolean,
     username: SimpleEither[StringPos[InputPosition], Parameter],
-    password: Expression,
-    encrypted: Boolean,
-    changeRequired: Boolean,
     suspended: lang.Boolean,
-    homeDatabase: DatabaseName
+    homeDatabase: DatabaseName,
+    auths: util.List[Auth],
+    nativeAuthAttributes: util.List[AuthAttribute]
   ): AdministrationCommand = {
     val homeAction = if (homeDatabase == null) None else Some(SetHomeDatabaseAction(homeDatabase))
-    val userOptions = UserOptions(Some(changeRequired), asBooleanOption(suspended), homeAction)
+    val userOptions =
+      UserOptions(asBooleanOption(suspended), homeAction)
+    val systemAuth =
+      if (nativeAuthAttributes.isEmpty) None
+      else {
+        val nativeAttr = nativeAuthAttributes.asScala.toList
+        Some(Auth(NATIVE_AUTH, nativeAttr)(nativeAttr.head.position))
+      }
     CreateUser(
       stringLiteralOrParameterExpression(username.asScala),
-      encrypted,
-      password,
       userOptions,
-      ifExistsDo(replace, ifNotExists)
+      ifExistsDo(replace, ifNotExists),
+      auths.asScala.toList,
+      systemAuth
     )(p)
   }
 
@@ -2394,27 +2410,48 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
     p: InputPosition,
     ifExists: Boolean,
     username: SimpleEither[StringPos[InputPosition], Parameter],
-    password: Expression,
-    encrypted: Boolean,
-    changeRequired: lang.Boolean,
     suspended: lang.Boolean,
     homeDatabase: DatabaseName,
-    removeHome: Boolean
+    removeHome: Boolean,
+    auths: util.List[Auth],
+    nativeAuthAttributes: util.List[AuthAttribute],
+    removeAllAuth: Boolean,
+    removeAuth: util.List[Expression]
   ): AlterUser = {
-    val maybePassword = Option(password)
-    val homeAction =
-      if (removeHome) Some(RemoveHomeDatabaseAction)
-      else if (homeDatabase == null) None
-      else Some(SetHomeDatabaseAction(homeDatabase))
-    val userOptions = UserOptions(asBooleanOption(changeRequired), asBooleanOption(suspended), homeAction)
+    val homeAction = (removeHome, homeDatabase) match {
+      case (_, _: DatabaseName) => Some(SetHomeDatabaseAction(homeDatabase))
+      case (true, _)            => Some(RemoveHomeDatabaseAction)
+      case _                    => None
+    }
+    val userOptions =
+      UserOptions(asBooleanOption(suspended), homeAction)
+    val nativeAuth =
+      if (nativeAuthAttributes.isEmpty) None
+      else {
+        val nativeAttr = nativeAuthAttributes.asScala.toList
+        Some(Auth(NATIVE_AUTH, nativeAttr)(nativeAttr.head.position))
+      }
     AlterUser(
       stringLiteralOrParameterExpression(username.asScala),
-      if (maybePassword.isDefined) Some(encrypted) else None,
-      Option(password),
       userOptions,
-      ifExists
+      ifExists,
+      auths.asScala.toList,
+      nativeAuth,
+      RemoveAuth(removeAllAuth, removeAuth.asScala.toList)
     )(p)
   }
+
+  override def auth(provider: String, attributes: util.List[AuthAttribute], p: InputPosition): Auth =
+    Auth(provider, attributes.asScala.toList)(p)
+
+  override def authId(p: InputPosition, id: Expression): AuthAttribute =
+    AuthId(id)(p)
+
+  override def password(p: InputPosition, password: Expression, encrypted: Boolean): AuthAttribute =
+    Password(password, encrypted)(p)
+
+  override def passwordChangeRequired(p: InputPosition, changeRequired: Boolean): AuthAttribute =
+    PasswordChange(changeRequired)(p)
 
   override def passwordExpression(password: Parameter): Expression =
     new ExplicitParameter(password.name, CTString)(password.position) with SensitiveParameter
@@ -2660,6 +2697,7 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
     case ActionType.USER_DROP                     => DropUserAction
     case ActionType.USER_RENAME                   => RenameUserAction
     case ActionType.USER_PASSWORD                 => SetPasswordsAction
+    case ActionType.USER_AUTH                     => SetAuthAction
     case ActionType.USER_STATUS                   => SetUserStatusAction
     case ActionType.USER_HOME                     => SetUserHomeDatabaseAction
     case ActionType.USER_IMPERSONATE              => ImpersonateUserAction

@@ -98,7 +98,7 @@ final class Cypher5SyntaxChecker(exceptionFactory: CypherExceptionFactory) exten
   private def errorOnDuplicate(
     token: Token,
     description: String,
-    isParam: Boolean = false
+    isParam: Boolean
   ): Unit = {
     if (isParam) {
       _errors :+= exceptionFactory.syntaxException(
@@ -111,16 +111,6 @@ final class Cypher5SyntaxChecker(exceptionFactory: CypherExceptionFactory) exten
         inputPosition(token)
       )
 
-    }
-  }
-
-  private def errorOnDuplicateTokens(
-    params: java.util.List[TerminalNode],
-    description: String,
-    isParam: Boolean = false
-  ): Unit = {
-    if (params.size() > 1) {
-      errorOnDuplicate(params.get(1).getSymbol, description, isParam)
     }
   }
 
@@ -190,33 +180,11 @@ final class Cypher5SyntaxChecker(exceptionFactory: CypherExceptionFactory) exten
   }
 
   private def checkCreateUser(ctx: Cypher5Parser.CreateUserContext): Unit = {
-    val changeRequired = ctx.password().passwordChangeRequired()
-    if (changeRequired != null && !ctx.PASSWORD().isEmpty) {
-      errorOnDuplicate(ctx.PASSWORD().get(0).getSymbol, "SET PASSWORD CHANGE [NOT] REQUIRED")
-    } else if (ctx.PASSWORD().size > 1) {
-      errorOnDuplicate(ctx.PASSWORD().get(1).getSymbol, "SET PASSWORD CHANGE [NOT] REQUIRED")
-    }
     errorOnDuplicateRule(ctx.userStatus(), "SET STATUS {SUSPENDED|ACTIVE}")
     errorOnDuplicateRule(ctx.homeDatabase(), "SET HOME DATABASE")
   }
 
   private def checkAlterUser(ctx: Cypher5Parser.AlterUserContext): Unit = {
-    val pass = ctx.password()
-    val passSize = pass.size()
-    val nbrSetPass = ctx.PASSWORD().size + pass.size()
-    // Set
-    if (nbrSetPass > 1) {
-      if (ctx.PASSWORD().size > 1) {
-        errorOnDuplicateTokens(ctx.PASSWORD(), "SET PASSWORD CHANGE [NOT] REQUIRED")
-      } else if (passSize > 0) {
-        val hasChange = pass.stream().anyMatch(_.passwordChangeRequired() != null)
-        if (ctx.PASSWORD().size > 0 && hasChange) {
-          errorOnDuplicate(nodeChild(ctx.password(0), 0).getSymbol, "SET PASSWORD")
-        } else if (passSize > 1) {
-          errorOnDuplicate(nodeChild(ctx.password(1), 0).getSymbol, "SET PASSWORD")
-        }
-      }
-    }
     errorOnDuplicateRule(ctx.userStatus(), "SET STATUS {SUSPENDED|ACTIVE}")
     errorOnDuplicateRule(ctx.homeDatabase(), "SET HOME DATABASE")
   }

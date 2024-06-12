@@ -23,8 +23,8 @@ import static org.neo4j.kernel.api.security.AuthToken.newBasicAuthToken;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
-import org.neo4j.cypher.internal.security.SecureHasher;
-import org.neo4j.cypher.internal.security.SystemGraphCredential;
+import org.neo4j.server.security.SecureHasher;
+import org.neo4j.server.security.SystemGraphCredential;
 
 public class SecurityTestUtils {
     private SecurityTestUtils() {}

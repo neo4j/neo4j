@@ -324,13 +324,19 @@ public abstract class AbstractCypher5AstBuilder implements Cypher5ParserListener
             case Cypher5Parser.RULE_alterCurrentUser -> exitAlterCurrentUser(
                     (Cypher5Parser.AlterCurrentUserContext) ctx);
             case Cypher5Parser.RULE_alterUser -> exitAlterUser((Cypher5Parser.AlterUserContext) ctx);
+            case Cypher5Parser.RULE_removeNamedProvider -> exitRemoveNamedProvider(
+                    (Cypher5Parser.RemoveNamedProviderContext) ctx);
             case Cypher5Parser.RULE_password -> exitPassword((Cypher5Parser.PasswordContext) ctx);
+            case Cypher5Parser.RULE_passwordOnly -> exitPasswordOnly((Cypher5Parser.PasswordOnlyContext) ctx);
             case Cypher5Parser.RULE_passwordExpression -> exitPasswordExpression(
                     (Cypher5Parser.PasswordExpressionContext) ctx);
             case Cypher5Parser.RULE_passwordChangeRequired -> exitPasswordChangeRequired(
                     (Cypher5Parser.PasswordChangeRequiredContext) ctx);
             case Cypher5Parser.RULE_userStatus -> exitUserStatus((Cypher5Parser.UserStatusContext) ctx);
             case Cypher5Parser.RULE_homeDatabase -> exitHomeDatabase((Cypher5Parser.HomeDatabaseContext) ctx);
+            case Cypher5Parser.RULE_setAuthClause -> exitSetAuthClause((Cypher5Parser.SetAuthClauseContext) ctx);
+            case Cypher5Parser.RULE_userAuthAttribute -> exitUserAuthAttribute(
+                    (Cypher5Parser.UserAuthAttributeContext) ctx);
             case Cypher5Parser.RULE_showUsers -> exitShowUsers((Cypher5Parser.ShowUsersContext) ctx);
             case Cypher5Parser.RULE_showCurrentUser -> exitShowCurrentUser((Cypher5Parser.ShowCurrentUserContext) ctx);
             case Cypher5Parser.RULE_showPrivileges -> exitShowPrivileges((Cypher5Parser.ShowPrivilegesContext) ctx);
@@ -459,8 +465,12 @@ public abstract class AbstractCypher5AstBuilder implements Cypher5ParserListener
             case Cypher5Parser.RULE_glob -> exitGlob((Cypher5Parser.GlobContext) ctx);
             case Cypher5Parser.RULE_globRecursive -> exitGlobRecursive((Cypher5Parser.GlobRecursiveContext) ctx);
             case Cypher5Parser.RULE_globPart -> exitGlobPart((Cypher5Parser.GlobPartContext) ctx);
+            case Cypher5Parser.RULE_stringListLiteral -> exitStringListLiteral(
+                    (Cypher5Parser.StringListLiteralContext) ctx);
             case Cypher5Parser.RULE_stringList -> exitStringList((Cypher5Parser.StringListContext) ctx);
             case Cypher5Parser.RULE_stringLiteral -> exitStringLiteral((Cypher5Parser.StringLiteralContext) ctx);
+            case Cypher5Parser.RULE_stringOrParameterExpression -> exitStringOrParameterExpression(
+                    (Cypher5Parser.StringOrParameterExpressionContext) ctx);
             case Cypher5Parser.RULE_stringOrParameter -> exitStringOrParameter(
                     (Cypher5Parser.StringOrParameterContext) ctx);
             case Cypher5Parser.RULE_mapOrParameter -> exitMapOrParameter((Cypher5Parser.MapOrParameterContext) ctx);

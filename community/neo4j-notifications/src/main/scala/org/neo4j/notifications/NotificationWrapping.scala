@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.ast.UsingIndexHint.UsingPointIndexType
 import org.neo4j.cypher.internal.ast.UsingIndexHint.UsingRangeIndexType
 import org.neo4j.cypher.internal.ast.UsingIndexHint.UsingTextIndexType
 import org.neo4j.cypher.internal.util.AssignPrivilegeCommandHasNoEffectNotification
+import org.neo4j.cypher.internal.util.AuthProviderNotDefined
 import org.neo4j.cypher.internal.util.CartesianProductNotification
 import org.neo4j.cypher.internal.util.CordonedServersExistedDuringAllocation
 import org.neo4j.cypher.internal.util.DeprecatedConnectComponentsPlannerPreParserOption
@@ -37,6 +38,7 @@ import org.neo4j.cypher.internal.util.DeprecatedPropertyReferenceInMerge
 import org.neo4j.cypher.internal.util.DeprecatedRelTypeSeparatorNotification
 import org.neo4j.cypher.internal.util.DeprecatedRuntimeNotification
 import org.neo4j.cypher.internal.util.DeprecatedTextIndexProvider
+import org.neo4j.cypher.internal.util.ExternalAuthNotEnabled
 import org.neo4j.cypher.internal.util.FixedLengthRelationshipInShortestPath
 import org.neo4j.cypher.internal.util.GrantRoleCommandHasNoEffectNotification
 import org.neo4j.cypher.internal.util.HomeDatabaseNotPresent
@@ -319,6 +321,15 @@ object NotificationWrapping {
       NotificationCodeWithDescription.deprecatedConnectComponentsPlannerPreParserOption(
         position.asInputPosition
       )
+
+    case AuthProviderNotDefined(provider) =>
+      NotificationCodeWithDescription.authProviderNotDefined(
+        graphdb.InputPosition.empty,
+        provider
+      )
+
+    case _: ExternalAuthNotEnabled =>
+      NotificationCodeWithDescription.externalAuthNotEnabled(graphdb.InputPosition.empty)
 
     case AssignPrivilegeCommandHasNoEffectNotification(command) =>
       NotificationCodeWithDescription.commandHasNoEffectAssignPrivilege(

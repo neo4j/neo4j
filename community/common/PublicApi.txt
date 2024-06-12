@@ -139,11 +139,13 @@ org.neo4j.kernel.api.exceptions.Status.Schema::valueOf(java.lang.String) org.neo
 org.neo4j.kernel.api.exceptions.Status.Schema::values() org.neo4j.kernel.api.exceptions.Status.Schema[] public static
 org.neo4j.kernel.api.exceptions.Status.Security public static final enum extends java.lang.Enum<org.neo4j.kernel.api.exceptions.Status.Security> implements org.neo4j.kernel.api.exceptions.Status
 org.neo4j.kernel.api.exceptions.Status.Security::AuthProviderFailed org.neo4j.kernel.api.exceptions.Status.Security public static final
+org.neo4j.kernel.api.exceptions.Status.Security::AuthProviderNotDefined org.neo4j.kernel.api.exceptions.Status.Security public static final
 org.neo4j.kernel.api.exceptions.Status.Security::AuthProviderTimeout org.neo4j.kernel.api.exceptions.Status.Security public static final
 org.neo4j.kernel.api.exceptions.Status.Security::AuthenticationRateLimit org.neo4j.kernel.api.exceptions.Status.Security public static final
 org.neo4j.kernel.api.exceptions.Status.Security::AuthorizationExpired org.neo4j.kernel.api.exceptions.Status.Security public static final
 org.neo4j.kernel.api.exceptions.Status.Security::CommandHasNoEffect org.neo4j.kernel.api.exceptions.Status.Security public static final
 org.neo4j.kernel.api.exceptions.Status.Security::CredentialsExpired org.neo4j.kernel.api.exceptions.Status.Security public static final
+org.neo4j.kernel.api.exceptions.Status.Security::ExternalAuthNotEnabled org.neo4j.kernel.api.exceptions.Status.Security public static final
 org.neo4j.kernel.api.exceptions.Status.Security::Forbidden org.neo4j.kernel.api.exceptions.Status.Security public static final
 org.neo4j.kernel.api.exceptions.Status.Security::ImpossibleRevokeCommand org.neo4j.kernel.api.exceptions.Status.Security public static final
 org.neo4j.kernel.api.exceptions.Status.Security::ModifiedConcurrently org.neo4j.kernel.api.exceptions.Status.Security public static final

@@ -44,11 +44,6 @@
         </dependency>
         <dependency>
             <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-cypher</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.neo4j</groupId>
             <artifactId>neo4j-graphdb-api</artifactId>
             <version>${project.version}</version>
         </dependency>

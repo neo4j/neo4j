@@ -17,14 +17,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.security;
+package org.neo4j.server.security;
 
-class SecureHasherConfiguration {
-    final String algorithm;
-    final int iterations;
-
-    SecureHasherConfiguration(String algorithm, int iterations) {
-        this.algorithm = algorithm;
-        this.iterations = iterations;
+public class FormatException extends Exception {
+    public FormatException(String message) {
+        super(message);
     }
 }

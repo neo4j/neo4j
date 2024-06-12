@@ -237,7 +237,17 @@ public enum PrivilegeAction {
         @Override
         public boolean satisfies(PrivilegeAction action) {
             return switch (action) {
-                case SET_USER_STATUS, SET_PASSWORDS, SET_USER_HOME_DATABASE -> true;
+                case SET_USER_STATUS, SET_PASSWORDS, SET_AUTH, SET_USER_HOME_DATABASE -> true;
+                default -> this == action;
+            };
+        }
+    },
+
+    SET_AUTH {
+        @Override
+        public boolean satisfies(PrivilegeAction action) {
+            return switch (action) {
+                case SET_PASSWORDS -> true;
                 default -> this == action;
             };
         }

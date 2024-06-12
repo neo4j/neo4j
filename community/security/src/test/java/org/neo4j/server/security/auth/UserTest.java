@@ -23,8 +23,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.server.security.auth.SecurityTestUtils.credentialFor;
 
 import org.junit.jupiter.api.Test;
-import org.neo4j.cypher.internal.security.SystemGraphCredential;
 import org.neo4j.kernel.impl.security.User;
+import org.neo4j.server.security.SystemGraphCredential;
 
 class UserTest {
     @Test

@@ -16,6 +16,8 @@
  */
 package org.neo4j.cypher.internal.ast
 
+import org.neo4j.cypher.internal.ast.AdministrationCommand.NATIVE_AUTH
+import org.neo4j.cypher.internal.ast.AdministrationCommand.checkIsStringLiteralOrParameter
 import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.ast.prettifier.Prettifier
 import org.neo4j.cypher.internal.ast.semantics.SemanticAnalysisTooling
@@ -23,9 +25,11 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticCheck
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheck.success
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheck.when
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheckResult
+import org.neo4j.cypher.internal.ast.semantics.SemanticError
 import org.neo4j.cypher.internal.ast.semantics.SemanticExpressionCheck
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
+import org.neo4j.cypher.internal.ast.semantics.iterableOnceSemanticChecking
 import org.neo4j.cypher.internal.ast.semantics.optionSemanticChecking
 import org.neo4j.cypher.internal.expressions.BooleanExpression
 import org.neo4j.cypher.internal.expressions.Equals
@@ -91,12 +95,16 @@ sealed trait AdministrationCommand extends StatementWithGraph with SemanticAnaly
 
   override def dup(children: Seq[AnyRef]): this.type =
     super.dup(children).withGraph(useGraph).asInstanceOf[this.type]
+}
+
+object AdministrationCommand {
+  val NATIVE_AUTH = "native"
 
   private[ast] def checkIsStringLiteralOrParameter(value: String, expression: Expression): SemanticCheck =
     expression match {
       case _: StringLiteral                            => success
       case p: Parameter if p.parameterType == CTString => success
-      case exp => error(s"$value must be a String, or a String parameter.", exp.position)
+      case exp => SemanticCheck.error(SemanticError(s"$value must be a String, or a String parameter.", exp.position))
     }
 }
 
@@ -265,18 +273,62 @@ object ShowCurrentUser {
     )(position)
 }
 
+sealed trait UserAuth extends SemanticAnalysisTooling {
+  protected def newStyleAuth: List[Auth]
+  protected def oldStyleAuth: Option[Auth]
+
+  protected val externalAuths: List[ExternalAuth] =
+    newStyleAuth.filter(_.provider != NATIVE_AUTH).map(a => ExternalAuth(a.provider, a.authAttributes)(a.position))
+
+  private val allNativeAuths: List[NativeAuth] =
+    (newStyleAuth.filter(_.provider == NATIVE_AUTH) ++ oldStyleAuth).map(a => NativeAuth(a.authAttributes)(a.position))
+
+  // semantic check makes sure at most one exists
+  protected val nativeAuth: Option[NativeAuth] = allNativeAuths.headOption
+
+  protected val allAuths: Seq[AuthImpl] = externalAuths ++ allNativeAuths
+
+  protected def checkDuplicateAuth: SemanticCheck = newStyleAuth.groupBy(_.provider).collectFirst {
+    case (_, List(_, duplicate, _*)) =>
+      error(s"Duplicate `SET AUTH '${duplicate.provider}'` clause.", duplicate.position)
+  }.getOrElse(success)
+
+  protected def checkOldAndNewStyleCombination: SemanticCheck = newStyleAuth.filter(_.provider == NATIVE_AUTH) match {
+    case Seq(_, _*) if oldStyleAuth.nonEmpty =>
+      error(
+        "Cannot combine old and new auth syntax for the same auth provider.",
+        oldStyleAuth.head.authAttributes.head.position
+      )
+    case _ => success
+  }
+
+  protected def checkSetAuthFeatureFlag: SemanticCheck = {
+    newStyleAuth.headOption match {
+      case Some(auth) =>
+        requireFeatureSupport(s"The `SET AUTH` clause", SemanticFeature.LinkedUsers, auth.position)
+      case None => success
+    }
+  }
+
+  val useOldStyleNativeAuth: Boolean = oldStyleAuth.nonEmpty
+}
+
 final case class CreateUser(
   userName: Expression,
-  isEncryptedPassword: Boolean,
-  initialPassword: Expression,
   userOptions: UserOptions,
-  ifExistsDo: IfExistsDo
-)(val position: InputPosition) extends WriteAdministrationCommand {
+  ifExistsDo: IfExistsDo,
+  protected val newStyleAuth: List[Auth],
+  protected val oldStyleAuth: Option[Auth]
+)(val position: InputPosition) extends WriteAdministrationCommand with UserAuth {
 
   override def name: String = ifExistsDo match {
     case IfExistsReplace | IfExistsInvalidSyntax => "CREATE OR REPLACE USER"
     case _                                       => "CREATE USER"
   }
+
+  private def checkAtLeastOneAuth: SemanticCheck = if (allAuths.isEmpty) {
+    error("No auth given for user.", position)
+  } else success
 
   override def semanticCheck: SemanticCheck = ifExistsDo match {
     case IfExistsInvalidSyntax => error(
@@ -284,12 +336,28 @@ final case class CreateUser(
         position
       )
     case _ =>
-      super.semanticCheck chain
-        super.checkIsStringLiteralOrParameter("username", userName) chain
+      checkSetAuthFeatureFlag chain
+        checkAtLeastOneAuth chain
+        checkDuplicateAuth chain
+        checkOldAndNewStyleCombination chain
+        allAuths.foldSemanticCheck(auth =>
+          auth.checkDuplicates chain
+            auth.checkRequiredAttributes chain // for external checks that ID exists and is string or parameter
+            auth.checkNoUnsupportedAttributes chain
+            auth.checkProviderName
+        ) chain
+        super.semanticCheck chain
+        checkIsStringLiteralOrParameter("username", userName) chain
         SemanticState.recordCurrentScope(this)
   }
 
   private val userAsString: String = Prettifier.escapeName(userName)
+}
+
+object CreateUser {
+
+  def unapply(c: CreateUser): Some[(Expression, UserOptions, IfExistsDo, List[ExternalAuth], Option[NativeAuth])] =
+    Some((c.userName, c.userOptions, c.ifExistsDo, c.externalAuths, c.nativeAuth))
 }
 
 final case class DropUser(userName: Expression, ifExists: Boolean)(val position: InputPosition)
@@ -299,7 +367,7 @@ final case class DropUser(userName: Expression, ifExists: Boolean)(val position:
 
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
-      super.checkIsStringLiteralOrParameter("username", userName) chain
+      checkIsStringLiteralOrParameter("username", userName) chain
       SemanticState.recordCurrentScope(this)
 }
 
@@ -313,33 +381,74 @@ final case class RenameUser(
 
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
-      super.checkIsStringLiteralOrParameter("from username", fromUserName) chain
-      super.checkIsStringLiteralOrParameter("to username", toUserName) chain
+      checkIsStringLiteralOrParameter("from username", fromUserName) chain
+      checkIsStringLiteralOrParameter("to username", toUserName) chain
       SemanticState.recordCurrentScope(this)
 }
 
 final case class AlterUser(
   userName: Expression,
-  isEncryptedPassword: Option[Boolean],
-  initialPassword: Option[Expression],
   userOptions: UserOptions,
-  ifExists: Boolean
-)(val position: InputPosition) extends WriteAdministrationCommand {
-
-  assert(
-    initialPassword.isDefined || userOptions.requirePasswordChange.isDefined || userOptions.suspended.isDefined || userOptions.homeDatabase.isDefined
-  )
-
-  if (userOptions.homeDatabase.isDefined && userOptions.homeDatabase.get == null) {
-    assert(initialPassword.isEmpty && userOptions.requirePasswordChange.isEmpty && userOptions.suspended.isEmpty)
-  }
+  ifExists: Boolean,
+  protected val newStyleAuth: List[Auth],
+  protected val oldStyleAuth: Option[Auth],
+  removeAuth: RemoveAuth
+)(val position: InputPosition) extends WriteAdministrationCommand with UserAuth {
 
   override def name = "ALTER USER"
 
+  private def checkAtLeastOneClause: SemanticCheck =
+    if (userOptions.isEmpty && allAuths.isEmpty && removeAuth.isEmpty) {
+      error("`ALTER USER` requires at least one clause.", position)
+    } else {
+      success
+    }
+
+  private def checkRemoveAuth: SemanticCheck =
+    removeAuth.auths.foldSemanticCheck {
+      case s: StringLiteral if s.value.nonEmpty => success
+      case _: Parameter                         => success
+      case list: ListLiteral
+        if list.expressions.forall(e =>
+          e.isInstanceOf[StringLiteral] && e.asInstanceOf[StringLiteral].value.nonEmpty
+        ) && list.expressions.nonEmpty =>
+        success
+      case expr =>
+        error("Expected a non-empty String, non-empty List of non-empty Strings, or Parameter.", expr.position)
+    }
+
+  private def checkRemoveAuthFeatureFlag: SemanticCheck =
+    removeAuth match {
+      case RemoveAuth(true, _) =>
+        requireFeatureSupport(s"The `REMOVE ALL AUTH` clause", SemanticFeature.LinkedUsers, position)
+      case RemoveAuth(false, auths) if auths.nonEmpty =>
+        requireFeatureSupport(s"The `REMOVE AUTH` clause", SemanticFeature.LinkedUsers, auths.head.position)
+      case _ => success
+    }
+
   override def semanticCheck: SemanticCheck =
-    super.semanticCheck chain
-      super.checkIsStringLiteralOrParameter("username", userName) chain
+    checkSetAuthFeatureFlag chain
+      checkRemoveAuthFeatureFlag chain
+      checkAtLeastOneClause chain
+      checkDuplicateAuth chain
+      checkOldAndNewStyleCombination chain
+      allAuths.foldSemanticCheck(auth =>
+        auth.checkDuplicates chain
+          auth.checkNoUnsupportedAttributes chain
+          auth.checkProviderName
+      ) chain
+      externalAuths.foldSemanticCheck(_.checkIdIsStringLiteralOrParameter) chain
+      checkRemoveAuth chain
+      super.semanticCheck chain
+      checkIsStringLiteralOrParameter("username", userName) chain
       SemanticState.recordCurrentScope(this)
+}
+
+object AlterUser {
+
+  def unapply(a: AlterUser)
+    : Some[(Expression, UserOptions, Boolean, List[ExternalAuth], Option[NativeAuth], RemoveAuth)] =
+    Some((a.userName, a.userOptions, a.ifExists, a.externalAuths, a.nativeAuth, a.removeAuth))
 }
 
 final case class SetOwnPassword(newPassword: Expression, currentPassword: Expression)(val position: InputPosition)
@@ -352,15 +461,117 @@ final case class SetOwnPassword(newPassword: Expression, currentPassword: Expres
       SemanticState.recordCurrentScope(this)
 }
 
+case class RemoveAuth(all: Boolean, auths: List[Expression]) {
+  def isEmpty: Boolean = auths.isEmpty && !all
+}
+
+// Only used during parsing
+case class Auth(provider: String, authAttributes: List[AuthAttribute])(val position: InputPosition) extends ASTNode
+
+sealed trait AuthImpl extends ASTNode with SemanticAnalysisTooling {
+  def authAttributes: List[AuthAttribute]
+  def provider: String
+
+  def checkRequiredAttributes: SemanticCheck
+  def checkNoUnsupportedAttributes: SemanticCheck
+
+  def checkDuplicates: SemanticCheck = authAttributes.groupBy(_.name).collectFirst {
+    case (_, List(_, duplicate, _*)) => error(s"Duplicate `${duplicate.name}` clause.", duplicate.position)
+  }.getOrElse(success)
+
+  def checkProviderName: SemanticCheck =
+    if (provider.isEmpty) error("Invalid input. Auth provider is not allowed to be an empty string.", position)
+    else success
+
+  protected def requiredAttributes(func: AuthAttribute => Boolean, name: String): SemanticCheck =
+    authAttributes.find(func) match {
+      case Some(_) => success
+      case None    => error(missingRequiredClauseErrorMessage(name), position)
+    }
+
+  protected def noUnsupportedAttributes(func: AuthAttribute => Boolean): SemanticCheck = {
+    authAttributes.find(func) match {
+      case Some(unsupported) =>
+        error(s"Auth provider `$provider` does not allow `${unsupported.name}` clause.", unsupported.position)
+      case None => success
+    }
+  }
+
+  protected def missingRequiredClauseErrorMessage(name: String): String =
+    s"Clause `$name` is mandatory for auth provider `$provider`."
+}
+
+final case class NativeAuth(authAttributes: List[AuthAttribute])(val position: InputPosition) extends AuthImpl {
+
+  val provider: String = NATIVE_AUTH
+
+  override def checkRequiredAttributes: SemanticCheck =
+    requiredAttributes(attr => attr.isInstanceOf[Password], "SET PASSWORD")
+
+  override def checkNoUnsupportedAttributes: SemanticCheck =
+    noUnsupportedAttributes(attr => !attr.isInstanceOf[NativeAuthAttribute])
+
+  def password: Option[Password] = authAttributes.collectFirst { case p: Password => p }
+
+  def changeRequired: Option[Boolean] = authAttributes.collectFirst { case PasswordChange(change) => change }
+}
+
+final case class ExternalAuth(provider: String, authAttributes: List[AuthAttribute])(val position: InputPosition)
+    extends AuthImpl {
+  private val maybeId = authAttributes.collectFirst { case AuthId(id) => id }
+
+  override def checkRequiredAttributes: SemanticCheck =
+    requiredAttributes(attr => attr.isInstanceOf[AuthId], "SET ID") ifOkChain
+      checkIdIsStringLiteralOrParameter
+
+  override def checkNoUnsupportedAttributes: SemanticCheck =
+    noUnsupportedAttributes(attr => !attr.isInstanceOf[ExternalAuthAttribute])
+
+  def checkIdIsStringLiteralOrParameter: SemanticCheck =
+    maybeId.map(id => checkIsStringLiteralOrParameter("id", id))
+      .getOrElse(error(missingRequiredClauseErrorMessage("SET ID"), position))
+
+  // this is expected to only be called after checkRequiredAttributes has been called
+  def id: Expression = maybeId.get
+}
+
+sealed trait AuthAttribute extends ASTNode {
+  def position: InputPosition
+  def name: String
+}
+
+sealed trait NativeAuthAttribute extends AuthAttribute
+sealed trait ExternalAuthAttribute extends AuthAttribute
+
+final case class Password(
+  password: Expression,
+  isEncrypted: Boolean
+)(val position: InputPosition) extends NativeAuthAttribute {
+  override val name: String = "SET PASSWORD"
+}
+
+final case class PasswordChange(
+  requireChange: Boolean
+)(val position: InputPosition) extends NativeAuthAttribute {
+  override val name: String = "SET PASSWORD CHANGE [NOT] REQUIRED"
+}
+
+final case class AuthId(
+  id: Expression
+)(val position: InputPosition) extends ExternalAuthAttribute {
+  override val name: String = "SET ID"
+}
+
 sealed trait HomeDatabaseAction
 case object RemoveHomeDatabaseAction extends HomeDatabaseAction
 final case class SetHomeDatabaseAction(name: DatabaseName) extends HomeDatabaseAction
 
 final case class UserOptions(
-  requirePasswordChange: Option[Boolean],
   suspended: Option[Boolean],
   homeDatabase: Option[HomeDatabaseAction]
-)
+) {
+  def isEmpty: Boolean = suspended.isEmpty && homeDatabase.isEmpty
+}
 
 // Role commands
 
@@ -415,7 +626,7 @@ final case class CreateRole(
         )
       case _ =>
         super.semanticCheck chain
-          super.checkIsStringLiteralOrParameter("rolename", roleName) chain
+          checkIsStringLiteralOrParameter("rolename", roleName) chain
           semanticCheckFold(from)(roleName => checkIsStringLiteralOrParameter("from rolename", roleName)) chain
           SemanticState.recordCurrentScope(this)
     }
@@ -428,7 +639,7 @@ final case class DropRole(roleName: Expression, ifExists: Boolean)(val position:
 
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
-      super.checkIsStringLiteralOrParameter("rolename", roleName) chain
+      checkIsStringLiteralOrParameter("rolename", roleName) chain
       SemanticState.recordCurrentScope(this)
 }
 
@@ -442,8 +653,8 @@ final case class RenameRole(
 
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
-      super.checkIsStringLiteralOrParameter("from rolename", fromRoleName) chain
-      super.checkIsStringLiteralOrParameter("to rolename", toRoleName) chain
+      checkIsStringLiteralOrParameter("from rolename", fromRoleName) chain
+      checkIsStringLiteralOrParameter("to rolename", toRoleName) chain
       SemanticState.recordCurrentScope(this)
 }
 
@@ -734,6 +945,8 @@ sealed abstract class PrivilegeCommand(
     (privilege match {
       case DbmsPrivilege(u: UnassignableAction) =>
         error(s"`GRANT`, `DENY` and `REVOKE` are not supported for `${u.name}`", position)
+      case DbmsPrivilege(a @ SetAuthAction) =>
+        requireFeatureSupport(s"The `SET AUTH` privilege", SemanticFeature.LinkedUsers, position)
       case GraphPrivilege(_, _: DefaultGraphScope) =>
         error("`ON DEFAULT GRAPH` is not supported. Use `ON HOME GRAPH` instead.", position)
       case DatabasePrivilege(_, _: DefaultDatabaseScope) =>

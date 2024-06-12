@@ -44,6 +44,7 @@ import org.neo4j.cypher.internal.ast.RemoveRoleAction
 import org.neo4j.cypher.internal.ast.RenameRoleAction
 import org.neo4j.cypher.internal.ast.RenameUserAction
 import org.neo4j.cypher.internal.ast.ServerManagementAction
+import org.neo4j.cypher.internal.ast.SetAuthAction
 import org.neo4j.cypher.internal.ast.SetDatabaseAccessAction
 import org.neo4j.cypher.internal.ast.SetPasswordsAction
 import org.neo4j.cypher.internal.ast.SetUserHomeDatabaseAction
@@ -80,6 +81,7 @@ class DbmsPrivilegeAdministrationCommandParserTest extends AdministrationAndSche
           ("SHOW USER", ShowUserAction),
           ("SET PASSWORD", SetPasswordsAction),
           ("SET PASSWORDS", SetPasswordsAction),
+          ("SET AUTH", SetAuthAction),
           ("SET USER STATUS", SetUserStatusAction),
           ("SET USER HOME DATABASE", SetUserHomeDatabaseAction),
           ("ALTER USER", AlterUserAction),
@@ -405,6 +407,27 @@ class DbmsPrivilegeAdministrationCommandParserTest extends AdministrationAndSche
               )
           }
         }
+
+        // Other invalid tests
+
+        test(s"$command$immutableString SET AUTHS ON DBMS $preposition role") {
+          testName should notParse[Statements].in {
+            case Cypher5JavaCc => _.withMessage(
+                s"""Invalid input 'AUTHS': expected
+                   |  "AUTH"
+                   |  "DATABASE"
+                   |  "LABEL"
+                   |  "PASSWORD"
+                   |  "PASSWORDS"
+                   |  "PROPERTY"
+                   |  "USER" (line 1, column ${offset + 5} (offset: ${offset + 4}))""".stripMargin
+              )
+            case _ => _.withSyntaxErrorContaining(
+                s"""Invalid input 'AUTHS': expected 'DATABASE ACCESS', 'AUTH ON DBMS', 'LABEL', 'PASSWORD', 'PASSWORDS', 'PROPERTY' or 'USER' (line 1, column ${offset + 5} (offset: ${offset + 4}))"""
+              )
+          }
+        }
+
     }
   }
 }

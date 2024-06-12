@@ -30,26 +30,23 @@ import org.neo4j.server.security.auth.UserRepository;
  * This is the UserSecurityComponent version for Neo4j 4.3-Drop04
  */
 public class CommunitySecurityComponentVersion_3_43D4 extends SupportedCommunitySecurityComponentVersion {
-    private final KnownCommunitySecurityComponentVersion previous;
-
     public CommunitySecurityComponentVersion_3_43D4(
-            Log debugLog,
-            AbstractSecurityLog securityLog,
-            UserRepository userRepository,
-            KnownCommunitySecurityComponentVersion previous) {
+            Log debugLog, AbstractSecurityLog securityLog, UserRepository userRepository) {
         super(COMMUNITY_SECURITY_43D4, userRepository, debugLog, securityLog);
-        this.previous = previous;
     }
 
     @Override
     public void upgradeSecurityGraph(Transaction tx, int fromVersion) throws Exception {
         if (fromVersion < version) {
-            previous.upgradeSecurityGraph(tx, fromVersion);
             this.setVersionProperty(tx, version);
-            this.setUserIds(tx);
         }
     }
 
     @Override
     public void upgradeSecurityGraphSchema(Transaction tx, int fromVersion) {}
+
+    @Override
+    public boolean requiresAuthObject() {
+        return false;
+    }
 }

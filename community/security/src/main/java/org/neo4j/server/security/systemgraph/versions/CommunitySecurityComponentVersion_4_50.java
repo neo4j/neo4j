@@ -67,4 +67,9 @@ public class CommunitySecurityComponentVersion_4_50 extends SupportedCommunitySe
             }
         }
     }
+
+    @Override
+    public boolean requiresAuthObject() {
+        return false;
+    }
 }

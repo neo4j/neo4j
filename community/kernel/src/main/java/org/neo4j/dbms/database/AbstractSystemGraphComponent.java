@@ -102,6 +102,18 @@ public abstract class AbstractSystemGraphComponent implements SystemGraphCompone
         }
     }
 
+    protected static void initializeSystemGraphConstraint(
+            Transaction tx, String name, Label label, String... properties) {
+        if (!hasUniqueConstraint(tx, label, properties)) {
+            checkForClashingIndexes(tx, label, properties);
+            ConstraintCreator cb = tx.schema().constraintFor(label);
+            for (String prop : properties) {
+                cb = cb.assertPropertyIsUnique(prop);
+            }
+            cb.withName(name).create();
+        }
+    }
+
     protected static boolean hasUniqueConstraint(Transaction tx, Label label, String... properties) {
         return findUniqueConstraint(tx, label, properties).isPresent();
     }

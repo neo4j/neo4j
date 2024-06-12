@@ -125,6 +125,7 @@ import org.neo4j.cypher.internal.ast.RevokeGrantType
 import org.neo4j.cypher.internal.ast.RevokePrivilege
 import org.neo4j.cypher.internal.ast.RevokeRolesFromUsers
 import org.neo4j.cypher.internal.ast.ServerManagementAction
+import org.neo4j.cypher.internal.ast.SetAuthAction
 import org.neo4j.cypher.internal.ast.SetDatabaseAccessAction
 import org.neo4j.cypher.internal.ast.SetLabelAction
 import org.neo4j.cypher.internal.ast.SetPasswordsAction
@@ -522,6 +523,7 @@ trait DdlPrivilegeBuilder extends Cypher5ParserListener {
       val action = if (ctx.passwordToken() != null) SetPasswordsAction
       else if (ctx.STATUS() != null) SetUserStatusAction
       else if (ctx.HOME() != null) SetUserHomeDatabaseAction
+      else if (ctx.AUTH() != null) SetAuthAction
       else SetDatabaseAccessAction
       allQualifier(DbmsPrivilege(action)(p), None)
     } else {

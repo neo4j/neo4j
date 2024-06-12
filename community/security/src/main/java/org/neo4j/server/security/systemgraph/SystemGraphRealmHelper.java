@@ -22,9 +22,6 @@ package org.neo4j.server.security.systemgraph;
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 import static org.neo4j.kernel.database.NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID;
 
-import org.neo4j.cypher.internal.security.FormatException;
-import org.neo4j.cypher.internal.security.SecureHasher;
-import org.neo4j.cypher.internal.security.SystemGraphCredential;
 import org.neo4j.dbms.database.DatabaseContextProvider;
 import org.neo4j.function.Suppliers;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -34,10 +31,16 @@ import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.security.AuthProviderFailedException;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
+import org.neo4j.kernel.api.security.AuthToken;
 import org.neo4j.kernel.impl.security.Credential;
 import org.neo4j.kernel.impl.security.User;
+import org.neo4j.server.security.FormatException;
+import org.neo4j.server.security.SecureHasher;
+import org.neo4j.server.security.SystemGraphCredential;
 
 public class SystemGraphRealmHelper {
+    public static final String NATIVE_AUTH = AuthToken.NATIVE_REALM;
+
     private final Suppliers.Lazy<GraphDatabaseService> systemSupplier;
     private final SecureHasher secureHasher;
 

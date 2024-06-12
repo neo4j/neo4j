@@ -245,6 +245,7 @@ class PropertyPrivilegeAdministrationCommandParserTest extends AdministrationAnd
             failsParsing[Statements].in {
               case Cypher5JavaCc => _.withMessage(
                   s"""Invalid input 'PROPERTYS': expected
+                     |  "AUTH"
                      |  "DATABASE"
                      |  "LABEL"
                      |  "PASSWORD"
@@ -253,7 +254,7 @@ class PropertyPrivilegeAdministrationCommandParserTest extends AdministrationAnd
                      |  "USER" (line 1, column ${offset + 1} (offset: $offset))""".stripMargin
                 )
               case _ => _.withSyntaxErrorContaining(
-                  """Invalid input 'PROPERTYS': expected 'DATABASE ACCESS', 'LABEL', 'PASSWORD', 'PASSWORDS', 'PROPERTY' or 'USER'"""
+                  """Invalid input 'PROPERTYS': expected 'DATABASE ACCESS', 'AUTH ON DBMS', 'LABEL', 'PASSWORD', 'PASSWORDS', 'PROPERTY' or 'USER'"""
                 )
             }
           }
@@ -263,6 +264,7 @@ class PropertyPrivilegeAdministrationCommandParserTest extends AdministrationAnd
             failsParsing[Statements].in {
               case Cypher5JavaCc => _.withMessage(
                   s"""Invalid input 'PROPERTIES': expected
+                     |  "AUTH"
                      |  "DATABASE"
                      |  "LABEL"
                      |  "PASSWORD"
@@ -271,7 +273,7 @@ class PropertyPrivilegeAdministrationCommandParserTest extends AdministrationAnd
                      |  "USER" (line 1, column ${offset + 1} (offset: $offset))""".stripMargin
                 )
               case _ => _.withSyntaxErrorContaining(
-                  """Invalid input 'PROPERTIES': expected 'DATABASE ACCESS', 'LABEL', 'PASSWORD', 'PASSWORDS', 'PROPERTY' or 'USER'"""
+                  """Invalid input 'PROPERTIES': expected 'DATABASE ACCESS', 'AUTH ON DBMS', 'LABEL', 'PASSWORD', 'PASSWORDS', 'PROPERTY' or 'USER'"""
                 )
             }
           }

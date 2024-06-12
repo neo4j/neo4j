@@ -73,6 +73,8 @@ public interface ASTFactory<
                 PRIVILEGE_TYPE,
                 PRIVILEGE_RESOURCE,
                 PRIVILEGE_QUALIFIER,
+                AUTH,
+                AUTH_ATTRIBUTE,
                 SUBQUERY_IN_TRANSACTIONS_PARAMETERS,
                 SUBQUERY_IN_TRANSACTIONS_BATCH_PARAMETERS,
                 SUBQUERY_IN_TRANSACTIONS_CONCURRENCY_PARAMETERS,
@@ -483,11 +485,10 @@ public interface ASTFactory<
             boolean replace,
             boolean ifNotExists,
             SimpleEither<StringPos<POS>, PARAMETER> username,
-            EXPRESSION password,
-            boolean encrypted,
-            boolean changeRequired,
             Boolean suspended,
-            DATABASE_NAME homeDatabase);
+            DATABASE_NAME homeDatabase,
+            List<AUTH> auths,
+            List<AUTH_ATTRIBUTE> systemAuthAttributes);
 
     ADMINISTRATION_COMMAND dropUser(POS p, boolean ifExists, SimpleEither<StringPos<POS>, PARAMETER> username);
 
@@ -503,12 +504,21 @@ public interface ASTFactory<
             POS p,
             boolean ifExists,
             SimpleEither<StringPos<POS>, PARAMETER> username,
-            EXPRESSION password,
-            boolean encrypted,
-            Boolean changeRequired,
             Boolean suspended,
             DATABASE_NAME homeDatabase,
-            boolean removeHome);
+            boolean removeHome,
+            List<AUTH> auths,
+            List<AUTH_ATTRIBUTE> systemAuthAttributes,
+            boolean removeAllAuth,
+            List<EXPRESSION> removeAuths);
+
+    AUTH auth(String provider, List<AUTH_ATTRIBUTE> attributes, POS p);
+
+    AUTH_ATTRIBUTE authId(POS s, EXPRESSION id);
+
+    AUTH_ATTRIBUTE password(POS p, EXPRESSION password, boolean encrypted);
+
+    AUTH_ATTRIBUTE passwordChangeRequired(POS p, boolean changeRequired);
 
     EXPRESSION passwordExpression(PARAMETER password);
 

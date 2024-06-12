@@ -234,6 +234,7 @@ public enum NotificationCodeWithDescription {
             "The Cypher query option `connectComponentsPlanner` is deprecated and will be removed without a replacement. "
                     + "The product's default behavior of using a cost-based IDP search algorithm when combining sub-plans will be kept. "
                     + "For more information, see Cypher Manual -> Cypher planner."),
+
     COMMAND_HAS_NO_EFFECT_ASSIGN_PRIVILEGE(
             Status.Security.CommandHasNoEffect,
             GqlStatusInfoNotifications.STATUS_00N70,
@@ -254,11 +255,22 @@ public enum NotificationCodeWithDescription {
             GqlStatusInfoNotifications.STATUS_00N71,
             "The user does not have the role. See Status Codes documentation for more information."),
 
+    AUTH_PROVIDER_NOT_DEFINED(
+            Status.Security.AuthProviderNotDefined,
+            GqlStatusInfoNotifications.STATUS_00N72,
+            "The auth provider `%s` is not defined in the configuration. "
+                    + "Verify that the spelling is correct or define `%s` in the configuration."),
+
     IMPOSSIBLE_REVOKE_COMMAND(
             Status.Security.ImpossibleRevokeCommand,
             GqlStatusInfoNotifications.STATUS_01N70,
             "%s Make sure nothing is misspelled. This notification will become an error in a future major version. "
                     + "See Status Codes documentation for more information."),
+
+    EXTERNAL_AUTH_NOT_ENABLED(
+            Status.Security.ExternalAuthNotEnabled,
+            GqlStatusInfoNotifications.STATUS_01N71,
+            "Use setting `dbms.security.require_local_user` to enable external auth."),
 
     SERVER_ALREADY_ENABLED(
             Status.Cluster.ServerAlreadyEnabled,
@@ -584,6 +596,15 @@ public enum NotificationCodeWithDescription {
     public static NotificationImplementation deprecatedConnectComponentsPlannerPreParserOption(InputPosition position) {
         return DEPRECATED_CONNECT_COMPONENTS_PLANNER_PRE_PARSER_OPTION.notificationWithParameters(
                 position, new String[] {}, new String[] {"connectComponentsPlanner"});
+    }
+
+    public static NotificationImplementation authProviderNotDefined(InputPosition position, String provider) {
+        return AUTH_PROVIDER_NOT_DEFINED.notificationWithParameters(
+                position, new String[] {provider, provider}, new String[] {provider, provider});
+    }
+
+    public static NotificationImplementation externalAuthNotEnabled(InputPosition position) {
+        return EXTERNAL_AUTH_NOT_ENABLED.notification(position);
     }
 
     public static NotificationImplementation commandHasNoEffectAssignPrivilege(

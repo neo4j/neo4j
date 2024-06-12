@@ -21,6 +21,10 @@ package org.neo4j.server.security.systemgraph;
 
 import static org.neo4j.dbms.database.ComponentVersion.SECURITY_USER_COMPONENT;
 import static org.neo4j.dbms.database.KnownSystemComponentVersion.UNKNOWN_VERSION;
+import static org.neo4j.server.security.systemgraph.versions.KnownCommunitySecurityComponentVersion.AUTH_CONSTRAINT;
+import static org.neo4j.server.security.systemgraph.versions.KnownCommunitySecurityComponentVersion.AUTH_ID;
+import static org.neo4j.server.security.systemgraph.versions.KnownCommunitySecurityComponentVersion.AUTH_LABEL;
+import static org.neo4j.server.security.systemgraph.versions.KnownCommunitySecurityComponentVersion.AUTH_PROVIDER;
 import static org.neo4j.server.security.systemgraph.versions.KnownCommunitySecurityComponentVersion.USER_ID;
 import static org.neo4j.server.security.systemgraph.versions.KnownCommunitySecurityComponentVersion.USER_LABEL;
 
@@ -39,10 +43,9 @@ import org.neo4j.kernel.impl.coreapi.TransactionImpl;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.security.auth.UserRepository;
-import org.neo4j.server.security.systemgraph.versions.CommunitySecurityComponentVersion_1_40;
-import org.neo4j.server.security.systemgraph.versions.CommunitySecurityComponentVersion_2_41;
 import org.neo4j.server.security.systemgraph.versions.CommunitySecurityComponentVersion_3_43D4;
 import org.neo4j.server.security.systemgraph.versions.CommunitySecurityComponentVersion_4_50;
+import org.neo4j.server.security.systemgraph.versions.CommunitySecurityComponentVersion_5_521;
 import org.neo4j.server.security.systemgraph.versions.KnownCommunitySecurityComponentVersion;
 import org.neo4j.server.security.systemgraph.versions.NoCommunitySecurityComponentVersion;
 import org.neo4j.util.VisibleForTesting;
@@ -67,19 +70,16 @@ public class UserSecurityGraphComponent extends AbstractSystemGraphComponent
         super(config);
         this.debugLog = debugLogProvider.getLog(UserSecurityGraphComponent.class);
 
-        KnownCommunitySecurityComponentVersion version1 =
-                new CommunitySecurityComponentVersion_1_40(debugLog, securityLog, initialPasswordRepo);
-        KnownCommunitySecurityComponentVersion version2 =
-                new CommunitySecurityComponentVersion_2_41(debugLog, securityLog, initialPasswordRepo, version1);
         KnownCommunitySecurityComponentVersion version3 =
-                new CommunitySecurityComponentVersion_3_43D4(debugLog, securityLog, initialPasswordRepo, version2);
+                new CommunitySecurityComponentVersion_3_43D4(debugLog, securityLog, initialPasswordRepo);
         KnownCommunitySecurityComponentVersion version4 =
                 new CommunitySecurityComponentVersion_4_50(debugLog, securityLog, initialPasswordRepo, version3);
+        KnownCommunitySecurityComponentVersion version5 =
+                new CommunitySecurityComponentVersion_5_521(debugLog, securityLog, initialPasswordRepo, version4);
 
-        knownUserSecurityComponentVersions.add(version1);
-        knownUserSecurityComponentVersions.add(version2);
         knownUserSecurityComponentVersions.add(version3);
         knownUserSecurityComponentVersions.add(version4);
+        knownUserSecurityComponentVersions.add(version5);
     }
 
     @Override
@@ -118,6 +118,7 @@ public class UserSecurityGraphComponent extends AbstractSystemGraphComponent
     public void initializeSystemGraphConstraints(Transaction tx) {
         initializeSystemGraphConstraint(tx, USER_LABEL, "name");
         initializeSystemGraphConstraint(tx, USER_LABEL, USER_ID);
+        initializeSystemGraphConstraint(tx, AUTH_CONSTRAINT, AUTH_LABEL, AUTH_PROVIDER, AUTH_ID);
     }
 
     private void initializeLatestSystemGraph(Transaction tx) throws Exception {
@@ -182,5 +183,11 @@ public class UserSecurityGraphComponent extends AbstractSystemGraphComponent
 
     public KnownCommunitySecurityComponentVersion findSecurityGraphComponentVersion(ComponentVersion version) {
         return knownUserSecurityComponentVersions.findComponentVersion(version);
+    }
+
+    public boolean requiresAuthObject(Transaction tx) {
+        KnownCommunitySecurityComponentVersion component =
+                knownUserSecurityComponentVersions.detectCurrentComponentVersion(tx);
+        return component.requiresAuthObject();
     }
 }

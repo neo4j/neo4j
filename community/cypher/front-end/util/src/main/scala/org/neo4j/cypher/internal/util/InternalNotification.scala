@@ -79,7 +79,9 @@ object InternalNotification {
     "IndexOrConstraintAlreadyExistsNotification",
     "IndexOrConstraintDoesNotExistNotification",
     "DeprecatedFunctionFieldNotification",
-    "DeprecatedProcedureFieldNotification"
+    "DeprecatedProcedureFieldNotification",
+    "AuthProviderNotDefined",
+    "ExternalAuthNotEnabled"
   )
 
   def allNotificationsAsJavaIterable(): lang.Iterable[String] = allNotifications.asJava
@@ -142,6 +144,9 @@ case class RepeatedVarLengthRelationshipReference(position: InputPosition, relNa
     extends InternalNotification
 
 case class DeprecatedConnectComponentsPlannerPreParserOption(position: InputPosition) extends InternalNotification
+
+case class AuthProviderNotDefined(provider: String) extends InternalNotification
+case class ExternalAuthNotEnabled() extends InternalNotification
 
 case class AssignPrivilegeCommandHasNoEffectNotification(command: String) extends InternalNotification
 case class RevokePrivilegeCommandHasNoEffectNotification(command: String) extends InternalNotification

@@ -80,7 +80,7 @@ class RecoveryOldAndUpgradedVersionsIT {
         removeLastCheckpointRecordFromLastLogFile(dbLayout, fileSystem);
         assertFalse(logsContainCheckpoint(dbLayout, fileSystem));
 
-        createBuilder();
+        createBuilderNoAutomaticUpgrade();
         managementService = builder.build();
         GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database(dbName);
         assertKernelVersion(db, KernelVersion.V5_0);

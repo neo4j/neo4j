@@ -164,6 +164,10 @@ AT
    : A T
    ;
 
+AUTH
+   : A U T H
+   ;
+
 BAR
    : '|'
    ;
@@ -548,6 +552,10 @@ HOME
    : H O M E
    ;
 
+ID
+   : I D
+   ;
+
 IF
    : I F
    ;
@@ -878,6 +886,14 @@ PROPERTIES
 
 PROPERTY
    : P R O P E R T Y
+   ;
+
+PROVIDER
+   : P R O V I D E R
+   ;
+
+PROVIDERS
+   : P R O V I D E R S
    ;
 
 QUESTION

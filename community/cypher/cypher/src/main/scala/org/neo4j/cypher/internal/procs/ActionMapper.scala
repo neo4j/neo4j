@@ -78,6 +78,7 @@ import org.neo4j.cypher.internal.ast.RemoveRoleAction
 import org.neo4j.cypher.internal.ast.RenameRoleAction
 import org.neo4j.cypher.internal.ast.RenameUserAction
 import org.neo4j.cypher.internal.ast.ServerManagementAction
+import org.neo4j.cypher.internal.ast.SetAuthAction
 import org.neo4j.cypher.internal.ast.SetDatabaseAccessAction
 import org.neo4j.cypher.internal.ast.SetLabelAction
 import org.neo4j.cypher.internal.ast.SetPasswordsAction
@@ -148,6 +149,7 @@ object ActionMapper {
     case RenameUserAction          => security.PrivilegeAction.RENAME_USER
     case SetUserStatusAction       => security.PrivilegeAction.SET_USER_STATUS
     case SetPasswordsAction        => security.PrivilegeAction.SET_PASSWORDS
+    case SetAuthAction             => security.PrivilegeAction.SET_AUTH
     case SetUserHomeDatabaseAction => security.PrivilegeAction.SET_USER_HOME_DATABASE
     case AlterUserAction           => security.PrivilegeAction.ALTER_USER
     case DropUserAction            => security.PrivilegeAction.DROP_USER

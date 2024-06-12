@@ -24,13 +24,13 @@ import static org.neo4j.kernel.api.security.AuthManager.INITIAL_USER_NAME;
 import static org.neo4j.server.security.systemgraph.SystemGraphRealmHelper.IS_SUSPENDED;
 
 import java.util.Optional;
-import org.neo4j.cypher.internal.security.SecureHasher;
-import org.neo4j.cypher.internal.security.SystemGraphCredential;
 import org.neo4j.dbms.database.ComponentVersion;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.security.AbstractSecurityLog;
 import org.neo4j.kernel.impl.security.User;
 import org.neo4j.logging.Log;
+import org.neo4j.server.security.SecureHasher;
+import org.neo4j.server.security.SystemGraphCredential;
 import org.neo4j.server.security.auth.UserRepository;
 import org.neo4j.string.UTF8;
 

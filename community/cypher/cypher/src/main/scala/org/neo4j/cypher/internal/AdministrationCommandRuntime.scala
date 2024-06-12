@@ -22,12 +22,17 @@ package org.neo4j.cypher.internal
 import org.neo4j.configuration.Config
 import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.cypher.internal.ast.DatabaseName
+import org.neo4j.cypher.internal.ast.ExternalAuth
 import org.neo4j.cypher.internal.ast.HomeDatabaseAction
 import org.neo4j.cypher.internal.ast.NamespacedName
+import org.neo4j.cypher.internal.ast.NativeAuth
 import org.neo4j.cypher.internal.ast.ParameterName
+import org.neo4j.cypher.internal.ast.Password
+import org.neo4j.cypher.internal.ast.RemoveAuth
 import org.neo4j.cypher.internal.ast.RemoveHomeDatabaseAction
 import org.neo4j.cypher.internal.ast.SetHomeDatabaseAction
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.ListLiteral
 import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
@@ -36,11 +41,11 @@ import org.neo4j.cypher.internal.options.CypherRuntimeOption
 import org.neo4j.cypher.internal.procs.Continue
 import org.neo4j.cypher.internal.procs.InitAndFinallyFunctions
 import org.neo4j.cypher.internal.procs.ParameterTransformer
+import org.neo4j.cypher.internal.procs.ParameterTransformer.ParameterGenerationFunction
 import org.neo4j.cypher.internal.procs.QueryHandler
+import org.neo4j.cypher.internal.procs.QueryHandlerResult
 import org.neo4j.cypher.internal.procs.ThrowException
 import org.neo4j.cypher.internal.procs.UpdatingSystemCommandExecutionPlan
-import org.neo4j.cypher.internal.security.SecureHasher
-import org.neo4j.cypher.internal.security.SystemGraphCredential
 import org.neo4j.cypher.internal.util.DeprecatedDatabaseNameNotification
 import org.neo4j.cypher.internal.util.HomeDatabaseNotPresent
 import org.neo4j.cypher.internal.util.InternalNotification
@@ -67,13 +72,21 @@ import org.neo4j.kernel.api.exceptions.Status
 import org.neo4j.kernel.api.exceptions.Status.HasStatus
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException
 import org.neo4j.kernel.database.NormalizedDatabaseName
+import org.neo4j.server.security.SecureHasher
+import org.neo4j.server.security.SystemGraphCredential
+import org.neo4j.server.security.systemgraph.SystemGraphRealmHelper.NATIVE_AUTH
+import org.neo4j.server.security.systemgraph.UserSecurityGraphComponent
+import org.neo4j.server.security.systemgraph.versions.KnownCommunitySecurityComponentVersion.AUTH_CONSTRAINT
 import org.neo4j.string.UTF8
 import org.neo4j.values.AnyValue
+import org.neo4j.values.storable.BooleanValue
 import org.neo4j.values.storable.ByteArray
 import org.neo4j.values.storable.StringValue
 import org.neo4j.values.storable.TextValue
 import org.neo4j.values.storable.Value
 import org.neo4j.values.storable.Values
+import org.neo4j.values.utils.PrettyPrinter
+import org.neo4j.values.virtual.ListValue
 import org.neo4j.values.virtual.MapValue
 import org.neo4j.values.virtual.VirtualValues
 
@@ -207,20 +220,23 @@ object AdministrationCommandRuntime {
 
   private[internal] def makeCreateUserExecutionPlan(
     userName: Either[String, Parameter],
-    isEncryptedPassword: Boolean,
-    password: expressions.Expression,
-    requirePasswordChange: Boolean,
     suspended: Boolean,
-    defaultDatabase: Option[HomeDatabaseAction] = None
+    defaultDatabase: Option[HomeDatabaseAction],
+    nativeAuth: Option[NativeAuth],
+    externalAuths: Seq[ExternalAuth],
+    validateAuth: (Seq[ExternalAuth], Option[NativeAuth]) => QueryHandlerResult = (_, _) => Continue
   )(
     sourcePlan: Option[ExecutionPlan],
     normalExecutionEngine: ExecutionEngine,
     securityAuthorizationHandler: SecurityAuthorizationHandler,
     config: Config
   ): ExecutionPlan = {
+    val changeRequiredOption = nativeAuth.map(auth => auth.changeRequired.getOrElse(true))
     val passwordChangeRequiredKey = internalKey("passwordChangeRequired")
     val suspendedKey = internalKey("suspended")
     val uuidKey = internalKey("uuid")
+    val userId = Values.utf8Value(UUID.randomUUID().toString)
+    val authKey = internalKey("auth")
     val homeDatabaseFields = defaultDatabase.map {
       case RemoveHomeDatabaseAction => NameFields(s"${internalPrefix}homeDatabase", Values.NO_VALUE, IdentityConverter)
       case SetHomeDatabaseAction(name) =>
@@ -230,35 +246,64 @@ object AdministrationCommandRuntime {
     val nonPasswordParameterNames = Array(
       userNameFields.nameKey,
       uuidKey,
-      passwordChangeRequiredKey,
-      suspendedKey
-    ) ++ homeDatabaseFields.map(_.nameKey)
-    val credentials = getPasswordExpression(password, isEncryptedPassword, nonPasswordParameterNames)(config)
+      suspendedKey,
+      authKey
+    ) ++ homeDatabaseFields.map(_.nameKey) ++ changeRequiredOption.map(_ =>
+      passwordChangeRequiredKey
+    )
+    val credentialsOption = nativeAuth.map(_.password).collectFirst {
+      case Some(Password(password, isEncrypted)) =>
+        getPasswordExpression(password, isEncrypted, nonPasswordParameterNames)(config)
+    }
     val homeDatabaseCypher = homeDatabaseFields.map(ddf => s", homeDatabase: $$`${ddf.nameKey}`").getOrElse("")
-    val parameterTransformer = ParameterTransformer()
+    val nativeAuthCypher = credentialsOption.map(credentials =>
+      s", credentials: $$`${credentials.key}`, passwordChangeRequired: $$`$passwordChangeRequiredKey`"
+    ).getOrElse("")
+
+    def authMapGenerator: ParameterGenerationFunction = (_, _, params) => {
+      val authList = externalAuths.map(auth => {
+        val id = runtimeStringValue(auth.id, params, prettyPrint = true)
+        validateAuthId(id)
+        VirtualValues.map(Array("provider", "id"), Array(Values.utf8Value(auth.provider), Values.utf8Value(id)))
+      }) ++ nativeAuth.map(_ =>
+        VirtualValues.map(Array("provider", "id"), Array(Values.utf8Value(NATIVE_AUTH), userId))
+      )
+      VirtualValues.map(Array(authKey), Array(VirtualValues.list(authList: _*)))
+    }
+
+    val parameterTransformer = ParameterTransformer(authMapGenerator)
       .convert(userNameFields.nameConverter)
       .optionallyConvert(homeDatabaseFields.map(_.nameConverter))
-      .convert(credentials.mapValueConverter)
+      .optionallyConvert(credentialsOption.map(_.mapValueConverter))
       .validate(isHomeDatabasePresent(homeDatabaseFields))
     UpdatingSystemCommandExecutionPlan(
       "CreateUser",
       normalExecutionEngine,
       securityAuthorizationHandler,
       // NOTE: If username already exists we will violate a constraint
-      s"""CREATE (u:User {name: $$`${userNameFields.nameKey}`, id: $$`$uuidKey`, credentials: $$`${credentials.key}`,
-         |passwordChangeRequired: $$`$passwordChangeRequiredKey`, suspended: $$`$suspendedKey`
+      s"""CREATE (u:User {name: $$`${userNameFields.nameKey}`, id: $$`$uuidKey`, suspended: $$`$suspendedKey`
+         |$nativeAuthCypher
          |$homeDatabaseCypher })
+         |WITH u
+         |CALL {
+         |  WITH u
+         |  UNWIND $$`$authKey` AS auth
+         |  CREATE (u)-[:HAS_AUTH]->(:Auth {provider: auth.provider, id: auth.id})
+         |}
          |RETURN u.name""".stripMargin,
       VirtualValues.map(
-        Array(credentials.key, credentials.bytesKey) ++ nonPasswordParameterNames,
-        Array[AnyValue](
-          credentials.value,
-          credentials.bytesValue,
-          userNameFields.nameValue,
-          Values.utf8Value(UUID.randomUUID().toString),
-          Values.booleanValue(requirePasswordChange),
-          Values.booleanValue(suspended)
-        ) ++ homeDatabaseFields.map(_.nameValue)
+        credentialsOption.map(credentials => Array(credentials.key, credentials.bytesKey)).getOrElse(
+          Array.empty
+        ) ++ nonPasswordParameterNames,
+        credentialsOption.map(credentials => Array[AnyValue](credentials.value, credentials.bytesValue)).getOrElse(
+          Array.empty
+        )
+          ++ Array[AnyValue](
+            userNameFields.nameValue,
+            userId,
+            Values.booleanValue(suspended),
+            Values.NO_VALUE // generated
+          ) ++ homeDatabaseFields.map(_.nameValue) ++ changeRequiredOption.map(Values.booleanValue)
       ),
       QueryHandler
         .handleNoResult(params =>
@@ -270,11 +315,18 @@ object AdministrationCommandRuntime {
         )
         .handleError((error, params) =>
           (error, error.getCause) match {
-            case (_, _: UniquePropertyValueValidationException) =>
-              new InvalidArgumentException(
-                s"Failed to create the specified user '${runtimeStringValue(userName, params)}': User already exists.",
-                error
-              )
+            case (_, e: UniquePropertyValueValidationException) =>
+              if (e.constraint().getName.equals(AUTH_CONSTRAINT)) {
+                new InvalidArgumentException(
+                  s"Failed to create the specified user '${runtimeStringValue(userName, params)}': The combination of provider and id is already in use.",
+                  error
+                )
+              } else {
+                new InvalidArgumentException(
+                  s"Failed to create the specified user '${runtimeStringValue(userName, params)}': User already exists.",
+                  error
+                )
+              }
             case (e: HasStatus, _) if e.status() == Status.Cluster.NotALeader =>
               new DatabaseAdministrationOnFollowerException(
                 s"Failed to create the specified user '${runtimeStringValue(userName, params)}': $followerError",
@@ -285,11 +337,13 @@ object AdministrationCommandRuntime {
                 error
               )
           }
-        ),
+        )
+        .handleResult { (_, _, _) => validateAuth(externalAuths, nativeAuth) },
       sourcePlan,
       initAndFinally = InitAndFinallyFunctions(
         initFunction = params => NameValidator.assertValidUsername(runtimeStringValue(userName, params)),
-        finallyFunction = p => p.get(credentials.bytesKey).asInstanceOf[ByteArray].zero()
+        finallyFunction =
+          p => credentialsOption.foreach(credentials => p.get(credentials.bytesKey).asInstanceOf[ByteArray].zero())
       ),
       parameterTransformer = parameterTransformer
     )
@@ -297,31 +351,38 @@ object AdministrationCommandRuntime {
 
   private[internal] def makeAlterUserExecutionPlan(
     userName: Either[String, Parameter],
-    isEncryptedPassword: Option[Boolean],
-    password: Option[expressions.Expression],
-    requirePasswordChange: Option[Boolean],
     suspended: Option[Boolean],
-    homeDatabase: Option[HomeDatabaseAction] = None
+    homeDatabase: Option[HomeDatabaseAction],
+    nativeAuth: Option[NativeAuth],
+    externalAuths: Seq[ExternalAuth],
+    removeAuths: RemoveAuth,
+    validateAuth: (Seq[ExternalAuth], Option[NativeAuth]) => QueryHandlerResult = (_, _) => Continue
   )(
     sourcePlan: Option[ExecutionPlan],
     normalExecutionEngine: ExecutionEngine,
     securityAuthorizationHandler: SecurityAuthorizationHandler,
+    userSecurityGraphComponent: UserSecurityGraphComponent,
     config: Config
   ): ExecutionPlan = {
     val userNameFields = getNameFields("username", userName)
+    val setAuthKey = internalKey("setAuth")
+    val removeAuthKey = internalKey("removeAuth")
+    val removeNativeKey = internalKey("removeNative")
+    val enforceAuthKey = internalKey("enforceAuth")
     val homeDatabaseFields = homeDatabase.map {
       case RemoveHomeDatabaseAction => NameFields(s"${internalPrefix}homeDatabase", Values.NO_VALUE, IdentityConverter)
       case SetHomeDatabaseAction(name) =>
         getNameFields("homeDatabase", name.asLegacyName, s => new NormalizedDatabaseName(s).name())
     }
-    val nonPasswordParameterNames = Array(userNameFields.nameKey) ++ homeDatabaseFields.map(_.nameKey)
-    val maybePw =
-      password.map(p =>
-        getPasswordExpression(p, isEncryptedPassword.getOrElse(false), nonPasswordParameterNames)(config)
-      )
+    val nonPasswordParameterNames = Array(userNameFields.nameKey) ++ homeDatabaseFields.map(_.nameKey) ++
+      Array(setAuthKey, removeAuthKey, removeNativeKey, enforceAuthKey)
+    val maybePw = nativeAuth.map(_.password).collectFirst {
+      case Some(Password(password, isEncrypted)) =>
+        getPasswordExpression(password, isEncrypted, nonPasswordParameterNames)(config)
+    }
     val params = Seq(
       maybePw -> "credentials",
-      requirePasswordChange -> "passwordChangeRequired",
+      nativeAuth.flatMap(_.changeRequired) -> "passwordChangeRequired",
       suspended -> "suspended",
       homeDatabaseFields -> "homeDatabase"
     ).flatMap { param =>
@@ -336,8 +397,8 @@ object AdministrationCommandRuntime {
           )
       }
     }
-    val (query, keys, values) = params.foldLeft((
-      s"MATCH (user:User {name: $$`${userNameFields.nameKey}`}) WITH user, user.credentials AS oldCredentials",
+    val (setParts, keys, values) = params.foldLeft((
+      "",
       Seq.empty[String],
       Seq.empty[Value]
     )) { (acc, param) =>
@@ -346,9 +407,108 @@ object AdministrationCommandRuntime {
       val value: Value = param._3
       (acc._1 + s" SET user.$propertyName = $$`$key`", acc._2 :+ key, acc._3 :+ value)
     }
-    val parameterKeys: Seq[String] = (keys ++ maybePw.map(_.bytesKey).toSeq) :+ userNameFields.nameKey
-    val parameterValues: Seq[Value] = (values ++ maybePw.map(_.bytesValue).toSeq) :+ userNameFields.nameValue
+    val parameterKeys: Array[String] =
+      ((keys ++ maybePw.map(_.bytesKey).toSeq) :+ userNameFields.nameKey).toArray ++ Array(
+        setAuthKey,
+        removeAuthKey,
+        removeNativeKey,
+        enforceAuthKey
+      )
+    val parameterValues: Array[AnyValue] =
+      ((values ++ maybePw.map(_.bytesValue).toSeq) :+ userNameFields.nameValue).toArray ++ Array[AnyValue](
+        Values.NO_VALUE, // generated
+        Values.NO_VALUE, // generated
+        Values.NO_VALUE, // generated
+        Values.NO_VALUE // generated
+      )
+
+    def enforceAuthGen: ParameterGenerationFunction = (transaction, _, _) => {
+      val enforced = Values.booleanValue(userSecurityGraphComponent.requiresAuthObject(transaction))
+      VirtualValues.map(Array(enforceAuthKey), Array(enforced))
+    }
+
+    def authMapGenerator: ParameterGenerationFunction = (_, _, params) => {
+      val setAuthList = externalAuths.map(auth => {
+        val id = runtimeStringValue(auth.id, params, prettyPrint = true)
+        validateAuthId(id)
+        VirtualValues.map(Array("provider", "id"), Array(Values.utf8Value(auth.provider), Values.utf8Value(id)))
+      })
+      val providers =
+        removeAuths.auths.flatMap(expr => runtimeStringListValue(expr, params)).distinct
+      val removeNative = providers.contains(NATIVE_AUTH)
+      val removeAuthList = providers.map(Values.utf8Value)
+
+      VirtualValues.map(
+        Array(setAuthKey, removeAuthKey, removeNativeKey),
+        Array(
+          VirtualValues.list(setAuthList: _*),
+          VirtualValues.list(removeAuthList: _*),
+          Values.booleanValue(removeNative)
+        )
+      )
+    }
+
+    val removeAuthString = {
+      val authMatch =
+        if (removeAuths.all)
+          "OPTIONAL MATCH (user)-[:HAS_AUTH]->(a:Auth)"
+        else
+          s"""UNWIND $$`$removeAuthKey` AS auth
+             |  OPTIONAL MATCH (user)-[:HAS_AUTH]->(a:Auth {provider: auth})""".stripMargin
+
+      s"""WITH user, oldCredentials
+         |CALL {
+         |  WITH user
+         |  WITH user,
+         |  CASE
+         |    WHEN $$`$removeNativeKey` THEN {credentials: null, change: null}
+         |    ELSE {credentials: user.credentials, change: user.passwordChangeRequired}
+         |  END AS cMap
+         |  SET user.credentials = cMap.credentials, user.passwordChangeRequired = cMap.change
+         |}
+         |WITH user, oldCredentials
+         |CALL {
+         |  WITH user
+         |  $authMatch
+         |  DETACH DELETE (a)
+         |}""".stripMargin
+    }
+
+    val addNativeAuthString =
+      if (nativeAuth.nonEmpty)
+        s"""MERGE (user)-[:HAS_AUTH]->(:Auth {provider: '$NATIVE_AUTH', id: user.id})
+           |SET user.passwordChangeRequired = coalesce(user.passwordChangeRequired, true)""".stripMargin
+      else ""
+
+    val nativeAuthValid =
+      s"""
+         |WITH user, oldCredentials
+         |OPTIONAL MATCH (user)-[:HAS_AUTH]->(nativeAuth:Auth {provider: '$NATIVE_AUTH'})
+         |WITH user, oldCredentials,
+         | CASE EXISTS { (nativeAuth) }
+         |  WHEN true THEN EXISTS { (user) WHERE user.credentials IS NOT NULL AND user.passwordChangeRequired IS NOT NULL }
+         |  ELSE true
+         | END AS validNativeAuth
+         |""".stripMargin
+
+    val addAuthString =
+      s"""WITH user, oldCredentials
+         |CALL {
+         |  WITH user
+         |  UNWIND $$`$setAuthKey` AS auth
+         |  MERGE (user)-[:HAS_AUTH]->(a:Auth {provider: auth.provider}) SET a.id = auth.id
+         |}""".stripMargin
+
+    val enforceAuthString =
+      s"""CASE $$`$enforceAuthKey`
+         | WHEN true THEN EXISTS { (user)-[:HAS_AUTH]->(:Auth) }
+         | ELSE true
+         |END AS authOk
+         |""".stripMargin
+
     val parameterTransformer = ParameterTransformer()
+      .generate(enforceAuthGen)
+      .generate(authMapGenerator)
       .convert(userNameFields.nameConverter)
       .optionallyConvert(homeDatabaseFields.map(_.nameConverter))
       .optionallyConvert(maybePw.map(_.mapValueConverter))
@@ -357,38 +517,67 @@ object AdministrationCommandRuntime {
       "AlterUser",
       normalExecutionEngine,
       securityAuthorizationHandler,
-      s"$query RETURN oldCredentials",
-      VirtualValues.map(parameterKeys.toArray, parameterValues.toArray),
+      s"""MATCH (user:User {name: $$`${userNameFields.nameKey}`})
+         |WITH user, user.credentials AS oldCredentials
+         |$removeAuthString
+         |$setParts
+         |$addNativeAuthString
+         |$addAuthString
+         |$nativeAuthValid
+         |RETURN EXISTS { (user:User {name: $$`${userNameFields.nameKey}`}) } AS exists,
+         |oldCredentials, $enforceAuthString, validNativeAuth """.stripMargin,
+      VirtualValues.map(parameterKeys, parameterValues),
       QueryHandler
         .handleNoResult(p =>
           Some(ThrowException(new InvalidArgumentException(
             s"Failed to alter the specified user '${runtimeStringValue(userName, p)}': User does not exist."
           )))
         )
-        .handleError {
-          case (error: HasStatus, p) if error.status() == Status.Cluster.NotALeader =>
-            new DatabaseAdministrationOnFollowerException(
-              s"Failed to alter the specified user '${runtimeStringValue(userName, p)}': $followerError",
-              error
-            )
-          case (error, p) => new CypherExecutionException(
-              s"Failed to alter the specified user '${runtimeStringValue(userName, p)}'.",
-              error
-            )
-        }
-        .handleResult((_, value, p) =>
-          maybePw.map { newPw =>
-            val oldCredentials =
-              SystemGraphCredential.deserialize(value.asInstanceOf[TextValue].stringValue(), secureHasher)
-            val newValue = p.get(newPw.bytesKey).asInstanceOf[ByteArray].asObject()
-            if (oldCredentials.matchesPassword(newValue))
-              ThrowException(new InvalidArgumentException(
-                s"Failed to alter the specified user '${runtimeStringValue(userName, p)}': Old password and new password cannot be the same."
-              ))
-            else
-              Continue
-          }.getOrElse(Continue)
-        ),
+        .handleError((error, p) =>
+          (error, error.getCause) match {
+            case (_, _: UniquePropertyValueValidationException) =>
+              new InvalidArgumentException(
+                s"Failed to alter the specified user '${runtimeStringValue(userName, p)}': The combination of provider and id is already in use.",
+                error
+              )
+            case (e: HasStatus, _) if e.status() == Status.Cluster.NotALeader =>
+              new DatabaseAdministrationOnFollowerException(
+                s"Failed to alter the specified user '${runtimeStringValue(userName, p)}': $followerError",
+                error
+              )
+            case _ => new CypherExecutionException(
+                s"Failed to alter the specified user '${runtimeStringValue(userName, p)}'.",
+                error
+              )
+          }
+        )
+        .handleResult {
+          case (0, value: BooleanValue, p) if !value.booleanValue() =>
+            ThrowException(new InvalidArgumentException(
+              s"Failed to alter the specified user '${runtimeStringValue(userName, p)}': User does not exist."
+            ))
+          case (1, value: TextValue, p) =>
+            maybePw.map {
+              newPw =>
+                val oldCredentials =
+                  SystemGraphCredential.deserialize(value.stringValue(), secureHasher)
+                val newValue = p.get(newPw.bytesKey).asInstanceOf[ByteArray].asObject()
+                if (oldCredentials.matchesPassword(newValue)) {
+                  ThrowException(new InvalidArgumentException(
+                    s"Failed to alter the specified user '${runtimeStringValue(userName, p)}': Old password and new password cannot be the same."
+                  ))
+                } else validateAuth(externalAuths, nativeAuth)
+            }.getOrElse(validateAuth(externalAuths, nativeAuth))
+          case (2, value: BooleanValue, _) if !value.booleanValue() =>
+            ThrowException(new InvalidArgumentException(
+              "User has no auth provider. Add at least one auth provider for the user or consider suspending them."
+            ))
+          case (3, value: BooleanValue, _) if !value.booleanValue() =>
+            ThrowException(new InvalidArgumentException(
+              s"Clause `SET PASSWORD` is mandatory for auth provider `$NATIVE_AUTH`."
+            ))
+          case _ => validateAuth(externalAuths, nativeAuth)
+        },
       sourcePlan,
       initAndFinally = InitAndFinallyFunctions(finallyFunction =
         p => maybePw.foreach(newPw => p.get(newPw.bytesKey).asInstanceOf[ByteArray].zero())
@@ -567,20 +756,20 @@ object AdministrationCommandRuntime {
 
   private[internal] def runtimeStringValue(field: DatabaseName, params: MapValue): String = field match {
     case n: NamespacedName => n.toString
-    case ParameterName(p)  => runtimeStringValue(p.name, params)
+    case ParameterName(p)  => runtimeStringValue(p.name, params, prettyPrint = false)
   }
 
   private[internal] def runtimeStringValue(field: Either[String, Parameter], params: MapValue): String = field match {
     case Left(s)  => s
-    case Right(p) => runtimeStringValue(p.name, params)
+    case Right(p) => runtimeStringValue(p.name, params, prettyPrint = false)
   }
 
-  private[internal] def runtimeStringValue(field: Expression, params: MapValue): String = ({
+  private[internal] def runtimeStringValue(field: Expression, params: MapValue, prettyPrint: Boolean): String = ({
     case StringLiteral(s) => s
-    case p: Parameter     => runtimeStringValue(p.name, params)
+    case p: Parameter     => runtimeStringValue(p.name, params, prettyPrint)
   }: PartialFunction[Expression, String]).apply(field)
 
-  private[internal] def runtimeStringValue(parameter: String, params: MapValue): String = {
+  private[internal] def runtimeStringValue(parameter: String, params: MapValue, prettyPrint: Boolean): String = {
     val value: AnyValue =
       if (params.containsKey(parameter))
         params.get(parameter)
@@ -589,9 +778,56 @@ object AdministrationCommandRuntime {
     value match {
       case tv: TextValue => tv.stringValue()
       case _ =>
-        throw new ParameterWrongTypeException(s"Expected parameter $$$parameter to have type String but was $value")
+        val (p, v) = if (prettyPrint) {
+          val pp = new PrettyPrinter()
+          value.writeTo(pp)
+          (s"`$$$parameter`", s"`${pp.value()}`.")
+        } else (s"$$$parameter", value.toString)
+        throw new ParameterWrongTypeException(s"Expected parameter $p to have type String but was $v")
     }
   }
+
+  private[internal] def runtimeStringListValue(field: Expression, params: MapValue): List[String] = field match {
+    case StringLiteral(s) if s.nonEmpty => List(s)
+    case l: ListLiteral
+      if l.expressions.forall(e =>
+        e.isInstanceOf[StringLiteral] && e.asInstanceOf[StringLiteral].value.nonEmpty
+      ) && l.expressions.nonEmpty =>
+      l.expressions.map(_.asInstanceOf[StringLiteral].value).toList
+    case p: Parameter =>
+      val value: AnyValue =
+        if (params.containsKey(p.name))
+          params.get(p.name)
+        else
+          params.get(internalKey(p.name))
+
+      val pp = new PrettyPrinter()
+      value match {
+        case tv: TextValue if tv.stringValue().nonEmpty => List(tv.stringValue())
+        case lv: ListValue if lv.nonEmpty =>
+          lv.iterator().asScala.map {
+            case tv: TextValue if tv.stringValue().nonEmpty => tv.stringValue()
+            case v =>
+              v.writeTo(pp)
+              throw new ParameterWrongTypeException(
+                s"Expected parameter `$$${p.name}` to only contain non-empty Strings but contained `${pp.value()}`."
+              )
+          }.toList
+        case _ =>
+          value.writeTo(pp)
+          throw new ParameterWrongTypeException(
+            s"Expected parameter `$$${p.name}` to be a non-empty String or a non-empty List of non-empty Strings but was `${pp.value()}`."
+          )
+      }
+    case _ =>
+      // this fails in parsing or semantic checking, but is needed for scala warnings
+      throw new InvalidArgumentException(
+        s"Expected non-empty String or non-empty List of non-empty Strings but was `${field.asCanonicalStringVal}`."
+      )
+  }
+
+  private def validateAuthId(id: String): Unit =
+    if (id.isEmpty) throw new InvalidArgumentException("Invalid input. Auth id is not allowed to be an empty string.")
 
   case class RenamingStringParameterConverter(
     parameter: String,

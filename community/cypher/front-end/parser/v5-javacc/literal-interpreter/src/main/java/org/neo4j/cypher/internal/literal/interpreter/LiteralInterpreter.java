@@ -101,6 +101,8 @@ public class LiteralInterpreter
                 NULL, // PRIVILEGE_TYPE,
                 NULL, // PRIVILEGE_RESOURCE,
                 NULL, // PRIVILEGE_QUALIFIER,
+                NULL, // AUTH,
+                NULL, // AUTH_ATTRIBUTE,
                 NULL, // SUBQUERY_IN_TRANSACTIONS_BATCH_PARAMETERS,
                 NULL, // SUBQUERY_IN_TRANSACTIONS_CONCURRENCY_PARAMETERS,
                 NULL, // SUBQUERY_IN_TRANSACTIONS_ERROR_PARAMETERS,
@@ -725,11 +727,10 @@ public class LiteralInterpreter
             boolean replace,
             boolean ifNotExists,
             SimpleEither<StringPos<NULL>, Object> username,
-            Object password,
-            boolean encrypted,
-            boolean changeRequired,
             Boolean suspended,
-            NULL homeDatabase) {
+            NULL homeDatabase,
+            List<NULL> auths,
+            List<NULL> systemAuthAttributes) {
         throw new UnsupportedOperationException("createUser is not a literal");
     }
 
@@ -757,13 +758,34 @@ public class LiteralInterpreter
             NULL p,
             boolean ifExists,
             SimpleEither<StringPos<NULL>, Object> username,
-            Object password,
-            boolean encrypted,
-            Boolean changeRequired,
             Boolean suspended,
             NULL homeDatabase,
-            boolean removeHome) {
+            boolean removeHome,
+            List<NULL> auths,
+            List<NULL> systemAuthAttributes,
+            boolean removeAllAuth,
+            List<Object> removeAuths) {
         throw new UnsupportedOperationException("alterUser is not a literal");
+    }
+
+    @Override
+    public NULL auth(String provider, List<NULL> nulls, NULL p) {
+        throw new UnsupportedOperationException("auth is not a literal");
+    }
+
+    @Override
+    public NULL authId(NULL s, Object id) {
+        throw new UnsupportedOperationException("authId is not a literal");
+    }
+
+    @Override
+    public NULL password(NULL p, Object password, boolean encrypted) {
+        throw new UnsupportedOperationException("password is not a literal");
+    }
+
+    @Override
+    public NULL passwordChangeRequired(NULL p, boolean changeRequired) {
+        throw new UnsupportedOperationException("passwordChangeRequired is not a literal");
     }
 
     @Override

@@ -23,13 +23,13 @@ import static java.lang.String.format;
 import static org.neo4j.internal.helpers.Format.parseHexString;
 import static org.neo4j.kernel.impl.security.Credential.CREDENTIAL_SEPARATOR;
 
-import org.neo4j.cypher.internal.security.FormatException;
-import org.neo4j.cypher.internal.security.SecureHasher;
-import org.neo4j.cypher.internal.security.SecureHasherConfigurations;
-import org.neo4j.cypher.internal.security.SystemGraphCredential;
 import org.neo4j.exceptions.InvalidArgumentException;
 import org.neo4j.kernel.impl.security.Credential;
 import org.neo4j.kernel.impl.security.User;
+import org.neo4j.server.security.FormatException;
+import org.neo4j.server.security.SecureHasher;
+import org.neo4j.server.security.SecureHasherConfigurations;
+import org.neo4j.server.security.SystemGraphCredential;
 
 /**
  * Serializes user authorization and authentication data to a format similar to unix passwd files.

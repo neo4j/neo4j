@@ -21,16 +21,15 @@ package org.neo4j.server.security.systemgraph.versions;
 
 import static org.neo4j.kernel.api.security.AuthManager.INITIAL_PASSWORD;
 import static org.neo4j.kernel.api.security.AuthManager.INITIAL_USER_NAME;
+import static org.neo4j.server.security.systemgraph.SystemGraphRealmHelper.NATIVE_AUTH;
 
 import java.util.List;
 import java.util.UUID;
-import org.neo4j.cypher.internal.security.FormatException;
-import org.neo4j.cypher.internal.security.SecureHasher;
-import org.neo4j.cypher.internal.security.SystemGraphCredential;
 import org.neo4j.dbms.database.ComponentVersion;
 import org.neo4j.dbms.database.KnownSystemComponentVersion;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.helpers.collection.Iterators;
@@ -38,12 +37,25 @@ import org.neo4j.internal.kernel.api.security.AbstractSecurityLog;
 import org.neo4j.kernel.impl.security.Credential;
 import org.neo4j.kernel.impl.security.User;
 import org.neo4j.logging.Log;
+import org.neo4j.server.security.FormatException;
+import org.neo4j.server.security.SecureHasher;
+import org.neo4j.server.security.SystemGraphCredential;
 import org.neo4j.server.security.systemgraph.UserSecurityGraphComponentVersion;
 import org.neo4j.string.UTF8;
 
 public abstract class KnownCommunitySecurityComponentVersion extends KnownSystemComponentVersion {
     public static final Label USER_LABEL = Label.label("User");
     public static final String USER_ID = "id";
+    public static final String USER_NAME = "name";
+    public static final String USER_CREDENTIALS = "credentials";
+
+    public static final String AUTH_CONSTRAINT = "auth-constraint";
+    public static final Label AUTH_LABEL = Label.label("Auth");
+    public static final String AUTH_PROVIDER = "provider";
+    public static final String AUTH_ID = "id";
+
+    public static final RelationshipType HAS_AUTH = RelationshipType.withName("HAS_AUTH");
+
     private final SecureHasher secureHasher = new SecureHasher();
     private final AbstractSecurityLog securityLog;
 
@@ -51,10 +63,6 @@ public abstract class KnownCommunitySecurityComponentVersion extends KnownSystem
             ComponentVersion componentVersion, Log debugLog, AbstractSecurityLog securityLog) {
         super(componentVersion, debugLog);
         this.securityLog = securityLog;
-    }
-
-    boolean componentNotInVersionNode(Transaction tx) {
-        return getSystemGraphInstalledVersion(tx) == null;
     }
 
     public abstract void setupUsers(Transaction tx) throws Exception;
@@ -72,13 +80,13 @@ public abstract class KnownCommunitySecurityComponentVersion extends KnownSystem
                 passwordChangeRequired ? "REQUIRED" : "NOT REQUIRED",
                 suspended ? " SET STATUS SUSPENDED" : ""));
         Node node = tx.createNode(USER_LABEL);
-        node.setProperty("name", username);
-        node.setProperty("credentials", credentials.serialize());
+        node.setProperty(USER_NAME, username);
+        node.setProperty(USER_CREDENTIALS, credentials.serialize());
         node.setProperty("passwordChangeRequired", passwordChangeRequired);
         node.setProperty("suspended", suspended);
-
-        if (version >= UserSecurityGraphComponentVersion.COMMUNITY_SECURITY_43D4.getVersion()) {
-            node.setProperty(USER_ID, UUID.randomUUID().toString());
+        node.setProperty(USER_ID, UUID.randomUUID().toString());
+        if (version >= UserSecurityGraphComponentVersion.COMMUNITY_SECURITY_521.getVersion()) {
+            addAuthObject(tx, node);
         }
     }
 
@@ -93,7 +101,7 @@ public abstract class KnownCommunitySecurityComponentVersion extends KnownSystem
                     "Unable to update missing initial user password from `auth.ini` file: %s", initialUser.name()));
         } else if (users.size() == 1) {
             Node user = users.get(0);
-            if (user.getProperty("name").equals(INITIAL_USER_NAME)) {
+            if (user.getProperty(USER_NAME).equals(INITIAL_USER_NAME)) {
                 SystemGraphCredential currentCredentials = SystemGraphCredential.deserialize(
                         user.getProperty("credentials").toString(), secureHasher);
                 if (currentCredentials.matchesPassword(UTF8.encode(INITIAL_PASSWORD))) {
@@ -108,15 +116,23 @@ public abstract class KnownCommunitySecurityComponentVersion extends KnownSystem
         }
     }
 
-    public void setUserIds(Transaction tx) {
+    public void addAuthObjects(Transaction tx) {
         try (ResourceIterator<Node> nodes = tx.findNodes(USER_LABEL)) {
             while (nodes.hasNext()) {
-                Node node = nodes.next();
-                if (!node.hasProperty(USER_ID)) {
-                    node.setProperty(USER_ID, UUID.randomUUID().toString());
+                Node user = nodes.next();
+                if (user.hasProperty(USER_CREDENTIALS) && !user.hasRelationship(HAS_AUTH)) {
+                    addAuthObject(tx, user);
                 }
             }
         }
+    }
+
+    private void addAuthObject(Transaction tx, Node user) {
+        String userId = (String) user.getProperty(USER_ID);
+        Node authNode = tx.createNode(AUTH_LABEL);
+        authNode.setProperty(AUTH_PROVIDER, NATIVE_AUTH);
+        authNode.setProperty(AUTH_ID, userId);
+        user.createRelationshipTo(authNode, HAS_AUTH);
     }
 
     /**
@@ -136,4 +152,8 @@ public abstract class KnownCommunitySecurityComponentVersion extends KnownSystem
      * @param fromVersion the detected version, upgrade will be performed rolling from this
      */
     public abstract void upgradeSecurityGraphSchema(Transaction tx, int fromVersion) throws Exception;
+
+    public boolean requiresAuthObject() {
+        return true;
+    }
 }
