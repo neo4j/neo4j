@@ -65,13 +65,13 @@ public class ThreadExecutionContext implements ExecutionContext, AutoCloseable {
     private final AllStoreHolder.ForThreadExecutionContextScope allStoreHolder;
     private final TokenRead tokenRead;
     private final StoreCursors storageCursors;
-    private final IndexMonitor monitor;
     private final MemoryTracker contextTracker;
     private final SecurityAuthorizationHandler securityAuthorizationHandler;
     private final ElementIdMapper elementIdMapper;
     private final List<AutoCloseable> otherResources;
     private final ExecutionContextProcedureKernelTransaction ktx;
     private final Supplier<ClockContext> clockContextSupplier;
+    private final QueryContext queryContext;
 
     public ThreadExecutionContext(
             DefaultPooledCursors cursors,
@@ -105,13 +105,13 @@ public class ThreadExecutionContext implements ExecutionContext, AutoCloseable {
         this.ktxContext = ktxContext;
         this.tokenRead = tokenRead;
         this.storageCursors = storageCursors;
-        this.monitor = monitor;
         this.contextTracker = contextTracker;
         this.securityAuthorizationHandler = securityAuthorizationHandler;
         this.otherResources = otherResources;
         this.elementIdMapper = elementIdMapper;
         this.ktx = new ExecutionContextProcedureKernelTransaction(ktx, this);
         this.clockContextSupplier = clockContextSupplier;
+        this.queryContext = new ThreadExecutionQueryContext(this::dataRead, cursors, context, contextTracker, monitor);
         this.allStoreHolder = new AllStoreHolder.ForThreadExecutionContextScope(
                 this,
                 storageReader,
@@ -121,7 +121,6 @@ public class ThreadExecutionContext implements ExecutionContext, AutoCloseable {
                 databaseDependencies,
                 cursors,
                 storageCursors,
-                context,
                 storageLocks,
                 lockClient,
                 lockTracer,
@@ -130,7 +129,8 @@ public class ThreadExecutionContext implements ExecutionContext, AutoCloseable {
                 securityAuthorizationHandler,
                 clockContextSupplier,
                 procedureView,
-                multiVersioned);
+                multiVersioned,
+                queryContext);
     }
 
     public Supplier<ClockContext> clockContextSupplier() {
@@ -208,7 +208,7 @@ public class ThreadExecutionContext implements ExecutionContext, AutoCloseable {
 
     @Override
     public QueryContext queryContext() {
-        return allStoreHolder;
+        return queryContext;
     }
 
     @Override
@@ -224,10 +224,6 @@ public class ThreadExecutionContext implements ExecutionContext, AutoCloseable {
     @Override
     public SecurityAuthorizationHandler securityAuthorizationHandler() {
         return securityAuthorizationHandler;
-    }
-
-    IndexMonitor monitor() {
-        return monitor;
     }
 
     @Override

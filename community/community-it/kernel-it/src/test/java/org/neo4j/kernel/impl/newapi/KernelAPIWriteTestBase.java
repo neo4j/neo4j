@@ -35,7 +35,6 @@ import org.mockito.Answers;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.EntityCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
@@ -44,7 +43,6 @@ import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.Kernel;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
-import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.coreapi.TransactionImpl;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.query.TransactionalContextFactory;
@@ -134,7 +132,7 @@ public abstract class KernelAPIWriteTestBase<WriteSupport extends KernelAPIWrite
     }
 
     protected static CursorFactory cursorFactory(KernelTransaction ktx) {
-        return ((Read) ktx.dataRead()).cursors();
+        return ktx.cursors();
     }
 
     protected void assertProperties(
@@ -155,10 +153,6 @@ public abstract class KernelAPIWriteTestBase<WriteSupport extends KernelAPIWrite
                     "Unable to determine whether the transaction would create a cursor over the relationship type index that is node-based");
             return false;
         }
-    }
-
-    protected boolean isNodeBased(Transaction tx) {
-        return isNodeBased(((InternalTransaction) tx).kernelTransaction());
     }
 
     protected boolean isNodeBased(KernelTransaction tx) {

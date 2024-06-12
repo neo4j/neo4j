@@ -137,6 +137,7 @@ import org.neo4j.kernel.impl.newapi.IndexTxStateUpdater;
 import org.neo4j.kernel.impl.newapi.KernelToken;
 import org.neo4j.kernel.impl.newapi.KernelTokenRead;
 import org.neo4j.kernel.impl.newapi.Operations;
+import org.neo4j.kernel.impl.newapi.TransactionQueryContext;
 import org.neo4j.kernel.impl.query.TransactionExecutionMonitor;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionCommitmentFactory;
@@ -260,6 +261,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private volatile Map<String, Object> userMetaData;
     private volatile String statusDetails;
     private final AllStoreHolder.ForTransactionScope allStoreHolder;
+    private final QueryContext queryContext;
     private final Operations operations;
     private InternalTransaction internalTransaction;
     private volatile TraceProvider traceProvider;
@@ -380,6 +382,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 storageReader, transactionalCursors, config, storageEngine.indexingBehaviour(), multiVersioned);
         this.securityAuthorizationHandler = new SecurityAuthorizationHandler(securityLog);
         var kernelToken = new KernelToken(storageReader, commandCreationContext, this, tokenHolders);
+        this.queryContext = new TransactionQueryContext(
+                this::dataRead, cursors, this, this::cursorContext, memoryTracker, indexingService.getMonitor());
         this.allStoreHolder = new AllStoreHolder.ForTransactionScope(
                 storageReader,
                 kernelToken,
@@ -391,7 +395,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 indexStatisticsStore,
                 dependencies,
                 memoryTracker,
-                multiVersioned);
+                multiVersioned,
+                queryContext);
         this.executionContextFactory = createExecutionContextFactory(
                 contextFactory,
                 storageEngine,
@@ -682,7 +687,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
     @Override
     public QueryContext queryContext() {
-        return operations.queryContext();
+        return queryContext;
     }
 
     @Override

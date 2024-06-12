@@ -27,7 +27,6 @@ import java.util.List;
 import org.neo4j.common.EntityType;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.Cursor;
-import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.InternalIndexState;
@@ -66,7 +65,6 @@ import org.neo4j.storageengine.api.RelationshipSelection;
 import org.neo4j.storageengine.api.StorageLocks;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
-import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.util.Preconditions;
 
 abstract class Read
@@ -77,14 +75,14 @@ abstract class Read
                 org.neo4j.internal.kernel.api.Locks,
                 AssertOpen,
                 LockingNodeUniqueIndexSeek.UniqueNodeIndexSeeker<DefaultNodeValueIndexCursor>,
-                LockingRelationshipUniqueIndexSeek.UniqueRelationshipIndexSeeker<DefaultRelationshipValueIndexCursor>,
-                QueryContext {
+                LockingRelationshipUniqueIndexSeek.UniqueRelationshipIndexSeeker<DefaultRelationshipValueIndexCursor> {
     protected final StorageReader storageReader;
     protected final DefaultPooledCursors cursors;
     private final TokenRead tokenRead;
     private final StorageLocks storageLocks;
-    final StoreCursors storageCursors;
+    protected final StoreCursors storageCursors;
     private final LockTracer lockTracer;
+    protected final QueryContext queryContext;
 
     Read(
             StorageReader storageReader,
@@ -92,13 +90,15 @@ abstract class Read
             DefaultPooledCursors cursors,
             StoreCursors storageCursors,
             StorageLocks storageLocks,
-            LockTracer lockTracer) {
+            LockTracer lockTracer,
+            QueryContext queryContext) {
         this.storageReader = storageReader;
         this.tokenRead = tokenRead;
         this.cursors = cursors;
         this.storageCursors = storageCursors;
         this.storageLocks = storageLocks;
         this.lockTracer = lockTracer;
+        this.queryContext = queryContext;
     }
 
     @Override
@@ -177,21 +177,6 @@ abstract class Read
     }
 
     @Override
-    public org.neo4j.internal.kernel.api.Read getRead() {
-        return this;
-    }
-
-    @Override
-    public CursorFactory cursors() {
-        return cursors;
-    }
-
-    @Override
-    public ReadableTransactionState getTransactionStateOrNull() {
-        return hasTxStateWithChanges() ? txState() : null;
-    }
-
-    @Override
     public long lockingNodeUniqueIndexSeek(
             IndexDescriptor index, NodeValueIndexCursor cursor, PropertyIndexQuery.ExactPredicate... predicates)
             throws IndexNotApplicableKernelException, IndexNotFoundKernelException, IndexBrokenKernelException {
@@ -226,7 +211,7 @@ abstract class Read
             PropertyIndexQuery.ExactPredicate... query)
             throws IndexNotApplicableKernelException {
         cursor.setRead(this);
-        indexReader.query(cursor, this, unconstrained(), query);
+        indexReader.query(cursor, queryContext, unconstrained(), query);
     }
 
     @Override
@@ -236,7 +221,7 @@ abstract class Read
             PropertyIndexQuery.ExactPredicate... query)
             throws IndexNotApplicableKernelException {
         cursor.setRead(this);
-        indexReader.query(cursor, this, unconstrained(), query);
+        indexReader.query(cursor, queryContext, unconstrained(), query);
     }
 
     @Override
@@ -303,7 +288,7 @@ abstract class Read
             IndexQueryConstraints constraints)
             throws KernelException {
         indexSeekClient.setRead(this);
-        indexSession.reader.query(indexSeekClient, this, constraints, PropertyIndexQuery.allEntries());
+        indexSession.reader.query(indexSeekClient, queryContext, constraints, PropertyIndexQuery.allEntries());
     }
 
     @Override

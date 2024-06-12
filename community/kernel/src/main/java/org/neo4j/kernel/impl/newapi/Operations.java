@@ -77,7 +77,6 @@ import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
 import org.neo4j.internal.kernel.api.Procedures;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
-import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.RelationshipTypeIndexCursor;
@@ -1500,10 +1499,6 @@ public class Operations implements Write, SchemaWrite, Upgrade {
     }
 
     public Procedures procedures() {
-        return allStoreHolder;
-    }
-
-    public QueryContext queryContext() {
         return allStoreHolder;
     }
 

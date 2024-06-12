@@ -35,12 +35,12 @@ import org.neo4j.collection.diffset.DiffSets;
 import org.neo4j.common.EntityType;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.helpers.collection.Iterators;
-import org.neo4j.internal.kernel.api.IndexMonitor;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
+import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor;
 import org.neo4j.internal.kernel.api.SchemaReadCore;
 import org.neo4j.internal.kernel.api.TokenRead;
@@ -62,7 +62,6 @@ import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.internal.schema.SchemaState;
-import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.CypherScope;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.IndexUsageStats;
@@ -131,8 +130,9 @@ public abstract class AllStoreHolder extends Read {
             StoreCursors storageCursors,
             StorageLocks storageLocks,
             LockTracer lockTracer,
-            boolean multiVersioned) {
-        super(storageReader, tokenRead, cursors, storageCursors, storageLocks, lockTracer);
+            boolean multiVersioned,
+            QueryContext queryContext) {
+        super(storageReader, tokenRead, cursors, storageCursors, storageLocks, lockTracer, queryContext);
         this.schemaState = schemaState;
         this.valueIndexReaderCache = new IndexReaderCache<>(
                 index -> indexingService.getIndexProxy(index).newValueReader());
@@ -165,7 +165,7 @@ public abstract class AllStoreHolder extends Read {
         } else if (!existsInNodeStore) {
             return false;
         } else {
-            try (DefaultNodeCursor node = cursors.allocateNodeCursor(cursorContext(), memoryTracker())) {
+            try (DefaultNodeCursor node = cursors.allocateNodeCursor(queryContext.cursorContext(), memoryTracker)) {
                 singleNode(reference, node);
                 return node.next();
             }
@@ -189,11 +189,12 @@ public abstract class AllStoreHolder extends Read {
         performCheckBeforeOperation();
         if (hasTxStateWithChanges()) {
             if (applyAccessModeToTxState) {
-                try (DefaultNodeCursor nodeCursor = cursors.allocateNodeCursor(cursorContext(), memoryTracker())) {
+                try (DefaultNodeCursor nodeCursor =
+                        cursors.allocateNodeCursor(queryContext.cursorContext(), memoryTracker)) {
                     singleNode(node, nodeCursor);
                     nodeCursor.next();
                     try (DefaultPropertyCursor propertyCursor =
-                            cursors.allocatePropertyCursor(cursorContext(), memoryTracker)) {
+                            cursors.allocatePropertyCursor(queryContext.cursorContext(), memoryTracker)) {
                         nodeCursor.properties(propertyCursor, PropertySelection.selection(propertyKeyId));
                         return propertyCursor.allowed(propertyKeyId)
                                 ? txState().getNodeState(node).propertyValue(propertyKeyId)
@@ -215,8 +216,7 @@ public abstract class AllStoreHolder extends Read {
             return !applyAccessModeToTxState
                             || (relationshipState.hasPropertyChanges()
                                     && getAccessMode()
-                                            .allowsReadRelationshipProperty(
-                                                    () -> relationshipState.getType(), propertyKeyId))
+                                            .allowsReadRelationshipProperty(relationshipState::getType, propertyKeyId))
                     ? relationshipState.propertyValue(propertyKeyId)
                     : null;
         }
@@ -230,20 +230,20 @@ public abstract class AllStoreHolder extends Read {
                 getAccessMode(),
                 storageReader,
                 cursors,
-                cursorContext(),
-                memoryTracker(),
+                queryContext.cursorContext(),
+                memoryTracker,
                 this,
                 storageCursors);
     }
 
     @Override
     public List<Integer> mostCommonLabelGivenRelationshipType(int type) {
-        return entityCounter.mostCommonLabelGivenRelationshipType(type, storageReader, cursorContext());
+        return entityCounter.mostCommonLabelGivenRelationshipType(type, storageReader, queryContext.cursorContext());
     }
 
     @Override
     public long estimateCountsForNode(int labelId) {
-        return storageReader.estimateCountsForNode(labelId, cursorContext());
+        return storageReader.estimateCountsForNode(labelId, queryContext.cursorContext());
     }
 
     @Override
@@ -256,14 +256,15 @@ public abstract class AllStoreHolder extends Read {
                 storageReader,
                 cursors,
                 this,
-                cursorContext(),
-                memoryTracker(),
+                queryContext.cursorContext(),
+                memoryTracker,
                 storageCursors);
     }
 
     @Override
     public long estimateCountsForRelationships(int startLabelId, int typeId, int endLabelId) {
-        return storageReader.estimateCountsForRelationship(startLabelId, typeId, endLabelId, cursorContext());
+        return storageReader.estimateCountsForRelationship(
+                startLabelId, typeId, endLabelId, queryContext.cursorContext());
     }
 
     IndexDescriptor findUsableTokenIndex(EntityType entityType) throws IndexNotFoundKernelException {
@@ -294,7 +295,7 @@ public abstract class AllStoreHolder extends Read {
             return false;
         } else {
             try (DefaultRelationshipScanCursor rels = (DefaultRelationshipScanCursor)
-                    cursors.allocateRelationshipScanCursor(cursorContext(), memoryTracker())) {
+                    cursors.allocateRelationshipScanCursor(queryContext.cursorContext(), memoryTracker)) {
                 singleRelationship(reference, rels);
                 return rels.next();
             }
@@ -802,16 +803,6 @@ public abstract class AllStoreHolder extends Read {
     abstract ProcedureCaller getProcedureCaller();
 
     @Override
-    public MemoryTracker memoryTracker() {
-        return memoryTracker;
-    }
-
-    @Override
-    public IndexMonitor monitor() {
-        return indexingService.getMonitor();
-    }
-
-    @Override
     public RawIterator<AnyValue[], ProcedureException> procedureCallRead(
             int id, AnyValue[] arguments, ProcedureCallContext context) throws ProcedureException {
         return getProcedureCaller().callProcedure(id, arguments, AccessMode.Static.READ, context);
@@ -915,7 +906,8 @@ public abstract class AllStoreHolder extends Read {
                 IndexStatisticsStore indexStatisticsStore,
                 Dependencies databaseDependencies,
                 MemoryTracker memoryTracker,
-                boolean multiVersioned) {
+                boolean multiVersioned,
+                QueryContext queryContext) {
             super(
                     storageReader,
                     tokenRead,
@@ -927,7 +919,8 @@ public abstract class AllStoreHolder extends Read {
                     ktx.storeCursors(),
                     storageLocks,
                     ktx.lockTracer(),
-                    multiVersioned);
+                    multiVersioned,
+                    queryContext);
 
             this.ktx = ktx;
             this.databaseDependencies = databaseDependencies;
@@ -966,11 +959,6 @@ public abstract class AllStoreHolder extends Read {
             return ktx.lockClient();
         }
 
-        @Override
-        public CursorContext cursorContext() {
-            return ktx.cursorContext();
-        }
-
         public void close() {
             procedureCaller = null;
         }
@@ -984,7 +972,6 @@ public abstract class AllStoreHolder extends Read {
     public static class ForThreadExecutionContextScope extends AllStoreHolder {
 
         private final OverridableSecurityContext overridableSecurityContext;
-        private final CursorContext cursorContext;
         private final LockManager.Client lockClient;
         private final ExecutionContextProcedureKernelTransaction kernelTransaction;
         private final ProcedureCaller.ForThreadExecutionContextScope procedureCaller;
@@ -998,7 +985,6 @@ public abstract class AllStoreHolder extends Read {
                 Dependencies databaseDependencies,
                 DefaultPooledCursors cursors,
                 StoreCursors storageCursors,
-                CursorContext cursorContext,
                 StorageLocks storageLocks,
                 Client lockClient,
                 LockTracer lockTracer,
@@ -1007,7 +993,8 @@ public abstract class AllStoreHolder extends Read {
                 SecurityAuthorizationHandler securityAuthorizationHandler,
                 Supplier<ClockContext> clockContextSupplier,
                 ProcedureView procedureView,
-                boolean multiVersioned) {
+                boolean multiVersioned,
+                QueryContext queryContext) {
             super(
                     storageReader,
                     executionContext.tokenRead(),
@@ -1019,9 +1006,9 @@ public abstract class AllStoreHolder extends Read {
                     storageCursors,
                     storageLocks,
                     lockTracer,
-                    multiVersioned);
+                    multiVersioned,
+                    queryContext);
             this.overridableSecurityContext = overridableSecurityContext;
-            this.cursorContext = cursorContext;
             this.lockClient = lockClient;
             this.kernelTransaction = kernelTransaction;
             this.procedureCaller = new ProcedureCaller.ForThreadExecutionContextScope(
@@ -1091,11 +1078,6 @@ public abstract class AllStoreHolder extends Read {
         @Override
         LockManager.Client getLockClient() {
             return lockClient;
-        }
-
-        @Override
-        public CursorContext cursorContext() {
-            return cursorContext;
         }
 
         @Override

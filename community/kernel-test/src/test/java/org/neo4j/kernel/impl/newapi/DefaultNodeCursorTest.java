@@ -29,6 +29,7 @@ import static org.mockito.Mockito.when;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.Test;
 import org.neo4j.collection.Dependencies;
+import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.internal.schema.SchemaState;
@@ -100,7 +101,8 @@ class DefaultNodeCursorTest {
                 mock(IndexStatisticsStore.class),
                 mock(Dependencies.class),
                 EmptyMemoryTracker.INSTANCE,
-                false);
+                false,
+                mock(QueryContext.class));
         read.initialize(mock(ProcedureView.class));
         var txState = new TxState();
         setup.accept(txState);

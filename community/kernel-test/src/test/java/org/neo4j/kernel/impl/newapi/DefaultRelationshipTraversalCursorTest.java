@@ -37,10 +37,10 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.neo4j.collection.RawIterator;
 import org.neo4j.graphdb.Direction;
-import org.neo4j.internal.kernel.api.IndexMonitor;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.PopulationProgress;
+import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.SchemaReadCore;
 import org.neo4j.internal.kernel.api.TokenReadSession;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
@@ -58,7 +58,6 @@ import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptor;
-import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.CypherScope;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.IndexUsageStats;
@@ -67,7 +66,6 @@ import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.locking.LockManager;
-import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.storageengine.api.Reference;
 import org.neo4j.storageengine.api.RelationshipDirection;
@@ -406,7 +404,8 @@ class DefaultRelationshipTraversalCursorTest {
                     mock(DefaultPooledCursors.class),
                     ktx.storeCursors(),
                     mock(StorageLocks.class),
-                    ktx.lockTracer());
+                    ktx.lockTracer(),
+                    mock(QueryContext.class));
             this.ktx = ktx;
         }
 
@@ -507,21 +506,6 @@ class DefaultRelationshipTraversalCursorTest {
         @Override
         public long signatureVersion() {
             return 0;
-        }
-
-        @Override
-        public CursorContext cursorContext() {
-            return null;
-        }
-
-        @Override
-        public MemoryTracker memoryTracker() {
-            return null;
-        }
-
-        @Override
-        public IndexMonitor monitor() {
-            return IndexMonitor.NO_MONITOR;
         }
 
         @Override

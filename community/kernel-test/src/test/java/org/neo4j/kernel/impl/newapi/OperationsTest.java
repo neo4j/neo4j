@@ -53,6 +53,7 @@ import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.dbms.DbmsRuntimeVersionProvider;
 import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.internal.kernel.api.PropertyCursor;
+import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
@@ -181,7 +182,8 @@ abstract class OperationsTest {
                 mock(IndexStatisticsStore.class),
                 dependenciesOf(facade),
                 INSTANCE,
-                false);
+                false,
+                mock(QueryContext.class));
         allStoreHolder.initialize(mock(ProcedureView.class));
         constraintIndexCreator = mock(ConstraintIndexCreator.class);
         creationContext = mock(CommandCreationContext.class);
