@@ -2074,7 +2074,9 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     the[SyntaxException].thrownBy(planner.plan(q))
   }
 
-  test("should not start with a subtractionNodeByLabelScan") {
+  test(
+    "should not start with a subtractionNodeByLabelScan when other node has a more selective predicate (expand in both directions is equally expensive)"
+  ) {
     val nodes = 200.0
     val a = 100.0
     val b = 10.0
@@ -2098,7 +2100,9 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       .build())
   }
 
-  test("should start with a subtractionNodeByLabelScan") {
+  test(
+    "should start with a subtractionNodeByLabelScan when the other node has a less selective predicate (expand in both directions is equally expensive)"
+  ) {
     val nodes = 200.0
     val a = 100.0
     val b = 100.0
@@ -2135,7 +2139,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       .build()
   }
 
-  test("should plan index for subtractionNodeByLabelScan") {
+  test("should plan index for subtractionNodeByLabelScan when the property access is more selective") {
     val existsSelectivity = 0.1
     val planningConf = confForSubtractionNodeByLabelScanVersusIndexTest(existsSelectivity)
 
@@ -2149,7 +2153,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       .build())
   }
 
-  test("should NOT plan index for subtractionNodeByLabelScan") {
+  test("should NOT plan index for subtractionNodeByLabelScan when the property access is less selective") {
     val existsSelectivity = 0.9
     val planningConf = confForSubtractionNodeByLabelScanVersusIndexTest(existsSelectivity)
 

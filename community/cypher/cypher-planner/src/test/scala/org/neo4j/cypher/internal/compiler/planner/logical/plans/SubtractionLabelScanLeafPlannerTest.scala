@@ -24,10 +24,8 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.subtractionLabelScanLeafPlanner
-import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.Selections
-import org.neo4j.cypher.internal.ir.ordering.ColumnOrder
 import org.neo4j.cypher.internal.ir.ordering.ColumnOrder.Asc
 import org.neo4j.cypher.internal.ir.ordering.ColumnOrder.Desc
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder

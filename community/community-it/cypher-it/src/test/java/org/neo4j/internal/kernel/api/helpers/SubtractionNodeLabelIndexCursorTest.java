@@ -217,7 +217,6 @@ class SubtractionNodeLabelIndexCursorTest {
 
             nodeToFind = write.nodeCreate();
             write.nodeAddLabel(nodeToFind, positiveLabel);
-            write.nodeAddLabel(nodeToFind, negativeLabel1);
 
             tx.commit();
         }
@@ -317,7 +316,6 @@ class SubtractionNodeLabelIndexCursorTest {
                         write.nodeAddLabel(node, positiveLabel2);
                         write.nodeAddLabel(node, positiveLabel3);
                         write.nodeAddLabel(node, negativeLabel1);
-                        nodesToFind.add(node);
                     }
                     case 2 -> {
                         write.nodeAddLabel(node, positiveLabel1);
