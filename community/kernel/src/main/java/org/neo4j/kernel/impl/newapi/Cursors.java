@@ -126,7 +126,7 @@ public final class Cursors {
 
         @Override
         public void properties(PropertyCursor cursor, PropertySelection selection) {
-            ((DefaultPropertyCursor) cursor).initEmptyRelationship(null, () -> {});
+            ((DefaultPropertyCursor) cursor).initEmptyRelationship();
         }
 
         @Override

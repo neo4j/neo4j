@@ -33,7 +33,6 @@ import org.neo4j.internal.kernel.api.RelTypeSupplier;
 import org.neo4j.internal.kernel.api.TokenSet;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.kernel.api.security.ReadSecurityPropertyProvider;
-import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.storageengine.api.Reference;
 import org.neo4j.storageengine.api.StorageProperty;
@@ -195,8 +194,8 @@ public class DefaultPropertyCursor extends TraceableCursorImpl<DefaultPropertyCu
         }
     }
 
-    void initEmptyRelationship(Read read, AssertOpen assertOpen) {
-        init(ALL_PROPERTIES, read);
+    void initEmptyRelationship() {
+        init(ALL_PROPERTIES, null);
         storeCursor.initRelationshipProperties(NULL_REFERENCE, ALL_PROPERTIES);
         this.entityReference = NO_SUCH_ENTITY;
 
