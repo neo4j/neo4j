@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.newapi;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.storageengine.api.cursor.StoreCursors.NULL;
 
@@ -29,11 +28,21 @@ import org.eclipse.collections.api.factory.primitive.LongSets;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.graphdb.Direction;
+import org.neo4j.internal.kernel.api.EntityLocks;
+import org.neo4j.internal.kernel.api.QueryContext;
+import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.security.AccessMode;
+import org.neo4j.internal.kernel.api.security.AccessMode.Static;
+import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.kernel.api.index.IndexProgressor;
+import org.neo4j.kernel.api.txstate.TxStateHolder;
+import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.storageengine.api.RelationshipSelection;
+import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.StubStorageCursors;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
@@ -57,8 +66,30 @@ class DefaultNodeBasedRelationshipTypeIndexCursorTest {
                 internalCursors,
                 false);
         var cursor = new DefaultNodeBasedRelationshipTypeIndexCursor(c -> {}, nodeCursor, relationshipCursor);
-        var read = mock(Read.class);
-        when(read.getAccessMode()).thenReturn(AccessMode.Static.FULL);
+        Read read =
+                new AllStoreHolder(
+                        mock(StorageReader.class),
+                        mock(TokenRead.class),
+                        mock(SchemaState.class),
+                        mock(IndexingService.class),
+                        mock(IndexStatisticsStore.class),
+                        EmptyMemoryTracker.INSTANCE,
+                        mock(DefaultPooledCursors.class),
+                        mock(StoreCursors.class),
+                        mock(EntityLocks.class),
+                        false,
+                        mock(QueryContext.class),
+                        mock(TxStateHolder.class)) {
+
+                    @Override
+                    void performCheckBeforeOperation() {}
+
+                    @Override
+                    AccessMode getAccessMode() {
+                        return Static.FULL;
+                    }
+                };
+
         cursor.setRead(read);
         int numNodes = 10;
         int numRelationships = 5;

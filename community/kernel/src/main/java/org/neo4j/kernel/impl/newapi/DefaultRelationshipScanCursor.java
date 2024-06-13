@@ -94,7 +94,7 @@ class DefaultRelationshipScanCursor extends DefaultRelationshipCursor implements
         if (hasChanges) {
             while (addedRelationships.hasNext()) {
                 long next = addedRelationships.next();
-                read.txState().relationshipVisit(next, relationshipTxStateDataVisitor);
+                read.txStateHolder.txState().relationshipVisit(next, relationshipTxStateDataVisitor);
 
                 if (!applyAccessModeToTxState || allowed()) {
                     if (tracer != null) {
@@ -107,7 +107,8 @@ class DefaultRelationshipScanCursor extends DefaultRelationshipCursor implements
         }
 
         while (storeCursor.next()) {
-            boolean skip = hasChanges && read.txState().relationshipIsDeletedInThisBatch(storeCursor.entityReference());
+            boolean skip = hasChanges
+                    && read.txStateHolder.txState().relationshipIsDeletedInThisBatch(storeCursor.entityReference());
             if (!skip && allowed()) {
                 if (tracer != null) {
                     tracer.onRelationship(relationshipReference());
@@ -182,12 +183,15 @@ class DefaultRelationshipScanCursor extends DefaultRelationshipCursor implements
     @Override
     protected void collectAddedTxStateSnapshot() {
         if (isSingle) {
-            addedRelationships = read.txState().relationshipIsAddedInThisBatch(single)
+            addedRelationships = read.txStateHolder.txState().relationshipIsAddedInThisBatch(single)
                     ? LongHashSet.newSetWith(single).longIterator()
                     : ImmutableEmptyLongIterator.INSTANCE;
         } else {
-            addedRelationships =
-                    read.txState().addedAndRemovedRelationships().getAdded().longIterator();
+            addedRelationships = read.txStateHolder
+                    .txState()
+                    .addedAndRemovedRelationships()
+                    .getAdded()
+                    .longIterator();
         }
     }
 

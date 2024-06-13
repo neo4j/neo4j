@@ -107,7 +107,7 @@ abstract class DefaultRelationshipCursor<SELF extends DefaultRelationshipCursor>
      */
     protected boolean hasChanges() {
         if (checkHasChanges) {
-            hasChanges = read.hasTxStateWithChanges();
+            hasChanges = read.txStateHolder.hasTxStateWithChanges();
             if (hasChanges) {
                 collectAddedTxStateSnapshot();
             }

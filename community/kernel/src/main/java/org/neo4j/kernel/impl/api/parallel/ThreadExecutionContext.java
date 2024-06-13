@@ -42,6 +42,8 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.ExecutionContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.procedure.ProcedureView;
+import org.neo4j.kernel.api.txstate.TransactionState;
+import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.impl.api.ClockContext;
 import org.neo4j.kernel.impl.api.CloseableResourceManager;
 import org.neo4j.kernel.impl.api.OverridableSecurityContext;
@@ -60,6 +62,20 @@ import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.values.ElementIdMapper;
 
 public class ThreadExecutionContext implements ExecutionContext, AutoCloseable {
+
+    public static final TxStateHolder THREAD_EXECUTION_STATE_HOLDER = new TxStateHolder() {
+        @Override
+        public TransactionState txState() {
+            throw new UnsupportedOperationException(
+                    "Accessing transaction state is not allowed during parallel execution");
+        }
+
+        @Override
+        public boolean hasTxStateWithChanges() {
+            return false;
+        }
+    };
+
     private final CloseableResourceManager resourceManager = new CloseableResourceManager();
     private final DefaultPooledCursors cursors;
     private final CursorContext context;
@@ -139,7 +155,8 @@ public class ThreadExecutionContext implements ExecutionContext, AutoCloseable {
                 overridableSecurityContext,
                 this.ktx,
                 multiVersioned,
-                queryContext);
+                queryContext,
+                THREAD_EXECUTION_STATE_HOLDER);
     }
 
     public Supplier<ClockContext> clockContextSupplier() {

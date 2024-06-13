@@ -133,11 +133,11 @@ class DefaultNodeCursor extends TraceableCursorImpl<DefaultNodeCursor> implement
     public TokenSet labelsAndProperties(PropertyCursor propertyCursor, PropertySelection selection) {
         if (currentAddedInTx != NO_ID) {
             // Node added in tx-state, no reason to go down to store and check
-            TransactionState txState = read.txState();
+            TransactionState txState = read.txStateHolder.txState();
             properties(propertyCursor, selection);
             return Labels.from(txState.nodeStateLabelDiffSets(currentAddedInTx).getAdded());
         } else if (hasChanges()) {
-            TransactionState txState = read.txState();
+            TransactionState txState = read.txStateHolder.txState();
             final MutableIntSet labels = new IntHashSet(storeCursor.labels());
             properties(propertyCursor, selection);
             // Augment what was found in store with what we have in tx state
@@ -159,7 +159,7 @@ class DefaultNodeCursor extends TraceableCursorImpl<DefaultNodeCursor> implement
     public TokenSet labelsIgnoringTxStateSetRemove() {
         if (currentAddedInTx != NO_ID) {
             // Node added in tx-state, no reason to go down to store and check
-            TransactionState txState = read.txState();
+            TransactionState txState = read.txStateHolder.txState();
             return Labels.from(txState.nodeStateLabelDiffSets(currentAddedInTx).getAdded());
         } else {
             // Nothing in tx state, just read the data.
@@ -170,7 +170,7 @@ class DefaultNodeCursor extends TraceableCursorImpl<DefaultNodeCursor> implement
     @Override
     public boolean hasLabel(int label) {
         if (hasChanges()) {
-            TransactionState txState = read.txState();
+            TransactionState txState = read.txStateHolder.txState();
             LongDiffSets diffSets = txState.nodeStateLabelDiffSets(nodeReference());
             if (diffSets.isAdded(label)) {
                 if (tracer != null) {
@@ -195,7 +195,7 @@ class DefaultNodeCursor extends TraceableCursorImpl<DefaultNodeCursor> implement
     @Override
     public boolean hasLabel() {
         if (hasChanges()) {
-            TransactionState txState = read.txState();
+            TransactionState txState = read.txStateHolder.txState();
             LongDiffSets diffSets = txState.nodeStateLabelDiffSets(nodeReference());
             if (diffSets.getAdded().notEmpty()) {
                 if (tracer != null) {
@@ -264,7 +264,7 @@ class DefaultNodeCursor extends TraceableCursorImpl<DefaultNodeCursor> implement
     @Override
     public int[] relationshipTypes() {
         boolean hasChanges = hasChanges();
-        NodeState nodeTxState = hasChanges ? read.txState().getNodeState(nodeReference()) : null;
+        NodeState nodeTxState = hasChanges ? read.txStateHolder.txState().getNodeState(nodeReference()) : null;
         int[] storedTypes = currentAddedInTx == NO_ID ? storeCursor.relationshipTypes() : null;
         MutableIntSet types = storedTypes != null ? IntSets.mutable.of(storedTypes) : IntSets.mutable.empty();
         if (nodeTxState != null) {
@@ -296,7 +296,7 @@ class DefaultNodeCursor extends TraceableCursorImpl<DefaultNodeCursor> implement
 
     private void fillDegrees(RelationshipSelection selection, Degrees.Mutator degrees) {
         if (hasChanges()) {
-            var nodeTxState = read.txState().getNodeState(nodeReference());
+            var nodeTxState = read.txStateHolder.txState().getNodeState(nodeReference());
             if (nodeTxState != null && !nodeTxState.fillDegrees(selection, degrees)) {
                 return;
             }
@@ -369,10 +369,10 @@ class DefaultNodeCursor extends TraceableCursorImpl<DefaultNodeCursor> implement
     private TokenSet labels(StorageNodeCursor nodeCursor) {
         if (currentAddedInTx != NO_ID) {
             // Node added in tx-state, no reason to go down to store and check
-            TransactionState txState = read.txState();
+            TransactionState txState = read.txStateHolder.txState();
             return Labels.from(txState.nodeStateLabelDiffSets(currentAddedInTx).getAdded());
         } else if (hasChanges()) {
-            TransactionState txState = read.txState();
+            TransactionState txState = read.txStateHolder.txState();
             final MutableIntSet labels = new IntHashSet(nodeCursor.labels());
             // Augment what was found in store with what we have in tx state
             return Labels.from(txState.augmentLabels(labels, txState.getNodeState(nodeCursor.entityReference())));
@@ -387,7 +387,10 @@ class DefaultNodeCursor extends TraceableCursorImpl<DefaultNodeCursor> implement
         storageNodeCursor.properties(
                 lazyInitAndGetSecurityPropertyCursor(), PropertySelection.selection(securityProperties.toArray()));
         Iterable<StorageProperty> txStateChangedProperties = applyAccessModeToTxState
-                ? read.txState().getNodeState(this.nodeReference()).addedAndChangedProperties()
+                ? read.txStateHolder
+                        .txState()
+                        .getNodeState(this.nodeReference())
+                        .addedAndChangedProperties()
                 : null;
 
         return new ReadSecurityPropertyProvider.LazyReadSecurityPropertyProvider(
@@ -426,7 +429,8 @@ class DefaultNodeCursor extends TraceableCursorImpl<DefaultNodeCursor> implement
         }
 
         while (storeCursor.next()) {
-            boolean skip = hasChanges && read.txState().nodeIsDeletedInThisBatch(storeCursor.entityReference());
+            boolean skip =
+                    hasChanges && read.txStateHolder.txState().nodeIsDeletedInThisBatch(storeCursor.entityReference());
             if (!skip && allowsTraverse()) {
                 if (tracer != null) {
                     tracer.onNode(nodeReference());
@@ -486,11 +490,12 @@ class DefaultNodeCursor extends TraceableCursorImpl<DefaultNodeCursor> implement
     @SuppressWarnings("AssignmentUsedAsCondition")
     private void computeHasChanges() {
         checkHasChanges = false;
-        if (hasChanges = read.hasTxStateWithChanges()) {
+        if (hasChanges = read.txStateHolder.hasTxStateWithChanges()) {
             if (this.isSingle) {
-                singleIsAddedInTx = read.txState().nodeIsAddedInThisBatch(single);
+                singleIsAddedInTx = read.txStateHolder.txState().nodeIsAddedInThisBatch(single);
             } else {
-                addedNodes = read.txState()
+                addedNodes = read.txStateHolder
+                        .txState()
                         .addedAndRemovedNodes()
                         .getAdded()
                         .freeze()

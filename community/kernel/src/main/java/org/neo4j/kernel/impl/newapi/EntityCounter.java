@@ -91,10 +91,10 @@ final class EntityCounter {
             CursorContext cursorContext,
             StoreCursors storageCursors) {
         long count = 0;
-        if (read.hasTxStateWithChanges()) {
+        if (read.txStateHolder.hasTxStateWithChanges()) {
             CountsDelta counts = new CountsDelta();
             try {
-                TransactionState txState = read.txState();
+                TransactionState txState = read.txStateHolder.txState();
                 try (var countingVisitor = new TransactionCountingStateVisitor(
                         EMPTY, storageReader, txState, counts, cursorContext, storageCursors)) {
                     txState.accept(countingVisitor);
@@ -151,7 +151,13 @@ final class EntityCounter {
                 && accessMode.allowsTraverseNode(endLabelId)) {
             return storageReader.countsForRelationship(startLabelId, typeId, endLabelId, cursorContext)
                     + countsForRelationshipInTxState(
-                            startLabelId, typeId, endLabelId, read, storageReader, storageCursors, cursorContext);
+                            startLabelId,
+                            typeId,
+                            endLabelId,
+                            read.txStateHolder,
+                            storageReader,
+                            storageCursors,
+                            cursorContext);
         }
         if (accessMode.disallowsTraverseRelType(typeId)
                 || accessMode.disallowsTraverseLabel(startLabelId)
@@ -159,7 +165,7 @@ final class EntityCounter {
             // Not allowed to traverse any relationship with the specified relationship type, start node label and end
             // node label, so count only ones in transaction state.
             return countsForRelationshipInTxState(
-                    startLabelId, typeId, endLabelId, read, storageReader, storageCursors, cursorContext);
+                    startLabelId, typeId, endLabelId, read.txStateHolder, storageReader, storageCursors, cursorContext);
         }
 
         return countRelationshipByScan(startLabelId, typeId, endLabelId, cursors, read, cursorContext, memoryTracker);

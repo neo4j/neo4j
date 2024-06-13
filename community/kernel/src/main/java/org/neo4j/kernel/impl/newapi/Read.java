@@ -62,14 +62,14 @@ import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.util.Preconditions;
 
-abstract class Read
-        implements TxStateHolder, org.neo4j.internal.kernel.api.Read, org.neo4j.internal.kernel.api.SchemaRead {
+abstract class Read implements org.neo4j.internal.kernel.api.Read, org.neo4j.internal.kernel.api.SchemaRead {
     protected final StorageReader storageReader;
     protected final DefaultPooledCursors cursors;
     private final TokenRead tokenRead;
     protected final StoreCursors storageCursors;
     protected final QueryContext queryContext;
     protected final Locks entityLocks;
+    protected final TxStateHolder txStateHolder;
 
     Read(
             StorageReader storageReader,
@@ -77,13 +77,15 @@ abstract class Read
             DefaultPooledCursors cursors,
             StoreCursors storageCursors,
             Locks entityLocks,
-            QueryContext queryContext) {
+            QueryContext queryContext,
+            TxStateHolder txStateHolder) {
         this.storageReader = storageReader;
         this.tokenRead = tokenRead;
         this.cursors = cursors;
         this.storageCursors = storageCursors;
         this.entityLocks = entityLocks;
         this.queryContext = queryContext;
+        this.txStateHolder = txStateHolder;
     }
 
     @Override
@@ -543,7 +545,7 @@ abstract class Read
             throw new IndexNotApplicableKernelException("This index does not support partitioned scan for this query: "
                     + descriptor.userDescription(tokenRead));
         }
-        if (hasTxStateWithChanges()) {
+        if (txStateHolder.hasTxStateWithChanges()) {
             throw new IllegalStateException(
                     "Transaction contains changes; PartitionScan is only valid in Read-Only transactions.");
         }
@@ -562,7 +564,7 @@ abstract class Read
             throw new IndexNotApplicableKernelException("This index does not support partitioned scan for this query: "
                     + descriptor.userDescription(tokenRead));
         }
-        if (hasTxStateWithChanges()) {
+        if (txStateHolder.hasTxStateWithChanges()) {
             throw new IllegalStateException(
                     "Transaction contains changes; PartitionScan is only valid in Read-Only transactions.");
         }
@@ -581,7 +583,7 @@ abstract class Read
             throw new IndexNotApplicableKernelException("This index does not support partitioned scan for this query: "
                     + descriptor.userDescription(tokenRead));
         }
-        if (hasTxStateWithChanges()) {
+        if (txStateHolder.hasTxStateWithChanges()) {
             throw new IllegalStateException(
                     "Transaction contains changes; PartitionScan is only valid in Read-Only transactions.");
         }

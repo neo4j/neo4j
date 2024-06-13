@@ -30,16 +30,25 @@ import static org.mockito.Mockito.when;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import org.neo4j.internal.kernel.api.EntityLocks;
+import org.neo4j.internal.kernel.api.QueryContext;
+import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.helpers.StubPropertyCursor;
+import org.neo4j.internal.kernel.api.security.AccessMode;
+import org.neo4j.internal.kernel.api.security.AccessMode.Static;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.PropertySchemaType;
 import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.kernel.api.txstate.TransactionState;
+import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.storageengine.api.StorageReader;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.values.storable.ValueTuple;
 
 public class IndexTxStateUpdaterTestBase {
@@ -93,13 +102,34 @@ public class IndexTxStateUpdaterTestBase {
                     return descriptors;
                 });
 
-        Read readOps = mock(Read.class);
-        when(readOps.txState()).thenReturn(txState);
-
         IndexingService indexingService = mock(IndexingService.class);
         IndexProxy indexProxy = mock(IndexProxy.class);
         when(indexingService.getIndexProxy(any(IndexDescriptor.class))).thenReturn(indexProxy);
 
+        Read readOps =
+                new AllStoreHolder(
+                        storageReader,
+                        mock(TokenRead.class),
+                        mock(SchemaState.class),
+                        indexingService,
+                        mock(IndexStatisticsStore.class),
+                        EmptyMemoryTracker.INSTANCE,
+                        mock(DefaultPooledCursors.class),
+                        mock(StoreCursors.class),
+                        mock(EntityLocks.class),
+                        false,
+                        mock(QueryContext.class),
+                        mock(TxStateHolder.class)) {
+
+                    @Override
+                    void performCheckBeforeOperation() {}
+
+                    @Override
+                    AccessMode getAccessMode() {
+                        return Static.FULL;
+                    }
+                };
+        when(readOps.txStateHolder.txState()).thenReturn(txState);
         indexTxUpdater = new IndexTxStateUpdater(storageReader, readOps, indexingService);
     }
 

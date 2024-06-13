@@ -104,8 +104,8 @@ class DefaultNodeCursorTest {
                 mock(AssertOpen.class));
         var txState = new TxState();
         setup.accept(txState);
-        when(read.hasTxStateWithChanges()).thenReturn(true);
-        when(read.txState()).thenReturn(txState);
+        when(ktx.hasTxStateWithChanges()).thenReturn(true);
+        when(ktx.txState()).thenReturn(txState);
         return read;
     }
 

@@ -55,7 +55,7 @@ import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.IndexUsageStats;
 import org.neo4j.kernel.api.index.TokenIndexReader;
 import org.neo4j.kernel.api.index.ValueIndexReader;
-import org.neo4j.kernel.api.txstate.TransactionState;
+import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.impl.api.IndexReaderCache;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.OverridableSecurityContext;
@@ -109,8 +109,9 @@ public abstract class AllStoreHolder extends Read {
             StoreCursors storageCursors,
             Locks entityLocks,
             boolean multiVersioned,
-            QueryContext queryContext) {
-        super(storageReader, tokenRead, cursors, storageCursors, entityLocks, queryContext);
+            QueryContext queryContext,
+            TxStateHolder txStateHolder) {
+        super(storageReader, tokenRead, cursors, storageCursors, entityLocks, queryContext, txStateHolder);
         this.schemaState = schemaState;
         this.valueIndexReaderCache = new IndexReaderCache<>(
                 index -> indexingService.getIndexProxy(index).newValueReader());
@@ -127,8 +128,8 @@ public abstract class AllStoreHolder extends Read {
     public boolean nodeExists(long reference) {
         performCheckBeforeOperation();
 
-        if (hasTxStateWithChanges()) {
-            TransactionState txState = txState();
+        if (txStateHolder.hasTxStateWithChanges()) {
+            var txState = txStateHolder.txState();
             if (txState.nodeIsDeletedInThisBatch(reference)) {
                 return false;
             } else if (txState.nodeIsAddedInThisBatch(reference)) {
@@ -153,19 +154,20 @@ public abstract class AllStoreHolder extends Read {
     @Override
     public boolean nodeDeletedInTransaction(long node) {
         performCheckBeforeOperation();
-        return hasTxStateWithChanges() && txState().nodeIsDeletedInThisBatch(node);
+        return txStateHolder.hasTxStateWithChanges() && txStateHolder.txState().nodeIsDeletedInThisBatch(node);
     }
 
     @Override
     public boolean relationshipDeletedInTransaction(long relationship) {
         performCheckBeforeOperation();
-        return hasTxStateWithChanges() && txState().relationshipIsDeletedInThisBatch(relationship);
+        return txStateHolder.hasTxStateWithChanges()
+                && txStateHolder.txState().relationshipIsDeletedInThisBatch(relationship);
     }
 
     @Override
     public Value nodePropertyChangeInBatchOrNull(long node, int propertyKeyId) {
         performCheckBeforeOperation();
-        if (hasTxStateWithChanges()) {
+        if (txStateHolder.hasTxStateWithChanges()) {
             if (applyAccessModeToTxState) {
                 try (DefaultNodeCursor nodeCursor =
                         cursors.allocateNodeCursor(queryContext.cursorContext(), memoryTracker)) {
@@ -175,12 +177,12 @@ public abstract class AllStoreHolder extends Read {
                             cursors.allocatePropertyCursor(queryContext.cursorContext(), memoryTracker)) {
                         nodeCursor.properties(propertyCursor, PropertySelection.selection(propertyKeyId));
                         return propertyCursor.allowed(propertyKeyId)
-                                ? txState().getNodeState(node).propertyValue(propertyKeyId)
+                                ? txStateHolder.txState().getNodeState(node).propertyValue(propertyKeyId)
                                 : null;
                     }
                 }
             } else {
-                return txState().getNodeState(node).propertyValue(propertyKeyId);
+                return txStateHolder.txState().getNodeState(node).propertyValue(propertyKeyId);
             }
         }
         return null;
@@ -189,8 +191,8 @@ public abstract class AllStoreHolder extends Read {
     @Override
     public Value relationshipPropertyChangeInBatchOrNull(long relationship, int propertyKeyId) {
         performCheckBeforeOperation();
-        if (hasTxStateWithChanges()) {
-            RelationshipState relationshipState = txState().getRelationshipState(relationship);
+        if (txStateHolder.hasTxStateWithChanges()) {
+            RelationshipState relationshipState = txStateHolder.txState().getRelationshipState(relationship);
             return !applyAccessModeToTxState
                             || (relationshipState.hasPropertyChanges()
                                     && getAccessMode()
@@ -258,8 +260,8 @@ public abstract class AllStoreHolder extends Read {
     public boolean relationshipExists(long reference) {
         performCheckBeforeOperation();
 
-        if (hasTxStateWithChanges()) {
-            TransactionState txState = txState();
+        if (txStateHolder.hasTxStateWithChanges()) {
+            var txState = txStateHolder.txState();
             if (txState.relationshipIsDeletedInThisBatch(reference)) {
                 return false;
             } else if (txState.relationshipIsAddedInThisBatch(reference)) {
@@ -365,8 +367,8 @@ public abstract class AllStoreHolder extends Read {
     }
 
     private boolean indexExists(IndexDescriptor index) {
-        if (hasTxStateWithChanges()) {
-            DiffSets<IndexDescriptor> changes = txState().indexChanges();
+        if (txStateHolder.hasTxStateWithChanges()) {
+            DiffSets<IndexDescriptor> changes = txStateHolder.txState().indexChanges();
             return changes.isAdded(index) || (storageReader.indexExists(index) && !changes.isRemoved(index));
         }
         return storageReader.indexExists(index);
@@ -399,8 +401,8 @@ public abstract class AllStoreHolder extends Read {
         entityLocks.acquireSharedSchemaLock(constraint);
         performCheckBeforeOperation();
 
-        if (hasTxStateWithChanges()) {
-            DiffSets<ConstraintDescriptor> changes = txState().constraintsChanges();
+        if (txStateHolder.hasTxStateWithChanges()) {
+            var changes = txStateHolder.txState().constraintsChanges();
             return changes.isAdded(constraint)
                     || (storageReader.constraintExists(constraint) && !changes.isRemoved(constraint));
         }
@@ -415,8 +417,8 @@ public abstract class AllStoreHolder extends Read {
 
     Iterator<IndexDescriptor> indexGetForSchema(StorageSchemaReader reader, SchemaDescriptor schema) {
         Iterator<IndexDescriptor> indexes = reader.indexGetForSchema(schema);
-        if (hasTxStateWithChanges()) {
-            DiffSets<IndexDescriptor> diffSets = txState().indexDiffSetsBySchema(schema);
+        if (txStateHolder.hasTxStateWithChanges()) {
+            var diffSets = txStateHolder.txState().indexDiffSetsBySchema(schema);
             indexes = diffSets.apply(indexes);
         }
 
@@ -431,8 +433,8 @@ public abstract class AllStoreHolder extends Read {
 
     IndexDescriptor indexGetForSchemaAndType(StorageSchemaReader reader, SchemaDescriptor schema, IndexType type) {
         var index = reader.indexGetForSchemaAndType(schema, type);
-        if (hasTxStateWithChanges()) {
-            var indexChanges = txState().indexChanges();
+        if (txStateHolder.hasTxStateWithChanges()) {
+            var indexChanges = txStateHolder.txState().indexChanges();
             if (index == null) {
                 // check if such index was added in this tx
                 var added = indexChanges
@@ -461,8 +463,8 @@ public abstract class AllStoreHolder extends Read {
         if (accessMode.allowsTraverseNode(labelId) || accessMode.hasApplicableTraverseAllowPropertyRules(labelId)) {
             Iterator<IndexDescriptor> iterator = reader.indexesGetForLabel(labelId);
 
-            if (hasTxStateWithChanges()) {
-                iterator = txState().indexDiffSetsByLabel(labelId).apply(iterator);
+            if (txStateHolder.hasTxStateWithChanges()) {
+                iterator = txStateHolder.txState().indexDiffSetsByLabel(labelId).apply(iterator);
             }
 
             return iterator;
@@ -479,9 +481,11 @@ public abstract class AllStoreHolder extends Read {
 
     Iterator<IndexDescriptor> indexesGetForRelationshipType(StorageSchemaReader reader, int relationshipType) {
         Iterator<IndexDescriptor> iterator = reader.indexesGetForRelationshipType(relationshipType);
-        if (hasTxStateWithChanges()) {
-            iterator =
-                    txState().indexDiffSetsByRelationshipType(relationshipType).apply(iterator);
+        if (txStateHolder.hasTxStateWithChanges()) {
+            iterator = txStateHolder
+                    .txState()
+                    .indexDiffSetsByRelationshipType(relationshipType)
+                    .apply(iterator);
         }
         return iterator;
     }
@@ -495,11 +499,14 @@ public abstract class AllStoreHolder extends Read {
         performCheckBeforeOperation();
 
         IndexDescriptor index = reader.indexGetForName(name);
-        if (hasTxStateWithChanges()) {
+        if (txStateHolder.hasTxStateWithChanges()) {
             Predicate<IndexDescriptor> namePredicate =
                     indexDescriptor -> indexDescriptor.getName().equals(name);
-            Iterator<IndexDescriptor> indexes =
-                    txState().indexChanges().filterAdded(namePredicate).apply(Iterators.iterator(index));
+            Iterator<IndexDescriptor> indexes = txStateHolder
+                    .txState()
+                    .indexChanges()
+                    .filterAdded(namePredicate)
+                    .apply(Iterators.iterator(index));
             index = singleOrNull(indexes);
         }
         return lockIndex(index);
@@ -514,11 +521,14 @@ public abstract class AllStoreHolder extends Read {
         performCheckBeforeOperation();
 
         ConstraintDescriptor constraint = reader.constraintGetForName(name);
-        if (hasTxStateWithChanges()) {
+        if (txStateHolder.hasTxStateWithChanges()) {
             Predicate<ConstraintDescriptor> namePredicate =
                     constraintDescriptor -> constraintDescriptor.getName().equals(name);
-            Iterator<ConstraintDescriptor> constraints =
-                    txState().constraintsChanges().filterAdded(namePredicate).apply(Iterators.iterator(constraint));
+            Iterator<ConstraintDescriptor> constraints = txStateHolder
+                    .txState()
+                    .constraintsChanges()
+                    .filterAdded(namePredicate)
+                    .apply(Iterators.iterator(constraint));
             constraint = singleOrNull(constraints);
         }
         return lockConstraint(constraint);
@@ -533,8 +543,8 @@ public abstract class AllStoreHolder extends Read {
 
     Iterator<IndexDescriptor> indexesGetAll(StorageSchemaReader reader) {
         Iterator<IndexDescriptor> iterator = reader.indexesGetAll();
-        if (hasTxStateWithChanges()) {
-            iterator = txState().indexChanges().apply(iterator);
+        if (txStateHolder.hasTxStateWithChanges()) {
+            iterator = txStateHolder.txState().indexChanges().apply(iterator);
         }
         return iterator;
     }
@@ -559,8 +569,8 @@ public abstract class AllStoreHolder extends Read {
     InternalIndexState indexGetStateLocked(IndexDescriptor index) throws IndexNotFoundKernelException {
         SchemaDescriptor schema = index.schema();
         // If index is in our state, then return populating
-        if (hasTxStateWithChanges()) {
-            if (checkIndexState(index, txState().indexDiffSetsBySchema(schema))) {
+        if (txStateHolder.hasTxStateWithChanges()) {
+            if (checkIndexState(index, txStateHolder.txState().indexDiffSetsBySchema(schema))) {
                 return InternalIndexState.POPULATING;
             }
         }
@@ -577,8 +587,8 @@ public abstract class AllStoreHolder extends Read {
     }
 
     PopulationProgress indexGetPopulationProgressLocked(IndexDescriptor index) throws IndexNotFoundKernelException {
-        if (hasTxStateWithChanges()) {
-            if (checkIndexState(index, txState().indexDiffSetsBySchema(index.schema()))) {
+        if (txStateHolder.hasTxStateWithChanges()) {
+            if (checkIndexState(index, txStateHolder.txState().indexDiffSetsBySchema(index.schema()))) {
                 return PopulationProgress.NONE;
             }
         }
@@ -673,8 +683,8 @@ public abstract class AllStoreHolder extends Read {
     private Iterator<ConstraintDescriptor> getConstraintsForSchema(SchemaDescriptor schema) {
         performCheckBeforeOperation();
         Iterator<ConstraintDescriptor> constraints = storageReader.constraintsGetForSchema(schema);
-        if (hasTxStateWithChanges()) {
-            return txState().constraintsChangesForSchema(schema).apply(constraints);
+        if (txStateHolder.hasTxStateWithChanges()) {
+            return txStateHolder.txState().constraintsChangesForSchema(schema).apply(constraints);
         }
         return constraints;
     }
@@ -693,8 +703,8 @@ public abstract class AllStoreHolder extends Read {
 
     Iterator<ConstraintDescriptor> constraintsGetForLabel(StorageSchemaReader reader, int labelId) {
         Iterator<ConstraintDescriptor> constraints = reader.constraintsGetForLabel(labelId);
-        if (hasTxStateWithChanges()) {
-            return txState().constraintsChangesForLabel(labelId).apply(constraints);
+        if (txStateHolder.hasTxStateWithChanges()) {
+            return txStateHolder.txState().constraintsChangesForLabel(labelId).apply(constraints);
         }
         return constraints;
     }
@@ -714,8 +724,8 @@ public abstract class AllStoreHolder extends Read {
 
     Iterator<ConstraintDescriptor> constraintsGetAll(StorageSchemaReader reader) {
         Iterator<ConstraintDescriptor> constraints = reader.constraintsGetAll();
-        if (hasTxStateWithChanges()) {
-            constraints = txState().constraintsChanges().apply(constraints);
+        if (txStateHolder.hasTxStateWithChanges()) {
+            constraints = txStateHolder.txState().constraintsChanges().apply(constraints);
         }
         return constraints;
     }
@@ -734,8 +744,11 @@ public abstract class AllStoreHolder extends Read {
 
     Iterator<ConstraintDescriptor> constraintsGetForRelationshipType(StorageSchemaReader reader, int typeId) {
         Iterator<ConstraintDescriptor> constraints = reader.constraintsGetForRelationshipType(typeId);
-        if (hasTxStateWithChanges()) {
-            return txState().constraintsChangesForRelationshipType(typeId).apply(constraints);
+        if (txStateHolder.hasTxStateWithChanges()) {
+            return txStateHolder
+                    .txState()
+                    .constraintsChangesForRelationshipType(typeId)
+                    .apply(constraints);
         }
         return constraints;
     }
@@ -759,7 +772,7 @@ public abstract class AllStoreHolder extends Read {
 
     @Override
     public boolean transactionStateHasChanges() {
-        return hasTxStateWithChanges();
+        return txStateHolder.hasTxStateWithChanges();
     }
 
     static void assertValidIndex(IndexDescriptor index) throws IndexNotFoundKernelException {
@@ -803,20 +816,11 @@ public abstract class AllStoreHolder extends Read {
                     ktx.storeCursors(),
                     entityLocks,
                     multiVersioned,
-                    queryContext);
+                    queryContext,
+                    ktx);
 
             this.ktx = ktx;
             this.assertOpen = assertOpen;
-        }
-
-        @Override
-        public TransactionState txState() {
-            return ktx.txState();
-        }
-
-        @Override
-        public boolean hasTxStateWithChanges() {
-            return ktx.hasTxStateWithChanges();
         }
 
         @Override
@@ -847,7 +851,8 @@ public abstract class AllStoreHolder extends Read {
                 OverridableSecurityContext overridableSecurityContext,
                 ExecutionContextProcedureKernelTransaction kernelTransaction,
                 boolean multiVersioned,
-                QueryContext queryContext) {
+                QueryContext queryContext,
+                TxStateHolder txStateHolder) {
             super(
                     storageReader,
                     executionContext.tokenRead(),
@@ -859,7 +864,8 @@ public abstract class AllStoreHolder extends Read {
                     storageCursors,
                     entityLocks,
                     multiVersioned,
-                    queryContext);
+                    queryContext,
+                    txStateHolder);
             this.overridableSecurityContext = overridableSecurityContext;
             this.kernelTransaction = kernelTransaction;
         }
@@ -881,17 +887,6 @@ public abstract class AllStoreHolder extends Read {
             // This is currently a problematic operation for parallel execution, because it takes exclusive locks.
             // In transactions deadlocks is a problem for another day :) .
             throw new UnsupportedOperationException("Locking unique index seek not allowed during parallel execution");
-        }
-
-        @Override
-        public TransactionState txState() {
-            throw new UnsupportedOperationException(
-                    "Accessing transaction state is not allowed during parallel execution");
-        }
-
-        @Override
-        public boolean hasTxStateWithChanges() {
-            return false;
         }
 
         @Override

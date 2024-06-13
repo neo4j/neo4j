@@ -52,7 +52,6 @@ import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.IndexUsageStats;
 import org.neo4j.kernel.api.index.ValueIndexReader;
-import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.storageengine.api.PropertySelection;
@@ -391,7 +390,8 @@ class DefaultRelationshipTraversalCursorTest {
                     mock(DefaultPooledCursors.class),
                     ktx.storeCursors(),
                     mock(Locks.class),
-                    mock(QueryContext.class));
+                    mock(QueryContext.class),
+                    ktx);
             this.ktx = ktx;
         }
 
@@ -657,16 +657,6 @@ class DefaultRelationshipTraversalCursorTest {
         @Override
         public Iterator<ConstraintDescriptor> constraintsGetAllNonLocking() {
             return null;
-        }
-
-        @Override
-        public TransactionState txState() {
-            return ktx.txState();
-        }
-
-        @Override
-        public boolean hasTxStateWithChanges() {
-            return ktx.hasTxStateWithChanges();
         }
 
         @Override

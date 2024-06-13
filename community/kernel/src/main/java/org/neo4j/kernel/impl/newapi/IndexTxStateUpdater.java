@@ -88,7 +88,7 @@ public class IndexTxStateUpdater {
         if (!indexes.isEmpty()) {
             MutableIntObjectMap<Value> materializedProperties = IntObjectMaps.mutable.empty();
             for (IndexDescriptor index : indexes) {
-                MemoryTracker memoryTracker = read.txState().memoryTracker();
+                MemoryTracker memoryTracker = read.txStateHolder.txState().memoryTracker();
                 int[] indexPropertyIds = index.schema().getPropertyIds();
                 Value[] values = getValueTuple(
                         node,
@@ -103,9 +103,12 @@ public class IndexTxStateUpdater {
                 switch (changeType) {
                     case ADDED_LABEL -> {
                         indexingService.validateBeforeCommit(index, values, node.nodeReference());
-                        read.txState().indexDoUpdateEntry(index.schema(), node.nodeReference(), null, valueTuple);
+                        read.txStateHolder
+                                .txState()
+                                .indexDoUpdateEntry(index.schema(), node.nodeReference(), null, valueTuple);
                     }
-                    case REMOVED_LABEL -> read.txState()
+                    case REMOVED_LABEL -> read.txStateHolder
+                            .txState()
                             .indexDoUpdateEntry(index.schema(), node.nodeReference(), valueTuple, null);
                 }
             }
@@ -206,7 +209,8 @@ public class IndexTxStateUpdater {
     }
 
     private boolean noSchemaChangedInTx() {
-        return !(read.txState().hasChanges() && !read.txState().hasDataChanges());
+        var txState = read.txStateHolder.txState();
+        return !(txState.hasChanges() && !txState.hasDataChanges());
     }
 
     // PROPERTY CHANGES
@@ -233,7 +237,7 @@ public class IndexTxStateUpdater {
         if (!indexes.isEmpty()) {
             MutableIntObjectMap<Value> materializedProperties = IntObjectMaps.mutable.empty();
             SchemaMatcher.onMatchingSchema(indexes.iterator(), ANY_PROPERTY_KEY, propertyKeyIds, index -> {
-                MemoryTracker memoryTracker = read.txState().memoryTracker();
+                MemoryTracker memoryTracker = read.txStateHolder.txState().memoryTracker();
                 SchemaDescriptor schema = index.schema();
                 Value[] values = getValueTuple(
                         entity,
@@ -245,7 +249,7 @@ public class IndexTxStateUpdater {
                         memoryTracker);
                 ValueTuple valueTuple = ValueTuple.of(values);
                 memoryTracker.allocateHeap(valueTuple.getShallowSize());
-                read.txState().indexDoUpdateEntry(schema, entity.reference(), valueTuple, null);
+                read.txStateHolder.txState().indexDoUpdateEntry(schema, entity.reference(), valueTuple, null);
             });
         }
     }
@@ -263,7 +267,7 @@ public class IndexTxStateUpdater {
         if (!indexes.isEmpty()) {
             MutableIntObjectMap<Value> materializedProperties = IntObjectMaps.mutable.empty();
             SchemaMatcher.onMatchingSchema(indexes.iterator(), propertyKeyId, existingPropertyKeyIds, index -> {
-                MemoryTracker memoryTracker = read.txState().memoryTracker();
+                MemoryTracker memoryTracker = read.txStateHolder.txState().memoryTracker();
                 SchemaDescriptor schema = index.schema();
                 Value[] values = getValueTuple(
                         entity,
@@ -276,7 +280,7 @@ public class IndexTxStateUpdater {
                 indexingService.validateBeforeCommit(index, values, entity.reference());
                 ValueTuple valueTuple = ValueTuple.of(values);
                 memoryTracker.allocateHeap(valueTuple.getShallowSize());
-                read.txState().indexDoUpdateEntry(schema, entity.reference(), null, valueTuple);
+                read.txStateHolder.txState().indexDoUpdateEntry(schema, entity.reference(), null, valueTuple);
             });
         }
     }
@@ -294,7 +298,7 @@ public class IndexTxStateUpdater {
         if (!indexes.isEmpty()) {
             MutableIntObjectMap<Value> materializedProperties = IntObjectMaps.mutable.empty();
             SchemaMatcher.onMatchingSchema(indexes.iterator(), propertyKeyId, existingPropertyKeyIds, index -> {
-                MemoryTracker memoryTracker = read.txState().memoryTracker();
+                MemoryTracker memoryTracker = read.txStateHolder.txState().memoryTracker();
                 SchemaDescriptor schema = index.schema();
                 Value[] values = getValueTuple(
                         entity,
@@ -306,7 +310,7 @@ public class IndexTxStateUpdater {
                         memoryTracker);
                 ValueTuple valueTuple = ValueTuple.of(values);
                 memoryTracker.allocateHeap(valueTuple.getShallowSize());
-                read.txState().indexDoUpdateEntry(schema, entity.reference(), valueTuple, null);
+                read.txStateHolder.txState().indexDoUpdateEntry(schema, entity.reference(), valueTuple, null);
             });
         }
     }
@@ -325,7 +329,7 @@ public class IndexTxStateUpdater {
         if (!indexes.isEmpty()) {
             MutableIntObjectMap<Value> materializedProperties = IntObjectMaps.mutable.empty();
             SchemaMatcher.onMatchingSchema(indexes.iterator(), propertyKeyId, existingPropertyKeyIds, index -> {
-                MemoryTracker memoryTracker = read.txState().memoryTracker();
+                MemoryTracker memoryTracker = read.txStateHolder.txState().memoryTracker();
                 SchemaDescriptor schema = index.schema();
                 int[] propertyIds = schema.getPropertyIds();
                 Value[] valuesAfter = getValueTuple(
@@ -348,7 +352,9 @@ public class IndexTxStateUpdater {
                 ValueTuple valuesTupleAfter = ValueTuple.of(valuesAfter);
                 memoryTracker.allocateHeap(
                         valuesTupleBefore.getShallowSize() * 2); // They are copies and same shallow size
-                read.txState().indexDoUpdateEntry(schema, entity.reference(), valuesTupleBefore, valuesTupleAfter);
+                read.txStateHolder
+                        .txState()
+                        .indexDoUpdateEntry(schema, entity.reference(), valuesTupleBefore, valuesTupleAfter);
             });
         }
     }

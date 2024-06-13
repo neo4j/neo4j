@@ -158,7 +158,7 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Defau
         if (hasChanges) {
             while (addedRelationships.hasNext()) {
                 long next = addedRelationships.next();
-                read.txState().relationshipVisit(next, relationshipTxStateDataVisitor);
+                read.txStateHolder.txState().relationshipVisit(next, relationshipTxStateDataVisitor);
 
                 if (!applyAccessModeToTxState || allowed()) {
                     if (neighbourNodeReference != NO_ID && otherNodeReference() != neighbourNodeReference) {
@@ -175,7 +175,8 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Defau
         }
 
         while (storeCursor.next()) {
-            boolean skip = hasChanges && read.txState().relationshipIsDeletedInThisBatch(storeCursor.entityReference());
+            boolean skip = hasChanges
+                    && read.txStateHolder.txState().relationshipIsDeletedInThisBatch(storeCursor.entityReference());
             if (!skip && allowed()) {
                 return true;
             }
@@ -233,7 +234,8 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Defau
     @Override
     protected void collectAddedTxStateSnapshot() {
         if (selection != null) {
-            addedRelationships = selection.addedRelationships(read.txState().getNodeState(originNodeReference));
+            addedRelationships =
+                    selection.addedRelationships(read.txStateHolder.txState().getNodeState(originNodeReference));
         }
     }
 

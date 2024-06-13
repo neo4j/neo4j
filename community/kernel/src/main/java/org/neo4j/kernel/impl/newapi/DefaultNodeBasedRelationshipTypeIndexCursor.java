@@ -68,13 +68,18 @@ public class DefaultNodeBasedRelationshipTypeIndexCursor
     public void initialize(IndexProgressor progressor, int type, IndexOrder order) {
         LongIterator addedRelationships = null;
         LongSet removedNodes = null;
-        if (read.hasTxStateWithChanges()) {
-            addedRelationships = read.txState()
+        if (read.txStateHolder.hasTxStateWithChanges()) {
+            addedRelationships = read.txStateHolder
+                    .txState()
                     .relationshipsWithTypeChanged(type)
                     .getAdded()
                     .freeze()
                     .longIterator();
-            removedNodes = read.txState().addedAndRemovedNodes().getRemoved().freeze();
+            removedNodes = read.txStateHolder
+                    .txState()
+                    .addedAndRemovedNodes()
+                    .getRemoved()
+                    .freeze();
         }
         initialize(progressor, type, addedRelationships, removedNodes);
     }

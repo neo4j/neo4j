@@ -148,8 +148,8 @@ public class DefaultPropertyCursor extends TraceableCursorImpl<DefaultPropertyCu
     }
 
     private void initializeNodeTransactionState(long nodeReference, Read read) {
-        if (read.hasTxStateWithChanges()) {
-            this.propertiesState = read.txState().getNodeState(nodeReference);
+        if (read.txStateHolder.hasTxStateWithChanges()) {
+            this.propertiesState = read.txStateHolder.txState().getNodeState(nodeReference);
             this.txStateChangedProperties =
                     this.propertiesState.addedAndChangedProperties().iterator();
         } else {
@@ -184,8 +184,8 @@ public class DefaultPropertyCursor extends TraceableCursorImpl<DefaultPropertyCu
 
     private void initializeRelationshipTransactionState(long relationshipReference, Read read) {
         // Transaction state
-        if (read.hasTxStateWithChanges()) {
-            this.propertiesState = read.txState().getRelationshipState(relationshipReference);
+        if (read.txStateHolder.hasTxStateWithChanges()) {
+            this.propertiesState = read.txStateHolder.txState().getRelationshipState(relationshipReference);
             this.txStateChangedProperties =
                     this.propertiesState.addedAndChangedProperties().iterator();
         } else {

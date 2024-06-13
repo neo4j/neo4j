@@ -45,7 +45,7 @@ import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.kernel.api.index.ValueIndexReader;
-import org.neo4j.kernel.api.txstate.TransactionState;
+import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
@@ -140,17 +140,8 @@ class LockingNodeUniqueIndexSeekTest {
                 mock(StoreCursors.class),
                 new EntityLocks(mock(StorageLocks.class), () -> LockTracer.NONE, locks, () -> {}),
                 false,
-                QueryContext.NULL_CONTEXT) {
-
-            @Override
-            public TransactionState txState() {
-                return null;
-            }
-
-            @Override
-            public boolean hasTxStateWithChanges() {
-                return false;
-            }
+                QueryContext.NULL_CONTEXT,
+                mock(TxStateHolder.class)) {
 
             @Override
             void performCheckBeforeOperation() {}

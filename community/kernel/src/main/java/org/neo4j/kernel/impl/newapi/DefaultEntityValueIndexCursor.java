@@ -110,7 +110,7 @@ abstract class DefaultEntityValueIndexCursor<CURSOR> extends IndexCursor<IndexPr
 
         shortcutSecurity = setupSecurity(descriptor);
 
-        if (!indexIncludesTransactionState && read.hasTxStateWithChanges() && query.length > 0) {
+        if (!indexIncludesTransactionState && read.txStateHolder.hasTxStateWithChanges() && query.length > 0) {
             // Extract out the equality queries
             List<Value> exactQueryValues = new ArrayList<>(query.length);
             int i = 0;
@@ -372,7 +372,7 @@ abstract class DefaultEntityValueIndexCursor<CURSOR> extends IndexCursor<IndexPr
 
     private void prefixQuery(
             IndexDescriptor descriptor, Value[] equalityPrefix, PropertyIndexQuery.StringPrefixPredicate predicate) {
-        TransactionState txState = read.txState();
+        TransactionState txState = read.txStateHolder.txState();
 
         if (needsValues) {
             AddedWithValuesAndRemoved changes = indexUpdatesWithValuesForRangeSeekByPrefix(
@@ -389,7 +389,7 @@ abstract class DefaultEntityValueIndexCursor<CURSOR> extends IndexCursor<IndexPr
 
     private void rangeQuery(
             IndexDescriptor descriptor, Value[] equalityPrefix, PropertyIndexQuery.RangePredicate<?> predicate) {
-        TransactionState txState = read.txState();
+        TransactionState txState = read.txStateHolder.txState();
 
         if (needsValues) {
             AddedWithValuesAndRemoved changes =
@@ -406,7 +406,7 @@ abstract class DefaultEntityValueIndexCursor<CURSOR> extends IndexCursor<IndexPr
 
     private void boundingBoxQuery(
             IndexDescriptor descriptor, Value[] equalityPrefix, PropertyIndexQuery.BoundingBoxPredicate predicate) {
-        TransactionState txState = read.txState();
+        TransactionState txState = read.txStateHolder.txState();
 
         if (needsValues) {
             AddedWithValuesAndRemoved changes =
@@ -421,7 +421,7 @@ abstract class DefaultEntityValueIndexCursor<CURSOR> extends IndexCursor<IndexPr
     }
 
     private void scanQuery(IndexDescriptor descriptor) {
-        TransactionState txState = read.txState();
+        TransactionState txState = read.txStateHolder.txState();
 
         if (needsValues) {
             AddedWithValuesAndRemoved changes = indexUpdatesWithValuesForScan(txState, descriptor, indexOrder);
@@ -435,7 +435,7 @@ abstract class DefaultEntityValueIndexCursor<CURSOR> extends IndexCursor<IndexPr
     }
 
     private void suffixOrContainsQuery(IndexDescriptor descriptor, PropertyIndexQuery query) {
-        TransactionState txState = read.txState();
+        TransactionState txState = read.txStateHolder.txState();
 
         if (needsValues) {
             AddedWithValuesAndRemoved changes =
@@ -450,7 +450,7 @@ abstract class DefaultEntityValueIndexCursor<CURSOR> extends IndexCursor<IndexPr
     }
 
     private void seekQuery(IndexDescriptor descriptor, Value[] values) {
-        TransactionState txState = read.txState();
+        TransactionState txState = read.txStateHolder.txState();
 
         if (needsValues) {
             AddedWithValuesAndRemoved changes =
