@@ -1640,10 +1640,8 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       .emptyResult()
       .deleteNode("x")
       .eager(ListSet(
-        ReadDeleteConflict("x").withConflict(Conflict(Id(2), Id(5))),
         ReadDeleteConflict("b").withConflict(Conflict(Id(2), Id(7))),
         ReadDeleteConflict("a").withConflict(Conflict(Id(2), Id(10))),
-        ReadDeleteConflict("x").withConflict(Conflict(Id(2), Id(12))),
         ReadDeleteConflict("start").withConflict(Conflict(Id(2), Id(7))),
         ReadDeleteConflict("end").withConflict(Conflict(Id(2), Id(6))),
         ReadDeleteConflict("start").withConflict(Conflict(Id(2), Id(12))),
@@ -1657,7 +1655,7 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       .|.optional("x")
       .|.filter("end:B")
       .|.trail(`(start)((a)-[r]->(b))*(end)`)
-      .|.|.filterExpressionOrString("b:B", isRepeatTrailUnique("r"))
+      .|.|.filterExpressionOrString(isRepeatTrailUnique("r"), "b:B")
       .|.|.expandAll("(a)-[r]->(b)")
       .|.|.filter("a:A")
       .|.|.argument("a", "x")

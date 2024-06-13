@@ -7770,7 +7770,6 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         .detachDeleteNode("n")
         // Important that this is ID 4 (Optional)
         .eager(ListSet(
-          ReadDeleteConflict("n").withConflict(Conflict(Id(2), Id(4))),
           ReadDeleteConflict("n").withConflict(Conflict(Id(2), Id(5)))
         ))
         .apply()

@@ -285,7 +285,6 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
         ListSet(ReadDeleteConflict("n"))
       case EagerAnalysisImplementation.LP =>
         ListSet(
-          ReadDeleteConflict("x").withConflict(Conflict(Id(3), Id(7))),
           ReadDeleteConflict("n").withConflict(Conflict(Id(3), Id(7))),
           ReadDeleteConflict("x").withConflict(Conflict(Id(3), Id(9)))
         )
@@ -326,7 +325,6 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
         ListSet(ReadDeleteConflict("n"))
       case EagerAnalysisImplementation.LP =>
         ListSet(
-          ReadDeleteConflict("x").withConflict(Conflict(Id(3), Id(7))),
           ReadDeleteConflict("n").withConflict(Conflict(Id(3), Id(7))),
           ReadDeleteConflict("x").withConflict(Conflict(Id(3), Id(9)))
         )
@@ -368,7 +366,6 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
       case EagerAnalysisImplementation.LP =>
         ListSet(
           ReadDeleteConflict("n").withConflict(Conflict(Id(3), Id(6))),
-          ReadDeleteConflict("x").withConflict(Conflict(Id(3), Id(8))),
           ReadDeleteConflict("n").withConflict(Conflict(Id(3), Id(8))),
           ReadDeleteConflict("x").withConflict(Conflict(Id(3), Id(10)))
         )
@@ -412,7 +409,6 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
       case EagerAnalysisImplementation.LP =>
         ListSet(
           ReadDeleteConflict("n").withConflict(Conflict(Id(3), Id(6))),
-          ReadDeleteConflict("x").withConflict(Conflict(Id(3), Id(8))),
           ReadDeleteConflict("n").withConflict(Conflict(Id(3), Id(8))),
           ReadDeleteConflict("x").withConflict(Conflict(Id(3), Id(10)))
         )
@@ -455,7 +451,6 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
         ListSet(ReadDeleteConflict("n"))
       case EagerAnalysisImplementation.LP =>
         ListSet(
-          ReadDeleteConflict("x").withConflict(Conflict(Id(3), Id(7))),
           ReadDeleteConflict("n").withConflict(Conflict(Id(3), Id(7))),
           ReadDeleteConflict("x").withConflict(Conflict(Id(3), Id(9)))
         )
@@ -497,7 +492,6 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
         ListSet(ReadDeleteConflict("n"))
       case EagerAnalysisImplementation.LP =>
         ListSet(
-          ReadDeleteConflict("x").withConflict(Conflict(Id(3), Id(7))),
           ReadDeleteConflict("n").withConflict(Conflict(Id(3), Id(7))),
           ReadDeleteConflict("x").withConflict(Conflict(Id(3), Id(9)))
         )
@@ -541,7 +535,6 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
         ListSet(ReadDeleteConflict("n"))
       case EagerAnalysisImplementation.LP =>
         ListSet(
-          ReadDeleteConflict("x").withConflict(Conflict(Id(3), Id(7))),
           ReadDeleteConflict("n").withConflict(Conflict(Id(3), Id(7))),
           ReadDeleteConflict("x").withConflict(Conflict(Id(3), Id(9)))
         )
@@ -586,7 +579,6 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
         ListSet(ReadDeleteConflict("n"))
       case EagerAnalysisImplementation.LP =>
         ListSet(
-          ReadDeleteConflict("x").withConflict(Conflict(Id(3), Id(7))),
           ReadDeleteConflict("n").withConflict(Conflict(Id(3), Id(7))),
           ReadDeleteConflict("x").withConflict(Conflict(Id(3), Id(9)))
         )
@@ -991,8 +983,7 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
       case EagerAnalysisImplementation.LP =>
         ListSet(
           ReadDeleteConflict("end").withConflict(Conflict(Id(6), Id(1))),
-          ReadDeleteConflict("start").withConflict(Conflict(Id(6), Id(4))),
-          ReadDeleteConflict("a").withConflict(Conflict(Id(6), Id(4)))
+          ReadDeleteConflict("start").withConflict(Conflict(Id(6), Id(4)))
         )
     }
 
