@@ -74,7 +74,6 @@ import org.neo4j.internal.kernel.api.EntityCursor;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
-import org.neo4j.internal.kernel.api.Procedures;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.Read;
@@ -1555,10 +1554,6 @@ public class Operations implements Write, SchemaWrite, Upgrade {
 
     public CursorFactory cursors() {
         return cursors;
-    }
-
-    public Procedures procedures() {
-        return allStoreHolder;
     }
 
     public void release() {

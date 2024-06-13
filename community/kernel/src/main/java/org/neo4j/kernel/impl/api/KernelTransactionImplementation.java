@@ -136,6 +136,7 @@ import org.neo4j.kernel.impl.monitoring.TransactionMonitor;
 import org.neo4j.kernel.impl.newapi.AllStoreHolder;
 import org.neo4j.kernel.impl.newapi.DefaultPooledCursors;
 import org.neo4j.kernel.impl.newapi.IndexTxStateUpdater;
+import org.neo4j.kernel.impl.newapi.KernelProcedures;
 import org.neo4j.kernel.impl.newapi.KernelToken;
 import org.neo4j.kernel.impl.newapi.KernelTokenRead;
 import org.neo4j.kernel.impl.newapi.Operations;
@@ -226,6 +227,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final LogProvider logProvider;
     private final CursorContextFactory contextFactory;
     private final EntityLocks entityLocks;
+    private final KernelProcedures.ForTransactionScope procedures;
     // For concurrent access by monitoring, jobs, etc CURSOR_CONTEXT_HANDLE should be used
     @SuppressWarnings("FieldMayBeFinal")
     private CursorContext cursorContext;
@@ -391,6 +393,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 this::dataRead, cursors, this, this::cursorContext, memoryTracker, indexingService.getMonitor());
         this.entityLocks = new EntityLocks(
                 storageLocks, currentStatement::lockTracer, lockClient, this::assertOpenWithParallelAccessCheck);
+        this.procedures =
+                new KernelProcedures.ForTransactionScope(this, dependencies, this::assertOpenWithParallelAccessCheck);
         this.allStoreHolder = new AllStoreHolder.ForTransactionScope(
                 storageReader,
                 kernelToken,
@@ -400,7 +404,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 schemaState,
                 indexingService,
                 indexStatisticsStore,
-                dependencies,
                 memoryTracker,
                 multiVersioned,
                 queryContext,
@@ -436,9 +439,9 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 indexingService,
                 config,
                 memoryTracker);
-        traceProvider = getTraceProvider(config);
-        initializationTrace = NONE;
-        transactionHeapBytesLimit = config.get(memory_transaction_max_size);
+        this.traceProvider = getTraceProvider(config);
+        this.initializationTrace = NONE;
+        this.transactionHeapBytesLimit = config.get(memory_transaction_max_size);
         this.collectionsFactory = collectionsFactorySupplier.create();
         this.kernelTransactions = kernelTransactions;
         this.databaseSerialGuard = databaseSerialGuard;
@@ -507,7 +510,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.transactionMemoryPool.setLimit(transactionHeapBytesLimit);
         this.innerTransactionHandler = new InnerTransactionHandlerImpl(kernelTransactions);
         this.procedureView = procedureView;
-        this.allStoreHolder.initialize(procedureView);
+        this.procedures.initialize(procedureView);
         this.closing = false;
         this.closed = false;
         this.needsHighIdTracking = false;
@@ -1280,7 +1283,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
     @Override
     public Procedures procedures() {
-        return operations.procedures();
+        return procedures;
     }
 
     @Override
@@ -1367,7 +1370,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 error = Exceptions.chain(error, e);
             }
             try {
-                allStoreHolder.close();
+                procedures.reset();
             } catch (RuntimeException | Error e) {
                 error = Exceptions.chain(error, e);
             }

@@ -63,10 +63,7 @@ import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.util.Preconditions;
 
 abstract class Read
-        implements TxStateHolder,
-                org.neo4j.internal.kernel.api.Read,
-                org.neo4j.internal.kernel.api.SchemaRead,
-                org.neo4j.internal.kernel.api.Procedures {
+        implements TxStateHolder, org.neo4j.internal.kernel.api.Read, org.neo4j.internal.kernel.api.SchemaRead {
     protected final StorageReader storageReader;
     protected final DefaultPooledCursors cursors;
     private final TokenRead tokenRead;

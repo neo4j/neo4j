@@ -27,10 +27,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
-import java.util.stream.Stream;
-import org.neo4j.collection.Dependencies;
-import org.neo4j.collection.RawIterator;
 import org.neo4j.collection.diffset.DiffSets;
 import org.neo4j.common.EntityType;
 import org.neo4j.exceptions.KernelException;
@@ -46,17 +42,8 @@ import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor;
 import org.neo4j.internal.kernel.api.SchemaReadCore;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.TokenReadSession;
-import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
-import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
-import org.neo4j.internal.kernel.api.procs.ProcedureHandle;
-import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
-import org.neo4j.internal.kernel.api.procs.QualifiedName;
-import org.neo4j.internal.kernel.api.procs.UserAggregationReducer;
-import org.neo4j.internal.kernel.api.procs.UserFunctionHandle;
-import org.neo4j.internal.kernel.api.procs.UserFunctionSignature;
 import org.neo4j.internal.kernel.api.security.AccessMode;
-import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexType;
@@ -64,14 +51,11 @@ import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.kernel.api.AssertOpen;
-import org.neo4j.kernel.api.CypherScope;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.IndexUsageStats;
 import org.neo4j.kernel.api.index.TokenIndexReader;
 import org.neo4j.kernel.api.index.ValueIndexReader;
-import org.neo4j.kernel.api.procedure.ProcedureView;
 import org.neo4j.kernel.api.txstate.TransactionState;
-import org.neo4j.kernel.impl.api.ClockContext;
 import org.neo4j.kernel.impl.api.IndexReaderCache;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.OverridableSecurityContext;
@@ -85,7 +69,6 @@ import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.StorageSchemaReader;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.api.txstate.RelationshipState;
-import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.Value;
 
 /**
@@ -791,101 +774,10 @@ public abstract class AllStoreHolder extends Read {
         tokenIndexReaderCache.close();
     }
 
-    abstract ProcedureCaller getProcedureCaller();
-
-    @Override
-    public RawIterator<AnyValue[], ProcedureException> procedureCallRead(
-            int id, AnyValue[] arguments, ProcedureCallContext context) throws ProcedureException {
-        return getProcedureCaller().callProcedure(id, arguments, AccessMode.Static.READ, context);
-    }
-
-    @Override
-    public RawIterator<AnyValue[], ProcedureException> procedureCallWrite(
-            int id, AnyValue[] arguments, ProcedureCallContext context) throws ProcedureException {
-        return getProcedureCaller().callProcedure(id, arguments, AccessMode.Static.TOKEN_WRITE, context);
-    }
-
-    @Override
-    public RawIterator<AnyValue[], ProcedureException> procedureCallSchema(
-            int id, AnyValue[] arguments, ProcedureCallContext context) throws ProcedureException {
-        return getProcedureCaller().callProcedure(id, arguments, AccessMode.Static.SCHEMA, context);
-    }
-
-    @Override
-    public RawIterator<AnyValue[], ProcedureException> procedureCallDbms(
-            int id, AnyValue[] arguments, ProcedureCallContext context) throws ProcedureException {
-        return getProcedureCaller().callProcedure(id, arguments, AccessMode.Static.ACCESS, context);
-    }
-
-    @Override
-    public AnyValue functionCall(int id, AnyValue[] arguments, ProcedureCallContext context) throws ProcedureException {
-        return getProcedureCaller().callFunction(id, arguments, context);
-    }
-
-    @Override
-    public AnyValue builtInFunctionCall(int id, AnyValue[] arguments, ProcedureCallContext context)
-            throws ProcedureException {
-        return getProcedureCaller().callBuiltInFunction(id, arguments, context);
-    }
-
-    @Override
-    public UserAggregationReducer aggregationFunction(int id, ProcedureCallContext context) throws ProcedureException {
-        return getProcedureCaller().createAggregationFunction(id, context);
-    }
-
-    @Override
-    public UserAggregationReducer builtInAggregationFunction(int id, ProcedureCallContext context)
-            throws ProcedureException {
-        return getProcedureCaller().createBuiltInAggregationFunction(id, context);
-    }
-
-    @Override
-    public UserFunctionHandle functionGet(QualifiedName name, CypherScope scope) {
-        performCheckBeforeOperation();
-        return getProcedureCaller().procedureView.function(name, scope);
-    }
-
-    @Override
-    public Stream<UserFunctionSignature> functionGetAll(CypherScope scope) {
-        performCheckBeforeOperation();
-        return getProcedureCaller().procedureView.getAllNonAggregatingFunctions(scope);
-    }
-
-    @Override
-    public ProcedureHandle procedureGet(QualifiedName name, CypherScope scope) throws ProcedureException {
-        performCheckBeforeOperation();
-        return getProcedureCaller().procedureView.procedure(name, scope);
-    }
-
-    @Override
-    public Stream<ProcedureSignature> proceduresGetAll(CypherScope scope) {
-        performCheckBeforeOperation();
-        return getProcedureCaller().procedureView.getAllProcedures(scope);
-    }
-
-    @Override
-    public UserFunctionHandle aggregationFunctionGet(QualifiedName name, CypherScope scope) {
-        performCheckBeforeOperation();
-        return getProcedureCaller().procedureView.aggregationFunction(name, scope);
-    }
-
-    @Override
-    public Stream<UserFunctionSignature> aggregationFunctionGetAll(CypherScope scope) {
-        performCheckBeforeOperation();
-        return getProcedureCaller().procedureView.getAllAggregatingFunctions(scope);
-    }
-
-    @Override
-    public long signatureVersion() {
-        return getProcedureCaller().procedureView.signatureVersion();
-    }
-
     public static class ForTransactionScope extends AllStoreHolder {
 
         private final KernelTransactionImplementation ktx;
-        private final Dependencies databaseDependencies;
         private final AssertOpen assertOpen;
-        private ProcedureCaller.ForTransactionScope procedureCaller;
 
         public ForTransactionScope(
                 StorageReader storageReader,
@@ -896,7 +788,6 @@ public abstract class AllStoreHolder extends Read {
                 SchemaState schemaState,
                 IndexingService indexingService,
                 IndexStatisticsStore indexStatisticsStore,
-                Dependencies databaseDependencies,
                 MemoryTracker memoryTracker,
                 boolean multiVersioned,
                 QueryContext queryContext,
@@ -915,12 +806,7 @@ public abstract class AllStoreHolder extends Read {
                     queryContext);
 
             this.ktx = ktx;
-            this.databaseDependencies = databaseDependencies;
             this.assertOpen = assertOpen;
-        }
-
-        public void initialize(ProcedureView procedureView) {
-            this.procedureCaller = new ProcedureCaller.ForTransactionScope(ktx, databaseDependencies, procedureView);
         }
 
         @Override
@@ -942,22 +828,12 @@ public abstract class AllStoreHolder extends Read {
         AccessMode getAccessMode() {
             return ktx.securityContext().mode();
         }
-
-        public void close() {
-            procedureCaller = null;
-        }
-
-        @Override
-        ProcedureCaller getProcedureCaller() {
-            return procedureCaller;
-        }
     }
 
     public static class ForThreadExecutionContextScope extends AllStoreHolder {
 
         private final OverridableSecurityContext overridableSecurityContext;
         private final ExecutionContextProcedureKernelTransaction kernelTransaction;
-        private final ProcedureCaller.ForThreadExecutionContextScope procedureCaller;
 
         public ForThreadExecutionContextScope(
                 ThreadExecutionContext executionContext,
@@ -965,15 +841,11 @@ public abstract class AllStoreHolder extends Read {
                 SchemaState schemaState,
                 IndexingService indexingService,
                 IndexStatisticsStore indexStatisticsStore,
-                Dependencies databaseDependencies,
                 DefaultPooledCursors cursors,
                 StoreCursors storageCursors,
                 Locks entityLocks,
                 OverridableSecurityContext overridableSecurityContext,
                 ExecutionContextProcedureKernelTransaction kernelTransaction,
-                SecurityAuthorizationHandler securityAuthorizationHandler,
-                Supplier<ClockContext> clockContextSupplier,
-                ProcedureView procedureView,
                 boolean multiVersioned,
                 QueryContext queryContext) {
             super(
@@ -990,14 +862,6 @@ public abstract class AllStoreHolder extends Read {
                     queryContext);
             this.overridableSecurityContext = overridableSecurityContext;
             this.kernelTransaction = kernelTransaction;
-            this.procedureCaller = new ProcedureCaller.ForThreadExecutionContextScope(
-                    executionContext,
-                    databaseDependencies,
-                    overridableSecurityContext,
-                    kernelTransaction,
-                    securityAuthorizationHandler,
-                    clockContextSupplier,
-                    procedureView);
         }
 
         @Override
@@ -1020,20 +884,6 @@ public abstract class AllStoreHolder extends Read {
         }
 
         @Override
-        public RawIterator<AnyValue[], ProcedureException> procedureCallWrite(
-                int id, AnyValue[] arguments, ProcedureCallContext context) {
-            throw new UnsupportedOperationException(
-                    "Invoking procedure with WRITE access mode is not allowed during parallel execution.");
-        }
-
-        @Override
-        public RawIterator<AnyValue[], ProcedureException> procedureCallSchema(
-                int id, AnyValue[] arguments, ProcedureCallContext context) {
-            throw new UnsupportedOperationException(
-                    "Invoking procedure with SCHEMA access mode is not allowed during parallel execution.");
-        }
-
-        @Override
         public TransactionState txState() {
             throw new UnsupportedOperationException(
                     "Accessing transaction state is not allowed during parallel execution");
@@ -1052,11 +902,6 @@ public abstract class AllStoreHolder extends Read {
         @Override
         AccessMode getAccessMode() {
             return overridableSecurityContext.currentSecurityContext().mode();
-        }
-
-        @Override
-        ProcedureCaller getProcedureCaller() {
-            return procedureCaller;
         }
     }
 }

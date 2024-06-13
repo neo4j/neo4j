@@ -33,9 +33,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.function.Function;
 import java.util.stream.LongStream;
-import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
-import org.neo4j.collection.RawIterator;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.InternalIndexState;
@@ -44,22 +42,13 @@ import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.SchemaReadCore;
 import org.neo4j.internal.kernel.api.TokenReadSession;
-import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
-import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
-import org.neo4j.internal.kernel.api.procs.ProcedureHandle;
-import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
-import org.neo4j.internal.kernel.api.procs.QualifiedName;
-import org.neo4j.internal.kernel.api.procs.UserAggregationReducer;
-import org.neo4j.internal.kernel.api.procs.UserFunctionHandle;
-import org.neo4j.internal.kernel.api.procs.UserFunctionSignature;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptor;
-import org.neo4j.kernel.api.CypherScope;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.IndexUsageStats;
 import org.neo4j.kernel.api.index.ValueIndexReader;
@@ -73,7 +62,6 @@ import org.neo4j.storageengine.api.RelationshipSelection;
 import org.neo4j.storageengine.api.StoragePropertyCursor;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.StorageRelationshipTraversalCursor;
-import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.Value;
 
 class DefaultRelationshipTraversalCursorTest {
@@ -420,85 +408,6 @@ class DefaultRelationshipTraversalCursorTest {
         @Override
         AccessMode getAccessMode() {
             return ktx.securityContext().mode();
-        }
-
-        @Override
-        public UserFunctionHandle functionGet(QualifiedName name, CypherScope scope) {
-            return null;
-        }
-
-        @Override
-        public Stream<UserFunctionSignature> functionGetAll(CypherScope scope) {
-            return null;
-        }
-
-        @Override
-        public UserFunctionHandle aggregationFunctionGet(QualifiedName name, CypherScope scope) {
-            return null;
-        }
-
-        @Override
-        public Stream<UserFunctionSignature> aggregationFunctionGetAll(CypherScope scope) {
-            return null;
-        }
-
-        @Override
-        public ProcedureHandle procedureGet(QualifiedName name, CypherScope scope) {
-            return null;
-        }
-
-        @Override
-        public Stream<ProcedureSignature> proceduresGetAll(CypherScope scope) {
-            return null;
-        }
-
-        @Override
-        public RawIterator<AnyValue[], ProcedureException> procedureCallRead(
-                int id, AnyValue[] arguments, ProcedureCallContext context) {
-            return null;
-        }
-
-        @Override
-        public RawIterator<AnyValue[], ProcedureException> procedureCallWrite(
-                int id, AnyValue[] arguments, ProcedureCallContext context) {
-            return null;
-        }
-
-        @Override
-        public RawIterator<AnyValue[], ProcedureException> procedureCallSchema(
-                int id, AnyValue[] arguments, ProcedureCallContext context) {
-            return null;
-        }
-
-        @Override
-        public RawIterator<AnyValue[], ProcedureException> procedureCallDbms(
-                int id, AnyValue[] arguments, ProcedureCallContext context) {
-            return null;
-        }
-
-        @Override
-        public AnyValue functionCall(int id, AnyValue[] arguments, ProcedureCallContext context) {
-            return null;
-        }
-
-        @Override
-        public AnyValue builtInFunctionCall(int id, AnyValue[] arguments, ProcedureCallContext context) {
-            return null;
-        }
-
-        @Override
-        public UserAggregationReducer aggregationFunction(int id, ProcedureCallContext context) {
-            return null;
-        }
-
-        @Override
-        public UserAggregationReducer builtInAggregationFunction(int id, ProcedureCallContext context) {
-            return null;
-        }
-
-        @Override
-        public long signatureVersion() {
-            return 0;
         }
 
         @Override

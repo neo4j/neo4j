@@ -159,11 +159,6 @@ class LockingNodeUniqueIndexSeekTest {
             AccessMode getAccessMode() {
                 return Static.FULL;
             }
-
-            @Override
-            ProcedureCaller getProcedureCaller() {
-                return null;
-            }
         };
     }
 }

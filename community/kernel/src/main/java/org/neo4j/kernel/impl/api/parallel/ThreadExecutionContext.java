@@ -50,6 +50,8 @@ import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.locking.LockManager.Client;
 import org.neo4j.kernel.impl.newapi.AllStoreHolder;
 import org.neo4j.kernel.impl.newapi.DefaultPooledCursors;
+import org.neo4j.kernel.impl.newapi.KernelProcedures;
+import org.neo4j.kernel.impl.newapi.KernelProcedures.ForThreadExecutionContextScope;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.StorageLocks;
@@ -65,6 +67,7 @@ public class ThreadExecutionContext implements ExecutionContext, AutoCloseable {
     private final ExecutionContextCursorTracer cursorTracer;
     private final CursorContext ktxContext;
     private final AllStoreHolder.ForThreadExecutionContextScope allStoreHolder;
+    private final KernelProcedures.ForThreadExecutionContextScope procedures;
     private final TokenRead tokenRead;
     private final StoreCursors storageCursors;
     private final MemoryTracker contextTracker;
@@ -116,21 +119,25 @@ public class ThreadExecutionContext implements ExecutionContext, AutoCloseable {
         this.clockContextSupplier = clockContextSupplier;
         this.queryContext = new ThreadExecutionQueryContext(this::dataRead, cursors, context, contextTracker, monitor);
         this.entityLocks = new EntityLocks(storageLocks, singleton(lockTracer), lockClient, this.ktx);
+        this.procedures = new ForThreadExecutionContextScope(
+                this,
+                databaseDependencies,
+                overridableSecurityContext,
+                this.ktx,
+                securityAuthorizationHandler,
+                clockContextSupplier,
+                procedureView);
         this.allStoreHolder = new AllStoreHolder.ForThreadExecutionContextScope(
                 this,
                 storageReader,
                 schemaState,
                 indexingService,
                 indexStatisticsStore,
-                databaseDependencies,
                 cursors,
                 storageCursors,
                 entityLocks,
                 overridableSecurityContext,
                 this.ktx,
-                securityAuthorizationHandler,
-                clockContextSupplier,
-                procedureView,
                 multiVersioned,
                 queryContext);
     }
@@ -175,7 +182,7 @@ public class ThreadExecutionContext implements ExecutionContext, AutoCloseable {
 
     @Override
     public Procedures procedures() {
-        return allStoreHolder;
+        return procedures;
     }
 
     @Override

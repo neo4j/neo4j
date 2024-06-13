@@ -29,7 +29,6 @@ import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.collection.Dependencies.dependenciesOf;
 import static org.neo4j.function.Suppliers.singleton;
 import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.EMBEDDED_CONNECTION;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
@@ -76,7 +75,6 @@ import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.procedure.ProcedureView;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.index.IndexingProvidersService;
@@ -183,12 +181,10 @@ abstract class OperationsTest {
                 mock(SchemaState.class),
                 indexingService,
                 mock(IndexStatisticsStore.class),
-                dependenciesOf(facade),
                 INSTANCE,
                 false,
                 mock(QueryContext.class),
                 mock(AssertOpen.class));
-        allStoreHolder.initialize(mock(ProcedureView.class));
         constraintIndexCreator = mock(ConstraintIndexCreator.class);
         creationContext = mock(CommandCreationContext.class);
 
