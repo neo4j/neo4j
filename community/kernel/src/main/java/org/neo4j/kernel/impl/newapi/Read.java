@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.newapi;
 import static java.lang.String.format;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.kernel.impl.locking.ResourceIds.indexEntryResourceId;
-import static org.neo4j.lock.ResourceType.INDEX_ENTRY;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -32,6 +31,7 @@ import org.neo4j.internal.kernel.api.Cursor;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.InternalIndexState;
+import org.neo4j.internal.kernel.api.Locks;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
@@ -50,21 +50,14 @@ import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelE
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.SchemaDescriptor;
-import org.neo4j.internal.schema.SchemaDescriptorSupplier;
-import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
 import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
-import org.neo4j.kernel.impl.locking.LockManager;
-import org.neo4j.lock.LockTracer;
-import org.neo4j.lock.ResourceType;
 import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.storageengine.api.Reference;
 import org.neo4j.storageengine.api.RelationshipSelection;
-import org.neo4j.storageengine.api.StorageLocks;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.util.Preconditions;
@@ -73,30 +66,26 @@ abstract class Read
         implements TxStateHolder,
                 org.neo4j.internal.kernel.api.Read,
                 org.neo4j.internal.kernel.api.SchemaRead,
-                org.neo4j.internal.kernel.api.Procedures,
-                org.neo4j.internal.kernel.api.Locks {
+                org.neo4j.internal.kernel.api.Procedures {
     protected final StorageReader storageReader;
     protected final DefaultPooledCursors cursors;
     private final TokenRead tokenRead;
-    private final StorageLocks storageLocks;
     protected final StoreCursors storageCursors;
-    private final LockTracer lockTracer;
     protected final QueryContext queryContext;
+    protected final Locks entityLocks;
 
     Read(
             StorageReader storageReader,
             TokenRead tokenRead,
             DefaultPooledCursors cursors,
             StoreCursors storageCursors,
-            StorageLocks storageLocks,
-            LockTracer lockTracer,
+            Locks entityLocks,
             QueryContext queryContext) {
         this.storageReader = storageReader;
         this.tokenRead = tokenRead;
         this.cursors = cursors;
         this.storageCursors = storageCursors;
-        this.storageLocks = storageLocks;
-        this.lockTracer = lockTracer;
+        this.entityLocks = entityLocks;
         this.queryContext = queryContext;
     }
 
@@ -182,7 +171,6 @@ abstract class Read
         assertIndexOnline(index);
         assertPredicatesMatchSchema(index, predicates);
 
-        LockManager.Client locks = getLockClient();
         int[] entityTokenIds = index.schema().getEntityTokenIds();
         if (entityTokenIds.length != 1) {
             throw new IndexNotApplicableKernelException("Multi-token index " + index + " does not support uniqueness.");
@@ -191,19 +179,19 @@ abstract class Read
 
         // First try to find node under a shared lock
         // if not found upgrade to exclusive and try again
-        locks.acquireShared(lockTracer, INDEX_ENTRY, indexEntryId);
+        entityLocks.acquireSharedIndexEntryLock(indexEntryId);
         try (IndexReaders readers = new IndexReaders(index, this)) {
             nodeIndexSeekWithFreshIndexReader((DefaultNodeValueIndexCursor) cursor, readers.createReader(), predicates);
             if (!cursor.next()) {
-                locks.releaseShared(INDEX_ENTRY, indexEntryId);
-                locks.acquireExclusive(lockTracer, INDEX_ENTRY, indexEntryId);
+                entityLocks.releaseSharedIndexEntryLock(indexEntryId);
+                entityLocks.acquireExclusiveIndexEntryLock(indexEntryId);
                 nodeIndexSeekWithFreshIndexReader(
                         (DefaultNodeValueIndexCursor) cursor, readers.createReader(), predicates);
                 if (cursor.next()) {
                     // we found it under the exclusive lock
                     // downgrade to a shared lock
-                    locks.acquireShared(lockTracer, INDEX_ENTRY, indexEntryId);
-                    locks.releaseExclusive(INDEX_ENTRY, indexEntryId);
+                    entityLocks.acquireSharedIndexEntryLock(indexEntryId);
+                    entityLocks.releaseExclusiveIndexEntryLock(indexEntryId);
                     return cursor.nodeReference();
                 } else {
                     return StatementConstants.NO_SUCH_NODE;
@@ -221,7 +209,6 @@ abstract class Read
         assertIndexOnline(index);
         assertPredicatesMatchSchema(index, predicates);
 
-        LockManager.Client locks = getLockClient();
         int[] entityTokenIds = index.schema().getEntityTokenIds();
         if (entityTokenIds.length != 1) {
             throw new IndexNotApplicableKernelException("Multi-token index " + index + " does not support uniqueness.");
@@ -230,19 +217,19 @@ abstract class Read
 
         // First try to find relationship under a shared lock
         // if not found upgrade to exclusive and try again
-        locks.acquireShared(lockTracer, INDEX_ENTRY, indexEntryId);
+        entityLocks.acquireSharedIndexEntryLock(indexEntryId);
         try (IndexReaders readers = new IndexReaders(index, this)) {
             DefaultRelationshipValueIndexCursor indexCursor = (DefaultRelationshipValueIndexCursor) cursor;
             relationshipIndexSeekWithFreshIndexReader(indexCursor, readers.createReader(), predicates);
             if (!cursor.next()) {
-                locks.releaseShared(INDEX_ENTRY, indexEntryId);
-                locks.acquireExclusive(lockTracer, INDEX_ENTRY, indexEntryId);
+                entityLocks.releaseSharedIndexEntryLock(indexEntryId);
+                entityLocks.acquireExclusiveIndexEntryLock(indexEntryId);
                 relationshipIndexSeekWithFreshIndexReader(indexCursor, readers.createReader(), predicates);
                 if (cursor.next()) {
                     // we found it under the exclusive lock
                     // downgrade to a shared lock
-                    locks.acquireShared(lockTracer, INDEX_ENTRY, indexEntryId);
-                    locks.releaseExclusive(INDEX_ENTRY, indexEntryId);
+                    entityLocks.acquireSharedIndexEntryLock(indexEntryId);
+                    entityLocks.releaseExclusiveIndexEntryLock(indexEntryId);
                     return cursor.relationshipReference();
                 } else {
                     return StatementConstants.NO_SUCH_RELATIONSHIP;
@@ -628,103 +615,6 @@ abstract class Read
 
     public abstract ValueIndexReader newValueIndexReader(IndexDescriptor index) throws IndexNotFoundKernelException;
 
-    @Override
-    public void acquireExclusiveNodeLock(long... ids) {
-        performCheckBeforeOperation();
-        storageLocks.acquireExclusiveNodeLock(lockTracer, ids);
-    }
-
-    @Override
-    public void acquireExclusiveRelationshipLock(long... ids) {
-        performCheckBeforeOperation();
-        storageLocks.acquireExclusiveRelationshipLock(lockTracer, ids);
-    }
-
-    @Override
-    public void releaseExclusiveNodeLock(long... ids) {
-        performCheckBeforeOperation();
-        storageLocks.releaseExclusiveNodeLock(ids);
-    }
-
-    @Override
-    public void releaseExclusiveRelationshipLock(long... ids) {
-        performCheckBeforeOperation();
-        storageLocks.releaseExclusiveRelationshipLock(ids);
-    }
-
-    @Override
-    public void acquireSharedNodeLock(long... ids) {
-        performCheckBeforeOperation();
-        storageLocks.acquireSharedNodeLock(lockTracer, ids);
-    }
-
-    @Override
-    public void acquireSharedRelationshipLock(long... ids) {
-        performCheckBeforeOperation();
-        storageLocks.acquireSharedRelationshipLock(lockTracer, ids);
-    }
-
-    @Override
-    public void acquireSharedRelationshipTypeLock(long... ids) {
-        performCheckBeforeOperation();
-        acquireSharedLock(ResourceType.RELATIONSHIP_TYPE, ids);
-    }
-
-    @Override
-    public void acquireSharedLabelLock(long... ids) {
-        performCheckBeforeOperation();
-        acquireSharedLock(ResourceType.LABEL, ids);
-    }
-
-    @Override
-    public void releaseSharedNodeLock(long... ids) {
-        performCheckBeforeOperation();
-        storageLocks.releaseSharedNodeLock(ids);
-    }
-
-    @Override
-    public void releaseSharedRelationshipLock(long... ids) {
-        performCheckBeforeOperation();
-        storageLocks.releaseSharedRelationshipLock(ids);
-    }
-
-    @Override
-    public void releaseSharedLabelLock(long... ids) {
-        performCheckBeforeOperation();
-        releaseSharedLock(ResourceType.LABEL, ids);
-    }
-
-    @Override
-    public void releaseSharedRelationshipTypeLock(long... ids) {
-        performCheckBeforeOperation();
-        releaseSharedLock(ResourceType.RELATIONSHIP_TYPE, ids);
-    }
-
-    <T extends SchemaDescriptorSupplier> T acquireSharedSchemaLock(T schemaLike) {
-        SchemaDescriptor schema = schemaLike.schema();
-        long[] lockingKeys = schema.lockingKeys();
-        getLockClient().acquireShared(lockTracer, schema.keyType(), lockingKeys);
-        return schemaLike;
-    }
-
-    <T extends SchemaDescriptorSupplier> void releaseSharedSchemaLock(T schemaLike) {
-        SchemaDescriptor schema = schemaLike.schema();
-        long[] lockingKeys = schema.lockingKeys();
-        getLockClient().releaseShared(schema.keyType(), lockingKeys);
-    }
-
-    void acquireSharedLock(ResourceType resource, long resourceId) {
-        getLockClient().acquireShared(lockTracer, resource, resourceId);
-    }
-
-    private void acquireSharedLock(ResourceType type, long... ids) {
-        getLockClient().acquireShared(lockTracer, type, ids);
-    }
-
-    private void releaseSharedLock(ResourceType types, long... ids) {
-        getLockClient().releaseShared(types, ids);
-    }
-
     private void assertIndexOnline(IndexDescriptor index)
             throws IndexNotFoundKernelException, IndexBrokenKernelException {
         if (indexGetState(index) == InternalIndexState.ONLINE) {
@@ -751,21 +641,7 @@ abstract class Read
         }
     }
 
-    @Override
-    public void acquireSharedLookupLock(EntityType entityType) {
-        acquireSharedSchemaLock(() -> SchemaDescriptors.forAnyEntityTokens(entityType));
-        performCheckBeforeOperation();
-    }
-
-    @Override
-    public void releaseSharedLookupLock(EntityType entityType) {
-        releaseSharedSchemaLock(() -> SchemaDescriptors.forAnyEntityTokens(entityType));
-        performCheckBeforeOperation();
-    }
-
     abstract void performCheckBeforeOperation();
 
     abstract AccessMode getAccessMode();
-
-    abstract LockManager.Client getLockClient();
 }

@@ -37,6 +37,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -77,14 +78,17 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.identity.ServerId;
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.TransactionTerminatedException;
+import org.neo4j.internal.kernel.api.Locks;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
+import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
@@ -100,11 +104,13 @@ import org.neo4j.kernel.api.database.enrichment.TxEnrichmentVisitor;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.WriteOnReadOnlyAccessDbException;
 import org.neo4j.kernel.api.procedure.ProcedureView;
+import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.database.DatabaseIdFactory;
 import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.api.transaction.trace.TransactionInitializationTrace;
+import org.neo4j.kernel.impl.locking.LockManager;
 import org.neo4j.kernel.impl.monitoring.TransactionMonitor;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.memory.MemoryLimitExceededException;
@@ -113,6 +119,7 @@ import org.neo4j.resources.CpuClock;
 import org.neo4j.storageengine.api.CommandBatch;
 import org.neo4j.storageengine.api.CommandCreationContext;
 import org.neo4j.storageengine.api.StorageCommand;
+import org.neo4j.storageengine.api.StorageLocks;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.api.enrichment.EnrichmentMode;
@@ -1060,6 +1067,66 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase {
                 });
             });
             tx.rollback();
+        }
+    }
+
+    public static Stream<Arguments> locksTracingParameter() {
+        return Stream.of(
+                lockTracerParams(l -> l.acquireExclusiveNodeLock(13), (sl, lc, lt) -> verify(sl)
+                        .acquireExclusiveNodeLock(same(lt), anyLong())),
+                lockTracerParams(l -> l.acquireExclusiveRelationshipLock(13), (sl, lc, lt) -> verify(sl)
+                        .acquireExclusiveRelationshipLock(same(lt), anyLong())),
+                lockTracerParams(l -> l.acquireSharedNodeLock(13), (sl, lc, lt) -> verify(sl)
+                        .acquireSharedNodeLock(same(lt), anyLong())),
+                lockTracerParams(l -> l.acquireSharedRelationshipLock(13), (sl, lc, lt) -> verify(sl)
+                        .acquireSharedRelationshipLock(same(lt), anyLong())),
+                lockTracerParams(l -> l.acquireSharedLookupLock(EntityType.NODE), (sl, lc, lt) -> verify(lc)
+                        .acquireShared(same(lt), any(), anyLong())),
+                lockTracerParams(
+                        l -> l.acquireSharedSchemaLock(() -> SchemaDescriptors.forLabel(13, 13)),
+                        (sl, lc, lt) -> verify(lc).acquireShared(same(lt), any(), anyLong())),
+                lockTracerParams(l -> l.acquireSharedLabelLock(13), (sl, lc, lt) -> verify(lc)
+                        .acquireShared(same(lt), any(), anyLong())),
+                lockTracerParams(l -> l.acquireSharedRelationshipTypeLock(13), (sl, lc, lt) -> verify(lc)
+                        .acquireShared(same(lt), any(), anyLong())),
+                lockTracerParams(l -> l.acquireSharedIndexEntryLock(13), (sl, lc, lt) -> verify(lc)
+                        .acquireShared(same(lt), any(), anyLong())),
+                lockTracerParams(l -> l.acquireExclusiveIndexEntryLock(13), (sl, lc, lt) -> verify(lc)
+                        .acquireExclusive(same(lt), any(), anyLong())));
+    }
+
+    @FunctionalInterface
+    private interface TriConsumer<P1, P2, P3> {
+        void accept(P1 p1, P2 p2, P3 p3);
+    }
+
+    private static Arguments lockTracerParams(
+            Consumer<Locks> when, TriConsumer<StorageLocks, LockManager.Client, LockTracer> then) {
+        return Arguments.of(when, then);
+    }
+
+    @ParameterizedTest
+    @MethodSource("locksTracingParameter")
+    void transactionLocksShouldUseQueryLockTracer(
+            Consumer<Locks> when, TriConsumer<StorageLocks, LockManager.Client, LockTracer> then)
+            throws TransactionFailureException {
+        var storageLocks = mock(StorageLocks.class);
+        when(storageEngine.createStorageLocks(any())).thenReturn(storageLocks);
+        try (var tx = newTransaction(AUTH_DISABLED)) {
+            var noQueryLockTracer = tx.lockTracer();
+            var executingQuery = mock(ExecutingQuery.class);
+            var lockTracer = mock(LockTracer.class);
+            when(executingQuery.lockTracer()).thenReturn(lockTracer);
+            try (var kernelStatement = tx.acquireStatement()) {
+                kernelStatement.startQueryExecution(executingQuery);
+
+                // verify that we got non-system tracer
+                assertThat(lockTracer).isNotSameAs(noQueryLockTracer);
+                assertThat(tx.lockTracer()).isSameAs(lockTracer);
+
+                when.accept(tx.locks());
+                then.accept(storageLocks, locksClient, lockTracer);
+            }
         }
     }
 

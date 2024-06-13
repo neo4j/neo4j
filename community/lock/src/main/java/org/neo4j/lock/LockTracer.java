@@ -44,5 +44,10 @@ public interface LockTracer {
         public LockTracer combine(LockTracer tracer) {
             return tracer;
         }
+
+        @Override
+        public String toString() {
+            return "LockTracer.NONE";
+        }
     };
 }

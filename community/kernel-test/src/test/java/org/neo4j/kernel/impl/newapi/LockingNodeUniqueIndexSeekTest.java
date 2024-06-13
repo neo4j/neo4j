@@ -32,6 +32,7 @@ import static org.neo4j.lock.ResourceType.INDEX_ENTRY;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
+import org.neo4j.internal.kernel.api.EntityLocks;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.QueryContext;
@@ -49,7 +50,6 @@ import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.locking.LockManager;
-import org.neo4j.kernel.impl.locking.LockManager.Client;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.storageengine.api.StorageLocks;
@@ -138,8 +138,7 @@ class LockingNodeUniqueIndexSeekTest {
                 EmptyMemoryTracker.INSTANCE,
                 mock(DefaultPooledCursors.class),
                 mock(StoreCursors.class),
-                mock(StorageLocks.class),
-                LockTracer.NONE,
+                new EntityLocks(mock(StorageLocks.class), () -> LockTracer.NONE, locks, () -> {}),
                 false,
                 QueryContext.NULL_CONTEXT) {
 
@@ -159,11 +158,6 @@ class LockingNodeUniqueIndexSeekTest {
             @Override
             AccessMode getAccessMode() {
                 return Static.FULL;
-            }
-
-            @Override
-            Client getLockClient() {
-                return locks;
             }
 
             @Override

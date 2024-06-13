@@ -68,6 +68,7 @@ import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
+import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.ExecutionContext;
@@ -652,6 +653,36 @@ class QueryExecutionLocksIT {
         public void releaseSharedLookupLock(EntityType entityType) {
             recordLookupIndex(false, false, entityType);
             delegate.releaseSharedLookupLock(entityType);
+        }
+
+        @Override
+        public void releaseExclusiveIndexEntryLock(long... indexEntries) {
+            delegate.releaseExclusiveIndexEntryLock(indexEntries);
+        }
+
+        @Override
+        public void acquireExclusiveIndexEntryLock(long... indexEntries) {
+            delegate.acquireExclusiveIndexEntryLock(indexEntries);
+        }
+
+        @Override
+        public void releaseSharedIndexEntryLock(long... indexEntries) {
+            delegate.releaseSharedIndexEntryLock(indexEntries);
+        }
+
+        @Override
+        public void acquireSharedIndexEntryLock(long... indexEntries) {
+            delegate.acquireSharedIndexEntryLock(indexEntries);
+        }
+
+        @Override
+        public void acquireSharedSchemaLock(SchemaDescriptorSupplier schemaLike) {
+            delegate.acquireSharedSchemaLock(schemaLike);
+        }
+
+        @Override
+        public void releaseSharedSchemaLock(SchemaDescriptorSupplier schemaLike) {
+            delegate.releaseSharedSchemaLock(schemaLike);
         }
     }
 

@@ -62,7 +62,9 @@ import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.internal.kernel.api.CursorFactory;
+import org.neo4j.internal.kernel.api.EntityLocks;
 import org.neo4j.internal.kernel.api.ExecutionStatistics;
+import org.neo4j.internal.kernel.api.Locks;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.Procedures;
 import org.neo4j.internal.kernel.api.PropertyCursor;
@@ -223,6 +225,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final TransactionMemoryPool transactionMemoryPool;
     private final LogProvider logProvider;
     private final CursorContextFactory contextFactory;
+    private final EntityLocks entityLocks;
     // For concurrent access by monitoring, jobs, etc CURSOR_CONTEXT_HANDLE should be used
     @SuppressWarnings("FieldMayBeFinal")
     private CursorContext cursorContext;
@@ -386,11 +389,13 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         var kernelToken = new KernelToken(storageReader, commandCreationContext, this, tokenHolders);
         this.queryContext = new TransactionQueryContext(
                 this::dataRead, cursors, this, this::cursorContext, memoryTracker, indexingService.getMonitor());
+        this.entityLocks = new EntityLocks(
+                storageLocks, currentStatement::lockTracer, lockClient, this::assertOpenWithParallelAccessCheck);
         this.allStoreHolder = new AllStoreHolder.ForTransactionScope(
                 storageReader,
                 kernelToken,
                 this,
-                storageLocks,
+                entityLocks,
                 cursors,
                 schemaState,
                 indexingService,
@@ -398,7 +403,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 dependencies,
                 memoryTracker,
                 multiVersioned,
-                queryContext);
+                queryContext,
+                this::assertOpenWithParallelAccessCheck);
         this.executionContextFactory = createExecutionContextFactory(
                 contextFactory,
                 storageEngine,
@@ -444,6 +450,13 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.transactionEventListeners = new TransactionEventListeners(transactionEventListeners, this, storageReader);
         this.txStateWriter = createChunkWriter(multiVersioned);
         registerConfigChangeListeners(config);
+    }
+
+    private void assertOpenWithParallelAccessCheck() {
+        if (ParallelAccessCheck.shouldPerformCheck()) {
+            ParallelAccessCheck.checkNotCypherWorkerThread();
+        }
+        assertOpen();
     }
 
     /**
@@ -1251,8 +1264,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     }
 
     @Override
-    public org.neo4j.internal.kernel.api.Locks locks() {
-        return operations.locks();
+    public Locks locks() {
+        return entityLocks;
     }
 
     public LockManager.Client lockClient() {

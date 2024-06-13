@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.parallel;
 
+import static org.neo4j.function.Suppliers.singleton;
 import static org.neo4j.io.IOUtils.closeAllUnchecked;
 
 import java.lang.invoke.VarHandle;
@@ -26,6 +27,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
 import org.neo4j.collection.Dependencies;
+import org.neo4j.internal.kernel.api.EntityLocks;
 import org.neo4j.internal.kernel.api.IndexMonitor;
 import org.neo4j.internal.kernel.api.Locks;
 import org.neo4j.internal.kernel.api.Procedures;
@@ -72,6 +74,7 @@ public class ThreadExecutionContext implements ExecutionContext, AutoCloseable {
     private final ExecutionContextProcedureKernelTransaction ktx;
     private final Supplier<ClockContext> clockContextSupplier;
     private final QueryContext queryContext;
+    private final EntityLocks entityLocks;
 
     public ThreadExecutionContext(
             DefaultPooledCursors cursors,
@@ -112,6 +115,7 @@ public class ThreadExecutionContext implements ExecutionContext, AutoCloseable {
         this.ktx = new ExecutionContextProcedureKernelTransaction(ktx, this);
         this.clockContextSupplier = clockContextSupplier;
         this.queryContext = new ThreadExecutionQueryContext(this::dataRead, cursors, context, contextTracker, monitor);
+        this.entityLocks = new EntityLocks(storageLocks, singleton(lockTracer), lockClient, this.ktx);
         this.allStoreHolder = new AllStoreHolder.ForThreadExecutionContextScope(
                 this,
                 storageReader,
@@ -121,9 +125,7 @@ public class ThreadExecutionContext implements ExecutionContext, AutoCloseable {
                 databaseDependencies,
                 cursors,
                 storageCursors,
-                storageLocks,
-                lockClient,
-                lockTracer,
+                entityLocks,
                 overridableSecurityContext,
                 this.ktx,
                 securityAuthorizationHandler,
@@ -218,7 +220,7 @@ public class ThreadExecutionContext implements ExecutionContext, AutoCloseable {
 
     @Override
     public Locks locks() {
-        return allStoreHolder;
+        return entityLocks;
     }
 
     @Override

@@ -20,6 +20,7 @@
 package org.neo4j.internal.kernel.api;
 
 import org.neo4j.common.EntityType;
+import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 
 /**
  * Methods for acquiring and releasing locks.
@@ -52,4 +53,16 @@ public interface Locks {
     void acquireSharedLookupLock(EntityType entityType);
 
     void releaseSharedLookupLock(EntityType entityType);
+
+    void releaseExclusiveIndexEntryLock(long... indexEntries);
+
+    void acquireExclusiveIndexEntryLock(long... indexEntries);
+
+    void releaseSharedIndexEntryLock(long... indexEntries);
+
+    void acquireSharedIndexEntryLock(long... indexEntries);
+
+    void acquireSharedSchemaLock(SchemaDescriptorSupplier schemaLike);
+
+    void releaseSharedSchemaLock(SchemaDescriptorSupplier schemaLike);
 }

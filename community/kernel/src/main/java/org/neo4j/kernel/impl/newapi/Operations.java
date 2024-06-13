@@ -72,7 +72,6 @@ import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.EntityCursor;
 import org.neo4j.internal.kernel.api.InternalIndexState;
-import org.neo4j.internal.kernel.api.Locks;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
 import org.neo4j.internal.kernel.api.Procedures;
@@ -2405,10 +2404,6 @@ public class Operations implements Write, SchemaWrite, Upgrade {
             throw new EntityAlreadyExistsException(
                     RELATIONSHIP, ktx.internalTransaction().elementIdMapper().relationshipElementId(relationshipId));
         }
-    }
-
-    public Locks locks() {
-        return allStoreHolder;
     }
 
     private void assertConstraintExists(ConstraintDescriptor constraint) throws NoSuchConstraintException {

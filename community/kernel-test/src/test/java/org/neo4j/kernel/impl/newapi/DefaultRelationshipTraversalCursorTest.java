@@ -39,6 +39,7 @@ import org.neo4j.collection.RawIterator;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.InternalIndexState;
+import org.neo4j.internal.kernel.api.Locks;
 import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.SchemaReadCore;
@@ -65,12 +66,10 @@ import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.state.TxState;
-import org.neo4j.kernel.impl.locking.LockManager;
 import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.storageengine.api.Reference;
 import org.neo4j.storageengine.api.RelationshipDirection;
 import org.neo4j.storageengine.api.RelationshipSelection;
-import org.neo4j.storageengine.api.StorageLocks;
 import org.neo4j.storageengine.api.StoragePropertyCursor;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.StorageRelationshipTraversalCursor;
@@ -403,8 +402,7 @@ class DefaultRelationshipTraversalCursorTest {
                     ktx.tokenRead(),
                     mock(DefaultPooledCursors.class),
                     ktx.storeCursors(),
-                    mock(StorageLocks.class),
-                    ktx.lockTracer(),
+                    mock(Locks.class),
                     mock(QueryContext.class));
             this.ktx = ktx;
         }
@@ -422,11 +420,6 @@ class DefaultRelationshipTraversalCursorTest {
         @Override
         AccessMode getAccessMode() {
             return ktx.securityContext().mode();
-        }
-
-        @Override
-        LockManager.Client getLockClient() {
-            return ktx.lockClient();
         }
 
         @Override

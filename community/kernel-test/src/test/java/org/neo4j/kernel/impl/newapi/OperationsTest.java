@@ -30,6 +30,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.collection.Dependencies.dependenciesOf;
+import static org.neo4j.function.Suppliers.singleton;
 import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.EMBEDDED_CONNECTION;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.lock.LockTracer.NONE;
@@ -52,6 +53,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.dbms.DbmsRuntimeVersionProvider;
 import org.neo4j.graphdb.security.AuthorizationViolationException;
+import org.neo4j.internal.kernel.api.EntityLocks;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.Write;
@@ -72,6 +74,7 @@ import org.neo4j.internal.schema.SchemaDescriptorImplementation;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.kernel.KernelVersion;
+import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.procedure.ProcedureView;
 import org.neo4j.kernel.api.txstate.TransactionState;
@@ -175,7 +178,7 @@ abstract class OperationsTest {
                 storageReader,
                 kernelToken,
                 transaction,
-                storageLocks,
+                new EntityLocks(storageLocks, singleton(NONE), locks, () -> {}),
                 cursors,
                 mock(SchemaState.class),
                 indexingService,
@@ -183,7 +186,8 @@ abstract class OperationsTest {
                 dependenciesOf(facade),
                 INSTANCE,
                 false,
-                mock(QueryContext.class));
+                mock(QueryContext.class),
+                mock(AssertOpen.class));
         allStoreHolder.initialize(mock(ProcedureView.class));
         constraintIndexCreator = mock(ConstraintIndexCreator.class);
         creationContext = mock(CommandCreationContext.class);

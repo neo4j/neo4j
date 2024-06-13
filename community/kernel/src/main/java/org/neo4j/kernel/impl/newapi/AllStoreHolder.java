@@ -37,6 +37,7 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.InternalIndexState;
+import org.neo4j.internal.kernel.api.Locks;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
@@ -62,6 +63,7 @@ import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.internal.schema.SchemaState;
+import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.CypherScope;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.IndexUsageStats;
@@ -76,15 +78,9 @@ import org.neo4j.kernel.impl.api.OverridableSecurityContext;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.api.parallel.ExecutionContextProcedureKernelTransaction;
-import org.neo4j.kernel.impl.api.parallel.ParallelAccessCheck;
 import org.neo4j.kernel.impl.api.parallel.ThreadExecutionContext;
-import org.neo4j.kernel.impl.locking.LockManager;
-import org.neo4j.kernel.impl.locking.LockManager.Client;
-import org.neo4j.lock.LockTracer;
-import org.neo4j.lock.ResourceType;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.PropertySelection;
-import org.neo4j.storageengine.api.StorageLocks;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.StorageSchemaReader;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
@@ -128,11 +124,10 @@ public abstract class AllStoreHolder extends Read {
             MemoryTracker memoryTracker,
             DefaultPooledCursors cursors,
             StoreCursors storageCursors,
-            StorageLocks storageLocks,
-            LockTracer lockTracer,
+            Locks entityLocks,
             boolean multiVersioned,
             QueryContext queryContext) {
-        super(storageReader, tokenRead, cursors, storageCursors, storageLocks, lockTracer, queryContext);
+        super(storageReader, tokenRead, cursors, storageCursors, entityLocks, queryContext);
         this.schemaState = schemaState;
         this.valueIndexReaderCache = new IndexReaderCache<>(
                 index -> indexingService.getIndexProxy(index).newValueReader());
@@ -367,13 +362,13 @@ public abstract class AllStoreHolder extends Read {
         if (index == null) {
             return IndexDescriptor.NO_INDEX;
         }
-        index = acquireSharedSchemaLock(index);
+        entityLocks.acquireSharedSchemaLock(index);
         // Since the schema cache gives us snapshots views of the schema, the indexes could be dropped in-between us
         // getting the snapshot, and taking the shared schema locks.
         // Thus, after we take the lock, we need to filter out indexes that no longer exists.
         if (!indexExists(index)) {
-            releaseSharedSchemaLock(index);
-            index = IndexDescriptor.NO_INDEX;
+            entityLocks.releaseSharedSchemaLock(index);
+            return IndexDescriptor.NO_INDEX;
         }
         return index;
     }
@@ -404,10 +399,10 @@ public abstract class AllStoreHolder extends Read {
         if (constraint == null) {
             return null;
         }
-        constraint = acquireSharedSchemaLock(constraint);
+        entityLocks.acquireSharedSchemaLock(constraint);
         if (!constraintExists(constraint)) {
-            releaseSharedSchemaLock(constraint);
-            constraint = null;
+            entityLocks.releaseSharedSchemaLock(constraint);
+            return null;
         }
         return constraint;
     }
@@ -418,7 +413,7 @@ public abstract class AllStoreHolder extends Read {
 
     @Override
     public boolean constraintExists(ConstraintDescriptor constraint) {
-        acquireSharedSchemaLock(constraint);
+        entityLocks.acquireSharedSchemaLock(constraint);
         performCheckBeforeOperation();
 
         if (hasTxStateWithChanges()) {
@@ -474,8 +469,7 @@ public abstract class AllStoreHolder extends Read {
 
     @Override
     public Iterator<IndexDescriptor> indexesGetForLabel(int labelId) {
-        acquireSharedLock(ResourceType.LABEL, labelId);
-        performCheckBeforeOperation();
+        entityLocks.acquireSharedLabelLock(labelId);
         return lockIndexes(indexesGetForLabel(storageReader, labelId));
     }
 
@@ -496,8 +490,7 @@ public abstract class AllStoreHolder extends Read {
 
     @Override
     public Iterator<IndexDescriptor> indexesGetForRelationshipType(int relationshipType) {
-        acquireSharedLock(ResourceType.RELATIONSHIP_TYPE, relationshipType);
-        performCheckBeforeOperation();
+        entityLocks.acquireSharedRelationshipTypeLock(relationshipType);
         return lockIndexes(indexesGetForRelationshipType(storageReader, relationshipType));
     }
 
@@ -566,7 +559,7 @@ public abstract class AllStoreHolder extends Read {
     @Override
     public InternalIndexState indexGetState(IndexDescriptor index) throws IndexNotFoundKernelException {
         assertValidIndex(index);
-        acquireSharedSchemaLock(index);
+        entityLocks.acquireSharedSchemaLock(index);
         performCheckBeforeOperation();
 
         return indexGetStateLocked(index);
@@ -595,7 +588,7 @@ public abstract class AllStoreHolder extends Read {
     @Override
     public PopulationProgress indexGetPopulationProgress(IndexDescriptor index) throws IndexNotFoundKernelException {
         assertValidIndex(index);
-        acquireSharedSchemaLock(index);
+        entityLocks.acquireSharedSchemaLock(index);
         performCheckBeforeOperation();
         return indexGetPopulationProgressLocked(index);
     }
@@ -612,7 +605,7 @@ public abstract class AllStoreHolder extends Read {
 
     @Override
     public Long indexGetOwningUniquenessConstraintId(IndexDescriptor index) {
-        acquireSharedSchemaLock(index);
+        entityLocks.acquireSharedSchemaLock(index);
         return indexGetOwningUniquenessConstraintIdNonLocking(index);
     }
 
@@ -632,7 +625,7 @@ public abstract class AllStoreHolder extends Read {
     public double indexUniqueValuesSelectivity(IndexDescriptor index) throws IndexNotFoundKernelException {
         performCheckBeforeOperation();
         assertValidIndex(index);
-        acquireSharedSchemaLock(index);
+        entityLocks.acquireSharedSchemaLock(index);
         assertIndexExists(index); // Throws if the index has been dropped.
         final IndexSample indexSample = indexStatisticsStore.indexSample(index.getId());
         long unique = indexSample.uniqueValues();
@@ -644,7 +637,7 @@ public abstract class AllStoreHolder extends Read {
     public long indexSize(IndexDescriptor index) throws IndexNotFoundKernelException {
         performCheckBeforeOperation();
         assertValidIndex(index);
-        acquireSharedSchemaLock(index);
+        entityLocks.acquireSharedSchemaLock(index);
         return indexStatisticsStore.indexSample(index.getId()).indexSize();
     }
 
@@ -685,7 +678,7 @@ public abstract class AllStoreHolder extends Read {
 
     @Override
     public Iterator<ConstraintDescriptor> constraintsGetForSchema(SchemaDescriptor schema) {
-        acquireSharedSchemaLock(() -> schema);
+        entityLocks.acquireSharedSchemaLock(() -> schema);
         return getConstraintsForSchema(schema);
     }
 
@@ -705,8 +698,7 @@ public abstract class AllStoreHolder extends Read {
 
     @Override
     public Iterator<ConstraintDescriptor> constraintsGetForLabel(int labelId) {
-        performCheckBeforeOperation();
-        acquireSharedLock(ResourceType.LABEL, labelId);
+        entityLocks.acquireSharedLabelLock(labelId);
         return constraintsGetForLabel(storageReader, labelId);
     }
 
@@ -747,8 +739,7 @@ public abstract class AllStoreHolder extends Read {
 
     @Override
     public Iterator<ConstraintDescriptor> constraintsGetForRelationshipType(int typeId) {
-        performCheckBeforeOperation();
-        acquireSharedLock(ResourceType.RELATIONSHIP_TYPE, typeId);
+        entityLocks.acquireSharedRelationshipTypeLock(typeId);
         return constraintsGetForRelationshipType(storageReader, typeId);
     }
 
@@ -893,13 +884,14 @@ public abstract class AllStoreHolder extends Read {
 
         private final KernelTransactionImplementation ktx;
         private final Dependencies databaseDependencies;
+        private final AssertOpen assertOpen;
         private ProcedureCaller.ForTransactionScope procedureCaller;
 
         public ForTransactionScope(
                 StorageReader storageReader,
                 TokenRead tokenRead,
                 KernelTransactionImplementation ktx,
-                StorageLocks storageLocks,
+                Locks entityLocks,
                 DefaultPooledCursors cursors,
                 SchemaState schemaState,
                 IndexingService indexingService,
@@ -907,7 +899,8 @@ public abstract class AllStoreHolder extends Read {
                 Dependencies databaseDependencies,
                 MemoryTracker memoryTracker,
                 boolean multiVersioned,
-                QueryContext queryContext) {
+                QueryContext queryContext,
+                AssertOpen assertOpen) {
             super(
                     storageReader,
                     tokenRead,
@@ -917,13 +910,13 @@ public abstract class AllStoreHolder extends Read {
                     memoryTracker,
                     cursors,
                     ktx.storeCursors(),
-                    storageLocks,
-                    ktx.lockTracer(),
+                    entityLocks,
                     multiVersioned,
                     queryContext);
 
             this.ktx = ktx;
             this.databaseDependencies = databaseDependencies;
+            this.assertOpen = assertOpen;
         }
 
         public void initialize(ProcedureView procedureView) {
@@ -942,21 +935,12 @@ public abstract class AllStoreHolder extends Read {
 
         @Override
         void performCheckBeforeOperation() {
-            if (ParallelAccessCheck.shouldPerformCheck()) {
-                ParallelAccessCheck.checkNotCypherWorkerThread();
-            }
-            ktx.assertOpen();
+            assertOpen.assertOpen();
         }
 
         @Override
         AccessMode getAccessMode() {
             return ktx.securityContext().mode();
-        }
-
-        @Override
-        LockManager.Client getLockClient() {
-            // lock client has to be accessed like this, because of KernelTransaction#freezeLocks
-            return ktx.lockClient();
         }
 
         public void close() {
@@ -972,7 +956,6 @@ public abstract class AllStoreHolder extends Read {
     public static class ForThreadExecutionContextScope extends AllStoreHolder {
 
         private final OverridableSecurityContext overridableSecurityContext;
-        private final LockManager.Client lockClient;
         private final ExecutionContextProcedureKernelTransaction kernelTransaction;
         private final ProcedureCaller.ForThreadExecutionContextScope procedureCaller;
 
@@ -985,9 +968,7 @@ public abstract class AllStoreHolder extends Read {
                 Dependencies databaseDependencies,
                 DefaultPooledCursors cursors,
                 StoreCursors storageCursors,
-                StorageLocks storageLocks,
-                Client lockClient,
-                LockTracer lockTracer,
+                Locks entityLocks,
                 OverridableSecurityContext overridableSecurityContext,
                 ExecutionContextProcedureKernelTransaction kernelTransaction,
                 SecurityAuthorizationHandler securityAuthorizationHandler,
@@ -1004,12 +985,10 @@ public abstract class AllStoreHolder extends Read {
                     executionContext.memoryTracker(),
                     cursors,
                     storageCursors,
-                    storageLocks,
-                    lockTracer,
+                    entityLocks,
                     multiVersioned,
                     queryContext);
             this.overridableSecurityContext = overridableSecurityContext;
-            this.lockClient = lockClient;
             this.kernelTransaction = kernelTransaction;
             this.procedureCaller = new ProcedureCaller.ForThreadExecutionContextScope(
                     executionContext,
@@ -1073,11 +1052,6 @@ public abstract class AllStoreHolder extends Read {
         @Override
         AccessMode getAccessMode() {
             return overridableSecurityContext.currentSecurityContext().mode();
-        }
-
-        @Override
-        LockManager.Client getLockClient() {
-            return lockClient;
         }
 
         @Override
