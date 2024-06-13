@@ -373,7 +373,7 @@ case class CardinalityCostModel(executionModel: ExecutionModel, cancellationChec
         val negativeLabelsCardinalitySum = negativeLabels.map(l =>
           statistics.nodesWithLabelCardinality(semanticTable.id(l)).amount
         ).sum
-        val nextCallsForNegativeCursor = Seq(nextCallsForPositiveCursor, negativeLabelsCardinalitySum).min
+        val nextCallsForNegativeCursor = math.min(nextCallsForPositiveCursor, negativeLabelsCardinalitySum)
 
         Cardinality(nextCallsForPositiveCursor + nextCallsForNegativeCursor) * rowCost
 

@@ -1389,7 +1389,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
   }
 
   test(
-    "inserts no eager between Create and SubtractionNodeByLabelScan if no label overlap"
+    "inserts no eager between Create and SubtractionNodeByLabelsScan if no label overlap"
   ) {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("m")
@@ -1404,7 +1404,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
   }
 
   test(
-    "inserts no eager between Create and SubtractionNodeByLabelScan if no label overlap due to negative label"
+    "inserts no eager between Create and SubtractionNodeByLabelsScan if no label overlap due to negative label"
   ) {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("m")
@@ -1419,7 +1419,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
   }
 
   test(
-    "inserts eager between Create and SubtractionNodeByLabelScan if label overlap"
+    "inserts eager between Create and SubtractionNodeByLabelsScan if label overlap"
   ) {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("m")
@@ -1446,7 +1446,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
   }
 
   test(
-    "inserts eager between Create and SubtractionNodeByLabelScan if label overlap, with possibly more labels on the newly created nodes"
+    "inserts eager between Create and SubtractionNodeByLabelsScan if label overlap, with possibly more labels on the newly created nodes"
   ) {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("m")
@@ -1471,6 +1471,150 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         .allNodeScan("m")
         .build()
     )
+  }
+
+  test(
+    "inserts eager between SetLabels and SubtractionNodeByLabelsScan when the label set is one of the positive labels of the SubtractionNodeByLabelsScan"
+  ) {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("mProp")
+      .projection("m.prop as mProp")
+      .setLabels("m", "M")
+      .apply()
+      .|.subtractionNodeByLabelsScan("n", Seq("N", "M"), Seq("P"))
+      .allNodeScan("m")
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("mProp")
+        .projection("m.prop as mProp")
+        .setLabels("m", "M")
+        .eager(ListSet(
+          LabelReadSetConflict(labelName("M")).withConflict(Conflict(Id(2), Id(4)))
+        ))
+        .apply()
+        .|.subtractionNodeByLabelsScan("n", Seq("N", "M"), Seq("P"))
+        .allNodeScan("m")
+        .build()
+    )
+  }
+
+  test(
+    "inserts eager between SetLabels and SubtractionNodeByLabelsScan when the label set is one of the negative labels of the SubtractionNodeByLabelsScan"
+  ) {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("mProp")
+      .projection("m.prop as mProp")
+      .setLabels("m", "P")
+      .apply()
+      .|.subtractionNodeByLabelsScan("n", Seq("N", "M"), Seq("P"))
+      .allNodeScan("m")
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("mProp")
+        .projection("m.prop as mProp")
+        .setLabels("m", "P")
+        .eager(ListSet(
+          LabelReadSetConflict(labelName("P")).withConflict(Conflict(Id(2), Id(4)))
+        ))
+        .apply()
+        .|.subtractionNodeByLabelsScan("n", Seq("N", "M"), Seq("P"))
+        .allNodeScan("m")
+        .build()
+    )
+  }
+
+  test(
+    "inserts no eager between SetLabels and SubtractionNodeByLabelsScan when the label that is set is not one of the labels considered by subtractionNodeByLabelsScan"
+  ) {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("mProp")
+      .projection("m.prop as mProp")
+      .setLabels("m", "Q")
+      .apply()
+      .|.subtractionNodeByLabelsScan("n", Seq("N", "M"), Seq("P"))
+      .allNodeScan("m")
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    result should equal(plan)
+  }
+
+  test(
+    "inserts eager between RemoveLabels and SubtractionNodeByLabelsScan when the removed label is considered as a positive label by SubtractionNodeByLabelsScan"
+  ) {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("mProp")
+      .projection("m.prop as mProp")
+      .removeLabels("m", "N")
+      .apply()
+      .|.subtractionNodeByLabelsScan("n", Seq("N", "M"), Seq("P"))
+      .allNodeScan("m")
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("mProp")
+        .projection("m.prop AS mProp")
+        .removeLabels("m", "N")
+        .eager(ListSet(
+          LabelReadRemoveConflict(labelName("N")).withConflict(Conflict(Id(2), Id(4)))
+        ))
+        .apply()
+        .|.subtractionNodeByLabelsScan("n", Seq("N", "M"), Seq("P"))
+        .allNodeScan("m")
+        .build()
+    )
+  }
+
+  test(
+    "inserts eager between RemoveLabels and SubtractionNodeByLabelsScan when the removed label is considered as a negative label by SubtractionNodeByLabelsScan"
+  ) {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("mProp")
+      .projection("m.prop as mProp")
+      .removeLabels("m", "P")
+      .apply()
+      .|.subtractionNodeByLabelsScan("n", Seq("N", "M"), Seq("P"))
+      .allNodeScan("m")
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("mProp")
+        .projection("m.prop AS mProp")
+        .removeLabels("m", "P")
+        .eager(ListSet(
+          LabelReadRemoveConflict(labelName("P")).withConflict(Conflict(Id(2), Id(4)))
+        ))
+        .apply()
+        .|.subtractionNodeByLabelsScan("n", Seq("N", "M"), Seq("P"))
+        .allNodeScan("m")
+        .build()
+    )
+  }
+
+  test(
+    "inserts no eager between RemoveLabels and SubtractionNodeByLabelsScan when the removed label is not considered by SubtractionNodeByLabelsScan"
+  ) {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("mProp")
+      .projection("m.prop as mProp")
+      .removeLabels("m", "Q")
+      .apply()
+      .|.subtractionNodeByLabelsScan("n", Seq("N", "M"), Seq("P"))
+      .allNodeScan("m")
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    result should equal(plan)
   }
 
   test(
