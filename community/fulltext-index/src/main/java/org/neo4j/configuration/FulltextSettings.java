@@ -38,38 +38,37 @@ import org.neo4j.kernel.api.impl.fulltext.analyzer.providers.StandardNoStopWords
 public class FulltextSettings implements SettingsDeclaration {
     private static final String DEFAULT_ANALYZER = StandardNoStopWords.ANALYZER_NAME;
 
-    @Description("The name of the analyzer that the fulltext indexes should use by default.")
+    @Description("The name of the analyzer that the full-text indexes should use by default.")
     public static final Setting<String> fulltext_default_analyzer = newBuilder(
                     "db.index.fulltext.default_analyzer", STRING, DEFAULT_ANALYZER)
             .build();
 
-    @Description("Whether or not fulltext indexes should be eventually consistent by default or not.")
+    @Description("Whether or not full-text indexes should be eventually consistent by default or not.")
     public static final Setting<Boolean> eventually_consistent =
             newBuilder("db.index.fulltext.eventually_consistent", BOOL, false).build();
 
-    @Description(
-            "The number of threads that are applying the queued index updates for eventually consistent fulltext indexes")
+    @Description("The number of threads processing queued index updates for eventually consistent full-text indexes.")
     public static final Setting<Integer> eventually_consistent_apply_parallelism = newBuilder(
                     "db.index.fulltext.eventually_consistent_apply_parallelism", INT, 1)
             .addConstraint(min(1))
             .build();
 
     @Description(
-            "How often an eventually consistent fulltext index will be refreshed (readers guaranteed to see changes). "
-                    + "If set to 0 then refresh is done by the threads applying eventually consistent fulltext index updates")
+            "How often an eventually consistent full-text index is refreshed (changes are guaranteed to be visible)."
+                    + " If set to `0`, refresh is done by the threads applying eventually consistent full-text index updates.")
     public static final Setting<Duration> eventually_consistent_refresh_interval = newBuilder(
                     "db.index.fulltext.eventually_consistent_refresh_interval", DURATION, Duration.ofSeconds(0))
             .build();
 
-    @Description("The number of threads that can do fulltext index refresh in parallel, "
-            + "basically how many eventually consistent fulltext indexes can be refreshed in parallel")
+    @Description("The number of threads that can do full-text index refresh in parallel,"
+            + "i.e. the number of eventually consistent full-text indexes that can be refreshed in parallel.")
     public static final Setting<Integer> eventually_consistent_refresh_parallelism = newBuilder(
                     "db.index.fulltext.eventually_consistent_refresh_parallelism", INT, 1)
             .addConstraint(min(1))
             .build();
 
     @Description(
-            "The eventually_consistent mode of the fulltext indexes works by queueing up index updates to be applied later in a background thread. "
+            "The eventually_consistent mode of the full-text indexes works by queueing up index updates to be applied later in a background thread. "
                     + "This newBuilder sets an upper bound on how many index updates are allowed to be in this queue at any one point in time. When it is reached, "
                     + "the commit process will slow down and wait for the index update applier thread to make some more room in the queue.")
     public static final Setting<Integer> eventually_consistent_index_update_queue_max_length = newBuilder(
