@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.configuration.SettingImpl
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
@@ -34,7 +33,6 @@ trait ShowSettingsAcceptanceTestSupport extends GraphDatabaseTestSupport {
   self: CypherFunSuite =>
 
   abstract override def databaseConfig(): Map[Setting[_], Object] = super.databaseConfig() ++ Map(
-    GraphDatabaseInternalSettings.show_setting -> TRUE,
     GraphDatabaseSettings.auth_enabled -> TRUE
   )
 

@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.optionsmap
 
 import org.neo4j.configuration.Config
-import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException
 import org.neo4j.values.storable.Values.stringValue
@@ -29,7 +28,6 @@ import org.neo4j.values.virtual.VirtualValues
 class OptionsConverterTest extends CypherFunSuite {
 
   val config: Config = Config.defaults()
-  config.set(GraphDatabaseInternalSettings.change_data_capture, java.lang.Boolean.TRUE)
 
   test("create should ignore casing of entry key") {
     CreateDatabaseOptionsConverter.convert(

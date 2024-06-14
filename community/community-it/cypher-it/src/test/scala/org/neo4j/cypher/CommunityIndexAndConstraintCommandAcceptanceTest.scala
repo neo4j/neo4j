@@ -19,11 +19,9 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.cypher.internal.runtime.QueryStatistics
 import org.neo4j.cypher.internal.util.test_helpers.WindowsStringSafe
 import org.neo4j.exceptions.CypherExecutionException
-import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.schema.ConstraintType
 import org.neo4j.graphdb.schema.IndexSettingImpl.VECTOR_DIMENSIONS
 import org.neo4j.graphdb.schema.IndexSettingImpl.VECTOR_SIMILARITY_FUNCTION
@@ -52,9 +50,6 @@ class CommunityIndexAndConstraintCommandAcceptanceTest extends ExecutionEngineFu
   })
 
   private def anyMap(elems: (String, Any)*): Map[String, Any] = Map[String, Any](elems: _*)
-
-  override def databaseConfig(): Map[Setting[_], Object] =
-    super.databaseConfig() ++ Map(GraphDatabaseInternalSettings.type_constraints -> java.lang.Boolean.TRUE)
 
   // Index commands
 
