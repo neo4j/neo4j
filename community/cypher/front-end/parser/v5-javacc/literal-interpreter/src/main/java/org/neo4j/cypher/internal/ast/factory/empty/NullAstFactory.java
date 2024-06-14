@@ -1176,7 +1176,7 @@ public class NullAstFactory
     }
 
     @Override
-    public NULL showUsers(NULL p, NULL yieldExpr, NULL returnWithoutGraph, NULL aNull) {
+    public NULL showUsers(NULL p, NULL yieldExpr, NULL returnWithoutGraph, NULL aNull, boolean withAuth) {
         return null;
     }
 

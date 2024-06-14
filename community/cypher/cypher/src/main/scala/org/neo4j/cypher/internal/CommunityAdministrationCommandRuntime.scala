@@ -230,11 +230,12 @@ case class CommunityAdministrationCommandRuntime(
         )
 
     // SHOW USERS
-    case ShowUsers(source, symbols, yields, returns) => context =>
+    case ShowUsers(source, withAuth, symbols, yields, returns) => context =>
         val sourcePlan: Option[ExecutionPlan] =
           Some(fullLogicalToExecutable.applyOrElse(source, throwCantCompile).apply(context))
         ShowUsersExecutionPlanner(normalExecutionEngine, securityAuthorizationHandler).planShowUsers(
           symbols.map(_.name),
+          withAuth,
           yields,
           returns,
           sourcePlan

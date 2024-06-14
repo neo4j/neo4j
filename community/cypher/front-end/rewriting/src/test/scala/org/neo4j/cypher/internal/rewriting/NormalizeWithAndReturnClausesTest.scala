@@ -18,6 +18,7 @@ package org.neo4j.cypher.internal.rewriting
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheckContext
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheckResult
+import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.LinkedUsers
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.MultipleDatabases
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.rewriting.rewriters.normalizeWithAndReturnClauses
@@ -222,6 +223,10 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
     assertRewrite(
       "SHOW USERS YIELD user",
       "SHOW USERS YIELD user AS user"
+    )
+    assertRewrite(
+      "SHOW USERS WITH AUTH YIELD user, provider AS authProvider",
+      "SHOW USERS WITH AUTH YIELD user AS user, provider AS authProvider"
     )
   }
 
@@ -1231,7 +1236,10 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
     $expectedQuery
     but was rewritten to:${prettifier.asString(result)}"""
     )
-    result.semanticCheck.run(SemanticState.clean.withFeatures(MultipleDatabases), SemanticCheckContext.default)
+    result.semanticCheck.run(
+      SemanticState.clean.withFeatures(MultipleDatabases, LinkedUsers),
+      SemanticCheckContext.default
+    )
   }
 
   override protected def assertRewrite(originalQuery: String, expectedQuery: String): Unit = {

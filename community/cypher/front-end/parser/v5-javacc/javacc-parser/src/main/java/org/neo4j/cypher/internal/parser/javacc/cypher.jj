@@ -4485,8 +4485,8 @@ STATEMENT ShowCommand( USE_CLAUSE useClause ) throws Exception:
         | (<USERS> | <USER>)
             (
                 // Need these lookaheads to distinguish e.g. 'SHOW USER[S] YIELD ...' from 'SHOW USER[S] yield[, ...] PRIVILEGE[S]'
-                LOOKAHEAD(( <YIELD> | <WHERE> ) ( <PRIVILEGE> | <PRIVILEGES> | <COMMA> )) statement=ShowUserPrivileges( start, useClause )
-                | LOOKAHEAD(<YIELD> | <WHERE> | <EOF>) statement=ShowUsers( start, useClause )
+                LOOKAHEAD(( <YIELD> | <WHERE> | <WITH> ) ( <PRIVILEGE> | <PRIVILEGES> | <COMMA> )) statement=ShowUserPrivileges( start, useClause )
+                | LOOKAHEAD(<YIELD> | <WHERE> | <WITH> | <EOF>) statement=ShowUsers( start, useClause )
                 | statement=ShowUserPrivileges( start, useClause )
             )
     )
@@ -6131,17 +6131,19 @@ AUTH UserAuthObjects() throws Exception:
 
 STATEMENT_WITH_GRAPH ShowUsers( Token start, USE_CLAUSE useClause ) throws Exception:
 {
+    boolean withAuth = false;
     YIELD yield = null;
     RETURN_CLAUSE returnClause = null;
     WHERE where = null;
 }
 {
+    (<WITH> <AUTH> { withAuth = true; })?
     (
         ( yield = YieldClause() ( returnClause = ReturnClause() )? )
         | where=WhereClause()
     )?
     {
-        return astFactory.useGraph( astFactory.showUsers( pos( start ), yield, returnClause, where ), useClause );
+        return astFactory.useGraph( astFactory.showUsers( pos( start ), yield, returnClause, where, withAuth ), useClause );
     }
 }
 

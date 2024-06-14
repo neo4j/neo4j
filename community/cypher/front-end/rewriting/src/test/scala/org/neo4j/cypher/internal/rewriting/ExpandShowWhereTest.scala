@@ -161,6 +161,14 @@ class ExpandShowWhereTest extends CypherFunSuite with RewriteTest {
     )
   }
 
+  test("SHOW USERS WITH AUTH") {
+    assertRewrite(
+      "SHOW USERS WITH AUTH WHERE name STARTS WITH 'g'",
+      "SHOW USERS WITH AUTH YIELD * WHERE name STARTS WITH 'g'",
+      List("user", "roles", "passwordChangeRequired", "suspended", "home", "provider", "auth")
+    )
+  }
+
   test("SHOW CURRENT USER") {
     assertRewrite(
       "SHOW CURRENT USER WHERE name STARTS WITH 'g'",

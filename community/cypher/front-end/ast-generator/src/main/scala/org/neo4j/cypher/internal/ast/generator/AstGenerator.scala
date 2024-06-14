@@ -2355,7 +2355,8 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
 
   def _showUsers: Gen[ShowUsers] = for {
     yields <- _eitherYieldOrWhere
-  } yield ShowUsers(yields)(pos)
+    withAuth <- boolean
+  } yield ShowUsers(yields, withAuth)(pos)
 
   def _showCurrentUser: Gen[ShowCurrentUser] = for {
     yields <- _eitherYieldOrWhere

@@ -799,7 +799,7 @@ public class LiteralInterpreter
     }
 
     @Override
-    public NULL showUsers(NULL p, NULL yieldExpr, NULL returnWithoutGraph, NULL where) {
+    public NULL showUsers(NULL p, NULL yieldExpr, NULL returnWithoutGraph, NULL where, boolean withAuth) {
         throw new UnsupportedOperationException("showUsers is not a literal");
     }
 

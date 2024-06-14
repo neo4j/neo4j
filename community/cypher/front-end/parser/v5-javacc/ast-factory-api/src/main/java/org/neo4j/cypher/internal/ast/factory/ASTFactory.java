@@ -524,7 +524,8 @@ public interface ASTFactory<
 
     EXPRESSION passwordExpression(POS s, POS e, String password);
 
-    ADMINISTRATION_COMMAND showUsers(POS p, YIELD yieldExpr, RETURN_CLAUSE returnWithoutGraph, WHERE where);
+    ADMINISTRATION_COMMAND showUsers(
+            POS p, YIELD yieldExpr, RETURN_CLAUSE returnWithoutGraph, WHERE where, boolean withAuth);
 
     ADMINISTRATION_COMMAND showCurrentUser(POS p, YIELD yieldExpr, RETURN_CLAUSE returnWithoutGraph, WHERE where);
 

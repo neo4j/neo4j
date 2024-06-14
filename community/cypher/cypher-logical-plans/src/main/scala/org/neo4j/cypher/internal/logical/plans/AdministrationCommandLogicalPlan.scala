@@ -82,6 +82,7 @@ case class AllowedNonAdministrationCommands(statement: Statement)(implicit idGen
 // Security administration commands
 case class ShowUsers(
   source: PrivilegePlan,
+  withAuth: Boolean,
   override val returnColumns: List[LogicalVariable],
   yields: Option[Yield],
   returns: Option[Return]

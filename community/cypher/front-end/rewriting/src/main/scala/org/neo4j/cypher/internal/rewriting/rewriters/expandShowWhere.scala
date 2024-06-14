@@ -58,7 +58,7 @@ case object expandShowWhere extends Step with DefaultPostCondition with Preparat
       s.copy(yieldOrWhere = whereToYield(where, s.defaultColumnNames))(s.position)
     case s @ ShowSupportedPrivilegeCommand(Some(Right(where)), _) =>
       s.copy(yieldOrWhere = whereToYield(where, s.defaultColumnNames))(s.position)
-    case s @ ShowUsers(Some(Right(where)), _) =>
+    case s @ ShowUsers(Some(Right(where)), _, _) =>
       s.copy(yieldOrWhere = whereToYield(where, s.defaultColumnNames))(s.position)
     case s @ ShowCurrentUser(Some(Right(where)), _) =>
       s.copy(yieldOrWhere = whereToYield(where, s.defaultColumnNames))(s.position)
@@ -83,7 +83,7 @@ case object expandShowWhere extends Step with DefaultPostCondition with Preparat
     case s @ ShowSupportedPrivilegeCommand(Some(Left((yieldClause, returnClause))), _)
       if yieldClause.returnItems.includeExisting || returnClause.exists(_.returnItems.includeExisting) =>
       s.copy(yieldOrWhere = addDefaultColumns(yieldClause, returnClause, s.defaultColumnNames))(s.position)
-    case s @ ShowUsers(Some(Left((yieldClause, returnClause))), _)
+    case s @ ShowUsers(Some(Left((yieldClause, returnClause))), _, _)
       if yieldClause.returnItems.includeExisting || returnClause.exists(_.returnItems.includeExisting) =>
       s.copy(yieldOrWhere = addDefaultColumns(yieldClause, returnClause, s.defaultColumnNames))(s.position)
     case s @ ShowCurrentUser(Some(Left((yieldClause, returnClause))), _)

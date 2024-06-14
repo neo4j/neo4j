@@ -537,7 +537,8 @@ trait DdlShowBuilder extends Cypher5ParserListener {
     ctx: Cypher5Parser.ShowUsersContext
   ): Unit = {
     ctx.ast = ShowUsers(
-      astOpt[Either[(Yield, Option[Return]), Where]](ctx.showCommandYield())
+      astOpt[Either[(Yield, Option[Return]), Where]](ctx.showCommandYield()),
+      withAuth = ctx.AUTH() != null
     )(pos(ctx))
   }
 

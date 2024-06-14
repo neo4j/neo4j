@@ -2459,8 +2459,14 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
   override def passwordExpression(s: InputPosition, e: InputPosition, password: String): Expression =
     SensitiveStringLiteral(password.getBytes(StandardCharsets.UTF_8))(s.withInputLength(e.offset - s.offset + 1))
 
-  override def showUsers(p: InputPosition, yieldExpr: Yield, returnWithoutGraph: Return, where: Where): ShowUsers = {
-    ShowUsers(yieldOrWhere(yieldExpr, returnWithoutGraph, where))(p)
+  override def showUsers(
+    p: InputPosition,
+    yieldExpr: Yield,
+    returnWithoutGraph: Return,
+    where: Where,
+    withAuth: Boolean
+  ): ShowUsers = {
+    ShowUsers(yieldOrWhere(yieldExpr, returnWithoutGraph, where), withAuth)(p)
   }
 
   override def showCurrentUser(

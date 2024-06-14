@@ -139,13 +139,34 @@ class ShowPrivilegesAdministrationCommandParserTest extends AdministrationAndSch
     )(pos))
   }
 
-  test(s"SHOW USER defined PRIVILEGES") {
+  test("SHOW USER defined PRIVILEGES") {
     parsesTo[Statements](ast.ShowPrivileges(ast.ShowUsersPrivileges(List(literal("defined")))(pos), None)(pos))
   }
 
-  test(s"SHOW USERS yield, where PRIVILEGES") {
+  test("SHOW USERS yield, where PRIVILEGES") {
     parsesTo[Statements](ast.ShowPrivileges(
       ast.ShowUsersPrivileges(List(literal("yield"), literal("where")))(pos),
+      None
+    )(pos))
+  }
+
+  test("SHOW USERS where PRIVILEGES") {
+    parsesTo[Statements](ast.ShowPrivileges(
+      ast.ShowUsersPrivileges(List(literal("where")))(pos),
+      None
+    )(pos))
+  }
+
+  test("SHOW USERS with PRIVILEGES") {
+    parsesTo[Statements](ast.ShowPrivileges(
+      ast.ShowUsersPrivileges(List(literal("with")))(pos),
+      None
+    )(pos))
+  }
+
+  test("SHOW USERS with, yield PRIVILEGES") {
+    parsesTo[Statements](ast.ShowPrivileges(
+      ast.ShowUsersPrivileges(List(literal("with"), literal("yield")))(pos),
       None
     )(pos))
   }

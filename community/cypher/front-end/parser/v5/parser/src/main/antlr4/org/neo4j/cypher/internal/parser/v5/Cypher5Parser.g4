@@ -1195,7 +1195,7 @@ userAuthAttribute
    ;
 
 showUsers
-   : (USER | USERS) showCommandYield?
+   : (USER | USERS) (WITH AUTH)? showCommandYield?
    ;
 
 showCurrentUser

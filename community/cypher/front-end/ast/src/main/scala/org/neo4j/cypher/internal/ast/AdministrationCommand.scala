@@ -215,33 +215,47 @@ sealed trait WriteAdministrationCommand extends AdministrationCommand {
 
 // User commands
 
-final case class ShowUsers(override val yieldOrWhere: YieldOrWhere, override val defaultColumnSet: List[ShowColumn])(
-  val position: InputPosition
-) extends ReadAdministrationCommand {
+final case class ShowUsers(
+  override val yieldOrWhere: YieldOrWhere,
+  withAuth: Boolean,
+  override val defaultColumnSet: List[ShowColumn]
+)(val position: InputPosition) extends ReadAdministrationCommand {
 
   override def name: String = "SHOW USERS"
 
   override def semanticCheck: SemanticCheck =
-    super.semanticCheck chain
+    checkWithAuthFeatureFlag chain
+      super.semanticCheck chain
       SemanticState.recordCurrentScope(this)
 
   override def withYieldOrWhere(newYieldOrWhere: YieldOrWhere): ShowUsers =
     this.copy(yieldOrWhere = newYieldOrWhere)(position)
+
+  private def checkWithAuthFeatureFlag: SemanticCheck = {
+    if (withAuth) requireFeatureSupport("The `WITH AUTH` clause", SemanticFeature.LinkedUsers, position)
+    else success
+  }
 }
 
 object ShowUsers {
 
-  def apply(yieldOrWhere: YieldOrWhere)(position: InputPosition): ShowUsers =
+  def apply(yieldOrWhere: YieldOrWhere, withAuth: Boolean)(position: InputPosition): ShowUsers = {
+    val baseColumns = List(
+      ShowColumn("user")(position),
+      ShowColumn("roles", CTList(CTString))(position),
+      ShowColumn("passwordChangeRequired", CTBoolean)(position),
+      ShowColumn("suspended", CTBoolean)(position),
+      ShowColumn("home")(position)
+    )
+    val columns =
+      if (withAuth) baseColumns ++ List(ShowColumn("provider")(position), ShowColumn("auth", CTMap)(position))
+      else baseColumns
     ShowUsers(
       yieldOrWhere,
-      List(
-        ShowColumn("user")(position),
-        ShowColumn("roles", CTList(CTString))(position),
-        ShowColumn("passwordChangeRequired", CTBoolean)(position),
-        ShowColumn("suspended", CTBoolean)(position),
-        ShowColumn("home")(position)
-      )
+      withAuth,
+      columns
     )(position)
+  }
 }
 
 final case class ShowCurrentUser(
@@ -305,7 +319,7 @@ sealed trait UserAuth extends SemanticAnalysisTooling {
   protected def checkSetAuthFeatureFlag: SemanticCheck = {
     newStyleAuth.headOption match {
       case Some(auth) =>
-        requireFeatureSupport(s"The `SET AUTH` clause", SemanticFeature.LinkedUsers, auth.position)
+        requireFeatureSupport("The `SET AUTH` clause", SemanticFeature.LinkedUsers, auth.position)
       case None => success
     }
   }
@@ -420,9 +434,9 @@ final case class AlterUser(
   private def checkRemoveAuthFeatureFlag: SemanticCheck =
     removeAuth match {
       case RemoveAuth(true, _) =>
-        requireFeatureSupport(s"The `REMOVE ALL AUTH` clause", SemanticFeature.LinkedUsers, position)
+        requireFeatureSupport("The `REMOVE ALL AUTH` clause", SemanticFeature.LinkedUsers, position)
       case RemoveAuth(false, auths) if auths.nonEmpty =>
-        requireFeatureSupport(s"The `REMOVE AUTH` clause", SemanticFeature.LinkedUsers, auths.head.position)
+        requireFeatureSupport("The `REMOVE AUTH` clause", SemanticFeature.LinkedUsers, auths.head.position)
       case _ => success
     }
 
@@ -946,7 +960,7 @@ sealed abstract class PrivilegeCommand(
       case DbmsPrivilege(u: UnassignableAction) =>
         error(s"`GRANT`, `DENY` and `REVOKE` are not supported for `${u.name}`", position)
       case DbmsPrivilege(a @ SetAuthAction) =>
-        requireFeatureSupport(s"The `SET AUTH` privilege", SemanticFeature.LinkedUsers, position)
+        requireFeatureSupport("The `SET AUTH` privilege", SemanticFeature.LinkedUsers, position)
       case GraphPrivilege(_, _: DefaultGraphScope) =>
         error("`ON DEFAULT GRAPH` is not supported. Use `ON HOME GRAPH` instead.", position)
       case DatabasePrivilege(_, _: DefaultDatabaseScope) =>

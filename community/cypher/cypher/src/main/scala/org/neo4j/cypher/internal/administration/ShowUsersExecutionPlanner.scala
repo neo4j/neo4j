@@ -23,11 +23,13 @@ import org.neo4j.cypher.internal.AdministrationCommandRuntime.internalKey
 import org.neo4j.cypher.internal.AdministrationShowCommandUtils
 import org.neo4j.cypher.internal.ExecutionEngine
 import org.neo4j.cypher.internal.ExecutionPlan
+import org.neo4j.cypher.internal.administration.ShowUsersExecutionPlanner.getAuthCypher
 import org.neo4j.cypher.internal.ast.Return
 import org.neo4j.cypher.internal.ast.Yield
 import org.neo4j.cypher.internal.procs.ParameterTransformer
 import org.neo4j.cypher.internal.procs.SystemCommandExecutionPlan
 import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler
+import org.neo4j.server.security.systemgraph.SystemGraphRealmHelper.NATIVE_AUTH
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.VirtualValues
 
@@ -38,21 +40,30 @@ case class ShowUsersExecutionPlanner(
 
   def planShowUsers(
     symbols: List[String],
+    withAuth: Boolean,
     yields: Option[Yield],
     returns: Option[Return],
     sourcePlan: Option[ExecutionPlan]
-  ): ExecutionPlan =
+  ): ExecutionPlan = {
+
+    // Community should only have native auth,
+    // but if for some reason there is external auth it might be nice to show regardless
+    val (authMatch, authColumns) = if (withAuth) getAuthCypher("u") else ("", "")
+
     SystemCommandExecutionPlan(
       "ShowUsers",
       normalExecutionEngine,
       securityAuthorizationHandler,
       s"""MATCH (u:User)
+         |$authMatch
          |WITH u.name as user, null as roles, u.passwordChangeRequired AS passwordChangeRequired, null as suspended, null as home
+         |$authColumns
          |${AdministrationShowCommandUtils.generateReturnClause(symbols, yields, returns, Seq("user"))}
          |""".stripMargin,
       VirtualValues.EMPTY_MAP,
       source = sourcePlan
     )
+  }
 
   def planShowCurrentUser(symbols: List[String], yields: Option[Yield], returns: Option[Return]): ExecutionPlan = {
     val currentUserKey = internalKey("currentUser")
@@ -72,6 +83,42 @@ case class ShowUsersExecutionPlanner(
           Array(Values.utf8Value(securityContext.subject().executingUser()))
         )
       )
+    )
+  }
+}
+
+object ShowUsersExecutionPlanner {
+
+  /** Get auth Cypher strings for show users, both match statement and additional return columns
+   *
+   * @param userVariable the user node variable
+   * @return return tuple of strings, the first one is the match statement and the second is the return columns (starting with ,)
+   */
+  def getAuthCypher(userVariable: String): (String, String) = {
+    val authProviderExpression =
+      s"""CASE
+         | WHEN auth.provider IS NULL THEN
+         |  CASE
+         |   WHEN $userVariable.passwordChangeRequired IS NULL THEN null
+         |   ELSE '$NATIVE_AUTH'
+         |  END
+         | ELSE auth.provider
+         |END""".stripMargin
+    val authExpression =
+      s"""CASE
+         | WHEN auth.provider IS NULL THEN
+         |  CASE
+         |   WHEN $userVariable.passwordChangeRequired IS NULL THEN null
+         |   ELSE {password: '***', changeRequired: $userVariable.passwordChangeRequired}
+         |  END
+         | WHEN auth.provider = '$NATIVE_AUTH' THEN {password: '***', changeRequired: $userVariable.passwordChangeRequired}
+         | ELSE {id: auth.id}
+         |END""".stripMargin
+
+    (
+      s"""OPTIONAL MATCH ($userVariable)-[:HAS_AUTH]->(auth)
+         |WITH *, $authProviderExpression AS provider, $authExpression AS auth""".stripMargin,
+      ", provider, auth"
     )
   }
 }

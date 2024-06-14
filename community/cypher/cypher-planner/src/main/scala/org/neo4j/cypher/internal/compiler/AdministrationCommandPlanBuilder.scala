@@ -265,6 +265,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
       // SHOW USERS
       case su: ShowUsers => Some(plans.ShowUsers(
           plans.AssertAllowedDbmsActions(ShowUserAction),
+          su.withAuth,
           su.defaultColumnNames.map(varFor),
           su.yields,
           su.returns

@@ -1342,6 +1342,16 @@ class PrettifierIT extends CypherFunSuite {
         |    SKIP 1
         |    LIMIT 1
         |    WHERE user = "neo4j"""".stripMargin,
+    "Show Users wiTH AUth" ->
+      "SHOW USERS WITH AUTH",
+    "Show Users wiTH AUth where user = 'neo4j'" ->
+      """SHOW USERS WITH AUTH
+        |  WHERE user = "neo4j"""".stripMargin,
+    "Show Users wiTH AUth YIELD * where user = 'neo4j' Return *" ->
+      """SHOW USERS WITH AUTH
+        |  YIELD *
+        |    WHERE user = "neo4j"
+        |  RETURN *""".stripMargin,
     "Show Current User" ->
       "SHOW CURRENT USER",
     "Show Current User where user = 'neo4j'" ->

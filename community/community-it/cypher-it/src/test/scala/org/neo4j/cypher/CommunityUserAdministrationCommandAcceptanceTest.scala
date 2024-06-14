@@ -27,7 +27,9 @@ import org.neo4j.exceptions.InvalidArgumentException
 import org.neo4j.exceptions.ParameterNotFoundException
 import org.neo4j.exceptions.ParameterWrongTypeException
 import org.neo4j.exceptions.SyntaxException
+import org.neo4j.graphdb.Label
 import org.neo4j.graphdb.QueryExecutionException
+import org.neo4j.graphdb.RelationshipType
 import org.neo4j.graphdb.Result
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.security.AuthorizationViolationException
@@ -38,12 +40,14 @@ import org.neo4j.kernel.api.security.AuthManager
 import org.neo4j.server.security.SecureHasher
 import org.neo4j.server.security.SystemGraphCredential
 import org.neo4j.server.security.auth.SecurityTestUtils
+import org.neo4j.server.security.systemgraph.SystemGraphRealmHelper.NATIVE_AUTH
 import org.scalatest.enablers.Messaging.messagingNatureOfThrowable
 
 import java.util
 import java.util.Collections
 
 import scala.jdk.CollectionConverters.MapHasAsJava
+import scala.util.Using
 
 //noinspection RedundantDefaultArgument
 // uses default argument for clarification in some tests
@@ -322,6 +326,132 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
 
   test("should fail when showing users when not on system database") {
     assertFailWhenNotOnSystem("SHOW USERS", "SHOW USERS")
+  }
+
+  test("should show native only user with auth") {
+    // WHEN
+    val result = execute("SHOW USERS WITH AUTH")
+
+    // THEN
+    result.toSet should be(Set(addNativeAuthColumns(defaultUser, pwChangeRequired = true)))
+  }
+
+  test("should show native only users with auth and yield") {
+    // GIVEN
+    execute(alterDefaultUserQuery)
+
+    // WHEN
+    val result = execute(s"SHOW USERS WITH AUTH YIELD user, provider, auth")
+
+    // THEN
+    result.toSet should be(Set(addNativeAuthColumns(
+      Map[String, Any]("user" -> defaultUsername),
+      pwChangeRequired = false
+    )))
+  }
+
+  test("should show native only users with auth and where") {
+    // GIVEN
+    execute(s"CREATE USER $username SET PASSWORD '$password'")
+
+    // WHEN
+    val result = execute(s"SHOW USERS WITH AUTH WHERE user = '$defaultUsername'")
+
+    // THEN
+    result.toSet should be(Set(addNativeAuthColumns(defaultUser, pwChangeRequired = true)))
+  }
+
+  test("should show users with auth with multiple users with mixed auth info") {
+    // Community should only have native auth,
+    // but if for some reason there is external auth it might be nice to show regardless
+    // and therefore test even if we have to fake the external auth parts
+
+    /** Takes in an existing user and adds external auths
+     *
+     * @param user username to add auths for
+     * @param externalAuths List of maps with provider and id for each wanted external auth: Map("provider" -> "x", "id" ->"y")
+     * @param keepNativeAuth if false, the native auth for the user is removed
+     */
+    def fakeExternalAuthForUser(
+      user: String,
+      externalAuths: List[Map[String, String]],
+      keepNativeAuth: Boolean = true
+    ): Unit = {
+      Using.resource(graphOps.beginTx()) { tx =>
+        val userNode = tx.findNode(Label.label("User"), "name", user)
+
+        if (!keepNativeAuth) {
+          // remove native auth
+          userNode.removeProperty("credentials")
+          userNode.removeProperty("passwordChangeRequired")
+
+          userNode.getRelationships(RelationshipType.withName("HAS_AUTH"))
+            .stream()
+            .filter(rel => rel.getOtherNode(userNode).getProperty("provider").equals(NATIVE_AUTH))
+            .forEach(rel => {
+              val node = rel.getOtherNode(userNode)
+              rel.delete()
+              node.delete()
+            })
+        }
+
+        externalAuths.foreach(auth => {
+          val authNode = tx.createNode()
+          authNode.setProperty("provider", auth("provider"))
+          authNode.setProperty("id", auth("id"))
+          userNode.createRelationshipTo(authNode, RelationshipType.withName("HAS_AUTH"))
+        })
+
+        tx.commit()
+      }
+    }
+
+    def addExternalAuthColumns(userMap: Map[String, Any], provider: String, id: String): Map[String, Any] = {
+      val authMap = if (id == null) null else Map("id" -> id)
+      userMap ++ Map("provider" -> provider, "auth" -> authMap)
+    }
+
+    // GIVEN
+    execute(s"CREATE USER $username SET PASSWORD '$password'")
+    fakeExternalAuthForUser(
+      username,
+      List(
+        Map("provider" -> "Foo", "id" -> s"$username.foo@example.com"),
+        Map("provider" -> "Bar", "id" -> s"$username.bar@example.com")
+      ),
+      keepNativeAuth = false
+    )
+    execute(s"CREATE USER $newUsername SET PASSWORD '$password' CHANGE NOT REQUIRED")
+    fakeExternalAuthForUser(
+      newUsername,
+      List(
+        Map("provider" -> "Baz", "id" -> s"$newUsername.baz@example.com")
+      )
+    )
+
+    // WHEN
+    val resultWithAuth = execute("SHOW USERS WITH AUTH YIELD * ORDER BY user, provider")
+
+    // THEN
+    val user1Map = user(username) ++ Map("passwordChangeRequired" -> null)
+    val user2Map = user(newUsername, passwordChangeRequired = false)
+    resultWithAuth.toList should be(List(
+      addNativeAuthColumns(defaultUser, pwChangeRequired = true),
+      addExternalAuthColumns(user1Map, "Foo", s"$username.foo@example.com"),
+      addExternalAuthColumns(user1Map, "Bar", s"$username.bar@example.com"),
+      addNativeAuthColumns(user2Map, pwChangeRequired = false),
+      addExternalAuthColumns(user2Map, "Baz", s"$newUsername.baz@example.com")
+    ).sortBy(m => (m("user").asInstanceOf[String], m("provider").asInstanceOf[String])))
+
+    // WHEN
+    val resultWithoutAuth = execute("SHOW USERS YIELD * ORDER BY user")
+
+    // THEN
+    resultWithoutAuth.toList should be(List(
+      defaultUser,
+      user(username) ++ Map("passwordChangeRequired" -> null),
+      user(newUsername, passwordChangeRequired = false)
+    ).sortBy(m => m("user").asInstanceOf[String]))
   }
 
   // Tests for showing current user
@@ -1892,6 +2022,11 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
       "suspended" -> null,
       "home" -> null
     )
+
+  private def addNativeAuthColumns(userMap: Map[String, Any], pwChangeRequired: Boolean): Map[String, Any] = {
+    val authMap = Map[String, Any]("password" -> "***", "changeRequired" -> pwChangeRequired)
+    userMap ++ Map("provider" -> NATIVE_AUTH, "auth" -> authMap)
+  }
 
   private def testUserLogin(username: String, password: String, expected: AuthenticationResult): Unit = {
     val login = authManager.login(SecurityTestUtils.authToken(username, password), EMBEDDED_CONNECTION)

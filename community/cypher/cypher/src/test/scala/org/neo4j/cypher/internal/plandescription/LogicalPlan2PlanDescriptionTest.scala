@@ -6832,7 +6832,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       adminPlanDescription
     )
 
-    assertGood(attach(ShowUsers(privLhsLP, List(), None, None), 1.0), adminPlanDescription)
+    assertGood(attach(ShowUsers(privLhsLP, withAuth = true, List(), None, None), 1.0), adminPlanDescription)
 
     assertGood(attach(ShowCurrentUser(List(), None, None), 1.0), adminPlanDescription)
 

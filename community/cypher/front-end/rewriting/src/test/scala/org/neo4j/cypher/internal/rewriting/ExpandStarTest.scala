@@ -233,10 +233,10 @@ class ExpandStarTest extends CypherFunSuite with AstRewritingTestSupport {
     )
 
     assertRewrite(
-      "SHOW USERS YIELD * RETURN *",
-      """SHOW USERS
-        |YIELD user, roles, passwordChangeRequired, suspended, home
-        |RETURN user, roles, passwordChangeRequired, suspended, home""".stripMargin,
+      "SHOW USERS WITH AUTH YIELD * RETURN *",
+      """SHOW USERS WITH AUTH
+        |YIELD user, roles, passwordChangeRequired, suspended, home, provider, auth
+        |RETURN user, roles, passwordChangeRequired, suspended, home, provider, auth""".stripMargin,
       rewriteShowCommand = true
     )
   }
