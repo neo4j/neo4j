@@ -108,10 +108,9 @@ public class TransactionLogServiceImpl implements TransactionLogService {
     }
 
     @Override
-    public LogPosition append(ByteBuffer byteBuffer, OptionalLong transactionId, OptionalLong appendIndex)
-            throws IOException {
+    public LogPosition append(ByteBuffer byteBuffer, OptionalLong appendIndex) throws IOException {
         checkState(!availabilityGuard.isAvailable(), "Database should not be available.");
-        return logFile.append(byteBuffer, transactionId, appendIndex);
+        return logFile.append(byteBuffer, appendIndex);
     }
 
     @Override

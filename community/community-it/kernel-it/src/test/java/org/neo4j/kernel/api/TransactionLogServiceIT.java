@@ -252,14 +252,14 @@ class TransactionLogServiceIT {
     void requireDirectByteBufferForLogFileAppending() {
         availabilityGuard.require(new DescriptiveAvailabilityRequirement("Database unavailable"));
 
-        assertThrows(IllegalArgumentException.class, () -> logService.append(ByteBuffer.allocate(5), empty(), empty()));
+        assertThrows(IllegalArgumentException.class, () -> logService.append(ByteBuffer.allocate(5), empty()));
     }
 
     @Test
     void failBulkAppendOnNonAvailableDatabase() {
         assertThrows(
                 IllegalStateException.class,
-                () -> logService.append(ByteBuffer.wrap(new byte[] {1, 2, 3, 4, 5}), empty(), empty()));
+                () -> logService.append(ByteBuffer.wrap(new byte[] {1, 2, 3, 4, 5}), empty()));
     }
 
     @Test
@@ -271,7 +271,7 @@ class TransactionLogServiceIT {
         try {
             for (int i = 0; i < 100; i++) {
                 buffer.rewind();
-                logService.append(buffer, empty(), empty());
+                logService.append(buffer, empty());
             }
         } finally {
             ByteBuffers.releaseBuffer(buffer, INSTANCE);
@@ -291,7 +291,7 @@ class TransactionLogServiceIT {
         var appendData = createBuffer().put(randomAscii((int) (THRESHOLD + 1)).getBytes(UTF_8));
         try {
             for (int i = 0; i < appendIterations; i++) {
-                logService.append(appendData, OptionalLong.of(i), OptionalLong.of(i + 7));
+                logService.append(appendData, OptionalLong.of(i + 7));
                 appendData.rewind();
             }
         } finally {
@@ -315,7 +315,7 @@ class TransactionLogServiceIT {
         var appendData = createBuffer().put(randomAscii((int) (THRESHOLD + 1)).getBytes(UTF_8));
         try {
             for (int i = 0; i < appendIterations; i++) {
-                logService.append(appendData, OptionalLong.of(i), OptionalLong.of(i + 7));
+                logService.append(appendData, OptionalLong.of(i + 7));
                 appendData.rewind();
             }
         } finally {
@@ -339,7 +339,7 @@ class TransactionLogServiceIT {
         var appendData = createBuffer().put(randomAscii((int) (THRESHOLD + 1)).getBytes(UTF_8));
         try {
             for (int i = 0; i < appendIterations; i++) {
-                logService.append(appendData, OptionalLong.of(indexShift + i), OptionalLong.of(indexShift + i));
+                logService.append(appendData, OptionalLong.of(indexShift + i));
                 appendData.rewind();
             }
         } finally {
@@ -384,10 +384,7 @@ class TransactionLogServiceIT {
             positionBeforeRecovery = metadataProvider.getLastClosedTransaction().logPosition();
 
             for (int i = 0; i < 3; i++) {
-                logService.append(
-                        buffer,
-                        OptionalLong.of(lastTransactionBeforeBufferAppend + i + 1),
-                        OptionalLong.of(lastTransactionBeforeBufferAppend + i + 1));
+                logService.append(buffer, OptionalLong.of(lastTransactionBeforeBufferAppend + i + 1));
                 buffer.rewind();
             }
         } finally {
@@ -418,8 +415,7 @@ class TransactionLogServiceIT {
         var appendData = createBuffer().put(randomAscii((int) (THRESHOLD + 1)).getBytes(UTF_8));
         try {
             for (int i = 0; i < appendIterations; i++) {
-                logService.append(
-                        appendData, OptionalLong.of(transactionalShift + i), OptionalLong.of(transactionalShift + i));
+                logService.append(appendData, OptionalLong.of(transactionalShift + i));
                 appendData.rewind();
             }
         } finally {
@@ -444,8 +440,7 @@ class TransactionLogServiceIT {
         var appendData = createBuffer().put(randomAscii((int) (THRESHOLD + 1)).getBytes(UTF_8));
         try {
             for (int i = 0; i < appendIterations; i++) {
-                logService.append(
-                        appendData, OptionalLong.of(transactionalShift + i), OptionalLong.of(transactionalShift + i));
+                logService.append(appendData, OptionalLong.of(transactionalShift + i));
                 appendData.rewind();
             }
         } finally {
@@ -467,7 +462,7 @@ class TransactionLogServiceIT {
         var appendData = createBuffer().put(randomAscii((int) (THRESHOLD + 1)).getBytes(UTF_8));
         try {
             for (int i = 0; i < appendIterations; i++) {
-                var position = logService.append(appendData, OptionalLong.empty(), OptionalLong.empty());
+                var position = logService.append(appendData, OptionalLong.empty());
                 if (previousPosition != null) {
                     assertEquals(previousPosition, position);
                 }
@@ -492,7 +487,7 @@ class TransactionLogServiceIT {
             int appendIterations = 100;
             LogPosition firstPosition = null;
             for (int i = 0; i < appendIterations; i++) {
-                var position = logService.append(appendData, OptionalLong.of(i + 5), OptionalLong.of(i + 5));
+                var position = logService.append(appendData, OptionalLong.of(i + 5));
                 if (firstPosition == null) {
                     firstPosition = position;
                 }
@@ -502,7 +497,7 @@ class TransactionLogServiceIT {
                     .isGreaterThanOrEqualTo(firstPosition.getLogVersion());
             logService.restore(firstPosition);
 
-            assertEquals(firstPosition, logService.append(appendData, OptionalLong.of(5), OptionalLong.of(5)));
+            assertEquals(firstPosition, logService.append(appendData, OptionalLong.of(5)));
             assertEquals(logVersionBefore, logFiles.getLogFile().getHighestLogVersion());
         } finally {
             ByteBuffers.releaseBuffer(appendData, INSTANCE);

@@ -329,8 +329,7 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile {
     }
 
     @Override
-    public synchronized LogPosition append(ByteBuffer byteBuffer, OptionalLong transactionId, OptionalLong appendIndex)
-            throws IOException {
+    public synchronized LogPosition append(ByteBuffer byteBuffer, OptionalLong appendIndex) throws IOException {
         checkArgument(byteBuffer.isDirect(), "It is required for byte buffer to be direct.");
         var transactionLogWriter = getTransactionLogWriter();
 
@@ -338,7 +337,7 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile {
                 context.getDatabaseTracers().getDatabaseTracer().logAppend()) {
             if (appendIndex.isPresent()) {
                 logRotation.batchedRotateLogIfNeeded(
-                        logAppendEvent, transactionId.getAsLong() - 1, appendIndex.getAsLong() - 1);
+                        logAppendEvent, appendIndex.getAsLong() - 1, appendIndex.getAsLong() - 1);
             }
 
             var logPositionBefore = transactionLogWriter.getCurrentPosition();

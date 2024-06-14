@@ -144,7 +144,7 @@ public interface LogFile extends RotatableFile {
 
     void truncate(LogPosition position) throws IOException;
 
-    LogPosition append(ByteBuffer byteBuffer, OptionalLong transactionId, OptionalLong appendIndex) throws IOException;
+    LogPosition append(ByteBuffer byteBuffer, OptionalLong appendIndex) throws IOException;
 
     /**
      * Register map of externally exposed readers. Key is log version number. Value is log reader.
