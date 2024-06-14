@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
-import java.util.Objects;
 import org.neo4j.internal.helpers.collection.LfuCache;
 
 public class TransactionMetadataCache {
@@ -47,23 +46,5 @@ public class TransactionMetadataCache {
         appendIndexMetadataCache.put(appendIndex, result);
     }
 
-    public record TransactionMetadata(LogPosition startPosition) {
-
-        @Override
-        public String toString() {
-            return "TransactionMetadata{" + ", startPosition=" + startPosition + '}';
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) {
-                return true;
-            }
-            if (o == null || getClass() != o.getClass()) {
-                return false;
-            }
-            TransactionMetadata that = (TransactionMetadata) o;
-            return Objects.equals(startPosition, that.startPosition);
-        }
-    }
+    public record TransactionMetadata(LogPosition startPosition) {}
 }
