@@ -1236,25 +1236,33 @@ private[internal] class TransactionBoundReadQueryContext(
   override def asObject(value: AnyValue): AnyRef = value.map(valueMapper)
 
   override def getTxStateNodePropertyOrNull(nodeId: Long, propertyKey: Int): Value = {
-    val ops = reads()
-    if (ops.nodeDeletedInTransaction(nodeId)) {
-      throw new EntityNotFoundException(
-        s"Node with id $nodeId has been deleted in this transaction"
-      )
-    }
+    if (nodeId != -1L) {
+      val ops = reads()
+      if (ops.nodeDeletedInTransaction(nodeId)) {
+        throw new EntityNotFoundException(
+          s"Node with id $nodeId has been deleted in this transaction"
+        )
+      }
 
-    ops.nodePropertyChangeInBatchOrNull(nodeId, propertyKey)
+      ops.nodePropertyChangeInBatchOrNull(nodeId, propertyKey)
+    } else {
+      null
+    }
   }
 
   override def getTxStateRelationshipPropertyOrNull(relId: Long, propertyKey: Int): Value = {
-    val ops = reads()
-    if (ops.relationshipDeletedInTransaction(relId)) {
-      throw new EntityNotFoundException(
-        s"Relationship with id $relId has been deleted in this transaction"
-      )
-    }
+    if (relId != -1L) {
+      val ops = reads()
+      if (ops.relationshipDeletedInTransaction(relId)) {
+        throw new EntityNotFoundException(
+          s"Relationship with id $relId has been deleted in this transaction"
+        )
+      }
 
-    ops.relationshipPropertyChangeInBatchOrNull(relId, propertyKey)
+      ops.relationshipPropertyChangeInBatchOrNull(relId, propertyKey)
+    } else {
+      null
+    }
   }
 
   class NodeReadOperations
