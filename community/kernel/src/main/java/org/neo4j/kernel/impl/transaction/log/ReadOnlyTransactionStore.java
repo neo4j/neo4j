@@ -26,16 +26,13 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
-import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.CommandReaderFactory;
 
 /**
  * Used for reading transactions off of file.
  */
-public class ReadOnlyTransactionStore implements Lifecycle, LogicalTransactionStore {
-    private final LifeSupport life = new LifeSupport();
+public class ReadOnlyTransactionStore implements LogicalTransactionStore {
     private final LogicalTransactionStore physicalStore;
 
     public ReadOnlyTransactionStore(
@@ -68,25 +65,5 @@ public class ReadOnlyTransactionStore implements Lifecycle, LogicalTransactionSt
     @Override
     public CommandBatchCursor getCommandBatchesInReverseOrder(LogPosition backToPosition) throws IOException {
         return physicalStore.getCommandBatchesInReverseOrder(backToPosition);
-    }
-
-    @Override
-    public void init() {
-        life.init();
-    }
-
-    @Override
-    public void start() {
-        life.start();
-    }
-
-    @Override
-    public void stop() {
-        life.stop();
-    }
-
-    @Override
-    public void shutdown() {
-        life.shutdown();
     }
 }
