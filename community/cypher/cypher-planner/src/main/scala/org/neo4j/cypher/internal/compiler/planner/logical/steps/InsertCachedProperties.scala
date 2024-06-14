@@ -151,7 +151,7 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean)
           effectiveCardinalities,
           attributes,
           from.semanticTable(),
-          context.planContext.databaseMode,
+          if (from.logicalPlan.readOnly) context.planContext.databaseMode else DatabaseMode.SINGLE,
           context.cancellationChecker
         )
       } else {

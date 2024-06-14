@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.expressions.ExplicitParameter
 import org.neo4j.cypher.internal.expressions.NODE_TYPE
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.plans.GetValue
 import org.neo4j.cypher.internal.planner.spi.DatabaseMode
 import org.neo4j.cypher.internal.util.InputPosition
@@ -73,6 +74,25 @@ class RemoteBatchPropertiesPlanningIntegrationTest extends CypherFunSuite with L
       .produceResults("personFirstName", "personLastName")
       .projection("cacheN[person.firstName] AS personFirstName", "cacheN[person.lastName] AS personLastName")
       .remoteBatchProperties("cacheNFromStore[person.firstName]", "cacheNFromStore[person.lastName]")
+      .nodeByLabelScan("person", "Person")
+      .build()
+  }
+
+  test("should not batch node properties for write queries") {
+    val query =
+      """MATCH (person:Person)
+        |CREATE ()
+        |RETURN person.firstName AS personFirstName,
+        |       person.lastName AS personLastName""".stripMargin
+
+    val plan = planner.plan(query)
+
+    plan shouldEqual planner
+      .planBuilder()
+      .produceResults("personFirstName", "personLastName")
+      .projection("cacheN[person.firstName] AS personFirstName", "cacheN[person.lastName] AS personLastName")
+      .cacheProperties("cacheNFromStore[person.firstName]", "cacheNFromStore[person.lastName]")
+      .create(createNode("anon_0"))
       .nodeByLabelScan("person", "Person")
       .build()
   }
