@@ -252,6 +252,7 @@ public interface TopologyGraphDbmsModel {
     String TOPOLOGY_GRAPH_CONFIG_AUTO_ENABLE_FREE_SERVERS_FLAG = "auto_enable_free_servers";
     String TOPOLOGY_GRAPH_CREATE_DEFAULT_DATABASE = "create_default_database";
     Label SUPPORTED_COMPONENT_VERSIONS_LABEL = Label.label("SupportedVersions");
+    String SUPPORTED_COMPONENT_VERSIONS_UUID_PROPERTY = "__uuid";
     RelationshipType LATEST_SUPPORTED_COMPONENT_VERSIONS_RELATIONSHIP =
             RelationshipType.withName("LATEST_SUPPORTED_VERSIONS");
 
