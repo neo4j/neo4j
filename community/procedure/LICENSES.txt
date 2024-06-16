@@ -26,7 +26,6 @@ Apache Software License, Version 2.0
   Apache Shiro :: Cryptography :: Hashing
   Apache Shiro :: Event
   Apache Shiro :: Lang
-  Byte Buddy (without dependencies)
   Caffeine cache
   IPAddress
   Jackson-annotations

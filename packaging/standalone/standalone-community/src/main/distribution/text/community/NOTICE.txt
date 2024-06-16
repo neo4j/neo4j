@@ -72,7 +72,6 @@ Apache Software License, Version 2.0
   Arrow Vectors
   ascli
   aws-sign2
-  Byte Buddy (without dependencies)
   bytebuffer
   Caffeine cache
   caseless

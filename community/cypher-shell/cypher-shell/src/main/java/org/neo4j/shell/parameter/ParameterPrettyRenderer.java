@@ -19,16 +19,16 @@
  */
 package org.neo4j.shell.parameter;
 
+import static org.neo4j.cypherdsl.core.Cypher.duration;
 import static org.neo4j.cypherdsl.core.Cypher.literalOf;
+import static org.neo4j.cypherdsl.core.Cypher.point;
 import static org.neo4j.cypherdsl.core.Cypher.sortedMapOf;
-import static org.neo4j.cypherdsl.core.Functions.point;
 
 import java.util.Map;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import org.neo4j.cypherdsl.core.Cypher;
 import org.neo4j.cypherdsl.core.Expression;
-import org.neo4j.cypherdsl.core.Functions;
 import org.neo4j.cypherdsl.core.renderer.Configuration;
 import org.neo4j.cypherdsl.core.renderer.GeneralizedRenderer;
 import org.neo4j.cypherdsl.core.renderer.Renderer;
@@ -78,7 +78,7 @@ class ParameterPrettyRendererImpl implements ParameterPrettyRenderer {
         } else if (input instanceof IsoDuration d) {
             // Note, neo4j storable values has prettier rendering, so we use that
             final var neo4jDuration = DurationValue.duration(d.months(), d.days(), d.seconds(), d.nanoseconds());
-            return Functions.duration(neo4jDuration.prettyPrint());
+            return duration(neo4jDuration.prettyPrint());
         } else if (input instanceof Point p) {
             if (Double.isNaN(p.z())) {
                 return point(literalMap("srid", p.srid(), "x", p.x(), "y", p.y()));
