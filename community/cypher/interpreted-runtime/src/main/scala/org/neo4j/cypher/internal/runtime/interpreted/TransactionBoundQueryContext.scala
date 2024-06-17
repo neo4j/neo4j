@@ -120,6 +120,7 @@ import org.neo4j.kernel.impl.util.DefaultValueMapper
 import org.neo4j.kernel.impl.util.NodeEntityWrappingNodeValue
 import org.neo4j.kernel.impl.util.PathWrappingPathValue
 import org.neo4j.kernel.impl.util.RelationshipEntityWrappingValue
+import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.logging.InternalLogProvider
 import org.neo4j.logging.internal.LogService
 import org.neo4j.scheduler.JobScheduler
@@ -1844,9 +1845,16 @@ private[internal] class TransactionBoundReadQueryContext(
         true
 
       case m: MapValue if !m.isEmpty =>
-        m.entryExists((_, v) => {
-          needsRebinding(v)
+        var foundValue = false
+        m.foreach((_, v) => {
+          if (needsRebinding(v)) {
+            // We could break here if we had something like `exists` or an entrySet-iterator on MapValue,
+            // and we also want to avoid using a non-local return.
+            // However, the common case is when we do not need to rebind and then we need to visit every entry anyway.
+            foundValue = true
+          }
         })
+        foundValue
 
       case _: IntegralRangeListValue =>
         false
