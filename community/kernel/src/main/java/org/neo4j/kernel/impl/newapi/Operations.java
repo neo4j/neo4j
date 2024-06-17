@@ -61,6 +61,7 @@ import org.eclipse.collections.api.set.primitive.MutableIntSet;
 import org.eclipse.collections.api.tuple.primitive.IntObjectPair;
 import org.eclipse.collections.impl.factory.primitive.IntObjectMaps;
 import org.eclipse.collections.impl.factory.primitive.IntSets;
+import org.neo4j.common.EntityType;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
@@ -79,7 +80,6 @@ import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.RelationshipTypeIndexCursor;
-import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.Token;
 import org.neo4j.internal.kernel.api.TokenPredicate;
@@ -110,6 +110,7 @@ import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorImplementation;
 import org.neo4j.internal.schema.SchemaDescriptorSupplier;
+import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.internal.schema.SchemaNameUtil;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
@@ -169,6 +170,7 @@ public class Operations implements Write, SchemaWrite, Upgrade {
 
     private final KernelTransactionImplementation ktx;
     private final AllStoreHolder allStoreHolder;
+    private final KernelSchemaRead schemaRead;
     private final StorageReader storageReader;
     private final CommandCreationContext commandCreationContext;
     private final DbmsRuntimeVersionProvider dbmsRuntimeVersionProvider;
@@ -201,6 +203,7 @@ public class Operations implements Write, SchemaWrite, Upgrade {
             KernelVersionProvider kernelVersionProvider,
             StorageLocks storageLocks,
             KernelTransactionImplementation ktx,
+            KernelSchemaRead schemaRead,
             KernelToken token,
             DefaultPooledCursors cursors,
             ConstraintIndexCreator constraintIndexCreator,
@@ -213,6 +216,7 @@ public class Operations implements Write, SchemaWrite, Upgrade {
         this.dbmsRuntimeVersionProvider = dbmsRuntimeVersionProvider;
         this.kernelVersionProvider = kernelVersionProvider;
         this.storageLocks = storageLocks;
+        this.schemaRead = schemaRead;
         this.token = token;
         this.allStoreHolder = allStoreHolder;
         this.ktx = ktx;
@@ -896,8 +900,8 @@ public class Operations implements Write, SchemaWrite, Upgrade {
 
     private void assertIndexOnline(IndexDescriptor descriptor)
             throws IndexNotFoundKernelException, IndexBrokenKernelException {
-        if (allStoreHolder.indexGetState(descriptor) != InternalIndexState.ONLINE) {
-            throw new IndexBrokenKernelException(allStoreHolder.indexGetFailure(descriptor));
+        if (schemaRead.indexGetState(descriptor) != InternalIndexState.ONLINE) {
+            throw new IndexBrokenKernelException(schemaRead.indexGetFailure(descriptor));
         }
     }
 
@@ -1590,10 +1594,6 @@ public class Operations implements Write, SchemaWrite, Upgrade {
         return token;
     }
 
-    public SchemaRead schemaRead() {
-        return allStoreHolder;
-    }
-
     public Read dataRead() {
         return allStoreHolder;
     }
@@ -1753,7 +1753,7 @@ public class Operations implements Write, SchemaWrite, Upgrade {
         exclusiveSchemaLock(index.schema());
         exclusiveSchemaNameLock(index.getName());
         assertIndexExistsForDrop(index);
-        if (index.isUnique() && allStoreHolder.indexGetOwningUniquenessConstraintId(index) != null) {
+        if (index.isUnique() && schemaRead.indexGetOwningUniquenessConstraintId(index) != null) {
             IndexBelongsToConstraintException cause = new IndexBelongsToConstraintException(index.schema());
             throw new DropIndexFailureException("Unable to drop index: " + cause.getUserMessage(token), cause);
         }
@@ -1762,7 +1762,7 @@ public class Operations implements Write, SchemaWrite, Upgrade {
 
     private void assertIndexExistsForDrop(IndexDescriptor index) throws DropIndexFailureException {
         try {
-            allStoreHolder.assertIndexExists(index);
+            schemaRead.assertIndexExists(index);
         } catch (IndexNotFoundKernelException e) {
             throw new DropIndexFailureException("Unable to drop index: " + e.getUserMessage(token), e);
         }
@@ -1771,14 +1771,14 @@ public class Operations implements Write, SchemaWrite, Upgrade {
     @Override
     public void indexDrop(String indexName) throws SchemaKernelException {
         exclusiveSchemaNameLock(indexName);
-        IndexDescriptor index = allStoreHolder.indexGetForName(indexName);
+        IndexDescriptor index = schemaRead.indexGetForName(indexName);
         if (index == IndexDescriptor.NO_INDEX) {
             throw new DropIndexFailureException(
                     "Unable to drop index called `" + indexName + "`. There is no such index.");
         }
         exclusiveSchemaLock(index.schema());
         assertIndexExistsForDrop(index);
-        if (index.isUnique() && allStoreHolder.indexGetOwningUniquenessConstraintId(index) != null) {
+        if (index.isUnique() && schemaRead.indexGetOwningUniquenessConstraintId(index) != null) {
             IndexBelongsToConstraintException cause = new IndexBelongsToConstraintException(indexName, index.schema());
             throw new DropIndexFailureException("Unable to drop index: " + cause.getUserMessage(token), cause);
         }
@@ -1832,7 +1832,7 @@ public class Operations implements Write, SchemaWrite, Upgrade {
         String name = prototypeName.get();
 
         // Equivalent index
-        var indexWithSameSchemaAndType = allStoreHolder.index(prototype.schema(), prototype.getIndexType());
+        var indexWithSameSchemaAndType = schemaRead.index(prototype.schema(), prototype.getIndexType());
 
         if (indexWithSameSchemaAndType.getName().equals(name)
                 && indexWithSameSchemaAndType.isUnique() == prototype.isUnique()) {
@@ -1844,7 +1844,7 @@ public class Operations implements Write, SchemaWrite, Upgrade {
 
         // Already constrained
         final Iterator<ConstraintDescriptor> constraintWithSameSchema =
-                allStoreHolder.constraintsGetForSchema(prototype.schema());
+                schemaRead.constraintsGetForSchema(prototype.schema());
         while (constraintWithSameSchema.hasNext()) {
             final ConstraintDescriptor constraint = constraintWithSameSchema.next();
             if (constraint.isIndexBackedConstraint()) {
@@ -1872,7 +1872,7 @@ public class Operations implements Write, SchemaWrite, Upgrade {
 
         // Equivalent constraint
         final List<ConstraintDescriptor> constraintsWithSameSchema =
-                Iterators.asList(allStoreHolder.constraintsGetForSchema(constraint.schema()));
+                Iterators.asList(schemaRead.constraintsGetForSchema(constraint.schema()));
         for (ConstraintDescriptor constraintWithSameSchema : constraintsWithSameSchema) {
             if (constraint.equals(constraintWithSameSchema)
                     && constraint.getName().equals(constraintWithSameSchema.getName())) {
@@ -1912,7 +1912,7 @@ public class Operations implements Write, SchemaWrite, Upgrade {
         // A node-key or uniqueness constraint with relationship schema is not counted as index-backed so we don't check
         // blocking indexes for them. But that will fail later anyway since we don't support such constraints.
         if (constraint.isIndexBackedConstraint()) {
-            IndexDescriptor existingIndex = allStoreHolder.index(
+            IndexDescriptor existingIndex = schemaRead.index(
                     constraint.schema(), constraint.asIndexBackedConstraint().indexType());
             // An index of the same type on the schema blocks constraint creation.
             if (existingIndex != IndexDescriptor.NO_INDEX) {
@@ -1944,11 +1944,11 @@ public class Operations implements Write, SchemaWrite, Upgrade {
     private void assertSchemaRuleWithNameDoesNotExist(String name)
             throws IndexWithNameAlreadyExistsException, ConstraintWithNameAlreadyExistsException {
         // Check constraints first because some of them will also be backed by indexes
-        final ConstraintDescriptor constraintWithSameName = allStoreHolder.constraintGetForName(name);
+        final ConstraintDescriptor constraintWithSameName = schemaRead.constraintGetForName(name);
         if (constraintWithSameName != null) {
             throw new ConstraintWithNameAlreadyExistsException(name);
         }
-        final IndexDescriptor indexWithSameName = allStoreHolder.indexGetForName(name);
+        final IndexDescriptor indexWithSameName = schemaRead.indexGetForName(name);
         if (indexWithSameName != IndexDescriptor.NO_INDEX) {
             throw new IndexWithNameAlreadyExistsException(name);
         }
@@ -2037,7 +2037,7 @@ public class Operations implements Write, SchemaWrite, Upgrade {
     }
 
     private void enforceNodeKeyConstraint(SchemaDescriptor schema) throws KernelException {
-        IndexDescriptor index = allStoreHolder.findUsableTokenIndex(NODE);
+        IndexDescriptor index = findUsableTokenIndex(NODE);
         if (index != IndexDescriptor.NO_INDEX) {
             try (var cursor = cursors.allocateFullAccessNodeLabelIndexCursor(ktx.cursorContext())) {
                 var session = allStoreHolder.tokenReadSession(index);
@@ -2059,7 +2059,7 @@ public class Operations implements Write, SchemaWrite, Upgrade {
     }
 
     private void enforceRelKeyConstraint(SchemaDescriptor schema) throws KernelException {
-        IndexDescriptor index = allStoreHolder.findUsableTokenIndex(RELATIONSHIP);
+        IndexDescriptor index = findUsableTokenIndex(RELATIONSHIP);
         if (index != IndexDescriptor.NO_INDEX) {
             try (var cursor = cursors.allocateFullAccessRelationshipTypeIndexCursor(ktx.cursorContext())) {
                 var session = allStoreHolder.tokenReadSession(index);
@@ -2104,7 +2104,7 @@ public class Operations implements Write, SchemaWrite, Upgrade {
             NodeValidatorWithIndex nodeValidatorWithIndex,
             NodeValidatorWithoutIndex nodeValidatorWithoutIndex)
             throws KernelException {
-        IndexDescriptor index = allStoreHolder.findUsableTokenIndex(NODE);
+        IndexDescriptor index = findUsableTokenIndex(NODE);
         if (index != IndexDescriptor.NO_INDEX) {
             try (var cursor = cursors.allocateFullAccessNodeLabelIndexCursor(ktx.cursorContext())) {
                 var session = allStoreHolder.tokenReadSession(index);
@@ -2164,7 +2164,7 @@ public class Operations implements Write, SchemaWrite, Upgrade {
             RelValidatorWithIndex relValidatorWithIndex,
             RelValidatorWithoutIndex relValidatorWithoutIndex)
             throws KernelException {
-        var index = allStoreHolder.findUsableTokenIndex(RELATIONSHIP);
+        var index = findUsableTokenIndex(RELATIONSHIP);
         if (index != IndexDescriptor.NO_INDEX) {
             try (var fullAccessIndexCursor =
                     cursors.allocateFullAccessRelationshipTypeIndexCursor(ktx.cursorContext())) {
@@ -2297,7 +2297,7 @@ public class Operations implements Write, SchemaWrite, Upgrade {
     @Override
     public void constraintDrop(String name, boolean canDropDependent) throws SchemaKernelException {
         exclusiveSchemaNameLock(name);
-        ConstraintDescriptor constraint = allStoreHolder.constraintGetForName(name);
+        ConstraintDescriptor constraint = schemaRead.constraintGetForName(name);
         if (constraint == null) {
             throw new DropConstraintFailureException(name, new NoSuchConstraintException(name));
         }
@@ -2328,7 +2328,7 @@ public class Operations implements Write, SchemaWrite, Upgrade {
         TransactionState txState = ktx.txState();
         txState.constraintDoDrop(constraint);
         if (constraint.enforcesUniqueness()) {
-            IndexDescriptor index = allStoreHolder.indexGetForName(constraint.getName());
+            IndexDescriptor index = schemaRead.indexGetForName(constraint.getName());
             if (index != IndexDescriptor.NO_INDEX) {
                 txState.indexDoDrop(index);
             }
@@ -2402,7 +2402,7 @@ public class Operations implements Write, SchemaWrite, Upgrade {
     }
 
     private void assertConstraintExists(ConstraintDescriptor constraint) throws NoSuchConstraintException {
-        if (!allStoreHolder.constraintExists(constraint)) {
+        if (!schemaRead.constraintExists(constraint)) {
             throw new NoSuchConstraintException(constraint, token);
         }
     }
@@ -2433,7 +2433,7 @@ public class Operations implements Write, SchemaWrite, Upgrade {
             ConstraintIndexCreator.PropertyExistenceEnforcer propertyExistenceEnforcer)
             throws KernelException {
         try {
-            if (allStoreHolder.constraintExists(constraint)) {
+            if (schemaRead.constraintExists(constraint)) {
                 throw new AlreadyConstrainedException(constraint, CONSTRAINT_CREATION, token);
             }
             IndexType indexType = prototype.getIndexType();
@@ -2462,7 +2462,7 @@ public class Operations implements Write, SchemaWrite, Upgrade {
 
             IndexDescriptor index = constraintIndexCreator.createUniquenessConstraintIndex(
                     ktx, constraint, prototype, propertyExistenceEnforcer);
-            if (!allStoreHolder.constraintExists(constraint)) {
+            if (!schemaRead.constraintExists(constraint)) {
                 // This looks weird, but since we release the label lock while awaiting population of the index
                 // backing this constraint there can be someone else getting ahead of us, creating this exact
                 // constraint
@@ -2473,7 +2473,7 @@ public class Operations implements Write, SchemaWrite, Upgrade {
                 ktx.txState().constraintDoAdd(constraint, index);
             } else {
                 Iterator<ConstraintDescriptor> constraintsWithSchema =
-                        allStoreHolder.constraintsGetForSchema(constraint.schema());
+                        schemaRead.constraintsGetForSchema(constraint.schema());
                 while (constraintsWithSchema.hasNext()) {
                     ConstraintDescriptor next = constraintsWithSchema.next();
                     if (next.isIndexBackedConstraint()
@@ -2509,6 +2509,15 @@ public class Operations implements Write, SchemaWrite, Upgrade {
         String[] propertyNames = resolveTokenNames(token::propertyKeyName, propertyIds);
 
         return SchemaNameUtil.generateName(schemaDescriptorSupplier, entityTokenNames, propertyNames);
+    }
+
+    IndexDescriptor findUsableTokenIndex(EntityType entityType) throws IndexNotFoundKernelException {
+        var descriptor = SchemaDescriptors.forAnyEntityTokens(entityType);
+        var index = schemaRead.index(descriptor, IndexType.LOOKUP);
+        if (index != IndexDescriptor.NO_INDEX && schemaRead.indexGetState(index) == InternalIndexState.ONLINE) {
+            return index;
+        }
+        return IndexDescriptor.NO_INDEX;
     }
 
     @Override

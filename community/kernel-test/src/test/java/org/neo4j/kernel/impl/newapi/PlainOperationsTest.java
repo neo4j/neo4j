@@ -409,7 +409,7 @@ public class PlainOperationsTest extends OperationsTest {
     @Test
     void shouldAcquireSchemaReadLockBeforeGettingConstraintsByLabelAndProperty() {
         // WHEN
-        allStoreHolder.constraintsGetForSchema(schema);
+        kernelSchemaRead.constraintsGetForSchema(schema);
 
         // THEN
         order.verify(locks).acquireShared(LockTracer.NONE, ResourceType.LABEL, schema.getLabelId());
@@ -419,7 +419,7 @@ public class PlainOperationsTest extends OperationsTest {
     @Test
     void shouldNotAcquireSchemaReadLockBeforeGettingIndexesByLabelAndProperty() {
         // WHEN
-        allStoreHolder.index(schema);
+        kernelSchemaRead.index(schema);
 
         // THEN
         verifyNoMoreInteractions(locks);
@@ -429,7 +429,7 @@ public class PlainOperationsTest extends OperationsTest {
     @Test
     void shouldNotAcquireSchemaReadLockWhenGettingIndexesByLabelAndPropertyFromSnapshot() {
         // WHEN
-        allStoreHolder.snapshot().index(schema);
+        kernelSchemaRead.snapshot().index(schema);
 
         // THEN
         verifyNoMoreInteractions(locks);
@@ -439,7 +439,7 @@ public class PlainOperationsTest extends OperationsTest {
     @Test
     void shouldAcquireSchemaReadLockBeforeGettingConstraintsByLabel() {
         // WHEN
-        allStoreHolder.constraintsGetForLabel(42);
+        kernelSchemaRead.constraintsGetForLabel(42);
 
         // THEN
         order.verify(locks).acquireShared(LockTracer.NONE, ResourceType.LABEL, 42);
@@ -449,7 +449,7 @@ public class PlainOperationsTest extends OperationsTest {
     @Test
     void shouldAcquireSchemaReadLockBeforeGettingConstraintsByRelationshipType() {
         // WHEN
-        allStoreHolder.constraintsGetForRelationshipType(42);
+        kernelSchemaRead.constraintsGetForRelationshipType(42);
 
         // THEN
         order.verify(locks).acquireShared(LockTracer.NONE, ResourceType.RELATIONSHIP_TYPE, 42);
@@ -459,7 +459,7 @@ public class PlainOperationsTest extends OperationsTest {
     @Test
     void shouldNotAcquireSchemaReadLockBeforeGettingConstraintsByLabel() {
         // WHEN
-        allStoreHolder.snapshot().constraintsGetForLabel(42);
+        kernelSchemaRead.snapshot().constraintsGetForLabel(42);
 
         // THEN
         verifyNoMoreInteractions(locks);
@@ -469,7 +469,7 @@ public class PlainOperationsTest extends OperationsTest {
     @Test
     void shouldNotAcquireSchemaReadLockBeforeGettingConstraintsByRelationshipType() {
         // WHEN
-        allStoreHolder.snapshot().constraintsGetForRelationshipType(42);
+        kernelSchemaRead.snapshot().constraintsGetForRelationshipType(42);
 
         // THEN
         verifyNoMoreInteractions(locks);
@@ -479,7 +479,7 @@ public class PlainOperationsTest extends OperationsTest {
     @Test
     void shouldAcquireSchemaReadLockBeforeCheckingExistenceConstraints() {
         // WHEN
-        allStoreHolder.constraintExists(ConstraintDescriptorFactory.uniqueForSchema(schema));
+        kernelSchemaRead.constraintExists(ConstraintDescriptorFactory.uniqueForSchema(schema));
 
         // THEN
         order.verify(locks).acquireShared(LockTracer.NONE, ResourceType.LABEL, 123);
@@ -499,7 +499,7 @@ public class PlainOperationsTest extends OperationsTest {
         when(storageReader.constraintExists(existenceConstraint)).thenReturn(true);
 
         // when
-        Iterator<ConstraintDescriptor> result = allStoreHolder.constraintsGetAll();
+        Iterator<ConstraintDescriptor> result = kernelSchemaRead.constraintsGetAll();
 
         // then
         assertThat(Iterators.count(result)).isEqualTo(2L);
@@ -520,7 +520,7 @@ public class PlainOperationsTest extends OperationsTest {
                 .thenReturn(Iterators.iterator(uniquenessConstraint, existenceConstraint));
 
         // when
-        Iterator<ConstraintDescriptor> result = allStoreHolder.snapshot().constraintsGetAll();
+        Iterator<ConstraintDescriptor> result = kernelSchemaRead.snapshot().constraintsGetAll();
 
         // then
         assertThat(Iterators.count(result)).isEqualTo(2L);
@@ -962,6 +962,7 @@ public class PlainOperationsTest extends OperationsTest {
                 LatestVersions.LATEST_KERNEL_VERSION_PROVIDER,
                 mock(StorageLocks.class),
                 ktx,
+                mock(KernelSchemaRead.class),
                 mock(KernelToken.class),
                 mock(DefaultPooledCursors.class),
                 mock(ConstraintIndexCreator.class),
@@ -1006,6 +1007,7 @@ public class PlainOperationsTest extends OperationsTest {
                 LatestVersions.LATEST_KERNEL_VERSION_PROVIDER,
                 mock(StorageLocks.class),
                 ktx,
+                mock(KernelSchemaRead.class),
                 mock(KernelToken.class),
                 cursors,
                 mock(ConstraintIndexCreator.class),
@@ -1048,6 +1050,7 @@ public class PlainOperationsTest extends OperationsTest {
                 LatestVersions.LATEST_KERNEL_VERSION_PROVIDER,
                 mock(StorageLocks.class),
                 ktx,
+                mock(KernelSchemaRead.class),
                 mock(KernelToken.class),
                 mock(DefaultPooledCursors.class),
                 mock(ConstraintIndexCreator.class),
@@ -1082,12 +1085,12 @@ public class PlainOperationsTest extends OperationsTest {
         IndexingProvidersService indexingProvidersService = mock(IndexingProvidersService.class);
         when(indexingProvidersService.getDefaultProvider()).thenReturn(indexProviderDescriptor);
         when(indexingProvidersService.getIndexProvider(any())).thenReturn(indexProvider);
-        AllStoreHolder allStoreHolder = mock(AllStoreHolder.class);
-        when(allStoreHolder.index(any(), any())).thenReturn(IndexDescriptor.NO_INDEX);
-        when(allStoreHolder.indexGetForName(any())).thenReturn(IndexDescriptor.NO_INDEX);
-        when(allStoreHolder.constraintsGetForSchema(any())).thenReturn(Iterators.emptyResourceIterator());
+        KernelSchemaRead kernelSchemaRead = mock(KernelSchemaRead.class);
+        when(kernelSchemaRead.index(any(), any())).thenReturn(IndexDescriptor.NO_INDEX);
+        when(kernelSchemaRead.indexGetForName(any())).thenReturn(IndexDescriptor.NO_INDEX);
+        when(kernelSchemaRead.constraintsGetForSchema(any())).thenReturn(Iterators.emptyResourceIterator());
         Operations operations = new Operations(
-                allStoreHolder,
+                mock(AllStoreHolder.class),
                 mock(StorageReader.class),
                 mock(IndexTxStateUpdater.class),
                 commandCreationContext,
@@ -1095,6 +1098,7 @@ public class PlainOperationsTest extends OperationsTest {
                 LatestVersions.LATEST_KERNEL_VERSION_PROVIDER,
                 mock(StorageLocks.class),
                 ktx,
+                kernelSchemaRead,
                 mock(KernelToken.class),
                 mock(DefaultPooledCursors.class),
                 mock(ConstraintIndexCreator.class),

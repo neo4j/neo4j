@@ -30,6 +30,20 @@ import org.neo4j.internal.schema.SchemaDescriptor;
 public interface StorageSchemaReader {
 
     /**
+     * Check whether or not the given index exists in the store.
+     * @param index The index to check.
+     * @return {@code true} if the index exists, {@code false} otherwise.
+     */
+    boolean indexExists(IndexDescriptor index);
+
+    /**
+     * Check whether or not the given constraint exists in the store.
+     * @param constraint The constraint to check.
+     * @return {@code true} if the constraint exists, {@code false} otherwise.
+     */
+    boolean constraintExists(ConstraintDescriptor constraint);
+
+    /**
      * Get the index with the given name.
      * @param name name of index to find.
      * @return {@link IndexDescriptor} associated with the given {@code name}.

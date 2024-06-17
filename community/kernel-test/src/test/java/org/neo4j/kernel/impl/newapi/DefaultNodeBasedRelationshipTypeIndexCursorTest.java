@@ -30,14 +30,13 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.internal.kernel.api.EntityLocks;
 import org.neo4j.internal.kernel.api.QueryContext;
+import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.kernel.api.security.AccessMode.Static;
-import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.impl.api.index.IndexingService;
-import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.storageengine.api.RelationshipSelection;
 import org.neo4j.storageengine.api.StorageReader;
@@ -70,16 +69,15 @@ class DefaultNodeBasedRelationshipTypeIndexCursorTest {
                 new AllStoreHolder(
                         mock(StorageReader.class),
                         mock(TokenRead.class),
-                        mock(SchemaState.class),
                         mock(IndexingService.class),
-                        mock(IndexStatisticsStore.class),
                         EmptyMemoryTracker.INSTANCE,
                         mock(DefaultPooledCursors.class),
                         mock(StoreCursors.class),
                         mock(EntityLocks.class),
                         false,
                         mock(QueryContext.class),
-                        mock(TxStateHolder.class)) {
+                        mock(TxStateHolder.class),
+                        mock(SchemaRead.class)) {
 
                     @Override
                     void performCheckBeforeOperation() {}

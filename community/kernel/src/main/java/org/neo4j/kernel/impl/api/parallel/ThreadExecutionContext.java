@@ -54,6 +54,7 @@ import org.neo4j.kernel.impl.newapi.AllStoreHolder;
 import org.neo4j.kernel.impl.newapi.DefaultPooledCursors;
 import org.neo4j.kernel.impl.newapi.KernelProcedures;
 import org.neo4j.kernel.impl.newapi.KernelProcedures.ForThreadExecutionContextScope;
+import org.neo4j.kernel.impl.newapi.KernelSchemaRead;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.StorageLocks;
@@ -94,6 +95,7 @@ public class ThreadExecutionContext implements ExecutionContext, AutoCloseable {
     private final Supplier<ClockContext> clockContextSupplier;
     private final QueryContext queryContext;
     private final EntityLocks entityLocks;
+    private final SchemaRead schemaRead;
 
     public ThreadExecutionContext(
             DefaultPooledCursors cursors,
@@ -143,12 +145,19 @@ public class ThreadExecutionContext implements ExecutionContext, AutoCloseable {
                 securityAuthorizationHandler,
                 clockContextSupplier,
                 procedureView);
+        this.schemaRead = new KernelSchemaRead(
+                schemaState,
+                indexStatisticsStore,
+                storageReader,
+                entityLocks,
+                this.ktx,
+                indexingService,
+                this.ktx,
+                () -> overridableSecurityContext.currentSecurityContext().mode());
         this.allStoreHolder = new AllStoreHolder.ForThreadExecutionContextScope(
                 this,
                 storageReader,
-                schemaState,
                 indexingService,
-                indexStatisticsStore,
                 cursors,
                 storageCursors,
                 entityLocks,
@@ -156,7 +165,8 @@ public class ThreadExecutionContext implements ExecutionContext, AutoCloseable {
                 this.ktx,
                 multiVersioned,
                 queryContext,
-                THREAD_EXECUTION_STATE_HOLDER);
+                THREAD_EXECUTION_STATE_HOLDER,
+                schemaRead);
     }
 
     public Supplier<ClockContext> clockContextSupplier() {
@@ -194,7 +204,7 @@ public class ThreadExecutionContext implements ExecutionContext, AutoCloseable {
 
     @Override
     public SchemaRead schemaRead() {
-        return allStoreHolder;
+        return schemaRead;
     }
 
     @Override

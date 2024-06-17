@@ -33,6 +33,7 @@ import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.RelationshipDataAccessor;
 import org.neo4j.internal.kernel.api.RelationshipIndexCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
+import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.TokenPredicate;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
@@ -144,7 +145,8 @@ final class EntityCounter {
             Read read,
             CursorContext cursorContext,
             MemoryTracker memoryTracker,
-            StoreCursors storageCursors) {
+            StoreCursors storageCursors,
+            SchemaRead schemaRead) {
         if (!multiVersioned
                 && accessMode.allowsTraverseRelType(typeId)
                 && accessMode.allowsTraverseNode(startLabelId)
@@ -168,7 +170,8 @@ final class EntityCounter {
                     startLabelId, typeId, endLabelId, read.txStateHolder, storageReader, storageCursors, cursorContext);
         }
 
-        return countRelationshipByScan(startLabelId, typeId, endLabelId, cursors, read, cursorContext, memoryTracker);
+        return countRelationshipByScan(
+                startLabelId, typeId, endLabelId, cursors, read, schemaRead, cursorContext, memoryTracker);
     }
 
     private long countRelationshipByScan(
@@ -177,12 +180,13 @@ final class EntityCounter {
             int endLabelId,
             DefaultPooledCursors cursors,
             Read read,
+            SchemaRead schemaRead,
             CursorContext cursorContext,
             MemoryTracker memoryTracker) {
         // token index scan can only scan for single relationship type
         if (typeId != TokenRead.ANY_RELATIONSHIP_TYPE) {
             try {
-                var index = findUsableRelationshipTypeTokenIndex(read);
+                var index = findUsableRelationshipTypeTokenIndex(schemaRead);
                 if (index != IndexDescriptor.NO_INDEX) {
                     long count = 0;
                     try (var relationshipsWithType =
@@ -219,10 +223,11 @@ final class EntityCounter {
         return count;
     }
 
-    private IndexDescriptor findUsableRelationshipTypeTokenIndex(Read read) throws IndexNotFoundKernelException {
+    private IndexDescriptor findUsableRelationshipTypeTokenIndex(SchemaRead schemaRead)
+            throws IndexNotFoundKernelException {
         var descriptor = SchemaDescriptors.forAnyEntityTokens(EntityType.RELATIONSHIP);
-        var index = read.index(descriptor, IndexType.LOOKUP);
-        if (index != IndexDescriptor.NO_INDEX && read.indexGetState(index) == InternalIndexState.ONLINE) {
+        var index = schemaRead.index(descriptor, IndexType.LOOKUP);
+        if (index != IndexDescriptor.NO_INDEX && schemaRead.indexGetState(index) == InternalIndexState.ONLINE) {
             return index;
         }
         return IndexDescriptor.NO_INDEX;

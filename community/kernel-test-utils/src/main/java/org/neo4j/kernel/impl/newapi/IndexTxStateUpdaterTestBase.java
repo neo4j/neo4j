@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Set;
 import org.neo4j.internal.kernel.api.EntityLocks;
 import org.neo4j.internal.kernel.api.QueryContext;
+import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.helpers.StubPropertyCursor;
@@ -40,12 +41,10 @@ import org.neo4j.internal.kernel.api.security.AccessMode.Static;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.PropertySchemaType;
 import org.neo4j.internal.schema.SchemaDescriptor;
-import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingService;
-import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
@@ -110,16 +109,15 @@ public class IndexTxStateUpdaterTestBase {
                 new AllStoreHolder(
                         storageReader,
                         mock(TokenRead.class),
-                        mock(SchemaState.class),
                         indexingService,
-                        mock(IndexStatisticsStore.class),
                         EmptyMemoryTracker.INSTANCE,
                         mock(DefaultPooledCursors.class),
                         mock(StoreCursors.class),
                         mock(EntityLocks.class),
                         false,
                         mock(QueryContext.class),
-                        mock(TxStateHolder.class)) {
+                        mock(TxStateHolder.class),
+                        mock(SchemaRead.class)) {
 
                     @Override
                     void performCheckBeforeOperation() {}

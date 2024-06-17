@@ -30,13 +30,12 @@ import java.util.function.Consumer;
 import org.junit.jupiter.api.Test;
 import org.neo4j.internal.kernel.api.Locks;
 import org.neo4j.internal.kernel.api.QueryContext;
+import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
-import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.index.IndexingService;
-import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.storageengine.api.StorageNodeCursor;
@@ -95,13 +94,12 @@ class DefaultNodeCursorTest {
                 ktx,
                 mock(Locks.class),
                 mock(DefaultPooledCursors.class),
-                mock(SchemaState.class),
                 mock(IndexingService.class),
-                mock(IndexStatisticsStore.class),
                 EmptyMemoryTracker.INSTANCE,
                 false,
                 mock(QueryContext.class),
-                mock(AssertOpen.class));
+                mock(AssertOpen.class),
+                mock(SchemaRead.class));
         var txState = new TxState();
         setup.accept(txState);
         when(ktx.hasTxStateWithChanges()).thenReturn(true);

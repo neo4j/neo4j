@@ -43,6 +43,7 @@ import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.internal.kernel.api.RelationshipTypeIndexCursor;
 import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor;
+import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.TokenPredicate;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.TokenReadSession;
@@ -62,7 +63,7 @@ import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.util.Preconditions;
 
-abstract class Read implements org.neo4j.internal.kernel.api.Read, org.neo4j.internal.kernel.api.SchemaRead {
+abstract class Read implements org.neo4j.internal.kernel.api.Read {
     protected final StorageReader storageReader;
     protected final DefaultPooledCursors cursors;
     private final TokenRead tokenRead;
@@ -70,6 +71,7 @@ abstract class Read implements org.neo4j.internal.kernel.api.Read, org.neo4j.int
     protected final QueryContext queryContext;
     protected final Locks entityLocks;
     protected final TxStateHolder txStateHolder;
+    protected final SchemaRead schemaRead;
 
     Read(
             StorageReader storageReader,
@@ -78,7 +80,8 @@ abstract class Read implements org.neo4j.internal.kernel.api.Read, org.neo4j.int
             StoreCursors storageCursors,
             Locks entityLocks,
             QueryContext queryContext,
-            TxStateHolder txStateHolder) {
+            TxStateHolder txStateHolder,
+            SchemaRead schemaRead) {
         this.storageReader = storageReader;
         this.tokenRead = tokenRead;
         this.cursors = cursors;
@@ -86,6 +89,7 @@ abstract class Read implements org.neo4j.internal.kernel.api.Read, org.neo4j.int
         this.entityLocks = entityLocks;
         this.queryContext = queryContext;
         this.txStateHolder = txStateHolder;
+        this.schemaRead = schemaRead;
     }
 
     @Override
@@ -616,10 +620,10 @@ abstract class Read implements org.neo4j.internal.kernel.api.Read, org.neo4j.int
 
     private void assertIndexOnline(IndexDescriptor index)
             throws IndexNotFoundKernelException, IndexBrokenKernelException {
-        if (indexGetState(index) == InternalIndexState.ONLINE) {
+        if (schemaRead.indexGetState(index) == InternalIndexState.ONLINE) {
             return;
         }
-        throw new IndexBrokenKernelException(indexGetFailure(index));
+        throw new IndexBrokenKernelException(schemaRead.indexGetFailure(index));
     }
 
     private static void assertPredicatesMatchSchema(

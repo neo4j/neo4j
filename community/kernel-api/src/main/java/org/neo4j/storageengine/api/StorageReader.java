@@ -89,8 +89,6 @@ public interface StorageReader extends AutoCloseable, StorageSchemaReader {
      */
     Iterator<ConstraintDescriptor> constraintsGetForSchema(SchemaDescriptor descriptor);
 
-    boolean constraintExists(ConstraintDescriptor descriptor);
-
     /**
      * Returns number of stored nodes labeled with the label represented by {@code labelId}.
      *

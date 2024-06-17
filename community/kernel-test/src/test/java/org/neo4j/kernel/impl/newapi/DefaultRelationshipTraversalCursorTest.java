@@ -29,28 +29,19 @@ import static org.neo4j.storageengine.api.RelationshipSelection.ALL_RELATIONSHIP
 import static org.neo4j.storageengine.api.RelationshipSelection.selection;
 
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
-import java.util.function.Function;
 import java.util.stream.LongStream;
 import org.junit.jupiter.api.Test;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.internal.kernel.api.IndexReadSession;
-import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.Locks;
-import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.internal.kernel.api.QueryContext;
-import org.neo4j.internal.kernel.api.SchemaReadCore;
+import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.TokenReadSession;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
-import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.IndexType;
-import org.neo4j.internal.schema.SchemaDescriptor;
-import org.neo4j.kernel.api.index.IndexSample;
-import org.neo4j.kernel.api.index.IndexUsageStats;
 import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.state.TxState;
@@ -391,7 +382,8 @@ class DefaultRelationshipTraversalCursorTest {
                     ktx.storeCursors(),
                     mock(Locks.class),
                     mock(QueryContext.class),
-                    ktx);
+                    ktx,
+                    mock(SchemaRead.class));
             this.ktx = ktx;
         }
 
@@ -488,180 +480,6 @@ class DefaultRelationshipTraversalCursorTest {
         @Override
         public boolean transactionStateHasChanges() {
             return false;
-        }
-
-        @Override
-        public Iterator<IndexDescriptor> indexForSchemaNonTransactional(SchemaDescriptor schema) {
-            return null;
-        }
-
-        @Override
-        public IndexDescriptor indexForSchemaAndIndexTypeNonTransactional(
-                SchemaDescriptor schema, IndexType indexType) {
-            return null;
-        }
-
-        @Override
-        public Iterator<IndexDescriptor> indexForSchemaNonLocking(SchemaDescriptor schema) {
-            return null;
-        }
-
-        @Override
-        public Iterator<IndexDescriptor> getLabelIndexesNonLocking(int labelId) {
-            return null;
-        }
-
-        @Override
-        public Iterator<IndexDescriptor> getRelTypeIndexesNonLocking(int labelId) {
-            return null;
-        }
-
-        @Override
-        public Iterator<IndexDescriptor> indexesGetAllNonLocking() {
-            return null;
-        }
-
-        @Override
-        public double indexUniqueValuesSelectivity(IndexDescriptor index) {
-            return 0;
-        }
-
-        @Override
-        public long indexSize(IndexDescriptor index) {
-            return 0;
-        }
-
-        @Override
-        public IndexSample indexSample(IndexDescriptor index) {
-            return null;
-        }
-
-        @Override
-        public Iterator<ConstraintDescriptor> constraintsGetForSchema(SchemaDescriptor descriptor) {
-            return null;
-        }
-
-        @Override
-        public Iterator<ConstraintDescriptor> constraintsGetForSchemaNonLocking(SchemaDescriptor descriptor) {
-            return null;
-        }
-
-        @Override
-        public boolean constraintExists(ConstraintDescriptor descriptor) {
-            return false;
-        }
-
-        @Override
-        public SchemaReadCore snapshot() {
-            return null;
-        }
-
-        @Override
-        public Long indexGetOwningUniquenessConstraintId(IndexDescriptor index) {
-            return null;
-        }
-
-        @Override
-        public Long indexGetOwningUniquenessConstraintIdNonLocking(IndexDescriptor index) {
-            return null;
-        }
-
-        @Override
-        public <K, V> V schemaStateGetOrCreate(K key, Function<K, V> creator) {
-            return null;
-        }
-
-        @Override
-        public void schemaStateFlush() {}
-
-        @Override
-        public IndexDescriptor indexGetForName(String name) {
-            return null;
-        }
-
-        @Override
-        public ConstraintDescriptor constraintGetForName(String name) {
-            return null;
-        }
-
-        @Override
-        public Iterator<IndexDescriptor> index(SchemaDescriptor schema) {
-            return null;
-        }
-
-        @Override
-        public IndexDescriptor index(SchemaDescriptor schema, IndexType type) {
-            return null;
-        }
-
-        @Override
-        public Iterator<IndexDescriptor> indexesGetForLabel(int labelId) {
-            return null;
-        }
-
-        @Override
-        public Iterator<IndexDescriptor> indexesGetForRelationshipType(int relationshipType) {
-            return null;
-        }
-
-        @Override
-        public Iterator<IndexDescriptor> indexesGetAll() {
-            return null;
-        }
-
-        @Override
-        public InternalIndexState indexGetState(IndexDescriptor index) {
-            return null;
-        }
-
-        @Override
-        public InternalIndexState indexGetStateNonLocking(IndexDescriptor index) {
-            return null;
-        }
-
-        @Override
-        public PopulationProgress indexGetPopulationProgress(IndexDescriptor index) {
-            return null;
-        }
-
-        @Override
-        public String indexGetFailure(IndexDescriptor index) {
-            return null;
-        }
-
-        @Override
-        public Iterator<ConstraintDescriptor> constraintsGetForLabel(int labelId) {
-            return null;
-        }
-
-        @Override
-        public Iterator<ConstraintDescriptor> constraintsGetForLabelNonLocking(int labelId) {
-            return null;
-        }
-
-        @Override
-        public Iterator<ConstraintDescriptor> constraintsGetForRelationshipType(int typeId) {
-            return null;
-        }
-
-        @Override
-        public Iterator<ConstraintDescriptor> constraintsGetForRelationshipTypeNonLocking(int typeId) {
-            return null;
-        }
-
-        @Override
-        public Iterator<ConstraintDescriptor> constraintsGetAll() {
-            return null;
-        }
-
-        @Override
-        public Iterator<ConstraintDescriptor> constraintsGetAllNonLocking() {
-            return null;
-        }
-
-        @Override
-        public IndexUsageStats indexUsageStats(IndexDescriptor index) {
-            return null;
         }
     }
 }

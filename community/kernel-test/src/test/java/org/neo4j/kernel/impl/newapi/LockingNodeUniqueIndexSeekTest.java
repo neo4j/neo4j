@@ -36,6 +36,7 @@ import org.neo4j.internal.kernel.api.EntityLocks;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.QueryContext;
+import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.security.AccessMode;
@@ -43,12 +44,10 @@ import org.neo4j.internal.kernel.api.security.AccessMode.Static;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptors;
-import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingService;
-import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.locking.LockManager;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.memory.EmptyMemoryTracker;
@@ -126,22 +125,22 @@ class LockingNodeUniqueIndexSeekTest {
     private AllStoreHolder createMockedRead() throws IndexNotFoundKernelException {
         IndexingService indexingService = mock(IndexingService.class);
         IndexProxy indexProxy = mock(IndexProxy.class);
-        when(indexProxy.getState()).thenReturn(InternalIndexState.ONLINE);
         when(indexProxy.newValueReader()).thenReturn(mock(ValueIndexReader.class));
         when(indexingService.getIndexProxy(any())).thenReturn(indexProxy);
+        SchemaRead schemaRead = mock(SchemaRead.class);
+        when(schemaRead.indexGetState(any())).thenReturn(InternalIndexState.ONLINE);
         return new AllStoreHolder(
                 mock(StorageReader.class),
                 mock(TokenRead.class),
-                mock(SchemaState.class),
                 indexingService,
-                mock(IndexStatisticsStore.class),
                 EmptyMemoryTracker.INSTANCE,
                 mock(DefaultPooledCursors.class),
                 mock(StoreCursors.class),
                 new EntityLocks(mock(StorageLocks.class), () -> LockTracer.NONE, locks, () -> {}),
                 false,
                 QueryContext.NULL_CONTEXT,
-                mock(TxStateHolder.class)) {
+                mock(TxStateHolder.class),
+                schemaRead) {
 
             @Override
             void performCheckBeforeOperation() {}

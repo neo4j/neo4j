@@ -137,6 +137,7 @@ import org.neo4j.kernel.impl.newapi.AllStoreHolder;
 import org.neo4j.kernel.impl.newapi.DefaultPooledCursors;
 import org.neo4j.kernel.impl.newapi.IndexTxStateUpdater;
 import org.neo4j.kernel.impl.newapi.KernelProcedures;
+import org.neo4j.kernel.impl.newapi.KernelSchemaRead;
 import org.neo4j.kernel.impl.newapi.KernelToken;
 import org.neo4j.kernel.impl.newapi.KernelTokenRead;
 import org.neo4j.kernel.impl.newapi.Operations;
@@ -228,6 +229,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final CursorContextFactory contextFactory;
     private final EntityLocks entityLocks;
     private final KernelProcedures.ForTransactionScope procedures;
+    private final KernelSchemaRead schemaRead;
     // For concurrent access by monitoring, jobs, etc CURSOR_CONTEXT_HANDLE should be used
     @SuppressWarnings("FieldMayBeFinal")
     private CursorContext cursorContext;
@@ -395,19 +397,27 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 storageLocks, currentStatement::lockTracer, lockClient, this::assertOpenWithParallelAccessCheck);
         this.procedures =
                 new KernelProcedures.ForTransactionScope(this, dependencies, this::assertOpenWithParallelAccessCheck);
+        this.schemaRead = new KernelSchemaRead(
+                schemaState,
+                indexStatisticsStore,
+                storageReader,
+                entityLocks,
+                this,
+                indexingService,
+                this::assertOpenWithParallelAccessCheck,
+                () -> securityContext().mode());
         this.allStoreHolder = new AllStoreHolder.ForTransactionScope(
                 storageReader,
                 kernelToken,
                 this,
                 entityLocks,
                 cursors,
-                schemaState,
                 indexingService,
-                indexStatisticsStore,
                 memoryTracker,
                 multiVersioned,
                 queryContext,
-                this::assertOpenWithParallelAccessCheck);
+                this::assertOpenWithParallelAccessCheck,
+                schemaRead);
         this.executionContextFactory = createExecutionContextFactory(
                 contextFactory,
                 storageEngine,
@@ -432,6 +442,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 kernelVersionProvider,
                 storageLocks,
                 this,
+                schemaRead,
                 kernelToken,
                 cursors,
                 constraintIndexCreator,
@@ -1250,7 +1261,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
     @Override
     public SchemaRead schemaRead() {
-        return operations.schemaRead();
+        return schemaRead;
     }
 
     @Override

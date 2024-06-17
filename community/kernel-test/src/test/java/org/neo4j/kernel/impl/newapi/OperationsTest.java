@@ -64,6 +64,7 @@ import org.neo4j.internal.kernel.api.helpers.StubRead;
 import org.neo4j.internal.kernel.api.helpers.StubRelationshipCursor;
 import org.neo4j.internal.kernel.api.helpers.TestRelationshipChain;
 import org.neo4j.internal.kernel.api.security.AccessMode;
+import org.neo4j.internal.kernel.api.security.AccessMode.Static;
 import org.neo4j.internal.kernel.api.security.CommunitySecurityLog;
 import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
@@ -118,6 +119,7 @@ abstract class OperationsTest {
     protected DefaultRelationshipScanCursor relationshipCursor;
     protected TransactionState txState;
     protected AllStoreHolder.ForTransactionScope allStoreHolder;
+    protected KernelSchemaRead kernelSchemaRead;
     protected final LabelSchemaDescriptor schema = SchemaDescriptors.forLabel(123, 456);
     protected StorageReader storageReader;
     protected StorageSchemaReader storageReaderSnapshot;
@@ -172,19 +174,28 @@ abstract class OperationsTest {
         storageLocks = mock(StorageLocks.class);
         tokenHolders = mockedTokenHolders();
         var kernelToken = new KernelToken(storageReader, creationContext, transaction, tokenHolders);
+        EntityLocks entityLocks = new EntityLocks(storageLocks, singleton(NONE), locks, () -> {});
+        kernelSchemaRead = new KernelSchemaRead(
+                mock(SchemaState.class),
+                mock(IndexStatisticsStore.class),
+                storageReader,
+                entityLocks,
+                transaction,
+                indexingService,
+                mock(AssertOpen.class),
+                () -> Static.FULL);
         allStoreHolder = new AllStoreHolder.ForTransactionScope(
                 storageReader,
                 kernelToken,
                 transaction,
-                new EntityLocks(storageLocks, singleton(NONE), locks, () -> {}),
+                entityLocks,
                 cursors,
-                mock(SchemaState.class),
                 indexingService,
-                mock(IndexStatisticsStore.class),
                 INSTANCE,
                 false,
                 mock(QueryContext.class),
-                mock(AssertOpen.class));
+                mock(AssertOpen.class),
+                kernelSchemaRead);
         constraintIndexCreator = mock(ConstraintIndexCreator.class);
         creationContext = mock(CommandCreationContext.class);
 
@@ -221,6 +232,7 @@ abstract class OperationsTest {
                 LatestVersions.LATEST_KERNEL_VERSION_PROVIDER,
                 storageLocks,
                 transaction,
+                kernelSchemaRead,
                 kernelToken,
                 cursors,
                 constraintIndexCreator,
