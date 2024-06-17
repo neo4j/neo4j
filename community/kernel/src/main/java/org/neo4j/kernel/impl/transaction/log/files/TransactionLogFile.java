@@ -207,7 +207,7 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile {
 
         long rotationElapsedTime = context.getClock().millis() - startTimeMillis;
         rotationMonitor.finishLogRotation(
-                channel.getPath(), logHeader.getLogVersion(), lastCommittedTransactionId, rotationElapsedTime, 0);
+                channel.getPath(), logHeader.getLogVersion(), context.appendIndex(), rotationElapsedTime, 0);
     }
 
     // In order to be able to write into a logfile after life.stop during shutdown sequence

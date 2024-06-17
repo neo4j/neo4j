@@ -33,5 +33,5 @@ public interface LogRotationMonitor {
     void startRotation(long currentLogVersion);
 
     void finishLogRotation(
-            Path logFile, long logVersion, long lastTransactionId, long rotationMillis, long millisSinceLastRotation);
+            Path logFile, long logVersion, long lastAppendIndex, long rotationMillis, long millisSinceLastRotation);
 }

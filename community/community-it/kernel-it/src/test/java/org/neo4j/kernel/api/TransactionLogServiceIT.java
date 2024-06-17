@@ -918,7 +918,7 @@ class TransactionLogServiceIT {
         public void finishLogRotation(
                 Path logFile,
                 long logVersion,
-                long lastTransactionId,
+                long lastAppendIndex,
                 long rotationMillis,
                 long millisSinceLastRotation) {
             versions.add(logVersion);

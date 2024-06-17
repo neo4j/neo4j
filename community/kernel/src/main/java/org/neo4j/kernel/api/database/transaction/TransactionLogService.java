@@ -45,7 +45,7 @@ public interface TransactionLogService {
      * Append buffer content to the end of transaction logs. Buffer content is only appended and is not interpreted at this point.
      * Meaning transactions will be replayed as subsequent recovery. There is no guarantee what buffer will contain in terms of transactions: it can
      * be completely empty, contain only part of transaction, several of those etc.
-     * Unlike transactional log append log rotation will be performed only when transaction id and append index is provided and rotations is required.
+     * Unlike transactional log append log rotation will be performed only when append index is provided and rotations is required.
      * Transactions that are appended by this method do not perform commit, as result there no updates to metadata store will be executed.
      * Mixing bulk append and applying standard transactional workload is not supported and will result in corrupted database.
      * Provided byte buffer can be reused, if required, after append operation completion.

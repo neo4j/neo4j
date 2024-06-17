@@ -146,10 +146,10 @@ public class LoggingLogFileMonitor
 
     @Override
     public void finishLogRotation(
-            Path logFile, long logVersion, long lastTransactionId, long rotationMillis, long millisSinceLastRotation) {
+            Path logFile, long logVersion, long lastAppendIndex, long rotationMillis, long millisSinceLastRotation) {
         StringBuilder sb = new StringBuilder("Rotated to transaction log [");
-        sb.append(logFile).append("] version=").append(logVersion).append(", last transaction in previous log=");
-        sb.append(lastTransactionId)
+        sb.append(logFile).append("] version=").append(logVersion).append(", last append index in previous log=");
+        sb.append(lastAppendIndex)
                 .append(", rotation took ")
                 .append(rotationMillis)
                 .append(" millis");

@@ -45,7 +45,7 @@ public class FileLogRotation implements LogRotation {
     private final Panic databasePanic;
     private final RotatableFile rotatableFile;
     private long lastRotationCompleted;
-    private final LongSupplier lastTransactionIdSupplier;
+    private final LongSupplier lastAppendIndexSupplier;
     private final LongSupplier currentFileVersionSupplier;
 
     public static LogRotation checkpointLogRotation(
@@ -59,7 +59,7 @@ public class FileLogRotation implements LogRotation {
                 clock,
                 databasePanic,
                 monitor,
-                () -> logFile.getLogFileInformation().committingEntryId(),
+                () -> logFile.getLogFileInformation().getLastEntryAppendIndex(),
                 uncheckedLongSupplier(checkpointLogFile::getCurrentDetachedLogVersion));
     }
 
@@ -70,7 +70,7 @@ public class FileLogRotation implements LogRotation {
                 clock,
                 databasePanic,
                 monitor,
-                () -> logFile.getLogFileInformation().committingEntryId(),
+                () -> logFile.getLogFileInformation().getLastEntryAppendIndex(),
                 logFile::getCurrentLogVersion);
     }
 
@@ -79,13 +79,13 @@ public class FileLogRotation implements LogRotation {
             Clock clock,
             Panic databasePanic,
             LogRotationMonitor monitor,
-            LongSupplier lastTransactionIdSupplier,
+            LongSupplier lastAppendIndexSupplier,
             LongSupplier currentFileVersionSupplier) {
         this.clock = clock;
         this.monitor = monitor;
         this.databasePanic = databasePanic;
         this.rotatableFile = rotatableFile;
-        this.lastTransactionIdSupplier = lastTransactionIdSupplier;
+        this.lastAppendIndexSupplier = lastAppendIndexSupplier;
         this.currentFileVersionSupplier = currentFileVersionSupplier;
     }
 
@@ -113,7 +113,7 @@ public class FileLogRotation implements LogRotation {
                     long version = logFile.getHighestLogVersion();
                     doRotate(
                             logRotateEvents,
-                            lastTransactionId,
+                            lastAppendIndex,
                             () -> version,
                             () -> logFile.rotate(lastTransactionId, lastAppendIndex));
                     return true;
@@ -129,7 +129,7 @@ public class FileLogRotation implements LogRotation {
         if (rotatableFile.rotationNeeded()) {
             doRotate(
                     logRotateEvents,
-                    lastTransactionIdSupplier.getAsLong(),
+                    lastAppendIndexSupplier.getAsLong(),
                     currentFileVersionSupplier,
                     rotatableFile::rotate);
             return true;
@@ -143,7 +143,7 @@ public class FileLogRotation implements LogRotation {
         synchronized (rotatableFile) {
             doRotate(
                     logRotateEvents,
-                    lastTransactionIdSupplier.getAsLong(),
+                    lastAppendIndexSupplier.getAsLong(),
                     currentFileVersionSupplier,
                     rotatableFile::rotate);
         }
@@ -159,7 +159,7 @@ public class FileLogRotation implements LogRotation {
             throws IOException {
         doRotate(
                 logRotateEvents,
-                lastTransactionId,
+                lastAppendIndex,
                 currentFileVersionSupplier,
                 () -> rotatableFile.rotate(kernelVersion, lastTransactionId, lastAppendIndex, previousChecksum));
     }
@@ -171,7 +171,7 @@ public class FileLogRotation implements LogRotation {
 
     private void doRotate(
             LogRotateEvents logRotateEvents,
-            long lastTransactionId,
+            long appendIndex,
             LongSupplier currentFileVersionSupplier,
             FileRotator fileRotator)
             throws IOException {
@@ -190,7 +190,7 @@ public class FileLogRotation implements LogRotation {
             long rotationElapsedTime = lastRotationCompleted - startTimeMillis;
             rotateEvent.rotationCompleted(rotationElapsedTime);
             monitor.finishLogRotation(
-                    newLogFile, currentVersion, lastTransactionId, rotationElapsedTime, millisSinceLastRotation);
+                    newLogFile, currentVersion, appendIndex, rotationElapsedTime, millisSinceLastRotation);
         }
     }
 
