@@ -171,7 +171,7 @@ case class SlottedRow(slots: SlotConfiguration) extends CypherRow {
       val refValue = getRefAt(i)
       val newRefValue = func(refValue)
       setRefAt(i, newRefValue)
-      i += 1
+      i += i
     }
   }
 
