@@ -1845,30 +1845,23 @@ private[internal] class TransactionBoundReadQueryContext(
         true
 
       case m: MapValue if !m.isEmpty =>
-        var foundValue = false
         m.foreach((_, v) => {
           if (needsRebinding(v)) {
-            // We could break here if we had something like `exists` or an entrySet-iterator on MapValue,
-            // and we also want to avoid using a non-local return.
-            // However, the common case is when we do not need to rebind and then we need to visit every entry anyway.
-            foundValue = true
+            return true
           }
         })
-        foundValue
+        false
 
       case _: IntegralRangeListValue =>
         false
 
       case l: ListValue if !l.isEmpty =>
-        val iter = l.iterator()
-        var foundValue = false
-        while (iter.hasNext && !foundValue) {
-          val v = iter.next()
+        l.forEach(v => {
           if (needsRebinding(v)) {
-            foundValue = true
+            return true
           }
-        }
-        foundValue
+        })
+        false
 
       case _ =>
         false
