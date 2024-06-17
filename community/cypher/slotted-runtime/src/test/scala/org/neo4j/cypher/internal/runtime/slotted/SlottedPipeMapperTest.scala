@@ -59,6 +59,7 @@ import org.neo4j.cypher.internal.logical.plans.SingleQueryExpression
 import org.neo4j.cypher.internal.logical.plans.Sort
 import org.neo4j.cypher.internal.logical.plans.UnwindCollection
 import org.neo4j.cypher.internal.logical.plans.VarExpand
+import org.neo4j.cypher.internal.options.CypherVersion
 import org.neo4j.cypher.internal.physicalplanning.LongSlot
 import org.neo4j.cypher.internal.physicalplanning.PhysicalPlanner
 import org.neo4j.cypher.internal.physicalplanning.RefSlot
@@ -157,6 +158,7 @@ class SlottedPipeMapperTest extends CypherFunSuite with LogicalPlanningTestSuppo
     )
 
     val fallback = InterpretedPipeMapper(
+      CypherVersion.default.actualVersion,
       true,
       converters,
       tokenContext,

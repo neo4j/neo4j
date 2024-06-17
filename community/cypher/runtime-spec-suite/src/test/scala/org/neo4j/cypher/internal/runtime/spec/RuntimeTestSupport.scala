@@ -908,6 +908,7 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](
     val queryOptions = PreParser.queryOptions(List.empty, InputPosition.NONE, cypherConfiguration)
 
     runtimeContextManager.create(
+      queryOptions.queryOptions.cypherVersion.actualVersion,
       queryContext,
       queryContext.transactionalContext.schemaRead,
       queryContext.transactionalContext.procedures,

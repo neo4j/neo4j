@@ -20,12 +20,14 @@
 package org.neo4j.cypher.internal.runtime.interpreted
 
 import org.neo4j.cypher.internal
+import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.expressions
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.NODE_TYPE
 import org.neo4j.cypher.internal.expressions.RELATIONSHIP_TYPE
 import org.neo4j.cypher.internal.expressions.SemanticDirection
+import org.neo4j.cypher.internal.frontend.phases.CypherScope.toKernelScope
 import org.neo4j.cypher.internal.frontend.phases.ResolvedCall
 import org.neo4j.cypher.internal.ir.CreatePattern
 import org.neo4j.cypher.internal.ir.RemoveLabelPattern
@@ -372,6 +374,7 @@ import org.neo4j.values.virtual.VirtualRelationshipValue
  * When adding new Pipes and LogicalPlans, this is where you should be looking.
  */
 case class InterpretedPipeMapper(
+  cypherVersion: CypherVersion,
   readOnly: Boolean,
   expressionConverters: ExpressionConverters,
   tokenContext: ReadTokenContext,
@@ -975,10 +978,17 @@ case class InterpretedPipeMapper(
         CommandPipe(ShowConstraintsCommand(constraintType, columns, yields))(id)
 
       case ShowProcedures(executableBy, columns, yields, _) =>
-        CommandPipe(ShowProceduresCommand(executableBy, columns, yields, isCommunity))(id)
+        CommandPipe(ShowProceduresCommand(executableBy, columns, yields, isCommunity, toKernelScope(cypherVersion)))(id)
 
       case ShowFunctions(functionType, executableBy, columns, yields, _) =>
-        CommandPipe(ShowFunctionsCommand(functionType, executableBy, columns, yields, isCommunity))(id)
+        CommandPipe(ShowFunctionsCommand(
+          functionType,
+          executableBy,
+          columns,
+          yields,
+          isCommunity,
+          toKernelScope(cypherVersion)
+        ))(id)
 
       case ShowTransactions(ids, columns, yields, _) =>
         val newIds = ids match {

@@ -60,7 +60,8 @@ case class ShowProceduresCommand(
   executableBy: Option[ExecutableBy],
   columns: List[ShowColumn],
   yieldColumns: List[CommandResultItem],
-  isCommunity: Boolean
+  isCommunity: Boolean,
+  scope: CypherScope
 ) extends Command(columns, yieldColumns) {
 
   private val rolesColumnRequested =
@@ -96,7 +97,7 @@ case class ShowProceduresCommand(
       else
         false
 
-    val allProcedures = txContext.procedures.proceduresGetAll(CypherScope.CYPHER_5).iterator.asScala
+    val allProcedures = txContext.procedures.proceduresGetAll(scope).iterator.asScala
     val sortedProcedures = allProcedures.filter(proc => !proc.internal).toList.sortBy(a => a.name.toString)
 
     val rows = sortedProcedures.map { proc =>

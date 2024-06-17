@@ -62,7 +62,8 @@ case class ShowFunctionsCommand(
   executableBy: Option[ExecutableBy],
   columns: List[ShowColumn],
   yieldColumns: List[CommandResultItem],
-  isCommunity: Boolean
+  isCommunity: Boolean,
+  scope: CypherScope
 ) extends Command(columns, yieldColumns) {
 
   private val rolesColumnRequested =
@@ -112,7 +113,7 @@ case class ShowFunctionsCommand(
     }
 
     // gets you all non-aggregating functions that are registered in the db (incl. those from libs like apoc)
-    val loadedFunctions = txContext.procedures.functionGetAll(CypherScope.CYPHER_5).iterator.asScala
+    val loadedFunctions = txContext.procedures.functionGetAll(scope).iterator.asScala
 
     // filters out functions annotated with @Internal and gets the FunctionInfo
     val loadedFunctionsInfo =
@@ -120,7 +121,7 @@ case class ShowFunctionsCommand(
 
     // gets you all aggregation functions that are registered in the db (incl. those from libs like apoc)
     val loadedAggregationFunctions =
-      txContext.procedures.aggregationFunctionGetAll(CypherScope.CYPHER_5).iterator.asScala
+      txContext.procedures.aggregationFunctionGetAll(scope).iterator.asScala
 
     // filters out functions annotated with @Internal and gets the FunctionInfo
     val loadedAggregationFunctionsInfo =

@@ -46,7 +46,7 @@ import org.neo4j.internal.kernel.api.security.AuthSubject
 import org.neo4j.internal.kernel.api.security.PermissionState
 import org.neo4j.internal.kernel.api.security.PrivilegeAction.SHOW_ROLE
 import org.neo4j.internal.kernel.api.security.Segment
-import org.neo4j.kernel.api.CypherScope
+import org.neo4j.kernel.api.CypherScope.CYPHER_5
 import org.neo4j.kernel.impl.query.FunctionInformation
 import org.neo4j.kernel.impl.query.FunctionInformation.InputInformation
 import org.neo4j.values.AnyValue
@@ -225,8 +225,8 @@ class ShowFunctionsCommandTest extends ShowCommandTestBase {
   }
 
   private def returnDefaultFunctions(): Unit = {
-    when(procedures.functionGetAll(CypherScope.CYPHER_5)).thenReturn(List(func1, func3).asJava.stream())
-    when(procedures.aggregationFunctionGetAll(CypherScope.CYPHER_5)).thenReturn(List(func2, func4).asJava.stream())
+    when(procedures.functionGetAll(CYPHER_5)).thenReturn(List(func1, func3).asJava.stream())
+    when(procedures.aggregationFunctionGetAll(CYPHER_5)).thenReturn(List(func2, func4).asJava.stream())
     when(ctx.providedLanguageFunctions).thenReturn(List(func5, func6))
   }
 
@@ -294,7 +294,7 @@ class ShowFunctionsCommandTest extends ShowCommandTestBase {
 
     // When
     val showFunctions =
-      ShowFunctionsCommand(AllFunctions, None, defaultColumns, List.empty, isCommunity = true)
+      ShowFunctionsCommand(AllFunctions, None, defaultColumns, List.empty, isCommunity = true, CYPHER_5)
     val result = showFunctions.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -357,7 +357,7 @@ class ShowFunctionsCommandTest extends ShowCommandTestBase {
 
     // When
     val showFunctions =
-      ShowFunctionsCommand(AllFunctions, None, defaultColumns, List.empty, isCommunity = false)
+      ShowFunctionsCommand(AllFunctions, None, defaultColumns, List.empty, isCommunity = false, CYPHER_5)
     val result = showFunctions.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -420,7 +420,7 @@ class ShowFunctionsCommandTest extends ShowCommandTestBase {
 
     // When
     val showFunctions =
-      ShowFunctionsCommand(AllFunctions, None, allColumns, List.empty, isCommunity = true)
+      ShowFunctionsCommand(AllFunctions, None, allColumns, List.empty, isCommunity = true, CYPHER_5)
     val result = showFunctions.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -525,7 +525,7 @@ class ShowFunctionsCommandTest extends ShowCommandTestBase {
 
     // When
     val showFunctions =
-      ShowFunctionsCommand(AllFunctions, None, allColumns, List.empty, isCommunity = false)
+      ShowFunctionsCommand(AllFunctions, None, allColumns, List.empty, isCommunity = false, CYPHER_5)
     val result = showFunctions.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -627,13 +627,13 @@ class ShowFunctionsCommandTest extends ShowCommandTestBase {
 
   test("show functions should return the functions sorted on name") {
     // Set-up which functions to return, not ordered by name:
-    when(procedures.functionGetAll(CypherScope.CYPHER_5)).thenReturn(List(func3, func1).asJava.stream())
-    when(procedures.aggregationFunctionGetAll(CypherScope.CYPHER_5)).thenReturn(List(func4, func2).asJava.stream())
+    when(procedures.functionGetAll(CYPHER_5)).thenReturn(List(func3, func1).asJava.stream())
+    when(procedures.aggregationFunctionGetAll(CYPHER_5)).thenReturn(List(func4, func2).asJava.stream())
     when(ctx.providedLanguageFunctions).thenReturn(List(func6, func5))
 
     // When
     val showFunctions =
-      ShowFunctionsCommand(AllFunctions, None, defaultColumns, List.empty, isCommunity = true)
+      ShowFunctionsCommand(AllFunctions, None, defaultColumns, List.empty, isCommunity = true, CYPHER_5)
     val result = showFunctions.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -674,8 +674,8 @@ class ShowFunctionsCommandTest extends ShowCommandTestBase {
       true,
       false
     )
-    when(procedures.functionGetAll(CypherScope.CYPHER_5)).thenReturn(List(func1, internalFunc).asJava.stream())
-    when(procedures.aggregationFunctionGetAll(CypherScope.CYPHER_5)).thenReturn(List(
+    when(procedures.functionGetAll(CYPHER_5)).thenReturn(List(func1, internalFunc).asJava.stream())
+    when(procedures.aggregationFunctionGetAll(CYPHER_5)).thenReturn(List(
       func2,
       internalAggregatingFunc
     ).asJava.stream())
@@ -683,7 +683,7 @@ class ShowFunctionsCommandTest extends ShowCommandTestBase {
 
     // When
     val showFunctions =
-      ShowFunctionsCommand(AllFunctions, None, defaultColumns, List.empty, isCommunity = true)
+      ShowFunctionsCommand(AllFunctions, None, defaultColumns, List.empty, isCommunity = true, CYPHER_5)
     val result = showFunctions.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -757,11 +757,11 @@ class ShowFunctionsCommandTest extends ShowCommandTestBase {
       deprecated = true,
       deprecatedByString = null
     )
-    when(procedures.functionGetAll(CypherScope.CYPHER_5)).thenReturn(List(
+    when(procedures.functionGetAll(CYPHER_5)).thenReturn(List(
       deprecatedFunc,
       deprecatedFuncWithoutReplacement
     ).asJava.stream())
-    when(procedures.aggregationFunctionGetAll(CypherScope.CYPHER_5)).thenReturn(List(
+    when(procedures.aggregationFunctionGetAll(CYPHER_5)).thenReturn(List(
       deprecatedAggregatingFunc,
       deprecatedAggregatingFuncWithoutReplacement
     ).asJava.stream())
@@ -769,7 +769,7 @@ class ShowFunctionsCommandTest extends ShowCommandTestBase {
 
     // When
     val showFunctions =
-      ShowFunctionsCommand(AllFunctions, None, allColumns, List.empty, isCommunity = true)
+      ShowFunctionsCommand(AllFunctions, None, allColumns, List.empty, isCommunity = true, CYPHER_5)
     val result = showFunctions.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -825,7 +825,7 @@ class ShowFunctionsCommandTest extends ShowCommandTestBase {
 
     // When
     val showFunctions =
-      ShowFunctionsCommand(AllFunctions, None, allColumns, List.empty, isCommunity = false)
+      ShowFunctionsCommand(AllFunctions, None, allColumns, List.empty, isCommunity = false, CYPHER_5)
     val result = showFunctions.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -847,7 +847,7 @@ class ShowFunctionsCommandTest extends ShowCommandTestBase {
 
     // When
     val showFunctions =
-      ShowFunctionsCommand(AllFunctions, None, allColumns, List.empty, isCommunity = false)
+      ShowFunctionsCommand(AllFunctions, None, allColumns, List.empty, isCommunity = false, CYPHER_5)
     val result = showFunctions.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -866,7 +866,7 @@ class ShowFunctionsCommandTest extends ShowCommandTestBase {
 
     // When
     val showFunctions =
-      ShowFunctionsCommand(AllFunctions, None, allColumns, List.empty, isCommunity = false)
+      ShowFunctionsCommand(AllFunctions, None, allColumns, List.empty, isCommunity = false, CYPHER_5)
     val result = showFunctions.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -941,7 +941,8 @@ class ShowFunctionsCommandTest extends ShowCommandTestBase {
         Some(CurrentUser),
         defaultColumns,
         List.empty,
-        isCommunity = false
+        isCommunity = false,
+        CYPHER_5
       )
     val result = showFunctions.originalNameRows(queryState, initialCypherRow).toList
 
@@ -977,7 +978,8 @@ class ShowFunctionsCommandTest extends ShowCommandTestBase {
         Some(CurrentUser),
         defaultColumns,
         List.empty,
-        isCommunity = false
+        isCommunity = false,
+        CYPHER_5
       )
     val resultCurrent = showFunctionsCurrent.originalNameRows(queryState, initialCypherRow).toList
 
@@ -999,7 +1001,8 @@ class ShowFunctionsCommandTest extends ShowCommandTestBase {
         Some(User(username)),
         defaultColumns,
         List.empty,
-        isCommunity = false
+        isCommunity = false,
+        CYPHER_5
       )
     val resultSame = showFunctionsSame.originalNameRows(queryState, initialCypherRow).toList
 
@@ -1028,7 +1031,8 @@ class ShowFunctionsCommandTest extends ShowCommandTestBase {
         Some(User(otherUser)),
         defaultColumns,
         List.empty,
-        isCommunity = false
+        isCommunity = false,
+        CYPHER_5
       )
     val resultCurrent = showFunctionsCurrent.originalNameRows(queryState, initialCypherRow).toList
 
@@ -1069,7 +1073,8 @@ class ShowFunctionsCommandTest extends ShowCommandTestBase {
         Some(User(missingUser)),
         defaultColumns,
         List.empty,
-        isCommunity = false
+        isCommunity = false,
+        CYPHER_5
       )
     val resultCurrent = showFunctionsCurrent.originalNameRows(queryState, initialCypherRow).toList
 
@@ -1083,7 +1088,7 @@ class ShowFunctionsCommandTest extends ShowCommandTestBase {
 
     // When
     val showFunctions =
-      ShowFunctionsCommand(AllFunctions, None, allColumns, List.empty, isCommunity = false)
+      ShowFunctionsCommand(AllFunctions, None, allColumns, List.empty, isCommunity = false, CYPHER_5)
     val result = showFunctions.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -1126,7 +1131,7 @@ class ShowFunctionsCommandTest extends ShowCommandTestBase {
 
     // When
     val showFunctions =
-      ShowFunctionsCommand(BuiltInFunctions, None, allColumns, List.empty, isCommunity = false)
+      ShowFunctionsCommand(BuiltInFunctions, None, allColumns, List.empty, isCommunity = false, CYPHER_5)
     val result = showFunctions.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -1159,7 +1164,7 @@ class ShowFunctionsCommandTest extends ShowCommandTestBase {
 
     // When
     val showFunctions =
-      ShowFunctionsCommand(UserDefinedFunctions, None, allColumns, List.empty, isCommunity = false)
+      ShowFunctionsCommand(UserDefinedFunctions, None, allColumns, List.empty, isCommunity = false, CYPHER_5)
     val result = showFunctions.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -1199,7 +1204,7 @@ class ShowFunctionsCommandTest extends ShowCommandTestBase {
 
     // When
     val showFunctions =
-      ShowFunctionsCommand(AllFunctions, None, allColumns, yieldColumns, isCommunity = false)
+      ShowFunctionsCommand(AllFunctions, None, allColumns, yieldColumns, isCommunity = false, CYPHER_5)
     val result = showFunctions.originalNameRows(queryState, initialCypherRow).toList
 
     // Then

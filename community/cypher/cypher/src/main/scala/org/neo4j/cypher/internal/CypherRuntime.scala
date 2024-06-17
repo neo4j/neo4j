@@ -99,6 +99,7 @@ case class LogicalQuery(
  * Context in which the Runtime performs physical planning
  */
 abstract class RuntimeContext {
+  def cypherVersion: CypherVersion
   def tokenContext: ReadTokenContext
   def schemaRead: SchemaRead
   def procedures: Procedures
@@ -123,6 +124,7 @@ trait RuntimeContextManager[+CONTEXT <: RuntimeContext] {
    * Create a new runtime context.
    */
   def create(
+    cypherVersion: CypherVersion,
     tokenContext: ReadTokenContext,
     schemaRead: SchemaRead,
     procedures: Procedures,

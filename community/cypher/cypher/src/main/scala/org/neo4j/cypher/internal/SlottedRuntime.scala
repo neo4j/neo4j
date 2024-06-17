@@ -118,6 +118,7 @@ trait SlottedRuntime[-CONTEXT <: RuntimeContext] extends CypherRuntime[CONTEXT] 
 
       val queryIndexRegistrator = new QueryIndexRegistrator(context.schemaRead)
       val fallback = InterpretedPipeMapper(
+        context.cypherVersion,
         query.readOnly,
         converters,
         context.tokenContext,

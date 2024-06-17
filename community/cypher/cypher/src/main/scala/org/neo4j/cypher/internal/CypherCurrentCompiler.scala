@@ -205,6 +205,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](
     queryType: InternalQueryType
   ): CachedExecutionPlan = {
     val runtimeContext = contextManager.create(
+      query.options.queryOptions.cypherVersion.actualVersion,
       logicalPlanResult.plannerContext.planContext,
       transactionalContext.kernelTransaction().schemaRead(),
       transactionalContext.kernelTransaction().procedures(),

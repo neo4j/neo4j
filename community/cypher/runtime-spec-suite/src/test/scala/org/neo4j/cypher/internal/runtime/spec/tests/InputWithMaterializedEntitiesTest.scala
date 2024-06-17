@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.options.CypherDebugOptions
 import org.neo4j.cypher.internal.options.CypherInterpretedPipesFallbackOption
 import org.neo4j.cypher.internal.options.CypherOperatorEngineOption
+import org.neo4j.cypher.internal.options.CypherVersion
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
@@ -245,6 +246,7 @@ abstract class InputWithMaterializedEntitiesTest[CONTEXT <: RuntimeContext](
 
       override protected def newRuntimeContext(queryContext: QueryContext): CONTEXT = {
         runtimeContextManager.create(
+          CypherVersion.default.actualVersion,
           queryContext,
           queryContext.transactionalContext.schemaRead,
           queryContext.transactionalContext.procedures,

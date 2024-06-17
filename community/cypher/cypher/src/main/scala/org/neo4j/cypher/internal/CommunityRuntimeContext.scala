@@ -36,6 +36,7 @@ import java.time.Clock
  * The regular community runtime context.
  */
 case class CommunityRuntimeContext(
+  cypherVersion: CypherVersion,
   tokenContext: ReadTokenContext,
   schemaRead: SchemaRead,
   procedures: Procedures,
@@ -54,6 +55,7 @@ case class CommunityRuntimeContextManager(log: InternalLog, config: CypherRuntim
     extends RuntimeContextManager[CommunityRuntimeContext] {
 
   override def create(
+    cypherVersion: CypherVersion,
     tokenContext: ReadTokenContext,
     schemaRead: SchemaRead,
     procedures: Procedures,
@@ -67,6 +69,7 @@ case class CommunityRuntimeContextManager(log: InternalLog, config: CypherRuntim
     assertOpen: AssertOpen
   ): CommunityRuntimeContext =
     CommunityRuntimeContext(
+      cypherVersion,
       tokenContext,
       schemaRead,
       procedures,

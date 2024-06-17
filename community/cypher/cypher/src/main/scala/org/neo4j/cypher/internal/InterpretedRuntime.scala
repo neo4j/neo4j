@@ -81,6 +81,7 @@ object InterpretedRuntime extends CypherRuntime[RuntimeContext] {
     )
     val queryIndexRegistrator = new QueryIndexRegistrator(context.schemaRead)
     val pipeMapper = InterpretedPipeMapper(
+      context.cypherVersion,
       query.readOnly,
       converters,
       context.tokenContext,

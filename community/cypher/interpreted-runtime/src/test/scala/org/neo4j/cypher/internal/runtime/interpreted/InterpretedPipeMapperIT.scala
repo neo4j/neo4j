@@ -43,6 +43,7 @@ import org.neo4j.cypher.internal.logical.plans.NodeHashJoin
 import org.neo4j.cypher.internal.logical.plans.OptionalExpand
 import org.neo4j.cypher.internal.logical.plans.Projection
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipByIdSeek
+import org.neo4j.cypher.internal.options.CypherVersion
 import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.planner.spi.ReadTokenContext
 import org.neo4j.cypher.internal.runtime.CypherRuntimeConfiguration
@@ -101,6 +102,7 @@ class InterpretedPipeMapperIT extends CypherFunSuite with AstConstructionTestSup
 
   private val pipeMapper =
     InterpretedPipeMapper(
+      CypherVersion.default.actualVersion,
       readOnly = true,
       converters,
       planContext,
