@@ -145,7 +145,7 @@
     <lucene.version>9.11.0</lucene.version>
     <bouncycastle.version>1.78.1</bouncycastle.version>
     <jetty.version>10.0.20</jetty.version>
-    <scala-maven-plugin.version>4.9.0</scala-maven-plugin.version>
+    <scala-maven-plugin.version>4.9.1</scala-maven-plugin.version>
     <scala.version>2.13.11</scala.version>
     <scala.binary.version>2.13</scala.binary.version>
     <scala.plugin.recompileMode>all</scala.plugin.recompileMode>
@@ -324,7 +324,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-surefire-plugin</artifactId>
-          <version>3.2.5</version>
+          <version>3.3.0</version>
           <configuration>
             <statelessTestsetReporter implementation="org.apache.maven.plugin.surefire.extensions.junit5.JUnit5Xml30StatelessReporter">
               <disable>false</disable>
@@ -356,7 +356,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-failsafe-plugin</artifactId>
-          <version>3.2.5</version>
+          <version>3.3.0</version>
           <configuration>
             <statelessTestsetReporter
                     implementation="org.apache.maven.plugin.surefire.extensions.junit5.JUnit5Xml30StatelessReporter">
