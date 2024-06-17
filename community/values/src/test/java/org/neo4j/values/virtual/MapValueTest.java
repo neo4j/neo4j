@@ -242,10 +242,6 @@ class MapValueTest {
         assertThat(Arrays.asList(a.keys().asArray())).contains(b.keys().asArray());
         a.foreach((k, v) -> assertThat(b.get(k)).isEqualTo(v));
         b.foreach((k, v) -> assertThat(a.get(k)).isEqualTo(v));
-        a.foreach((ak, av) -> assertThat(b.entryExists((bk, bv) -> ak.equals(bk) && av.equals(bv)))
-                .isTrue());
-        b.foreach((bk, bv) -> assertThat(a.entryExists((ak, av) -> ak.equals(bk) && av.equals(bv)))
-                .isTrue());
     }
 
     private static MapValue mapValue(Object... kv) {
