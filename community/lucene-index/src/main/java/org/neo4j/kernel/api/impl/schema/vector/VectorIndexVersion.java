@@ -129,8 +129,12 @@ public enum VectorIndexVersion {
 
     public abstract boolean acceptsValueInstanceType(Value candidate);
 
+    public VectorSimilarityFunction maybeSimilarityFunction(String name) {
+        return similarityFunctions.get(name.toUpperCase(Locale.ROOT));
+    }
+
     public VectorSimilarityFunction similarityFunction(String name) {
-        final var similarityFunction = similarityFunctions.get(name.toUpperCase(Locale.ROOT));
+        final var similarityFunction = maybeSimilarityFunction(name);
         if (similarityFunction == null) {
             throw new IllegalArgumentException("'%s' is an unsupported vector similarity function for %s. Supported: %s"
                     .formatted(name, descriptor.name(), similarityFunctions.keysView()));
