@@ -4,7 +4,7 @@
     <parent>
         <groupId>org.neo4j</groupId>
         <artifactId>parent</artifactId>
-        <version>5.21.0-SNAPSHOT</version>
+        <version>5.22.0-SNAPSHOT</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
 
@@ -86,7 +86,7 @@
         <dependency>
             <groupId>org.neo4j</groupId>
             <artifactId>neo4j-gql-status</artifactId>
-            <version>5.21.0-SNAPSHOT</version>
+            <version>5.22.0-SNAPSHOT</version>
             <scope>compile</scope>
         </dependency>
     </dependencies>

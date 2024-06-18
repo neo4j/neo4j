@@ -6,14 +6,14 @@
     <parent>
         <groupId>org.neo4j</groupId>
         <artifactId>cypher-parent</artifactId>
-        <version>5.21.0-SNAPSHOT</version>
+        <version>5.22.0-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
     <artifactId>neo4j-cypher-slotted-runtime</artifactId>
     <packaging>jar</packaging>
-    <version>5.21.0-SNAPSHOT</version>
+    <version>5.22.0-SNAPSHOT</version>
     <name>Neo4j - Cypher Slotted Runtime</name>
     <description>Planner for the physical query plans</description>
     <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
