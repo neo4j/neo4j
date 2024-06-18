@@ -110,7 +110,7 @@ class CsvImporter {
     private final MemoryTracker memoryTracker;
     private final boolean force;
     private final ImportCommand.IncrementalStage incrementalStage;
-    private final ImportCommand.ImportType importType;
+    private final boolean incremental;
     private final InternalLogProvider logProvider;
 
     private CsvImporter(Builder b) {
@@ -139,7 +139,7 @@ class CsvImporter {
         this.stdErr = requireNonNull(b.stdErr);
         this.logProvider = requireNonNull(b.logProvider);
         this.force = b.force;
-        this.importType = b.importType;
+        this.incremental = b.incremental;
         this.incrementalStage = b.incrementalStage;
     }
 
@@ -203,7 +203,7 @@ class CsvImporter {
                     input);
             success = true;
         } catch (Exception ex) {
-            throw andPrintError(databaseLayout.getDatabaseName(), ex, importType, stdErr);
+            throw andPrintError(databaseLayout.getDatabaseName(), ex, incremental, stdErr);
         } finally {
             long numberOfBadEntries = badCollector.badEntries();
             if (badTolerance != BadCollector.UNLIMITED_TOLERANCE && numberOfBadEntries > badTolerance) {
@@ -239,11 +239,11 @@ class CsvImporter {
      *
      * @param databaseName the name of the database to receive the import data
      * @param e            the error that occurred
-     * @param importType   type of import
+     * @param incremental  whether the import is incremental
      * @param err          the error output stream
      */
     private static RuntimeException andPrintError(
-            String databaseName, Exception e, ImportCommand.ImportType importType, PrintStream err) {
+            String databaseName, Exception e, boolean incremental, PrintStream err) {
         // List of common errors that can be explained to the user
         if (DuplicateInputIdException.class.equals(e.getClass())) {
             err.println("Duplicate input ids that would otherwise clash can be put into separate id space.");
@@ -255,7 +255,7 @@ class CsvImporter {
         } else if (FileLockException.class.equals(e.getClass())) {
             String string =
                     "%s can only be run against a database which is offline. The current state of database '%s' is online."
-                            .formatted(importType.description(), databaseName);
+                            .formatted(incremental ? "Incremental import" : "Import", databaseName);
             err.println(string);
         }
         // This type of exception is wrapped since our input code throws InputException consistently,
@@ -403,7 +403,7 @@ class CsvImporter {
         private PrintStream stdOut = System.out;
         private PrintStream stdErr = System.err;
         private boolean force;
-        private ImportCommand.ImportType importType = ImportCommand.ImportType.full;
+        private boolean incremental = false;
         private ImportCommand.IncrementalStage incrementalStage = null;
         private InternalLogProvider logProvider = NullLogProvider.getInstance();
 
@@ -529,8 +529,8 @@ class CsvImporter {
             return this;
         }
 
-        Builder withImportType(ImportCommand.ImportType importType) {
-            this.importType = importType;
+        Builder withIncremental(boolean incremental) {
+            this.incremental = incremental;
             return this;
         }
 
@@ -546,7 +546,7 @@ class CsvImporter {
 
         CsvImporter build() {
             Preconditions.checkState(
-                    !(force && importType == ImportCommand.ImportType.incremental),
+                    !(force && incremental),
                     "--overwrite-destination doesn't work with incremental import",
                     incrementalStage);
             return new CsvImporter(this);

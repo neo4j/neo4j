@@ -405,7 +405,7 @@ public class ImportCommand {
         }
 
         protected void doExecute(
-                ImportType importType, String format, boolean overwriteDestination, Base.MaybeLocker maybeLockChecker) {
+                boolean incremental, String format, boolean overwriteDestination, Base.MaybeLocker maybeLockChecker) {
             try {
                 final var databaseConfig = loadNeo4jConfig(format);
                 DatabaseLayout databaseLayout = Neo4jLayout.of(databaseConfig).databaseLayout(database.name());
@@ -437,20 +437,18 @@ public class ImportCommand {
                             .withVerbose(verbose)
                             .withAutoSkipHeaders(autoSkipHeaders)
                             .withForce(overwriteDestination)
-                            .withImportType(importType)
+                            .withIncremental(incremental)
                             .withLogProvider(logProvider);
-                    CursorContextFactory cursorContextFactory;
-                    if (importType == ImportType.incremental) {
-                        cursorContextFactory = new CursorContextFactory(
+                    if (incremental) {
+                        importerBuilder.withCursorContextFactory(new CursorContextFactory(
                                 PageCacheTracer.NULL,
                                 new FixedVersionContextSupplier(getLogTail(fileSystem, databaseLayout, databaseConfig)
                                         .getLastCommittedTransaction()
-                                        .id()));
+                                        .id())));
                     } else {
-                        cursorContextFactory = new CursorContextFactory(
-                                PageCacheTracer.NULL, new FixedVersionContextSupplier(BASE_TX_ID));
+                        importerBuilder.withCursorContextFactory(new CursorContextFactory(
+                                PageCacheTracer.NULL, new FixedVersionContextSupplier(BASE_TX_ID)));
                     }
-                    importerBuilder.withCursorContextFactory(cursorContextFactory);
 
                     for (var n : nodes) {
                         importerBuilder.addNodeFiles(n.key, n.toPaths(fileSystem));
@@ -646,7 +644,7 @@ public class ImportCommand {
 
         @Override
         public void execute() throws Exception {
-            doExecute(ImportType.full, format, overwriteDestination, databaseLayout -> {
+            doExecute(false, format, overwriteDestination, databaseLayout -> {
                 // Create the db folder if it doesn't exist, to be able to create and lock the lockfile.
                 ctx.fs().mkdirs(databaseLayout.databaseDirectory());
                 return LockChecker.checkDatabaseLock(databaseLayout);
@@ -721,11 +719,7 @@ public class ImportCommand {
                         "ERROR: Incremental import needs to be used with care. Please confirm by specifying --force.");
                 throw new IllegalArgumentException("Missing force");
             }
-            doExecute(
-                    ImportType.incremental,
-                    null,
-                    false,
-                    (layout) -> () -> {} /* locking handled in the specific steps */);
+            doExecute(true, null, false, (layout) -> () -> {} /* locking handled in the specific steps */);
         }
 
         @Override
@@ -889,21 +883,5 @@ public class ImportCommand {
          * Performs a full incremental import including all steps involved.
          */
         all
-    }
-
-    protected enum ImportType {
-        full("Full import"),
-        incremental("Incremental import"),
-        spd("SPD property data sharded import");
-
-        private final String description;
-
-        ImportType(String description) {
-            this.description = description;
-        }
-
-        String description() {
-            return description;
-        }
     }
 }
