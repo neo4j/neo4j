@@ -187,7 +187,7 @@ public class VectorIndexCreationTest {
         @EnabledIf("hasValidVersions")
         void shouldRejectIllegalDimensions(VectorIndexVersion version, int dimensions) {
             final var config = defaultConfigWith(IndexSetting.vector_Dimensions(), dimensions);
-            assertIllegalDimensions(() -> createVectorIndex(version, config, propKeyIds[0]));
+            assertIllegalDimensions(version, () -> createVectorIndex(version, config, propKeyIds[0]));
         }
 
         Stream<Arguments> shouldRejectIllegalDimensions() {
@@ -199,7 +199,7 @@ public class VectorIndexCreationTest {
         @ValueSource(ints = {-1, 0})
         void shouldRejectIllegalDimensionsCoreAPI(int dimensions) {
             final var settings = defaultSettingsWith(IndexSetting.vector_Dimensions(), dimensions);
-            assertIllegalDimensions(() -> createVectorIndex(settings, PROP_KEYS.get(1)));
+            assertIllegalDimensions(latestSupportedVersion, () -> createVectorIndex(settings, PROP_KEYS.get(1)));
         }
 
         @ParameterizedTest
@@ -208,14 +208,14 @@ public class VectorIndexCreationTest {
         void shouldRejectUnsupportedDimensions(VectorIndexVersion version) {
             final var dimensions = version.maxDimensions() + 1;
             final var config = defaultConfigWith(IndexSetting.vector_Dimensions(), dimensions);
-            assertUnsupportedDimensions(() -> createVectorIndex(version, config, propKeyIds[0]));
+            assertIllegalDimensions(version, () -> createVectorIndex(version, config, propKeyIds[0]));
         }
 
         @Test
         void shouldRejectUnsupportedDimensionsCoreAPI() {
             final var dimensions = latestSupportedVersion.maxDimensions() + 1;
             final var settings = defaultSettingsWith(IndexSetting.vector_Dimensions(), dimensions);
-            assertUnsupportedDimensions(() -> createVectorIndex(settings, PROP_KEYS.get(1)));
+            assertIllegalDimensions(latestSupportedVersion, () -> createVectorIndex(settings, PROP_KEYS.get(1)));
         }
 
         @ParameterizedTest
@@ -318,7 +318,7 @@ public class VectorIndexCreationTest {
             return invalidVersions.stream();
         }
 
-        private void createVectorIndex(VectorIndexVersion version, IndexConfig config, int... propKeyIds)
+        protected void createVectorIndex(VectorIndexVersion version, IndexConfig config, int... propKeyIds)
                 throws KernelException {
             try (final var tx = db.beginTx()) {
                 final var ktx = ((InternalTransaction) tx).kernelTransaction();
@@ -363,7 +363,7 @@ public class VectorIndexCreationTest {
             return configFrom(defaultSettingsWith(setting, value));
         }
 
-        private static IndexConfig defaultConfigWithout(IndexSetting setting) {
+        protected static IndexConfig defaultConfigWithout(IndexSetting setting) {
             return configFrom(defaultSettingsWithout(setting));
         }
 
@@ -397,26 +397,22 @@ public class VectorIndexCreationTest {
                     .hasMessageContainingAll("vector indexes with provider", "are not supported");
         }
 
-        private static void assertIllegalDimensions(ThrowingCallable callable) {
+        private static void assertIllegalDimensions(VectorIndexVersion version, ThrowingCallable callable) {
             assertThatThrownBy(callable)
                     .isInstanceOf(IllegalArgumentException.class)
-                    .cause()
                     .hasMessageContainingAll(
-                            IndexSetting.vector_Dimensions().getSettingName(), "is expected to be positive");
-        }
-
-        private static void assertUnsupportedDimensions(ThrowingCallable callable) {
-            assertThatThrownBy(callable)
-                    .isInstanceOf(UnsupportedOperationException.class)
-                    .hasMessageContainingAll(IndexSetting.vector_Dimensions().getSettingName(), "set greater than");
+                            IndexSetting.vector_Dimensions().getSettingName(),
+                            "must be between 1 and",
+                            String.valueOf(version.maxDimensions()),
+                            "inclusively");
         }
 
         private static void assertIllegalSimilarityFunction(VectorIndexVersion version, ThrowingCallable callable) {
             assertThatThrownBy(callable)
                     .isInstanceOf(IllegalArgumentException.class)
-                    .cause()
                     .hasMessageContainingAll(
-                            "is an unsupported vector similarity function",
+                            "is an unsupported",
+                            IndexSetting.vector_Similarity_Function().getSettingName(),
                             "Supported",
                             version.supportedSimilarityFunctions()
                                     .asLazy()
@@ -431,10 +427,9 @@ public class VectorIndexCreationTest {
                             "Composite indexes are not supported for", IndexType.VECTOR.name(), "index type");
         }
 
-        private static void assertMissingExpectedSetting(IndexSetting setting, ThrowingCallable callable) {
+        protected static void assertMissingExpectedSetting(IndexSetting setting, ThrowingCallable callable) {
             assertThatThrownBy(callable)
                     .isInstanceOf(IllegalArgumentException.class)
-                    .rootCause()
                     .hasMessageContainingAll(setting.getSettingName(), "is expected to have been set");
         }
     }
@@ -462,6 +457,14 @@ public class VectorIndexCreationTest {
         @Override
         protected IndexCreator indexCreator(Transaction tx) {
             return tx.schema().indexFor(LABEL);
+        }
+
+        @Test
+        void shouldRequireDimensionsV1() {
+            final var config = defaultConfigWithout(IndexSetting.vector_Dimensions());
+            assertMissingExpectedSetting(
+                    IndexSetting.vector_Dimensions(),
+                    () -> createVectorIndex(VectorIndexVersion.V1_0, config, propKeyIds[0]));
         }
     }
 

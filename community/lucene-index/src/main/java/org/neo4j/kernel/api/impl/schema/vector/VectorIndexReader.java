@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.api.impl.schema.vector;
 
-import static org.neo4j.kernel.api.impl.schema.vector.VectorUtils.vectorDimensionsFrom;
-
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.ArrayList;
@@ -48,19 +46,20 @@ import org.neo4j.kernel.impl.index.schema.IndexUsageTracker;
 import org.neo4j.values.storable.Value;
 
 class VectorIndexReader extends AbstractLuceneIndexReader {
-    private final List<SearcherReference> searchers;
     private final VectorDocumentStructure documentStructure;
-    private final int vectorDimensionality;
+    private final int dimensions;
+    private final List<SearcherReference> searchers;
 
     VectorIndexReader(
             IndexDescriptor descriptor,
+            VectorIndexConfig vectorIndexConfig,
             VectorDocumentStructure documentStructure,
             List<SearcherReference> searchers,
             IndexUsageTracker usageTracker) {
         super(descriptor, usageTracker);
-        this.searchers = searchers;
         this.documentStructure = documentStructure;
-        this.vectorDimensionality = vectorDimensionsFrom(descriptor.getIndexConfig());
+        this.dimensions = vectorIndexConfig.dimensions();
+        this.searchers = searchers;
     }
 
     @Override
@@ -104,10 +103,10 @@ class VectorIndexReader extends AbstractLuceneIndexReader {
         final var predicate = super.validateQuery(predicates);
         if (predicate instanceof final NearestNeighborsPredicate nearestNeighbour) {
             final var queryVector = nearestNeighbour.query();
-            if (queryVector.length != vectorDimensionality) {
+            if (queryVector.length != dimensions) {
                 throw new IndexNotApplicableKernelException(
                         "Index query vector has a dimensionality of %d, but indexed vectors have %d."
-                                .formatted(queryVector.length, vectorDimensionality));
+                                .formatted(queryVector.length, dimensions));
             }
         }
         return predicate;

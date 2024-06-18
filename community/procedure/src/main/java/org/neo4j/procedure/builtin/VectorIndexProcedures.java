@@ -55,12 +55,12 @@ import org.neo4j.internal.kernel.api.ValueIndexCursor;
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexType;
+import org.neo4j.internal.schema.SettingsAccessor.IndexConfigAccessor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.impl.schema.vector.VectorIndexVersion;
 import org.neo4j.kernel.api.impl.schema.vector.VectorSimilarityFunctions;
-import org.neo4j.kernel.api.impl.schema.vector.VectorUtils;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.api.vector.VectorCandidate;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -241,14 +241,16 @@ public class VectorIndexProcedures {
 
     private static float[] validateAndConvertQuery(IndexDescriptor index, VectorCandidate query) {
         final var version = VectorIndexVersion.fromDescriptor(index.getIndexProvider());
-        final var config = index.getIndexConfig();
-        final var dimensions = VectorUtils.vectorDimensionsFrom(config);
+        final var vectorIndexConfig = version.indexSettingValidator()
+                .trustIsValidToVectorIndexConfig(new IndexConfigAccessor(index.getIndexConfig()));
+
+        final var dimensions = vectorIndexConfig.dimensions();
         if (dimensions != query.dimensions()) {
             throw new IllegalArgumentException("Index query vector has %d dimensions, but indexed vectors have %d."
                     .formatted(query.dimensions(), dimensions));
         }
 
-        final var similarityFunction = VectorUtils.vectorSimilarityFunctionFrom(version, config);
+        final var similarityFunction = vectorIndexConfig.similarityFunction();
         return similarityFunction.toValidVector(query);
     }
 

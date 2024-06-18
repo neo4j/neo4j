@@ -55,13 +55,13 @@ import org.neo4j.internal.schema.IndexConfig
 import org.neo4j.internal.schema.IndexPrototype
 import org.neo4j.internal.schema.IndexType
 import org.neo4j.internal.schema.SchemaDescriptors
+import org.neo4j.internal.schema.SettingsAccessor.IndexConfigAccessor
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory
 import org.neo4j.kernel.api.impl.fulltext.analyzer.providers.StandardNoStopWords
 import org.neo4j.kernel.api.impl.fulltext.analyzer.providers.UrlOrEmail
 import org.neo4j.kernel.api.impl.schema.TextIndexProvider
 import org.neo4j.kernel.api.impl.schema.trigram.TrigramIndexProvider
 import org.neo4j.kernel.api.impl.schema.vector.VectorIndexVersion
-import org.neo4j.kernel.api.impl.schema.vector.VectorUtils
 import org.neo4j.kernel.api.index.IndexUsageStats
 import org.neo4j.kernel.impl.index.schema.FulltextIndexProviderFactory
 import org.neo4j.kernel.impl.index.schema.PointIndexProvider
@@ -202,13 +202,12 @@ class ShowIndexesCommandTest extends ShowCommandTestBase {
   }
   private val vectorDimensions = VECTOR_DIMENSIONS.getSettingName
   private val vectorSimilarityFunction = VECTOR_SIMILARITY_FUNCTION.getSettingName
-  private val vectorDimensionsValue = VectorUtils.vectorDimensionsFrom(vectorConfig)
 
-  private val vectorSimilarityFunctionValue = (version: VectorIndexVersion) =>
-    VectorUtils.vectorSimilarityFunctionFrom(version, vectorConfig).name
-
-  private val vectorConfigMapString = (version: VectorIndexVersion) =>
-    s"{`$vectorDimensions`: $vectorDimensionsValue,`$vectorSimilarityFunction`: '${vectorSimilarityFunctionValue(version)}'}"
+  private val vectorConfigMapString = (version: VectorIndexVersion) => {
+    val vectorIndexConfig =
+      version.indexSettingValidator.trustIsValidToVectorIndexConfig(new IndexConfigAccessor(vectorConfig))
+    s"{`$vectorDimensions`: ${vectorIndexConfig.dimensions},`$vectorSimilarityFunction`: '${vectorIndexConfig.similarityFunction.name}'}"
+  }
 
   private val rangeNodeIndexDescriptor =
     IndexPrototype.forSchema(labelDescriptor, RangeIndexProvider.DESCRIPTOR).withName("index00").materialise(0)

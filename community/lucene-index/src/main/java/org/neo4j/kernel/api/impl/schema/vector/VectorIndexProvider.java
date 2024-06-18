@@ -25,12 +25,12 @@ import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
-import org.neo4j.graphdb.schema.IndexSetting;
 import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexType;
+import org.neo4j.internal.schema.SettingsAccessor.IndexConfigAccessor;
 import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -58,6 +58,7 @@ import org.neo4j.values.storable.Value;
 
 public class VectorIndexProvider extends AbstractLuceneIndexProvider {
     private final VectorIndexVersion version;
+    private final VectorIndexSettingsValidator settingsValidator;
     private final VectorDocumentStructure documentStructure;
     private final FileSystemAbstraction fileSystem;
     private final JobScheduler scheduler;
@@ -82,6 +83,7 @@ public class VectorIndexProvider extends AbstractLuceneIndexProvider {
                 config,
                 readOnlyChecker);
         this.version = version;
+        this.settingsValidator = version.indexSettingValidator();
         this.documentStructure = VectorDocumentStructures.documentStructureFor(version);
         this.fileSystem = fileSystem;
         this.scheduler = scheduler;
@@ -90,19 +92,8 @@ public class VectorIndexProvider extends AbstractLuceneIndexProvider {
     @Override
     public void validatePrototype(IndexPrototype prototype) {
         super.validatePrototype(prototype);
-        final var config = prototype.getIndexConfig();
-
-        final var dimensions = VectorUtils.vectorDimensionsFrom(config);
-        final var maxDimensions = version.maxDimensions();
-        if (dimensions > maxDimensions) {
-            throw new UnsupportedOperationException(
-                    "'%s' set greater than %d is unsupported for index with provider '%s'."
-                            .formatted(
-                                    IndexSetting.vector_Dimensions().getSettingName(),
-                                    maxDimensions,
-                                    getProviderDescriptor().name()));
-        }
-        VectorUtils.vectorSimilarityFunctionFrom(version, config);
+        settingsValidator.validateToVectorIndexConfig(
+                new IndexConfigAccessor(prototype.getIndexConfig())); // construction handles validation
     }
 
     @Override
@@ -114,12 +105,14 @@ public class VectorIndexProvider extends AbstractLuceneIndexProvider {
             TokenNameLookup tokenNameLookup,
             ImmutableSet<OpenOption> openOptions,
             StorageEngineIndexingBehaviour indexingBehaviour) {
-        final var indexConfig = descriptor.getIndexConfig();
-        final var dimensions = VectorUtils.vectorDimensionsFrom(indexConfig);
+        final var vectorIndexConfig =
+                settingsValidator.trustIsValidToVectorIndexConfig(new IndexConfigAccessor(descriptor.getIndexConfig()));
+        final var dimensions = vectorIndexConfig.dimensions();
 
         final var codec = new VectorCodecV2(dimensions);
         final var writerConfigBuilder = new IndexWriterConfigBuilder(VectorModes.POPULATION, config).withCodec(codec);
-        final var luceneIndex = VectorIndexBuilder.create(descriptor, documentStructure, readOnlyChecker, config)
+        final var luceneIndex = VectorIndexBuilder.create(
+                        descriptor, vectorIndexConfig, documentStructure, readOnlyChecker, config)
                 .withFileSystem(fileSystem)
                 .withIndexStorage(getIndexStorage(descriptor.getId()))
                 .withWriterConfig(writerConfigBuilder::build)
@@ -130,7 +123,7 @@ public class VectorIndexProvider extends AbstractLuceneIndexProvider {
         }
 
         final var ignoreStrategy = new IgnoreStrategy(version, dimensions);
-        final var similarityFunction = vectorSimilarityFunctionFrom(indexConfig);
+        final var similarityFunction = vectorSimilarityFunctionFrom(vectorIndexConfig);
         return new VectorIndexPopulator(luceneIndex, ignoreStrategy, documentStructure, similarityFunction);
     }
 
@@ -143,7 +136,11 @@ public class VectorIndexProvider extends AbstractLuceneIndexProvider {
             boolean readOnly,
             StorageEngineIndexingBehaviour indexingBehaviour)
             throws IOException {
-        var builder = VectorIndexBuilder.create(descriptor, documentStructure, readOnlyChecker, config)
+        final var vectorIndexConfig =
+                settingsValidator.trustIsValidToVectorIndexConfig(new IndexConfigAccessor(descriptor.getIndexConfig()));
+
+        var builder = VectorIndexBuilder.create(
+                        descriptor, vectorIndexConfig, documentStructure, readOnlyChecker, config)
                 .withIndexStorage(getIndexStorage(descriptor.getId()));
         if (readOnly) {
             builder = builder.permanentlyReadOnly();
@@ -152,9 +149,8 @@ public class VectorIndexProvider extends AbstractLuceneIndexProvider {
         luceneIndex.open();
         forceMergeSegments(scheduler, luceneIndex);
 
-        final var indexConfig = descriptor.getIndexConfig();
-        final var ignoreStrategy = new IgnoreStrategy(version, VectorUtils.vectorDimensionsFrom(indexConfig));
-        final var similarityFunction = vectorSimilarityFunctionFrom(indexConfig);
+        final var ignoreStrategy = new IgnoreStrategy(version, vectorIndexConfig.dimensions());
+        final var similarityFunction = vectorSimilarityFunctionFrom(vectorIndexConfig);
         return new VectorIndexAccessor(luceneIndex, descriptor, ignoreStrategy, documentStructure, similarityFunction);
     }
 
@@ -167,9 +163,10 @@ public class VectorIndexProvider extends AbstractLuceneIndexProvider {
     }
 
     public static IndexCapability capability(VectorIndexVersion version, IndexConfig config) {
-        final var dimensions = VectorUtils.vectorDimensionsFrom(config);
-        final var similarityFunction = VectorUtils.vectorSimilarityFunctionFrom(version, config);
-        return new VectorIndexCapability(new IgnoreStrategy(version, dimensions), similarityFunction);
+        final var vectorIndexConfig =
+                version.indexSettingValidator().trustIsValidToVectorIndexConfig(new IndexConfigAccessor(config));
+        return new VectorIndexCapability(
+                new IgnoreStrategy(version, vectorIndexConfig.dimensions()), vectorIndexConfig.similarityFunction());
     }
 
     record IgnoreStrategy(VectorIndexVersion version, int dimensions) implements IndexUpdateIgnoreStrategy {
@@ -189,8 +186,8 @@ public class VectorIndexProvider extends AbstractLuceneIndexProvider {
         }
     }
 
-    private LuceneVectorSimilarityFunction vectorSimilarityFunctionFrom(IndexConfig config) {
-        final var vectorSimilarityFunction = VectorUtils.vectorSimilarityFunctionFrom(version, config);
+    private LuceneVectorSimilarityFunction vectorSimilarityFunctionFrom(VectorIndexConfig vectorIndexConfig) {
+        final var vectorSimilarityFunction = vectorIndexConfig.similarityFunction();
         if (!(vectorSimilarityFunction instanceof final LuceneVectorSimilarityFunction luceneSimilarityFunction)) {
             throw new IllegalArgumentException(
                     "'%s' vector similarity function is expected to be compatible with Lucene. Provided: %s"

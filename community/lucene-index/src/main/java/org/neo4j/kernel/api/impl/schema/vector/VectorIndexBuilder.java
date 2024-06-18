@@ -36,38 +36,42 @@ import org.neo4j.kernel.api.impl.schema.vector.codec.VectorCodecV2;
 
 class VectorIndexBuilder extends AbstractLuceneIndexBuilder<VectorIndexBuilder> {
     private final IndexDescriptor descriptor;
+    private final VectorIndexConfig vectorIndexConfig;
     private final VectorDocumentStructure documentStructure;
     private final Config config;
     private Supplier<IndexWriterConfig> writerConfigFactory;
 
     private VectorIndexBuilder(
             IndexDescriptor descriptor,
+            VectorIndexConfig vectorIndexConfig,
             VectorDocumentStructure documentStructure,
             DatabaseReadOnlyChecker readOnlyChecker,
             Config config) {
         super(readOnlyChecker);
-        this.documentStructure = documentStructure;
         this.descriptor = descriptor;
+        this.vectorIndexConfig = vectorIndexConfig;
+        this.documentStructure = documentStructure;
         this.config = config;
 
-        final var codec = new VectorCodecV2(VectorUtils.vectorDimensionsFrom(descriptor.getIndexConfig()));
+        final var codec = new VectorCodecV2(vectorIndexConfig.dimensions());
         final var writerConfigBuilder = new IndexWriterConfigBuilder(VectorModes.STANDARD, config).withCodec(codec);
         this.writerConfigFactory = writerConfigBuilder::build;
     }
 
     /**
      * Create new lucene schema index builder.
-     *
-     * @param documentStructure The lucene document structure for this index
      * @param descriptor The descriptor for this index
-     * @return {@link VectorIndexBuilder} that can be used to build trigram based Text index built on Lucene
+     * @param vectorIndexConfig The vector index config for the index
+     * @param documentStructure The lucene document structure for this index
+     * @return {@link VectorIndexBuilder} that can be used to build vector index built on Lucene
      */
     static VectorIndexBuilder create(
             IndexDescriptor descriptor,
+            VectorIndexConfig vectorIndexConfig,
             VectorDocumentStructure documentStructure,
             DatabaseReadOnlyChecker readOnlyChecker,
             Config config) {
-        return new VectorIndexBuilder(descriptor, documentStructure, readOnlyChecker, config);
+        return new VectorIndexBuilder(descriptor, vectorIndexConfig, documentStructure, readOnlyChecker, config);
     }
 
     /**
@@ -89,7 +93,12 @@ class VectorIndexBuilder extends AbstractLuceneIndexBuilder<VectorIndexBuilder> 
     DatabaseIndex<VectorIndexReader> build() {
         final var storage = storageBuilder.build();
         final var index = new VectorIndex(
-                storage, new WritableIndexPartitionFactory(writerConfigFactory), documentStructure, descriptor, config);
+                storage,
+                new WritableIndexPartitionFactory(writerConfigFactory),
+                documentStructure,
+                descriptor,
+                vectorIndexConfig,
+                config);
         return new WritableDatabaseIndex<>(index, readOnlyChecker, permanentlyReadOnly);
     }
 }
