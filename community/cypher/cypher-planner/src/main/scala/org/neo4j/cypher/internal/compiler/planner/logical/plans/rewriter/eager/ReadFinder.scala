@@ -886,9 +886,9 @@ object ReadFinder {
         LeftOuterHashJoin(_, _, _) |
         RightOuterHashJoin(_, _, _) |
         TriadicSelection(_, _, _, _, _, _) |
-        RemoveLabels(_, _, _) |
+        RemoveLabels(_, _, _, _) |
         RunQueryAt(_, _, _, _, _, _) |
-        SetLabels(_, _, _) |
+        SetLabels(_, _, _, _) |
         SetNodeProperties(_, _, _) |
         SetNodePropertiesFromMap(_, _, _, _) |
         SetNodeProperty(_, _, _, _) |

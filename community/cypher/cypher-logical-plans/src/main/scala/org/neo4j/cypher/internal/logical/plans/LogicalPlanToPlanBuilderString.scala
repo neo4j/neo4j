@@ -1411,9 +1411,14 @@ object LogicalPlanToPlanBuilderString {
         wrapInQuotations(idName)
       case Prober(_, _) =>
         "Prober.NoopProbe" // We do not preserve the object reference through the string transformation
-      case RemoveLabels(_, idName, labelNames) =>
-        wrapInQuotationsAndMkString(idName.name +: labelNames.map(_.name).toSeq)
-      case SetLabels(_, idName, labelNames) => wrapInQuotationsAndMkString(idName.name +: labelNames.map(_.name).toSeq)
+      case RemoveLabels(_, idName, labelNames, dynamicLabels) =>
+        s"${wrapInQuotations(idName.name)}, " +
+          s"Seq(${wrapInQuotationsAndMkString(labelNames.map(_.name))}), " +
+          s"Seq(${wrapInQuotationsAndMkString(dynamicLabels.map(e => expressionStringifier(e)))})"
+      case SetLabels(_, idName, labelNames, dynamicLabels) =>
+        s"${wrapInQuotations(idName.name)}, " +
+          s"Seq(${wrapInQuotationsAndMkString(labelNames.map(_.name))}), " +
+          s"Seq(${wrapInQuotationsAndMkString(dynamicLabels.map(e => expressionStringifier(e)))})"
       case LoadCSV(_, url, variableName, format, fieldTerminator, _, _) =>
         val fieldTerminatorStr = fieldTerminator.fold("None")(ft => s"Some(${wrapInQuotations(ft)})")
         Seq(
@@ -1751,10 +1756,14 @@ object LogicalPlanToPlanBuilderString {
       s"createPattern(Seq(${c.nodes.map(createNodeToString).mkString(", ")}), Seq(${c.relationships.map(createRelationshipToString).mkString(", ")}))"
     case org.neo4j.cypher.internal.ir.DeleteExpression(expression, forced) =>
       s"delete(${wrapInQuotations(expressionStringifier(expression))}, $forced)"
-    case SetLabelPattern(node, labelNames) =>
-      s"setLabel(${wrapInQuotationsAndMkString(node.name +: labelNames.map(_.name))})"
-    case RemoveLabelPattern(node, labelNames) =>
-      s"removeLabel(${wrapInQuotationsAndMkString(node.name +: labelNames.map(_.name))})"
+    case SetLabelPattern(node, labelNames, dynamicLabels) =>
+      s"setLabel(${wrapInQuotations(node.name)}, " +
+        s"Seq(${wrapInQuotationsAndMkString(labelNames.map(_.name))}), " +
+        s"Seq(${wrapInQuotationsAndMkString(dynamicLabels.map(e => expressionStringifier(e)))}))"
+    case RemoveLabelPattern(node, labelNames, dynamicLabels) =>
+      s"removeLabel(${wrapInQuotations(node.name)}, " +
+        s"Seq(${wrapInQuotationsAndMkString(labelNames.map(_.name))}), " +
+        s"Seq(${wrapInQuotationsAndMkString(dynamicLabels.map(e => expressionStringifier(e)))}))"
     case SetNodePropertyPattern(node, propertyKey, value) =>
       s"setNodeProperty(${wrapInQuotationsAndMkString(Seq(node.name, propertyKey.name, expressionStringifier(value)))})"
     case SetRelationshipPropertyPattern(relationship, propertyKey, value) =>

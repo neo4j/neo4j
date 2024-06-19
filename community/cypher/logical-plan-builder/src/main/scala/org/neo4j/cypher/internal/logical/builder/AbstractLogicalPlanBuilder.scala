@@ -1070,12 +1070,46 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
 
   def setLabels(nodeVariable: String, labels: String*): IMPL = {
     val labelNames = labels.map(l => LabelName(l)(InputPosition.NONE)).toSet
-    appendAtCurrentIndent(UnaryOperator(lp => SetLabels(lp, varFor(nodeVariable), labelNames)(_)))
+    appendAtCurrentIndent(UnaryOperator(lp => SetLabels(lp, varFor(nodeVariable), labelNames, Set.empty)(_)))
+  }
+
+  def setLabels(nodeVariable: String, labelNames: Seq[String], labelExpressions: Seq[String]): IMPL = {
+    appendAtCurrentIndent(UnaryOperator(lp =>
+      SetLabels(
+        lp,
+        varFor(nodeVariable),
+        labelNames.map(l => LabelName(l)(InputPosition.NONE)).toSet,
+        labelExpressions.map(l => Parser.parseExpression(l)).toSet
+      )(_)
+    ))
+  }
+
+  def setDynamicLabels(nodeVariable: String, labels: String*): IMPL = {
+    appendAtCurrentIndent(UnaryOperator(lp =>
+      SetLabels(lp, varFor(nodeVariable), Set.empty, labels.map(l => Parser.parseExpression(l)).toSet)(_)
+    ))
   }
 
   def removeLabels(nodeVariable: String, labels: String*): IMPL = {
     val labelNames = labels.map(l => LabelName(l)(InputPosition.NONE)).toSet
-    appendAtCurrentIndent(UnaryOperator(lp => RemoveLabels(lp, varFor(nodeVariable), labelNames)(_)))
+    appendAtCurrentIndent(UnaryOperator(lp => RemoveLabels(lp, varFor(nodeVariable), labelNames, Set.empty)(_)))
+  }
+
+  def removeLabels(nodeVariable: String, labelNames: Seq[String], labelExpressions: Seq[String]): IMPL = {
+    appendAtCurrentIndent(UnaryOperator(lp =>
+      RemoveLabels(
+        lp,
+        varFor(nodeVariable),
+        labelNames.map(l => LabelName(l)(InputPosition.NONE)).toSet,
+        labelExpressions.map(l => Parser.parseExpression(l)).toSet
+      )(_)
+    ))
+  }
+
+  def removeDynamicLabels(nodeVariable: String, labels: String*): IMPL = {
+    appendAtCurrentIndent(UnaryOperator(lp =>
+      RemoveLabels(lp, varFor(nodeVariable), Set.empty, labels.map(l => Parser.parseExpression(l)).toSet)(_)
+    ))
   }
 
   def unwind(projectionString: String): IMPL = {
@@ -3222,10 +3256,30 @@ object AbstractLogicalPlanBuilder {
     SetPropertiesFromMapPattern(Parser.parseExpression(entity), Parser.parseExpression(map), removeOtherProps)
 
   def setLabel(node: String, labels: String*): SetMutatingPattern =
-    SetLabelPattern(varFor(node), labels.map(l => LabelName(l)(InputPosition.NONE)))
+    SetLabelPattern(varFor(node), labels.map(l => LabelName(l)(InputPosition.NONE)), Seq.empty)
+
+  def setLabel(node: String, labels: Seq[String], labelExpressions: Seq[String]): SetMutatingPattern =
+    SetLabelPattern(
+      varFor(node),
+      labels.map(l => LabelName(l)(InputPosition.NONE)),
+      labelExpressions.map(e => Parser.parseExpression(e))
+    )
+
+  def setDynamicLabel(node: String, labels: String*): SetMutatingPattern =
+    SetLabelPattern(varFor(node), Seq.empty, labels.map(l => Parser.parseExpression(l)))
 
   def removeLabel(node: String, labels: String*): RemoveLabelPattern =
-    RemoveLabelPattern(varFor(node), labels.map(l => LabelName(l)(InputPosition.NONE)))
+    RemoveLabelPattern(varFor(node), labels.map(l => LabelName(l)(InputPosition.NONE)), Seq.empty)
+
+  def removeLabel(node: String, labels: Seq[String], labelExpressions: Seq[String]): SetMutatingPattern =
+    RemoveLabelPattern(
+      varFor(node),
+      labels.map(l => LabelName(l)(InputPosition.NONE)),
+      labelExpressions.map(e => Parser.parseExpression(e))
+    )
+
+  def removeDynamicLabel(node: String, labels: String*): SetMutatingPattern =
+    RemoveLabelPattern(varFor(node), Seq.empty, labels.map(l => Parser.parseExpression(l)))
 
   def delete(entity: String, forced: Boolean = false): org.neo4j.cypher.internal.ir.DeleteExpression =
     org.neo4j.cypher.internal.ir.DeleteExpression(Parser.parseExpression(entity), forced)

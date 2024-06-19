@@ -281,10 +281,12 @@ object WriteFinder {
         case SetNodePropertiesFromMap(_, variable, _, _) =>
           PlanWrites(sets = PlanSets(unknownNodePropertiesAccessors = Seq(Some(variable))))
 
-        case SetLabels(_, variable, labelNames) =>
+        // TODO dynamic labels
+        case SetLabels(_, variable, labelNames, _) =>
           PlanWrites(sets = PlanSets(writtenLabels = labelNames.map(AccessedLabel(_, Some(variable)))))
 
-        case RemoveLabels(_, variable, labelNames) =>
+        // TODO dynamic labels
+        case RemoveLabels(_, variable, labelNames, _) =>
           PlanWrites(sets = PlanSets(writtenLabels = labelNames.map(AccessedLabel(_, Some(variable)))))
 
         case c: Create =>
@@ -472,10 +474,12 @@ object WriteFinder {
         acc.withUnknownRelPropertiesWritten(asMaybeVar(entity))
           .withUnknownNodePropertiesWritten(asMaybeVar(entity))
 
-      case (acc, SetLabelPattern(variable, labels)) =>
+      // TODO dynamic labels
+      case (acc, SetLabelPattern(variable, labels, _)) =>
         acc.withLabelsWritten(labels.map(AccessedLabel(_, Some(variable))).toSet)
 
-      case (acc, RemoveLabelPattern(variable, labels)) =>
+      // TODO dynamic labels
+      case (acc, RemoveLabelPattern(variable, labels, _)) =>
         acc.withLabelsWritten(labels.map(AccessedLabel(_, Some(variable))).toSet)
     }
   }

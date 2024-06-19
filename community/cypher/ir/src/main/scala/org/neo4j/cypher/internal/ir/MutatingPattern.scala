@@ -160,13 +160,15 @@ case class SetNodePropertiesPattern(variable: LogicalVariable, items: Seq[(Prope
   }
 }
 
-case class SetLabelPattern(variable: LogicalVariable, labels: Seq[LabelName]) extends SetMutatingPattern {
-  override def dependencies: Set[LogicalVariable] = Set(variable)
+case class SetLabelPattern(variable: LogicalVariable, labels: Seq[LabelName], dynamicLabels: Seq[Expression])
+    extends SetMutatingPattern {
+  override def dependencies: Set[LogicalVariable] = dynamicLabels.flatMap(_.dependencies).toSet + variable
 }
 
-case class RemoveLabelPattern(variable: LogicalVariable, labels: Seq[LabelName]) extends SetMutatingPattern
+case class RemoveLabelPattern(variable: LogicalVariable, labels: Seq[LabelName], dynamicLabels: Seq[Expression])
+    extends SetMutatingPattern
     with NoSymbols {
-  override def dependencies: Set[LogicalVariable] = Set(variable)
+  override def dependencies: Set[LogicalVariable] = dynamicLabels.flatMap(_.dependencies).toSet + variable
 }
 
 case class CreatePattern(commands: Seq[CreateCommand]) extends SimpleMutatingPattern

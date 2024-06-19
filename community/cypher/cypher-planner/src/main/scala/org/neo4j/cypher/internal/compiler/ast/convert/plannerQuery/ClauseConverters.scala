@@ -674,7 +674,7 @@ object ClauseConverters {
     }.toIndexedSeq
 
   private def toSetPattern(semanticTable: SemanticTable)(setItem: SetItem): SetMutatingPattern = setItem match {
-    case SetLabelItem(id, labels, _, _) => SetLabelPattern(id, labels) // TODO: Dynamic labels support
+    case SetLabelItem(id, labels, dynamicLabels, _) => SetLabelPattern(id, labels, dynamicLabels)
 
     case SetPropertyItem(LogicalProperty(node: Variable, propertyKey), expr)
       if semanticTable.typeFor(node).is(CTNode) =>
@@ -1000,8 +1000,8 @@ object ClauseConverters {
   private def addRemoveToLogicalPlanInput(acc: PlannerQueryBuilder, clause: Remove): PlannerQueryBuilder = {
     clause.items.foldLeft(acc) {
       // REMOVE n:Foo
-      case (builder, RemoveLabelItem(variable, labelNames, _, _)) => // TODO: Add Dynamic Label Support
-        builder.amendQueryGraph(_.addMutatingPatterns(RemoveLabelPattern(variable, labelNames)))
+      case (builder, RemoveLabelItem(variable, labelNames, dynamicLabels, _)) =>
+        builder.amendQueryGraph(_.addMutatingPatterns(RemoveLabelPattern(variable, labelNames, dynamicLabels)))
 
       // REMOVE n.prop
       case (builder, RemovePropertyItem(Property(variable: Variable, propertyKey)))

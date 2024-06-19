@@ -522,13 +522,13 @@ object VariableRefRewriter extends Rewriter {
           p.copy(from = varRef(from), to = varRef(to))(SameId(p.id))
         case p @ RelationshipCountFromCountStore(rel, _, _, _, args) =>
           p.copy(idName = varRef(rel), argumentIds = args.map(varRef))(SameId(p.id))
-        case p @ RemoveLabels(_, variable, _) =>
+        case p @ RemoveLabels(_, variable, _, _) =>
           p.copy(idName = varRef(variable))(SameId(p.id))
         case p @ RightOuterHashJoin(nodes, _, _) =>
           p.copy(nodes = nodes.map(varRef))(SameId(p.id))
         case p @ RollUpApply(_, _, collectionName, variableToCollect) =>
           p.copy(collectionName = varRef(collectionName), variableToCollect = varRef(variableToCollect))(SameId(p.id))
-        case p @ SetLabels(_, variable, _) =>
+        case p @ SetLabels(_, variable, _, _) =>
           p.copy(idName = varRef(variable))(SameId(p.id))
         case p @ SetNodePropertiesFromMap(_, node, _, _) =>
           p.copy(idName = varRef(node))(SameId(p.id))

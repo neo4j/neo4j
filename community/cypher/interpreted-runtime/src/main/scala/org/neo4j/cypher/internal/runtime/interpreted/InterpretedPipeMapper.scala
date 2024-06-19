@@ -1056,8 +1056,8 @@ case class InterpretedPipeMapper(
 
         case org.neo4j.cypher.internal.ir.DeleteExpression(expression, forced) =>
           Seq(DeleteOperation(buildExpression(expression), forced))
-        case SetLabelPattern(node, labelNames) => Seq(SetLabelsOperation(node.name, labelNames.map(LazyLabel.apply)))
-        case RemoveLabelPattern(node, labelNames) =>
+        case SetLabelPattern(node, labelNames, _) => Seq(SetLabelsOperation(node.name, labelNames.map(LazyLabel.apply)))
+        case RemoveLabelPattern(node, labelNames, _) =>
           Seq(RemoveLabelsOperation(node.name, labelNames.map(LazyLabel.apply)))
         case SetNodePropertyPattern(node, propertyKey, value) =>
           val needsExclusiveLock =
@@ -1664,7 +1664,7 @@ case class InterpretedPipeMapper(
           nodesToLock.map(_.name).toArray
         )(id = id)
 
-      case SetLabels(_, name, labels) =>
+      case SetLabels(_, name, labels, _) =>
         SetPipe(source, SetLabelsOperation(name.name, labels.toSeq.map(LazyLabel.apply)))(id = id)
 
       case SetNodeProperty(_, name, propertyKey, expression) =>
@@ -1779,7 +1779,7 @@ case class InterpretedPipeMapper(
         }
         SetPipe(source, SetPropertiesOperation(buildExpression(entityExpr), keys, values))(id = id)
 
-      case RemoveLabels(_, name, labels) =>
+      case RemoveLabels(_, name, labels, _) =>
         RemoveLabelsPipe(source, name.name, labels.toSeq.map(LazyLabel.apply))(id = id)
 
       case DeleteNode(_, expression) =>

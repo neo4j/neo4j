@@ -5164,7 +5164,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           lhsLP,
           Seq(CreateNode(varFor("x"), Set(label("L")), None)),
           Seq.empty,
-          Seq(SetLabelPattern(varFor("x"), Seq(label("NEW")))),
+          Seq(SetLabelPattern(varFor("x"), Seq(label("NEW")), Seq.empty)),
           Seq.empty,
           Set.empty
         ),
@@ -5186,7 +5186,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           Seq(CreateNode(varFor("x"), Set(label("L")), None)),
           Seq.empty,
           Seq.empty,
-          Seq(SetLabelPattern(varFor("x"), Seq(label("NEW")))),
+          Seq(SetLabelPattern(varFor("x"), Seq(label("NEW")), Seq.empty)),
           Set.empty
         ),
         32.2
@@ -5206,8 +5206,8 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           lhsLP,
           Seq(CreateNode(varFor("x"), Set(label("L")), None)),
           Seq.empty,
-          Seq(SetLabelPattern(varFor("x"), Seq(label("ON_MATCH")))),
-          Seq(SetLabelPattern(varFor("x"), Seq(label("ON_CREATE")))),
+          Seq(SetLabelPattern(varFor("x"), Seq(label("ON_MATCH")), Seq.empty)),
+          Seq(SetLabelPattern(varFor("x"), Seq(label("ON_CREATE")), Seq.empty)),
           Set.empty
         ),
         32.2
@@ -5348,7 +5348,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           lhsLP,
           varFor("i"),
           parameter("p", CTList(CTInteger)),
-          Seq(RemoveLabelPattern(varFor("x"), Seq(label("L"), label("M"))))
+          Seq(RemoveLabelPattern(varFor("x"), Seq(label("L"), label("M")), Seq.empty))
         ),
         32.2
       ),
@@ -6643,24 +6643,29 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
   test("Updates") {
     // RemoveLabels
     assertGood(
-      attach(RemoveLabels(lhsLP, varFor("x"), Set(label("L1"))), 1.0),
+      attach(RemoveLabels(lhsLP, varFor("x"), Set(label("L1")), Set.empty), 1.0),
       planDescription(id, "RemoveLabels", SingleChild(lhsPD), Seq(details("x:L1")), Set("a", "x"))
     )
 
     assertGood(
-      attach(RemoveLabels(lhsLP, varFor("x"), Set(label("L1"), label("L2"))), 1.0),
+      attach(RemoveLabels(lhsLP, varFor("x"), Set(label("L1"), label("L2")), Set.empty), 1.0),
       planDescription(id, "RemoveLabels", SingleChild(lhsPD), Seq(details("x:L1:L2")), Set("a", "x"))
     )
 
     // SetLabels
     assertGood(
-      attach(SetLabels(lhsLP, varFor("x"), Set(label("L1"))), 1.0),
+      attach(SetLabels(lhsLP, varFor("x"), Set(label("L1")), Set.empty), 1.0),
       planDescription(id, "SetLabels", SingleChild(lhsPD), Seq(details("x:L1")), Set("a", "x"))
     )
 
     assertGood(
-      attach(SetLabels(lhsLP, varFor("x"), Set(label("L1"), label("L2"))), 1.0),
+      attach(SetLabels(lhsLP, varFor("x"), Set(label("L1"), label("L2")), Set.empty), 1.0),
       planDescription(id, "SetLabels", SingleChild(lhsPD), Seq(details("x:L1:L2")), Set("a", "x"))
+    )
+
+    assertGood(
+      attach(SetLabels(lhsLP, varFor("x"), Set(label("L1"), label("L2")), Set(stringLiteral("L3"))), 1.0),
+      planDescription(id, "SetLabels", SingleChild(lhsPD), Seq(details("x:L1:L2:$(\"L3\")")), Set("a", "x"))
     )
 
     val map = MapExpression(Seq(

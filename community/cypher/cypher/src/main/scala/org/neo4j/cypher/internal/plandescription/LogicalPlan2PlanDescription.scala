@@ -299,6 +299,7 @@ import org.neo4j.cypher.internal.plandescription.Arguments.RuntimeVersion
 import org.neo4j.cypher.internal.plandescription.Arguments.Version
 import org.neo4j.cypher.internal.plandescription.LogicalPlan2PlanDescription.getPrettyStringName
 import org.neo4j.cypher.internal.plandescription.LogicalPlan2PlanDescription.prettyOptions
+import org.neo4j.cypher.internal.plandescription.LogicalPlan2PlanDescription.prettyUpdateLabelString
 import org.neo4j.cypher.internal.plandescription.asPrettyString.PrettyStringInterpolator
 import org.neo4j.cypher.internal.plandescription.asPrettyString.PrettyStringMaker
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.EffectiveCardinalities
@@ -349,6 +350,15 @@ object LogicalPlan2PlanDescription {
       pretty" OPTIONS ${options.map({
           case (s, e) => pretty"${asPrettyString(s)}: ${asPrettyString(e)}"
         }).mkPrettyString("{", ", ", "}")}"
+  }
+
+  def prettyUpdateLabelString(labelNames: Iterable[LabelName], dynamicLabels: Iterable[Expression]): PrettyString = {
+    val prettyStaticLabels = if (labelNames.isEmpty) pretty""
+    else labelNames.map(labelName => asPrettyString(labelName.name)).mkPrettyString(":", ":", "")
+    val prettyDynamicLabels = if (dynamicLabels.isEmpty) pretty""
+    else
+      dynamicLabels.map(labelExpression => pretty"$$(${asPrettyString(labelExpression)})").mkPrettyString(":", ":", "")
+    pretty"$prettyStaticLabels$prettyDynamicLabels"
   }
 
   def getPrettyStringName(nameOption: Option[Either[String, Parameter]]): PrettyString =
@@ -2272,9 +2282,9 @@ case class LogicalPlan2PlanDescription(
           withDistinctness
         )
 
-      case RemoveLabels(_, idName, labelNames) =>
+      case RemoveLabels(_, idName, labelNames, dynamicLabels) =>
         val prettyId = asPrettyString(idName)
-        val prettyLabels = labelNames.map(labelName => asPrettyString(labelName.name)).mkPrettyString(":", ":", "")
+        val prettyLabels = prettyUpdateLabelString(labelNames, dynamicLabels)
         val details = Details(pretty"$prettyId$prettyLabels")
         PlanDescriptionImpl(
           id,
@@ -2286,9 +2296,9 @@ case class LogicalPlan2PlanDescription(
           withDistinctness
         )
 
-      case SetLabels(_, idName, labelNames) =>
+      case SetLabels(_, idName, labelNames, dynamicLabels) =>
         val prettyId = asPrettyString(idName)
-        val prettyLabels = labelNames.map(labelName => asPrettyString(labelName.name)).mkPrettyString(":", ":", "")
+        val prettyLabels = prettyUpdateLabelString(labelNames, dynamicLabels)
         val details = Details(pretty"$prettyId$prettyLabels")
         PlanDescriptionImpl(id, "SetLabels", children, Seq(details), variables, withRawCardinalities, withDistinctness)
 
@@ -3676,13 +3686,13 @@ case class LogicalPlan2PlanDescription(
       pretty"CREATE ${details.mkPrettyString(", ")}"
     case org.neo4j.cypher.internal.ir.DeleteExpression(toDelete, forced) =>
       if (forced) pretty"DETACH DELETE ${asPrettyString(toDelete)}" else pretty"DELETE ${asPrettyString(toDelete)}"
-    case SetLabelPattern(node, labelNames) =>
+    case SetLabelPattern(node, labelNames, dynamicLabels) =>
       val prettyId = asPrettyString(node)
-      val prettyLabels = labelNames.map(labelName => asPrettyString(labelName.name)).mkPrettyString(":", ":", "")
+      val prettyLabels = prettyUpdateLabelString(labelNames, dynamicLabels)
       pretty"SET $prettyId$prettyLabels"
-    case RemoveLabelPattern(node, labelNames) =>
+    case RemoveLabelPattern(node, labelNames, dynamicLabels) =>
       val prettyId = asPrettyString(node)
-      val prettyLabels = labelNames.map(labelName => asPrettyString(labelName.name)).mkPrettyString(":", ":", "")
+      val prettyLabels = prettyUpdateLabelString(labelNames, dynamicLabels)
       pretty"REMOVE $prettyId$prettyLabels"
     case SetNodePropertyPattern(node, propertyKey, value) =>
       pretty"SET ${setPropertyInfo(pretty"${asPrettyString(node)}.${asPrettyString(propertyKey.name)}", value, removeOtherProps = true)}"

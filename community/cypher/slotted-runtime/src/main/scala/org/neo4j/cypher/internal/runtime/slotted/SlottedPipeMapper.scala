@@ -984,9 +984,9 @@ class SlottedPipeMapper(
         }
       case org.neo4j.cypher.internal.ir.DeleteExpression(expression, forced) =>
         Seq(DeleteOperation(convertExpressions(expression), forced))
-      case SetLabelPattern(node, labelNames) =>
+      case SetLabelPattern(node, labelNames, _) =>
         Seq(SlottedSetLabelsOperation(slots(node), labelNames.map(l => LazyLabel(l)(semanticTable))))
-      case RemoveLabelPattern(node, labelNames) =>
+      case RemoveLabelPattern(node, labelNames, _) =>
         Seq(SlottedRemoveLabelsOperation(slots(node), labelNames.map(l => LazyLabel(l)(semanticTable))))
       case SetNodePropertyPattern(node, propertyKey, value) =>
         val needsExclusiveLock = internal.expressions.Expression.hasPropertyReadDependency(node, value, propertyKey)

@@ -3633,8 +3633,12 @@ case class RelationshipCountFromCountStore(
  * For each source row, the labels in 'labelNamed' are removed from the node 'idName'.
  * The source row is produced.
  */
-case class RemoveLabels(override val source: LogicalPlan, idName: LogicalVariable, labelNames: Set[LabelName])(implicit
-idGen: IdGen) extends LogicalUnaryPlan(idGen) with UpdatingPlan {
+case class RemoveLabels(
+  override val source: LogicalPlan,
+  idName: LogicalVariable,
+  labelNames: Set[LabelName],
+  labelExpressions: Set[Expression]
+)(implicit idGen: IdGen) extends LogicalUnaryPlan(idGen) with UpdatingPlan {
 
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan with UpdatingPlan =
     copy(source = newLHS)(idGen)
@@ -3827,8 +3831,12 @@ case class AntiSemiApply(override val left: LogicalPlan, override val right: Log
  * For each source row, add the labels in 'labelNamed' to the node 'idName'.
  * The source row is produced.
  */
-case class SetLabels(override val source: LogicalPlan, idName: LogicalVariable, labelNames: Set[LabelName])(implicit
-idGen: IdGen) extends LogicalUnaryPlan(idGen) with UpdatingPlan {
+case class SetLabels(
+  override val source: LogicalPlan,
+  idName: LogicalVariable,
+  labelNames: Set[LabelName],
+  labelExpressions: Set[Expression]
+)(implicit idGen: IdGen) extends LogicalUnaryPlan(idGen) with UpdatingPlan {
 
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan with UpdatingPlan =
     copy(source = newLHS)(idGen)

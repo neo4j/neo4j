@@ -181,7 +181,8 @@ trait UpdateGraph {
    * Finds all label names being removed on nodes that are not the given node.
    */
   private def labelsToRemoveFromOtherNodes(node: LogicalVariable): Set[LabelName] = removeLabelPatterns.collect {
-    case RemoveLabelPattern(n, labels) if n != node => labels
+    // TODO dynamic labels
+    case RemoveLabelPattern(n, labels, _) if n != node => labels
   }.flatten.toSet
 
   /*
@@ -414,19 +415,20 @@ trait UpdateGraph {
     (typesOverlap(readRelTypes, createRelTypes) && propsOverlap(readRelProperties, createRelProperties))
   }
 
+  // TODO dynamic
   private lazy val labelsToSet: Set[LabelName] = {
     @tailrec
     def toLabelPattern(patterns: Seq[MutatingPattern], acc: Set[LabelName]): Set[LabelName] = {
 
       def extractLabels(patterns: Seq[SetMutatingPattern]) = patterns.collect {
-        case SetLabelPattern(_, labels) => labels
+        case SetLabelPattern(_, labels, _) => labels
       }.flatten
 
       if (patterns.isEmpty) {
         acc
       } else {
         patterns.head match {
-          case SetLabelPattern(_, labels) => toLabelPattern(patterns.tail, acc ++ labels)
+          case SetLabelPattern(_, labels, _) => toLabelPattern(patterns.tail, acc ++ labels)
           case MergeNodePattern(_, _, onCreate, onMatch) =>
             toLabelPattern(patterns.tail, acc ++ extractLabels(onCreate) ++ extractLabels(onMatch))
           case MergeRelationshipPattern(_, _, _, onCreate, onMatch) =>
@@ -665,12 +667,14 @@ trait UpdateGraph {
       case _: HasALabel => true
     }
 
+    // TODO dynamic labels
     val overlappingLabels: Seq[LabelName] = removeLabelPatterns.collect {
-      case RemoveLabelPattern(_, labelsToRemove) if overlapWithLabelsFunction || overlapWithWildcard => labelsToRemove
-      case RemoveLabelPattern(_, labelsToRemove)
+      case RemoveLabelPattern(_, labelsToRemove, _) if overlapWithLabelsFunction || overlapWithWildcard =>
+        labelsToRemove
+      case RemoveLabelPattern(_, labelsToRemove, _)
         if labelsToRemove.nonEmpty && isReturningNode(qgWithInfo, semanticTable) =>
         labelsToRemove
-      case RemoveLabelPattern(_, labelsToRemove) =>
+      case RemoveLabelPattern(_, labelsToRemove, _) =>
         // does any other identifier match on the labels I am deleting?
         // MATCH (a:BAR)..(b) REMOVE b:BAR
         labelsToRemove.filter(l => {

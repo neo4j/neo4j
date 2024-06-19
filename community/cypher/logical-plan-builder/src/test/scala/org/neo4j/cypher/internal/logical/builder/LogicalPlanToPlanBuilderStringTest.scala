@@ -42,6 +42,7 @@ import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.crea
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createRelationshipExpression
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.delete
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.removeLabel
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setDynamicLabel
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setLabel
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setNodeProperties
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setNodePropertiesFromMap
@@ -774,6 +775,7 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName wi
         Seq(setNodeProperty("x", "prop", "42"), setNodePropertiesFromMap("x", "{prop: 42}")),
         Seq(
           setLabel("x", "L", "M"),
+          setDynamicLabel("x", "'N'", "$p"),
           setRelationshipProperty("r", "prop", "42"),
           setRelationshipPropertiesFromMap("r", "{prop: 42}")
         )
@@ -2499,10 +2501,46 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName wi
   )
 
   testPlan(
+    "removeDynamicLabels",
+    new TestPlanBuilder()
+      .produceResults("n")
+      .removeDynamicLabels("n", "'Label'")
+      .argument("n")
+      .build()
+  )
+
+  testPlan(
+    "removeLabels dynamic and static",
+    new TestPlanBuilder()
+      .produceResults("n")
+      .removeLabels("n", Seq("Label1"), Seq("'Label2'"))
+      .argument("n")
+      .build()
+  )
+
+  testPlan(
     "setLabels",
     new TestPlanBuilder()
       .produceResults("n")
       .setLabels("n", "Label", "OtherLabel")
+      .argument("n")
+      .build()
+  )
+
+  testPlan(
+    "setDynamicLabels",
+    new TestPlanBuilder()
+      .produceResults("n")
+      .setDynamicLabels("n", "'Label'", "'OtherLabel'")
+      .argument("n")
+      .build()
+  )
+
+  testPlan(
+    "setLabels dynamic and static",
+    new TestPlanBuilder()
+      .produceResults("n")
+      .setLabels("n", Seq("Label"), Seq("'OtherLabel'"))
       .argument("n")
       .build()
   )

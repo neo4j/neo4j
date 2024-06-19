@@ -89,7 +89,7 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport wit
 
   test("should not be empty after adding label to set") {
     val original = QueryGraph()
-    val setLabel = SetLabelPattern(v"name", Seq.empty)
+    val setLabel = SetLabelPattern(v"name", Seq.empty, Seq.empty)
 
     original.addMutatingPatterns(setLabel).containsUpdates should be(true)
   }
@@ -688,5 +688,9 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport wit
     )
 
   private def removeLabelIr(node: String, labels: String*): org.neo4j.cypher.internal.ir.RemoveLabelPattern =
-    org.neo4j.cypher.internal.ir.RemoveLabelPattern(varFor(node), labels.map(l => LabelName(l)(InputPosition.NONE)))
+    org.neo4j.cypher.internal.ir.RemoveLabelPattern(
+      varFor(node),
+      labels.map(l => LabelName(l)(InputPosition.NONE)),
+      Seq.empty
+    )
 }

@@ -551,13 +551,13 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
 
   test("Setlabel should eliminate provided order") {
     shouldEliminateProvidedOrder(ctx =>
-      ctx.producer.planSetLabel(ctx.lhs, SetLabelPattern(v"n", Seq(labelName("N"))), ctx.context)
+      ctx.producer.planSetLabel(ctx.lhs, SetLabelPattern(v"n", Seq(labelName("N")), Seq.empty), ctx.context)
     )
   }
 
   test("RemoveLabel should eliminate provided order") {
     shouldEliminateProvidedOrder(ctx =>
-      ctx.producer.planRemoveLabel(ctx.lhs, RemoveLabelPattern(v"n", Seq(labelName("N"))), ctx.context)
+      ctx.producer.planRemoveLabel(ctx.lhs, RemoveLabelPattern(v"n", Seq(labelName("N")), Seq.empty), ctx.context)
     )
   }
 
@@ -1096,7 +1096,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
     context.staticComponents.planningAttributes.providedOrders.set(lhs.id, providedOrder)
 
     val rhs = fakeLogicalPlanFor(context.staticComponents.planningAttributes, "a")
-    val rhsWithUpdate = lpp.planSetLabel(rhs, SetLabelPattern(v"n", Seq(labelName("N"))), context)
+    val rhsWithUpdate = lpp.planSetLabel(rhs, SetLabelPattern(v"n", Seq(labelName("N")), Seq.empty), context)
     createPlan(PlanCreationContext(lpp, context, lhs, rhsWithUpdate, rhs))
   }
 
