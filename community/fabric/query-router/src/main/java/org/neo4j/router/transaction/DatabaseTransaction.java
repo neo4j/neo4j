@@ -33,6 +33,8 @@ public interface DatabaseTransaction extends ChildTransaction {
 
     void commit();
 
+    boolean isOpen();
+
     void rollback();
 
     void close();

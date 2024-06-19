@@ -197,4 +197,9 @@ public class LocalDatabaseTransaction implements DatabaseTransaction {
             return new TaggingPlanDescriptionWrapper(super.executionPlanDescription(), location.getDatabaseName());
         }
     }
+
+    @Override
+    public boolean isOpen() {
+        return internalTransaction.isOpen();
+    }
 }

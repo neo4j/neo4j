@@ -19,11 +19,14 @@
  */
 package org.neo4j.router.impl.transaction;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.locks.LockSupport.parkNanos;
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.TransactionCommitFailed;
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.TransactionRollbackFailed;
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.TransactionTerminationFailed;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -510,6 +513,37 @@ public class RouterTransactionImpl implements CompoundTransaction<DatabaseTransa
         }
 
         return internalTransactions;
+    }
+
+    void stopRemoteDbsAfterTimeout(long timeoutMillis) {
+        var nonLocalTransaction = readingTransactions.stream()
+                .map(ReadingChildTransaction::inner)
+                .filter(tx -> !(tx instanceof LocalDatabaseTransaction))
+                .toList();
+
+        if (nonLocalTransaction.isEmpty()) {
+            return;
+        }
+
+        awaitTransactionsClosedWithinTimeout(nonLocalTransaction, timeoutMillis);
+        nonLocalTransaction.forEach(tx -> tx.terminate(Status.Transaction.Terminated));
+    }
+
+    private void awaitTransactionsClosedWithinTimeout(
+            Collection<DatabaseTransaction> nonLocalTransaction, long timeoutMillis) {
+        long deadline = clock.millis() + timeoutMillis;
+        while (hasOpenTransactions(nonLocalTransaction) && clock.millis() < deadline) {
+            parkNanos(MILLISECONDS.toNanos(10));
+        }
+    }
+
+    private static boolean hasOpenTransactions(Collection<DatabaseTransaction> nonLocalTransaction) {
+        for (DatabaseTransaction dbTransaction : nonLocalTransaction) {
+            if (dbTransaction.isOpen()) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @Override

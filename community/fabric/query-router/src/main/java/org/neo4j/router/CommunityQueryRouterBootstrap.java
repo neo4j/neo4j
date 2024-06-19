@@ -178,7 +178,7 @@ public class CommunityQueryRouterBootstrap extends CommonQueryRouterBootstrap {
         var transactionCheckInterval = config.get(GraphDatabaseSettings.transaction_monitor_check_interval)
                 .toMillis();
         registerWithLifecycle(new TransactionMonitorScheduler(txMonitor, jobScheduler, transactionCheckInterval, null));
-        var routerTxManager = new RouterTransactionManager(txMonitor);
+        var routerTxManager = new RouterTransactionManager(txMonitor, config);
         dependencies.satisfyDependency(routerTxManager);
         TransactionManager compositeTxManager = null;
         if (dependencies.containsDependency(TransactionManager.class)) {

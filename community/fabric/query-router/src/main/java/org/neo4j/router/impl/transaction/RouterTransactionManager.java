@@ -23,17 +23,23 @@ import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.router.transaction.RouterTransaction;
 import org.neo4j.util.VisibleForTesting;
 
-public class RouterTransactionManager {
+public class RouterTransactionManager extends LifecycleAdapter {
 
     private final Set<RouterTransactionImpl> transactions = ConcurrentHashMap.newKeySet();
     private final QueryRouterTransactionMonitor transactionMonitor;
+    private final long awaitActiveTransactionDeadlineMillis;
 
-    public RouterTransactionManager(QueryRouterTransactionMonitor transactionMonitor) {
+    public RouterTransactionManager(QueryRouterTransactionMonitor transactionMonitor, Config config) {
         this.transactionMonitor = transactionMonitor;
+        this.awaitActiveTransactionDeadlineMillis = config.get(GraphDatabaseSettings.shutdown_transaction_end_timeout)
+                .toMillis();
     }
 
     public void registerTransaction(RouterTransactionImpl transaction) {
@@ -57,5 +63,12 @@ public class RouterTransactionManager {
     @VisibleForTesting
     public Set<RouterTransaction> registeredTransactions() {
         return new HashSet<>(transactions);
+    }
+
+    @Override
+    public void stop() {
+        // Stop remote transactions after given timeout.
+        // Any db specific transaction will be handled on a database level with own set of rules, checks etc
+        transactions.forEach(rTx -> rTx.stopRemoteDbsAfterTimeout(awaitActiveTransactionDeadlineMillis));
     }
 }
