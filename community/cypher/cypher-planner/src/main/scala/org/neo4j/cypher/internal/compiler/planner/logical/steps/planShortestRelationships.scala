@@ -245,10 +245,10 @@ case object planShortestRelationships {
     // Expressions solved in var expand
     val varExpandSolvedExpr =
       context.staticComponents.planningAttributes.solveds.get(
-        rhsVarExpand.id
+        rhsVarExpand.plan.id
       ).asSinglePlannerQuery.lastQueryGraph.selections.predicates
 
-    val rhsProjection = lpp.planRegularProjection(rhsVarExpand, map, Some(map), context)
+    val rhsProjection = lpp.planRegularProjection(rhsVarExpand.plan, map, Some(map), context)
 
     // Filter out predicates solved in var expand
     val filteredPredicates =

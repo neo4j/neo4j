@@ -23,10 +23,10 @@ import org.neo4j.cypher.internal.compiler.planner.logical.ConvertToNFA
 import org.neo4j.cypher.internal.compiler.planner.logical.LimitRangesOnSelectivePathPattern
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.equalsPredicate
-import org.neo4j.cypher.internal.compiler.planner.logical.idp.expandSolverStep.LogicalPlanWithSSPHeuristic
+import org.neo4j.cypher.internal.compiler.planner.logical.idp.expandSolverStep.LogicalPlanWithIntoVsAllHeuristic
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.expandSolverStep.planSinglePatternSide
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.expandSolverStep.planSingleProjectEndpoints
-import org.neo4j.cypher.internal.compiler.planner.logical.idp.expandSolverStep.preFilterCandidatesBySSPHeuristic
+import org.neo4j.cypher.internal.compiler.planner.logical.idp.expandSolverStep.preFilterCandidatesByIntoVsAllHeuristic
 import org.neo4j.cypher.internal.expressions.Add
 import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.Disjoint
@@ -55,6 +55,7 @@ import org.neo4j.cypher.internal.ir.ast.ForAllRepetitions
 import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.Expand.ExpandAll
 import org.neo4j.cypher.internal.logical.plans.Expand.ExpandInto
+import org.neo4j.cypher.internal.logical.plans.Expand.ExpansionMode
 import org.neo4j.cypher.internal.logical.plans.Expand.VariablePredicate
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NFA.PathLength
@@ -86,7 +87,7 @@ case class expandSolverStep(qg: QueryGraph, qppInnerPlanner: QPPInnerPlanner)
     def plansForNodeConnection(source: LogicalPlan, nodeConnection: NodeConnection): Iterator[LogicalPlan] = {
       val candidates = nodeConnection match {
         case relationship: PatternRelationship if source.availableSymbols.contains(relationship.variable) =>
-          Iterator[LogicalPlanWithSSPHeuristic](
+          Iterator[LogicalPlanWithIntoVsAllHeuristic](
             // we do not project endpoints for quantified path patterns
             planSingleProjectEndpoints(relationship, source, context)
           )
@@ -111,7 +112,7 @@ case class expandSolverStep(qg: QueryGraph, qppInnerPlanner: QPPInnerPlanner)
           ).flatten
       }
 
-      preFilterCandidatesBySSPHeuristic(candidates.toSeq, context).iterator
+      preFilterCandidatesByIntoVsAllHeuristic(candidates.toSeq, context).iterator
     }
 
     for {
@@ -166,7 +167,7 @@ object expandSolverStep {
     nodeId: LogicalVariable,
     qppInnerPlanner: QPPInnerPlanner,
     context: LogicalPlanningContext
-  ): Option[LogicalPlanWithSSPHeuristic] = {
+  ): Option[LogicalPlanWithIntoVsAllHeuristic] = {
     val availableSymbols = sourcePlan.availableSymbols
 
     if (availableSymbols(nodeId)) {
@@ -192,7 +193,7 @@ object expandSolverStep {
     availableSymbols: Set[LogicalVariable],
     context: LogicalPlanningContext,
     qppInnerPlanner: QPPInnerPlanner
-  ): Option[LogicalPlanWithSSPHeuristic] = {
+  ): Option[LogicalPlanWithIntoVsAllHeuristic] = {
     patternRel match {
       case rel: PatternRelationship =>
         Some(produceExpandLogicalPlan(qg, rel, rel.variable, sourcePlan, nodeId, availableSymbols, context))
@@ -240,7 +241,7 @@ object expandSolverStep {
     node: LogicalVariable,
     availableSymbols: Set[LogicalVariable],
     context: LogicalPlanningContext
-  ): LogicalPlan = {
+  ): LogicalPlanWithIntoVsAllHeuristic = {
     val otherSide = patternRelationship.otherSide(node)
     val overlapping = availableSymbols.contains(otherSide)
     val mode = if (overlapping) ExpandInto else ExpandAll
@@ -272,16 +273,24 @@ object expandSolverStep {
             varLength = varLength
           )
 
-        context.staticComponents.logicalPlanProducer.planVarExpand(
-          source = sourcePlan,
-          from = node,
-          to = otherSide,
-          patternRelationship = patternRelationship,
-          nodePredicates = nodePredicates,
-          relationshipPredicates = relationshipPredicates,
-          solvedPredicates = solvedPredicates,
-          mode = mode,
-          context = context
+        val plan =
+          context.staticComponents.logicalPlanProducer.planVarExpand(
+            source = sourcePlan,
+            from = node,
+            to = otherSide,
+            patternRelationship = patternRelationship,
+            nodePredicates = nodePredicates,
+            relationshipPredicates = relationshipPredicates,
+            solvedPredicates = solvedPredicates,
+            mode = mode,
+            context = context
+          )
+
+        heuristicForExpandIntoVsAll(
+          plan,
+          sourcePlan,
+          mode,
+          context
         )
     }
   }
@@ -304,7 +313,7 @@ object expandSolverStep {
     qppInnerPlanner: QPPInnerPlanner,
     predicates: Seq[Expression],
     queryGraph: QueryGraph
-  ): LogicalPlan = {
+  ): LogicalPlanWithIntoVsAllHeuristic = {
     val fromLeft = startNode == quantifiedPathPattern.left
 
     // Get the QPP inner plan
@@ -381,7 +390,7 @@ object expandSolverStep {
     val previouslyBoundRelationships = uniquenessPredicates.flatMap(_.previouslyBoundRelationships).toSet
     val previouslyBoundRelationshipGroups = uniquenessPredicates.flatMap(_.previouslyBoundRelationshipGroups).toSet
 
-    updatedContext.staticComponents.logicalPlanProducer.planTrail(
+    val plan = updatedContext.staticComponents.logicalPlanProducer.planTrail(
       source = sourcePlan,
       pattern = quantifiedPathPattern,
       startBinding = startBinding,
@@ -393,6 +402,16 @@ object expandSolverStep {
       previouslyBoundRelationships,
       previouslyBoundRelationshipGroups,
       reverseGroupVariableProjections = !fromLeft
+    )
+
+    val bothEndpointsBoundInSourcePlan =
+      availableVars.contains(quantifiedPathPattern.left) && availableVars.contains(quantifiedPathPattern.right)
+
+    heuristicForExpandIntoVsAll(
+      plan,
+      sourcePlan,
+      if (bothEndpointsBoundInSourcePlan) ExpandInto else ExpandAll,
+      context
     )
   }
 
@@ -480,7 +499,7 @@ object expandSolverStep {
     availableSymbols: Set[LogicalVariable],
     queryGraph: QueryGraph,
     context: LogicalPlanningContext
-  ): Option[LogicalPlanWithSSPHeuristic] = {
+  ): Option[LogicalPlanWithIntoVsAllHeuristic] = {
     val spp = inlineQPPPredicates(originalSpp, availableSymbols)
     val fromLeft = startNode == spp.left
     val endNode = if (fromLeft) spp.right else spp.left
@@ -600,38 +619,38 @@ object expandSolverStep {
   }
 
   /**
-   * A value that controls what StatefulShortestPath candidates should be produced.
+   * A value that controls what expansion mode candidates should be produced.
    */
-  sealed trait SSPHeuristic extends Ordered[SSPHeuristic] {
-    private val inOrder = Seq(SSPHeuristic.Avoid, SSPHeuristic.Neutral, SSPHeuristic.Prefer)
+  sealed trait IntoVsAllHeuristic extends Ordered[IntoVsAllHeuristic] {
+    private val inOrder = Seq(IntoVsAllHeuristic.Avoid, IntoVsAllHeuristic.Neutral, IntoVsAllHeuristic.Prefer)
 
-    override def compare(that: SSPHeuristic): Int = inOrder.indexOf(this) - inOrder.indexOf(that)
+    override def compare(that: IntoVsAllHeuristic): Int = inOrder.indexOf(this) - inOrder.indexOf(that)
   }
 
-  object SSPHeuristic {
+  object IntoVsAllHeuristic {
 
     /**
      * Prefer planning this plan, if possible.
      */
-    case object Prefer extends SSPHeuristic
+    case object Prefer extends IntoVsAllHeuristic
 
     /**
      * There is no preference whether this plan should be planned or not.
      */
-    case object Neutral extends SSPHeuristic
+    case object Neutral extends IntoVsAllHeuristic
 
     /**
      * Avoid planning this plan, if possible.
      */
-    case object Avoid extends SSPHeuristic
+    case object Avoid extends IntoVsAllHeuristic
   }
 
-  case class LogicalPlanWithSSPHeuristic(plan: LogicalPlan, heuristic: SSPHeuristic)
+  case class LogicalPlanWithIntoVsAllHeuristic(plan: LogicalPlan, heuristic: IntoVsAllHeuristic)
 
-  object LogicalPlanWithSSPHeuristic {
+  object LogicalPlanWithIntoVsAllHeuristic {
 
-    implicit def neutralPlan(plan: LogicalPlan): LogicalPlanWithSSPHeuristic =
-      LogicalPlanWithSSPHeuristic(plan, SSPHeuristic.Neutral)
+    implicit def neutralPlan(plan: LogicalPlan): LogicalPlanWithIntoVsAllHeuristic =
+      LogicalPlanWithIntoVsAllHeuristic(plan, IntoVsAllHeuristic.Neutral)
   }
 
   /**
@@ -643,21 +662,68 @@ object expandSolverStep {
   private def heuristicForStatefulShortestInto(
     ssp: StatefulShortestPath,
     context: LogicalPlanningContext
-  ): LogicalPlanWithSSPHeuristic = {
+  ): LogicalPlanWithIntoVsAllHeuristic = {
     ssp.mode match {
       case Expand.ExpandAll =>
-        LogicalPlanWithSSPHeuristic(ssp, SSPHeuristic.Neutral)
+        LogicalPlanWithIntoVsAllHeuristic(ssp, IntoVsAllHeuristic.Neutral)
       case Expand.ExpandInto =>
         val cardinalities = context.staticComponents.planningAttributes.cardinalities
         val inCardinality = cardinalities.get(ssp.source.id)
         // + 0.1 to accommodate very leniently for rounding errors.
         val single = inCardinality <= Cardinality.SINGLE + 0.1
-        LogicalPlanWithSSPHeuristic(ssp, if (single) SSPHeuristic.Prefer else SSPHeuristic.Avoid)
+        LogicalPlanWithIntoVsAllHeuristic(ssp, if (single) IntoVsAllHeuristic.Prefer else IntoVsAllHeuristic.Avoid)
     }
   }
 
   /**
-   * Filter out candidates according to the SSPHeuristic.
+   * This function can be used for VarExpand relationships and QPPs
+   *
+   * Avoid planning an expandInto when the child plan is estimated to have a cardinality larger than 1.
+   * This should limit the planner into planning an expensive Cartesian Product followed by an expandInto.
+   *
+   * Consider the query: MATCH (a:A)-[r:R*]->(b:B) RETURN *
+   *
+   * The following query plan is avoided when the Cartesian Product of nodes with the label "A" and "B" is larger than 1
+   * .expand("(a:A)-[r:R*]->(b:B)", expandMode = ExpandInto, projectedDir = OUTGOING)
+   * .cartesianProduct
+   * .|.nodeByLabelScan("b", "B")
+   * .nodeByLabelScan("a", "A")
+   *
+   * Otherwise, it might get chosen when the variable length pattern is highly overestimated, which will make the final filter appear very expensive
+   * .filter("b:B")                                                                 # cost will be highly overestimated due to overestimated cardinality estimate of its child
+   * .expand("(a:A)-[r:R*]->(b)", expandMode = ExpandALL, projectedDir = OUTGOING)  # cardinality might be highly overestimated
+   * .nodeByLabelScan("a", "A")
+   *
+   * @param plan          The original VarExpand or Trail logical plan
+   * @param sourcePlan    The logical plan that is the source of `plan`
+   * @param expansionMode The expansion mode.
+   *                      Either ExpandInto, which means that both endpoint have been bound by the source plan.
+   *                      Or ExpandAll, which means that only one endpoint has been bound by the source plan..
+   * @param context       The logicalPlanningContext
+   * @return The original logical plan together with an annotation whether it should be avoided or not
+   */
+  private def heuristicForExpandIntoVsAll(
+    plan: LogicalPlan,
+    sourcePlan: LogicalPlan,
+    expansionMode: ExpansionMode,
+    context: LogicalPlanningContext
+  ): LogicalPlanWithIntoVsAllHeuristic = {
+    if (expansionMode == ExpandInto) {
+      val cardinalities = context.staticComponents.planningAttributes.cardinalities
+      val inCardinality = cardinalities.get(sourcePlan.id)
+      // + 0.1 to accommodate very leniently for rounding errors.
+      val single = inCardinality <= Cardinality.SINGLE + 0.1
+      LogicalPlanWithIntoVsAllHeuristic(
+        plan,
+        if (single) IntoVsAllHeuristic.Neutral else IntoVsAllHeuristic.Avoid
+      )
+    } else {
+      LogicalPlanWithIntoVsAllHeuristic(plan, IntoVsAllHeuristic.Neutral)
+    }
+  }
+
+  /**
+   * Filter out candidates according to the IntoVsAllHeuristic.
    * This happens as a "pre-filter", before the candidates are given the pickBest.
    *
    * Thus this preference weights more than the cost estimated by the cost model.
@@ -667,13 +733,13 @@ object expandSolverStep {
    * - USING JOIN/SCAN hints can be fulfilled
    * - our internal hints when we don't use `statefulShortestPlanningMode = cardinality_heuristic` can be fulfilled
    */
-  private[idp] def preFilterCandidatesBySSPHeuristic(
-    candidates: Iterable[LogicalPlanWithSSPHeuristic],
+  private[idp] def preFilterCandidatesByIntoVsAllHeuristic(
+    candidates: Iterable[LogicalPlanWithIntoVsAllHeuristic],
     context: LogicalPlanningContext
   ): Iterable[LogicalPlan] = {
     candidates
       .map {
-        case LogicalPlanWithSSPHeuristic(plan, heuristic) =>
+        case LogicalPlanWithIntoVsAllHeuristic(plan, heuristic) =>
           val numHints = context.staticComponents.planningAttributes.solveds.get(plan.id).numHints
           // Create a tuple (numHints, heuristic) for each candidate.
           (plan, (numHints, heuristic))
@@ -683,7 +749,7 @@ object expandSolverStep {
       .to(SortedMap)
       // Only keep the last group. This is either the group solving the most hints,
       // or if this is equal for all candidates, than this is the group with the highest
-      // SSPHeuristic.
+      // IntoVsAllHeuristic.
       .lastOption
       .map {
         _._2.map(_._1)

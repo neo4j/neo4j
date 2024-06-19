@@ -26,10 +26,10 @@ import org.neo4j.cypher.internal.compiler.planner.logical.QueryPlannerKit
 import org.neo4j.cypher.internal.compiler.planner.logical.SortPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.IDPQueryGraphSolver.extraRequirementForInterestingOrder
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.SingleComponentPlanner.planSinglePattern
-import org.neo4j.cypher.internal.compiler.planner.logical.idp.expandSolverStep.LogicalPlanWithSSPHeuristic
+import org.neo4j.cypher.internal.compiler.planner.logical.idp.expandSolverStep.LogicalPlanWithIntoVsAllHeuristic
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.expandSolverStep.planSinglePatternSide
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.expandSolverStep.planSingleProjectEndpoints
-import org.neo4j.cypher.internal.compiler.planner.logical.idp.expandSolverStep.preFilterCandidatesBySSPHeuristic
+import org.neo4j.cypher.internal.compiler.planner.logical.idp.expandSolverStep.preFilterCandidatesByIntoVsAllHeuristic
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.BestPlans
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.leafPlanOptions
@@ -223,18 +223,19 @@ trait SingleComponentPlannerTrait {
 object SingleComponentPlanner {
 
   sealed private trait SinglePatternSolutions {
-    def getSolutions: Iterable[LogicalPlanWithSSPHeuristic]
+    def getSolutions: Iterable[LogicalPlanWithIntoVsAllHeuristic]
   }
 
-  private case class NonExpandSolutions(solutions: Option[LogicalPlanWithSSPHeuristic]) extends SinglePatternSolutions {
-    override def getSolutions: Iterable[LogicalPlanWithSSPHeuristic] = solutions
+  private case class NonExpandSolutions(solutions: Option[LogicalPlanWithIntoVsAllHeuristic])
+      extends SinglePatternSolutions {
+    override def getSolutions: Iterable[LogicalPlanWithIntoVsAllHeuristic] = solutions
   }
 
   private case class ExpandSolutions(
-    leftExpand: Option[LogicalPlanWithSSPHeuristic],
-    rightExpand: Option[LogicalPlanWithSSPHeuristic]
+    leftExpand: Option[LogicalPlanWithIntoVsAllHeuristic],
+    rightExpand: Option[LogicalPlanWithIntoVsAllHeuristic]
   ) extends SinglePatternSolutions {
-    override def getSolutions: Iterable[LogicalPlanWithSSPHeuristic] = Set(leftExpand, rightExpand).flatten
+    override def getSolutions: Iterable[LogicalPlanWithIntoVsAllHeuristic] = Set(leftExpand, rightExpand).flatten
   }
 
   /**
@@ -280,10 +281,10 @@ object SingleComponentPlanner {
       val (start, end) = patternToSolve.boundaryNodes
       if (start == end) {
         // We are not allowed to plan CP or joins with identical LHS and RHS
-        Iterable.empty[LogicalPlanWithSSPHeuristic]
+        Iterable.empty[LogicalPlanWithIntoVsAllHeuristic]
       } else if (qg.argumentIds.contains(start) || qg.argumentIds.contains(end)) {
         // This kind of join for single relationship patterns is currently only supported for non-argument nodes.
-        Iterable.empty[LogicalPlanWithSSPHeuristic]
+        Iterable.empty[LogicalPlanWithIntoVsAllHeuristic]
       } else {
         val startJoinNodes = Set(start)
         val endJoinNodes = Set(end)
@@ -315,14 +316,14 @@ object SingleComponentPlanner {
           maybeEndBestPlans,
           getExpandSolutionOnTopOfLeaf,
           context
-        ).map(LogicalPlanWithSSPHeuristic.neutralPlan)
+        ).map(LogicalPlanWithIntoVsAllHeuristic.neutralPlan)
 
         cartesianProducts ++ joins
       }
     }
 
     val candidates = perLeafSolutions.values.flatMap(_.getSolutions) ++ cartesianProductsAndJoins
-    preFilterCandidatesBySSPHeuristic(candidates, context)
+    preFilterCandidatesByIntoVsAllHeuristic(candidates, context)
   }
 
   private def planSinglePatternCartesianProducts(
@@ -334,7 +335,7 @@ object SingleComponentPlanner {
     maybeEndBestPlans: Option[BestPlans],
     qppInnerPlanner: QPPInnerPlanner,
     context: LogicalPlanningContext
-  ): Iterable[LogicalPlanWithSSPHeuristic] = (maybeStartBestPlans, maybeEndBestPlans) match {
+  ): Iterable[LogicalPlanWithIntoVsAllHeuristic] = (maybeStartBestPlans, maybeEndBestPlans) match {
     case (Some(startBestPlan), Some(endBestPlan)) =>
       // CP keeps the LHS order. Therefore we consider both the bestResult and the best sorted result
       // as LHSs of the CP.

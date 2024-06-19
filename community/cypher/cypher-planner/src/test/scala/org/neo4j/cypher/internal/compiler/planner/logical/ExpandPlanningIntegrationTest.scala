@@ -33,6 +33,7 @@ import org.neo4j.cypher.internal.expressions.SingleRelationshipPathStep
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.Predicate
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.andsReorderable
 import org.neo4j.cypher.internal.logical.plans.Expand
+import org.neo4j.cypher.internal.logical.plans.Expand.ExpandAll
 import org.neo4j.cypher.internal.logical.plans.Expand.ExpandInto
 import org.neo4j.cypher.internal.logical.plans.GetValue
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
@@ -827,5 +828,98 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningI
       .expandAll("(b)<-[r]-(a)")
       .nodeIndexOperator("b:B(x = 4, y = 5, z = 6)", _ => GetValue, supportPartitionedScan = false)
       .build()
+  }
+
+  test("Should plan ExpandAll when cardinality estimate of the cartesian product is larger than 1") {
+    val nodes = 200
+    val relationships = 500
+    val a = 2
+    val r = 100
+    val builder = plannerBuilder()
+      .setAllNodesCardinality(nodes)
+      .setLabelCardinality("A", a)
+      .setAllRelationshipsCardinality(relationships)
+      .setRelationshipCardinality("()-[R]->()", r)
+      .setRelationshipCardinality("(:A)-[R]->()", r)
+      .setRelationshipCardinality("()-[R]->(:A)", r)
+      .setRelationshipCardinality("(:A)-[R]->(:A)", r)
+      .build()
+
+    val query = "MATCH (n1:A)-[r:R*]->(n2:A) RETURN n1, n2, r"
+
+    val plan = builder.plan(query)
+
+    plan should equal(
+      builder.planBuilder()
+        .produceResults("n1", "n2", "r")
+        .filter("n2:A")
+        .expand("(n1)-[r:R*1..]->(n2)", expandMode = ExpandAll, projectedDir = OUTGOING)
+        .nodeByLabelScan("n1", "A")
+        .build()
+    )
+  }
+
+  test(
+    "Should plan ExpandInto when cardinality estimate of the cartesian product is equal to 1 and the total plan has lowest cost"
+  ) {
+    val nodes = 200
+    val relationships = 500
+    val a = 1
+    val r = 100
+    val builder = plannerBuilder()
+      .setAllNodesCardinality(nodes)
+      .setLabelCardinality("A", a)
+      .setAllRelationshipsCardinality(relationships)
+      .setRelationshipCardinality("()-[R]->()", r)
+      .setRelationshipCardinality("(:A)-[R]->()", r)
+      .setRelationshipCardinality("()-[R]->(:A)", r)
+      .setRelationshipCardinality("(:A)-[R]->(:A)", r)
+      .enablePrintCostComparisons()
+      .build()
+
+    val query = "MATCH (n1:A)-[r:R*]->(n2:A) RETURN n1, n2, r"
+
+    val plan = builder.plan(query)
+
+    plan should equal(
+      builder.planBuilder()
+        .produceResults("n1", "n2", "r")
+        .expand("(n1)-[r:R*1..]->(n2)", expandMode = ExpandInto, projectedDir = OUTGOING)
+        .cartesianProduct()
+        .|.nodeByLabelScan("n2", "A")
+        .nodeByLabelScan("n1", "A")
+        .build()
+    )
+  }
+
+  test(
+    "Should plan ExpandAll when the total plan has lowest cost, even when cardinality estimate of the cartesian product is equal to 1"
+  ) {
+    val nodes = 200
+    val relationships = 500
+    val a = 1
+    val r = 1
+    val builder = plannerBuilder()
+      .setAllNodesCardinality(nodes)
+      .setLabelCardinality("A", a)
+      .setAllRelationshipsCardinality(relationships)
+      .setRelationshipCardinality("()-[R]->()", r)
+      .setRelationshipCardinality("(:A)-[R]->()", r)
+      .setRelationshipCardinality("()-[R]->(:A)", r)
+      .setRelationshipCardinality("(:A)-[R]->(:A)", r)
+      .build()
+
+    val query = "MATCH (n1:A)-[r:R*]->(n2:A) RETURN n1, n2, r"
+
+    val plan = builder.plan(query)
+
+    plan should equal(
+      builder.planBuilder()
+        .produceResults("n1", "n2", "r")
+        .filter("n2:A")
+        .expand("(n1)-[r:R*1..]->(n2)", expandMode = ExpandAll, projectedDir = OUTGOING)
+        .nodeByLabelScan("n1", "A")
+        .build()
+    )
   }
 }

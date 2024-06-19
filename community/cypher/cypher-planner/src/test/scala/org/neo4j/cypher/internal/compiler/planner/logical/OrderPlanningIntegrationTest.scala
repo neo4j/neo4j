@@ -2674,15 +2674,14 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
       .sort("`n{prop: n.prop}` ASC")
       .projection(Map("n{prop: n.prop}" -> mapProjection))
       .projection(Map("n" -> secondNodeInPathProjection))
+      .filter("anon_1:B")
       .expand(
         "(a)-[anon_0:R*1..]->(anon_1)",
-        expandMode = Expand.ExpandInto,
+        expandMode = Expand.ExpandAll,
         projectedDir = SemanticDirection.OUTGOING,
         nodePredicates = Seq(),
         relationshipPredicates = Seq()
       )
-      .cartesianProduct()
-      .|.nodeByLabelScan("anon_1", "B", IndexOrderNone)
       .nodeByLabelScan("a", "A", IndexOrderNone)
       .build()
   }

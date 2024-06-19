@@ -50,6 +50,7 @@ import org.neo4j.cypher.internal.logical.plans.Expand.VariablePredicate
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.NestedPlanExistsExpression
 import org.neo4j.cypher.internal.util.UpperBound
+import org.neo4j.cypher.internal.util.UpperBound.Limited
 import org.neo4j.cypher.internal.util.UpperBound.Unlimited
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.internal.util.collection.immutable.ListSet
@@ -2769,5 +2770,157 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       .build()
 
     plan shouldEqual expected
+  }
+
+  test(
+    "Should not plan to solve both endpoints using a Cartesian Product before planning the QPP when source-plan has cardinality larger than 1"
+  ) {
+    val nodes = 200
+    val relationships = 500
+    val a = 2
+    val r = 100
+    val builder = plannerBuilder()
+      .setAllNodesCardinality(nodes)
+      .setLabelCardinality("A", a)
+      .setAllRelationshipsCardinality(relationships)
+      .setRelationshipCardinality("()-[R]->()", r)
+      .setRelationshipCardinality("(:A)-[R]->()", r)
+      .setRelationshipCardinality("()-[R]->(:A)", r)
+      .setRelationshipCardinality("(:A)-[R]->(:A)", r)
+      .build()
+
+    val query = "MATCH (n1:A)((inner1:A)-[r:R]->(inner2:A)){50,55}(n2:A) RETURN n1, n2, r"
+
+    val plan = builder.plan(query)
+
+    val trailParameters = TrailParameters(
+      min = 50,
+      max = Limited(55),
+      start = "n1",
+      end = "n2",
+      innerStart = "inner1",
+      innerEnd = "inner2",
+      groupNodes = Set(),
+      groupRelationships = Set(("r", "r")),
+      innerRelationships = Set("r"),
+      previouslyBoundRelationships = Set.empty,
+      previouslyBoundRelationshipGroups = Set.empty,
+      reverseGroupVariableProjections = false
+    )
+
+    plan should equal(
+      builder.planBuilder()
+        .produceResults("n1", "n2", "r")
+        .filter("n2:A")
+        .trail(trailParameters)
+        .|.filterExpressionOrString(isRepeatTrailUnique("r"), "inner2:A")
+        .|.expandAll("(inner1)-[r:R]->(inner2)")
+        .|.filter("inner1:A")
+        .|.argument("inner1")
+        .nodeByLabelScan("n1", "A")
+        .build()
+    )
+  }
+
+  test(
+    "Should plan to solve both endpoints using a Cartesian Product before planning the QPP when source-plan has cardinality 1 and total cost is less than the QPPAll plans"
+  ) {
+    val nodes = 200
+    val relationships = 500
+    val a = 1
+    val r = 100
+    val builder = plannerBuilder()
+      .setAllNodesCardinality(nodes)
+      .setLabelCardinality("A", a)
+      .setAllRelationshipsCardinality(relationships)
+      .setRelationshipCardinality("()-[R]->()", r)
+      .setRelationshipCardinality("(:A)-[R]->()", r)
+      .setRelationshipCardinality("()-[R]->(:A)", r)
+      .setRelationshipCardinality("(:A)-[R]->(:A)", r)
+      .build()
+
+    val query = "MATCH (n1:A)((inner1:A)-[r:R]->(inner2:A)){50,55}(n2:A) RETURN n1, n2, r"
+
+    val plan = builder.plan(query)
+
+    val trailParameters = TrailParameters(
+      min = 50,
+      max = Limited(55),
+      start = "n1",
+      end = "anon_0",
+      innerStart = "inner1",
+      innerEnd = "inner2",
+      groupNodes = Set(),
+      groupRelationships = Set(("r", "r")),
+      innerRelationships = Set("r"),
+      previouslyBoundRelationships = Set.empty,
+      previouslyBoundRelationshipGroups = Set.empty,
+      reverseGroupVariableProjections = false
+    )
+
+    plan should equal(
+      builder.planBuilder()
+        .produceResults("n1", "n2", "r")
+        .filter("anon_0 = n2")
+        .trail(trailParameters)
+        .|.filterExpressionOrString(isRepeatTrailUnique("r"), "inner2:A")
+        .|.expandAll("(inner1)-[r:R]->(inner2)")
+        .|.filter("inner1:A")
+        .|.argument("inner1")
+        .cartesianProduct()
+        .|.nodeByLabelScan("n2", "A")
+        .nodeByLabelScan("n1", "A")
+        .build()
+    )
+  }
+
+  test(
+    "Should not plan to solve both endpoints using a Cartesian Product before planning the QPP when source-plan has cardinality 1 but total cost is larger than a QPPAll plans"
+  ) {
+    val nodes = 200
+    val relationships = 500
+    val a = 1
+    val r = 1
+    val builder = plannerBuilder()
+      .setAllNodesCardinality(nodes)
+      .setLabelCardinality("A", a)
+      .setAllRelationshipsCardinality(relationships)
+      .setRelationshipCardinality("()-[R]->()", r)
+      .setRelationshipCardinality("(:A)-[R]->()", r)
+      .setRelationshipCardinality("()-[R]->(:A)", r)
+      .setRelationshipCardinality("(:A)-[R]->(:A)", r)
+      .build()
+
+    val query = "MATCH (n1:A)((inner1:A)-[r:R]->(inner2:A)){50,55}(n2:A) RETURN n1, n2, r"
+
+    val plan = builder.plan(query)
+
+    val trailParameters = TrailParameters(
+      min = 50,
+      max = Limited(55),
+      start = "n1",
+      end = "n2",
+      innerStart = "inner1",
+      innerEnd = "inner2",
+      groupNodes = Set(),
+      groupRelationships = Set(("r", "r")),
+      innerRelationships = Set("r"),
+      previouslyBoundRelationships = Set.empty,
+      previouslyBoundRelationshipGroups = Set.empty,
+      reverseGroupVariableProjections = false
+    )
+
+    plan should equal(
+      builder.planBuilder()
+        .produceResults("n1", "n2", "r")
+        .filter("n2:A")
+        .trail(trailParameters)
+        .|.filterExpressionOrString(isRepeatTrailUnique("r"), "inner2:A")
+        .|.expandAll("(inner1)-[r:R]->(inner2)")
+        .|.filter("inner1:A")
+        .|.argument("inner1")
+        .nodeByLabelScan("n1", "A")
+        .build()
+    )
   }
 }
