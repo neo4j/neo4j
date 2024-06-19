@@ -506,4 +506,9 @@ public class DelegatingStorageEngineFactory implements StorageEngineFactory {
             FileSystemAbstraction fs, PageCache pageCache, DatabaseLayout layout, CursorContextFactory contextFactory) {
         return delegate.getStoreOpenOptions(fs, pageCache, layout, contextFactory);
     }
+
+    @Override
+    public StorageEngineFactory unwrap() {
+        return delegate.unwrap();
+    }
 }

@@ -478,6 +478,11 @@ public interface StorageEngineFactory {
             FileSystemAbstraction fs, PageCache pageCache, DatabaseLayout layout, CursorContextFactory contextFactory);
 
     /**
+     * Return itself or original StorageEngineFactory if wraps one
+     */
+    StorageEngineFactory unwrap();
+
+    /**
      * @return the default {@link StorageEngineFactory}.
      * @throws IllegalStateException if there were no storage engine factories to choose from.
      */
