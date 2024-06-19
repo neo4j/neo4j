@@ -33,6 +33,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.automatic_upgrade_enabled;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.upgrade_procedure_wait_timeout;
+import static org.neo4j.dbms.database.SystemGraphComponents.UpgradeCheckResult.upgradeNotAllowed;
+import static org.neo4j.dbms.database.SystemGraphComponents.UpgradeChecker.UPGRADE_ALWAYS_ALLOWED;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTNode;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTPath;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTRelationship;
@@ -64,6 +66,7 @@ import org.neo4j.configuration.SettingValueParsers;
 import org.neo4j.dbms.database.SystemGraphComponent;
 import org.neo4j.dbms.database.SystemGraphComponent.Status;
 import org.neo4j.dbms.database.SystemGraphComponents;
+import org.neo4j.dbms.database.SystemGraphComponents.UpgradeChecker;
 import org.neo4j.dbms.database.TestSystemGraphComponent;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
@@ -96,9 +99,6 @@ import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.Log;
-import org.neo4j.procedure.builtin.BuiltInDbmsProcedures.UpgradeAllowedChecker;
-import org.neo4j.procedure.builtin.BuiltInDbmsProcedures.UpgradeAllowedChecker.UpgradeAlwaysAllowed;
-import org.neo4j.procedure.builtin.BuiltInDbmsProcedures.UpgradeAllowedChecker.UpgradeNotAllowedException;
 import org.neo4j.procedure.impl.GlobalProceduresRegistry;
 import org.neo4j.procedure.impl.ProcedureConfig;
 import org.neo4j.procedure.impl.temporal.TemporalFunction;
@@ -405,7 +405,7 @@ class BuiltInProceduresTest {
         Config config = Config.defaults();
         setupFakeSystemComponents();
         when(resolver.resolveDependency(Config.class)).thenReturn(config);
-        when(resolver.resolveDependency(UpgradeAllowedChecker.class)).thenReturn(new UpgradeAlwaysAllowed());
+        when(resolver.resolveDependency(UpgradeChecker.class)).thenReturn(UPGRADE_ALWAYS_ALLOWED);
         when(callContext.isSystemDatabase()).thenReturn(true);
 
         var r = call("dbms.upgradeStatus").iterator();
@@ -427,7 +427,7 @@ class BuiltInProceduresTest {
         setupFakeSystemComponents();
         when(resolver.resolveDependency(Config.class)).thenReturn(config);
         var message = "You will never succeed!";
-        when(resolver.resolveDependency(UpgradeAllowedChecker.class)).thenReturn(new UpgradeNeverAllowed(message));
+        when(resolver.resolveDependency(UpgradeChecker.class)).thenReturn(() -> upgradeNotAllowed(message));
         when(callContext.isSystemDatabase()).thenReturn(true);
 
         var r = call("dbms.upgradeStatus").iterator();
@@ -463,7 +463,7 @@ class BuiltInProceduresTest {
         config.set(automatic_upgrade_enabled, false);
         setupFakeSystemComponents();
         when(resolver.resolveDependency(Config.class)).thenReturn(config);
-        when(resolver.resolveDependency(UpgradeAllowedChecker.class)).thenReturn(new UpgradeAlwaysAllowed());
+        when(resolver.resolveDependency(UpgradeChecker.class)).thenReturn(UPGRADE_ALWAYS_ALLOWED);
         when(callContext.isSystemDatabase()).thenReturn(true);
         when(graphDatabaseAPI.beginTx()).thenReturn(transaction);
 
@@ -484,7 +484,7 @@ class BuiltInProceduresTest {
         config.set(automatic_upgrade_enabled, true);
         mockSystemGraphComponents(Status.REQUIRES_UPGRADE, Status.REQUIRES_UPGRADE, Status.CURRENT);
         when(resolver.resolveDependency(Config.class)).thenReturn(config);
-        when(resolver.resolveDependency(UpgradeAllowedChecker.class)).thenReturn(new UpgradeAlwaysAllowed());
+        when(resolver.resolveDependency(UpgradeChecker.class)).thenReturn(UPGRADE_ALWAYS_ALLOWED);
         when(callContext.isSystemDatabase()).thenReturn(true);
         when(graphDatabaseAPI.beginTx()).thenReturn(transaction);
 
@@ -506,7 +506,7 @@ class BuiltInProceduresTest {
         config.set(upgrade_procedure_wait_timeout, Duration.ofSeconds(2));
         mockSystemGraphComponents(Status.REQUIRES_UPGRADE);
         when(resolver.resolveDependency(Config.class)).thenReturn(config);
-        when(resolver.resolveDependency(UpgradeAllowedChecker.class)).thenReturn(new UpgradeAlwaysAllowed());
+        when(resolver.resolveDependency(UpgradeChecker.class)).thenReturn(UPGRADE_ALWAYS_ALLOWED);
         when(callContext.isSystemDatabase()).thenReturn(true);
         when(graphDatabaseAPI.beginTx()).thenReturn(transaction);
 
@@ -526,9 +526,7 @@ class BuiltInProceduresTest {
         var failureMessage = "Don't want to";
         Config config = Config.defaults();
         when(resolver.resolveDependency(Config.class)).thenReturn(config);
-        when(resolver.resolveDependency(UpgradeAllowedChecker.class)).thenReturn(() -> {
-            throw new UpgradeNotAllowedException(failureMessage);
-        });
+        when(resolver.resolveDependency(UpgradeChecker.class)).thenReturn(() -> upgradeNotAllowed(failureMessage));
         when(callContext.isSystemDatabase()).thenReturn(true);
         when(graphDatabaseAPI.beginTx()).thenReturn(transaction);
 
@@ -547,7 +545,7 @@ class BuiltInProceduresTest {
         when(graphDatabaseAPI.dbmsInfo()).thenReturn(DbmsInfo.COMMUNITY);
 
         setupFakeSystemComponents();
-        when(resolver.resolveDependency(UpgradeAllowedChecker.class)).thenReturn(new UpgradeAlwaysAllowed());
+        when(resolver.resolveDependency(UpgradeChecker.class)).thenReturn(UPGRADE_ALWAYS_ALLOWED);
         when(callContext.isSystemDatabase()).thenReturn(true);
         when(graphDatabaseAPI.beginTx()).thenReturn(transaction);
 
@@ -695,19 +693,5 @@ class BuiltInProceduresTest {
         systemGraphComponentsBuilder.register(makeSystemComponentUpgradeSucceeds("component_C"));
         systemGraphComponentsBuilder.register(makeSystemComponentUpgradeFails("component_D"));
         systemGraphComponents = systemGraphComponentsBuilder.build();
-    }
-
-    static class UpgradeNeverAllowed implements UpgradeAllowedChecker {
-
-        private final String message;
-
-        public UpgradeNeverAllowed(String message) {
-            this.message = message;
-        }
-
-        @Override
-        public void isUpgradeAllowed() throws UpgradeNotAllowedException {
-            throw new UpgradeNotAllowedException(message);
-        }
     }
 }

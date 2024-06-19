@@ -59,6 +59,7 @@ import org.neo4j.dbms.database.DatabaseContextProvider;
 import org.neo4j.dbms.database.SystemGraphComponent;
 import org.neo4j.dbms.database.SystemGraphComponent.Status;
 import org.neo4j.dbms.database.SystemGraphComponents;
+import org.neo4j.dbms.database.SystemGraphComponents.UpgradeChecker;
 import org.neo4j.fabric.executor.FabricExecutor;
 import org.neo4j.fabric.transaction.TransactionManager;
 import org.neo4j.graphdb.Transaction;
@@ -79,7 +80,6 @@ import org.neo4j.procedure.Description;
 import org.neo4j.procedure.Internal;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
-import org.neo4j.procedure.builtin.BuiltInDbmsProcedures.UpgradeAllowedChecker.UpgradeNotAllowedException;
 import org.neo4j.router.QueryRouter;
 import org.neo4j.router.transaction.TransactionLookup;
 import org.neo4j.storageengine.api.StoreIdProvider;
@@ -277,13 +277,12 @@ public class BuiltInDbmsProcedures {
                     ProcedureCallFailed,
                     "This is an administration command and it should be executed against the system database: dbms.upgrade");
         }
-        UpgradeAllowedChecker checker = resolver.resolveDependency(UpgradeAllowedChecker.class);
-        try {
-            checker.isUpgradeAllowed();
-        } catch (UpgradeNotAllowedException e) {
-            log.info("Upgrade not currently possible", e);
+        var upgradeCheckResult =
+                resolver.resolveDependency(UpgradeChecker.class).upgradeCheck();
+        if (!upgradeCheckResult.upgradeAllowed()) {
+            log.info("Upgrade not currently possible: %s", upgradeCheckResult.whyUpgradeNotAllowed());
             return Stream.of(new SystemGraphComponentUpgradeResult(
-                    SystemGraphComponentStatusResult.CANNOT_UPGRADE_STATUS, e.getMessage()));
+                    SystemGraphComponentStatusResult.CANNOT_UPGRADE_STATUS, upgradeCheckResult.whyUpgradeNotAllowed()));
         }
 
         SystemGraphComponents components = systemGraphComponents;
@@ -429,16 +428,15 @@ public class BuiltInDbmsProcedures {
      */
     public static SystemGraphComponentStatusResult getAggregateUpgradeStatus(
             SystemGraphComponents systemGraphComponents, DependencyResolver resolver, Transaction transaction) {
-        UpgradeAllowedChecker checker = resolver.resolveDependency(UpgradeAllowedChecker.class);
-        try {
-            checker.isUpgradeAllowed();
-            return new SystemGraphComponentStatusResult(systemGraphComponents.detect(transaction));
-        } catch (UpgradeNotAllowedException e) {
+        var checker = resolver.resolveDependency(UpgradeChecker.class);
+        var checkResult = checker.upgradeCheck();
+        if (!checkResult.upgradeAllowed()) {
             return new SystemGraphComponentStatusResult(
                     SystemGraphComponentStatusResult.CANNOT_UPGRADE_STATUS,
-                    e.getMessage(),
+                    checkResult.whyUpgradeNotAllowed(),
                     SystemGraphComponentStatusResult.CANNOT_UPGRADE_RESOLUTION);
         }
+        return new SystemGraphComponentStatusResult(systemGraphComponents.detect(transaction));
     }
 
     public record SystemInfo(String id, String name, String creationDate) {}
@@ -501,27 +499,5 @@ public class BuiltInDbmsProcedures {
             }
         }
         return statusSupplier.get();
-    }
-
-    public interface UpgradeAllowedChecker {
-        void isUpgradeAllowed() throws UpgradeNotAllowedException;
-
-        class UpgradeNotAllowedException extends Exception {
-            public UpgradeNotAllowedException(String message) {
-                super(message);
-            }
-
-            public UpgradeNotAllowedException(String message, Throwable cause) {
-                super(message, cause);
-            }
-        }
-
-        class UpgradeAlwaysAllowed implements UpgradeAllowedChecker {
-
-            @Override
-            public void isUpgradeAllowed() {
-                // Do nothing
-            }
-        }
     }
 }

@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Consumer;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -153,6 +154,66 @@ public class SystemGraphComponents {
                         + component.componentName().name());
             }
             componentMap.put(component.componentName(), component);
+        }
+    }
+
+    @FunctionalInterface
+    public interface UpgradeChecker {
+        UpgradeChecker UPGRADE_ALWAYS_ALLOWED = () -> UpgradeCheckResult.UPGRADE_NECESSARY;
+
+        UpgradeCheckResult upgradeCheck();
+    }
+
+    public static final class UpgradeCheckResult {
+        public static final UpgradeCheckResult UPGRADE_NOT_NECESSARY = new UpgradeCheckResult(false, null);
+        public static final UpgradeCheckResult UPGRADE_NECESSARY = new UpgradeCheckResult(true, null);
+
+        public static UpgradeCheckResult upgradeNotAllowed(String message) {
+            Objects.requireNonNull(message);
+            return new UpgradeCheckResult(false, message);
+        }
+
+        private final boolean upgradeNecessary;
+        private final String whyUpgradeNotAllowed;
+
+        private UpgradeCheckResult(boolean upgradeNecessary, String whyUpgradeNotAllowed) {
+            this.upgradeNecessary = upgradeNecessary;
+            this.whyUpgradeNotAllowed = whyUpgradeNotAllowed;
+        }
+
+        public boolean upgradeAllowed() {
+            return whyUpgradeNotAllowed == null;
+        }
+
+        public boolean upgradeNecessary() {
+            return upgradeNecessary;
+        }
+
+        public String whyUpgradeNotAllowed() {
+            return whyUpgradeNotAllowed;
+        }
+
+        @Override
+        public String toString() {
+            return "UpgradeCheckResult{"
+                    + (upgradeAllowed()
+                            ? (upgradeNecessary ? "Upgrade necessary" : "Upgrade not necessary")
+                            : "Upgrade not allowed: " + whyUpgradeNotAllowed)
+                    + "}";
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            UpgradeCheckResult that = (UpgradeCheckResult) o;
+            return upgradeNecessary == that.upgradeNecessary
+                    && Objects.equals(whyUpgradeNotAllowed, that.whyUpgradeNotAllowed);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(upgradeNecessary, whyUpgradeNotAllowed);
         }
     }
 }
