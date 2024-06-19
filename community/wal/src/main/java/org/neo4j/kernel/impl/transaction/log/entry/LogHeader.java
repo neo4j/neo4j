@@ -34,7 +34,6 @@ public class LogHeader {
 
     private final LogFormat logFormatVersion;
     private final long logVersion;
-    private final long lastCommittedTxId;
     private final long lastAppendIndex;
     private final StoreId storeId;
     private final LogPosition startPosition;
@@ -45,7 +44,6 @@ public class LogHeader {
     LogHeader(
             byte logFormatVersion,
             long logVersion,
-            long lastCommittedTxId,
             long lastAppendIndex,
             StoreId storeId,
             long headerSize,
@@ -54,7 +52,6 @@ public class LogHeader {
             KernelVersion kernelVersion) {
         this.logFormatVersion = LogFormat.fromByteVersion(logFormatVersion);
         this.logVersion = logVersion;
-        this.lastCommittedTxId = lastCommittedTxId;
         this.lastAppendIndex = lastAppendIndex;
         this.storeId = storeId;
         this.segmentBlockSize = segmentBlockSize;
@@ -71,7 +68,6 @@ public class LogHeader {
     public LogHeader(LogHeader logHeader, long version) {
         logFormatVersion = logHeader.logFormatVersion;
         logVersion = version;
-        lastCommittedTxId = logHeader.lastCommittedTxId;
         lastAppendIndex = logHeader.lastAppendIndex;
         storeId = logHeader.storeId;
         segmentBlockSize = logHeader.segmentBlockSize;
@@ -90,10 +86,6 @@ public class LogHeader {
 
     public long getLogVersion() {
         return logVersion;
-    }
-
-    public long getLastCommittedTxId() {
-        return lastCommittedTxId;
     }
 
     public StoreId getStoreId() {
@@ -127,7 +119,6 @@ public class LogHeader {
         LogHeader logHeader = (LogHeader) o;
         return logFormatVersion == logHeader.logFormatVersion
                 && logVersion == logHeader.logVersion
-                && lastCommittedTxId == logHeader.lastCommittedTxId
                 && lastAppendIndex == logHeader.lastAppendIndex
                 && Objects.equals(storeId, logHeader.storeId)
                 && Objects.equals(startPosition, logHeader.startPosition)
@@ -141,7 +132,6 @@ public class LogHeader {
         return Objects.hash(
                 logFormatVersion,
                 logVersion,
-                lastCommittedTxId,
                 lastAppendIndex,
                 storeId,
                 startPosition,
@@ -153,8 +143,8 @@ public class LogHeader {
     @Override
     public String toString() {
         return "LogHeader{" + "logFormatVersion=" + logFormatVersion + ", logVersion=" + logVersion
-                + ", lastCommittedTxId=" + lastCommittedTxId + ", lastAppendIndex="
-                + lastAppendIndex + ", storeId=" + storeId + ", startPosition=" + startPosition + ", segmentBlockSize="
+                + ", lastAppendIndex=" + lastAppendIndex + ", storeId=" + storeId + ", startPosition=" + startPosition
+                + ", segmentBlockSize="
                 + segmentBlockSize
                 + ", previousLogFileChecksum=" + previousLogFileChecksum + ", kernelVersion=" + kernelVersion + '}';
     }

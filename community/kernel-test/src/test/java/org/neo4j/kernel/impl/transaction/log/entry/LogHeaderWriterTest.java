@@ -60,7 +60,6 @@ class LogHeaderWriterTest {
     private RandomSupport random;
 
     private long expectedLogVersion;
-    private long expectedTxId;
     private long expectedAppendIndex;
     private StoreId expectedStoreId;
     private int expectedBlockSize;
@@ -69,7 +68,6 @@ class LogHeaderWriterTest {
     @BeforeEach
     void setUp() {
         expectedLogVersion = random.nextLong(0, LOG_VERSION_MASK);
-        expectedTxId = random.nextLong(0, Long.MAX_VALUE);
         expectedAppendIndex = random.nextLong(0, Long.MAX_VALUE);
         expectedStoreId = new StoreId(
                 random.nextLong(),
@@ -92,7 +90,6 @@ class LogHeaderWriterTest {
         final var channel = fileSystem.write(file);
         LogHeader logHeader = logFormat.newHeader(
                 expectedLogVersion,
-                expectedTxId,
                 expectedAppendIndex,
                 expectedStoreId,
                 logFormat != V10 ? UNKNOWN_LOG_SEGMENT_SIZE : expectedBlockSize,
@@ -112,16 +109,17 @@ class LogHeaderWriterTest {
         final var result = ByteBuffer.wrap(array);
 
         final var encodedLogVersions = result.getLong();
-        final var txId = result.getLong();
+        final var txId = V10.compareTo(logFormat) > 0 ? result.getLong() : -1;
         final var appendIndex = V9.compareTo(logFormat) <= 0 ? result.getLong() : -1;
         StoreId storeId = StoreIdSerialization.deserializeWithFixedSize(result);
 
         assertEquals(encodeLogVersion(expectedLogVersion, logFormat.getVersionByte()), encodedLogVersions);
         assertEquals(logFormat.getVersionByte(), decodeLogFormatVersion(encodedLogVersions));
         assertEquals(expectedLogVersion, decodeLogVersion(encodedLogVersions));
-        assertEquals(expectedTxId, txId);
-        if (logFormat == V9) {
+        if (V9.compareTo(logFormat) <= 0) {
             assertEquals(expectedAppendIndex, appendIndex);
+        } else if (V10.compareTo(logFormat) > 0) {
+            assertEquals(expectedAppendIndex, txId);
         }
         assertEquals(expectedStoreId, storeId);
 

@@ -413,7 +413,7 @@ class TransactionLogsUpgradeIT {
             throws IOException {
         LogHeader logHeader = LogHeaderReader.readLogHeader(
                 fileSystem, logFiles.getLogFile().getLogFileForVersion(logVersion), EmptyMemoryTracker.INSTANCE);
-        assertThat(logHeader.getLastCommittedTxId()).isEqualTo(lastExpectedTxId);
+        assertThat(logHeader.getLastAppendIndex()).isEqualTo(lastExpectedTxId);
         assertThat(logHeader.getKernelVersion()).isEqualTo(expectedVersion);
         return logHeader;
     }

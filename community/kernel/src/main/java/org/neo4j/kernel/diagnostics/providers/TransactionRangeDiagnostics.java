@@ -89,8 +89,8 @@ public class TransactionRangeDiagnostics extends NamedDiagnosticsProvider {
                 logVersion++) {
             if (logFile.hasAnyEntries(logVersion)) {
                 LogHeader header = logFile.extractHeader(logVersion);
-                long firstTransactionIdInThisLog = header.getLastCommittedTxId() + 1;
-                logger.log(" - oldest transaction " + firstTransactionIdInThisLog + " found in log with version "
+                long firstAppendIndexInThisLog = header.getLastAppendIndex() + 1;
+                logger.log(" - oldest append index " + firstAppendIndexInThisLog + " found in log with version "
                         + logVersion);
                 foundTransactions = true;
             }

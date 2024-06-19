@@ -23,7 +23,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.neo4j.storageengine.AppendIndexProvider;
 
 public class SimpleAppendIndexProvider implements AppendIndexProvider {
-    private final AtomicLong index = new AtomicLong();
+    private final AtomicLong index = new AtomicLong(BASE_APPEND_INDEX);
 
     @Override
     public long nextAppendIndex() {

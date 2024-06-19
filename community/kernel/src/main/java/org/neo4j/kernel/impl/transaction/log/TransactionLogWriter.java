@@ -99,9 +99,7 @@ public class TransactionLogWriter {
             // The transaction appenders handle locking of the logFile to guarantee only one thread is appending at a
             // time.
             // That means we know we are the only ones using the logfile here, and don't need to lock
-            // TODO misha this tx id can be wrong with mvcc - remove or use correct lastTxId here
-            logRotation.locklessRotateLogFile(
-                    logAppendEvent, kernelVersion, transactionId - 1, appendIndex - 1, previousChecksum);
+            logRotation.locklessRotateLogFile(logAppendEvent, kernelVersion, appendIndex - 1, previousChecksum);
             previousKernelVersion = kernelVersion;
         }
         channel.getCurrentLogPosition(logPositionMarker);

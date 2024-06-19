@@ -91,13 +91,7 @@ class ReaderLogVersionBridgeTest {
                 }
                 ByteBuffer buffer = invocation.getArgument(0);
                 LogHeader logHeader = LATEST_LOG_FORMAT.newHeader(
-                        version + 1,
-                        -1L,
-                        2L,
-                        storeId,
-                        UNKNOWN_LOG_SEGMENT_SIZE,
-                        BASE_TX_CHECKSUM,
-                        LATEST_KERNEL_VERSION);
+                        version + 1, 2L, storeId, UNKNOWN_LOG_SEGMENT_SIZE, BASE_TX_CHECKSUM, LATEST_KERNEL_VERSION);
                 LATEST_LOG_FORMAT.serializeHeader(buffer, logHeader);
                 return LATEST_LOG_FORMAT.getHeaderSize();
             }

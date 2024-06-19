@@ -1178,7 +1178,7 @@ class EnvelopeReadChannelTest {
             LogFormat.V10.serializeHeader(
                     buffer,
                     LogFormat.V10.newHeader(
-                            42, 1, 1, StoreId.UNKNOWN, segmentSize, previousLogFileChecksum, LATEST_KERNEL_VERSION));
+                            42, 1, StoreId.UNKNOWN, segmentSize, previousLogFileChecksum, LATEST_KERNEL_VERSION));
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -1282,7 +1282,7 @@ class EnvelopeReadChannelTest {
         private boolean isRaw = false;
 
         @Override
-        public LogVersionedStoreChannel next(LogVersionedStoreChannel channel, boolean raw) throws IOException {
+        public LogVersionedStoreChannel next(LogVersionedStoreChannel channel, boolean raw) {
             isRaw = raw;
             return channel;
         }

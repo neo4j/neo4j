@@ -101,7 +101,6 @@ class LogEntrySerializerDispatcherTest {
                     LATEST_LOG_FORMAT.newHeader(
                             1,
                             1,
-                            0,
                             StoreId.UNKNOWN,
                             LogSegments.DEFAULT_LOG_SEGMENT_SIZE,
                             BASE_TX_CHECKSUM,

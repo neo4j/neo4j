@@ -100,7 +100,7 @@ class TransactionRangeDiagnosticsTest {
 
         // THEN
         assertThat(logProvider)
-                .containsMessages("oldest transaction " + (prevLogLastTxId + 1), "version " + logVersion)
+                .containsMessages("oldest append index " + (prevLogLastTxId + 1), "version " + logVersion)
                 .containsMessages("existing transaction log versions")
                 .containsMessages("no checkpoints found");
     }
@@ -120,7 +120,7 @@ class TransactionRangeDiagnosticsTest {
 
         // THEN
         assertThat(logProvider)
-                .containsMessages("oldest transaction " + (prevLogLastTxId + 1), "version " + (logVersion + 1))
+                .containsMessages("oldest append index " + (prevLogLastTxId + 1), "version " + (logVersion + 1))
                 .containsMessages("no checkpoints found");
     }
 
@@ -227,8 +227,9 @@ class TransactionRangeDiagnosticsTest {
         return database;
     }
 
-    private LogFiles logWithTransactionsInNextToOldestLog(long logVersion, long prevLogLastTxId) throws IOException {
-        LogFiles files = logWithTransactions(logVersion, logVersion + 1, prevLogLastTxId);
+    private LogFiles logWithTransactionsInNextToOldestLog(long logVersion, long prevLogLastAppendIndex)
+            throws IOException {
+        LogFiles files = logWithTransactions(logVersion, logVersion + 1, prevLogLastAppendIndex);
         var logFile = files.getLogFile();
         when(logFile.hasAnyEntries(logVersion)).thenReturn(false);
         return files;
@@ -243,12 +244,12 @@ class TransactionRangeDiagnosticsTest {
         };
     }
 
-    private LogFiles logWithTransactions(long lowVersion, long highVersion, long headerTxId) throws IOException {
-        return logs(transactionLogsWithTransaction(lowVersion, highVersion, headerTxId), checkpointLogs -> {});
+    private LogFiles logWithTransactions(long lowVersion, long highVersion, long headerAppendIndex) throws IOException {
+        return logs(transactionLogsWithTransaction(lowVersion, highVersion, headerAppendIndex), checkpointLogs -> {});
     }
 
     private ThrowingConsumer<LogFile, IOException> transactionLogsWithTransaction(
-            long lowVersion, long highVersion, long headerTxId) {
+            long lowVersion, long highVersion, long headerAppendIndex) {
         return transactionLogs -> {
             when(transactionLogs.getLowestLogVersion()).thenReturn(lowVersion);
             when(transactionLogs.getHighestLogVersion()).thenReturn(highVersion);
@@ -263,8 +264,7 @@ class TransactionRangeDiagnosticsTest {
                 when(transactionLogs.extractHeader(version))
                         .thenReturn(LATEST_LOG_FORMAT.newHeader(
                                 version,
-                                headerTxId,
-                                headerTxId + 9,
+                                headerAppendIndex,
                                 new StoreId(12345, 56789, "engine-1", "format-1", 1, 1),
                                 UNKNOWN_LOG_SEGMENT_SIZE,
                                 BASE_TX_CHECKSUM,

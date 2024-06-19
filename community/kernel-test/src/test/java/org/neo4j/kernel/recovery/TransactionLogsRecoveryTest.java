@@ -697,13 +697,7 @@ class TransactionLogsRecoveryTest {
             writeLogHeader(
                     versionedStoreChannel,
                     LATEST_LOG_FORMAT.newHeader(
-                            logVersion,
-                            2L,
-                            3L,
-                            storeId,
-                            UNKNOWN_LOG_SEGMENT_SIZE,
-                            BASE_TX_CHECKSUM,
-                            LATEST_KERNEL_VERSION),
+                            logVersion, 3L, storeId, UNKNOWN_LOG_SEGMENT_SIZE, BASE_TX_CHECKSUM, LATEST_KERNEL_VERSION),
                     INSTANCE);
             writableLogChannel.beginChecksumForWriting();
             LogEntryWriter<?> first = new LogEntryWriter<>(writableLogChannel, LatestVersions.BINARY_VERSIONS);

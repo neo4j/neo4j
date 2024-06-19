@@ -1133,7 +1133,6 @@ class EnvelopeWriteChannelTest {
             public void locklessRotateLogFile(
                     LogRotateEvents logRotateEvents,
                     KernelVersion kernelVersion,
-                    long lastTransactionId,
                     long lastAppendIndex,
                     int previousChecksum) {
                 throw new UnsupportedOperationException();
@@ -1150,8 +1149,7 @@ class EnvelopeWriteChannelTest {
             }
 
             @Override
-            public boolean batchedRotateLogIfNeeded(
-                    LogRotateEvents logRotateEvents, long lastTransactionId, long appendIndex) {
+            public boolean batchedRotateLogIfNeeded(LogRotateEvents logRotateEvents, long appendIndex) {
                 throw new UnsupportedOperationException();
             }
 

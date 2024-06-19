@@ -61,7 +61,7 @@ class RecoveryStartInformationProviderTest {
     @BeforeEach
     void setUp() throws IOException {
         var logHeader = LATEST_LOG_FORMAT.newHeader(
-                0, 1, 2, null, UNKNOWN_LOG_SEGMENT_SIZE, BASE_TX_CHECKSUM, LATEST_KERNEL_VERSION);
+                0, 1, null, UNKNOWN_LOG_SEGMENT_SIZE, BASE_TX_CHECKSUM, LATEST_KERNEL_VERSION);
         when(logFile.extractHeader(0)).thenReturn(logHeader);
         when(logFiles.getLogFile()).thenReturn(logFile);
     }

@@ -126,6 +126,7 @@ class TransactionLogFileTest {
     @BeforeEach
     void setUp() {
         wrappingFileSystem = new CapturingChannelFileSystem(fileSystem);
+        appendIndexProvider.setAppendIndex(2L);
     }
 
     @ParameterizedTest
@@ -227,7 +228,7 @@ class TransactionLogFileTest {
                 .getLogFileForVersion(1L);
         LogHeader header = readLogHeader(fileSystem, file, INSTANCE);
         assertEquals(1L, header.getLogVersion());
-        assertEquals(2L, header.getLastCommittedTxId());
+        assertEquals(2L, header.getLastAppendIndex());
     }
 
     @ParameterizedTest
@@ -513,11 +514,11 @@ class TransactionLogFileTest {
         for (int i = 2; i < numberOfAdditionalFile + 2; i++) {
             int expectedCommitIdx = i - 2;
             LogHeader header = readLogHeader(fileSystem, logFile.getLogFileForVersion(i), INSTANCE);
-            Long lastCommittedTxId = header.getLastCommittedTxId();
-            assertThat(lastCommittedTxId)
+            Long lastAppendIndex = header.getLastAppendIndex();
+            assertThat(lastAppendIndex)
                     .withFailMessage(
                             "File %s should have commit idx %s instead of %s",
-                            logFile.getLogFileForVersion(i), expectedCommitIdx, lastCommittedTxId)
+                            logFile.getLogFileForVersion(i), expectedCommitIdx, lastAppendIndex)
                     .isEqualTo(expectedCommitIdx);
         }
     }
@@ -857,14 +858,14 @@ class TransactionLogFileTest {
         lifeSupport.shutdown();
     }
 
-    private void createFile(Path filePath, long version, long lastCommittedTxId, KernelVersion kernelVersion)
+    private void createFile(Path filePath, long version, long lastAppendIndex, KernelVersion kernelVersion)
             throws IOException {
 
         var filesHelper = TransactionLogFilesHelper.forTransactions(fileSystem, filePath);
         try (StoreChannel storeChannel = fileSystem.write(filesHelper.getLogFileForVersion(version))) {
             LogFormat logFormat = LogFormat.fromKernelVersion(kernelVersion);
-            LogHeader logHeader = logFormat.newHeader(
-                    version, lastCommittedTxId, lastCommittedTxId + 5, STORE_ID, 256, BASE_TX_CHECKSUM, kernelVersion);
+            LogHeader logHeader =
+                    logFormat.newHeader(version, lastAppendIndex, STORE_ID, 256, BASE_TX_CHECKSUM, kernelVersion);
             writeLogHeader(storeChannel, logHeader, INSTANCE);
         }
     }

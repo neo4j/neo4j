@@ -100,7 +100,6 @@ public interface LogFile extends RotatableFile {
 
     PhysicalLogVersionedStoreChannel createLogChannelForVersion(
             long version,
-            LongSupplier lastTransactionIdSupplier,
             LongSupplier lastApplyIndexSupplier,
             KernelVersionProvider kernelVersionProvider,
             int previousLogFileChecksum)

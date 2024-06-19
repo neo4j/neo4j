@@ -136,11 +136,7 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile {
     public void start() throws IOException {
         long currentLogVersion = logVersionRepository.getCurrentLogVersion();
         channel = createLogChannelForVersion(
-                currentLogVersion,
-                () -> context.getLastCommittedTransactionIdProvider().getLastCommittedTransactionId(logFiles),
-                context::appendIndex,
-                context.getKernelVersionProvider(),
-                BASE_TX_CHECKSUM);
+                currentLogVersion, context::appendIndex, context.getKernelVersionProvider(), BASE_TX_CHECKSUM);
 
         LogHeader logHeader = extractHeader(currentLogVersion);
         KernelVersion currentKernelVersion = context.getKernelVersionProvider().kernelVersion();
@@ -184,8 +180,6 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile {
      * This alerts the monitor about rotation since we don't use the regular path through {@link LogRotation}.
      */
     private void rotateOnStart(LogHeader logHeader) throws IOException {
-        long lastCommittedTransactionId =
-                context.getLastCommittedTransactionIdProvider().getLastCommittedTransactionId(logFiles);
         long startTimeMillis = context.getClock().millis();
         rotationMonitor.startRotation(logHeader.getLogVersion());
         long newLogVersion = logVersionRepository.incrementAndGetVersion();
@@ -197,11 +191,7 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile {
 
         // TODO checksum wrong here, but not used until envelopes so this is okay.
         PhysicalLogVersionedStoreChannel newLog = createLogChannelForVersion(
-                newLogVersion,
-                () -> lastCommittedTransactionId,
-                context::appendIndex,
-                context.getKernelVersionProvider(),
-                BASE_TX_CHECKSUM);
+                newLogVersion, context::appendIndex, context.getKernelVersionProvider(), BASE_TX_CHECKSUM);
         channel.close();
         channel = newLog;
 
@@ -235,7 +225,6 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile {
      * but the incremented log version changed hadn't made it to persistent storage.
      *
      * @param version log version for the file/channel to create.
-     * @param lastTransactionIdSupplier supplier of last transaction id that was written into previous log file
      * @param kernelVersionProvider kernel version that should be written down to the log header
      * @return {@link PhysicalLogVersionedStoreChannel} for newly created/opened log file.
      * @throws IOException if there's any I/O related error.
@@ -243,17 +232,12 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile {
     @Override
     public PhysicalLogVersionedStoreChannel createLogChannelForVersion(
             long version,
-            LongSupplier lastTransactionIdSupplier,
             LongSupplier lastAppendIndexSupplier,
             KernelVersionProvider kernelVersionProvider,
             int previousLogFileChecksum)
             throws IOException {
         return channelAllocator.createLogChannel(
-                version,
-                lastTransactionIdSupplier.getAsLong(),
-                lastAppendIndexSupplier.getAsLong(),
-                previousLogFileChecksum,
-                kernelVersionProvider);
+                version, lastAppendIndexSupplier.getAsLong(), previousLogFileChecksum, kernelVersionProvider);
     }
 
     /**
@@ -308,11 +292,7 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile {
             // TODO: BASE_TX_CHECKSUM is only used when creating a new file, which should never happen during a
             // TODO: truncation. We should make this dependency more clear.
             channel = createLogChannelForVersion(
-                    targetVersion,
-                    context::committingTransactionId,
-                    context::appendIndex,
-                    context.getKernelVersionProvider(),
-                    BASE_TX_CHECKSUM);
+                    targetVersion, context::appendIndex, context.getKernelVersionProvider(), BASE_TX_CHECKSUM);
 
             writer.setChannel(channel, channelAllocator.readLogHeaderForVersion(targetVersion));
             oldChannel.close();
@@ -336,8 +316,7 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile {
         try (var logAppendEvent =
                 context.getDatabaseTracers().getDatabaseTracer().logAppend()) {
             if (appendIndex.isPresent()) {
-                logRotation.batchedRotateLogIfNeeded(
-                        logAppendEvent, appendIndex.getAsLong() - 1, appendIndex.getAsLong() - 1);
+                logRotation.batchedRotateLogIfNeeded(logAppendEvent, appendIndex.getAsLong() - 1);
             }
 
             var logPositionBefore = transactionLogWriter.getCurrentPosition();
@@ -349,14 +328,13 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile {
 
     @Override
     public synchronized Path rotate() throws IOException {
-        return rotate(context::committingTransactionId, context::appendIndex);
+        return rotate(context::appendIndex);
     }
 
     @Override
-    public synchronized Path rotate(
-            KernelVersion kernelVersion, long lastTransactionId, long lastAppendIndex, int checksum)
+    public synchronized Path rotate(KernelVersion kernelVersion, long lastAppendIndex, int checksum)
             throws IOException {
-        channel = rotate(channel, () -> lastTransactionId, () -> lastAppendIndex, () -> kernelVersion, () -> checksum);
+        channel = rotate(channel, () -> lastAppendIndex, () -> kernelVersion, () -> checksum);
         writer.setChannel(channel, channelAllocator.readLogHeaderForVersion(channel.getLogVersion()));
         return channel.getPath();
     }
@@ -366,8 +344,8 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile {
         return rotateAtSize.get();
     }
 
-    public synchronized Path rotate(long lastTransactionId, long appendIndex) throws IOException {
-        return rotate(() -> lastTransactionId, () -> appendIndex);
+    public synchronized Path rotate(long appendIndex) throws IOException {
+        return rotate(() -> appendIndex);
     }
 
     @Override
@@ -647,14 +625,10 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile {
         return externalFileReaders;
     }
 
-    private synchronized Path rotate(LongSupplier committedTransactIdSupplier, LongSupplier appendIndexSupplier)
-            throws IOException {
-        channel = rotate(
-                channel,
-                committedTransactIdSupplier,
-                appendIndexSupplier,
-                context.getKernelVersionProvider(),
-                () -> writer.currentChecksum().orElse(BASE_TX_CHECKSUM));
+    private synchronized Path rotate(LongSupplier appendIndexSupplier) throws IOException {
+        channel =
+                rotate(channel, appendIndexSupplier, context.getKernelVersionProvider(), () -> writer.currentChecksum()
+                        .orElse(BASE_TX_CHECKSUM));
         writer.setChannel(channel, channelAllocator.readLogHeaderForVersion(channel.getLogVersion()));
         return channel.getPath();
     }
@@ -698,7 +672,6 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile {
      * </ol>
      *
      * @param currentLog current {@link LogVersionedStoreChannel channel} to flush and close.
-     * @param lastTransactionIdSupplier transaction ID supplier
      * @param lastAppendIndexSupplier append index supplier
      * @param kernelVersionProvider kernel version provider
      * @param checksumProvider latest checksum provider
@@ -707,7 +680,6 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile {
      */
     private PhysicalLogVersionedStoreChannel rotate(
             LogVersionedStoreChannel currentLog,
-            LongSupplier lastTransactionIdSupplier,
             LongSupplier lastAppendIndexSupplier,
             KernelVersionProvider kernelVersionProvider,
             IntSupplier checksumProvider)
@@ -740,11 +712,7 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile {
          * into transaction log that was just rotated.
          */
         PhysicalLogVersionedStoreChannel newLog = createLogChannelForVersion(
-                newLogVersion,
-                lastTransactionIdSupplier,
-                lastAppendIndexSupplier,
-                kernelVersionProvider,
-                checksumProvider.getAsInt());
+                newLogVersion, lastAppendIndexSupplier, kernelVersionProvider, checksumProvider.getAsInt());
         currentLog.close();
 
         try {

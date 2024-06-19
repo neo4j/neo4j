@@ -359,7 +359,7 @@ class BatchingTransactionAppenderTest {
         long txId = 3;
         String failureMessage = "Forces a failure";
         final var logHeader = LATEST_LOG_FORMAT.newHeader(
-                0, BASE_TX_ID, BASE_APPEND_INDEX, StoreId.UNKNOWN, 512, BASE_TX_CHECKSUM, LATEST_KERNEL_VERSION);
+                0, BASE_APPEND_INDEX, StoreId.UNKNOWN, 512, BASE_TX_CHECKSUM, LATEST_KERNEL_VERSION);
         PhysicalLogVersionedStoreChannel logChannel = mock(PhysicalLogVersionedStoreChannel.class);
         when(logChannel.getLogFormatVersion()).thenReturn(LATEST_LOG_FORMAT);
         FlushableLogPositionAwareChannel channel =

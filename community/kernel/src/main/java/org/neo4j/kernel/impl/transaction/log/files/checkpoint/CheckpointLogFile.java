@@ -369,9 +369,8 @@ public class CheckpointLogFile extends LifecycleAdapter implements CheckpointFil
     }
 
     @Override
-    public Path rotate(KernelVersion kernelVersion, long lastTransactionId, long lastAppendIndex, int checksum)
-            throws IOException {
-        return checkpointAppender.rotate(kernelVersion, lastTransactionId, lastAppendIndex);
+    public Path rotate(KernelVersion kernelVersion, long lastAppendIndex, int checksum) throws IOException {
+        return checkpointAppender.rotate(kernelVersion, lastAppendIndex);
     }
 
     @Override

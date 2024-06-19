@@ -109,8 +109,8 @@ class TransactionAppenderRotationIT {
         life.add(logFiles);
         Panic databasePanic = getDatabaseHealth();
 
-        TransactionAppender transactionAppender =
-                createTransactionAppender(logFiles, databasePanic, transactionIdStore, jobScheduler);
+        TransactionAppender transactionAppender = createTransactionAppender(
+                logFiles, databasePanic, transactionIdStore, jobScheduler, appendIndexProvider);
 
         life.add(transactionAppender);
 
@@ -123,15 +123,19 @@ class TransactionAppenderRotationIT {
         assertEquals(1, logFile.getHighestLogVersion());
         Path highestLogFile = logFile.getHighestLogFile();
         LogHeader logHeader = LogHeaderReader.readLogHeader(fileSystem, highestLogFile, INSTANCE);
-        assertEquals(2, logHeader.getLastCommittedTxId());
+        assertEquals(2, logHeader.getLastAppendIndex());
     }
 
     private static TransactionAppender createTransactionAppender(
-            LogFiles logFiles, Panic databasePanic, TransactionIdStore transactionIdStore, JobScheduler scheduler) {
+            LogFiles logFiles,
+            Panic databasePanic,
+            TransactionIdStore transactionIdStore,
+            JobScheduler scheduler,
+            AppendIndexProvider appendIndexProvider) {
         return TransactionAppenderFactory.createTransactionAppender(
                 logFiles,
                 transactionIdStore,
-                new SimpleAppendIndexProvider(),
+                appendIndexProvider,
                 Config.defaults(),
                 databasePanic,
                 scheduler,

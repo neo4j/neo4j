@@ -195,7 +195,6 @@ class LogHeaderReaderTest {
                                 LogFormat.V6.getVersionByte(),
                                 logVersion,
                                 previousCommittedTx,
-                                previousCommittedTx,
                                 null,
                                 LogFormat.V6.getHeaderSize(),
                                 UNKNOWN_LOG_SEGMENT_SIZE,
@@ -234,7 +233,6 @@ class LogHeaderReaderTest {
                         return new LogHeader(
                                 LogFormat.V7.getVersionByte(),
                                 logVersion,
-                                previousCommittedTx,
                                 previousCommittedTx,
                                 null,
                                 LogFormat.V7.getHeaderSize(),
@@ -276,7 +274,6 @@ class LogHeaderReaderTest {
                         return LogFormat.V8.newHeader(
                                 logVersion,
                                 previousCommittedTx,
-                                previousCommittedTx,
                                 storeId,
                                 UNKNOWN_LOG_SEGMENT_SIZE,
                                 BASE_TX_CHECKSUM,
@@ -314,13 +311,7 @@ class LogHeaderReaderTest {
                             int segmentSize,
                             int checksum) {
                         return LogFormat.V9.newHeader(
-                                logVersion,
-                                previousCommittedTx,
-                                appendIndex,
-                                storeId,
-                                UNKNOWN_LOG_SEGMENT_SIZE,
-                                BASE_TX_CHECKSUM,
-                                null);
+                                logVersion, appendIndex, storeId, UNKNOWN_LOG_SEGMENT_SIZE, BASE_TX_CHECKSUM, null);
                     }
                 },
                 new TestCase(LogFormat.V10) {
@@ -335,7 +326,6 @@ class LogHeaderReaderTest {
                             int checksum)
                             throws IOException {
                         buffer.putLong(encodeLogVersion(logVersion, versionByte()));
-                        buffer.putLong(txId);
                         buffer.putLong(appendIndex);
                         StoreIdSerialization.serializeWithFixedSize(storeId, buffer);
                         buffer.putInt(segmentSize);
@@ -353,13 +343,7 @@ class LogHeaderReaderTest {
                             int segmentSize,
                             int checksum) {
                         return LogFormat.V10.newHeader(
-                                logVersion,
-                                previousCommittedTx,
-                                appendIndex,
-                                storeId,
-                                segmentSize,
-                                checksum,
-                                LATEST_KERNEL_VERSION);
+                                logVersion, appendIndex, storeId, segmentSize, checksum, LATEST_KERNEL_VERSION);
                     }
                 });
     }

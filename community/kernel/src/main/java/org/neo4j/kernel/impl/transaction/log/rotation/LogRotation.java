@@ -37,7 +37,7 @@ public interface LogRotation {
         }
 
         @Override
-        public boolean batchedRotateLogIfNeeded(LogRotateEvents logRotateEvents, long transactionId, long appendIndex) {
+        public boolean batchedRotateLogIfNeeded(LogRotateEvents logRotateEvents, long appendIndex) {
             return false;
         }
 
@@ -53,7 +53,6 @@ public interface LogRotation {
         public void locklessRotateLogFile(
                 LogRotateEvents logRotateEvents,
                 KernelVersion kernelVersion,
-                long lastTransactionId,
                 long lastAppendIndex,
                 int previousChecksum) {}
 
@@ -73,8 +72,7 @@ public interface LogRotation {
      * Rotates the underlying log if it is required for batch updates. Returns true if rotation happened, false otherwise.
      * Batch rotation does not perform any metadata or lover version store updates and only perform log file rotations.
      */
-    boolean batchedRotateLogIfNeeded(LogRotateEvents logRotateEvents, long lastTransactionId, long lastAppendIndex)
-            throws IOException;
+    boolean batchedRotateLogIfNeeded(LogRotateEvents logRotateEvents, long lastAppendIndex) throws IOException;
 
     /**
      * Rotates the underlying log if it is required. Returns true if rotation happened, false otherwise
@@ -94,11 +92,7 @@ public interface LogRotation {
      * @throws IOException
      */
     void locklessRotateLogFile(
-            LogRotateEvents logRotateEvents,
-            KernelVersion kernelVersion,
-            long lastTransactionId,
-            long lastAppendIndex,
-            int previousChecksum)
+            LogRotateEvents logRotateEvents, KernelVersion kernelVersion, long lastAppendIndex, int previousChecksum)
             throws IOException;
 
     long rotationSize();

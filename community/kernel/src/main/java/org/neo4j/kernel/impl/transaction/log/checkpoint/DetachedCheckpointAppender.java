@@ -108,11 +108,7 @@ public class DetachedCheckpointAppender extends LifecycleAdapter implements Chec
 
         long currentLogVersion = logVersionRepository.getCheckpointLogVersion();
         channel = channelAllocator.createLogChannel(
-                currentLogVersion,
-                context.getLastCommittedTransactionIdProvider().getLastCommittedTransactionId(logFiles),
-                context.appendIndex(),
-                BASE_TX_CHECKSUM,
-                context.getKernelVersionProvider());
+                currentLogVersion, context.appendIndex(), BASE_TX_CHECKSUM, context.getKernelVersionProvider());
 
         context.getMonitors().newMonitor(LogRotationMonitor.class).started(channel.getPath(), currentLogVersion);
         seekCheckpointChannel(currentLogVersion);
@@ -227,30 +223,26 @@ public class DetachedCheckpointAppender extends LifecycleAdapter implements Chec
     }
 
     public Path rotate() throws IOException {
-        channel = rotateChannel(
-                channel, context.committingTransactionId(), context.appendIndex(), context.getKernelVersionProvider());
+        channel = rotateChannel(channel, context.appendIndex(), context.getKernelVersionProvider());
         writer.setChannel(channel, logHeader(channel.getLogVersion()));
         return channel.getPath();
     }
 
-    public Path rotate(KernelVersion kernelVersion, long lastTransactionId, long lastAppendIndex) throws IOException {
-        channel = rotateChannel(channel, lastTransactionId, lastAppendIndex, () -> kernelVersion);
+    public Path rotate(KernelVersion kernelVersion, long lastAppendIndex) throws IOException {
+        channel = rotateChannel(channel, lastAppendIndex, () -> kernelVersion);
         writer.setChannel(channel, logHeader(channel.getLogVersion()));
         return channel.getPath();
     }
 
     private PhysicalLogVersionedStoreChannel rotateChannel(
-            PhysicalLogVersionedStoreChannel channel,
-            long lastTransactionId,
-            long lastAppendIndex,
-            KernelVersionProvider kernelVersionProvider)
+            PhysicalLogVersionedStoreChannel channel, long lastAppendIndex, KernelVersionProvider kernelVersionProvider)
             throws IOException {
         long newLogVersion = logVersionRepository.incrementAndGetCheckpointLogVersion();
         writer.prepareForFlush().flush();
 
         int checksum = writer.currentChecksum().orElse(BASE_TX_CHECKSUM);
-        var newChannel = channelAllocator.createLogChannel(
-                newLogVersion, lastTransactionId, lastAppendIndex, checksum, kernelVersionProvider);
+        var newChannel =
+                channelAllocator.createLogChannel(newLogVersion, lastAppendIndex, checksum, kernelVersionProvider);
         channel.close();
         return newChannel;
     }

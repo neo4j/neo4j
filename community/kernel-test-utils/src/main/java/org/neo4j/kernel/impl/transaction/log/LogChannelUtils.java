@@ -97,6 +97,6 @@ public final class LogChannelUtils {
     private static LogHeader getLogHeader(KernelVersion kernelVersion) {
         LogFormat logFormat = LogFormat.fromKernelVersion(kernelVersion);
         return logFormat.newHeader(
-                0, 0, BASE_APPEND_INDEX, StoreId.UNKNOWN, DEFAULT_LOG_SEGMENT_SIZE, BASE_TX_CHECKSUM, kernelVersion);
+                0, BASE_APPEND_INDEX, StoreId.UNKNOWN, DEFAULT_LOG_SEGMENT_SIZE, BASE_TX_CHECKSUM, kernelVersion);
     }
 }

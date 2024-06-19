@@ -30,7 +30,6 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.writeLogHead
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.AppendIndexProvider.BASE_APPEND_INDEX;
 import static org.neo4j.storageengine.api.LogVersionRepository.INITIAL_LOG_VERSION;
-import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
 import static org.neo4j.test.LatestVersions.LATEST_KERNEL_VERSION;
 import static org.neo4j.test.LatestVersions.LATEST_LOG_FORMAT;
 
@@ -103,7 +102,6 @@ class EnvelopeFuzzerTest {
         PhysicalLogVersionedStoreChannel storeChannel = storeChannel(0, preAllocate, rotationSize);
         LogHeader logHeader = LogFormat.V10.newHeader(
                 INITIAL_LOG_VERSION,
-                BASE_TX_ID,
                 BASE_APPEND_INDEX,
                 StoreId.UNKNOWN,
                 segmentSize,
@@ -241,7 +239,6 @@ class EnvelopeFuzzerTest {
                     int previousChecksum = writeChannel.currentChecksum();
                     LogHeader logHeader = LogFormat.V10.newHeader(
                             currentVersion.intValue(),
-                            BASE_TX_ID,
                             BASE_APPEND_INDEX,
                             StoreId.UNKNOWN,
                             segmentSize,
@@ -259,7 +256,6 @@ class EnvelopeFuzzerTest {
             public void locklessRotateLogFile(
                     LogRotateEvents logRotateEvents,
                     KernelVersion kernelVersion,
-                    long lastTransactionId,
                     long lastAppendIndex,
                     int previousChecksum) {
                 throw new UnsupportedOperationException();
@@ -276,8 +272,7 @@ class EnvelopeFuzzerTest {
             }
 
             @Override
-            public boolean batchedRotateLogIfNeeded(
-                    LogRotateEvents logRotateEvents, long lastTransactionId, long appendIndex) {
+            public boolean batchedRotateLogIfNeeded(LogRotateEvents logRotateEvents, long appendIndex) {
                 throw new UnsupportedOperationException();
             }
 

@@ -61,7 +61,6 @@ public class TransactionLogChannelAllocator {
 
     public PhysicalLogVersionedStoreChannel createLogChannel(
             long version,
-            long lastCommittedTransactionId,
             long lastAppendIndex,
             int previousLogFileChecksum,
             KernelVersionProvider kernelVersionProvider)
@@ -78,7 +77,6 @@ public class TransactionLogChannelAllocator {
                 header = LogFormat.fromKernelVersion(kernelVersion)
                         .newHeader(
                                 version,
-                                lastCommittedTransactionId,
                                 lastAppendIndex,
                                 logFilesContext.getStoreId(),
                                 logFilesContext.getEnvelopeSegmentBlockSizeBytes(),
