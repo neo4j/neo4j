@@ -16,6 +16,7 @@
  */
 package org.neo4j.cypher.internal.ast.test.util
 
+import org.apache.commons.lang3.exception.ExceptionUtils
 import org.neo4j.cypher.internal.ast.test.util.AstParsing.ParseFailure
 import org.neo4j.cypher.internal.ast.test.util.AstParsing.ParseResult
 import org.neo4j.cypher.internal.ast.test.util.AstParsing.ParseResults
@@ -278,8 +279,18 @@ object MatchResults {
       case (parser, ParseSuccess(ast)) =>
         s"""$parser result
            |${"-".repeat(parser.toString.length + 7)}
-           |${pprint.apply(ast).render}""".stripMargin
-      case (parser, ParseFailure(throwable)) => s"$parser:\n$throwable"
+           |${pprint.apply(ast).render}
+           |""".stripMargin
+      case (parser, ParseFailure(throwable)) =>
+        val hint = throwable match {
+          case _: NullPointerException => Some("NullPointerExceptions can occur because of how def isSafeToFreeChildren is implemented")
+          case _ => None
+        }
+        s"""$parser result
+           |${"-".repeat(parser.toString.length + 7)}
+           |Parsing failed with the following stacktrace, scroll past stacktrace to see assertion error:${hint.map(h => s"\nHint! $h").getOrElse("")}
+           |${ExceptionUtils.getStackTrace(throwable)}
+           |""".stripMargin
     }
     s"""Cypher:
        |${results.cypher}
