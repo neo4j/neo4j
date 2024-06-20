@@ -59,7 +59,11 @@ case class SetOwnPasswordExecutionPlanner(
 ) {
   private val secureHasher = new SecureHasher
 
-  def planSetOwnPassword(newPassword: Expression, currentPassword: Expression): ExecutionPlan = {
+  def planSetOwnPassword(
+    newPassword: Expression,
+    currentPassword: Expression,
+    sourcePlan: Option[ExecutionPlan]
+  ): ExecutionPlan = {
     val usernameKey = internalKey("username")
     val newPw = getPasswordExpression(newPassword, isEncryptedPassword = false, Array(usernameKey))(config)
     val (currentKeyBytes, currentValueBytes, currentConverterBytes) = getPasswordFieldsCurrent(currentPassword)
@@ -127,7 +131,8 @@ case class SetOwnPasswordExecutionPlanner(
       parameterTransformer = ParameterTransformer((_, securityContext, _) =>
         VirtualValues.map(Array(usernameKey), Array(Values.utf8Value(securityContext.subject().executingUser())))
       )
-        .convert((tx, m) => newPw.mapValueConverter(tx, currentConverterBytes(m)))
+        .convert((tx, m) => newPw.mapValueConverter(tx, currentConverterBytes(m))),
+      source = sourcePlan
     )
   }
 

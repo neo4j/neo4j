@@ -21,6 +21,8 @@ package org.neo4j.cypher.internal
 
 import org.neo4j.common.DependencyResolver
 import org.neo4j.configuration.Config
+import org.neo4j.cypher.internal.AdministrationCommandRuntime.followerError
+import org.neo4j.cypher.internal.AdministrationCommandRuntime.internalKey
 import org.neo4j.cypher.internal.AdministrationCommandRuntime.makeRenameExecutionPlan
 import org.neo4j.cypher.internal.AdministrationCommandRuntime.runtimeStringValue
 import org.neo4j.cypher.internal.administration.AlterUserExecutionPlanner
@@ -44,6 +46,7 @@ import org.neo4j.cypher.internal.logical.plans.AssertAllowedDatabaseAction
 import org.neo4j.cypher.internal.logical.plans.AssertAllowedDbmsActions
 import org.neo4j.cypher.internal.logical.plans.AssertAllowedDbmsActionsOrSelf
 import org.neo4j.cypher.internal.logical.plans.AssertNotCurrentUser
+import org.neo4j.cypher.internal.logical.plans.CheckNativeAuthentication
 import org.neo4j.cypher.internal.logical.plans.CreateUser
 import org.neo4j.cypher.internal.logical.plans.DoNothingIfDatabaseExists
 import org.neo4j.cypher.internal.logical.plans.DoNothingIfDatabaseNotExists
@@ -63,11 +66,20 @@ import org.neo4j.cypher.internal.logical.plans.ShowUsers
 import org.neo4j.cypher.internal.logical.plans.SystemProcedureCall
 import org.neo4j.cypher.internal.procs.ActionMapper
 import org.neo4j.cypher.internal.procs.AuthorizationAndPredicateExecutionPlan
+import org.neo4j.cypher.internal.procs.Continue
+import org.neo4j.cypher.internal.procs.ParameterTransformer
 import org.neo4j.cypher.internal.procs.PredicateExecutionPlan
+import org.neo4j.cypher.internal.procs.QueryHandler
 import org.neo4j.cypher.internal.procs.SystemCommandExecutionPlan
+import org.neo4j.cypher.internal.procs.ThrowException
+import org.neo4j.cypher.internal.procs.UpdatingSystemCommandExecutionPlan
 import org.neo4j.cypher.rendering.QueryRenderer
 import org.neo4j.exceptions.CantCompileQueryException
+import org.neo4j.exceptions.CypherExecutionException
+import org.neo4j.exceptions.DatabaseAdministrationOnFollowerException
 import org.neo4j.exceptions.InvalidArgumentException
+import org.neo4j.exceptions.Neo4jException
+import org.neo4j.graphdb.security.AuthorizationViolationException
 import org.neo4j.internal.kernel.api.security.AbstractSecurityLog
 import org.neo4j.internal.kernel.api.security.AccessMode
 import org.neo4j.internal.kernel.api.security.AdminActionOnResource
@@ -76,11 +88,15 @@ import org.neo4j.internal.kernel.api.security.PermissionState
 import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler
 import org.neo4j.internal.kernel.api.security.SecurityContext
 import org.neo4j.internal.kernel.api.security.Segment
+import org.neo4j.kernel.api.exceptions.Status
+import org.neo4j.kernel.api.exceptions.Status.HasStatus
 import org.neo4j.kernel.impl.api.security.RestrictedAccessMode
 import org.neo4j.server.security.systemgraph.UserSecurityGraphComponent
+import org.neo4j.values.storable.BooleanValue
 import org.neo4j.values.storable.TextValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.MapValue
+import org.neo4j.values.virtual.VirtualValues
 
 /**
  * This runtime takes on queries that work on the system database, such as multidatabase and security administration commands.
@@ -301,10 +317,13 @@ case class CommunityAdministrationCommandRuntime(
     // ALTER CURRENT USER SET PASSWORD FROM 'currentPassword' TO $newPassword
     // ALTER CURRENT USER SET PASSWORD FROM $currentPassword TO 'newPassword'
     // ALTER CURRENT USER SET PASSWORD FROM $currentPassword TO $newPassword
-    case SetOwnPassword(newPassword, currentPassword) => _ =>
+    case SetOwnPassword(source, newPassword, currentPassword) => context =>
+        val sourcePlan: Option[ExecutionPlan] =
+          Some(fullLogicalToExecutable.applyOrElse(source, throwCantCompile).apply(context))
         SetOwnPasswordExecutionPlanner(normalExecutionEngine, securityAuthorizationHandler, config).planSetOwnPassword(
           newPassword,
-          currentPassword
+          currentPassword,
+          sourcePlan
         )
 
     // SHOW DATABASES | SHOW DEFAULT DATABASE | SHOW HOME DATABASE | SHOW DATABASE foo
@@ -369,6 +388,45 @@ case class CommunityAdministrationCommandRuntime(
           call,
           returns,
           checkCredentialsExpired
+        )
+
+    case CheckNativeAuthentication() => _ =>
+        val usernameKey = internalKey("username")
+        val nativeAuth = internalKey("nativelyAuthenticated")
+
+        def currentUser(p: MapValue): String = p.get(usernameKey).asInstanceOf[TextValue].stringValue()
+
+        UpdatingSystemCommandExecutionPlan(
+          "CheckNativeAuthentication",
+          normalExecutionEngine,
+          securityAuthorizationHandler,
+          s"RETURN $$`$nativeAuth` AS nativelyAuthenticated",
+          MapValue.EMPTY,
+          QueryHandler
+            .handleError {
+              case (error: HasStatus, p) if error.status() == Status.Cluster.NotALeader =>
+                new DatabaseAdministrationOnFollowerException(
+                  s"User '${currentUser(p)}' failed to alter their own password: $followerError",
+                  error
+                )
+              case (error: Neo4jException, _) => error
+              case (error, p) =>
+                new CypherExecutionException(s"User '${currentUser(p)}' failed to alter their own password.", error)
+            }
+            .handleResult((_, value, _) => {
+              if (value eq BooleanValue.TRUE) Continue
+              else ThrowException(new AuthorizationViolationException("`ALTER CURRENT USER` is not permitted."))
+            }),
+          parameterTransformer = ParameterTransformer((_, securityContext, _) =>
+            VirtualValues.map(
+              Array(nativeAuth, usernameKey),
+              Array(
+                Values.booleanValue(securityContext.nativelyAuthenticated()),
+                Values.utf8Value(securityContext.subject().executingUser())
+              )
+            )
+          ),
+          checkCredentialsExpired = false
         )
 
     // Non-administration commands that are allowed on system database, e.g. SHOW PROCEDURES

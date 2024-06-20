@@ -124,8 +124,13 @@ case class AlterUser(
   removeAuth: RemoveAuth
 )(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
 
-case class SetOwnPassword(newPassword: Expression, currentPassword: Expression)(implicit idGen: IdGen)
-    extends SecurityAdministrationLogicalPlan
+case class SetOwnPassword(
+  source: SecurityAdministrationLogicalPlan,
+  newPassword: Expression,
+  currentPassword: Expression
+)(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
+
+case class CheckNativeAuthentication()(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan()
 
 case class ShowRoles(
   source: PrivilegePlan,

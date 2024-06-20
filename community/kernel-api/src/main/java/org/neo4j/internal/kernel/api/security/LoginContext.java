@@ -55,6 +55,10 @@ public abstract class LoginContext {
         return !Objects.equals(subject.executingUser(), subject.authenticatedUser());
     }
 
+    public boolean nativelyAuthenticated() {
+        return subject.nativelyAuthenticated();
+    }
+
     /**
      * Authorize the user and return a SecurityContext.
      *

@@ -46,6 +46,10 @@ public interface AuthSubject {
         return executingUser();
     }
 
+    default boolean nativelyAuthenticated() {
+        return true;
+    }
+
     default Subject userSubject() {
         if (AuthSubject.AUTH_DISABLED == this) {
             return Subject.AUTH_DISABLED;

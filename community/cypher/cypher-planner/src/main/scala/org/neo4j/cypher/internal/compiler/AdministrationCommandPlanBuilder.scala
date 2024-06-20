@@ -361,7 +361,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
       // ALTER CURRENT USER SET PASSWORD FROM currentPassword TO newPassword
       case c: SetOwnPassword =>
         Some(plans.LogSystemCommand(
-          plans.SetOwnPassword(c.newPassword, c.currentPassword),
+          plans.SetOwnPassword(plans.CheckNativeAuthentication(), c.newPassword, c.currentPassword),
           prettifier.asString(c)
         ))
 

@@ -6873,7 +6873,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     )
 
     assertGood(
-      attach(SetOwnPassword(stringLiteral("oldPassword"), stringLiteral("newPassword")), 1.0),
+      attach(SetOwnPassword(privLhsLP, stringLiteral("oldPassword"), stringLiteral("newPassword")), 1.0),
       adminPlanDescription
     )
 
