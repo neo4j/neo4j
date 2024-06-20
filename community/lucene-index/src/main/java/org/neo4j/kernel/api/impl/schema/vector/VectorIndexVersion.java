@@ -183,8 +183,11 @@ public enum VectorIndexVersion {
     public VectorSimilarityFunction similarityFunction(String name) {
         final var similarityFunction = maybeSimilarityFunction(name);
         if (similarityFunction == null) {
-            throw new IllegalArgumentException("'%s' is an unsupported vector similarity function for %s. Supported: %s"
-                    .formatted(name, descriptor.name(), similarityFunctions.keysView()));
+            throw new IllegalArgumentException(
+                    "'%s' is an unsupported vector similarity function for index with provider %s. "
+                                    .formatted(name, descriptor.name())
+                            + "Supported: "
+                            + similarityFunctions.keysView());
         }
 
         return similarityFunction;
