@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import static org.neo4j.kernel.impl.newapi.Read.NO_ID;
+import static org.neo4j.kernel.impl.newapi.KernelRead.NO_ID;
 import static org.neo4j.storageengine.api.LongReference.NULL_REFERENCE;
 
 import org.eclipse.collections.api.iterator.LongIterator;
@@ -53,7 +53,7 @@ class DefaultNodeCursor extends TraceableCursorImpl<DefaultNodeCursor> implement
     final StorageNodeCursor storeCursor;
     private final InternalCursorFactory internalCursors;
     private final boolean applyAccessModeToTxState;
-    Read read;
+    KernelRead read;
     boolean checkHasChanges;
     boolean hasChanges;
     private LongIterator addedNodes;
@@ -76,7 +76,7 @@ class DefaultNodeCursor extends TraceableCursorImpl<DefaultNodeCursor> implement
         this.applyAccessModeToTxState = applyAccessModeToTxState;
     }
 
-    void scan(Read read) {
+    void scan(KernelRead read) {
         storeCursor.scan();
         this.read = read;
         this.isSingle = false;
@@ -88,7 +88,7 @@ class DefaultNodeCursor extends TraceableCursorImpl<DefaultNodeCursor> implement
         }
     }
 
-    boolean scanBatch(Read read, AllNodeScan scan, long sizeHint, LongIterator addedNodes, boolean hasChanges) {
+    boolean scanBatch(KernelRead read, AllNodeScan scan, long sizeHint, LongIterator addedNodes, boolean hasChanges) {
         this.read = read;
         this.isSingle = false;
         this.currentAddedInTx = NO_ID;
@@ -99,7 +99,7 @@ class DefaultNodeCursor extends TraceableCursorImpl<DefaultNodeCursor> implement
         return addedNodes.hasNext() || scanBatch;
     }
 
-    void single(long reference, Read read) {
+    void single(long reference, KernelRead read) {
         storeCursor.single(reference);
         this.read = read;
         this.single = reference;

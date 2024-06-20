@@ -171,7 +171,7 @@ final class SchemaReadCoreSnapshot implements SchemaReadCore {
 
     @Override
     public InternalIndexState indexGetStateNonLocking(IndexDescriptor index) throws IndexNotFoundKernelException {
-        AllStoreHolder.assertValidIndex(index);
+        KernelSchemaRead.assertValidIndex(index);
         if (txStateHolder.hasTxStateWithChanges()) {
             if (checkIndexState(index, txStateHolder.txState().indexDiffSetsBySchema(index.schema()))) {
                 return InternalIndexState.POPULATING;
@@ -183,7 +183,7 @@ final class SchemaReadCoreSnapshot implements SchemaReadCore {
 
     @Override
     public PopulationProgress indexGetPopulationProgress(IndexDescriptor index) throws IndexNotFoundKernelException {
-        AllStoreHolder.assertValidIndex(index);
+        KernelSchemaRead.assertValidIndex(index);
         if (txStateHolder.hasTxStateWithChanges()) {
             if (checkIndexState(index, txStateHolder.txState().indexDiffSetsBySchema(index.schema()))) {
                 return PopulationProgress.NONE;
@@ -206,7 +206,7 @@ final class SchemaReadCoreSnapshot implements SchemaReadCore {
 
     @Override
     public String indexGetFailure(IndexDescriptor index) throws IndexNotFoundKernelException {
-        AllStoreHolder.assertValidIndex(index);
+        KernelSchemaRead.assertValidIndex(index);
         return indexingService.getIndexProxy(index).getPopulationFailure().asString();
     }
 
@@ -257,7 +257,7 @@ final class SchemaReadCoreSnapshot implements SchemaReadCore {
 
     @Override
     public IndexUsageStats indexUsageStats(IndexDescriptor index) throws IndexNotFoundKernelException {
-        AllStoreHolder.assertValidIndex(index);
+        KernelSchemaRead.assertValidIndex(index);
         return indexStatisticsStore.usageStats(index.getId());
     }
 }

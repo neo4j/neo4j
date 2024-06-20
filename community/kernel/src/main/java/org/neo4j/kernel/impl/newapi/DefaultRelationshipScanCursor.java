@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import static org.neo4j.kernel.impl.newapi.Read.NO_ID;
+import static org.neo4j.kernel.impl.newapi.KernelRead.NO_ID;
 
 import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.impl.iterator.ImmutableEmptyLongIterator;
@@ -49,7 +49,7 @@ class DefaultRelationshipScanCursor extends DefaultRelationshipCursor implements
         this.applyAccessModeToTxState = applyAccessModeToTxState;
     }
 
-    void scan(Read read) {
+    void scan(KernelRead read) {
         storeCursor.scan();
         this.single = NO_ID;
         this.isSingle = false;
@@ -58,7 +58,11 @@ class DefaultRelationshipScanCursor extends DefaultRelationshipCursor implements
     }
 
     boolean scanBatch(
-            Read read, AllRelationshipsScan scan, long sizeHint, LongIterator addedRelationships, boolean hasChanges) {
+            KernelRead read,
+            AllRelationshipsScan scan,
+            long sizeHint,
+            LongIterator addedRelationships,
+            boolean hasChanges) {
         this.read = read;
         this.single = NO_ID;
         this.isSingle = false;
@@ -70,7 +74,7 @@ class DefaultRelationshipScanCursor extends DefaultRelationshipCursor implements
         return addedRelationships.hasNext() || scanBatch;
     }
 
-    void single(long reference, Read read) {
+    void single(long reference, KernelRead read) {
         storeCursor.single(reference);
         this.single = reference;
         this.isSingle = true;
@@ -78,7 +82,7 @@ class DefaultRelationshipScanCursor extends DefaultRelationshipCursor implements
         this.addedRelationships = ImmutableEmptyLongIterator.INSTANCE;
     }
 
-    void single(long reference, long sourceNodeReference, int type, long targetNodeReference, Read read) {
+    void single(long reference, long sourceNodeReference, int type, long targetNodeReference, KernelRead read) {
         storeCursor.single(reference, sourceNodeReference, type, targetNodeReference);
         this.single = reference;
         this.isSingle = true;

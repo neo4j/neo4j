@@ -51,12 +51,12 @@ import org.neo4j.values.storable.ValueTuple;
  */
 public class IndexTxStateUpdater {
     private final StorageReader storageReader;
-    private final Read read;
+    private final KernelRead read;
     private final IndexingService indexingService;
 
     // We can use the StorageReader directly instead of the SchemaReadOps, because we know that in transactions
     // where this class is needed we will never have index changes.
-    public IndexTxStateUpdater(StorageReader storageReader, Read read, IndexingService indexingService) {
+    public IndexTxStateUpdater(StorageReader storageReader, KernelRead read, IndexingService indexingService) {
         this.storageReader = storageReader;
         this.read = read;
         this.indexingService = indexingService;

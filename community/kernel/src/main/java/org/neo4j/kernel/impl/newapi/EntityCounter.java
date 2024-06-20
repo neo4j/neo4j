@@ -70,7 +70,7 @@ final class EntityCounter {
             DefaultPooledCursors cursors,
             CursorContext cursorContext,
             MemoryTracker memoryTracker,
-            Read read,
+            KernelRead read,
             StoreCursors storageCursors) {
         if (!multiVersioned && accessMode.allowsTraverseAllNodesWithLabel(labelId)) {
             // All nodes with the specified label can be traversed, so the count store can be used.
@@ -87,7 +87,7 @@ final class EntityCounter {
 
     private static long countsForNodeInTxState(
             int labelId,
-            Read read,
+            KernelRead read,
             StorageReader storageReader,
             CursorContext cursorContext,
             StoreCursors storageCursors) {
@@ -115,7 +115,7 @@ final class EntityCounter {
             DefaultPooledCursors cursors,
             CursorContext cursorContext,
             MemoryTracker memoryTracker,
-            Read read) {
+            KernelRead read) {
         // We have a restriction on what part of the graph can be traversed, that can affect nodes with the
         // specified label.
         // This disables the count store entirely.
@@ -142,7 +142,7 @@ final class EntityCounter {
             AccessMode accessMode,
             StorageReader storageReader,
             DefaultPooledCursors cursors,
-            Read read,
+            KernelRead read,
             CursorContext cursorContext,
             MemoryTracker memoryTracker,
             StoreCursors storageCursors,
@@ -179,7 +179,7 @@ final class EntityCounter {
             int typeId,
             int endLabelId,
             DefaultPooledCursors cursors,
-            Read read,
+            KernelRead read,
             SchemaRead schemaRead,
             CursorContext cursorContext,
             MemoryTracker memoryTracker) {

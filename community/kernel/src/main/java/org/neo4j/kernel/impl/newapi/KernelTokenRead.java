@@ -34,9 +34,9 @@ import org.neo4j.token.api.NamedToken;
 import org.neo4j.token.api.TokenNotFoundException;
 
 /**
- * See {@link AllStoreHolder} for the description of the concurrency semantic and what resources
+ * See {@link KernelRead} for the description of the concurrency semantic and what resources
  * are allowed to be used by this class. These two classes are very closely related in their use
- * and scoping and everything described in {@link AllStoreHolder} javadoc applies here, too.
+ * and scoping and everything described in {@link KernelRead} javadoc applies here, too.
  * <p>
  * This class has two implementations on Kernel level.
  * {@link KernelToken} has one-to-one relation with a transaction and therefore it can safely use

@@ -77,7 +77,6 @@ import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
-import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.RelationshipTypeIndexCursor;
 import org.neo4j.internal.kernel.api.SchemaWrite;
@@ -169,7 +168,7 @@ import org.neo4j.values.storable.Values;
 public class Operations implements Write, SchemaWrite, Upgrade {
 
     private final KernelTransactionImplementation ktx;
-    private final AllStoreHolder allStoreHolder;
+    private final KernelRead kernelRead;
     private final KernelSchemaRead schemaRead;
     private final StorageReader storageReader;
     private final CommandCreationContext commandCreationContext;
@@ -195,7 +194,7 @@ public class Operations implements Write, SchemaWrite, Upgrade {
     private DefaultRelationshipScanCursor restrictedRelationshipCursor;
 
     public Operations(
-            AllStoreHolder allStoreHolder,
+            KernelRead kernelRead,
             StorageReader storageReader,
             IndexTxStateUpdater updater,
             CommandCreationContext commandCreationContext,
@@ -218,7 +217,7 @@ public class Operations implements Write, SchemaWrite, Upgrade {
         this.storageLocks = storageLocks;
         this.schemaRead = schemaRead;
         this.token = token;
-        this.allStoreHolder = allStoreHolder;
+        this.kernelRead = kernelRead;
         this.ktx = ktx;
         this.updater = updater;
         this.cursors = cursors;
@@ -289,7 +288,7 @@ public class Operations implements Write, SchemaWrite, Upgrade {
             checkAfterLocked.accept(nodeId);
         }
         txState.nodeDoCreate(nodeId);
-        nodeCursor.single(nodeId, allStoreHolder);
+        nodeCursor.single(nodeId, kernelRead);
         nodeCursor.next();
         int prevLabel = NO_SUCH_LABEL;
         for (long lockingId : lockingIds) {
@@ -449,7 +448,7 @@ public class Operations implements Write, SchemaWrite, Upgrade {
             return true;
         }
 
-        allStoreHolder.singleRelationship(relationship, relationshipCursor); // tx-state aware
+        kernelRead.singleRelationship(relationship, relationshipCursor); // tx-state aware
 
         if (!relationshipCursor.next()) {
             return false;
@@ -469,7 +468,7 @@ public class Operations implements Write, SchemaWrite, Upgrade {
                 sourceNodeAddedInBatch,
                 targetNodeAddedInBatch);
 
-        if (!allStoreHolder.relationshipExists(relationship)) {
+        if (!kernelRead.relationshipExists(relationship)) {
             return false;
         }
 
@@ -611,7 +610,7 @@ public class Operations implements Write, SchemaWrite, Upgrade {
             storageLocks.acquireNodeDeletionLock(ktx.txState(), ktx.lockTracer(), node);
         }
 
-        allStoreHolder.singleNode(node, nodeCursor);
+        kernelRead.singleNode(node, nodeCursor);
         if (nodeCursor.next()) {
             acquireSharedNodeLabelLocks();
             sharedTokenSchemaLock(ResourceType.LABEL);
@@ -645,7 +644,7 @@ public class Operations implements Write, SchemaWrite, Upgrade {
     }
 
     private void singleNode(long node) throws EntityNotFoundException {
-        allStoreHolder.singleNode(node, nodeCursor);
+        kernelRead.singleNode(node, nodeCursor);
         if (!nodeCursor.next()) {
             throw new EntityNotFoundException(
                     NODE, ktx.internalTransaction().elementIdMapper().nodeElementId(node));
@@ -653,7 +652,7 @@ public class Operations implements Write, SchemaWrite, Upgrade {
     }
 
     private void singleRelationship(long relationship) throws EntityNotFoundException {
-        allStoreHolder.singleRelationship(relationship, relationshipCursor);
+        kernelRead.singleRelationship(relationship, relationshipCursor);
         if (!relationshipCursor.next()) {
             throw new EntityNotFoundException(
                     RELATIONSHIP, ktx.internalTransaction().elementIdMapper().relationshipElementId(relationship));
@@ -753,10 +752,10 @@ public class Operations implements Write, SchemaWrite, Upgrade {
         long existingNodeId = NO_SUCH_NODE;
         try (var r = ktx.overrideWith(ktx.securityContext().withMode(Static.FULL));
                 var valueCursor = cursors.allocateNodeValueIndexCursor(ktx.cursorContext(), memoryTracker);
-                IndexReaders indexReaders = new IndexReaders(index, allStoreHolder)) {
+                IndexReaders indexReaders = new IndexReaders(index, kernelRead)) {
             assertOnlineAndLock(constraint, index, propertyValues);
 
-            allStoreHolder.nodeIndexSeekWithFreshIndexReader(valueCursor, indexReaders.createReader(), propertyValues);
+            kernelRead.nodeIndexSeekWithFreshIndexReader(valueCursor, indexReaders.createReader(), propertyValues);
             while (valueCursor.next()) {
                 if (valueCursor.nodeReference() != modifiedNode) {
                     existingNodeId = valueCursor.nodeReference();
@@ -775,7 +774,7 @@ public class Operations implements Write, SchemaWrite, Upgrade {
             var allowsReadAllProperties = false;
             try (var nodeCursor = cursors.allocateNodeCursor(ktx.cursorContext(), memoryTracker);
                     var propertyCursor = cursors.allocatePropertyCursor(ktx.cursorContext(), memoryTracker)) {
-                nodeCursor.single(existingNodeId, allStoreHolder);
+                nodeCursor.single(existingNodeId, kernelRead);
                 // First check if the current access mode can read the node
                 if (nodeCursor.next()) {
                     nodeCursor.properties(propertyCursor, PropertySelection.selection(propertyKeys));
@@ -849,10 +848,10 @@ public class Operations implements Write, SchemaWrite, Upgrade {
         long existingRelationshipId = NO_SUCH_RELATIONSHIP;
         try (var r = ktx.overrideWith(ktx.securityContext().withMode(Static.FULL));
                 var valueCursor = cursors.allocateRelationshipValueIndexCursor(ktx.cursorContext(), memoryTracker);
-                IndexReaders indexReaders = new IndexReaders(index, allStoreHolder)) {
+                IndexReaders indexReaders = new IndexReaders(index, kernelRead)) {
             assertOnlineAndLock(constraint, index, propertyValues);
 
-            allStoreHolder.relationshipIndexSeekWithFreshIndexReader(
+            kernelRead.relationshipIndexSeekWithFreshIndexReader(
                     valueCursor, indexReaders.createReader(), propertyValues);
             while (valueCursor.next()) {
                 if (valueCursor.relationshipReference() != modifiedRel) {
@@ -871,7 +870,7 @@ public class Operations implements Write, SchemaWrite, Upgrade {
             try (var relCursor = (DefaultRelationshipScanCursor)
                             cursors.allocateRelationshipScanCursor(ktx.cursorContext(), memoryTracker);
                     var propertyCursor = cursors.allocatePropertyCursor(ktx.cursorContext(), memoryTracker)) {
-                relCursor.single(existingRelationshipId, allStoreHolder);
+                relCursor.single(existingRelationshipId, kernelRead);
                 //  First check if the current access mode can read the relationship
                 if (relCursor.next()) {
                     relCursor.properties(propertyCursor, PropertySelection.selection(propertyKeys));
@@ -1594,10 +1593,6 @@ public class Operations implements Write, SchemaWrite, Upgrade {
         return token;
     }
 
-    public Read dataRead() {
-        return allStoreHolder;
-    }
-
     public DefaultNodeCursor nodeCursor() {
         return restrictedNodeCursor;
     }
@@ -2040,15 +2035,15 @@ public class Operations implements Write, SchemaWrite, Upgrade {
         IndexDescriptor index = findUsableTokenIndex(NODE);
         if (index != IndexDescriptor.NO_INDEX) {
             try (var cursor = cursors.allocateFullAccessNodeLabelIndexCursor(ktx.cursorContext())) {
-                var session = allStoreHolder.tokenReadSession(index);
-                allStoreHolder.nodeLabelScan(
+                var session = kernelRead.tokenReadSession(index);
+                kernelRead.nodeLabelScan(
                         session, cursor, unconstrained(), new TokenPredicate(schema.getLabelId()), ktx.cursorContext());
                 constraintSemantics.validateNodeKeyConstraint(
                         cursor, nodeCursor, propertyCursor, schema.asLabelSchemaDescriptor(), token);
             }
         } else {
             try (var cursor = cursors.allocateFullAccessNodeCursor(ktx.cursorContext())) {
-                allStoreHolder.allNodesScan(cursor);
+                kernelRead.allNodesScan(cursor);
                 constraintSemantics.validateNodeKeyConstraint(
                         new FilteringNodeCursorWrapper(cursor, CursorPredicates.hasLabel(schema.getLabelId())),
                         propertyCursor,
@@ -2062,8 +2057,8 @@ public class Operations implements Write, SchemaWrite, Upgrade {
         IndexDescriptor index = findUsableTokenIndex(RELATIONSHIP);
         if (index != IndexDescriptor.NO_INDEX) {
             try (var cursor = cursors.allocateFullAccessRelationshipTypeIndexCursor(ktx.cursorContext())) {
-                var session = allStoreHolder.tokenReadSession(index);
-                allStoreHolder.relationshipTypeScan(
+                var session = kernelRead.tokenReadSession(index);
+                kernelRead.relationshipTypeScan(
                         session,
                         cursor,
                         unconstrained(),
@@ -2074,7 +2069,7 @@ public class Operations implements Write, SchemaWrite, Upgrade {
             }
         } else {
             try (var cursor = cursors.allocateFullAccessRelationshipScanCursor(ktx.cursorContext())) {
-                allStoreHolder.allRelationshipsScan(cursor);
+                kernelRead.allRelationshipsScan(cursor);
                 constraintSemantics.validateRelKeyConstraint(
                         new FilteringRelationshipScanCursorWrapper(
                                 cursor, CursorPredicates.hasType(schema.getRelTypeId())),
@@ -2107,14 +2102,14 @@ public class Operations implements Write, SchemaWrite, Upgrade {
         IndexDescriptor index = findUsableTokenIndex(NODE);
         if (index != IndexDescriptor.NO_INDEX) {
             try (var cursor = cursors.allocateFullAccessNodeLabelIndexCursor(ktx.cursorContext())) {
-                var session = allStoreHolder.tokenReadSession(index);
-                allStoreHolder.nodeLabelScan(
+                var session = kernelRead.tokenReadSession(index);
+                kernelRead.nodeLabelScan(
                         session, cursor, unconstrained(), new TokenPredicate(schema.getLabelId()), ktx.cursorContext());
                 nodeValidatorWithIndex.validate(cursor, nodeCursor, propertyCursor, token);
             }
         } else {
             try (var cursor = cursors.allocateFullAccessNodeCursor(ktx.cursorContext())) {
-                allStoreHolder.allNodesScan(cursor);
+                kernelRead.allNodesScan(cursor);
                 nodeValidatorWithoutIndex.validate(
                         new FilteringNodeCursorWrapper(cursor, CursorPredicates.hasLabel(schema.getLabelId())),
                         propertyCursor,
@@ -2168,8 +2163,8 @@ public class Operations implements Write, SchemaWrite, Upgrade {
         if (index != IndexDescriptor.NO_INDEX) {
             try (var fullAccessIndexCursor =
                     cursors.allocateFullAccessRelationshipTypeIndexCursor(ktx.cursorContext())) {
-                var session = allStoreHolder.tokenReadSession(index);
-                allStoreHolder.relationshipTypeScan(
+                var session = kernelRead.tokenReadSession(index);
+                kernelRead.relationshipTypeScan(
                         session,
                         fullAccessIndexCursor,
                         unconstrained(),
@@ -2180,7 +2175,7 @@ public class Operations implements Write, SchemaWrite, Upgrade {
         } else {
             // fallback to all relationship scan
             try (var fullAccessCursor = cursors.allocateFullAccessRelationshipScanCursor(ktx.cursorContext())) {
-                allStoreHolder.allRelationshipsScan(fullAccessCursor);
+                kernelRead.allRelationshipsScan(fullAccessCursor);
                 relValidatorWithoutIndex.validate(
                         new FilteringRelationshipScanCursorWrapper(
                                 fullAccessCursor, CursorPredicates.hasType(schema.getRelTypeId())),
@@ -2381,21 +2376,21 @@ public class Operations implements Write, SchemaWrite, Upgrade {
     }
 
     private void assertNodeExists(long nodeId) throws EntityNotFoundException {
-        if (!allStoreHolder.nodeExists(nodeId)) {
+        if (!kernelRead.nodeExists(nodeId)) {
             throw new EntityNotFoundException(
                     NODE, ktx.internalTransaction().elementIdMapper().nodeElementId(nodeId));
         }
     }
 
     private void assertNodeDoesntExist(long nodeId) throws EntityAlreadyExistsException {
-        if (allStoreHolder.nodeExists(nodeId)) {
+        if (kernelRead.nodeExists(nodeId)) {
             throw new EntityAlreadyExistsException(
                     NODE, ktx.internalTransaction().elementIdMapper().nodeElementId(nodeId));
         }
     }
 
     private void assertRelationshipDoesntExist(long relationshipId) throws EntityAlreadyExistsException {
-        if (allStoreHolder.relationshipExists(relationshipId)) {
+        if (kernelRead.relationshipExists(relationshipId)) {
             throw new EntityAlreadyExistsException(
                     RELATIONSHIP, ktx.internalTransaction().elementIdMapper().relationshipElementId(relationshipId));
         }

@@ -32,6 +32,7 @@ import org.neo4j.internal.kernel.api.Locks;
 import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.TokenRead;
+import org.neo4j.internal.kernel.api.security.AccessMode.Static;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
@@ -85,21 +86,24 @@ class DefaultNodeCursorTest {
         }
     }
 
-    private static Read buildReadState(Consumer<TxState> setup) {
+    private static KernelRead buildReadState(Consumer<TxState> setup) {
         var ktx = mock(KernelTransactionImplementation.class);
         when(ktx.securityContext()).thenReturn(SecurityContext.AUTH_DISABLED);
-        var read = new AllStoreHolder.ForTransactionScope(
+        var read = new KernelRead(
                 mock(StorageReader.class),
                 mock(TokenRead.class),
-                ktx,
-                mock(Locks.class),
                 mock(DefaultPooledCursors.class),
+                ktx.storeCursors(),
+                mock(Locks.class),
+                mock(QueryContext.class),
+                ktx,
+                mock(SchemaRead.class),
                 mock(IndexingService.class),
                 EmptyMemoryTracker.INSTANCE,
                 false,
-                mock(QueryContext.class),
                 mock(AssertOpen.class),
-                mock(SchemaRead.class));
+                () -> Static.FULL,
+                false);
         var txState = new TxState();
         setup.accept(txState);
         when(ktx.hasTxStateWithChanges()).thenReturn(true);

@@ -36,14 +36,15 @@ import org.neo4j.internal.kernel.api.EntityLocks;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.QueryContext;
+import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
-import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.kernel.api.security.AccessMode.Static;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptors;
+import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
@@ -83,8 +84,8 @@ class LockingNodeUniqueIndexSeekTest {
         when(cursor.next()).thenReturn(true);
         when(cursor.nodeReference()).thenReturn(42L);
 
-        var allStoreHolder = createMockedRead();
-        long nodeId = allStoreHolder.lockingNodeUniqueIndexSeek(index, cursor, predicate);
+        var read = createMockedRead();
+        long nodeId = read.lockingNodeUniqueIndexSeek(index, cursor, predicate);
 
         assertEquals(42L, nodeId);
         verify(locks).acquireShared(LockTracer.NONE, INDEX_ENTRY, resourceId);
@@ -96,8 +97,8 @@ class LockingNodeUniqueIndexSeekTest {
         when(cursor.next()).thenReturn(false, true);
         when(cursor.nodeReference()).thenReturn(42L);
 
-        var allStoreHolder = createMockedRead();
-        long nodeId = allStoreHolder.lockingNodeUniqueIndexSeek(index, cursor, predicate);
+        var read = createMockedRead();
+        long nodeId = read.lockingNodeUniqueIndexSeek(index, cursor, predicate);
 
         assertEquals(42L, nodeId);
         order.verify(locks).acquireShared(LockTracer.NONE, INDEX_ENTRY, resourceId);
@@ -113,8 +114,8 @@ class LockingNodeUniqueIndexSeekTest {
         when(cursor.next()).thenReturn(false, false);
         when(cursor.nodeReference()).thenReturn(-1L);
 
-        var allStoreHolder = createMockedRead();
-        long nodeId = allStoreHolder.lockingNodeUniqueIndexSeek(index, cursor, predicate);
+        var read = createMockedRead();
+        long nodeId = read.lockingNodeUniqueIndexSeek(index, cursor, predicate);
 
         assertEquals(-1L, nodeId);
         order.verify(locks).acquireShared(LockTracer.NONE, INDEX_ENTRY, resourceId);
@@ -122,33 +123,27 @@ class LockingNodeUniqueIndexSeekTest {
         order.verify(locks).acquireExclusive(LockTracer.NONE, INDEX_ENTRY, resourceId);
     }
 
-    private AllStoreHolder createMockedRead() throws IndexNotFoundKernelException {
+    private Read createMockedRead() throws IndexNotFoundKernelException {
         IndexingService indexingService = mock(IndexingService.class);
         IndexProxy indexProxy = mock(IndexProxy.class);
         when(indexProxy.newValueReader()).thenReturn(mock(ValueIndexReader.class));
         when(indexingService.getIndexProxy(any())).thenReturn(indexProxy);
         SchemaRead schemaRead = mock(SchemaRead.class);
         when(schemaRead.indexGetState(any())).thenReturn(InternalIndexState.ONLINE);
-        return new AllStoreHolder(
+        return new KernelRead(
                 mock(StorageReader.class),
                 mock(TokenRead.class),
-                indexingService,
-                EmptyMemoryTracker.INSTANCE,
                 mock(DefaultPooledCursors.class),
                 mock(StoreCursors.class),
                 new EntityLocks(mock(StorageLocks.class), () -> LockTracer.NONE, locks, () -> {}),
-                false,
                 QueryContext.NULL_CONTEXT,
                 mock(TxStateHolder.class),
-                schemaRead) {
-
-            @Override
-            void performCheckBeforeOperation() {}
-
-            @Override
-            AccessMode getAccessMode() {
-                return Static.FULL;
-            }
-        };
+                schemaRead,
+                indexingService,
+                EmptyMemoryTracker.INSTANCE,
+                false,
+                mock(AssertOpen.class),
+                () -> Static.FULL,
+                false);
     }
 }

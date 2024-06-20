@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import static org.neo4j.kernel.impl.newapi.Read.NO_ID;
+import static org.neo4j.kernel.impl.newapi.KernelRead.NO_ID;
 
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
@@ -34,7 +34,7 @@ abstract class DefaultRelationshipCursor<SELF extends DefaultRelationshipCursor>
         implements RelationshipDataAccessor {
     protected boolean hasChanges;
     boolean checkHasChanges;
-    Read read;
+    KernelRead read;
 
     final StorageRelationshipCursor storeCursor;
     RelationshipVisitor<RuntimeException> relationshipTxStateDataVisitor = new TxStateDataVisitor();
@@ -49,7 +49,7 @@ abstract class DefaultRelationshipCursor<SELF extends DefaultRelationshipCursor>
         this.storeCursor = storeCursor;
     }
 
-    protected void init(Read read) {
+    protected void init(KernelRead read) {
         this.currentAddedInTx = NO_ID;
         this.read = read;
         this.checkHasChanges = true;

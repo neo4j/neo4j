@@ -26,11 +26,11 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexProgressor;
 
 /**
- * Similar to an {@link IndexProgressor.EntityValueClient}, but will be given a {@link Read} instance, and possibly a {@link Resource}, prior to its
+ * Similar to an {@link IndexProgressor.EntityValueClient}, but will be given a {@link KernelRead} instance, and possibly a {@link Resource}, prior to its
  * {@link IndexProgressor.EntityValueClient#initialize(IndexDescriptor, IndexProgressor, boolean, boolean, IndexQueryConstraints, PropertyIndexQuery...)}  initialization}.
  * <p>
  * This is useful if the entity references needs to be processed further.
  */
 public interface EntityIndexSeekClient extends IndexProgressor.EntityValueClient {
-    void setRead(Read read);
+    void setRead(KernelRead read);
 }

@@ -22,5 +22,5 @@ package org.neo4j.kernel.impl.newapi;
 import org.neo4j.kernel.api.index.IndexProgressor;
 
 public interface InternalTokenIndexCursor extends TraceableCursor, IndexProgressor.EntityTokenClient {
-    void setRead(Read read);
+    void setRead(KernelRead read);
 }

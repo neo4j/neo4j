@@ -46,7 +46,7 @@ public class DefaultNodeBasedRelationshipTypeIndexCursor
         implements InternalRelationshipTypeIndexCursor {
     private final DefaultNodeCursor nodeCursor;
     private final DefaultRelationshipTraversalCursor relationshipTraversalCursor;
-    private Read read;
+    private KernelRead read;
     private LongIterator addedRelationships;
     private LongSet removedNodes;
     private int type;
@@ -224,7 +224,7 @@ public class DefaultNodeBasedRelationshipTypeIndexCursor
     }
 
     @Override
-    public void setRead(Read read) {
+    public void setRead(KernelRead read) {
         this.read = read;
     }
 

@@ -118,7 +118,7 @@ abstract class OperationsTest {
     protected FullAccessPropertyCursor propertyCursor;
     protected DefaultRelationshipScanCursor relationshipCursor;
     protected TransactionState txState;
-    protected AllStoreHolder.ForTransactionScope allStoreHolder;
+    protected KernelRead kernelRead;
     protected KernelSchemaRead kernelSchemaRead;
     protected final LabelSchemaDescriptor schema = SchemaDescriptors.forLabel(123, 456);
     protected StorageReader storageReader;
@@ -184,18 +184,21 @@ abstract class OperationsTest {
                 indexingService,
                 mock(AssertOpen.class),
                 () -> Static.FULL);
-        allStoreHolder = new AllStoreHolder.ForTransactionScope(
+        kernelRead = new KernelRead(
                 storageReader,
                 kernelToken,
-                transaction,
-                entityLocks,
                 cursors,
+                transaction.storeCursors(),
+                entityLocks,
+                mock(QueryContext.class),
+                transaction,
+                kernelSchemaRead,
                 indexingService,
                 INSTANCE,
                 false,
-                mock(QueryContext.class),
                 mock(AssertOpen.class),
-                kernelSchemaRead);
+                () -> Static.FULL,
+                false);
         constraintIndexCreator = mock(ConstraintIndexCreator.class);
         creationContext = mock(CommandCreationContext.class);
 
@@ -224,7 +227,7 @@ abstract class OperationsTest {
         when(indexingProvidersService.completeConfiguration(any())).thenAnswer(inv -> inv.getArgument(0));
 
         operations = new Operations(
-                allStoreHolder,
+                kernelRead,
                 storageReader,
                 mock(IndexTxStateUpdater.class),
                 creationContext,

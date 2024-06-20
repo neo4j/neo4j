@@ -32,8 +32,8 @@ import org.neo4j.internal.kernel.api.EntityLocks;
 import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.TokenRead;
-import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.kernel.api.security.AccessMode.Static;
+import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -65,28 +65,21 @@ class DefaultNodeBasedRelationshipTypeIndexCursorTest {
                 internalCursors,
                 false);
         var cursor = new DefaultNodeBasedRelationshipTypeIndexCursor(c -> {}, nodeCursor, relationshipCursor);
-        Read read =
-                new AllStoreHolder(
-                        mock(StorageReader.class),
-                        mock(TokenRead.class),
-                        mock(IndexingService.class),
-                        EmptyMemoryTracker.INSTANCE,
-                        mock(DefaultPooledCursors.class),
-                        mock(StoreCursors.class),
-                        mock(EntityLocks.class),
-                        false,
-                        mock(QueryContext.class),
-                        mock(TxStateHolder.class),
-                        mock(SchemaRead.class)) {
-
-                    @Override
-                    void performCheckBeforeOperation() {}
-
-                    @Override
-                    AccessMode getAccessMode() {
-                        return Static.FULL;
-                    }
-                };
+        KernelRead read = new KernelRead(
+                mock(StorageReader.class),
+                mock(TokenRead.class),
+                mock(DefaultPooledCursors.class),
+                mock(StoreCursors.class),
+                mock(EntityLocks.class),
+                mock(QueryContext.class),
+                mock(TxStateHolder.class),
+                mock(SchemaRead.class),
+                mock(IndexingService.class),
+                EmptyMemoryTracker.INSTANCE,
+                false,
+                mock(AssertOpen.class),
+                () -> Static.FULL,
+                false);
 
         cursor.setRead(read);
         int numNodes = 10;

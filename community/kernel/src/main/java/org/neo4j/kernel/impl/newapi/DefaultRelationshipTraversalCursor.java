@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.newapi;
 
 import static java.lang.String.format;
-import static org.neo4j.kernel.impl.newapi.Read.NO_ID;
+import static org.neo4j.kernel.impl.newapi.KernelRead.NO_ID;
 
 import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.impl.iterator.ImmutableEmptyLongIterator;
@@ -61,9 +61,9 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Defau
      * @param nodeReference reference to the origin node.
      * @param reference reference to the place to start traversing these relationships.
      * @param selection the relationship selector
-     * @param read reference to {@link Read}.
+     * @param read reference to {@link KernelRead}.
      */
-    void init(long nodeReference, long reference, RelationshipSelection selection, Read read) {
+    void init(long nodeReference, long reference, RelationshipSelection selection, KernelRead read) {
         this.originNodeReference = nodeReference;
         this.selection = selection;
         this.neighbourNodeReference = -1;
@@ -77,9 +77,9 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Defau
      *
      * @param nodeCursor {@link NodeCursor} at the origin node.
      * @param selection the relationship selector
-     * @param read reference to {@link Read}.
+     * @param read reference to {@link KernelRead}.
      */
-    void init(DefaultNodeCursor nodeCursor, RelationshipSelection selection, Read read) {
+    void init(DefaultNodeCursor nodeCursor, RelationshipSelection selection, KernelRead read) {
         this.originNodeReference = nodeCursor.nodeReference();
         this.selection = selection;
         this.neighbourNodeReference = NO_ID;
@@ -96,9 +96,9 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Defau
      * Initializes this cursor to access a details of a relationship from the transaction state using the ID provided.
      *
      * @param addedRelationship the relationship to access
-     * @param read reference to {@link Read}.
+     * @param read reference to {@link KernelRead}.
      */
-    void init(long addedRelationship, Read read) {
+    void init(long addedRelationship, KernelRead read) {
         assert addedRelationship != NO_ID;
         this.originNodeReference = NO_ID;
         this.neighbourNodeReference = NO_ID;
@@ -110,7 +110,11 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Defau
         this.addedRelationships = PrimitiveLongCollections.single(addedRelationship);
     }
 
-    void init(DefaultNodeCursor nodeCursor, RelationshipSelection selection, long neighbourNodeReference, Read read) {
+    void init(
+            DefaultNodeCursor nodeCursor,
+            RelationshipSelection selection,
+            long neighbourNodeReference,
+            KernelRead read) {
         this.originNodeReference = nodeCursor.nodeReference();
         this.selection = selection;
         this.neighbourNodeReference = neighbourNodeReference;

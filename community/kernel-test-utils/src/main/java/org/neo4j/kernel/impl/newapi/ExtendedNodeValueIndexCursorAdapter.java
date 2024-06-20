@@ -73,7 +73,7 @@ public class ExtendedNodeValueIndexCursorAdapter extends DefaultCloseListenable
     }
 
     @Override
-    public void setRead(Read read) {}
+    public void setRead(KernelRead read) {}
 
     @Override
     public void initialize(

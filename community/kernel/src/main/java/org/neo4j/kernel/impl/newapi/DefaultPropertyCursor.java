@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.newapi;
 
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_ENTITY;
-import static org.neo4j.kernel.impl.newapi.Read.NO_ID;
+import static org.neo4j.kernel.impl.newapi.KernelRead.NO_ID;
 import static org.neo4j.storageengine.api.LongReference.NULL_REFERENCE;
 import static org.neo4j.storageengine.api.PropertySelection.ALL_PROPERTIES;
 import static org.neo4j.token.api.TokenConstants.NO_TOKEN;
@@ -47,7 +47,7 @@ public class DefaultPropertyCursor extends TraceableCursorImpl<DefaultPropertyCu
     final StoragePropertyCursor storeCursor;
     private final InternalCursorFactory internalCursors;
     private final boolean applyAccessModeToTxState;
-    private Read read;
+    private KernelRead read;
     private StoragePropertyCursor securityPropertyCursor;
     private FullAccessNodeCursor securityNodeCursor;
     private FullAccessRelationshipScanCursor securityRelCursor;
@@ -73,7 +73,7 @@ public class DefaultPropertyCursor extends TraceableCursorImpl<DefaultPropertyCu
         this.applyAccessModeToTxState = applyAccessModeToTxState;
     }
 
-    void initNode(long nodeReference, Reference reference, PropertySelection selection, Read read) {
+    void initNode(long nodeReference, Reference reference, PropertySelection selection, KernelRead read) {
         assert nodeReference != NO_ID;
 
         init(selection, read);
@@ -85,7 +85,7 @@ public class DefaultPropertyCursor extends TraceableCursorImpl<DefaultPropertyCu
         this.entityReference = nodeReference;
     }
 
-    void initNode(DefaultNodeCursor nodeCursor, PropertySelection selection, Read read, boolean initStoreCursor) {
+    void initNode(DefaultNodeCursor nodeCursor, PropertySelection selection, KernelRead read, boolean initStoreCursor) {
         entityReference = nodeCursor.nodeReference();
         assert entityReference != NO_ID;
 
@@ -147,7 +147,7 @@ public class DefaultPropertyCursor extends TraceableCursorImpl<DefaultPropertyCu
         return securityPropertyCursor;
     }
 
-    private void initializeNodeTransactionState(long nodeReference, Read read) {
+    private void initializeNodeTransactionState(long nodeReference, KernelRead read) {
         if (read.txStateHolder.hasTxStateWithChanges()) {
             this.propertiesState = read.txStateHolder.txState().getNodeState(nodeReference);
             this.txStateChangedProperties =
@@ -158,7 +158,8 @@ public class DefaultPropertyCursor extends TraceableCursorImpl<DefaultPropertyCu
         }
     }
 
-    void initRelationship(long relationshipReference, Reference reference, PropertySelection selection, Read read) {
+    void initRelationship(
+            long relationshipReference, Reference reference, PropertySelection selection, KernelRead read) {
         assert relationshipReference != NO_ID;
 
         init(selection, read);
@@ -167,7 +168,7 @@ public class DefaultPropertyCursor extends TraceableCursorImpl<DefaultPropertyCu
         this.entityReference = relationshipReference;
     }
 
-    void initRelationship(DefaultRelationshipCursor relationshipCursor, PropertySelection selection, Read read) {
+    void initRelationship(DefaultRelationshipCursor relationshipCursor, PropertySelection selection, KernelRead read) {
         entityReference = relationshipCursor.relationshipReference();
         assert entityReference != NO_ID;
 
@@ -182,7 +183,7 @@ public class DefaultPropertyCursor extends TraceableCursorImpl<DefaultPropertyCu
         }
     }
 
-    private void initializeRelationshipTransactionState(long relationshipReference, Read read) {
+    private void initializeRelationshipTransactionState(long relationshipReference, KernelRead read) {
         // Transaction state
         if (read.txStateHolder.hasTxStateWithChanges()) {
             this.propertiesState = read.txStateHolder.txState().getRelationshipState(relationshipReference);
@@ -203,7 +204,7 @@ public class DefaultPropertyCursor extends TraceableCursorImpl<DefaultPropertyCu
         this.txStateChangedProperties = null;
     }
 
-    private void init(PropertySelection selection, Read read) {
+    private void init(PropertySelection selection, KernelRead read) {
         this.selection = selection;
         this.read = read;
         this.labels = null;

@@ -133,10 +133,11 @@ import org.neo4j.kernel.impl.factory.AccessCapability;
 import org.neo4j.kernel.impl.factory.AccessCapabilityFactory;
 import org.neo4j.kernel.impl.locking.LockManager;
 import org.neo4j.kernel.impl.monitoring.TransactionMonitor;
-import org.neo4j.kernel.impl.newapi.AllStoreHolder;
+import org.neo4j.kernel.impl.newapi.AccessModeProvider;
 import org.neo4j.kernel.impl.newapi.DefaultPooledCursors;
 import org.neo4j.kernel.impl.newapi.IndexTxStateUpdater;
 import org.neo4j.kernel.impl.newapi.KernelProcedures;
+import org.neo4j.kernel.impl.newapi.KernelRead;
 import org.neo4j.kernel.impl.newapi.KernelSchemaRead;
 import org.neo4j.kernel.impl.newapi.KernelToken;
 import org.neo4j.kernel.impl.newapi.KernelTokenRead;
@@ -230,6 +231,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final EntityLocks entityLocks;
     private final KernelProcedures.ForTransactionScope procedures;
     private final KernelSchemaRead schemaRead;
+    private final KernelRead kernelRead;
     // For concurrent access by monitoring, jobs, etc CURSOR_CONTEXT_HANDLE should be used
     @SuppressWarnings("FieldMayBeFinal")
     private CursorContext cursorContext;
@@ -268,7 +270,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private volatile ClientConnectionInfo clientInfo;
     private volatile Map<String, Object> userMetaData;
     private volatile String statusDetails;
-    private final AllStoreHolder.ForTransactionScope allStoreHolder;
     private final QueryContext queryContext;
     private final Operations operations;
     private InternalTransaction internalTransaction;
@@ -397,6 +398,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 storageLocks, currentStatement::lockTracer, lockClient, this::assertOpenWithParallelAccessCheck);
         this.procedures =
                 new KernelProcedures.ForTransactionScope(this, dependencies, this::assertOpenWithParallelAccessCheck);
+        AccessModeProvider accessModeProvider = () -> securityContext().mode();
         this.schemaRead = new KernelSchemaRead(
                 schemaState,
                 indexStatisticsStore,
@@ -405,19 +407,22 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 this,
                 indexingService,
                 this::assertOpenWithParallelAccessCheck,
-                () -> securityContext().mode());
-        this.allStoreHolder = new AllStoreHolder.ForTransactionScope(
+                accessModeProvider);
+        this.kernelRead = new KernelRead(
                 storageReader,
                 kernelToken,
-                this,
-                entityLocks,
                 cursors,
+                transactionalCursors,
+                entityLocks,
+                queryContext,
+                this,
+                schemaRead,
                 indexingService,
                 memoryTracker,
                 multiVersioned,
-                queryContext,
                 this::assertOpenWithParallelAccessCheck,
-                schemaRead);
+                accessModeProvider,
+                false);
         this.executionContextFactory = createExecutionContextFactory(
                 contextFactory,
                 storageEngine,
@@ -434,9 +439,9 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 elementIdMapper,
                 multiVersioned);
         this.operations = new Operations(
-                allStoreHolder,
+                kernelRead,
                 storageReader,
-                new IndexTxStateUpdater(storageReader, allStoreHolder, indexingService),
+                new IndexTxStateUpdater(storageReader, kernelRead, indexingService),
                 commandCreationContext,
                 dbmsRuntimeVersionProvider,
                 kernelVersionProvider,
@@ -1232,7 +1237,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
     @Override
     public Read dataRead() {
-        return operations.dataRead();
+        return kernelRead;
     }
 
     @Override
@@ -1331,7 +1336,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
      * Release resources for the current statement because it's being closed.
      */
     void releaseStatementResources() {
-        allStoreHolder.release();
+        kernelRead.release();
     }
 
     /**
@@ -1532,7 +1537,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private TxStateVisitor enforceConstraints(TxStateVisitor txStateVisitor, MemoryTracker memoryTracker) {
         return constraintSemantics.decorateTxStateVisitor(
                 storageReader,
-                operations.dataRead(),
+                kernelRead,
                 operations.cursors(),
                 txState,
                 txStateVisitor,

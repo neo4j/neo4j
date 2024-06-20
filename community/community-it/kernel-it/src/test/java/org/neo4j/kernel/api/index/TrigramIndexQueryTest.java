@@ -26,7 +26,7 @@ import static org.neo4j.values.storable.Values.stringValue;
 import org.junit.jupiter.api.Test;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.kernel.api.impl.schema.trigram.TrigramIndexProvider;
-import org.neo4j.kernel.impl.newapi.AllStoreHolder;
+import org.neo4j.kernel.impl.newapi.KernelRead;
 
 public class TrigramIndexQueryTest extends TextIndexQueryTest {
 
@@ -37,8 +37,7 @@ public class TrigramIndexQueryTest extends TextIndexQueryTest {
 
     @Test
     void countIndexEntitiesShouldFindExactEntity() throws Exception {
-        try (ValueIndexReader valueIndexReader =
-                ((AllStoreHolder) read).newValueIndexReader(getIndex(NODE_INDEX_NAME))) {
+        try (ValueIndexReader valueIndexReader = ((KernelRead) read).newValueIndexReader(getIndex(NODE_INDEX_NAME))) {
             long countIndexedEntities = valueIndexReader.countIndexedEntities(
                     mikeNodeId, NULL_CONTEXT, new int[] {token.propertyKey(NAME)}, stringValue("Mike Smith"));
             assertThat(countIndexedEntities).isEqualTo(1);
@@ -47,8 +46,7 @@ public class TrigramIndexQueryTest extends TextIndexQueryTest {
 
     @Test
     void sadlyCountIndexEntitiesFindNotExactEntity() throws Exception {
-        try (ValueIndexReader valueIndexReader =
-                ((AllStoreHolder) read).newValueIndexReader(getIndex(NODE_INDEX_NAME))) {
+        try (ValueIndexReader valueIndexReader = ((KernelRead) read).newValueIndexReader(getIndex(NODE_INDEX_NAME))) {
             // Will find Mike Smith even though we are asking for Smith
             long countIndexedEntities = valueIndexReader.countIndexedEntities(
                     mikeNodeId, NULL_CONTEXT, new int[] {token.propertyKey(NAME)}, stringValue("Smith"));
@@ -58,8 +56,7 @@ public class TrigramIndexQueryTest extends TextIndexQueryTest {
 
     @Test
     void countIndexEntitiesDoesntFindOtherEntity() throws Exception {
-        try (ValueIndexReader valueIndexReader =
-                ((AllStoreHolder) read).newValueIndexReader(getIndex(NODE_INDEX_NAME))) {
+        try (ValueIndexReader valueIndexReader = ((KernelRead) read).newValueIndexReader(getIndex(NODE_INDEX_NAME))) {
             // At least we don't find entities with other ids
             long countIndexedEntities = valueIndexReader.countIndexedEntities(
                     noahNodeId, NULL_CONTEXT, new int[] {token.propertyKey(NAME)}, stringValue("Smith"));

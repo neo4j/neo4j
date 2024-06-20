@@ -36,11 +36,11 @@ import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.helpers.StubPropertyCursor;
-import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.kernel.api.security.AccessMode.Static;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.PropertySchemaType;
 import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
@@ -105,28 +105,21 @@ public class IndexTxStateUpdaterTestBase {
         IndexProxy indexProxy = mock(IndexProxy.class);
         when(indexingService.getIndexProxy(any(IndexDescriptor.class))).thenReturn(indexProxy);
 
-        Read readOps =
-                new AllStoreHolder(
-                        storageReader,
-                        mock(TokenRead.class),
-                        indexingService,
-                        EmptyMemoryTracker.INSTANCE,
-                        mock(DefaultPooledCursors.class),
-                        mock(StoreCursors.class),
-                        mock(EntityLocks.class),
-                        false,
-                        mock(QueryContext.class),
-                        mock(TxStateHolder.class),
-                        mock(SchemaRead.class)) {
-
-                    @Override
-                    void performCheckBeforeOperation() {}
-
-                    @Override
-                    AccessMode getAccessMode() {
-                        return Static.FULL;
-                    }
-                };
+        KernelRead readOps = new KernelRead(
+                storageReader,
+                mock(TokenRead.class),
+                mock(DefaultPooledCursors.class),
+                mock(StoreCursors.class),
+                mock(EntityLocks.class),
+                mock(QueryContext.class),
+                mock(TxStateHolder.class),
+                mock(SchemaRead.class),
+                indexingService,
+                EmptyMemoryTracker.INSTANCE,
+                false,
+                mock(AssertOpen.class),
+                () -> Static.FULL,
+                false);
         when(readOps.txStateHolder.txState()).thenReturn(txState);
         indexTxUpdater = new IndexTxStateUpdater(storageReader, readOps, indexingService);
     }

@@ -78,7 +78,13 @@ public class KernelSchemaRead implements SchemaRead {
                 storageReader, txStateHolder, indexingService, indexStatisticsStore, accessModeProvider);
     }
 
-    void performCheckBeforeOperation() {
+    static void assertValidIndex(IndexDescriptor index) throws IndexNotFoundKernelException {
+        if (index == IndexDescriptor.NO_INDEX) {
+            throw new IndexNotFoundKernelException("No index was found");
+        }
+    }
+
+    private void performCheckBeforeOperation() {
         assertOpen.assertOpen();
     }
 
@@ -314,7 +320,7 @@ public class KernelSchemaRead implements SchemaRead {
     @Override
     public double indexUniqueValuesSelectivity(IndexDescriptor index) throws IndexNotFoundKernelException {
         performCheckBeforeOperation();
-        AllStoreHolder.assertValidIndex(index);
+        assertValidIndex(index);
         entityLocks.acquireSharedSchemaLock(index);
         assertIndexExists(index); // Throws if the index has been dropped.
         final IndexSample indexSample = indexStatisticsStore.indexSample(index.getId());
@@ -326,7 +332,7 @@ public class KernelSchemaRead implements SchemaRead {
     @Override
     public long indexSize(IndexDescriptor index) throws IndexNotFoundKernelException {
         performCheckBeforeOperation();
-        AllStoreHolder.assertValidIndex(index);
+        assertValidIndex(index);
         entityLocks.acquireSharedSchemaLock(index);
         return indexStatisticsStore.indexSample(index.getId()).indexSize();
     }
@@ -334,7 +340,7 @@ public class KernelSchemaRead implements SchemaRead {
     @Override
     public IndexSample indexSample(IndexDescriptor index) throws IndexNotFoundKernelException {
         performCheckBeforeOperation();
-        AllStoreHolder.assertValidIndex(index);
+        assertValidIndex(index);
         return indexStatisticsStore.indexSample(index.getId());
     }
 

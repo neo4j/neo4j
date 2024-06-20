@@ -31,9 +31,9 @@ import org.neo4j.kernel.api.index.ValueIndexReader;
 class IndexReaders implements Closeable {
     private final List<ValueIndexReader> indexReaders = new ArrayList<>();
     private final IndexDescriptor descriptor;
-    private final Read read;
+    private final KernelRead read;
 
-    IndexReaders(IndexDescriptor descriptor, Read read) {
+    IndexReaders(IndexDescriptor descriptor, KernelRead read) {
         this.descriptor = descriptor;
         this.read = read;
     }

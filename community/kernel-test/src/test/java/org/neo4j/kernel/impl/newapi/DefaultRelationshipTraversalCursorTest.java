@@ -28,23 +28,17 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.storageengine.api.RelationshipSelection.ALL_RELATIONSHIPS;
 import static org.neo4j.storageengine.api.RelationshipSelection.selection;
 
-import java.util.Collections;
-import java.util.List;
 import java.util.stream.LongStream;
 import org.junit.jupiter.api.Test;
 import org.neo4j.graphdb.Direction;
-import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.Locks;
 import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.SchemaRead;
-import org.neo4j.internal.kernel.api.TokenReadSession;
-import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
-import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
-import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
+import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.state.TxState;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.storageengine.api.Reference;
 import org.neo4j.storageengine.api.RelationshipDirection;
@@ -52,7 +46,6 @@ import org.neo4j.storageengine.api.RelationshipSelection;
 import org.neo4j.storageengine.api.StoragePropertyCursor;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.StorageRelationshipTraversalCursor;
-import org.neo4j.values.storable.Value;
 
 class DefaultRelationshipTraversalCursorTest {
     private static final long node = 42;
@@ -70,7 +63,7 @@ class DefaultRelationshipTraversalCursorTest {
         StorageRelationshipTraversalCursor storeCursor = storeCursor(100, 102, 104);
         DefaultRelationshipTraversalCursor cursor =
                 new DefaultRelationshipTraversalCursor(pool::accept, storeCursor, internalCursors, false);
-        Read read = emptyTxState();
+        KernelRead read = emptyTxState();
 
         // when
         cursor.init(node, relationship, ALL_RELATIONSHIPS, read);
@@ -85,7 +78,7 @@ class DefaultRelationshipTraversalCursorTest {
         StorageRelationshipTraversalCursor storeCursor = storeCursor(100, 102, 104);
         DefaultRelationshipTraversalCursor cursor =
                 new DefaultRelationshipTraversalCursor(pool::accept, storeCursor, internalCursors, false);
-        Read read = txState(3, 4);
+        KernelRead read = txState(3, 4);
 
         // when
         cursor.init(node, relationship, ALL_RELATIONSHIPS, read);
@@ -106,7 +99,7 @@ class DefaultRelationshipTraversalCursorTest {
 
         DefaultRelationshipTraversalCursor cursor =
                 new DefaultRelationshipTraversalCursor(pool::accept, storeCursor, internalCursors, false);
-        Read read = txState(
+        KernelRead read = txState(
                 rel(3, node, 50, type),
                 rel(4, 50, node, type),
                 rel(5, node, 50, type2),
@@ -134,7 +127,7 @@ class DefaultRelationshipTraversalCursorTest {
 
         DefaultRelationshipTraversalCursor cursor =
                 new DefaultRelationshipTraversalCursor(pool::accept, storeCursor, internalCursors, false);
-        Read read = txState(
+        KernelRead read = txState(
                 rel(3, node, 50, type),
                 rel(4, 50, node, type),
                 rel(5, node, 50, type2),
@@ -155,7 +148,7 @@ class DefaultRelationshipTraversalCursorTest {
 
         DefaultRelationshipTraversalCursor cursor =
                 new DefaultRelationshipTraversalCursor(pool::accept, storeCursor, internalCursors, false);
-        Read read = txState(
+        KernelRead read = txState(
                 rel(3, node, 50, type),
                 rel(4, 50, node, type),
                 rel(5, 50, node, type2),
@@ -177,7 +170,7 @@ class DefaultRelationshipTraversalCursorTest {
 
         DefaultRelationshipTraversalCursor cursor =
                 new DefaultRelationshipTraversalCursor(pool::accept, storeCursor, internalCursors, false);
-        Read read = txState(
+        KernelRead read = txState(
                 rel(3, node, 50, type),
                 rel(2, node, node, type),
                 rel(5, 50, node, type2),
@@ -223,21 +216,21 @@ class DefaultRelationshipTraversalCursorTest {
 
     // HELPERS
 
-    private static Read emptyTxState() {
+    private static KernelRead emptyTxState() {
         KernelTransactionImplementation ktx = mock(KernelTransactionImplementation.class);
         when(ktx.securityContext()).thenReturn(SecurityContext.AUTH_DISABLED);
-        return new TestRead(ktx);
+        return mockedRead(ktx);
     }
 
-    private static Read txState(long... ids) {
+    private static KernelRead txState(long... ids) {
         return txState(
                 LongStream.of(ids).mapToObj(id -> rel(id, node, node, type)).toArray(Rel[]::new));
     }
 
-    private static Read txState(Rel... rels) {
+    private static KernelRead txState(Rel... rels) {
         KernelTransactionImplementation ktx = mock(KernelTransactionImplementation.class);
         when(ktx.securityContext()).thenReturn(SecurityContext.AUTH_DISABLED);
-        Read read = new TestRead(ktx);
+        KernelRead read = mockedRead(ktx);
         if (rels.length > 0) {
             TxState txState = new TxState();
             for (Rel rel : rels) {
@@ -370,116 +363,21 @@ class DefaultRelationshipTraversalCursorTest {
         };
     }
 
-    private static class TestRead extends Read {
-
-        private final KernelTransactionImplementation ktx;
-
-        TestRead(KernelTransactionImplementation ktx) {
-            super(
-                    mock(StorageReader.class),
-                    ktx.tokenRead(),
-                    mock(DefaultPooledCursors.class),
-                    ktx.storeCursors(),
-                    mock(Locks.class),
-                    mock(QueryContext.class),
-                    ktx,
-                    mock(SchemaRead.class));
-            this.ktx = ktx;
-        }
-
-        @Override
-        public ValueIndexReader newValueIndexReader(IndexDescriptor index) {
-            return null;
-        }
-
-        @Override
-        void performCheckBeforeOperation() {
-            ktx.assertOpen();
-        }
-
-        @Override
-        AccessMode getAccessMode() {
-            return ktx.securityContext().mode();
-        }
-
-        @Override
-        public IndexReadSession indexReadSession(IndexDescriptor index) {
-            return null;
-        }
-
-        @Override
-        public TokenReadSession tokenReadSession(IndexDescriptor index) throws IndexNotFoundKernelException {
-            return null;
-        }
-
-        @Override
-        public boolean nodeExists(long reference) {
-            return false;
-        }
-
-        @Override
-        public long countsForNode(int labelId) {
-            return 0;
-        }
-
-        @Override
-        public long estimateCountsForNode(int labelId) {
-            return 0;
-        }
-
-        @Override
-        public List<Integer> mostCommonLabelGivenRelationshipType(int type) {
-            return Collections.emptyList();
-        }
-
-        @Override
-        public long countsForRelationship(int startLabelId, int typeId, int endLabelId) {
-            return 0;
-        }
-
-        @Override
-        public long estimateCountsForRelationships(int startLabelId, int typeId, int endLabelId) {
-            return 0;
-        }
-
-        @Override
-        public long nodesGetCount() {
-            return 0;
-        }
-
-        @Override
-        public long relationshipsGetCount() {
-            return 0;
-        }
-
-        @Override
-        public boolean relationshipExists(long reference) {
-            return false;
-        }
-
-        @Override
-        public boolean nodeDeletedInTransaction(long node) {
-            return false;
-        }
-
-        @Override
-        public boolean relationshipDeletedInTransaction(long relationship) {
-            return false;
-        }
-
-        @Override
-        public Value nodePropertyChangeInBatchOrNull(long node, int propertyKeyId) {
-            return null;
-        }
-
-        @Override
-        public Value relationshipPropertyChangeInBatchOrNull(long relationship, int propertyKeyId) {
-            return null;
-        }
-
-        @Override
-        public boolean transactionStateHasChanges() {
-            return false;
-        }
+    private static KernelRead mockedRead(KernelTransactionImplementation ktx) {
+        return new KernelRead(
+                mock(StorageReader.class),
+                ktx.tokenRead(),
+                mock(DefaultPooledCursors.class),
+                ktx.storeCursors(),
+                mock(Locks.class),
+                mock(QueryContext.class),
+                ktx,
+                mock(SchemaRead.class),
+                mock(IndexingService.class),
+                EmptyMemoryTracker.INSTANCE,
+                false,
+                ktx,
+                () -> ktx.securityContext().mode(),
+                false);
     }
 }

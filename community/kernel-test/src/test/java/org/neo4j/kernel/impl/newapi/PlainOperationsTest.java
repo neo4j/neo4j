@@ -954,7 +954,7 @@ public class PlainOperationsTest extends OperationsTest {
                 .thenReturn(new SecurityAuthorizationHandler(CommunitySecurityLog.NULL_LOG));
         CommandCreationContext commandCreationContext = mock(CommandCreationContext.class);
         Operations operations = new Operations(
-                mock(AllStoreHolder.class),
+                mock(KernelRead.class),
                 mock(StorageReader.class),
                 mock(IndexTxStateUpdater.class),
                 commandCreationContext,
@@ -999,7 +999,7 @@ public class PlainOperationsTest extends OperationsTest {
                 .thenReturn(mock(FullAccessPropertyCursor.class));
 
         Operations operations = new Operations(
-                mock(AllStoreHolder.class),
+                mock(KernelRead.class),
                 mock(StorageReader.class),
                 mock(IndexTxStateUpdater.class),
                 commandCreationContext,
@@ -1039,10 +1039,10 @@ public class PlainOperationsTest extends OperationsTest {
         when(ktx.securityAuthorizationHandler())
                 .thenReturn(new SecurityAuthorizationHandler(CommunitySecurityLog.NULL_LOG));
         CommandCreationContext commandCreationContext = mock(CommandCreationContext.class);
-        AllStoreHolder allStoreHolder = mock(AllStoreHolder.class);
-        when(allStoreHolder.nodeExists(anyLong())).thenReturn(true);
+        KernelRead kernelRead = mock(KernelRead.class);
+        when(kernelRead.nodeExists(anyLong())).thenReturn(true);
         Operations operations = new Operations(
-                allStoreHolder,
+                kernelRead,
                 mock(StorageReader.class),
                 mock(IndexTxStateUpdater.class),
                 commandCreationContext,
@@ -1090,7 +1090,7 @@ public class PlainOperationsTest extends OperationsTest {
         when(kernelSchemaRead.indexGetForName(any())).thenReturn(IndexDescriptor.NO_INDEX);
         when(kernelSchemaRead.constraintsGetForSchema(any())).thenReturn(Iterators.emptyResourceIterator());
         Operations operations = new Operations(
-                mock(AllStoreHolder.class),
+                mock(KernelRead.class),
                 mock(StorageReader.class),
                 mock(IndexTxStateUpdater.class),
                 commandCreationContext,

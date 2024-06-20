@@ -39,6 +39,7 @@ import org.neo4j.internal.kernel.api.PartitionedScan;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.QueryContext;
+import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.internal.kernel.api.RelationshipTypeIndexCursor;
@@ -52,28 +53,59 @@ import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelExcept
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
+import org.neo4j.kernel.api.index.TokenIndexReader;
 import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
+import org.neo4j.kernel.impl.api.IndexReaderCache;
+import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
+import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.storageengine.api.Reference;
 import org.neo4j.storageengine.api.RelationshipSelection;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
+import org.neo4j.storageengine.api.txstate.RelationshipState;
 import org.neo4j.util.Preconditions;
+import org.neo4j.values.storable.Value;
 
-abstract class Read implements org.neo4j.internal.kernel.api.Read {
-    protected final StorageReader storageReader;
-    protected final DefaultPooledCursors cursors;
+/**
+ * Implementation of read operation of the Kernel API.
+ * <p>
+ * The relation between a transaction and KernelRead can be one to many
+ * and the instances of KernelRead related to the same transaction can be used concurrently by multiple threads.
+ * The thread safety aspect of the operation performed by KernelRead must reflect it!
+ * This means that KernelRead must not use objects shared by multiple KernelReads that are
+ * not safe for multithreaded use!!!
+ * Recorces for KernelRead should be provided either by:
+ * - {@link KernelTransactionImplementation} itself for one-to-one relation with transaction
+ * - Or by {@link org.neo4j.kernel.impl.api.parallel.ThreadExecutionContext} for one-to-many relation with a
+ * transaction.
+ * Transaction scoped and thread context scoped resources CANNOT be mixed.
+ */
+public final class KernelRead implements Read {
+    private final StorageReader storageReader;
+    private final DefaultPooledCursors cursors;
+    private final IndexingService indexingService;
+    private final MemoryTracker memoryTracker;
+    private final IndexReaderCache<ValueIndexReader> valueIndexReaderCache;
+    private final IndexReaderCache<TokenIndexReader> tokenIndexReaderCache;
+    private final EntityCounter entityCounter;
+    private final boolean applyAccessModeToTxState;
     private final TokenRead tokenRead;
-    protected final StoreCursors storageCursors;
-    protected final QueryContext queryContext;
-    protected final Locks entityLocks;
-    protected final TxStateHolder txStateHolder;
-    protected final SchemaRead schemaRead;
+    private final StoreCursors storageCursors;
+    private final QueryContext queryContext;
+    private final Locks entityLocks;
+    final TxStateHolder txStateHolder;
+    private final SchemaRead schemaRead;
+    private final AssertOpen assertOpen;
+    private final AccessModeProvider accessModeProvider;
+    private final boolean parallel;
 
-    Read(
+    public KernelRead(
             StorageReader storageReader,
             TokenRead tokenRead,
             DefaultPooledCursors cursors,
@@ -81,7 +113,13 @@ abstract class Read implements org.neo4j.internal.kernel.api.Read {
             Locks entityLocks,
             QueryContext queryContext,
             TxStateHolder txStateHolder,
-            SchemaRead schemaRead) {
+            SchemaRead schemaRead,
+            IndexingService indexingService,
+            MemoryTracker memoryTracker,
+            boolean multiVersioned,
+            AssertOpen assertOpen,
+            AccessModeProvider accessModeProvider,
+            boolean parallel) {
         this.storageReader = storageReader;
         this.tokenRead = tokenRead;
         this.cursors = cursors;
@@ -90,10 +128,21 @@ abstract class Read implements org.neo4j.internal.kernel.api.Read {
         this.queryContext = queryContext;
         this.txStateHolder = txStateHolder;
         this.schemaRead = schemaRead;
+        this.indexingService = indexingService;
+        this.memoryTracker = memoryTracker;
+        this.valueIndexReaderCache = new IndexReaderCache<>(
+                index -> indexingService.getIndexProxy(index).newValueReader());
+        this.tokenIndexReaderCache = new IndexReaderCache<>(
+                index -> indexingService.getIndexProxy(index).newTokenReader());
+        this.entityCounter = new EntityCounter(multiVersioned);
+        this.applyAccessModeToTxState = multiVersioned;
+        this.assertOpen = assertOpen;
+        this.accessModeProvider = accessModeProvider;
+        this.parallel = parallel;
     }
 
     @Override
-    public final void nodeIndexSeek(
+    public void nodeIndexSeek(
             QueryContext queryContext,
             IndexReadSession index,
             NodeValueIndexCursor cursor,
@@ -131,7 +180,7 @@ abstract class Read implements org.neo4j.internal.kernel.api.Read {
     }
 
     @Override
-    public final void relationshipIndexSeek(
+    public void relationshipIndexSeek(
             QueryContext queryContext,
             IndexReadSession index,
             RelationshipValueIndexCursor cursor,
@@ -167,10 +216,19 @@ abstract class Read implements org.neo4j.internal.kernel.api.Read {
         return propertyIndexSeek(index, desiredNumberOfPartitions, queryContext, query);
     }
 
+    private void verifyNotParallel() {
+        if (parallel) {
+            // This is currently a problematic operation for parallel execution, because it takes exclusive locks.
+            // In transactions deadlocks is a problem for another day :) .
+            throw new UnsupportedOperationException("Locking unique index seek not allowed during parallel execution");
+        }
+    }
+
     @Override
     public long lockingNodeUniqueIndexSeek(
             IndexDescriptor index, NodeValueIndexCursor cursor, PropertyIndexQuery.ExactPredicate... predicates)
             throws IndexNotApplicableKernelException, IndexNotFoundKernelException, IndexBrokenKernelException {
+        verifyNotParallel();
         assertIndexOnline(index);
         assertPredicatesMatchSchema(index, predicates);
 
@@ -209,6 +267,7 @@ abstract class Read implements org.neo4j.internal.kernel.api.Read {
     public long lockingRelationshipUniqueIndexSeek(
             IndexDescriptor index, RelationshipValueIndexCursor cursor, PropertyIndexQuery.ExactPredicate... predicates)
             throws KernelException {
+        verifyNotParallel();
         assertIndexOnline(index);
         assertPredicatesMatchSchema(index, predicates);
 
@@ -262,8 +321,7 @@ abstract class Read implements org.neo4j.internal.kernel.api.Read {
     }
 
     @Override
-    public final void nodeIndexScan(
-            IndexReadSession index, NodeValueIndexCursor cursor, IndexQueryConstraints constraints)
+    public void nodeIndexScan(IndexReadSession index, NodeValueIndexCursor cursor, IndexQueryConstraints constraints)
             throws KernelException {
         performCheckBeforeOperation();
         DefaultIndexReadSession indexSession = (DefaultIndexReadSession) index;
@@ -291,7 +349,7 @@ abstract class Read implements org.neo4j.internal.kernel.api.Read {
     }
 
     @Override
-    public final void relationshipIndexScan(
+    public void relationshipIndexScan(
             IndexReadSession index, RelationshipValueIndexCursor cursor, IndexQueryConstraints constraints)
             throws KernelException {
         performCheckBeforeOperation();
@@ -329,7 +387,7 @@ abstract class Read implements org.neo4j.internal.kernel.api.Read {
     }
 
     @Override
-    public final PartitionedScan<NodeLabelIndexCursor> nodeLabelScan(
+    public PartitionedScan<NodeLabelIndexCursor> nodeLabelScan(
             TokenReadSession session, int desiredNumberOfPartitions, CursorContext cursorContext, TokenPredicate query)
             throws IndexNotApplicableKernelException {
         performCheckBeforeOperation();
@@ -341,7 +399,7 @@ abstract class Read implements org.neo4j.internal.kernel.api.Read {
     }
 
     @Override
-    public final PartitionedScan<NodeLabelIndexCursor> nodeLabelScan(
+    public PartitionedScan<NodeLabelIndexCursor> nodeLabelScan(
             TokenReadSession session, PartitionedScan<NodeLabelIndexCursor> leadingPartitionScan, TokenPredicate query)
             throws IndexNotApplicableKernelException {
         performCheckBeforeOperation();
@@ -353,7 +411,7 @@ abstract class Read implements org.neo4j.internal.kernel.api.Read {
     }
 
     @Override
-    public final List<PartitionedScan<NodeLabelIndexCursor>> nodeLabelScans(
+    public List<PartitionedScan<NodeLabelIndexCursor>> nodeLabelScans(
             TokenReadSession session,
             int desiredNumberOfPartitions,
             CursorContext cursorContext,
@@ -368,7 +426,7 @@ abstract class Read implements org.neo4j.internal.kernel.api.Read {
     }
 
     @Override
-    public final void nodeLabelScan(
+    public void nodeLabelScan(
             TokenReadSession session,
             NodeLabelIndexCursor cursor,
             IndexQueryConstraints constraints,
@@ -390,13 +448,13 @@ abstract class Read implements org.neo4j.internal.kernel.api.Read {
     }
 
     @Override
-    public final void allNodesScan(NodeCursor cursor) {
+    public void allNodesScan(NodeCursor cursor) {
         performCheckBeforeOperation();
         ((DefaultNodeCursor) cursor).scan(this);
     }
 
     @Override
-    public final void singleNode(long reference, NodeCursor cursor) {
+    public void singleNode(long reference, NodeCursor cursor) {
         performCheckBeforeOperation();
         ((DefaultNodeCursor) cursor).single(reference, this);
     }
@@ -418,7 +476,7 @@ abstract class Read implements org.neo4j.internal.kernel.api.Read {
     }
 
     @Override
-    public final void singleRelationship(long reference, RelationshipScanCursor cursor) {
+    public void singleRelationship(long reference, RelationshipScanCursor cursor) {
         performCheckBeforeOperation();
         ((DefaultRelationshipScanCursor) cursor).single(reference, this);
     }
@@ -436,13 +494,13 @@ abstract class Read implements org.neo4j.internal.kernel.api.Read {
     }
 
     @Override
-    public final void allRelationshipsScan(RelationshipScanCursor cursor) {
+    public void allRelationshipsScan(RelationshipScanCursor cursor) {
         performCheckBeforeOperation();
         ((DefaultRelationshipScanCursor) cursor).scan(this);
     }
 
     @Override
-    public final PartitionedScan<RelationshipTypeIndexCursor> relationshipTypeScan(
+    public PartitionedScan<RelationshipTypeIndexCursor> relationshipTypeScan(
             TokenReadSession session, int desiredNumberOfPartitions, CursorContext cursorContext, TokenPredicate query)
             throws IndexNotApplicableKernelException {
         performCheckBeforeOperation();
@@ -454,7 +512,7 @@ abstract class Read implements org.neo4j.internal.kernel.api.Read {
     }
 
     @Override
-    public final PartitionedScan<RelationshipTypeIndexCursor> relationshipTypeScan(
+    public PartitionedScan<RelationshipTypeIndexCursor> relationshipTypeScan(
             TokenReadSession session,
             PartitionedScan<RelationshipTypeIndexCursor> leadingPartitionScan,
             TokenPredicate query)
@@ -468,7 +526,7 @@ abstract class Read implements org.neo4j.internal.kernel.api.Read {
     }
 
     @Override
-    public final List<PartitionedScan<RelationshipTypeIndexCursor>> relationshipTypeScans(
+    public List<PartitionedScan<RelationshipTypeIndexCursor>> relationshipTypeScans(
             TokenReadSession session,
             int desiredNumberOfPartitions,
             CursorContext cursorContext,
@@ -483,7 +541,7 @@ abstract class Read implements org.neo4j.internal.kernel.api.Read {
     }
 
     @Override
-    public final void relationshipTypeScan(
+    public void relationshipTypeScan(
             TokenReadSession session,
             RelationshipTypeIndexCursor cursor,
             IndexQueryConstraints constraints,
@@ -616,7 +674,160 @@ abstract class Read implements org.neo4j.internal.kernel.api.Read {
         return scans;
     }
 
-    public abstract ValueIndexReader newValueIndexReader(IndexDescriptor index) throws IndexNotFoundKernelException;
+    @Override
+    public boolean nodeExists(long reference) {
+        performCheckBeforeOperation();
+
+        if (txStateHolder.hasTxStateWithChanges()) {
+            var txState = txStateHolder.txState();
+            if (txState.nodeIsDeletedInThisBatch(reference)) {
+                return false;
+            } else if (txState.nodeIsAddedInThisBatch(reference)) {
+                return true;
+            }
+        }
+
+        boolean existsInNodeStore = storageReader.nodeExists(reference, storageCursors);
+
+        if (getAccessMode().allowsTraverseAllLabels()) {
+            return existsInNodeStore;
+        } else if (!existsInNodeStore) {
+            return false;
+        } else {
+            try (DefaultNodeCursor node = cursors.allocateNodeCursor(queryContext.cursorContext(), memoryTracker)) {
+                singleNode(reference, node);
+                return node.next();
+            }
+        }
+    }
+
+    @Override
+    public boolean nodeDeletedInTransaction(long node) {
+        performCheckBeforeOperation();
+        return txStateHolder.hasTxStateWithChanges() && txStateHolder.txState().nodeIsDeletedInThisBatch(node);
+    }
+
+    @Override
+    public boolean relationshipDeletedInTransaction(long relationship) {
+        performCheckBeforeOperation();
+        return txStateHolder.hasTxStateWithChanges()
+                && txStateHolder.txState().relationshipIsDeletedInThisBatch(relationship);
+    }
+
+    @Override
+    public Value nodePropertyChangeInBatchOrNull(long node, int propertyKeyId) {
+        performCheckBeforeOperation();
+        if (txStateHolder.hasTxStateWithChanges()) {
+            if (applyAccessModeToTxState) {
+                try (DefaultNodeCursor nodeCursor =
+                        cursors.allocateNodeCursor(queryContext.cursorContext(), memoryTracker)) {
+                    singleNode(node, nodeCursor);
+                    nodeCursor.next();
+                    try (DefaultPropertyCursor propertyCursor =
+                            cursors.allocatePropertyCursor(queryContext.cursorContext(), memoryTracker)) {
+                        nodeCursor.properties(propertyCursor, PropertySelection.selection(propertyKeyId));
+                        return propertyCursor.allowed(propertyKeyId)
+                                ? txStateHolder.txState().getNodeState(node).propertyValue(propertyKeyId)
+                                : null;
+                    }
+                }
+            } else {
+                return txStateHolder.txState().getNodeState(node).propertyValue(propertyKeyId);
+            }
+        }
+        return null;
+    }
+
+    @Override
+    public Value relationshipPropertyChangeInBatchOrNull(long relationship, int propertyKeyId) {
+        performCheckBeforeOperation();
+        if (txStateHolder.hasTxStateWithChanges()) {
+            RelationshipState relationshipState = txStateHolder.txState().getRelationshipState(relationship);
+            return !applyAccessModeToTxState
+                            || (relationshipState.hasPropertyChanges()
+                                    && getAccessMode()
+                                            .allowsReadRelationshipProperty(relationshipState::getType, propertyKeyId))
+                    ? relationshipState.propertyValue(propertyKeyId)
+                    : null;
+        }
+        return null;
+    }
+
+    @Override
+    public long countsForNode(int labelId) {
+        return entityCounter.countsForNode(
+                labelId,
+                getAccessMode(),
+                storageReader,
+                cursors,
+                queryContext.cursorContext(),
+                memoryTracker,
+                this,
+                storageCursors);
+    }
+
+    @Override
+    public List<Integer> mostCommonLabelGivenRelationshipType(int type) {
+        return entityCounter.mostCommonLabelGivenRelationshipType(type, storageReader, queryContext.cursorContext());
+    }
+
+    @Override
+    public long estimateCountsForNode(int labelId) {
+        return storageReader.estimateCountsForNode(labelId, queryContext.cursorContext());
+    }
+
+    @Override
+    public long countsForRelationship(int startLabelId, int typeId, int endLabelId) {
+        return entityCounter.countsForRelationship(
+                startLabelId,
+                typeId,
+                endLabelId,
+                getAccessMode(),
+                storageReader,
+                cursors,
+                this,
+                queryContext.cursorContext(),
+                memoryTracker,
+                storageCursors,
+                schemaRead);
+    }
+
+    @Override
+    public long estimateCountsForRelationships(int startLabelId, int typeId, int endLabelId) {
+        return storageReader.estimateCountsForRelationship(
+                startLabelId, typeId, endLabelId, queryContext.cursorContext());
+    }
+
+    @Override
+    public boolean relationshipExists(long reference) {
+        performCheckBeforeOperation();
+
+        if (txStateHolder.hasTxStateWithChanges()) {
+            var txState = txStateHolder.txState();
+            if (txState.relationshipIsDeletedInThisBatch(reference)) {
+                return false;
+            } else if (txState.relationshipIsAddedInThisBatch(reference)) {
+                return true;
+            }
+        }
+        boolean existsInRelStore = storageReader.relationshipExists(reference, storageCursors);
+        if (getAccessMode().allowsTraverseAllRelTypes()) {
+            return existsInRelStore;
+        } else if (!existsInRelStore) {
+            return false;
+        } else {
+            try (DefaultRelationshipScanCursor rels = (DefaultRelationshipScanCursor)
+                    cursors.allocateRelationshipScanCursor(queryContext.cursorContext(), memoryTracker)) {
+                singleRelationship(reference, rels);
+                return rels.next();
+            }
+        }
+    }
+
+    public ValueIndexReader newValueIndexReader(IndexDescriptor index) throws IndexNotFoundKernelException {
+        KernelSchemaRead.assertValidIndex(index);
+        return indexingService.getIndexProxy(index).newValueReader();
+    }
 
     private void assertIndexOnline(IndexDescriptor index)
             throws IndexNotFoundKernelException, IndexBrokenKernelException {
@@ -644,7 +855,49 @@ abstract class Read implements org.neo4j.internal.kernel.api.Read {
         }
     }
 
-    abstract void performCheckBeforeOperation();
+    void performCheckBeforeOperation() {
+        assertOpen.assertOpen();
+    }
 
-    abstract AccessMode getAccessMode();
+    AccessMode getAccessMode() {
+        return accessModeProvider.getAccessMode();
+    }
+
+    public TokenIndexReader newTokenIndexReader(IndexDescriptor index) throws IndexNotFoundKernelException {
+        KernelSchemaRead.assertValidIndex(index);
+        return indexingService.getIndexProxy(index).newTokenReader();
+    }
+
+    @Override
+    public IndexReadSession indexReadSession(IndexDescriptor index) throws IndexNotFoundKernelException {
+        KernelSchemaRead.assertValidIndex(index);
+        return new DefaultIndexReadSession(valueIndexReaderCache.getOrCreate(index), index);
+    }
+
+    @Override
+    public TokenReadSession tokenReadSession(IndexDescriptor index) throws IndexNotFoundKernelException {
+        KernelSchemaRead.assertValidIndex(index);
+        return new DefaultTokenReadSession(tokenIndexReaderCache.getOrCreate(index), index);
+    }
+
+    @Override
+    public long nodesGetCount() {
+        return countsForNode(TokenRead.ANY_LABEL);
+    }
+
+    @Override
+    public long relationshipsGetCount() {
+        return countsForRelationship(TokenRead.ANY_LABEL, TokenRead.ANY_RELATIONSHIP_TYPE, TokenRead.ANY_LABEL);
+    }
+
+    @Override
+    public boolean transactionStateHasChanges() {
+        return txStateHolder.hasTxStateWithChanges();
+    }
+
+    public void release() {
+        // Note: This only clears the caches, and does in fact not close the objects
+        valueIndexReaderCache.close();
+        tokenIndexReaderCache.close();
+    }
 }

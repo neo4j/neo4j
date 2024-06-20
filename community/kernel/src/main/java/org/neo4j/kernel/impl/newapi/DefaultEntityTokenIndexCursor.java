@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.newapi;
 import static org.neo4j.collection.PrimitiveLongCollections.iterator;
 import static org.neo4j.collection.PrimitiveLongCollections.reverseIterator;
 import static org.neo4j.internal.schema.IndexOrder.DESCENDING;
-import static org.neo4j.kernel.impl.newapi.Read.NO_ID;
+import static org.neo4j.kernel.impl.newapi.KernelRead.NO_ID;
 
 import java.util.NoSuchElementException;
 import org.eclipse.collections.api.iterator.LongIterator;
@@ -39,7 +39,7 @@ import org.neo4j.kernel.impl.index.schema.TokenScanValueIndexProgressor;
  */
 abstract class DefaultEntityTokenIndexCursor<SELF extends DefaultEntityTokenIndexCursor<SELF>>
         extends IndexCursor<IndexProgressor, SELF> implements InternalTokenIndexCursor {
-    protected Read read;
+    protected KernelRead read;
 
     protected long entity;
     protected long entityFromIndex;
@@ -165,7 +165,7 @@ abstract class DefaultEntityTokenIndexCursor<SELF extends DefaultEntityTokenInde
     }
 
     @Override
-    public void setRead(Read read) {
+    public void setRead(KernelRead read) {
         this.read = read;
     }
 
