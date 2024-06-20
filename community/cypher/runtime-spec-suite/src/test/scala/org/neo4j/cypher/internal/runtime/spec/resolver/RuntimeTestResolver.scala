@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.spec.resolver
 
+import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.frontend.phases.ProcedureSignature
 import org.neo4j.cypher.internal.frontend.phases.QualifiedName
@@ -47,11 +48,11 @@ trait RuntimeTestResolver[CONTEXT <: RuntimeContext] extends Resolver {
 
   override def procedureSignature(name: QualifiedName): ProcedureSignature = {
     val ktx = tx.kernelTransaction()
-    TransactionBoundPlanContext.procedureSignature(ktx, name)
+    TransactionBoundPlanContext.procedureSignature(ktx, name, CypherVersion.Default)
   }
 
   override def functionSignature(name: QualifiedName): Option[UserFunctionSignature] = {
     val ktx = tx.kernelTransaction()
-    TransactionBoundPlanContext.functionSignature(ktx, name)
+    TransactionBoundPlanContext.functionSignature(ktx, name, CypherVersion.Default)
   }
 }

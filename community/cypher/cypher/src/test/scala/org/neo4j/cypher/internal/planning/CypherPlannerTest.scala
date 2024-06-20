@@ -258,7 +258,7 @@ class CypherPlannerTest extends CypherFunSuite {
       override def procedureSignatureVersion: Long = -1
     }
 
-    CypherPlanner.customPlanContextCreator = Some((_, _, _) => planContext)
+    CypherPlanner.customPlanContextCreator = Some((_, _, _, _) => planContext)
 
     val monitors = new monitoring.Monitors()
 

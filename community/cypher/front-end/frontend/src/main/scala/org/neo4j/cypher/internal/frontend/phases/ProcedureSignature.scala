@@ -16,6 +16,7 @@
  */
 package org.neo4j.cypher.internal.frontend.phases
 
+import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.ast.UnresolvedCall
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.util.symbols.CypherType
@@ -74,6 +75,25 @@ object QualifiedName {
 
 case class QualifiedName(namespace: Seq[String], name: String) {
   override def toString: String = (namespace :+ name).mkString(".")
+}
+
+// Should have one to one mapping with org.neo4j.kernel.api.CypherScope
+sealed trait CypherScope
+
+object CypherScope {
+  case object Cypher5 extends CypherScope
+  case object CypherFuture extends CypherScope
+  val All: Set[CypherScope] = Set(Cypher5, CypherFuture)
+
+  def from(version: CypherVersion): CypherScope = version match {
+    case CypherVersion.Cypher5 => CypherScope.Cypher5
+  }
+
+  def toKernelScope(scope: CypherScope): org.neo4j.kernel.api.CypherScope = scope match {
+    case CypherScope.Cypher5      => org.neo4j.kernel.api.CypherScope.CYPHER_5
+    case CypherScope.CypherFuture => org.neo4j.kernel.api.CypherScope.CYPHER_FUTURE
+  }
+  def toKernelScope(version: CypherVersion): org.neo4j.kernel.api.CypherScope = toKernelScope(from(version))
 }
 
 case class FieldSignature(

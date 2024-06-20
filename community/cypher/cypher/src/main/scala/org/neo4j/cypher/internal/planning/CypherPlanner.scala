@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.AdministrationCommandRuntime
 import org.neo4j.cypher.internal.CompilerWithExpressionCodeGenOption
 import org.neo4j.cypher.internal.CypherQueryObfuscator
 import org.neo4j.cypher.internal.CypherRuntime
+import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.FineToReuse
 import org.neo4j.cypher.internal.FullyParsedQuery
 import org.neo4j.cypher.internal.MaybeReusable
@@ -125,7 +126,8 @@ object CypherPlanner {
    * where we need to inject some specific indexes and statistics.
    */
   var customPlanContextCreator
-    : Option[(TransactionalContextWrapper, InternalNotificationLogger, InternalLog) => PlanContext] = None
+    : Option[(TransactionalContextWrapper, InternalNotificationLogger, InternalLog, CypherVersion) => PlanContext] =
+    None
 
   /**
    * Create a Query Graph solver that matches the configurations and pre-parser options.
@@ -348,7 +350,12 @@ case class CypherPlanner(
     // Context used for db communication during planning
     val createPlanContext = CypherPlanner.customPlanContextCreator.getOrElse(TransactionBoundPlanContext.apply _)
     val planContext =
-      new ExceptionTranslatingPlanContext(createPlanContext(transactionalContextWrapper, notificationLogger, log))
+      new ExceptionTranslatingPlanContext(createPlanContext(
+        transactionalContextWrapper,
+        notificationLogger,
+        log,
+        options.queryOptions.cypherVersion.actualVersion
+      ))
 
     val inferredRuntime: CypherRuntimeOption = options.queryOptions.runtime match {
       case CypherRuntimeOption.default => runtime.correspondingRuntimeOption.getOrElse(CypherRuntimeOption.default)

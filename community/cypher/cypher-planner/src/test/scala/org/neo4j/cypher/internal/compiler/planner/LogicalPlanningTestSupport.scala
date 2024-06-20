@@ -27,6 +27,7 @@ import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 import org.neo4j.common
 import org.neo4j.configuration.GraphDatabaseInternalSettings
+import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.ast.ASTAnnotationMap
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.Hint
@@ -70,7 +71,6 @@ import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.frontend.phases.AstRewriting
 import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.FieldSignature
-import org.neo4j.cypher.internal.frontend.phases.FrontEndCompilationPhases.CypherVersion
 import org.neo4j.cypher.internal.frontend.phases.Monitors
 import org.neo4j.cypher.internal.frontend.phases.MoveBoundaryNodePredicates
 import org.neo4j.cypher.internal.frontend.phases.Namespacer

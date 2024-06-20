@@ -25,8 +25,8 @@ import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.SchemaCommand
 import org.neo4j.cypher.internal.ast.UnresolvedCall
 import org.neo4j.cypher.internal.ast.UpdateClause
-import org.neo4j.cypher.internal.frontend.phases.ProcedureSignatureResolver
 import org.neo4j.cypher.internal.frontend.phases.ResolvedCall
+import org.neo4j.cypher.internal.frontend.phases.ScopedProcedureSignatureResolver
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.fabric.util.Folded.FoldableOps
 import org.neo4j.fabric.util.Folded.Stop
@@ -62,7 +62,7 @@ object QueryType {
   def of(ast: ASTNode): QueryType =
     of(ast, callClause => of(callClause))
 
-  def of(ast: ASTNode, resolver: ProcedureSignatureResolver): QueryType =
+  def of(ast: ASTNode, resolver: ScopedProcedureSignatureResolver): QueryType =
     of(ast, callClause => of(callClause, resolver))
 
   private def of(ast: ASTNode, callClauseHandler: CallClause => QueryType): QueryType =
@@ -82,12 +82,12 @@ object QueryType {
     case _                                      => Write
   }
 
-  private def of(ast: CallClause, resolver: ProcedureSignatureResolver): QueryType = ast match {
+  private def of(ast: CallClause, resolver: ScopedProcedureSignatureResolver): QueryType = ast match {
     case unresolved: UnresolvedCall => of(tryResolve(unresolved, resolver))
     case c                          => of(c)
   }
 
-  private def tryResolve(unresolved: UnresolvedCall, resolver: ProcedureSignatureResolver): CallClause =
+  private def tryResolve(unresolved: UnresolvedCall, resolver: ScopedProcedureSignatureResolver): CallClause =
     Try(ResolvedCall(resolver.procedureSignature)(unresolved)).getOrElse(unresolved)
 
   def recursive(fragment: Fragment): QueryType =

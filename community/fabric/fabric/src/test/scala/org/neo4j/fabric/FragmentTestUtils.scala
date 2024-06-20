@@ -38,6 +38,7 @@ import org.neo4j.cypher.internal.frontend.PlannerName
 import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.InternalSyntaxUsageStatsNoOp
 import org.neo4j.cypher.internal.frontend.phases.ProcedureSignatureResolver
+import org.neo4j.cypher.internal.frontend.phases.ScopedProcedureSignatureResolver
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.InputPosition
@@ -151,6 +152,7 @@ trait FragmentTestUtils {
   val params: MapValue = MapValue.EMPTY
 
   def signatures: ProcedureSignatureResolver
+  def scopedSignatures: ScopedProcedureSignatureResolver
 
   val cypherConfig: CypherConfiguration = CypherConfiguration.fromConfig(Config.defaults())
 
@@ -165,7 +167,7 @@ trait FragmentTestUtils {
 
   def pipeline(query: String): frontend.Pipeline =
     frontend.Pipeline(
-      signatures,
+      scopedSignatures,
       frontend.preParsing.preParse(query, devNullLogger),
       params,
       CancellationChecker.NeverCancelled,

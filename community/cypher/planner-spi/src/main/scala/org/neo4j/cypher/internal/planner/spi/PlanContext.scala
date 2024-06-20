@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.planner.spi
 
-import org.neo4j.cypher.internal.frontend.phases.ProcedureSignatureResolver
+import org.neo4j.cypher.internal.frontend.phases.ScopedProcedureSignatureResolver
 import org.neo4j.cypher.internal.util.InternalNotificationLogger
 import org.neo4j.internal.schema.constraints.SchemaValueType
 
@@ -43,7 +43,7 @@ object DatabaseMode extends Enumeration {
  *
  * None of the functions in PlanContext takes any schema lock.
  */
-trait PlanContext extends ReadTokenContext with ProcedureSignatureResolver {
+trait PlanContext extends ReadTokenContext with ScopedProcedureSignatureResolver {
 
   /**
    * Return all range indexes (general and unique) for a given label, without taking any schema locks.

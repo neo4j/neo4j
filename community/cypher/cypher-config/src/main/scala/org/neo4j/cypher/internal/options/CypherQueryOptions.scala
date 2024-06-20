@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.options
 
 import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.configuration.GraphDatabaseSettings
+import org.neo4j.cypher.internal
 import org.neo4j.cypher.internal.config.CypherConfiguration
 import org.neo4j.cypher.internal.options.CypherQueryOptions.ILLEGAL_EXPRESSION_ENGINE_RUNTIME_COMBINATIONS
 import org.neo4j.cypher.internal.options.CypherQueryOptions.ILLEGAL_INTERPRETED_PIPES_FALLBACK_RUNTIME_COMBINATIONS
@@ -190,12 +191,18 @@ sealed abstract class CypherVersion(val version: String) extends CypherOption(ve
   override def render: String = super.render.toUpperCase(Locale.ROOT)
   override def cacheKey: String = super.cacheKey.toUpperCase(Locale.ROOT)
   override def relevantForLogicalPlanCacheKey: Boolean = true
+  def actualVersion: org.neo4j.cypher.internal.CypherVersion
 }
 
 case object CypherVersion extends CypherOptionCompanion[CypherVersion](name = "cypher version") {
 
-  case object default extends CypherVersion("")
-  case object cypher5 extends CypherVersion("5")
+  case object default extends CypherVersion("") {
+    override def actualVersion: internal.CypherVersion = internal.CypherVersion.Default
+  }
+
+  case object cypher5 extends CypherVersion("5") {
+    override def actualVersion: internal.CypherVersion = internal.CypherVersion.Cypher5
+  }
 
   override def values: Set[CypherVersion] = Set(cypher5)
 

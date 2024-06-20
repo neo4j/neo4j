@@ -887,8 +887,8 @@ class FabricFragmenterTest
     return_(vars.map(v => varFor(v._1).as(v._2)): _*)
 
   private def resolved(unresolved: UnresolvedCall): ResolvedCall =
-    ResolvedCall(signatures.procedureSignature)(unresolved)
+    ResolvedCall(scopedSignatures.procedureSignature)(unresolved)
 
   private def resolved(unresolved: FunctionInvocation): ResolvedFunctionInvocation =
-    ResolvedFunctionInvocation(signatures.functionSignature)(unresolved)
+    ResolvedFunctionInvocation(scopedSignatures.functionSignature)(unresolved)
 }

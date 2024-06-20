@@ -17,8 +17,24 @@
 package org.neo4j.cypher.internal.frontend.phases
 
 trait ProcedureSignatureResolver {
+  def procedureSignature(name: QualifiedName, scope: CypherScope): ProcedureSignature
+  def functionSignature(name: QualifiedName, scope: CypherScope): Option[UserFunctionSignature]
+  def procedureSignatureVersion: Long
+}
+
+trait ScopedProcedureSignatureResolver {
   def procedureSignature(name: QualifiedName): ProcedureSignature
   def functionSignature(name: QualifiedName): Option[UserFunctionSignature]
-
   def procedureSignatureVersion: Long
+}
+
+object ScopedProcedureSignatureResolver {
+
+  def from(r: ProcedureSignatureResolver, scope: CypherScope): ScopedProcedureSignatureResolver = {
+    new ScopedProcedureSignatureResolver {
+      override def procedureSignature(n: QualifiedName): ProcedureSignature = r.procedureSignature(n, scope)
+      override def functionSignature(n: QualifiedName): Option[UserFunctionSignature] = r.functionSignature(n, scope)
+      override def procedureSignatureVersion: Long = r.procedureSignatureVersion
+    }
+  }
 }

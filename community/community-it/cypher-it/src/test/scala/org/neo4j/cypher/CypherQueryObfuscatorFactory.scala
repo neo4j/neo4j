@@ -23,6 +23,7 @@ import org.neo4j.configuration.Config
 import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.cypher.internal.CachingPreParser
 import org.neo4j.cypher.internal.CypherQueryObfuscator
+import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.PreParsedQuery
 import org.neo4j.cypher.internal.cache.ExecutorBasedCaffeineCacheFactory
 import org.neo4j.cypher.internal.cache.LFUCache
@@ -30,7 +31,6 @@ import org.neo4j.cypher.internal.compiler.phases.PlannerContext
 import org.neo4j.cypher.internal.compiler.phases.RewriteProcedureCalls
 import org.neo4j.cypher.internal.config.CypherConfiguration
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
-import org.neo4j.cypher.internal.frontend.phases.FrontEndCompilationPhases.CypherVersion
 import org.neo4j.cypher.internal.frontend.phases.InitialState
 import org.neo4j.cypher.internal.frontend.phases.ObfuscationMetadataCollection
 import org.neo4j.cypher.internal.frontend.phases.Parse

@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.semantics
 
+import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.ExistsExpression
 import org.neo4j.cypher.internal.ast.semantics.SemanticErrorDef
@@ -27,7 +28,6 @@ import org.neo4j.cypher.internal.compiler.phases.CompilationPhases.ParsingConfig
 import org.neo4j.cypher.internal.frontend.phases
 import org.neo4j.cypher.internal.frontend.phases.BaseContext
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
-import org.neo4j.cypher.internal.frontend.phases.FrontEndCompilationPhases.CypherVersion
 import org.neo4j.cypher.internal.frontend.phases.InitialState
 import org.neo4j.cypher.internal.frontend.phases.InternalSyntaxUsageStats
 import org.neo4j.cypher.internal.frontend.phases.InternalSyntaxUsageStatsNoOp

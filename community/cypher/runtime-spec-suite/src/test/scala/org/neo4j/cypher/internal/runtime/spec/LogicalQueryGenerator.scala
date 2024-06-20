@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.spec
 
+import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.LogicalQuery
 import org.neo4j.cypher.internal.logical.generator.LogicalPlanGenerator
 import org.neo4j.cypher.internal.logical.generator.LogicalPlanGenerator.WithState
@@ -57,7 +58,12 @@ object LogicalQueryGenerator {
 
     val tokenRead = txContext.kernelTransaction().tokenRead()
     val log = NullLog.getInstance()
-    val planContext = TransactionBoundPlanContext(TransactionalContextWrapper(txContext), devNullLogger, log)
+    val planContext = TransactionBoundPlanContext(
+      TransactionalContextWrapper(txContext),
+      devNullLogger,
+      log,
+      CypherVersion.Default
+    )
     val labelMap = tokenRead.labelsGetAllTokens().asScala.map(l => l.name() -> l.id()).toMap
     val relMap = tokenRead.relationshipTypesGetAllTokens().asScala.toVector.map(r => r.name() -> r.id()).toMap
 

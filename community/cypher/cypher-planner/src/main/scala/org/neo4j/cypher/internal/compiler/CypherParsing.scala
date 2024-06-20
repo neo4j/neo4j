@@ -30,11 +30,10 @@ import org.neo4j.cypher.internal.compiler.phases.CompilationPhases.defaultSemant
 import org.neo4j.cypher.internal.config.CypherConfiguration
 import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
-import org.neo4j.cypher.internal.frontend.phases.FrontEndCompilationPhases
 import org.neo4j.cypher.internal.frontend.phases.InitialState
 import org.neo4j.cypher.internal.frontend.phases.InternalSyntaxUsageStats
 import org.neo4j.cypher.internal.frontend.phases.Monitors
-import org.neo4j.cypher.internal.frontend.phases.ProcedureSignatureResolver
+import org.neo4j.cypher.internal.frontend.phases.ScopedProcedureSignatureResolver
 import org.neo4j.cypher.internal.macros.AssertMacros
 import org.neo4j.cypher.internal.options.CypherVersion
 import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
@@ -62,7 +61,7 @@ class CypherParsing(
     tracer: CompilationPhaseTracer,
     params: MapValue,
     cancellationChecker: CancellationChecker,
-    resolver: Option[ProcedureSignatureResolver] = None,
+    resolver: Option[ScopedProcedureSignatureResolver] = None,
     sessionDatabase: DatabaseReference
   ): BaseState = {
     val plannerName = PlannerNameFor(plannerNameText)
@@ -87,7 +86,7 @@ class CypherParsing(
     )
     CompilationPhases.parsing(
       ParsingConfig(
-        cypherVersion = convertCypherVersion(cypherVersion),
+        cypherVersion = cypherVersion.actualVersion,
         extractLiterals = config.extractLiterals,
         parameterTypeMapping = paramTypes,
         semanticFeatures = features,
@@ -96,11 +95,6 @@ class CypherParsing(
       ),
       resolver = resolver
     ).transform(startState, context)
-  }
-
-  def convertCypherVersion(version: CypherVersion): FrontEndCompilationPhases.CypherVersion = version match {
-    case CypherVersion.default => FrontEndCompilationPhases.CypherVersion.Default
-    case CypherVersion.cypher5 => FrontEndCompilationPhases.CypherVersion.Cypher5
   }
 }
 

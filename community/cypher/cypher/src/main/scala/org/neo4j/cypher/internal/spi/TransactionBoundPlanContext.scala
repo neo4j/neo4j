@@ -20,7 +20,9 @@
 package org.neo4j.cypher.internal.spi
 
 import org.neo4j.common.EntityType
+import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.LastCommittedTxIdProvider
+import org.neo4j.cypher.internal.frontend.phases.CypherScope.toKernelScope
 import org.neo4j.cypher.internal.frontend.phases.DeprecationInfo
 import org.neo4j.cypher.internal.frontend.phases.FieldSignature
 import org.neo4j.cypher.internal.frontend.phases.ProcedureSignature
@@ -56,7 +58,6 @@ import org.neo4j.internal.schema.ConstraintDescriptor
 import org.neo4j.internal.schema.SchemaDescriptor
 import org.neo4j.internal.schema.SchemaDescriptors
 import org.neo4j.internal.schema.constraints.SchemaValueType
-import org.neo4j.kernel.api.CypherScope
 import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.logging.InternalLog
@@ -69,7 +70,8 @@ object TransactionBoundPlanContext {
   def apply(
     tc: TransactionalContextWrapper,
     logger: InternalNotificationLogger,
-    log: InternalLog
+    log: InternalLog,
+    cypherVersion: CypherVersion
   ): TransactionBoundPlanContext = {
 
     val statistics = TransactionBoundGraphStatistics(tc.dataRead, tc.schemaRead, log)
@@ -77,26 +79,31 @@ object TransactionBoundPlanContext {
     new TransactionBoundPlanContext(
       tc,
       logger,
-      InstrumentedGraphStatistics(statistics, new MutableGraphStatisticsSnapshot())
+      InstrumentedGraphStatistics(statistics, new MutableGraphStatisticsSnapshot()),
+      cypherVersion
     )
   }
 
-  def procedureSignature(tx: KernelTransaction, name: QualifiedName): ProcedureSignature = {
+  def procedureSignature(tx: KernelTransaction, name: QualifiedName, version: CypherVersion): ProcedureSignature = {
     val kn = new procs.QualifiedName(name.namespace.toArray, name.name)
     val procedures = tx.procedures()
-    val handle = procedures.procedureGet(kn, CypherScope.CYPHER_5)
+    val handle = procedures.procedureGet(kn, toKernelScope(version))
 
     asCypherProcedureSignature(name, handle.id(), handle.signature())
   }
 
-  def functionSignature(tx: KernelTransaction, name: QualifiedName): Option[UserFunctionSignature] = {
+  def functionSignature(
+    tx: KernelTransaction,
+    name: QualifiedName,
+    version: CypherVersion
+  ): Option[UserFunctionSignature] = {
     val kn = new procs.QualifiedName(name.namespace.toArray, name.name)
     val procedures = tx.procedures()
-    val func = procedures.functionGet(kn, CypherScope.CYPHER_5)
+    val func = procedures.functionGet(kn, toKernelScope(version))
 
     val (fcn, aggregation) =
       if (func != null) (func, false)
-      else (procedures.aggregationFunctionGet(kn, CypherScope.CYPHER_5), true)
+      else (procedures.aggregationFunctionGet(kn, toKernelScope(version)), true)
     if (fcn == null) None
     else {
       val signature = fcn.signature()
@@ -134,7 +141,8 @@ object TransactionBoundPlanContext {
 class TransactionBoundPlanContext(
   tc: TransactionalContextWrapper,
   logger: InternalNotificationLogger,
-  graphStatistics: InstrumentedGraphStatistics
+  graphStatistics: InstrumentedGraphStatistics,
+  cypherVersion: CypherVersion
 ) extends TransactionBoundReadTokenContext(tc) with PlanContext with IndexDescriptorCompatibility {
 
   override def rangeIndexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = {
@@ -506,10 +514,10 @@ class TransactionBoundPlanContext(
   override val lastCommittedTxIdProvider: LastCommittedTxIdProvider = LastCommittedTxIdProvider(tc.graph)
 
   override def procedureSignature(name: QualifiedName): ProcedureSignature =
-    TransactionBoundPlanContext.procedureSignature(tc.kernelTransaction, name)
+    TransactionBoundPlanContext.procedureSignature(tc.kernelTransaction, name, cypherVersion)
 
   override def functionSignature(name: QualifiedName): Option[UserFunctionSignature] =
-    TransactionBoundPlanContext.functionSignature(tc.kernelTransaction, name)
+    TransactionBoundPlanContext.functionSignature(tc.kernelTransaction, name, cypherVersion)
 
   override def notificationLogger(): InternalNotificationLogger = logger
 
@@ -518,7 +526,7 @@ class TransactionBoundPlanContext(
   override def procedureSignatureVersion: Long = tc.procedures.signatureVersion
 
   override def withNotificationLogger(notificationLogger: InternalNotificationLogger): PlanContext =
-    new TransactionBoundPlanContext(tc, notificationLogger, graphStatistics)
+    new TransactionBoundPlanContext(tc, notificationLogger, graphStatistics, cypherVersion)
 
   override def databaseMode: DatabaseMode = tc.kernelTransactionalContext.databaseMode match {
     case TransactionalContext.DatabaseMode.SINGLE    => DatabaseMode.SINGLE

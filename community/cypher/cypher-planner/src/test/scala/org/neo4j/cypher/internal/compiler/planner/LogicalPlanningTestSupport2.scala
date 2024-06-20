@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.planner
 import org.neo4j.common
 import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.configuration.GraphDatabaseInternalSettings.ExtractLiteral
+import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.factory.neo4j.JavaCCParser
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
@@ -74,7 +75,6 @@ import org.neo4j.cypher.internal.compiler.test_helpers.ContextHelper
 import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
-import org.neo4j.cypher.internal.frontend.phases.FrontEndCompilationPhases.CypherVersion
 import org.neo4j.cypher.internal.frontend.phases.If
 import org.neo4j.cypher.internal.frontend.phases.InitialState
 import org.neo4j.cypher.internal.frontend.phases.Phase

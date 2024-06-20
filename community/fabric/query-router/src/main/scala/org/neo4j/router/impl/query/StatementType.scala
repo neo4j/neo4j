@@ -26,8 +26,8 @@ import org.neo4j.cypher.internal.ast.SchemaCommand
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.UnresolvedCall
 import org.neo4j.cypher.internal.ast.UpdateClause
-import org.neo4j.cypher.internal.frontend.phases.ProcedureSignatureResolver
 import org.neo4j.cypher.internal.frontend.phases.ResolvedCall
+import org.neo4j.cypher.internal.frontend.phases.ScopedProcedureSignatureResolver
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.fabric.util.Folded.FoldableOps
 import org.neo4j.fabric.util.Folded.Stop
@@ -94,7 +94,7 @@ object StatementType {
    * The command type is decided directly from the statement, but we need to do some recursion
    * in order to figure out if the statement contains any writes.
    */
-  def of(statement: Statement, resolver: ProcedureSignatureResolver): StatementType = {
+  def of(statement: Statement, resolver: ScopedProcedureSignatureResolver): StatementType = {
     val maybeContainsUpdates = containsUpdates(statement, callClause => containsUpdates(callClause, resolver))
 
     statement match {
@@ -125,12 +125,12 @@ object StatementType {
     case _                                      => Write
   }
 
-  private def containsUpdates(ast: CallClause, resolver: ProcedureSignatureResolver): Mode = ast match {
+  private def containsUpdates(ast: CallClause, resolver: ScopedProcedureSignatureResolver): Mode = ast match {
     case unresolved: UnresolvedCall => containsUpdates(tryResolve(unresolved, resolver))
     case c                          => containsUpdates(c)
   }
 
-  private def tryResolve(unresolved: UnresolvedCall, resolver: ProcedureSignatureResolver): CallClause =
+  private def tryResolve(unresolved: UnresolvedCall, resolver: ScopedProcedureSignatureResolver): CallClause =
     Try(ResolvedCall(resolver.procedureSignature)(unresolved)).getOrElse(unresolved)
 
   private def merge: (Mode, Mode) => Mode = {

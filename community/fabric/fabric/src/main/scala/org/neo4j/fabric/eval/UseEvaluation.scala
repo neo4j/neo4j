@@ -27,8 +27,8 @@ import org.neo4j.cypher.internal.ast.GraphSelection
 import org.neo4j.cypher.internal.evaluator.StaticEvaluation
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
-import org.neo4j.cypher.internal.frontend.phases.ProcedureSignatureResolver
 import org.neo4j.cypher.internal.frontend.phases.ResolvedFunctionInvocation
+import org.neo4j.cypher.internal.frontend.phases.ScopedProcedureSignatureResolver
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.fabric.util.Errors
 import org.neo4j.fabric.util.Rewritten.RewritingOps
@@ -44,7 +44,7 @@ class UseEvaluation(
 
   def instance(
     evaluator: StaticEvaluation.StaticEvaluator,
-    signatureResolver: ProcedureSignatureResolver,
+    signatureResolver: ScopedProcedureSignatureResolver,
     query: String,
     catalog: Catalog
   ) =
@@ -58,7 +58,7 @@ object UseEvaluation {
     query: String,
     catalog: Catalog,
     val evaluator: StaticEvaluation.StaticEvaluator,
-    signatureResolver: ProcedureSignatureResolver
+    signatureResolver: ScopedProcedureSignatureResolver
   ) {
 
     def evaluate(

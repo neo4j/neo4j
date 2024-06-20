@@ -136,7 +136,8 @@ public class FabricExecutor {
             }
 
             var statementResult = fabricTransaction.execute(ctx -> {
-                var useEvaluator = useEvaluation.instance(evaluator, signatureResolver, statement, catalog);
+                var useEvaluator =
+                        useEvaluation.instance(evaluator, plannerInstance.signatureResolver(), statement, catalog);
                 FabricStatementExecution execution;
                 if (plan.debugOptions().logRecords()) {
                     execution = new FabricLoggingStatementExecution(

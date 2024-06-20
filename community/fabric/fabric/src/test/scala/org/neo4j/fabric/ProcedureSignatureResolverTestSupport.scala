@@ -20,17 +20,24 @@
 package org.neo4j.fabric
 
 import org.neo4j.collection.RawIterator
+import org.neo4j.cypher.internal.CypherVersion
+import org.neo4j.cypher.internal.compiler.helpers.ProcedureLookup
 import org.neo4j.cypher.internal.compiler.helpers.SignatureResolver
+import org.neo4j.cypher.internal.compiler.helpers.SignatureResolver.toCypherProcedure
+import org.neo4j.cypher.internal.frontend.phases
+import org.neo4j.cypher.internal.frontend.phases.CypherScope
 import org.neo4j.cypher.internal.frontend.phases.ProcedureSignature
 import org.neo4j.cypher.internal.frontend.phases.ProcedureSignatureResolver
 import org.neo4j.cypher.internal.frontend.phases.QualifiedName
+import org.neo4j.cypher.internal.frontend.phases.ScopedProcedureSignatureResolver
 import org.neo4j.cypher.internal.frontend.phases.UserFunctionSignature
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException
 import org.neo4j.internal.kernel.api.procs
 import org.neo4j.internal.kernel.api.procs.FieldSignature.inputField
 import org.neo4j.internal.kernel.api.procs.FieldSignature.outputField
+import org.neo4j.internal.kernel.api.procs.ProcedureHandle
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature.VOID
-import org.neo4j.kernel.api.CypherScope
+import org.neo4j.internal.kernel.api.procs.UserFunctionHandle
 import org.neo4j.kernel.api.ResourceMonitor
 import org.neo4j.kernel.api.procedure
 import org.neo4j.kernel.api.procedure.Context
@@ -70,30 +77,24 @@ trait ProcedureSignatureResolverTestSupport {
     mkFunction(Seq("say", "neo4j"), Seq(), "MyCategory")(Values.stringValue("neo4j"))
   )
 
-  val signatures: ProcedureSignatureResolver = TestProcedureSignatureResolver(callableProcedures, callableUseFunctions)
+  val signatures: ProcedureSignatureResolver = new SignatureResolver(new ProcedureLookup {
 
-  case class TestProcedureSignatureResolver(
-    procedures: Seq[procedure.CallableProcedure],
-    functions: Seq[procedure.CallableUserFunction],
-    procedureSignatureVersion: Long = -1
-  ) extends ProcedureSignatureResolver {
-
-    private val procSignatures = procedures.zipWithIndex.map { case (procedure, i) =>
-      val handle = new procs.ProcedureHandle(procedure.signature(), i)
-      SignatureResolver.toCypherProcedure(handle)
+    override def procedure(name: procs.QualifiedName, scope: org.neo4j.kernel.api.CypherScope): ProcedureHandle = {
+      callableProcedures.zipWithIndex
+        .collectFirst { case (p, i) if p.signature().name() == name => new procs.ProcedureHandle(p.signature(), i) }
+        .getOrElse(throw new RuntimeException(s"No such procedure $name"))
     }
 
-    private val funcSignatures = functions.zipWithIndex.map { case (function, i) =>
-      val handle = new procs.UserFunctionHandle(function.signature(), i)
-      SignatureResolver.toCypherFunction(handle)
+    override def function(name: procs.QualifiedName, scope: org.neo4j.kernel.api.CypherScope): UserFunctionHandle = {
+      callableUseFunctions.zipWithIndex
+        .collectFirst { case (f, i) if f.signature().name() == name => new UserFunctionHandle(f.signature(), i) }
+        .orNull
     }
+    override def signatureVersion: Long = -1
+  })
 
-    override def procedureSignature(name: QualifiedName): ProcedureSignature =
-      procSignatures.find(_.name == name).getOrElse(throw new RuntimeException(s"No such procedure $name"))
-
-    override def functionSignature(name: QualifiedName): Option[UserFunctionSignature] =
-      funcSignatures.find(_.name == name)
-  }
+  val scopedSignatures: ScopedProcedureSignatureResolver =
+    ScopedProcedureSignatureResolver.from(signatures, CypherScope.from(CypherVersion.Default))
 
   private def mkFunction(
     name: Seq[String],
@@ -147,7 +148,7 @@ trait ProcedureSignatureResolverTestSupport {
       false,
       false,
       false,
-      CypherScope.ALL_SCOPES
+      org.neo4j.kernel.api.CypherScope.ALL_SCOPES
     )) {
       override def apply(
         ctx: Context,

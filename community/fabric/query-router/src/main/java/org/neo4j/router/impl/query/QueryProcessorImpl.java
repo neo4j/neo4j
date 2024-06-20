@@ -35,7 +35,7 @@ import org.neo4j.cypher.internal.compiler.CypherParsing;
 import org.neo4j.cypher.internal.compiler.helpers.SignatureResolver;
 import org.neo4j.cypher.internal.evaluator.SimpleInternalExpressionEvaluator;
 import org.neo4j.cypher.internal.frontend.phases.BaseState;
-import org.neo4j.cypher.internal.frontend.phases.ProcedureSignatureResolver;
+import org.neo4j.cypher.internal.frontend.phases.ScopedProcedureSignatureResolver;
 import org.neo4j.cypher.internal.frontend.phases.rewriting.cnf.flattenBooleanOperators;
 import org.neo4j.cypher.internal.javacompat.ExecutionEngine;
 import org.neo4j.cypher.internal.rewriting.rewriters.RemoveUseRewriter;
@@ -162,7 +162,9 @@ public class QueryProcessorImpl implements QueryProcessor {
             CancellationChecker cancellationChecker,
             DatabaseReference sessionDatabase) {
         var queryTracer = tracer.compileQuery(query.text());
-        var resolver = SignatureResolver.from(globalProcedures.getCurrentView());
+        var resolver = SignatureResolver.from(
+                globalProcedures.getCurrentView(),
+                preParsedQuery.options().queryOptions().cypherVersion());
         var parsedQuery = parse(
                 query, queryTracer, preParsedQuery, resolver, notificationLogger, cancellationChecker, sessionDatabase);
         var catalogInfo = resolveCatalogInfo(parsedQuery.statement(), sessionDatabase.isComposite());
@@ -264,7 +266,7 @@ public class QueryProcessorImpl implements QueryProcessor {
             Query query,
             CompilationTracer.QueryCompilationEvent queryTracer,
             PreParsedQuery preParsedQuery,
-            ProcedureSignatureResolver resolver,
+            ScopedProcedureSignatureResolver resolver,
             RecordingNotificationLogger notificationLogger,
             CancellationChecker cancellationChecker,
             DatabaseReference sessionDatabase) {

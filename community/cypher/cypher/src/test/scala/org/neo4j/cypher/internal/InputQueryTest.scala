@@ -20,13 +20,13 @@
 package org.neo4j.cypher.internal
 
 import org.neo4j.configuration.Config
+import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.cache.LFUCache
 import org.neo4j.cypher.internal.cache.TestExecutorCaffeineCacheFactory
 import org.neo4j.cypher.internal.compiler.phases.CompilationPhases
 import org.neo4j.cypher.internal.compiler.phases.CompilationPhases.ParsingConfig
 import org.neo4j.cypher.internal.compiler.test_helpers.ContextHelper
 import org.neo4j.cypher.internal.config.CypherConfiguration
-import org.neo4j.cypher.internal.frontend.phases.FrontEndCompilationPhases.CypherVersion
 import org.neo4j.cypher.internal.frontend.phases.InitialState
 import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator

@@ -16,11 +16,11 @@
  */
 package org.neo4j.cypher.internal.frontend.phases
 
+import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.factory.neo4j.JavaCCParser
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.PARSING
-import org.neo4j.cypher.internal.frontend.phases.FrontEndCompilationPhases.CypherVersion
 import org.neo4j.cypher.internal.frontend.phases.factories.ParsePipelineTransformerFactory
 import org.neo4j.cypher.internal.parser.v5.ast.factory.Cypher5AstParser
 import org.neo4j.cypher.internal.rewriting.rewriters.LiteralExtractionStrategy
@@ -47,11 +47,6 @@ case class Parse(useAntlr: Boolean, version: CypherVersion) extends Phase[BaseCo
   ): Statement = {
     if (useAntlr) {
       version match {
-        case CypherVersion.Default => new Cypher5AstParser(
-            query,
-            exceptionFactory,
-            Some(notificationLogger)
-          ).singleStatement()
         case CypherVersion.Cypher5 => new Cypher5AstParser(
             query,
             exceptionFactory,
@@ -60,7 +55,6 @@ case class Parse(useAntlr: Boolean, version: CypherVersion) extends Phase[BaseCo
       }
     } else {
       version match {
-        case CypherVersion.Default => JavaCCParser.parse(query, exceptionFactory, notificationLogger)
         case CypherVersion.Cypher5 => JavaCCParser.parse(query, exceptionFactory, notificationLogger)
       }
     }

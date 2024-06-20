@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.helpers
 
+import org.neo4j.cypher.internal.frontend.phases.CypherScope
+import org.neo4j.cypher.internal.frontend.phases.CypherScope.toKernelScope
 import org.neo4j.cypher.internal.frontend.phases.DeprecationInfo
 import org.neo4j.cypher.internal.frontend.phases.FieldSignature
 import org.neo4j.cypher.internal.frontend.phases.ProcedureAccessMode
@@ -29,7 +31,9 @@ import org.neo4j.cypher.internal.frontend.phases.ProcedureSchemaWriteAccess
 import org.neo4j.cypher.internal.frontend.phases.ProcedureSignature
 import org.neo4j.cypher.internal.frontend.phases.ProcedureSignatureResolver
 import org.neo4j.cypher.internal.frontend.phases.QualifiedName
+import org.neo4j.cypher.internal.frontend.phases.ScopedProcedureSignatureResolver
 import org.neo4j.cypher.internal.frontend.phases.UserFunctionSignature
+import org.neo4j.cypher.internal.options.CypherVersion
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CTBoolean
 import org.neo4j.cypher.internal.util.symbols.CTDate
@@ -58,50 +62,51 @@ import org.neo4j.internal.kernel.api.procs.Neo4jTypes
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes.AnyType
 import org.neo4j.internal.kernel.api.procs.ProcedureHandle
 import org.neo4j.internal.kernel.api.procs.UserFunctionHandle
-import org.neo4j.kernel.api.CypherScope
+import org.neo4j.kernel.api
 import org.neo4j.kernel.api.procedure.ProcedureView
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.procedure.Mode
-import org.neo4j.util.VisibleForTesting
 
 import java.util.Optional
 
 import scala.jdk.CollectionConverters.ListHasAsScala
 
-class SignatureResolver(
-  getProc: Function[procs.QualifiedName, procs.ProcedureHandle],
-  getFunc: Function[procs.QualifiedName, procs.UserFunctionHandle],
-  override val procedureSignatureVersion: Long
-) extends ProcedureSignatureResolver {
+trait ProcedureLookup {
+  def function(name: procs.QualifiedName, scope: org.neo4j.kernel.api.CypherScope): UserFunctionHandle
+  def procedure(name: procs.QualifiedName, scope: org.neo4j.kernel.api.CypherScope): ProcedureHandle
+  def signatureVersion: Long
+}
 
-  override def functionSignature(name: QualifiedName): Option[UserFunctionSignature] =
-    Option(getFunc(SignatureResolver.asKernelQualifiedName(name)))
+final class SignatureResolver(lookup: ProcedureLookup) extends ProcedureSignatureResolver {
+
+  override def functionSignature(name: QualifiedName, scope: CypherScope): Option[UserFunctionSignature] =
+    Option(lookup.function(SignatureResolver.asKernelQualifiedName(name), toKernelScope(scope)))
       .map(fcn => SignatureResolver.toCypherFunction(fcn))
 
-  override def procedureSignature(name: QualifiedName): ProcedureSignature = {
+  override def procedureSignature(name: QualifiedName, scope: CypherScope): ProcedureSignature = {
     val kn = new procs.QualifiedName(name.namespace.toArray, name.name)
-    SignatureResolver.toCypherProcedure(getProc(kn))
+    SignatureResolver.toCypherProcedure(lookup.procedure(kn, toKernelScope(scope)))
   }
+
+  override def procedureSignatureVersion: Long = lookup.signatureVersion
 }
 
 object SignatureResolver {
 
-  def from(procedures: Procedures) =
-    new SignatureResolver(
-      (name: procs.QualifiedName) => procedures.procedureGet(name, CypherScope.CYPHER_5),
-      (name: procs.QualifiedName) => procedures.functionGet(name, CypherScope.CYPHER_5),
-      procedures.signatureVersion()
-    )
+  def from(p: Procedures): ProcedureSignatureResolver = new SignatureResolver(new ProcedureLookup {
+    override def function(n: procs.QualifiedName, s: api.CypherScope): UserFunctionHandle = p.functionGet(n, s)
+    override def procedure(n: procs.QualifiedName, s: api.CypherScope): ProcedureHandle = p.procedureGet(n, s)
+    override def signatureVersion: Long = p.signatureVersion()
+  })
 
-  // Note: Typically the signature resolver should be derived from a transaction bound Procedures object.
-  // In some testing situations this can be troublesome to reach, and thus we provide this escape hatch.
-  @VisibleForTesting
-  def from(procedureView: ProcedureView) =
-    new SignatureResolver(
-      (name: procs.QualifiedName) => procedureView.procedure(name, org.neo4j.kernel.api.CypherScope.CYPHER_5),
-      (name: procs.QualifiedName) => procedureView.function(name, org.neo4j.kernel.api.CypherScope.CYPHER_5),
-      procedureView.signatureVersion()
-    )
+  def from(p: ProcedureView): ProcedureSignatureResolver = new SignatureResolver(new ProcedureLookup {
+    override def function(n: procs.QualifiedName, s: api.CypherScope): UserFunctionHandle = p.function(n, s)
+    override def procedure(n: procs.QualifiedName, s: api.CypherScope): ProcedureHandle = p.procedure(n, s)
+    override def signatureVersion: Long = p.signatureVersion()
+  })
+
+  def from(p: ProcedureView, v: CypherVersion): ScopedProcedureSignatureResolver =
+    ScopedProcedureSignatureResolver.from(from(p), CypherScope.from(v.actualVersion))
 
   def toCypherProcedure(handle: ProcedureHandle): ProcedureSignature = {
     val signature = handle.signature()

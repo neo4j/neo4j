@@ -26,9 +26,11 @@ import org.neo4j.cypher.internal.ast.CatalogName
 import org.neo4j.cypher.internal.cache.CacheSize
 import org.neo4j.cypher.internal.cache.CaffeineCacheFactory
 import org.neo4j.cypher.internal.config.CypherConfiguration
+import org.neo4j.cypher.internal.frontend.phases.CypherScope
 import org.neo4j.cypher.internal.frontend.phases.InternalSyntaxUsageStats
 import org.neo4j.cypher.internal.frontend.phases.InternalSyntaxUsageStatsNoOp
 import org.neo4j.cypher.internal.frontend.phases.ProcedureSignatureResolver
+import org.neo4j.cypher.internal.frontend.phases.ScopedProcedureSignatureResolver
 import org.neo4j.cypher.internal.options.CypherExpressionEngineOption
 import org.neo4j.cypher.internal.options.CypherRuntimeOption
 import org.neo4j.cypher.internal.util.CancellationChecker
@@ -89,7 +91,10 @@ case class FabricPlanner(
     val notificationLogger = new RecordingNotificationLogger()
     val query = frontend.preParsing.preParse(queryString, notificationLogger)
     PlannerInstance(
-      signatureResolver,
+      ScopedProcedureSignatureResolver.from(
+        signatureResolver,
+        CypherScope.from(query.options.queryOptions.cypherVersion.actualVersion)
+      ),
       query,
       queryParams,
       defaultGraphName,
@@ -101,7 +106,7 @@ case class FabricPlanner(
   }
 
   case class PlannerInstance(
-    signatureResolver: ProcedureSignatureResolver,
+    signatureResolver: ScopedProcedureSignatureResolver,
     query: PreParsedQuery,
     queryParams: MapValue,
     defaultContextName: String,

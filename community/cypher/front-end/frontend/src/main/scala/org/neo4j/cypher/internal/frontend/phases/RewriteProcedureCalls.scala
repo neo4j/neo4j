@@ -34,7 +34,7 @@ import scala.util.Try
 
 trait RewriteProcedureCalls {
 
-  def process(from: BaseState, resolver: ProcedureSignatureResolver): BaseState = {
+  def process(from: BaseState, resolver: ScopedProcedureSignatureResolver): BaseState = {
     val instrumentedResolver = new InstrumentedProcedureSignatureResolver(resolver)
     val rewrittenStatement = from.statement().endoRewrite(rewriter(instrumentedResolver))
 
@@ -45,11 +45,11 @@ trait RewriteProcedureCalls {
       .withProcedureSignatureVersion(instrumentedResolver.signatureVersionIfResolved)
   }
 
-  def rewriter(resolver: ProcedureSignatureResolver): Rewriter =
+  def rewriter(resolver: ScopedProcedureSignatureResolver): Rewriter =
     resolverProcedureCall(resolver) andThen fakeStandaloneCallDeclarations
 
   // rewriter that amends unresolved procedure calls with procedure signature information
-  private def resolverProcedureCall(resolver: ProcedureSignatureResolver): Rewriter =
+  private def resolverProcedureCall(resolver: ScopedProcedureSignatureResolver): Rewriter =
     bottomUp(Rewriter.lift {
       case unresolved: UnresolvedCall =>
         resolveProcedure(resolver, unresolved)
@@ -58,7 +58,7 @@ trait RewriteProcedureCalls {
         resolveFunction(resolver, function)
     })
 
-  def resolveProcedure(resolver: ProcedureSignatureResolver, unresolved: UnresolvedCall): CallClause = {
+  def resolveProcedure(resolver: ScopedProcedureSignatureResolver, unresolved: UnresolvedCall): CallClause = {
     val resolved = ResolvedCall(resolver.procedureSignature)(unresolved)
     // We coerce here to ensure that the semantic check run after this rewriter assigns a type
     // to the coercion expressions
@@ -66,7 +66,7 @@ trait RewriteProcedureCalls {
     coerced
   }
 
-  def resolveFunction(resolver: ProcedureSignatureResolver, unresolved: FunctionInvocation): Expression = {
+  def resolveFunction(resolver: ScopedProcedureSignatureResolver, unresolved: FunctionInvocation): Expression = {
     val resolved = ResolvedFunctionInvocation(resolver.functionSignature)(unresolved)
     // We coerce here to ensure that the semantic check run after this rewriter assigns a type
     // to the coercion expression
@@ -119,7 +119,7 @@ trait RewriteProcedureCalls {
 /**
  * Rewrites unresolved calls into resolved calls, or leaves them unresolved if not found.
  */
-case class TryRewriteProcedureCalls(resolver: ProcedureSignatureResolver)
+case class TryRewriteProcedureCalls(resolver: ScopedProcedureSignatureResolver)
     extends Phase[BaseContext, BaseState, BaseState] with RewriteProcedureCalls {
 
   override def phase = AST_REWRITE
@@ -128,10 +128,13 @@ case class TryRewriteProcedureCalls(resolver: ProcedureSignatureResolver)
 
   override def postConditions: Set[StepSequencer.Condition] = Set()
 
-  override def resolveProcedure(resolver: ProcedureSignatureResolver, unresolved: UnresolvedCall): CallClause =
+  override def resolveProcedure(resolver: ScopedProcedureSignatureResolver, unresolved: UnresolvedCall): CallClause =
     Try(super.resolveProcedure(resolver, unresolved)).getOrElse(unresolved)
 
-  override def resolveFunction(resolver: ProcedureSignatureResolver, unresolved: FunctionInvocation): Expression = {
+  override def resolveFunction(
+    resolver: ScopedProcedureSignatureResolver,
+    unresolved: FunctionInvocation
+  ): Expression = {
     super.resolveFunction(resolver, unresolved) match {
       case resolved @ ResolvedFunctionInvocation(_, Some(_), _) => resolved
       case _                                                    => unresolved
@@ -141,8 +144,8 @@ case class TryRewriteProcedureCalls(resolver: ProcedureSignatureResolver)
   val rewriter: Rewriter = rewriter(resolver)
 }
 
-class InstrumentedProcedureSignatureResolver(resolver: ProcedureSignatureResolver)
-    extends ProcedureSignatureResolver {
+class InstrumentedProcedureSignatureResolver(resolver: ScopedProcedureSignatureResolver)
+    extends ScopedProcedureSignatureResolver {
   private var hasAttemptedToResolve = false
 
   def procedureSignature(name: QualifiedName): ProcedureSignature = {

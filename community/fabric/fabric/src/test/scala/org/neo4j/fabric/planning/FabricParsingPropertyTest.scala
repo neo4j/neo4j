@@ -19,6 +19,7 @@
  */
 package org.neo4j.fabric.planning
 
+import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.generator.AstGenerator
 import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
@@ -35,14 +36,13 @@ import org.neo4j.cypher.internal.frontend.phases
 import org.neo4j.cypher.internal.frontend.phases.BaseContext
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.frontend.phases.FieldSignature
-import org.neo4j.cypher.internal.frontend.phases.FrontEndCompilationPhases.CypherVersion
 import org.neo4j.cypher.internal.frontend.phases.InitialState
 import org.neo4j.cypher.internal.frontend.phases.InternalSyntaxUsageStats
 import org.neo4j.cypher.internal.frontend.phases.InternalSyntaxUsageStatsNoOp
 import org.neo4j.cypher.internal.frontend.phases.ProcedureReadOnlyAccess
 import org.neo4j.cypher.internal.frontend.phases.ProcedureSignature
-import org.neo4j.cypher.internal.frontend.phases.ProcedureSignatureResolver
 import org.neo4j.cypher.internal.frontend.phases.QualifiedName
+import org.neo4j.cypher.internal.frontend.phases.ScopedProcedureSignatureResolver
 import org.neo4j.cypher.internal.frontend.phases.UserFunctionSignature
 import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
 import org.neo4j.cypher.internal.planning.WrappedMonitors
@@ -80,7 +80,7 @@ class FabricParsingPropertyTest extends CypherFunSuite
     val signature =
       ProcedureSignature(qualifiedName, signatureInputs, signatureOutputs, None, ProcedureReadOnlyAccess, id = 42)
 
-    new ProcedureSignatureResolver {
+    new ScopedProcedureSignatureResolver {
       override def procedureSignature(name: QualifiedName): ProcedureSignature = signature
       override def functionSignature(name: QualifiedName): Option[UserFunctionSignature] = None
       override def procedureSignatureVersion: Long = -1
