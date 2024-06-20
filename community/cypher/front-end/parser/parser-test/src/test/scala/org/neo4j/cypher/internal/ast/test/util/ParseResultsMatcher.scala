@@ -283,12 +283,15 @@ object MatchResults {
            |""".stripMargin
       case (parser, ParseFailure(throwable)) =>
         val hint = throwable match {
-          case _: NullPointerException => Some("NullPointerExceptions can occur because of how def isSafeToFreeChildren is implemented")
+          case _: NullPointerException =>
+            Some("NullPointerExceptions can occur because of how def isSafeToFreeChildren is implemented")
           case _ => None
         }
         s"""$parser result
            |${"-".repeat(parser.toString.length + 7)}
-           |Parsing failed with the following stacktrace, scroll past stacktrace to see assertion error:${hint.map(h => s"\nHint! $h").getOrElse("")}
+           |Parsing failed with the following stacktrace, scroll past stacktrace to see assertion error:${hint.map(h =>
+            s"\nHint! $h"
+          ).getOrElse("")}
            |${ExceptionUtils.getStackTrace(throwable)}
            |""".stripMargin
     }
