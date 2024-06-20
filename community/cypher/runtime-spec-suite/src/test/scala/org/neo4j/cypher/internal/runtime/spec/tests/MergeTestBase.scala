@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNodeWithProperties
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createRelationship
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setDynamicLabel
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setDynamicProperty
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setLabel
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setNodeProperties
@@ -995,6 +996,33 @@ abstract class MergeTestBase[CONTEXT <: RuntimeContext](
     )
   }
 
+  test("merge should perform on create dynamic side effect") {
+    // given no nodes
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n")
+      .merge(
+        nodes = Seq(createNode("n")),
+        onCreate = Seq(setDynamicLabel("n", "'L'", "'M'"), setDynamicProperty("n", "'prop'", "42"))
+      )
+      .allNodeScan("n")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+    val node = Iterables.single(tx.getAllNodes)
+    node.hasLabel(label("L")) shouldBe true
+    node.hasLabel(label("M")) shouldBe true
+    node.getProperty("prop") should equal(42)
+    runtimeResult should beColumns("n").withSingleRow(node).withStatistics(
+      nodesCreated = 1,
+      labelsAdded = 2,
+      propertiesSet = 1
+    )
+  }
+
   test("merge should perform on match side effect") {
     val nodes = givenGraph(nodeGraph(sizeHint))
 
@@ -1002,6 +1030,34 @@ abstract class MergeTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("n")
       .merge(nodes = Seq(createNode("n")), onMatch = Seq(setLabel("n", "L", "M"), setNodeProperty("n", "prop", "42")))
+      .allNodeScan("n")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    nodes.foreach(node => {
+      node.hasLabel(label("L")) shouldBe true
+      node.hasLabel(label("M")) shouldBe true
+      node.getProperty("prop") should equal(42)
+    })
+    runtimeResult should beColumns("n").withRows(singleColumn(nodes)).withStatistics(
+      labelsAdded = 2 * sizeHint,
+      propertiesSet = sizeHint
+    )
+  }
+
+  test("merge should perform on match dynamic side effect") {
+    val nodes = givenGraph(nodeGraph(sizeHint))
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n")
+      .merge(
+        nodes = Seq(createNode("n")),
+        onMatch = Seq(setDynamicLabel("n", "'L'", "'M'"), setDynamicProperty("n", "'prop'", "42"))
+      )
       .allNodeScan("n")
       .build(readOnly = false)
 

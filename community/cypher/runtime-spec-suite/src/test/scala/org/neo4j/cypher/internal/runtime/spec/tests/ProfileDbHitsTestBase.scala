@@ -34,7 +34,9 @@ import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.crea
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createPattern
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createRelationship
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.delete
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.removeDynamicLabel
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.removeLabel
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setDynamicLabel
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setLabel
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setNodePropertiesFromMap
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setNodeProperty
@@ -2057,6 +2059,38 @@ trait WriteOperatorsDbHitsTestBase[CONTEXT <: RuntimeContext] {
     foreachProfile.dbHits() shouldBe expectedDbHits
   }
 
+  test("should profile rows and dbhits of foreach + set dynamic label correctly") {
+    // given
+    givenGraph {
+      bipartiteGraph(sizeHint, "A", "B", "R")
+    }
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .foreach("i", "[1, 2, 3]", Seq(setDynamicLabel("x", "'L'", "'M'")))
+      .nodeByLabelScan("x", "A")
+      .build()
+
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    val foreachProfile = queryProfile.operatorProfile(1)
+
+    val expectedDbHits =
+      if (useWritesWithProfiling & canFuseOverPipelines) {
+        val tokenLookup = 2 * 3 * sizeHint
+        val setLabelToNode = 2 * sizeHint
+        tokenLookup + setLabelToNode
+      } else {
+        2 * costOfLabelLookup + 3 * sizeHint
+      }
+
+    foreachProfile.rows() shouldBe sizeHint
+    foreachProfile.dbHits() shouldBe expectedDbHits
+  }
+
   test("should profile rows and dbhits of foreach + remove label correctly") {
     // given
     givenGraph {
@@ -2066,6 +2100,38 @@ trait WriteOperatorsDbHitsTestBase[CONTEXT <: RuntimeContext] {
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .foreach("i", "[1, 2, 3]", Seq(removeLabel("x", "A")))
+      .nodeByLabelScan("x", "A")
+      .build()
+
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    val foreachProfile = queryProfile.operatorProfile(1)
+
+    val expectedDbHits =
+      if (useWritesWithProfiling & canFuseOverPipelines) {
+        val tokenLookup = 1 * sizeHint
+        val setLabelToNode = 3 * sizeHint
+        tokenLookup + setLabelToNode
+      } else {
+        costOfLabelLookup + 3 * sizeHint
+      }
+
+    foreachProfile.rows() shouldBe sizeHint
+    foreachProfile.dbHits() shouldBe expectedDbHits
+  }
+
+  test("should profile rows and dbhits of foreach + remove dynamic label correctly") {
+    // given
+    givenGraph {
+      bipartiteGraph(sizeHint, "A", "B", "R")
+    }
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .foreach("i", "[1, 2, 3]", Seq(removeDynamicLabel("x", "'A'")))
       .nodeByLabelScan("x", "A")
       .build()
 
@@ -2164,6 +2230,78 @@ trait WriteOperatorsDbHitsTestBase[CONTEXT <: RuntimeContext] {
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("n")
       .removeLabels("n", "Label", "OtherLabel")
+      .allNodeScan("n")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+    val removeLabelsProfile = runtimeResult.runtimeResult.queryProfile().operatorProfile(1)
+
+    val expectedLabelLookups = 2
+
+    val labelsRemovedFromNodeDbHits =
+      if (useWritesWithProfiling) {
+        (nodeCount - 3) * Seq("Label", "OtherLabel").size + 1 * Seq("Label").size + 1 * Seq("OtherLabel").size
+      } else {
+        nodeCount
+      }
+
+    removeLabelsProfile.dbHits() shouldBe labelsRemovedFromNodeDbHits + expectedLabelLookups
+  }
+
+  test("should profile db hits on set dynamic labels") {
+    // given
+    val emptyNodes = 2
+    val nodesWithLabel = sizeHint - emptyNodes
+    val label = "ExistingLabel"
+    val newLabels = Seq("Label", "OtherLabel")
+    val labelsSet = label +: newLabels
+
+    givenGraph {
+      nodeGraph(emptyNodes)
+      nodeGraph(nodesWithLabel, label)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("l")
+      .projection("labels(n) AS l")
+      .setDynamicLabels("n", labelsSet.map(l => s"'$l''"): _*)
+      .allNodeScan("n")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+    val setLabelsProfile = runtimeResult.runtimeResult.queryProfile().operatorProfile(2)
+
+    val setLabelsToNodeDbHits =
+      if (useWritesWithProfiling) {
+        emptyNodes * 3 + nodesWithLabel * 2
+      } else {
+        sizeHint
+      }
+
+    val labelTokenLookup = labelsSet.size
+
+    setLabelsProfile.dbHits() shouldBe setLabelsToNodeDbHits + labelTokenLookup
+  }
+
+  test("should profile db hits on remove dynamic labels") {
+    // given
+    val nodeCount = sizeHint
+    givenGraph {
+      nodeGraph(nodeCount - 3, "Label", "OtherLabel", "ThirdLabel")
+      nodeGraph(1, "Label")
+      nodeGraph(1, "OtherLabel")
+      nodeGraph(1, "ThirdLabel")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n")
+      .removeDynamicLabels("n", "`Label`", "`OtherLabel`")
       .allNodeScan("n")
       .build(readOnly = false)
 

@@ -41,6 +41,7 @@ import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.crea
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createRelationship
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createRelationshipExpression
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.delete
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.removeDynamicLabel
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.removeLabel
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setDynamicLabel
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setDynamicProperty
@@ -74,7 +75,6 @@ import org.neo4j.cypher.internal.util.test_helpers.TestName
 import org.neo4j.graphdb.schema.IndexType
 
 import java.lang.reflect.Modifier
-
 import scala.collection.mutable
 import scala.tools.nsc.Settings
 import scala.tools.nsc.interpreter.IMain
@@ -745,7 +745,8 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName wi
         "[1, 2, 3]",
         Seq(
           createPattern(nodes = Seq(createNode("n"))),
-          removeLabel("x", "L", "M"),
+          removeLabel("x", "L"),
+          removeDynamicLabel("x", "'M'"),
           delete("x", forced = true),
           setNodeProperty("n", "prop", "i"),
           setDynamicProperty("n", "'foo'", "i")

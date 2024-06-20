@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.crea
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createPattern
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createRelationship
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.delete
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.removeDynamicLabel
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.removeLabel
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setDynamicProperty
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setLabel
@@ -266,6 +267,33 @@ abstract class ForeachTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("n")
       .foreach("i", "[1, 2, 3]", Seq(setLabel("n", "A", "B", "C")))
+      .allNodeScan("n")
+      .build(readOnly = false)
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("n")
+      .withRows(singleColumn(nodes))
+      .withStatistics(labelsAdded = 3 * sizeHint)
+    val allNodes = tx.getAllNodes
+    try {
+      allNodes.asScala.foreach { n =>
+        n.hasLabel(Label.label("A")) shouldBe true
+        n.hasLabel(Label.label("B")) shouldBe true
+        n.hasLabel(Label.label("C")) shouldBe true
+      }
+    } finally {
+      allNodes.close()
+    }
+  }
+
+  test("foreach should set dynamic label") {
+    val nodes = givenGraph(nodeGraph(sizeHint))
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n")
+      .foreach("i", "[1, 2, 3]", Seq(setLabel("n", Seq("A"), Seq("'B'", "'C'"))))
       .allNodeScan("n")
       .build(readOnly = false)
 
@@ -679,6 +707,33 @@ abstract class ForeachTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("n")
       .foreach("node", "[n, null]", Seq(removeLabel("node", "A", "B")))
+      .allNodeScan("n")
+      .build(readOnly = false)
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("n")
+      .withRows(singleColumn(nodes))
+      .withStatistics(labelsRemoved = 2 * sizeHint)
+    val allNodes = tx.getAllNodes
+    try {
+      allNodes.asScala.foreach { n =>
+        n.hasLabel(Label.label("A")) shouldBe false
+        n.hasLabel(Label.label("B")) shouldBe false
+        n.hasLabel(Label.label("C")) shouldBe true
+      }
+    } finally {
+      allNodes.close()
+    }
+  }
+
+  test("foreach + remove dynamic label") {
+    val nodes = givenGraph(nodeGraph(sizeHint, "A", "B", "C"))
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n")
+      .foreach("node", "[n, null]", Seq(removeDynamicLabel("node", "'A'", "'B'")))
       .allNodeScan("n")
       .build(readOnly = false)
 
