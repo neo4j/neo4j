@@ -43,6 +43,7 @@ import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.crea
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.delete
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.removeLabel
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setDynamicLabel
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setDynamicProperty
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setLabel
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setNodeProperties
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setNodePropertiesFromMap
@@ -746,7 +747,8 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName wi
           createPattern(nodes = Seq(createNode("n"))),
           removeLabel("x", "L", "M"),
           delete("x", forced = true),
-          setNodeProperty("n", "prop", "i")
+          setNodeProperty("n", "prop", "i"),
+          setDynamicProperty("n", "'foo'", "i")
         )
       )
       .allNodeScan("x")
@@ -2785,6 +2787,7 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName wi
             |import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createRelationship
             |import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.delete
             |import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setLabel
+            |import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setDynamicProperty
             |import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setNodeProperty
             |import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setNodePropertiesFromMap
             |import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setRelationshipProperty

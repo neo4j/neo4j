@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.ir.CreateNode
 import org.neo4j.cypher.internal.ir.CreatePattern
 import org.neo4j.cypher.internal.ir.CreateRelationship
 import org.neo4j.cypher.internal.ir.RemoveLabelPattern
+import org.neo4j.cypher.internal.ir.SetDynamicPropertyPattern
 import org.neo4j.cypher.internal.ir.SetLabelPattern
 import org.neo4j.cypher.internal.ir.SetNodePropertiesFromMapPattern
 import org.neo4j.cypher.internal.ir.SetNodePropertiesPattern
@@ -215,6 +216,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.ProduceResultsPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.ProjectionPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.RelationshipTypes
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.SetDynamicPropertyOperation
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.SetPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.SetPropertiesOperation
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.SetPropertyFromMapOperation
@@ -1054,6 +1056,13 @@ class SlottedPipeMapper(
         Seq(SetPropertyOperation(
           convertExpressions(entityExpression),
           LazyPropertyKey(propertyKeyName),
+          convertExpressions(expression)
+        ))
+
+      case SetDynamicPropertyPattern(entityExpression, propertyKey, expression) =>
+        Seq(SetDynamicPropertyOperation(
+          convertExpressions(entityExpression),
+          convertExpressions(propertyKey),
           convertExpressions(expression)
         ))
 

@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.crea
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createRelationship
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.delete
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.removeLabel
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setDynamicProperty
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setLabel
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setNodePropertiesFromMap
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setNodeProperty
@@ -561,6 +562,31 @@ abstract class ForeachTestBase[CONTEXT <: RuntimeContext](
     try {
       allNodes.asScala.foreach { n =>
         n.getProperty("prop") should equal(42)
+      }
+    } finally {
+      allNodes.close()
+    }
+  }
+
+  test("foreach should set dynamic property") {
+    val nodes = givenGraph(nodeGraph(sizeHint))
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n")
+      .foreach("i", "[1, 2, 3]", Seq(setDynamicProperty("n", "'prop'", "i")))
+      .allNodeScan("n")
+      .build(readOnly = false)
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("n")
+      .withRows(singleColumn(nodes))
+      .withStatistics(propertiesSet = 3 * sizeHint)
+    val allNodes = tx.getAllNodes
+    try {
+      allNodes.asScala.foreach { n =>
+        n.getProperty("prop") should equal(3)
       }
     } finally {
       allNodes.close()

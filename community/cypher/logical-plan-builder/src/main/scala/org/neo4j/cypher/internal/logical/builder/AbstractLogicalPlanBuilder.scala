@@ -75,6 +75,7 @@ import org.neo4j.cypher.internal.ir.CreateRelationship
 import org.neo4j.cypher.internal.ir.EagernessReason
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.RemoveLabelPattern
+import org.neo4j.cypher.internal.ir.SetDynamicPropertyPattern
 import org.neo4j.cypher.internal.ir.SetLabelPattern
 import org.neo4j.cypher.internal.ir.SetMutatingPattern
 import org.neo4j.cypher.internal.ir.SetNodePropertiesFromMapPattern
@@ -3245,6 +3246,9 @@ object AbstractLogicalPlanBuilder {
       PropertyKeyName(key)(InputPosition.NONE),
       Parser.parseExpression(value)
     )
+
+  def setDynamicProperty(entity: String, key: String, value: String): SetMutatingPattern =
+    SetDynamicPropertyPattern(varFor(entity), Parser.parseExpression(key), Parser.parseExpression(value))
 
   def setProperties(entity: String, items: (String, String)*): SetMutatingPattern =
     SetPropertiesPattern(

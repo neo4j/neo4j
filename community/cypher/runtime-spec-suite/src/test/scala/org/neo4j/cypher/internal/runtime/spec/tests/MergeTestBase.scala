@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNodeWithProperties
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createRelationship
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setDynamicProperty
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setLabel
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setNodeProperties
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setNodePropertiesFromMap
@@ -1762,6 +1763,28 @@ trait PipelinedMergeTestBase[CONTEXT <: RuntimeContext] {
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("n")
       .merge(nodes = Seq(createNode("n")), onCreate = Seq(setProperties("n", ("p1", "42"), ("p2", "43"))))
+      .allNodeScan("n")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+    val node = Iterables.single(tx.getAllNodes)
+    node.getProperty("p1") should equal(42)
+    node.getProperty("p2") should equal(43)
+    runtimeResult should beColumns("n").withSingleRow(node).withStatistics(nodesCreated = 1, propertiesSet = 2)
+  }
+
+  test("merge with setDynamicProperty") {
+    // given empty db
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n")
+      .merge(
+        nodes = Seq(createNode("n")),
+        onCreate = Seq(setDynamicProperty("n", "'p1'", "42"), setDynamicProperty("n", "'p2'", "43"))
+      )
       .allNodeScan("n")
       .build(readOnly = false)
 

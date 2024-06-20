@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.frontend.phases.CypherScope.toKernelScope
 import org.neo4j.cypher.internal.frontend.phases.ResolvedCall
 import org.neo4j.cypher.internal.ir.CreatePattern
 import org.neo4j.cypher.internal.ir.RemoveLabelPattern
+import org.neo4j.cypher.internal.ir.SetDynamicPropertyPattern
 import org.neo4j.cypher.internal.ir.SetLabelPattern
 import org.neo4j.cypher.internal.ir.SetNodePropertiesFromMapPattern
 import org.neo4j.cypher.internal.ir.SetNodePropertiesPattern
@@ -1122,6 +1123,12 @@ case class InterpretedPipeMapper(
           Seq(SetPropertyOperation(
             buildExpression(entityExpression),
             LazyPropertyKey(propertyKeyName),
+            buildExpression(expression)
+          ))
+        case SetDynamicPropertyPattern(entityExpression, propertyKey, expression) =>
+          Seq(SetDynamicPropertyOperation(
+            buildExpression(entityExpression),
+            buildExpression(propertyKey),
             buildExpression(expression)
           ))
         case SetPropertiesPattern(entityExpression, items) =>
