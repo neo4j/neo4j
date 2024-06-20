@@ -198,7 +198,6 @@ public class DataImporter {
             Input input,
             BatchingNeoStores stores,
             IdMapper idMapper,
-            boolean strictRelationshipCheck,
             Collector badCollector,
             ExecutionMonitor executionMonitor,
             Monitor monitor,
