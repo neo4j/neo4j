@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.plandescription
 
 import org.neo4j.common.EntityType
 import org.neo4j.cypher.QueryPlanTestSupport.StubExecutionPlan
+import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.ast.AllConstraints
 import org.neo4j.cypher.internal.ast.AllDatabasesScope
 import org.neo4j.cypher.internal.ast.AllFunctions
@@ -539,6 +540,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           details("a"),
           EstimatedRows(1, Some(15)),
           Order(asPrettyString.raw("a ASC")),
+          Version("5"),
           RUNTIME_VERSION,
           Planner("COST"),
           PlannerImpl("IDP"),
@@ -546,7 +548,8 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         ),
         Set("a")
       ),
-      validateAllArgs = true
+      validateAllArgs = true,
+      cypherVersion = CypherVersion.Cypher5
     )
 
     assertGood(
@@ -563,6 +566,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           details(anonVar("111")),
           EstimatedRows(1, Some(10)),
           Order(asPrettyString.raw(s"${anonVar("111")} ASC")),
+          Version("5"),
           RUNTIME_VERSION,
           Planner("COST"),
           PlannerImpl("IDP"),
@@ -570,7 +574,8 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         ),
         Set(anonVar("111"))
       ),
-      validateAllArgs = true
+      validateAllArgs = true,
+      cypherVersion = CypherVersion.Cypher5
     )
 
     assertGood(
@@ -585,6 +590,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         Seq(
           details(Seq("n1", "n2", "r", "v1", "v2")),
           EstimatedRows(42.3, Some(132)),
+          Version("5"),
           RUNTIME_VERSION,
           Planner("COST"),
           PlannerImpl("IDP"),
@@ -592,7 +598,8 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         ),
         Set("n1", "n2", "r", "v1", "v2")
       ),
-      validateAllArgs = true
+      validateAllArgs = true,
+      cypherVersion = CypherVersion.Cypher5
     )
   }
 
@@ -8043,7 +8050,8 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     logicalPlan: LogicalPlan,
     expectedPlanDescription: InternalPlanDescription,
     validateAllArgs: Boolean = false,
-    readOnly: Boolean = true
+    readOnly: Boolean = true,
+    cypherVersion: CypherVersion = CypherVersion.Default
   ): Unit = {
     val producedPlanDescription = LogicalPlan2PlanDescription.create(
       logicalPlan,
@@ -8053,7 +8061,8 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       withRawCardinalities = false,
       withDistinctness = false,
       providedOrders = providedOrders,
-      StubExecutionPlan().operatorMetadata
+      StubExecutionPlan().operatorMetadata,
+      cypherVersion
     )
 
     def shouldValidateArg(arg: Argument) =

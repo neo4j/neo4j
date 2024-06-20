@@ -81,7 +81,8 @@ class CypherExecutableQueryTest extends CypherFunSuite {
       enableMonitors = false,
       queryObfuscator = QueryObfuscator.PASSTHROUGH,
       renderPlanDescription = false,
-      kernelMonitors = mock[Monitors]
+      kernelMonitors = mock[Monitors],
+      cypherVersion = CypherVersion.Default
     )
 
     val provider = query.deprecationNotificationsProvider(InputPosition.NONE)

@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.plandescription
 
 import org.neo4j.cypher.QueryPlanTestSupport.StubExecutionPlan
+import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanConstructionTestSupport
 import org.neo4j.cypher.internal.expressions.SemanticDirection
@@ -1288,7 +1289,8 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
       withRawCardinalities = false,
       withDistinctness = false,
       new ProvidedOrders,
-      StubExecutionPlan().operatorMetadata
+      StubExecutionPlan().operatorMetadata,
+      CypherVersion.Cypher5
     )
 
     renderAsTreeTable(plan) should equal(

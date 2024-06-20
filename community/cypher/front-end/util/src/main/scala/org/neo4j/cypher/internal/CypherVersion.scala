@@ -20,10 +20,15 @@ package org.neo4j.cypher.internal
  * Cypher version.
  * Related to org.neo4j.kernel.api.CypherScope and org.neo4j.cypher.internal.options.CypherVersion.
  */
-sealed trait CypherVersion
+sealed trait CypherVersion {
+  def name: String
+}
 
 object CypherVersion {
-  case object Cypher5 extends CypherVersion
+
+  case object Cypher5 extends CypherVersion {
+    def name: String = "5"
+  }
   val Default: CypherVersion = Cypher5
   val All: Set[CypherVersion] = Set(Cypher5)
 }

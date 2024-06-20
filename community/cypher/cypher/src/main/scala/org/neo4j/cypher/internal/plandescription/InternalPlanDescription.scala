@@ -250,7 +250,7 @@ final case class PlanDescriptionImpl(
 
   override def toString: String = {
     val version = arguments.collectFirst {
-      case Version(v) => s"Compiler $v$NL"
+      case Version(v) => s"Cypher $v$NL"
     }
     val planner = arguments.collectFirst {
       case Planner(n) => s"Planner ${n.toUpperCase(Locale.ROOT)}$NL"

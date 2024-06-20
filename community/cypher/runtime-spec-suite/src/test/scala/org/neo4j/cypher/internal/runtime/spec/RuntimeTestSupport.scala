@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.runtime.spec
 
 import org.neo4j.common.DependencyResolver
 import org.neo4j.cypher.internal.CypherRuntime
+import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.ExecutionPlan
 import org.neo4j.cypher.internal.LogicalQuery
 import org.neo4j.cypher.internal.MasterCompiler
@@ -695,7 +696,8 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](
           debugOptions.renderDistinctnessEnabled,
           logicalQuery.providedOrders,
           executionPlan,
-          renderPlanDescription = false
+          renderPlanDescription = false,
+          CypherVersion.Default
         )
       planDescriptionBuilder.explain()
     }

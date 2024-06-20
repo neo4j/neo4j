@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.plandescription
 
 import org.neo4j.common.EntityType
+import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.ast.CommandResultItem
 import org.neo4j.cypher.internal.ast.ExecutableBy
 import org.neo4j.cypher.internal.ast.NoOptions
@@ -295,6 +296,7 @@ import org.neo4j.cypher.internal.plandescription.Arguments.Planner
 import org.neo4j.cypher.internal.plandescription.Arguments.PlannerImpl
 import org.neo4j.cypher.internal.plandescription.Arguments.PlannerVersion
 import org.neo4j.cypher.internal.plandescription.Arguments.RuntimeVersion
+import org.neo4j.cypher.internal.plandescription.Arguments.Version
 import org.neo4j.cypher.internal.plandescription.LogicalPlan2PlanDescription.getPrettyStringName
 import org.neo4j.cypher.internal.plandescription.LogicalPlan2PlanDescription.prettyOptions
 import org.neo4j.cypher.internal.plandescription.asPrettyString.PrettyStringInterpolator
@@ -321,7 +323,8 @@ object LogicalPlan2PlanDescription {
     withRawCardinalities: Boolean,
     withDistinctness: Boolean,
     providedOrders: ProvidedOrders,
-    runtimeOperatorMetadata: Id => Seq[Argument]
+    runtimeOperatorMetadata: Id => Seq[Argument],
+    cypherVersion: CypherVersion
   ): InternalPlanDescription = {
     new LogicalPlan2PlanDescription(
       readOnly,
@@ -332,6 +335,7 @@ object LogicalPlan2PlanDescription {
       runtimeOperatorMetadata
     )
       .create(input)
+      .addArgument(Version(cypherVersion.name))
       .addArgument(RuntimeVersion.currentVersion)
       .addArgument(Planner(plannerName.toTextOutput))
       .addArgument(PlannerImpl(plannerName.name))

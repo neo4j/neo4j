@@ -192,7 +192,8 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](
       contextManager.config.enableMonitors,
       logicalPlanResult.queryObfuscator,
       contextManager.config.renderPlanDescription,
-      kernelMonitors
+      kernelMonitors,
+      query.options.queryOptions.cypherVersion.actualVersion
     )
   }
 
@@ -381,7 +382,8 @@ object CypherCurrentCompiler {
     enableMonitors: Boolean,
     override val queryObfuscator: QueryObfuscator,
     renderPlanDescription: Boolean,
-    kernelMonitors: Monitors
+    kernelMonitors: Monitors,
+    cypherVersion: CypherVersion
   ) extends ExecutableQuery {
 
     // Monitors are implemented via dynamic proxies which are slow compared to NOOP which is why we want to able to completely disable
@@ -401,7 +403,8 @@ object CypherCurrentCompiler {
         distinctnessInPlanDescription,
         providedOrders,
         executionPlan,
-        renderPlanDescription
+        renderPlanDescription,
+        cypherVersion
       )
 
     private def createQueryContext(transactionalContext: TransactionalContext, taskCloser: TaskCloser) = {

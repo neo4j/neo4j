@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.plandescription
 
+import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.ExecutionPlan
 import org.neo4j.cypher.internal.RuntimeName
 import org.neo4j.cypher.internal.frontend.PlannerName
@@ -46,7 +47,8 @@ object PlanDescriptionBuilder {
     withDistinctness: Boolean,
     providedOrders: ProvidedOrders,
     executionPlan: ExecutionPlan,
-    renderPlanDescription: Boolean
+    renderPlanDescription: Boolean,
+    cypherVersion: CypherVersion
   ): PlanDescriptionBuilder = {
     // NOTE: We should not keep a reference to the ExecutionPlan in the PlanDescriptionBuilder since it can end up in long-lived caches, e.g. RecentQueryBuffer
     val batchSize = executionPlan.batchSize
@@ -68,7 +70,8 @@ object PlanDescriptionBuilder {
       runtimeOperatorMetadata,
       internalPlanDescriptionRewriter,
       batchSize,
-      renderPlanDescription
+      renderPlanDescription,
+      cypherVersion
     )
   }
 }
@@ -86,7 +89,8 @@ class PlanDescriptionBuilder(
   runtimeOperatorMetadata: Id => Seq[Argument],
   internalPlanDescriptionRewriter: Option[InternalPlanDescriptionRewriter],
   batchSize: Option[Int],
-  includeStringRepresentation: Boolean
+  includeStringRepresentation: Boolean,
+  cypherVersion: CypherVersion
 ) {
 
   def explain(): InternalPlanDescription = {
@@ -100,7 +104,8 @@ class PlanDescriptionBuilder(
           withRawCardinalities,
           withDistinctness,
           providedOrders,
-          runtimeOperatorMetadata
+          runtimeOperatorMetadata,
+          cypherVersion
         )
         .addArgument(Runtime(runtimeName.toTextOutput))
         .addArgument(RuntimeImpl(runtimeName.name))
