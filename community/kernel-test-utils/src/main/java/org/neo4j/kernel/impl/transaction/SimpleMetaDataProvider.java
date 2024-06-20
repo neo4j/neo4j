@@ -97,11 +97,6 @@ public class SimpleMetaDataProvider implements MetadataProvider {
     }
 
     @Override
-    public long committingTransactionId() {
-        return transactionIdStore.committingTransactionId();
-    }
-
-    @Override
     public void transactionCommitted(
             long transactionId,
             long appendIndex,

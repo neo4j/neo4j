@@ -85,11 +85,6 @@ public class SimpleTransactionIdStore implements TransactionIdStore {
     }
 
     @Override
-    public long committingTransactionId() {
-        return committingTransactionId.get();
-    }
-
-    @Override
     public synchronized void transactionCommitted(
             long transactionId,
             long appendIndex,

@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.transaction.log.files;
 import java.time.Clock;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.nativeimpl.NativeAccess;
@@ -46,7 +45,6 @@ public class TransactionLogFilesContext {
     private final LastCommittedTransactionIdProvider lastCommittedTransactionIdSupplier;
     private final LastAppendIndexLogFilesProvider lastAppendIndexLogFilesProvider;
     private final LastAppendIndexProvider lastAppendIndexProvider;
-    private final LongSupplier committingTransactionIdSupplier;
     private final LastClosedPositionProvider lastClosedPositionProvider;
     private final LogVersionRepositoryProvider logVersionRepositoryProvider;
     private final LogFileVersionTracker versionTracker;
@@ -77,7 +75,6 @@ public class TransactionLogFilesContext {
             LastAppendIndexLogFilesProvider lastAppendIndexLogFilesProvider,
             LastAppendIndexProvider lastAppendIndexProvider,
             LastCommittedTransactionIdProvider lastCommittedTransactionIdSupplier,
-            LongSupplier committingTransactionIdSupplier,
             LastClosedPositionProvider lastClosedPositionProvider,
             LogVersionRepositoryProvider logVersionRepositoryProvider,
             LogFileVersionTracker versionTracker,
@@ -106,7 +103,6 @@ public class TransactionLogFilesContext {
         this.lastAppendIndexLogFilesProvider = lastAppendIndexLogFilesProvider;
         this.lastAppendIndexProvider = lastAppendIndexProvider;
         this.lastCommittedTransactionIdSupplier = lastCommittedTransactionIdSupplier;
-        this.committingTransactionIdSupplier = committingTransactionIdSupplier;
         this.lastClosedPositionProvider = lastClosedPositionProvider;
         this.logVersionRepositoryProvider = logVersionRepositoryProvider;
         this.versionTracker = versionTracker;
@@ -156,10 +152,6 @@ public class TransactionLogFilesContext {
 
     public LastAppendIndexLogFilesProvider getLastAppendIndexLogFilesProvider() {
         return lastAppendIndexLogFilesProvider;
-    }
-
-    public long committingTransactionId() {
-        return committingTransactionIdSupplier.getAsLong();
     }
 
     public long appendIndex() {

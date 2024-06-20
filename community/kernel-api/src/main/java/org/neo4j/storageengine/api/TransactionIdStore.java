@@ -109,11 +109,6 @@ public interface TransactionIdStore {
     long nextCommittingTransactionId();
 
     /**
-     * @return the transaction id of last committing transaction.
-     */
-    long committingTransactionId();
-
-    /**
      * Signals that a transaction with the given transaction id has been committed (i.e. appended to a log).
      * Calls to this method may come in out-of-transaction-id order. The highest transaction id
      * seen given to this method will be visible in {@link #getLastCommittedTransactionId()}.

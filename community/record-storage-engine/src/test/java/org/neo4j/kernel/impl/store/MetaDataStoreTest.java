@@ -192,21 +192,6 @@ public class MetaDataStoreTest {
     }
 
     @Test
-    void currentCommittingTransactionId() {
-        try (MetaDataStore metaDataStore = newMetaDataStore()) {
-            metaDataStore.nextCommittingTransactionId();
-            long lastCommittingTxId = metaDataStore.nextCommittingTransactionId();
-            assertEquals(lastCommittingTxId, metaDataStore.committingTransactionId());
-
-            metaDataStore.nextCommittingTransactionId();
-            metaDataStore.nextCommittingTransactionId();
-
-            lastCommittingTxId = metaDataStore.nextCommittingTransactionId();
-            assertEquals(lastCommittingTxId, metaDataStore.committingTransactionId());
-        }
-    }
-
-    @Test
     void setLastCommittedAndClosedTransactionIdShouldFailWhenStoreIsClosed() {
         MetaDataStore metaDataStore = newMetaDataStore();
         metaDataStore.close();

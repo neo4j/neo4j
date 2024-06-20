@@ -311,12 +311,6 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord, NoStoreHe
     }
 
     @Override
-    public long committingTransactionId() {
-        assertNotClosed();
-        return lastCommittingTx.get();
-    }
-
-    @Override
     public void transactionCommitted(
             long transactionId,
             long appendIndex,

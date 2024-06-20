@@ -342,7 +342,6 @@ public class LogFilesBuilder {
                 lastAppendIndexLogFilesProvider(availableAppendIndexProvider);
         var appendIndexProvider = lastAppendIndexProvider(availableAppendIndexProvider);
         LastCommittedTransactionIdProvider lastCommittedIdSupplier = lastCommittedIdProvider();
-        LongSupplier committingTransactionIdSupplier = committingIdSupplier();
         LastClosedPositionProvider lastClosedTransactionPositionProvider = closePositionProvider();
 
         // Register listener for rotation threshold
@@ -362,7 +361,6 @@ public class LogFilesBuilder {
                 lastAppendIndexLogFilesProvider,
                 appendIndexProvider,
                 lastCommittedIdSupplier,
-                committingTransactionIdSupplier,
                 lastClosedTransactionPositionProvider,
                 logVersionRepositorySupplier,
                 versionTracker,
@@ -625,32 +623,6 @@ public class LogFilesBuilder {
             return any -> resolveDependency(TransactionIdStore.class)
                     .getLastClosedTransaction()
                     .logPosition();
-        }
-    }
-
-    private LongSupplier committingIdSupplier() {
-        if (transactionIdStore != null) {
-            return transactionIdStore::committingTransactionId;
-        }
-        if (fileBasedOperationsOnly) {
-            return () -> {
-                throw new UnsupportedOperationException("Current version of log files can't perform any "
-                        + "operation that require availability of transaction id store. Please build full version of log files "
-                        + "to be able to use them.");
-            };
-        }
-        if (readOnlyStores) {
-            requireNonNull(databaseLayout, "Store directory is required.");
-            return () -> {
-                throw new UnsupportedOperationException(
-                        "Read only log files can't have any transaction commit in progress.");
-            };
-        } else {
-            requireNonNull(
-                    dependencies,
-                    TransactionIdStore.class.getSimpleName() + " is required. "
-                            + "Please provide an instance or a dependencies where it can be found.");
-            return () -> resolveDependency(TransactionIdStore.class).committingTransactionId();
         }
     }
 
