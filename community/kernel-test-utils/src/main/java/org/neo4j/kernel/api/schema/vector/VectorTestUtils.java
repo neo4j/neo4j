@@ -21,6 +21,7 @@ package org.neo4j.kernel.api.schema.vector;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.Map;
 import java.util.Objects;
 import org.apache.commons.lang3.ArrayUtils;
 import org.eclipse.collections.api.LazyIterable;
@@ -32,6 +33,13 @@ import org.eclipse.collections.api.factory.primitive.FloatLists;
 import org.eclipse.collections.api.factory.primitive.IntLists;
 import org.eclipse.collections.api.factory.primitive.LongLists;
 import org.eclipse.collections.api.factory.primitive.ShortLists;
+import org.eclipse.collections.api.map.MutableMap;
+import org.eclipse.collections.impl.factory.Maps;
+import org.neo4j.graphdb.schema.IndexSetting;
+import org.neo4j.graphdb.schema.IndexSettingUtil;
+import org.neo4j.internal.schema.IndexConfig;
+import org.neo4j.internal.schema.SettingsAccessor;
+import org.neo4j.internal.schema.SettingsAccessor.IndexSettingObjectMapAccessor;
 import org.neo4j.kernel.api.impl.schema.vector.VectorSimilarityFunctions;
 import org.neo4j.kernel.api.vector.VectorSimilarityFunction;
 import org.neo4j.values.AnyValue;
@@ -41,6 +49,8 @@ import org.neo4j.values.storable.NumberValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.ListValue;
+import org.neo4j.values.virtual.MapValue;
+import org.neo4j.values.virtual.MapValueBuilder;
 import org.neo4j.values.virtual.VirtualValues;
 
 public class VectorTestUtils {
@@ -611,5 +621,61 @@ public class VectorTestUtils {
             perms.add(VirtualValues.list(perm));
         }
         return perms.asLazy();
+    }
+
+    public static class VectorIndexSettings {
+        private final MutableMap<IndexSetting, Object> settings = Maps.mutable.empty();
+
+        private VectorIndexSettings() {}
+
+        public static VectorIndexSettings create() {
+            return new VectorIndexSettings();
+        }
+
+        public static VectorIndexSettings from(Map<IndexSetting, Object> settings) {
+            final var vectorIndexSettings = create();
+            settings.forEach(vectorIndexSettings::set);
+            return vectorIndexSettings;
+        }
+
+        public static VectorIndexSettings from(IndexConfig config) {
+            return from(IndexSettingUtil.toIndexSettingObjectMapFromIndexConfig(config));
+        }
+
+        public VectorIndexSettings set(IndexSetting setting, Object value) {
+            settings.put(setting, value);
+            return this;
+        }
+
+        public VectorIndexSettings withDimensions(int dimensions) {
+            return set(IndexSetting.vector_Dimensions(), dimensions);
+        }
+
+        public VectorIndexSettings withSimilarityFunction(VectorSimilarityFunction similarityFunction) {
+            return withSimilarityFunction(similarityFunction.name());
+        }
+
+        public VectorIndexSettings withSimilarityFunction(String similarityFunction) {
+            return set(IndexSetting.vector_Similarity_Function(), similarityFunction);
+        }
+
+        public IndexConfig toIndexConfig() {
+            return IndexSettingUtil.toIndexConfigFromIndexSettingObjectMap(settings);
+        }
+
+        public Map<IndexSetting, Object> toMap() {
+            return settings.asUnmodifiable();
+        }
+
+        public MapValue toMapValue() {
+            final var mapBuilder = new MapValueBuilder(settings.size());
+            settings.keyValuesView()
+                    .forEach(kv -> mapBuilder.add(kv.getOne().getSettingName(), Values.of(kv.getTwo())));
+            return mapBuilder.build();
+        }
+
+        public SettingsAccessor toSettingsAccessor() {
+            return new IndexSettingObjectMapAccessor(toMap());
+        }
     }
 }
