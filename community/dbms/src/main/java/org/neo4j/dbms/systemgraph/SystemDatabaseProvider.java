@@ -24,10 +24,13 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.monitoring.DatabaseHealth;
 
 @FunctionalInterface
 public interface SystemDatabaseProvider {
     class SystemDatabaseUnavailableException extends RuntimeException {}
+
+    class SystemDatabasePanickedException extends SystemDatabaseUnavailableException {}
 
     GraphDatabaseAPI database() throws SystemDatabaseUnavailableException;
 
@@ -45,7 +48,14 @@ public interface SystemDatabaseProvider {
     default <T> T query(Function<Transaction, T> function) throws SystemDatabaseUnavailableException {
         var facade = database();
         if (!facade.isAvailable(1000)) {
-            throw new SystemDatabaseUnavailableException();
+            var hasNotPanicked = dependency(DatabaseHealth.class)
+                    .map(DatabaseHealth::hasNoPanic)
+                    .orElse(true);
+            if (hasNotPanicked) {
+                throw new SystemDatabaseUnavailableException();
+            } else {
+                throw new SystemDatabasePanickedException();
+            }
         }
         try (var tx = facade.beginTx()) {
             var result = function.apply(tx);
