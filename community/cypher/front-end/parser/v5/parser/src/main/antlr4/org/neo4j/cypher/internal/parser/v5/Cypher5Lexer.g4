@@ -81,11 +81,17 @@ UNSIGNED_OCTAL_INTEGER
    ;
 
 STRING_LITERAL1
-   : '\'' ( ~'\'' | '\\\'' )* '\''
+   : '\'' (~['\\] | EscapeSequence)* '\''
    ;
 
 STRING_LITERAL2
-   : '"' ( ~'"' | '\\"' )* '"'
+   : '"' (~["\\] | EscapeSequence)* '"'
+   ;
+
+// In Cypher it is allowed to have any character following a backslash.
+// In the cases it is an actual escape code it is handled in the AST builder.
+fragment EscapeSequence
+   : '\\' .
    ;
 
 ESCAPED_SYMBOLIC_NAME
