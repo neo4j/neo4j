@@ -1049,12 +1049,12 @@
         <activeByDefault>false</activeByDefault>
         <property>
           <name>NEO4J_PARALLEL_DISCOVERY</name>
-          <value>ORIGINAL_SHADOW</value>
+          <value>V2_OVER_V1</value>
         </property>
       </activation>
       <properties>
         <test.runner.jvm.settings.db.format>
-          -DNEO4J_PARALLEL_DISCOVERY=ORIGINAL_SHADOW
+          -DNEO4J_PARALLEL_DISCOVERY=V2_OVER_V1
         </test.runner.jvm.settings.db.format>
       </properties>
     </profile>
