@@ -150,6 +150,12 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
     parsesTo[Statements](ast.ShowDatabase(ast.SingleNamedDatabaseScope(namespacedName("foo", "bar"))(pos), None)(pos))
   }
 
+  test("SHOW DATABASE `foo`.`bar`.`baz`") {
+    failsParsing[Statements].withMessageStart(
+      "Invalid input ``foo`.`bar`.`baz`` for name. Expected name to contain at most two components separated by `.`."
+    )
+  }
+
   test("SHOW DATABASE blah YIELD *,blah RETURN user") {
     failsParsing[Statements]
   }
@@ -354,16 +360,29 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
     )(pos))
   }
 
+  test("CREATE COMPOSITE DATABASE foo.bar") {
+    parsesTo[Statements](ast.CreateCompositeDatabase(
+      namespacedName("foo", "bar"),
+      ast.IfExistsThrowError,
+      ast.NoOptions,
+      ast.NoWait
+    )(pos))
+  }
+
   test("CREATE DATABASE `graph.db`.`db.db`") {
-    parsesTo[Statements](
-      ast.CreateDatabase(
-        namespacedName("graph.db", "db.db"),
-        ast.IfExistsThrowError,
-        ast.NoOptions,
-        ast.NoWait,
-        None
-      )(pos)
+    failsParsing[Statements].withMessageStart(
+      "Invalid input ``graph.db`.`db.db`` for database name. Expected name to contain at most one component"
     )
+  }
+
+  test("CREATE COMPOSITE DATABASE `graph.db`.`db.db`") {
+    // Fails in semantic checks instead
+    parsesTo[Statements](ast.CreateCompositeDatabase(
+      namespacedName("graph.db", "db.db"),
+      ast.IfExistsThrowError,
+      ast.NoOptions,
+      ast.NoWait
+    )(pos))
   }
 
   test("CREATE DATABASE `foo-bar42`") {
@@ -478,6 +497,13 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
 
   test("CREATE DATABASE _foo-bar42 IF NOT EXISTS") {
     failsParsing[Statements]
+  }
+
+  test("CREATE DATABASE `foo`.`bar`.`baz`") {
+    failsParsing[Statements]
+      .withMessageStart(
+        "Invalid input ``foo`.`bar`.`baz`` for database name. Expected name to contain at most one component"
+      )
   }
 
   test("CREATE DATABASE  IF NOT EXISTS") {
@@ -1107,6 +1133,12 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
     failsParsing[Statements]
   }
 
+  test("DROP DATABASE `foo`.`bar`.`baz`") {
+    failsParsing[Statements].withMessageStart(
+      "Invalid input ``foo`.`bar`.`baz`` for name. Expected name to contain at most two components separated by `.`."
+    )
+  }
+
   test("DROP DATABASE KEEP DATA") {
     val exceptionMessage =
       s"""Invalid input 'DATA': expected
@@ -1295,6 +1327,12 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
             |                               ^""".stripMargin
         )
     }
+  }
+
+  test("ALTER DATABASE `foo`.`bar`.`baz` SET ACCESS READ WRITE") {
+    failsParsing[Statements].withMessageStart(
+      "Invalid input ``foo`.`bar`.`baz`` for name. Expected name to contain at most two components separated by `.`."
+    )
   }
 
   // Set ACCESS multiple times in the same command
@@ -2102,6 +2140,12 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
     }
   }
 
+  test("START DATABASE `foo`.bar.`baz`") {
+    failsParsing[Statements].withMessageStart(
+      "Invalid input ``foo`.bar.`baz`` for name. Expected name to contain at most two components separated by `.`."
+    )
+  }
+
   // STOP DATABASE
 
   test("STOP DATABASE foo") {
@@ -2142,6 +2186,12 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
 
   test("STOP DATABASE foo.bar") {
     parsesTo[Statements](ast.StopDatabase(NamespacedName(List("bar"), Some("foo"))((1, 16, 15)), ast.NoWait)(pos))
+  }
+
+  test("STOP DATABASE `foo`.bar.`baz`") {
+    failsParsing[Statements].withMessageStart(
+      "Invalid input ``foo`.bar.`baz`` for name. Expected name to contain at most two components separated by `.`."
+    )
   }
 
   test("STOP DATABASE") {

@@ -6446,7 +6446,7 @@ PRIVILEGE_TYPE createPrivilege(Token start, boolean immutable) throws Exception:
     ) { return privilege; }
 }
 
-PRIVILEGE_TYPE dropPrivilege(Token start, boolean immutable):
+PRIVILEGE_TYPE dropPrivilege(Token start, boolean immutable) throws Exception:
 {
     PRIVILEGE_TYPE privilege = null;
     ADMINISTRATION_ACTION action = null;
@@ -6488,7 +6488,7 @@ PRIVILEGE_TYPE loadPrivilege(Token start, boolean immutable):
     }
 }
 
-PRIVILEGE_TYPE showPrivilege(Token start, boolean immutable):
+PRIVILEGE_TYPE showPrivilege(Token start, boolean immutable) throws Exception:
 {
     PRIVILEGE_TYPE privilege = null;
     ADMINISTRATION_ACTION action = null;
@@ -6548,7 +6548,7 @@ PRIVILEGE_TYPE setPrivilege(Token start, boolean immutable) throws Exception:
     ) { return privilege; }
 }
 
-PRIVILEGE_TYPE removePrivilege(Token start, boolean immutable):
+PRIVILEGE_TYPE removePrivilege(Token start, boolean immutable) throws Exception:
 {
     PRIVILEGE_TYPE privilege = null;
     GRAPH_SCOPE graph = null;
@@ -6567,7 +6567,7 @@ PRIVILEGE_TYPE removePrivilege(Token start, boolean immutable):
     ) { return privilege; }
 }
 
-PRIVILEGE_TYPE writePrivilege(Token start, boolean immutable):
+PRIVILEGE_TYPE writePrivilege(Token start, boolean immutable) throws Exception:
 {
     GRAPH_SCOPE graph = null;
     List<SimpleEither<String, PARAMETER>> qualifiers = null;
@@ -6579,7 +6579,7 @@ PRIVILEGE_TYPE writePrivilege(Token start, boolean immutable):
     }
 }
 
-PRIVILEGE_TYPE databasePrivilege(Token start, boolean immutable):
+PRIVILEGE_TYPE databasePrivilege(Token start, boolean immutable) throws Exception:
 {
     ADMINISTRATION_ACTION action = null;
     DATABASE_SCOPE database = null;
@@ -6836,7 +6836,7 @@ ADMINISTRATION_COMMAND CreateDatabase( Token start, boolean replace ) throws Exc
     {
         return astFactory.createDatabase(
             pos( start ),
-            replace, databaseName.getLocalAliasName(astFactory),
+            replace, databaseName.getAsDatabaseName(astFactory),
             ifNotExists,
             wait,
             options,
@@ -6874,7 +6874,7 @@ ADMINISTRATION_COMMAND CreateCompositeDatabase( Token start, boolean replace ) t
     }
 }
 
-ADMINISTRATION_COMMAND DropDatabase( Token start ):
+ADMINISTRATION_COMMAND DropDatabase( Token start ) throws Exception:
 {
     AliasName<DATABASE_NAME, PARAMETER> databaseName = null;
     boolean ifExists = false;
@@ -6961,7 +6961,7 @@ ADMINISTRATION_COMMAND AlterDatabase( Token start ) throws Exception:
     }
 }
 
-ADMINISTRATION_COMMAND StartDatabase():
+ADMINISTRATION_COMMAND StartDatabase() throws Exception:
 {
     Token start;
     AliasName<DATABASE_NAME, PARAMETER> databaseName;
@@ -6974,7 +6974,7 @@ ADMINISTRATION_COMMAND StartDatabase():
     }
 }
 
-ADMINISTRATION_COMMAND StopDatabase():
+ADMINISTRATION_COMMAND StopDatabase() throws Exception:
 {
     Token start;
     AliasName<DATABASE_NAME, PARAMETER> databaseName;
@@ -7042,7 +7042,7 @@ STATEMENT_WITH_GRAPH ShowDatabase( Token start, USE_CLAUSE useClause ) throws Ex
    }
 }
 
-DATABASE_SCOPE DatabaseScope():
+DATABASE_SCOPE DatabaseScope() throws Exception:
 {
     Token start = null;
     List<DATABASE_NAME> names = null;
@@ -7059,7 +7059,7 @@ DATABASE_SCOPE DatabaseScope():
   }
 }
 
-GRAPH_SCOPE GraphScope():
+GRAPH_SCOPE GraphScope() throws Exception:
 {
     Token start = null;
     List<DATABASE_NAME> names = null;
@@ -7111,7 +7111,7 @@ ADMINISTRATION_COMMAND CreateAlias( Token start, boolean replace ) throws Except
     }
 }
 
-ADMINISTRATION_COMMAND DropAlias( Token start ):
+ADMINISTRATION_COMMAND DropAlias( Token start ) throws Exception:
 {
     AliasName<DATABASE_NAME, PARAMETER> aliasName = null;
     boolean ifExists = false;
@@ -7184,7 +7184,7 @@ STATEMENT ShowAliases( Token start, USE_CLAUSE useClause ) throws Exception:
     }
 }
 
-List<DATABASE_NAME> SymbolicAliasNameList():
+List<DATABASE_NAME> SymbolicAliasNameList() throws Exception:
 {
     AliasName<DATABASE_NAME, PARAMETER> dbSymbol = null;
     List<DATABASE_NAME> databases = new ArrayList<>();
@@ -7197,7 +7197,7 @@ List<DATABASE_NAME> SymbolicAliasNameList():
     }
 }
 
-AliasName<DATABASE_NAME, PARAMETER> SymbolicAliasNameOrParameter():
+AliasName<DATABASE_NAME, PARAMETER> SymbolicAliasNameOrParameter() throws Exception:
 {
     AliasName<DATABASE_NAME, PARAMETER> name = null;
     PARAMETER parameter;
@@ -7207,7 +7207,7 @@ AliasName<DATABASE_NAME, PARAMETER> SymbolicAliasNameOrParameter():
     | parameter=Parameter(ParameterType.STRING) { return new AliasName<DATABASE_NAME, PARAMETER>( exceptionFactory, parameter ); }
 }
 
-AliasName<DATABASE_NAME, PARAMETER> SymbolicAliasName():
+AliasName<DATABASE_NAME, PARAMETER> SymbolicAliasName() throws Exception:
 {
     Token token;
     AliasName<DATABASE_NAME, PARAMETER> name = null;

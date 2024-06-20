@@ -134,6 +134,42 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
     )
   }
 
+  test("CREATE ALIAS very.long.alias IF NOT EXISTS FOR DATABASE db") {
+    assertAst(
+      CreateLocalDatabaseAlias(
+        namespacedName("very", "long", "alias"),
+        namespacedName("db"),
+        IfExistsDoNothing
+      )(
+        defaultPos
+      )
+    )
+  }
+
+  test("CREATE ALIAS `a`.b.c.d IF NOT EXISTS FOR DATABASE db") {
+    assertAst(
+      CreateLocalDatabaseAlias(
+        namespacedName("a", "b", "c", "d"),
+        namespacedName("db"),
+        IfExistsDoNothing
+      )(
+        defaultPos
+      )
+    )
+  }
+
+  test("CREATE ALIAS a.b.c.`d` IF NOT EXISTS FOR DATABASE db") {
+    assertAst(
+      CreateLocalDatabaseAlias(
+        namespacedName("a", "b", "c", "d"),
+        namespacedName("db"),
+        IfExistsDoNothing
+      )(
+        defaultPos
+      )
+    )
+  }
+
   test("CREATE ALIAS alias.for FOR DATABASE db") {
     assertAst(
       CreateLocalDatabaseAlias(
@@ -303,6 +339,48 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
             |                                                 ^""".stripMargin
         )
     }
+  }
+
+  test("CREATE ALIAS `a`.`b`.`c` FOR DATABASE db") {
+    failsParsing[Statements].withMessageStart(
+      "Invalid input ``a`.`b`.`c`` for name. Expected name to contain at most two components separated by `.`. (line 1, column 14 (offset: 13))"
+    )
+  }
+
+  test("CREATE ALIAS `a`.b.`c` FOR DATABASE db") {
+    failsParsing[Statements].withMessageStart(
+      "Invalid input ``a`.b.`c`` for name. Expected name to contain at most two components separated by `.`. (line 1, column 14 (offset: 13))"
+    )
+  }
+
+  test("CREATE ALIAS `a`.b.c.`d` FOR DATABASE db") {
+    failsParsing[Statements].withMessageStart(
+      "Invalid input ``a`.b.c.`d`` for name. Expected name to contain at most two components separated by `.`. (line 1, column 14 (offset: 13))"
+    )
+  }
+
+  test("CREATE ALIAS a.`b`.`c` FOR DATABASE db") {
+    failsParsing[Statements].withMessageStart(
+      "Invalid input `a.`b`.`c`` for name. Expected name to contain at most two components separated by `.`. (line 1, column 14 (offset: 13))"
+    )
+  }
+
+  test("CREATE ALIAS `a`.`b`.c FOR DATABASE db") {
+    failsParsing[Statements].withMessageStart(
+      "Invalid input ``a`.`b`.c` for name. Expected name to contain at most two components separated by `.`. (line 1, column 14 (offset: 13))"
+    )
+  }
+
+  test("CREATE ALIAS a.`b`.c FOR DATABASE db") {
+    failsParsing[Statements].withMessageStart(
+      "Invalid input `a.`b`.c` for name. Expected name to contain at most two components separated by `.`. (line 1, column 14 (offset: 13))"
+    )
+  }
+
+  test("CREATE ALIAS `a`.`b` FOR DATABASE `db.cd`.`ef.gh`.d") {
+    failsParsing[Statements].withMessageStart(
+      "Invalid input ``db.cd`.`ef.gh`.d` for name. Expected name to contain at most two components separated by `.`. (line 1, column 35 (offset: 34))"
+    )
   }
 
   // CREATE REMOTE ALIAS
@@ -795,6 +873,36 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
     }
   }
 
+  test("DROP ALIAS `a`.`b`.`c` FOR DATABASE") {
+    failsParsing[Statements].withMessageStart(
+      "Invalid input ``a`.`b`.`c`` for name. Expected name to contain at most two components separated by `.`. (line 1, column 12 (offset: 11))"
+    )
+  }
+
+  test("DROP ALIAS `a`.b.`c` FOR DATABASE") {
+    failsParsing[Statements].withMessageStart(
+      "Invalid input ``a`.b.`c`` for name. Expected name to contain at most two components separated by `.`. (line 1, column 12 (offset: 11))"
+    )
+  }
+
+  test("DROP ALIAS a.`b`.`c` FOR DATABASE") {
+    failsParsing[Statements].withMessageStart(
+      "Invalid input `a.`b`.`c`` for name. Expected name to contain at most two components separated by `.`. (line 1, column 12 (offset: 11))"
+    )
+  }
+
+  test("DROP ALIAS `a`.`b`.c FOR DATABASE") {
+    failsParsing[Statements].withMessageStart(
+      "Invalid input ``a`.`b`.c` for name. Expected name to contain at most two components separated by `.`. (line 1, column 12 (offset: 11))"
+    )
+  }
+
+  test("DROP ALIAS a.`b`.c FOR DATABASE") {
+    failsParsing[Statements].withMessageStart(
+      "Invalid input `a.`b`.c` for name. Expected name to contain at most two components separated by `.`. (line 1, column 12 (offset: 11))"
+    )
+  }
+
   // ALTER ALIAS
   test("ALTER ALIAS name SET DATABASE TARGET db") {
     assertAst(AlterLocalDatabaseAlias(namespacedName("name"), Some(namespacedName("db")))(defaultPos))
@@ -909,6 +1017,42 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
             |       ^""".stripMargin
         )
     }
+  }
+
+  test("ALTER ALIAS `a`.`b`.`c` SET DATABASE TARGET db") {
+    failsParsing[Statements].withMessageStart(
+      "Invalid input ``a`.`b`.`c`` for name. Expected name to contain at most two components separated by `.`. (line 1, column 13 (offset: 12))"
+    )
+  }
+
+  test("ALTER ALIAS `a`.b.`c` SET DATABASE TARGET db") {
+    failsParsing[Statements].withMessageStart(
+      "Invalid input ``a`.b.`c`` for name. Expected name to contain at most two components separated by `.`. (line 1, column 13 (offset: 12))"
+    )
+  }
+
+  test("ALTER ALIAS a.`b`.`c` SET DATABASE TARGET db") {
+    failsParsing[Statements].withMessageStart(
+      "Invalid input `a.`b`.`c`` for name. Expected name to contain at most two components separated by `.`. (line 1, column 13 (offset: 12))"
+    )
+  }
+
+  test("ALTER ALIAS `a`.`b`.c SET DATABASE TARGET db") {
+    failsParsing[Statements].withMessageStart(
+      "Invalid input ``a`.`b`.c` for name. Expected name to contain at most two components separated by `.`. (line 1, column 13 (offset: 12))"
+    )
+  }
+
+  test("ALTER ALIAS a.`b`.c SET DATABASE TARGET db") {
+    failsParsing[Statements].withMessageStart(
+      "Invalid input `a.`b`.c` for name. Expected name to contain at most two components separated by `.`. (line 1, column 13 (offset: 12))"
+    )
+  }
+
+  test("ALTER ALIAS `a`.`b` SET DATABASE TARGET `db.cd`.`ef.gh`.d") {
+    failsParsing[Statements].withMessageStart(
+      "Invalid input ``db.cd`.`ef.gh`.d` for name. Expected name to contain at most two components separated by `.`. (line 1, column 41 (offset: 40))"
+    )
   }
 
   private val localAliasClauses = Seq(
@@ -1404,6 +1548,36 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
 
   test("SHOW ALIAS `ns.db`.db FOR DATABASE") {
     assertAst(ShowAliases(Some(namespacedName("ns.db", "db")), None)(defaultPos))
+  }
+
+  test("SHOW ALIAS `a`.`b`.`c` FOR DATABASE") {
+    failsParsing[Statements].withMessageStart(
+      "Invalid input ``a`.`b`.`c`` for name. Expected name to contain at most two components separated by `.`. (line 1, column 12 (offset: 11))"
+    )
+  }
+
+  test("SHOW ALIAS `a`.b.`c` FOR DATABASE") {
+    failsParsing[Statements].withMessageStart(
+      "Invalid input ``a`.b.`c`` for name. Expected name to contain at most two components separated by `.`. (line 1, column 12 (offset: 11))"
+    )
+  }
+
+  test("SHOW ALIAS a.`b`.`c` FOR DATABASE") {
+    failsParsing[Statements].withMessageStart(
+      "Invalid input `a.`b`.`c`` for name. Expected name to contain at most two components separated by `.`. (line 1, column 12 (offset: 11))"
+    )
+  }
+
+  test("SHOW ALIAS `a`.`b`.c FOR DATABASE") {
+    failsParsing[Statements].withMessageStart(
+      "Invalid input ``a`.`b`.c` for name. Expected name to contain at most two components separated by `.`. (line 1, column 12 (offset: 11))"
+    )
+  }
+
+  test("SHOW ALIAS a.`b`.c FOR DATABASE") {
+    failsParsing[Statements].withMessageStart(
+      "Invalid input `a.`b`.c` for name. Expected name to contain at most two components separated by `.`. (line 1, column 12 (offset: 11))"
+    )
   }
 
   test("SHOW ALIASES FOR DATABASE WHERE name = 'alias1'") {

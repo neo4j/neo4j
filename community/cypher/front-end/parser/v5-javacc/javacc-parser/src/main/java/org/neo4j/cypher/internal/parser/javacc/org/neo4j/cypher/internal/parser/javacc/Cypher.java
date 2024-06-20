@@ -29713,7 +29713,7 @@ privilege = astFactory.graphPrivilege( pos(start), astFactory.privilegeAction( A
     throw new IllegalStateException ("Missing return statement in function");
 }
 
-  final public PRIVILEGE_TYPE dropPrivilege(Token start, boolean immutable) throws ParseException {PRIVILEGE_TYPE privilege = null;
+  final public PRIVILEGE_TYPE dropPrivilege(Token start, boolean immutable) throws ParseException, Exception {PRIVILEGE_TYPE privilege = null;
     ADMINISTRATION_ACTION action = null;
     DATABASE_SCOPE database = null;
     jj_consume_token(DROP);
@@ -29851,7 +29851,7 @@ privilege = astFactory.dbmsPrivilege( pos(start), action, astFactory.allQualifie
     throw new IllegalStateException ("Missing return statement in function");
 }
 
-  final public PRIVILEGE_TYPE showPrivilege(Token start, boolean immutable) throws ParseException {PRIVILEGE_TYPE privilege = null;
+  final public PRIVILEGE_TYPE showPrivilege(Token start, boolean immutable) throws ParseException, Exception {PRIVILEGE_TYPE privilege = null;
     ADMINISTRATION_ACTION action = null;
     DATABASE_SCOPE database = null;
     List<PRIVILEGE_QUALIFIER> databaseQualifier = astFactory.allDatabasesQualifier();
@@ -30418,7 +30418,7 @@ privilege = astFactory.graphPrivilege( pos(start), astFactory.privilegeAction( A
     throw new IllegalStateException ("Missing return statement in function");
 }
 
-  final public PRIVILEGE_TYPE removePrivilege(Token start, boolean immutable) throws ParseException {PRIVILEGE_TYPE privilege = null;
+  final public PRIVILEGE_TYPE removePrivilege(Token start, boolean immutable) throws ParseException, Exception {PRIVILEGE_TYPE privilege = null;
     GRAPH_SCOPE graph = null;
     PRIVILEGE_RESOURCE resource = null;
     ADMINISTRATION_ACTION action = null;
@@ -30464,7 +30464,7 @@ privilege = astFactory.graphPrivilege( pos(start), astFactory.privilegeAction( A
     throw new IllegalStateException ("Missing return statement in function");
 }
 
-  final public PRIVILEGE_TYPE writePrivilege(Token start, boolean immutable) throws ParseException {GRAPH_SCOPE graph = null;
+  final public PRIVILEGE_TYPE writePrivilege(Token start, boolean immutable) throws ParseException, Exception {GRAPH_SCOPE graph = null;
     List<SimpleEither<String, PARAMETER>> qualifiers = null;
     jj_consume_token(WRITE);
     jj_consume_token(ON);
@@ -30473,7 +30473,7 @@ privilege = astFactory.graphPrivilege( pos(start), astFactory.privilegeAction( A
     throw new IllegalStateException ("Missing return statement in function");
 }
 
-  final public PRIVILEGE_TYPE databasePrivilege(Token start, boolean immutable) throws ParseException {ADMINISTRATION_ACTION action = null;
+  final public PRIVILEGE_TYPE databasePrivilege(Token start, boolean immutable) throws ParseException, Exception {ADMINISTRATION_ACTION action = null;
     DATABASE_SCOPE database = null;
     List<PRIVILEGE_QUALIFIER> qualifier = astFactory.allDatabasesQualifier();
     List<SimpleEither<StringPos<POS>, PARAMETER>>qualifiers = null;
@@ -33825,7 +33825,7 @@ secondaries = count;
     }
 {if ("" != null) return astFactory.createDatabase(
             pos( start ),
-            replace, databaseName.getLocalAliasName(astFactory),
+            replace, databaseName.getAsDatabaseName(astFactory),
             ifNotExists,
             wait,
             options,
@@ -33883,7 +33883,7 @@ ifNotExists = true;
     throw new IllegalStateException ("Missing return statement in function");
 }
 
-  final public ADMINISTRATION_COMMAND DropDatabase(Token start) throws ParseException {AliasName<DATABASE_NAME, PARAMETER> databaseName = null;
+  final public ADMINISTRATION_COMMAND DropDatabase(Token start) throws ParseException, Exception {AliasName<DATABASE_NAME, PARAMETER> databaseName = null;
     boolean ifExists = false;
     WAIT_CLAUSE wait = astFactory.wait( false, -1 );
     boolean dumpData = false;
@@ -34147,7 +34147,7 @@ String entryOrNull = optionsToRemove.contains(key.image) ? key.image : null;
     throw new IllegalStateException ("Missing return statement in function");
 }
 
-  final public ADMINISTRATION_COMMAND StartDatabase() throws ParseException {Token start;
+  final public ADMINISTRATION_COMMAND StartDatabase() throws ParseException, Exception {Token start;
     AliasName<DATABASE_NAME, PARAMETER> databaseName;
     WAIT_CLAUSE wait = astFactory.wait( false, -1 );
     start = jj_consume_token(START);
@@ -34167,7 +34167,7 @@ String entryOrNull = optionsToRemove.contains(key.image) ? key.image : null;
     throw new IllegalStateException ("Missing return statement in function");
 }
 
-  final public ADMINISTRATION_COMMAND StopDatabase() throws ParseException {Token start;
+  final public ADMINISTRATION_COMMAND StopDatabase() throws ParseException, Exception {Token start;
     AliasName<DATABASE_NAME, PARAMETER> databaseName;
     WAIT_CLAUSE wait = astFactory.wait( false, -1 );
     start = jj_consume_token(STOP);
@@ -34924,7 +34924,7 @@ scope = astFactory.databaseScope( pos( scopeStart ), name == null ? null : name.
     throw new IllegalStateException ("Missing return statement in function");
 }
 
-  final public DATABASE_SCOPE DatabaseScope() throws ParseException {Token start = null;
+  final public DATABASE_SCOPE DatabaseScope() throws ParseException, Exception {Token start = null;
     List<DATABASE_NAME> names = null;
     ScopeType type = ScopeType.NAMED;
     switch (jj_ntk == -1 ? jj_ntk_f() : jj_ntk) {
@@ -35245,7 +35245,7 @@ type = ScopeType.HOME;
     throw new IllegalStateException ("Missing return statement in function");
 }
 
-  final public GRAPH_SCOPE GraphScope() throws ParseException {Token start = null;
+  final public GRAPH_SCOPE GraphScope() throws ParseException, Exception {Token start = null;
     List<DATABASE_NAME> names = null;
     ScopeType type = ScopeType.NAMED;
     switch (jj_ntk == -1 ? jj_ntk_f() : jj_ntk) {
@@ -35636,7 +35636,7 @@ if ( url == null )
     throw new IllegalStateException ("Missing return statement in function");
 }
 
-  final public ADMINISTRATION_COMMAND DropAlias(Token start) throws ParseException {AliasName<DATABASE_NAME, PARAMETER> aliasName = null;
+  final public ADMINISTRATION_COMMAND DropAlias(Token start) throws ParseException, Exception {AliasName<DATABASE_NAME, PARAMETER> aliasName = null;
     boolean ifExists = false;
     jj_consume_token(ALIAS);
     aliasName = SymbolicAliasNameOrParameter();
@@ -35830,7 +35830,7 @@ DATABASE_NAME maybeAliasName = aliasName == null ? null : aliasName.getLocalAlia
     throw new IllegalStateException ("Missing return statement in function");
 }
 
-  final public List<DATABASE_NAME> SymbolicAliasNameList() throws ParseException {AliasName<DATABASE_NAME, PARAMETER> dbSymbol = null;
+  final public List<DATABASE_NAME> SymbolicAliasNameList() throws ParseException, Exception {AliasName<DATABASE_NAME, PARAMETER> dbSymbol = null;
     List<DATABASE_NAME> databases = new ArrayList<>();
     dbSymbol = SymbolicAliasNameOrParameter();
 databases.add(dbSymbol.getLocalAliasName(astFactory));
@@ -35852,7 +35852,7 @@ databases.add(dbSymbol.getLocalAliasName(astFactory));
     throw new IllegalStateException ("Missing return statement in function");
 }
 
-  final public AliasName<DATABASE_NAME, PARAMETER> SymbolicAliasNameOrParameter() throws ParseException {AliasName<DATABASE_NAME, PARAMETER> name = null;
+  final public AliasName<DATABASE_NAME, PARAMETER> SymbolicAliasNameOrParameter() throws ParseException, Exception {AliasName<DATABASE_NAME, PARAMETER> name = null;
     PARAMETER parameter;
     switch (jj_ntk == -1 ? jj_ntk_f() : jj_ntk) {
     case ESCAPED_SYMBOLIC_NAME:
@@ -36135,7 +36135,7 @@ databases.add(dbSymbol.getLocalAliasName(astFactory));
     throw new IllegalStateException ("Missing return statement in function");
 }
 
-  final public AliasName<DATABASE_NAME, PARAMETER> SymbolicAliasName() throws ParseException {Token token;
+  final public AliasName<DATABASE_NAME, PARAMETER> SymbolicAliasName() throws ParseException, Exception {Token token;
     AliasName<DATABASE_NAME, PARAMETER> name = null;
     token = SymbolicNameString();
 name = new AliasName<DATABASE_NAME, PARAMETER>( exceptionFactory, token );

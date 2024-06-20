@@ -18,19 +18,26 @@ package org.neo4j.cypher.internal.parser.javacc;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.neo4j.cypher.internal.ast.factory.ASTExceptionFactory;
 import org.neo4j.cypher.internal.ast.factory.ASTFactory;
+// spotless:off
+import org.neo4j.cypher.internal.parser.javacc.Token;
+import org.neo4j.cypher.internal.parser.javacc.ParseException;
+import org.neo4j.cypher.internal.parser.javacc.CypherConstants;
+// spotless:on
 
 public class AliasName<DATABASE_NAME, PARAMETER> {
     ASTExceptionFactory exceptionFactory;
-    Token start;
-    List<String> names = new ArrayList<>();
+    List<Token> names = new ArrayList<>();
     PARAMETER parameter;
+    private int componentCount = 1;
+    private Token lastToken;
 
-    public AliasName(ASTExceptionFactory exceptionFactory, Token token) {
+    public AliasName(ASTExceptionFactory exceptionFactory, Token token) throws Exception {
         this.exceptionFactory = exceptionFactory;
-        this.start = token;
-        this.names.add(token.image);
+        this.lastToken = token;
+        this.names.add(token);
     }
 
     public AliasName(ASTExceptionFactory exceptionFactory, PARAMETER parameter) {
@@ -38,8 +45,12 @@ public class AliasName<DATABASE_NAME, PARAMETER> {
         this.parameter = parameter;
     }
 
-    public void add(Token token) {
-        names.add(token.image);
+    public void add(Token token) throws Exception {
+        if (isEscaped(token) || isEscaped(lastToken)) {
+            componentCount++;
+        }
+        lastToken = token;
+        names.add(token);
     }
 
     public DATABASE_NAME getRemoteAliasName(ASTFactory astFactory) throws Exception {
@@ -48,23 +59,80 @@ public class AliasName<DATABASE_NAME, PARAMETER> {
         } else {
             if (names.size() > 2) {
                 throw exceptionFactory.syntaxException(
-                        new ParseException(ASTExceptionFactory.invalidDotsInRemoteAliasName(String.join(".", names))),
-                        start.beginOffset,
-                        start.beginLine,
-                        start.beginColumn);
+                        new ParseException(ASTExceptionFactory.invalidDotsInRemoteAliasName(originalRepresentation())),
+                        names.get(0).beginOffset,
+                        names.get(0).beginLine,
+                        names.get(0).beginColumn);
             } else {
                 return (DATABASE_NAME) astFactory.databaseName(
-                        astFactory.inputPosition(start.beginOffset, start.beginLine, start.beginColumn), names);
+                        astFactory.inputPosition(
+                                names.get(0).beginOffset, names.get(0).beginLine, names.get(0).beginColumn),
+                        tokensAsStrings());
             }
         }
     }
 
-    public DATABASE_NAME getLocalAliasName(ASTFactory astFactory) {
+    public DATABASE_NAME getAsDatabaseName(ASTFactory astFactory) throws Exception {
         if (parameter != null) {
             return (DATABASE_NAME) astFactory.databaseName(parameter);
         } else {
+            if (componentCount > 1) {
+                var invalidToken = names.stream().filter(this::isEscaped).findFirst();
+                if (invalidToken.isPresent()) {
+                    throw exceptionFactory.syntaxException(
+                            new ParseException(
+                                    ASTExceptionFactory.tooManyDatabaseNameComponents(originalRepresentation())),
+                            names.get(0).beginOffset,
+                            names.get(0).beginLine,
+                            names.get(0).beginColumn);
+                }
+            }
             return (DATABASE_NAME) astFactory.databaseName(
-                    astFactory.inputPosition(start.beginOffset, start.beginLine, start.beginColumn), names);
+                    astFactory.inputPosition(
+                            names.get(0).beginOffset, names.get(0).beginLine, names.get(0).beginColumn),
+                    tokensAsStrings());
         }
+    }
+
+    public DATABASE_NAME getLocalAliasName(ASTFactory astFactory) throws Exception {
+        if (parameter != null) {
+            return (DATABASE_NAME) astFactory.databaseName(parameter);
+        } else {
+            if (componentCount > 2) {
+                var invalidToken = names.stream().filter(this::isEscaped).findFirst();
+                if (invalidToken.isPresent()) {
+                    throw exceptionFactory.syntaxException(
+                            new ParseException(
+                                    ASTExceptionFactory.tooManyAliasNameComponents(originalRepresentation())),
+                            names.get(0).beginOffset,
+                            names.get(0).beginLine,
+                            names.get(0).beginColumn);
+                }
+            }
+            return (DATABASE_NAME) astFactory.databaseName(
+                    astFactory.inputPosition(
+                            names.get(0).beginOffset, names.get(0).beginLine, names.get(0).beginColumn),
+                    tokensAsStrings());
+        }
+    }
+
+    private boolean isEscaped(Token token) {
+        return token.kind == CypherConstants.ESCAPED_SYMBOLIC_NAME;
+    }
+
+    private List<String> tokensAsStrings() {
+        return names.stream().map(t -> t.image).toList();
+    }
+
+    private String originalRepresentation() {
+        return names.stream()
+                .map(token -> {
+                    if (isEscaped(token)) {
+                        return "`" + token.image + "`";
+                    } else {
+                        return token.image;
+                    }
+                })
+                .collect(Collectors.joining("."));
     }
 }

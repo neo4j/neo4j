@@ -56,6 +56,16 @@ public interface ASTExceptionFactory {
                 name);
     }
 
+    static String tooManyAliasNameComponents(String name) {
+        return String.format(
+                "Invalid input `%s` for name. Expected name to contain at most two components separated by `.`.", name);
+    }
+
+    static String tooManyDatabaseNameComponents(String name) {
+        return String.format(
+                "Invalid input `%s` for database name. Expected name to contain at most one component.", name);
+    }
+
     String periodicCommitNotSupported =
             "The PERIODIC COMMIT query hint is no longer supported. Please use CALL { ... } IN TRANSACTIONS instead.";
 

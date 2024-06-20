@@ -276,6 +276,15 @@ class AllGraphPrivilegeAdministrationCommandParserTest extends AdministrationAnd
                 )
             }
           }
+
+          // Alias with too many components
+          test(s"$verb$immutableString ALL GRAPH PRIVILEGES ON GRAPH `a`.`b`.`c` $preposition role") {
+            // more than two components
+            failsParsing[Statements]
+              .withMessageContaining(
+                "Invalid input ``a`.`b`.`c`` for name. Expected name to contain at most two components separated by `.`."
+              )
+          }
       }
   }
 }

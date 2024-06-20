@@ -197,6 +197,14 @@ class DatabasePrivilegeAdministrationCommandParserTest extends AdministrationAnd
                 failsParsing[Statements]
               }
 
+              test(s"$verb$immutableString $privilege ON DATABASE `a`.`b`.`c` $preposition role") {
+                // more than two components
+                failsParsing[Statements]
+                  .withMessageContaining(
+                    "Invalid input ``a`.`b`.`c`` for name. Expected name to contain at most two components separated by `.`."
+                  )
+              }
+
               test(s"$verb$immutableString $privilege ON DATABASE foo $preposition r:ole") {
                 // invalid role name
                 failsParsing[Statements]
@@ -674,6 +682,13 @@ class DatabasePrivilegeAdministrationCommandParserTest extends AdministrationAnd
 
           test(s"$verb$immutableString TRANSACTION ON DATABASE foo, * $preposition role") {
             failsParsing[Statements]
+          }
+
+          test(s"$verb$immutableString TRANSACTION ON DATABASE `a`.`b`.`c` $preposition role") {
+            failsParsing[Statements]
+              .withMessageContaining(
+                "Invalid input ``a`.`b`.`c`` for name. Expected name to contain at most two components separated by `.`."
+              )
           }
 
           test(s"$verb$immutableString TRANSACTION ON DATABASE *, foo $preposition role") {

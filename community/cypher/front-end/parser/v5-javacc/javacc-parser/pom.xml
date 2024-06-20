@@ -66,6 +66,7 @@
                 <artifactId>spotless-maven-plugin</artifactId>
                 <configuration>
                     <java>
+                        <toggleOffOn/>
                         <excludes>
                             <!-- JavaCC generated files -->
                             <exclude>src/main/java/org/neo4j/cypher/internal/parser/javacc/org/neo4j/cypher/internal/parser/javacc/*.java</exclude>

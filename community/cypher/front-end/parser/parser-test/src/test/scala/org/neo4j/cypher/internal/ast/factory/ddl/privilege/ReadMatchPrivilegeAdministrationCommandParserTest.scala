@@ -971,20 +971,30 @@ class ReadMatchPrivilegeAdministrationCommandParserTest extends AdministrationAn
 
           // Database instead of graph keyword
 
-          test(s"$verb$immutableString ${action.name} ON DATABASES * $preposition role") {
+          test(s"$verb$immutableString ${action.name} {*} ON DATABASES * $preposition role") {
             failsParsing[Statements]
           }
 
-          test(s"$verb$immutableString ${action.name} ON DATABASE foo $preposition role") {
+          test(s"$verb$immutableString ${action.name} {*} ON DATABASE foo $preposition role") {
             failsParsing[Statements]
           }
 
-          test(s"$verb$immutableString ${action.name} ON HOME DATABASE $preposition role") {
+          test(s"$verb$immutableString ${action.name} {*} ON HOME DATABASE $preposition role") {
             failsParsing[Statements]
           }
 
-          test(s"$verb$immutableString ${action.name} ON DEFAULT DATABASE $preposition role") {
+          test(s"$verb$immutableString ${action.name} {*} ON DEFAULT DATABASE $preposition role") {
             failsParsing[Statements]
+          }
+
+          // Alias with too many components
+
+          test(s"$verb$immutableString ${action.name} {*} ON GRAPH `a`.`b`.`c` $preposition role") {
+            // more than two components
+            failsParsing[Statements]
+              .withMessageContaining(
+                "Invalid input ``a`.`b`.`c`` for name. Expected name to contain at most two components separated by `.`."
+              )
           }
       }
   }

@@ -42,11 +42,15 @@ import org.neo4j.cypher.internal.parser.v5.Cypher5Parser.DropConstraintContext
 import org.neo4j.cypher.internal.parser.v5.Cypher5Parser.GlobContext
 import org.neo4j.cypher.internal.parser.v5.Cypher5Parser.GlobRecursiveContext
 import org.neo4j.cypher.internal.parser.v5.Cypher5Parser.SymbolicAliasNameOrParameterContext
+import org.neo4j.cypher.internal.parser.v5.ast.factory.Cypher5SyntaxChecker.MAX_ALIAS_NAME_COMPONENTS
+import org.neo4j.cypher.internal.parser.v5.ast.factory.Cypher5SyntaxChecker.MAX_DATABASE_NAME_COMPONENTS
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.ClosedDynamicUnionType
+import org.neo4j.internal.helpers.NameUtil
 
 import scala.collection.mutable
+import scala.jdk.CollectionConverters.ListHasAsScala
 
 final class Cypher5SyntaxChecker(exceptionFactory: CypherExceptionFactory) extends SyntaxChecker {
   private[this] var _errors: Seq[Exception] = Seq.empty
@@ -82,6 +86,7 @@ final class Cypher5SyntaxChecker(exceptionFactory: CypherExceptionFactory) exten
       case Cypher5Parser.RULE_functionInvocation               => checkFunctionInvocation(cast(ctx))
       case Cypher5Parser.RULE_typePart                         => checkTypePart(cast(ctx))
       case Cypher5Parser.RULE_hint                             => checkHint(cast(ctx))
+      case Cypher5Parser.RULE_symbolicAliasNameOrParameter     => checkSymbolicAliasNameOrParameter(cast(ctx))
       case _                                                   =>
     }
   }
@@ -138,12 +143,47 @@ final class Cypher5SyntaxChecker(exceptionFactory: CypherExceptionFactory) exten
     : Unit = {
     if (aliasesNames.size() > 0) {
       val aliasName = aliasesNames.get(0)
-      if (aliasName.symbolicAliasName() != null && aliasName.symbolicAliasName().symbolicNameString().size() > 2) {
+      if (
+        aliasName.symbolicAliasName() != null && aliasName.symbolicAliasName().symbolicNameString().size() > MAX_ALIAS_NAME_COMPONENTS
+      ) {
         val start = aliasName.symbolicAliasName().symbolicNameString().get(0).getStart
         _errors :+= exceptionFactory.syntaxException(
           s"'.' is not a valid character in the remote alias name '${aliasName.getText}'. Remote alias names using '.' must be quoted with backticks e.g. `remote.alias`.",
           inputPosition(start)
         )
+      }
+    }
+  }
+
+  private def errorOnAliasNameContainingTooManyComponents(
+    aliasesNames: Seq[SymbolicAliasNameOrParameterContext],
+    maxComponents: Int,
+    errorTemplate: String
+  ): Unit = {
+    if (aliasesNames.nonEmpty) {
+      val literalAliasNames = aliasesNames.filter(_.symbolicAliasName() != null)
+      for (aliasName <- literalAliasNames) {
+        val nameComponents = aliasName.symbolicAliasName().symbolicNameString().asScala.toList
+        val componentCount = nameComponents.sliding(2, 1).foldLeft(1) {
+          case (count, a :: b :: Nil)
+            if a.escapedSymbolicNameString() != null || b.escapedSymbolicNameString() != null => count + 1
+          case (count, _) => count
+        }
+        if (componentCount > maxComponents) {
+          val start = aliasName.symbolicAliasName().symbolicNameString().get(0).getStart
+          _errors :+= exceptionFactory.syntaxException(
+            errorTemplate.formatted(
+              aliasName.symbolicAliasName().symbolicNameString().asScala.map {
+                case context if context.unescapedSymbolicNameString() != null =>
+                  context.unescapedSymbolicNameString().ast
+                case context if context.escapedSymbolicNameString() != null =>
+                  NameUtil.forceEscapeName(context.escapedSymbolicNameString().ast())
+                case _ => ""
+              }.mkString(".")
+            ),
+            inputPosition(start)
+          )
+        }
       }
     }
   }
@@ -156,9 +196,10 @@ final class Cypher5SyntaxChecker(exceptionFactory: CypherExceptionFactory) exten
   }
 
   private def checkCreateAlias(ctx: Cypher5Parser.CreateAliasContext): Unit = {
-    if (ctx.stringOrParameter() != null)
-      errorOnAliasNameContainingDots(ctx.symbolicAliasNameOrParameter())
-
+    if (ctx.stringOrParameter() != null) {
+      if (!(ctx.AT() == null && ctx.USER() == null && ctx.PASSWORD() == null && ctx.DRIVER() == null))
+        errorOnAliasNameContainingDots(ctx.symbolicAliasNameOrParameter())
+    }
   }
 
   private def checkAlterAlias(ctx: Cypher5Parser.AlterAliasContext): Unit = {
@@ -177,6 +218,27 @@ final class Cypher5SyntaxChecker(exceptionFactory: CypherExceptionFactory) exten
     errorOnDuplicateCtx(passwords, "PASSWORD")
     errorOnDuplicateCtx(ctx.alterAliasProperties(), "PROPERTIES")
     errorOnDuplicateCtx(aliasTargets, "TARGET")
+  }
+
+  private def checkSymbolicAliasNameOrParameter(ctx: Cypher5Parser.SymbolicAliasNameOrParameterContext): Unit = {
+    ctx.getParent.getRuleIndex match {
+      case Cypher5Parser.RULE_createDatabase =>
+        // `a`.`b` disallowed
+        errorOnAliasNameContainingTooManyComponents(
+          Seq(ctx),
+          MAX_DATABASE_NAME_COMPONENTS,
+          "Invalid input `%s` for database name. Expected name to contain at most one component."
+        )
+      case Cypher5Parser.RULE_createCompositeDatabase =>
+      // Handled in semantic checks
+      case _ =>
+        // `a`.`b` allowed, `a`.`b`.`c` disallowed
+        errorOnAliasNameContainingTooManyComponents(
+          Seq(ctx),
+          MAX_ALIAS_NAME_COMPONENTS,
+          "Invalid input `%s` for name. Expected name to contain at most two components separated by `.`."
+        )
+    }
   }
 
   private def checkCreateUser(ctx: Cypher5Parser.CreateUserContext): Unit = {
@@ -500,4 +562,9 @@ final class Cypher5SyntaxChecker(exceptionFactory: CypherExceptionFactory) exten
       case _ =>
     }
   }
+}
+
+object Cypher5SyntaxChecker {
+  private val MAX_ALIAS_NAME_COMPONENTS: Int = 2
+  private val MAX_DATABASE_NAME_COMPONENTS: Int = 1
 }
