@@ -21,10 +21,6 @@ package org.neo4j.internal.batchimport.cache;
 
 import static java.lang.Math.max;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
@@ -42,7 +38,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
-import org.apache.commons.lang3.mutable.MutableLong;
 import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
 import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
@@ -50,6 +45,7 @@ import org.eclipse.collections.impl.factory.primitive.IntObjectMaps;
 import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -69,9 +65,7 @@ public class NodeRelationshipCacheTest {
 
     @AfterEach
     public void after() {
-        if (cache != null) {
-            cache.close();
-        }
+        cache.close();
     }
 
     private static Stream<Long> data() {
@@ -92,13 +86,13 @@ public class NodeRelationshipCacheTest {
         increment(cache, 25, 6);
 
         // THEN
-        assertFalse(cache.isDense(0));
-        assertTrue(cache.isDense(2));
-        assertFalse(cache.isDense(5));
-        assertTrue(cache.isDense(7));
-        assertFalse(cache.isDense(23));
-        assertTrue(cache.isDense(24));
-        assertTrue(cache.isDense(25));
+        Assertions.assertFalse(cache.isDense(0));
+        Assertions.assertTrue(cache.isDense(2));
+        Assertions.assertFalse(cache.isDense(5));
+        Assertions.assertTrue(cache.isDense(7));
+        Assertions.assertFalse(cache.isDense(23));
+        Assertions.assertTrue(cache.isDense(24));
+        Assertions.assertTrue(cache.isDense(25));
     }
 
     @ParameterizedTest
@@ -136,11 +130,11 @@ public class NodeRelationshipCacheTest {
         cache.setForwardScan(true, true);
         cache.setNodeCount(nodes + 1);
         for (int i = 0; i < nodes; i++) {
-            assertEquals(-1L, cache.getFirstRel(nodes, groupVisitor));
+            Assertions.assertEquals(-1L, cache.getFirstRel(nodes, groupVisitor));
             cache.incrementCount(i);
             long previous = cache.getAndPutRelationship(
                     i, typeId, directions[i % directions.length], random.nextInt(1_000_000), true);
-            assertEquals(-1L, previous);
+            Assertions.assertEquals(-1L, previous);
         }
 
         // WHEN
@@ -148,13 +142,13 @@ public class NodeRelationshipCacheTest {
         for (int i = 0; i < nodes; i++) {
             long previous = cache.getAndPutRelationship(
                     i, typeId, directions[i % directions.length], random.nextInt(1_000_000), false);
-            assertEquals(-1L, previous);
+            Assertions.assertEquals(-1L, previous);
         }
 
         // THEN
         cache.setForwardScan(true, true);
         for (int i = 0; i < nodes; i++) {
-            assertEquals(-1L, cache.getFirstRel(nodes, groupVisitor));
+            Assertions.assertEquals(-1L, cache.getFirstRel(nodes, groupVisitor));
         }
     }
 
@@ -170,16 +164,16 @@ public class NodeRelationshipCacheTest {
         cache.incrementCount(nodeId);
         cache.getAndPutRelationship(nodeId, typeId, OUTGOING, 10, true);
         cache.getAndPutRelationship(nodeId, typeId, OUTGOING, 12, true);
-        assertTrue(cache.isDense(nodeId));
+        Assertions.assertTrue(cache.isDense(nodeId));
 
         // WHEN
         long countNoReset = cache.getCount(nodeId, typeId, OUTGOING, false);
         long countDoReset = cache.getCount(nodeId, typeId, OUTGOING, true);
-        assertEquals(2, countNoReset);
-        assertEquals(2, countDoReset);
+        Assertions.assertEquals(2, countNoReset);
+        Assertions.assertEquals(2, countDoReset);
 
         // THEN
-        assertEquals(0, cache.getCount(nodeId, typeId, OUTGOING, false));
+        Assertions.assertEquals(0, cache.getCount(nodeId, typeId, OUTGOING, false));
     }
 
     @ParameterizedTest
@@ -192,11 +186,12 @@ public class NodeRelationshipCacheTest {
         long nodeId = 1_000_000 - 1;
         int typeId = 10;
         cache.setNodeCount(nodeId + 1);
+        Direction direction = Direction.OUTGOING;
         long relId = 10;
-        cache.getAndPutRelationship(nodeId, typeId, Direction.OUTGOING, relId, false);
+        cache.getAndPutRelationship(nodeId, typeId, direction, relId, false);
 
         // THEN
-        assertEquals(relId, cache.getFirstRel(nodeId, mock(NodeRelationshipCache.GroupVisitor.class)));
+        Assertions.assertEquals(relId, cache.getFirstRel(nodeId, mock(NodeRelationshipCache.GroupVisitor.class)));
     }
 
     @ParameterizedTest
@@ -228,7 +223,7 @@ public class NodeRelationshipCacheTest {
             if (keyIds == null) {
                 key.put(nodeId, keyIds = minusOneLongs(Direction.values().length));
             }
-            assertEquals(keyIds[keyIndex], previousHead);
+            Assertions.assertEquals(keyIds[keyIndex], previousHead);
             keyIds[keyIndex] = relationshipId;
         }
     }
@@ -246,12 +241,12 @@ public class NodeRelationshipCacheTest {
         cache.incrementCount(denseNode);
 
         // WHEN
-        assertEquals(-1L, cache.getAndPutRelationship(sparseNode, typeId, OUTGOING, relationshipId, false));
-        assertEquals(-1L, cache.getAndPutRelationship(denseNode, typeId, OUTGOING, relationshipId, false));
+        Assertions.assertEquals(-1L, cache.getAndPutRelationship(sparseNode, typeId, OUTGOING, relationshipId, false));
+        Assertions.assertEquals(-1L, cache.getAndPutRelationship(denseNode, typeId, OUTGOING, relationshipId, false));
 
         // THEN
-        assertEquals(relationshipId, cache.getAndPutRelationship(sparseNode, typeId, OUTGOING, 1, false));
-        assertEquals(relationshipId, cache.getAndPutRelationship(denseNode, typeId, OUTGOING, 1, false));
+        Assertions.assertEquals(relationshipId, cache.getAndPutRelationship(sparseNode, typeId, OUTGOING, 1, false));
+        Assertions.assertEquals(relationshipId, cache.getAndPutRelationship(denseNode, typeId, OUTGOING, 1, false));
     }
 
     @ParameterizedTest
@@ -264,9 +259,13 @@ public class NodeRelationshipCacheTest {
 
         // WHEN
         cache.getAndPutRelationship(0, typeId, OUTGOING, (1L << 48) - 2, false);
-        assertThatThrownBy(() -> cache.getAndPutRelationship(0, typeId, OUTGOING, (1L << 48) - 1, false))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("max");
+        try {
+            cache.getAndPutRelationship(0, typeId, OUTGOING, (1L << 48) - 1, false);
+            Assertions.fail("Should fail");
+        } catch (IllegalArgumentException e) {
+            // THEN Good
+            Assertions.assertTrue(e.getMessage().contains("max"));
+        }
     }
 
     @ParameterizedTest
@@ -303,10 +302,11 @@ public class NodeRelationshipCacheTest {
             // WHEN (sparse)
             NodeRelationshipCache.NodeChangeVisitor visitor = (nodeId, array) -> {
                 // THEN (sparse)
-                assertTrue(keySparseChanged.remove(nodeId), "Unexpected sparse change reported for " + nodeId);
+                Assertions.assertTrue(
+                        keySparseChanged.remove(nodeId), "Unexpected sparse change reported for " + nodeId);
             };
             cache.visitChangedNodes(visitor, NodeType.NODE_TYPE_SPARSE);
-            assertTrue(
+            Assertions.assertTrue(
                     keySparseChanged.isEmpty(),
                     "There was " + keySparseChanged.size() + " expected sparse changes that weren't reported");
         }
@@ -315,55 +315,13 @@ public class NodeRelationshipCacheTest {
             // WHEN (dense)
             NodeRelationshipCache.NodeChangeVisitor visitor = (nodeId, array) -> {
                 // THEN (dense)
-                assertTrue(keyDenseChanged.remove(nodeId), "Unexpected dense change reported for " + nodeId);
+                Assertions.assertTrue(keyDenseChanged.remove(nodeId), "Unexpected dense change reported for " + nodeId);
             };
             cache.visitChangedNodes(visitor, NodeType.NODE_TYPE_DENSE);
-            assertTrue(
+            Assertions.assertTrue(
                     keyDenseChanged.isEmpty(),
                     "There was " + keyDenseChanged.size() + " expected dense changes that weren reported");
         }
-    }
-
-    @ParameterizedTest
-    @MethodSource("data")
-    void visitChangedNodesFromDifferentChunks(long base) {
-        int nodes = 720;
-        int typeId = 2;
-        // chunk size and batch step here created to have steps where one batch is part of several chunks, where one of
-        // them is changed another is not
-        int chunkSize = 10;
-        int batchStep = 7;
-        int denseNodeThreshold = 5;
-
-        List<Long> expectedDenseNodes = new ArrayList<>();
-        cache = new NodeRelationshipCache(NumberArrayFactories.HEAP, denseNodeThreshold, chunkSize, base, INSTANCE);
-        cache.setNodeCount(nodes);
-
-        // we need to make every second node in every second chunk dense
-        for (long nodeId = 0; nodeId < nodes; nodeId += 3) {
-            if (nodeId / chunkSize % 2 == 0) {
-                increment(cache, nodeId, denseNodeThreshold + 2);
-                cache.getAndPutRelationship(nodeId, typeId, Direction.OUTGOING, random.nextLong(1_000_000), true);
-                expectedDenseNodes.add(nodeId);
-            }
-        }
-
-        assertEquals(expectedDenseNodes.size(), cache.calculateNumberOfDenseNodes());
-
-        MutableLong changeNotCounter = new MutableLong();
-        NodeRelationshipCache.NodeChangeVisitor visitor = (nodeId, array) -> {
-            changeNotCounter.increment();
-        };
-
-        long batchStart = 0;
-        long batchEnd = batchStart + batchStep;
-        while (batchStart <= nodes) {
-            cache.visitChangedNodes(visitor, NodeType.NODE_TYPE_DENSE, batchStart, batchEnd);
-            batchStart += batchStep;
-            batchEnd = Math.min(batchStart + batchStep, nodes);
-        }
-
-        assertEquals(expectedDenseNodes.size(), changeNotCounter.longValue());
     }
 
     @ParameterizedTest
@@ -379,7 +337,12 @@ public class NodeRelationshipCacheTest {
 
         // WHEN
         cache.incrementCount(nodeId);
-        assertThatThrownBy(() -> cache.incrementCount(nodeId)).isInstanceOf(IllegalStateException.class);
+        try {
+            cache.incrementCount(nodeId);
+            Assertions.fail("Should have failed");
+        } catch (IllegalStateException e) {
+            // THEN Good
+        }
     }
 
     @ParameterizedTest
@@ -403,7 +366,7 @@ public class NodeRelationshipCacheTest {
             firstRelationshipGroupId = cache.getFirstRel(nodeId, groupVisitor);
 
             // THEN
-            assertEquals(1L, firstRelationshipGroupId);
+            Assertions.assertEquals(1L, firstRelationshipGroupId);
             verify(groupVisitor).visit(nodeId, typeId, relationshipId, -1L, -1L);
 
             // Also simulate going back again ("clearing" of the cache requires this)
@@ -420,7 +383,7 @@ public class NodeRelationshipCacheTest {
             secondRelationshipGroupId = cache.getFirstRel(nodeId, groupVisitor);
 
             // THEN
-            assertEquals(2L, secondRelationshipGroupId);
+            Assertions.assertEquals(2L, secondRelationshipGroupId);
             verify(groupVisitor).visit(nodeId, typeId, -1, relationshipId, -1L);
 
             // Also simulate going back again ("clearing" of the cache requires this)
@@ -434,7 +397,7 @@ public class NodeRelationshipCacheTest {
             long relationshipId = 10;
             cache.getAndPutRelationship(nodeId, typeId, BOTH, relationshipId, true);
             long thirdRelationshipGroupId = cache.getFirstRel(nodeId, groupVisitor);
-            assertEquals(3L, thirdRelationshipGroupId);
+            Assertions.assertEquals(3L, thirdRelationshipGroupId);
             verify(groupVisitor).visit(nodeId, typeId, -1L, -1L, relationshipId);
         }
     }
@@ -464,8 +427,8 @@ public class NodeRelationshipCacheTest {
         cache.getAndPutRelationship(nodeId, typeId, INCOMING, 2, true /*increment count*/);
 
         // THEN
-        assertEquals(highCountOut + 1, cache.getCount(nodeId, typeId, OUTGOING, false));
-        assertEquals(highCountIn + 1, cache.getCount(nodeId, typeId, INCOMING, false));
+        Assertions.assertEquals(highCountOut + 1, cache.getCount(nodeId, typeId, OUTGOING, false));
+        Assertions.assertEquals(highCountIn + 1, cache.getCount(nodeId, typeId, INCOMING, false));
     }
 
     @ParameterizedTest
@@ -490,15 +453,18 @@ public class NodeRelationshipCacheTest {
         AtomicInteger visitCount = new AtomicInteger();
         NodeRelationshipCache.GroupVisitor visitor = (nodeId1, typeId, out, in, loop) -> {
             visitCount.incrementAndGet();
-            assertEquals(firstRelationshipIds.get(Pair.of(typeId, OUTGOING)).longValue(), out);
-            assertEquals(firstRelationshipIds.get(Pair.of(typeId, INCOMING)).longValue(), in);
-            assertEquals(firstRelationshipIds.get(Pair.of(typeId, BOTH)).longValue(), loop);
+            Assertions.assertEquals(
+                    firstRelationshipIds.get(Pair.of(typeId, OUTGOING)).longValue(), out);
+            Assertions.assertEquals(
+                    firstRelationshipIds.get(Pair.of(typeId, INCOMING)).longValue(), in);
+            Assertions.assertEquals(
+                    firstRelationshipIds.get(Pair.of(typeId, BOTH)).longValue(), loop);
             return 0;
         };
         cache.getFirstRel(nodeId, visitor);
 
         // THEN
-        assertEquals(typeCount, visitCount.get());
+        Assertions.assertEquals(typeCount, visitCount.get());
     }
 
     @ParameterizedTest
@@ -516,7 +482,7 @@ public class NodeRelationshipCacheTest {
         long nextHighCount = cache.incrementCount(nodeId);
 
         // THEN
-        assertEquals(highCount + 1, nextHighCount);
+        Assertions.assertEquals(highCount + 1, nextHighCount);
     }
 
     @ParameterizedTest
@@ -525,8 +491,13 @@ public class NodeRelationshipCacheTest {
         // given
         cache = new NodeRelationshipCache(NumberArrayFactories.HEAP, 1, INSTANCE);
 
-        assertThatThrownBy(() -> cache.setNodeCount(2L << (5 * Byte.SIZE)))
-                .isInstanceOf(IllegalArgumentException.class);
+        try {
+            // when
+            cache.setNodeCount(2L << (5 * Byte.SIZE));
+            Assertions.fail("Should have failed");
+        } catch (IllegalArgumentException e) {
+            // then good
+        }
     }
 
     @ParameterizedTest
@@ -589,9 +560,9 @@ public class NodeRelationshipCacheTest {
     private static void testNode(NodeRelationshipCache link, long node, Direction direction) {
         int typeId = 0; // doesn't matter here because it's all sparse
         long count = link.getCount(node, typeId, direction, false);
-        assertEquals(-1, link.getAndPutRelationship(node, typeId, direction, 5, false));
-        assertEquals(5, link.getAndPutRelationship(node, typeId, direction, 10, false));
-        assertEquals(count, link.getCount(node, typeId, direction, false));
+        Assertions.assertEquals(-1, link.getAndPutRelationship(node, typeId, direction, 5, false));
+        Assertions.assertEquals(5, link.getAndPutRelationship(node, typeId, direction, 10, false));
+        Assertions.assertEquals(count, link.getCount(node, typeId, direction, false));
     }
 
     private static long findNode(NodeRelationshipCache link, long nodeCount, boolean isDense) {

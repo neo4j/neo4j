@@ -329,6 +329,7 @@ public class ImportLogic implements Closeable {
                 input,
                 neoStore,
                 idMapper,
+                config.strictNodeCheck(),
                 badCollector,
                 executionMonitor,
                 storeUpdateMonitor,
