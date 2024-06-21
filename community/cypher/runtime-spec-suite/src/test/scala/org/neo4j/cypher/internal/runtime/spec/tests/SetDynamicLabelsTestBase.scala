@@ -293,7 +293,7 @@ abstract class SetDynamicLabelsTestBase[CONTEXT <: RuntimeContext](
       .produceResults("refSlotLabels", "longSlotLabels")
       .projection("labels(nRef) AS refSlotLabels", "labels(n) AS longSlotLabels")
       .setDynamicLabels("n", "'LongSlotLabel'", "'CommonLabel'")
-      .setDynamicLabels("nRef", "'RefSlotLabel", "'CommonLabel'")
+      .setDynamicLabels("nRef", "'RefSlotLabel'", "'CommonLabel'")
       .unwind("[n] as nRef")
       .allNodeScan("n")
       .build(readOnly = false)

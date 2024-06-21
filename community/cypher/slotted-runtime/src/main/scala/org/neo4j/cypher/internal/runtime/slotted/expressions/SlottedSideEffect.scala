@@ -27,12 +27,14 @@ import org.neo4j.cypher.internal.runtime.interpreted.IsMap
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.CreateNode.handleNaNValue
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.CreateNode.handleNoValue
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.CreateRelationship
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.SideEffect
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.LazyLabel
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.runtime.makeValueNeoSafe
 import org.neo4j.cypher.internal.runtime.slotted.pipes.CreateNodeSlottedCommand
 import org.neo4j.cypher.internal.runtime.slotted.pipes.CreateRelationshipSlottedCommand
+import org.neo4j.cypher.operations.CypherFunctions
 import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.exceptions.InternalException
 import org.neo4j.kernel.api.StatementConstants
@@ -116,13 +118,16 @@ case class CreateSlottedRelationship(command: CreateRelationshipSlottedCommand, 
   }
 }
 
-case class SlottedRemoveLabelsOperation(nodeSlot: Slot, labels: Seq[LazyLabel]) extends SideEffect {
+case class SlottedRemoveLabelsOperation(nodeSlot: Slot, labels: Seq[LazyLabel], dynamicLabels: Seq[Expression])
+    extends SideEffect {
   private val getFromNodeFunction = makeGetPrimitiveNodeFromSlotFunctionFor(nodeSlot)
 
   override def execute(executionContext: CypherRow, state: QueryState): Unit = {
     val node = getFromNodeFunction.applyAsLong(executionContext)
     if (node != StatementConstants.NO_SUCH_NODE) {
-      val labelIds = labels.map(_.getOrCreateId(state.query))
+      val labelIds = labels.map(_.getOrCreateId(state.query)) ++ dynamicLabels.map(e => {
+        state.query.getOrCreateLabelId(CypherFunctions.asString(e(executionContext, state)))
+      })
       state.query.removeLabelsFromNode(node, labelIds.iterator)
     }
   }

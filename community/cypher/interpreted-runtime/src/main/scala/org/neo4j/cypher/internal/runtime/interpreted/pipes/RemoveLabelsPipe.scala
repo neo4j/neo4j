@@ -23,12 +23,15 @@ import org.neo4j.cypher.internal.runtime.CastSupport
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.GraphElementPropertyFunctions
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.util.attribution.Id
+import org.neo4j.cypher.operations.CypherFunctions
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.VirtualNodeValue
 
-case class RemoveLabelsPipe(src: Pipe, variable: String, labels: Seq[LazyLabel])(val id: Id = Id.INVALID_ID)
-    extends PipeWithSource(src) with GraphElementPropertyFunctions {
+case class RemoveLabelsPipe(src: Pipe, variable: String, labels: Seq[LazyLabel], dynamicLabels: Seq[Expression])(
+  val id: Id = Id.INVALID_ID
+) extends PipeWithSource(src) with GraphElementPropertyFunctions {
 
   override protected def internalCreateResults(
     input: ClosingIterator[CypherRow],
@@ -36,13 +39,15 @@ case class RemoveLabelsPipe(src: Pipe, variable: String, labels: Seq[LazyLabel])
   ): ClosingIterator[CypherRow] = {
     input.map { row =>
       val item = row.getByName(variable)
-      if (!(item eq Values.NO_VALUE)) removeLabels(state, CastSupport.castOrFail[VirtualNodeValue](item).id)
+      if (!(item eq Values.NO_VALUE)) removeLabels(row, state, CastSupport.castOrFail[VirtualNodeValue](item).id)
       row
     }
   }
 
-  private def removeLabels(state: QueryState, nodeId: Long): Int = {
-    val labelIds = labels.map(_.getId(state.query)).filter(_ != LazyLabel.UNKNOWN)
+  private def removeLabels(row: CypherRow, state: QueryState, nodeId: Long): Int = {
+    val labelIds = (labels.map(_.getId(state.query)) ++ dynamicLabels.map(l =>
+      state.query.getOptLabelId(CypherFunctions.asString(l(row, state))).getOrElse(LazyLabel.UNKNOWN)
+    )).filter(_ != LazyLabel.UNKNOWN)
     state.query.removeLabelsFromNode(nodeId, labelIds.iterator)
   }
 }

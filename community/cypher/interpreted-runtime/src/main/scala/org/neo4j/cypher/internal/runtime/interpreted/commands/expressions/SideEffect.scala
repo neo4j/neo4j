@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.DeletePipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.LazyLabel
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.runtime.makeValueNeoSafe
+import org.neo4j.cypher.operations.CypherFunctions
 import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.exceptions.InternalException
 import org.neo4j.exceptions.InvalidSemanticsException
@@ -175,13 +176,16 @@ object CreateRelationship {
     fail(startVariableName, relTypeName, endVariableName, key, "NaN")
 }
 
-case class RemoveLabelsOperation(nodeName: String, labels: Seq[LazyLabel]) extends SideEffect {
+case class RemoveLabelsOperation(nodeName: String, labels: Seq[LazyLabel], dynamicLabels: Seq[Expression])
+    extends SideEffect {
 
   override def execute(executionContext: CypherRow, state: QueryState): Unit = {
     val value: AnyValue = executionContext.getByName(nodeName)
     if (!(value eq Values.NO_VALUE)) {
       val nodeId = CastSupport.castOrFail[VirtualNodeValue](value).id()
-      val labelIds = labels.map(_.getOrCreateId(state.query))
+      val labelIds = labels.map(_.getOrCreateId(state.query)) ++ dynamicLabels.map(e => {
+        state.query.getOrCreateLabelId(CypherFunctions.asString(e(executionContext, state)))
+      })
       state.query.removeLabelsFromNode(nodeId, labelIds.iterator)
     }
   }

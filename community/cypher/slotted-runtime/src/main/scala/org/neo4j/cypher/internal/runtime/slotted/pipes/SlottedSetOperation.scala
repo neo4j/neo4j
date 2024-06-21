@@ -36,19 +36,23 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.LazyLabel
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.LazyPropertyKey
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.SetOperation
+import org.neo4j.cypher.operations.CypherFunctions
 import org.neo4j.internal.kernel.api.NodeCursor
 import org.neo4j.internal.kernel.api.RelationshipScanCursor
 import org.neo4j.kernel.api.StatementConstants
 import org.neo4j.values.virtual.VirtualNodeValue
 import org.neo4j.values.virtual.VirtualRelationshipValue
 
-case class SlottedSetLabelsOperation(nodeSlot: Slot, labels: Seq[LazyLabel]) extends SetOperation {
+case class SlottedSetLabelsOperation(nodeSlot: Slot, labels: Seq[LazyLabel], dynamicLabels: Seq[Expression])
+    extends SetOperation {
   private val getFromNodeFunction = makeGetPrimitiveNodeFromSlotFunctionFor(nodeSlot)
 
   override def set(executionContext: CypherRow, state: QueryState): Long = {
     val node = getFromNodeFunction.applyAsLong(executionContext)
     if (node != StatementConstants.NO_SUCH_NODE) {
-      val labelIds = labels.map(_.getOrCreateId(state.query))
+      val labelIds = labels.map(_.getOrCreateId(state.query)) ++ dynamicLabels.map(e => {
+        state.query.getOrCreateLabelId(CypherFunctions.asString(e(executionContext, state)))
+      })
       state.query.setLabelsOnNode(node, labelIds.iterator).toLong
     } else {
       0L

@@ -138,6 +138,7 @@ import org.neo4j.cypher.internal.runtime.spec.tests.RelationshipIndexSeekTestBas
 import org.neo4j.cypher.internal.runtime.spec.tests.RelationshipIndexStartsWithSeekTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.RelationshipLockingUniqueIndexSeekTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.RelationshipTypeScanTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.RemoveDynamicLabelsTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.RemoveLabelsTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.RightOuterHashJoinTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.RollupApplyTestBase
@@ -146,6 +147,7 @@ import org.neo4j.cypher.internal.runtime.spec.tests.RuntimeDebugLoggingTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.SelectOrAntiSemiApplyTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.SelectOrSemiApplyTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.SemiApplyTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.SetDynamicLabelsTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.SetDynamicPropertyTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.SetLabelsTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.SetNodePropertiesFromMapTestBase
@@ -471,6 +473,7 @@ class InterpretedSetRelationshipPropertiesFromMapTest
 class InterpretedMergeTest extends MergeTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedMergeStressTest extends MergeStressTestBase(COMMUNITY.EDITION, InterpretedRuntime)
 class InterpretedSetLabelsTest extends SetLabelsTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
+class InterpretedSetDynamicLabelsTest extends SetDynamicLabelsTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 
 class InterpretedForEachTest extends ForeachTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedForEachApplyTest extends ForeachApplyTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
@@ -515,6 +518,9 @@ class InterpretedDeleteExpressionTest extends DeleteExpressionTestBase(COMMUNITY
 class InterpretedDeleteDetachExpressionTest
     extends DeleteDetachExpressionTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedRemoveLabelsTest extends RemoveLabelsTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
+
+class InterpretedRemoveDynamicLabelsTest
+    extends RemoveDynamicLabelsTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 
 // CONCURRENT UPDATE STRESS TESTS
 class InterpretedRelationshipTypeScanConcurrencyStressTest

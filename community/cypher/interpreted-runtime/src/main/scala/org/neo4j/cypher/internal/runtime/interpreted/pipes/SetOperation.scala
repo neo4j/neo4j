@@ -610,13 +610,16 @@ case class SetPropertyFromMapOperation(entityExpr: Expression, expression: Expre
   override def needsExclusiveLock = true
 }
 
-case class SetLabelsOperation(nodeName: String, labels: Seq[LazyLabel]) extends SetOperation {
+case class SetLabelsOperation(nodeName: String, labels: Seq[LazyLabel], dynamicLabels: Seq[Expression])
+    extends SetOperation {
 
   override def set(executionContext: CypherRow, state: QueryState): Long = {
     val value: AnyValue = executionContext.getByName(nodeName)
     if (!(value eq Values.NO_VALUE)) {
       val nodeId = CastSupport.castOrFail[VirtualNodeValue](value).id()
-      val labelIds = labels.map(_.getOrCreateId(state.query))
+      val labelIds = labels.map(_.getOrCreateId(state.query)) ++ dynamicLabels.map(e => {
+        state.query.getOrCreateLabelId(CypherFunctions.asString(e(executionContext, state)))
+      })
       state.query.setLabelsOnNode(nodeId, labelIds.iterator).toLong
     } else {
       0L

@@ -2084,7 +2084,7 @@ trait WriteOperatorsDbHitsTestBase[CONTEXT <: RuntimeContext] {
         val setLabelToNode = 2 * sizeHint
         tokenLookup + setLabelToNode
       } else {
-        2 * costOfLabelLookup + 3 * sizeHint
+        2 * 3 * costOfLabelLookup * sizeHint + 3 * sizeHint
       }
 
     foreachProfile.rows() shouldBe sizeHint
@@ -2148,7 +2148,7 @@ trait WriteOperatorsDbHitsTestBase[CONTEXT <: RuntimeContext] {
         val setLabelToNode = 3 * sizeHint
         tokenLookup + setLabelToNode
       } else {
-        costOfLabelLookup + 3 * sizeHint
+        costOfLabelLookup * 3 * sizeHint + 3 * sizeHint
       }
 
     foreachProfile.rows() shouldBe sizeHint
@@ -2267,7 +2267,7 @@ trait WriteOperatorsDbHitsTestBase[CONTEXT <: RuntimeContext] {
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("l")
       .projection("labels(n) AS l")
-      .setDynamicLabels("n", labelsSet.map(l => s"'$l''"): _*)
+      .setDynamicLabels("n", labelsSet.map(l => s"'$l'"): _*)
       .allNodeScan("n")
       .build(readOnly = false)
 
@@ -2283,9 +2283,7 @@ trait WriteOperatorsDbHitsTestBase[CONTEXT <: RuntimeContext] {
         sizeHint
       }
 
-    val labelTokenLookup = labelsSet.size
-
-    setLabelsProfile.dbHits() shouldBe setLabelsToNodeDbHits + labelTokenLookup
+    setLabelsProfile.dbHits() shouldBe setLabelsToNodeDbHits + sizeHint * labelsSet.size
   }
 
   test("should profile db hits on remove dynamic labels") {
@@ -2301,7 +2299,7 @@ trait WriteOperatorsDbHitsTestBase[CONTEXT <: RuntimeContext] {
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("n")
-      .removeDynamicLabels("n", "`Label`", "`OtherLabel`")
+      .removeDynamicLabels("n", "'Label'", "'OtherLabel'")
       .allNodeScan("n")
       .build(readOnly = false)
 
@@ -2310,7 +2308,7 @@ trait WriteOperatorsDbHitsTestBase[CONTEXT <: RuntimeContext] {
     consume(runtimeResult)
     val removeLabelsProfile = runtimeResult.runtimeResult.queryProfile().operatorProfile(1)
 
-    val expectedLabelLookups = 2
+    val expectedLabelLookups = 2 * nodeCount
 
     val labelsRemovedFromNodeDbHits =
       if (useWritesWithProfiling) {
