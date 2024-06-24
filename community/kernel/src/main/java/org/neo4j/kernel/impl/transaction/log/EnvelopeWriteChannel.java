@@ -489,6 +489,8 @@ public class EnvelopeWriteChannel implements PhysicalLogChannel {
     private void rotateLogFile() throws IOException {
         try (var logAppendEvent = databaseTracer.logAppend()) {
             logRotation.rotateLogFile(logAppendEvent);
+            // and notify the event tracer
+            logAppendEvent.setLogRotated(true);
         }
     }
 

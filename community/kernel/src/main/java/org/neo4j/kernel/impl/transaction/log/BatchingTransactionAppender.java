@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
+import static org.neo4j.kernel.KernelVersion.VERSION_ENVELOPED_TRANSACTION_LOGS_INTRODUCED;
+
 import java.io.IOException;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
@@ -91,14 +93,21 @@ class BatchingTransactionAppender extends LifecycleAdapter implements Transactio
         if (logFile.forceAfterAppend(logAppendEvent)) {
             // We got lucky and were the one forcing the log. It's enough if ones of all doing concurrent committers
             // checks the need for log rotation.
-            boolean logRotated = logRotation.rotateLogIfNeeded(logAppendEvent);
-            logAppendEvent.setLogRotated(logRotated);
+            if (checkIfRotationCheckIsRequired(batch)) {
+                logAppendEvent.setLogRotated(logRotation.rotateLogIfNeeded(logAppendEvent));
+            }
         }
 
         // Mark all transactions as committed
         publishAsCommitted(batch);
 
         return lastTransactionId;
+    }
+
+    private static boolean checkIfRotationCheckIsRequired(CommandBatchToApply batch) {
+        // for envelopes, rotation happens within the channel during appends so rotating post-append isn't required
+        return batch != null
+                && batch.commandBatch().kernelVersion().isLessThan(VERSION_ENVELOPED_TRANSACTION_LOGS_INTRODUCED);
     }
 
     private static void publishAsCommitted(CommandBatchToApply batch) {

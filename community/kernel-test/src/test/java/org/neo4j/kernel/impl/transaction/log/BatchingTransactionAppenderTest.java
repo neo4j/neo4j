@@ -26,6 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyByte;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -40,8 +41,11 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.common.Subject.ANONYMOUS;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.latest_kernel_version;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.latest_runtime_version;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.KernelVersion.DEFAULT_BOOTSTRAP_VERSION;
+import static org.neo4j.kernel.KernelVersion.VERSION_ENVELOPED_TRANSACTION_LOGS_INTRODUCED;
 import static org.neo4j.kernel.impl.transaction.log.LogChannelUtils.getReadChannel;
 import static org.neo4j.kernel.impl.transaction.log.LogChannelUtils.getWriteChannel;
 import static org.neo4j.kernel.impl.transaction.log.LogIndexEncoding.encodeLogIndex;
@@ -71,8 +75,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.mockito.Mockito;
+import org.neo4j.configuration.Config;
+import org.neo4j.dbms.database.DbmsRuntimeVersion;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.BinarySupportedKernelVersions;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.impl.api.CommandCommitListeners;
@@ -91,6 +98,7 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFiles;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
+import org.neo4j.kernel.impl.transaction.tracing.AppendTransactionEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionWriteEvent;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -113,7 +121,6 @@ import org.neo4j.test.utils.TestDirectory;
 @TestDirectoryExtension
 @ExtendWith(LifeExtension.class)
 class BatchingTransactionAppenderTest {
-    private final LogAppendEvent logAppendEvent = LogAppendEvent.NULL;
     private final Panic databasePanic = mock(DatabaseHealth.class);
     private final LogFile logFile = mock(LogFile.class);
     private final LogFiles logFiles = mock(TransactionLogFiles.class);
@@ -170,7 +177,7 @@ class BatchingTransactionAppenderTest {
             appender.append(
                     new TransactionToApply(
                             transaction, NULL_CONTEXT, StoreCursors.NULL, NO_COMMITMENT, TransactionIdGenerator.EMPTY),
-                    logAppendEvent);
+                    LogAppendEvent.NULL);
 
             assertEquals(2, versionProvider.getVersionLookedUp());
         }
@@ -186,42 +193,17 @@ class BatchingTransactionAppenderTest {
     @ParameterizedTest
     @KernelVersionSource(atLeast = "5.0")
     void shouldAppendSingleTransaction(KernelVersion kernelVersion) throws Exception {
-        CommandBatch transaction =
-                transaction(singleTestCommand(kernelVersion), 5, 12345, 4545, 12345 + 10, kernelVersion);
+        assertShouldAppendSingleTransaction(kernelVersion, BINARY_VERSIONS);
+    }
 
-        try (var writeChannel = getWriteChannel(fs, path, kernelVersion)) {
-            when(logFile.getTransactionLogWriter())
-                    .thenReturn(new TransactionLogWriter(
-                            writeChannel, () -> kernelVersion, BINARY_VERSIONS, LogRotation.NO_ROTATION));
-            long txId = 15;
-            when(transactionIdStore.nextCommittingTransactionId()).thenReturn(txId);
-            when(transactionIdStore.getLastCommittedTransaction())
-                    .thenReturn(new TransactionId(
-                            txId,
-                            txId + 2,
-                            DEFAULT_BOOTSTRAP_VERSION,
-                            BASE_TX_CHECKSUM,
-                            BASE_TX_COMMIT_TIMESTAMP,
-                            UNKNOWN_CONSENSUS_INDEX));
-            TransactionAppender appender = life.add(createTransactionAppender());
-
-            appender.append(
-                    new TransactionToApply(
-                            transaction, NULL_CONTEXT, StoreCursors.NULL, NO_COMMITMENT, TransactionIdGenerator.EMPTY),
-                    logAppendEvent);
-        }
-
-        final LogEntryReader logEntryReader = logEntryReader();
-        try (var readChannel = getReadChannel(fs, path, kernelVersion);
-                CommittedCommandBatchCursor reader = new CommittedCommandBatchCursor(readChannel, logEntryReader)) {
-            reader.next();
-            CommittedCommandBatch commandBatch = reader.get();
-            CommandBatch tx = commandBatch.commandBatch();
-            assertEquals(transaction.consensusIndex(), tx.consensusIndex());
-            assertEquals(transaction.getTimeStarted(), tx.getTimeStarted());
-            assertEquals(transaction.getTimeCommitted(), commandBatch.timeWritten());
-            assertEquals(transaction.getLatestCommittedTxWhenStarted(), tx.getLatestCommittedTxWhenStarted());
-        }
+    @Test
+    void shouldAppendSingleTransactionInGloriousFuture() throws Exception {
+        assertShouldAppendSingleTransaction(
+                KernelVersion.GLORIOUS_FUTURE,
+                new BinarySupportedKernelVersions(Config.newBuilder()
+                        .set(latest_kernel_version, KernelVersion.GLORIOUS_FUTURE.version())
+                        .set(latest_runtime_version, DbmsRuntimeVersion.GLORIOUS_FUTURE.getVersion())
+                        .build()));
     }
 
     @Test
@@ -238,7 +220,7 @@ class BatchingTransactionAppenderTest {
             CommandBatch batch2 = transaction(singleTestCommand(), 0, 0, 1, 0, LATEST_KERNEL_VERSION);
             CommandBatch batch3 = transaction(singleTestCommand(), 0, 0, 1, 0, LATEST_KERNEL_VERSION);
             TransactionToApply batch = batchOf(batch1, batch2, batch3);
-            appender.append(batch, logAppendEvent);
+            appender.append(batch, LogAppendEvent.NULL);
 
             verify(logWriterSpy)
                     .append(eq(batch1), eq(2L), anyLong(), anyLong(), anyInt(), any(LogPosition.class), any());
@@ -294,7 +276,7 @@ class BatchingTransactionAppenderTest {
                             StoreCursors.NULL,
                             new TransactionCommitment(transactionIdStore),
                             transactionIdGenerator),
-                    logAppendEvent);
+                    LogAppendEvent.NULL);
         }
 
         LogEntryReader logEntryReader = logEntryReader();
@@ -349,7 +331,7 @@ class BatchingTransactionAppenderTest {
                                 StoreCursors.NULL,
                                 new TransactionCommitment(transactionIdStore),
                                 new IdStoreTransactionIdGenerator(transactionIdStore)),
-                        logAppendEvent));
+                        LogAppendEvent.NULL));
         assertThat(e.getMessage()).contains("to be applied, but appending it ended up generating an");
     }
 
@@ -398,7 +380,7 @@ class BatchingTransactionAppenderTest {
                                 StoreCursors.NULL,
                                 new TransactionCommitment(transactionIdStore),
                                 transactionIdGenerator),
-                        logAppendEvent));
+                        LogAppendEvent.NULL));
         assertSame(failure, e);
         verify(transactionIdStore).nextCommittingTransactionId();
         verify(transactionIdStore, never())
@@ -464,7 +446,7 @@ class BatchingTransactionAppenderTest {
                                 StoreCursors.NULL,
                                 new TransactionCommitment(transactionIdStore),
                                 new IdStoreTransactionIdGenerator(transactionIdStore)),
-                        logAppendEvent));
+                        LogAppendEvent.NULL));
         assertSame(failure, e);
         verify(transactionIdStore).nextCommittingTransactionId();
         verify(transactionIdStore, never())
@@ -497,6 +479,58 @@ class BatchingTransactionAppenderTest {
         assertThrows(
                 TransactionFailureException.class,
                 () -> commitProcess.commit(batch, TransactionWriteEvent.NULL, TransactionApplicationMode.EXTERNAL));
+    }
+
+    private void assertShouldAppendSingleTransaction(
+            KernelVersion kernelVersion, BinarySupportedKernelVersions supportedKernelVersions) throws Exception {
+        final var logAppendEvent = mock(LogAppendEvent.class);
+        when(logAppendEvent.beginAppendTransaction(anyInt())).thenReturn(AppendTransactionEvent.NULL);
+
+        when(logFile.forceAfterAppend(eq(logAppendEvent))).thenReturn(true);
+        when(logFile.getLogRotation()).thenReturn(LogRotation.NO_ROTATION);
+
+        CommandBatch transaction =
+                transaction(singleTestCommand(kernelVersion), 5, 12345, 4545, 12345 + 10, kernelVersion);
+
+        try (var writeChannel = getWriteChannel(fs, path, kernelVersion)) {
+            when(logFile.getTransactionLogWriter())
+                    .thenReturn(new TransactionLogWriter(
+                            writeChannel, () -> kernelVersion, supportedKernelVersions, LogRotation.NO_ROTATION));
+            long txId = 15;
+            when(transactionIdStore.nextCommittingTransactionId()).thenReturn(txId);
+            when(transactionIdStore.getLastCommittedTransaction())
+                    .thenReturn(new TransactionId(
+                            txId,
+                            txId + 2,
+                            DEFAULT_BOOTSTRAP_VERSION,
+                            BASE_TX_CHECKSUM,
+                            BASE_TX_COMMIT_TIMESTAMP,
+                            UNKNOWN_CONSENSUS_INDEX));
+            TransactionAppender appender = life.add(createTransactionAppender());
+
+            appender.append(
+                    new TransactionToApply(
+                            transaction, NULL_CONTEXT, StoreCursors.NULL, NO_COMMITMENT, TransactionIdGenerator.EMPTY),
+                    logAppendEvent);
+        }
+
+        final LogEntryReader logEntryReader = logEntryReader(supportedKernelVersions);
+        try (var readChannel = getReadChannel(fs, path, kernelVersion);
+                CommittedCommandBatchCursor reader = new CommittedCommandBatchCursor(readChannel, logEntryReader)) {
+            reader.next();
+            CommittedCommandBatch commandBatch = reader.get();
+            CommandBatch tx = commandBatch.commandBatch();
+            assertEquals(transaction.consensusIndex(), tx.consensusIndex());
+            assertEquals(transaction.getTimeStarted(), tx.getTimeStarted());
+            assertEquals(transaction.getTimeCommitted(), commandBatch.timeWritten());
+            assertEquals(transaction.getLatestCommittedTxWhenStarted(), tx.getLatestCommittedTxWhenStarted());
+        }
+
+        if (kernelVersion.isLessThan(VERSION_ENVELOPED_TRANSACTION_LOGS_INTRODUCED)) {
+            verify(logAppendEvent).setLogRotated(eq(false));
+        } else {
+            verify(logAppendEvent, never()).setLogRotated(anyBoolean());
+        }
     }
 
     private BatchingTransactionAppender createTransactionAppender() {

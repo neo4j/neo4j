@@ -29,7 +29,10 @@ public final class TestLogEntryReader {
     private TestLogEntryReader() {}
 
     public static LogEntryReader logEntryReader() {
-        return new VersionAwareLogEntryReader(
-                TestCommandReaderFactory.INSTANCE, new BinarySupportedKernelVersions(Config.defaults()));
+        return logEntryReader(new BinarySupportedKernelVersions(Config.defaults()));
+    }
+
+    public static LogEntryReader logEntryReader(BinarySupportedKernelVersions supportedKernelVersions) {
+        return new VersionAwareLogEntryReader(TestCommandReaderFactory.INSTANCE, supportedKernelVersions);
     }
 }
