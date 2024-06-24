@@ -340,46 +340,15 @@ trait GraphIcing {
     // Create vector index
 
     def createNodeVectorIndex(
-      name: String,
       label: String,
       property: String,
       dimensions: Int,
-      similarityFunction: String
+      similarityFunction: String,
+      maybeName: Option[String] = None
     ): IndexDefinition = {
       createNodeIndex(
-        Some(name),
+        maybeName,
         label,
-        Seq(property),
-        IndexType.VECTOR,
-        maybeConfig = Some(getVectorConfigMap(dimensions, similarityFunction))
-      )
-    }
-
-    def createNodeVectorIndex(
-      label: String,
-      property: String,
-      dimensions: Int,
-      similarityFunction: String
-    ): IndexDefinition = {
-      createNodeIndex(
-        None,
-        label,
-        Seq(property),
-        IndexType.VECTOR,
-        maybeConfig = Some(getVectorConfigMap(dimensions, similarityFunction))
-      )
-    }
-
-    def createRelationshipVectorIndex(
-      name: String,
-      relType: String,
-      property: String,
-      dimensions: Int,
-      similarityFunction: String
-    ): IndexDefinition = {
-      createRelationshipIndex(
-        Some(name),
-        relType,
         Seq(property),
         IndexType.VECTOR,
         maybeConfig = Some(getVectorConfigMap(dimensions, similarityFunction))
@@ -390,10 +359,11 @@ trait GraphIcing {
       relType: String,
       property: String,
       dimensions: Int,
-      similarityFunction: String
+      similarityFunction: String,
+      maybeName: Option[String] = None
     ): IndexDefinition = {
       createRelationshipIndex(
-        None,
+        maybeName,
         relType,
         Seq(property),
         IndexType.VECTOR,
