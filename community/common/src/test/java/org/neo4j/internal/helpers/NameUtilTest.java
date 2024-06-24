@@ -20,6 +20,7 @@
 package org.neo4j.internal.helpers;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.internal.helpers.NameUtil.escapeDoubleQuotes;
 import static org.neo4j.internal.helpers.NameUtil.escapeGlob;
 import static org.neo4j.internal.helpers.NameUtil.escapeName;
 import static org.neo4j.internal.helpers.NameUtil.escapeSingleQuotes;
@@ -56,6 +57,11 @@ public class NameUtilTest {
     @Test
     void escapeSingleQuotesAlphanumericStrings() {
         assertThat(escapeSingleQuotes("\\'test'")).isEqualTo("\\\\\\'test\\'");
+    }
+
+    @Test
+    void escapeDoubleQuotesAlphanumericStrings() {
+        assertThat(escapeDoubleQuotes("\\\"test\"")).isEqualTo("\\\\\\\"test\\\"");
     }
 
     @Test

@@ -41,6 +41,10 @@ public class NameUtil {
         return string.replace("\\", "\\\\").replace("'", "\\'");
     }
 
+    public static String escapeDoubleQuotes(String string) {
+        return string.replace("\\", "\\\\").replace("\"", "\\\"");
+    }
+
     public static String forceEscapeName(String string) {
         return BACKTICK + escapeBackticks(string) + BACKTICK;
     }
