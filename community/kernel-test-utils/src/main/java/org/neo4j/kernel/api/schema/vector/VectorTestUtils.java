@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Map;
 import java.util.Objects;
+import java.util.SortedMap;
 import org.apache.commons.lang3.ArrayUtils;
 import org.eclipse.collections.api.LazyIterable;
 import org.eclipse.collections.api.RichIterable;
@@ -665,6 +666,19 @@ public class VectorTestUtils {
 
         public Map<IndexSetting, Object> toMap() {
             return settings.asUnmodifiable();
+        }
+
+        public SortedMap<String, String> toCypherValueStringMap() {
+            return settings.keyValuesView()
+                    .toSortedMap(
+                            String.CASE_INSENSITIVE_ORDER, kv -> kv.getOne().getSettingName(), kv -> {
+                                final var type = kv.getOne().getType();
+                                final var value = kv.getTwo().toString();
+                                return type.equals(String.class)
+                                        ? '"' + NameUtil.escapeDoubleQuotes(value) + '"'
+                                        : value;
+                            })
+                    .asUnmodifiable();
         }
 
         public MapValue toMapValue() {

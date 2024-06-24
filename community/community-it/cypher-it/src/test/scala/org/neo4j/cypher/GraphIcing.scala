@@ -30,14 +30,15 @@ import org.neo4j.graphdb.schema.ConstraintDefinition
 import org.neo4j.graphdb.schema.ConstraintType
 import org.neo4j.graphdb.schema.IndexDefinition
 import org.neo4j.graphdb.schema.IndexSetting
-import org.neo4j.graphdb.schema.IndexSettingImpl
 import org.neo4j.graphdb.schema.IndexType
 import org.neo4j.graphdb.schema.PropertyType
+import org.neo4j.internal.helpers.NameUtil
 import org.neo4j.internal.helpers.collection.Iterables
 import org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED
 import org.neo4j.internal.schema.IndexProviderDescriptor
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.KernelTransaction.Type
+import org.neo4j.kernel.api.schema.vector.VectorTestUtils.VectorIndexSettings
 import org.neo4j.kernel.impl.coreapi.InternalTransaction
 import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl
 import org.neo4j.kernel.impl.coreapi.schema.NodePropertyTypeConstraintDefinition
@@ -47,9 +48,12 @@ import org.neo4j.kernel.impl.query.QueryExecutionConfiguration
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats
 import org.neo4j.kernel.impl.util.ValueUtils
+import org.neo4j.values.storable.Values
+import org.neo4j.values.utils.PrettyPrinter
 
 import java.util.concurrent.TimeUnit
 
+import scala.collection.immutable.SortedMap
 import scala.jdk.CollectionConverters.IterableHasAsScala
 import scala.jdk.CollectionConverters.MapHasAsScala
 
@@ -342,8 +346,7 @@ trait GraphIcing {
     def createNodeVectorIndex(
       label: String,
       property: String,
-      dimensions: Int,
-      similarityFunction: String,
+      maybeSettings: Option[VectorIndexSettings],
       maybeName: Option[String] = None
     ): IndexDefinition = {
       createNodeIndex(
@@ -351,15 +354,14 @@ trait GraphIcing {
         label,
         Seq(property),
         IndexType.VECTOR,
-        maybeConfig = Some(getVectorConfigMap(dimensions, similarityFunction))
+        maybeConfig = getVectorIndexSettings(maybeSettings)
       )
     }
 
     def createRelationshipVectorIndex(
       relType: String,
       property: String,
-      dimensions: Int,
-      similarityFunction: String,
+      maybeSettings: Option[VectorIndexSettings],
       maybeName: Option[String] = None
     ): IndexDefinition = {
       createRelationshipIndex(
@@ -367,15 +369,26 @@ trait GraphIcing {
         relType,
         Seq(property),
         IndexType.VECTOR,
-        maybeConfig = Some(getVectorConfigMap(dimensions, similarityFunction))
+        maybeConfig = getVectorIndexSettings(maybeSettings)
       )
     }
 
-    private def getVectorConfigMap(dimensions: Int, similarityFunction: String): Map[String, String] =
-      Map(
-        IndexSettingImpl.VECTOR_DIMENSIONS.getSettingName -> dimensions.toString,
-        IndexSettingImpl.VECTOR_SIMILARITY_FUNCTION.getSettingName -> s"'$similarityFunction'"
-      )
+    private def getVectorIndexSettings(maybeSettings: Option[VectorIndexSettings]) = {
+      val pp = new PrettyPrinter()
+      maybeSettings.map {
+        settings =>
+          SortedMap.from(settings.toStringObjectMap.asScala.map {
+            case (setting, obj) =>
+              pp.reset()
+              val value = obj match {
+                case string: String => Values.stringValue(NameUtil.escapeDoubleQuotes(string))
+                case _              => Values.of(obj)
+              }
+              value.writeTo(pp)
+              NameUtil.escapeBackticks(setting) -> pp.value()
+          })(Ordering.comparatorToOrdering(String.CASE_INSENSITIVE_ORDER))
+      }
+    }
 
     // Create label/prop index help methods
 
