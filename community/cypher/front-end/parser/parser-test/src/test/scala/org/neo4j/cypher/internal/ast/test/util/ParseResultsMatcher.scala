@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.ast.test.util.AstParsing.parseAst
 import org.neo4j.cypher.internal.ast.test.util.MatchResults.merge
 import org.neo4j.cypher.internal.ast.test.util.VerifyAstPositionTestSupport.findPosMismatch
 import org.neo4j.cypher.internal.ast.test.util.VerifyStatementUseGraph.findUseGraphMismatch
+import org.neo4j.cypher.internal.parser.ast.AstBuildingAntlrParser
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.exceptions.SyntaxException
@@ -284,7 +285,9 @@ object MatchResults {
       case (parser, ParseFailure(throwable)) =>
         val hint = throwable match {
           case _: NullPointerException =>
-            Some("NullPointerExceptions can occur because of how def isSafeToFreeChildren is implemented")
+            Some(
+              s"NullPointerExceptions can occur because of how ${classOf[AstBuildingAntlrParser]}.isSafeToFreeChildren is implemented"
+            )
           case _ => None
         }
         s"""$parser result
