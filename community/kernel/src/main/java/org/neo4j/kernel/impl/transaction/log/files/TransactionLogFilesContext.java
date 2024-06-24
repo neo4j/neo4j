@@ -42,7 +42,6 @@ public class TransactionLogFilesContext {
     private final long checkpointRotationThreshold;
     private final AtomicBoolean tryPreallocateTransactionLogs;
     private final CommandReaderFactory commandReaderFactory;
-    private final LastCommittedTransactionIdProvider lastCommittedTransactionIdSupplier;
     private final LastAppendIndexLogFilesProvider lastAppendIndexLogFilesProvider;
     private final LastAppendIndexProvider lastAppendIndexProvider;
     private final LastClosedPositionProvider lastClosedPositionProvider;
@@ -74,7 +73,6 @@ public class TransactionLogFilesContext {
             CommandReaderFactory commandReaderFactory,
             LastAppendIndexLogFilesProvider lastAppendIndexLogFilesProvider,
             LastAppendIndexProvider lastAppendIndexProvider,
-            LastCommittedTransactionIdProvider lastCommittedTransactionIdSupplier,
             LastClosedPositionProvider lastClosedPositionProvider,
             LogVersionRepositoryProvider logVersionRepositoryProvider,
             LogFileVersionTracker versionTracker,
@@ -102,7 +100,6 @@ public class TransactionLogFilesContext {
         this.commandReaderFactory = commandReaderFactory;
         this.lastAppendIndexLogFilesProvider = lastAppendIndexLogFilesProvider;
         this.lastAppendIndexProvider = lastAppendIndexProvider;
-        this.lastCommittedTransactionIdSupplier = lastCommittedTransactionIdSupplier;
         this.lastClosedPositionProvider = lastClosedPositionProvider;
         this.logVersionRepositoryProvider = logVersionRepositoryProvider;
         this.versionTracker = versionTracker;
@@ -144,10 +141,6 @@ public class TransactionLogFilesContext {
 
     public LogFileVersionTracker getLogFileVersionTracker() {
         return versionTracker;
-    }
-
-    public LastCommittedTransactionIdProvider getLastCommittedTransactionIdProvider() {
-        return lastCommittedTransactionIdSupplier;
     }
 
     public LastAppendIndexLogFilesProvider getLastAppendIndexLogFilesProvider() {

@@ -224,7 +224,6 @@ class TransactionLogChannelAllocatorIT {
                 TestCommandReaderFactory.INSTANCE,
                 any -> 1L,
                 () -> 1L,
-                any -> 1L,
                 any -> new LogPosition(0, 1),
                 any -> new SimpleLogVersionRepository(),
                 LogFileVersionTracker.NO_OP,

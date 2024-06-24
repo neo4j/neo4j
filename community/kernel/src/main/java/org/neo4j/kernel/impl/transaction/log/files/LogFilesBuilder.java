@@ -94,7 +94,6 @@ public class LogFilesBuilder {
     private LogFileVersionTracker logFileVersionTracker;
     private TransactionIdStore transactionIdStore;
     private AppendIndexProvider appendIndexProvider;
-    private LongSupplier lastCommittedTransactionIdSupplier;
     private ThrowingSupplier<LogPosition, IOException> lastClosedPositionSupplier;
     private boolean fileBasedOperationsOnly;
     private DatabaseTracers databaseTracers = DatabaseTracers.EMPTY;
@@ -219,11 +218,6 @@ public class LogFilesBuilder {
         return this;
     }
 
-    public LogFilesBuilder withLastCommittedTransactionIdSupplier(LongSupplier transactionIdSupplier) {
-        this.lastCommittedTransactionIdSupplier = transactionIdSupplier;
-        return this;
-    }
-
     public LogFilesBuilder withConfig(Config config) {
         this.config = config;
         return this;
@@ -341,7 +335,6 @@ public class LogFilesBuilder {
         LastAppendIndexLogFilesProvider lastAppendIndexLogFilesProvider =
                 lastAppendIndexLogFilesProvider(availableAppendIndexProvider);
         var appendIndexProvider = lastAppendIndexProvider(availableAppendIndexProvider);
-        LastCommittedTransactionIdProvider lastCommittedIdSupplier = lastCommittedIdProvider();
         LastClosedPositionProvider lastClosedTransactionPositionProvider = closePositionProvider();
 
         // Register listener for rotation threshold
@@ -360,7 +353,6 @@ public class LogFilesBuilder {
                 commandReaderFactory(),
                 lastAppendIndexLogFilesProvider,
                 appendIndexProvider,
-                lastCommittedIdSupplier,
                 lastClosedTransactionPositionProvider,
                 logVersionRepositorySupplier,
                 versionTracker,
@@ -570,34 +562,6 @@ public class LogFilesBuilder {
         }
     }
 
-    private LastCommittedTransactionIdProvider lastCommittedIdProvider() {
-        if (lastCommittedTransactionIdSupplier != null) {
-            return new LongSupplierLastCommittedTransactionIdProvider(lastCommittedTransactionIdSupplier);
-        }
-        if (transactionIdStore != null) {
-            return new LongSupplierLastCommittedTransactionIdProvider(
-                    transactionIdStore::getLastCommittedTransactionId);
-        }
-        if (fileBasedOperationsOnly) {
-            return any -> {
-                throw new UnsupportedOperationException("Current version of log files can't perform any "
-                        + "operation that require availability of transaction id store. Please build full version of log files "
-                        + "to be able to use them.");
-            };
-        }
-        if (readOnlyStores) {
-            requireNonNull(databaseLayout, "Store directory is required.");
-            return new ReadOnlyLastCommittedTransactionIdProvider();
-        } else {
-            requireNonNull(
-                    dependencies,
-                    TransactionIdStore.class.getSimpleName() + " is required. "
-                            + "Please provide an instance or a dependencies where it can be found.");
-            return new LongSupplierLastCommittedTransactionIdProvider(
-                    () -> resolveDependency(TransactionIdStore.class).getLastCommittedTransactionId());
-        }
-    }
-
     private LastClosedPositionProvider closePositionProvider() {
         if (lastClosedPositionSupplier != null) {
             return any -> lastClosedPositionSupplier.get();
@@ -642,26 +606,6 @@ public class LogFilesBuilder {
 
     private <T> T resolveDependency(Class<T> clazz) {
         return dependencies.resolveDependency(clazz);
-    }
-
-    private static class LongSupplierLastCommittedTransactionIdProvider implements LastCommittedTransactionIdProvider {
-        private final LongSupplier idSupplier;
-
-        LongSupplierLastCommittedTransactionIdProvider(LongSupplier idSupplier) {
-            this.idSupplier = idSupplier;
-        }
-
-        @Override
-        public long getLastCommittedTransactionId(LogFiles logFiles) {
-            return idSupplier.getAsLong();
-        }
-    }
-
-    private static class ReadOnlyLastCommittedTransactionIdProvider implements LastCommittedTransactionIdProvider {
-        @Override
-        public long getLastCommittedTransactionId(LogFiles logFiles) {
-            return logFiles.getTailMetadata().getLastCommittedTransaction().id();
-        }
     }
 
     private static class LongSupplierLastAppendIndexLogFilesProvider implements LastAppendIndexLogFilesProvider {
