@@ -35,6 +35,7 @@ import org.eclipse.collections.api.factory.primitive.IntLists;
 import org.eclipse.collections.api.factory.primitive.LongLists;
 import org.eclipse.collections.api.factory.primitive.ShortLists;
 import org.eclipse.collections.api.map.MutableMap;
+import org.eclipse.collections.api.tuple.Pair;
 import org.eclipse.collections.impl.factory.Maps;
 import org.neo4j.graphdb.schema.IndexSetting;
 import org.neo4j.graphdb.schema.IndexSettingUtil;
@@ -668,16 +669,10 @@ public class VectorTestUtils {
             return settings.asUnmodifiable();
         }
 
-        public SortedMap<String, String> toCypherValueStringMap() {
+        public SortedMap<String, Object> toStringObjectMap() {
             return settings.keyValuesView()
                     .toSortedMap(
-                            String.CASE_INSENSITIVE_ORDER, kv -> kv.getOne().getSettingName(), kv -> {
-                                final var type = kv.getOne().getType();
-                                final var value = kv.getTwo().toString();
-                                return type.equals(String.class)
-                                        ? '"' + NameUtil.escapeDoubleQuotes(value) + '"'
-                                        : value;
-                            })
+                            String.CASE_INSENSITIVE_ORDER, kv -> kv.getOne().getSettingName(), Pair::getTwo)
                     .asUnmodifiable();
         }
 
