@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.core;
 
 import static java.lang.String.format;
 import static org.apache.commons.lang3.ArrayUtils.indexOf;
-import static org.neo4j.internal.kernel.api.Read.NO_ID;
 import static org.neo4j.kernel.impl.coreapi.DefaultTransactionExceptionMapper.mapStatusException;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 import static org.neo4j.storageengine.api.PropertySelection.ALL_PROPERTIES;
@@ -56,6 +55,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.TokenCapacityExceededKern
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
+import org.neo4j.storageengine.api.LongReference;
 import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.storageengine.api.RelationshipVisitor;
 import org.neo4j.values.storable.Values;
@@ -65,9 +65,9 @@ public class RelationshipEntity implements Relationship, RelationshipVisitor<Run
 
     private final InternalTransaction internalTransaction;
     private final RelationshipDataAccessor cursor;
-    private long id = NO_ID;
-    private long startNode = NO_ID;
-    private long endNode = NO_ID;
+    private long id = LongReference.NULL;
+    private long startNode = LongReference.NULL;
+    private long endNode = LongReference.NULL;
     private int type;
 
     public RelationshipEntity(InternalTransaction internalTransaction, RelationshipDataAccessor cursor) {
@@ -110,7 +110,7 @@ public class RelationshipEntity implements Relationship, RelationshipVisitor<Run
     }
 
     public boolean initializeData() {
-        if (startNode == NO_ID) {
+        if (startNode == LongReference.NULL) {
             KernelTransaction transaction = internalTransaction.kernelTransaction();
             RelationshipScanCursor relationships = transaction.ambientRelationshipCursor();
             return initializeData(relationships);
@@ -120,7 +120,7 @@ public class RelationshipEntity implements Relationship, RelationshipVisitor<Run
 
     public boolean initializeData(RelationshipScanCursor relationships) {
         // It enough to check only start node, since it's absence will indicate that data was not yet loaded.
-        if (startNode == NO_ID) {
+        if (startNode == LongReference.NULL) {
             KernelTransaction transaction = internalTransaction.kernelTransaction();
 
             transaction.dataRead().singleRelationship(id, relationships);
@@ -226,7 +226,7 @@ public class RelationshipEntity implements Relationship, RelationshipVisitor<Run
     public RelationshipType getType() {
         internalTransaction.checkInTransaction();
         int typeId = typeId();
-        if (typeId == NO_ID) {
+        if (typeId == LongReference.NULL) {
             throw new NotFoundException(new EntityNotFoundException(EntityType.NODE, getElementId()));
         }
         return internalTransaction.getRelationshipTypeById(typeId);
@@ -463,7 +463,7 @@ public class RelationshipEntity implements Relationship, RelationshipVisitor<Run
     }
 
     private void singleRelationship(KernelTransaction transaction, RelationshipScanCursor relationships) {
-        if (startNode != NO_ID) {
+        if (startNode != LongReference.NULL) {
             transaction.dataRead().singleRelationship(id, startNode, type, endNode, relationships);
         } else {
             transaction.dataRead().singleRelationship(id, relationships);

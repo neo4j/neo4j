@@ -27,7 +27,6 @@ import org.neo4j.configuration.Config;
 import org.neo4j.dbms.DbmsRuntimeVersionProvider;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.event.TransactionData;
-import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.KernelVersion;
@@ -41,6 +40,7 @@ import org.neo4j.kernel.internal.event.InternalTransactionEventListener;
 import org.neo4j.lock.Lock;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
+import org.neo4j.storageengine.api.LongReference;
 
 class DatabaseUpgradeTransactionHandler {
     private final DbmsRuntimeVersionProvider dbmsRuntimeVersionProvider;
@@ -109,7 +109,7 @@ class DatabaseUpgradeTransactionHandler {
 
     private class DatabaseUpgradeListener extends InternalTransactionEventListener.Adapter<Lock> {
         private final InternalUpgradeTransactionHandler internalUpgradeTransactionHandler;
-        private volatile long upgradeTxSeqNbr = Read.NO_ID;
+        private volatile long upgradeTxSeqNbr = LongReference.NULL;
 
         DatabaseUpgradeListener(InternalUpgradeTransactionHandler internalUpgradeTransactionHandler) {
             this.internalUpgradeTransactionHandler = internalUpgradeTransactionHandler;
@@ -141,7 +141,7 @@ class DatabaseUpgradeTransactionHandler {
                                         currentKernelVersion, kernelVersionToUpgradeTo, upgradeTx);
                                 upgradeTx.commit();
                             } finally {
-                                upgradeTxSeqNbr = Read.NO_ID;
+                                upgradeTxSeqNbr = LongReference.NULL;
                             }
                             log.info(
                                     "Upgrade transaction from %s to %s completed",

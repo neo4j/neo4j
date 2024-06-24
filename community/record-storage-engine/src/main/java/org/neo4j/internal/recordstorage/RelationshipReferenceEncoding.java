@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.recordstorage;
 
-import org.neo4j.internal.kernel.api.Read;
+import org.neo4j.storageengine.api.LongReference;
 
 /**
  * Relationship/relationship group references that are exposed from the kernel API surface into the client
@@ -67,7 +67,7 @@ enum RelationshipReferenceEncoding {
     }
 
     static RelationshipReferenceEncoding parseEncoding(long reference) {
-        if (reference == Read.NO_ID) {
+        if (reference == LongReference.NULL) {
             return NONE;
         }
         return ENCODINGS[encodingId(reference)];
@@ -91,7 +91,7 @@ enum RelationshipReferenceEncoding {
      * @return The cleared reference.
      */
     static long clearEncoding(long reference) {
-        assert reference != Read.NO_ID;
+        assert reference != LongReference.NULL;
         return reference & ~FLAGS;
     }
 }

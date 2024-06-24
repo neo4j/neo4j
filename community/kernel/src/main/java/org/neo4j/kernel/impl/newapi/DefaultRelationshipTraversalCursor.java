@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.newapi;
 
 import static java.lang.String.format;
-import static org.neo4j.kernel.impl.newapi.KernelRead.NO_ID;
 
 import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.impl.iterator.ImmutableEmptyLongIterator;
@@ -29,6 +28,7 @@ import org.neo4j.internal.kernel.api.KernelReadTracer;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.internal.kernel.api.security.AccessMode;
+import org.neo4j.storageengine.api.LongReference;
 import org.neo4j.storageengine.api.RelationshipSelection;
 import org.neo4j.storageengine.api.StorageRelationshipTraversalCursor;
 
@@ -82,7 +82,7 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Defau
     void init(DefaultNodeCursor nodeCursor, RelationshipSelection selection, KernelRead read) {
         this.originNodeReference = nodeCursor.nodeReference();
         this.selection = selection;
-        this.neighbourNodeReference = NO_ID;
+        this.neighbourNodeReference = LongReference.NULL;
         if (!nodeCursor.currentNodeIsAddedInTx()) {
             nodeCursor.storeCursor.relationships(storeCursor, selection);
         } else {
@@ -99,9 +99,9 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Defau
      * @param read reference to {@link KernelRead}.
      */
     void init(long addedRelationship, KernelRead read) {
-        assert addedRelationship != NO_ID;
-        this.originNodeReference = NO_ID;
-        this.neighbourNodeReference = NO_ID;
+        assert addedRelationship != LongReference.NULL;
+        this.originNodeReference = LongReference.NULL;
+        this.neighbourNodeReference = LongReference.NULL;
         this.selection = null;
         storeCursor.reset();
         init(read);
@@ -132,7 +132,7 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Defau
 
     @Override
     public long otherNodeReference() {
-        if (currentAddedInTx != NO_ID) {
+        if (currentAddedInTx != LongReference.NULL) {
             // Here we compare the source/target nodes from tx-state to the origin node and decide the neighbour node
             // from it
             long originNodeReference = originNodeReference();
@@ -165,7 +165,8 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Defau
                 read.txStateHolder.txState().relationshipVisit(next, relationshipTxStateDataVisitor);
 
                 if (!applyAccessModeToTxState || allowed()) {
-                    if (neighbourNodeReference != NO_ID && otherNodeReference() != neighbourNodeReference) {
+                    if (neighbourNodeReference != LongReference.NULL
+                            && otherNodeReference() != neighbourNodeReference) {
                         continue;
                     }
 
@@ -175,7 +176,7 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Defau
                     return true;
                 }
             }
-            currentAddedInTx = NO_ID;
+            currentAddedInTx = LongReference.NULL;
         }
 
         while (storeCursor.next()) {
@@ -209,7 +210,9 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Defau
             if (securityNodeCursor == null) {
                 securityNodeCursor = internalCursors.allocateNodeCursor();
             }
-            if (applyAccessModeToTxState && this.currentAddedInTx != NO_ID && neighbourNodeReference != NO_ID) {
+            if (applyAccessModeToTxState
+                    && this.currentAddedInTx != LongReference.NULL
+                    && neighbourNodeReference != LongReference.NULL) {
                 read.singleNode(neighbourNodeReference, securityNodeCursor);
             } else {
                 read.singleNode(storeCursor.neighbourNodeReference(), securityNodeCursor);

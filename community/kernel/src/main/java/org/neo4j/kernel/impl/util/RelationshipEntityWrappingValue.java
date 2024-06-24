@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.util;
 
-import static org.neo4j.internal.kernel.api.Read.NO_ID;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 import static org.neo4j.values.AnyValueWriter.EntityMode.REFERENCE;
 
@@ -30,6 +29,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.kernel.impl.core.RelationshipEntity;
+import org.neo4j.storageengine.api.LongReference;
 import org.neo4j.values.AnyValueWriter;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Values;
@@ -58,7 +58,7 @@ public class RelationshipEntityWrappingValue extends RelationshipValue implement
     }
 
     private RelationshipEntityWrappingValue(Relationship relationship) {
-        super(relationship.getId(), NO_ID, NO_ID);
+        super(relationship.getId(), LongReference.NULL, LongReference.NULL);
         this.relationship = relationship;
     }
 
@@ -191,13 +191,13 @@ public class RelationshipEntityWrappingValue extends RelationshipValue implement
     @Override
     public long startNodeId(Consumer<RelationshipVisitor> consumer) {
         long startNodeId = super.startNodeId(consumer);
-        return startNodeId != NO_ID ? startNodeId : startNode().id();
+        return startNodeId != LongReference.NULL ? startNodeId : startNode().id();
     }
 
     @Override
     public long endNodeId(Consumer<RelationshipVisitor> consumer) {
         long endNodeId = super.endNodeId(consumer);
-        return endNodeId != NO_ID ? endNodeId : endNode().id();
+        return endNodeId != LongReference.NULL ? endNodeId : endNode().id();
     }
 
     @Override
@@ -206,7 +206,7 @@ public class RelationshipEntityWrappingValue extends RelationshipValue implement
         // the case
         // Then use the other route of looking up the start node the slow way and getting its ID.
         long startNodeId = super.startNodeId();
-        return startNodeId != NO_ID ? startNodeId : startNode().id();
+        return startNodeId != LongReference.NULL ? startNodeId : startNode().id();
     }
 
     @Override
@@ -215,7 +215,7 @@ public class RelationshipEntityWrappingValue extends RelationshipValue implement
         // the case
         // Then use the other route of looking up the end node the slow way and getting its ID.
         long endNodeId = super.endNodeId();
-        return endNodeId != NO_ID ? endNodeId : endNode().id();
+        return endNodeId != LongReference.NULL ? endNodeId : endNode().id();
     }
 
     @Override

@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.newapi;
 import static org.neo4j.collection.PrimitiveLongCollections.iterator;
 import static org.neo4j.collection.PrimitiveLongCollections.reverseIterator;
 import static org.neo4j.internal.schema.IndexOrder.DESCENDING;
-import static org.neo4j.kernel.impl.newapi.KernelRead.NO_ID;
 
 import java.util.NoSuchElementException;
 import org.eclipse.collections.api.iterator.LongIterator;
@@ -33,6 +32,7 @@ import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.index.schema.TokenScanValueIndexProgressor;
+import org.neo4j.storageengine.api.LongReference;
 
 /**
  * Base for index cursors that can handle scans with IndexOrder.
@@ -59,7 +59,7 @@ abstract class DefaultEntityTokenIndexCursor<SELF extends DefaultEntityTokenInde
 
     DefaultEntityTokenIndexCursor(CursorPool<SELF> pool, boolean applyAccessModeToTxState) {
         super(pool);
-        this.entity = NO_ID;
+        this.entity = LongReference.NULL;
         this.applyAccessModeToTxState = applyAccessModeToTxState;
     }
 
@@ -136,8 +136,8 @@ abstract class DefaultEntityTokenIndexCursor<SELF extends DefaultEntityTokenInde
 
     @Override
     public boolean next() {
-        entity = NO_ID;
-        entityFromIndex = NO_ID;
+        entity = LongReference.NULL;
+        entityFromIndex = LongReference.NULL;
         final var hasNext = useMergeSort ? nextWithOrdering() : nextWithoutOrder();
         if (hasNext && tracer != null) {
             traceNext(tracer, entity);
@@ -149,9 +149,9 @@ abstract class DefaultEntityTokenIndexCursor<SELF extends DefaultEntityTokenInde
     public void closeInternal() {
         if (!isClosed()) {
             closeProgressor();
-            entity = NO_ID;
-            entityFromIndex = NO_ID;
-            tokenId = (int) NO_ID;
+            entity = LongReference.NULL;
+            entityFromIndex = LongReference.NULL;
+            tokenId = (int) LongReference.NULL;
             read = null;
             added = null;
             removed = null;
@@ -196,7 +196,7 @@ abstract class DefaultEntityTokenIndexCursor<SELF extends DefaultEntityTokenInde
             }
         }
 
-        if (entity == NO_ID) {
+        if (entity == LongReference.NULL) {
             while (innerNext()) {
                 long next = nextEntity();
                 if (!applyAccessModeToTxState || allowed(next)) {
@@ -206,7 +206,7 @@ abstract class DefaultEntityTokenIndexCursor<SELF extends DefaultEntityTokenInde
             }
         }
 
-        return entity != NO_ID;
+        return entity != LongReference.NULL;
     }
 
     private boolean nextWithOrdering() {
@@ -232,7 +232,7 @@ abstract class DefaultEntityTokenIndexCursor<SELF extends DefaultEntityTokenInde
         }
 
         final var nextId = sortedMergeJoin.next();
-        if (nextId == NO_ID) {
+        if (nextId == LongReference.NULL) {
             return false;
         } else {
             entity = nextId;

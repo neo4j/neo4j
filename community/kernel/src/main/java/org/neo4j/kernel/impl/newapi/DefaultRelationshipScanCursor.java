@@ -19,14 +19,13 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import static org.neo4j.kernel.impl.newapi.KernelRead.NO_ID;
-
 import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.impl.iterator.ImmutableEmptyLongIterator;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.storageengine.api.AllRelationshipsScan;
+import org.neo4j.storageengine.api.LongReference;
 import org.neo4j.storageengine.api.StorageRelationshipScanCursor;
 
 class DefaultRelationshipScanCursor extends DefaultRelationshipCursor implements RelationshipScanCursor {
@@ -51,7 +50,7 @@ class DefaultRelationshipScanCursor extends DefaultRelationshipCursor implements
 
     void scan(KernelRead read) {
         storeCursor.scan();
-        this.single = NO_ID;
+        this.single = LongReference.NULL;
         this.isSingle = false;
         init(read);
         this.addedRelationships = ImmutableEmptyLongIterator.INSTANCE;
@@ -64,9 +63,9 @@ class DefaultRelationshipScanCursor extends DefaultRelationshipCursor implements
             LongIterator addedRelationships,
             boolean hasChanges) {
         this.read = read;
-        this.single = NO_ID;
+        this.single = LongReference.NULL;
         this.isSingle = false;
-        this.currentAddedInTx = NO_ID;
+        this.currentAddedInTx = LongReference.NULL;
         this.addedRelationships = addedRelationships;
         this.hasChanges = hasChanges;
         this.checkHasChanges = false;
@@ -107,7 +106,7 @@ class DefaultRelationshipScanCursor extends DefaultRelationshipCursor implements
                     return true;
                 }
             }
-            currentAddedInTx = NO_ID;
+            currentAddedInTx = LongReference.NULL;
         }
 
         while (storeCursor.next()) {
@@ -136,14 +135,14 @@ class DefaultRelationshipScanCursor extends DefaultRelationshipCursor implements
             securityNodeCursor = internalCursors.allocateNodeCursor();
         }
 
-        if (applyAccessModeToTxState && currentAddedInTx != NO_ID) {
+        if (applyAccessModeToTxState && currentAddedInTx != LongReference.NULL) {
             read.singleNode(txStateSourceNodeReference, securityNodeCursor);
         } else {
             read.singleNode(storeCursor.sourceNodeReference(), securityNodeCursor);
         }
 
         if (securityNodeCursor.next()) {
-            if (applyAccessModeToTxState && currentAddedInTx != NO_ID) {
+            if (applyAccessModeToTxState && currentAddedInTx != LongReference.NULL) {
                 read.singleNode(txStateTargetNodeReference, securityNodeCursor);
             } else {
                 read.singleNode(storeCursor.targetNodeReference(), securityNodeCursor);

@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.newapi;
 
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_ENTITY;
-import static org.neo4j.kernel.impl.newapi.KernelRead.NO_ID;
 import static org.neo4j.storageengine.api.LongReference.NULL_REFERENCE;
 import static org.neo4j.storageengine.api.PropertySelection.ALL_PROPERTIES;
 import static org.neo4j.token.api.TokenConstants.NO_TOKEN;
@@ -33,6 +32,7 @@ import org.neo4j.internal.kernel.api.RelTypeSupplier;
 import org.neo4j.internal.kernel.api.TokenSet;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.kernel.api.security.ReadSecurityPropertyProvider;
+import org.neo4j.storageengine.api.LongReference;
 import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.storageengine.api.Reference;
 import org.neo4j.storageengine.api.StorageProperty;
@@ -54,7 +54,7 @@ public class DefaultPropertyCursor extends TraceableCursorImpl<DefaultPropertyCu
     private EntityState propertiesState;
     private Iterator<StorageProperty> txStateChangedProperties;
     private StorageProperty txStateValue;
-    private long entityReference = NO_ID;
+    private long entityReference = LongReference.NULL;
     private TokenSet labels;
     // stores relationship type or NODE if not a relationship
     private int type = NO_TOKEN;
@@ -74,7 +74,7 @@ public class DefaultPropertyCursor extends TraceableCursorImpl<DefaultPropertyCu
     }
 
     void initNode(long nodeReference, Reference reference, PropertySelection selection, KernelRead read) {
-        assert nodeReference != NO_ID;
+        assert nodeReference != LongReference.NULL;
 
         init(selection, read);
         this.type = NODE;
@@ -87,7 +87,7 @@ public class DefaultPropertyCursor extends TraceableCursorImpl<DefaultPropertyCu
 
     void initNode(DefaultNodeCursor nodeCursor, PropertySelection selection, KernelRead read, boolean initStoreCursor) {
         entityReference = nodeCursor.nodeReference();
-        assert entityReference != NO_ID;
+        assert entityReference != LongReference.NULL;
 
         init(selection, read);
         this.type = NODE;
@@ -160,7 +160,7 @@ public class DefaultPropertyCursor extends TraceableCursorImpl<DefaultPropertyCu
 
     void initRelationship(
             long relationshipReference, Reference reference, PropertySelection selection, KernelRead read) {
-        assert relationshipReference != NO_ID;
+        assert relationshipReference != LongReference.NULL;
 
         init(selection, read);
         initializeRelationshipTransactionState(relationshipReference, read);
@@ -170,7 +170,7 @@ public class DefaultPropertyCursor extends TraceableCursorImpl<DefaultPropertyCu
 
     void initRelationship(DefaultRelationshipCursor relationshipCursor, PropertySelection selection, KernelRead read) {
         entityReference = relationshipCursor.relationshipReference();
-        assert entityReference != NO_ID;
+        assert entityReference != LongReference.NULL;
 
         init(selection, read);
         initializeRelationshipTransactionState(entityReference, read);

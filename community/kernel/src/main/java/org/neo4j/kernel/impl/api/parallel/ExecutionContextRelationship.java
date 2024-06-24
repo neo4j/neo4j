@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.api.parallel;
 
 import static java.lang.String.format;
-import static org.neo4j.internal.kernel.api.Read.NO_ID;
 
 import java.util.Map;
 import org.neo4j.common.EntityType;
@@ -37,6 +36,7 @@ import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.ExecutionContext;
 import org.neo4j.kernel.impl.core.AbstractEntity;
+import org.neo4j.storageengine.api.LongReference;
 
 public class ExecutionContextRelationship extends AbstractEntity implements Relationship {
 
@@ -183,7 +183,7 @@ public class ExecutionContextRelationship extends AbstractEntity implements Rela
                 .allocateRelationshipScanCursor(executionContext.cursorContext(), executionContext.memoryTracker())) {
             singleRelationship(relationships);
             int type = relationships.type();
-            if (type == NO_ID) {
+            if (type == LongReference.NULL) {
                 throw new NotFoundException(new EntityNotFoundException(EntityType.RELATIONSHIP, getElementId()));
             }
 

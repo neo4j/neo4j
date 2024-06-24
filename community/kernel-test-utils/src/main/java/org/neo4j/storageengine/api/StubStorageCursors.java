@@ -47,7 +47,6 @@ import org.neo4j.common.TokenNameLookup;
 import org.neo4j.counts.CountsVisitor;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.helpers.collection.Iterators;
-import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
@@ -385,7 +384,7 @@ public class StubStorageCursors implements StorageReader {
     }
 
     class EntityData<SELF> extends Data<SELF> {
-        long propertyId = Read.NO_ID;
+        long propertyId = LongReference.NULL;
 
         public SELF propertyId(long propertyId) {
             this.propertyId = propertyId;

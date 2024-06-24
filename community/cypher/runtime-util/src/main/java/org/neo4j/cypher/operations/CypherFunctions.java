@@ -23,7 +23,6 @@ import static java.lang.Double.parseDouble;
 import static java.lang.Long.parseLong;
 import static java.lang.String.format;
 import static org.neo4j.cypher.operations.CursorUtils.propertyKeys;
-import static org.neo4j.internal.kernel.api.Read.NO_ID;
 import static org.neo4j.values.storable.Values.EMPTY_STRING;
 import static org.neo4j.values.storable.Values.FALSE;
 import static org.neo4j.values.storable.Values.NO_VALUE;
@@ -87,6 +86,7 @@ import org.neo4j.kernel.api.impl.schema.vector.VectorSimilarity;
 import org.neo4j.kernel.api.vector.VectorCandidate;
 import org.neo4j.kernel.api.vector.VectorSimilarityFunction;
 import org.neo4j.kernel.impl.util.NodeEntityWrappingNodeValue;
+import org.neo4j.storageengine.api.LongReference;
 import org.neo4j.token.api.TokenConstants;
 import org.neo4j.util.CalledFromGeneratedCode;
 import org.neo4j.values.AnyValue;
@@ -1108,12 +1108,12 @@ public final class CypherFunctions {
     }
 
     public static TextValue nodeElementId(long id, ElementIdMapper idMapper) {
-        assert id > NO_ID;
+        assert id > LongReference.NULL;
         return Values.stringValue(idMapper.nodeElementId(id));
     }
 
     public static TextValue relationshipElementId(long id, ElementIdMapper idMapper) {
-        assert id > NO_ID;
+        assert id > LongReference.NULL;
         return Values.stringValue(idMapper.relationshipElementId(id));
     }
 

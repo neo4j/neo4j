@@ -19,8 +19,6 @@
  */
 package org.neo4j.internal.kernel.api.helpers;
 
-import static org.neo4j.internal.kernel.api.Read.NO_ID;
-
 import java.util.Collections;
 import java.util.List;
 import org.neo4j.internal.kernel.api.DefaultCloseListenable;
@@ -143,7 +141,8 @@ public class StubRelationshipCursor extends DefaultCloseListenable implements Re
             }
             TestRelationshipChain.Data data = chain.get(offset);
             if (selection.test(data.type(), data.relationshipDirection(nodeReference))
-                    && (neighbourNodeReference == NO_ID || neighbourNodeReference == otherNodeReference())) {
+                    && (neighbourNodeReference == LongReference.NULL
+                            || neighbourNodeReference == otherNodeReference())) {
                 return true;
             }
         }

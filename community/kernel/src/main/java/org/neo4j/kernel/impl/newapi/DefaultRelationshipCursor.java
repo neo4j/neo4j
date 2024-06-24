@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import static org.neo4j.kernel.impl.newapi.KernelRead.NO_ID;
-
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipDataAccessor;
@@ -39,7 +37,7 @@ abstract class DefaultRelationshipCursor<SELF extends DefaultRelationshipCursor>
     final StorageRelationshipCursor storeCursor;
     RelationshipVisitor<RuntimeException> relationshipTxStateDataVisitor = new TxStateDataVisitor();
     // The visitor above will update the fields below
-    long currentAddedInTx = NO_ID;
+    long currentAddedInTx = LongReference.NULL;
     private int txStateTypeId;
     long txStateSourceNodeReference;
     long txStateTargetNodeReference;
@@ -50,19 +48,19 @@ abstract class DefaultRelationshipCursor<SELF extends DefaultRelationshipCursor>
     }
 
     protected void init(KernelRead read) {
-        this.currentAddedInTx = NO_ID;
+        this.currentAddedInTx = LongReference.NULL;
         this.read = read;
         this.checkHasChanges = true;
     }
 
     @Override
     public long relationshipReference() {
-        return currentAddedInTx != NO_ID ? currentAddedInTx : storeCursor.entityReference();
+        return currentAddedInTx != LongReference.NULL ? currentAddedInTx : storeCursor.entityReference();
     }
 
     @Override
     public int type() {
-        return currentAddedInTx != NO_ID ? txStateTypeId : storeCursor.type();
+        return currentAddedInTx != LongReference.NULL ? txStateTypeId : storeCursor.type();
     }
 
     @Override
@@ -82,23 +80,25 @@ abstract class DefaultRelationshipCursor<SELF extends DefaultRelationshipCursor>
 
     @Override
     public long sourceNodeReference() {
-        return currentAddedInTx != NO_ID ? txStateSourceNodeReference : storeCursor.sourceNodeReference();
+        return currentAddedInTx != LongReference.NULL ? txStateSourceNodeReference : storeCursor.sourceNodeReference();
     }
 
     @Override
     public long targetNodeReference() {
-        return currentAddedInTx != NO_ID ? txStateTargetNodeReference : storeCursor.targetNodeReference();
+        return currentAddedInTx != LongReference.NULL ? txStateTargetNodeReference : storeCursor.targetNodeReference();
     }
 
     @Override
     public Reference propertiesReference() {
-        return currentAddedInTx != NO_ID ? LongReference.NULL_REFERENCE : storeCursor.propertiesReference();
+        return currentAddedInTx != LongReference.NULL
+                ? LongReference.NULL_REFERENCE
+                : storeCursor.propertiesReference();
     }
 
     protected abstract void collectAddedTxStateSnapshot();
 
     protected boolean currentRelationshipIsAddedInTx() {
-        return currentAddedInTx != NO_ID;
+        return currentAddedInTx != LongReference.NULL;
     }
 
     /**

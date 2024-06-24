@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import static org.neo4j.internal.kernel.api.Read.NO_ID;
-
 import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.api.set.primitive.LongSet;
 import org.neo4j.graphdb.Direction;
@@ -30,6 +28,7 @@ import org.neo4j.internal.kernel.api.RelationshipTypeIndexCursor;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
 import org.neo4j.kernel.api.index.IndexProgressor;
+import org.neo4j.storageengine.api.LongReference;
 import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.storageengine.api.Reference;
 import org.neo4j.storageengine.api.RelationshipSelection;
@@ -50,7 +49,7 @@ public class DefaultNodeBasedRelationshipTypeIndexCursor
     private LongIterator addedRelationships;
     private LongSet removedNodes;
     private int type;
-    private long relId = NO_ID;
+    private long relId = LongReference.NULL;
     private RelationshipSelection selection;
     private long nodeFromIndex;
     private ReadState readState;
@@ -155,7 +154,7 @@ public class DefaultNodeBasedRelationshipTypeIndexCursor
                 case RELATIONSHIP_READ -> {
                     while (relationshipTraversalCursor.next()) {
                         // Since we check tx state separately, lets not return them here!
-                        if (relationshipTraversalCursor.currentAddedInTx == NO_ID) {
+                        if (relationshipTraversalCursor.currentAddedInTx == LongReference.NULL) {
                             relId = relationshipTraversalCursor.relationshipReference();
                             return true;
                         }
@@ -164,7 +163,7 @@ public class DefaultNodeBasedRelationshipTypeIndexCursor
                 }
             }
         }
-        relId = NO_ID;
+        relId = LongReference.NULL;
         return false;
     }
 
@@ -220,7 +219,7 @@ public class DefaultNodeBasedRelationshipTypeIndexCursor
     @Override
     public boolean readFromStore() {
         // We've already ready from store in innerNext(), or placed cursor on tx state data
-        return relId != NO_ID;
+        return relId != LongReference.NULL;
     }
 
     @Override
@@ -249,8 +248,8 @@ public class DefaultNodeBasedRelationshipTypeIndexCursor
             read = null;
             nodeCursor.close();
             relationshipTraversalCursor.close();
-            relId = NO_ID;
-            nodeFromIndex = NO_ID;
+            relId = LongReference.NULL;
+            nodeFromIndex = LongReference.NULL;
             readState = ReadState.UNAVAILABLE;
         }
         super.closeInternal();

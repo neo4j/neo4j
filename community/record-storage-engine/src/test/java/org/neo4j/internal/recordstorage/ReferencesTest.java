@@ -23,7 +23,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.internal.kernel.api.Read.NO_ID;
 import static org.neo4j.internal.recordstorage.RelationshipReferenceEncoding.DENSE;
 import static org.neo4j.internal.recordstorage.RelationshipReferenceEncoding.clearEncoding;
 import static org.neo4j.internal.recordstorage.RelationshipReferenceEncoding.parseEncoding;
@@ -31,6 +30,7 @@ import static org.neo4j.internal.recordstorage.RelationshipReferenceEncoding.par
 import java.util.concurrent.ThreadLocalRandom;
 import org.eclipse.collections.api.block.function.primitive.LongToLongFunction;
 import org.junit.jupiter.api.Test;
+import org.neo4j.storageengine.api.LongReference;
 
 class ReferencesTest {
     // This value the largest possible high limit id +1 (see HighLimitV3_1_0)
@@ -38,7 +38,8 @@ class ReferencesTest {
 
     @Test
     void shouldPreserveNoId() {
-        assertThat(RelationshipReferenceEncoding.encodeDense(NO_ID)).isEqualTo(NO_ID);
+        assertThat(RelationshipReferenceEncoding.encodeDense(LongReference.NULL))
+                .isEqualTo(LongReference.NULL);
     }
 
     @Test

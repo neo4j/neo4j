@@ -19,12 +19,11 @@
  */
 package org.neo4j.internal.batchimport;
 
-import static org.neo4j.internal.kernel.api.Read.NO_ID;
-
 import org.eclipse.collections.api.iterator.LongIterator;
 import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.id.IdSequence;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.storageengine.api.LongReference;
 
 /**
  * Exposes batches of ids from an {@link IdGenerator} as a {@link LongIterator}.
@@ -34,7 +33,7 @@ import org.neo4j.io.pagecache.context.CursorContext;
 public class BatchingIdGetter implements IdSequence {
     private final IdGenerator source;
     private final int batchSize;
-    private long currentBatchStartId = NO_ID;
+    private long currentBatchStartId = LongReference.NULL;
     private int currentBatchIndex;
 
     public BatchingIdGetter(IdGenerator idGenerator, int recordsPerPage) {
@@ -45,7 +44,7 @@ public class BatchingIdGetter implements IdSequence {
     @Override
     public long nextId(CursorContext cursorContext) {
         long id = nextIdFromCurrentBatch();
-        if (id != NO_ID) {
+        if (id != LongReference.NULL) {
             return id;
         }
 
@@ -55,15 +54,15 @@ public class BatchingIdGetter implements IdSequence {
     }
 
     private long nextIdFromCurrentBatch() {
-        return currentBatchStartId == NO_ID || currentBatchIndex == batchSize
-                ? NO_ID
+        return currentBatchStartId == LongReference.NULL || currentBatchIndex == batchSize
+                ? LongReference.NULL
                 : currentBatchStartId + currentBatchIndex++;
     }
 
     public void markUnusedIdsAsDeleted(CursorContext cursorContext) {
         try (var marker = source.transactionalMarker(cursorContext)) {
             long id;
-            while ((id = nextIdFromCurrentBatch()) != NO_ID) {
+            while ((id = nextIdFromCurrentBatch()) != LongReference.NULL) {
                 marker.markDeleted(id);
             }
         }

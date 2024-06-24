@@ -35,10 +35,10 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.ProjectEndpoints.vali
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.ProjectEndpoints.validateRelsUndirectedNothingInScope
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.exceptions.CypherTypeException
-import org.neo4j.internal.kernel.api.Read.NO_ID
 import org.neo4j.internal.kernel.api.RelationshipDataAccessor
 import org.neo4j.internal.kernel.api.RelationshipScanCursor
 import org.neo4j.kernel.api.StatementConstants
+import org.neo4j.storageengine.api.LongReference.NULL
 import org.neo4j.util.CalledFromGeneratedCode
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
@@ -249,9 +249,9 @@ case object ProjectEndpoints {
     val (iterator, start, end, effectiveDirection, reversed) = (startIfInScope, endIfInScope) match {
       // If end is in scope but not start, reverse the order of iteration to fail fast
       case (None, Some(end)) =>
-        (rels.reverse().iterator(), end, NO_ID, direction.reversed, true)
+        (rels.reverse().iterator(), end, NULL, direction.reversed, true)
       case _ =>
-        (rels.iterator(), startIfInScope.getOrElse(NO_ID), endIfInScope.getOrElse(NO_ID), direction, false)
+        (rels.iterator(), startIfInScope.getOrElse(NULL), endIfInScope.getOrElse(NULL), direction, false)
     }
 
     // Check that the path starts with startNode (if startNode is in scope)
@@ -277,19 +277,19 @@ case object ProjectEndpoints {
       effectiveDirection match {
 
         case SemanticDirection.OUTGOING =>
-          if (prevNode != NO_ID && prevNode != source) {
+          if (prevNode != NULL && prevNode != source) {
             return None
           }
-          if (firstNode == NO_ID) {
+          if (firstNode == NULL) {
             firstNode = source
           }
           prevNode = target
 
         case SemanticDirection.INCOMING =>
-          if (prevNode != NO_ID && prevNode != target) {
+          if (prevNode != NULL && prevNode != target) {
             return None
           }
-          if (firstNode == NO_ID) {
+          if (firstNode == NULL) {
             firstNode = target
           }
           prevNode = source
@@ -307,7 +307,7 @@ case object ProjectEndpoints {
     }
 
     // Check that the path ends with endNode (if endNode is in scope)
-    if (end == NO_ID || end == prevNode) {
+    if (end == NULL || end == prevNode) {
       if (!reversed) {
         Some(EndNodes(firstNode, prevNode))
       } else {
@@ -346,7 +346,7 @@ case object ProjectEndpoints {
     typeCheck: RelationshipScanCursorPredicate
   ): Seq[EndNodes] = {
 
-    if (scanCursor.reference() == NO_ID || !typeCheck.test(scanCursor)) {
+    if (scanCursor.reference() == NULL || !typeCheck.test(scanCursor)) {
       Seq.empty
     } else {
       val source = scanCursor.sourceNodeReference()
@@ -379,11 +379,11 @@ case object ProjectEndpoints {
     val iterator = rels.iterator()
 
     val DISQUALIFIED = -2L
-    var prevNode1 = NO_ID
-    var prevNode2 = NO_ID
+    var prevNode1 = NULL
+    var prevNode2 = NULL
 
-    var start1 = NO_ID
-    var start2 = NO_ID
+    var start1 = NULL
+    var start2 = NULL
 
     while (iterator.hasNext) {
       val next: VirtualRelationshipValue = iterator.next() match {
@@ -401,7 +401,7 @@ case object ProjectEndpoints {
       val source = scanCursor.sourceNodeReference()
       val target = scanCursor.targetNodeReference()
 
-      if (prevNode1 == NO_ID) {
+      if (prevNode1 == NULL) {
         start1 = source
         start2 = target
         prevNode1 = target
@@ -457,7 +457,7 @@ case object ProjectEndpoints {
     scanCursor: RelationshipDataAccessor,
     typeCheck: RelationshipScanCursorPredicate
   ): EndNodes = {
-    if (relId == NO_ID) null
+    if (relId == NULL) null
     else validateRel(direction, startIfInScope, endIfInScope, scanCursor, typeCheck).orNull
   }
 

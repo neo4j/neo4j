@@ -35,7 +35,6 @@ import org.neo4j.values.storable.Values;
  * Defines the graph read operations of the Kernel.
  */
 public interface Read {
-    long NO_ID = -1; // is there better place for this?
 
     /**
      * Ensure there is an IndexReadSession for the given value index bound to this transaction, and return it. Not Thread-safe.

@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.newapi;
 
 import static java.util.Arrays.stream;
-import static org.neo4j.internal.kernel.api.Read.NO_ID;
 import static org.neo4j.kernel.impl.newapi.TxStateIndexChanges.indexUpdatesForBoundingBoxSeek;
 import static org.neo4j.kernel.impl.newapi.TxStateIndexChanges.indexUpdatesForRangeSeek;
 import static org.neo4j.kernel.impl.newapi.TxStateIndexChanges.indexUpdatesForRangeSeekByPrefix;
@@ -55,6 +54,7 @@ import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.newapi.TxStateIndexChanges.AddedAndRemoved;
 import org.neo4j.kernel.impl.newapi.TxStateIndexChanges.AddedWithValuesAndRemoved;
+import org.neo4j.storageengine.api.LongReference;
 import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueTuple;
@@ -80,7 +80,7 @@ abstract class DefaultEntityValueIndexCursor<CURSOR> extends IndexCursor<IndexPr
 
     DefaultEntityValueIndexCursor(CursorPool<CURSOR> pool, boolean applyAccessModeToTxState) {
         super(pool);
-        entity = NO_ID;
+        entity = LongReference.NULL;
         score = Float.NaN;
         indexOrder = IndexOrder.NONE;
         this.applyAccessModeToTxState = applyAccessModeToTxState;
@@ -339,7 +339,7 @@ abstract class DefaultEntityValueIndexCursor<CURSOR> extends IndexCursor<IndexPr
     public final void closeInternal() {
         if (!isClosed()) {
             closeProgressor();
-            this.entity = NO_ID;
+            this.entity = LongReference.NULL;
             this.score = Float.NaN;
             this.query = null;
             this.values = null;

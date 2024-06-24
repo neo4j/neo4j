@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import static org.neo4j.kernel.impl.newapi.KernelRead.NO_ID;
 import static org.neo4j.storageengine.api.LongReference.NULL_REFERENCE;
 
 import org.eclipse.collections.api.iterator.LongIterator;
@@ -38,6 +37,7 @@ import org.neo4j.internal.kernel.api.security.ReadSecurityPropertyProvider;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.storageengine.api.AllNodeScan;
 import org.neo4j.storageengine.api.Degrees;
+import org.neo4j.storageengine.api.LongReference;
 import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.storageengine.api.Reference;
 import org.neo4j.storageengine.api.RelationshipSelection;
@@ -61,7 +61,7 @@ class DefaultNodeCursor extends TraceableCursorImpl<DefaultNodeCursor> implement
     private StorageNodeCursor securityStoreNodeCursor;
     private StorageRelationshipTraversalCursor securityStoreRelationshipCursor;
     private StoragePropertyCursor securityPropertyCursor;
-    private long currentAddedInTx = NO_ID;
+    private long currentAddedInTx = LongReference.NULL;
     private long single;
     private boolean isSingle;
 
@@ -80,7 +80,7 @@ class DefaultNodeCursor extends TraceableCursorImpl<DefaultNodeCursor> implement
         storeCursor.scan();
         this.read = read;
         this.isSingle = false;
-        this.currentAddedInTx = NO_ID;
+        this.currentAddedInTx = LongReference.NULL;
         this.checkHasChanges = true;
         this.addedNodes = ImmutableEmptyLongIterator.INSTANCE;
         if (tracer != null) {
@@ -91,7 +91,7 @@ class DefaultNodeCursor extends TraceableCursorImpl<DefaultNodeCursor> implement
     boolean scanBatch(KernelRead read, AllNodeScan scan, long sizeHint, LongIterator addedNodes, boolean hasChanges) {
         this.read = read;
         this.isSingle = false;
-        this.currentAddedInTx = NO_ID;
+        this.currentAddedInTx = LongReference.NULL;
         this.checkHasChanges = false;
         this.hasChanges = hasChanges;
         this.addedNodes = addedNodes;
@@ -104,19 +104,19 @@ class DefaultNodeCursor extends TraceableCursorImpl<DefaultNodeCursor> implement
         this.read = read;
         this.single = reference;
         this.isSingle = true;
-        this.currentAddedInTx = NO_ID;
+        this.currentAddedInTx = LongReference.NULL;
         this.checkHasChanges = true;
         this.addedNodes = ImmutableEmptyLongIterator.INSTANCE;
         this.singleIsAddedInTx = false;
     }
 
     protected boolean currentNodeIsAddedInTx() {
-        return currentAddedInTx != NO_ID;
+        return currentAddedInTx != LongReference.NULL;
     }
 
     @Override
     public long nodeReference() {
-        if (currentAddedInTx != NO_ID) {
+        if (currentAddedInTx != LongReference.NULL) {
             // Special case where the most recent next() call selected a node that exists only in tx-state.
             // Internal methods getting data about this node will also check tx-state and get the data from there.
             return currentAddedInTx;
@@ -131,7 +131,7 @@ class DefaultNodeCursor extends TraceableCursorImpl<DefaultNodeCursor> implement
 
     @Override
     public TokenSet labelsAndProperties(PropertyCursor propertyCursor, PropertySelection selection) {
-        if (currentAddedInTx != NO_ID) {
+        if (currentAddedInTx != LongReference.NULL) {
             // Node added in tx-state, no reason to go down to store and check
             TransactionState txState = read.txStateHolder.txState();
             properties(propertyCursor, selection);
@@ -157,7 +157,7 @@ class DefaultNodeCursor extends TraceableCursorImpl<DefaultNodeCursor> implement
      */
     @Override
     public TokenSet labelsIgnoringTxStateSetRemove() {
-        if (currentAddedInTx != NO_ID) {
+        if (currentAddedInTx != LongReference.NULL) {
             // Node added in tx-state, no reason to go down to store and check
             TransactionState txState = read.txStateHolder.txState();
             return Labels.from(txState.nodeStateLabelDiffSets(currentAddedInTx).getAdded());
@@ -232,7 +232,7 @@ class DefaultNodeCursor extends TraceableCursorImpl<DefaultNodeCursor> implement
 
     @Override
     public boolean supportsFastRelationshipsTo() {
-        return currentAddedInTx == NO_ID && storeCursor.supportsFastRelationshipsTo();
+        return currentAddedInTx == LongReference.NULL && storeCursor.supportsFastRelationshipsTo();
     }
 
     @Override
@@ -248,24 +248,25 @@ class DefaultNodeCursor extends TraceableCursorImpl<DefaultNodeCursor> implement
 
     @Override
     public long relationshipsReference() {
-        return currentAddedInTx != NO_ID ? NO_ID : storeCursor.relationshipsReference();
+        return currentAddedInTx != LongReference.NULL ? LongReference.NULL : storeCursor.relationshipsReference();
     }
 
     @Override
     public Reference propertiesReference() {
-        return currentAddedInTx != NO_ID ? NULL_REFERENCE : storeCursor.propertiesReference();
+        return currentAddedInTx != LongReference.NULL ? NULL_REFERENCE : storeCursor.propertiesReference();
     }
 
     @Override
     public boolean supportsFastDegreeLookup() {
-        return (currentAddedInTx != NO_ID || storeCursor.supportsFastDegreeLookup()) && allowsTraverseAll();
+        return (currentAddedInTx != LongReference.NULL || storeCursor.supportsFastDegreeLookup())
+                && allowsTraverseAll();
     }
 
     @Override
     public int[] relationshipTypes() {
         boolean hasChanges = hasChanges();
         NodeState nodeTxState = hasChanges ? read.txStateHolder.txState().getNodeState(nodeReference()) : null;
-        int[] storedTypes = currentAddedInTx == NO_ID ? storeCursor.relationshipTypes() : null;
+        int[] storedTypes = currentAddedInTx == LongReference.NULL ? storeCursor.relationshipTypes() : null;
         MutableIntSet types = storedTypes != null ? IntSets.mutable.of(storedTypes) : IntSets.mutable.empty();
         if (nodeTxState != null) {
             types.addAll(nodeTxState.getAddedRelationshipTypes());
@@ -301,7 +302,7 @@ class DefaultNodeCursor extends TraceableCursorImpl<DefaultNodeCursor> implement
                 return;
             }
         }
-        if (currentAddedInTx == NO_ID) {
+        if (currentAddedInTx == LongReference.NULL) {
             if (allowsTraverseAll()) {
                 storeCursor.degrees(selection, degrees);
             } else {
@@ -367,7 +368,7 @@ class DefaultNodeCursor extends TraceableCursorImpl<DefaultNodeCursor> implement
     }
 
     private TokenSet labels(StorageNodeCursor nodeCursor) {
-        if (currentAddedInTx != NO_ID) {
+        if (currentAddedInTx != LongReference.NULL) {
             // Node added in tx-state, no reason to go down to store and check
             TransactionState txState = read.txStateHolder.txState();
             return Labels.from(txState.nodeStateLabelDiffSets(currentAddedInTx).getAdded());
@@ -425,7 +426,7 @@ class DefaultNodeCursor extends TraceableCursorImpl<DefaultNodeCursor> implement
                     return true;
                 }
             }
-            currentAddedInTx = NO_ID;
+            currentAddedInTx = LongReference.NULL;
         }
 
         while (storeCursor.next()) {

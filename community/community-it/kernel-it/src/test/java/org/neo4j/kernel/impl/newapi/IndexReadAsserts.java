@@ -23,12 +23,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.internal.kernel.api.Read.NO_ID;
 
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.neo4j.internal.kernel.api.NodeIndexCursor;
 import org.neo4j.internal.kernel.api.RelationshipIndexCursor;
 import org.neo4j.internal.schema.IndexOrder;
+import org.neo4j.storageengine.api.LongReference;
 
 class IndexReadAsserts {
     static void assertNodes(NodeIndexCursor node, MutableLongSet uniqueIds, long... expected) {
@@ -72,7 +72,7 @@ class IndexReadAsserts {
     static void assertRelationships(
             RelationshipIndexCursor edge, MutableLongSet uniqueIds, IndexOrder order, long... expected) {
         uniqueIds.clear();
-        var previousId = NO_ID;
+        var previousId = LongReference.NULL;
         var expectedIdCount = expected.length;
         while (expectedIdCount-- > 0) {
             assertTrue(edge.next(), "at least " + expected.length + " relationships");
@@ -98,7 +98,7 @@ class IndexReadAsserts {
     }
 
     static void checkRelationshipOrder(IndexOrder expectedOrder, long previousId, long currentId) {
-        if (previousId != NO_ID) {
+        if (previousId != LongReference.NULL) {
             switch (expectedOrder) {
                 case ASCENDING -> assertThat(previousId).isLessThan(currentId);
                 case DESCENDING -> assertThat(previousId).isGreaterThan(currentId);
