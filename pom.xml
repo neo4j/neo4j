@@ -1049,12 +1049,12 @@
         <activeByDefault>false</activeByDefault>
         <property>
           <name>NEO4J_PARALLEL_DISCOVERY</name>
-          <value>V2_OVER_V1</value>
+          <value>V2_ONLY</value>
         </property>
       </activation>
       <properties>
         <test.runner.jvm.settings.db.format>
-          -DNEO4J_PARALLEL_DISCOVERY=V2_OVER_V1
+          -DNEO4J_PARALLEL_DISCOVERY=V2_ONLY
         </test.runner.jvm.settings.db.format>
       </properties>
     </profile>
