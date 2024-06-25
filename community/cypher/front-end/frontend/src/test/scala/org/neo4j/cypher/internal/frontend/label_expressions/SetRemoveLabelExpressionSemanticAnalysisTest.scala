@@ -17,6 +17,7 @@
 package org.neo4j.cypher.internal.frontend.label_expressions
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticError
+import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.frontend.SemanticAnalysisTestSuiteWithDefaultQuery
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.test_helpers.TestName
@@ -30,8 +31,16 @@ abstract class LabelExpressionSemanticAnalysisTestSuiteWithChangeStatement(state
   // The position of the SET/REMOVE clause in the query
   protected val errorPosition: InputPosition = InputPosition(15, 1, 16)
 
+  protected val errorPositionDynamicLabels: InputPosition =
+    if (statement == ChangeStatement.SET) InputPosition(19, 1, 20) else InputPosition(22, 1, 23)
+
   protected def multipleAssignmentErrorMessage(replacement: String) =
     s"It is not supported to use the `IS` keyword together with multiple labels in `$statement`. Rewrite the expression as `$replacement`."
+
+  protected def notSupportedErrorMessage() = {
+    val clauseAction = if (statement == ChangeStatement.SET) "Setting" else "Removing"
+    s"$clauseAction labels or properties dynamically is not supported."
+  }
 
   test("n:A") {
     runSemanticAnalysis().errors shouldBe empty
@@ -71,6 +80,95 @@ abstract class LabelExpressionSemanticAnalysisTestSuiteWithChangeStatement(state
     runSemanticAnalysis().errors shouldEqual Seq(
       SemanticError(multipleAssignmentErrorMessage("n IS A, m IS A, m IS B"), errorPosition)
     )
+  }
+
+  // Dynamic Labels
+  test("n:$(\"Label1\")") {
+    runSemanticAnalysis().errors shouldEqual Seq(
+      SemanticError(
+        notSupportedErrorMessage(),
+        errorPositionDynamicLabels
+      )
+    )
+  }
+
+  test("n IS $(\"Label1\")") {
+    runSemanticAnalysis().errors shouldEqual Seq(
+      SemanticError(
+        notSupportedErrorMessage(),
+        errorPositionDynamicLabels
+      )
+    )
+  }
+
+  test("n:A:$(\"Label1\")") {
+    runSemanticAnalysis().errors shouldEqual Seq(
+      SemanticError(
+        notSupportedErrorMessage(),
+        errorPositionDynamicLabels
+      )
+    )
+  }
+
+  test("n IS A, m:$(\"Label1\"):B:$(\"Label2\")") {
+    runSemanticAnalysisWithSemanticFeatures(SemanticFeature.DynamicProperties).errors shouldEqual Seq(
+      SemanticError(
+        multipleAssignmentErrorMessage("n IS A, m IS $(\"Label1\"), m IS B, m IS $(\"Label2\")"),
+        errorPosition
+      )
+    )
+  }
+
+  test("n:$(\"Label2\")") {
+    runSemanticAnalysisWithSemanticFeatures(SemanticFeature.DynamicProperties).errors shouldBe empty
+  }
+
+  test("n IS $(\"Label2\")") {
+    runSemanticAnalysisWithSemanticFeatures(SemanticFeature.DynamicProperties).errors shouldBe empty
+  }
+
+  test("n:A:$(\"Label2\")") {
+    runSemanticAnalysisWithSemanticFeatures(SemanticFeature.DynamicProperties).errors shouldBe empty
+  }
+
+  test("m:$(\"\")") {
+    runSemanticAnalysisWithSemanticFeatures(SemanticFeature.DynamicProperties).errors shouldEqual Seq(
+      SemanticError(
+        "'' is not a valid token name. Token names cannot be empty or contain any null-bytes.",
+        errorPositionDynamicLabels
+      )
+    )
+  }
+
+  test("n:$(1)") {
+    runSemanticAnalysisWithSemanticFeatures(SemanticFeature.DynamicProperties).errors shouldEqual Seq(
+      SemanticError(
+        "Type mismatch: expected String or List<String> but was Integer",
+        if (statement == ChangeStatement.SET) InputPosition(23, 1, 24) else InputPosition(26, 1, 27)
+      )
+    )
+  }
+
+  test("n:$([1])") {
+    runSemanticAnalysisWithSemanticFeatures(SemanticFeature.DynamicProperties).errors shouldEqual Seq(
+      SemanticError(
+        "Type mismatch: expected String or List<String> but was List<Integer>",
+        if (statement == ChangeStatement.SET) InputPosition(23, 1, 24) else InputPosition(26, 1, 27)
+      )
+    )
+  }
+
+  test("n:$(point({x : 1, y: 1}))") {
+    runSemanticAnalysisWithSemanticFeatures(SemanticFeature.DynamicProperties).errors shouldEqual Seq(
+      SemanticError(
+        "Type mismatch: expected String or List<String> but was Point",
+        if (statement == ChangeStatement.SET) InputPosition(23, 1, 24) else InputPosition(26, 1, 27)
+      )
+    )
+  }
+
+  test("n:$([\"Label1\", \"Label2\"])") {
+    runSemanticAnalysisWithSemanticFeatures(SemanticFeature.DynamicProperties).errors shouldBe empty
   }
 }
 

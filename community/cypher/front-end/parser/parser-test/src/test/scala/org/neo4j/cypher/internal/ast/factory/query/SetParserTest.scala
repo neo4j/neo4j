@@ -22,6 +22,7 @@ import org.neo4j.cypher.internal.ast.SetPropertyItem
 import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.test.util.AstParsing.Cypher5JavaCc
 import org.neo4j.cypher.internal.ast.test.util.AstParsingTestBase
+import org.neo4j.cypher.internal.util.symbols.CTAny
 
 class SetParserTest extends AstParsingTestBase {
 
@@ -90,6 +91,81 @@ class SetParserTest extends AstParsingTestBase {
       set_(
         Seq(
           setPropertyItem("n", "_1", literalInt(1))
+        )
+      )
+    )
+  }
+
+  // Dynamic Labels
+
+  test("SET n:$(A)") {
+    parsesTo[Clause](
+      set_(
+        Seq(setLabelItem("n", Seq.empty, dynamicLabels = Seq(varFor("A"))))
+      )
+    )
+  }
+
+  test("SET n IS $(A)") {
+    parsesTo[Clause](
+      set_(
+        Seq(setLabelItem("n", Seq.empty, dynamicLabels = Seq(varFor("A")), containsIs = true))
+      )
+    )
+  }
+
+  test("SET n:$(A):B:$(C)") {
+    parsesTo[Clause](
+      set_(
+        Seq(setLabelItem("n", Seq("B"), dynamicLabels = Seq(varFor("A"), varFor("C"))))
+      )
+    )
+  }
+
+  test("SET n:$($param), n:$(B)") {
+    parsesTo[Clause](
+      set_(
+        Seq(
+          setLabelItem("n", Seq.empty, dynamicLabels = Seq(parameter("param", CTAny))),
+          setLabelItem("n", Seq.empty, dynamicLabels = Seq(varFor("B")))
+        )
+      )
+    )
+  }
+
+  test("SET n IS $(\"A\"), n IS B") {
+    parsesTo[Clause](
+      set_(
+        Seq(
+          setLabelItem("n", Seq.empty, Seq(literalString("A")), containsIs = true),
+          setLabelItem("n", Seq("B"), containsIs = true)
+        )
+      )
+    )
+  }
+
+  test("SET n IS $(a || b), n:$(b || c)") {
+    parsesTo[Clause](
+      set_(
+        Seq(
+          setLabelItem("n", Seq.empty, Seq(concatenate(varFor("a"), varFor("b"))), containsIs = true),
+          setLabelItem("n", Seq.empty, Seq(concatenate(varFor("b"), varFor("c"))))
+        )
+      )
+    )
+  }
+
+  test("SET n:$(CASE WHEN x THEN \"Label1\" ELSE \"Label2\" END), r.prop = 1, m IS $($param)") {
+    parsesTo[Clause](
+      set_(
+        Seq(
+          setLabelItem(
+            "n",
+            Seq.empty,
+            Seq(caseExpression(None, Some(literalString("Label2")), (varFor("x"), literalString("Label1"))))
+          ),
+          setPropertyItem("r", "prop", literalInt(1)),
+          setLabelItem("m", Seq.empty, Seq(parameter("param", CTAny)), containsIs = true)
         )
       )
     )
@@ -174,6 +250,28 @@ class SetParserTest extends AstParsingTestBase {
     }
   }
 
+  test("SET :A") {
+    failsParsing[Statements].in {
+      case Cypher5JavaCc => _.withMessageStart("Invalid input ':'")
+      case _ => _.withMessage(
+          """Invalid input ':': expected an expression (line 1, column 5 (offset: 4))
+            |"SET :A"
+            |     ^""".stripMargin
+        )
+    }
+  }
+
+  test("SET IS A") {
+    failsParsing[Statements].in {
+      case Cypher5JavaCc => _.withMessageStart("Invalid input 'A': expected \"IS\"")
+      case _ => _.withMessage(
+          """Invalid input 'A': expected an expression, '+=', '.', ':', '=', 'IS' or '[' (line 1, column 8 (offset: 7))
+            |"SET IS A"
+            |        ^""".stripMargin
+        )
+    }
+  }
+
   // Invalid mix of colon conjunction and IS, this will be disallowed in semantic checking
 
   test("SET n IS A:B") {
@@ -214,14 +312,6 @@ class SetParserTest extends AstParsingTestBase {
   }
 
   test("SET n IS A&B") {
-    failsParsing[Statements]
-  }
-
-  test("SET :A") {
-    failsParsing[Statements]
-  }
-
-  test("SET IS A") {
     failsParsing[Statements]
   }
 }

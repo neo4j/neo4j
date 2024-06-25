@@ -202,7 +202,8 @@ public interface ASTFactory<
 
     SET_ITEM addAndSetVariable(VARIABLE variable, EXPRESSION value);
 
-    SET_ITEM setLabels(VARIABLE variable, List<StringPos<POS>> value, boolean containsIs);
+    SET_ITEM setLabels(
+            VARIABLE variable, List<StringPos<POS>> labels, List<EXPRESSION> dynamicLabels, boolean containsIs);
 
     CLAUSE removeClause(POS p, List<REMOVE_ITEM> removeItems);
 
@@ -210,7 +211,8 @@ public interface ASTFactory<
 
     REMOVE_ITEM removeDynamicProperty(EXPRESSION dynamicProperty);
 
-    REMOVE_ITEM removeLabels(VARIABLE variable, List<StringPos<POS>> labels, boolean containsIs);
+    REMOVE_ITEM removeLabels(
+            VARIABLE variable, List<StringPos<POS>> labels, List<EXPRESSION> dynamicLabels, boolean containsIs);
 
     CLAUSE deleteClause(POS p, boolean detach, List<EXPRESSION> expressions);
 

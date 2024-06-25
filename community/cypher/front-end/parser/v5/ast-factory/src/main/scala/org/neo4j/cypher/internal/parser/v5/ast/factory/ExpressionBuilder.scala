@@ -594,7 +594,7 @@ trait ExpressionBuilder extends Cypher5ParserListener {
               typeComparisonExpression(lhs, whenCtx)
             case formCtx: Cypher5Parser.WhenFormContext =>
               normalFormComparisonExpression(lhs, formCtx.normalForm(), formCtx.NOT() != null, pos(formCtx))
-            case _ => throw new IllegalStateException(s"Unexepected context $whenCtx")
+            case _ => throw new IllegalStateException(s"Unexpected context $whenCtx")
           }
           buffer.addOne(newWhen -> thenExp)
         case _ =>

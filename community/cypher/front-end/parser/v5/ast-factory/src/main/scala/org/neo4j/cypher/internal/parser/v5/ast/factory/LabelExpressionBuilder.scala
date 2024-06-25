@@ -85,14 +85,27 @@ trait LabelExpressionBuilder extends Cypher5ParserListener {
   }
 
   final override def exitNodeLabels(ctx: Cypher5Parser.NodeLabelsContext): Unit = {
-    ctx.ast = astSeq[LabelName](ctx.labelType())
+    ctx.ast = (astSeq[LabelName](ctx.labelType()), astSeq[Expression](ctx.dynamicLabelType()))
   }
 
   final override def exitNodeLabelsIs(ctx: Cypher5Parser.NodeLabelsIsContext): Unit = {
-    val symString = ctx.symbolicNameString()
-    ctx.ast =
-      ArraySeq(LabelName(symString.ast[String]())(pos(symString))) ++
-        astSeq[LabelName](ctx.labelType())
+    val labelTypes = ArraySeq.newBuilder[LabelName]
+      .addAll(Option(ctx.symbolicNameString()).map(c => LabelName(c.ast())(pos(c))))
+      .addAll(astSeq(ctx.labelType()))
+      .result()
+    val dynamicLabels = ArraySeq.newBuilder[Expression]
+      .addAll(astOpt(ctx.dynamicExpression()))
+      .addAll(astSeq(ctx.dynamicLabelType()))
+      .result()
+    ctx.ast = (labelTypes, dynamicLabels)
+  }
+
+  final override def exitDynamicExpression(ctx: Cypher5Parser.DynamicExpressionContext): Unit = {
+    ctx.ast = ctxChild(ctx, 2).ast
+  }
+
+  final override def exitDynamicLabelType(ctx: Cypher5Parser.DynamicLabelTypeContext): Unit = {
+    ctx.ast = ctxChild(ctx, 1).ast
   }
 
   final override def exitLabelType(ctx: Cypher5Parser.LabelTypeContext): Unit = {

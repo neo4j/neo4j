@@ -803,9 +803,15 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
   override def setLabels(
     variable: Variable,
     labels: util.List[StringPos[InputPosition]],
+    dynamicLabels: util.List[Expression],
     containsIs: Boolean
   ): SetItem =
-    SetLabelItem(variable, labels.asScala.toList.map(sp => LabelName(sp.string)(sp.pos)), containsIs)(variable.position)
+    SetLabelItem(
+      variable,
+      labels.asScala.toList.map(sp => LabelName(sp.string)(sp.pos)),
+      dynamicLabels.asScala.toList,
+      containsIs
+    )(variable.position)
 
   override def removeClause(p: InputPosition, removeItems: util.List[RemoveItem]): Clause =
     Remove(removeItems.asScala.toList)(p)
@@ -822,9 +828,15 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
   override def removeLabels(
     variable: Variable,
     labels: util.List[StringPos[InputPosition]],
+    dynamicLabels: util.List[Expression],
     containsIs: Boolean
   ): RemoveItem =
-    RemoveLabelItem(variable, labels.asScala.toList.map(sp => LabelName(sp.string)(sp.pos)), containsIs)(
+    RemoveLabelItem(
+      variable,
+      labels.asScala.toList.map(sp => LabelName(sp.string)(sp.pos)),
+      dynamicLabels.asScala.toList,
+      containsIs
+    )(
       variable.position
     )
 

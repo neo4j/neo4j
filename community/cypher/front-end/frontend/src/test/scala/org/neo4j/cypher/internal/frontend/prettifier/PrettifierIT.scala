@@ -166,6 +166,12 @@ class PrettifierIT extends CypherFunSuite {
       """CALL {
         |  RETURN 1 AS i
         |} IN TRANSACTIONS ON ERROR BREAK""".stripMargin,
+    "match (n) SET n:A   :$(B):   $(  1 + 1  + \"2\")  :D" ->
+      """MATCH (n)
+        |SET n:A:$(B):$((1 + 1) + "2"):D""".stripMargin,
+    "match (n) SET n IS $([a,  b,   c])" ->
+      """MATCH (n)
+        |SET n IS $([a, b, c])""".stripMargin,
     "match (n) SET n.prop = 1" ->
       """MATCH (n)
         |SET n.prop = 1""".stripMargin,
@@ -196,6 +202,12 @@ class PrettifierIT extends CypherFunSuite {
     "match (n) SET n:Label, n.prop = 1" ->
       """MATCH (n)
         |SET n:Label, n.prop = 1""".stripMargin,
+    "match (n) REMOVE n:A   :$(B):   $(  1 + 1  + \"2\")  :D" ->
+      """MATCH (n)
+        |REMOVE n:A:$(B):$((1 + 1) + "2"):D""".stripMargin,
+    "match (n) REMOVE n IS $([a,  b,   c])" ->
+      """MATCH (n)
+        |REMOVE n IS $([a, b, c])""".stripMargin,
     "match (n) REMOVE n:Label" ->
       """MATCH (n)
         |REMOVE n:Label""".stripMargin,

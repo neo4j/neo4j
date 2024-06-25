@@ -81,6 +81,7 @@ import org.neo4j.cypher.internal.ast.factory.HintIndexType
 import org.neo4j.cypher.internal.expressions.AnonymousPatternPart
 import org.neo4j.cypher.internal.expressions.ContainerIndex
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.MatchMode
 import org.neo4j.cypher.internal.expressions.NamedPatternPart
 import org.neo4j.cypher.internal.expressions.Namespace
@@ -275,9 +276,11 @@ trait StatementBuilder extends Cypher5ParserListener {
       case _: Cypher5Parser.AddPropContext =>
         SetIncludingPropertiesFromMapItem(ctxChild(ctx, 0).ast(), ctxChild(ctx, 2).ast())(pos(ctx))
       case _: Cypher5Parser.SetLabelsContext =>
-        SetLabelItem(ctxChild(ctx, 0).ast(), ctxChild(ctx, 1).ast(), containsIs = false)(pos(ctx))
+        val (labels, dynamicLabels) = astChild[(Seq[LabelName], Seq[Expression])](ctx, 1)
+        SetLabelItem(ctxChild(ctx, 0).ast(), labels, dynamicLabels, containsIs = false)(pos(ctx))
       case _: Cypher5Parser.SetLabelsIsContext =>
-        SetLabelItem(ctxChild(ctx, 0).ast(), ctxChild(ctx, 1).ast(), containsIs = true)(pos(ctx))
+        val (labels, dynamicLabels) = astChild[(Seq[LabelName], Seq[Expression])](ctx, 1)
+        SetLabelItem(ctxChild(ctx, 0).ast(), labels, dynamicLabels, containsIs = true)(pos(ctx))
       case _ => throw new IllegalStateException(s"Unexpected context $ctx")
     }
   }
@@ -295,9 +298,11 @@ trait StatementBuilder extends Cypher5ParserListener {
       case r: Cypher5Parser.RemoveDynamicPropContext =>
         RemoveDynamicPropertyItem(ctxChild(r, 0).ast())
       case r: Cypher5Parser.RemoveLabelsContext =>
-        RemoveLabelItem(ctxChild(r, 0).ast(), ctxChild(r, 1).ast(), containsIs = false)(pos(ctx))
+        val (labels, dynamicLabels) = astChild[(Seq[LabelName], Seq[Expression])](ctx, 1)
+        RemoveLabelItem(ctxChild(r, 0).ast(), labels, dynamicLabels, containsIs = false)(pos(ctx))
       case r: Cypher5Parser.RemoveLabelsIsContext =>
-        RemoveLabelItem(ctxChild(r, 0).ast(), ctxChild(r, 1).ast(), containsIs = true)(pos(ctx))
+        val (labels, dynamicLabels) = astChild[(Seq[LabelName], Seq[Expression])](ctx, 1)
+        RemoveLabelItem(ctxChild(r, 0).ast(), labels, dynamicLabels, containsIs = true)(pos(ctx))
       case _ => throw new IllegalStateException(s"Unexpected context $ctx")
     }
   }

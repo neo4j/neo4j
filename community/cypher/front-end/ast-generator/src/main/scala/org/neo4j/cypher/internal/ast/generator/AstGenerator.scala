@@ -1375,11 +1375,12 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
   def _setItem: Gen[SetItem] = for {
     variable <- _variable
     labels <- oneOrMore(_labelName)
+    dynamicLabels <- oneOrMore(_expression)
     property <- _property
     expression <- _expression
     containsIs <- boolean
     item <- oneOf(
-      SetLabelItem(variable, labels, containsIs)(pos),
+      SetLabelItem(variable, labels, dynamicLabels, containsIs)(pos),
       SetPropertyItem(property, expression)(pos),
       SetExactPropertiesFromMapItem(variable, expression)(pos),
       SetIncludingPropertiesFromMapItem(variable, expression)(pos)
@@ -1389,10 +1390,11 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
   def _removeItem: Gen[RemoveItem] = for {
     variable <- _variable
     labels <- oneOrMore(_labelName)
+    dynamicLabels <- oneOrMore(_expression)
     containsIs <- boolean
     property <- _property
     item <- oneOf(
-      RemoveLabelItem(variable, labels, containsIs)(pos),
+      RemoveLabelItem(variable, labels, dynamicLabels, containsIs)(pos),
       RemovePropertyItem(property)
     )
   } yield item

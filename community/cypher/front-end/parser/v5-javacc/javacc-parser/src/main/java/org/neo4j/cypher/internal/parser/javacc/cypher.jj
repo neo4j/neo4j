@@ -1990,15 +1990,15 @@ SET_ITEM SetItem() throws Exception:
     PROPERTY p;
     EXPRESSION d;
     VARIABLE v;
-    List<StringPos<POS>> labels;
+    SET_ITEM setItem = null;
 }
 {
     LOOKAHEAD( Expression1() <DOT> ) p=PropertyExpression() <EQ> e=Expression() { return astFactory.setProperty( p, e ); }
     | LOOKAHEAD( Expression1() <LBRACKET> ) d=DynamicPropertyExpression() <EQ> e=Expression() { return astFactory.setDynamicProperty( d, e ); }
     | LOOKAHEAD( 2 ) v=Variable() <EQ> e=Expression() { return astFactory.setVariable( v, e ); }
     | LOOKAHEAD( 2 ) v = Variable() <PLUSEQUAL> e=Expression() { return astFactory.addAndSetVariable( v, e ); }
-    | LOOKAHEAD( 2 ) v = Variable() labels = NodeLabels() { return astFactory.setLabels( v, labels, false ); }
-    | v = Variable() labels = NodeLabelsIs() { return astFactory.setLabels( v, labels, true ); }
+    | LOOKAHEAD( 2 ) v = Variable() setItem = SetNodeLabels(v) { return setItem; }
+    | v = Variable() setItem = SetNodeLabelsIs(v) { return setItem; }
 }
 
 // REMOVE
@@ -2021,13 +2021,13 @@ REMOVE_ITEM RemoveItem() throws Exception:
     EXPRESSION e;
     PROPERTY p;
     VARIABLE v;
-    List<StringPos<POS>> labels;
+    REMOVE_ITEM removeItem = null;
 }
 {
     LOOKAHEAD( Expression1() <DOT> ) p=PropertyExpression() { return astFactory.removeProperty( p ); }
     | LOOKAHEAD( Expression1() <LBRACKET> ) e=DynamicPropertyExpression() { return astFactory.removeDynamicProperty( e ); }
-    | LOOKAHEAD(2) v=Variable() labels=NodeLabels() { return astFactory.removeLabels( v, labels, false ); }
-    | v=Variable() labels=NodeLabelsIs() { return astFactory.removeLabels( v, labels, true ); }
+    | LOOKAHEAD( 2 ) v=Variable() removeItem=RemoveNodeLabelsColon(v) { return removeItem; }
+    | v=Variable() removeItem=RemoveNodeLabelsIs(v) { return removeItem; }
 }
 
 // DELETE
@@ -2757,28 +2757,77 @@ PATTERN_ATOM ParenthesizedPath() throws Exception:
     }
 }
 
-List<StringPos<POS>> NodeLabels() :
+SET_ITEM SetNodeLabels(VARIABLE v) throws Exception:
 {
     Token label;
     List<StringPos<POS>> labels = new ArrayList<>();
+    List<EXPRESSION> dynamicLabels = new ArrayList<>();
+    EXPRESSION e = null;
 }
 {
-    ( LOOKAHEAD( 2 ) label=LabelOrRelType() { labels.add( new StringPos<>( label.image, pos( label ) ) ); } )+
+    (
+        LOOKAHEAD( 2 ) label=LabelOrRelType() { labels.add( new StringPos<>( label.image, pos( label ) ) ); }
+        | <COLON> <DOLLAR> <LPAREN> e=Expression() <RPAREN> { dynamicLabels.add( e ); }
+    )+
     {
-        return labels;
+        return astFactory.setLabels( v, labels, dynamicLabels, false );
     }
 }
 
-List<StringPos<POS>> NodeLabelsIs() :
+SET_ITEM SetNodeLabelsIs(VARIABLE v) throws Exception:
 {
     Token label;
     List<StringPos<POS>> labels = new ArrayList<>();
+    List<EXPRESSION> dynamicLabels = new ArrayList<>();
+    EXPRESSION e = null;
 }
 {
-    <IS> label=SymbolicNameString() { labels.add( new StringPos<>( label.image, pos( label ) ) ); }
-    ( label=LabelOrRelType() { labels.add( new StringPos<>( label.image, pos( label ) ) ); } )*
+    <IS> (LOOKAHEAD( 2 ) label=SymbolicNameString() { labels.add( new StringPos<>( label.image, pos( label ) ) ); }
+        | <DOLLAR> <LPAREN> e=Expression() <RPAREN> { dynamicLabels.add( e ); })
+    (
+        LOOKAHEAD( 2 ) label=LabelOrRelType() { labels.add( new StringPos<>( label.image, pos( label ) ) ); }
+        | <COLON> <DOLLAR> <LPAREN> e=Expression() <RPAREN> { dynamicLabels.add( e ); }
+    )*
     {
-        return labels;
+        return astFactory.setLabels( v, labels, dynamicLabels, true );
+    }
+}
+
+REMOVE_ITEM RemoveNodeLabelsColon(VARIABLE v) throws Exception:
+{
+    Token label;
+    List<StringPos<POS>> labels = new ArrayList<>();
+    List<EXPRESSION> dynamicLabels = new ArrayList<>();
+    EXPRESSION e = null;
+}
+{
+    (
+        LOOKAHEAD( 2 ) label=LabelOrRelType() { labels.add( new StringPos<>( label.image, pos( label ) ) ); }
+        | <COLON> <DOLLAR> <LPAREN> e=Expression() <RPAREN> { dynamicLabels.add( e ); }
+    )+
+    {
+        return astFactory.removeLabels( v, labels, dynamicLabels, false );
+    }
+}
+
+REMOVE_ITEM RemoveNodeLabelsIs(VARIABLE v) throws Exception:
+{
+    Token label;
+    List<StringPos<POS>> labels = new ArrayList<>();
+    List<EXPRESSION> dynamicLabels = new ArrayList<>();
+    EXPRESSION e = null;
+}
+{
+    <IS> (
+            <DOLLAR> <LPAREN> e=Expression() <RPAREN> { dynamicLabels.add( e ); }
+            | label=SymbolicNameString() { labels.add( new StringPos<>( label.image, pos( label ) ) ); }
+        )
+    (
+        LOOKAHEAD( 2 ) label=LabelOrRelType() { labels.add( new StringPos<>( label.image, pos( label ) ) ); }
+        | <COLON> <DOLLAR> <LPAREN> e=Expression() <RPAREN> { dynamicLabels.add( e ); }
+    )*
+    {
+        return astFactory.removeLabels( v, labels, dynamicLabels, true );
     }
 }
 

@@ -29,17 +29,25 @@ import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.symbols.CTList
 import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.symbols.CTRelationship
+import org.neo4j.cypher.internal.util.symbols.CTString
 
 sealed trait RemoveItem extends ASTNode with SemanticCheckable with HasMappableExpressions[RemoveItem]
 
-case class RemoveLabelItem(variable: LogicalVariable, labels: Seq[LabelName], containsIs: Boolean)(
-  val position: InputPosition
-) extends RemoveItem {
+case class RemoveLabelItem(
+  variable: LogicalVariable,
+  labels: Seq[LabelName],
+  dynamicLabels: Seq[Expression],
+  containsIs: Boolean
+)(val position: InputPosition) extends RemoveItem {
 
   override def semanticCheck: SemanticCheck =
     SemanticExpressionCheck.simple(variable) chain
+      SemanticExpressionCheck.simple(dynamicLabels) chain
+      SemanticPatternCheck.checkValidDynamicLabels(dynamicLabels, position) chain
+      SemanticExpressionCheck.expectType(CTString.covariant | CTList(CTString).covariant, dynamicLabels) chain
       SemanticPatternCheck.checkValidLabels(labels, position) chain
       SemanticExpressionCheck.expectType(CTNode.covariant, variable)
 

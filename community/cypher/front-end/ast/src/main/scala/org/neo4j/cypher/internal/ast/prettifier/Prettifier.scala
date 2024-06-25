@@ -306,30 +306,47 @@ case class Prettifier(
       case SetDynamicPropertyItem(prop, exp) => s"${expr(prop)} = ${expr(exp)}"
       case SetPropertyItems(entity, items) =>
         items.map(i => s"${expr(entity)}.${i._1.name} = ${expr(i._2)}").mkString(", ")
-      case SetLabelItem(variable, labels, false)            => labelsString(variable, labels)
-      case SetLabelItem(variable, labels, true)             => isLabelsString(variable, labels)
-      case SetIncludingPropertiesFromMapItem(variable, exp) => s"${expr(variable)} += ${expr(exp)}"
-      case SetExactPropertiesFromMapItem(variable, exp)     => s"${expr(variable)} = ${expr(exp)}"
+      case SetLabelItem(variable, labels, dynamicLabels, false) => labelsString(variable, labels, dynamicLabels)
+      case SetLabelItem(variable, labels, dynamicLabels, true)  => isLabelsString(variable, labels, dynamicLabels)
+      case SetIncludingPropertiesFromMapItem(variable, exp)     => s"${expr(variable)} += ${expr(exp)}"
+      case SetExactPropertiesFromMapItem(variable, exp)         => s"${expr(variable)} = ${expr(exp)}"
     }
     items.mkString(", ")
   }
 
   def prettifyRemoveItems(removeItems: Seq[RemoveItem]): String = {
     val items = removeItems.map {
-      case RemovePropertyItem(prop)                         => s"${expr(prop)}"
-      case RemoveDynamicPropertyItem(dynamicPropertyLookup) => s"${expr(dynamicPropertyLookup)}"
-      case RemoveLabelItem(variable, labels, false)         => labelsString(variable, labels)
-      case RemoveLabelItem(variable, labels, true)          => isLabelsString(variable, labels)
+      case RemovePropertyItem(prop)                                => s"${expr(prop)}"
+      case RemoveDynamicPropertyItem(dynamicPropertyLookup)        => s"${expr(dynamicPropertyLookup)}"
+      case RemoveLabelItem(variable, labels, dynamicLabels, false) => labelsString(variable, labels, dynamicLabels)
+      case RemoveLabelItem(variable, labels, dynamicLabels, true)  => isLabelsString(variable, labels, dynamicLabels)
     }
     items.mkString(", ")
   }
 
-  private def labelsString(variable: LogicalVariable, labels: Seq[LabelName]): String = {
-    expr(variable) + labels.map(l => s":${expr(l)}").mkString("")
+  private def labelsString(
+    variable: LogicalVariable,
+    labels: Seq[LabelName],
+    dynamicLabels: Seq[Expression]
+  ): String = {
+    expr(variable) + labelsOrderedSeq(labels, dynamicLabels).map(l => s":$l").mkString("")
   }
 
-  private def isLabelsString(variable: LogicalVariable, labels: Seq[LabelName]): String = {
-    expr(variable) + " IS " + expr(labels.head) + labels.tail.map(l => s":${expr(l)}").mkString("")
+  private def isLabelsString(
+    variable: LogicalVariable,
+    labels: Seq[LabelName],
+    dynamicLabels: Seq[Expression]
+  ): String = {
+    val labelsStrings: Seq[String] = labelsOrderedSeq(labels, dynamicLabels)
+    expr(variable) + " IS " + labelsStrings.head + labelsStrings.tail.map(l => s":$l").mkString("")
+  }
+
+  private def labelsOrderedSeq(labels: Seq[LabelName], dynamicLabels: Seq[Expression]): Seq[String] = {
+    (labels ++ dynamicLabels).map {
+      case l: LabelName  => (s"${expr(l)}", l.position)
+      case d: Expression => (s"$$(${expr(d)})", d.position)
+      case _             => throw new IllegalStateException("Unreachable state.")
+    }.sortBy(pos => (pos._2.line, pos._2.column)).map(_._1)
   }
 
   def asString(command: SchemaCommand): String = {

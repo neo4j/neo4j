@@ -60,6 +60,7 @@ import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.RelationshipsPattern
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.ShortestPathsPatternPart
+import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.expressions.SymbolicName
 import org.neo4j.cypher.internal.expressions.UnsignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.label_expressions.LabelExpression
@@ -844,6 +845,12 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
 
       case LabelOrRelTypeName(name) => checkValidTokenName(name)
       case _                        => None
+    }.headOption.map(message => SemanticError(message, pos))
+
+  def checkValidDynamicLabels(labelNames: Seq[Expression], pos: InputPosition): SemanticCheck =
+    labelNames.view.flatMap {
+      case StringLiteral(name) => checkValidTokenName(name)
+      case _                   => None
     }.headOption.map(message => SemanticError(message, pos))
 
   private def checkValidTokenName(name: String): Option[String] = {

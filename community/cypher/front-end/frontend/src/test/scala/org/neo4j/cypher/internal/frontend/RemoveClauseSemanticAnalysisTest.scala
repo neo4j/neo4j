@@ -28,7 +28,7 @@ class RemoveClauseSemanticAnalysisTest
   test("MATCH (n) REMOVE n[\"prop\"]") {
     runSemanticAnalysis().errors.toSet shouldEqual Set(
       SemanticError(
-        "Removing properties dynamically is not supported.",
+        "Removing labels or properties dynamically is not supported.",
         InputPosition(19, 1, 20).withInputLength(6)
       )
     )
@@ -37,7 +37,7 @@ class RemoveClauseSemanticAnalysisTest
   test("MATCH (n), (m) REMOVE (CASE WHEN n.prop = 5 THEN n ELSE m END)[\"prop\"]") {
     runSemanticAnalysis().errors.toSet shouldEqual Set(
       SemanticError(
-        "Removing properties dynamically is not supported.",
+        "Removing labels or properties dynamically is not supported.",
         InputPosition(63, 1, 64).withInputLength(6)
       )
     )

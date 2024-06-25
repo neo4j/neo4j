@@ -30,18 +30,28 @@ import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.symbols.CTList
 import org.neo4j.cypher.internal.util.symbols.CTMap
 import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.symbols.CTRelationship
+import org.neo4j.cypher.internal.util.symbols.CTString
 
 sealed trait SetItem extends ASTNode with SemanticCheckable with HasMappableExpressions[SetItem]
 
-case class SetLabelItem(variable: Variable, labels: Seq[LabelName], containsIs: Boolean)(val position: InputPosition)
+case class SetLabelItem(
+  variable: Variable,
+  labels: Seq[LabelName],
+  dynamicLabels: Seq[Expression],
+  containsIs: Boolean
+)(val position: InputPosition)
     extends SetItem {
 
   def semanticCheck =
     SemanticExpressionCheck.simple(variable) chain
       SemanticPatternCheck.checkValidLabels(labels, position) chain
+      SemanticExpressionCheck.simple(dynamicLabels) chain
+      SemanticPatternCheck.checkValidDynamicLabels(dynamicLabels, position) chain
+      SemanticExpressionCheck.expectType(CTString.covariant | CTList(CTString).covariant, dynamicLabels) chain
       SemanticExpressionCheck.expectType(CTNode.covariant, variable)
 
   override def mapExpressions(f: Expression => Expression): SetItem =

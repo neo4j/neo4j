@@ -28,7 +28,7 @@ class SetClauseSemanticAnalysisTest
   test("MATCH (n) SET n[\"prop\"] = 3") {
     runSemanticAnalysis().errors.toSet shouldEqual Set(
       SemanticError(
-        "Setting properties dynamically is not supported.",
+        "Setting labels or properties dynamically is not supported.",
         InputPosition(16, 1, 17).withInputLength(6)
       )
     )
@@ -37,7 +37,7 @@ class SetClauseSemanticAnalysisTest
   test("MATCH (n)-[r]->(m) SET (CASE WHEN n.prop = 5 THEN n ELSE r END)[\"prop\"] = 3") {
     runSemanticAnalysis().errors.toSet shouldEqual Set(
       SemanticError(
-        "Setting properties dynamically is not supported.",
+        "Setting labels or properties dynamically is not supported.",
         InputPosition(64, 1, 65).withInputLength(6)
       )
     )
@@ -82,11 +82,11 @@ class SetClauseSemanticAnalysisTest
   test("WITH \"prop\" as prop MERGE (n) ON MATCH SET n[prop] = 3 ON CREATE SET n[prop] = 4") {
     runSemanticAnalysis().errors.toSet shouldEqual Set(
       SemanticError(
-        "Setting properties dynamically is not supported.",
+        "Setting labels or properties dynamically is not supported.",
         InputPosition(45, 1, 46)
       ),
       SemanticError(
-        "Setting properties dynamically is not supported.",
+        "Setting labels or properties dynamically is not supported.",
         InputPosition(71, 1, 72)
       )
     )

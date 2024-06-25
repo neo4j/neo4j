@@ -670,7 +670,7 @@ public class NullAstFactory
     }
 
     @Override
-    public NULL setLabels(NULL aNull, List<StringPos<NULL>> value, boolean containsIs) {
+    public NULL setLabels(NULL aNull, List<StringPos<NULL>> labels, List<NULL> dynamicLabels, boolean containsIs) {
         return null;
     }
 
@@ -690,7 +690,7 @@ public class NullAstFactory
     }
 
     @Override
-    public NULL removeLabels(NULL aNull, List<StringPos<NULL>> labels, boolean containsIs) {
+    public NULL removeLabels(NULL aNull, List<StringPos<NULL>> labels, List<NULL> dynamicLabels, boolean containsIs) {
         return null;
     }
 

@@ -303,11 +303,19 @@ parenthesizedPath
    ;
 
 nodeLabels
-   : labelType+
+   : (labelType | dynamicLabelType)+
    ;
 
 nodeLabelsIs
-   : IS symbolicNameString labelType*
+   : IS (symbolicNameString | dynamicExpression) (labelType | dynamicLabelType)*
+   ;
+
+dynamicExpression
+   : DOLLAR LPAREN expression RPAREN
+   ;
+
+dynamicLabelType
+   : COLON dynamicExpression
    ;
 
 labelType

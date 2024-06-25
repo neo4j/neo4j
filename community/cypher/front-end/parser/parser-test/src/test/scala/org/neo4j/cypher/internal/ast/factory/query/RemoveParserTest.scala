@@ -22,6 +22,7 @@ import org.neo4j.cypher.internal.ast.RemovePropertyItem
 import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.test.util.AstParsing.Cypher5JavaCc
 import org.neo4j.cypher.internal.ast.test.util.AstParsingTestBase
+import org.neo4j.cypher.internal.util.symbols.CTAny
 
 class RemoveParserTest extends AstParsingTestBase {
 
@@ -194,7 +195,7 @@ class RemoveParserTest extends AstParsingTestBase {
     failsParsing[Statements].in {
       case Cypher5JavaCc => _.withMessageStart("Invalid input '!'")
       case _ => _.withMessage(
-          """Invalid input '!': expected an identifier (line 1, column 10 (offset: 9))
+          """Invalid input '!': expected an identifier or '$' (line 1, column 10 (offset: 9))
             |"REMOVE n:!A"
             |          ^""".stripMargin
         )
@@ -205,7 +206,7 @@ class RemoveParserTest extends AstParsingTestBase {
     failsParsing[Statements].in {
       case Cypher5JavaCc => _.withMessageStart("Invalid input '%'")
       case _ => _.withMessage(
-          """Invalid input '%': expected an identifier (line 1, column 10 (offset: 9))
+          """Invalid input '%': expected an identifier or '$' (line 1, column 10 (offset: 9))
             |"REMOVE n:%"
             |          ^""".stripMargin
         )
@@ -254,5 +255,80 @@ class RemoveParserTest extends AstParsingTestBase {
             |           ^""".stripMargin
         )
     }
+  }
+
+  // Dynamic Labels
+
+  test("REMOVE n:$(A)") {
+    parsesTo[Clause](
+      remove(
+        Seq(removeLabelItem("n", Seq.empty, dynamicLabels = Seq(varFor("A"))))
+      )
+    )
+  }
+
+  test("REMOVE n IS $(A)") {
+    parsesTo[Clause](
+      remove(
+        Seq(removeLabelItem("n", Seq.empty, dynamicLabels = Seq(varFor("A")), containsIs = true))
+      )
+    )
+  }
+
+  test("REMOVE n:$(A):B:$(C)") {
+    parsesTo[Clause](
+      remove(
+        Seq(removeLabelItem("n", Seq("B"), dynamicLabels = Seq(varFor("A"), varFor("C"))))
+      )
+    )
+  }
+
+  test("REMOVE n:$($param), n:$(B)") {
+    parsesTo[Clause](
+      remove(
+        Seq(
+          removeLabelItem("n", Seq.empty, dynamicLabels = Seq(parameter("param", CTAny))),
+          removeLabelItem("n", Seq.empty, dynamicLabels = Seq(varFor("B")))
+        )
+      )
+    )
+  }
+
+  test("REMOVE n IS $(\"A\"), n IS B") {
+    parsesTo[Clause](
+      remove(
+        Seq(
+          removeLabelItem("n", Seq.empty, Seq(literalString("A")), containsIs = true),
+          removeLabelItem("n", Seq("B"), containsIs = true)
+        )
+      )
+    )
+  }
+
+  test("REMOVE n IS $(a || b), n:$(b || c)") {
+    parsesTo[Clause](
+      remove(
+        Seq(
+          removeLabelItem("n", Seq.empty, Seq(concatenate(varFor("a"), varFor("b"))), containsIs = true),
+          removeLabelItem("n", Seq.empty, Seq(concatenate(varFor("b"), varFor("c"))))
+        )
+      )
+    )
+  }
+
+  test("REMOVE n:$(CASE WHEN x THEN \"Label1\" ELSE \"Label2\" END), r.prop, m IS $($param)") {
+    parsesTo[Clause](
+      remove(
+        Seq(
+          removeLabelItem(
+            "n",
+            Seq.empty,
+            Seq(caseExpression(None, Some(literalString("Label2")), (varFor("x"), literalString("Label1"))))
+          ),
+          removePropertyItem("r", "prop"),
+          removeLabelItem("m", Seq.empty, Seq(parameter("param", CTAny)), containsIs = true)
+        )
+      )
+    )
   }
 }

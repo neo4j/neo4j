@@ -1179,12 +1179,15 @@ case class SetClause(items: Seq[SetItem])(val position: InputPosition) extends U
 
   override def clauseSpecificSemanticCheck: SemanticCheck =
     whenState(
-      items.exists(_.isInstanceOf[SetDynamicPropertyItem]) && !_.features.contains(SemanticFeature.DynamicProperties)
+      !_.features.contains(SemanticFeature.DynamicProperties)
     ) {
-      error(
-        "Setting properties dynamically is not supported.",
-        items.find(_.isInstanceOf[SetDynamicPropertyItem]).get.position
-      )
+      items.filter {
+        case _: SetDynamicPropertyItem                                         => true
+        case _ @SetLabelItem(_, _, dynamicLabels, _) if dynamicLabels.nonEmpty => true
+        case _                                                                 => false
+      } map {
+        e => SemanticError("Setting labels or properties dynamically is not supported.", e.position)
+      }
     } chain items.semanticCheck chain fromState(checkIfMixingIsWithMultipleLabels)
 
   override def mapExpressions(f: Expression => Expression): UpdateClause =
@@ -1193,20 +1196,27 @@ case class SetClause(items: Seq[SetItem])(val position: InputPosition) extends U
   private def checkIfMixingIsWithMultipleLabels(state: SemanticState): SemanticCheck = {
     // Check for the IS keyword
     val containsIs = this.folder.treeExists {
-      case _ @SetLabelItem(_, _, true) => true
+      case _ @SetLabelItem(_, _, _, true) => true
     }
 
     // Check for multiple labels in the same item
     val multipleLabels = this.folder.treeExists {
-      case _ @SetLabelItem(_, labels, _) if labels.size > 1 => true
+      case _ @SetLabelItem(_, labels, dynamicLabels, _) if labels.size + dynamicLabels.size > 1 => true
     }
 
     // If both were present, throw error with improvement suggestion: n:A:B => n IS A, n IS B
     when(containsIs && multipleLabels) {
       val prettifier = Prettifier(ExpressionStringifier())
       val setItems: Seq[SetItem] = this.items.flatMap {
-        case s @ SetLabelItem(variable, labels, _) =>
-          labels.map(label => SetLabelItem(variable, Seq(label), containsIs = true)(s.position))
+        case s @ SetLabelItem(variable, labels, dynamicLabels, _) =>
+          (labels.map(label =>
+            SetLabelItem(variable, Seq(label), Seq.empty, containsIs = true)(s.position)
+          ) ++ dynamicLabels.map(dynamicLabel =>
+            SetLabelItem(variable, Seq.empty, Seq(dynamicLabel), containsIs = true)(s.position)
+          )).sortBy(setItem =>
+            if (setItem.labels.nonEmpty) setItem.labels.head.position.column
+            else setItem.dynamicLabels.head.position.column
+          )
         case x => Seq(x)
       }
       val replacement = prettifier.prettifySetItems(setItems)
@@ -1236,12 +1246,15 @@ case class Remove(items: Seq[RemoveItem])(val position: InputPosition) extends U
 
   override def clauseSpecificSemanticCheck: SemanticCheck =
     whenState(
-      items.exists(_.isInstanceOf[RemoveDynamicPropertyItem]) && !_.features.contains(SemanticFeature.DynamicProperties)
+      !_.features.contains(SemanticFeature.DynamicProperties)
     ) {
-      error(
-        "Removing properties dynamically is not supported.",
-        items.find(_.isInstanceOf[RemoveDynamicPropertyItem]).get.position
-      )
+      items.filter {
+        case _: RemoveDynamicPropertyItem                                         => true
+        case _ @RemoveLabelItem(_, _, dynamicLabels, _) if dynamicLabels.nonEmpty => true
+        case _                                                                    => false
+      } map {
+        e => SemanticError("Removing labels or properties dynamically is not supported.", e.position)
+      }
     } chain
       items.semanticCheck chain checkIfMixingIsWithMultipleLabels
 
@@ -1251,20 +1264,27 @@ case class Remove(items: Seq[RemoveItem])(val position: InputPosition) extends U
   private def checkIfMixingIsWithMultipleLabels(): SemanticCheck = {
     // Check for the IS keyword
     val containsIs = this.folder.treeExists {
-      case _ @RemoveLabelItem(_, _, true) => true
+      case _ @RemoveLabelItem(_, _, _, true) => true
     }
 
     // Check for multiple labels in the same item
     val multipleLabels = this.folder.treeExists {
-      case _ @RemoveLabelItem(_, labels, _) if labels.size > 1 => true
+      case _ @RemoveLabelItem(_, labels, dynamicLabels, _) if labels.size + dynamicLabels.size > 1 => true
     }
 
     // If both were present, throw error with improvement suggestion: n:A:B => n IS A, n IS B
     when(containsIs && multipleLabels) {
       val prettifier = Prettifier(ExpressionStringifier())
       val removeItems: Seq[RemoveItem] = this.items.flatMap {
-        case s @ RemoveLabelItem(variable, labels, _) =>
-          labels.map(label => RemoveLabelItem(variable, Seq(label), containsIs = true)(s.position))
+        case s @ RemoveLabelItem(variable, labels, dynamicLabels, _) =>
+          (labels.map(label =>
+            RemoveLabelItem(variable, Seq(label), Seq.empty, containsIs = true)(s.position)
+          ) ++ dynamicLabels.map(dynamicLabel =>
+            RemoveLabelItem(variable, Seq.empty, Seq(dynamicLabel), containsIs = true)(s.position)
+          )).sortBy(removeItem =>
+            if (removeItem.labels.nonEmpty) removeItem.labels.head.position.column
+            else removeItem.dynamicLabels.head.position.column
+          )
         case x => Seq(x)
       }
       val replacement = prettifier.prettifyRemoveItems(removeItems)

@@ -928,16 +928,26 @@ trait AstConstructionTestSupport {
   def set_(items: Seq[SetItem]): SetClause =
     SetClause(items)(pos)
 
-  def setLabelItem(node: String, labels: Seq[String], containsIs: Boolean = false): SetLabelItem =
-    SetLabelItem(varFor(node), labels.map(label => LabelName(label)(pos)), containsIs)(pos)
+  def setLabelItem(
+    node: String,
+    labels: Seq[String],
+    dynamicLabels: Seq[Expression] = Seq.empty,
+    containsIs: Boolean = false
+  ): SetLabelItem =
+    SetLabelItem(varFor(node), labels.map(label => LabelName(label)(pos)), dynamicLabels, containsIs)(pos)
 
   def setPropertyItem(map: String, propertyName: String, expr: Expression): SetPropertyItem =
     SetPropertyItem(Property(Variable(map)(pos), PropertyKeyName(propertyName)(pos))(pos), expr)(pos)
 
   def remove(items: Seq[RemoveItem]): Remove = Remove(items)(pos)
 
-  def removeLabelItem(node: String, labels: Seq[String], containsIs: Boolean = false): RemoveLabelItem =
-    RemoveLabelItem(varFor(node), labels.map(label => LabelName(label)(pos)), containsIs)(pos)
+  def removeLabelItem(
+    node: String,
+    labels: Seq[String],
+    dynamicLabels: Seq[Expression] = Seq.empty,
+    containsIs: Boolean = false
+  ): RemoveLabelItem =
+    RemoveLabelItem(varFor(node), labels.map(label => LabelName(label)(pos)), dynamicLabels, containsIs)(pos)
 
   def removePropertyItem(map: String, propertyName: String): RemovePropertyItem =
     RemovePropertyItem(Property(Variable(map)(pos), PropertyKeyName(propertyName)(pos))(pos))
