@@ -36,8 +36,6 @@ public abstract class PathValue extends VirtualPathValue {
 
     public abstract NodeValue endNode();
 
-    public abstract RelationshipValue lastRelationship();
-
     public abstract NodeValue[] nodes();
 
     public abstract RelationshipValue[] relationships();
@@ -204,12 +202,6 @@ public abstract class PathValue extends VirtualPathValue {
         @Override
         public NodeValue endNode() {
             return nodes[nodes.length - 1];
-        }
-
-        @Override
-        public RelationshipValue lastRelationship() {
-            assert edges.length > 0;
-            return edges[edges.length - 1];
         }
 
         @Override

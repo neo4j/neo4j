@@ -48,11 +48,6 @@ public class PathWrappingPathValue extends PathValue {
     }
 
     @Override
-    public RelationshipValue lastRelationship() {
-        return (RelationshipValue) ValueUtils.wrapRelationshipEntity(path.lastRelationship());
-    }
-
-    @Override
     public NodeValue[] nodes() {
         int length = path.length() + 1;
         NodeValue[] values = new NodeValue[length];
