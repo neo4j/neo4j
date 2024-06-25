@@ -4,17 +4,17 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
         <groupId>org.neo4j</groupId>
-        <artifactId>neo4j-front-end-parent</artifactId>
+        <artifactId>cypher-parser-parent</artifactId>
         <version>5.22.0-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
-    <artifactId>cypher-parser-parent</artifactId>
+    <artifactId>cypher-v6-parser-parent</artifactId>
     <packaging>pom</packaging>
-    <name>Cypher Parsers Parent</name>
+    <name>Cypher 6 ANTLR Parser Parent</name>
 
-    <description>Cypher Parsers Parent</description>
+    <description>Cypher 6 ANTLR Parser Parent</description>
     <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
     <scm>
@@ -24,12 +24,10 @@
     </scm>
 
     <modules>
-        <module>common</module>
-        <module>v5</module>
-        <module>v5-javacc</module>
-        <module>v6</module>
-        <module>parser-test</module>
-        <module>parser-factory</module>
+        <module>parser</module>
+        <module>antlr-parser-listener</module>
+        <module>ast-factory</module>
     </modules>
+
 
 </project>
