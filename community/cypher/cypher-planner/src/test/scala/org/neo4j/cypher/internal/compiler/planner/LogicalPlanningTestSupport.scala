@@ -99,7 +99,7 @@ import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.ordering.ProvidedOrder
 import org.neo4j.cypher.internal.options.CypherDebugOptions
-import org.neo4j.cypher.internal.parser.v5.ast.factory.Cypher5AstParser
+import org.neo4j.cypher.internal.parser.AstParserFactory
 import org.neo4j.cypher.internal.planner.spi.CostBasedPlannerName
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
@@ -123,6 +123,9 @@ import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.internal.schema.constraints.SchemaValueType
 
+import scala.util.Success
+import scala.util.Try
+
 trait LogicalPlanningTestSupport extends AstConstructionTestSupport with LogicalPlanConstructionTestSupport {
   self: CypherFunSuite =>
 
@@ -130,8 +133,29 @@ trait LogicalPlanningTestSupport extends AstConstructionTestSupport with Logical
   val mockRel = newPatternRelationship("a", "b", "r")
 
   def parse(query: String, exceptionFactory: CypherExceptionFactory): Statement = {
-    new Cypher5AstParser(query, exceptionFactory, None).singleStatement()
+    val defaultStatement = parse(CypherVersion.Default, query, exceptionFactory)
+
+    // Quick and dirty hack to try to make sure we have sufficient coverage of all cypher versions.
+    // Feel free to improve ¯\_(ツ)_/¯.
+    CypherVersion.All.foreach { version =>
+      if (version != CypherVersion.Default) {
+        val otherStatement = Try(parse(version, query, exceptionFactory))
+        if (otherStatement != Success(defaultStatement)) {
+          throw new AssertionError(
+            s"""Query parse differently in $version
+               |Default statement: $defaultStatement
+               |$version statement: $otherStatement
+               |""".stripMargin
+          )
+        }
+      }
+    }
+
+    defaultStatement
   }
+
+  def parse(version: CypherVersion, query: String, exceptionFactory: CypherExceptionFactory): Statement =
+    AstParserFactory(version)(query, exceptionFactory, None).singleStatement()
 
   def newPatternRelationship(
     start: String,
@@ -454,7 +478,7 @@ trait LogicalPlanningTestSupport extends AstConstructionTestSupport with Logical
 
   lazy val cnfNormalizerTransformer = CNFNormalizerTest.getTransformer(semanticFeatures)
 
-  lazy val pipeLine: Transformer[PlannerContext, BaseState, LogicalPlanState] =
+  private lazy val pipeLine: Transformer[PlannerContext, BaseState, LogicalPlanState] =
     Parse(
       useAntlr = GraphDatabaseInternalSettings.cypher_parser_antlr_enabled.defaultValue(),
       CypherVersion.Default
@@ -487,6 +511,7 @@ trait LogicalPlanningTestSupport extends AstConstructionTestSupport with Logical
       id = 42
     )
     val exceptionFactory = Neo4jCypherExceptionFactory(query, Some(pos))
+    parse(query, exceptionFactory) // Dirty hack to try to make sure cypher versions have coverage
     val procs: QualifiedName => ProcedureSignature = procLookup.getOrElse(_ => signature)
     val funcs: QualifiedName => Option[UserFunctionSignature] = fcnLookup.getOrElse(_ => None)
     val planContext = new TestSignatureResolvingPlanContext(procs, funcs)

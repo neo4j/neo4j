@@ -39,6 +39,7 @@ import org.neo4j.cypher.internal.compiler.phases.LogicalPlanCondition
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2.QueryGraphSolverWithIDPConnectComponents
+import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2.defaultParsingConfig
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.IndexCapabilities
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.IndexDefinition
 import org.neo4j.cypher.internal.compiler.planner.logical.CostModelMonitor
@@ -72,11 +73,13 @@ import org.neo4j.cypher.internal.compiler.planner.logical.steps.LogicalPlanProdu
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.OrderedIndexPlansUseCachedProperties
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.devNullListener
 import org.neo4j.cypher.internal.compiler.test_helpers.ContextHelper
+import org.neo4j.cypher.internal.frontend.phases.BaseContext
 import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
 import org.neo4j.cypher.internal.frontend.phases.If
 import org.neo4j.cypher.internal.frontend.phases.InitialState
+import org.neo4j.cypher.internal.frontend.phases.Parse
 import org.neo4j.cypher.internal.frontend.phases.Phase
 import org.neo4j.cypher.internal.frontend.phases.ProcedureSignature
 import org.neo4j.cypher.internal.frontend.phases.QualifiedName
@@ -196,12 +199,16 @@ object LogicalPlanningTestSupport2 extends MockitoSugar {
 
   def pipeLine(
     parsingConfig: ParsingConfig,
+    compatibleVersions: Iterable[CypherVersion],
     pushdownPropertyReads: Boolean = pushdownPropertyReads,
     compressAnonymousVariables: Boolean = compressAnonymousVariables,
     deduplicateNames: Boolean = deduplicateNames
   ): Transformer[PlannerContext, BaseState, LogicalPlanState] = {
     // if you ever want to have parameters in here, fix the map
-    val p1 = parsing(parsingConfig) andThen
+    val compatibleParsingConfs = compatibleVersions
+      .collect { case v if v != parsingConfig.cypherVersion => parsingConfig.copy(cypherVersion = v) }
+    val p1 = assertMultiVersionCompatibility(parsingConfig, compatibleParsingConfs.toSeq) andThen
+      parsing(parsingConfig) andThen
       prepareForCaching andThen
       planPipeLine(pushdownPropertyReads = pushdownPropertyReads, semanticFeatures = parsingConfig.semanticFeatures)
     p1 andThen
@@ -211,6 +218,38 @@ object LogicalPlanningTestSupport2 extends MockitoSugar {
       If((_: LogicalPlanState) => deduplicateNames)(
         NameDeduplication
       )
+  }
+
+  // Quick and dirty hack to try to make sure we have sufficient coverage of all cypher versions.
+  // Feel free to improve ¯\_(ツ)_/¯.
+  private def assertMultiVersionCompatibility(
+    baseConfig: ParsingConfig,
+    compatibleParsingConfigs: Seq[ParsingConfig]
+  ): Transformer[BaseContext, BaseState, BaseState] = {
+    new Transformer[BaseContext, BaseState, BaseState] {
+
+      override def transform(from: BaseState, context: BaseContext): BaseState = {
+        val baseStatement = Parse(useAntlr = true, baseConfig.cypherVersion).parse(from, context)
+        compatibleParsingConfigs.foreach { c =>
+          val otherStatement = Parse(useAntlr = true, c.cypherVersion).parse(from, context)
+          if (otherStatement != baseStatement) {
+            throw new AssertionError(
+              s"""Query is not compatible in all supported versions. Please rewrite your test.
+                 |Supported versions: ${compatibleParsingConfigs.map(_.cypherVersion).mkString(", ")}
+                 |Query:
+                 |${from.queryText}
+                 |Statement in ${baseConfig.cypherVersion}: $baseStatement
+                 |Statement in ${c.cypherVersion}: $otherStatement
+                 |""".stripMargin
+            )
+          }
+        }
+        from
+      }
+
+      override def postConditions: Set[StepSequencer.Condition] = Set.empty
+      override def name: String = "MultiVersionCompatibilityParsing"
+    }
   }
 }
 
@@ -229,11 +268,15 @@ trait LogicalPlanningTestSupport2 extends AstConstructionTestSupport with Logica
   def createInitState(queryString: String): BaseState =
     InitialState(queryString, IDPPlannerName, new AnonymousVariableNameGenerator)
 
-  def pipeLine(deduplicateNames: Boolean = deduplicateNames)
-    : Transformer[PlannerContext, BaseState, LogicalPlanState] = {
-    val parsingConfig = LogicalPlanningTestSupport2.defaultParsingConfig
+  def pipeLine(
+    deduplicateNames: Boolean = deduplicateNames,
+    explicitVersion: Option[CypherVersion] = None
+  ): Transformer[PlannerContext, BaseState, LogicalPlanState] = {
+
+    val parsingConfig = explicitVersion.foldLeft(defaultParsingConfig)((c, v) => c.copy(cypherVersion = v))
     LogicalPlanningTestSupport2.pipeLine(
-      parsingConfig,
+      parsingConfig = parsingConfig,
+      compatibleVersions = explicitVersion.map(v => Seq(v)).getOrElse(CypherVersion.All),
       pushdownPropertyReads = pushdownPropertyReads,
       deduplicateNames = deduplicateNames
     )
@@ -454,11 +497,12 @@ trait LogicalPlanningTestSupport2 extends AstConstructionTestSupport with Logica
       queryGraphSolver: QueryGraphSolver = queryGraphSolver,
       stripProduceResults: Boolean = true,
       deduplicateNames: Boolean = deduplicateNames,
-      debugOptions: CypherDebugOptions = CypherDebugOptions.default
+      debugOptions: CypherDebugOptions = CypherDebugOptions.default,
+      explicitVersion: Option[CypherVersion] = None
     ): (LogicalPlan, SemanticTable, PlanningAttributes) = {
       val context = getContext(queryString, cypherConfig, queryGraphSolver, debugOptions)
       val state = createInitState(queryString)
-      val output = pipeLine(deduplicateNames).transform(state, context)
+      val output = pipeLine(deduplicateNames, explicitVersion).transform(state, context)
       val logicalPlan = output.logicalPlan match {
         case p: ProduceResult if stripProduceResults => p.source
         case p                                       => p
@@ -466,11 +510,14 @@ trait LogicalPlanningTestSupport2 extends AstConstructionTestSupport with Logica
       (logicalPlan, output.semanticTable(), output.planningAttributes)
     }
 
-    def getLogicalPlanForAst(initialState: BaseState): (LogicalPlan, SemanticTable, PlanningAttributes) = {
+    def getLogicalPlanForAst(
+      initialState: BaseState,
+      explicitVersion: Option[CypherVersion] = None
+    ): (LogicalPlan, SemanticTable, PlanningAttributes) = {
       // As the test only checks ast -> planning, the query string can be an empty string
       val context = getContext("")
 
-      val output = pipeLine(deduplicateNames).transform(initialState, context)
+      val output = pipeLine(deduplicateNames, explicitVersion).transform(initialState, context)
       val logicalPlan = output.logicalPlan match {
         case p: ProduceResult => p.source
         case p                => p

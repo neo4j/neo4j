@@ -16,16 +16,16 @@
  */
 package org.neo4j.cypher.internal.frontend.prettifier
 
+import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.UnaliasedReturnItem
 import org.neo4j.cypher.internal.ast.factory.neo4j.JavaCCParser
 import org.neo4j.cypher.internal.ast.prettifier.Prettifier
-import org.neo4j.cypher.internal.parser.v5.ast.factory.Cypher5AstParser
+import org.neo4j.cypher.internal.parser.AstParserFactory
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.bottomUp
-import org.scalatest.Assertion
 import org.scalatest.matchers.should.Matchers
 
 trait PrettifierTestUtils extends Matchers {
@@ -89,9 +89,9 @@ trait PrettifierTestUtils extends Matchers {
     sb.result()
   }
 
-  def roundTripCheck(original: Statement): Assertion = {
+  def roundTripCheck(original: Statement): Unit = {
     val pretty = prettifier.asString(original)
-    val parsed =
+    val statements =
       try {
         parse(pretty)
       } catch {
@@ -101,19 +101,21 @@ trait PrettifierTestUtils extends Matchers {
           printAstComparison(original, None)
           throw e
       }
-    val clean = dropQuotedSyntax(parsed)
-    val prettifiedClean = prettifier.asString(clean)
-    try {
-      pretty should equal(prettifiedClean)
-    } catch {
-      case e: Exception =>
-        printSeparator("failed query")
-        println(pretty)
-        printSeparator("string diff")
-        printStringComparison(pretty, prettifiedClean)
-        printSeparator("AST diff")
-        printAstComparison(original, Some(clean))
-        throw e
+    statements.foreach { statement =>
+      val clean = dropQuotedSyntax(statement)
+      val prettifiedClean = prettifier.asString(clean)
+      try {
+        pretty should equal(prettifiedClean)
+      } catch {
+        case e: Exception =>
+          printSeparator("failed query")
+          println(pretty)
+          printSeparator("string diff")
+          printStringComparison(pretty, prettifiedClean)
+          printSeparator("AST diff")
+          printAstComparison(original, Some(clean))
+          throw e
+      }
     }
   }
 
@@ -130,10 +132,10 @@ trait PrettifierTestUtils extends Matchers {
       case i @ UnaliasedReturnItem(e, _) => UnaliasedReturnItem(e, "")(i.position)
     })))
 
-  private def parse(original: String): Statement = {
+  private def parse(original: String): Seq[Statement] = {
     val javaCcStatement = JavaCCParser.parse(original, OpenCypherExceptionFactory(None))
-    val antlrStatement = new Cypher5AstParser(original, OpenCypherExceptionFactory(None), None).singleStatement()
-    antlrStatement should equal(javaCcStatement)
-    antlrStatement
+    val statements = CypherVersion.All.toSeq
+      .map(v => AstParserFactory(v)(original, OpenCypherExceptionFactory(None), None).singleStatement())
+    statements :+ javaCcStatement
   }
 }

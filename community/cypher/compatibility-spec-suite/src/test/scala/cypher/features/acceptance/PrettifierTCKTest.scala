@@ -20,13 +20,16 @@
 package cypher.features.acceptance
 
 import cypher.features.BaseFeatureTestHolder
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.function.Executable
+import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.UnaliasedReturnItem
 import org.neo4j.cypher.internal.ast.factory.neo4j.JavaCCParser
 import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.ast.prettifier.Prettifier
-import org.neo4j.cypher.internal.parser.v5.ast.factory.Cypher5AstParser
+import org.neo4j.cypher.internal.parser.AstParserFactory
 import org.neo4j.cypher.internal.util.Neo4jCypherExceptionFactory
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
 import org.neo4j.cypher.internal.util.Rewriter
@@ -43,7 +46,13 @@ import scala.util.Try
 class PrettifierTCKTest extends PrettifierTCKTestBase {
 
   override protected def parseStatements(query: String): Statement =
-    new Cypher5AstParser(query, Neo4jCypherExceptionFactory(query, None), None).singleStatement()
+    AstParserFactory(CypherVersion.Default)(query, Neo4jCypherExceptionFactory(query, None), None).singleStatement()
+
+  @Test
+  def allVersionsHaveCoverage(): Unit = {
+    // If this starts to fail you need to add a new prettifyer test for the new version and adapt this test.
+    assertEquals(Set(CypherVersion.Default), CypherVersion.All)
+  }
 }
 
 class PrettifierJavaCcTCKTest extends PrettifierTCKTestBase {

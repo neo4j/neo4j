@@ -23,14 +23,9 @@ import org.neo4j.collection.RawIterator
 import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.compiler.helpers.ProcedureLookup
 import org.neo4j.cypher.internal.compiler.helpers.SignatureResolver
-import org.neo4j.cypher.internal.compiler.helpers.SignatureResolver.toCypherProcedure
-import org.neo4j.cypher.internal.frontend.phases
 import org.neo4j.cypher.internal.frontend.phases.CypherScope
-import org.neo4j.cypher.internal.frontend.phases.ProcedureSignature
 import org.neo4j.cypher.internal.frontend.phases.ProcedureSignatureResolver
-import org.neo4j.cypher.internal.frontend.phases.QualifiedName
 import org.neo4j.cypher.internal.frontend.phases.ScopedProcedureSignatureResolver
-import org.neo4j.cypher.internal.frontend.phases.UserFunctionSignature
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException
 import org.neo4j.internal.kernel.api.procs
 import org.neo4j.internal.kernel.api.procs.FieldSignature.inputField

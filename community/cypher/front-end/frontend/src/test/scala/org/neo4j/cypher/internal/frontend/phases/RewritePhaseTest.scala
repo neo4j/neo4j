@@ -16,6 +16,7 @@
  */
 package org.neo4j.cypher.internal.frontend.phases
 
+import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.StatementHelper.RichStatement
@@ -25,7 +26,7 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.frontend.PlannerName
 import org.neo4j.cypher.internal.frontend.helpers.TestContext
-import org.neo4j.cypher.internal.parser.v5.ast.factory.Cypher5AstParser
+import org.neo4j.cypher.internal.parser.AstParserFactory
 import org.neo4j.cypher.internal.rewriting.rewriters.computeDependenciesForExpressions
 import org.neo4j.cypher.internal.rewriting.rewriters.normalizeWithAndReturnClauses
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
@@ -117,10 +118,10 @@ trait RewritePhaseTest {
     }
   }
 
-  private def parseAndRewrite(queryText: String, features: SemanticFeature*): Statement = {
+  private def parseAndRewrite(version: CypherVersion, queryText: String, features: SemanticFeature*): Statement = {
     val exceptionFactory = OpenCypherExceptionFactory(None)
     val nameGenerator = new AnonymousVariableNameGenerator
-    val parsedAst = new Cypher5AstParser(queryText, exceptionFactory, None).singleStatement()
+    val parsedAst = AstParserFactory(version)(queryText, exceptionFactory, None).singleStatement()
     val cleanedAst = parsedAst.endoRewrite(normalizeWithAndReturnClauses(exceptionFactory))
     if (astRewriteAndAnalyze) {
       val semanticState = cleanedAst.semanticState(semanticFeatures ++ features: _*)
@@ -135,6 +136,20 @@ trait RewritePhaseTest {
     } else {
       cleanedAst
     }
+  }
+
+  private def parseAndRewrite(query: String, features: SemanticFeature*): Statement = {
+    // Quick and dirty hack to try to make sure we have sufficient coverage of all cypher versions.
+    // Feel free to improve ¯\_(ツ)_/¯.
+    val defaultResult = parseAndRewrite(CypherVersion.Default, query, features: _*)
+    CypherVersion.All.foreach { version =>
+      if (version != CypherVersion.Default) {
+        withClue(s"Parser $version") {
+          parseAndRewrite(version, query, features: _*) shouldBe defaultResult
+        }
+      }
+    }
+    defaultResult
   }
 
   def sessionDatabase: String = null

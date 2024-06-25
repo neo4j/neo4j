@@ -38,7 +38,7 @@
         </dependency>
         <dependency>
             <groupId>org.neo4j</groupId>
-            <artifactId>cypher-v5-ast-factory</artifactId>
+            <artifactId>cypher-parser-factory</artifactId>
             <version>${project.version}</version>
         </dependency>
 

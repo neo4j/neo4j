@@ -16,14 +16,16 @@
  */
 package org.neo4j.cypher.internal
 
-/**
- * Cypher version.
- * Related to org.neo4j.kernel.api.CypherScope and org.neo4j.cypher.internal.options.CypherVersion.
- */
-sealed trait CypherVersion
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.reflections.Reflections
 
-object CypherVersion {
-  case object Cypher5 extends CypherVersion
-  val Default: CypherVersion = Cypher5
-  val All: Set[CypherVersion] = Set(Cypher5)
+import scala.jdk.CollectionConverters.SetHasAsScala
+
+class CypherVersionTest extends CypherFunSuite {
+
+  test("all is complete") {
+    CypherVersion.All.map(_.getClass) shouldBe new Reflections("org.neo4j.cypher.internal")
+      .getSubTypesOf[CypherVersion](classOf[CypherVersion])
+      .asScala
+  }
 }

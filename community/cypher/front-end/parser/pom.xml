@@ -28,6 +28,7 @@
         <module>v5</module>
         <module>v5-javacc</module>
         <module>parser-test</module>
+        <module>parser-factory</module>
     </modules>
 
 </project>

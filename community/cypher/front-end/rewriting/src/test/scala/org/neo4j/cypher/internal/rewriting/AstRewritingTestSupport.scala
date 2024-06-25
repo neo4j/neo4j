@@ -16,14 +16,36 @@
  */
 package org.neo4j.cypher.internal.rewriting
 
+import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.Statement
-import org.neo4j.cypher.internal.parser.v5.ast.factory.Cypher5AstParser
+import org.neo4j.cypher.internal.parser.AstParserFactory
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
 
 trait AstRewritingTestSupport extends AstConstructionTestSupport {
 
   def parse(query: String, exceptionFactory: CypherExceptionFactory): Statement = {
-    new Cypher5AstParser(query, exceptionFactory, None).singleStatement()
+    val defaultStatement = parse(CypherVersion.Default, query, exceptionFactory)
+
+    // Quick and dirty hack to try to make sure we have sufficient coverage of all cypher versions.
+    // Feel free to improve ¯\_(ツ)_/¯.
+    CypherVersion.All.foreach { version =>
+      if (version != CypherVersion.Default) {
+        val otherStatement = parse(version, query, exceptionFactory)
+        if (otherStatement != defaultStatement) {
+          throw new AssertionError(
+            s"""Query parse differently in $version
+               |Default statement: $defaultStatement
+               |$version statement: $otherStatement
+               |""".stripMargin
+          )
+        }
+      }
+    }
+    defaultStatement
+  }
+
+  def parse(version: CypherVersion, query: String, exceptionFactory: CypherExceptionFactory): Statement = {
+    AstParserFactory(version)(query, exceptionFactory, None).singleStatement()
   }
 }

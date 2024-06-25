@@ -16,11 +16,12 @@
  */
 package org.neo4j.cypher.internal.frontend
 
+import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.frontend.helpers.ErrorCollectingContext
 import org.neo4j.cypher.internal.frontend.helpers.NoPlannerName
-import org.neo4j.cypher.internal.frontend.phases.Cypher5Parsing
 import org.neo4j.cypher.internal.frontend.phases.InitialState
 import org.neo4j.cypher.internal.frontend.phases.ListCoercedToBooleanCheck
+import org.neo4j.cypher.internal.frontend.phases.Parse
 import org.neo4j.cypher.internal.frontend.phases.PatternExpressionInNonExistenceCheck
 import org.neo4j.cypher.internal.frontend.phases.PreparatoryRewriting
 import org.neo4j.cypher.internal.frontend.phases.SemanticAnalysis
@@ -30,7 +31,7 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class SemanticTypeCheckTest extends CypherFunSuite {
 
-  private val pipeline = Cypher5Parsing andThen
+  private val pipeline = Parse(true, CypherVersion.Default) andThen
     PreparatoryRewriting andThen
     SemanticAnalysis(warn = false) andThen
     SemanticTypeCheck

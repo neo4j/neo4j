@@ -27,6 +27,7 @@ import org.neo4j.cypher.graphcounts.GraphCountData
 import org.neo4j.cypher.graphcounts.Index
 import org.neo4j.cypher.graphcounts.NodeCount
 import org.neo4j.cypher.graphcounts.RelationshipCount
+import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
@@ -1380,11 +1381,11 @@ class StatisticsBackedLogicalPlanningConfiguration(
 ) extends LogicalPlanConstructionTestSupport
     with AstConstructionTestSupport {
 
-  def plan(queryString: String): LogicalPlan = {
-    planState(queryString).logicalPlan
+  def plan(queryString: String, explicitVersion: Option[CypherVersion] = None): LogicalPlan = {
+    planState(queryString, explicitVersion).logicalPlan
   }
 
-  def planState(queryString: String): LogicalPlanState = {
+  def planState(queryString: String, explicitVersion: Option[CypherVersion] = None): LogicalPlanState = {
     val plannerConfiguration = CypherPlannerConfiguration.withSettings(settings)
 
     val cfg = Config.defaults(settings.asJava)
@@ -1421,13 +1422,16 @@ class StatisticsBackedLogicalPlanningConfiguration(
     val state = InitialState(queryString, IDPPlannerName, new AnonymousVariableNameGenerator)
     val parsingConfig = {
       val cfg = LogicalPlanningTestSupport2.defaultParsingConfig
-      cfg.copy(semanticFeatures = cfg.semanticFeatures ++ options.semanticFeatures)
+      val version = explicitVersion.getOrElse(cfg.cypherVersion)
+      cfg.copy(semanticFeatures = cfg.semanticFeatures ++ options.semanticFeatures, cypherVersion = version)
     }
-
-    LogicalPlanningTestSupport2.pipeLine(parsingConfig, deduplicateNames = options.deduplicateNames).transform(
-      state,
-      context
-    )
+    LogicalPlanningTestSupport2
+      .pipeLine(
+        parsingConfig = parsingConfig,
+        compatibleVersions = explicitVersion.map(v => Seq(v)).getOrElse(CypherVersion.All),
+        deduplicateNames = options.deduplicateNames
+      )
+      .transform(state, context)
   }
 
   def planBuilder(): LogicalPlanBuilder = new LogicalPlanBuilder(wholePlan = true, resolver)

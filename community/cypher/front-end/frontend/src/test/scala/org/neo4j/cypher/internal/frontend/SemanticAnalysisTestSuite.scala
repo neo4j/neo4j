@@ -16,6 +16,7 @@
  */
 package org.neo4j.cypher.internal.frontend
 
+import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.ast.semantics.SemanticError
 import org.neo4j.cypher.internal.ast.semantics.SemanticErrorDef
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
@@ -26,8 +27,8 @@ import org.neo4j.cypher.internal.frontend.phases.BaseContext
 import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.AST_REWRITE
-import org.neo4j.cypher.internal.frontend.phases.Cypher5Parsing
 import org.neo4j.cypher.internal.frontend.phases.InitialState
+import org.neo4j.cypher.internal.frontend.phases.Parse
 import org.neo4j.cypher.internal.frontend.phases.Phase
 import org.neo4j.cypher.internal.frontend.phases.PreparatoryRewriting
 import org.neo4j.cypher.internal.frontend.phases.SemanticAnalysis
@@ -40,6 +41,8 @@ import org.neo4j.cypher.internal.util.NotImplementedErrorMessageProvider
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.TestName
+
+import scala.util.Random
 
 case class SemanticAnalysisResult(context: ErrorCollectingContext, state: BaseState) {
 
@@ -59,14 +62,46 @@ trait SemanticAnalysisTestSuite extends CypherFunSuite {
 
   def runSemanticAnalysisWithPipelineAndState(
     pipeline: Pipeline,
-    initialState: BaseState,
+    createInitialState: () => BaseState,
     isComposite: Boolean = false,
-    sessionDatabase: String = defaultDatabaseName
+    sessionDatabase: String = defaultDatabaseName,
+    versions: Set[CypherVersion] = CypherVersion.All
   ): SemanticAnalysisResult = {
+    val result = versions.toSeq.map { version =>
+      version -> runSemanticAnalysisWithPipelineAndState(
+        version,
+        pipeline,
+        createInitialState,
+        isComposite,
+        sessionDatabase
+      )
+    }
+
+    // Quick and dirty hack to try to make sure we have sufficient coverage of all cypher versions.
+    // Feel free to improve ¯\_(ツ)_/¯.
+    val (baseVersion, baseResult) = result(Random.nextInt(result.size))
+    result.foreach { case (version, result) =>
+      if (version != baseVersion) withClue(s"Parser $version")(result.errors shouldBe baseResult.errors)
+    }
+    baseResult
+  }
+
+  private def runSemanticAnalysisWithPipelineAndState(
+    version: CypherVersion,
+    pipeline: Pipeline,
+    createInitialState: () => BaseState,
+    isComposite: Boolean,
+    sessionDatabase: String
+  ): SemanticAnalysisResult = {
+    withClue("Parsing is not allowed to be part of the pipeline! It will be added later.") {
+      pipeline.name should not include "Parse"
+    }
+
     val context = new ErrorCollectingContext(isComposite, sessionDatabase) {
       override def errorMessageProvider: ErrorMessageProvider = messageProvider
     }
-    val state = pipeline.transform(initialState, context)
+
+    val state = (Parse(useAntlr = true, version) andThen pipeline).transform(createInitialState(), context)
     SemanticAnalysisResult(context, state)
   }
 
@@ -79,12 +114,11 @@ trait SemanticAnalysisTestSuite extends CypherFunSuite {
     isComposite: Boolean = false,
     sessionDatabase: String = defaultDatabaseName
   ): SemanticAnalysisResult =
-    runSemanticAnalysisWithPipelineAndState(pipeline, initialStateWithQuery(query), isComposite, sessionDatabase)
+    runSemanticAnalysisWithPipelineAndState(pipeline, () => initialStateWithQuery(query), isComposite, sessionDatabase)
 
   // This test invokes SemanticAnalysis twice because that's what the production pipeline does
   def pipelineWithSemanticFeatures(semanticFeatures: SemanticFeature*): Pipeline =
-    Cypher5Parsing andThen
-      PreparatoryRewriting andThen
+    PreparatoryRewriting andThen
       SemanticAnalysis(warn = true, semanticFeatures: _*) andThen
       SemanticAnalysis(warn = false, semanticFeatures: _*)
 

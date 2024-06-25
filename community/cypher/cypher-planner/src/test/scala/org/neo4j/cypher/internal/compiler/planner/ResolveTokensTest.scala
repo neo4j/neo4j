@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner
 
 import org.mockito.Mockito.when
+import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.ast.Match
 import org.neo4j.cypher.internal.ast.Query
 import org.neo4j.cypher.internal.ast.Return
@@ -45,7 +46,7 @@ import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.label_expressions.LabelExpression.Leaf
-import org.neo4j.cypher.internal.parser.v5.ast.factory.Cypher5AstParser
+import org.neo4j.cypher.internal.parser.AstParserFactory
 import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.rewriting.rewriters.LabelExpressionPredicateNormalizer
 import org.neo4j.cypher.internal.rewriting.rewriters.normalizeHasLabelsAndHasType
@@ -227,15 +228,19 @@ class ResolveTokensTest extends CypherFunSuite {
     }
   }
 
-  def parseTest(queryText: String)(f: Query => Unit): Unit = test(queryText) {
-    val parsed = new Cypher5AstParser(queryText, Neo4jCypherExceptionFactory(queryText, None), None).singleStatement()
-    val rewriter = LabelExpressionPredicateNormalizer.instance andThen
-      normalizeHasLabelsAndHasType(SemanticChecker.check(parsed).state)
-    rewriter(parsed) match {
-      case query: Query => f(query)
-      case other        => throw new IllegalArgumentException(s"Unexpected value: $other")
+  def parseTest(queryText: String, versions: Set[CypherVersion] = CypherVersion.All)(f: Query => Unit): Unit =
+    test(queryText) {
+      versions.foreach { version =>
+        val parsed = AstParserFactory(version)(queryText, Neo4jCypherExceptionFactory(queryText, None), None)
+          .singleStatement()
+        val rewriter = LabelExpressionPredicateNormalizer.instance andThen
+          normalizeHasLabelsAndHasType(SemanticChecker.check(parsed).state)
+        rewriter(parsed) match {
+          case query: Query => withClue(s"Parser: $version\n")(f(query))
+          case other        => throw new IllegalArgumentException(s"Unexpected value with $version: $other")
+        }
+      }
     }
-  }
 }
 
 object ResolveTokensTest {

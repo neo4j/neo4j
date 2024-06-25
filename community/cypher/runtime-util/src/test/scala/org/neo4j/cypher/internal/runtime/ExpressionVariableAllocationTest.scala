@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime
 
+import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.expressions.AllIterablePredicate
 import org.neo4j.cypher.internal.expressions.CachedProperty
@@ -42,7 +43,7 @@ import org.neo4j.cypher.internal.logical.plans.Projection
 import org.neo4j.cypher.internal.logical.plans.PruningVarExpand
 import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.logical.plans.VarExpand
-import org.neo4j.cypher.internal.parser.v5.ast.factory.Cypher5AstParser
+import org.neo4j.cypher.internal.parser.AstParserFactory
 import org.neo4j.cypher.internal.runtime.ast.ConstantExpressionVariable
 import org.neo4j.cypher.internal.runtime.ast.ExpressionVariable
 import org.neo4j.cypher.internal.runtime.ast.RuntimeConstant
@@ -56,6 +57,8 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.topDown
 
 import scala.collection.mutable
+import scala.util.Success
+import scala.util.Try
 
 //noinspection NameBooleanParameters
 class ExpressionVariableAllocationTest extends CypherFunSuite with AstConstructionTestSupport {
@@ -508,6 +511,27 @@ class ExpressionVariableAllocationTest extends CypherFunSuite with AstConstructi
 
 class ExpressionParser {
 
-  def parse(text: String): Expression =
-    new Cypher5AstParser(text, Neo4jCypherExceptionFactory(text, None), None).expression()
+  def parse(text: String): Expression = {
+    val defaultStatement = parse(CypherVersion.Default, text)
+
+    // Quick and dirty hack to try to make sure we have sufficient coverage of all cypher versions.
+    // Feel free to improve ¯\_(ツ)_/¯.
+    CypherVersion.All.foreach { version =>
+      if (version != CypherVersion.Default) {
+        Try(parse(version, text)) match {
+          case Success(otherStatement) if otherStatement == defaultStatement =>
+          case notEqual => throw new AssertionError(
+              s"""Unexpected result in $version
+                 |Default statement: $defaultStatement
+                 |$version statement: $notEqual
+                 |""".stripMargin
+            )
+        }
+      }
+    }
+    defaultStatement
+  }
+
+  def parse(version: CypherVersion, text: String): Expression =
+    AstParserFactory(version)(text, Neo4jCypherExceptionFactory(text, None), None).expression()
 }

@@ -22,12 +22,11 @@ import org.neo4j.cypher.internal.ast.factory.neo4j.JavaCCParser
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.PARSING
 import org.neo4j.cypher.internal.frontend.phases.factories.ParsePipelineTransformerFactory
-import org.neo4j.cypher.internal.parser.v5.ast.factory.Cypher5AstParser
+import org.neo4j.cypher.internal.parser.AstParserFactory
 import org.neo4j.cypher.internal.rewriting.rewriters.LiteralExtractionStrategy
-import org.neo4j.cypher.internal.util.CypherExceptionFactory
-import org.neo4j.cypher.internal.util.InternalNotificationLogger
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo
+import org.neo4j.util.VisibleForTesting
 
 /**
  * Parse text into an AST object.
@@ -37,22 +36,16 @@ case class Parse(useAntlr: Boolean, version: CypherVersion) extends Phase[BaseCo
     with ParsePipelineTransformerFactory {
 
   override def process(in: BaseState, context: BaseContext): BaseState = {
-    in.withStatement(parse(in.queryText, context.cypherExceptionFactory, context.notificationLogger))
+    in.withStatement(parse(in, context))
   }
 
-  private def parse(
-    query: String,
-    exceptionFactory: CypherExceptionFactory,
-    notificationLogger: InternalNotificationLogger
-  ): Statement = {
+  @VisibleForTesting
+  def parse(in: BaseState, context: BaseContext): Statement = {
+    val query = in.queryText
+    val exceptionFactory = context.cypherExceptionFactory
+    val notificationLogger = context.notificationLogger
     if (useAntlr) {
-      version match {
-        case CypherVersion.Cypher5 => new Cypher5AstParser(
-            query,
-            exceptionFactory,
-            Some(notificationLogger)
-          ).singleStatement()
-      }
+      AstParserFactory(version)(query, exceptionFactory, Some(notificationLogger)).singleStatement()
     } else {
       version match {
         case CypherVersion.Cypher5 => JavaCCParser.parse(query, exceptionFactory, notificationLogger)

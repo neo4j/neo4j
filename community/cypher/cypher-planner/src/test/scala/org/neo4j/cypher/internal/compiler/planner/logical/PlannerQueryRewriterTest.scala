@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
+import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.ast.Query
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.semantics.SemanticChecker
@@ -28,7 +29,7 @@ import org.neo4j.cypher.internal.compiler.SyntaxExceptionCreator
 import org.neo4j.cypher.internal.compiler.ast.convert.plannerQuery.StatementConverters
 import org.neo4j.cypher.internal.compiler.helpers.WindowsSafeAnyRef
 import org.neo4j.cypher.internal.ir.PlannerQuery
-import org.neo4j.cypher.internal.parser.v5.ast.factory.Cypher5AstParser
+import org.neo4j.cypher.internal.parser.AstParserFactory
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
@@ -40,11 +41,35 @@ import org.neo4j.cypher.internal.util.helpers.NameDeduplicator.removeGeneratedNa
 import org.neo4j.cypher.internal.util.helpers.fixedPoint
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
+import scala.util.Success
+import scala.util.Try
+
 trait PlannerQueryRewriterTest {
   self: CypherFunSuite =>
 
   private def parse(query: String, exceptionFactory: CypherExceptionFactory): Statement = {
-    new Cypher5AstParser(query, exceptionFactory, None).singleStatement()
+    val defaultStatement = parse(CypherVersion.Default, query, exceptionFactory)
+
+    // Quick and dirty hack to try to make sure we have sufficient coverage of all cypher versions.
+    // Feel free to improve ¯\_(ツ)_/¯.
+    CypherVersion.All.foreach { version =>
+      if (version != CypherVersion.Default) {
+        Try(parse(version, query, exceptionFactory)) match {
+          case Success(otherStatement) if otherStatement == defaultStatement =>
+          case notEqual => throw new AssertionError(
+              s"""Unexpected result in $version
+                 |Default statement: $defaultStatement
+                 |$version statement: $notEqual
+                 |""".stripMargin
+            )
+        }
+      }
+    }
+    defaultStatement
+  }
+
+  private def parse(version: CypherVersion, query: String, exceptionFactory: CypherExceptionFactory): Statement = {
+    AstParserFactory(version)(query, exceptionFactory, None).singleStatement()
   }
 
   def rewriter(anonymousVariableNameGenerator: AnonymousVariableNameGenerator): Rewriter

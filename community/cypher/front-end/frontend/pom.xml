@@ -62,13 +62,7 @@
 
         <dependency>
             <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-cypher-ast-factory</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.neo4j</groupId>
-            <artifactId>cypher-v5-ast-factory</artifactId>
+            <artifactId>cypher-parser-factory</artifactId>
             <version>${project.version}</version>
         </dependency>
 

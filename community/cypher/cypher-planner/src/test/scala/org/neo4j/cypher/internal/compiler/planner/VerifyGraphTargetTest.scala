@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.planner
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito
 import org.mockito.Mockito.when
+import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.ast.Query
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.UseAsMultipleGraphsSelector
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.UseAsSingleGraphSelector
@@ -30,7 +31,7 @@ import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
 import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
-import org.neo4j.cypher.internal.parser.v5.ast.factory.Cypher5AstParser
+import org.neo4j.cypher.internal.parser.AstParserFactory
 import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.Neo4jCypherExceptionFactory
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -47,6 +48,8 @@ import java.util
 import java.util.Optional
 
 import scala.jdk.CollectionConverters.SeqHasAsJava
+import scala.util.Success
+import scala.util.Try
 
 class VerifyGraphTargetTest extends CypherFunSuite {
 
@@ -275,9 +278,27 @@ class VerifyGraphTargetTest extends CypherFunSuite {
     dbRef
   }
 
-  private def parse(query: String): Query =
-    new Cypher5AstParser(query, Neo4jCypherExceptionFactory(query, None), None).singleStatement() match {
+  private def parse(query: String): Query = {
+    val defaultStatement = parse(CypherVersion.Default, query)
+    CypherVersion.All.foreach { version =>
+      if (version != CypherVersion.Default) {
+        Try(parse(version, query)) match {
+          case Success(otherStatement) if otherStatement == defaultStatement =>
+          case notEqual => throw new AssertionError(
+              s"""Unexpected result in $version
+                 |Default statement: $defaultStatement
+                 |$version statement: $notEqual
+                 |""".stripMargin
+            )
+        }
+      }
+    }
+    defaultStatement
+  }
+
+  private def parse(version: CypherVersion, query: String): Query =
+    AstParserFactory(version)(query, Neo4jCypherExceptionFactory(query, None), None).singleStatement() match {
       case q: Query => q
-      case _        => fail("Must be a Query")
+      case _        => fail(s"Must be a Query, it's not in $version")
     }
 }

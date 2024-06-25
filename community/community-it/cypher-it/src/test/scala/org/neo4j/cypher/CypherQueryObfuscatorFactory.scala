@@ -60,7 +60,8 @@ class CypherQueryObfuscatorFactory {
       null,
       new AnonymousVariableNameGenerator()
     )
-    val res = pipeline.transform(state, plannerContext(query))
+    val res = pipeline(preParsedQuery.options.queryOptions.cypherVersion.actualVersion)
+      .transform(state, plannerContext(query))
     CypherQueryObfuscator(res.obfuscationMetadata())
   }
 
@@ -77,10 +78,10 @@ class CypherQueryObfuscatorFactory {
     new LFUCache[String, PreParsedQuery](new ExecutorBasedCaffeineCacheFactory((r: Runnable) => r.run()), 1)
   )
 
-  private val pipeline =
+  private def pipeline(version: CypherVersion) =
     Parse(
       useAntlr = GraphDatabaseInternalSettings.cypher_parser_antlr_enabled.defaultValue(),
-      CypherVersion.Default
+      version
     ) andThen
       RewriteProcedureCalls andThen
       ObfuscationMetadataCollection

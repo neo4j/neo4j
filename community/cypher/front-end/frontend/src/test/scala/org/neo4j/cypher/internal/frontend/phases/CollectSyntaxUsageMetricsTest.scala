@@ -16,13 +16,16 @@
  */
 package org.neo4j.cypher.internal.frontend.phases
 
+import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.frontend.helpers.ErrorCollectingContext
 import org.neo4j.cypher.internal.frontend.helpers.NoPlannerName
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class CollectSyntaxUsageMetricsTest extends CypherFunSuite {
-  private val pipeline = Cypher5Parsing andThen CollectSyntaxUsageMetrics
+
+  private def pipeline(version: CypherVersion) =
+    Parse(useAntlr = true, version) andThen CollectSyntaxUsageMetrics
 
   test("should find multiple things in one query") {
     val stats = runPipeline(
@@ -115,11 +118,28 @@ class CollectSyntaxUsageMetricsTest extends CypherFunSuite {
   }
 
   private def runPipeline(query: String): InternalSyntaxUsageStats = {
+    val defaultResult = runPipeline(CypherVersion.Default, query)
+
+    // Quick and dirty hack to try to make sure we have sufficient coverage of all cypher versions.
+    // Feel free to improve ¯\_(ツ)_/¯.
+    CypherVersion.All.foreach { version =>
+      if (version != CypherVersion.Default) {
+        val otherResult = runPipeline(version, query)
+        SyntaxUsageMetricKey.values().foreach { metricKey =>
+          otherResult.getSyntaxUsageCount(metricKey) shouldBe defaultResult.getSyntaxUsageCount(metricKey)
+        }
+      }
+    }
+
+    defaultResult
+  }
+
+  private def runPipeline(version: CypherVersion, query: String): InternalSyntaxUsageStats = {
     val startState = InitialState(query, NoPlannerName, new AnonymousVariableNameGenerator)
     val context = new ErrorCollectingContext() {
       override val internalSyntaxUsageStats: InternalSyntaxUsageStats = InternalSyntaxUsageStats.newImpl()
     }
-    pipeline.transform(startState, context)
+    pipeline(version).transform(startState, context)
 
     context.internalSyntaxUsageStats
   }

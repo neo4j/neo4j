@@ -21,12 +21,13 @@ package org.neo4j.internal.collector
 
 import org.neo4j.configuration.Config
 import org.neo4j.cypher.internal.CachingPreParser
+import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.PreParsedQuery
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.cache.LFUCache
 import org.neo4j.cypher.internal.cache.TestExecutorCaffeineCacheFactory
 import org.neo4j.cypher.internal.config.CypherConfiguration
-import org.neo4j.cypher.internal.parser.v5.ast.factory.Cypher5AstParser
+import org.neo4j.cypher.internal.parser.AstParserFactory
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.Neo4jCypherExceptionFactory
 import org.neo4j.cypher.internal.util.devNullLogger
@@ -283,13 +284,14 @@ object DataCollectorMatchers {
 
   case class BeCypherMatcher(expected: String) extends Matcher[AnyRef] {
 
-    private def parse(query: String, exceptionFactory: CypherExceptionFactory): Statement = {
-      new Cypher5AstParser(query, exceptionFactory, None).singleStatement()
+    private def parse(version: CypherVersion, query: String, exceptionFactory: CypherExceptionFactory): Statement = {
+      AstParserFactory(version)(query, exceptionFactory, None).singleStatement()
     }
 
     private val preParsedQuery: PreParsedQuery = preParser.preParseQuery(expected, devNullLogger)
 
     private val expectedAst = parse(
+      preParsedQuery.options.queryOptions.cypherVersion.actualVersion,
       preParsedQuery.statement,
       Neo4jCypherExceptionFactory(expected, Some(preParsedQuery.options.offset))
     )
@@ -300,6 +302,7 @@ object DataCollectorMatchers {
           case text: String =>
             val preParsedQuery1 = preParser.preParseQuery(text, devNullLogger)
             parse(
+              preParsedQuery1.options.queryOptions.cypherVersion.actualVersion,
               preParsedQuery1.statement,
               Neo4jCypherExceptionFactory(text, Some(preParsedQuery1.options.offset))
             ) == expectedAst

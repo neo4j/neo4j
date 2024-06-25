@@ -16,10 +16,13 @@
  */
 package org.neo4j.cypher.internal.frontend.prettifier
 
+import org.neo4j.cypher.internal.CypherVersion
+import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.factory.neo4j.JavaCCParser
 import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.ast.prettifier.Prettifier
-import org.neo4j.cypher.internal.parser.v5.ast.factory.Cypher5AstParser
+import org.neo4j.cypher.internal.parser.AstParserFactory
+import org.neo4j.cypher.internal.util.Neo4jCypherExceptionFactory
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.WindowsStringSafe
@@ -2879,11 +2882,16 @@ class PrettifierIT extends CypherFunSuite {
     case (inputString, expected) =>
       test(inputString) {
         val statementJavaCc = JavaCCParser.parse(inputString, OpenCypherExceptionFactory(None))
-        val statementAntlr = new Cypher5AstParser(inputString, OpenCypherExceptionFactory(None), None).singleStatement()
-        statementJavaCc shouldBe statementAntlr
         prettifier.asString(statementJavaCc) should equal(expected)
-        prettifier.asString(statementAntlr) should equal(expected)
+
+        CypherVersion.All.foreach { version =>
+          val statement = parseAntlr(version, inputString)
+          statement shouldBe statementJavaCc
+          prettifier.asString(statement) should equal(expected)
+        }
       }
   }
 
+  private def parseAntlr(version: CypherVersion, cypher: String): Statement =
+    AstParserFactory(version)(cypher, Neo4jCypherExceptionFactory(cypher, None), None).singleStatement()
 }

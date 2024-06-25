@@ -192,7 +192,7 @@ class SelectionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanni
     val plans = Seq(
       "MATCH (n:N) WHERE n.foo = 2 AND n.foo > 1 RETURN n.bar",
       "MATCH (n:N) WHERE n.foo > 1 AND n.foo = 2 RETURN n.bar"
-    ).map(planner.plan).map(_.stripProduceResults)
+    ).map(planner.plan(_)).map(_.stripProduceResults)
 
     val noArgs = Set.empty[LogicalVariable]
 

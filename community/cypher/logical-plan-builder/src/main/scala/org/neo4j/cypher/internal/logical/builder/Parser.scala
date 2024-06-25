@@ -120,6 +120,7 @@ object Parser {
     }.toMap
   }
 
+  // Note, only supports cypher 5 for now.
   def astParser(cypher: String) = new Cypher5AstParser(cypher, Neo4jCypherExceptionFactory(cypher, None), None)
 
   def parseExpression(text: String): Expression = {
