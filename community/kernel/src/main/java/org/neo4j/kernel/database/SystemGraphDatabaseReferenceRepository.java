@@ -48,7 +48,17 @@ public class SystemGraphDatabaseReferenceRepository implements DatabaseReference
         if (Objects.equals(SYSTEM_DATABASE_NAME, databaseAlias.name())) {
             return Optional.of(SYSTEM_DATABASE_REFERENCE);
         }
-        return execute(model -> model.getDatabaseRefByAlias(databaseAlias.name()));
+
+        return execute(model -> model.getDatabaseRefByAlias(normalizeCatalogName(databaseAlias.name())));
+    }
+
+    private String normalizeCatalogName(String databaseAlias) {
+        // catalog has been quoted due to a .
+        if (databaseAlias.matches("`.*\\..*`")) {
+            String unquoted = databaseAlias.substring(1, databaseAlias.length() - 1);
+            return unquoted.replace("``", "`");
+        }
+        return databaseAlias;
     }
 
     @Override
