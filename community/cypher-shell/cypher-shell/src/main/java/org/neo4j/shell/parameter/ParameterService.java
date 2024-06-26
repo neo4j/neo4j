@@ -36,7 +36,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 import org.apache.commons.lang3.StringUtils;
-import org.neo4j.cypher.internal.literal.interpreter.LiteralInterpreter;
+import org.neo4j.cypher.internal.literal.interpreter.Cypher5LiteralInterpreter;
 import org.neo4j.driver.internal.value.NullValue;
 import org.neo4j.shell.TransactionHandler;
 import org.neo4j.shell.exception.CommandException;
@@ -231,7 +231,7 @@ class ShellParameterService implements ParameterService {
 
         private Optional<org.neo4j.driver.Value> evaluateOffline(String expression) {
             try {
-                return Optional.of(toDriverValue(LiteralInterpreter.parseExpression(expression)));
+                return Optional.of(toDriverValue(Cypher5LiteralInterpreter.parseExpression(expression)));
             } catch (Exception e) {
                 log.warn("Failed to evaluate expression " + expression + " locally", e);
                 return Optional.empty();

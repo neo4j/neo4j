@@ -26,7 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.neo4j.cypher.internal.literal.interpreter.LiteralInterpreter.parseExpression;
+import static org.neo4j.cypher.internal.literal.interpreter.Cypher5LiteralInterpreter.parseExpression;
 
 import java.time.Instant;
 import java.time.ZoneId;
@@ -50,7 +50,7 @@ import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.TimeValue;
 
 @ExtendWith(RandomExtension.class)
-public class LiteralInterpreterTest {
+public class Cypher5LiteralInterpreterTest {
     public static final ZoneId DEFAULT_ZONE_ID = ZoneId.systemDefault();
 
     @Inject

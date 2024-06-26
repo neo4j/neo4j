@@ -57,8 +57,8 @@ import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.MapValueBuilder;
 import org.neo4j.values.virtual.VirtualValues;
 
-public class LiteralInterpreter {
-    private LiteralInterpreter() {}
+public class Cypher5LiteralInterpreter {
+    private Cypher5LiteralInterpreter() {}
 
     public static Object parseExpression(String cypherExpression) {
         final var builder = new LiteralInterpreterBuilder();
