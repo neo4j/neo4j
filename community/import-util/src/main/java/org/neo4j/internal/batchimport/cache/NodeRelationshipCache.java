@@ -29,6 +29,7 @@ import org.neo4j.graphdb.Direction;
 import org.neo4j.internal.batchimport.cache.idmapping.string.BigIdTracker;
 import org.neo4j.internal.helpers.Numbers;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.util.VisibleForTesting;
 
 /**
  * Caches of parts of node store and relationship group store. A crucial part of batch import where
@@ -127,9 +128,7 @@ public class NodeRelationshipCache implements MemoryStatsVisitor.Visitable, Auto
         return incrementCount(array, nodeId, SPARSE_COUNT_OFFSET);
     }
 
-    /**
-     * Should only be used by tests
-     */
+    @VisibleForTesting
     public void setCount(long nodeId, long count, int typeId, Direction direction) {
         if (isDense(nodeId)) {
             long relGroupId = all48Bits(array, nodeId, SPARSE_ID_OFFSET);
@@ -747,7 +746,7 @@ public class NodeRelationshipCache implements MemoryStatsVisitor.Visitable, Auto
             boolean chunkHasChanged = (NodeType.isDense(nodeTypes) && chunkHasChange(nodeId, denseChunkMask))
                     || (NodeType.isSparse(nodeTypes) && chunkHasChange(nodeId, sparseChunkMask));
             if (!chunkHasChanged) {
-                nodeId += chunkSize;
+                nodeId = (chunkOf(nodeId) + 1L) * chunkSize;
                 continue;
             }
 
