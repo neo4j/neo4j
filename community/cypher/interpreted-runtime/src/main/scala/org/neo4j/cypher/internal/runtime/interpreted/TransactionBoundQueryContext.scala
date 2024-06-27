@@ -66,7 +66,6 @@ import org.neo4j.exceptions.EntityNotFoundException
 import org.neo4j.exceptions.FailedIndexException
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.Node
-import org.neo4j.graphdb.NotFoundException
 import org.neo4j.graphdb.Relationship
 import org.neo4j.internal.helpers.collection.Iterators
 import org.neo4j.internal.kernel.api
@@ -1465,12 +1464,7 @@ private[internal] class TransactionBoundReadQueryContext(
       CursorUtils.relationshipHasProperty(reads(), relationshipCursor, obj, propertyCursor, propertyKey)
     }
 
-    override def getById(id: Long): VirtualRelationshipValue =
-      try {
-        VirtualValues.relationship(id)
-      } catch {
-        case e: NotFoundException => throw new EntityNotFoundException(s"Relationship with id $id", e)
-      }
+    override def getById(id: Long): VirtualRelationshipValue = VirtualValues.relationship(id)
 
     override def entityExists(id: Long): Boolean = id >= 0 && reads().relationshipExists(id)
 
