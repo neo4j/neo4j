@@ -19,8 +19,10 @@
  */
 package org.neo4j.cypher.internal.optionsmap
 
+import Ordering.comparatorToOrdering
 import org.neo4j.cypher.internal.MapValueOps.Ops
 import org.neo4j.cypher.internal.runtime.QueryContext
+import org.neo4j.graphdb.schema.IndexSetting
 import org.neo4j.graphdb.schema.IndexSettingImpl.FULLTEXT_ANALYZER
 import org.neo4j.graphdb.schema.IndexSettingImpl.FULLTEXT_EVENTUALLY_CONSISTENT
 import org.neo4j.graphdb.schema.IndexSettingImpl.SPATIAL_CARTESIAN_3D_MAX
@@ -43,6 +45,10 @@ import org.neo4j.values.storable.TextValue
 import org.neo4j.values.utils.PrettyPrinter
 import org.neo4j.values.virtual.MapValue
 import org.neo4j.values.virtual.VirtualValues
+
+import java.lang.String.CASE_INSENSITIVE_ORDER
+
+import scala.collection.immutable.SortedSet
 
 trait IndexOptionsConverter[T] extends OptionsConverter[T] {
   protected def context: QueryContext
@@ -91,19 +97,19 @@ trait IndexOptionsConverter[T] extends OptionsConverter[T] {
       )
   }
 
+  private val validPointConfigSettingNames: SortedSet[String] = indexSettingsToCaseInsensitiveNames(
+    SPATIAL_CARTESIAN_MIN,
+    SPATIAL_CARTESIAN_MAX,
+    SPATIAL_CARTESIAN_3D_MIN,
+    SPATIAL_CARTESIAN_3D_MAX,
+    SPATIAL_WGS84_MIN,
+    SPATIAL_WGS84_MAX,
+    SPATIAL_WGS84_3D_MIN,
+    SPATIAL_WGS84_3D_MAX
+  )
+
   protected def checkForPointConfigValues(pp: PrettyPrinter, itemsMap: MapValue, schemaType: String): Unit =
-    if (
-      itemsMap.exists { case (p: String, _) =>
-        p.equalsIgnoreCase(SPATIAL_CARTESIAN_MIN.getSettingName) ||
-        p.equalsIgnoreCase(SPATIAL_CARTESIAN_MAX.getSettingName) ||
-        p.equalsIgnoreCase(SPATIAL_CARTESIAN_3D_MIN.getSettingName) ||
-        p.equalsIgnoreCase(SPATIAL_CARTESIAN_3D_MAX.getSettingName) ||
-        p.equalsIgnoreCase(SPATIAL_WGS84_MIN.getSettingName) ||
-        p.equalsIgnoreCase(SPATIAL_WGS84_MAX.getSettingName) ||
-        p.equalsIgnoreCase(SPATIAL_WGS84_3D_MIN.getSettingName) ||
-        p.equalsIgnoreCase(SPATIAL_WGS84_3D_MAX.getSettingName)
-      }
-    ) {
+    if (itemsMap.exists { case (p, _) => validPointConfigSettingNames.contains(p) }) {
       itemsMap.writeTo(pp)
       throw new InvalidArgumentsException(
         s"""Could not create $schemaType with specified index config '${pp.value()}', contains spatial config settings options.
@@ -111,14 +117,11 @@ trait IndexOptionsConverter[T] extends OptionsConverter[T] {
       )
     }
 
+  private val validFulltextConfigSettingNames: SortedSet[String] =
+    indexSettingsToCaseInsensitiveNames(FULLTEXT_ANALYZER, FULLTEXT_EVENTUALLY_CONSISTENT)
+
   protected def checkForFulltextConfigValues(pp: PrettyPrinter, itemsMap: MapValue, schemaType: String): Unit =
-    if (
-      itemsMap.exists { case (p, _) =>
-        p.equalsIgnoreCase(FULLTEXT_ANALYZER.getSettingName) || p.equalsIgnoreCase(
-          FULLTEXT_EVENTUALLY_CONSISTENT.getSettingName
-        )
-      }
-    ) {
+    if (itemsMap.exists { case (p, _) => validFulltextConfigSettingNames.contains(p) }) {
       itemsMap.writeTo(pp)
       throw new InvalidArgumentsException(
         s"""Could not create $schemaType with specified index config '${pp.value()}', contains fulltext config options.
@@ -126,14 +129,11 @@ trait IndexOptionsConverter[T] extends OptionsConverter[T] {
       )
     }
 
+  private val validVectorConfigSettingNames: SortedSet[String] =
+    indexSettingsToCaseInsensitiveNames(VECTOR_DIMENSIONS, VECTOR_SIMILARITY_FUNCTION)
+
   protected def checkForVectorConfigValues(pp: PrettyPrinter, itemsMap: MapValue, schemaType: String): Unit =
-    if (
-      itemsMap.exists { case (p, _) =>
-        p.equalsIgnoreCase(VECTOR_DIMENSIONS.getSettingName) || p.equalsIgnoreCase(
-          VECTOR_SIMILARITY_FUNCTION.getSettingName
-        )
-      }
-    ) {
+    if (itemsMap.exists { case (p, _) => validVectorConfigSettingNames.contains(p) }) {
       itemsMap.writeTo(pp)
       throw new InvalidArgumentsException(
         s"""Could not create $schemaType with specified index config '${pp.value()}', contains vector config options.
@@ -166,6 +166,9 @@ trait IndexOptionsConverter[T] extends OptionsConverter[T] {
         )
     }
   }
+
+  private def indexSettingsToCaseInsensitiveNames(settings: IndexSetting*): SortedSet[String] =
+    SortedSet.from(settings.iterator.map(_.getSettingName))(comparatorToOrdering(CASE_INSENSITIVE_ORDER))
 }
 
 case class CreateIndexProviderOnlyOptions(provider: Option[IndexProviderDescriptor])
