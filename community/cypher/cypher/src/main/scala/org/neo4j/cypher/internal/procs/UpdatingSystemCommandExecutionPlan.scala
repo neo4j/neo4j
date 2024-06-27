@@ -116,7 +116,7 @@ abstract class UpdatingSystemCommandExecutionPlanBase(
           updatedParams,
           tc,
           isOutermostQuery = false,
-          executionMode == ProfileMode,
+          profile = executionMode == ProfileMode,
           prePopulateResults,
           systemSubscriber
         ).asInstanceOf[InternalExecutionResult]
