@@ -97,7 +97,7 @@ trait IndexOptionsConverter[T] extends OptionsConverter[T] {
       )
   }
 
-  private val validPointConfigSettingNames: SortedSet[String] = indexSettingsToCaseInsensitiveNames(
+  protected val validPointConfigSettingNames: SortedSet[String] = indexSettingsToCaseInsensitiveNames(
     SPATIAL_CARTESIAN_MIN,
     SPATIAL_CARTESIAN_MAX,
     SPATIAL_CARTESIAN_3D_MIN,
@@ -110,36 +110,53 @@ trait IndexOptionsConverter[T] extends OptionsConverter[T] {
 
   protected def checkForPointConfigValues(pp: PrettyPrinter, itemsMap: MapValue, schemaType: String): Unit =
     if (itemsMap.exists { case (p, _) => validPointConfigSettingNames.contains(p) }) {
-      itemsMap.writeTo(pp)
-      throw new InvalidArgumentsException(
-        s"""Could not create $schemaType with specified index config '${pp.value()}', contains spatial config settings options.
-           |To create point index, please use 'CREATE POINT INDEX ...'.""".stripMargin
-      )
+      foundPointConfigValues(pp, itemsMap, schemaType)
     }
 
-  private val validFulltextConfigSettingNames: SortedSet[String] =
+  protected def foundPointConfigValues(pp: PrettyPrinter, itemsMap: MapValue, schemaType: String): Unit = {
+    throw new InvalidArgumentsException(
+      s"""${invalidConfigValueString(pp, itemsMap, schemaType)}, contains spatial config settings options.
+         |To create point index, please use 'CREATE POINT INDEX ...'.""".stripMargin
+    )
+  }
+
+  protected val validFulltextConfigSettingNames: SortedSet[String] =
     indexSettingsToCaseInsensitiveNames(FULLTEXT_ANALYZER, FULLTEXT_EVENTUALLY_CONSISTENT)
 
   protected def checkForFulltextConfigValues(pp: PrettyPrinter, itemsMap: MapValue, schemaType: String): Unit =
     if (itemsMap.exists { case (p, _) => validFulltextConfigSettingNames.contains(p) }) {
-      itemsMap.writeTo(pp)
-      throw new InvalidArgumentsException(
-        s"""Could not create $schemaType with specified index config '${pp.value()}', contains fulltext config options.
-           |To create fulltext index, please use 'CREATE FULLTEXT INDEX ...'.""".stripMargin
-      )
+      foundFulltextConfigValues(pp, itemsMap, schemaType)
     }
+
+  protected def foundFulltextConfigValues(pp: PrettyPrinter, itemsMap: MapValue, schemaType: String): Unit = {
+    throw new InvalidArgumentsException(
+      s"""${invalidConfigValueString(pp, itemsMap, schemaType)}, contains fulltext config options.
+         |To create fulltext index, please use 'CREATE FULLTEXT INDEX ...'.""".stripMargin
+    )
+  }
 
   private val validVectorConfigSettingNames: SortedSet[String] =
     indexSettingsToCaseInsensitiveNames(VECTOR_DIMENSIONS, VECTOR_SIMILARITY_FUNCTION)
 
   protected def checkForVectorConfigValues(pp: PrettyPrinter, itemsMap: MapValue, schemaType: String): Unit =
     if (itemsMap.exists { case (p, _) => validVectorConfigSettingNames.contains(p) }) {
-      itemsMap.writeTo(pp)
-      throw new InvalidArgumentsException(
-        s"""Could not create $schemaType with specified index config '${pp.value()}', contains vector config options.
-           |To create vector index, please use 'CREATE VECTOR INDEX ...'.""".stripMargin
-      )
+      foundVectorConfigValues(pp, itemsMap, schemaType)
     }
+
+  private def foundVectorConfigValues(pp: PrettyPrinter, itemsMap: MapValue, schemaType: String): Unit = {
+    throw new InvalidArgumentsException(
+      s"""${invalidConfigValueString(pp, itemsMap, schemaType)}, contains vector config options.
+         |To create vector index, please use 'CREATE VECTOR INDEX ...'.""".stripMargin
+    )
+  }
+
+  protected def invalidConfigValueString(pp: PrettyPrinter, value: AnyValue, schemaType: String): String = {
+    value.writeTo(pp)
+    invalidConfigValueString(pp.value(), schemaType)
+  }
+
+  protected def invalidConfigValueString(value: String, schemaType: String): String =
+    s"Could not create $schemaType with specified index config '$value'"
 
   protected def assertEmptyConfig(
     config: AnyValue,

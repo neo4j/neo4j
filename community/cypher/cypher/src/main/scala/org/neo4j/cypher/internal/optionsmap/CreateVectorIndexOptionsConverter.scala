@@ -21,32 +21,35 @@ package org.neo4j.cypher.internal.optionsmap
 
 import org.neo4j.configuration.Config
 import org.neo4j.cypher.internal.runtime.QueryContext
-import org.neo4j.graphdb.schema.IndexSettingImpl.VECTOR_DIMENSIONS
-import org.neo4j.graphdb.schema.IndexSettingImpl.VECTOR_SIMILARITY_FUNCTION
 import org.neo4j.internal.schema.IndexConfig
+import org.neo4j.internal.schema.IndexConfigValidationRecords
+import org.neo4j.internal.schema.IndexConfigValidationRecords.IncorrectType
+import org.neo4j.internal.schema.IndexConfigValidationRecords.IndexConfigValidationRecord
+import org.neo4j.internal.schema.IndexConfigValidationRecords.InvalidValue
+import org.neo4j.internal.schema.IndexConfigValidationRecords.State.INCORRECT_TYPE
+import org.neo4j.internal.schema.IndexConfigValidationRecords.State.INVALID_VALUE
+import org.neo4j.internal.schema.IndexConfigValidationRecords.State.MISSING_SETTING
+import org.neo4j.internal.schema.IndexConfigValidationRecords.State.UNRECOGNIZED_SETTING
 import org.neo4j.internal.schema.IndexProviderDescriptor
 import org.neo4j.internal.schema.IndexType
+import org.neo4j.internal.schema.SettingsAccessor.MapValueAccessor
 import org.neo4j.kernel.KernelVersion
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException
+import org.neo4j.kernel.api.impl.schema.vector.VectorIndexConfigUtils
 import org.neo4j.kernel.api.impl.schema.vector.VectorIndexVersion
-import org.neo4j.util.Preconditions
 import org.neo4j.values.AnyValue
-import org.neo4j.values.storable.IntValue
-import org.neo4j.values.storable.LongValue
+import org.neo4j.values.storable.IntegralValue
 import org.neo4j.values.storable.TextValue
 import org.neo4j.values.utils.PrettyPrinter
 import org.neo4j.values.virtual.MapValue
 
-import java.util.Locale
-import java.util.Objects
+import java.lang
 
 import scala.jdk.CollectionConverters.IterableHasAsScala
 
 case class CreateVectorIndexOptionsConverter(context: QueryContext)
     extends IndexOptionsConverter[CreateIndexWithFullOptions] {
   private val schemaType = "vector index"
-  private val dimensionsSetting = VECTOR_DIMENSIONS.getSettingName
-  private val similarityFunctionSetting = VECTOR_SIMILARITY_FUNCTION.getSettingName
 
   override protected val hasMandatoryOptions: Boolean = true
 
@@ -59,119 +62,112 @@ case class CreateVectorIndexOptionsConverter(context: QueryContext)
   override protected def assertValidAndTransformConfig(
     config: AnyValue,
     schemaType: String,
-    indexProvider: Option[IndexProviderDescriptor]
+    maybeIndexProvider: Option[IndexProviderDescriptor]
   ): IndexConfig = {
     // current keys: vector.(dimensions|similarity_function)
     // current values: Long, String
 
-    def exceptionWrongType(suppliedValue: AnyValue): InvalidArgumentsException = {
-      val pp = new PrettyPrinter()
-      suppliedValue.writeTo(pp)
+    def assertInvalidConfigValues(
+      pp: PrettyPrinter,
+      validationRecords: IndexConfigValidationRecords,
+      itemsMap: MapValue,
+      schemaType: String,
+      validSettingNames: Iterable[String]
+    ): Unit = {
+      validationRecords.get(UNRECOGNIZED_SETTING).asScala.foreach {
+        case fulltextSetting if validFulltextConfigSettingNames.contains(fulltextSetting.settingName) =>
+          foundFulltextConfigValues(pp, itemsMap, schemaType)
+        case pointSetting if validPointConfigSettingNames.contains(pointSetting.settingName) =>
+          foundPointConfigValues(pp, itemsMap, schemaType)
+        case unrecognized => throw new InvalidArgumentsException(
+            invalidConfigValueString(pp, itemsMap, schemaType) +
+              s". '${unrecognized.settingName}' is an unrecognized setting. Supported: " +
+              validSettingNames.mkString("[", ", ", "]")
+          )
+      }
+    }
+
+    def assertMandatoryConfigSettingsExists(validationRecords: IndexConfigValidationRecords): Unit = {
+      val missingSettings = validationRecords.get(MISSING_SETTING)
+      if (!missingSettings.isEmpty) {
+        val missing =
+          missingSettings.makeString(
+            (r: IndexConfigValidationRecord) => s"'${r.settingName}'",
+            "[",
+            ", ",
+            "]"
+          )
+        throw new InvalidArgumentsException(
+          s"Failed to create $schemaType: Missing index config options $missing."
+        )
+      }
+    }
+
+    def exceptionWrongType(suppliedValue: AnyValue): InvalidArgumentsException =
       new InvalidArgumentsException(
-        s"Could not create $schemaType with specified index config '${pp.value()}'. Expected a map from String to Strings and Integers."
+        s"${invalidConfigValueString(new PrettyPrinter(), suppliedValue, schemaType)}. Expected a map from String to Strings and Integers."
       )
+
+    def assertConfigSettingsCorrectTypes(validationRecords: IndexConfigValidationRecords, itemsMap: MapValue): Unit = {
+      // note: in cypher 6 probably should refer to these as INTEGER and STRING respectively
+      val validTypes: Map[Class[_], String] =
+        Map(classOf[IntegralValue] -> "an Integer", classOf[TextValue] -> "a String")
+
+      validationRecords.get(INCORRECT_TYPE).asScala.foreach {
+        // valid type for vector index config, *but* invalid for that setting
+        case incorrectType: IncorrectType if validTypes.exists { case (cls, _) =>
+            cls.isAssignableFrom(incorrectType.providedType)
+          } =>
+          throw new InvalidArgumentsException(
+            s"${invalidConfigValueString(incorrectType.settingName, schemaType)}. Expected ${validTypes(incorrectType.targetType)}."
+          )
+        // invalid type for valid type for vector index config
+        case _ => throw exceptionWrongType(itemsMap)
+      }
+    }
+
+    def assertValidConfigValues(pp: PrettyPrinter, validationRecords: IndexConfigValidationRecords): Unit = {
+      validationRecords.get(INVALID_VALUE).asScala.map(_.asInstanceOf[InvalidValue]).foreach {
+        invalidValue =>
+          invalidValue.valid match {
+            case range: VectorIndexConfigUtils.Range[_] => throw new IllegalArgumentException(
+                s"'${invalidValue.settingName}' must be between ${range.min} and ${range.max} inclusively"
+              )
+            case iterable: lang.Iterable[_] =>
+              val supported = iterable.asScala.mkString("[", ", ", "]")
+              invalidValue.rawValue().writeTo(pp)
+              throw new IllegalArgumentException(
+                s"'${pp.value()}' is an unsupported '${invalidValue.settingName}'. Supported: $supported"
+              )
+            case unknown => throw new IllegalStateException(
+                s"Unhandled valid value type '${unknown.getClass.getSimpleName}' for '${invalidValue.settingName}'. Provided: $unknown"
+              )
+          }
+      }
     }
 
     config match {
-      case itemsMap: MapValue if itemsMap.isEmpty =>
-        assertMandatoryConfigSettingsExists(Set.empty)
-        IndexConfig.empty // should not reach here
       case itemsMap: MapValue =>
-        checkForFulltextConfigValues(new PrettyPrinter(), itemsMap, schemaType)
-        checkForPointConfigValues(new PrettyPrinter(), itemsMap, schemaType)
-
-        // throw error early on missing config settings
-        assertMandatoryConfigSettingsExists(itemsMap.keySet().asScala.toSet)
-
-        val hm = new java.util.HashMap[String, Object]()
-        itemsMap.foreach {
-          case (p: String, e: TextValue) =>
-            hm.put(p, e.stringValue().toUpperCase(Locale.ROOT))
-          case (p: String, e: IntValue) =>
-            hm.put(p, java.lang.Integer.valueOf(e.intValue()))
-          case (p: String, e: LongValue) =>
-            hm.put(p, java.lang.Long.valueOf(e.longValue()))
-          case _ => throw exceptionWrongType(itemsMap)
-        }
-
-        // Need to validate config settings here in the same way that is done in the procedure
-        // since the exceptions given on procedure level is nicer than the ones down in kernel
-        assertValidConfigValues(
-          indexProvider,
-          hm.get(VECTOR_DIMENSIONS.getSettingName),
-          hm.get(VECTOR_SIMILARITY_FUNCTION.getSettingName)
+        val version = maybeIndexProvider.map(VectorIndexVersion.fromDescriptor).getOrElse(
+          VectorIndexVersion.latestSupportedVersion(KernelVersion.getLatestVersion(context.getConfig))
         )
+        val validator = version.indexSettingValidator
+        val validationRecords = validator.validate(new MapValueAccessor(itemsMap))
+        if (validationRecords.valid) return validator.trustIsValidToVectorIndexConfig(validationRecords).config
 
-        toIndexConfig(hm)
+        assertInvalidConfigValues(
+          new PrettyPrinter(),
+          validationRecords,
+          itemsMap,
+          schemaType,
+          validator.validSettings.asScala.map(_.getSettingName)
+        )
+        assertMandatoryConfigSettingsExists(validationRecords)
+        assertConfigSettingsCorrectTypes(validationRecords, itemsMap)
+        assertValidConfigValues(new PrettyPrinter(), validationRecords)
+        validator.trustIsValidToVectorIndexConfig(validationRecords).config
       case unknown =>
         throw exceptionWrongType(unknown)
-    }
-  }
-
-  private def assertMandatoryConfigSettingsExists(givenConfigSettings: Set[String]): Unit = {
-    val hasDimensions =
-      givenConfigSettings.map(_.toLowerCase(Locale.ROOT)).contains(dimensionsSetting.toLowerCase(Locale.ROOT))
-    val hasSimilarityFunction =
-      givenConfigSettings.map(_.toLowerCase(Locale.ROOT)).contains(similarityFunctionSetting.toLowerCase(Locale.ROOT))
-
-    val missingConfig =
-      if (!hasDimensions && !hasSimilarityFunction) {
-        Some(List(dimensionsSetting, similarityFunctionSetting).sorted.mkString("'", "', '", "'"))
-      } else if (!hasDimensions) {
-        Some(s"'$dimensionsSetting'")
-      } else if (!hasSimilarityFunction) {
-        Some(s"'$similarityFunctionSetting'")
-      } else {
-        None
-      }
-    if (missingConfig.nonEmpty) {
-      throw new InvalidArgumentsException(
-        s"Failed to create $schemaType: Missing index config options [${missingConfig.get}]."
-      )
-    }
-  }
-
-  // Do the same checks as in the procedure + check for correct type
-  // The checks would still be done and errors thrown otherwise but they'd be wrapped in less helpful errors,
-  // so only looking at the top error would not give you the reason for the failure
-  private def assertValidConfigValues(
-    maybeIndexProvider: Option[IndexProviderDescriptor],
-    dimensionValue: AnyRef,
-    similarityFunctionValue: AnyRef
-  ): Unit = {
-    val version = maybeIndexProvider.map(VectorIndexVersion.fromDescriptor).getOrElse(
-      VectorIndexVersion.latestSupportedVersion(KernelVersion.getLatestVersion(context.getConfig))
-    )
-
-    // Check dimension
-    val maxDimensions = version.maxDimensions
-    Objects.requireNonNull(dimensionValue, s"'$dimensionsSetting' must not be null")
-    val vectorDimensionCheck = dimensionValue match {
-      case l: java.lang.Long =>
-        val vectorDimension = l.longValue()
-        1 <= vectorDimension && vectorDimension <= maxDimensions
-      case i: Integer =>
-        val vectorDimension = i.intValue()
-        1 <= vectorDimension && vectorDimension <= maxDimensions
-      case _ =>
-        throw new InvalidArgumentsException(
-          s"Could not create $schemaType with specified index config '$dimensionsSetting'. Expected an Integer."
-        )
-    }
-    Preconditions.checkArgument(
-      vectorDimensionCheck,
-      "'%s' must be between %d and %d inclusively".formatted(dimensionsSetting, 1, maxDimensions)
-    )
-
-    // Check similarity function
-    Objects.requireNonNull(similarityFunctionValue, s"'$similarityFunctionSetting' must not be null")
-    similarityFunctionValue match {
-      case s: String =>
-        version.similarityFunction(s)
-      case _ =>
-        throw new InvalidArgumentsException(
-          s"Could not create $schemaType with specified index config '$similarityFunctionSetting'. Expected a String."
-        )
     }
   }
 
