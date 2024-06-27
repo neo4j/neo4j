@@ -42,8 +42,7 @@ import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.TextValue
 import org.neo4j.values.utils.PrettyPrinter
 import org.neo4j.values.virtual.MapValue
-
-import java.util.Collections
+import org.neo4j.values.virtual.VirtualValues
 
 trait IndexOptionsConverter[T] extends OptionsConverter[T] {
   protected def context: QueryContext
@@ -60,21 +59,24 @@ trait IndexOptionsConverter[T] extends OptionsConverter[T] {
       )
     }
     val maybeIndexProvider = options.getOption("indexprovider")
-    val maybeConfig = options.getOption("indexconfig")
+    // If there are mandatory options we should call convert with empty options to throw expected errors
+    val maybeConfig = options.getOption("indexconfig").orElse(Option.when(hasMandatoryOptions)(VirtualValues.EMPTY_MAP))
 
     val indexProvider = maybeIndexProvider.map(assertValidIndexProvider(_, schemaType, indexType))
-    val configMap: java.util.Map[String, Object] =
-      maybeConfig.map(assertValidAndTransformConfig(_, schemaType, indexProvider)).getOrElse(Collections.emptyMap())
-    val indexConfig = IndexSettingUtil.toIndexConfigFromStringObjectMap(configMap)
+    val indexConfig =
+      maybeConfig.map(assertValidAndTransformConfig(_, schemaType, indexProvider)).getOrElse(IndexConfig.empty)
 
     (indexProvider, indexConfig)
   }
+
+  protected def toIndexConfig: java.util.Map[String, Object] => IndexConfig =
+    IndexSettingUtil.toIndexConfigFromStringObjectMap
 
   protected def assertValidAndTransformConfig(
     config: AnyValue,
     schemaType: String,
     indexProvider: Option[IndexProviderDescriptor]
-  ): java.util.Map[String, Object]
+  ): IndexConfig
 
   private def assertValidIndexProvider(
     indexProvider: AnyValue,
@@ -143,23 +145,20 @@ trait IndexOptionsConverter[T] extends OptionsConverter[T] {
     config: AnyValue,
     schemaType: String,
     indexType: String
-  ): java.util.Map[String, Object] = {
+  ): IndexConfig = {
     // no available config settings, throw nice error when existing config settings for other index types
     val pp = new PrettyPrinter()
     config match {
-      case itemsMap: MapValue =>
+      case itemsMap: MapValue if !itemsMap.isEmpty =>
         checkForFulltextConfigValues(pp, itemsMap, schemaType)
         checkForPointConfigValues(pp, itemsMap, schemaType)
         checkForVectorConfigValues(pp, itemsMap, schemaType)
 
-        if (!itemsMap.isEmpty) {
-          itemsMap.writeTo(pp)
-          throw new InvalidArgumentsException(
-            s"""Could not create $schemaType with specified index config '${pp.value()}': $indexType indexes have no valid config values.""".stripMargin
-          )
-        }
-
-        Collections.emptyMap()
+        itemsMap.writeTo(pp)
+        throw new InvalidArgumentsException(
+          s"""Could not create $schemaType with specified index config '${pp.value()}': $indexType indexes have no valid config values.""".stripMargin
+        )
+      case _: MapValue => IndexConfig.empty
       case unknown =>
         unknown.writeTo(pp)
         throw new InvalidArgumentsException(

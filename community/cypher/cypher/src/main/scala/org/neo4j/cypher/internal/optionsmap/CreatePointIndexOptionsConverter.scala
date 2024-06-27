@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.optionsmap
 import org.neo4j.configuration.Config
 import org.neo4j.cypher.internal.MapValueOps.Ops
 import org.neo4j.cypher.internal.runtime.QueryContext
+import org.neo4j.internal.schema.IndexConfig
 import org.neo4j.internal.schema.IndexProviderDescriptor
 import org.neo4j.internal.schema.IndexType
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException
@@ -48,7 +49,7 @@ case class CreatePointIndexOptionsConverter(context: QueryContext)
     config: AnyValue,
     schemaType: String,
     indexProvider: Option[IndexProviderDescriptor]
-  ): java.util.Map[String, Object] = {
+  ): IndexConfig = {
     // current keys: spatial.* (cartesian.|cartesian-3d.|wgs-84.|wgs-84-3d.) + (min|max)
     // current values: Double[]
 
@@ -61,11 +62,12 @@ case class CreatePointIndexOptionsConverter(context: QueryContext)
     }
 
     config match {
+      case itemsMap: MapValue if itemsMap.isEmpty => IndexConfig.empty
       case itemsMap: MapValue =>
         checkForFulltextConfigValues(new PrettyPrinter(), itemsMap, schemaType)
         checkForVectorConfigValues(new PrettyPrinter(), itemsMap, schemaType)
 
-        itemsMap.foldLeft(Map[String, Object]()) {
+        val map = itemsMap.foldLeft(Map[String, Object]()) {
           // Allow both list and array
           case (m, (p: String, e: SequenceValue)) =>
             val configValue: Array[Double] = e.iterator().asScala.map {
@@ -76,6 +78,8 @@ case class CreatePointIndexOptionsConverter(context: QueryContext)
             m + (p -> configValue)
           case _ => throw exceptionWrongType(itemsMap)
         }.asJava
+
+        toIndexConfig(map)
       case unknown =>
         throw exceptionWrongType(unknown)
     }

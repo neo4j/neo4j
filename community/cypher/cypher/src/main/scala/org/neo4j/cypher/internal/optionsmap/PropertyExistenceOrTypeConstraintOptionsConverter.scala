@@ -21,12 +21,11 @@ package org.neo4j.cypher.internal.optionsmap
 
 import org.neo4j.configuration.Config
 import org.neo4j.cypher.internal.runtime.QueryContext
+import org.neo4j.internal.schema.IndexConfig
 import org.neo4j.internal.schema.IndexProviderDescriptor
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException
 import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.MapValue
-
-import java.util.Collections
 
 case class PropertyExistenceOrTypeConstraintOptionsConverter(
   entity: String,
@@ -48,7 +47,7 @@ case class PropertyExistenceOrTypeConstraintOptionsConverter(
     config: AnyValue,
     entity: String,
     indexProvider: Option[IndexProviderDescriptor]
-  ): java.util.Map[String, Object] = Collections.emptyMap()
+  ): IndexConfig = IndexConfig.empty
 
   override def operation: String = s"create $entity property $constraintType constraint"
 }

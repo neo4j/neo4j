@@ -52,12 +52,6 @@ case class CreateVectorIndexOptionsConverter(context: QueryContext)
 
   override def convert(options: MapValue, config: Option[Config]): CreateIndexWithFullOptions = {
     val (indexProvider, indexConfig) = getOptionsParts(options, schemaType, IndexType.VECTOR)
-
-    // We check that all mandatory settings are included if we get a config to throw errors on missing ones early.
-    // However, the validate config method isn't called when no config is given
-    // but this case should also give an error so we need to check that here.
-    assertMandatoryConfigSettingsExists(indexConfig)
-
     CreateIndexWithFullOptions(indexProvider, indexConfig)
   }
 
@@ -66,7 +60,7 @@ case class CreateVectorIndexOptionsConverter(context: QueryContext)
     config: AnyValue,
     schemaType: String,
     indexProvider: Option[IndexProviderDescriptor]
-  ): java.util.Map[String, Object] = {
+  ): IndexConfig = {
     // current keys: vector.(dimensions|similarity_function)
     // current values: Long, String
 
@@ -79,6 +73,9 @@ case class CreateVectorIndexOptionsConverter(context: QueryContext)
     }
 
     config match {
+      case itemsMap: MapValue if itemsMap.isEmpty =>
+        assertMandatoryConfigSettingsExists(Set.empty)
+        IndexConfig.empty // should not reach here
       case itemsMap: MapValue =>
         checkForFulltextConfigValues(new PrettyPrinter(), itemsMap, schemaType)
         checkForPointConfigValues(new PrettyPrinter(), itemsMap, schemaType)
@@ -105,18 +102,9 @@ case class CreateVectorIndexOptionsConverter(context: QueryContext)
           hm.get(VECTOR_SIMILARITY_FUNCTION.getSettingName)
         )
 
-        hm
+        toIndexConfig(hm)
       case unknown =>
         throw exceptionWrongType(unknown)
-    }
-  }
-
-  private def assertMandatoryConfigSettingsExists(indexConfig: IndexConfig): Unit = {
-    val settings = indexConfig.asMap().keySet().asScala.toSet
-    // Call assert method to get the same error as for giving an empty setting map, without needing to duplicate it.
-    // If there is a config it has already been checked as part of the validation.
-    if (settings.isEmpty) {
-      assertMandatoryConfigSettingsExists(settings)
     }
   }
 

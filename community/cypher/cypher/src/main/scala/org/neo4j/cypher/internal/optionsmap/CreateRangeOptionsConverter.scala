@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.optionsmap
 
 import org.neo4j.configuration.Config
 import org.neo4j.cypher.internal.runtime.QueryContext
+import org.neo4j.internal.schema.IndexConfig
 import org.neo4j.internal.schema.IndexProviderDescriptor
 import org.neo4j.internal.schema.IndexType
 import org.neo4j.values.AnyValue
@@ -39,7 +40,7 @@ abstract class CreateRangeOptionsConverter(schemaType: String)
     config: AnyValue,
     schemaType: String,
     indexProvider: Option[IndexProviderDescriptor]
-  ): java.util.Map[String, Object] =
+  ): IndexConfig =
     assertEmptyConfig(config, schemaType, "range")
 
   override def operation: String = s"create $schemaType"

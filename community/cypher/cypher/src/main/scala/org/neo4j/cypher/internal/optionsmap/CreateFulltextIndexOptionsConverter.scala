@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.optionsmap
 
 import org.neo4j.configuration.Config
 import org.neo4j.cypher.internal.runtime.QueryContext
+import org.neo4j.internal.schema.IndexConfig
 import org.neo4j.internal.schema.IndexProviderDescriptor
 import org.neo4j.internal.schema.IndexType
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException
@@ -46,7 +47,7 @@ case class CreateFulltextIndexOptionsConverter(context: QueryContext)
     config: AnyValue,
     schemaType: String,
     indexProvider: Option[IndexProviderDescriptor]
-  ): java.util.Map[String, Object] = {
+  ): IndexConfig = {
 
     def exceptionWrongType(suppliedValue: AnyValue): InvalidArgumentsException = {
       val pp = new PrettyPrinter()
@@ -57,6 +58,7 @@ case class CreateFulltextIndexOptionsConverter(context: QueryContext)
     }
 
     config match {
+      case itemsMap: MapValue if itemsMap.isEmpty => IndexConfig.empty
       case itemsMap: MapValue =>
         checkForPointConfigValues(new PrettyPrinter(), itemsMap, schemaType)
         checkForVectorConfigValues(new PrettyPrinter(), itemsMap, schemaType)
@@ -69,7 +71,8 @@ case class CreateFulltextIndexOptionsConverter(context: QueryContext)
             hm.put(p, java.lang.Boolean.valueOf(e.booleanValue()))
           case _ => throw exceptionWrongType(itemsMap)
         }
-        hm
+
+        toIndexConfig(hm)
       case unknown =>
         throw exceptionWrongType(unknown)
     }
