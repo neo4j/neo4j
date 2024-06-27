@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.result.InternalExecutionResult
 import org.neo4j.cypher.internal.runtime.ExecutionMode
 import org.neo4j.cypher.internal.runtime.InputDataStream
 import org.neo4j.cypher.internal.runtime.NormalMode
+import org.neo4j.cypher.internal.runtime.ProfileMode
 import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.graphdb.Transaction
@@ -115,7 +116,7 @@ abstract class UpdatingSystemCommandExecutionPlanBase(
           updatedParams,
           tc,
           isOutermostQuery = false,
-          executionMode == NormalMode,
+          executionMode == ProfileMode,
           prePopulateResults,
           systemSubscriber
         ).asInstanceOf[InternalExecutionResult]
