@@ -19,6 +19,7 @@ package org.neo4j.cypher.internal.ast.factory.ddl.privilege
 import org.neo4j.cypher.internal.ast.ActionResource
 import org.neo4j.cypher.internal.ast.AllGraphsScope
 import org.neo4j.cypher.internal.ast.AllPropertyResource
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.ast.DefaultGraphScope
 import org.neo4j.cypher.internal.ast.ExistsExpression
 import org.neo4j.cypher.internal.ast.GraphAction
@@ -30,6 +31,7 @@ import org.neo4j.cypher.internal.ast.Match
 import org.neo4j.cypher.internal.ast.MatchAction
 import org.neo4j.cypher.internal.ast.NamedGraphsScope
 import org.neo4j.cypher.internal.ast.PatternQualifier
+import org.neo4j.cypher.internal.ast.PrivilegeQualifier
 import org.neo4j.cypher.internal.ast.PropertiesResource
 import org.neo4j.cypher.internal.ast.ReadAction
 import org.neo4j.cypher.internal.ast.SingleQuery
@@ -49,11 +51,17 @@ import org.neo4j.cypher.internal.expressions.PatternPartWithSelector
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.Variable
-
-import scala.util.Random
+import org.neo4j.cypher.internal.util.test_helpers.CypherScalaCheckDrivenPropertyChecks
+import org.scalacheck.Arbitrary
+import org.scalacheck.Gen
+import org.scalacheck.Shrink
+import org.scalactic.anyvals.PosInt
 
 class ReadMatchPropertyPrivilegeAdministrationCommandParserTest
-    extends PropertyPrivilegeAdministrationCommandParserTestBase {
+    extends PropertyPrivilegeAdministrationCommandParserTestBase
+    with CypherScalaCheckDrivenPropertyChecks {
+  implicit def noShrink[T]: Shrink[T] = Shrink.shrinkAny
+
   case class Action(action: GraphAction, verb: String, preposition: String, func: resourcePrivilegeFunc)
 
   case class Resource(properties: String, resource: ActionResource)
@@ -129,188 +137,102 @@ class ReadMatchPropertyPrivilegeAdministrationCommandParserTest
     }
   }
 
-  test("valid labels") {
+  case class ExpressionAndQualifier(
+    literal: LiteralExpression,
+    varible: Option[Variable],
+    propertyRule: String,
+    expectedQualifiers: Seq[PrivilegeQualifier]
+  )
+
+  private def literalExpressionAndQualifiers(): Iterator[ExpressionAndQualifier] = {
     for {
-      Action(action, verb, preposition, func) <- actions
-      immutable <- Seq(true, false)
-      graphKeyword <- graphKeywords
-      LiteralExpression(expression, propertyRuleAst) <- literalExpressions
-      Resource(properties, resource) <- resources
-      Scope(graphName, graphScope) <- scopes
-    } {
-      val immutableString = immutableOrEmpty(immutable)
-      val expressionString = expressionStringifier(expression)
-
-      // No labels
-      (expression match {
-        case _: MapExpression => List(
-            (None, s"($expressionString)"),
-            (Some(Variable("n")(pos)), s"(n $expressionString)")
+      literal <- literalExpressions.iterator
+      expressionString = expressionStringifier(literal.expression)
+      (variable, propertyRule, expectedQualifiers) <- literal.expression match {
+        case _: MapExpression => Iterator(
+            (None, s"($expressionString)", Seq(LabelAllQualifier()(pos))),
+            (Some(v"n"), s"(n $expressionString)", Seq(LabelAllQualifier()(pos))),
+            (None, s"(:A $expressionString)", Seq(labelQualifierA(pos))),
+            (Some(v"n"), s"(n:A $expressionString)", Seq(labelQualifierA(pos))),
+            (None, s"(:`A B` $expressionString)", Seq(LabelQualifier("A B")(pos))),
+            (Some(v"n"), s"(n:`A B` $expressionString)", Seq(LabelQualifier("A B")(pos))),
+            (None, s"(:`:A` $expressionString)", Seq(LabelQualifier(":A")(pos))),
+            (Some(v"n"), s"(n:`:A` $expressionString)", Seq(LabelQualifier(":A")(pos))),
+            (None, s"(:A|B $expressionString)", Seq(labelQualifierA(pos), labelQualifierB(pos))),
+            (Some(v"n"), s"(n:A|B $expressionString)", Seq(labelQualifierA(pos), labelQualifierB(pos)))
           )
-        case _: BooleanExpression => List(
-            (Some(Variable("n")(pos)), s"(n) WHERE $expressionString"),
-            (Some(Variable("n")(pos)), s"(n WHERE $expressionString)"),
-            (Some(Variable("WHERE")(pos)), s"(WHERE WHERE $expressionString)"), // WHERE as variable
-            (
-              None,
-              s"() WHERE $expressionString"
-            ) // Missing variable is valid when parsing. Fail in semantic check
+        case _: BooleanExpression => Iterator(
+            (Some(v"n"), s"(n) WHERE $expressionString", Seq(LabelAllQualifier()(pos))),
+            (Some(v"n"), s"(n WHERE $expressionString)", Seq(LabelAllQualifier()(pos))),
+            // WHERE as variable
+            (Some(v"WHERE"), s"(WHERE WHERE $expressionString)", Seq(LabelAllQualifier()(pos))),
+            // Missing variable is valid when parsing. Fail in semantic check
+            (None, s"() WHERE $expressionString", Seq(LabelAllQualifier()(pos))),
+            (Some(v"n"), s"(n:A) WHERE $expressionString", Seq(labelQualifierA(pos))),
+            (Some(v"n"), s"(n:A WHERE $expressionString)", Seq(labelQualifierA(pos))),
+            // WHERE as variable
+            (Some(v"WHERE"), s"(WHERE:A WHERE $expressionString)", Seq(labelQualifierA(pos))),
+            // Missing variable is valid when parsing. Fail in semantic check
+            (None, s"(:A) WHERE $expressionString", Seq(labelQualifierA(pos))),
+            // Missing variable is valid when parsing. Fail in semantic check
+            (None, s"(:A WHERE $expressionString)", Seq(labelQualifierA(pos))),
+            (Some(v"n"), s"(n:`A B`) WHERE $expressionString", Seq(LabelQualifier("A B")(pos))),
+            (Some(v"n"), s"(n:`A B` WHERE $expressionString)", Seq(LabelQualifier("A B")(pos))),
+            // Missing variable is valid when parsing. Fail in semantic check
+            (None, s"(:`A B`) WHERE $expressionString", Seq(LabelQualifier("A B")(pos))),
+            // Missing variable is valid when parsing. Fail in semantic check
+            (None, s"(:`A B` WHERE $expressionString)", Seq(LabelQualifier("A B")(pos))),
+            (Some(v"n"), s"(n:`:A`) WHERE $expressionString", Seq(LabelQualifier(":A")(pos))),
+            (Some(v"n"), s"(n:`:A` WHERE $expressionString)", Seq(LabelQualifier(":A")(pos))),
+            // Missing variable is valid when parsing. Fail in semantic check
+            (None, s"(:`:A`) WHERE $expressionString", Seq(LabelQualifier(":A")(pos))),
+            // Missing variable is valid when parsing. Fail in semantic check
+            (None, s"(:`:A` WHERE $expressionString)", Seq(LabelQualifier(":A")(pos))),
+            (Some(v"n"), s"(n:A|B) WHERE $expressionString", Seq(labelQualifierA(pos), labelQualifierB(pos))),
+            (Some(v"n"), s"(n:A|B WHERE $expressionString)", Seq(labelQualifierA(pos), labelQualifierB(pos))),
+            // Missing variable is valid when parsing. Fail in semantic check
+            (None, s"(:A|B) WHERE $expressionString", Seq(labelQualifierA(pos), labelQualifierB(pos))),
+            // Missing variable is valid when parsing. Fail in semantic check
+            (None, s"(:A|B WHERE $expressionString)", Seq(labelQualifierA(pos), labelQualifierB(pos)))
           )
         case _ => fail("Unexpected expression")
-      }).foreach { case (variable: Option[Variable], propertyRule: String) =>
-        // All labels, parameterised role
-        parsing(
-          s"$verb$immutableString ${action.name} {$properties} ON $graphKeyword $graphName $patternKeyword $propertyRule $preposition $$role"
-        ) shouldGive
-          func(
-            GraphPrivilege(action, graphScope)(pos),
-            resource,
-            List(PatternQualifier(Seq(LabelAllQualifier()(pos)), variable, propertyRuleAst)),
-            Seq(paramRole),
-            immutable
-          )
-
-        // All labels, role containing colon
-        parsing(
-          s"$verb$immutableString ${action.name} {$properties} ON $graphKeyword $graphName $patternKeyword $propertyRule $preposition `r:ole`"
-        ) shouldGive
-          func(
-            GraphPrivilege(action, graphScope)(pos),
-            resource,
-            List(PatternQualifier(Seq(LabelAllQualifier()(pos)), variable, propertyRuleAst)),
-            Seq(literalRColonOle),
-            immutable
-          )
       }
+    } yield ExpressionAndQualifier(literal, variable, propertyRule, expectedQualifiers)
+  }
 
-      // Single label name
-      (expression match {
-        case _: MapExpression => List(
-            (None, s"(:A $expressionString)"),
-            (Some(Variable("n")(pos)), s"(n:A $expressionString)")
-          )
-        case _: BooleanExpression => List(
-            (Some(Variable("n")(pos)), s"(n:A) WHERE $expressionString"),
-            (Some(Variable("n")(pos)), s"(n:A WHERE $expressionString)"),
-            (Some(Variable("WHERE")(pos)), s"(WHERE:A WHERE $expressionString)"), // WHERE as variable
-            (
-              None,
-              s"(:A) WHERE $expressionString"
-            ), // Missing variable is valid when parsing. Fail in semantic check
-            (
-              None,
-              s"(:A WHERE $expressionString)"
-            ) // Missing variable is valid when parsing. Fail in semantic check
-          )
-        case _ => fail("Unexpected expression")
-      }).foreach { case (variable: Option[Variable], propertyRule: String) =>
-        parsing(
-          s"$verb$immutableString ${action.name} {$properties} ON $graphKeyword $graphName $patternKeyword $propertyRule $preposition role"
-        ) shouldGive
-          func(
-            GraphPrivilege(action, graphScope)(pos),
-            resource,
-            List(PatternQualifier(Seq(labelQualifierA), variable, propertyRuleAst)),
-            Seq(literalRole),
-            immutable
-          )
-      }
+  test("valid labels") {
+    def genTestCase = for {
+      action <- Gen.oneOf(actions)
+      immutable <- Arbitrary.arbitrary[Boolean]
+      graphKeyword <- Gen.oneOf(graphKeywords)
+      resource <- Gen.oneOf(resources)
+      scope <- Gen.oneOf(scopes)
+      (roleString, expectedRoles) <- Gen.oneOf(
+        ("role", Seq(literalRole)),
+        ("$role", Seq(paramRole)),
+        ("`r:ole`", Seq(literalRColonOle)),
+        ("role1, $role2", Seq(literalRole1, paramRole2))
+      )
+    } yield (action, immutable, graphKeyword, resource, scope, roleString, expectedRoles)
 
-      // Escaped multi-token label name
-      (expression match {
-        case _: MapExpression => List(
-            (None, s"(:`A B` $expressionString)"),
-            (Some(Variable("n")(pos)), s"(n:`A B` $expressionString)")
-          )
-        case _: BooleanExpression => List(
-            (Some(Variable("n")(pos)), s"(n:`A B`) WHERE $expressionString"),
-            (Some(Variable("n")(pos)), s"(n:`A B` WHERE $expressionString)"),
-            (
-              None,
-              s"(:`A B`) WHERE $expressionString"
-            ), // Missing variable is valid when parsing. Fail in semantic check
-            (
-              None,
-              s"(:`A B` WHERE $expressionString)"
-            ) // Missing variable is valid when parsing. Fail in semantic check
-          )
-        case _ => fail("Unexpected expression")
-      }).foreach { case (variable: Option[Variable], propertyRule: String) =>
-        parsing(
-          s"$verb$immutableString ${action.name} {$properties} ON $graphKeyword $graphName $patternKeyword $propertyRule $preposition role"
-        ) shouldGive
-          func(
-            GraphPrivilege(action, graphScope)(pos),
-            resource,
-            List(PatternQualifier(Seq(LabelQualifier("A B")(_)), variable, propertyRuleAst)),
-            Seq(literalRole),
-            immutable
-          )
-      }
+    val sizeHint = 100_000
+    // Run at least sizeHint test cases
+    val minSuccess = math.max(sizeHint / literalExpressionAndQualifiers().size, 10)
 
-      // Label containing colon
-      (expression match {
-        case _: MapExpression => List(
-            (None, s"(:`:A` $expressionString)"),
-            (Some(Variable("n")(pos)), s"(n:`:A` $expressionString)")
-          )
-        case _: BooleanExpression => List(
-            (Some(Variable("n")(pos)), s"(n:`:A`) WHERE $expressionString"),
-            (Some(Variable("n")(pos)), s"(n:`:A` WHERE $expressionString)"),
-            (
-              None,
-              s"(:`:A`) WHERE $expressionString"
-            ), // Missing variable is valid when parsing. Fail in semantic check
-            (
-              None,
-              s"(:`:A` WHERE $expressionString)"
-            ) // Missing variable is valid when parsing. Fail in semantic check
-          )
-        case _ => fail("Unexpected expression")
-      }).foreach { case (variable: Option[Variable], propertyRule: String) =>
-        parsing(
-          s"$verb$immutableString ${action.name} {$properties} ON $graphKeyword $graphName $patternKeyword $propertyRule $preposition role"
-        ) shouldGive
-          func(
-            GraphPrivilege(action, graphScope)(pos),
-            resource,
-            List(PatternQualifier(Seq(LabelQualifier(":A")(_)), variable, propertyRuleAst)),
-            Seq(literalRole),
-            immutable
-          )
-      }
-
-      // Multiple labels
-      (expression match {
-        case _: MapExpression => List(
-            (None, s"(:A|B $expressionString)"),
-            (Some(Variable("n")(pos)), s"(n:A|B $expressionString)")
-          )
-        case _: BooleanExpression => List(
-            (Some(Variable("n")(pos)), s"(n:A|B) WHERE $expressionString"),
-            (Some(Variable("n")(pos)), s"(n:A|B WHERE $expressionString)"),
-            (
-              None,
-              s"(:A|B) WHERE $expressionString"
-            ), // Missing variable is valid when parsing. Fail in semantic check
-            (
-              None,
-              s"(:A|B WHERE $expressionString)"
-            ) // Missing variable is valid when parsing. Fail in semantic check
-          )
-        case _ => fail("Unexpected expression")
-      }).foreach { case (variable: Option[Variable], propertyRule: String) =>
-        parsing(
-          s"$verb$immutableString ${action.name} {$properties} ON $graphKeyword $graphName $patternKeyword $propertyRule $preposition role1, $$role2"
-        ) shouldGive
-          func(
-            GraphPrivilege(action, graphScope)(pos),
-            resource,
-            List(
-              PatternQualifier(Seq(labelQualifierA, labelQualifierB), variable, propertyRuleAst)
-            ),
-            Seq(literalRole1, paramRole2),
-            immutable
+    literalExpressionAndQualifiers().foreach { qualifiers =>
+      forAll(genTestCase, minSuccessful(PosInt.from(minSuccess).get)) {
+        case (action, immutable, graphKeyword, resource, scope, roleString, expectedRoles) =>
+          val immutableString = immutableOrEmpty(immutable)
+          s"""${action.verb}$immutableString ${action.action.name} {${resource.properties}}
+             |ON $graphKeyword ${scope.graphName} $patternKeyword ${qualifiers.propertyRule}
+             |${action.preposition} $roleString""".stripMargin should parseTo[Statements](
+            action.func(
+              GraphPrivilege(action.action, scope.graphScope)(pos),
+              resource.resource,
+              List(PatternQualifier(qualifiers.expectedQualifiers, qualifiers.varible, qualifiers.literal.expectedAst)),
+              expectedRoles,
+              immutable
+            )(pos)
           )
       }
     }
@@ -577,28 +499,21 @@ class ReadMatchPropertyPrivilegeAdministrationCommandParserTest
   }
 
   test("legitimate property rules, but with problems elsewhere in the privilege command") {
-    // To limit the amount of tests run (and reduce test setup time)
-    // only add 25 union combinations, but make it a random mix of combinations
-    val randomSamplesOfLiteralExpressions = Random.shuffle(literalExpressions).take(50)
-
-    for {
-      Action(action, verb, preposition, _) <- actions
-      immutable <- Seq(true, false)
-      graphKeyword <- graphKeywords
-      LiteralExpression(expression, _) <- randomSamplesOfLiteralExpressions
-      Resource(properties, _) <- resources
-      Scope(graphName, _) <- scopes
-    } yield {
-      val immutableString = immutableOrEmpty(immutable)
-      val expressionString = expressionStringifier(expression)
-
-      (expression match {
-        case _: MapExpression => List(
+    val genTestCases = for {
+      Action(action, verb, preposition, _) <- Gen.oneOf(actions)
+      immutable <- Arbitrary.arbitrary[Boolean]
+      graphKeyword <- Gen.oneOf(graphKeywords)
+      LiteralExpression(expression, _) <- Gen.oneOf(literalExpressions)
+      expressionString = expressionStringifier(expression)
+      Resource(properties, _) <- Gen.oneOf(resources)
+      Scope(graphName, _) <- Gen.oneOf(scopes)
+      propertyRule <- expression match {
+        case _: MapExpression => Gen.oneOf(
             s"($expressionString)",
             s"(:A $expressionString)",
             s"(n:A $expressionString)"
           )
-        case _: BooleanExpression => List(
+        case _: BooleanExpression => Gen.oneOf(
             s"(n) WHERE $expressionString",
             s"(n WHERE $expressionString)",
             s"(n:A) WHERE $expressionString",
@@ -608,76 +523,80 @@ class ReadMatchPropertyPrivilegeAdministrationCommandParserTest
             s"(:A WHERE $expressionString)" // Missing variable is valid when parsing. Fail in semantic check
           )
         case _ => fail("Unexpected expression")
-      }).foreach { (propertyRule: String) =>
+      }
+    } yield (action, verb, preposition, immutable, graphKeyword, properties, graphName, propertyRule)
+    forAll(genTestCases, minSuccessful(1000)) {
+      case (action, verb, preposition, immutable, graphKeyword, properties, graphName, propertyRule) =>
+        val immutableString = immutableOrEmpty(immutable)
+
         // Missing ON
-        assertFails[Statements](
-          s"$verb$immutableString ${action.name} {$properties} $graphKeyword $graphName $patternKeyword $propertyRule $preposition role"
-        )
+        s"""$verb$immutableString ${action.name} {$properties}
+           |$graphKeyword $graphName $patternKeyword $propertyRule
+           |$preposition role""".stripMargin should notParse[Statements].withMessageContaining("Invalid input")
 
         // Missing role
-        assertFails[Statements](
-          s"$verb$immutableString ${action.name} {$properties} ON $graphKeyword $graphName $patternKeyword $propertyRule"
-        )
+        s"""$verb$immutableString ${action.name} {$properties}
+           |ON $graphKeyword $graphName $patternKeyword $propertyRule
+           |""".stripMargin should notParse[Statements].withMessageContaining("Invalid input")
 
         // r:ole is invalid
-        assertFails[Statements](
-          s"$verb$immutableString ${action.name} {$properties} ON $graphKeyword $graphName $patternKeyword $propertyRule $preposition r:ole"
-        )
+        s"""$verb$immutableString ${action.name} {$properties}
+           |ON $graphKeyword $graphName $patternKeyword $propertyRule
+           |$preposition r:ole""".stripMargin should notParse[Statements].withMessageContaining("Invalid input")
 
         // Invalid graph name
-        assertFails[Statements](
-          s"$verb$immutableString ${action.name} {$properties} ON $graphKeyword f:oo $patternKeyword $propertyRule $preposition role"
-        )
+        s"""$verb$immutableString ${action.name} {$properties}
+           |ON $graphKeyword f:oo $patternKeyword $propertyRule
+           |$preposition role""".stripMargin should notParse[Statements].withMessageContaining("Invalid input")
 
         // Mixing specific graph and *
-        assertFails[Statements](
-          s"$verb$immutableString ${action.name} {$properties} ON $graphKeyword foo, * $patternKeyword $propertyRule $preposition role"
-        )
-        assertFails[Statements](
-          s"$verb$immutableString ${action.name} {$properties} ON $graphKeyword *, foo $patternKeyword $propertyRule $preposition role"
-        )
+        s"""$verb$immutableString ${action.name} {$properties}
+           |ON $graphKeyword foo, * $patternKeyword $propertyRule
+           |$preposition role""".stripMargin should notParse[Statements].withMessageContaining("Invalid input")
+        s"""$verb$immutableString ${action.name} {$properties}
+           |ON $graphKeyword *, foo $patternKeyword $propertyRule
+           |$preposition role""".stripMargin should notParse[Statements].withMessageContaining("Invalid input")
 
         // Invalid property definition
-        assertFails[Statements](
-          s"$verb$immutableString ${action.name} {b:ar} ON $graphKeyword foo $patternKeyword $propertyRule $preposition role"
-        )
+        s"""$verb$immutableString ${action.name} {b:ar}
+           |ON $graphKeyword foo $patternKeyword $propertyRule
+           |$preposition role""".stripMargin should notParse[Statements].withMessageContaining("Invalid input")
 
         // Missing graph name
-        assertFails[Statements](
-          s"$verb$immutableString ${action.name} {$properties} ON $graphKeyword $patternKeyword $propertyRule $preposition role"
-        )
-        assertFails[Statements](
-          s"$verb$immutableString ${action.name} {$properties} ON $graphKeyword $patternKeyword $propertyRule (*) $preposition role"
-        )
+        s"""$verb$immutableString ${action.name} {$properties}
+           |ON $graphKeyword $patternKeyword $propertyRule
+           |$preposition role""".stripMargin should notParse[Statements].withMessageContaining("Invalid input")
+        s"""$verb$immutableString ${action.name} {$properties}
+           |ON $graphKeyword $patternKeyword $propertyRule (*)
+           |$preposition role""".stripMargin should notParse[Statements].withMessageContaining("Invalid input")
 
         // Missing property definition
-        assertFails[Statements](
-          s"$verb$immutableString ${action.name} ON $graphKeyword * $patternKeyword $propertyRule $preposition role"
-        )
-        assertFails[Statements](
-          s"$verb$immutableString ${action.name} ON $graphKeyword * $patternKeyword $propertyRule (*) $preposition role"
-        )
-        assertFails[Statements](
-          s"$verb$immutableString ${action.name} ON $graphKeyword foo $patternKeyword $propertyRule $preposition role"
-        )
-        assertFails[Statements](
-          s"$verb$immutableString ${action.name} ON $graphKeyword foo $patternKeyword $propertyRule (*) $preposition role"
-        )
+        s"""$verb$immutableString ${action.name}
+           |ON $graphKeyword * $patternKeyword $propertyRule
+           |$preposition role""".stripMargin should notParse[Statements].withMessageContaining("Invalid input")
+        s"""$verb$immutableString ${action.name}
+           |ON $graphKeyword * $patternKeyword $propertyRule (*)
+           |$preposition role""".stripMargin should notParse[Statements].withMessageContaining("Invalid input")
+        s"""$verb$immutableString ${action.name}
+           |ON $graphKeyword foo $patternKeyword $propertyRule
+           |$preposition role""".stripMargin should notParse[Statements].withMessageContaining("Invalid input")
+        s"""$verb$immutableString ${action.name}
+           |ON $graphKeyword foo $patternKeyword $propertyRule (*)
+           |$preposition role""".stripMargin should notParse[Statements].withMessageContaining("Invalid input")
 
         // Missing property list
-        assertFails[Statements](
-          s"$verb$immutableString ${action.name} {} ON $graphKeyword * $patternKeyword $propertyRule $preposition role"
-        )
-        assertFails[Statements](
-          s"$verb$immutableString ${action.name} {} ON $graphKeyword * $patternKeyword $propertyRule (*) $preposition role"
-        )
-        assertFails[Statements](
-          s"$verb$immutableString ${action.name} {} ON $graphKeyword foo $patternKeyword $propertyRule $preposition role"
-        )
-        assertFails[Statements](
-          s"$verb$immutableString ${action.name} {} ON $graphKeyword foo $patternKeyword $propertyRule (*) $preposition role"
-        )
-      }
+        s"""$verb$immutableString ${action.name} {}
+           |ON $graphKeyword * $patternKeyword $propertyRule
+           |$preposition role""".stripMargin should notParse[Statements].withMessageContaining("Invalid input")
+        s"""$verb$immutableString ${action.name} {}
+           |ON $graphKeyword * $patternKeyword $propertyRule (*)
+           |$preposition role""".stripMargin should notParse[Statements].withMessageContaining("Invalid input")
+        s"""$verb$immutableString ${action.name} {}
+           |ON $graphKeyword foo $patternKeyword $propertyRule
+           |$preposition role""".stripMargin should notParse[Statements].withMessageContaining("Invalid input")
+        s"$verb$immutableString ${action.name} {} " +
+          s"ON $graphKeyword foo $patternKeyword $propertyRule (*) " +
+          s"$preposition role" should notParse[Statements].withMessageContaining("Invalid input")
     }
   }
 

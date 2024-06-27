@@ -170,10 +170,10 @@ trait AstMatchers {
         .filter { case (parser, _) => parsers.contains(parser) }
         .sliding(2)
         .flatMap {
-          case Seq((parserA, resultA), (parserB, resultB)) =>
-            findPosMismatch(resultA.toTry.get, resultB.toTry.get)
-              .map(m => Vector[Any](Seq(parserA, parserB), m, results.cypher))
-          case _ => None
+          case Seq((parserA, ParseSuccess(resultA)), (parserB, ParseSuccess(resultB))) =>
+            findPosMismatch(resultA, resultB).map(m => Vector[Any](Seq(parserA, parserB), m, results.cypher))
+          case Seq((_, _), (_, _)) => Some(Vector[Any](parsers, Some("Parsing failed"), results.cypher))
+          case _                   => None
         }
         .nextOption()
 

@@ -44,9 +44,16 @@ import org.neo4j.cypher.internal.expressions.PatternPartWithSelector
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.util.test_helpers.CypherScalaCheckDrivenPropertyChecks
+import org.scalacheck.Arbitrary
+import org.scalacheck.Gen
+import org.scalacheck.Shrink
 
 class TraversePropertyPrivilegeAdministrationCommandParserTest
-    extends PropertyPrivilegeAdministrationCommandParserTestBase {
+    extends PropertyPrivilegeAdministrationCommandParserTestBase
+    with CypherScalaCheckDrivenPropertyChecks {
+  implicit def noShrink[T]: Shrink[T] = Shrink.shrinkAny
+
   case class Action(verb: String, preposition: String, func: noResourcePrivilegeFunc)
 
   val actions: Seq[Action] = Seq(
@@ -447,23 +454,20 @@ class TraversePropertyPrivilegeAdministrationCommandParserTest
   }
 
   test("legitimate property rules, but with problems elsewhere in the privilege command") {
-    for {
-      Action(verb, preposition, _) <- actions
-      immutable <- Seq(true, false)
-      graphKeyword <- graphKeywords
-      LiteralExpression(expression, _) <- literalExpressions
-      Scope(graphName, _) <- scopes
-    } yield {
-      val immutableString = immutableOrEmpty(immutable)
-      val expressionString = expressionStringifier(expression)
-
-      (expression match {
-        case _: MapExpression => List(
+    val genTestCases = for {
+      Action(verb, preposition, _) <- Gen.oneOf(actions)
+      immutable <- Arbitrary.arbitrary[Boolean]
+      graphKeyword <- Gen.oneOf(graphKeywords)
+      LiteralExpression(expression, _) <- Gen.oneOf(literalExpressions)
+      expressionString = expressionStringifier(expression)
+      Scope(graphName, _) <- Gen.oneOf(scopes)
+      propertyRule <- expression match {
+        case _: MapExpression => Gen.oneOf(
             s"($expressionString)",
             s"(:A $expressionString)",
             s"(n:A $expressionString)"
           )
-        case _: BooleanExpression => List(
+        case _: BooleanExpression => Gen.oneOf(
             s"(n) WHERE $expressionString",
             s"(n WHERE $expressionString)",
             s"(n:A) WHERE $expressionString",
@@ -473,35 +477,48 @@ class TraversePropertyPrivilegeAdministrationCommandParserTest
             s"(:A WHERE $expressionString)" // Missing variable is valid when parsing. Fail in semantic check
           )
         case _ => fail("Unexpected expression")
-      }).foreach { (propertyRule: String) =>
+      }
+    } yield (verb, preposition, immutable, graphKeyword, graphName, propertyRule)
+
+    forAll(genTestCases, minSuccessful(1000)) {
+      case (verb, preposition, immutable, graphKeyword, graphName, propertyRule) =>
+        val immutableString = immutableOrEmpty(immutable)
+
         // Missing ON
-        s"$verb$immutableString TRAVERSE $graphKeyword $graphName $patternKeyword $propertyRule $preposition role" should
-          notParse[Statements]
+        s"""$verb$immutableString TRAVERSE
+           |$graphKeyword $graphName $patternKeyword $propertyRule
+           |$preposition role""".stripMargin should notParse[Statements].withMessageContaining("Invalid input")
 
         // Missing role
-        s"$verb$immutableString TRAVERSE ON $graphKeyword $graphName $patternKeyword $propertyRule" should
-          notParse[Statements]
+        s"""$verb$immutableString TRAVERSE
+           |ON $graphKeyword $graphName $patternKeyword $propertyRule
+           |""".stripMargin should notParse[Statements].withMessageContaining("Invalid input")
 
         // r:ole is invalid
-        s"$verb$immutableString TRAVERSE ON $graphKeyword $graphName $patternKeyword $propertyRule $preposition r:ole" should
-          notParse[Statements]
+        s"""$verb$immutableString TRAVERSE
+           |ON $graphKeyword $graphName $patternKeyword $propertyRule
+           |$preposition r:ole""".stripMargin should notParse[Statements].withMessageContaining("Invalid input")
 
         // Invalid graph name
-        s"$verb$immutableString TRAVERSE ON $graphKeyword f:oo $patternKeyword $propertyRule $preposition role" should
-          notParse[Statements]
+        s"""$verb$immutableString TRAVERSE
+           |ON $graphKeyword f:oo $patternKeyword $propertyRule
+           |$preposition role""".stripMargin should notParse[Statements].withMessageContaining("Invalid input")
 
         // Mixing specific graph and *
-        s"$verb$immutableString TRAVERSE ON $graphKeyword foo, * $patternKeyword $propertyRule $preposition role" should
-          notParse[Statements]
-        s"$verb$immutableString TRAVERSE ON $graphKeyword *, foo $patternKeyword $propertyRule $preposition role" should
-          notParse[Statements]
+        s"""$verb$immutableString TRAVERSE
+           |ON $graphKeyword foo, * $patternKeyword $propertyRule
+           |$preposition role""".stripMargin should notParse[Statements].withMessageContaining("Invalid input")
+        s"""$verb$immutableString TRAVERSE
+           |ON $graphKeyword *, foo $patternKeyword $propertyRule
+           |$preposition role""".stripMargin should notParse[Statements].withMessageContaining("Invalid input")
 
         // Missing graph name
-        s"$verb$immutableString TRAVERSE ON $graphKeyword $patternKeyword $propertyRule $preposition role" should
-          notParse[Statements]
-        s"$verb$immutableString TRAVERSE ON $graphKeyword $patternKeyword $propertyRule (*) $preposition role" should
-          notParse[Statements]
-      }
+        s"""$verb$immutableString TRAVERSE
+           |ON $graphKeyword $patternKeyword $propertyRule
+           |$preposition role""".stripMargin should notParse[Statements].withMessageContaining("Invalid input")
+        s"""$verb$immutableString TRAVERSE
+           |ON $graphKeyword $patternKeyword $propertyRule (*)
+           |$preposition role""".stripMargin should notParse[Statements].withMessageContaining("Invalid input")
     }
   }
 
