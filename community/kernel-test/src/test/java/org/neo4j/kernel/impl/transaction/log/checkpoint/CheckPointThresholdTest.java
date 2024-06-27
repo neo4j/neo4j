@@ -41,7 +41,7 @@ class CheckPointThresholdTest extends CheckPointThresholdTestSupport {
         assertFalse(threshold.isCheckPointingNeeded(intervalTx, ARBITRARY_LOG_POSITION, notTriggered));
         // True because new we're at intervalTx + initial offset.
         assertTrue(threshold.isCheckPointingNeeded(intervalTx + 1, ARBITRARY_LOG_POSITION, triggered));
-        verifyTriggered("every 100000 transactions");
+        verifyTriggered("every 100000 log chunks");
         verifyNoMoreTriggers();
     }
 
@@ -164,7 +164,7 @@ class CheckPointThresholdTest extends CheckPointThresholdTestSupport {
         threshold.initialize(2, UNSPECIFIED);
 
         assertTrue(threshold.isCheckPointingNeeded(4, ARBITRARY_LOG_POSITION, triggered));
-        verifyTriggered("every 2 transactions");
+        verifyTriggered("every 2 log chunks");
         verifyNoMoreTriggers();
     }
 
@@ -196,7 +196,7 @@ class CheckPointThresholdTest extends CheckPointThresholdTestSupport {
 
         threshold.checkPointHappened(4, UNSPECIFIED);
         assertTrue(threshold.isCheckPointingNeeded(6, ARBITRARY_LOG_POSITION, triggered));
-        verifyTriggered("2 transactions");
+        verifyTriggered("2 log chunks");
         verifyNoMoreTriggers();
     }
 

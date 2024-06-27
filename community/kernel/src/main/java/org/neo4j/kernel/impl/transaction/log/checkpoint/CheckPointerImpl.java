@@ -101,7 +101,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer {
     @Override
     public void start() {
         var lastClosedTransaction = metadataProvider.getLastClosedTransaction();
-        threshold.initialize(lastClosedTransaction.transactionId().id(), lastClosedTransaction.logPosition());
+        threshold.initialize(metadataProvider.getLastAppendIndex(), lastClosedTransaction.logPosition());
     }
 
     @Override
@@ -161,7 +161,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer {
     public long checkPointIfNeeded(TriggerInfo info) throws IOException {
         var lastClosedTransaction = metadataProvider.getLastClosedTransaction();
         if (threshold.isCheckPointingNeeded(
-                lastClosedTransaction.transactionId().id(), lastClosedTransaction.logPosition(), info)) {
+                lastClosedTransaction.transactionId().appendIndex(), lastClosedTransaction.logPosition(), info)) {
             try (Resource lock = mutex.checkPoint()) {
                 return checkpointByTrigger(info);
             }
@@ -234,7 +234,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer {
                     logPosition,
                     clock.instant(),
                     checkpointReason);
-            threshold.checkPointHappened(lastClosedTransactionId, logPosition);
+            threshold.checkPointHappened(appendIndex, logPosition);
             long durationMillis = startTime.elapsed(MILLISECONDS);
             checkPointEvent.checkpointCompleted(durationMillis);
             log.info(createCheckpointMessageDescription(checkPointEvent, checkpointReason, durationMillis));

@@ -35,8 +35,8 @@ public abstract class AbstractCheckPointThreshold implements CheckPointThreshold
 
     @Override
     public final boolean isCheckPointingNeeded(
-            long lastCommittedTransactionId, LogPosition logPosition, Consumer<String> consumer) {
-        if (thresholdReached(lastCommittedTransactionId, logPosition)) {
+            long lastAppendIndex, LogPosition logPosition, Consumer<String> consumer) {
+        if (thresholdReached(lastAppendIndex, logPosition)) {
             consumer.accept(createCheckpointThresholdDescription(description));
             return true;
         }
@@ -47,5 +47,5 @@ public abstract class AbstractCheckPointThreshold implements CheckPointThreshold
         return description;
     }
 
-    protected abstract boolean thresholdReached(long lastCommittedTransactionId, LogPosition logPosition);
+    protected abstract boolean thresholdReached(long lastAppendIndex, LogPosition logPosition);
 }

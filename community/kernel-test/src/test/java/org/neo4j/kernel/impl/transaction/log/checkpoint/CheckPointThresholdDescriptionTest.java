@@ -61,10 +61,10 @@ class CheckPointThresholdDescriptionTest {
         }
 
         @Override
-        public void initialize(long transactionId, LogPosition logPosition) {}
+        public void initialize(long appendIndex, LogPosition logPosition) {}
 
         @Override
-        public void checkPointHappened(long transactionId, LogPosition logPosition) {}
+        public void checkPointHappened(long appendIndex, LogPosition logPosition) {}
 
         @Override
         public long checkFrequencyMillis() {
@@ -72,7 +72,7 @@ class CheckPointThresholdDescriptionTest {
         }
 
         @Override
-        protected boolean thresholdReached(long lastCommittedTransactionId, LogPosition logPosition) {
+        protected boolean thresholdReached(long lastAppendIndex, LogPosition logPosition) {
             return reached;
         }
     }

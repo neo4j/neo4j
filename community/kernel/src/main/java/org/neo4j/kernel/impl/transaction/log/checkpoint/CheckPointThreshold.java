@@ -39,22 +39,22 @@ public interface CheckPointThreshold {
     long DEFAULT_CHECKING_FREQUENCY_MILLIS = TimeUnit.SECONDS.toMillis(10);
 
     /**
-     * This method initialize the threshold by providing the initial transaction id
+     * This method initialize the threshold by providing the initial append index
      *
-     * @param transactionId the latest transaction committed id
-     * @param logPosition the latest committed transaction log position
+     * @param appendIndex the latest append index
+     * @param logPosition the latest committed chunk log position
      */
-    void initialize(long transactionId, LogPosition logPosition);
+    void initialize(long appendIndex, LogPosition logPosition);
 
     /**
      * This method can be used for querying the threshold about the necessity of a check point.
      *
-     * @param lastCommittedTransactionId the latest transaction committed id
-     * @param logPosition the latest closed transaction log position
+     * @param lastAppendIndex the latest append index
+     * @param logPosition the latest closed chunk log position
      * @param consumer will be called with the description about this threshold only if the return value is true
      * @return true is a check point is needed, false otherwise.
      */
-    boolean isCheckPointingNeeded(long lastCommittedTransactionId, LogPosition logPosition, Consumer<String> consumer);
+    boolean isCheckPointingNeeded(long lastAppendIndex, LogPosition logPosition, Consumer<String> consumer);
 
     /**
      * This method notifies the threshold that a check point has happened. This must be called every time a check point
@@ -62,10 +62,10 @@ public interface CheckPointThreshold {
      * <p>
      * This is important since we might have multiple thresholds or forced check points.
      *
-     * @param transactionId the latest transaction committed id used by the check point
-     * @param logPosition the latest committed transaction log position
+     * @param appendIndex the latest append index used by the check point
+     * @param logPosition the latest committed chunk log position
      */
-    void checkPointHappened(long transactionId, LogPosition logPosition);
+    void checkPointHappened(long appendIndex, LogPosition logPosition);
 
     /**
      * Return a desired checking frequency, as a number of milliseconds between calls to
@@ -102,17 +102,17 @@ public interface CheckPointThreshold {
     static CheckPointThreshold or(final CheckPointThreshold... thresholds) {
         return new CheckPointThreshold() {
             @Override
-            public void initialize(long transactionId, LogPosition logPosition) {
+            public void initialize(long appendIndex, LogPosition logPosition) {
                 for (CheckPointThreshold threshold : thresholds) {
-                    threshold.initialize(transactionId, logPosition);
+                    threshold.initialize(appendIndex, logPosition);
                 }
             }
 
             @Override
             public boolean isCheckPointingNeeded(
-                    long transactionId, LogPosition logPosition, Consumer<String> consumer) {
+                    long lastAppendIndex, LogPosition logPosition, Consumer<String> consumer) {
                 for (CheckPointThreshold threshold : thresholds) {
-                    if (threshold.isCheckPointingNeeded(transactionId, logPosition, consumer)) {
+                    if (threshold.isCheckPointingNeeded(lastAppendIndex, logPosition, consumer)) {
                         return true;
                     }
                 }
@@ -121,9 +121,9 @@ public interface CheckPointThreshold {
             }
 
             @Override
-            public void checkPointHappened(long transactionId, LogPosition logPosition) {
+            public void checkPointHappened(long appendIndex, LogPosition logPosition) {
                 for (CheckPointThreshold threshold : thresholds) {
-                    threshold.checkPointHappened(transactionId, logPosition);
+                    threshold.checkPointHappened(appendIndex, logPosition);
                 }
             }
 

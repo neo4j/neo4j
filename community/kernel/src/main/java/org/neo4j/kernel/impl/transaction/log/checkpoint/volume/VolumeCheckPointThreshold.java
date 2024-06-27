@@ -37,7 +37,7 @@ public class VolumeCheckPointThreshold extends AbstractCheckPointThreshold {
     }
 
     @Override
-    protected boolean thresholdReached(long lastCommittedTransactionId, LogPosition logPosition) {
+    protected boolean thresholdReached(long lastAppendIndex, LogPosition logPosition) {
         var previousLogPosition = checkpointLogPosition;
         long files = Math.abs(logPosition.getLogVersion() - previousLogPosition.getLogVersion());
         long offset = logPosition.getByteOffset() - previousLogPosition.getByteOffset();
@@ -46,12 +46,12 @@ public class VolumeCheckPointThreshold extends AbstractCheckPointThreshold {
     }
 
     @Override
-    public void initialize(long transactionId, LogPosition logPosition) {
+    public void initialize(long appendIndex, LogPosition logPosition) {
         checkpointLogPosition = logPosition;
     }
 
     @Override
-    public void checkPointHappened(long transactionId, LogPosition logPosition) {
+    public void checkPointHappened(long appendIndex, LogPosition logPosition) {
         checkpointLogPosition = logPosition;
     }
 

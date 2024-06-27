@@ -28,7 +28,7 @@ import org.neo4j.time.Stopwatch;
 import org.neo4j.time.SystemNanoClock;
 
 class TimeCheckPointThreshold extends AbstractCheckPointThreshold {
-    private volatile long lastCheckPointedTransactionId;
+    private volatile long lastCheckPointedAppendIndex;
     private volatile Duration timeout;
     private volatile Stopwatch stopWatch;
 
@@ -55,18 +55,18 @@ class TimeCheckPointThreshold extends AbstractCheckPointThreshold {
     }
 
     @Override
-    public void initialize(long transactionId, LogPosition logPosition) {
-        lastCheckPointedTransactionId = transactionId;
+    public void initialize(long appendIndex, LogPosition logPosition) {
+        lastCheckPointedAppendIndex = appendIndex;
     }
 
     @Override
-    protected boolean thresholdReached(long lastCommittedTransactionId, LogPosition logPosition) {
-        return lastCommittedTransactionId > lastCheckPointedTransactionId && stopWatch.hasTimedOut(timeout);
+    protected boolean thresholdReached(long lastAppendIndex, LogPosition logPosition) {
+        return lastAppendIndex > lastCheckPointedAppendIndex && stopWatch.hasTimedOut(timeout);
     }
 
     @Override
-    public void checkPointHappened(long transactionId, LogPosition logPosition) {
-        lastCheckPointedTransactionId = transactionId;
+    public void checkPointHappened(long appendIndex, LogPosition logPosition) {
+        lastCheckPointedAppendIndex = appendIndex;
         stopWatch = clock.startStopWatch();
         timeout = Duration.ofMillis(timeMillisThreshold);
     }

@@ -75,6 +75,7 @@ import org.neo4j.util.concurrent.BinaryLatch;
 
 class CheckPointerImplTest {
     private static final SimpleTriggerInfo INFO = new SimpleTriggerInfo("Test");
+    private static final long TRANSACTION_APPEND_INDEX = 8;
 
     private final MetadataProvider metadataProvider = mock(MetadataProvider.class);
     private final CheckPointThreshold threshold = mock(CheckPointThreshold.class);
@@ -84,7 +85,7 @@ class CheckPointerImplTest {
     private final Panic panic = mock(DatabaseHealth.class);
     private final DatabaseTracer tracer = mock(DatabaseTracer.class, RETURNS_MOCKS);
 
-    private final long initialTransactionId = 2L;
+    private final long initialAppendIndex = 2L;
     private final long transactionId = 42L;
     private final LogPosition logPosition = new LogPosition(16L, 233L);
     private final Clock clock = Clocks.fakeClock();
@@ -136,9 +137,9 @@ class CheckPointerImplTest {
                         eq(logPosition),
                         any(Instant.class),
                         any(String.class));
-        verify(threshold).initialize(initialTransactionId, logPosition);
-        verify(threshold).checkPointHappened(transactionId, logPosition);
-        verify(threshold).isCheckPointingNeeded(transactionId, logPosition, INFO);
+        verify(threshold).initialize(initialAppendIndex, logPosition);
+        verify(threshold).isCheckPointingNeeded(TRANSACTION_APPEND_INDEX, logPosition, INFO);
+        verify(threshold).checkPointHappened(TRANSACTION_APPEND_INDEX, logPosition);
         verify(logPruning).pruneLogs(logPosition.getLogVersion());
         verify(tracer).beginCheckPoint();
         verifyNoMoreInteractions(forceOperation, panic, appender, threshold, tracer);
@@ -170,9 +171,9 @@ class CheckPointerImplTest {
                         eq(logPosition),
                         any(Instant.class),
                         any(String.class));
-        verify(threshold).initialize(initialTransactionId, logPosition);
-        verify(threshold).checkPointHappened(transactionId, logPosition);
-        verify(threshold, never()).isCheckPointingNeeded(transactionId, logPosition, INFO);
+        verify(threshold).initialize(initialAppendIndex, logPosition);
+        verify(threshold).checkPointHappened(TRANSACTION_APPEND_INDEX, logPosition);
+        verify(threshold, never()).isCheckPointingNeeded(TRANSACTION_APPEND_INDEX, logPosition, INFO);
         verify(logPruning).pruneLogs(logPosition.getLogVersion());
         verifyNoMoreInteractions(forceOperation, panic, appender, threshold);
     }
@@ -203,9 +204,9 @@ class CheckPointerImplTest {
                         eq(logPosition),
                         any(Instant.class),
                         any(String.class));
-        verify(threshold).initialize(initialTransactionId, logPosition);
-        verify(threshold).checkPointHappened(transactionId, logPosition);
-        verify(threshold, never()).isCheckPointingNeeded(transactionId, logPosition, INFO);
+        verify(threshold).initialize(initialAppendIndex, logPosition);
+        verify(threshold).checkPointHappened(TRANSACTION_APPEND_INDEX, logPosition);
+        verify(threshold, never()).isCheckPointingNeeded(TRANSACTION_APPEND_INDEX, logPosition, INFO);
         verify(logPruning).pruneLogs(logPosition.getLogVersion());
         verifyNoMoreInteractions(forceOperation, panic, appender, threshold);
     }
@@ -236,9 +237,9 @@ class CheckPointerImplTest {
                         eq(logPosition),
                         any(Instant.class),
                         any(String.class));
-        verify(threshold).initialize(initialTransactionId, logPosition);
-        verify(threshold).checkPointHappened(transactionId, logPosition);
-        verify(threshold, never()).isCheckPointingNeeded(transactionId, logPosition, INFO);
+        verify(threshold).initialize(initialAppendIndex, logPosition);
+        verify(threshold).checkPointHappened(TRANSACTION_APPEND_INDEX, logPosition);
+        verify(threshold, never()).isCheckPointingNeeded(TRANSACTION_APPEND_INDEX, logPosition, INFO);
         verify(logPruning).pruneLogs(logPosition.getLogVersion());
         verifyNoMoreInteractions(forceOperation, panic, appender, threshold);
     }
@@ -399,6 +400,7 @@ class CheckPointerImplTest {
         when(databaseTracers.getDatabaseTracer()).thenReturn(tracer);
         when(databaseTracers.getPageCacheTracer()).thenReturn(PageCacheTracer.NULL);
         when(metadataProvider.getStoreId()).thenReturn(storeId);
+        when(metadataProvider.getLastAppendIndex()).thenReturn(initialAppendIndex);
         return new CheckPointerImpl(
                 metadataProvider,
                 threshold,
@@ -421,14 +423,17 @@ class CheckPointerImplTest {
 
     private void mockTxIdStore() {
         var initialCommitted = new ClosedTransactionMetadata(
-                new TransactionId(initialTransactionId, 6, LATEST_KERNEL_VERSION, 4, 5, UNKNOWN_CONSENSUS_INDEX),
+                new TransactionId(
+                        initialAppendIndex, initialAppendIndex, LATEST_KERNEL_VERSION, 4, 5, UNKNOWN_CONSENSUS_INDEX),
                 logPosition);
         var otherCommitted = new ClosedTransactionMetadata(
-                new TransactionId(transactionId, 8, LATEST_KERNEL_VERSION, 6, 7, UNKNOWN_CONSENSUS_INDEX), logPosition);
+                new TransactionId(
+                        transactionId, TRANSACTION_APPEND_INDEX, LATEST_KERNEL_VERSION, 6, 7, UNKNOWN_CONSENSUS_INDEX),
+                logPosition);
         when(metadataProvider.getLastClosedTransaction()).thenReturn(initialCommitted, otherCommitted);
         when(metadataProvider.getLastClosedTransactionId())
-                .thenReturn(initialTransactionId, transactionId, transactionId);
-        when(metadataProvider.lastBatch()).thenReturn(new AppendBatchInfo(transactionId, logPosition));
+                .thenReturn(initialAppendIndex, transactionId, transactionId);
+        when(metadataProvider.lastBatch()).thenReturn(new AppendBatchInfo(TRANSACTION_APPEND_INDEX, logPosition));
     }
 
     private class CheckpointCountingLock extends ReentrantLock {

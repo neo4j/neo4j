@@ -43,13 +43,13 @@ public class PeriodicThresholdPolicy implements CheckPointThresholdPolicy {
     public CheckPointThreshold createThreshold(
             Config config, SystemNanoClock clock, LogPruning logPruning, InternalLogProvider logProvider) {
         int txThreshold = config.get(GraphDatabaseSettings.check_point_interval_tx);
-        final CountCommittedTransactionThreshold countCommittedTransactionThreshold =
-                new CountCommittedTransactionThreshold(txThreshold);
+        final CountCommittedLogChunksThreshold countCommittedLogChunksThreshold =
+                new CountCommittedLogChunksThreshold(txThreshold);
 
         long timeMillisThreshold =
                 config.get(GraphDatabaseSettings.check_point_interval_time).toMillis();
         TimeCheckPointThreshold timeCheckPointThreshold = new TimeCheckPointThreshold(timeMillisThreshold, clock);
 
-        return or(countCommittedTransactionThreshold, timeCheckPointThreshold);
+        return or(countCommittedLogChunksThreshold, timeCheckPointThreshold);
     }
 }

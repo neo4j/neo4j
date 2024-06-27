@@ -21,29 +21,29 @@ package org.neo4j.kernel.impl.transaction.log.checkpoint;
 
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 
-class CountCommittedTransactionThreshold extends AbstractCheckPointThreshold {
+class CountCommittedLogChunksThreshold extends AbstractCheckPointThreshold {
     private final int notificationThreshold;
 
-    private volatile long nextTransactionIdTarget;
+    private volatile long nextAppendIndexTarget;
 
-    CountCommittedTransactionThreshold(int notificationThreshold) {
-        super("every " + notificationThreshold + " transactions threshold");
+    CountCommittedLogChunksThreshold(int notificationThreshold) {
+        super("every " + notificationThreshold + " log chunks threshold");
         this.notificationThreshold = notificationThreshold;
     }
 
     @Override
-    public void initialize(long transactionId, LogPosition logPosition) {
-        nextTransactionIdTarget = transactionId + notificationThreshold;
+    public void initialize(long appendIndex, LogPosition logPosition) {
+        nextAppendIndexTarget = appendIndex + notificationThreshold;
     }
 
     @Override
-    protected boolean thresholdReached(long lastCommittedTransactionId, LogPosition logPosition) {
-        return lastCommittedTransactionId >= nextTransactionIdTarget;
+    protected boolean thresholdReached(long lastAppendIndex, LogPosition logPosition) {
+        return lastAppendIndex >= nextAppendIndexTarget;
     }
 
     @Override
-    public void checkPointHappened(long transactionId, LogPosition logPosition) {
-        nextTransactionIdTarget = transactionId + notificationThreshold;
+    public void checkPointHappened(long appendIndex, LogPosition logPosition) {
+        nextAppendIndexTarget = appendIndex + notificationThreshold;
     }
 
     @Override
