@@ -65,6 +65,7 @@ import org.neo4j.cypher.internal.ir.SetPropertyPattern
 import org.neo4j.cypher.internal.ir.SetRelationshipPropertiesFromMapPattern
 import org.neo4j.cypher.internal.ir.SetRelationshipPropertiesPattern
 import org.neo4j.cypher.internal.ir.SetRelationshipPropertyPattern
+import org.neo4j.cypher.internal.logical.plans.AggregatingPlan
 import org.neo4j.cypher.internal.logical.plans.CanGetValue
 import org.neo4j.cypher.internal.logical.plans.Create
 import org.neo4j.cypher.internal.logical.plans.DeleteExpression
@@ -348,6 +349,15 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean)
             )
 
         produceResult.withNewReturnColumns(newColumns)
+
+      case aggregating: AggregatingPlan =>
+        // If we rename the variable in the aggregation it is no longer available to get the cached property later
+        aggregating.groupingExpressions.foreach {
+          case (v, oldV: LogicalVariable) if v != oldV =>
+            cachedPropertiesTracker.clear(oldV)
+          case _ => // do nothing
+        }
+        aggregating
 
       case properties @ Properties(variable: LogicalVariable) =>
         cachedPropertiesTracker.get(acc.variableWithOriginalName(asVariable(variable))) match {
@@ -796,6 +806,10 @@ object RestrictedCaching {
 
   class CachedPropertiesTracker {
     private val cachedProperties = mutable.Map.empty[LogicalVariable, Set[ASTCachedProperty]]
+
+    def clear(variable: LogicalVariable): Unit = {
+      cachedProperties.remove(variable)
+    }
 
     def addOne(variable: LogicalVariable, newProperty: ASTCachedProperty): Unit = {
       // If we have one property with knownToAccessStore=true and one with knownToAccessStore=false we merge into a
