@@ -19,24 +19,22 @@
  */
 package org.neo4j.gqlstatus;
 
-import java.util.List;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public sealed interface GqlStatusInfo permits GqlStatusInfoCodes {
-    boolean useGqlMessage = false;
+import org.junit.jupiter.api.Test;
 
-    String getMessage();
+public class GqlStatusInfoTest {
 
-    String getMessage(List<String> param);
-
-    String getSubCondition();
-
-    GqlStatus getGqlStatus();
-
-    String getStatusString();
-
-    default String toJavaFormattable(String message) {
-        String regex = "\\$\\w+";
-        String replacementString = "%s";
-        return message.replaceAll(regex, replacementString);
+    @Test
+    public void test() {
+        String m1 = "My name is `$name`";
+        String result = GqlStatusInfoCodes.STATUS_00000.toJavaFormattable(m1);
+        assertEquals("My name is `%s`", result);
+        String m2 = "My name is `$name`.";
+        result = GqlStatusInfoCodes.STATUS_00000.toJavaFormattable(m2);
+        assertEquals("My name is `%s`.", result);
+        String m3 = "My name is `$name` and `$name2`";
+        result = GqlStatusInfoCodes.STATUS_00000.toJavaFormattable(m3);
+        assertEquals("My name is `%s` and `%s`", result);
     }
 }

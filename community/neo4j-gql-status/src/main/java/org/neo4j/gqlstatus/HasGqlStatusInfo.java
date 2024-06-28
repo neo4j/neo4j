@@ -19,24 +19,10 @@
  */
 package org.neo4j.gqlstatus;
 
-import java.util.List;
+public interface HasGqlStatusInfo {
+    public final String DEFAULT_STATUS_CODE = GqlStatusInfoCodes.STATUS_50N42.getStatusString();
 
-public sealed interface GqlStatusInfo permits GqlStatusInfoCodes {
-    boolean useGqlMessage = false;
-
-    String getMessage();
-
-    String getMessage(List<String> param);
-
-    String getSubCondition();
-
-    GqlStatus getGqlStatus();
-
-    String getStatusString();
-
-    default String toJavaFormattable(String message) {
-        String regex = "\\$\\w+";
-        String replacementString = "%s";
-        return message.replaceAll(regex, replacementString);
+    default String getGqlStatus() {
+        return DEFAULT_STATUS_CODE;
     }
 }

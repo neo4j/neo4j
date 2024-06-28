@@ -23,9 +23,22 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import java.util.ArrayList;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 
 class GqlStatusTest {
+    @Test
+    void shouldFormatParams() {
+        var statusCode = GqlStatusInfoCodes.STATUS_52U00;
+        List<String> paramList = new ArrayList<String>();
+        paramList.add("param1");
+        paramList.add("param2");
+        paramList.add("param3");
+        String message = statusCode.getMessage(paramList);
+        assertEquals("Execution of the procedure `param1` failed due to `param2`: `param3`", message);
+    }
+
     @Test
     void shouldFailOnEmptyGqlStatus() {
         Exception e = assertThrows(IllegalArgumentException.class, () -> new GqlStatus(""), hint);

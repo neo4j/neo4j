@@ -19,6 +19,8 @@
  */
 package org.neo4j.notifications;
 
+import static org.neo4j.gqlstatus.Condition.createStandardDescription;
+
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -292,14 +294,6 @@ public final class NotificationImplementation implements Notification {
 
     public String getStatusDescription() {
 
-        return (conditionToDescription(this.condition) + this.subCondition + ". " + this.message);
-    }
-
-    private String conditionToDescription(Condition condition) {
-        return switch (condition) {
-            case WARNING -> "warn: ";
-            case INFORMATION -> "info: ";
-            case SUCCESSFUL_COMPLETION -> "note: successful completion - ";
-        };
+        return (createStandardDescription(this.condition, this.subCondition) + ". " + this.message);
     }
 }

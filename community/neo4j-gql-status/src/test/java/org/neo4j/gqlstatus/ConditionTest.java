@@ -19,24 +19,17 @@
  */
 package org.neo4j.gqlstatus;
 
-import java.util.List;
+import org.junit.jupiter.api.Test;
 
-public sealed interface GqlStatusInfo permits GqlStatusInfoCodes {
-    boolean useGqlMessage = false;
+public class ConditionTest {
 
-    String getMessage();
-
-    String getMessage(List<String> param);
-
-    String getSubCondition();
-
-    GqlStatus getGqlStatus();
-
-    String getStatusString();
-
-    default String toJavaFormattable(String message) {
-        String regex = "\\$\\w+";
-        String replacementString = "%s";
-        return message.replaceAll(regex, replacementString);
+    @Test
+    public void testCorrectNaming() {
+        for (Condition cond : Condition.values()) {
+            String name = cond.name();
+            for (char c : name.toCharArray()) {
+                assert (c == '_') || (Character.isUpperCase(c));
+            }
+        }
     }
 }

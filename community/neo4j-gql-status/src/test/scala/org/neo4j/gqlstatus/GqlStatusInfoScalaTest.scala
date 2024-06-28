@@ -17,26 +17,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.gqlstatus;
+package org.neo4j.gqlstatus
 
-import java.util.List;
+import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.matchers.should.Matchers
 
-public sealed interface GqlStatusInfo permits GqlStatusInfoCodes {
-    boolean useGqlMessage = false;
+class GqlStatusInfoScalaTest extends AnyFunSuite with Matchers {
 
-    String getMessage();
-
-    String getMessage(List<String> param);
-
-    String getSubCondition();
-
-    GqlStatus getGqlStatus();
-
-    String getStatusString();
-
-    default String toJavaFormattable(String message) {
-        String regex = "\\$\\w+";
-        String replacementString = "%s";
-        return message.replaceAll(regex, replacementString);
-    }
+  test("String is formatted correctly") {
+    val m = "Hello my name is `$name`"
+    val result = GqlStatusInfoCodes.STATUS_00000.toJavaFormattable(m)
+    result shouldBe "Hello my name is `%s`"
+  }
 }

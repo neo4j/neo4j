@@ -19,8 +19,50 @@
  */
 package org.neo4j.gqlstatus;
 
+// The first four entries of the enum must be in this specific order for GQL-status objects to be sorted in severity
+// order
 public enum Condition {
+    NO_DATA,
     WARNING,
-    INFORMATION,
-    SUCCESSFUL_COMPLETION
+    SUCCESSFUL_COMPLETION,
+    INFORMATIONAL,
+    CONNECTION_EXCEPTION,
+    DATA_EXCEPTION,
+    SYNTAX_ERROR_OR_ACCESS_RULE_VIOLATION,
+    GENERAL_PROCESSING_EXCEPTION,
+    SYSTEM_CONFIGURATION_OR_OPERATION_EXCEPTION,
+    PROCEDURE_EXCEPTION,
+    DEPENDENT_OBJECT_ERROR,
+    GRAPH_TYPE_VIOLATION,
+    INVALID_TRANSACTION_STATE,
+    INVALID_TRANSACTION_TERMINATION,
+    TRANSACTION_ROLLBACK;
+
+    public static String createStandardDescription(Condition condition, String subcondition) {
+        return switch (condition) {
+            case WARNING -> "warn: " + subcondition;
+            case INFORMATIONAL -> "info: " + subcondition;
+            case SUCCESSFUL_COMPLETION -> {
+                String successBaseMessage = "note: successful completion";
+                if (subcondition.isEmpty()) {
+                    yield successBaseMessage;
+                } else {
+                    yield successBaseMessage + " - " + subcondition;
+                }
+            }
+            case NO_DATA -> "note: no data";
+            default -> {
+                String exceptionBaseMessage = "error: " + condition.createConditionString();
+                if (subcondition.isEmpty()) {
+                    yield exceptionBaseMessage;
+                } else {
+                    yield exceptionBaseMessage + " - " + subcondition;
+                }
+            }
+        };
+    }
+
+    private String createConditionString() {
+        return this.name().toLowerCase().replace('_', ' ');
+    }
 }

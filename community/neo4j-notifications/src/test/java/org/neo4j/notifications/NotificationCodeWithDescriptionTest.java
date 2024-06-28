@@ -314,7 +314,7 @@ class NotificationCodeWithDescriptionTest {
                                         "msg",
                                         "PARALLEL"))
                         .asMap(),
-                "warn: runtime unsupported. The query cannot be executed with `runtime=parallel`, `runtime=pipelined` is used. Cause: `PARALLEL`.");
+                "warn: unsupported runtime. The query cannot be executed with `runtime=parallel`, `runtime=pipelined` is used. Cause: `PARALLEL`.");
     }
 
     @Test
@@ -421,7 +421,7 @@ class NotificationCodeWithDescriptionTest {
                                 -1,
                                 Map.of("proc", "my.proc", "msg", "warning from procedure"))
                         .asMap(),
-                "warn: procedure execution warning. The procedure `my.proc` generates the warning `warning from procedure`.");
+                "warn: procedure or function execution warning. The procedure `my.proc` generates the warning `warning from procedure`.");
     }
 
     @Test
@@ -438,9 +438,9 @@ class NotificationCodeWithDescriptionTest {
                 NotificationCategory.DEPRECATION,
                 NotificationClassification.DEPRECATION,
                 "01N03",
-                new DiagnosticRecord(warning, deprecation, -1, -1, -1, Map.of("column", "field", "proc", "proc"))
+                new DiagnosticRecord(warning, deprecation, -1, -1, -1, Map.of("field", "field", "proc", "proc"))
                         .asMap(),
-                "warn: procedure result column deprecated. `field` returned by procedure `proc` is deprecated.");
+                "warn: procedure field deprecated. `field` for procedure `proc` is deprecated.");
     }
 
     @Test
@@ -815,7 +815,7 @@ class NotificationCodeWithDescriptionTest {
                                         cause))
                         .asMap(),
                 String.format(
-                        "warn: runtime unsupported. The query cannot be executed with `%s`, `%s` is used. Cause: `%s`.",
+                        "warn: unsupported runtime. The query cannot be executed with `%s`, `%s` is used. Cause: `%s`.",
                         preparserOptions1, preparserOptions2, cause));
     }
 
@@ -988,7 +988,7 @@ class NotificationCodeWithDescriptionTest {
                 NotificationClassification.SECURITY,
                 "00N72",
                 new DiagnosticRecord(info, security, -1, -1, -1, Map.of("provider", "foo")).asMap(),
-                "note: successful completion - auth provider not defined. "
+                "note: successful completion - the auth provider is not defined. "
                         + "The auth provider `foo` is not defined in the configuration. "
                         + "Verify that the spelling is correct or define `foo` in the configuration.");
     }
@@ -1482,8 +1482,9 @@ class NotificationCodeWithDescriptionTest {
         byte[] notificationHash = DigestUtils.sha256(notificationBuilder.toString());
 
         byte[] expectedHash = new byte[] {
-            127, 100, -31, -52, 74, -73, -47, -115, 36, 12, 77, 118, 104, 35, 17, -103,
-            126, -45, 81, -25, 97, 24, 40, -40, -77, -43, -42, 75, -13, 82, -69, -111
+            -73, -2, -116, 52, -18, 118, 21, -122, -3, 59, 40, -84,
+            120, 21, 85, -60, -38, 89, 64, -23, -111, 36, 100, -89,
+            -5, -111, -9, 29, -11, -57, -73, 69
         };
 
         if (!Arrays.equals(notificationHash, expectedHash)) {

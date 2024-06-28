@@ -22,7 +22,7 @@ package org.neo4j.notifications;
 import java.util.List;
 import org.neo4j.gqlstatus.Condition;
 import org.neo4j.gqlstatus.GqlStatus;
-import org.neo4j.gqlstatus.GqlStatusInfoNotifications;
+import org.neo4j.gqlstatus.GqlStatusInfoCodes;
 import org.neo4j.graphdb.InputPosition;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.impl.schema.TextIndexProvider;
@@ -36,7 +36,7 @@ import org.neo4j.kernel.api.impl.schema.trigram.TrigramIndexProvider;
 public enum NotificationCodeWithDescription {
     CARTESIAN_PRODUCT(
             Status.Statement.CartesianProduct,
-            GqlStatusInfoNotifications.STATUS_03N90,
+            GqlStatusInfoCodes.STATUS_03N90,
             "If a part of a query contains multiple disconnected patterns, this will build a "
                     + "cartesian product between all those parts. This may produce a large amount of data and slow down"
                     + " query processing. "
@@ -45,276 +45,271 @@ public enum NotificationCodeWithDescription {
                     + "product, perhaps by adding a relationship between the different parts or by using OPTIONAL MATCH (%s)"),
     RUNTIME_UNSUPPORTED(
             Status.Statement.RuntimeUnsupportedWarning,
-            GqlStatusInfoNotifications.STATUS_01N40,
+            GqlStatusInfoCodes.STATUS_01N40,
             "Selected runtime is unsupported for this query, please use a different runtime instead or fallback to default. (%s)"),
     INDEX_HINT_UNFULFILLABLE(
             Status.Schema.HintedIndexNotFound,
-            GqlStatusInfoNotifications.STATUS_01N31,
+            GqlStatusInfoCodes.STATUS_01N31,
             "The hinted index does not exist, please check the schema (%s)"),
     JOIN_HINT_UNFULFILLABLE(
             Status.Statement.JoinHintUnfulfillableWarning,
-            GqlStatusInfoNotifications.STATUS_01N30,
+            GqlStatusInfoCodes.STATUS_01N30,
             "The hinted join was not planned. This could happen because no generated plan contained the join key, "
                     + "please try using a different join key or restructure your query. (%s)"),
     INDEX_LOOKUP_FOR_DYNAMIC_PROPERTY(
             Status.Statement.DynamicProperty,
-            GqlStatusInfoNotifications.STATUS_03N95,
+            GqlStatusInfoCodes.STATUS_03N95,
             "Using a dynamic property makes it impossible to use an index lookup for this query (%s)"),
     DEPRECATED_FUNCTION_WITHOUT_REPLACEMENT(
             Status.Statement.FeatureDeprecationWarning,
-            GqlStatusInfoNotifications.STATUS_01N02,
+            GqlStatusInfoCodes.STATUS_01N02,
             "The query used a deprecated function%s"),
 
     DEPRECATED_FUNCTION_WITH_REPLACEMENT(
             Status.Statement.FeatureDeprecationWarning,
-            GqlStatusInfoNotifications.STATUS_01N01,
+            GqlStatusInfoCodes.STATUS_01N01,
             "The query used a deprecated function%s"),
     DEPRECATED_PROCEDURE_WITHOUT_REPLACEMENT(
             Status.Statement.FeatureDeprecationWarning,
-            GqlStatusInfoNotifications.STATUS_01N02,
+            GqlStatusInfoCodes.STATUS_01N02,
             "The query used a deprecated procedure%s"),
 
     DEPRECATED_PROCEDURE_WITH_REPLACEMENT(
             Status.Statement.FeatureDeprecationWarning,
-            GqlStatusInfoNotifications.STATUS_01N01,
+            GqlStatusInfoCodes.STATUS_01N01,
             "The query used a deprecated procedure%s"),
 
     DEPRECATED_RUNTIME_OPTION(
             Status.Statement.FeatureDeprecationWarning,
-            GqlStatusInfoNotifications.STATUS_01N01,
+            GqlStatusInfoCodes.STATUS_01N01,
             "The query used a deprecated runtime option. (%s)"),
     PROCEDURE_WARNING(
             Status.Procedure.ProcedureWarning,
-            GqlStatusInfoNotifications.STATUS_01N62,
+            GqlStatusInfoCodes.STATUS_01N62,
             "The query used a procedure that generated a warning. (%s)"),
     DEPRECATED_PROCEDURE_RETURN_FIELD(
             Status.Statement.FeatureDeprecationWarning,
-            GqlStatusInfoNotifications.STATUS_01N03,
+            GqlStatusInfoCodes.STATUS_01N03,
             "The query used a deprecated field from a procedure. (%s)"),
     DEPRECATED_PROCEDURE_FIELD(
             Status.Statement.FeatureDeprecationWarning,
-            GqlStatusInfoNotifications.STATUS_01N00,
+            GqlStatusInfoCodes.STATUS_01N00,
             "The procedure has a deprecated field. (%s)"),
     DEPRECATED_FUNCTION_FIELD(
             Status.Statement.FeatureDeprecationWarning,
-            GqlStatusInfoNotifications.STATUS_01N00,
+            GqlStatusInfoCodes.STATUS_01N00,
             "The function has a deprecated field. (%s)"),
     DEPRECATED_RELATIONSHIP_TYPE_SEPARATOR(
             Status.Statement.FeatureDeprecationWarning,
-            GqlStatusInfoNotifications.STATUS_01N01,
+            GqlStatusInfoCodes.STATUS_01N01,
             "The semantics of using colon in the separation of alternative relationship types will change in a future version. (%s)"),
     DEPRECATED_NODE_OR_RELATIONSHIP_ON_RHS_SET_CLAUSE(
             Status.Statement.FeatureDeprecationWarning,
-            GqlStatusInfoNotifications.STATUS_01N01,
+            GqlStatusInfoCodes.STATUS_01N01,
             "The use of nodes or relationships for setting properties is deprecated and will be removed in a future version. "
                     + "Please use properties() instead."),
 
     DEPRECATED_PROPERTY_REFERENCE_IN_CREATE(
             Status.Statement.FeatureDeprecationWarning,
-            GqlStatusInfoNotifications.STATUS_01N00,
+            GqlStatusInfoCodes.STATUS_01N00,
             // referencing that entity in a property definition in the same create clause
             "Creating an entity (%s) and referencing that entity in a property definition in the same CREATE is deprecated."),
 
     DEPRECATED_PROPERTY_REFERENCE_IN_MERGE(
             Status.Statement.FeatureDeprecationWarning,
-            GqlStatusInfoNotifications.STATUS_01N00,
+            GqlStatusInfoCodes.STATUS_01N00,
             // referencing that entity in a property definition in the same merge clause
             "Merging an entity (%s) and referencing that entity in a property definition in the same MERGE is deprecated."),
 
     DEPRECATED_SHORTEST_PATH_WITH_FIXED_LENGTH_RELATIONSHIP(
             Status.Statement.FeatureDeprecationWarning,
-            GqlStatusInfoNotifications.STATUS_01N01,
+            GqlStatusInfoCodes.STATUS_01N01,
             "The use of shortestPath and allShortestPaths with fixed length relationships is deprecated and will be removed in a future version. "
                     + "Please use a path with a length of 1 [r*1..1] instead or a Match with a limit."),
     DEPRECATED_TEXT_INDEX_PROVIDER(
             Status.Statement.FeatureDeprecationWarning,
-            GqlStatusInfoNotifications.STATUS_01N01,
+            GqlStatusInfoCodes.STATUS_01N01,
             "The `" + TextIndexProvider.DESCRIPTOR.name()
                     + "` provider for text indexes is deprecated and will be removed in a future version. "
                     + "Please use `" + TrigramIndexProvider.DESCRIPTOR.name() + "` instead."),
 
     DEPRECATED_IDENTIFIER_WHITESPACE_UNICODE(
             Status.Statement.FeatureDeprecationWarning,
-            GqlStatusInfoNotifications.STATUS_01N00,
+            GqlStatusInfoCodes.STATUS_01N00,
             "The Unicode character `%s` is deprecated for unescaped identifiers and will be considered as a whitespace character in the future. "
                     + "To continue using it, escape the identifier by adding backticks around the identifier `%s`."),
 
     DEPRECATED_IDENTIFIER_UNICODE(
             Status.Statement.FeatureDeprecationWarning,
-            GqlStatusInfoNotifications.STATUS_01N00,
+            GqlStatusInfoCodes.STATUS_01N00,
             "The character with the Unicode representation `%s` is deprecated for unescaped identifiers and will not be supported in the future. "
                     + "To continue using it, escape the identifier by adding backticks around the identifier `%s`."),
     EAGER_LOAD_CSV(
             Status.Statement.EagerOperator,
-            GqlStatusInfoNotifications.STATUS_03N94,
+            GqlStatusInfoCodes.STATUS_03N94,
             "Using LOAD CSV with a large data set in a query where the execution plan contains the "
                     + "Eager operator could potentially consume a lot of memory and is likely to not perform well. "
                     + "See the Neo4j Manual entry on the Eager operator for more information and hints on "
                     + "how problems could be avoided."),
     DEPRECATED_FORMAT(
             Status.Request.DeprecatedFormat,
-            GqlStatusInfoNotifications.STATUS_01N01,
+            GqlStatusInfoCodes.STATUS_01N01,
             "The requested format has been deprecated. (%s)"),
     LARGE_LABEL_LOAD_CSV(
             Status.Statement.NoApplicableIndex,
-            GqlStatusInfoNotifications.STATUS_03N93,
+            GqlStatusInfoCodes.STATUS_03N93,
             "Using LOAD CSV followed by a MATCH or MERGE that matches a non-indexed label will most likely "
                     + "not perform well on large data sets. Please consider using a schema index."),
     MISSING_LABEL(
             Status.Statement.UnknownLabelWarning,
-            GqlStatusInfoNotifications.STATUS_01N50,
+            GqlStatusInfoCodes.STATUS_01N50,
             "One of the labels in your query is not available in the database, make sure you didn't "
                     + "misspell it or that the label is available when you run this statement in your application (%s)"),
     MISSING_REL_TYPE(
             Status.Statement.UnknownRelationshipTypeWarning,
-            GqlStatusInfoNotifications.STATUS_01N51,
+            GqlStatusInfoCodes.STATUS_01N51,
             "One of the relationship types in your query is not available in the database, make sure you didn't "
                     + "misspell it or that the label is available when you run this statement in your application (%s)"),
     MISSING_PROPERTY_NAME(
             Status.Statement.UnknownPropertyKeyWarning,
-            GqlStatusInfoNotifications.STATUS_01N52,
+            GqlStatusInfoCodes.STATUS_01N52,
             "One of the property names in your query is not available in the database, make sure you didn't "
                     + "misspell it or that the label is available when you run this statement in your application (%s)"),
     UNBOUNDED_SHORTEST_PATH(
             Status.Statement.UnboundedVariableLengthPattern,
-            GqlStatusInfoNotifications.STATUS_03N91,
+            GqlStatusInfoCodes.STATUS_03N91,
             "Using shortest path with an unbounded pattern will likely result in long execution times. "
                     + "It is recommended to use an upper limit to the number of node hops in your pattern."),
     EXHAUSTIVE_SHORTEST_PATH(
             Status.Statement.ExhaustiveShortestPath,
-            GqlStatusInfoNotifications.STATUS_03N92,
+            GqlStatusInfoCodes.STATUS_03N92,
             "Using shortest path with an exhaustive search fallback might cause query slow down since shortest path "
                     + "graph algorithms might not work for this use case. It is recommended to introduce a WITH to separate the "
                     + "MATCH containing the shortest path from the existential predicates on that path."),
     MISSING_PARAMETERS_FOR_EXPLAIN(
             Status.Statement.ParameterNotProvided,
-            GqlStatusInfoNotifications.STATUS_01N60,
+            GqlStatusInfoCodes.STATUS_01N60,
             "Did not supply query with enough parameters. The produced query plan will not be cached and is not executable without EXPLAIN. (%s)"),
     CODE_GENERATION_FAILED(
             Status.Statement.CodeGenerationFailed,
-            GqlStatusInfoNotifications.STATUS_01N40,
+            GqlStatusInfoCodes.STATUS_01N40,
             "The database was unable to generate code for the query. A stacktrace can be found in the debug.log. (%s)"),
 
     SUBQUERY_VARIABLE_SHADOWING(
             Status.Statement.SubqueryVariableShadowing,
-            GqlStatusInfoNotifications.STATUS_03N60,
+            GqlStatusInfoCodes.STATUS_03N60,
             "Variable in subquery is shadowing a variable with the same name from the outer scope. "
                     + "If you want to use that variable instead, it must be imported into the subquery using importing WITH clause. (%s)"),
     UNION_RETURN_ORDER(
             Status.Statement.FeatureDeprecationWarning,
-            GqlStatusInfoNotifications.STATUS_01N00,
+            GqlStatusInfoCodes.STATUS_01N00,
             "All subqueries in a UNION [ALL] should have the same ordering for the return columns. "
                     + "Using differently ordered return items in a UNION [ALL] clause is deprecated and will be removed in a future version."),
     HOME_DATABASE_NOT_PRESENT(
             Status.Database.HomeDatabaseNotFound,
-            GqlStatusInfoNotifications.STATUS_00N50,
+            GqlStatusInfoCodes.STATUS_00N50,
             "The home database provided does not currently exist in the DBMS. This command will not take effect until this database is created. (%s)"),
     DEPRECATED_DATABASE_NAME(
             Status.Statement.FeatureDeprecationWarning,
-            GqlStatusInfoNotifications.STATUS_01N00,
+            GqlStatusInfoCodes.STATUS_01N00,
             "Databases and aliases with unescaped `.` are deprecated unless to indicate that they belong to a composite database. "
                     + "Names containing `.` should be escaped. (%s)"),
     UNSATISFIABLE_RELATIONSHIP_TYPE_EXPRESSION(
             Status.Statement.UnsatisfiableRelationshipTypeExpression,
-            GqlStatusInfoNotifications.STATUS_01N61,
+            GqlStatusInfoCodes.STATUS_01N61,
             "Relationship type expression cannot possibly be satisfied. (%s)"),
     REPEATED_RELATIONSHIP_REFERENCE(
             Status.Statement.RepeatedRelationshipReference,
-            GqlStatusInfoNotifications.STATUS_01N63,
+            GqlStatusInfoCodes.STATUS_01N63,
             "A relationship is referenced more than once in the query, which leads to no results because"
                     + " relationships must not occur more than once in each result. (%s)"),
     REPEATED_VAR_LENGTH_RELATIONSHIP_REFERENCE(
             Status.Statement.RepeatedRelationshipReference,
-            GqlStatusInfoNotifications.STATUS_01N63,
+            GqlStatusInfoCodes.STATUS_01N63,
             "A variable-length relationship variable is bound more than once, which leads to no results because"
                     + " relationships must not occur more than once in each result. (%s)"),
     DEPRECATED_CONNECT_COMPONENTS_PLANNER_PRE_PARSER_OPTION(
             Status.Statement.FeatureDeprecationWarning,
-            GqlStatusInfoNotifications.STATUS_01N02,
+            GqlStatusInfoCodes.STATUS_01N02,
             "The Cypher query option `connectComponentsPlanner` is deprecated and will be removed without a replacement. "
                     + "The product's default behavior of using a cost-based IDP search algorithm when combining sub-plans will be kept. "
                     + "For more information, see Cypher Manual -> Cypher planner."),
 
     COMMAND_HAS_NO_EFFECT_ASSIGN_PRIVILEGE(
             Status.Security.CommandHasNoEffect,
-            GqlStatusInfoNotifications.STATUS_00N70,
+            GqlStatusInfoCodes.STATUS_00N70,
             "The role already has the privilege. See Status Codes documentation for more information."),
 
     COMMAND_HAS_NO_EFFECT_REVOKE_PRIVILEGE(
             Status.Security.CommandHasNoEffect,
-            GqlStatusInfoNotifications.STATUS_00N71,
+            GqlStatusInfoCodes.STATUS_00N71,
             "The role does not have the privilege. See Status Codes documentation for more information."),
 
     COMMAND_HAS_NO_EFFECT_GRANT_ROLE(
             Status.Security.CommandHasNoEffect,
-            GqlStatusInfoNotifications.STATUS_00N70,
+            GqlStatusInfoCodes.STATUS_00N70,
             "The user already has the role. See Status Codes documentation for more information."),
 
     COMMAND_HAS_NO_EFFECT_REVOKE_ROLE(
             Status.Security.CommandHasNoEffect,
-            GqlStatusInfoNotifications.STATUS_00N71,
+            GqlStatusInfoCodes.STATUS_00N71,
             "The user does not have the role. See Status Codes documentation for more information."),
 
     AUTH_PROVIDER_NOT_DEFINED(
             Status.Security.AuthProviderNotDefined,
-            GqlStatusInfoNotifications.STATUS_00N72,
+            GqlStatusInfoCodes.STATUS_00N72,
             "The auth provider `%s` is not defined in the configuration. "
                     + "Verify that the spelling is correct or define `%s` in the configuration."),
 
     IMPOSSIBLE_REVOKE_COMMAND(
             Status.Security.ImpossibleRevokeCommand,
-            GqlStatusInfoNotifications.STATUS_01N70,
+            GqlStatusInfoCodes.STATUS_01N70,
             "%s Make sure nothing is misspelled. This notification will become an error in a future major version. "
                     + "See Status Codes documentation for more information."),
 
     EXTERNAL_AUTH_NOT_ENABLED(
             Status.Security.ExternalAuthNotEnabled,
-            GqlStatusInfoNotifications.STATUS_01N71,
+            GqlStatusInfoCodes.STATUS_01N71,
             "Use setting `dbms.security.require_local_user` to enable external auth."),
 
     SERVER_ALREADY_ENABLED(
             Status.Cluster.ServerAlreadyEnabled,
-            GqlStatusInfoNotifications.STATUS_00N80,
+            GqlStatusInfoCodes.STATUS_00N80,
             "Server `%s` is already enabled. Verify that this is the intended server."),
 
     SERVER_ALREADY_CORDONED(
             Status.Cluster.ServerAlreadyCordoned,
-            GqlStatusInfoNotifications.STATUS_00N81,
+            GqlStatusInfoCodes.STATUS_00N81,
             "Server `%s` is already cordoned. Verify that this is the intended server."),
 
     NO_DATABASES_REALLOCATED(
             Status.Cluster.NoDatabasesReallocated,
-            GqlStatusInfoNotifications.STATUS_00N82,
+            GqlStatusInfoCodes.STATUS_00N82,
             "No databases were reallocated. No better allocation is currently possible."),
 
     CORDONED_SERVERS_EXISTED_DURING_ALLOCATION(
             Status.Cluster.CordonedServersExistedDuringAllocation,
-            GqlStatusInfoNotifications.STATUS_00N83,
+            GqlStatusInfoCodes.STATUS_00N83,
             "Server(s) `%s` are cordoned. This can impact allocation decisions."),
 
     REQUESTED_TOPOLOGY_MATCHED_CURRENT_TOPOLOGY(
             Status.Cluster.RequestedTopologyMatchedCurrentTopology,
-            GqlStatusInfoNotifications.STATUS_00N84,
+            GqlStatusInfoCodes.STATUS_00N84,
             "The requested topology matched the current topology. No allocations were changed."),
 
     INDEX_OR_CONSTRAINT_ALREADY_EXISTS(
-            Status.Schema.IndexOrConstraintAlreadyExists,
-            GqlStatusInfoNotifications.STATUS_00NA0,
-            "`%s` already exists."),
+            Status.Schema.IndexOrConstraintAlreadyExists, GqlStatusInfoCodes.STATUS_00NA0, "`%s` already exists."),
 
     INDEX_OR_CONSTRAINT_DOES_NOT_EXIST(
-            Status.Schema.IndexOrConstraintDoesNotExist,
-            GqlStatusInfoNotifications.STATUS_00NA1,
-            "`%s` does not exist.");
+            Status.Schema.IndexOrConstraintDoesNotExist, GqlStatusInfoCodes.STATUS_00NA1, "`%s` does not exist.");
 
     private final Status status;
-    private final GqlStatusInfoNotifications gqlStatusInfo;
+    private final GqlStatusInfoCodes gqlStatusInfo;
     private final String description;
 
-    NotificationCodeWithDescription(
-            Status status, GqlStatusInfoNotifications gqlStatusgqlStatusInfo, String description) {
+    NotificationCodeWithDescription(Status status, GqlStatusInfoCodes gqlStatusInfo, String description) {
         this.status = status;
-        this.gqlStatusInfo = gqlStatusgqlStatusInfo;
+        this.gqlStatusInfo = gqlStatusInfo;
         this.description = description;
     }
 
