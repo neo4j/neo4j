@@ -78,6 +78,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Function;
 import java.util.function.IntSupplier;
 import java.util.function.LongSupplier;
+import java.util.stream.LongStream;
 import java.util.stream.Stream;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.eclipse.collections.api.factory.primitive.LongLists;
@@ -1953,6 +1954,80 @@ class IndexedIdGeneratorTest {
         open(customization().with(monitor));
         assertThat(readNumUnusedIds.longValue()).isEqualTo(3);
         stop();
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {1, 2, 4, 8})
+    void shouldBridgeAcrossReservedId(int idSize) throws IOException {
+        // given
+        var customization = customization();
+        if (idSize > 1) {
+            customization.with(evenSlotDistribution(powerTwoSlotSizesDownwards(idSize)));
+        }
+        open(customization);
+        idGenerator.start(NO_FREE_IDS, NULL_CONTEXT);
+        long lowId = IdValidator.INTEGER_MINUS_ONE - 10;
+        idGenerator.setHighId(lowId);
+        idGenerator.markHighestWrittenAtHighId();
+        long[] ids = new long[20];
+        var expectedIds = LongLists.mutable.empty();
+        for (int i = 0; i < ids.length; i++) {
+            ids[i] = idGenerator.nextConsecutiveIdRange(idSize, true, NULL_CONTEXT);
+            if (i > 0 && ids[i] > ids[i - 1] + idSize) {
+                for (long gapId = ids[i - 1] + idSize; gapId < ids[i]; gapId++) {
+                    if (!IdValidator.isReservedId(gapId)) {
+                        expectedIds.add(gapId);
+                    }
+                }
+            }
+        }
+        long deletedIdBelowLowId = lowId - 3 - idSize;
+        markDeleted(deletedIdBelowLowId, idSize);
+
+        // when
+        markUsed(ids[ids.length - 1], idSize);
+
+        // then
+        var unusedIds = asList(idGenerator.notUsedIdsIterator());
+        expectedIds.addAll(LongStream.range(deletedIdBelowLowId, deletedIdBelowLowId + idSize)
+                .toArray());
+        for (int i = 0; i < ids.length - 1; i++) {
+            expectedIds.addAll(LongStream.range(ids[i], ids[i] + idSize).toArray());
+        }
+        expectedIds.sortThis();
+        assertThat(unusedIds).isEqualTo(expectedIds);
+    }
+
+    @Test
+    void shouldMarkConcurrentlyWithBridgingAcrossReservedId() throws IOException {
+        // given
+        open();
+        idGenerator.start(NO_FREE_IDS, NULL_CONTEXT);
+        long lowId = IdValidator.INTEGER_MINUS_ONE - 100;
+        idGenerator.setHighId(lowId);
+        idGenerator.markHighestWrittenAtHighId();
+
+        // when
+        var race = new Race();
+        race.addContestants(4, throwing(() -> {
+            for (int t = 0; t < 100; t++) {
+                int batchSize = ThreadLocalRandom.current().nextInt(1, 5);
+                long[] ids = new long[batchSize];
+                for (int i = 0; i < batchSize; i++) {
+                    ids[i] = idGenerator.nextId(NULL_CONTEXT);
+                }
+                try (var marker = idGenerator.transactionalMarker(NULL_CONTEXT)) {
+                    for (long id : ids) {
+                        marker.markUsed(id);
+                    }
+                }
+            }
+        }));
+        race.goUnchecked();
+
+        // then
+        assertThat(idGenerator.getHighId()).isGreaterThan(IdValidator.INTEGER_MINUS_ONE);
+        assertThat(asList(idGenerator.notUsedIdsIterator()).isEmpty()).isTrue();
     }
 
     private void verifyReallocationDoesNotIncreaseHighId(

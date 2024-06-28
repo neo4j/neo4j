@@ -353,7 +353,7 @@ class IdRangeMarker implements IdGenerator.TransactionalMarker, IdGenerator.Cont
                 if (hasReservedIdInRange(bridgeId, bridgeId + bridgeNumberOfIds)) {
                     // If we happen to bridge across the reserved ID then divide it up in two
                     // chunks: one before the reserved ID and the rest after.
-                    long idsBefore = bridgeId - IdValidator.INTEGER_MINUS_ONE;
+                    long idsBefore = IdValidator.INTEGER_MINUS_ONE - bridgeId;
                     if (idsBefore > 0) {
                         markWithSupportForLargerThanRange(
                                 TYPE_BRIDGED,
