@@ -539,26 +539,30 @@ class GBPTreeConsistencyChecker<KEY> {
             KEY prev = layout.newKey();
             KEY readKey = layout.newKey();
             boolean first = true;
-            for (int pos = 0; pos < keyCount; pos++) {
-                node.keyAt(cursor, readKey, pos, cursorContext);
-                if (!range.inRange(readKey)) {
-                    KEY keyCopy = layout.newKey();
-                    layout.copyKey(readKey, keyCopy);
-                    delayedVisitor.keysLocatedInWrongNode(
-                            range, keyCopy, pos, keyCount, cursor.getCurrentPageId(), file);
-                }
-                if (!first) {
-                    if (comparator.compare(prev, readKey) >= 0) {
-                        delayedVisitor.keysOutOfOrderInNode(cursor.getCurrentPageId(), file);
+            try {
+                for (int pos = 0; pos < keyCount; pos++) {
+                    node.keyAt(cursor, readKey, pos, cursorContext);
+                    if (!range.inRange(readKey)) {
+                        KEY keyCopy = layout.newKey();
+                        layout.copyKey(readKey, keyCopy);
+                        delayedVisitor.keysLocatedInWrongNode(
+                                range, keyCopy, pos, keyCount, cursor.getCurrentPageId(), file);
                     }
-                } else {
-                    first = false;
+                    if (!first) {
+                        if (comparator.compare(prev, readKey) >= 0) {
+                            delayedVisitor.keysOutOfOrderInNode(cursor.getCurrentPageId(), file);
+                        }
+                    } else {
+                        first = false;
+                    }
+                    layout.copyKey(readKey, prev);
+                    long offloadId = node.offloadIdAt(cursor, pos);
+                    if (offloadId != NO_OFFLOAD_ID) {
+                        offloadIds.add(offloadId);
+                    }
                 }
-                layout.copyKey(readKey, prev);
-                long offloadId = node.offloadIdAt(cursor, pos);
-                if (offloadId != NO_OFFLOAD_ID) {
-                    offloadIds.add(offloadId);
-                }
+            } catch (Exception e) {
+                cursor.setCursorException(e.toString());
             }
         } while (cursor.shouldRetry());
         checkAfterShouldRetry(cursor);

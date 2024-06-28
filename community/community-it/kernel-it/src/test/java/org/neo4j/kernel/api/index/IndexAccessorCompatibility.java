@@ -93,10 +93,11 @@ abstract class IndexAccessorCompatibility extends PropertyIndexProviderCompatibi
     @AfterEach
     void after() {
         try {
-            accessor.consistencyCheck(
+            boolean consistent = accessor.consistencyCheck(
                     ReporterFactories.throwingReporterFactory(),
                     NULL_CONTEXT_FACTORY,
                     Runtime.getRuntime().availableProcessors());
+            assertThat(consistent).isTrue();
         } finally {
             accessor.drop();
             accessor.close();
