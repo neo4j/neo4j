@@ -2210,6 +2210,36 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
       .build()
   }
 
+  test("should cache properties in produce result of returned indexed nodes after not renaming in aggregation") {
+    val builder = new LogicalPlanBuilder()
+      .produceResults("n", "c")
+      .aggregation(Seq("n AS n"), Seq("count(*) AS c"))
+      .nodeIndexOperator("n:L(prop > 123)", getValue = _ => CanGetValue, indexOrder = IndexOrderAscending)
+
+    val (newPlan, _) = replace(builder.build(), builder.getSemanticTable)
+
+    newPlan shouldBe new LogicalPlanBuilder()
+      .produceResults(column("n", "cacheN[n.prop]"), column("c"))
+      .aggregation(Seq("n AS n"), Seq("count(*) AS c"))
+      .nodeIndexOperator("n:L(prop > 123)", getValue = _ => GetValue, indexOrder = IndexOrderAscending)
+      .build()
+  }
+
+  test("should not cache properties in produce result of returned indexed nodes after renaming in aggregation") {
+    val builder = new LogicalPlanBuilder()
+      .produceResults("m", "c")
+      .aggregation(Seq("n AS m"), Seq("count(*) AS c"))
+      .nodeIndexOperator("n:L(prop > 123)", getValue = _ => CanGetValue, indexOrder = IndexOrderAscending)
+
+    val (newPlan, _) = replace(builder.build(), builder.getSemanticTable)
+
+    newPlan shouldBe new LogicalPlanBuilder()
+      .produceResults("m", "c")
+      .aggregation(Seq("n AS m"), Seq("count(*) AS c"))
+      .nodeIndexOperator("n:L(prop > 123)", getValue = _ => GetValue, indexOrder = IndexOrderAscending)
+      .build()
+  }
+
   test("should cache properties of returned and renamed indexed nodes") {
     val builder = new LogicalPlanBuilder()
       .produceResults("x")
@@ -2325,6 +2355,56 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
 
     newPlan shouldBe new LogicalPlanBuilder()
       .produceResults(column("r", "cacheR[r.prop]"))
+      .relationshipIndexOperator(
+        "(a)-[r:REL(prop > 123)]->(b)",
+        getValue = _ => GetValue,
+        indexOrder = IndexOrderAscending
+      )
+      .build()
+  }
+
+  test(
+    "should cache properties in produce result of returned indexed relationships after not renaming in aggregation"
+  ) {
+    val builder = new LogicalPlanBuilder()
+      .produceResults("r")
+      .aggregation(Seq("r AS r"), Seq("count(*) AS c"))
+      .relationshipIndexOperator(
+        "(a)-[r:REL(prop > 123)]->(b)",
+        getValue = _ => CanGetValue,
+        indexOrder = IndexOrderAscending
+      )
+
+    val (newPlan, _) = replace(builder.build(), builder.getSemanticTable)
+
+    newPlan shouldBe new LogicalPlanBuilder()
+      .produceResults(column("r", "cacheR[r.prop]"))
+      .aggregation(Seq("r AS r"), Seq("count(*) AS c"))
+      .relationshipIndexOperator(
+        "(a)-[r:REL(prop > 123)]->(b)",
+        getValue = _ => GetValue,
+        indexOrder = IndexOrderAscending
+      )
+      .build()
+  }
+
+  test(
+    "should not cache properties in produce result of returned indexed relationships after renaming in aggregation"
+  ) {
+    val builder = new LogicalPlanBuilder()
+      .produceResults("rr")
+      .aggregation(Seq("r AS rr"), Seq("count(*) AS c"))
+      .relationshipIndexOperator(
+        "(a)-[r:REL(prop > 123)]->(b)",
+        getValue = _ => CanGetValue,
+        indexOrder = IndexOrderAscending
+      )
+
+    val (newPlan, _) = replace(builder.build(), builder.getSemanticTable)
+
+    newPlan shouldBe new LogicalPlanBuilder()
+      .produceResults("rr")
+      .aggregation(Seq("r AS rr"), Seq("count(*) AS c"))
       .relationshipIndexOperator(
         "(a)-[r:REL(prop > 123)]->(b)",
         getValue = _ => GetValue,
@@ -2474,6 +2554,23 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
     newPlan shouldBe new LogicalPlanBuilder()
       .produceResults("props")
       .projection(Map("props" -> PropertiesUsingCachedProperties(varFor("n"), Set(cachedNProp1))))
+      .nodeIndexOperator("n:L(prop > 123)", getValue = _ => GetValue, indexOrder = IndexOrderAscending)
+      .build()
+  }
+
+  test("should not cache properties of indexed nodes passed to properties function if renamed in aggregation") {
+    val builder = new LogicalPlanBuilder()
+      .produceResults("props")
+      .projection("properties(m) AS props")
+      .aggregation(Seq("n AS m"), Seq("count(*) AS c"))
+      .nodeIndexOperator("n:L(prop > 123)", getValue = _ => CanGetValue, indexOrder = IndexOrderAscending)
+
+    val (newPlan, _) = replace(builder.build(), builder.getSemanticTable)
+
+    newPlan shouldBe new LogicalPlanBuilder()
+      .produceResults("props")
+      .projection("properties(m) AS props")
+      .aggregation(Seq("n AS m"), Seq("count(*) AS c"))
       .nodeIndexOperator("n:L(prop > 123)", getValue = _ => GetValue, indexOrder = IndexOrderAscending)
       .build()
   }
