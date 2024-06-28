@@ -163,7 +163,6 @@ import org.neo4j.kernel.impl.index.schema.IndexUsageTracker;
 import org.neo4j.kernel.impl.index.schema.NodeIdsIndexReaderQueryAnswer;
 import org.neo4j.kernel.impl.index.schema.PartitionedTokenScan;
 import org.neo4j.kernel.impl.index.schema.PartitionedValueSeek;
-import org.neo4j.kernel.impl.index.schema.TokenScan;
 import org.neo4j.kernel.impl.scheduler.GroupedDaemonThreadFactory;
 import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
 import org.neo4j.kernel.impl.transaction.state.storeview.IndexStoreViewFactory;
@@ -2160,11 +2159,6 @@ class IndexingServiceTest {
                 TokenPredicate query,
                 EntityRange range,
                 CursorContext cursorContext) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public TokenScan entityTokenScan(int tokenId, CursorContext cursorContext) {
             throw new UnsupportedOperationException();
         }
 

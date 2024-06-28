@@ -207,26 +207,6 @@ public class IndexAccessorUsageStatsTest {
 
     @ParameterizedTest
     @MethodSource("tokenIndexAccessors")
-    void tokenIndexShouldIncrementUsageCountOnEntityTokenScan(IndexProviderDescriptor providerDescriptor)
-            throws IOException {
-        // Given
-        try (var indexAccessor = createIndexAccessor(providerDescriptor);
-                var reader = indexAccessor.newTokenReader(usageTracking.track())) {
-            // When
-            for (int i = 0; i < queryCount; i++) {
-                entityTokenScan(reader, clock);
-            }
-        }
-        var usageStats = usageTracking.getAndReset();
-        var expectedLastUsedTime = clock.millis();
-        clock.forward(deltaMillis, MILLISECONDS);
-
-        // Then
-        assertUsage(usageStats, expectedLastUsedTime, queryCount);
-    }
-
-    @ParameterizedTest
-    @MethodSource("tokenIndexAccessors")
     void tokenIndexShouldIncrementUsageCountOnPartitionedEntityTokenScan(IndexProviderDescriptor providerDescriptor)
             throws IOException {
         // Given
@@ -317,11 +297,6 @@ public class IndexAccessorUsageStatsTest {
                 new TokenPredicate(1),
                 EntityRange.from(5),
                 CursorContext.NULL_CONTEXT);
-    }
-
-    private void entityTokenScan(TokenIndexReader reader, FakeClock clock) {
-        clock.forward(deltaMillis, MILLISECONDS);
-        reader.entityTokenScan(1, CursorContext.NULL_CONTEXT);
     }
 
     private void partitionedEntityTokenScan(TokenIndexReader reader, FakeClock clock) {

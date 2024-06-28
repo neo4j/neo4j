@@ -24,7 +24,6 @@ import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.PrintConfig;
 import org.neo4j.index.internal.gbptree.Seeker;
@@ -80,17 +79,6 @@ public class DefaultTokenIndexReader implements TokenIndexReader {
     }
 
     @Override
-    public TokenScan entityTokenScan(int tokenId, CursorContext cursorContext) {
-        try {
-            usageTracker.queried();
-            long highestEntityIdForToken = highestEntityIdForToken(tokenId, cursorContext);
-            return new NativeTokenScan(tokenId, highestEntityIdForToken);
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
-    }
-
-    @Override
     public PartitionedTokenScan entityTokenScan(
             int desiredNumberOfPartitions, CursorContext context, TokenPredicate query) {
         try {
@@ -105,13 +93,6 @@ public class DefaultTokenIndexReader implements TokenIndexReader {
     public PartitionedTokenScan entityTokenScan(PartitionedTokenScan leadingPartition, TokenPredicate query) {
         usageTracker.queried();
         return new NativePartitionedTokenScan((NativePartitionedTokenScan) leadingPartition, query);
-    }
-
-    private long highestEntityIdForToken(int tokenId, CursorContext cursorContext) throws IOException {
-        try (Seeker<TokenScanKey, TokenScanValue> seeker = index.seek(
-                new TokenScanKey(tokenId, Long.MAX_VALUE), new TokenScanKey(tokenId, Long.MIN_VALUE), cursorContext)) {
-            return seeker.next() ? idLayout.firstIdOfRange(seeker.key().idRange + 1) : 0;
-        }
     }
 
     private Seeker<TokenScanKey, TokenScanValue> seekerForToken(
@@ -140,56 +121,6 @@ public class DefaultTokenIndexReader implements TokenIndexReader {
     @Override
     public void close() {
         usageTracker.close();
-    }
-
-    private class NativeTokenScan implements TokenScan {
-        private final AtomicLong nextStart;
-        private final int tokenId;
-        private final long max;
-
-        NativeTokenScan(int tokenId, long max) {
-            this.tokenId = tokenId;
-            this.max = max;
-            nextStart = new AtomicLong(0);
-        }
-
-        @Override
-        public IndexProgressor initialize(
-                IndexProgressor.EntityTokenClient client, IndexOrder indexOrder, CursorContext cursorContext) {
-            return init(client, Long.MIN_VALUE, Long.MAX_VALUE, indexOrder, cursorContext);
-        }
-
-        @Override
-        public IndexProgressor initializeBatch(
-                IndexProgressor.EntityTokenClient client, int sizeHint, CursorContext cursorContext) {
-            if (sizeHint == 0) {
-                return IndexProgressor.EMPTY;
-            }
-            long size = idLayout.roundUp(sizeHint);
-            long start = nextStart.getAndAdd(size);
-            long stop = Math.min(start + size, max);
-            if (start >= max) {
-                return IndexProgressor.EMPTY;
-            }
-            return init(client, start, stop, IndexOrder.NONE, cursorContext);
-        }
-
-        private IndexProgressor init(
-                IndexProgressor.EntityTokenClient client,
-                long start,
-                long stop,
-                IndexOrder indexOrder,
-                CursorContext cursorContext) {
-            Seeker<TokenScanKey, TokenScanValue> cursor;
-            EntityRange range = new EntityRange(start, stop);
-            try {
-                cursor = seekerForToken(range, tokenId, indexOrder, cursorContext);
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
-            }
-
-            return new TokenScanValueIndexProgressor(cursor, client, indexOrder, range, idLayout, tokenId);
-        }
     }
 
     private class NativePartitionedTokenScan implements PartitionedTokenScan {

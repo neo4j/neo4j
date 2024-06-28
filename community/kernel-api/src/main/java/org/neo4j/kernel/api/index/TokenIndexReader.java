@@ -23,7 +23,6 @@ import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.TokenPredicate;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.index.schema.PartitionedTokenScan;
-import org.neo4j.kernel.impl.index.schema.TokenScan;
 
 public interface TokenIndexReader extends IndexReader {
 
@@ -57,8 +56,6 @@ public interface TokenIndexReader extends IndexReader {
             EntityRange range,
             CursorContext cursorContext);
 
-    TokenScan entityTokenScan(int tokenId, CursorContext cursorContext);
-
     PartitionedTokenScan entityTokenScan(int desiredNumberOfPartitions, CursorContext context, TokenPredicate query);
 
     PartitionedTokenScan entityTokenScan(PartitionedTokenScan leadingPartition, TokenPredicate query);
@@ -78,11 +75,6 @@ public interface TokenIndexReader extends IndexReader {
                 TokenPredicate query,
                 EntityRange range,
                 CursorContext cursorContext) {}
-
-        @Override
-        public TokenScan entityTokenScan(int tokenId, CursorContext cursorContext) {
-            throw new UnsupportedOperationException("EMPTY implementation does not support this method.");
-        }
 
         @Override
         public PartitionedTokenScan entityTokenScan(
