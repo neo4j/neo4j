@@ -221,6 +221,13 @@ public class TransactionLogInitializer {
             throws IOException {
         var checkpointAppender = logFiles.getCheckpointFile().getCheckpointAppender();
         checkpointAppender.checkPoint(
-                LogCheckPointEvent.NULL, transactionId, appendIndex, version, position, Instant.now(), reason);
+                LogCheckPointEvent.NULL,
+                transactionId,
+                appendIndex,
+                version,
+                position,
+                position,
+                Instant.now(),
+                reason);
     }
 }

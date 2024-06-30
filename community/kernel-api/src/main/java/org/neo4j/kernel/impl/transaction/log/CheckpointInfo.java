@@ -29,6 +29,7 @@ import org.neo4j.storageengine.api.TransactionId;
  * do the lookup (KernelVersion.getForVersion(byte version)) later.
  */
 public record CheckpointInfo(
+        LogPosition oldestNotVisibleTransactionLogPosition,
         LogPosition transactionLogPosition,
         StoreId storeId,
         LogPosition checkpointEntryPosition,
@@ -42,6 +43,7 @@ public record CheckpointInfo(
         boolean consensusIndexInCheckpoint)
         implements KernelVersionProvider {
     public CheckpointInfo(
+            LogPosition oldestNotVisibleTransaction,
             LogPosition transactionLogPosition,
             StoreId storeId,
             LogPosition checkpointEntryPosition,
@@ -53,6 +55,7 @@ public record CheckpointInfo(
             long appendIndex,
             String reason) {
         this(
+                oldestNotVisibleTransaction,
                 transactionLogPosition,
                 storeId,
                 checkpointEntryPosition,
@@ -64,5 +67,9 @@ public record CheckpointInfo(
                 appendIndex,
                 reason,
                 true);
+    }
+
+    public boolean olderTransactionRecoveryRequired() {
+        return !transactionLogPosition.equals(oldestNotVisibleTransactionLogPosition);
     }
 }

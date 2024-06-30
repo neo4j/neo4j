@@ -135,6 +135,7 @@ class CheckPointerImplTest {
                         anyLong(),
                         any(KernelVersion.class),
                         eq(logPosition),
+                        eq(logPosition),
                         any(Instant.class),
                         any(String.class));
         verify(threshold).initialize(initialAppendIndex, logPosition);
@@ -169,6 +170,7 @@ class CheckPointerImplTest {
                         anyLong(),
                         any(KernelVersion.class),
                         eq(logPosition),
+                        eq(logPosition),
                         any(Instant.class),
                         any(String.class));
         verify(threshold).initialize(initialAppendIndex, logPosition);
@@ -202,6 +204,7 @@ class CheckPointerImplTest {
                         anyLong(),
                         any(KernelVersion.class),
                         eq(logPosition),
+                        eq(logPosition),
                         any(Instant.class),
                         any(String.class));
         verify(threshold).initialize(initialAppendIndex, logPosition);
@@ -234,6 +237,7 @@ class CheckPointerImplTest {
                         any(TransactionId.class),
                         anyLong(),
                         any(KernelVersion.class),
+                        eq(logPosition),
                         eq(logPosition),
                         any(Instant.class),
                         any(String.class));
@@ -313,6 +317,7 @@ class CheckPointerImplTest {
                         anyLong(),
                         any(KernelVersion.class),
                         eq(logPosition),
+                        eq(logPosition),
                         any(Instant.class),
                         any(String.class));
         reset(appender);
@@ -353,6 +358,7 @@ class CheckPointerImplTest {
                         any(TransactionId.class),
                         anyLong(),
                         any(KernelVersion.class),
+                        eq(logPosition),
                         eq(logPosition),
                         any(Instant.class),
                         contains(triggerName));
@@ -450,6 +456,7 @@ class CheckPointerImplTest {
                                 any(TransactionId.class),
                                 anyLong(),
                                 any(KernelVersion.class),
+                                any(LogPosition.class),
                                 any(LogPosition.class),
                                 any(Instant.class),
                                 any(String.class));

@@ -63,6 +63,7 @@ class PreallocatedCheckpointLogFileRotationIT extends CheckpointLogFileRotationI
                     transactionId.id() + 7,
                     LatestVersions.LATEST_KERNEL_VERSION,
                     logPosition,
+                    logPosition,
                     Instant.now(),
                     reason);
         }
@@ -90,6 +91,7 @@ class PreallocatedCheckpointLogFileRotationIT extends CheckpointLogFileRotationI
                         transactionId,
                         transactionId.id() + 7,
                         LatestVersions.LATEST_KERNEL_VERSION,
+                        logPosition,
                         logPosition,
                         Instant.now(),
                         reason);

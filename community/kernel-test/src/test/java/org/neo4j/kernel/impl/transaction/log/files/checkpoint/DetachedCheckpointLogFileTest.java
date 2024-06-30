@@ -103,6 +103,7 @@ class DetachedCheckpointLogFileTest {
                         transactionId.id() + 6,
                         LatestVersions.LATEST_KERNEL_VERSION,
                         logPosition,
+                        logPosition,
                         Instant.now(),
                         "detached");
         CheckpointInfo lastCheckPoint = ((LogTailInformation) buildLogFiles().getTailMetadata()).lastCheckPoint;
@@ -122,6 +123,7 @@ class DetachedCheckpointLogFileTest {
                         transactionId,
                         transactionId.id() + 9,
                         LatestVersions.LATEST_KERNEL_VERSION,
+                        logPosition2,
                         logPosition2,
                         Instant.now(),
                         "detached");
@@ -147,6 +149,7 @@ class DetachedCheckpointLogFileTest {
                         transactionId.id() + 3,
                         LatestVersions.LATEST_KERNEL_VERSION,
                         logPosition,
+                        logPosition,
                         Instant.now(),
                         "detached");
         checkpointFile
@@ -156,6 +159,7 @@ class DetachedCheckpointLogFileTest {
                         transactionId1,
                         transactionId1.id() + 7,
                         LatestVersions.LATEST_KERNEL_VERSION,
+                        logPosition1,
                         logPosition1,
                         Instant.now(),
                         "detached");

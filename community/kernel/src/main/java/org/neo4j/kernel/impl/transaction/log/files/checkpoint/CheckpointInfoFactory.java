@@ -40,6 +40,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.v42.LogEntryDetachedCheckpointV4_2;
 import org.neo4j.kernel.impl.transaction.log.entry.v50.LogEntryDetachedCheckpointV5_0;
 import org.neo4j.kernel.impl.transaction.log.entry.v520.LogEntryDetachedCheckpointV5_20;
+import org.neo4j.kernel.impl.transaction.log.entry.v522.LogEntryDetachedCheckpointV5_22;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesContext;
 import org.neo4j.storageengine.api.TransactionId;
@@ -62,9 +63,52 @@ public final class CheckpointInfoFactory {
             LogPosition checkpointFilePostReadPosition,
             TransactionLogFilesContext context,
             LogFile logFile) {
-        if (entry instanceof LogEntryDetachedCheckpointV4_2 checkpoint42) {
+        if (entry instanceof LogEntryDetachedCheckpointV5_22 checkpoint522) {
+            return new CheckpointInfo(
+                    checkpoint522.getOldestNotCompletedPosition(),
+                    checkpoint522.getCheckpointedLogPosition(),
+                    checkpoint522.getStoreId(),
+                    checkpointEntryPosition,
+                    channelPositionAfterCheckpoint,
+                    checkpointFilePostReadPosition,
+                    checkpoint522.kernelVersion(),
+                    checkpoint522.kernelVersion().version(),
+                    checkpoint522.getTransactionId(),
+                    checkpoint522.getLastAppendIndex(),
+                    checkpoint522.getReason(),
+                    checkpoint522.consensusIndexInCheckpoint());
+        } else if (entry instanceof LogEntryDetachedCheckpointV5_20 checkpoint520) {
+            return new CheckpointInfo(
+                    checkpoint520.getLogPosition(),
+                    checkpoint520.getLogPosition(),
+                    checkpoint520.getStoreId(),
+                    checkpointEntryPosition,
+                    channelPositionAfterCheckpoint,
+                    checkpointFilePostReadPosition,
+                    checkpoint520.kernelVersion(),
+                    checkpoint520.kernelVersion().version(),
+                    checkpoint520.getTransactionId(),
+                    checkpoint520.getLastAppendIndex(),
+                    checkpoint520.getReason(),
+                    checkpoint520.consensusIndexInCheckpoint());
+        } else if (entry instanceof LogEntryDetachedCheckpointV5_0 checkpoint50) {
+            return new CheckpointInfo(
+                    checkpoint50.getLogPosition(),
+                    checkpoint50.getLogPosition(),
+                    checkpoint50.getStoreId(),
+                    checkpointEntryPosition,
+                    channelPositionAfterCheckpoint,
+                    checkpointFilePostReadPosition,
+                    checkpoint50.kernelVersion(),
+                    checkpoint50.kernelVersion().version(),
+                    checkpoint50.getTransactionId(),
+                    checkpoint50.getTransactionId().id(),
+                    checkpoint50.getReason(),
+                    checkpoint50.consensusIndexInCheckpoint());
+        } else if (entry instanceof LogEntryDetachedCheckpointV4_2 checkpoint42) {
             var transactionId = readTransactionInfoFor4_2(context, logFile, checkpoint42.getLogPosition());
             return new CheckpointInfo(
+                    checkpoint42.getLogPosition(),
                     checkpoint42.getLogPosition(),
                     checkpoint42.getStoreId(),
                     checkpointEntryPosition,
@@ -77,32 +121,6 @@ public final class CheckpointInfoFactory {
                     transactionId,
                     transactionId.id(),
                     checkpoint42.getReason());
-        } else if (entry instanceof LogEntryDetachedCheckpointV5_0 checkpoint50) {
-            return new CheckpointInfo(
-                    checkpoint50.getLogPosition(),
-                    checkpoint50.getStoreId(),
-                    checkpointEntryPosition,
-                    channelPositionAfterCheckpoint,
-                    checkpointFilePostReadPosition,
-                    checkpoint50.kernelVersion(),
-                    checkpoint50.kernelVersion().version(),
-                    checkpoint50.getTransactionId(),
-                    checkpoint50.getTransactionId().id(),
-                    checkpoint50.getReason(),
-                    checkpoint50.consensusIndexInCheckpoint());
-        } else if (entry instanceof LogEntryDetachedCheckpointV5_20 checkpoint520) {
-            return new CheckpointInfo(
-                    checkpoint520.getLogPosition(),
-                    checkpoint520.getStoreId(),
-                    checkpointEntryPosition,
-                    channelPositionAfterCheckpoint,
-                    checkpointFilePostReadPosition,
-                    checkpoint520.kernelVersion(),
-                    checkpoint520.kernelVersion().version(),
-                    checkpoint520.getTransactionId(),
-                    checkpoint520.getLastAppendIndex(),
-                    checkpoint520.getReason(),
-                    checkpoint520.consensusIndexInCheckpoint());
         } else {
             throw new UnsupportedOperationException(
                     "Expected to observe only checkpoint entries, but: `" + entry + "` was found.");

@@ -25,8 +25,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.neo4j.test.arguments.KernelVersionArgumentsProvider.fromKernelVersion;
 import static org.neo4j.test.arguments.KernelVersionArgumentsProvider.fromString;
 
-import java.util.Arrays;
-import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.neo4j.kernel.KernelVersion;
@@ -88,8 +86,7 @@ class KernelVersionArgumentsProviderTest {
 
     @Test
     void parseAllKernelVersions() {
-        List<KernelVersion> kernelVersions = Arrays.asList(KernelVersion.values());
-        assertThatCode(() -> kernelVersions.forEach(KernelVersionArgumentsProvider::fromKernelVersion))
+        assertThatCode(() -> KernelVersion.VERSIONS.forEach(KernelVersionArgumentsProvider::fromKernelVersion))
                 .doesNotThrowAnyException();
     }
 

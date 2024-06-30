@@ -96,6 +96,7 @@ class CheckpointLogFileTest {
                 transactionId.id() + 1,
                 LatestVersions.LATEST_KERNEL_VERSION,
                 new LogPosition(1, 2),
+                new LogPosition(1, 2),
                 Instant.now(),
                 "test"));
 
@@ -108,6 +109,7 @@ class CheckpointLogFileTest {
                         4,
                         LatestVersions.LATEST_KERNEL_VERSION,
                         new LogPosition(1, 2),
+                        new LogPosition(1, 2),
                         Instant.now(),
                         "test"));
 
@@ -115,7 +117,14 @@ class CheckpointLogFileTest {
 
         // no attempt is made to write any checkpoint here
         assertDoesNotThrow(() -> checkpointAppender.checkPoint(
-                NULL, null, 7, LatestVersions.LATEST_KERNEL_VERSION, new LogPosition(1, 2), Instant.now(), "test"));
+                NULL,
+                null,
+                7,
+                LatestVersions.LATEST_KERNEL_VERSION,
+                new LogPosition(1, 2),
+                new LogPosition(1, 2),
+                Instant.now(),
+                "test"));
     }
 
     @Test
@@ -138,6 +147,7 @@ class CheckpointLogFileTest {
                 firstTransactionId.id() + 1,
                 LatestVersions.LATEST_KERNEL_VERSION,
                 firstLogPosition,
+                firstLogPosition,
                 Instant.now(),
                 "test");
         assertEquals(
@@ -152,6 +162,7 @@ class CheckpointLogFileTest {
                 secondTransactionId.id() + 9,
                 LatestVersions.LATEST_KERNEL_VERSION,
                 secondLogPosition,
+                secondLogPosition,
                 Instant.now(),
                 "test");
         assertEquals(
@@ -165,6 +176,7 @@ class CheckpointLogFileTest {
                 thirdTransactionId,
                 thirdTransactionId.id() + 6,
                 LatestVersions.LATEST_KERNEL_VERSION,
+                thirdLogPosition,
                 thirdLogPosition,
                 Instant.now(),
                 "test");
@@ -193,6 +205,7 @@ class CheckpointLogFileTest {
                 firstTransactionId.id() + 9,
                 LatestVersions.LATEST_KERNEL_VERSION,
                 firstLogPosition,
+                firstLogPosition,
                 Instant.now(),
                 "test");
         var secondLogPosition = new LogPosition(2, 3);
@@ -202,6 +215,7 @@ class CheckpointLogFileTest {
                 secondTransactionId,
                 secondTransactionId.id() + 9,
                 LatestVersions.LATEST_KERNEL_VERSION,
+                secondLogPosition,
                 secondLogPosition,
                 Instant.now(),
                 "test");
@@ -213,6 +227,7 @@ class CheckpointLogFileTest {
                 thirdTransactionId.id() + 9,
                 LatestVersions.LATEST_KERNEL_VERSION,
                 thirdLogPosition,
+                thirdLogPosition,
                 Instant.now(),
                 "test");
         var fourthLogPosition = new LogPosition(4, 5);
@@ -222,6 +237,7 @@ class CheckpointLogFileTest {
                 fourthTransactionId,
                 fourthTransactionId.id() + 9,
                 LatestVersions.LATEST_KERNEL_VERSION,
+                fourthLogPosition,
                 fourthLogPosition,
                 Instant.now(),
                 "test");
@@ -233,6 +249,7 @@ class CheckpointLogFileTest {
                 fifthTransactionId.id() + 9,
                 LatestVersions.LATEST_KERNEL_VERSION,
                 fifthLogPosition,
+                fifthLogPosition,
                 Instant.now(),
                 "test");
         var sixthLogPosition = new LogPosition(6, 7);
@@ -242,6 +259,7 @@ class CheckpointLogFileTest {
                 sixthTransactionId,
                 sixthTransactionId.id() + 3,
                 LatestVersions.LATEST_KERNEL_VERSION,
+                sixthLogPosition,
                 sixthLogPosition,
                 Instant.now(),
                 "test");
@@ -267,6 +285,7 @@ class CheckpointLogFileTest {
                 9,
                 LatestVersions.LATEST_KERNEL_VERSION,
                 new LogPosition(1, 2),
+                new LogPosition(1, 2),
                 Instant.now(),
                 "test");
         assertThat(checkpointFile.reachableCheckpoints()).hasSize(1);
@@ -277,6 +296,7 @@ class CheckpointLogFileTest {
                 10,
                 LatestVersions.LATEST_KERNEL_VERSION,
                 new LogPosition(2, 3),
+                new LogPosition(2, 3),
                 Instant.now(),
                 "test");
         assertThat(checkpointFile.reachableCheckpoints()).hasSize(2);
@@ -286,6 +306,7 @@ class CheckpointLogFileTest {
                 new TransactionId(1, 2, LATEST_KERNEL_VERSION, 2, 3, 4),
                 11,
                 LatestVersions.LATEST_KERNEL_VERSION,
+                new LogPosition(3, 4),
                 new LogPosition(3, 4),
                 Instant.now(),
                 "test");

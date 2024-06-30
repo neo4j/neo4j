@@ -826,6 +826,7 @@ class DetachedLogTailScannerTest {
                         transactionId.appendIndex(),
                         kernelVersion,
                         logPosition,
+                        logPosition,
                         Instant.now(),
                         "test");
     }

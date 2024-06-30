@@ -21,7 +21,6 @@ package org.neo4j.test.arguments;
 
 import static org.neo4j.util.Preconditions.checkArgument;
 
-import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.TreeSet;
@@ -42,7 +41,7 @@ public class KernelVersionArgumentsProvider implements ArgumentsProvider, Annota
 
     @Override
     public Stream<? extends Arguments> provideArguments(ExtensionContext extensionContext) {
-        Set<KernelVersion> versions = new TreeSet<>(List.of(KernelVersion.values()));
+        Set<KernelVersion> versions = new TreeSet<>(KernelVersion.VERSIONS);
         Version lessThan = getLessThan();
         Version greaterThan = getGreaterThan();
 

@@ -266,6 +266,7 @@ class CorruptedLogsTruncatorTest {
                         transactionId.id() + 7,
                         LATEST_KERNEL_VERSION,
                         new LogPosition(highestCorrectLogFileIndex, byteOffset - 1),
+                        new LogPosition(highestCorrectLogFileIndex, byteOffset - 1),
                         Instant.now(),
                         "within okay transactions");
         // Write checkpoints that should be truncated. Write enough to get them get them in two files.
@@ -277,6 +278,7 @@ class CorruptedLogsTruncatorTest {
                             transactionId,
                             transactionId.id() + 7,
                             LATEST_KERNEL_VERSION,
+                            new LogPosition(highestCorrectLogFileIndex, byteOffset + 1),
                             new LogPosition(highestCorrectLogFileIndex, byteOffset + 1),
                             Instant.now(),
                             "in the part being truncated");

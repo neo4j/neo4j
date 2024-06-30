@@ -824,7 +824,7 @@ class TransactionLogServiceIT {
 
         availabilityGuard.require(new DescriptiveAvailabilityRequirement("Database unavailable"));
 
-        String testReason = "Should checkpoint at EOF when transaction is rotated out";
+        String testReason = "Checkpoint at EOF when tx is rotated out";
         logService.appendCheckpoint(lastTransactionId, lastTransactionId.appendIndex(), testReason);
 
         var checkpointInfo = logFiles.getCheckpointFile().findLatestCheckpoint().orElseThrow();
@@ -857,7 +857,7 @@ class TransactionLogServiceIT {
 
         availabilityGuard.require(new DescriptiveAvailabilityRequirement("Database unavailable"));
 
-        String testReason = "Should find position for transaction even when it has been rotated";
+        String testReason = "Find position for tx even when it has been rotated";
         logService.appendCheckpoint(lastTransactionId, lastTransactionId.appendIndex(), testReason);
 
         var checkpointInfo = logFiles.getCheckpointFile().findLatestCheckpoint().orElseThrow();
@@ -878,7 +878,7 @@ class TransactionLogServiceIT {
         TransactionId lastTransactionId = metadataProvider.getLastCommittedTransaction();
         var eofPosition = findEndOfFile(lastTransactionId.id());
         availabilityGuard.require(new DescriptiveAvailabilityRequirement("Database unavailable"));
-        String testReason = "Should checkpoint at end of file when transaction doesn't exist";
+        String testReason = "Checkpoint at end of file when tx doesn't exist";
         var transactionId = new TransactionId(789, 798, LATEST_KERNEL_VERSION, 7, 8, 9);
         logService.appendCheckpoint(transactionId, transactionId.appendIndex(), testReason);
 

@@ -35,7 +35,8 @@ public interface CheckpointAppender {
      * @param transactionId last closed transaction id at time of checkpoint
      * @param appendIndex checkpointed append index
      * @param kernelVersion kernel version of checkpoint
-     * @param logPosition the log position contained in the written check point
+     * @param oldestNotCompletedPosition the log position of oldest not completed transactional chunk
+     * @param checkpointedLogPosition the log position contained in the written check point
      * @param checkpointTime time when checkpoint occurred
      * @param reason reason for checkpoint to occur
      * @throws IOException if there was a problem appending the transaction. See method javadoc body for
@@ -46,7 +47,8 @@ public interface CheckpointAppender {
             TransactionId transactionId,
             long appendIndex,
             KernelVersion kernelVersion,
-            LogPosition logPosition,
+            LogPosition oldestNotCompletedPosition,
+            LogPosition checkpointedLogPosition,
             Instant checkpointTime,
             String reason)
             throws IOException;

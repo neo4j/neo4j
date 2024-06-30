@@ -97,6 +97,7 @@ public class CheckpointLogFileRotationIT {
                     TRANSACTION_ID.id() + 10,
                     LatestVersions.LATEST_KERNEL_VERSION,
                     LOG_POSITION,
+                    LOG_POSITION,
                     Instant.now(),
                     CHECKPOINT_REASON);
         }
@@ -133,6 +134,7 @@ public class CheckpointLogFileRotationIT {
                         TRANSACTION_ID,
                         TRANSACTION_ID.id() + 77,
                         LatestVersions.LATEST_KERNEL_VERSION,
+                        LOG_POSITION,
                         LOG_POSITION,
                         Instant.now(),
                         CHECKPOINT_REASON);

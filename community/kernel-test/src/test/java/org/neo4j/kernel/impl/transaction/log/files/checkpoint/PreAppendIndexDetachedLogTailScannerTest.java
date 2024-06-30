@@ -131,6 +131,7 @@ class PreAppendIndexDetachedLogTailScannerTest {
                         transactionId.id() + 7,
                         kernelVersion,
                         logPosition,
+                        logPosition,
                         Instant.now(),
                         "test");
     }

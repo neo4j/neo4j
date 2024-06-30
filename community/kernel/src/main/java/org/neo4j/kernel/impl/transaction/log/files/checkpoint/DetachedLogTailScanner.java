@@ -400,6 +400,7 @@ public class DetachedLogTailScanner {
         // create new CheckpointInfo with new TransactionId which has proper consensus index
         return new CheckpointInfo(
                 checkpoint.transactionLogPosition(),
+                checkpoint.transactionLogPosition(),
                 checkpoint.storeId(),
                 checkpoint.checkpointEntryPosition(),
                 checkpoint.channelPositionAfterCheckpoint(),

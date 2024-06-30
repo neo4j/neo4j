@@ -189,6 +189,7 @@ class TransactionLogsRecoveryTest {
                     5L,
                     LATEST_KERNEL_VERSION,
                     lastCommittedTxPosition,
+                    lastCommittedTxPosition,
                     Instant.now(),
                     "test");
 
@@ -324,6 +325,7 @@ class TransactionLogsRecoveryTest {
                     transactionId.id() + 7,
                     LATEST_KERNEL_VERSION,
                     marker.newPosition(),
+                    marker.newPosition(),
                     Instant.now(),
                     "test");
             return true;
@@ -424,6 +426,7 @@ class TransactionLogsRecoveryTest {
                     transactionId.id() + 7,
                     LATEST_KERNEL_VERSION,
                     marker.newPosition(),
+                    marker.newPosition(),
                     Instant.now(),
                     "test");
 
@@ -471,6 +474,7 @@ class TransactionLogsRecoveryTest {
                     transactionId.id() + 7,
                     LATEST_KERNEL_VERSION,
                     marker.newPosition(),
+                    marker.newPosition(),
                     Instant.now(),
                     "valid checkpoint");
             checkpointAppender.checkPoint(
@@ -478,6 +482,7 @@ class TransactionLogsRecoveryTest {
                     transactionId,
                     transactionId.id() + 7,
                     LATEST_KERNEL_VERSION,
+                    new LogPosition(marker.getLogVersion() + 1, marker.getByteOffset()),
                     new LogPosition(marker.getLogVersion() + 1, marker.getByteOffset()),
                     Instant.now(),
                     "invalid checkpoint");

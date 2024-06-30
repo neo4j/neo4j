@@ -196,6 +196,7 @@ class RecoveryCorruptedTransactionLogIT {
                             transactionIdStore.getLastCommittedTransaction().id() + 1,
                             LATEST_KERNEL_VERSION,
                             logOffsetBeforeTestTransactions,
+                            logOffsetBeforeTestTransactions,
                             Instant.now(),
                             "Fallback checkpoint.");
             managementService.shutdown();
@@ -243,6 +244,7 @@ class RecoveryCorruptedTransactionLogIT {
                             transactionIdStore.getLastCommittedTransaction().id() + 1,
                             LATEST_KERNEL_VERSION,
                             logOffsetBeforeTestTransactions,
+                            logOffsetBeforeTestTransactions,
                             Instant.now(),
                             "Fallback checkpoint.");
             managementService.shutdown();
@@ -287,6 +289,7 @@ class RecoveryCorruptedTransactionLogIT {
                         transactionIdStore.getLastCommittedTransaction(),
                         transactionIdStore.getLastCommittedTransaction().id() + 1,
                         LATEST_KERNEL_VERSION,
+                        logOffsetBeforeTestTransactions,
                         logOffsetBeforeTestTransactions,
                         Instant.now(),
                         "Fallback checkpoint.");
@@ -413,6 +416,7 @@ class RecoveryCorruptedTransactionLogIT {
                         transactionIdStore.getLastCommittedTransaction(),
                         transactionIdStore.getLastCommittedTransaction().id() + 7,
                         LATEST_KERNEL_VERSION,
+                        logOffsetBeforeTestTransactions,
                         logOffsetBeforeTestTransactions,
                         Instant.now(),
                         "Fallback checkpoint.");
@@ -680,6 +684,7 @@ class RecoveryCorruptedTransactionLogIT {
                         UNKNOWN_TRANSACTION_ID,
                         UNKNOWN_TRANSACTION_ID.id() + 8,
                         LATEST_KERNEL_VERSION,
+                        new LogPosition(0, HEADER_OFFSET),
                         new LogPosition(0, HEADER_OFFSET),
                         Instant.now(),
                         "test" + i);

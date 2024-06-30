@@ -1947,6 +1947,7 @@ class RecoveryIT {
                 transactionId.id() + 1,
                 LatestVersions.LATEST_KERNEL_VERSION,
                 new LogPosition(0, LATEST_LOG_FORMAT.getHeaderSize()),
+                new LogPosition(0, LATEST_LOG_FORMAT.getHeaderSize()),
                 Instant.now(),
                 "test1");
         appender.rotate();
@@ -1956,6 +1957,7 @@ class RecoveryIT {
                 transactionId.id() + 1,
                 LatestVersions.LATEST_KERNEL_VERSION,
                 new LogPosition(0, LATEST_LOG_FORMAT.getHeaderSize()),
+                new LogPosition(0, LATEST_LOG_FORMAT.getHeaderSize()),
                 Instant.now(),
                 "test2");
         appender.rotate();
@@ -1964,6 +1966,7 @@ class RecoveryIT {
                 transactionId,
                 transactionId.id() + 1,
                 LatestVersions.LATEST_KERNEL_VERSION,
+                new LogPosition(0, LATEST_LOG_FORMAT.getHeaderSize()),
                 new LogPosition(0, LATEST_LOG_FORMAT.getHeaderSize()),
                 Instant.now(),
                 "test3");

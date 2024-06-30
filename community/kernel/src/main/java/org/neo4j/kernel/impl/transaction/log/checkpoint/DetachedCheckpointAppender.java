@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.transaction.log.checkpoint;
 
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.kernel.KernelVersion.VERSION_APPEND_INDEX_INTRODUCED;
+import static org.neo4j.kernel.KernelVersion.VERSION_CHECKPOINT_NOT_COMPLETED_POSITION_INTRODUCED;
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntrySerializationSets.serializationSet;
 import static org.neo4j.storageengine.api.CommandReaderFactory.NO_COMMANDS;
@@ -49,6 +50,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.v50.LogEntryDetachedCheckpointV5_0;
 import org.neo4j.kernel.impl.transaction.log.entry.v520.LogEntryDetachedCheckpointV5_20;
+import org.neo4j.kernel.impl.transaction.log.entry.v522.LogEntryDetachedCheckpointV5_22;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogChannelAllocator;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesContext;
@@ -176,7 +178,8 @@ public class DetachedCheckpointAppender extends LifecycleAdapter implements Chec
             TransactionId transactionId,
             long appendIndex,
             KernelVersion kernelVersion,
-            LogPosition logPosition,
+            LogPosition oldestNotCompletedPosition,
+            LogPosition checkpointedLogPosition,
             Instant checkpointTime,
             String reason)
             throws IOException {
@@ -197,7 +200,8 @@ public class DetachedCheckpointAppender extends LifecycleAdapter implements Chec
                                         transactionId,
                                         appendIndex,
                                         kernelVersion,
-                                        logPosition,
+                                        oldestNotCompletedPosition,
+                                        checkpointedLogPosition,
                                         checkpointTime,
                                         reason,
                                         storeId));
@@ -251,21 +255,32 @@ public class DetachedCheckpointAppender extends LifecycleAdapter implements Chec
             TransactionId transactionId,
             long appendIndex,
             KernelVersion kernelVersion,
-            LogPosition logPosition,
+            LogPosition oldestNotCompletedPosition,
+            LogPosition checkpoinedLogPosition,
             Instant checkpointTime,
             String reason,
             StoreId storeId) {
-        if (kernelVersion.isAtLeast(VERSION_APPEND_INDEX_INTRODUCED)) {
+        if (kernelVersion.isAtLeast(VERSION_CHECKPOINT_NOT_COMPLETED_POSITION_INTRODUCED)) {
+            return new LogEntryDetachedCheckpointV5_22(
+                    kernelVersion,
+                    transactionId,
+                    appendIndex,
+                    oldestNotCompletedPosition,
+                    checkpoinedLogPosition,
+                    checkpointTime.toEpochMilli(),
+                    storeId,
+                    reason);
+        } else if (kernelVersion.isAtLeast(VERSION_APPEND_INDEX_INTRODUCED)) {
             return new LogEntryDetachedCheckpointV5_20(
                     kernelVersion,
                     transactionId,
                     appendIndex,
-                    logPosition,
+                    checkpoinedLogPosition,
                     checkpointTime.toEpochMilli(),
                     storeId,
                     reason);
         }
         return new LogEntryDetachedCheckpointV5_0(
-                kernelVersion, transactionId, logPosition, checkpointTime.toEpochMilli(), storeId, reason);
+                kernelVersion, transactionId, checkpoinedLogPosition, checkpointTime.toEpochMilli(), storeId, reason);
     }
 }

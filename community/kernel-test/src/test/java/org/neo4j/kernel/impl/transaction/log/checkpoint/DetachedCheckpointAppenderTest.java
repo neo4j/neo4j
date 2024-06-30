@@ -113,6 +113,7 @@ class DetachedCheckpointAppenderTest {
                         BASE_APPEND_INDEX,
                         LATEST_KERNEL_VERSION,
                         logPosition,
+                        logPosition,
                         Instant.now(),
                         "test"));
     }
@@ -133,6 +134,7 @@ class DetachedCheckpointAppenderTest {
                 BASE_APPEND_INDEX,
                 LATEST_KERNEL_VERSION,
                 UNSPECIFIED,
+                UNSPECIFIED,
                 Instant.now(),
                 "test"));
     }
@@ -151,6 +153,7 @@ class DetachedCheckpointAppenderTest {
                 BASE_APPEND_INDEX,
                 LATEST_KERNEL_VERSION,
                 logPosition1,
+                logPosition1,
                 Instant.now(),
                 "first");
         checkpointAppender.checkPoint(
@@ -159,6 +162,7 @@ class DetachedCheckpointAppenderTest {
                 BASE_APPEND_INDEX,
                 LATEST_KERNEL_VERSION,
                 logPosition2,
+                logPosition2,
                 Instant.now(),
                 "second");
         checkpointAppender.checkPoint(
@@ -166,6 +170,7 @@ class DetachedCheckpointAppenderTest {
                 UNKNOWN_TRANSACTION_ID,
                 BASE_APPEND_INDEX,
                 LATEST_KERNEL_VERSION,
+                logPosition3,
                 logPosition3,
                 Instant.now(),
                 "third");

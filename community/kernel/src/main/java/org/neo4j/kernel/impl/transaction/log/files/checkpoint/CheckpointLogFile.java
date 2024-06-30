@@ -213,6 +213,7 @@ public class CheckpointLogFile extends LifecycleAdapter implements CheckpointFil
         if (lastObservedKernelVersion != 0) {
             return Optional.of(new CheckpointInfo(
                     LogPosition.UNSPECIFIED,
+                    LogPosition.UNSPECIFIED,
                     null,
                     lastCheckpointLocation,
                     lastCheckpointLocation,

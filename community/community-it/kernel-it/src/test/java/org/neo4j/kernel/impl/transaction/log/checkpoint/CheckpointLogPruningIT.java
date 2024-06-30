@@ -119,6 +119,7 @@ public class CheckpointLogPruningIT {
                         TRANSACTION_ID.id() + 77,
                         LatestVersions.LATEST_KERNEL_VERSION,
                         LOG_POSITION,
+                        LOG_POSITION,
                         Instant.now(),
                         CHECKPOINT_REASON);
             }

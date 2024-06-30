@@ -232,6 +232,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer {
                     appendIndex,
                     kernelVersion,
                     logPosition,
+                    logPosition,
                     clock.instant(),
                     checkpointReason);
             threshold.checkPointHappened(appendIndex, logPosition);

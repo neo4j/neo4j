@@ -103,6 +103,7 @@ class RecoveryStartInformationProviderTest {
                 .thenReturn(new LogTailInformation(
                         new CheckpointInfo(
                                 txPosition,
+                                txPosition,
                                 null,
                                 checkpointPosition,
                                 afterCheckpointPosition,
