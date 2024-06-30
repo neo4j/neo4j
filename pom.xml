@@ -179,7 +179,7 @@
     <teavm.version>0.10.0</teavm.version>
     <javapoet.version>1.13.0</javapoet.version>
     <google.cloud.version>26.41.0</google.cloud.version>
-    <grpc.version>1.64.0</grpc.version>
+    <grpc.version>1.65.0</grpc.version>
     <testcontainers.version>1.19.8</testcontainers.version>
     <build-resources.version>2024-05.1</build-resources.version>
   </properties>
@@ -1533,7 +1533,7 @@
       <dependency>
         <groupId>io.netty</groupId>
         <artifactId>netty-bom</artifactId>
-        <version>4.1.110.Final</version>
+        <version>4.1.111.Final</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
