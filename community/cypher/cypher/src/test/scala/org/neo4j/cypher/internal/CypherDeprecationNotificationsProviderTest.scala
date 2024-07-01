@@ -52,7 +52,8 @@ class CypherDeprecationNotificationsProviderTest extends CypherFunSuite {
         "DeprecatedFunctionNotification",
         "DeprecatedRelTypeSeparatorNotification",
         "DeprecatedParameterSyntax",
-        "DeprecatedCreateIndexSyntax"
+        "DeprecatedCreateIndexSyntax",
+        "MissingAliasNotification"
     )
   }
 }

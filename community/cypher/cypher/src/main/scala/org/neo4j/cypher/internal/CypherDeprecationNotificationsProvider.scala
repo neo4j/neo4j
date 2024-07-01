@@ -36,14 +36,16 @@ final case class CypherDeprecationNotificationsProvider(
   override def forEachDeprecation(consumer: BiConsumer[String, Notification]): Unit = {
     preParserNotifications.foreach { n =>
       val notification = NotificationWrapping.asKernelNotification(None)(n)
-      if (notification.getStatus == Status.Statement.FeatureDeprecationWarning) {
+      if (notification.getStatus == Status.Statement.FeatureDeprecationWarning ||
+        notification.getStatus == Status.Statement.MissingAlias) {
         consumer.accept(n.notificationName, notification)
       }
     }
 
     otherNotifications.foreach { n =>
       val notification = NotificationWrapping.asKernelNotification(Some(queryOptionsOffset))(n)
-      if (notification.getStatus == Status.Statement.FeatureDeprecationWarning) {
+      if (notification.getStatus == Status.Statement.FeatureDeprecationWarning ||
+        notification.getStatus == Status.Statement.MissingAlias) {
         consumer.accept(n.notificationName, notification)
       }
     }
