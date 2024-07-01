@@ -681,13 +681,12 @@ object AdministrationCommandRuntime {
     case Left(u) =>
       NameFields(internalKey(key), Values.utf8Value(valueMapper(u)), IdentityConverter)
     case Right(parameter) =>
-      def rename: String => String = paramName => internalKey(paramName)
       NameFields(
-        rename(parameter.name),
+        internalKey(key),
         Values.NO_VALUE,
         RenamingStringParameterConverter(
           parameter.name,
-          rename,
+          internalKey(key),
           { v => Values.utf8Value(valueMapper(v.stringValue())) }
         )
       )
@@ -829,9 +828,9 @@ object AdministrationCommandRuntime {
   private def validateAuthId(id: String): Unit =
     if (id.isEmpty) throw new InvalidArgumentException("Invalid input. Auth id is not allowed to be an empty string.")
 
-  case class RenamingStringParameterConverter(
+  private case class RenamingStringParameterConverter(
     parameter: String,
-    rename: String => String = identity,
+    name: String,
     valueMapper: TextValue => TextValue = identity
   ) extends ((Transaction, MapValue) => MapValue) {
 
@@ -842,7 +841,7 @@ object AdministrationCommandRuntime {
         throw new ParameterWrongTypeException(
           s"Expected parameter $$$parameter to have type String but was $paramValue"
         )
-      } else params.updatedWith(rename(parameter), valueMapper(params.get(parameter).asInstanceOf[TextValue]))
+      } else params.updatedWith(name, valueMapper(params.get(parameter).asInstanceOf[TextValue]))
     }
   }
 
