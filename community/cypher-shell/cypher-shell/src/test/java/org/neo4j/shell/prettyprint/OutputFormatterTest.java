@@ -57,6 +57,7 @@ class OutputFormatterTest {
                 plan,
                 plan,
                 Collections.emptyList(),
+                Collections.emptySet(),
                 39,
                 55);
 

@@ -31,9 +31,9 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import org.neo4j.driver.AuthTokenManager;
 import org.neo4j.driver.Logging;
-import org.neo4j.driver.NotificationConfig;
 import org.neo4j.driver.internal.BoltAgent;
 import org.neo4j.driver.internal.BoltServerAddress;
+import org.neo4j.driver.internal.GqlNotificationConfig;
 import org.neo4j.driver.internal.async.connection.ChannelConnectedListener;
 import org.neo4j.driver.internal.async.connection.ChannelConnector;
 import org.neo4j.driver.internal.async.connection.ChannelPipelineBuilderImpl;
@@ -57,7 +57,7 @@ class LocalChannelConnector implements ChannelConnector {
     private final String userAgent;
     private final BoltAgent boltAgent;
 
-    private final NotificationConfig notificationConfig;
+    private final GqlNotificationConfig notificationConfig;
     private final AuthTokenManager authTokenManager;
     private final SecurityPlan securityPlan;
 
@@ -66,7 +66,7 @@ class LocalChannelConnector implements ChannelConnector {
             String userAgent,
             BoltAgent boltAgent,
             AuthTokenManager authTokenManager,
-            NotificationConfig notificationConfig,
+            GqlNotificationConfig notificationConfig,
             SecurityPlan securityPlan,
             Clock clock,
             Logging logging) {

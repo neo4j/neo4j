@@ -30,6 +30,7 @@ import org.neo4j.driver.Driver;
 import org.neo4j.driver.internal.BoltAgent;
 import org.neo4j.driver.internal.ConnectionSettings;
 import org.neo4j.driver.internal.DriverFactory;
+import org.neo4j.driver.internal.GqlNotificationConfig;
 import org.neo4j.driver.internal.async.connection.ChannelConnector;
 import org.neo4j.driver.internal.async.connection.EventLoopGroupFactory;
 import org.neo4j.driver.internal.cluster.RoutingContext;
@@ -70,7 +71,7 @@ public final class LocalChannelDriverFactory extends DriverFactory {
                 config.userAgent(),
                 boltAgent,
                 settings.authTokenProvider(),
-                config.notificationConfig(),
+                GqlNotificationConfig.from(config.notificationConfig()),
                 securityPlan,
                 clock,
                 config.logging());

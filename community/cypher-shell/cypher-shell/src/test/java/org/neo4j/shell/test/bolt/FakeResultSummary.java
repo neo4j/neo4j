@@ -20,10 +20,12 @@
 package org.neo4j.shell.test.bolt;
 
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.internal.summary.InternalSummaryCounters;
 import org.neo4j.driver.summary.DatabaseInfo;
+import org.neo4j.driver.summary.GqlStatusObject;
 import org.neo4j.driver.summary.Notification;
 import org.neo4j.driver.summary.Plan;
 import org.neo4j.driver.summary.ProfiledPlan;
@@ -74,6 +76,11 @@ class FakeResultSummary implements ResultSummary {
 
     @Override
     public List<Notification> notifications() {
+        throw new Util.NotImplementedYetException("Not implemented yet");
+    }
+
+    @Override
+    public Set<GqlStatusObject> gqlStatusObjects() {
         throw new Util.NotImplementedYetException("Not implemented yet");
     }
 
