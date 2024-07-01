@@ -1073,7 +1073,9 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
             .build();
 
     @Internal
-    @Description("Feature flag to enable/disable planning of cached properties for entities.")
+    @Description(
+            "Feature flag to enable/disable planning of cached properties for entities. "
+                    + "Disabling this can cause a regression in performance and can cause results to be returned out-of-order under concurrent updates.")
     public static final Setting<Boolean> planning_cache_properties_for_entities_enabled = newBuilder(
                     "internal.cypher.planning_cache_properties_for_entities_enabled", BOOL, true)
             .build();
