@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.LazyPropertyKey
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
+import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.MapValueBuilder
 import org.neo4j.values.virtual.VirtualRelationshipValue
 
@@ -51,7 +52,9 @@ case class ValuePopulatingRelationshipFromSlot(offset: Int, cachedProperties: Ar
         case (p, e) =>
           cachedTokens.add(p.id(query))
           val value = e(row, state)
-          builder.add(p.name, value)
+          if (value ne Values.NO_VALUE) {
+            builder.add(p.name, value)
+          }
       }
       ValuePopulation.relationshipValue(
         id,
