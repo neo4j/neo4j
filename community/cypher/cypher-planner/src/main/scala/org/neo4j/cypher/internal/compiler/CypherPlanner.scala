@@ -307,4 +307,11 @@ class CypherPlannerConfiguration(
     )
     () => config.statefulShortestPlanningRewriteQuantifiersAbove
   }
+
+  val cachePropertiesForEntities: () => Boolean = {
+    AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+      !GraphDatabaseInternalSettings.planning_cache_properties_for_entities_enabled.dynamic()
+    )
+    () => config.cachePropertiesForEntities
+  }
 }
