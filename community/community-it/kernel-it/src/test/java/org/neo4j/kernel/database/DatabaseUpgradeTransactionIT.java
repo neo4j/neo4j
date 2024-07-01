@@ -371,11 +371,23 @@ public class DatabaseUpgradeTransactionIT {
     }
 
     protected String createWriteTransaction() {
-        try (Transaction tx = db.beginTx()) {
-            String nodeId = tx.createNode().getElementId();
-            tx.commit();
-            return nodeId;
+        DeadlockDetectedException deadlockDetectedException = null;
+        for (int i = 0; i < 10; i++) {
+            try (Transaction tx = db.beginTx()) {
+                String nodeId = tx.createNode().getElementId();
+                tx.commit();
+                return nodeId;
+            } catch (DeadlockDetectedException e) {
+                deadlockDetectedException = e;
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException ex) {
+                    Thread.currentThread().interrupt();
+                    throw new RuntimeException(ex);
+                }
+            }
         }
+        throw deadlockDetectedException;
     }
 
     protected void startDbms() {
