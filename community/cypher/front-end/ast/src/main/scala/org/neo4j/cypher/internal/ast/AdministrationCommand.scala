@@ -477,6 +477,7 @@ final case class SetOwnPassword(newPassword: Expression, currentPassword: Expres
 
 case class RemoveAuth(all: Boolean, auths: List[Expression]) {
   def isEmpty: Boolean = auths.isEmpty && !all
+  def nonEmpty: Boolean = !isEmpty
 }
 
 // Only used during parsing

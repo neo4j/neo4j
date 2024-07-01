@@ -325,12 +325,12 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
       // ALTER USER foo
       case c @ AlterUser(userName, userOptions, ifExists, externalAuths, nativeAuth, removeAuth) =>
         val dbmsActions = Vector(
-          (nativeAuth, SetPasswordsAction),
-          (externalAuths.find(_ => true), SetAuthAction),
-          (if (removeAuth.isEmpty) None else Some(true), SetAuthAction),
-          (userOptions.suspended, SetUserStatusAction),
-          (userOptions.homeDatabase, SetUserHomeDatabaseAction)
-        ).collect { case (Some(_), action) => action }.distinct
+          (nativeAuth.nonEmpty, SetPasswordsAction),
+          (externalAuths.nonEmpty || removeAuth.nonEmpty, SetAuthAction),
+          (userOptions.suspended.nonEmpty, SetUserStatusAction),
+          (userOptions.homeDatabase.nonEmpty, SetUserHomeDatabaseAction)
+        ).collect { case (true, action) => action }
+
         if (dbmsActions.isEmpty) throw new IllegalStateException("Alter user has nothing to do")
 
         val assertAllowed = plans.AssertAllowedDbmsActions(None, dbmsActions)
