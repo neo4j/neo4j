@@ -68,7 +68,7 @@ public class BasicSystemGraphRealmTest {
     @Test
     void shouldFindAndAuthenticateUserSuccessfully() throws Throwable {
         // Given
-        User user = new User.Builder("jake", credentialFor("abc123")).build();
+        User user = new User("jake", null, credentialFor("abc123"), false, false);
         doReturn(user).when(realmHelper).getUser("jake");
 
         // When
@@ -81,7 +81,7 @@ public class BasicSystemGraphRealmTest {
     @Test
     void shouldFindAndAuthenticateUserAndReturnAuthStrategyResult() throws Throwable {
         // Given
-        User user = new User.Builder("jake", credentialFor("abc123")).build();
+        User user = new User("jake", null, credentialFor("abc123"), false, false);
         doReturn(user).when(realmHelper).getUser("jake");
 
         // When
@@ -94,9 +94,7 @@ public class BasicSystemGraphRealmTest {
     @Test
     void shouldFindAndAuthenticateUserAndReturnPasswordChangeIfRequired() throws Throwable {
         // Given
-        User user = new User.Builder("jake", credentialFor("abc123"))
-                .withRequiredPasswordChange(true)
-                .build();
+        User user = new User("jake", null, credentialFor("abc123"), true, false);
         doReturn(user).when(realmHelper).getUser("jake");
 
         // When
@@ -122,9 +120,7 @@ public class BasicSystemGraphRealmTest {
         // Given
         when(authStrategy.authenticate(any(), any())).thenReturn(AuthenticationResult.SUCCESS);
 
-        User user = new User.Builder("jake", credentialFor("abc123"))
-                .withRequiredPasswordChange(true)
-                .build();
+        User user = new User("jake", null, credentialFor("abc123"), true, false);
         doReturn(user).when(realmHelper).getUser("jake");
 
         byte[] password = password("abc123");

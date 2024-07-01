@@ -81,7 +81,7 @@ public class RateLimitedAuthenticationStrategy implements AuthenticationStrategy
             return AuthenticationResult.TOO_MANY_ATTEMPTS;
         }
 
-        if (user.credentials().matchesPassword(password)) {
+        if (user.credential().matchesPassword(password)) {
             authMetadata.authSuccess();
             return AuthenticationResult.SUCCESS;
         } else {

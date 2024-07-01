@@ -42,7 +42,7 @@ class RateLimitedAuthenticationStrategyTest {
         // Given
         FakeClock clock = getFakeClock();
         AuthenticationStrategy authStrategy = newAuthStrategy(clock, 3);
-        User user = new User.Builder("user", credentialFor("right")).build();
+        User user = new User("user", null, credentialFor("right"), false, false);
 
         // Then
         assertThat(authStrategy.authenticate(user, password("right"))).isEqualTo(AuthenticationResult.SUCCESS);
@@ -53,8 +53,7 @@ class RateLimitedAuthenticationStrategyTest {
         // Given
         FakeClock clock = getFakeClock();
         AuthenticationStrategy authStrategy = newAuthStrategy(clock, 3);
-        User user =
-                new User.Builder("user", credentialFor("right")).withId("id").build();
+        User user = new User("user", "id", credentialFor("right"), false, false);
 
         // Then
         assertThat(authStrategy.authenticate(user, password("right"))).isEqualTo(AuthenticationResult.SUCCESS);
@@ -65,7 +64,7 @@ class RateLimitedAuthenticationStrategyTest {
         // Given
         FakeClock clock = getFakeClock();
         AuthenticationStrategy authStrategy = newAuthStrategy(clock, 3);
-        User user = new User.Builder("user", credentialFor("right")).build();
+        User user = new User("user", null, credentialFor("right"), false, false);
 
         // Then
         assertThat(authStrategy.authenticate(user, password("wrong"))).isEqualTo(AuthenticationResult.FAILURE);
@@ -76,7 +75,7 @@ class RateLimitedAuthenticationStrategyTest {
         // Given
         FakeClock clock = getFakeClock();
         AuthenticationStrategy authStrategy = newAuthStrategy(clock, 3);
-        User user = new User.Builder("user", credentialFor("right")).build();
+        User user = new User("user", null, credentialFor("right"), false, false);
 
         // When we've failed two times
         assertThat(authStrategy.authenticate(user, password("wrong"))).isEqualTo(AuthenticationResult.FAILURE);
@@ -106,7 +105,7 @@ class RateLimitedAuthenticationStrategyTest {
         // Given
         FakeClock clock = getFakeClock();
         AuthenticationStrategy authStrategy = newAuthStrategy(clock, maxFailedAttempts, lockDuration);
-        User user = new User.Builder("user", credentialFor("right")).build();
+        User user = new User("user", null, credentialFor("right"), false, false);
 
         // When we've failed max number of times
         for (int i = 0; i < maxFailedAttempts; i++) {
@@ -129,7 +128,7 @@ class RateLimitedAuthenticationStrategyTest {
         // Given
         FakeClock clock = getFakeClock();
         AuthenticationStrategy authStrategy = newAuthStrategy(clock, maxFailedAttempts, lockDuration);
-        User user = new User.Builder("user", credentialFor("right")).build();
+        User user = new User("user", null, credentialFor("right"), false, false);
 
         // When we've failed max number of times
         for (int i = 0; i < maxFailedAttempts; i++) {
@@ -160,7 +159,7 @@ class RateLimitedAuthenticationStrategyTest {
     private static void testUnlimitedFailedAuthAttempts(int maxFailedAttempts) {
         FakeClock clock = getFakeClock();
         AuthenticationStrategy authStrategy = newAuthStrategy(clock, maxFailedAttempts);
-        User user = new User.Builder("user", credentialFor("right")).build();
+        User user = new User("user", null, credentialFor("right"), false, false);
 
         int attempts = ThreadLocalRandom.current().nextInt(5, 100);
         for (int i = 0; i < attempts; i++) {

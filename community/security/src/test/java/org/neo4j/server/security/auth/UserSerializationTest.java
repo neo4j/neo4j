@@ -30,6 +30,7 @@ import org.neo4j.server.security.SystemGraphCredential;
 import org.neo4j.string.UTF8;
 
 class UserSerializationTest {
+
     @Test
     void shouldSerializeAndDeserialize() throws Exception {
         // Given
@@ -60,8 +61,8 @@ class UserSerializationTest {
             User actualUser = actual.get(i);
             User givenUser = users.get(i);
             assertThat(actualUser.name()).isEqualTo(givenUser.name());
-            assertThat(actualUser.credentials().serialize())
-                    .isEqualTo(givenUser.credentials().serialize());
+            assertThat(actualUser.credential().serialize())
+                    .isEqualTo(givenUser.credential().serialize());
         }
     }
 
@@ -71,7 +72,7 @@ class UserSerializationTest {
         List<User> users = users();
 
         for (User user : users) {
-            String serialized = user.credentials().serialize();
+            String serialized = user.credential().serialize();
 
             // When
             String masked = SystemGraphCredential.maskSerialized(serialized);
@@ -87,7 +88,7 @@ class UserSerializationTest {
         List<User> users = legacyUsers();
 
         for (User user : users) {
-            String serialized = user.credentials().serialize();
+            String serialized = user.credential().serialize();
             // Newer versions of the LegacyCredentials add the iteration count, but there might still exist old
             // serializations in the graph
             // that are missing this field, so we remove that field in this test to simulate that.
@@ -122,47 +123,45 @@ class UserSerializationTest {
         // Then
         assertThat(deserialized)
                 .isEqualTo(asList(
-                        new User.Builder("Mike", new LegacyCredential(salt1, hash1)).build(),
-                        new User.Builder("Steve", new LegacyCredential(salt1, hash1))
-                                .withRequiredPasswordChange(true)
-                                .withFlag("nice_guy")
-                                .build(),
-                        new User.Builder("Bob", new LegacyCredential(salt2, hash2))
-                                .withRequiredPasswordChange(true)
-                                .build()));
+                        new User("Mike", null, new LegacyCredential(salt1, hash1), false, false),
+                        new User("Steve", null, new LegacyCredential(salt1, hash1), true, false),
+                        new User("Bob", null, new LegacyCredential(salt2, hash2), true, false)));
     }
 
     private List<User> legacyUsers() {
         return asList(
-                new User.Builder("Mike", LegacyCredential.forPassword("1234321"))
-                        .withFlag("not_as_nice")
-                        .build(),
-                new User.Builder("Steve", LegacyCredential.forPassword("1234321")).build(),
-                new User.Builder("steve.stevesson@WINDOMAIN", LegacyCredential.forPassword("1234321")).build(),
-                new User.Builder("Bob", LegacyCredential.forPassword("0987654")).build());
+                new User("Mike", null, LegacyCredential.forPassword("1234321"), false, false),
+                new User("Steve", null, LegacyCredential.forPassword("1234321"), false, false),
+                new User("steve.stevesson@WINDOMAIN", null, LegacyCredential.forPassword("1234321"), false, false),
+                new User("Bob", null, LegacyCredential.forPassword("0987654"), false, false));
     }
 
     private List<User> users() {
         SecureHasher hasher = new SecureHasher();
         return asList(
-                new User.Builder(
-                                "Mike",
-                                SystemGraphCredential.createCredentialForPassword(UTF8.encode("1234321"), hasher))
-                        .withId("id1")
-                        .build(),
-                new User.Builder(
-                                "Steve",
-                                SystemGraphCredential.createCredentialForPassword(UTF8.encode("1234321"), hasher))
-                        .withId("id2")
-                        .build(),
-                new User.Builder(
-                                "steve.stevesson@WINDOMAIN",
-                                SystemGraphCredential.createCredentialForPassword(UTF8.encode("1234321"), hasher))
-                        .withId("id3")
-                        .build(),
-                new User.Builder(
-                                "Bob",
-                                SystemGraphCredential.createCredentialForPassword(UTF8.encode("0987654"), hasher))
-                        .build());
+                new User(
+                        "Mike",
+                        "id1",
+                        SystemGraphCredential.createCredentialForPassword(UTF8.encode("1234321"), hasher),
+                        false,
+                        false),
+                new User(
+                        "Steve",
+                        "id2",
+                        SystemGraphCredential.createCredentialForPassword(UTF8.encode("1234321"), hasher),
+                        false,
+                        false),
+                new User(
+                        "steve.stevesson@WINDOMAIN",
+                        "id3",
+                        SystemGraphCredential.createCredentialForPassword(UTF8.encode("1234321"), hasher),
+                        false,
+                        false),
+                new User(
+                        "Bob",
+                        null,
+                        SystemGraphCredential.createCredentialForPassword(UTF8.encode("0987654"), hasher),
+                        false,
+                        false));
     }
 }

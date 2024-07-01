@@ -110,7 +110,7 @@ public class BasicSystemGraphRealmTestHelper {
             SystemGraphRealmHelper realmHelper, String username, String password, boolean changeRequired)
             throws Exception {
         var user = realmHelper.getUser(username);
-        assertTrue(user.credentials().matchesPassword(password(password)));
+        assertTrue(user.credential().matchesPassword(password(password)));
         assertThat(user.passwordChangeRequired())
                 .withFailMessage(
                         "Expected change required to be %s, but was %s", changeRequired, user.passwordChangeRequired())
@@ -120,12 +120,10 @@ public class BasicSystemGraphRealmTestHelper {
     public static void assertAuthenticationFails(SystemGraphRealmHelper realmHelper, String username, String password)
             throws Exception {
         var user = realmHelper.getUser(username);
-        assertFalse(user.credentials().matchesPassword(password(password)));
+        assertFalse(user.credential().matchesPassword(password(password)));
     }
 
     public static User createUser(String userName, String password, boolean pwdChangeRequired) {
-        return new User.Builder(userName, credentialFor(password))
-                .withRequiredPasswordChange(pwdChangeRequired)
-                .build();
+        return new User(userName, null, credentialFor(password), pwdChangeRequired, false);
     }
 }

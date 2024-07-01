@@ -72,9 +72,7 @@ class FileUserRepositoryTest {
     void shouldStoreAndRetrieveUsersByName() throws Exception {
         // Given
         FileUserRepository users = new FileUserRepository(fs, authFile, logProvider, memoryTracker);
-        User user = new User.Builder("jake", LegacyCredential.INACCESSIBLE)
-                .withRequiredPasswordChange(true)
-                .build();
+        User user = new User("jake", null, LegacyCredential.INACCESSIBLE, true, false);
         users.create(user);
 
         // When
@@ -88,9 +86,7 @@ class FileUserRepositoryTest {
     void shouldPersistUserWithoutId() throws Throwable {
         // Given
         FileUserRepository users = new FileUserRepository(fs, authFile, logProvider, memoryTracker);
-        User user = new User.Builder("jake", LegacyCredential.INACCESSIBLE)
-                .withRequiredPasswordChange(true)
-                .build();
+        User user = new User("jake", null, LegacyCredential.INACCESSIBLE, true, false);
         users.create(user);
 
         users = new FileUserRepository(fs, authFile, logProvider, memoryTracker);
@@ -107,10 +103,7 @@ class FileUserRepositoryTest {
     void shouldNotPersistIdForUserWithValidId() throws Throwable {
         // Given
         FileUserRepository users = new FileUserRepository(fs, authFile, logProvider, memoryTracker);
-        User user = new User.Builder("jake", LegacyCredential.INACCESSIBLE)
-                .withId("id")
-                .withRequiredPasswordChange(true)
-                .build();
+        User user = new User("jake", "id", LegacyCredential.INACCESSIBLE, true, false);
         users.create(user);
 
         users = new FileUserRepository(fs, authFile, logProvider, memoryTracker);
@@ -120,9 +113,7 @@ class FileUserRepositoryTest {
         User resultByName = users.getUserByName(user.name());
 
         // Then
-        User userWithoutId = new User.Builder("jake", LegacyCredential.INACCESSIBLE)
-                .withRequiredPasswordChange(true)
-                .build();
+        User userWithoutId = new User("jake", null, LegacyCredential.INACCESSIBLE, true, false);
         assertThat(resultByName).isEqualTo(userWithoutId);
     }
 
@@ -176,9 +167,7 @@ class FileUserRepositoryTest {
 
         FileUserRepository users = new FileUserRepository(crashingFileSystem, authFile, logProvider, memoryTracker);
         users.start();
-        User user = new User.Builder("jake", LegacyCredential.INACCESSIBLE)
-                .withRequiredPasswordChange(true)
-                .build();
+        User user = new User("jake", null, LegacyCredential.INACCESSIBLE, true, false);
 
         // When
         var e = assertThrows(IOException.class, () -> users.create(user));
@@ -222,7 +211,7 @@ class FileUserRepositoryTest {
     void shouldProvideUserByUsernameEvenIfMidSetUsers() throws Throwable {
         // Given
         FileUserRepository users = new FileUserRepository(fs, authFile, logProvider, memoryTracker);
-        users.create(new User.Builder("oskar", LegacyCredential.forPassword("hidden")).build());
+        users.create(new User("oskar", null, LegacyCredential.forPassword("hidden"), false, false));
         DoubleLatch latch = new DoubleLatch(2);
 
         // When

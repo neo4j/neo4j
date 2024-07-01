@@ -21,7 +21,6 @@ package org.neo4j.server.security.systemgraph.versions;
 
 import static org.neo4j.kernel.api.security.AuthManager.INITIAL_PASSWORD;
 import static org.neo4j.kernel.api.security.AuthManager.INITIAL_USER_NAME;
-import static org.neo4j.server.security.systemgraph.SystemGraphRealmHelper.IS_SUSPENDED;
 
 import java.util.Optional;
 import org.neo4j.dbms.database.ComponentVersion;
@@ -58,12 +57,7 @@ public abstract class SupportedCommunitySecurityComponentVersion extends KnownCo
         if (initialUser.isPresent()) {
             User user = initialUser.get();
             debugLog.info(String.format("Setting up initial user from `auth.ini` file: %s", user.name()));
-            addUser(
-                    tx,
-                    INITIAL_USER_NAME,
-                    user.credentials(),
-                    user.passwordChangeRequired(),
-                    user.hasFlag(IS_SUSPENDED));
+            addUser(tx, INITIAL_USER_NAME, user.credential(), user.passwordChangeRequired(), user.suspended());
         } else {
             SystemGraphCredential credential =
                     SystemGraphCredential.createCredentialForPassword(UTF8.encode(INITIAL_PASSWORD), secureHasher);

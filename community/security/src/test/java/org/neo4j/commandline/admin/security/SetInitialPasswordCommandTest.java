@@ -191,7 +191,7 @@ class SetInitialPasswordCommandTest {
         userRepository.start();
         User neo4j = userRepository.getUserByName(AuthManager.INITIAL_USER_NAME);
         assertNotNull(neo4j);
-        assertTrue(neo4j.credentials().matchesPassword(UTF8.encode(password)));
-        assertFalse(neo4j.hasFlag(User.PASSWORD_CHANGE_REQUIRED));
+        assertTrue(neo4j.credential().matchesPassword(UTF8.encode(password)));
+        assertFalse(neo4j.passwordChangeRequired());
     }
 }

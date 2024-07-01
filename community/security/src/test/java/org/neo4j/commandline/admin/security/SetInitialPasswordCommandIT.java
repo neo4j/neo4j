@@ -173,8 +173,8 @@ class SetInitialPasswordCommandIT {
         userRepository.start();
         User neo4j = userRepository.getUserByName(AuthManager.INITIAL_USER_NAME);
         assertNotNull(neo4j);
-        assertTrue(neo4j.credentials().matchesPassword(UTF8.encode(password)));
-        assertThat(neo4j.hasFlag(User.PASSWORD_CHANGE_REQUIRED)).isEqualTo(passwordChangeRequired);
+        assertTrue(neo4j.credential().matchesPassword(UTF8.encode(password)));
+        assertThat(neo4j.passwordChangeRequired()).isEqualTo(passwordChangeRequired);
     }
 
     private Path getAuthFile(String name) {

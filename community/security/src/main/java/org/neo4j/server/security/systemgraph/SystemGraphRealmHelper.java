@@ -73,11 +73,7 @@ public class SystemGraphRealmHelper {
             boolean requirePasswordChange = (boolean) userNode.getProperty("passwordChangeRequired");
             boolean suspended = (boolean) userNode.getProperty("suspended");
             tx.commit();
-
-            User.Builder builder =
-                    new User.Builder(username, credential).withId(id).withRequiredPasswordChange(requirePasswordChange);
-            builder = suspended ? builder.withFlag(IS_SUSPENDED) : builder.withoutFlag(IS_SUSPENDED);
-            return builder.build();
+            return new User(username, id, credential, requirePasswordChange, suspended);
         } catch (NotFoundException n) {
             // Can occur if the user was dropped by another thread after the null check.
             throw new InvalidArgumentsException("User '" + username + "' does not exist.");

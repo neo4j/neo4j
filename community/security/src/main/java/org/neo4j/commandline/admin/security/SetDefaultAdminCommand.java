@@ -67,7 +67,7 @@ public class SetDefaultAdminCommand extends AbstractAdminCommand {
                     new FileUserRepository(fs, adminIniFile, NullLogProvider.getInstance(), memoryTracher);
             admins.init();
             admins.start();
-            admins.create(new User.Builder(username, LegacyCredential.INACCESSIBLE).build());
+            admins.create(new User(username, null, LegacyCredential.INACCESSIBLE, false, false));
             admins.stop();
             admins.shutdown();
         } catch (Exception e) {

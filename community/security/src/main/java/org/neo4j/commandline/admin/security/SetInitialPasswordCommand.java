@@ -82,10 +82,12 @@ public class SetInitialPasswordCommand extends AbstractAdminCommand implements P
                 new FileUserRepository(fileSystem, file, NullLogProvider.getInstance(), memoryTracker);
         try {
             userRepository.start();
-            userRepository.create(
-                    new User.Builder(INITIAL_USER_NAME, createCredentialForPassword(UTF8.encode(password)))
-                            .withRequiredPasswordChange(changeRequired)
-                            .build());
+            userRepository.create(new User(
+                    INITIAL_USER_NAME,
+                    null,
+                    createCredentialForPassword(UTF8.encode(password)),
+                    changeRequired,
+                    false));
             userRepository.shutdown();
         } catch (Exception e) {
             throw new RuntimeException(e);

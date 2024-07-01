@@ -107,7 +107,7 @@ public abstract class KnownCommunitySecurityComponentVersion extends KnownSystem
                 if (currentCredentials.matchesPassword(UTF8.encode(INITIAL_PASSWORD))) {
                     debugLog.info(String.format(
                             "Updating initial user password from `auth.ini` file: %s", initialUser.name()));
-                    user.setProperty("credentials", initialUser.credentials().serialize());
+                    user.setProperty("credentials", initialUser.credential().serialize());
                     user.setProperty("passwordChangeRequired", initialUser.passwordChangeRequired());
                 }
             }

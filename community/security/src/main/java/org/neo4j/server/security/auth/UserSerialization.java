@@ -39,8 +39,8 @@ public class UserSerialization extends FileRepositorySerializer<User> {
 
     @Override
     protected String serialize(User user) {
-        return String.join(
-                userSeparator, user.name(), user.credentials().serialize(), String.join(",", user.getFlags()));
+        var passwordChangeRequired = user.passwordChangeRequired() ? User.PASSWORD_CHANGE_REQUIRED : "";
+        return String.join(userSeparator, user.name(), user.credential().serialize(), passwordChangeRequired);
     }
 
     @Override
@@ -51,16 +51,15 @@ public class UserSerialization extends FileRepositorySerializer<User> {
                     format("wrong number of line fields, expected 3, got %d [line %d]", parts.length, lineNumber));
         }
 
-        User.Builder b = new User.Builder(parts[0], deserializeCredentials(parts[1], lineNumber));
-
+        boolean passwordChangeRequired = false;
         for (String flag : parts[2].split(",", -1)) {
             String trimmed = flag.trim();
             if (!trimmed.isEmpty()) {
-                b = b.withFlag(trimmed);
+                if (User.PASSWORD_CHANGE_REQUIRED.equalsIgnoreCase(trimmed)) passwordChangeRequired = true;
             }
         }
 
-        return b.build();
+        return new User(parts[0], null, deserializeCredentials(parts[1], lineNumber), passwordChangeRequired, false);
     }
 
     protected static String serialize(LegacyCredential cred) {

@@ -50,7 +50,7 @@ class SecurityContextDescriptionTest {
         SystemGraphRealmHelper realmHelper = spy(new SystemGraphRealmHelper(null, new SecureHasher()));
         BasicSystemGraphRealm realm = new BasicSystemGraphRealm(
                 realmHelper, new RateLimitedAuthenticationStrategy(Clocks.systemClock(), Config.defaults()));
-        User user = new User.Builder("johan", credentialFor("bar")).withId("id").build();
+        User user = new User("johan", "id", credentialFor("bar"), false, false);
         doReturn(user).when(realmHelper).getUser("johan");
         context = realm.login(authToken("johan", "bar"), EMBEDDED_CONNECTION)
                 .authorize(LoginContext.IdLookup.EMPTY, DEFAULT_DATABASE_NAME, CommunitySecurityLog.NULL_LOG);

@@ -163,12 +163,10 @@ class BasicAuthenticationTest {
         BasicSystemGraphRealm realm = new BasicSystemGraphRealm(
                 realmHelper, new RateLimitedAuthenticationStrategy(Clocks.systemClock(), config));
         Authentication authentication = new BasicAuthentication(realm);
-        doReturn(new User.Builder("bob", credentialFor("secret"))
-                        .withRequiredPasswordChange(true)
-                        .build())
+        doReturn(new User("bob", null, credentialFor("secret"), true, false))
                 .when(realmHelper)
                 .getUser("bob");
-        doReturn(new User.Builder("mike", credentialFor("secret2")).build())
+        doReturn(new User("mike", null, credentialFor("secret2"), false, false))
                 .when(realmHelper)
                 .getUser("mike");
 
