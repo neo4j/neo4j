@@ -39,14 +39,14 @@ public class LogTailInformation implements LogTailMetadata {
     public final boolean filesNotFound;
     public final long currentLogVersion;
     public final byte firstLogEntryVersionAfterCheckpoint;
-    private final boolean recordAfterCheckpoint;
+    private final boolean hasRecordsToRecover;
     private final StoreId storeId;
     private final KernelVersionProvider fallbackKernelVersionProvider;
     private final LastAppendBatchInfoProvider lastAppendBatchInfoProvider;
     private AppendBatchInfo lastBatchInfo;
 
     public LogTailInformation(
-            boolean recordAfterCheckpoint,
+            boolean hasRecordsToRecover,
             long firstAppendIndexAfterLastCheckPoint,
             boolean filesNotFound,
             long currentLogVersion,
@@ -55,7 +55,7 @@ public class LogTailInformation implements LogTailMetadata {
             LastAppendBatchInfoProvider lastAppendBatchInfoProvider) {
         this(
                 null,
-                recordAfterCheckpoint,
+                hasRecordsToRecover,
                 firstAppendIndexAfterLastCheckPoint,
                 filesNotFound,
                 currentLogVersion,
@@ -67,7 +67,7 @@ public class LogTailInformation implements LogTailMetadata {
 
     public LogTailInformation(
             CheckpointInfo lastCheckPoint,
-            boolean recordAfterCheckpoint,
+            boolean hasRecordsToRecover,
             long firstAppendIndexAfterLastCheckPoint,
             boolean filesNotFound,
             long currentLogVersion,
@@ -80,14 +80,14 @@ public class LogTailInformation implements LogTailMetadata {
         this.filesNotFound = filesNotFound;
         this.currentLogVersion = currentLogVersion;
         this.firstLogEntryVersionAfterCheckpoint = firstLogEntryVersionAfterCheckpoint;
-        this.recordAfterCheckpoint = recordAfterCheckpoint;
+        this.hasRecordsToRecover = hasRecordsToRecover;
         this.storeId = storeId;
         this.fallbackKernelVersionProvider = fallbackKernelVersionProvider;
         this.lastAppendBatchInfoProvider = lastAppendBatchInfoProvider;
     }
 
-    public boolean logsAfterLastCheckpoint() {
-        return recordAfterCheckpoint;
+    public boolean hasRecordsToRecover() {
+        return hasRecordsToRecover;
     }
 
     @Override
@@ -105,7 +105,7 @@ public class LogTailInformation implements LogTailMetadata {
 
     @Override
     public boolean isRecoveryRequired() {
-        return recordAfterCheckpoint || logsMissing() || hasUnreadableBytesInCheckpointLogs();
+        return hasRecordsToRecover || logsMissing() || hasUnreadableBytesInCheckpointLogs();
     }
 
     @Override
@@ -124,7 +124,7 @@ public class LogTailInformation implements LogTailMetadata {
                 + firstAppendIndexAfterLastCheckPoint + ", filesNotFound="
                 + filesNotFound + ", currentLogVersion=" + currentLogVersion + ", firstLogEntryVersionAfterCheckpoint="
                 + firstLogEntryVersionAfterCheckpoint
-                + ", recordAfterCheckpoint=" + recordAfterCheckpoint + '}';
+                + ", hasRecordsToRecover=" + hasRecordsToRecover + '}';
     }
 
     @Override

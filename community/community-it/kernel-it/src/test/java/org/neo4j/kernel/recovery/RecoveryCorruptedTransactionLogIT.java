@@ -1591,7 +1591,7 @@ class RecoveryCorruptedTransactionLogIT {
         private final AtomicBoolean recoveryRequired = new AtomicBoolean();
 
         @Override
-        public void recoveryRequired(LogPosition recoveryPosition) {
+        public void recoveryRequired(RecoveryStartInformation recoveryStartInfo) {
             recoveryRequired.set(true);
             numberOfRecoveredTransactions = 0;
         }

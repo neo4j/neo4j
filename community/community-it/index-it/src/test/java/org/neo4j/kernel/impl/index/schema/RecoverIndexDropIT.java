@@ -56,6 +56,7 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.recovery.RecoveryMonitor;
+import org.neo4j.kernel.recovery.RecoveryStartInformation;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.TransactionIdStore;
@@ -197,7 +198,7 @@ class RecoverIndexDropIT {
         boolean recoveryWasRequired;
 
         @Override
-        public void recoveryRequired(LogPosition recoveryPosition) {
+        public void recoveryRequired(RecoveryStartInformation recoveryStartInformation) {
             recoveryWasRequired = true;
         }
     }

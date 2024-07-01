@@ -30,6 +30,7 @@ import org.neo4j.kernel.impl.transaction.log.rotation.monitor.LogRotationMonitor
 import org.neo4j.kernel.recovery.RecoveryMode;
 import org.neo4j.kernel.recovery.RecoveryMonitor;
 import org.neo4j.kernel.recovery.RecoveryPredicate;
+import org.neo4j.kernel.recovery.RecoveryStartInformation;
 import org.neo4j.kernel.recovery.RecoveryStartInformationProvider;
 import org.neo4j.logging.InternalLog;
 
@@ -47,8 +48,8 @@ public class LoggingLogFileMonitor
     }
 
     @Override
-    public void recoveryRequired(LogPosition startPosition) {
-        log.info("Recovery required from position " + startPosition);
+    public void recoveryRequired(RecoveryStartInformation recoveryStartInfo) {
+        log.info("Recovery required from position " + recoveryStartInfo.transactionLogPosition());
     }
 
     @Override
@@ -118,17 +119,20 @@ public class LoggingLogFileMonitor
     }
 
     @Override
-    public void noCommitsAfterLastCheckPoint(LogPosition logPosition) {
+    public void recoveryNotRequired(LogPosition logPosition) {
         log.info(format(
                 "No commits found after last check point (which is at %s)",
                 logPosition != null ? logPosition.toString() : "<no log position given>"));
     }
 
     @Override
-    public void logsAfterLastCheckPoint(LogPosition logPosition, long firstTxIdAfterLastCheckPoint) {
+    public void recoveryRequiredAfterLastCheckPoint(
+            LogPosition logPosition,
+            LogPosition oldestNotVisibleTransactionLogPosition,
+            long appendIndexAfterLastCheckPoint) {
         log.info(format(
-                "Transaction logs entries found after the last check point (which is at %s). First observed transaction id: %d.",
-                logPosition, firstTxIdAfterLastCheckPoint));
+                "Transaction logs recovery is required with the last check point (which points to %s, oldest log entry to recover %s). First observed post checkpoint append index: %d.",
+                logPosition, oldestNotVisibleTransactionLogPosition, appendIndexAfterLastCheckPoint));
     }
 
     @Override

@@ -44,7 +44,8 @@ public interface RecoveryService {
             LogPosition writePosition,
             TransactionIdTracker transactionTracker,
             CommittedCommandBatch.BatchInformation lastCommandBatch,
-            AppendIndexProvider appendIndexProvider)
+            AppendIndexProvider appendIndexProvider,
+            RecoveryMonitor monitor)
             throws IOException;
 
     void transactionsRecovered(

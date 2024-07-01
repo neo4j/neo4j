@@ -84,10 +84,10 @@ class RecoveryStartInformationProviderTest {
                 new RecoveryStartInformationProvider(logFiles, monitor).get();
 
         // then
-        verify(monitor).noCommitsAfterLastCheckPoint(null);
-        assertEquals(LogPosition.UNSPECIFIED, recoveryStartInformation.getTransactionLogPosition());
+        verify(monitor).recoveryNotRequired(null);
+        assertEquals(LogPosition.UNSPECIFIED, recoveryStartInformation.transactionLogPosition());
         assertEquals(LogPosition.UNSPECIFIED, recoveryStartInformation.getCheckpointPosition());
-        assertEquals(NO_APPEND_INDEX, recoveryStartInformation.getFirstAppendIndexAfterLastCheckPoint());
+        assertEquals(NO_APPEND_INDEX, recoveryStartInformation.firstAppendIndexAfterLastCheckPoint());
         assertFalse(recoveryStartInformation.isRecoveryRequired());
     }
 
@@ -127,10 +127,53 @@ class RecoveryStartInformationProviderTest {
                 new RecoveryStartInformationProvider(logFiles, monitor).get();
 
         // then
-        verify(monitor).logsAfterLastCheckPoint(txPosition, 10L);
-        assertEquals(txPosition, recoveryStartInformation.getTransactionLogPosition());
+        verify(monitor).recoveryRequiredAfterLastCheckPoint(txPosition, txPosition, 10L);
+        assertEquals(txPosition, recoveryStartInformation.transactionLogPosition());
         assertEquals(checkpointPosition, recoveryStartInformation.getCheckpointPosition());
-        assertEquals(10L, recoveryStartInformation.getFirstAppendIndexAfterLastCheckPoint());
+        assertEquals(10L, recoveryStartInformation.firstAppendIndexAfterLastCheckPoint());
+        assertTrue(recoveryStartInformation.isRecoveryRequired());
+    }
+
+    @Test
+    void propagateOldestNotVisibleTransactionPositionFromLogTailToRecoveryStartInfo() {
+        LogPosition oldestNotVisibleTransactionPosition = new LogPosition(1L, 4242);
+        LogPosition txPosition = new LogPosition(2L, 4242);
+        LogPosition checkpointPosition = new LogPosition(2, 4);
+        LogPosition afterCheckpointPosition = new LogPosition(4, 8);
+        LogPosition readerPostPosition = new LogPosition(5, 9);
+        TransactionId transactionId = new TransactionId(4L, 7L, LATEST_KERNEL_VERSION, 2, 5L, 6L);
+        when(logFiles.getTailMetadata())
+                .thenReturn(new LogTailInformation(
+                        new CheckpointInfo(
+                                oldestNotVisibleTransactionPosition,
+                                txPosition,
+                                null,
+                                checkpointPosition,
+                                afterCheckpointPosition,
+                                readerPostPosition,
+                                LatestVersions.LATEST_KERNEL_VERSION,
+                                LatestVersions.LATEST_KERNEL_VERSION.version(),
+                                transactionId,
+                                transactionId.id() + 8,
+                                "test"),
+                        true,
+                        10L,
+                        false,
+                        currentLogVersion,
+                        LatestVersions.LATEST_KERNEL_VERSION.version(),
+                        null,
+                        kernelProv,
+                        EMPTY_LAST_APPEND_BATCH_INFO_PROVIDER));
+
+        RecoveryStartInformation recoveryStartInformation =
+                new RecoveryStartInformationProvider(logFiles, monitor).get();
+
+        verify(monitor).recoveryRequiredAfterLastCheckPoint(txPosition, oldestNotVisibleTransactionPosition, 10L);
+        assertEquals(txPosition, recoveryStartInformation.transactionLogPosition());
+        assertEquals(
+                oldestNotVisibleTransactionPosition, recoveryStartInformation.oldestNotVisibleTransactionLogPosition());
+        assertEquals(checkpointPosition, recoveryStartInformation.getCheckpointPosition());
+        assertEquals(10L, recoveryStartInformation.firstAppendIndexAfterLastCheckPoint());
         assertTrue(recoveryStartInformation.isRecoveryRequired());
     }
 
@@ -156,9 +199,9 @@ class RecoveryStartInformationProviderTest {
         verify(monitor).noCheckPointFound();
         assertEquals(
                 new LogPosition(0, LogFormat.fromKernelVersion(kernelVersion).getHeaderSize()),
-                recoveryStartInformation.getTransactionLogPosition());
+                recoveryStartInformation.transactionLogPosition());
         assertEquals(LogPosition.UNSPECIFIED, recoveryStartInformation.getCheckpointPosition());
-        assertEquals(10L, recoveryStartInformation.getFirstAppendIndexAfterLastCheckPoint());
+        assertEquals(10L, recoveryStartInformation.firstAppendIndexAfterLastCheckPoint());
         assertTrue(recoveryStartInformation.isRecoveryRequired());
     }
 

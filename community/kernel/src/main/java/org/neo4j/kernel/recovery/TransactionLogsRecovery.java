@@ -103,9 +103,9 @@ public class TransactionLogsRecovery extends LifecycleAdapter {
         Stopwatch recoveryStartTime = Stopwatch.start();
 
         TransactionIdTracker transactionIdTracker = new TransactionIdTracker();
-        LogPosition recoveryStartPosition = recoveryStartInformation.getTransactionLogPosition();
+        LogPosition recoveryStartPosition = recoveryStartInformation.transactionLogPosition();
 
-        monitor.recoveryRequired(recoveryStartPosition);
+        monitor.recoveryRequired(recoveryStartInformation);
 
         LogPosition recoveryToPosition = recoveryStartPosition;
         LogPosition lastTransactionPosition = recoveryStartPosition;
@@ -114,7 +114,7 @@ public class TransactionLogsRecovery extends LifecycleAdapter {
         RecoveryRollbackAppendIndexProvider appendIndexProvider = null;
         boolean incompleteBatchEncountered = false;
         try {
-            if (!recoveryStartInformation.isMissingLogs()) {
+            if (!recoveryStartInformation.missingLogs()) {
                 try {
                     reverseRecovery(recoveryStartInformation, transactionIdTracker, recoveryStartPosition);
 
@@ -146,7 +146,7 @@ public class TransactionLogsRecovery extends LifecycleAdapter {
                                     // edge of provided criteria
                                     // and will fail otherwise.
                                     long beforeCheckpointAppendIndex =
-                                            recoveryStartInformation.getFirstAppendIndexAfterLastCheckPoint() - 1;
+                                            recoveryStartInformation.firstAppendIndexAfterLastCheckPoint() - 1;
                                     if (beforeCheckpointAppendIndex < BASE_APPEND_INDEX) {
                                         throw new RecoveryPredicateException(format(
                                                 "Partial recovery criteria can't be satisfied. No transaction after checkpoint matching to provided "
@@ -196,7 +196,7 @@ public class TransactionLogsRecovery extends LifecycleAdapter {
                                         monitor.batchApplySkipped(nextCommandBatch);
                                         if (!rollbackIncompleteTransactions) {
                                             if (lastHighestTransactionBatchInfo == null) {
-                                                var checkpointInfo = recoveryStartInformation.getCheckpointInfo();
+                                                var checkpointInfo = recoveryStartInformation.checkpointInfo();
                                                 var transactionId = checkpointInfo.transactionId();
                                                 lastBatchInfo = new CommittedCommandBatch.BatchInformation(
                                                         transactionId, checkpointInfo.appendIndex());
@@ -245,12 +245,13 @@ public class TransactionLogsRecovery extends LifecycleAdapter {
                 }
                 appendIndexProvider = new RecoveryRollbackAppendIndexProvider(lastBatchInfo);
                 if (rollbackIncompleteTransactions) {
-                    logsTruncator.truncate(recoveryToPosition, recoveryStartInformation.getCheckpointInfo());
+                    logsTruncator.truncate(recoveryToPosition, recoveryStartInformation.checkpointInfo());
                     var rollbackTransactionInfo = recoveryService.rollbackTransactions(
                             recoveryToPosition,
                             transactionIdTracker,
                             lastHighestTransactionBatchInfo,
-                            appendIndexProvider);
+                            appendIndexProvider,
+                            monitor);
                     if (rollbackTransactionInfo != null) {
                         if (lastHighestTransactionBatchInfo == null
                                 || lastHighestTransactionBatchInfo.txId()
@@ -266,7 +267,7 @@ public class TransactionLogsRecovery extends LifecycleAdapter {
         }
 
         try (var cursorContext = contextFactory.create(RECOVERY_COMPLETED_TAG)) {
-            final boolean missingLogs = recoveryStartInformation.isMissingLogs();
+            final boolean missingLogs = recoveryStartInformation.missingLogs();
             recoveryService.transactionsRecovered(
                     lastHighestTransactionBatchInfo,
                     appendIndexProvider,
@@ -291,7 +292,7 @@ public class TransactionLogsRecovery extends LifecycleAdapter {
             return;
         }
         CommittedCommandBatch lastReversedCommandBatch = null;
-        long lowestRecoveredAppendIndex = recoveryStartInformation.getFirstAppendIndexAfterLastCheckPoint();
+        long lowestRecoveredAppendIndex = recoveryStartInformation.firstAppendIndexAfterLastCheckPoint();
         try (var transactionsToRecover = recoveryService.getCommandBatchesInReverseOrder(recoveryStartPosition);
                 var recoveryVisitor =
                         recoveryService.getRecoveryApplier(REVERSE_RECOVERY, contextFactory, REVERSE_RECOVERY_TAG)) {
@@ -346,7 +347,7 @@ public class TransactionLogsRecovery extends LifecycleAdapter {
     private static long estimateNumberOfBatchesToRecover(
             RecoveryStartInformation recoveryStartInformation, CommittedCommandBatch lastReversedCommandBatch) {
         return lastReversedCommandBatch.appendIndex()
-                - recoveryStartInformation.getFirstAppendIndexAfterLastCheckPoint()
+                - recoveryStartInformation.firstAppendIndexAfterLastCheckPoint()
                 + 1;
     }
 

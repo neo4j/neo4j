@@ -114,7 +114,8 @@ public class DefaultRecoveryService implements RecoveryService {
             LogPosition writePosition,
             TransactionIdTracker transactionTracker,
             CommittedCommandBatch.BatchInformation lastCommittedBatch,
-            AppendIndexProvider appendIndexProvider)
+            AppendIndexProvider appendIndexProvider,
+            RecoveryMonitor monitor)
             throws IOException {
         long[] notCompletedTransactions = transactionTracker.notCompletedTransactions();
         if (notCompletedTransactions.length == 0) {
@@ -145,6 +146,7 @@ public class DefaultRecoveryService implements RecoveryService {
                             UNKNOWN_CONSENSUS_INDEX,
                             appendIndex);
                 }
+                monitor.rollbackTransaction(notCompletedTransaction, appendIndex);
             }
 
             return new RollbackTransactionInfo(lastBatchInfo, writerChannel.getCurrentLogPosition());

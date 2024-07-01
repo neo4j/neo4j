@@ -1870,7 +1870,7 @@ class RecoveryIT {
         MutableBoolean recoveryRunEvenThoughNoCommitsAfterLastCheckpoint = new MutableBoolean();
         RecoveryStartInformationProvider.Monitor monitor = new RecoveryStartInformationProvider.Monitor() {
             @Override
-            public void noCommitsAfterLastCheckPoint(LogPosition logPosition) {
+            public void recoveryNotRequired(LogPosition logPosition) {
                 recoveryRunEvenThoughNoCommitsAfterLastCheckpoint.setTrue();
             }
         };

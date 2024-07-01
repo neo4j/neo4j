@@ -343,7 +343,7 @@ class TransactionLogsRecoveryTest {
             CorruptedLogsTruncator logPruner = new CorruptedLogsTruncator(storeDir, logFiles, fileSystem, INSTANCE);
             monitors.addMonitorListener(new RecoveryMonitor() {
                 @Override
-                public void recoveryRequired(LogPosition recoveryPosition) {
+                public void recoveryRequired(RecoveryStartInformation recoveryStartInfo) {
                     fail("Recovery should not be required");
                 }
             });
@@ -640,7 +640,7 @@ class TransactionLogsRecoveryTest {
         final AtomicBoolean recoveryRequired = new AtomicBoolean();
         RecoveryMonitor monitor = new RecoveryMonitor() {
             @Override
-            public void recoveryRequired(LogPosition recoveryPosition) {
+            public void recoveryRequired(RecoveryStartInformation recoveryStartInfo) {
                 recoveryRequired.set(true);
             }
         };
@@ -735,7 +735,7 @@ class TransactionLogsRecoveryTest {
         }
 
         @Override
-        public void recoveryRequired(LogPosition recoveryPosition) {
+        public void recoveryRequired(RecoveryStartInformation recoveryStartInfo) {
             recoveryRequired = true;
         }
 

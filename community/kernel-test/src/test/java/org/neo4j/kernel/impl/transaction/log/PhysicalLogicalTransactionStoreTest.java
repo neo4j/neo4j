@@ -490,15 +490,16 @@ class PhysicalLogicalTransactionStoreTest {
                 LogPosition writePosition,
                 TransactionIdTracker transactionTracker,
                 CommittedCommandBatch.BatchInformation commandBatch,
-                AppendIndexProvider appendIndexProvider) {
+                AppendIndexProvider appendIndexProvider,
+                RecoveryMonitor recoveryMonitor) {
             return new RollbackTransactionInfo(
                     new CommittedCommandBatch.BatchInformation(1, KernelVersion.V5_18, 2, 3, 4, 5), writePosition);
         }
 
         @Override
         public RecoveryStartInformation getRecoveryStartInformation() throws IOException {
-            return new RecoveryStartInformation(
-                    logFiles.getLogFile().extractHeader(0).getStartPosition(), null, 1);
+            LogPosition startPosition = logFiles.getLogFile().extractHeader(0).getStartPosition();
+            return new RecoveryStartInformation(startPosition, startPosition, null, 1);
         }
 
         @Override

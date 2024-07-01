@@ -37,36 +37,34 @@ import org.neo4j.kernel.impl.transaction.log.files.LogTailInformation;
 public class RecoveryStartInformationProvider implements ThrowingSupplier<RecoveryStartInformation, IOException> {
     public interface Monitor {
         /**
-         * There's a check point log entry as the last entry in the transaction log.
+         * There's a check point log entry that points to the tail of .
          *
          * @param logPosition {@link LogPosition} of the last check point.
          */
-        default void noCommitsAfterLastCheckPoint(LogPosition logPosition) { // no-op by default
-        }
+        default void recoveryNotRequired(LogPosition logPosition) {}
 
         /**
-         * There's a check point log entry, but there are other log entries after it.
+         * There's a check point log entry, but there are log entries that need to be replayed
          *
          * @param logPosition {@link LogPosition} pointing to the first log entry after the last
          * check pointed transaction.
-         * @param firstTxIdAfterLastCheckPoint transaction id of the first transaction after the last check point.
+         * @param oldestNotVisibleTransactionLogPosition pointing to the oldest log entry before the last check pointed that needs to be recovered.
+         * @param appendIndexAfterLastCheckPoint transaction id of the first transaction after the last check point.
          */
-        default void logsAfterLastCheckPoint(
-                LogPosition logPosition, long firstTxIdAfterLastCheckPoint) { // no-op by default
-        }
+        default void recoveryRequiredAfterLastCheckPoint(
+                LogPosition logPosition,
+                LogPosition oldestNotVisibleTransactionLogPosition,
+                long appendIndexAfterLastCheckPoint) {}
 
         /**
          * No check point log entry found in the transaction log.
          */
-        default void noCheckPointFound() { // no-op by default
-        }
+        default void noCheckPointFound() {}
 
         /**
          * Failure to read initial header of initial log file
          */
-        default void failToExtractInitialFileHeader(Exception e) {
-            // no-op by default
-        }
+        default void failToExtractInitialFileHeader(Exception e) {}
     }
 
     public static final Monitor NO_MONITOR = new Monitor() {};
@@ -86,37 +84,55 @@ public class RecoveryStartInformationProvider implements ThrowingSupplier<Recove
         long appendIndexAfterLastCheckPoint = logTailInformation.firstAppendIndexAfterLastCheckPoint;
 
         if (!logTailInformation.isRecoveryRequired()) {
-            monitor.noCommitsAfterLastCheckPoint(
-                    lastCheckPoint != null ? lastCheckPoint.transactionLogPosition() : null);
+            LogPosition logPosition = lastCheckPoint != null ? lastCheckPoint.transactionLogPosition() : null;
+            monitor.recoveryNotRequired(logPosition);
             return NO_RECOVERY_REQUIRED;
         }
         if (logTailInformation.logsMissing()) {
             return MISSING_LOGS;
         }
-        if (logTailInformation.logsAfterLastCheckpoint()) {
+        if (logTailInformation.hasRecordsToRecover()) {
             if (lastCheckPoint == null) {
-                long lowestLogVersion = logFiles.getLogFile().getLowestLogVersion();
-                if (lowestLogVersion != INITIAL_LOG_VERSION) {
-                    throw new UnderlyingStorageException("No check point found in any log file and transaction log "
-                            + "files do not exist from expected version " + INITIAL_LOG_VERSION
-                            + ". Lowest found log file is "
-                            + lowestLogVersion + ".");
-                }
-                monitor.noCheckPointFound();
-                LogPosition position = tryExtractHeaderAndGetStartPosition();
-                return createRecoveryInformation(position, null, appendIndexAfterLastCheckPoint);
+                return noCheckpointRecordRecoveryInfo(appendIndexAfterLastCheckPoint);
             }
-            LogPosition transactionLogPosition = lastCheckPoint.transactionLogPosition();
-            monitor.logsAfterLastCheckPoint(transactionLogPosition, appendIndexAfterLastCheckPoint);
-            return createRecoveryInformation(transactionLogPosition, lastCheckPoint, appendIndexAfterLastCheckPoint);
+            return checkpointBasedRecoveryInfo(lastCheckPoint, appendIndexAfterLastCheckPoint);
         } else if (logTailInformation.hasUnreadableBytesInCheckpointLogs()) {
             // The problem is just corruption in the checkpoint log file
-            return createRecoveryInformation(
-                    lastCheckPoint.transactionLogPosition(), lastCheckPoint, lastCheckPoint.appendIndex());
+            return new RecoveryStartInformation(
+                    lastCheckPoint.transactionLogPosition(),
+                    lastCheckPoint.oldestNotVisibleTransactionLogPosition(),
+                    lastCheckPoint,
+                    lastCheckPoint.appendIndex());
         } else {
             throw new UnderlyingStorageException(
                     "Fail to determine recovery information Log tail info: " + logTailInformation);
         }
+    }
+
+    private RecoveryStartInformation checkpointBasedRecoveryInfo(
+            CheckpointInfo lastCheckPoint, long appendIndexAfterLastCheckPoint) {
+        LogPosition transactionLogPosition = lastCheckPoint.transactionLogPosition();
+        LogPosition oldestNotVisibleTransactionLogPosition = lastCheckPoint.oldestNotVisibleTransactionLogPosition();
+        monitor.recoveryRequiredAfterLastCheckPoint(
+                transactionLogPosition, oldestNotVisibleTransactionLogPosition, appendIndexAfterLastCheckPoint);
+        return new RecoveryStartInformation(
+                transactionLogPosition,
+                oldestNotVisibleTransactionLogPosition,
+                lastCheckPoint,
+                appendIndexAfterLastCheckPoint);
+    }
+
+    private RecoveryStartInformation noCheckpointRecordRecoveryInfo(long appendIndexAfterLastCheckPoint) {
+        long lowestLogVersion = logFiles.getLogFile().getLowestLogVersion();
+        if (lowestLogVersion != INITIAL_LOG_VERSION) {
+            throw new UnderlyingStorageException("No check point found in any log file and transaction log "
+                    + "files do not exist from expected version " + INITIAL_LOG_VERSION
+                    + ". Lowest found log file is "
+                    + lowestLogVersion + ".");
+        }
+        monitor.noCheckPointFound();
+        LogPosition position = tryExtractHeaderAndGetStartPosition();
+        return new RecoveryStartInformation(position, position, null, appendIndexAfterLastCheckPoint);
     }
 
     private LogPosition tryExtractHeaderAndGetStartPosition() {
@@ -127,10 +143,5 @@ public class RecoveryStartInformationProvider implements ThrowingSupplier<Recove
             throw new UnderlyingStorageException(
                     "Unable to read header from log file with version " + INITIAL_LOG_VERSION, e);
         }
-    }
-
-    private static RecoveryStartInformation createRecoveryInformation(
-            LogPosition transactionLogPosition, CheckpointInfo checkpoint, long firstAppendIndex) {
-        return new RecoveryStartInformation(transactionLogPosition, checkpoint, firstAppendIndex);
     }
 }

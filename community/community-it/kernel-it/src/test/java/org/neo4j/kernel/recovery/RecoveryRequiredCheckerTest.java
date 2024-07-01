@@ -20,6 +20,7 @@
 package org.neo4j.kernel.recovery;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
@@ -46,6 +47,10 @@ import org.neo4j.io.layout.CommonDatabaseStores;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.database.DatabaseTracers;
+import org.neo4j.kernel.impl.transaction.log.CheckpointInfo;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
+import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.test.RandomSupport;
@@ -173,6 +178,41 @@ class RecoveryRequiredCheckerTest {
             }
 
             assertTrue(checker.isRecoveryRequiredAt(databaseLayout, INSTANCE));
+        }
+    }
+
+    @Test
+    void doNotRequireCheckpointWhenOldestNotCompletedPositionIsEqualToCheckpointedPosition() throws IOException {
+        var managementService = new TestDatabaseManagementServiceBuilder(testDirectory.directory("test")).build();
+        try {
+            var db = (GraphDatabaseAPI) managementService.database(DEFAULT_DATABASE_NAME);
+
+            databaseLayout = db.databaseLayout();
+            var dependencyResolver = db.getDependencyResolver();
+            storageEngineFactory = dependencyResolver.resolveDependency(StorageEngineFactory.class);
+            var logFiles = dependencyResolver.resolveDependency(LogFiles.class);
+            var checkPointer = dependencyResolver.resolveDependency(CheckPointer.class);
+
+            try (Transaction tx = db.beginTx()) {
+                tx.createNode();
+                tx.commit();
+            }
+
+            checkPointer.forceCheckPoint(new SimpleTriggerInfo("Test"));
+
+            CheckpointInfo latestCheckpoint =
+                    logFiles.getCheckpointFile().findLatestCheckpoint().orElseThrow();
+            assertEquals(
+                    latestCheckpoint.transactionLogPosition(),
+                    latestCheckpoint.oldestNotVisibleTransactionLogPosition());
+        } finally {
+            managementService.shutdown();
+        }
+
+        try (PageCache pageCache = pageCacheExtension.getPageCache(fileSystem)) {
+            RecoveryRequiredChecker checker =
+                    getRecoveryCheckerWithDefaultConfig(fileSystem, pageCache, storageEngineFactory);
+            assertFalse(checker.isRecoveryRequiredAt(databaseLayout, INSTANCE));
         }
     }
 

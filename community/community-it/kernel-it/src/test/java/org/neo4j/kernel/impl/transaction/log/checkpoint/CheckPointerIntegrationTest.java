@@ -279,6 +279,46 @@ class CheckPointerIntegrationTest {
     }
 
     @Test
+    void oldestNotVisibleTransactionIsTheSameAsTransactionPositionOnTheDatabaseWithoutExplicitTransactions()
+            throws IOException {
+        DatabaseManagementService managementService = builder.build();
+        try {
+            GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database(DEFAULT_DATABASE_NAME);
+            getCheckPointer(db).forceCheckPoint(new SimpleTriggerInfo("test"));
+            List<CheckpointInfo> checkpointInfos = checkPointsInTxLog(db);
+            CheckpointInfo lastCheckpoint = checkpointInfos.get(checkpointInfos.size() - 1);
+            assertEquals(
+                    lastCheckpoint.oldestNotVisibleTransactionLogPosition(), lastCheckpoint.transactionLogPosition());
+        } finally {
+            managementService.shutdown();
+        }
+    }
+
+    @Test
+    void oldestNotVisibleTransactionIsTheSameAsTransactionPositionOnTheDatabaseAfterTransactions() throws IOException {
+        DatabaseManagementService managementService = builder.build();
+        try {
+            GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database(DEFAULT_DATABASE_NAME);
+
+            for (int i = 0; i < 17; i++) {
+                try (Transaction transaction = db.beginTx()) {
+                    Node startNode = transaction.createNode();
+                    Node endNode = transaction.createNode();
+                    startNode.createRelationshipTo(endNode, RelationshipType.withName("foo" + i));
+                    transaction.commit();
+                }
+            }
+
+            List<CheckpointInfo> checkpointInfos = checkPointsInTxLog(db);
+            CheckpointInfo lastCheckpoint = checkpointInfos.get(checkpointInfos.size() - 1);
+            assertEquals(
+                    lastCheckpoint.oldestNotVisibleTransactionLogPosition(), lastCheckpoint.transactionLogPosition());
+        } finally {
+            managementService.shutdown();
+        }
+    }
+
+    @Test
     void tracePageCacheAccessOnCheckpoint() throws Exception {
         var managementService = builder.setConfig(check_point_interval_time, ofMillis(0))
                 .setConfig(check_point_interval_tx, 1)

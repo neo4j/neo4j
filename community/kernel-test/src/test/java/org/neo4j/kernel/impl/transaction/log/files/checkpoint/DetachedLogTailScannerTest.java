@@ -893,7 +893,7 @@ class DetachedLogTailScannerTest {
             LogTailMetadata logTailInformation) {
         var tail = (LogTailInformation) logTailInformation;
         assertEquals(hasCheckPointEntry, tail.lastCheckPoint != null);
-        assertEquals(commitsAfterLastCheckPoint, tail.logsAfterLastCheckpoint());
+        assertEquals(commitsAfterLastCheckPoint, tail.hasRecordsToRecover());
         if (commitsAfterLastCheckPoint) {
             assertEquals(firstAppendIndexAfterLastCheckPoint, tail.firstAppendIndexAfterLastCheckPoint);
         }

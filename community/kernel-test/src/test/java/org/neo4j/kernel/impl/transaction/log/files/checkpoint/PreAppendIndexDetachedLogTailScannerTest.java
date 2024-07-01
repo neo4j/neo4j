@@ -840,7 +840,7 @@ class PreAppendIndexDetachedLogTailScannerTest {
             LogTailMetadata logTailInformation) {
         var tail = (LogTailInformation) logTailInformation;
         assertEquals(hasCheckPointEntry, tail.lastCheckPoint != null);
-        assertEquals(commitsAfterLastCheckPoint, tail.logsAfterLastCheckpoint());
+        assertEquals(commitsAfterLastCheckPoint, tail.hasRecordsToRecover());
         if (commitsAfterLastCheckPoint) {
             assertEquals(firstTxIdAfterLastCheckPoint, tail.firstAppendIndexAfterLastCheckPoint);
         }
