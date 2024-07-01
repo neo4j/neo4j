@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.ordering.Ordering.plan
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.Ordering.planUnionOrOrderedUnion
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.AsElementIdSeekable
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.AsIdSeekable
-import org.neo4j.cypher.internal.compiler.planner.logical.steps.OrLeafPlanner.DisjunctionForOneVariable
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.OrLeafPlanner.DisjunctionWithRelatedPredicates
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.OrLeafPlanner.InlinedRelationshipTypePredicateKind
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.OrLeafPlanner.WhereClausePredicateKind
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.leafPlanOptions.leafPlanHeuristic
@@ -51,6 +51,8 @@ import org.neo4j.cypher.internal.ir.ordering.InterestingOrderCandidate
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.collection.immutable.ListSet
+
+import scala.collection.immutable.Set
 
 object OrLeafPlanner {
 
@@ -83,7 +85,7 @@ object OrLeafPlanner {
     def addSolvedToQueryGraph(
       qg: QueryGraph,
       solvedQgs: Seq[QueryGraph],
-      disjunction: DisjunctionForOneVariable,
+      disjunction: DisjunctionWithRelatedPredicates,
       context: LogicalPlanningContext
     ): QueryGraph
   }
@@ -112,6 +114,15 @@ object OrLeafPlanner {
         hints = bareQg.hints
       )
     }
+  }
+
+  case class DisjunctionWithRelatedPredicates(
+    disjunction: DisjunctionForOneVariable,
+    relatedPredicates: Seq[DistributablePredicate]
+  ) {
+
+    override def toString: String =
+      Seq(s"(${disjunction.toString})", s"${relatedPredicates.mkString(" AND ")}").mkString(" AND ")
   }
 
   /**
@@ -197,33 +208,57 @@ object OrLeafPlanner {
     override def addSolvedToQueryGraph(
       qg: QueryGraph,
       solvedQgs: Seq[QueryGraph],
-      disjunction: DisjunctionForOneVariable,
+      disjunctionWithRelatedPredicates: DisjunctionWithRelatedPredicates,
       context: LogicalPlanningContext
     ): QueryGraph = {
-      // Predicates solved by all plans can be added top-level, otherwise the planner will have to plan another Selection for them.
-      val predicatesSolvedByAllPlans = solvedQgs.head.selections.flatPredicates.filter { predicate =>
-        solvedQgs.tail.forall(_.selections.flatPredicates.contains(predicate))
+      val disjunction = disjunctionWithRelatedPredicates.disjunction
+      val relatedPredicates = disjunctionWithRelatedPredicates.relatedPredicates
+      lazy val predicatesInTheDisjunction = disjunction.predicates.collect {
+        case w: WhereClausePredicate => w
+      }.toSet
+      // Each of the solved predicates may contain the relatedpredicates for the disjunction.
+      lazy val predicatesRelatedToTheDisjunction = relatedPredicates.collect {
+        case w: WhereClausePredicate => w.flattenConjunction
+      }.flatten
+
+      // Predicates that are not part of the original disjunction but part of the related predicates SHOULD be solved by all plans (since related predicates will add an AND relationship across the disjunction).
+      // We will pick these up and add them to the new solved query graph.
+      val relatedPredicatesSolvedByAllPlans = solvedQgs.head.selections.flatPredicatesSet.filter { predicate =>
+        predicatesRelatedToTheDisjunction.contains(predicate) &&
+        solvedQgs.tail.forall(_.selections.flatPredicatesSet.contains(predicate))
       }
 
-      // Predicates solved by only one plan each must be added inside an Ors
-      val disjunctivePredicatesPerPlan = solvedQgs.map(_
-        .selections
-        .flatPredicates
-        .filterNot(predicatesSolvedByAllPlans.contains))
+      // Each plan should solve a part of the disjunction.
+      // We identify all parts of the disjunction solved by each of the query plan.
+      // Each query plan should solve (at least) one side of the disjunction + all the related plans
+      val disjunctivePredicatesPerPlan = solvedQgs
+        .map(_.selections.flatPredicatesSet)
+        .collect({
+          case solvedPredicateSet if solvedPredicateSet.nonEmpty =>
+            val solvedDisjunctivePredicates = predicatesInTheDisjunction
+              .collect({
+                case predicateInDisjunction
+                  if predicateInDisjunction.flattenConjunction.union(
+                    relatedPredicatesSolvedByAllPlans
+                  ) == solvedPredicateSet => predicateInDisjunction.e
+              })
+            if (solvedDisjunctivePredicates.isEmpty) {
+              val predicatesSolvedByOnlyThisPlan = solvedPredicateSet.diff(relatedPredicatesSolvedByAllPlans)
+              if (predicatesSolvedByOnlyThisPlan.nonEmpty)
+                Set(Ands.create(
+                  predicatesSolvedByOnlyThisPlan.to(ListSet)
+                ))
+              else
+                Set.empty
+            } else
+              solvedDisjunctivePredicates
+        }).flatten
 
-      // We assume:
-      // - disjunctivePredicatesPerPlan.flatten is a subset of disjunction.predicates
-      //   - Either we have a rel-type disjunction, then disjunctivePredicatesPerPlan.flatten is empty
-      //   - Or we have a where clause disjunction
-      // - Each plan solves exactly one part from the disjunction.
-      //   That can either be a single predicate or a conjunction or predicates.
-      // - If one of the plan solves a predicate in the disjunction that is anyway solved by all other plans, then we will not get a predicate from this plan here.
-
-      val qgWithPredicatesSolvedByAllPlans = qg.addPredicates(predicatesSolvedByAllPlans: _*)
+      val qgWithPredicatesSolvedByAllPlans = qg.addPredicates(relatedPredicatesSolvedByAllPlans.to(Seq): _*)
       // If any of the plans does not provide a predicate to this, this amounts to providing `TRUE` which in turn makes the `Ors` to be created constant `TRUE`.
       // Thus, we leave it out.
-      if (disjunctivePredicatesPerPlan.forall(_.nonEmpty)) {
-        val ors = Ors(disjunctivePredicatesPerPlan.map(x => Ands.create(x.to(ListSet))))(InputPosition.NONE)
+      if (disjunctivePredicatesPerPlan.nonEmpty) {
+        val ors = Ors.create(disjunctivePredicatesPerPlan.to(ListSet))
         qgWithPredicatesSolvedByAllPlans.addPredicates(ors)
       } else {
         qgWithPredicatesSolvedByAllPlans
@@ -245,6 +280,13 @@ object OrLeafPlanner {
         case Ands(compositePredicates) =>
           compositePredicates.forall(flatPredicates.contains)
         case _ => flatPredicates.contains(e)
+      }
+    }
+
+    def flattenConjunction: Set[Expression] = {
+      e match {
+        case Ands(compositePredicates) => compositePredicates
+        case default                   => Set(default)
       }
     }
 
@@ -310,9 +352,10 @@ object OrLeafPlanner {
     override def addSolvedToQueryGraph(
       qg: QueryGraph,
       solvedQgs: Seq[QueryGraph],
-      disjunction: DisjunctionForOneVariable,
+      disjunctionWithRelatedPredicates: DisjunctionWithRelatedPredicates,
       context: LogicalPlanningContext
     ): QueryGraph = {
+      val disjunction = disjunctionWithRelatedPredicates.disjunction
       val relTypes = solvedQgs.map { solvedQG =>
         solvedQG.patternRelationships.collectFirst {
           case PatternRelationship(disjunction.`variable`, _, _, Seq(singleType), _) => singleType
@@ -372,10 +415,10 @@ case class OrLeafPlanner(inner: Seq[LeafPlanner]) extends LeafPlanner {
     def solvedQueryGraph(plan: LogicalPlan): QueryGraph =
       context.staticComponents.planningAttributes.solveds.get(plan.id).asSinglePlannerQuery.tailOrSelf.queryGraph
 
-    def findPlansPerPredicate(disjunction: DisjunctionForOneVariable): Array[Array[LogicalPlan]] = {
-      // Collect any other top-level predicates that only use this variable
-      val relatedPredicates = predicateKinds.flatMap(_.collectRelatedPredicates(qg, disjunction))
-
+    def findPlansPerPredicate(disjunctionWithRelatedPredicates: DisjunctionWithRelatedPredicates)
+      : Array[Array[LogicalPlan]] = {
+      val disjunction = disjunctionWithRelatedPredicates.disjunction
+      val relatedPredicates = disjunctionWithRelatedPredicates.relatedPredicates
       // Keep only the node/rel variable around
       val qgWithOnlyRelevantVariable = disjunction.qgWithOnlyRelevantVariable(bareQg)
 
@@ -409,27 +452,33 @@ case class OrLeafPlanner(inner: Seq[LeafPlanner]) extends LeafPlanner {
       }.toArray
     }
 
-    def computeJoinedSolvedQueryGraph(plans: Seq[LogicalPlan], disjunction: DisjunctionForOneVariable): QueryGraph = {
+    def computeJoinedSolvedQueryGraph(
+      plans: Seq[LogicalPlan],
+      disjunctionWithRelatedPredicates: DisjunctionWithRelatedPredicates
+    ): QueryGraph = {
       // Start by creating a query graph containing only the variables that are involved by the disjunction, and the correct arguments.
-      val queryGraph = disjunction.qgWithOnlyRelevantVariable(bareQg)
+      val queryGraph = disjunctionWithRelatedPredicates.disjunction.qgWithOnlyRelevantVariable(bareQg)
 
       val solvedQgs = plans.map(solvedQueryGraph)
 
       // Let the predicate kinds add the predicates that each plan claims to solve to the queryGraph
       predicateKinds.foldLeft(queryGraph)((accQg, dp) =>
-        dp.addSolvedToQueryGraph(accQg, solvedQgs, disjunction, context)
+        dp.addSolvedToQueryGraph(accQg, solvedQgs, disjunctionWithRelatedPredicates, context)
       )
     }
 
     def mergePlansWithUnion(plans: Array[LogicalPlan], joinedSolvedQueryGraph: QueryGraph): LogicalPlan = {
-      plans match {
-        case Array(singlePlan) => singlePlan
-        case _                 =>
+      val distinctPlans = plans.distinct
+      distinctPlans match {
+        case Array(singlePlan) =>
+          // This implies that the query plan solves both the lhs and the rhs of the disjunction. So map the query plan to combined joinedSolvedQueryGraph.
+          context.staticComponents.logicalPlanProducer.updateSolvedForOr(singlePlan, joinedSolvedQueryGraph, context)
+        case _ =>
           // Determines if we can plan OrderedUnion
-          val maybeSortColumns = orderedUnionColumns(plans, context)
+          val maybeSortColumns = orderedUnionColumns(distinctPlans, context)
 
           // Join the plans with Union
-          val unionPlan = plans.reduce[LogicalPlan] {
+          val unionPlan = distinctPlans.reduce[LogicalPlan] {
             case (p1, p2) => planUnionOrOrderedUnion(maybeSortColumns, p1, p2, Nil, context)
           }
 
@@ -449,14 +498,21 @@ case class OrLeafPlanner(inner: Seq[LeafPlanner]) extends LeafPlanner {
       if disjunction.predicates.size <= context.settings.predicatesAsUnionMaxSize
       // No point in doing OR leaf planning for less than 2 predicates
       if disjunction.predicates.size >= 2
-      plansPerExpression = findPlansPerPredicate(disjunction)
+      disjunctionWithRelatedPredicates =
+        DisjunctionWithRelatedPredicates(
+          disjunction,
+          predicateKinds.flatMap(_.collectRelatedPredicates(qg, disjunction)).toSeq
+        )
+      plansPerExpression = findPlansPerPredicate(disjunctionWithRelatedPredicates)
       // We can only solve the whole OR. If one predicate didn't yield any plan, we have to give up.
       if plansPerExpression.forall(_.nonEmpty)
       // Find each combination of best plans, with one best plan for each predicate in the disjunction
       combinations = combine(plansPerExpression)
       plans <- combinations
       if plans.nonEmpty
-      distinctPlans = plans.distinct
-    } yield mergePlansWithUnion(distinctPlans, computeJoinedSolvedQueryGraph(distinctPlans, disjunction))
+    } yield mergePlansWithUnion(
+      plans,
+      computeJoinedSolvedQueryGraph(plans, disjunctionWithRelatedPredicates)
+    )
   }
 }

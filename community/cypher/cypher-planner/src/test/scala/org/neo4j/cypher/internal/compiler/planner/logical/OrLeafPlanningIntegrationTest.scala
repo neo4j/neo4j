@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.colu
 import org.neo4j.cypher.internal.logical.plans.Distinct
 import org.neo4j.cypher.internal.logical.plans.GetValue
 import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
+import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.IndexSeek.nodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.NodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.Selection
@@ -691,10 +692,166 @@ class OrLeafPlanningIntegrationTest
         .produceResults(column("n", "cacheNFromStore[n.a]"))
         .filter(
           "not cacheNFromStore[n.a]",
-          "CoerceToPredicate(cacheNFromStore[n.a])",
-          "not cacheNFromStore[n.a] OR cacheNFromStore[n.a]"
+          "CoerceToPredicate(cacheNFromStore[n.a])"
         )
         .nodeByLabelScan("n", "L")
+        .build()
+    )
+  }
+
+  test("should handle multiple disjunctions by picking the first one") {
+    // this tests a published github issue.
+    val cfg = plannerConfig()
+      .setLabelCardinality("L1", 10).build()
+    val plan = cfg.plan(
+      """
+        |MATCH (n:L1)
+        |WHERE ((((((((("<")+("j4"))ENDS WITH(("")+("Ta")))OR(reverse("VU,")=~toUpper("%")))XOR(false))AND(n.k1))XOR(n.k1)))OR(n.k1))XOR(n.k1)
+        |RETURN n.k1
+        |""".stripMargin
+    )
+
+    plan should equal(
+      cfg.planBuilder()
+        .produceResults("`n.k1`")
+        .projection("cacheN[n.k1] AS `n.k1`")
+        .filter(
+          "NOT ('<' + 'j4') ENDS WITH ('' + 'Ta') OR NOT cacheN[n.k1] OR cacheN[n.k1]",
+          "NOT reverse('VU,') =~ toUpper('%') OR NOT cacheN[n.k1] OR cacheN[n.k1]",
+          "('<' + 'j4') ENDS WITH ('' + 'Ta') OR reverse('VU,') =~ toUpper('%') OR cacheN[n.k1]",
+          "NOT ('<' + 'j4') ENDS WITH ('' + 'Ta') OR ('<' + 'j4') ENDS WITH ('' + 'Ta') OR reverse('VU,') =~ toUpper('%') OR NOT cacheN[n.k1] OR cacheN[n.k1]",
+          "NOT reverse('VU,') =~ toUpper('%') OR ('<' + 'j4') ENDS WITH ('' + 'Ta') OR reverse('VU,') =~ toUpper('%') OR NOT cacheN[n.k1] OR cacheN[n.k1]"
+        )
+        .distinct("n AS n")
+        .cacheProperties("cacheN[n.k1]")
+        .union()
+        .|.filter("NOT cacheN[n.k1]", "CoerceToPredicate(cacheNFromStore[n.k1])")
+        .|.nodeByLabelScan("n", "L1", IndexOrderNone)
+        .filter(
+          "NOT cacheNFromStore[n.k1]",
+          "CoerceToPredicate(cacheNFromStore[n.k1])",
+          "(NOT ('<' + 'j4') ENDS WITH ('' + 'Ta') AND NOT reverse('VU,') =~ toUpper('%') OR NOT cacheNFromStore[n.k1]) AND NOT cacheNFromStore[n.k1] OR (('<' + 'j4') ENDS WITH ('' + 'Ta') OR reverse('VU,') =~ toUpper('%')) AND cacheNFromStore[n.k1]"
+        )
+        .nodeByLabelScan("n", "L1", IndexOrderNone)
+        .build()
+    )
+  }
+
+  test(
+    "should not redistribute on a complex nested disjunction with negations"
+  ) {
+    // this tests a published github issue.
+    // a normalized version of the predicate is (:((!n1 & !n2 & n3 & n4 & !n5 & !n6 & !n7 & n8 & n9 | n10 & !x)&!x))
+    // the next test is a simplified expression from here without negations.
+    val q =
+      """
+        |MATCH (:!(!(!(n1|(!(!(n2|(!(!(!(n3&n5)|n5))|n6)|!(!(n7|!(n8&n9)))))))|!(x|!n10))|x))
+        |RETURN 0
+        |""".stripMargin
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setLabelCardinality("n1", 10)
+      .setLabelCardinality("n2", 10)
+      .setLabelCardinality("n3", 10)
+      .setLabelCardinality("n4", 10)
+      .setLabelCardinality("n5", 10)
+      .setLabelCardinality("n6", 10)
+      .setLabelCardinality("n7", 10)
+      .setLabelCardinality("n8", 10)
+      .setLabelCardinality("n9", 10)
+      .setLabelCardinality("n10", 10)
+      .setLabelCardinality("x", 10)
+      .build()
+
+    val plan = cfg.plan(q)
+
+    plan should equal(
+      cfg.planBuilder()
+        .produceResults("0")
+        .projection("0 AS 0")
+        .distinct("anon_0 AS anon_0")
+        .union()
+        .|.subtractionNodeByLabelsScan("anon_0", Seq("n10"), Seq("x"), IndexOrderNone)
+        .subtractionNodeByLabelsScan(
+          "anon_0",
+          Seq("n8", "n5", "n9", "n3"),
+          Seq("n6", "n5", "n1", "n2", "n7", "x"),
+          IndexOrderNone
+        )
+        .build()
+    )
+  }
+
+  test(
+    "should not redistribute on a disjunction with overlapping predicates if all the predicates are solved by the disjunction already"
+  ) {
+    val q =
+      """
+        |MATCH (:((n1 & n2 & n3 & n4 & n5 & n6 & n7 & n8 & n9 | n10 & x)&x))
+        |RETURN 0
+        |""".stripMargin
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setLabelCardinality("n1", 10)
+      .setLabelCardinality("n2", 10)
+      .setLabelCardinality("n3", 10)
+      .setLabelCardinality("n4", 10)
+      .setLabelCardinality("n5", 10)
+      .setLabelCardinality("n6", 10)
+      .setLabelCardinality("n7", 10)
+      .setLabelCardinality("n8", 10)
+      .setLabelCardinality("n9", 10)
+      .setLabelCardinality("n10", 10)
+      .setLabelCardinality("x", 10)
+      .build()
+
+    val plan = cfg.plan(q)
+
+    plan should equal(
+      cfg.planBuilder()
+        .produceResults("0")
+        .projection("0 AS 0")
+        .distinct("anon_0 AS anon_0")
+        .union()
+        .|.intersectionNodeByLabelsScan("anon_0", Seq("x", "n10"), IndexOrderNone)
+        .intersectionNodeByLabelsScan(
+          "anon_0",
+          Seq("n8", "n9", "n6", "n4", "n5", "n3", "n1", "n2", "n7", "x"),
+          IndexOrderNone
+        )
+        .build()
+    )
+  }
+
+  test(
+    "Should compute the solved expression properly if either side of the disjunction is completely contained by the other side."
+  ) {
+    val planner =
+      plannerConfig()
+        .setAllNodesCardinality(10_000)
+        .setLabelCardinality("A", 1_000)
+        .setLabelCardinality("B", 1_000)
+        .setLabelCardinality("C", 1_000)
+        .setLabelCardinality("D", 1_000)
+        .setLabelCardinality("E", 1_000)
+        .setLabelCardinality("F", 1_000)
+        .setLabelCardinality("G", 1_000)
+        .setLabelCardinality("H", 1_000)
+        .setLabelCardinality("I", 1_000)
+        .setLabelCardinality("X", 1_000)
+        .setLabelCardinality("Y", 1_000)
+        .build()
+
+    val query =
+      """MATCH (n:(A & B & C & D & E & F & G & H & I | A & X) & (X & B & C & D & E & F & G & H & I))
+        |RETURN n""".stripMargin
+
+    val plan = planner.plan(query)
+
+    plan should equal(
+      planner.planBuilder()
+        .produceResults("n")
+        .intersectionNodeByLabelsScan("n", Seq("A", "I", "H", "C", "D", "G", "E", "B", "F", "X"), IndexOrderNone)
         .build()
     )
   }
@@ -1154,7 +1311,6 @@ class OrLeafPlanningIntegrationTest
       planner.planBuilder()
         .produceResults(column("a", "cacheNHasProperty[a.prop1]", "cacheN[a.prop2]"))
         .filter(
-          "cacheN[a.prop2] IS NOT NULL OR cacheNHasProperty[a.prop1] IS NOT NULL",
           "a.prop3 IS NOT NULL OR cacheNHasProperty[a.prop1] IS NOT NULL"
         )
         .distinct("a AS a")

@@ -2770,7 +2770,7 @@ case class LogicalPlanProducer(
           val newHints = lhs.allHints ++ rhs.allHints
           that.withQueryGraph(solvedQueryGraph.withHints(newHints))
         }
-      case q => throw new IllegalStateException(s"Expected orPlan to solve a UnionQuery, got: $q")
+      case q => q.asSinglePlannerQuery.withQueryGraph(solvedQueryGraph.withHints(q.allHints))
     }
     val cardinality = cardinalityModel(
       solved,

@@ -1272,6 +1272,27 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
     }
   }
 
+  test("should retain solved hints even when the or leaf planner plans a single plan without any unions") {
+    new givenConfig().withLogicalPlanningContext { (_, context) =>
+      val lpp = LogicalPlanProducer(context.cardinality, context.staticComponents.planningAttributes, idGen)
+
+      val singleNonUnionPlan = fakeLogicalPlanFor("x", "y")
+      val hint1 = UsingIndexHint(v"foo", labelOrRelTypeName("bar"), Seq())(InputPosition.NONE)
+      val hint2 = UsingIndexHint(v"blah", labelOrRelTypeName("meh"), Seq())(InputPosition.NONE)
+
+      val solveds = context.staticComponents.planningAttributes.solveds
+      val spq = SinglePlannerQuery.empty.amendQueryGraph(qg => qg.addHints(Seq(hint1, hint2)))
+
+      solveds.set(singleNonUnionPlan.id, spq)
+      context.staticComponents.planningAttributes.providedOrders.set(singleNonUnionPlan.id, ProvidedOrder.empty)
+
+      val updatedPlan = lpp.updateSolvedForOr(singleNonUnionPlan, QueryGraph(), context)
+
+      solveds.get(updatedPlan.id).allHints shouldBe Set(hint1, hint2)
+      context.staticComponents.planningAttributes.providedOrders.get(updatedPlan.id) shouldBe ProvidedOrder.empty
+    }
+  }
+
   test("should validate the inner plan against the quantified path pattern when planning Trail") {
     new givenConfig().withLogicalPlanningContext { (_, context) =>
       val producer = LogicalPlanProducer(context.cardinality, context.staticComponents.planningAttributes, idGen)
