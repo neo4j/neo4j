@@ -27,8 +27,7 @@ public enum ConnectorType {
     PROMETHEUS(4, "prometheus"),
     RAFT(5, "raft-server"),
     CLUSTER(6, "catchup-server"),
-    BACKUP(7, "backup-server"),
-    ARROW(8, "arrow-server");
+    BACKUP(7, "backup-server");
 
     private final byte code;
     private final String description;
