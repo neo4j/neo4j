@@ -584,7 +584,8 @@ public class TxState implements TransactionState {
                 : relationshipState;
     }
 
-    public RelationshipState getRelationshipStateEvenThoDeleted(long id) {
+    @Override
+    public RelationshipState getRelationshipStateEvenDeleted(long id) {
         if (relationshipStatesMap == null) {
             return RelationshipStateImpl.EMPTY;
         }
@@ -859,7 +860,7 @@ public class TxState implements TransactionState {
 
     public <EX extends Exception> boolean deletedRelationshipVisit(
             long relId, RelationshipVisitorWithProperties<EX> visitor) throws EX {
-        return getRelationshipStateEvenThoDeleted(relId).accept(visitor);
+        return getRelationshipStateEvenDeleted(relId).accept(visitor);
     }
 
     public void markAsMultiChunk() {

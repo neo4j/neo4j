@@ -142,6 +142,8 @@ public interface ReadableTransactionState {
 
     RelationshipState getRelationshipState(long id);
 
+    RelationshipState getRelationshipStateEvenDeleted(long id);
+
     MutableIntSet augmentLabels(MutableIntSet labels, NodeState nodeState);
 
     /**

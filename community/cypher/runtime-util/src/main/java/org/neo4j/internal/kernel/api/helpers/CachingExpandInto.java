@@ -432,7 +432,12 @@ public class CachingExpandInto extends DefaultCloseListenable {
 
         @Override
         public void properties(PropertyCursor cursor, PropertySelection selection) {
-            read.relationshipProperties(currentRelationship.id, currentRelationship.properties, selection, cursor);
+            read.relationshipProperties(
+                    currentRelationship.id,
+                    currentRelationship.from,
+                    currentRelationship.properties,
+                    selection,
+                    cursor);
         }
 
         @Override

@@ -47,6 +47,11 @@ class RelationshipStateImpl extends EntityStateImpl implements RelationshipState
         }
 
         @Override
+        public long getStartNodeId() {
+            throw new UnsupportedOperationException("startNodeId not defined");
+        }
+
+        @Override
         public <EX extends Exception> boolean accept(RelationshipVisitor<EX> visitor) {
             return false;
         }
@@ -137,6 +142,11 @@ class RelationshipStateImpl extends EntityStateImpl implements RelationshipState
     @Override
     public int getType() {
         return type;
+    }
+
+    @Override
+    public long getStartNodeId() {
+        return startNode;
     }
 
     @Override

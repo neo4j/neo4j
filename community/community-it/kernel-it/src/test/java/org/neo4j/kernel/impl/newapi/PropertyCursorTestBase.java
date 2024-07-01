@@ -311,7 +311,11 @@ public abstract class PropertyCursorTestBase<G extends KernelAPIReadTestSupport>
             assertFalse(props.next(), "no properties by direct method");
 
             read.relationshipProperties(
-                    relationship.relationshipReference(), relationship.propertiesReference(), ALL_PROPERTIES, props);
+                    relationship.relationshipReference(),
+                    relationship.sourceNodeReference(),
+                    relationship.propertiesReference(),
+                    ALL_PROPERTIES,
+                    props);
             assertFalse(props.next(), "no properties via property ref");
 
             assertFalse(relationship.next(), "only one relationship");
@@ -519,7 +523,11 @@ public abstract class PropertyCursorTestBase<G extends KernelAPIReadTestSupport>
             assertFalse(props.next(), "single property");
 
             read.relationshipProperties(
-                    relationship.relationshipReference(), relationship.propertiesReference(), ALL_PROPERTIES, props);
+                    relationship.relationshipReference(),
+                    relationship.sourceNodeReference(),
+                    relationship.propertiesReference(),
+                    ALL_PROPERTIES,
+                    props);
             assertTrue(props.next(), "has properties via property ref");
             assertEquals(expectedValue, props.propertyValue(), "correct value");
             assertFalse(props.next(), "single property");

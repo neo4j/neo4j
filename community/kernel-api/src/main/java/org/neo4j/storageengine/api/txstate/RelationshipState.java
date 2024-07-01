@@ -32,6 +32,8 @@ public interface RelationshipState extends EntityState {
 
     int getType();
 
+    long getStartNodeId();
+
     <EX extends Exception> boolean accept(RelationshipVisitor<EX> visitor) throws EX;
 
     <EX extends Exception> boolean accept(RelationshipVisitorWithProperties<EX> visitor) throws EX;

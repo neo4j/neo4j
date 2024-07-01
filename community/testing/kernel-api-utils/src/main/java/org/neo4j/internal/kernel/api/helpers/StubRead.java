@@ -302,7 +302,11 @@ public class StubRead implements Read {
 
     @Override
     public void relationshipProperties(
-            long nodeReference, Reference reference, PropertySelection selection, PropertyCursor cursor) {
+            long nodeReference,
+            long startNodeReference,
+            Reference reference,
+            PropertySelection selection,
+            PropertyCursor cursor) {
         throw new UnsupportedOperationException();
     }
 
