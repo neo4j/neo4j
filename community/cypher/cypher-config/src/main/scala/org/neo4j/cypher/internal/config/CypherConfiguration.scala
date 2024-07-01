@@ -175,6 +175,9 @@ class CypherConfiguration private (val config: Config) {
   val statefulShortestPlanningRewriteQuantifiersAbove: Int =
     config.get(GraphDatabaseInternalSettings.stateful_shortest_planning_rewrite_quantifiers_above)
 
+  val cachePropertiesForEntities: Boolean =
+    config.get(GraphDatabaseInternalSettings.planning_cache_properties_for_entities_enabled)
+
   // dynamic configurations
   private var _obfuscateLiterals: Boolean = config.get(GraphDatabaseSettings.log_queries_obfuscate_literals)
   private var _renderPlanDescription: Boolean = config.get(GraphDatabaseSettings.cypher_render_plan_descriptions)

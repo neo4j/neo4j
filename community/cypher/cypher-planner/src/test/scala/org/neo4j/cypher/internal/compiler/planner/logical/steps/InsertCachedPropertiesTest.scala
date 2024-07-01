@@ -2210,6 +2210,19 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
       .build()
   }
 
+  test("should not cache properties of returned indexed nodes if setting disabled") {
+    val builder = new LogicalPlanBuilder()
+      .produceResults("n")
+      .nodeIndexOperator("n:L(prop > 123)", getValue = _ => CanGetValue, indexOrder = IndexOrderAscending)
+
+    val (newPlan, _) = replace(builder.build(), builder.getSemanticTable, cachePropertiesForEntities = false)
+
+    newPlan shouldBe new LogicalPlanBuilder()
+      .produceResults("n")
+      .nodeIndexOperator("n:L(prop > 123)", getValue = _ => GetValue, indexOrder = IndexOrderAscending)
+      .build()
+  }
+
   test("should cache properties in produce result of returned indexed nodes after not renaming in aggregation") {
     val builder = new LogicalPlanBuilder()
       .produceResults("n", "c")
@@ -2863,7 +2876,8 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
     initialTable: SemanticTable,
     effectiveCardinalities: EffectiveCardinalities = new EffectiveCardinalities,
     idGen: IdGen = new SequentialIdGen(),
-    pushdownPropertyReads: Boolean = false
+    pushdownPropertyReads: Boolean = false,
+    cachePropertiesForEntities: Boolean = true
   ): (LogicalPlan, SemanticTable) = {
     val state = LogicalPlanState(InitialState("", IDPPlannerName, new AnonymousVariableNameGenerator))
       .withSemanticTable(initialTable)
@@ -2874,6 +2888,7 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
 
     val config = mock[CypherPlannerConfiguration](RETURNS_DEEP_STUBS)
     when(config.propertyCachingMode()).thenReturn(PropertyCachingMode.CacheProperties)
+    when(config.cachePropertiesForEntities()).thenReturn(cachePropertiesForEntities)
 
     val plannerContext = mock[PlannerContext]
     when(plannerContext.logicalPlanIdGen).thenReturn(idGen)

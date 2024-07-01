@@ -1073,6 +1073,12 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
             .build();
 
     @Internal
+    @Description("Feature flag to enable/disable planning of cached properties for entities.")
+    public static final Setting<Boolean> planning_cache_properties_for_entities_enabled = newBuilder(
+                    "internal.cypher.planning_cache_properties_for_entities_enabled", BOOL, true)
+            .build();
+
+    @Internal
     @Description("Feature flag to enable/disable planning use of intersection scans.")
     public static final Setting<Boolean> planning_intersection_scans_enabled = newBuilder(
                     "internal.cypher.planning_intersection_scans_enabled", BOOL, true)

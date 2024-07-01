@@ -166,7 +166,12 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean)
       )
 
     // In the second step we rewrite both properties and index plans
-    val (rewrittenPlan, newSemanticTable) = rewrite(logicalPlan, propertyUsagesAndRenamings, from.semanticTable())
+    val (rewrittenPlan, newSemanticTable) = rewrite(
+      logicalPlan,
+      propertyUsagesAndRenamings,
+      from.semanticTable(),
+      context.config.cachePropertiesForEntities()
+    )
 
     from
       .withMaybeLogicalPlan(Some(rewrittenPlan))
@@ -332,13 +337,14 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean)
   private def rewrite(
     logicalPlan: LogicalPlan,
     acc: PropertyUsagesAndRenamings,
-    semanticTable: SemanticTable
+    semanticTable: SemanticTable,
+    cachePropertiesForEntities: Boolean
   ): (LogicalPlan, SemanticTable) = {
     var currentTypes = semanticTable.types
     val cachedPropertiesTracker = new CachedPropertiesTracker
     val rewriter = bottomUp(Rewriter.lift {
 
-      case produceResult: ProduceResult =>
+      case produceResult: ProduceResult if cachePropertiesForEntities =>
         val newColumns =
           produceResult
             .returnColumns
@@ -359,7 +365,7 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean)
         }
         aggregating
 
-      case properties @ Properties(variable: LogicalVariable) =>
+      case properties @ Properties(variable: LogicalVariable) if cachePropertiesForEntities =>
         cachedPropertiesTracker.get(acc.variableWithOriginalName(asVariable(variable))) match {
           case Some(cached) => PropertiesUsingCachedProperties(variable, cached)
           case None         => properties
