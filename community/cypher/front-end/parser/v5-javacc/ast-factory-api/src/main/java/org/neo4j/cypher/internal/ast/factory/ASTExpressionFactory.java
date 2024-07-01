@@ -18,6 +18,10 @@ package org.neo4j.cypher.internal.ast.factory;
 
 import java.util.List;
 import org.neo4j.cypher.internal.ast.factory.ASTFactory.StringPos;
+import org.neo4j.cypher.internal.parser.common.ast.factory.ParameterType;
+import org.neo4j.cypher.internal.parser.common.ast.factory.ParserCypherTypeName;
+import org.neo4j.cypher.internal.parser.common.ast.factory.ParserNormalForm;
+import org.neo4j.cypher.internal.parser.common.ast.factory.ParserTrimSpecification;
 
 /**
  * Factory for constructing AST expressions.

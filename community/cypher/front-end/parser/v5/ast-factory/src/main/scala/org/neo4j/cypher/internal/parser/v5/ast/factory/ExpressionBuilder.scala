@@ -30,7 +30,6 @@ import org.neo4j.cypher.internal.ast.Match
 import org.neo4j.cypher.internal.ast.Query
 import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.Where
-import org.neo4j.cypher.internal.ast.factory.ParserTrimSpecification
 import org.neo4j.cypher.internal.expressions.Add
 import org.neo4j.cypher.internal.expressions.AllIterablePredicate
 import org.neo4j.cypher.internal.expressions.AllPropertiesSelector
@@ -134,7 +133,8 @@ import org.neo4j.cypher.internal.parser.ast.util.Util.nodeChildType
 import org.neo4j.cypher.internal.parser.ast.util.Util.optUnsignedDecimalInt
 import org.neo4j.cypher.internal.parser.ast.util.Util.pos
 import org.neo4j.cypher.internal.parser.ast.util.Util.unsignedDecimalInt
-import org.neo4j.cypher.internal.parser.deprecation.DeprecatedChars
+import org.neo4j.cypher.internal.parser.common.ast.factory.ParserTrimSpecification
+import org.neo4j.cypher.internal.parser.common.deprecation.DeprecatedChars
 import org.neo4j.cypher.internal.parser.v5.Cypher5Parser
 import org.neo4j.cypher.internal.parser.v5.Cypher5ParserListener
 import org.neo4j.cypher.internal.util.CypherExceptionFactory

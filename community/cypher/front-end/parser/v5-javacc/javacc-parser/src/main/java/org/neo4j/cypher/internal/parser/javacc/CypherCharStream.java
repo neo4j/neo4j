@@ -17,7 +17,7 @@
 package org.neo4j.cypher.internal.parser.javacc;
 
 import java.io.IOException;
-import org.neo4j.cypher.internal.parser.InvalidUnicodeLiteral;
+import org.neo4j.cypher.internal.parser.common.InvalidUnicodeLiteral;
 
 /**
  * CharStream operating over an input String.
@@ -40,7 +40,7 @@ import org.neo4j.cypher.internal.parser.InvalidUnicodeLiteral;
  * As parsing progresses, the {@link CypherCharStream} will convert more and more
  * of `query` into `result`, while updating `lines`, `columns` and `offset`.
  */
-public class CypherCharStream implements CharStream {
+public class CypherCharStream implements org.neo4j.cypher.internal.parser.javacc.CharStream {
     private static final char BACKSLASH = '\\';
     private static final IOException END_OF_INPUT = new IOException("End of input");
 

@@ -76,8 +76,6 @@ import org.neo4j.cypher.internal.ast.UsingJoinHint
 import org.neo4j.cypher.internal.ast.UsingScanHint
 import org.neo4j.cypher.internal.ast.Where
 import org.neo4j.cypher.internal.ast.With
-import org.neo4j.cypher.internal.ast.factory.ASTExceptionFactory
-import org.neo4j.cypher.internal.ast.factory.HintIndexType
 import org.neo4j.cypher.internal.expressions.AnonymousPatternPart
 import org.neo4j.cypher.internal.expressions.ContainerIndex
 import org.neo4j.cypher.internal.expressions.Expression
@@ -109,6 +107,8 @@ import org.neo4j.cypher.internal.parser.ast.util.Util.inputText
 import org.neo4j.cypher.internal.parser.ast.util.Util.lastChild
 import org.neo4j.cypher.internal.parser.ast.util.Util.nodeChild
 import org.neo4j.cypher.internal.parser.ast.util.Util.pos
+import org.neo4j.cypher.internal.parser.common.ast.factory.ASTExceptionFactory
+import org.neo4j.cypher.internal.parser.common.ast.factory.HintIndexType
 import org.neo4j.cypher.internal.parser.v6.Cypher6Parser
 import org.neo4j.cypher.internal.parser.v6.Cypher6ParserListener
 import org.neo4j.cypher.internal.parser.v6.ast.factory.Cypher6AstUtil.nonEmptyPropertyKeyName

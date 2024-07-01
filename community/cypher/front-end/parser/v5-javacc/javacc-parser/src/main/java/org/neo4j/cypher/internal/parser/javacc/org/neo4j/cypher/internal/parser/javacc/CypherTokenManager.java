@@ -26,30 +26,30 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.Stack;
-import org.neo4j.cypher.internal.ast.factory.AccessType;
-import org.neo4j.cypher.internal.ast.factory.ASTExceptionFactory;
+import org.neo4j.cypher.internal.parser.common.ast.factory.AccessType;
+import org.neo4j.cypher.internal.parser.common.ast.factory.ASTExceptionFactory;
 import org.neo4j.cypher.internal.ast.factory.ASTFactory;
 import org.neo4j.cypher.internal.ast.factory.ASTFactory.StringPos;
-import org.neo4j.cypher.internal.ast.factory.ActionType;
-import org.neo4j.cypher.internal.ast.factory.ConstraintType;
-import org.neo4j.cypher.internal.ast.factory.CallInTxsOnErrorBehaviourType;
-import org.neo4j.cypher.internal.ast.factory.ConstraintVersion;
-import org.neo4j.cypher.internal.ast.factory.CreateIndexTypes;
-import org.neo4j.cypher.internal.ast.factory.HintIndexType;
-import org.neo4j.cypher.internal.ast.factory.ParameterType;
-import org.neo4j.cypher.internal.ast.factory.ParserCypherTypeName;
-import org.neo4j.cypher.internal.ast.factory.ParserNormalForm;
-import org.neo4j.cypher.internal.ast.factory.ParserTrimSpecification;
-import org.neo4j.cypher.internal.ast.factory.ScopeType;
-import org.neo4j.cypher.internal.ast.factory.ShowCommandFilterTypes;
-import org.neo4j.cypher.internal.ast.factory.SimpleEither;
-import org.neo4j.cypher.internal.parser.InvalidUnicodeLiteral;
-import org.neo4j.cypher.internal.parser.deprecation.DeprecatedChars;
+import org.neo4j.cypher.internal.parser.common.ast.factory.ActionType;
+import org.neo4j.cypher.internal.parser.common.ast.factory.ConstraintType;
+import org.neo4j.cypher.internal.parser.common.ast.factory.CallInTxsOnErrorBehaviourType;
+import org.neo4j.cypher.internal.parser.common.ast.factory.ConstraintVersion;
+import org.neo4j.cypher.internal.parser.common.ast.factory.CreateIndexTypes;
+import org.neo4j.cypher.internal.parser.common.ast.factory.HintIndexType;
+import org.neo4j.cypher.internal.parser.common.ast.factory.ParameterType;
+import org.neo4j.cypher.internal.parser.common.ast.factory.ParserCypherTypeName;
+import org.neo4j.cypher.internal.parser.common.ast.factory.ParserNormalForm;
+import org.neo4j.cypher.internal.parser.common.ast.factory.ParserTrimSpecification;
+import org.neo4j.cypher.internal.parser.common.ast.factory.ScopeType;
+import org.neo4j.cypher.internal.parser.common.ast.factory.ShowCommandFilterTypes;
+import org.neo4j.cypher.internal.parser.common.ast.factory.SimpleEither;
+import org.neo4j.cypher.internal.parser.common.InvalidUnicodeLiteral;
+import org.neo4j.cypher.internal.parser.common.deprecation.DeprecatedChars;
 
 /** Token Manager. */
 @SuppressWarnings ("unused")
-public class CypherTokenManager implements CypherConstants {
-    public void CommonTokenAction( Token t )
+public class CypherTokenManager implements org.neo4j.cypher.internal.parser.javacc.CypherConstants {
+    public void CommonTokenAction( org.neo4j.cypher.internal.parser.javacc.Token t )
     {
         CypherCharStream ccStream = (CypherCharStream) input_stream;
         t.beginOffset = ccStream.getBeginOffset();

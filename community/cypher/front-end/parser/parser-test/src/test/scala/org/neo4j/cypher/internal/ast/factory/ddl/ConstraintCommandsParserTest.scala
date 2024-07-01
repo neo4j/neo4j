@@ -18,12 +18,12 @@ package org.neo4j.cypher.internal.ast.factory.ddl
 
 import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.Statements
-import org.neo4j.cypher.internal.ast.factory.ASTExceptionFactory
-import org.neo4j.cypher.internal.ast.factory.ConstraintType
 import org.neo4j.cypher.internal.ast.factory.neo4j.Neo4jASTConstructionException
 import org.neo4j.cypher.internal.ast.test.util.AstParsing.Cypher5JavaCc
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
+import org.neo4j.cypher.internal.parser.common.ast.factory.ASTExceptionFactory
+import org.neo4j.cypher.internal.parser.common.ast.factory.ConstraintType
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
 import org.neo4j.cypher.internal.util.symbols.AnyType
 import org.neo4j.cypher.internal.util.symbols.BooleanType

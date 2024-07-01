@@ -14,9 +14,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.cypher.internal.ast.factory;
+package org.neo4j.cypher.internal.parser.common.ast.factory;
 
-public enum AccessType {
-    READ_ONLY,
-    READ_WRITE
+public enum ScopeType {
+    ALL,
+    DEFAULT,
+    HOME,
+    NAMED
 }

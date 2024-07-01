@@ -27,8 +27,8 @@ import org.neo4j.cypher.internal.ast.IfExistsReplace
 import org.neo4j.cypher.internal.ast.IfExistsThrowError
 import org.neo4j.cypher.internal.ast.ShowAliases
 import org.neo4j.cypher.internal.ast.Statements
-import org.neo4j.cypher.internal.ast.factory.ASTExceptionFactory
 import org.neo4j.cypher.internal.ast.test.util.AstParsing.Cypher5JavaCc
+import org.neo4j.cypher.internal.parser.common.ast.factory.ASTExceptionFactory
 import org.neo4j.cypher.internal.util.symbols.CTMap
 
 class AliasAdministrationCommandParserTest extends AdministrationAndSchemaCommandParserTestBase {

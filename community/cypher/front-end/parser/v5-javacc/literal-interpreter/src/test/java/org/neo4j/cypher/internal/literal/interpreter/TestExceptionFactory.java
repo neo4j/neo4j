@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.literal.interpreter;
 
 import java.util.List;
-import org.neo4j.cypher.internal.ast.factory.ASTExceptionFactory;
+import org.neo4j.cypher.internal.parser.common.ast.factory.ASTExceptionFactory;
 
 public class TestExceptionFactory implements ASTExceptionFactory {
     @Override

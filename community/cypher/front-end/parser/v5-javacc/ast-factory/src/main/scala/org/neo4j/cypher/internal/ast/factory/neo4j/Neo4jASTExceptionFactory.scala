@@ -16,7 +16,7 @@
  */
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
-import org.neo4j.cypher.internal.ast.factory.ASTExceptionFactory
+import org.neo4j.cypher.internal.parser.common.ast.factory.ASTExceptionFactory
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.InputPosition
 

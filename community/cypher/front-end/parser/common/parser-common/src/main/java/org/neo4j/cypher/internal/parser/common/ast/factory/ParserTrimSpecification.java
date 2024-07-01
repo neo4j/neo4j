@@ -14,12 +14,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.cypher.internal.ast.factory;
+package org.neo4j.cypher.internal.parser.common.ast.factory;
 
-public enum HintIndexType {
-    ANY,
-    BTREE,
-    TEXT,
-    RANGE,
-    POINT
+public enum ParserTrimSpecification {
+    BOTH("BOTH"),
+    LEADING("LEADING"),
+    TRAILING("TRAILING");
+    private final String description;
+
+    ParserTrimSpecification(String description) {
+        this.description = description;
+    }
+
+    public String description() {
+        return description;
+    }
 }

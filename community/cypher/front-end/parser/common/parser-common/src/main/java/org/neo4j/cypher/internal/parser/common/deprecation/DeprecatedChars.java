@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.cypher.internal.parser.deprecation;
+package org.neo4j.cypher.internal.parser.common.deprecation;
 
 import java.util.ArrayList;
 import java.util.Arrays;

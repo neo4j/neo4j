@@ -23,7 +23,6 @@ import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.SubqueryCall
 import org.neo4j.cypher.internal.ast.UseGraph
-import org.neo4j.cypher.internal.ast.factory.ParameterType
 import org.neo4j.cypher.internal.ast.factory.neo4j.Neo4jASTExceptionFactory
 import org.neo4j.cypher.internal.ast.factory.neo4j.Neo4jASTFactory
 import org.neo4j.cypher.internal.ast.test.util.AstParsing.Cypher5
@@ -53,6 +52,7 @@ import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.parser.AstRuleCtx
+import org.neo4j.cypher.internal.parser.common.ast.factory.ParameterType
 import org.neo4j.cypher.internal.parser.javacc.Cypher
 import org.neo4j.cypher.internal.parser.javacc.CypherCharStream
 import org.neo4j.cypher.internal.parser.v5.Cypher5Parser

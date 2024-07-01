@@ -20,9 +20,6 @@ import org.antlr.v4.runtime.ParserRuleContext
 import org.antlr.v4.runtime.Token
 import org.antlr.v4.runtime.tree.ErrorNode
 import org.antlr.v4.runtime.tree.TerminalNode
-import org.neo4j.cypher.internal.ast.factory.ASTExceptionFactory
-import org.neo4j.cypher.internal.ast.factory.ConstraintType
-import org.neo4j.cypher.internal.ast.factory.HintIndexType
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.FunctionName
 import org.neo4j.cypher.internal.parser.AstRuleCtx
@@ -32,6 +29,9 @@ import org.neo4j.cypher.internal.parser.ast.util.Util.cast
 import org.neo4j.cypher.internal.parser.ast.util.Util.ctxChild
 import org.neo4j.cypher.internal.parser.ast.util.Util.nodeChild
 import org.neo4j.cypher.internal.parser.ast.util.Util.pos
+import org.neo4j.cypher.internal.parser.common.ast.factory.ASTExceptionFactory
+import org.neo4j.cypher.internal.parser.common.ast.factory.ConstraintType
+import org.neo4j.cypher.internal.parser.common.ast.factory.HintIndexType
 import org.neo4j.cypher.internal.parser.v6.Cypher6Parser
 import org.neo4j.cypher.internal.parser.v6.Cypher6Parser.ConstraintExistsContext
 import org.neo4j.cypher.internal.parser.v6.Cypher6Parser.ConstraintIsNotNullContext

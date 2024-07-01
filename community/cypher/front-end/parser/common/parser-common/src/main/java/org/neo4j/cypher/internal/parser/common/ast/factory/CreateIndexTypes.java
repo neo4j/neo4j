@@ -14,10 +14,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.cypher.internal.ast.factory;
+package org.neo4j.cypher.internal.parser.common.ast.factory;
 
-public enum CallInTxsOnErrorBehaviourType {
-    ON_ERROR_BREAK,
-    ON_ERROR_CONTINUE,
-    ON_ERROR_FAIL
+public enum CreateIndexTypes {
+    BTREE("BTREE"),
+    RANGE("RANGE"),
+    FULLTEXT("FULLTEXT"),
+    LOOKUP("LOOKUP"),
+    TEXT("TEXT"),
+    POINT("POINT"),
+    VECTOR("VECTOR"),
+    DEFAULT("DEFAULT"),
+    INVALID("INVALID");
+
+    private final String description;
+
+    CreateIndexTypes(String description) {
+        this.description = description;
+    }
+
+    public String description() {
+        return description;
+    }
 }

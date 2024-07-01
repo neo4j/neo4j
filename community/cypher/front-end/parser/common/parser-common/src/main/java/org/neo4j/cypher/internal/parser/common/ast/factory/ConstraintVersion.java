@@ -14,26 +14,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.cypher.internal.ast.factory;
+package org.neo4j.cypher.internal.parser.common.ast.factory;
 
-public enum CreateIndexTypes {
-    BTREE("BTREE"),
-    RANGE("RANGE"),
-    FULLTEXT("FULLTEXT"),
-    LOOKUP("LOOKUP"),
-    TEXT("TEXT"),
-    POINT("POINT"),
-    VECTOR("VECTOR"),
-    DEFAULT("DEFAULT"),
-    INVALID("INVALID");
-
-    private final String description;
-
-    CreateIndexTypes(String description) {
-        this.description = description;
-    }
-
-    public String description() {
-        return description;
-    }
+public enum ConstraintVersion {
+    CONSTRAINT_VERSION_0, // ASSERT EXISTS, ASSERT ... IS UNIQUE, ASSERT ... IS NODE KEY
+    CONSTRAINT_VERSION_1, // ASSERT ... IS NOT NULL
+    CONSTRAINT_VERSION_2 // REQUIRE
 }

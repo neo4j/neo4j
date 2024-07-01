@@ -14,10 +14,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.cypher.internal.ast.factory;
+package org.neo4j.cypher.internal.parser.common.ast.factory;
 
-public enum ParameterType {
-    ANY,
-    STRING,
-    MAP
+public enum ConstraintType {
+    NODE_UNIQUE("IS NODE UNIQUE"),
+    REL_UNIQUE("IS RELATIONSHIP UNIQUE"),
+    NODE_KEY("IS NODE KEY"),
+    REL_KEY("IS RELATIONSHIP KEY"),
+    NODE_EXISTS("EXISTS"),
+    NODE_IS_NOT_NULL("IS NOT NULL"),
+    REL_EXISTS("EXISTS"),
+    REL_IS_NOT_NULL("IS NOT NULL"),
+    NODE_IS_TYPED("IS TYPED"),
+    REL_IS_TYPED("IS TYPED");
+
+    private final String description;
+
+    ConstraintType(String description) {
+        this.description = description;
+    }
+
+    public String description() {
+        return description;
+    }
 }

@@ -14,17 +14,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.cypher.internal.parser;
+package org.neo4j.cypher.internal.parser.common.ast.factory;
 
-public class InvalidUnicodeLiteral extends RuntimeException {
-    public final int offset;
-    public final int line;
-    public final int column;
-
-    public InvalidUnicodeLiteral(String message, int offset, int line, int column) {
-        super(message);
-        this.offset = offset;
-        this.line = line;
-        this.column = column;
-    }
+public enum ParameterType {
+    ANY,
+    STRING,
+    MAP
 }

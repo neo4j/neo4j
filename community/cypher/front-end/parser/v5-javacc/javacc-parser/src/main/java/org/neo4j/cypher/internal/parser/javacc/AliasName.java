@@ -19,8 +19,8 @@ package org.neo4j.cypher.internal.parser.javacc;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
-import org.neo4j.cypher.internal.ast.factory.ASTExceptionFactory;
 import org.neo4j.cypher.internal.ast.factory.ASTFactory;
+import org.neo4j.cypher.internal.parser.common.ast.factory.ASTExceptionFactory;
 // spotless:off
 import org.neo4j.cypher.internal.parser.javacc.Token;
 import org.neo4j.cypher.internal.parser.javacc.ParseException;
