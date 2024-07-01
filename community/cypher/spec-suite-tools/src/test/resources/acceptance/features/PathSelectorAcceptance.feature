@@ -26,6 +26,12 @@ Feature: PathSelectorAcceptance
     Given an empty graph
 
   Scenario Outline: Find same paths with different noise words (PATH, PATHS, GROUP vs GROUPS) - no predicate
+    # ┌─┐   ┌─┐   ┌─┐   ┌─┐
+    # │A│──▶│B│──▶│C│──▶│D│
+    # └─┘   └─┘   └─┘   └─┘
+    #  │       ┌─┐       ▲
+    #  └──────▶│X│───────┘
+    #          └─┘
     And having executed:
       """
       CREATE (a:A), (b:B), (c:C), (d:D), (x:X),
@@ -68,6 +74,12 @@ Feature: PathSelectorAcceptance
       | SHORTEST 3 GROUPS  | [[(:A), (:X), (:D)], [(:A), (:B), (:C), (:D)]] |
 
   Scenario Outline: Find ANY paths with different noise words (PATH, PATHS) - no predicate
+    # ┌─┐   ┌─┐   ┌─┐   ┌─┐
+    # │A│──▶│B│──▶│C│──▶│D│
+    # └─┘   └─┘   └─┘   └─┘
+    #  │       ┌─┐       ▲
+    #  └──────▶│X│───────┘
+    #          └─┘
     And having executed:
       """
       CREATE (a:A), (b:B), (c:C), (d:D), (x:X),
@@ -98,6 +110,12 @@ Feature: PathSelectorAcceptance
       | ANY 3 PATHS  | 2      |
 
   Scenario Outline: Find same paths with different noise words (PATH, PATHS, GROUP vs GROUPS) - predicate
+      # ┌─┐   ┌─┐   ┌─┐   ┌─┐
+      # │A│──▶│B│──▶│C│──▶│D│
+      # └─┘   └─┘   └─┘   └─┘
+      #  │       ┌─┐       ▲
+      #  └──────▶│X│───────┘
+      #          └─┘
     And having executed:
       """
       CREATE (a:A), (b:B), (c:C), (d:D), (x:X),
@@ -152,6 +170,12 @@ Feature: PathSelectorAcceptance
       | ANY 2 PATHS             |
 
   Scenario Outline: Find ANY paths with different noise words (PATH, PATHS) - predicate
+    # ┌─┐   ┌─┐   ┌─┐   ┌─┐
+    # │A│──▶│B│──▶│C│──▶│D│
+    # └─┘   └─┘   └─┘   └─┘
+    #  │       ┌─┐       ▲
+    #  └──────▶│X│───────┘
+    #          └─┘
     And having executed:
       """
       CREATE (a:A), (b:B), (c:C), (d:D), (x:X),
@@ -179,6 +203,12 @@ Feature: PathSelectorAcceptance
       | ANY 2 PATHS  | 1      |
 
   Scenario Outline: Element pattern predicates are applied before path selector
+    # ┌─┐   ┌─┐   ┌─┐   ┌─┐
+    # │A│──▶│ │──▶│ │──▶│B│
+    # └─┘   └─┘   └─┘   └─┘
+    #  │       ┌─┐       ▲
+    #  └──────▶│ │──X────┘
+    #          └─┘
     And having executed:
       """
         CREATE (a:A), (b:B),
@@ -207,6 +237,12 @@ Feature: PathSelectorAcceptance
       | ANY 2              |
 
   Scenario Outline: Path pattern predicates are applied before path selector
+    # ┌─┐   ┌─┐   ┌─┐   ┌─┐
+    # │A│──▶│ │──▶│ │──▶│B│
+    # └─┘   └─┘   └─┘   └─┘
+    #  │       ┌─┐       ▲
+    #  └──────▶│ │──X────┘
+    #          └─┘
     And having executed:
       """
         CREATE (a:A), (b:B),
@@ -235,6 +271,12 @@ Feature: PathSelectorAcceptance
       | ANY 2              |
 
   Scenario Outline: Graph pattern predicates are applied after path selector - un-parenthesised
+    # ┌─┐   ┌─┐   ┌─┐   ┌─┐
+    # │A│──▶│ │──▶│ │──▶│B│
+    # └─┘   └─┘   └─┘   └─┘
+    #  │       ┌─┐       ▲
+    #  └──────▶│ │──X────┘
+    #          └─┘
     And having executed:
       """
         CREATE (a:A), (b:B),
@@ -260,6 +302,12 @@ Feature: PathSelectorAcceptance
       | SHORTEST 2 GROUP   | 1        |
 
   Scenario Outline: Graph pattern predicates are applied after path selector - parenthesised
+    # ┌─┐   ┌─┐   ┌─┐   ┌─┐
+    # │A│──▶│ │──▶│ │──▶│B│
+    # └─┘   └─┘   └─┘   └─┘
+    #  │       ┌─┐       ▲
+    #  └──────▶│ │──X────┘
+    #          └─┘
     And having executed:
       """
         CREATE (a:A), (b:B),
@@ -436,6 +484,18 @@ Feature: PathSelectorAcceptance
       | ALL PATHS          | :!X    | [['s1-t1', [[4, 2]]], ['s2-t1', [[3, 1], [5, 1]]]]                                  |
 
   Scenario Outline: Return correct paths under different path selectors where there are multiple pairs of nodes
+    #              ┌─┐
+    #          ┌──▶│5│────┐
+    #          │   └─┘    │
+    #          │          ▼
+    # ┌───┐   ┌─┐       ┌───┐   ┌───┐
+    # │A 1│──▶│4│──────▶│B 6│──▶│B 7│
+    # └───┘   └─┘       └───┘   └───┘
+    #          ▲
+    #          │
+    # ┌───┐   ┌─┐
+    # │A 2│──▶│3│
+    # └───┘   └─┘
     And having executed:
       """
       CREATE (n1:A {p: 1}), (n2:A {p: 2}), (n3 {p: 3}), (n4 {p: 4}), (n5 {p: 5}),
@@ -465,6 +525,12 @@ Feature: PathSelectorAcceptance
       | SHORTEST 3 GROUPS  | [[1, 4, 6], [1, 4, 5, 6], [1, 4, 6, 7], [1, 4, 5, 6, 7], [2, 3, 4, 6], [2, 3, 4, 5, 6], [2, 3, 4, 6, 7], [2, 3, 4, 5, 6, 7]] |
 
   Scenario Outline: OPTIONAL MATCH does not reduce cardinality under different path selectors
+    # ┌─┐          ┌─┐
+    # │A│─────────▶│B│
+    # └─┘          └─┘
+    #  │     ┌─┐    ▲
+    #  └────▶│ │────┘
+    #        └─┘
     And having executed:
       """
       CREATE (a:A)-[:R]->()-[:R]->(:B)<-[:R]-(a)
@@ -906,6 +972,19 @@ Feature: PathSelectorAcceptance
       | COLLECT      | ANY 4              | [3, 3, 3, 5, 6]                                        |
 
   Scenario Outline: Multiple path patterns allowed in graph pattern if non-selective (CIP-60)
+    #       ┌─┐
+    #       │D│
+    #       └─┘
+    #        │
+    #        ▼
+    # ┌─┐   ┌─┐   ┌─┐
+    # │A│──▶│B│──▶│C│
+    # └─┘   └─┘   └─┘
+    #        │
+    #        ▼
+    #       ┌─┐
+    #       │E│
+    #       └─┘
     And having executed:
       """
         CREATE (:A)-[:R]->(b:B)-[:R]->(:C),
@@ -1026,6 +1105,14 @@ Feature: PathSelectorAcceptance
       | SHORTEST 0 GROUP   |
 
   Scenario: Pre-GPM and GPM shortest can be mixed in query if in separate clauses (CIP-40)
+    # ┌─┐     ┌─┐
+    # │A│────▶│B│
+    # └─┘     └─┘
+    #  ▲       │
+    #  │       ▼
+    # ┌─┐     ┌─┐
+    # │D│◀────│C│
+    # └─┘     └─┘
     And having executed:
       """
         CREATE (a:A)-[:R]->(:B)-[:R]->(:C)-[:R]->(:D)-[:R]->(a)
@@ -1041,6 +1128,12 @@ Feature: PathSelectorAcceptance
       | true   |
 
   Scenario Outline: Fixed-length patterns allowed with path selectors
+    # ┌────┐     ┌───┐     ┌────┐
+    # │A a1│────▶│B b│◀────│A a2│
+    # └────┘     └───┘     └────┘
+    #    │         ▲
+    #    │         │
+    #    └─────────┘
     And having executed:
       """
         CREATE (a1:A {p: 'a1'})-[:R]->(b:B {p: 'b'}), (a1)-[:R]->(b), (:A {p: 'a2'})-[:R]->(b)
@@ -1174,7 +1267,6 @@ Feature: PathSelectorAcceptance
       | ANY 1             |
       | ANY 2             |
 
-
   Scenario Outline: PathSelector should handle pre-filter predicates on the whole path
     And having executed:
       """
@@ -1200,7 +1292,134 @@ Feature: PathSelectorAcceptance
       | ANY 1             |
       | ANY 2             |
 
-  Scenario Outline: PathSelector should handle legacy var-length
+  Scenario Outline: Predicate outside parentheses in selective path pattern is a postfilter
+    # ┌─┐    ┌─┐              ┌─┐
+    # │A│───▶│ │─────X───────▶│B│
+    # └─┘    └─┘              └─┘
+    #  │     ┌─┐    ┌─┐        ▲
+    #  ├────▶│ │───▶│ │────────┤
+    #  │     └─┘    └─┘        │
+    #  │     ┌─┐    ┌─┐   ┌─┐  │
+    #  └────▶│ │───▶│ │──▶│ │──┘
+    #        └─┘    └─┘   └─┘
+    And having executed:
+      """
+        CREATE (a:A)-[:R]->()-[:X]->(b:B),
+               (a)-[:R]->()-[:R]->()-[:R]->(b),
+               (a)-[:R]->()-[:R]->()-[:R]->()-[:R]->(b)
+      """
+    When executing query:
+      """
+        MATCH p = <pathSelector> (:A)-->*(:B) WHERE none(r IN relationships(p) WHERE r:X)
+        RETURN count(*) AS result
+      """
+    Then the result should be, in any order:
+      | result    |
+      | <result>  |
+    Examples:
+      | pathSelector      | result  |
+      | ANY SHORTEST      | 0       |
+      | SHORTEST 1        | 0       |
+      | SHORTEST 2        | 1       |
+      | SHORTEST 3        | 2       |
+      | ALL SHORTEST      | 0       |
+      | SHORTEST GROUP    | 0       |
+      | SHORTEST 1 GROUP  | 0       |
+      | SHORTEST 2 GROUPS | 1       |
+      | SHORTEST 3 GROUPS | 2       |
+      | ANY               | 0       |
+      | ANY 1             | 0       |
+      | ANY 2             | 1       |
+      | ANY 3             | 2       |
+
+  Scenario Outline: Predicate not required when making subpath variable declaration
+    # ┌─┐     ┌─┐     ┌─┐     ┌─┐
+    # │L│────▶│ │────▶│L│────▶│L│
+    # └─┘     └─┘     └─┘     └─┘
+    #  ▲                       │
+    #  │      ┌─┐     ┌─┐      │
+    #  └──────│ │◀────│ │◀─────┘
+    #         └─┘     └─┘
+    And having executed:
+      """
+        CREATE (a:L)-[:R]->()-[:R]->(b:L)-[:R]->(c:L),
+               (a)<-[:R]-()<-[:R]-()<-[:R]-(c)
+      """
+    When executing query:
+      """
+        MATCH <pathSelector> (p = (:L)--+(:L))
+        WITH length(p) AS pathLength, count(*) AS count ORDER BY pathLength
+        RETURN collect([pathLength, count]) AS result
+      """
+    Then the result should be, in any order:
+      | result    |
+      | <result>  |
+    Examples:
+      | pathSelector      | result                                            |
+      | ANY SHORTEST      | [[1, 2], [2, 2], [3, 2], [6, 3]]                  |
+      | SHORTEST 1        | [[1, 2], [2, 2], [3, 2], [6, 3]]                  |
+      | SHORTEST 2        | [[1, 2], [2, 2], [3, 4], [4, 2], [5, 2], [6, 6]]  |
+      | SHORTEST 3        | [[1, 2], [2, 2], [3, 4], [4, 2], [5, 2], [6, 6]]  |
+      | ALL SHORTEST      | [[1, 2], [2, 2], [3, 4], [6, 6]]                  |
+      | SHORTEST GROUP    | [[1, 2], [2, 2], [3, 4], [6, 6]]                  |
+      | SHORTEST 1 GROUP  | [[1, 2], [2, 2], [3, 4], [6, 6]]                  |
+      | SHORTEST 2 GROUPS | [[1, 2], [2, 2], [3, 4], [4, 2], [5, 2], [6, 6]]  |
+      | SHORTEST 3 GROUPS | [[1, 2], [2, 2], [3, 4], [4, 2], [5, 2], [6, 6]]  |
+      | ANY               | [[1, 2], [2, 2], [3, 2], [6, 3]]                  |
+      | ANY 1             | [[1, 2], [2, 2], [3, 2], [6, 3]]                  |
+      | ANY 2             | [[1, 2], [2, 2], [3, 4], [4, 2], [5, 2], [6, 6]]  |
+      | ANY 3             | [[1, 2], [2, 2], [3, 4], [4, 2], [5, 2], [6, 6]]  |
+
+  Scenario Outline: Disjoint path finding using subpath variables from separate MATCH clauses
+    #        ┌─┐
+    #  ┌────▶│ │──────────┐
+    #  │     └─┘          ▼
+    # ┌─┐    ┌─┐         ┌─┐
+    # │A│───▶│X│────────▶│B│
+    # └─┘    └─┘         └─┘
+    #  │     ┌─┐    ┌─┐   ▲
+    #  ├────▶│ │───▶│ │───┤
+    #  │     └─┘    └─┘   │
+    #  │     ┌─┐    ┌─┐   │
+    #  └────▶│ │───▶│X│───┘
+    #        └─┘    └─┘
+    And having executed:
+      """
+        CREATE (a:A)-[:R]->(:X)-[:R]->(b:B),
+               (a)-[:R]->()-[:R]->(b),
+               (a)-[:R]->()-[:R]->(:X)-[:R]->(b),
+               (a)-[:R]->()-[:R]->()-[:R]->(b)
+      """
+    When executing query:
+      """
+        MATCH <pathSelector> (p = (:A)-->+(:B) WHERE none(n IN nodes(p) WHERE n:X))
+        MATCH <pathSelector> (q = (:A)-->+(:B) WHERE q <> p AND length(p) = length(q))
+        WITH length(p) AS pathLength,
+             size([n IN nodes(p) WHERE n:X]) AS pxCount,
+             size([n IN nodes(q) WHERE n:X]) AS qxCount
+        ORDER BY pathLength
+        RETURN collect([pathLength, pxCount, qxCount]) AS result
+      """
+    Then the result should be, in any order:
+      | result    |
+      | <result>  |
+    Examples:
+      | pathSelector      | result                                            |
+      | ANY SHORTEST      | [[2, 0, 1]]                                       |
+      | SHORTEST 1        | [[2, 0, 1]]                                       |
+      | SHORTEST 2        | [[2, 0, 1], [3, 0, 1]]                            |
+      | SHORTEST 3        | [[2, 0, 1], [3, 0, 1]]                            |
+      | ALL SHORTEST      | [[2, 0, 1]]                                       |
+      | SHORTEST GROUP    | [[2, 0, 1]]                                       |
+      | SHORTEST 1 GROUP  | [[2, 0, 1]]                                       |
+      | SHORTEST 2 GROUPS | [[2, 0, 1], [3, 0, 1]]                            |
+      | SHORTEST 3 GROUPS | [[2, 0, 1], [3, 0, 1]]                            |
+      | ANY               | [[2, 0, 1]]                                       |
+      | ANY 1             | [[2, 0, 1]]                                       |
+      | ANY 2             | [[2, 0, 1], [3, 0, 1]]                            |
+      | ANY 3             | [[2, 0, 1], [3, 0, 1]]                            |
+
+  Scenario Outline: PathSelector with subpath variable should handle legacy var-length
     And having executed:
       """
         CREATE ()-[:R]->()-[:T]->()
@@ -1226,7 +1445,7 @@ Feature: PathSelectorAcceptance
       | ANY 1             |
       | ANY 2             |
 
-  Scenario Outline: PathSelector should handle legacy var-length with set upper bound
+  Scenario Outline: PathSelector with subpath variable should handle legacy var-length with set upper bound
     And having executed:
       """
         CREATE (:A)-[:R]->(:B)-[:T]->(:B)
@@ -1251,7 +1470,7 @@ Feature: PathSelectorAcceptance
       | ANY 1             |
       | ANY 2             |
 
-  Scenario Outline: PathSelector should handle a previously bound boundary node
+  Scenario Outline: PathSelector with subpath variable should handle a previously bound boundary node
     And having executed:
       """
         CREATE (:L)-[:R]->()-[:R]->()
@@ -1278,7 +1497,7 @@ Feature: PathSelectorAcceptance
       | ANY 1             |
       | ANY 2             |
 
-  Scenario Outline: PathSelector should handle a previously bound relationship
+  Scenario Outline: PathSelector with subpath variable should handle a previously bound relationship
     And having executed:
       """
         CREATE ()-[:R]->()-[:T]->()
@@ -1303,6 +1522,197 @@ Feature: PathSelectorAcceptance
       | ANY               |
       | ANY 1             |
       | ANY 2             |
+
+  Scenario Outline: Subpath variable with non-selective path search is invalid
+    When executing query:
+      """
+        MATCH <pathPattern>
+        RETURN *
+      """
+    Then a SyntaxError should be raised at compile time: *
+    Examples:
+      | pathPattern                          |
+      | ALL (p = ()-->*())                   |
+      |     (p = ()-->*())                   |
+      | ALL (p = (a)-->*(b) WHERE a.p > b.p) |
+      |     (p = (a)-->*(b) WHERE a.p > b.p) |
+      | ALL (p = ()-->())                    |
+      |     (p = ()-->())                    |
+
+  Scenario Outline: Subpath variable not allowed in a quantified path pattern
+    When executing query:
+      """
+        MATCH <pathSearchPrefix> (p = (:A)--(:B))+
+        RETURN *
+      """
+    Then a SyntaxError should be raised at compile time: *
+    Examples:
+      | pathSearchPrefix  |
+      | ANY SHORTEST      |
+      | SHORTEST 1        |
+      | ALL SHORTEST      |
+      | SHORTEST 1 GROUP  |
+      | ANY 1             |
+
+  Scenario Outline: Subpath variable not allowed in parenthesised path pattern expression that is not the whole path pattern
+    When executing query:
+      """
+        MATCH <pathSearchPrefix> (p = (:A)-[:R]->{,3}(:B)) (e)<-[:S]-(x)
+        RETURN p, e, x
+      """
+    Then a SyntaxError should be raised at compile time: *
+    Examples:
+      | pathSearchPrefix  |
+      |                   |
+      | ALL               |
+      | ANY SHORTEST      |
+      | SHORTEST 1        |
+      | ALL SHORTEST      |
+      | SHORTEST 1 GROUP  |
+      | ANY 1             |
+
+  Scenario Outline: Parenthesised path pattern WHERE clause may not reference a path variable declared in same path pattern
+    When executing query:
+      """
+        MATCH p = <pathSearchPrefix> ((:A)-->+(:B) WHERE length(p) % 2 <> 0)
+        RETURN p
+      """
+    Then a SyntaxError should be raised at compile time: *
+    Examples:
+      | pathSearchPrefix  |
+      |                   |
+      | ALL               |
+      | ANY SHORTEST      |
+      | SHORTEST 1        |
+      | ALL SHORTEST      |
+      | SHORTEST 1 GROUP  |
+      | ANY 1             |
+
+  Scenario Outline: Subpath variable name may not clash with other variable declarations
+    When executing query:
+      """
+        MATCH <firstGraphPattern>
+        MATCH <secondGraphPattern>
+        RETURN *
+      """
+    Then a SyntaxError should be raised at compile time: *
+    Examples:
+      | firstGraphPattern              | secondGraphPattern             |
+      | (p)                            | ANY (p = ()--+())              |
+      | (p)                            | ANY SHORTEST (p = ()--+())     |
+      | (p)                            | SHORTEST 1 (p = ()--+())       |
+      | (p)                            | ALL SHORTEST (p = ()--+())     |
+      | (p)                            | SHORTEST 1 GROUP (p = ()--+()) |
+      | ()-[p]-()                      | ANY (p = ()--+())              |
+      | ()-[p]-()                      | ANY SHORTEST (p = ()--+())     |
+      | ()-[p]-()                      | SHORTEST 1 (p = ()--+())       |
+      | ()-[p]-()                      | ALL SHORTEST (p = ()--+())     |
+      | ()-[p]-()                      | SHORTEST 1 GROUP (p = ()--+()) |
+      | p = ()--()                     | ANY (p = ()--+())              |
+      | p = ()--()                     | ANY SHORTEST (p = ()--+())     |
+      | p = ()--()                     | SHORTEST 1 (p = ()--+())       |
+      | p = ()--()                     | ALL SHORTEST (p = ()--+())     |
+      | p = ()--()                     | SHORTEST 1 GROUP (p = ()--+()) |
+      | ANY (p = ()--+())              | (p)                            |
+      | ANY SHORTEST (p = ()--+())     | (p)                            |
+      | SHORTEST 1 (p = ()--+())       | (p)                            |
+      | ALL SHORTEST (p = ()--+())     | (p)                            |
+      | SHORTEST 1 GROUP (p = ()--+()) | (p)                            |
+      | ANY (p = ()--+())              | ()-[p]-()                      |
+      | ANY SHORTEST (p = ()--+())     | ()-[p]-()                      |
+      | SHORTEST 1 (p = ()--+())       | ()-[p]-()                      |
+      | ALL SHORTEST (p = ()--+())     | ()-[p]-()                      |
+      | SHORTEST 1 GROUP (p = ()--+()) | ()-[p]-()                      |
+      | ANY (p = ()--+())              | p = ()--()                     |
+      | ANY SHORTEST (p = ()--+())     | p = ()--()                     |
+      | SHORTEST 1 (p = ()--+())       | p = ()--()                     |
+      | ALL SHORTEST (p = ()--+())     | p = ()--()                     |
+      | SHORTEST 1 GROUP (p = ()--+()) | p = ()--()                     |
+      | ANY SHORTEST (p = ()--+())     | ANY (p = ()--+())              |
+      | SHORTEST 1 (p = ()--+())       | ANY (p = ()--+())              |
+      | ALL SHORTEST (p = ()--+())     | ANY (p = ()--+())              |
+      | SHORTEST 1 GROUP (p = ()--+()) | ANY (p = ()--+())              |
+
+  Scenario Outline: Subpath variable name may not shadow variables with the same name and vice versa
+    When executing query:
+      """
+        MATCH <outerPathPattern> WHERE NOT EXISTS { <innerPathPattern> }
+        RETURN *
+      """
+    Then a SyntaxError should be raised at compile time: *
+    Examples:
+      | outerPathPattern                                 | innerPathPattern                                          |
+      | ANY (p = (a:A)-->+(b:B))                         | p = (a)<--+(b) WHERE length(p) % 2 = 1                    |
+      | ANY (p = (a:A)-->+(:B))                          | (a)<--+(p:B) WHERE p.q = 42                               |
+      | ANY (p = (a:A)-->+(:B))                          | (a)<-[p]-+(b) WHERE p.q = 42                              |
+      | ANY (p = (a:A)-->+(b:B))                         | ANY (p = (a)<--+(b) WHERE length(p) % 2 = 1)              |
+      | ANY SHORTEST (p = (a:A)-->+(b:B))                | p = (a)<--+(b) WHERE length(p) % 2 = 1                    |
+      | ANY SHORTEST (p = (a:A)-->+(:B))                 | (a)<--+(p:B) WHERE p.q = 42                               |
+      | ANY SHORTEST (p = (:A)-->+(:B))                  | (a)<-[p]-+(b) WHERE p.q = 42                              |
+      | ANY SHORTEST (p = (a:A)-->+(b:B))                | ANY (p = (a)<--+(b) WHERE length(p) % 2 = 1)              |
+      | SHORTEST 1 (p = (a:A)-->+(b:B))                  | p = (a)<--+(b) WHERE length(p) % 2 = 1                    |
+      | SHORTEST 1 (p = (a:A)-->+(:B))                   | (a)<--+(p:B) WHERE p.q = 42                               |
+      | SHORTEST 1 (p = (a:A)-->+(:B))                   | (a)<-[p]-+(b) WHERE p.q = 42                              |
+      | SHORTEST 1 (p = (a:A)-->+(b:B))                  | ANY (p = (a)<--+(b) WHERE length(p) % 2 = 1)              |
+      | ALL SHORTEST (p = (a:A)-->+(b:B))                | p = (a)<--+(b) WHERE length(p) % 2 = 1                    |
+      | ALL SHORTEST (p = (a:A)-->+(:B))                 | (a)<--+(p:B) WHERE p.q = 42                               |
+      | ALL SHORTEST (p = (a:A)-->+(:B))                 | (a)<-[p]-+(b) WHERE p.q = 42                              |
+      | ALL SHORTEST (p = (a:A)-->+(b:B))                | ANY (p = (a)<--+(b) WHERE length(p) % 2 = 1)              |
+      | SHORTEST 1 GROUP (p = (a:A)-->+(b:B))            | p = (a)<--+(b) WHERE length(p) % 2 = 1                    |
+      | SHORTEST 1 GROUP (p = (a:A)-->+(:B))             | (a)<--+(p:B) WHERE p.q = 42                               |
+      | SHORTEST 1 GROUP (p = (a:A)-->+(:B))             | (a)<-[p]-+(b) WHERE p.q = 42                              |
+      | SHORTEST 1 GROUP (p = (a:A)-->+(b:B))            | ANY (p = (a)<--+(b) WHERE length(p) % 2 = 1)              |
+      | p = (a:A)-->+(b:B)                               | ANY (p = (a)<--+(b) WHERE length(p) % 2 = 1)              |
+      | p = (a:A)-->+(b:B)                               | ANY SHORTEST (p = (a)<--+(b) WHERE length(p) % 2 = 1)     |
+      | p = (a:A)-->+(b:B)                               | SHORTEST 1 (p = (a)<--+(b) WHERE length(p) % 2 = 1)       |
+      | p = (a:A)-->+(b:B)                               | ALL SHORTEST (p = (a)<--+(b) WHERE length(p) % 2 = 1)     |
+      | p = (a:A)-->+(b:B)                               | SHORTEST 1 GROUP (p = (a)<--+(b) WHERE length(p) % 2 = 1) |
+      | (a:A)-->+(p:B)                                   | ANY (p = (a)<--+(:B) WHERE length(p) % 2 = 1)             |
+      | (a:A)-->+(p:B)                                   | ANY SHORTEST (p = (a)<--+(:B) WHERE length(p) % 2 = 1)    |
+      | (a:A)-->+(p:B)                                   | SHORTEST 1 (p = (a)<--+(:B) WHERE length(p) % 2 = 1)      |
+      | (a:A)-->+(p:B)                                   | ALL SHORTEST (p = (a)<--+(:B) WHERE length(p) % 2 = 1)    |
+      | (a:A)-->+(p:B)                                   | SHORTEST 1 GROUP (p = (a)<--+(:B) WHERE length(p) % 2 = 1)|
+      | (a:A)-[p]->+(b:B)                                | ANY (p = (a)<--+(b) WHERE length(p) % 2 = 1)              |
+      | (a:A)-[p]->+(b:B)                                | ANY SHORTEST (p = (a)<--+(b) WHERE length(p) % 2 = 1)     |
+      | (a:A)-[p]->+(b:B)                                | SHORTEST 1 (p = (a)<--+(b) WHERE length(p) % 2 = 1)       |
+      | (a:A)-[p]->+(b:B)                                | ALL SHORTEST (p = (a)<--+(b) WHERE length(p) % 2 = 1)     |
+      | (a:A)-[p]->+(b:B)                                | SHORTEST 1 GROUP (p = (a)<--+(b) WHERE length(p) % 2 = 1) |
+
+  Scenario Outline: Path variable and subpath variable declared in same path pattern may not have same name
+    When executing query:
+      """
+        MATCH p = <pathSearchPrefix> (p = (:A)-->+(:B))
+        RETURN p
+      """
+    Then a SyntaxError should be raised at compile time: *
+    Examples:
+      | pathSearchPrefix  |
+      | ANY SHORTEST      |
+      | SHORTEST 1        |
+      | ALL SHORTEST      |
+      | SHORTEST 1 GROUP  |
+      | ANY 1             |
+
+  Scenario Outline: Path variable and subpath variable declared in same path pattern bind to same path
+    And having executed:
+      """
+        CREATE (:A)-[:R]->()-[:R]->(:B)
+      """
+    When executing query:
+      """
+        MATCH p = <pathSearchPrefix> (q = (:A)-->+(:B))
+        RETURN p = q AS result
+      """
+    Then the result should be, in any order:
+      | result  |
+      | true    |
+    Examples:
+      | pathSearchPrefix  |
+      | ANY SHORTEST      |
+      | SHORTEST 1        |
+      | ALL SHORTEST      |
+      | SHORTEST 1 GROUP  |
+      | ANY 1             |
 
   Scenario Outline: Should support a shortest path pattern with a predicate on several entities inside a QPP
     And having executed:

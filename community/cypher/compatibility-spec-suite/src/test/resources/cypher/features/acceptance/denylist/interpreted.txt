@@ -38,3 +38,27 @@ Feature "GpmSyntaxMixingAcceptance": Scenario "Conflicting syntax in separate st
 Feature "GpmSyntaxMixingAcceptance": Scenario "Conflicting syntax in separate statements in same COUNT sub-query - syntax error": Example "4"
 Feature "GpmSyntaxMixingAcceptance": Scenario "Conflicting syntax in separate statements within a CALL subquery - syntax error": Example "6"
 Feature "GpmSyntaxMixingAcceptance": Scenario "Conflicting syntax in separate statements within a CALL subquery - syntax error": Example "9"
+
+// Subpath variable declaration is not throwing error for some name clashes, will be solved by https://trello.com/c/hA7fUKvN
+Feature "PathSelectorAcceptance": Scenario "Subpath variable name may not clash with other variable declarations": Example "10"
+Feature "PathSelectorAcceptance": Scenario "Subpath variable name may not clash with other variable declarations": Example "11"
+Feature "PathSelectorAcceptance": Scenario "Subpath variable name may not clash with other variable declarations": Example "12"
+Feature "PathSelectorAcceptance": Scenario "Subpath variable name may not clash with other variable declarations": Example "13"
+Feature "PathSelectorAcceptance": Scenario "Subpath variable name may not clash with other variable declarations": Example "14"
+Feature "PathSelectorAcceptance": Scenario "Subpath variable name may not clash with other variable declarations": Example "30"
+Feature "PathSelectorAcceptance": Scenario "Subpath variable name may not clash with other variable declarations": Example "31"
+Feature "PathSelectorAcceptance": Scenario "Subpath variable name may not clash with other variable declarations": Example "32"
+Feature "PathSelectorAcceptance": Scenario "Subpath variable name may not clash with other variable declarations": Example "33"
+
+// Subpath variable shadowing is not throwing error for some cases, will be solved by https://trello.com/c/hA7fUKvN
+Feature "PathSelectorAcceptance": Scenario "Subpath variable name may not shadow variables with the same name and vice versa": Example "3"
+Feature "PathSelectorAcceptance": Scenario "Subpath variable name may not shadow variables with the same name and vice versa": Example "7"
+Feature "PathSelectorAcceptance": Scenario "Subpath variable name may not shadow variables with the same name and vice versa": Example "11"
+Feature "PathSelectorAcceptance": Scenario "Subpath variable name may not shadow variables with the same name and vice versa": Example "15"
+Feature "PathSelectorAcceptance": Scenario "Subpath variable name may not shadow variables with the same name and vice versa": Example "19"
+Feature "PathSelectorAcceptance": Scenario "Subpath variable name may not shadow variables with the same name and vice versa": Example "20"
+Feature "PathSelectorAcceptance": Scenario "Subpath variable name may not shadow variables with the same name and vice versa": Example "21"
+Feature "PathSelectorAcceptance": Scenario "Subpath variable name may not shadow variables with the same name and vice versa": Example "22"
+Feature "PathSelectorAcceptance": Scenario "Subpath variable name may not shadow variables with the same name and vice versa": Example "23"
+Feature "PathSelectorAcceptance": Scenario "Subpath variable name may not shadow variables with the same name and vice versa": Example "24"
+
