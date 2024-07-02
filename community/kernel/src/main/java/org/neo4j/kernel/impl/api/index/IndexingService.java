@@ -68,6 +68,7 @@ import org.neo4j.internal.kernel.api.IndexMonitor;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.exceptions.InternalKernelRuntimeException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
+import org.neo4j.internal.schema.FulltextSchemaDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
@@ -370,7 +371,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
         if (!interval.isZero()) {
             for (IndexProxy indexProxy : indexMapRef.getAllIndexProxies()) {
                 try {
-                    if (indexProxy.getDescriptor().schema().isFulltextSchemaDescriptor()) {
+                    if (indexProxy.getDescriptor().schema().isSchemaDescriptorType(FulltextSchemaDescriptor.class)) {
                         indexProxy.refresh();
                     }
                 } catch (IOException e) {

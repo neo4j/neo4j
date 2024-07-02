@@ -39,6 +39,7 @@ import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.graphdb.schema.AnalyzerProvider;
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.internal.kernel.api.InternalIndexState;
+import org.neo4j.internal.schema.FulltextSchemaDescriptor;
 import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -318,7 +319,7 @@ public class FulltextIndexProvider extends IndexProvider {
             throw new IllegalArgumentException(
                     "The '" + providerName + "' index provider only supports FULLTEXT index types: " + ref);
         }
-        if (!ref.schema().isFulltextSchemaDescriptor()) {
+        if (!ref.schema().isSchemaDescriptorType(FulltextSchemaDescriptor.class)) {
             throw new IllegalArgumentException("The " + ref.schema() + " index schema is not a full-text index schema, "
                     + "which it is required to be for the '" + providerName
                     + "' index provider to be able to create an index.");

@@ -28,6 +28,7 @@ import java.util.concurrent.ConcurrentMap;
 import org.neo4j.common.EntityType;
 import org.neo4j.consistency.checker.ParallelExecution.ThrowingRunnable;
 import org.neo4j.consistency.checking.index.IndexAccessors;
+import org.neo4j.internal.schema.FulltextSchemaDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -107,7 +108,7 @@ class IndexSizes {
         indexes.sort(Comparator.comparingLong(this::getEstimatedIndexSize).reversed());
         int threshold = 0;
         for (IndexDescriptor index : indexes) {
-            if (!index.schema().isFulltextSchemaDescriptor() && !hasValues(index)) {
+            if (!index.schema().isSchemaDescriptorType(FulltextSchemaDescriptor.class) && !hasValues(index)) {
                 // Skip those that we cannot read values from. They should not be checked by the IndexChecker,
                 // but the "inefficient" way of doing a lookup per node/index in NodeChecker instead
                 continue;
@@ -123,7 +124,7 @@ class IndexSizes {
 
     static boolean hasValues(IndexDescriptor index) {
         return index.getCapability().supportsReturningValues()
-                && !index.schema().isFulltextSchemaDescriptor();
+                && !index.schema().isSchemaDescriptorType(FulltextSchemaDescriptor.class);
     }
 
     private double getSizeFactor(IndexDescriptor index, EntityType entityType) {

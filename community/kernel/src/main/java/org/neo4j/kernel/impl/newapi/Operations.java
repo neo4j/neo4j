@@ -99,6 +99,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelections;
 import org.neo4j.internal.kernel.api.security.AccessMode.Static;
 import org.neo4j.internal.schema.ConstraintDescriptor;
+import org.neo4j.internal.schema.FulltextSchemaDescriptor;
 import org.neo4j.internal.schema.GraphTypeDependence;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
@@ -2448,7 +2449,7 @@ public class Operations implements Write, SchemaWrite, Upgrade {
                 throw new CreateConstraintFailureException(
                         constraint, "Cannot create backing constraint index with index type " + indexType + ".");
             }
-            if (prototype.schema().isFulltextSchemaDescriptor()) {
+            if (prototype.schema().isSchemaDescriptorType(FulltextSchemaDescriptor.class)) {
                 throw new CreateConstraintFailureException(
                         constraint,
                         "Cannot create backing constraint index using a full-text schema: "

@@ -48,16 +48,6 @@ final class NoSchemaDescriptor implements SchemaDescriptor {
     }
 
     @Override
-    public boolean isFulltextSchemaDescriptor() {
-        return false;
-    }
-
-    @Override
-    public FulltextSchemaDescriptor asFulltextSchemaDescriptor() {
-        throw new IllegalStateException(CAST_ERROR_FMT.formatted("FulltextSchemaDescriptor"));
-    }
-
-    @Override
     public boolean isAnyTokenSchemaDescriptor() {
         return false;
     }

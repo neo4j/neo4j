@@ -168,19 +168,6 @@ public final class SchemaDescriptorImplementation
     }
 
     @Override
-    public boolean isFulltextSchemaDescriptor() {
-        return schemaArchetype == SchemaArchetype.MULTI_TOKEN;
-    }
-
-    @Override
-    public FulltextSchemaDescriptor asFulltextSchemaDescriptor() {
-        if (schemaArchetype != SchemaArchetype.MULTI_TOKEN) {
-            throw cannotCastException("FulltextSchemaDescriptor");
-        }
-        return this;
-    }
-
-    @Override
     public boolean isAnyTokenSchemaDescriptor() {
         return schemaArchetype == SchemaArchetype.ANY_TOKEN;
     }

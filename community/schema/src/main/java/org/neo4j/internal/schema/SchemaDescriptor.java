@@ -54,18 +54,6 @@ public interface SchemaDescriptor {
     <T extends SchemaDescriptor> T asSchemaDescriptorType(Class<T> type);
 
     /**
-     * Test if this schema descriptor is a {@link FulltextSchemaDescriptor}.
-     * @return {@code true} if calling {@link #asFulltextSchemaDescriptor()} will not throw an exception.
-     */
-    boolean isFulltextSchemaDescriptor();
-
-    /**
-     * If this schema descriptor matches the structure required by {@link FulltextSchemaDescriptor}, then return this descriptor as that type.
-     * Otherwise, throw an {@link IllegalStateException}.
-     */
-    FulltextSchemaDescriptor asFulltextSchemaDescriptor();
-
-    /**
      * Test if this schema descriptor is a {@link AnyTokenSchemaDescriptor}.
      * @return {@code true} if calling {@link #asAnyTokenSchemaDescriptor()} will not throw an exception.
      */
