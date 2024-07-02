@@ -28,10 +28,13 @@ import java.util.Iterator;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 import org.neo4j.internal.kernel.api.PropertyCursor;
+import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.RelTypeSupplier;
 import org.neo4j.internal.kernel.api.TokenSet;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.kernel.api.security.ReadSecurityPropertyProvider;
+import org.neo4j.kernel.api.AccessModeProvider;
+import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.storageengine.api.LongReference;
 import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.storageengine.api.Reference;
@@ -47,7 +50,8 @@ public class DefaultPropertyCursor extends TraceableCursorImpl<DefaultPropertyCu
     final StoragePropertyCursor storeCursor;
     private final InternalCursorFactory internalCursors;
     private final boolean applyAccessModeToTxState;
-    private KernelRead read;
+    private Read read;
+    private AccessModeProvider accessModeProvider;
     private StoragePropertyCursor securityPropertyCursor;
     private FullAccessNodeCursor securityNodeCursor;
     private FullAccessRelationshipScanCursor securityRelCursor;
@@ -73,26 +77,38 @@ public class DefaultPropertyCursor extends TraceableCursorImpl<DefaultPropertyCu
         this.applyAccessModeToTxState = applyAccessModeToTxState;
     }
 
-    void initNode(long nodeReference, Reference reference, PropertySelection selection, KernelRead read) {
+    void initNode(
+            long nodeReference,
+            Reference reference,
+            PropertySelection selection,
+            Read read,
+            TxStateHolder txStateHolder,
+            AccessModeProvider accessModeProvider) {
         assert nodeReference != LongReference.NULL;
 
-        init(selection, read);
+        init(selection, read, accessModeProvider);
         this.type = NODE;
-        initializeNodeTransactionState(nodeReference, read);
+        initializeNodeTransactionState(nodeReference, txStateHolder);
         storeCursor.initNodeProperties(reference, filterSelectionForTxState(selection));
         initSecurityPropertyProvision(
                 (propertyCursor, propertySelection) -> propertyCursor.initNodeProperties(reference, propertySelection));
         this.entityReference = nodeReference;
     }
 
-    void initNode(DefaultNodeCursor nodeCursor, PropertySelection selection, KernelRead read, boolean initStoreCursor) {
+    void initNode(
+            DefaultNodeCursor nodeCursor,
+            PropertySelection selection,
+            Read read,
+            boolean initStoreCursor,
+            TxStateHolder txStateHolder,
+            AccessModeProvider accessModeProvider) {
         entityReference = nodeCursor.nodeReference();
         assert entityReference != LongReference.NULL;
 
-        init(selection, read);
+        init(selection, read, accessModeProvider);
         this.type = NODE;
         this.addedInTx = nodeCursor.currentNodeIsAddedInTx();
-        initializeNodeTransactionState(entityReference, read);
+        initializeNodeTransactionState(entityReference, txStateHolder);
         if (!addedInTx || applyAccessModeToTxState) {
             if (initStoreCursor) {
                 storeCursor.initNodeProperties(nodeCursor.storeCursor, filterSelectionForTxState(selection));
@@ -119,7 +135,7 @@ public class DefaultPropertyCursor extends TraceableCursorImpl<DefaultPropertyCu
     }
 
     void initSecurityPropertyProvision(BiConsumer<StoragePropertyCursor, PropertySelection> initNodeProperties) {
-        AccessMode accessMode = read.getAccessMode();
+        AccessMode accessMode = accessModeProvider.getAccessMode();
         securityPropertyProvider = null;
         if (internalCursors == null || !accessMode.hasPropertyReadRules()) {
             return;
@@ -147,9 +163,9 @@ public class DefaultPropertyCursor extends TraceableCursorImpl<DefaultPropertyCu
         return securityPropertyCursor;
     }
 
-    private void initializeNodeTransactionState(long nodeReference, KernelRead read) {
-        if (read.txStateHolder.hasTxStateWithChanges()) {
-            this.propertiesState = read.txStateHolder.txState().getNodeState(nodeReference);
+    private void initializeNodeTransactionState(long nodeReference, TxStateHolder txStateHolder) {
+        if (txStateHolder.hasTxStateWithChanges()) {
+            this.propertiesState = txStateHolder.txState().getNodeState(nodeReference);
             this.txStateChangedProperties =
                     this.propertiesState.addedAndChangedProperties().iterator();
         } else {
@@ -159,21 +175,31 @@ public class DefaultPropertyCursor extends TraceableCursorImpl<DefaultPropertyCu
     }
 
     void initRelationship(
-            long relationshipReference, Reference reference, PropertySelection selection, KernelRead read) {
+            long relationshipReference,
+            Reference reference,
+            PropertySelection selection,
+            Read read,
+            TxStateHolder txStateHolder,
+            AccessModeProvider accessModeProvider) {
         assert relationshipReference != LongReference.NULL;
 
-        init(selection, read);
-        initializeRelationshipTransactionState(relationshipReference, read);
+        init(selection, read, accessModeProvider);
+        initializeRelationshipTransactionState(relationshipReference, txStateHolder);
         storeCursor.initRelationshipProperties(reference, filterSelectionForTxState(selection));
         this.entityReference = relationshipReference;
     }
 
-    void initRelationship(DefaultRelationshipCursor relationshipCursor, PropertySelection selection, KernelRead read) {
+    void initRelationship(
+            DefaultRelationshipCursor relationshipCursor,
+            PropertySelection selection,
+            Read read,
+            TxStateHolder txStateHolder,
+            AccessModeProvider accessModeProvider) {
         entityReference = relationshipCursor.relationshipReference();
         assert entityReference != LongReference.NULL;
 
-        init(selection, read);
-        initializeRelationshipTransactionState(entityReference, read);
+        init(selection, read, accessModeProvider);
+        initializeRelationshipTransactionState(entityReference, txStateHolder);
         this.addedInTx = relationshipCursor.currentRelationshipIsAddedInTx();
         if (!addedInTx || applyAccessModeToTxState) {
             storeCursor.initRelationshipProperties(
@@ -183,10 +209,10 @@ public class DefaultPropertyCursor extends TraceableCursorImpl<DefaultPropertyCu
         }
     }
 
-    private void initializeRelationshipTransactionState(long relationshipReference, KernelRead read) {
+    private void initializeRelationshipTransactionState(long relationshipReference, TxStateHolder txStateHolder) {
         // Transaction state
-        if (read.txStateHolder.hasTxStateWithChanges()) {
-            this.propertiesState = read.txStateHolder.txState().getRelationshipState(relationshipReference);
+        if (txStateHolder.hasTxStateWithChanges()) {
+            this.propertiesState = txStateHolder.txState().getRelationshipState(relationshipReference);
             this.txStateChangedProperties =
                     this.propertiesState.addedAndChangedProperties().iterator();
         } else {
@@ -196,7 +222,7 @@ public class DefaultPropertyCursor extends TraceableCursorImpl<DefaultPropertyCu
     }
 
     void initEmptyRelationship() {
-        init(ALL_PROPERTIES, null);
+        init(ALL_PROPERTIES, null, null);
         storeCursor.initRelationshipProperties(NULL_REFERENCE, ALL_PROPERTIES);
         this.entityReference = NO_SUCH_ENTITY;
 
@@ -204,15 +230,16 @@ public class DefaultPropertyCursor extends TraceableCursorImpl<DefaultPropertyCu
         this.txStateChangedProperties = null;
     }
 
-    private void init(PropertySelection selection, KernelRead read) {
+    private void init(PropertySelection selection, Read read, AccessModeProvider accessModeProvider) {
         this.selection = selection;
         this.read = read;
+        this.accessModeProvider = accessModeProvider;
         this.labels = null;
         this.type = NO_TOKEN;
     }
 
     boolean allowed(int[] propertyKeys, int[] labels) {
-        AccessMode accessMode = read.getAccessMode();
+        AccessMode accessMode = accessModeProvider.getAccessMode();
         if (isNode()) {
             return accessMode.allowsReadNodeProperties(
                     () -> Labels.from(labels), propertyKeys, securityPropertyProvider);
@@ -227,7 +254,7 @@ public class DefaultPropertyCursor extends TraceableCursorImpl<DefaultPropertyCu
     }
 
     protected boolean allowed(int propertyKey) {
-        AccessMode accessMode = read.getAccessMode();
+        AccessMode accessMode = accessModeProvider.getAccessMode();
         if (isNode()) {
             return accessMode.allowsReadNodeProperty(this, propertyKey, securityPropertyProvider);
         } else {
@@ -273,6 +300,7 @@ public class DefaultPropertyCursor extends TraceableCursorImpl<DefaultPropertyCu
             txStateChangedProperties = null;
             txStateValue = null;
             read = null;
+            accessModeProvider = null;
             storeCursor.reset();
             if (securityPropertyCursor != null) {
                 securityPropertyCursor.reset();

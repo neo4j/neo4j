@@ -29,6 +29,7 @@ import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.values.ElementIdMapper;
 
@@ -77,6 +78,9 @@ public interface ExecutionContext extends AutoCloseable, ResourceMonitor {
      */
     QueryContext queryContext();
 
+    AccessModeProvider accessModeProvider();
+
+    TxStateHolder txStateHolder();
     /**
      * Execution context local memory tracker. Transactional memory limit is shared between all execution contexts
      * that created from this transaction.

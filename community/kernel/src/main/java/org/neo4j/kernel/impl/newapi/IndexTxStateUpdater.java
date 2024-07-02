@@ -39,6 +39,7 @@ import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.PropertySelection;
@@ -51,14 +52,15 @@ import org.neo4j.values.storable.ValueTuple;
  */
 public class IndexTxStateUpdater {
     private final StorageReader storageReader;
-    private final KernelRead read;
+    private final TxStateHolder txStateHolder;
     private final IndexingService indexingService;
 
     // We can use the StorageReader directly instead of the SchemaReadOps, because we know that in transactions
     // where this class is needed we will never have index changes.
-    public IndexTxStateUpdater(StorageReader storageReader, KernelRead read, IndexingService indexingService) {
+    public IndexTxStateUpdater(
+            StorageReader storageReader, IndexingService indexingService, TxStateHolder txStateHolder) {
         this.storageReader = storageReader;
-        this.read = read;
+        this.txStateHolder = txStateHolder;
         this.indexingService = indexingService;
     }
 
@@ -88,7 +90,7 @@ public class IndexTxStateUpdater {
         if (!indexes.isEmpty()) {
             MutableIntObjectMap<Value> materializedProperties = IntObjectMaps.mutable.empty();
             for (IndexDescriptor index : indexes) {
-                MemoryTracker memoryTracker = read.txStateHolder.txState().memoryTracker();
+                MemoryTracker memoryTracker = txStateHolder.txState().memoryTracker();
                 int[] indexPropertyIds = index.schema().getPropertyIds();
                 Value[] values = getValueTuple(
                         node,
@@ -103,11 +105,11 @@ public class IndexTxStateUpdater {
                 switch (changeType) {
                     case ADDED_LABEL -> {
                         indexingService.validateBeforeCommit(index, values, node.nodeReference());
-                        read.txStateHolder
+                        txStateHolder
                                 .txState()
                                 .indexDoUpdateEntry(index.schema(), node.nodeReference(), null, valueTuple);
                     }
-                    case REMOVED_LABEL -> read.txStateHolder
+                    case REMOVED_LABEL -> txStateHolder
                             .txState()
                             .indexDoUpdateEntry(index.schema(), node.nodeReference(), valueTuple, null);
                 }
@@ -209,7 +211,7 @@ public class IndexTxStateUpdater {
     }
 
     private boolean noSchemaChangedInTx() {
-        var txState = read.txStateHolder.txState();
+        var txState = txStateHolder.txState();
         return !(txState.hasChanges() && !txState.hasDataChanges());
     }
 
@@ -237,7 +239,7 @@ public class IndexTxStateUpdater {
         if (!indexes.isEmpty()) {
             MutableIntObjectMap<Value> materializedProperties = IntObjectMaps.mutable.empty();
             SchemaMatcher.onMatchingSchema(indexes.iterator(), ANY_PROPERTY_KEY, propertyKeyIds, index -> {
-                MemoryTracker memoryTracker = read.txStateHolder.txState().memoryTracker();
+                MemoryTracker memoryTracker = txStateHolder.txState().memoryTracker();
                 SchemaDescriptor schema = index.schema();
                 Value[] values = getValueTuple(
                         entity,
@@ -249,7 +251,7 @@ public class IndexTxStateUpdater {
                         memoryTracker);
                 ValueTuple valueTuple = ValueTuple.of(values);
                 memoryTracker.allocateHeap(valueTuple.getShallowSize());
-                read.txStateHolder.txState().indexDoUpdateEntry(schema, entity.reference(), valueTuple, null);
+                txStateHolder.txState().indexDoUpdateEntry(schema, entity.reference(), valueTuple, null);
             });
         }
     }
@@ -267,7 +269,7 @@ public class IndexTxStateUpdater {
         if (!indexes.isEmpty()) {
             MutableIntObjectMap<Value> materializedProperties = IntObjectMaps.mutable.empty();
             SchemaMatcher.onMatchingSchema(indexes.iterator(), propertyKeyId, existingPropertyKeyIds, index -> {
-                MemoryTracker memoryTracker = read.txStateHolder.txState().memoryTracker();
+                MemoryTracker memoryTracker = txStateHolder.txState().memoryTracker();
                 SchemaDescriptor schema = index.schema();
                 Value[] values = getValueTuple(
                         entity,
@@ -280,7 +282,7 @@ public class IndexTxStateUpdater {
                 indexingService.validateBeforeCommit(index, values, entity.reference());
                 ValueTuple valueTuple = ValueTuple.of(values);
                 memoryTracker.allocateHeap(valueTuple.getShallowSize());
-                read.txStateHolder.txState().indexDoUpdateEntry(schema, entity.reference(), null, valueTuple);
+                txStateHolder.txState().indexDoUpdateEntry(schema, entity.reference(), null, valueTuple);
             });
         }
     }
@@ -298,7 +300,7 @@ public class IndexTxStateUpdater {
         if (!indexes.isEmpty()) {
             MutableIntObjectMap<Value> materializedProperties = IntObjectMaps.mutable.empty();
             SchemaMatcher.onMatchingSchema(indexes.iterator(), propertyKeyId, existingPropertyKeyIds, index -> {
-                MemoryTracker memoryTracker = read.txStateHolder.txState().memoryTracker();
+                MemoryTracker memoryTracker = txStateHolder.txState().memoryTracker();
                 SchemaDescriptor schema = index.schema();
                 Value[] values = getValueTuple(
                         entity,
@@ -310,7 +312,7 @@ public class IndexTxStateUpdater {
                         memoryTracker);
                 ValueTuple valueTuple = ValueTuple.of(values);
                 memoryTracker.allocateHeap(valueTuple.getShallowSize());
-                read.txStateHolder.txState().indexDoUpdateEntry(schema, entity.reference(), valueTuple, null);
+                txStateHolder.txState().indexDoUpdateEntry(schema, entity.reference(), valueTuple, null);
             });
         }
     }
@@ -329,7 +331,7 @@ public class IndexTxStateUpdater {
         if (!indexes.isEmpty()) {
             MutableIntObjectMap<Value> materializedProperties = IntObjectMaps.mutable.empty();
             SchemaMatcher.onMatchingSchema(indexes.iterator(), propertyKeyId, existingPropertyKeyIds, index -> {
-                MemoryTracker memoryTracker = read.txStateHolder.txState().memoryTracker();
+                MemoryTracker memoryTracker = txStateHolder.txState().memoryTracker();
                 SchemaDescriptor schema = index.schema();
                 int[] propertyIds = schema.getPropertyIds();
                 Value[] valuesAfter = getValueTuple(
@@ -352,7 +354,7 @@ public class IndexTxStateUpdater {
                 ValueTuple valuesTupleAfter = ValueTuple.of(valuesAfter);
                 memoryTracker.allocateHeap(
                         valuesTupleBefore.getShallowSize() * 2); // They are copies and same shallow size
-                read.txStateHolder
+                txStateHolder
                         .txState()
                         .indexDoUpdateEntry(schema, entity.reference(), valuesTupleBefore, valuesTupleAfter);
             });

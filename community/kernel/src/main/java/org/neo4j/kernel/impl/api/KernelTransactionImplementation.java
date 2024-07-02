@@ -95,6 +95,7 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.KernelVersionProvider;
+import org.neo4j.kernel.api.AccessModeProvider;
 import org.neo4j.kernel.api.ExecutionContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.ResourceMonitor;
@@ -133,7 +134,6 @@ import org.neo4j.kernel.impl.factory.AccessCapability;
 import org.neo4j.kernel.impl.factory.AccessCapabilityFactory;
 import org.neo4j.kernel.impl.locking.LockManager;
 import org.neo4j.kernel.impl.monitoring.TransactionMonitor;
-import org.neo4j.kernel.impl.newapi.AccessModeProvider;
 import org.neo4j.kernel.impl.newapi.DefaultPooledCursors;
 import org.neo4j.kernel.impl.newapi.IndexTxStateUpdater;
 import org.neo4j.kernel.impl.newapi.KernelProcedures;
@@ -441,7 +441,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.operations = new Operations(
                 kernelRead,
                 storageReader,
-                new IndexTxStateUpdater(storageReader, kernelRead, indexingService),
+                new IndexTxStateUpdater(storageReader, indexingService, this),
                 commandCreationContext,
                 dbmsRuntimeVersionProvider,
                 kernelVersionProvider,
@@ -454,7 +454,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 constraintSemantics,
                 indexingService,
                 config,
-                memoryTracker);
+                memoryTracker,
+                accessModeProvider);
         this.traceProvider = getTraceProvider(config);
         this.initializationTrace = NONE;
         this.transactionHeapBytesLimit = config.get(memory_transaction_max_size);

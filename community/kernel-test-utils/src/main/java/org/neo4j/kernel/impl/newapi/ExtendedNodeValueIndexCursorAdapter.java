@@ -25,8 +25,11 @@ import org.neo4j.internal.kernel.api.KernelReadTracer;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
+import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.kernel.api.AccessModeProvider;
 import org.neo4j.kernel.api.index.IndexProgressor;
+import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.values.storable.Value;
 
 public class ExtendedNodeValueIndexCursorAdapter extends DefaultCloseListenable
@@ -73,10 +76,10 @@ public class ExtendedNodeValueIndexCursorAdapter extends DefaultCloseListenable
     }
 
     @Override
-    public void setRead(KernelRead read) {}
+    public void initState(Read read, TxStateHolder txStateHolder, AccessModeProvider accessModeProvider) {}
 
     @Override
-    public void initialize(
+    public void initializeQuery(
             IndexDescriptor descriptor,
             IndexProgressor progressor,
             boolean indexIncludesTransactionState,

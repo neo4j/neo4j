@@ -108,7 +108,7 @@ class PointIndexReader extends NativeIndexReader<PointKey> {
                 // into a query that is split into multiple sub-queries.
                 BridgingIndexProgressor multiProgressor =
                         new BridgingIndexProgressor(client, descriptor.schema().getPropertyIds());
-                client.initialize(descriptor, multiProgressor, false, false, constraints, boundingBoxPredicate);
+                client.initializeQuery(descriptor, multiProgressor, false, false, constraints, boundingBoxPredicate);
                 double[] from = boundingBoxPredicate.from().coordinate();
                 double[] to = boundingBoxPredicate.to().coordinate();
                 CoordinateReferenceSystem crs = boundingBoxPredicate.crs();
@@ -135,7 +135,8 @@ class PointIndexReader extends NativeIndexReader<PointKey> {
                 }
             } catch (IllegalArgumentException e) {
                 // Invalid query ranges will cause this state (eg. min>max)
-                client.initialize(descriptor, IndexProgressor.EMPTY, false, false, constraints, boundingBoxPredicate);
+                client.initializeQuery(
+                        descriptor, IndexProgressor.EMPTY, false, false, constraints, boundingBoxPredicate);
             }
         } else {
             super.query(client, context, constraints, predicates);

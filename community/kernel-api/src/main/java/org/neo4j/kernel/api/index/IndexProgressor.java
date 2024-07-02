@@ -84,7 +84,7 @@ public interface IndexProgressor extends AutoCloseable {
          * property values together with entity ids.
          * @param query The query of this progression
          */
-        void initialize(
+        void initializeQuery(
                 IndexDescriptor descriptor,
                 IndexProgressor progressor,
                 boolean indexIncludesTransactionState,
@@ -116,7 +116,7 @@ public interface IndexProgressor extends AutoCloseable {
          * @param token The token id to query
          * @param order Required order the index should return entity ids in.
          */
-        void initialize(IndexProgressor progressor, int token, IndexOrder order);
+        void initializeQuery(IndexProgressor progressor, int token, IndexOrder order);
 
         /**
          * Setup the client for progressing using the supplied progressor. The values fed in to acceptEntity map to the
@@ -128,7 +128,7 @@ public interface IndexProgressor extends AutoCloseable {
          * @param added Added entities that should be included in the results.
          * @param removed Removed entities that should be excluded from the results.
          */
-        void initialize(IndexProgressor progressor, int token, LongIterator added, LongSet removed);
+        void initializeQuery(IndexProgressor progressor, int token, LongIterator added, LongSet removed);
 
         /**
          * Accept the entity id and token of a candidate index entry. Return true if the entry

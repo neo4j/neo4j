@@ -39,6 +39,7 @@ import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.kernel.api.AccessModeProvider;
 import org.neo4j.kernel.api.ExecutionContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.procedure.ProcedureView;
@@ -50,7 +51,6 @@ import org.neo4j.kernel.impl.api.OverridableSecurityContext;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.locking.LockManager.Client;
-import org.neo4j.kernel.impl.newapi.AccessModeProvider;
 import org.neo4j.kernel.impl.newapi.DefaultPooledCursors;
 import org.neo4j.kernel.impl.newapi.KernelProcedures;
 import org.neo4j.kernel.impl.newapi.KernelProcedures.ForThreadExecutionContextScope;
@@ -97,6 +97,7 @@ public class ThreadExecutionContext implements ExecutionContext, AutoCloseable {
     private final QueryContext queryContext;
     private final EntityLocks entityLocks;
     private final SchemaRead schemaRead;
+    private final AccessModeProvider accessModeProvider;
 
     public ThreadExecutionContext(
             DefaultPooledCursors cursors,
@@ -146,7 +147,7 @@ public class ThreadExecutionContext implements ExecutionContext, AutoCloseable {
                 securityAuthorizationHandler,
                 clockContextSupplier,
                 procedureView);
-        AccessModeProvider accessModeProvider =
+        this.accessModeProvider =
                 () -> overridableSecurityContext.currentSecurityContext().mode();
         this.schemaRead = new KernelSchemaRead(
                 schemaState,
@@ -250,6 +251,16 @@ public class ThreadExecutionContext implements ExecutionContext, AutoCloseable {
     @Override
     public QueryContext queryContext() {
         return queryContext;
+    }
+
+    @Override
+    public AccessModeProvider accessModeProvider() {
+        return accessModeProvider;
+    }
+
+    @Override
+    public TxStateHolder txStateHolder() {
+        return THREAD_EXECUTION_STATE_HOLDER;
     }
 
     @Override

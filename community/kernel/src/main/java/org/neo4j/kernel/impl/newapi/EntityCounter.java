@@ -30,6 +30,7 @@ import org.neo4j.common.EntityType;
 import org.neo4j.counts.CountsVisitor;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.InternalIndexState;
+import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.RelationshipDataAccessor;
 import org.neo4j.internal.kernel.api.RelationshipIndexCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
@@ -70,16 +71,17 @@ final class EntityCounter {
             DefaultPooledCursors cursors,
             CursorContext cursorContext,
             MemoryTracker memoryTracker,
-            KernelRead read,
-            StoreCursors storageCursors) {
+            Read read,
+            StoreCursors storageCursors,
+            TxStateHolder txStateHolder) {
         if (!multiVersioned && accessMode.allowsTraverseAllNodesWithLabel(labelId)) {
             // All nodes with the specified label can be traversed, so the count store can be used.
             return storageReader.countsForNode(labelId, cursorContext)
-                    + countsForNodeInTxState(labelId, read, storageReader, cursorContext, storageCursors);
+                    + countsForNodeInTxState(labelId, storageReader, cursorContext, storageCursors, txStateHolder);
         }
         if (accessMode.disallowsTraverseLabel(labelId)) {
             // No nodes with the specified label can't be traversed, so the count only ones in transaction state
-            return countsForNodeInTxState(labelId, read, storageReader, cursorContext, storageCursors);
+            return countsForNodeInTxState(labelId, storageReader, cursorContext, storageCursors, txStateHolder);
         }
         // Scanning adheres security and isolation requirements and includes transaction state too
         return countNodesByScan(labelId, cursors, cursorContext, memoryTracker, read);
@@ -87,15 +89,15 @@ final class EntityCounter {
 
     private static long countsForNodeInTxState(
             int labelId,
-            KernelRead read,
             StorageReader storageReader,
             CursorContext cursorContext,
-            StoreCursors storageCursors) {
+            StoreCursors storageCursors,
+            TxStateHolder txStateHolder) {
         long count = 0;
-        if (read.txStateHolder.hasTxStateWithChanges()) {
+        if (txStateHolder.hasTxStateWithChanges()) {
             CountsDelta counts = new CountsDelta();
             try {
-                TransactionState txState = read.txStateHolder.txState();
+                TransactionState txState = txStateHolder.txState();
                 try (var countingVisitor = new TransactionCountingStateVisitor(
                         EMPTY, storageReader, txState, counts, cursorContext, storageCursors)) {
                     txState.accept(countingVisitor);
@@ -115,7 +117,7 @@ final class EntityCounter {
             DefaultPooledCursors cursors,
             CursorContext cursorContext,
             MemoryTracker memoryTracker,
-            KernelRead read) {
+            Read read) {
         // We have a restriction on what part of the graph can be traversed, that can affect nodes with the
         // specified label.
         // This disables the count store entirely.
@@ -142,11 +144,12 @@ final class EntityCounter {
             AccessMode accessMode,
             StorageReader storageReader,
             DefaultPooledCursors cursors,
-            KernelRead read,
+            Read read,
             CursorContext cursorContext,
             MemoryTracker memoryTracker,
             StoreCursors storageCursors,
-            SchemaRead schemaRead) {
+            SchemaRead schemaRead,
+            TxStateHolder txStateHolder) {
         if (!multiVersioned
                 && accessMode.allowsTraverseRelType(typeId)
                 && accessMode.allowsTraverseNode(startLabelId)
@@ -156,7 +159,7 @@ final class EntityCounter {
                             startLabelId,
                             typeId,
                             endLabelId,
-                            read.txStateHolder,
+                            txStateHolder,
                             storageReader,
                             storageCursors,
                             cursorContext);
@@ -167,7 +170,7 @@ final class EntityCounter {
             // Not allowed to traverse any relationship with the specified relationship type, start node label and end
             // node label, so count only ones in transaction state.
             return countsForRelationshipInTxState(
-                    startLabelId, typeId, endLabelId, read.txStateHolder, storageReader, storageCursors, cursorContext);
+                    startLabelId, typeId, endLabelId, txStateHolder, storageReader, storageCursors, cursorContext);
         }
 
         return countRelationshipByScan(
@@ -179,7 +182,7 @@ final class EntityCounter {
             int typeId,
             int endLabelId,
             DefaultPooledCursors cursors,
-            KernelRead read,
+            Read read,
             SchemaRead schemaRead,
             CursorContext cursorContext,
             MemoryTracker memoryTracker) {

@@ -19,18 +19,16 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import org.neo4j.graphdb.Resource;
-import org.neo4j.internal.kernel.api.IndexQueryConstraints;
-import org.neo4j.internal.kernel.api.PropertyIndexQuery;
-import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.kernel.api.Read;
+import org.neo4j.kernel.api.AccessModeProvider;
 import org.neo4j.kernel.api.index.IndexProgressor;
+import org.neo4j.kernel.api.txstate.TxStateHolder;
 
-/**
- * Similar to an {@link IndexProgressor.EntityValueClient}, but will be given a {@link KernelRead} instance, and possibly a {@link Resource}, prior to its
- * {@link IndexProgressor.EntityValueClient#initialize(IndexDescriptor, IndexProgressor, boolean, boolean, IndexQueryConstraints, PropertyIndexQuery...)}  initialization}.
- * <p>
- * This is useful if the entity references needs to be processed further.
- */
 public interface EntityIndexSeekClient extends IndexProgressor.EntityValueClient {
-    void setRead(KernelRead read);
+    /**
+     * Provide client with information about state, access mode, and reference to {@link Read} implementation.
+     * This must be called before {@link IndexProgressor.EntityValueClient#initializeQuery initialization with query
+     * information}.
+     */
+    void initState(Read read, TxStateHolder txStateHolder, AccessModeProvider accessModeProvider);
 }

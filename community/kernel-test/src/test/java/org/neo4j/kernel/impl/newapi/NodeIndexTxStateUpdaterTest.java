@@ -47,7 +47,6 @@ import org.neo4j.values.storable.Values;
 class NodeIndexTxStateUpdaterTest extends IndexTxStateUpdaterTestBase {
     private static final int LABEL_ID_1 = 10;
     private static final int LABEL_ID_2 = 11;
-    private static final int UN_INDEXED_LABEL_ID = 12;
 
     private final IndexDescriptor indexOn1_1 = TestIndexDescriptorFactory.forLabel(LABEL_ID_1, PROP_ID_1);
     private final IndexDescriptor indexOn2_new = TestIndexDescriptorFactory.forLabel(LABEL_ID_2, NEW_PROP_ID);

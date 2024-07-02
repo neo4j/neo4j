@@ -335,14 +335,14 @@ abstract class GenericNativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>> 
             final NodeValueIterator iter, final PropertyIndexQuery filter) {
         return new IndexProgressor.EntityValueClient() {
             @Override
-            public void initialize(
+            public void initializeQuery(
                     IndexDescriptor descriptor,
                     IndexProgressor progressor,
                     boolean indexIncludesTransactionState,
                     boolean needStoreFilter,
                     IndexQueryConstraints constraints,
                     PropertyIndexQuery... query) {
-                iter.initialize(
+                iter.initializeQuery(
                         descriptor, progressor, indexIncludesTransactionState, needStoreFilter, constraints, query);
             }
 

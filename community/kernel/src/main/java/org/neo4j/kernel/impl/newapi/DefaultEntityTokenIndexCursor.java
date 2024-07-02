@@ -28,9 +28,12 @@ import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.api.set.primitive.LongSet;
 import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.internal.kernel.api.KernelReadTracer;
+import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.schema.IndexOrder;
+import org.neo4j.kernel.api.AccessModeProvider;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.txstate.TransactionState;
+import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.impl.index.schema.TokenScanValueIndexProgressor;
 import org.neo4j.storageengine.api.LongReference;
 
@@ -39,7 +42,9 @@ import org.neo4j.storageengine.api.LongReference;
  */
 abstract class DefaultEntityTokenIndexCursor<SELF extends DefaultEntityTokenIndexCursor<SELF>>
         extends IndexCursor<IndexProgressor, SELF> implements InternalTokenIndexCursor {
-    protected KernelRead read;
+    protected Read read;
+    protected TxStateHolder txStateHolder;
+    protected AccessModeProvider accessModeProvider;
 
     protected long entity;
     protected long entityFromIndex;
@@ -88,11 +93,11 @@ abstract class DefaultEntityTokenIndexCursor<SELF extends DefaultEntityTokenInde
     }
 
     @Override
-    public void initialize(IndexProgressor progressor, int token, IndexOrder order) {
+    public void initializeQuery(IndexProgressor progressor, int token, IndexOrder order) {
         initialize(progressor);
-        if (read.txStateHolder.hasTxStateWithChanges()) {
-            added = peekable(createAddedInTxState(read.txStateHolder.txState(), token, order));
-            removed = createDeletedInTxState(read.txStateHolder.txState(), token);
+        if (txStateHolder.hasTxStateWithChanges()) {
+            added = peekable(createAddedInTxState(txStateHolder.txState(), token, order));
+            removed = createDeletedInTxState(txStateHolder.txState(), token);
             useMergeSort = order != IndexOrder.NONE;
             if (useMergeSort) {
                 sortedMergeJoin.initialize(order);
@@ -110,7 +115,7 @@ abstract class DefaultEntityTokenIndexCursor<SELF extends DefaultEntityTokenInde
     }
 
     @Override
-    public void initialize(IndexProgressor progressor, int token, LongIterator added, LongSet removed) {
+    public void initializeQuery(IndexProgressor progressor, int token, LongIterator added, LongSet removed) {
         initialize(progressor);
         useMergeSort = false;
         this.added = peekable(added);
@@ -153,6 +158,8 @@ abstract class DefaultEntityTokenIndexCursor<SELF extends DefaultEntityTokenInde
             entityFromIndex = LongReference.NULL;
             tokenId = (int) LongReference.NULL;
             read = null;
+            txStateHolder = null;
+            accessModeProvider = null;
             added = null;
             removed = null;
         }
@@ -165,8 +172,10 @@ abstract class DefaultEntityTokenIndexCursor<SELF extends DefaultEntityTokenInde
     }
 
     @Override
-    public void setRead(KernelRead read) {
+    public void initState(Read read, TxStateHolder txStateHolder, AccessModeProvider accessModeProvider) {
         this.read = read;
+        this.txStateHolder = txStateHolder;
+        this.accessModeProvider = accessModeProvider;
     }
 
     public long entityReference() {

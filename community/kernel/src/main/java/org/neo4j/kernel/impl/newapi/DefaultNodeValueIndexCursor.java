@@ -58,7 +58,7 @@ class DefaultNodeValueIndexCursor extends DefaultEntityValueIndexCursor<DefaultN
     protected boolean canAccessAllDescribedEntities(IndexDescriptor descriptor) {
         propertyIds = descriptor.schema().getPropertyIds();
         int[] labelIds = descriptor.schema().getEntityTokenIds();
-        AccessMode accessMode = read.getAccessMode();
+        AccessMode accessMode = accessModeProvider.getAccessMode();
 
         for (int label : labelIds) {
             /*
@@ -117,7 +117,7 @@ class DefaultNodeValueIndexCursor extends DefaultEntityValueIndexCursor<DefaultN
                 ? securityNodeCursor.labels().all()
                 : securityNodeCursor.labelsIgnoringTxStateSetRemove().all();
 
-        AccessMode accessMode = read.getAccessMode();
+        AccessMode accessMode = accessModeProvider.getAccessMode();
         if (accessMode.hasPropertyReadRules(propertyIds)) {
             ensureSecurityPropertyCursor();
             securityNodeCursor.properties(securityPropertyCursor, PropertySelection.selection(propertyIds));

@@ -121,6 +121,7 @@ import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.KernelVersionProvider;
+import org.neo4j.kernel.api.AccessModeProvider;
 import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
@@ -170,6 +171,7 @@ public class Operations implements Write, SchemaWrite, Upgrade {
     private final KernelTransactionImplementation ktx;
     private final KernelRead kernelRead;
     private final KernelSchemaRead schemaRead;
+    private final AccessModeProvider accessModeProvider;
     private final StorageReader storageReader;
     private final CommandCreationContext commandCreationContext;
     private final DbmsRuntimeVersionProvider dbmsRuntimeVersionProvider;
@@ -209,13 +211,15 @@ public class Operations implements Write, SchemaWrite, Upgrade {
             ConstraintSemantics constraintSemantics,
             IndexingProvidersService indexProviders,
             Config config,
-            MemoryTracker memoryTracker) {
+            MemoryTracker memoryTracker,
+            AccessModeProvider accessModeProvider) {
         this.storageReader = storageReader;
         this.commandCreationContext = commandCreationContext;
         this.dbmsRuntimeVersionProvider = dbmsRuntimeVersionProvider;
         this.kernelVersionProvider = kernelVersionProvider;
         this.storageLocks = storageLocks;
         this.schemaRead = schemaRead;
+        this.accessModeProvider = accessModeProvider;
         this.token = token;
         this.kernelRead = kernelRead;
         this.ktx = ktx;
@@ -288,7 +292,7 @@ public class Operations implements Write, SchemaWrite, Upgrade {
             checkAfterLocked.accept(nodeId);
         }
         txState.nodeDoCreate(nodeId);
-        nodeCursor.single(nodeId, kernelRead);
+        nodeCursor.single(nodeId, kernelRead, ktx, accessModeProvider);
         nodeCursor.next();
         int prevLabel = NO_SUCH_LABEL;
         for (long lockingId : lockingIds) {
@@ -774,7 +778,7 @@ public class Operations implements Write, SchemaWrite, Upgrade {
             var allowsReadAllProperties = false;
             try (var nodeCursor = cursors.allocateNodeCursor(ktx.cursorContext(), memoryTracker);
                     var propertyCursor = cursors.allocatePropertyCursor(ktx.cursorContext(), memoryTracker)) {
-                nodeCursor.single(existingNodeId, kernelRead);
+                nodeCursor.single(existingNodeId, kernelRead, ktx, accessModeProvider);
                 // First check if the current access mode can read the node
                 if (nodeCursor.next()) {
                     nodeCursor.properties(propertyCursor, PropertySelection.selection(propertyKeys));
@@ -870,7 +874,7 @@ public class Operations implements Write, SchemaWrite, Upgrade {
             try (var relCursor = (DefaultRelationshipScanCursor)
                             cursors.allocateRelationshipScanCursor(ktx.cursorContext(), memoryTracker);
                     var propertyCursor = cursors.allocatePropertyCursor(ktx.cursorContext(), memoryTracker)) {
-                relCursor.single(existingRelationshipId, kernelRead);
+                relCursor.single(existingRelationshipId, kernelRead, ktx, accessModeProvider);
                 //  First check if the current access mode can read the relationship
                 if (relCursor.next()) {
                     relCursor.properties(propertyCursor, PropertySelection.selection(propertyKeys));

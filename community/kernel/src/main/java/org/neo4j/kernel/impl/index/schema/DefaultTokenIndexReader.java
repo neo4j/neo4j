@@ -72,7 +72,7 @@ public class DefaultTokenIndexReader implements TokenIndexReader {
             Seeker<TokenScanKey, TokenScanValue> seeker = seekerForToken(range, tokenId, order, cursorContext);
             IndexProgressor progressor =
                     new TokenScanValueIndexProgressor(seeker, client, order, range, idLayout, tokenId);
-            client.initialize(progressor, tokenId, order);
+            client.initializeQuery(progressor, tokenId, order);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }

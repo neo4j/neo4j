@@ -123,7 +123,7 @@ class LuceneScoredEntityIndexProgressorTest {
         private final List<Float> scores = new ArrayList<>();
 
         @Override
-        public void initialize(
+        public void initializeQuery(
                 IndexDescriptor descriptor,
                 IndexProgressor progressor,
                 boolean indexIncludesTransactionState,

@@ -224,7 +224,7 @@ class PartitionedValueIndexReaderTest {
         doAnswer(invocation -> {
                     // This is out outer client
                     var invokedClient = (BridgingIndexProgressor) invocation.getArgument(0);
-                    invokedClient.initialize(
+                    invokedClient.initializeQuery(
                             schemaIndexDescriptor, invokedClient, false, needStoreFilter, null, (PropertyIndexQuery)
                                     null);
                     return null;

@@ -30,6 +30,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.internal.kernel.api.EntityLocks;
 import org.neo4j.internal.kernel.api.QueryContext;
+import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.security.AccessMode.Static;
@@ -65,7 +66,7 @@ class DefaultNodeBasedRelationshipTypeIndexCursorTest {
                 internalCursors,
                 false);
         var cursor = new DefaultNodeBasedRelationshipTypeIndexCursor(c -> {}, nodeCursor, relationshipCursor);
-        KernelRead read = new KernelRead(
+        Read read = new KernelRead(
                 mock(StorageReader.class),
                 mock(TokenRead.class),
                 mock(DefaultPooledCursors.class),
@@ -81,7 +82,7 @@ class DefaultNodeBasedRelationshipTypeIndexCursorTest {
                 () -> Static.FULL,
                 false);
 
-        cursor.setRead(read);
+        cursor.initState(read, mock(TxStateHolder.class), () -> Static.FULL);
         int numNodes = 10;
         int numRelationships = 5;
         int type = 1;
@@ -96,7 +97,7 @@ class DefaultNodeBasedRelationshipTypeIndexCursorTest {
 
         // when
         var progressor = progressor(cursor, type, nodesIds);
-        cursor.initialize(progressor, type, LongSets.immutable.empty().longIterator(), LongSets.immutable.empty());
+        cursor.initializeQuery(progressor, type, LongSets.immutable.empty().longIterator(), LongSets.immutable.empty());
         while (cursor.next()) {
             // then
             assertIsOutgoingRelationship(

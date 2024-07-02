@@ -29,7 +29,7 @@ public class SimpleEntityValueClient extends SimpleEntityClient implements Index
     public Value[] values;
 
     @Override
-    public void initialize(
+    public void initializeQuery(
             IndexDescriptor descriptor,
             IndexProgressor progressor,
             boolean indexIncludesTransactionState,

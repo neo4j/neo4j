@@ -51,7 +51,7 @@ public class StubTokenIndexReader implements TokenIndexReader {
             TokenPredicate query,
             CursorContext cursorContext) {
         index.forEach((token, entities) ->
-                client.initialize(new StubIndexProgressor(client, entities), token.intValue(), IndexOrder.NONE));
+                client.initializeQuery(new StubIndexProgressor(client, entities), token.intValue(), IndexOrder.NONE));
     }
 
     @Override
@@ -62,7 +62,7 @@ public class StubTokenIndexReader implements TokenIndexReader {
             EntityRange range,
             CursorContext cursorContext) {
         index.forEach((token, entities) ->
-                client.initialize(new StubIndexProgressor(client, entities), token.intValue(), IndexOrder.NONE));
+                client.initializeQuery(new StubIndexProgressor(client, entities), token.intValue(), IndexOrder.NONE));
     }
 
     @Override

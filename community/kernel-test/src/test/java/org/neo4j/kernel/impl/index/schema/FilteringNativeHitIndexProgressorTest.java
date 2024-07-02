@@ -66,7 +66,7 @@ class FilteringNativeHitIndexProgressorTest {
                 .then(invocation -> filter.test(((TextValue) invocation.getArgument(0)).stringValue()));
         try (FilteringNativeHitIndexProgressor<RangeKey> progressor =
                 new FilteringNativeHitIndexProgressor<>(cursor, valueClient, predicates)) {
-            valueClient.initialize(
+            valueClient.initializeQuery(
                     TestIndexDescriptorFactory.forLabel(0, 0), progressor, false, false, unorderedValues(), predicates);
             List<Long> result = new ArrayList<>();
 

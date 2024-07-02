@@ -79,7 +79,7 @@ public class DefaultRelationshipBasedRelationshipTypeIndexCursor
 
     @Override
     protected final boolean allowedToSeeAllEntitiesWithToken(int token) {
-        AccessMode accessMode = read.getAccessMode();
+        AccessMode accessMode = accessModeProvider.getAccessMode();
         return accessMode.allowsTraverseRelType(token) && accessMode.allowsTraverseAllLabels();
     }
 
@@ -125,7 +125,7 @@ public class DefaultRelationshipBasedRelationshipTypeIndexCursor
             return true;
         }
 
-        relationshipScanCursor.single(entity, read);
+        relationshipScanCursor.single(entity, read, txStateHolder, accessModeProvider);
         return relationshipScanCursor.next();
     }
 
@@ -146,7 +146,7 @@ public class DefaultRelationshipBasedRelationshipTypeIndexCursor
 
     @Override
     protected boolean allowedToSeeEntity(long entityReference) {
-        if (read.getAccessMode().allowsTraverseAllRelTypes()) {
+        if (accessModeProvider.getAccessMode().allowsTraverseAllRelTypes()) {
             return true;
         }
         read.singleRelationship(entityReference, relationshipScanCursor);

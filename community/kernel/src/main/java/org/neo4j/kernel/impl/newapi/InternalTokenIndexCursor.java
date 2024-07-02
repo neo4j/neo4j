@@ -19,8 +19,16 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
+import org.neo4j.internal.kernel.api.Read;
+import org.neo4j.kernel.api.AccessModeProvider;
 import org.neo4j.kernel.api.index.IndexProgressor;
+import org.neo4j.kernel.api.txstate.TxStateHolder;
 
 public interface InternalTokenIndexCursor extends TraceableCursor, IndexProgressor.EntityTokenClient {
-    void setRead(KernelRead read);
+    /**
+     * Provide client with information about state, access mode, and reference to {@link Read} implementation.
+     * This must be called before {@link IndexProgressor.EntityTokenClient#initializeQuery initialization with query
+     * information}.
+     */
+    void initState(Read read, TxStateHolder txStateHolder, AccessModeProvider accessModeProvider);
 }

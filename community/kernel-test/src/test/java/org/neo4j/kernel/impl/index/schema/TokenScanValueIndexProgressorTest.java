@@ -111,10 +111,10 @@ public class TokenScanValueIndexProgressorTest {
         final List<Long> observedIds = new ArrayList<>();
 
         @Override
-        public void initialize(IndexProgressor progressor, int token, IndexOrder order) {}
+        public void initializeQuery(IndexProgressor progressor, int token, IndexOrder order) {}
 
         @Override
-        public void initialize(IndexProgressor progressor, int token, LongIterator added, LongSet removed) {}
+        public void initializeQuery(IndexProgressor progressor, int token, LongIterator added, LongSet removed) {}
 
         @Override
         public boolean acceptEntity(long reference, int tokenId) {

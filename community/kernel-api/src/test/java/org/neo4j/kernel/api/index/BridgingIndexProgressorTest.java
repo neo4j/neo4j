@@ -50,7 +50,7 @@ class BridgingIndexProgressorTest {
 
         // Given
         for (IndexProgressor part : parts) {
-            progressor.initialize(index, part, false, false, unconstrained());
+            progressor.initializeQuery(index, part, false, false, unconstrained());
         }
 
         // When
@@ -77,7 +77,7 @@ class BridgingIndexProgressorTest {
         for (IndexProgressor part : parts) {
             var needStoreFilter = random.nextBoolean();
             anyNeedStoreFilter |= needStoreFilter;
-            progressor.initialize(index, part, false, needStoreFilter, unconstrained());
+            progressor.initializeQuery(index, part, false, needStoreFilter, unconstrained());
         }
 
         // When

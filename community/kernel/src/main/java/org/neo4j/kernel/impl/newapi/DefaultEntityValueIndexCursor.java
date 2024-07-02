@@ -46,12 +46,15 @@ import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.IndexResultScore;
 import org.neo4j.internal.kernel.api.KernelReadTracer;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
+import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.ValueIndexCursor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.IndexQuery.IndexQueryType;
+import org.neo4j.kernel.api.AccessModeProvider;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.txstate.TransactionState;
+import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.impl.newapi.TxStateIndexChanges.AddedAndRemoved;
 import org.neo4j.kernel.impl.newapi.TxStateIndexChanges.AddedWithValuesAndRemoved;
 import org.neo4j.storageengine.api.LongReference;
@@ -61,7 +64,9 @@ import org.neo4j.values.storable.ValueTuple;
 
 abstract class DefaultEntityValueIndexCursor<CURSOR> extends IndexCursor<IndexProgressor, CURSOR>
         implements ValueIndexCursor, IndexResultScore, EntityIndexSeekClient, SortedMergeJoin.Sink {
-    protected KernelRead read;
+    protected Read read;
+    protected TxStateHolder txStateHolder;
+    protected AccessModeProvider accessModeProvider;
     protected long entity;
     private float score;
     private PropertyIndexQuery[] query;
@@ -87,7 +92,7 @@ abstract class DefaultEntityValueIndexCursor<CURSOR> extends IndexCursor<IndexPr
     }
 
     @Override
-    public final void initialize(
+    public final void initializeQuery(
             IndexDescriptor descriptor,
             IndexProgressor progressor,
             boolean indexIncludesTransactionState,
@@ -110,7 +115,7 @@ abstract class DefaultEntityValueIndexCursor<CURSOR> extends IndexCursor<IndexPr
 
         shortcutSecurity = setupSecurity(descriptor);
 
-        if (!indexIncludesTransactionState && read.txStateHolder.hasTxStateWithChanges() && query.length > 0) {
+        if (!indexIncludesTransactionState && txStateHolder.hasTxStateWithChanges() && query.length > 0) {
             // Extract out the equality queries
             List<Value> exactQueryValues = new ArrayList<>(query.length);
             int i = 0;
@@ -311,8 +316,10 @@ abstract class DefaultEntityValueIndexCursor<CURSOR> extends IndexCursor<IndexPr
     }
 
     @Override
-    public final void setRead(KernelRead read) {
+    public final void initState(Read read, TxStateHolder txStateHolder, AccessModeProvider accessModeProvider) {
         this.read = read;
+        this.txStateHolder = txStateHolder;
+        this.accessModeProvider = accessModeProvider;
     }
 
     @Override
@@ -344,6 +351,8 @@ abstract class DefaultEntityValueIndexCursor<CURSOR> extends IndexCursor<IndexPr
             this.query = null;
             this.values = null;
             this.read = null;
+            this.txStateHolder = null;
+            this.accessModeProvider = null;
             this.added = ImmutableEmptyLongIterator.INSTANCE;
             this.addedWithValues = Collections.emptyIterator();
             this.removed = LongSets.immutable.empty();
@@ -372,7 +381,7 @@ abstract class DefaultEntityValueIndexCursor<CURSOR> extends IndexCursor<IndexPr
 
     private void prefixQuery(
             IndexDescriptor descriptor, Value[] equalityPrefix, PropertyIndexQuery.StringPrefixPredicate predicate) {
-        TransactionState txState = read.txStateHolder.txState();
+        TransactionState txState = txStateHolder.txState();
 
         if (needsValues) {
             AddedWithValuesAndRemoved changes = indexUpdatesWithValuesForRangeSeekByPrefix(
@@ -389,7 +398,7 @@ abstract class DefaultEntityValueIndexCursor<CURSOR> extends IndexCursor<IndexPr
 
     private void rangeQuery(
             IndexDescriptor descriptor, Value[] equalityPrefix, PropertyIndexQuery.RangePredicate<?> predicate) {
-        TransactionState txState = read.txStateHolder.txState();
+        TransactionState txState = txStateHolder.txState();
 
         if (needsValues) {
             AddedWithValuesAndRemoved changes =
@@ -406,7 +415,7 @@ abstract class DefaultEntityValueIndexCursor<CURSOR> extends IndexCursor<IndexPr
 
     private void boundingBoxQuery(
             IndexDescriptor descriptor, Value[] equalityPrefix, PropertyIndexQuery.BoundingBoxPredicate predicate) {
-        TransactionState txState = read.txStateHolder.txState();
+        TransactionState txState = txStateHolder.txState();
 
         if (needsValues) {
             AddedWithValuesAndRemoved changes =
@@ -421,7 +430,7 @@ abstract class DefaultEntityValueIndexCursor<CURSOR> extends IndexCursor<IndexPr
     }
 
     private void scanQuery(IndexDescriptor descriptor) {
-        TransactionState txState = read.txStateHolder.txState();
+        TransactionState txState = txStateHolder.txState();
 
         if (needsValues) {
             AddedWithValuesAndRemoved changes = indexUpdatesWithValuesForScan(txState, descriptor, indexOrder);
@@ -435,7 +444,7 @@ abstract class DefaultEntityValueIndexCursor<CURSOR> extends IndexCursor<IndexPr
     }
 
     private void suffixOrContainsQuery(IndexDescriptor descriptor, PropertyIndexQuery query) {
-        TransactionState txState = read.txStateHolder.txState();
+        TransactionState txState = txStateHolder.txState();
 
         if (needsValues) {
             AddedWithValuesAndRemoved changes =
@@ -450,7 +459,7 @@ abstract class DefaultEntityValueIndexCursor<CURSOR> extends IndexCursor<IndexPr
     }
 
     private void seekQuery(IndexDescriptor descriptor, Value[] values) {
-        TransactionState txState = read.txStateHolder.txState();
+        TransactionState txState = txStateHolder.txState();
 
         if (needsValues) {
             AddedWithValuesAndRemoved changes =
@@ -517,6 +526,6 @@ abstract class DefaultEntityValueIndexCursor<CURSOR> extends IndexCursor<IndexPr
 
     @FunctionalInterface
     interface EntityReader {
-        void read(KernelRead read);
+        void read(Read read);
     }
 }

@@ -36,10 +36,12 @@ final class PartitionedRelationshipCursorScan
     public boolean reservePartition(RelationshipScanCursor cursor, ExecutionContext executionContext) {
         return ((DefaultRelationshipScanCursor) cursor)
                 .scanBatch(
-                        (KernelRead) executionContext.dataRead(),
+                        executionContext.dataRead(),
                         storageScan,
                         computeBatchSize(),
                         ImmutableEmptyLongIterator.INSTANCE,
-                        false);
+                        false,
+                        executionContext.txStateHolder(),
+                        executionContext.accessModeProvider());
     }
 }

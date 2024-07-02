@@ -117,13 +117,13 @@ public class TokenIndexScanIdIterator implements EntityIdIterator {
         private boolean hasNext;
 
         @Override
-        public void initialize(IndexProgressor progressor, int token, IndexOrder order) {
+        public void initializeQuery(IndexProgressor progressor, int token, IndexOrder order) {
             // seek
             this.progressor = progressor;
         }
 
         @Override
-        public void initialize(IndexProgressor progressor, int token, LongIterator added, LongSet removed) {
+        public void initializeQuery(IndexProgressor progressor, int token, LongIterator added, LongSet removed) {
             // used for scan
             throw new UnsupportedOperationException();
         }

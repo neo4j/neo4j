@@ -34,10 +34,12 @@ final class PartitionedNodeCursorScan extends PartitionedEntityCursorScan<NodeCu
     public boolean reservePartition(NodeCursor cursor, ExecutionContext executionContext) {
         return ((DefaultNodeCursor) cursor)
                 .scanBatch(
-                        (KernelRead) executionContext.dataRead(),
+                        executionContext.dataRead(),
                         storageScan,
                         computeBatchSize(),
                         ImmutableEmptyLongIterator.INSTANCE,
-                        false);
+                        false,
+                        executionContext.txStateHolder(),
+                        executionContext.accessModeProvider());
     }
 }

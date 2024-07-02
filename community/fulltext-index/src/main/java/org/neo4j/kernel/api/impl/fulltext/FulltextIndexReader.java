@@ -121,7 +121,7 @@ public class FulltextIndexReader implements ValueIndexReader {
         ValuesIterator itr =
                 searchLucene(query, constraints, context, context.cursorContext(), context.memoryTracker());
         IndexProgressor progressor = new LuceneScoredEntityIndexProgressor(itr, client, constraints);
-        client.initialize(index, progressor, true, false, constraints, queries);
+        client.initializeQuery(index, progressor, true, false, constraints, queries);
     }
 
     @Override

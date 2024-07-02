@@ -63,7 +63,7 @@ public abstract class AbstractLuceneIndexReader implements ValueIndexReader {
 
         final var progressor = indexProgressor(query, constraints, client);
         final var needStoreFilter = needStoreFilter(predicate);
-        client.initialize(descriptor, progressor, false, needStoreFilter, constraints, predicate);
+        client.initializeQuery(descriptor, progressor, false, needStoreFilter, constraints, predicate);
     }
 
     protected PropertyIndexQuery validateQuery(PropertyIndexQuery... predicates)

@@ -22,13 +22,17 @@ package org.neo4j.kernel.impl.newapi;
 import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.impl.iterator.ImmutableEmptyLongIterator;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
+import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.security.AccessMode;
+import org.neo4j.kernel.api.AccessModeProvider;
+import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.storageengine.api.AllRelationshipsScan;
 import org.neo4j.storageengine.api.LongReference;
 import org.neo4j.storageengine.api.StorageRelationshipScanCursor;
 
-class DefaultRelationshipScanCursor extends DefaultRelationshipCursor implements RelationshipScanCursor {
+class DefaultRelationshipScanCursor extends DefaultRelationshipCursor<DefaultRelationshipScanCursor>
+        implements RelationshipScanCursor {
     private final StorageRelationshipScanCursor storeCursor;
     private final InternalCursorFactory internalCursors;
     private final boolean applyAccessModeToTxState;
@@ -48,21 +52,25 @@ class DefaultRelationshipScanCursor extends DefaultRelationshipCursor implements
         this.applyAccessModeToTxState = applyAccessModeToTxState;
     }
 
-    void scan(KernelRead read) {
+    void scan(Read read, TxStateHolder txStateHolder, AccessModeProvider accessModeProvider) {
         storeCursor.scan();
         this.single = LongReference.NULL;
         this.isSingle = false;
-        init(read);
+        init(read, txStateHolder, accessModeProvider);
         this.addedRelationships = ImmutableEmptyLongIterator.INSTANCE;
     }
 
     boolean scanBatch(
-            KernelRead read,
+            Read read,
             AllRelationshipsScan scan,
             long sizeHint,
             LongIterator addedRelationships,
-            boolean hasChanges) {
+            boolean hasChanges,
+            TxStateHolder txStateHolder,
+            AccessModeProvider accessModeProvider) {
         this.read = read;
+        this.txStateHolder = txStateHolder;
+        this.accessModeProvider = accessModeProvider;
         this.single = LongReference.NULL;
         this.isSingle = false;
         this.currentAddedInTx = LongReference.NULL;
@@ -73,19 +81,26 @@ class DefaultRelationshipScanCursor extends DefaultRelationshipCursor implements
         return addedRelationships.hasNext() || scanBatch;
     }
 
-    void single(long reference, KernelRead read) {
+    void single(long reference, Read read, TxStateHolder txStateHolder, AccessModeProvider accessModeProvider) {
         storeCursor.single(reference);
         this.single = reference;
         this.isSingle = true;
-        init(read);
+        init(read, txStateHolder, accessModeProvider);
         this.addedRelationships = ImmutableEmptyLongIterator.INSTANCE;
     }
 
-    void single(long reference, long sourceNodeReference, int type, long targetNodeReference, KernelRead read) {
+    void single(
+            long reference,
+            long sourceNodeReference,
+            int type,
+            long targetNodeReference,
+            Read read,
+            TxStateHolder txStateHolder,
+            AccessModeProvider accessModeProvider) {
         storeCursor.single(reference, sourceNodeReference, type, targetNodeReference);
         this.single = reference;
         this.isSingle = true;
-        init(read);
+        init(read, txStateHolder, accessModeProvider);
         this.addedRelationships = ImmutableEmptyLongIterator.INSTANCE;
     }
 
@@ -97,7 +112,7 @@ class DefaultRelationshipScanCursor extends DefaultRelationshipCursor implements
         if (hasChanges) {
             while (addedRelationships.hasNext()) {
                 long next = addedRelationships.next();
-                read.txStateHolder.txState().relationshipVisit(next, relationshipTxStateDataVisitor);
+                txStateHolder.txState().relationshipVisit(next, relationshipTxStateDataVisitor);
 
                 if (!applyAccessModeToTxState || allowed()) {
                     if (tracer != null) {
@@ -111,7 +126,7 @@ class DefaultRelationshipScanCursor extends DefaultRelationshipCursor implements
 
         while (storeCursor.next()) {
             boolean skip = hasChanges
-                    && read.txStateHolder.txState().relationshipIsDeletedInThisBatch(storeCursor.entityReference());
+                    && txStateHolder.txState().relationshipIsDeletedInThisBatch(storeCursor.entityReference());
             if (!skip && allowed()) {
                 if (tracer != null) {
                     tracer.onRelationship(relationshipReference());
@@ -123,7 +138,7 @@ class DefaultRelationshipScanCursor extends DefaultRelationshipCursor implements
     }
 
     protected boolean allowed() {
-        AccessMode accessMode = read.getAccessMode();
+        AccessMode accessMode = accessModeProvider.getAccessMode();
         return accessMode.allowsTraverseRelType(type()) && allowedToSeeEndNode(accessMode);
     }
 
@@ -157,6 +172,8 @@ class DefaultRelationshipScanCursor extends DefaultRelationshipCursor implements
     public void closeInternal() {
         if (!isClosed()) {
             read = null;
+            txStateHolder = null;
+            accessModeProvider = null;
             storeCursor.close();
             if (securityNodeCursor != null) {
                 securityNodeCursor.close();
@@ -186,11 +203,11 @@ class DefaultRelationshipScanCursor extends DefaultRelationshipCursor implements
     @Override
     protected void collectAddedTxStateSnapshot() {
         if (isSingle) {
-            addedRelationships = read.txStateHolder.txState().relationshipIsAddedInThisBatch(single)
+            addedRelationships = txStateHolder.txState().relationshipIsAddedInThisBatch(single)
                     ? LongHashSet.newSetWith(single).longIterator()
                     : ImmutableEmptyLongIterator.INSTANCE;
         } else {
-            addedRelationships = read.txStateHolder
+            addedRelationships = txStateHolder
                     .txState()
                     .addedAndRemovedRelationships()
                     .getAdded()

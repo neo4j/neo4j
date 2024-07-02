@@ -406,7 +406,7 @@ abstract class IndexPopulationStressTest {
         final List<IndexRecord> records = new ArrayList<>();
 
         @Override
-        public void initialize(
+        public void initializeQuery(
                 IndexDescriptor descriptor,
                 IndexProgressor progressor,
                 boolean indexIncludesTransactionState,

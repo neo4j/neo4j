@@ -70,6 +70,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationExcep
 import org.neo4j.internal.kernel.api.helpers.StubNodeCursor;
 import org.neo4j.internal.kernel.api.helpers.TestRelationshipChain;
 import org.neo4j.internal.kernel.api.security.AccessMode;
+import org.neo4j.internal.kernel.api.security.AccessMode.Static;
 import org.neo4j.internal.kernel.api.security.CommunitySecurityLog;
 import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
@@ -969,7 +970,8 @@ public class PlainOperationsTest extends OperationsTest {
                 mock(ConstraintSemantics.class),
                 mock(IndexingProvidersService.class),
                 Config.defaults(),
-                INSTANCE);
+                INSTANCE,
+                () -> Static.FULL);
 
         // when
         operations.nodeCreate();
@@ -1014,7 +1016,8 @@ public class PlainOperationsTest extends OperationsTest {
                 mock(ConstraintSemantics.class),
                 mock(IndexingProvidersService.class),
                 Config.defaults(),
-                INSTANCE);
+                INSTANCE,
+                () -> Static.FULL);
         operations.initialize(NULL_CONTEXT);
 
         // when
@@ -1057,7 +1060,8 @@ public class PlainOperationsTest extends OperationsTest {
                 mock(ConstraintSemantics.class),
                 mock(IndexingProvidersService.class),
                 Config.defaults(),
-                INSTANCE);
+                INSTANCE,
+                () -> Static.FULL);
 
         // when
         operations.relationshipCreate(0, 1, 2);
@@ -1105,7 +1109,8 @@ public class PlainOperationsTest extends OperationsTest {
                 mock(ConstraintSemantics.class),
                 indexingProvidersService,
                 Config.defaults(),
-                INSTANCE);
+                INSTANCE,
+                () -> Static.FULL);
 
         // when
         operations.indexCreate(IndexPrototype.forSchema(schema).withName("name"));

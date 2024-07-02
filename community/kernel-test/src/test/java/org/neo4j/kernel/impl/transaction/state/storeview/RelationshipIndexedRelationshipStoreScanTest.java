@@ -90,7 +90,7 @@ class RelationshipIndexedRelationshipStoreScanTest {
         doAnswer(invocation -> {
                     IndexProgressor.EntityTokenClient client = invocation.getArgument(0);
                     TokenPredicate token = invocation.getArgument(2);
-                    client.initialize(
+                    client.initializeQuery(
                             new IndexProgressor() {
                                 private final PrimitiveIterator.OfLong relationshipsWithType1 =
                                         Arrays.stream(new long[] {1, 2, 4, 8}).iterator();

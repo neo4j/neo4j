@@ -511,13 +511,13 @@ public class TokenIndexAccessorTest extends IndexAccessorTests<TokenScanKey, Tok
         }
 
         @Override
-        public void initialize(IndexProgressor progressor, int token, IndexOrder order) {
+        public void initializeQuery(IndexProgressor progressor, int token, IndexOrder order) {
             assertThat(token).isEqualTo(expectedToken);
             this.progressor = progressor;
         }
 
         @Override
-        public void initialize(IndexProgressor progressor, int token, LongIterator added, LongSet removed) {
+        public void initializeQuery(IndexProgressor progressor, int token, LongIterator added, LongSet removed) {
             throw new UnsupportedOperationException("Did not expect to use this method");
         }
 

@@ -48,7 +48,7 @@ public class NodeValueIterator extends PrimitiveLongCollections.AbstractPrimitiv
     }
 
     @Override
-    public void initialize(
+    public void initializeQuery(
             IndexDescriptor descriptor,
             IndexProgressor progressor,
             boolean indexIncludesTransactionState,

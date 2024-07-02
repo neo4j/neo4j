@@ -38,7 +38,7 @@ public class GatheringNodeValueClient implements IndexProgressor.EntityValueClie
     public boolean needStoreFilter;
 
     @Override
-    public void initialize(
+    public void initializeQuery(
             IndexDescriptor descriptor,
             IndexProgressor progressor,
             boolean indexIncludesTransactionState,

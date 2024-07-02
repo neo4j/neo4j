@@ -21,7 +21,10 @@ package org.neo4j.kernel.impl.newapi;
 
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
+import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.RelationshipDataAccessor;
+import org.neo4j.kernel.api.AccessModeProvider;
+import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.storageengine.api.LongReference;
 import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.storageengine.api.Reference;
@@ -32,7 +35,9 @@ abstract class DefaultRelationshipCursor<SELF extends DefaultRelationshipCursor>
         implements RelationshipDataAccessor {
     protected boolean hasChanges;
     boolean checkHasChanges;
-    KernelRead read;
+    Read read;
+    TxStateHolder txStateHolder;
+    AccessModeProvider accessModeProvider;
 
     final StorageRelationshipCursor storeCursor;
     RelationshipVisitor<RuntimeException> relationshipTxStateDataVisitor = new TxStateDataVisitor();
@@ -47,9 +52,11 @@ abstract class DefaultRelationshipCursor<SELF extends DefaultRelationshipCursor>
         this.storeCursor = storeCursor;
     }
 
-    protected void init(KernelRead read) {
+    protected void init(Read read, TxStateHolder txStateHolder, AccessModeProvider accessModeProvider) {
         this.currentAddedInTx = LongReference.NULL;
         this.read = read;
+        this.txStateHolder = txStateHolder;
+        this.accessModeProvider = accessModeProvider;
         this.checkHasChanges = true;
     }
 
@@ -75,7 +82,7 @@ abstract class DefaultRelationshipCursor<SELF extends DefaultRelationshipCursor>
 
     @Override
     public void properties(PropertyCursor cursor, PropertySelection selection) {
-        ((DefaultPropertyCursor) cursor).initRelationship(this, selection, read);
+        ((DefaultPropertyCursor) cursor).initRelationship(this, selection, read, txStateHolder, accessModeProvider);
     }
 
     @Override
@@ -107,7 +114,7 @@ abstract class DefaultRelationshipCursor<SELF extends DefaultRelationshipCursor>
      */
     protected boolean hasChanges() {
         if (checkHasChanges) {
-            hasChanges = read.txStateHolder.hasTxStateWithChanges();
+            hasChanges = txStateHolder.hasTxStateWithChanges();
             if (hasChanges) {
                 collectAddedTxStateSnapshot();
             }

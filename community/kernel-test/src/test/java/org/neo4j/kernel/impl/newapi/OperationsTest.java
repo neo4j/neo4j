@@ -242,7 +242,8 @@ abstract class OperationsTest {
                 mock(ConstraintSemantics.class),
                 indexingProvidersService,
                 Config.defaults(GraphDatabaseInternalSettings.type_constraints, true),
-                INSTANCE);
+                INSTANCE,
+                () -> Static.FULL);
         operations.initialize(NULL_CONTEXT);
 
         this.order = inOrder(locks, txState, storageReader, storageReaderSnapshot, creationContext, storageLocks);

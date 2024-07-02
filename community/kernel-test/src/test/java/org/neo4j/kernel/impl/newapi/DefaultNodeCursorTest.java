@@ -48,11 +48,12 @@ class DefaultNodeCursorTest {
     @Test
     void hasLabelOnNewNodeDoesNotTouchStore() {
         final var NODEID = 1L;
-        var read = buildReadState(txState -> txState.nodeDoCreate(NODEID));
+        var ktx = buildKtx(txState -> txState.nodeDoCreate(NODEID));
+        var read = buildReadState(ktx);
 
         var storageCursor = mock(StorageNodeCursor.class);
         try (var defaultCursor = new DefaultNodeCursor((c) -> {}, storageCursor, internalCursors, false)) {
-            defaultCursor.single(NODEID, read);
+            defaultCursor.single(NODEID, read, ktx, () -> Static.FULL);
             final TestKernelReadTracer tracer = addTracerAndReturn(defaultCursor);
 
             assertTrue(defaultCursor.next());
@@ -69,12 +70,13 @@ class DefaultNodeCursorTest {
     @Test
     void hasSpecifiedLabelOnNewNodeDoesNotTouchStore() {
         final var NODEID = 1L;
-        var read = buildReadState(txState -> txState.nodeDoCreate(NODEID));
+        var ktx = buildKtx(txState -> txState.nodeDoCreate(NODEID));
+        var read = buildReadState(ktx);
 
         var storageCursor = mock(StorageNodeCursor.class);
         try (var defaultCursor = new DefaultNodeCursor((c) -> {}, storageCursor, internalCursors, false)) {
             final TestKernelReadTracer tracer = addTracerAndReturn(defaultCursor);
-            defaultCursor.single(NODEID, read);
+            defaultCursor.single(NODEID, read, ktx, () -> Static.FULL);
             assertTrue(defaultCursor.next());
             tracer.clear();
 
@@ -86,10 +88,8 @@ class DefaultNodeCursorTest {
         }
     }
 
-    private static KernelRead buildReadState(Consumer<TxState> setup) {
-        var ktx = mock(KernelTransactionImplementation.class);
-        when(ktx.securityContext()).thenReturn(SecurityContext.AUTH_DISABLED);
-        var read = new KernelRead(
+    private static KernelRead buildReadState(KernelTransactionImplementation ktx) {
+        return new KernelRead(
                 mock(StorageReader.class),
                 mock(TokenRead.class),
                 mock(DefaultPooledCursors.class),
@@ -104,11 +104,16 @@ class DefaultNodeCursorTest {
                 mock(AssertOpen.class),
                 () -> Static.FULL,
                 false);
+    }
+
+    private static KernelTransactionImplementation buildKtx(Consumer<TxState> setup) {
+        var ktx = mock(KernelTransactionImplementation.class);
+        when(ktx.securityContext()).thenReturn(SecurityContext.AUTH_DISABLED);
         var txState = new TxState();
         setup.accept(txState);
         when(ktx.hasTxStateWithChanges()).thenReturn(true);
         when(ktx.txState()).thenReturn(txState);
-        return read;
+        return ktx;
     }
 
     private static TestKernelReadTracer addTracerAndReturn(DefaultNodeCursor nodeCursor) {

@@ -74,12 +74,12 @@ class DefaultNodeLabelIndexCursor extends DefaultEntityTokenIndexCursor<DefaultN
 
     @Override
     protected boolean allowedToSeeAllEntitiesWithToken(int token) {
-        return read.getAccessMode().allowsTraverseAllNodesWithLabel(token);
+        return accessModeProvider.getAccessMode().allowsTraverseAllNodesWithLabel(token);
     }
 
     @Override
     protected boolean allowedToSeeEntity(long entityReference) {
-        if (read.getAccessMode().allowsTraverseAllLabels()) {
+        if (accessModeProvider.getAccessMode().allowsTraverseAllLabels()) {
             return true;
         }
         if (securityNodeCursor == null) {

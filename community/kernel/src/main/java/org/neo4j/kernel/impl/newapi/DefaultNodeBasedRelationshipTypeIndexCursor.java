@@ -24,10 +24,13 @@ import org.eclipse.collections.api.set.primitive.LongSet;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
+import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.RelationshipTypeIndexCursor;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
+import org.neo4j.kernel.api.AccessModeProvider;
 import org.neo4j.kernel.api.index.IndexProgressor;
+import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.storageengine.api.LongReference;
 import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.storageengine.api.Reference;
@@ -45,7 +48,9 @@ public class DefaultNodeBasedRelationshipTypeIndexCursor
         implements InternalRelationshipTypeIndexCursor {
     private final DefaultNodeCursor nodeCursor;
     private final DefaultRelationshipTraversalCursor relationshipTraversalCursor;
-    private KernelRead read;
+    private Read read;
+    private TxStateHolder txStateHolder;
+    private AccessModeProvider accessModeProvider;
     private LongIterator addedRelationships;
     private LongSet removedNodes;
     private int type;
@@ -64,27 +69,24 @@ public class DefaultNodeBasedRelationshipTypeIndexCursor
     }
 
     @Override
-    public void initialize(IndexProgressor progressor, int type, IndexOrder order) {
+    public void initializeQuery(IndexProgressor progressor, int type, IndexOrder order) {
         LongIterator addedRelationships = null;
         LongSet removedNodes = null;
-        if (read.txStateHolder.hasTxStateWithChanges()) {
-            addedRelationships = read.txStateHolder
+        if (txStateHolder.hasTxStateWithChanges()) {
+            addedRelationships = txStateHolder
                     .txState()
                     .relationshipsWithTypeChanged(type)
                     .getAdded()
                     .freeze()
                     .longIterator();
-            removedNodes = read.txStateHolder
-                    .txState()
-                    .addedAndRemovedNodes()
-                    .getRemoved()
-                    .freeze();
+            removedNodes =
+                    txStateHolder.txState().addedAndRemovedNodes().getRemoved().freeze();
         }
-        initialize(progressor, type, addedRelationships, removedNodes);
+        initializeQuery(progressor, type, addedRelationships, removedNodes);
     }
 
     @Override
-    public void initialize(
+    public void initializeQuery(
             IndexProgressor progressor, int type, LongIterator addedRelationships, LongSet removedNodes) {
         super.initialize(progressor);
         this.type = type;
@@ -131,7 +133,7 @@ public class DefaultNodeBasedRelationshipTypeIndexCursor
                     while (addedRelationships.hasNext()) {
                         long id = addedRelationships.next();
                         // Position cursor on the rel from tx state
-                        relationshipTraversalCursor.init(id, read);
+                        relationshipTraversalCursor.init(id, read, txStateHolder, accessModeProvider);
                         if (relationshipTraversalCursor.next()) {
                             relId = id;
                             return true;
@@ -143,7 +145,7 @@ public class DefaultNodeBasedRelationshipTypeIndexCursor
                 // indexNext() calls acceptEntity() with data from index
                 readState = indexNext() ? ReadState.NODE_READ : ReadState.UNAVAILABLE;
                 case NODE_READ -> {
-                    nodeCursor.single(nodeFromIndex, read);
+                    nodeCursor.single(nodeFromIndex, read, txStateHolder, accessModeProvider);
                     if (nodeCursor.next()) {
                         nodeCursor.relationships(relationshipTraversalCursor, selection);
                         readState = ReadState.RELATIONSHIP_READ;
@@ -223,8 +225,10 @@ public class DefaultNodeBasedRelationshipTypeIndexCursor
     }
 
     @Override
-    public void setRead(KernelRead read) {
+    public void initState(Read read, TxStateHolder txStateHolder, AccessModeProvider accessModeProvider) {
         this.read = read;
+        this.txStateHolder = txStateHolder;
+        this.accessModeProvider = accessModeProvider;
     }
 
     private void checkReadFromStore() {
@@ -246,6 +250,8 @@ public class DefaultNodeBasedRelationshipTypeIndexCursor
         if (!isClosed()) {
             closeProgressor();
             read = null;
+            txStateHolder = null;
+            accessModeProvider = null;
             nodeCursor.close();
             relationshipTraversalCursor.close();
             relId = LongReference.NULL;

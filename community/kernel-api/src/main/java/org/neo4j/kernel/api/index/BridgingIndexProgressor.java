@@ -74,7 +74,7 @@ public class BridgingIndexProgressor implements IndexProgressor.EntityValueClien
     }
 
     @Override
-    public void initialize(
+    public void initializeQuery(
             IndexDescriptor descriptor,
             IndexProgressor progressor,
             boolean indexIncludesTransactionState,

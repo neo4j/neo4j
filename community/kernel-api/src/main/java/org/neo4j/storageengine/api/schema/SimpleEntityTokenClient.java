@@ -26,12 +26,12 @@ import org.neo4j.kernel.api.index.IndexProgressor;
 
 public class SimpleEntityTokenClient extends SimpleEntityClient implements IndexProgressor.EntityTokenClient {
     @Override
-    public void initialize(IndexProgressor progressor, int token, IndexOrder order) {
+    public void initializeQuery(IndexProgressor progressor, int token, IndexOrder order) {
         super.initialize(progressor);
     }
 
     @Override
-    public void initialize(IndexProgressor progressor, int token, LongIterator added, LongSet removed) {
+    public void initializeQuery(IndexProgressor progressor, int token, LongIterator added, LongSet removed) {
         super.initialize(progressor);
     }
 

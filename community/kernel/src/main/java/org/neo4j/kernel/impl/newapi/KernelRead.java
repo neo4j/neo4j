@@ -53,6 +53,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelExcept
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.kernel.api.AccessModeProvider;
 import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
@@ -99,7 +100,7 @@ public final class KernelRead implements Read {
     private final StoreCursors storageCursors;
     private final QueryContext queryContext;
     private final Locks entityLocks;
-    final TxStateHolder txStateHolder;
+    private final TxStateHolder txStateHolder;
     private final SchemaRead schemaRead;
     private final AssertOpen assertOpen;
     private final AccessModeProvider accessModeProvider;
@@ -159,7 +160,7 @@ public final class KernelRead implements Read {
         }
 
         EntityIndexSeekClient client = (EntityIndexSeekClient) cursor;
-        client.setRead(this);
+        client.initState(this, txStateHolder, accessModeProvider);
         indexSession.reader.query(client, queryContext, constraints, query);
     }
 
@@ -196,7 +197,7 @@ public final class KernelRead implements Read {
         }
 
         EntityIndexSeekClient client = (EntityIndexSeekClient) cursor;
-        client.setRead(this);
+        client.initState(this, txStateHolder, accessModeProvider);
         indexSession.reader.query(client, queryContext, constraints, query);
     }
 
@@ -307,7 +308,7 @@ public final class KernelRead implements Read {
             ValueIndexReader indexReader,
             PropertyIndexQuery.ExactPredicate... query)
             throws IndexNotApplicableKernelException {
-        cursor.setRead(this);
+        cursor.initState(this, txStateHolder, accessModeProvider);
         indexReader.query(cursor, queryContext, unconstrained(), query);
     }
 
@@ -316,7 +317,7 @@ public final class KernelRead implements Read {
             ValueIndexReader indexReader,
             PropertyIndexQuery.ExactPredicate... query)
             throws IndexNotApplicableKernelException {
-        cursor.setRead(this);
+        cursor.initState(this, txStateHolder, accessModeProvider);
         indexReader.query(cursor, queryContext, unconstrained(), query);
     }
 
@@ -382,7 +383,7 @@ public final class KernelRead implements Read {
             EntityIndexSeekClient indexSeekClient,
             IndexQueryConstraints constraints)
             throws KernelException {
-        indexSeekClient.setRead(this);
+        indexSeekClient.initState(this, txStateHolder, accessModeProvider);
         indexSession.reader.query(indexSeekClient, queryContext, constraints, PropertyIndexQuery.allEntries());
     }
 
@@ -443,20 +444,20 @@ public final class KernelRead implements Read {
         var tokenSession = (DefaultTokenReadSession) session;
 
         DefaultNodeLabelIndexCursor indexCursor = (DefaultNodeLabelIndexCursor) cursor;
-        indexCursor.setRead(this);
+        indexCursor.initState(this, txStateHolder, accessModeProvider);
         tokenSession.reader.query(indexCursor, constraints, query, cursorContext);
     }
 
     @Override
     public void allNodesScan(NodeCursor cursor) {
         performCheckBeforeOperation();
-        ((DefaultNodeCursor) cursor).scan(this);
+        ((DefaultNodeCursor) cursor).scan(this, txStateHolder, accessModeProvider);
     }
 
     @Override
     public void singleNode(long reference, NodeCursor cursor) {
         performCheckBeforeOperation();
-        ((DefaultNodeCursor) cursor).single(reference, this);
+        ((DefaultNodeCursor) cursor).single(reference, this, txStateHolder, accessModeProvider);
     }
 
     @Override
@@ -478,7 +479,7 @@ public final class KernelRead implements Read {
     @Override
     public void singleRelationship(long reference, RelationshipScanCursor cursor) {
         performCheckBeforeOperation();
-        ((DefaultRelationshipScanCursor) cursor).single(reference, this);
+        ((DefaultRelationshipScanCursor) cursor).single(reference, this, txStateHolder, accessModeProvider);
     }
 
     @Override
@@ -490,13 +491,20 @@ public final class KernelRead implements Read {
             RelationshipScanCursor cursor) {
         performCheckBeforeOperation();
         ((DefaultRelationshipScanCursor) cursor)
-                .single(reference, sourceNodeReference, type, targetNodeReference, this);
+                .single(
+                        reference,
+                        sourceNodeReference,
+                        type,
+                        targetNodeReference,
+                        this,
+                        txStateHolder,
+                        accessModeProvider);
     }
 
     @Override
     public void allRelationshipsScan(RelationshipScanCursor cursor) {
         performCheckBeforeOperation();
-        ((DefaultRelationshipScanCursor) cursor).scan(this);
+        ((DefaultRelationshipScanCursor) cursor).scan(this, txStateHolder, accessModeProvider);
     }
 
     @Override
@@ -558,20 +566,22 @@ public final class KernelRead implements Read {
         var tokenSession = (DefaultTokenReadSession) session;
 
         var indexCursor = (InternalRelationshipTypeIndexCursor) cursor;
-        indexCursor.setRead(this);
+        indexCursor.initState(this, txStateHolder, accessModeProvider);
         tokenSession.reader.query(indexCursor, constraints, query, cursorContext);
     }
 
     @Override
     public void relationships(
             long nodeReference, long reference, RelationshipSelection selection, RelationshipTraversalCursor cursor) {
-        ((DefaultRelationshipTraversalCursor) cursor).init(nodeReference, reference, selection, this);
+        ((DefaultRelationshipTraversalCursor) cursor)
+                .init(nodeReference, reference, selection, this, txStateHolder, accessModeProvider);
     }
 
     @Override
     public void nodeProperties(
             long nodeReference, Reference reference, PropertySelection selection, PropertyCursor cursor) {
-        ((DefaultPropertyCursor) cursor).initNode(nodeReference, reference, selection, this);
+        ((DefaultPropertyCursor) cursor)
+                .initNode(nodeReference, reference, selection, this, txStateHolder, accessModeProvider);
     }
 
     @Override
@@ -581,7 +591,8 @@ public final class KernelRead implements Read {
             Reference reference,
             PropertySelection selection,
             PropertyCursor cursor) {
-        ((DefaultPropertyCursor) cursor).initRelationship(relationshipReference, reference, selection, this);
+        ((DefaultPropertyCursor) cursor)
+                .initRelationship(relationshipReference, reference, selection, this, txStateHolder, accessModeProvider);
     }
 
     private void validateConstraints(IndexQueryConstraints constraints, DefaultIndexReadSession indexSession) {
@@ -767,7 +778,8 @@ public final class KernelRead implements Read {
                 queryContext.cursorContext(),
                 memoryTracker,
                 this,
-                storageCursors);
+                storageCursors,
+                txStateHolder);
     }
 
     @Override
@@ -793,7 +805,8 @@ public final class KernelRead implements Read {
                 queryContext.cursorContext(),
                 memoryTracker,
                 storageCursors,
-                schemaRead);
+                schemaRead,
+                txStateHolder);
     }
 
     @Override
@@ -859,11 +872,11 @@ public final class KernelRead implements Read {
         }
     }
 
-    void performCheckBeforeOperation() {
+    private void performCheckBeforeOperation() {
         assertOpen.assertOpen();
     }
 
-    AccessMode getAccessMode() {
+    private AccessMode getAccessMode() {
         return accessModeProvider.getAccessMode();
     }
 

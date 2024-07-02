@@ -106,7 +106,7 @@ class DefaultRelationshipValueIndexCursor extends DefaultEntityValueIndexCursor<
             // this relationship
             return true;
         }
-        relationshipScanCursor.single(entity, read);
+        relationshipScanCursor.single(entity, read, txStateHolder, accessModeProvider);
         return relationshipScanCursor.next();
     }
 
@@ -143,7 +143,7 @@ class DefaultRelationshipValueIndexCursor extends DefaultEntityValueIndexCursor<
     @Override
     protected boolean canAccessAllDescribedEntities(IndexDescriptor descriptor) {
         propertyIds = descriptor.schema().getPropertyIds();
-        AccessMode accessMode = read.getAccessMode();
+        AccessMode accessMode = accessModeProvider.getAccessMode();
 
         for (int relType : descriptor.schema().getEntityTokenIds()) {
             if (!accessMode.allowsTraverseRelType(relType)) {
@@ -179,7 +179,7 @@ class DefaultRelationshipValueIndexCursor extends DefaultEntityValueIndexCursor<
 
         int relType = relationshipScanCursor.type();
         for (int prop : propertyIds) {
-            if (!read.getAccessMode().allowsReadRelationshipProperty(() -> relType, prop)) {
+            if (!accessModeProvider.getAccessMode().allowsReadRelationshipProperty(() -> relType, prop)) {
                 return false;
             }
         }

@@ -74,7 +74,7 @@ public class PartitionedValueIndexReader implements ValueIndexReader {
             });
             usageTracker.queried();
             boolean needStoreFilter = bridgingIndexProgressor.needStoreFilter();
-            client.initialize(descriptor, bridgingIndexProgressor, false, needStoreFilter, constraints, query);
+            client.initializeQuery(descriptor, bridgingIndexProgressor, false, needStoreFilter, constraints, query);
         } catch (InnerException e) {
             throw e.getCause();
         }

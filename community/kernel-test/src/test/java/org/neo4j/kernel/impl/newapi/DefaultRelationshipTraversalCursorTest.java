@@ -34,6 +34,7 @@ import org.neo4j.graphdb.Direction;
 import org.neo4j.internal.kernel.api.Locks;
 import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.SchemaRead;
+import org.neo4j.internal.kernel.api.security.AccessMode.Static;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -63,10 +64,11 @@ class DefaultRelationshipTraversalCursorTest {
         StorageRelationshipTraversalCursor storeCursor = storeCursor(100, 102, 104);
         DefaultRelationshipTraversalCursor cursor =
                 new DefaultRelationshipTraversalCursor(pool::accept, storeCursor, internalCursors, false);
-        KernelRead read = emptyTxState();
+        var ktx = emptyTxState();
+        var read = mockedRead(ktx);
 
         // when
-        cursor.init(node, relationship, ALL_RELATIONSHIPS, read);
+        cursor.init(node, relationship, ALL_RELATIONSHIPS, read, ktx, () -> Static.FULL);
 
         // then
         assertRelationships(cursor, 100, 102, 104);
@@ -78,10 +80,11 @@ class DefaultRelationshipTraversalCursorTest {
         StorageRelationshipTraversalCursor storeCursor = storeCursor(100, 102, 104);
         DefaultRelationshipTraversalCursor cursor =
                 new DefaultRelationshipTraversalCursor(pool::accept, storeCursor, internalCursors, false);
-        KernelRead read = txState(3, 4);
+        var ktx = txState(3, 4);
+        var read = mockedRead(ktx);
 
         // when
-        cursor.init(node, relationship, ALL_RELATIONSHIPS, read);
+        cursor.init(node, relationship, ALL_RELATIONSHIPS, read, ktx, () -> Static.FULL);
 
         // then
         assertRelationships(cursor, 3, 4, 100, 102, 104);
@@ -99,12 +102,13 @@ class DefaultRelationshipTraversalCursorTest {
 
         DefaultRelationshipTraversalCursor cursor =
                 new DefaultRelationshipTraversalCursor(pool::accept, storeCursor, internalCursors, false);
-        KernelRead read = txState(
+        var ktx = txState(
                 rel(3, node, 50, type),
                 rel(4, 50, node, type),
                 rel(5, node, 50, type2),
                 rel(6, node, node, type),
                 rel(7, node, 52, type));
+        var read = mockedRead(ktx);
 
         // when
         cursor.init(
@@ -112,7 +116,9 @@ class DefaultRelationshipTraversalCursorTest {
                 relationship,
                 // relationships of a specific type/direction
                 selection(type, Direction.OUTGOING),
-                read);
+                read,
+                ktx,
+                () -> Static.FULL);
 
         // then
         assertRelationships(cursor, 3, 7, 6, 100, 102, 104);
@@ -127,15 +133,16 @@ class DefaultRelationshipTraversalCursorTest {
 
         DefaultRelationshipTraversalCursor cursor =
                 new DefaultRelationshipTraversalCursor(pool::accept, storeCursor, internalCursors, false);
-        KernelRead read = txState(
+        var ktx = txState(
                 rel(3, node, 50, type),
                 rel(4, 50, node, type),
                 rel(5, node, 50, type2),
                 rel(6, node, node, type),
                 rel(7, node, 52, type));
+        var read = mockedRead(ktx);
 
         // when
-        cursor.init(node, relationship, selection(type, Direction.OUTGOING), read);
+        cursor.init(node, relationship, selection(type, Direction.OUTGOING), read, ktx, () -> Static.FULL);
 
         // then
         assertRelationships(cursor, 3, 7, 6);
@@ -148,16 +155,17 @@ class DefaultRelationshipTraversalCursorTest {
 
         DefaultRelationshipTraversalCursor cursor =
                 new DefaultRelationshipTraversalCursor(pool::accept, storeCursor, internalCursors, false);
-        KernelRead read = txState(
+        var ktx = txState(
                 rel(3, node, 50, type),
                 rel(4, 50, node, type),
                 rel(5, 50, node, type2),
                 rel(6, node, node, type),
                 rel(7, 56, node, type),
                 rel(8, node, 52, type));
+        var read = mockedRead(ktx);
 
         // when
-        cursor.init(node, relationship, selection(type, Direction.INCOMING), read);
+        cursor.init(node, relationship, selection(type, Direction.INCOMING), read, ktx, () -> Static.FULL);
 
         // then
         assertRelationships(cursor, 4, 7, 6);
@@ -170,16 +178,17 @@ class DefaultRelationshipTraversalCursorTest {
 
         DefaultRelationshipTraversalCursor cursor =
                 new DefaultRelationshipTraversalCursor(pool::accept, storeCursor, internalCursors, false);
-        KernelRead read = txState(
+        var ktx = txState(
                 rel(3, node, 50, type),
                 rel(2, node, node, type),
                 rel(5, 50, node, type2),
                 rel(6, node, node, type),
                 rel(7, 56, node, type),
                 rel(8, node, 52, type));
+        var read = mockedRead(ktx);
 
         // when
-        cursor.init(node, relationship, selection(type, Direction.BOTH), read);
+        cursor.init(node, relationship, selection(type, Direction.BOTH), read, ktx, () -> Static.FULL);
 
         // then
         assertRelationships(cursor, 3, 8, 7, 2, 6);
@@ -194,16 +203,17 @@ class DefaultRelationshipTraversalCursorTest {
 
         final var storeCursor = emptyStoreCursor();
         final var cursor = new DefaultRelationshipTraversalCursor(pool::accept, storeCursor, internalCursors, false);
-        final var read = txState(
+        final var ktx = txState(
                 rel(3, node, 50, type),
                 rel(2, node, node, type),
                 rel(5, 50, node, type2),
                 rel(6, node, node, type),
                 rel(relId, startId, endId, type2),
                 rel(8, node, 52, type));
+        var read = mockedRead(ktx);
 
         // when
-        cursor.init(relId, read);
+        cursor.init(relId, read, ktx, () -> Static.FULL);
 
         // then
         assertThat(cursor.next()).isTrue();
@@ -216,21 +226,20 @@ class DefaultRelationshipTraversalCursorTest {
 
     // HELPERS
 
-    private static KernelRead emptyTxState() {
+    private static KernelTransactionImplementation emptyTxState() {
         KernelTransactionImplementation ktx = mock(KernelTransactionImplementation.class);
         when(ktx.securityContext()).thenReturn(SecurityContext.AUTH_DISABLED);
-        return mockedRead(ktx);
+        return ktx;
     }
 
-    private static KernelRead txState(long... ids) {
+    private static KernelTransactionImplementation txState(long... ids) {
         return txState(
                 LongStream.of(ids).mapToObj(id -> rel(id, node, node, type)).toArray(Rel[]::new));
     }
 
-    private static KernelRead txState(Rel... rels) {
+    private static KernelTransactionImplementation txState(Rel... rels) {
         KernelTransactionImplementation ktx = mock(KernelTransactionImplementation.class);
         when(ktx.securityContext()).thenReturn(SecurityContext.AUTH_DISABLED);
-        KernelRead read = mockedRead(ktx);
         if (rels.length > 0) {
             TxState txState = new TxState();
             for (Rel rel : rels) {
@@ -239,7 +248,7 @@ class DefaultRelationshipTraversalCursorTest {
             when(ktx.hasTxStateWithChanges()).thenReturn(true);
             when(ktx.txState()).thenReturn(txState);
         }
-        return read;
+        return ktx;
     }
 
     private static void assertRelationships(DefaultRelationshipTraversalCursor cursor, long... expected) {
