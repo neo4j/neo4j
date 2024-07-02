@@ -2043,7 +2043,11 @@ public class Operations implements Write, SchemaWrite, Upgrade {
                 kernelRead.nodeLabelScan(
                         session, cursor, unconstrained(), new TokenPredicate(schema.getLabelId()), ktx.cursorContext());
                 constraintSemantics.validateNodeKeyConstraint(
-                        cursor, nodeCursor, propertyCursor, schema.asLabelSchemaDescriptor(), token);
+                        cursor,
+                        nodeCursor,
+                        propertyCursor,
+                        schema.asSchemaDescriptorType(LabelSchemaDescriptor.class),
+                        token);
             }
         } else {
             try (var cursor = cursors.allocateFullAccessNodeCursor(ktx.cursorContext())) {
@@ -2051,7 +2055,7 @@ public class Operations implements Write, SchemaWrite, Upgrade {
                 constraintSemantics.validateNodeKeyConstraint(
                         new FilteringNodeCursorWrapper(cursor, CursorPredicates.hasLabel(schema.getLabelId())),
                         propertyCursor,
-                        schema.asLabelSchemaDescriptor(),
+                        schema.asSchemaDescriptorType(LabelSchemaDescriptor.class),
                         token);
             }
         }
@@ -2136,7 +2140,7 @@ public class Operations implements Write, SchemaWrite, Upgrade {
 
     private void enforceNodePropertyTypeConstraint(TypeConstraintDescriptor descriptor) throws KernelException {
         enforceNodePropertyConstraint(
-                descriptor.schema().asLabelSchemaDescriptor(),
+                descriptor.schema().asSchemaDescriptorType(LabelSchemaDescriptor.class),
                 (allNodes, nodeCursor, propertyCursor, tokenNameLookup) ->
                         constraintSemantics.validateNodePropertyTypeConstraint(
                                 allNodes, nodeCursor, propertyCursor, descriptor, tokenNameLookup),

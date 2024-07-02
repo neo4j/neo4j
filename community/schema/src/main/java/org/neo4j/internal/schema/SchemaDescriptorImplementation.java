@@ -168,19 +168,6 @@ public final class SchemaDescriptorImplementation
     }
 
     @Override
-    public boolean isLabelSchemaDescriptor() {
-        return schemaArchetype == SchemaArchetype.LABEL_PROPERTY;
-    }
-
-    @Override
-    public LabelSchemaDescriptor asLabelSchemaDescriptor() {
-        if (schemaArchetype != SchemaArchetype.LABEL_PROPERTY) {
-            throw cannotCastException("LabelSchemaDescriptor");
-        }
-        return this;
-    }
-
-    @Override
     public boolean isRelationshipTypeSchemaDescriptor() {
         return schemaArchetype == SchemaArchetype.RELATIONSHIP_PROPERTY;
     }

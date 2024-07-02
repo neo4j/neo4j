@@ -48,16 +48,6 @@ final class NoSchemaDescriptor implements SchemaDescriptor {
     }
 
     @Override
-    public boolean isLabelSchemaDescriptor() {
-        return false;
-    }
-
-    @Override
-    public LabelSchemaDescriptor asLabelSchemaDescriptor() {
-        throw new IllegalStateException(CAST_ERROR_FMT.formatted("LabelSchemaDescriptor"));
-    }
-
-    @Override
     public boolean isRelationshipTypeSchemaDescriptor() {
         return false;
     }

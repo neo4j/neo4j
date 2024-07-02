@@ -54,18 +54,6 @@ public interface SchemaDescriptor {
     <T extends SchemaDescriptor> T asSchemaDescriptorType(Class<T> type);
 
     /**
-     * Test if this schema descriptor is a {@link LabelSchemaDescriptor}.
-     * @return {@code true} if calling {@link #asLabelSchemaDescriptor()} will not throw an exception.
-     */
-    boolean isLabelSchemaDescriptor();
-
-    /**
-     * If this schema descriptor matches the structure required by {@link LabelSchemaDescriptor}, then return this descriptor as that type.
-     * Otherwise, throw an {@link IllegalStateException}.
-     */
-    LabelSchemaDescriptor asLabelSchemaDescriptor();
-
-    /**
      * Test if this schema descriptor is a {@link RelationTypeSchemaDescriptor}.
      * @return {@code true} if calling {@link #asRelationshipTypeSchemaDescriptor()} will not throw an exception.
      */

@@ -126,6 +126,7 @@ import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.IndexType;
+import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.internal.schema.SchemaRule;
@@ -795,7 +796,7 @@ public class FullCheckIntegrationTest {
         // (IndexChecker only reports the duplicate if it refers to a node id lower than highId)
         long nodeId = createOneNode();
         for (IndexDescriptor indexDescriptor : getValueIndexDescriptors()) {
-            if (indexDescriptor.schema().isLabelSchemaDescriptor()) {
+            if (indexDescriptor.schema().isSchemaDescriptorType(LabelSchemaDescriptor.class)) {
                 // Don't close this accessor. It will be done when shutting down db.
                 IndexAccessor accessor = fixture.indexAccessorLookup().apply(indexDescriptor);
 
