@@ -48,16 +48,6 @@ final class NoSchemaDescriptor implements SchemaDescriptor {
     }
 
     @Override
-    public boolean isRelationshipTypeSchemaDescriptor() {
-        return false;
-    }
-
-    @Override
-    public RelationTypeSchemaDescriptor asRelationshipTypeSchemaDescriptor() {
-        throw new IllegalStateException(CAST_ERROR_FMT.formatted("RelationTypeSchemaDescriptor"));
-    }
-
-    @Override
     public boolean isFulltextSchemaDescriptor() {
         return false;
     }

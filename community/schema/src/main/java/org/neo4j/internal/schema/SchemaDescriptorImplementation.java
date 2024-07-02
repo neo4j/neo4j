@@ -168,19 +168,6 @@ public final class SchemaDescriptorImplementation
     }
 
     @Override
-    public boolean isRelationshipTypeSchemaDescriptor() {
-        return schemaArchetype == SchemaArchetype.RELATIONSHIP_PROPERTY;
-    }
-
-    @Override
-    public RelationTypeSchemaDescriptor asRelationshipTypeSchemaDescriptor() {
-        if (schemaArchetype != SchemaArchetype.RELATIONSHIP_PROPERTY) {
-            throw cannotCastException("RelationTypeSchemaDescriptor");
-        }
-        return this;
-    }
-
-    @Override
     public boolean isFulltextSchemaDescriptor() {
         return schemaArchetype == SchemaArchetype.MULTI_TOKEN;
     }

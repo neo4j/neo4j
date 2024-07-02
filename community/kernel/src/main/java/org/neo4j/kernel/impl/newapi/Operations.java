@@ -2073,7 +2073,11 @@ public class Operations implements Write, SchemaWrite, Upgrade {
                         new TokenPredicate(schema.getRelTypeId()),
                         ktx.cursorContext());
                 constraintSemantics.validateRelKeyConstraint(
-                        cursor, relationshipCursor, propertyCursor, schema.asRelationshipTypeSchemaDescriptor(), token);
+                        cursor,
+                        relationshipCursor,
+                        propertyCursor,
+                        schema.asSchemaDescriptorType(RelationTypeSchemaDescriptor.class),
+                        token);
             }
         } else {
             try (var cursor = cursors.allocateFullAccessRelationshipScanCursor(ktx.cursorContext())) {
@@ -2082,7 +2086,7 @@ public class Operations implements Write, SchemaWrite, Upgrade {
                         new FilteringRelationshipScanCursorWrapper(
                                 cursor, CursorPredicates.hasType(schema.getRelTypeId())),
                         propertyCursor,
-                        schema.asRelationshipTypeSchemaDescriptor(),
+                        schema.asSchemaDescriptorType(RelationTypeSchemaDescriptor.class),
                         token);
             }
         }
@@ -2207,7 +2211,7 @@ public class Operations implements Write, SchemaWrite, Upgrade {
 
     private void enforceRelationshipPropertyTypeConstraint(TypeConstraintDescriptor descriptor) throws KernelException {
         enforceRelationshipPropertyConstraint(
-                descriptor.schema().asRelationshipTypeSchemaDescriptor(),
+                descriptor.schema().asSchemaDescriptorType(RelationTypeSchemaDescriptor.class),
                 (relationships, propertyCursor, tokenNameLookup) ->
                         constraintSemantics.validateRelationshipPropertyTypeConstraint(
                                 relationships, propertyCursor, descriptor, tokenNameLookup),
@@ -2231,7 +2235,7 @@ public class Operations implements Write, SchemaWrite, Upgrade {
 
         TypeConstraintDescriptor descriptor = constraint.asPropertyTypeConstraint();
 
-        if (descriptor.schema().isRelationshipTypeSchemaDescriptor()) {
+        if (descriptor.schema().isSchemaDescriptorType(RelationTypeSchemaDescriptor.class)) {
             enforceRelationshipPropertyTypeConstraint(descriptor);
         } else {
             enforceNodePropertyTypeConstraint(descriptor);

@@ -538,8 +538,9 @@ public class SchemaImpl implements Schema {
                 return new NodeKeyConstraintDefinition(
                         actions, constraint, new IndexDefinitionImpl(actions, null, labels, propertyKeys, true));
             }
-        } else if (constraint.schema().isRelationshipTypeSchemaDescriptor()) {
-            RelationTypeSchemaDescriptor descriptor = constraint.schema().asRelationshipTypeSchemaDescriptor();
+        } else if (constraint.schema().isSchemaDescriptorType(RelationTypeSchemaDescriptor.class)) {
+            RelationTypeSchemaDescriptor descriptor =
+                    constraint.schema().asSchemaDescriptorType(RelationTypeSchemaDescriptor.class);
             RelationshipType relationshipType = withName(tokenRead.relationshipTypeGetName(descriptor.getRelTypeId()));
             if (constraint.isRelationshipPropertyExistenceConstraint()) {
                 return new RelationshipPropertyExistenceConstraintDefinition(

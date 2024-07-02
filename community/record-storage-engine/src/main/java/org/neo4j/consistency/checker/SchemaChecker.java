@@ -45,6 +45,7 @@ import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
+import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.internal.schema.constraints.PropertyTypeSet;
@@ -442,7 +443,7 @@ class SchemaChecker {
             MutableIntObjectMap<MutableIntSet> targetMap;
             if (schema.isSchemaDescriptorType(LabelSchemaDescriptor.class)) {
                 targetMap = mandatoryNodeProperties;
-            } else if (schema.isRelationshipTypeSchemaDescriptor()) {
+            } else if (schema.isSchemaDescriptorType(RelationTypeSchemaDescriptor.class)) {
                 targetMap = mandatoryRelationshipProperties;
             } else {
                 // We want to process only LabelSchemaDescriptor and RelationshipTypeSchemaDescriptors.
@@ -477,7 +478,7 @@ class SchemaChecker {
             MutableIntObjectMap<MutableIntObjectMap<PropertyTypeSet>> targetMap;
             if (schema.isSchemaDescriptorType(LabelSchemaDescriptor.class)) {
                 targetMap = allowedNodePropertyTypes;
-            } else if (schema.isRelationshipTypeSchemaDescriptor()) {
+            } else if (schema.isSchemaDescriptorType(RelationTypeSchemaDescriptor.class)) {
                 targetMap = allowedRelationshipPropertyTypes;
             } else {
                 // We want to process only LabelSchemaDescriptor and RelationshipTypeSchemaDescriptors.

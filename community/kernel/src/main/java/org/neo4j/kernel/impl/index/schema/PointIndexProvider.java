@@ -38,6 +38,7 @@ import org.neo4j.internal.schema.IndexQuery;
 import org.neo4j.internal.schema.IndexQuery.IndexQueryType;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
+import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
 import org.neo4j.io.memory.ByteBufferFactory;
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -166,7 +167,7 @@ public class PointIndexProvider extends NativeIndexProvider<PointKey, PointLayou
                     + " indexes: " + prototype);
         }
         if (!(prototype.schema().isSchemaDescriptorType(LabelSchemaDescriptor.class)
-                || prototype.schema().isRelationshipTypeSchemaDescriptor())) {
+                || prototype.schema().isSchemaDescriptorType(RelationTypeSchemaDescriptor.class))) {
             throw new IllegalArgumentException("The " + prototype.schema()
                     + " index schema is not a point index schema, which it is required to be for the '"
                     + getProviderDescriptor().name() + "' index provider to be able to create an index.");
