@@ -82,9 +82,6 @@ class NoSchemaDescriptor implements SchemaDescriptor {
     }
 
     @Override
-    public void processWith(SchemaProcessor processor) {}
-
-    @Override
     public String userDescription(TokenNameLookup tokenNameLookup) {
         return "NO_SCHEMA";
     }

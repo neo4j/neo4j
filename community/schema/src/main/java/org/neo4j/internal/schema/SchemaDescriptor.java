@@ -25,13 +25,7 @@ import org.neo4j.lock.ResourceType;
 
 /**
  * Internal representation of one schema unit, for example a label-property pair.
- *
- * Even when only supporting a small set of different schemas, the number of common methods is very small. This
- * interface therefore supports a visitor type access pattern with side-effect type logic performed using the
- * {@link #processWith(SchemaProcessor) process} method. This means that when implementing this interface
- * with a new concrete type, the process method implementations need to be added to {@link SchemaDescriptorImplementation}
- * and the {@link SchemaProcessor} interfaces need to be extended with methods taking the new concrete type as argument.
- *
+ * <p>
  * Currently there are 4 schema archetypes:
  * 1. Label Schema - schema that describes exactly one label, and one or more properties.
  *      This schema matches nodes that are labeled with specified label, and have all specified properties.
@@ -101,15 +95,6 @@ public interface SchemaDescriptor {
      * @return true if the supplied ids are relevant to this schema unit.
      */
     boolean isAffected(int[] entityTokenIds);
-
-    /**
-     * Performs some side-effect type logic by processing this object using the given SchemaProcessor.
-     *
-     * Note that implementers of this method just need to call `return processor.process( this );`.
-     *
-     * @param processor The SchemaProcessor that hold the logic for the computation
-     */
-    void processWith(SchemaProcessor processor);
 
     /**
      * This method return the property ids that are relevant to this Schema Descriptor.

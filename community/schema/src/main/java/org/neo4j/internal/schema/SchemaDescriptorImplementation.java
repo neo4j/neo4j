@@ -211,15 +211,6 @@ public final class SchemaDescriptorImplementation
     }
 
     @Override
-    public void processWith(SchemaProcessor processor) {
-        switch (schemaArchetype) {
-            case LABEL_PROPERTY -> processor.processSpecific(this.asLabelSchemaDescriptor());
-            case RELATIONSHIP_PROPERTY -> processor.processSpecific(this.asRelationshipTypeSchemaDescriptor());
-            default -> processor.processSpecific((SchemaDescriptor) this);
-        }
-    }
-
-    @Override
     public String userDescription(TokenNameLookup tokenNameLookup) {
         return SchemaUserDescription.forSchema(tokenNameLookup, entityType, entityTokens, propertyKeyIds);
     }
