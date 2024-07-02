@@ -54,18 +54,6 @@ public interface SchemaDescriptor {
     <T extends SchemaDescriptor> T asSchemaDescriptorType(Class<T> type);
 
     /**
-     * Test if this schema descriptor is a {@link AnyTokenSchemaDescriptor}.
-     * @return {@code true} if calling {@link #asAnyTokenSchemaDescriptor()} will not throw an exception.
-     */
-    boolean isAnyTokenSchemaDescriptor();
-
-    /**
-     * If this schema descriptor matches the structure required by {@link AnyTokenSchemaDescriptor}, then return this descriptor as that type.
-     * Otherwise, throw an {@link IllegalStateException}.
-     */
-    AnyTokenSchemaDescriptor asAnyTokenSchemaDescriptor();
-
-    /**
      * Returns true if any of the given entity token ids are part of this schema unit.
      * @param entityTokenIds entity token ids to check against.
      * @return true if the supplied ids are relevant to this schema unit.

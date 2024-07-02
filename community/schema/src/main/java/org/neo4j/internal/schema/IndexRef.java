@@ -67,6 +67,6 @@ public interface IndexRef<T extends IndexRef<T>> extends SchemaDescriptorSupplie
      * @return true if this {@link IndexRef index reference} is a token index, otherwise false.
      */
     default boolean isTokenIndex() {
-        return schema().isAnyTokenSchemaDescriptor() && getIndexType() == IndexType.LOOKUP;
+        return schema().isSchemaDescriptorType(AnyTokenSchemaDescriptor.class) && getIndexType() == IndexType.LOOKUP;
     }
 }

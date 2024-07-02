@@ -167,19 +167,6 @@ public final class SchemaDescriptorImplementation
         throw cannotCastException(type.getSimpleName());
     }
 
-    @Override
-    public boolean isAnyTokenSchemaDescriptor() {
-        return schemaArchetype == SchemaArchetype.ANY_TOKEN;
-    }
-
-    @Override
-    public AnyTokenSchemaDescriptor asAnyTokenSchemaDescriptor() {
-        if (schemaArchetype != SchemaArchetype.ANY_TOKEN) {
-            throw cannotCastException("AnyTokenSchemaDescriptor");
-        }
-        return this;
-    }
-
     private IllegalStateException cannotCastException(String descriptorType) {
         return new IllegalStateException("Cannot cast this schema to a " + descriptorType
                 + " because it does not match that structure: " + this + ".");
@@ -228,7 +215,7 @@ public final class SchemaDescriptorImplementation
     @Override
     public long[] lockingKeys() {
         // for AnyToken schema which doesn't have specific token ids lock on max long
-        if (isAnyTokenSchemaDescriptor()) {
+        if (schemaArchetype == SchemaArchetype.ANY_TOKEN) {
             return TOKEN_INDEX_LOCKING_IDS;
         }
 

@@ -48,16 +48,6 @@ final class NoSchemaDescriptor implements SchemaDescriptor {
     }
 
     @Override
-    public boolean isAnyTokenSchemaDescriptor() {
-        return false;
-    }
-
-    @Override
-    public AnyTokenSchemaDescriptor asAnyTokenSchemaDescriptor() {
-        throw new IllegalStateException(CAST_ERROR_FMT.formatted("AnyTokenSchemaDescriptor"));
-    }
-
-    @Override
     public boolean isAffected(int[] entityIds) {
         return false;
     }

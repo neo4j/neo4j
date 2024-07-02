@@ -44,6 +44,7 @@ import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
+import org.neo4j.internal.schema.AnyTokenSchemaDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
@@ -232,7 +233,7 @@ class RelationshipTypeIndexIT {
         try (Transaction tx = db.beginTx()) {
             for (IndexDefinition indexDef : tx.schema().getIndexes()) {
                 IndexDescriptor index = ((IndexDefinitionImpl) indexDef).getIndexReference();
-                if (index.schema().isAnyTokenSchemaDescriptor()
+                if (index.schema().isSchemaDescriptorType(AnyTokenSchemaDescriptor.class)
                         && index.schema().entityType() == EntityType.RELATIONSHIP
                         && index.getIndexType() == org.neo4j.internal.schema.IndexType.LOOKUP) {
                     return index;

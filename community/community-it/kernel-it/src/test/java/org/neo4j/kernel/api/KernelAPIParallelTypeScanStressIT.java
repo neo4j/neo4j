@@ -37,6 +37,7 @@ import org.neo4j.internal.kernel.api.RelationshipTypeIndexCursor;
 import org.neo4j.internal.kernel.api.TokenPredicate;
 import org.neo4j.internal.kernel.api.TokenReadSession;
 import org.neo4j.internal.kernel.api.security.LoginContext;
+import org.neo4j.internal.schema.AnyTokenSchemaDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
@@ -83,7 +84,7 @@ class KernelAPIParallelTypeScanStressIT {
                 IndexDescriptor index = ((IndexDefinitionImpl) indexDef).getIndexReference();
 
                 if (index.getIndexType() == IndexType.LOOKUP
-                        && index.schema().isAnyTokenSchemaDescriptor()
+                        && index.schema().isSchemaDescriptorType(AnyTokenSchemaDescriptor.class)
                         && index.schema().entityType() == EntityType.RELATIONSHIP) {
                     rti = index;
                 }
