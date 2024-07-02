@@ -227,6 +227,8 @@ class TransactionLogsRecoveryTest {
                     new CorruptedLogsTruncator(storeDir, recoveryLogFiles, fileSystem, INSTANCE);
             monitors.addMonitorListener(monitor);
             life.add(new TransactionLogsRecovery(
+                    logFiles,
+                    LatestVersions.LATEST_KERNEL_VERSION_PROVIDER,
                     new DefaultRecoveryService(
                             storageEngine,
                             transactionIdStore,
@@ -236,9 +238,7 @@ class TransactionLogsRecoveryTest {
                             LatestVersions.LATEST_KERNEL_VERSION_PROVIDER,
                             NO_MONITOR,
                             mock(InternalLog.class),
-                            Clocks.systemClock(),
                             false,
-                            LatestVersions.BINARY_VERSIONS,
                             contextFactory) {
                         private int nr;
 
@@ -288,6 +288,8 @@ class TransactionLogsRecoveryTest {
                     RecoveryPredicate.ALL,
                     false,
                     contextFactory,
+                    Clocks.systemClock(),
+                    LatestVersions.BINARY_VERSIONS,
                     RecoveryMode.FULL));
 
             life.start();
@@ -348,6 +350,8 @@ class TransactionLogsRecoveryTest {
                 }
             });
             life.add(new TransactionLogsRecovery(
+                    logFiles,
+                    LatestVersions.LATEST_KERNEL_VERSION_PROVIDER,
                     new DefaultRecoveryService(
                             storageEngine,
                             transactionIdStore,
@@ -357,9 +361,7 @@ class TransactionLogsRecoveryTest {
                             LatestVersions.LATEST_KERNEL_VERSION_PROVIDER,
                             NO_MONITOR,
                             mock(InternalLog.class),
-                            Clocks.systemClock(),
                             false,
-                            LatestVersions.BINARY_VERSIONS,
                             contextFactory),
                     logPruner,
                     schemaLife,
@@ -370,6 +372,8 @@ class TransactionLogsRecoveryTest {
                     RecoveryPredicate.ALL,
                     false,
                     contextFactory,
+                    Clocks.systemClock(),
+                    LatestVersions.BINARY_VERSIONS,
                     RecoveryMode.FULL));
 
             life.start();
@@ -577,6 +581,8 @@ class TransactionLogsRecoveryTest {
         RecoveryMonitor monitor = mock(RecoveryMonitor.class);
 
         TransactionLogsRecovery logsRecovery = new TransactionLogsRecovery(
+                logFiles,
+                LatestVersions.LATEST_KERNEL_VERSION_PROVIDER,
                 recoveryService,
                 logPruner,
                 schemaLife,
@@ -587,6 +593,8 @@ class TransactionLogsRecoveryTest {
                 RecoveryPredicate.ALL,
                 false,
                 contextFactory,
+                Clocks.systemClock(),
+                LatestVersions.BINARY_VERSIONS,
                 RecoveryMode.FULL);
 
         logsRecovery.init();
@@ -657,6 +665,8 @@ class TransactionLogsRecoveryTest {
             CorruptedLogsTruncator logPruner = new CorruptedLogsTruncator(storeDir, logFiles, fileSystem, INSTANCE);
             monitors.addMonitorListener(monitor);
             life.add(new TransactionLogsRecovery(
+                    logFiles,
+                    LatestVersions.LATEST_KERNEL_VERSION_PROVIDER,
                     new DefaultRecoveryService(
                             storageEngine,
                             transactionIdStore,
@@ -666,9 +676,7 @@ class TransactionLogsRecoveryTest {
                             LatestVersions.LATEST_KERNEL_VERSION_PROVIDER,
                             NO_MONITOR,
                             mock(InternalLog.class),
-                            Clocks.systemClock(),
                             false,
-                            LatestVersions.BINARY_VERSIONS,
                             contextFactory),
                     logPruner,
                     schemaLife,
@@ -679,6 +687,8 @@ class TransactionLogsRecoveryTest {
                     RecoveryPredicate.ALL,
                     true,
                     contextFactory,
+                    Clocks.systemClock(),
+                    LatestVersions.BINARY_VERSIONS,
                     RecoveryMode.FULL));
 
             life.start();

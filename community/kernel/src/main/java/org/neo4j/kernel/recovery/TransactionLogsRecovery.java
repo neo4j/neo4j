@@ -26,20 +26,32 @@ import static org.neo4j.kernel.recovery.RecoveryMode.FORWARD;
 import static org.neo4j.storageengine.AppendIndexProvider.BASE_APPEND_INDEX;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.RECOVERY;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.REVERSE_RECOVERY;
+import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_INDEX;
 
 import java.io.IOException;
 import java.nio.channels.ClosedByInterruptException;
+import java.time.Clock;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.neo4j.dbms.database.DatabaseStartAbortedException;
 import org.neo4j.internal.helpers.progress.ProgressListener;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.kernel.BinarySupportedKernelVersions;
+import org.neo4j.kernel.KernelVersion;
+import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
 import org.neo4j.kernel.impl.transaction.log.CommandBatchCursor;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.kernel.impl.transaction.log.PhysicalFlushableLogPositionAwareChannel;
+import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
+import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
+import org.neo4j.kernel.impl.transaction.log.files.LogFile;
+import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.storageengine.AppendIndexProvider;
 import org.neo4j.time.Stopwatch;
 
@@ -52,6 +64,8 @@ public class TransactionLogsRecovery extends LifecycleAdapter {
     private static final String RECOVERY_TAG = "recoverDatabase";
     private static final String RECOVERY_COMPLETED_TAG = "databaseRecoveryCompleted";
 
+    private final LogFiles logFiles;
+    private final KernelVersionProvider versionProvider;
     private final RecoveryService recoveryService;
     private final RecoveryMonitor monitor;
     private final CorruptedLogsTruncator logsTruncator;
@@ -62,11 +76,15 @@ public class TransactionLogsRecovery extends LifecycleAdapter {
     private final boolean rollbackIncompleteTransactions;
     private final CursorContextFactory contextFactory;
     private final RecoveryPredicate recoveryPredicate;
+    private final Clock clock;
+    private final BinarySupportedKernelVersions binarySupportedKernelVersions;
     private final RecoveryMode mode;
 
     private ProgressListener progressListener;
 
     public TransactionLogsRecovery(
+            LogFiles logFiles,
+            KernelVersionProvider versionProvider,
             RecoveryService recoveryService,
             CorruptedLogsTruncator logsTruncator,
             Lifecycle schemaLife,
@@ -77,7 +95,11 @@ public class TransactionLogsRecovery extends LifecycleAdapter {
             RecoveryPredicate recoveryPredicate,
             boolean rollbackIncompleteTransactions,
             CursorContextFactory contextFactory,
+            Clock clock,
+            BinarySupportedKernelVersions binarySupportedKernelVersions,
             RecoveryMode mode) {
+        this.logFiles = logFiles;
+        this.versionProvider = versionProvider;
         this.recoveryService = recoveryService;
         this.monitor = monitor;
         this.logsTruncator = logsTruncator;
@@ -88,6 +110,8 @@ public class TransactionLogsRecovery extends LifecycleAdapter {
         this.rollbackIncompleteTransactions = rollbackIncompleteTransactions;
         this.contextFactory = contextFactory;
         this.recoveryPredicate = recoveryPredicate;
+        this.clock = clock;
+        this.binarySupportedKernelVersions = binarySupportedKernelVersions;
         this.mode = mode;
         this.progressListener = null;
     }
@@ -246,12 +270,8 @@ public class TransactionLogsRecovery extends LifecycleAdapter {
                 appendIndexProvider = new RecoveryRollbackAppendIndexProvider(lastBatchInfo);
                 if (rollbackIncompleteTransactions) {
                     logsTruncator.truncate(recoveryToPosition, recoveryStartInformation.checkpointInfo());
-                    var rollbackTransactionInfo = recoveryService.rollbackTransactions(
-                            recoveryToPosition,
-                            transactionIdTracker,
-                            lastHighestTransactionBatchInfo,
-                            appendIndexProvider,
-                            monitor);
+                    var rollbackTransactionInfo = rollbackTransactions(
+                            recoveryToPosition, transactionIdTracker, appendIndexProvider, monitor);
                     if (rollbackTransactionInfo != null) {
                         if (lastHighestTransactionBatchInfo == null
                                 || lastHighestTransactionBatchInfo.txId()
@@ -278,6 +298,48 @@ public class TransactionLogsRecovery extends LifecycleAdapter {
                     cursorContext);
         }
         monitor.recoveryCompleted(recoveryStartTime.elapsed(MILLISECONDS), mode);
+    }
+
+    private RollbackTransactionInfo rollbackTransactions(
+            LogPosition writePosition,
+            TransactionIdTracker transactionTracker,
+            AppendIndexProvider appendIndexProvider,
+            RecoveryMonitor monitor)
+            throws IOException {
+        long[] notCompletedTransactions = transactionTracker.notCompletedTransactions();
+        if (notCompletedTransactions.length == 0) {
+            return null;
+        }
+        KernelVersion kernelVersion = versionProvider.kernelVersion();
+        LogFile logFile = logFiles.getLogFile();
+        PhysicalLogVersionedStoreChannel channel =
+                logFile.createLogChannelForExistingVersion(writePosition.getLogVersion());
+        LogHeader logHeader = logFile.extractHeader(writePosition.getLogVersion());
+        channel.position(writePosition.getByteOffset());
+        try (var writerChannel =
+                new PhysicalFlushableLogPositionAwareChannel(channel, logHeader, EmptyMemoryTracker.INSTANCE)) {
+            var entryWriter = new LogEntryWriter<>(writerChannel, binarySupportedKernelVersions);
+            long time = clock.millis();
+            CommittedCommandBatch.BatchInformation lastBatchInfo = null;
+            for (int i = 0; i < notCompletedTransactions.length; i++) {
+                long notCompletedTransaction = notCompletedTransactions[i];
+                long appendIndex = appendIndexProvider.nextAppendIndex();
+                int checksum =
+                        entryWriter.writeRollbackEntry(kernelVersion, notCompletedTransaction, appendIndex, time);
+                if (i == (notCompletedTransactions.length - 1)) {
+                    lastBatchInfo = new CommittedCommandBatch.BatchInformation(
+                            notCompletedTransaction,
+                            kernelVersion,
+                            checksum,
+                            time,
+                            UNKNOWN_CONSENSUS_INDEX,
+                            appendIndex);
+                }
+                monitor.rollbackTransaction(notCompletedTransaction, appendIndex);
+            }
+
+            return new RollbackTransactionInfo(lastBatchInfo, writerChannel.getCurrentLogPosition());
+        }
     }
 
     private void reverseRecovery(
@@ -365,6 +427,8 @@ public class TransactionLogsRecovery extends LifecycleAdapter {
     public void shutdown() throws Exception {
         schemaLife.shutdown();
     }
+
+    record RollbackTransactionInfo(CommittedCommandBatch.BatchInformation batchInfo, LogPosition position) {}
 
     private static class RecoveryRollbackAppendIndexProvider implements AppendIndexProvider {
         private final MutableLong rollbackIndex;

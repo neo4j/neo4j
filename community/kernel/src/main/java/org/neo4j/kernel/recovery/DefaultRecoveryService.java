@@ -27,27 +27,18 @@ import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_I
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.time.Clock;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.context.TransactionIdSnapshot;
-import org.neo4j.kernel.BinarySupportedKernelVersions;
-import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
 import org.neo4j.kernel.impl.transaction.log.CommandBatchCursor;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
-import org.neo4j.kernel.impl.transaction.log.PhysicalFlushableLogPositionAwareChannel;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
-import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
-import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.checkpoint.CheckpointFile;
 import org.neo4j.logging.InternalLog;
-import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.storageengine.AppendIndexProvider;
 import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.StorageEngine;
@@ -63,9 +54,7 @@ public class DefaultRecoveryService implements RecoveryService {
     private final LogFiles logFiles;
     private final KernelVersionProvider versionProvider;
     private final InternalLog log;
-    private final Clock clock;
     private final boolean doParallelRecovery;
-    private final BinarySupportedKernelVersions binarySupportedKernelVersions;
     private final CursorContextFactory contextFactory;
 
     DefaultRecoveryService(
@@ -77,9 +66,7 @@ public class DefaultRecoveryService implements RecoveryService {
             KernelVersionProvider versionProvider,
             RecoveryStartInformationProvider.Monitor monitor,
             InternalLog log,
-            Clock clock,
             boolean doParallelRecovery,
-            BinarySupportedKernelVersions binarySupportedKernelVersions,
             CursorContextFactory contextFactory) {
         this.storageEngine = storageEngine;
         this.transactionIdStore = transactionIdStore;
@@ -88,9 +75,7 @@ public class DefaultRecoveryService implements RecoveryService {
         this.logFiles = logFiles;
         this.versionProvider = versionProvider;
         this.log = log;
-        this.clock = clock;
         this.doParallelRecovery = doParallelRecovery;
-        this.binarySupportedKernelVersions = binarySupportedKernelVersions;
         this.contextFactory = contextFactory;
         this.recoveryStartInformationProvider = new RecoveryStartInformationProvider(logFiles, monitor);
     }
@@ -107,50 +92,6 @@ public class DefaultRecoveryService implements RecoveryService {
             return new ParallelRecoveryVisitor(storageEngine, mode, contextFactory, tracerTag);
         }
         return new RecoveryVisitor(storageEngine, mode, contextFactory, tracerTag);
-    }
-
-    @Override
-    public RollbackTransactionInfo rollbackTransactions(
-            LogPosition writePosition,
-            TransactionIdTracker transactionTracker,
-            CommittedCommandBatch.BatchInformation lastCommittedBatch,
-            AppendIndexProvider appendIndexProvider,
-            RecoveryMonitor monitor)
-            throws IOException {
-        long[] notCompletedTransactions = transactionTracker.notCompletedTransactions();
-        if (notCompletedTransactions.length == 0) {
-            return null;
-        }
-        KernelVersion kernelVersion = versionProvider.kernelVersion();
-        LogFile logFile = logFiles.getLogFile();
-        PhysicalLogVersionedStoreChannel channel =
-                logFile.createLogChannelForExistingVersion(writePosition.getLogVersion());
-        LogHeader logHeader = logFile.extractHeader(writePosition.getLogVersion());
-        channel.position(writePosition.getByteOffset());
-        try (var writerChannel =
-                new PhysicalFlushableLogPositionAwareChannel(channel, logHeader, EmptyMemoryTracker.INSTANCE)) {
-            var entryWriter = new LogEntryWriter<>(writerChannel, binarySupportedKernelVersions);
-            long time = clock.millis();
-            CommittedCommandBatch.BatchInformation lastBatchInfo = null;
-            for (int i = 0; i < notCompletedTransactions.length; i++) {
-                long notCompletedTransaction = notCompletedTransactions[i];
-                long appendIndex = appendIndexProvider.nextAppendIndex();
-                int checksum =
-                        entryWriter.writeRollbackEntry(kernelVersion, notCompletedTransaction, appendIndex, time);
-                if (i == (notCompletedTransactions.length - 1)) {
-                    lastBatchInfo = new CommittedCommandBatch.BatchInformation(
-                            notCompletedTransaction,
-                            kernelVersion,
-                            checksum,
-                            time,
-                            UNKNOWN_CONSENSUS_INDEX,
-                            appendIndex);
-                }
-                monitor.rollbackTransaction(notCompletedTransaction, appendIndex);
-            }
-
-            return new RollbackTransactionInfo(lastBatchInfo, writerChannel.getCurrentLogPosition());
-        }
     }
 
     @Override

@@ -868,14 +868,14 @@ public final class Recovery {
                 versionProvider,
                 positionMonitor,
                 log,
-                clock,
                 doParallelRecovery,
-                binarySupportedKernelVersions,
                 contextFactory);
         CorruptedLogsTruncator logsTruncator = new CorruptedLogsTruncator(
                 databaseLayout.databaseDirectory(), logFiles, fileSystemAbstraction, memoryTracker);
         var loggerPrintWriterAdaptor = new LoggerPrintWriterAdaptor(log, Level.INFO);
         return new TransactionLogsRecovery(
+                logFiles,
+                versionProvider,
                 recoveryService,
                 logsTruncator,
                 schemaLife,
@@ -886,6 +886,8 @@ public final class Recovery {
                 recoveryPredicate,
                 rollbackIncompleteTransactions,
                 contextFactory,
+                clock,
+                binarySupportedKernelVersions,
                 mode);
     }
 

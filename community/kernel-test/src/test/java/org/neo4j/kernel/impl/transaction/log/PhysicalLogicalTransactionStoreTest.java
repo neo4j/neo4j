@@ -34,6 +34,7 @@ import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import java.io.IOException;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
+import java.time.Clock;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -48,7 +49,6 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
-import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.api.TestCommand;
 import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
 import org.neo4j.kernel.impl.api.TransactionToApply;
@@ -69,7 +69,6 @@ import org.neo4j.kernel.recovery.RecoveryMonitor;
 import org.neo4j.kernel.recovery.RecoveryPredicate;
 import org.neo4j.kernel.recovery.RecoveryService;
 import org.neo4j.kernel.recovery.RecoveryStartInformation;
-import org.neo4j.kernel.recovery.TransactionIdTracker;
 import org.neo4j.kernel.recovery.TransactionLogsRecovery;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.monitoring.DatabaseHealth;
@@ -234,6 +233,8 @@ class PhysicalLogicalTransactionStoreTest {
         CorruptedLogsTruncator logPruner =
                 new CorruptedLogsTruncator(databaseDirectory, logFiles, fileSystem, INSTANCE);
         life.add(new TransactionLogsRecovery(
+                logFiles,
+                LatestVersions.LATEST_KERNEL_VERSION_PROVIDER,
                 new TestRecoveryService(visitor, logFiles, txStore, recoveryPerformed),
                 logPruner,
                 new LifecycleAdapter(),
@@ -244,6 +245,8 @@ class PhysicalLogicalTransactionStoreTest {
                 RecoveryPredicate.ALL,
                 false,
                 contextFactory,
+                Clock.systemUTC(),
+                LatestVersions.BINARY_VERSIONS,
                 RecoveryMode.FULL));
 
         // WHEN
@@ -483,17 +486,6 @@ class PhysicalLogicalTransactionStoreTest {
         public RecoveryApplier getRecoveryApplier(
                 TransactionApplicationMode mode, CursorContextFactory contextFactory, String tracerTag) {
             return mode.isReverseStep() ? mock(RecoveryApplier.class) : visitor;
-        }
-
-        @Override
-        public RollbackTransactionInfo rollbackTransactions(
-                LogPosition writePosition,
-                TransactionIdTracker transactionTracker,
-                CommittedCommandBatch.BatchInformation commandBatch,
-                AppendIndexProvider appendIndexProvider,
-                RecoveryMonitor recoveryMonitor) {
-            return new RollbackTransactionInfo(
-                    new CommittedCommandBatch.BatchInformation(1, KernelVersion.V5_18, 2, 3, 4, 5), writePosition);
         }
 
         @Override

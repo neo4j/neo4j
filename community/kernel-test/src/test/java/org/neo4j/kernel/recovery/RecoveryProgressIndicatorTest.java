@@ -34,6 +34,7 @@ import static org.neo4j.test.LatestVersions.LATEST_LOG_FORMAT;
 
 import org.junit.jupiter.api.Test;
 import org.mockito.Answers;
+import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 import org.neo4j.internal.helpers.progress.Indicator;
@@ -43,7 +44,10 @@ import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.CommandBatchCursor;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.test.LatestVersions;
+import org.neo4j.time.Clocks;
 
 class RecoveryProgressIndicatorTest {
 
@@ -82,6 +86,8 @@ class RecoveryProgressIndicatorTest {
         AssertableProgressMonitorFactory factory = new AssertableProgressMonitorFactory(expectedMax);
         var contextFactory = new CursorContextFactory(new DefaultPageCacheTracer(), EMPTY_CONTEXT_SUPPLIER);
         TransactionLogsRecovery recovery = new TransactionLogsRecovery(
+                Mockito.mock(LogFiles.class),
+                LatestVersions.LATEST_KERNEL_VERSION_PROVIDER,
                 recoveryService,
                 logsTruncator,
                 new LifecycleAdapter(),
@@ -92,6 +98,8 @@ class RecoveryProgressIndicatorTest {
                 RecoveryPredicate.ALL,
                 false,
                 contextFactory,
+                Clocks.systemClock(),
+                LatestVersions.BINARY_VERSIONS,
                 RecoveryMode.FULL);
         recovery.init();
 
