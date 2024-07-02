@@ -30,7 +30,7 @@ import org.neo4j.logging.InternalLog;
 
 @ServiceProvider
 public class FormatOverrideMigrator implements SettingMigrator {
-    private static final String OVERRIDE_STORE_FORMAT_KEY = "NEO4J_OVERRIDE_STORE_FORMAT";
+    public static final String OVERRIDE_STORE_FORMAT_KEY = "NEO4J_OVERRIDE_STORE_FORMAT";
 
     @Override
     public void migrate(Map<String, String> values, Map<String, String> defaultValues, InternalLog log) {
