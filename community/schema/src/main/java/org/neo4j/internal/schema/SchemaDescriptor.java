@@ -42,6 +42,18 @@ import org.neo4j.lock.ResourceType;
  */
 public interface SchemaDescriptor {
     /**
+     * Test if this schema descriptor is a {@code T}.
+     * @return {@code true} if calling {@link #asSchemaDescriptorType(Class)} will not throw an exception.
+     */
+    <T extends SchemaDescriptor> boolean isSchemaDescriptorType(Class<T> type);
+
+    /**
+     * If this schema descriptor matches the structure required by {@code T}, then return this descriptor as that type.
+     * Otherwise, throw an {@link IllegalStateException}.
+     */
+    <T extends SchemaDescriptor> T asSchemaDescriptorType(Class<T> type);
+
+    /**
      * Test if this schema descriptor is a {@link LabelSchemaDescriptor}.
      * @return {@code true} if calling {@link #asLabelSchemaDescriptor()} will not throw an exception.
      */

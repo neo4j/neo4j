@@ -34,6 +34,7 @@ import org.neo4j.common.EntityType;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.lock.ResourceType;
 import org.neo4j.token.api.TokenConstants;
+import org.neo4j.util.Preconditions;
 
 public final class SchemaDescriptorImplementation
         implements SchemaDescriptor,
@@ -141,6 +142,29 @@ public final class SchemaDescriptorImplementation
                 throw new IllegalArgumentException("Index schema descriptor can't be created for non existent label.");
             }
         }
+    }
+
+    @Override
+    public <T extends SchemaDescriptor> boolean isSchemaDescriptorType(Class<T> type) {
+        Preconditions.requireNonNull(type, "type argument cannot be null.");
+        // TODO: make use of switch with pattern matching of JDK 21 when we do
+        //       not support 17 anymore.
+        return switch (type.getSimpleName()) {
+            case "SchemaDescriptor" -> true;
+            case "LabelSchemaDescriptor" -> schemaArchetype == SchemaArchetype.LABEL_PROPERTY;
+            case "RelationTypeSchemaDescriptor" -> schemaArchetype == SchemaArchetype.RELATIONSHIP_PROPERTY;
+            case "FulltextSchemaDescriptor" -> schemaArchetype == SchemaArchetype.MULTI_TOKEN;
+            case "AnyTokenSchemaDescriptor" -> schemaArchetype == SchemaArchetype.ANY_TOKEN;
+            default -> false;
+        };
+    }
+
+    @Override
+    public <T extends SchemaDescriptor> T asSchemaDescriptorType(Class<T> type) {
+        if (isSchemaDescriptorType(type)) {
+            return (T) this;
+        }
+        throw cannotCastException(type.getSimpleName());
     }
 
     @Override

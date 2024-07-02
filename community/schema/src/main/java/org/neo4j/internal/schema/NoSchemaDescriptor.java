@@ -31,10 +31,21 @@ import org.neo4j.lock.ResourceType;
  * <p>
  * The instance is acquired via the {@link SchemaDescriptors#noSchema()} method.
  */
-class NoSchemaDescriptor implements SchemaDescriptor {
+final class NoSchemaDescriptor implements SchemaDescriptor {
+    private static final String CAST_ERROR_FMT = "NO_SCHEMA cannot be cast to a %s.";
     static final SchemaDescriptor NO_SCHEMA = new NoSchemaDescriptor();
 
     private NoSchemaDescriptor() {}
+
+    @Override
+    public <T extends SchemaDescriptor> boolean isSchemaDescriptorType(Class<T> type) {
+        return false;
+    }
+
+    @Override
+    public <T extends SchemaDescriptor> T asSchemaDescriptorType(Class<T> type) {
+        throw new IllegalStateException(CAST_ERROR_FMT.formatted(type.getSimpleName()));
+    }
 
     @Override
     public boolean isLabelSchemaDescriptor() {
@@ -43,7 +54,7 @@ class NoSchemaDescriptor implements SchemaDescriptor {
 
     @Override
     public LabelSchemaDescriptor asLabelSchemaDescriptor() {
-        throw new IllegalStateException("NO_SCHEMA cannot be cast to a LabelSchemaDescriptor.");
+        throw new IllegalStateException(CAST_ERROR_FMT.formatted("LabelSchemaDescriptor"));
     }
 
     @Override
@@ -53,7 +64,7 @@ class NoSchemaDescriptor implements SchemaDescriptor {
 
     @Override
     public RelationTypeSchemaDescriptor asRelationshipTypeSchemaDescriptor() {
-        throw new IllegalStateException("NO_SCHEMA cannot be cast to a RelationTypeSchemaDescriptor.");
+        throw new IllegalStateException(CAST_ERROR_FMT.formatted("RelationTypeSchemaDescriptor"));
     }
 
     @Override
@@ -63,7 +74,7 @@ class NoSchemaDescriptor implements SchemaDescriptor {
 
     @Override
     public FulltextSchemaDescriptor asFulltextSchemaDescriptor() {
-        throw new IllegalStateException("NO_SCHEMA cannot be cast to a FulltextSchemaDescriptor.");
+        throw new IllegalStateException(CAST_ERROR_FMT.formatted("FulltextSchemaDescriptor"));
     }
 
     @Override
@@ -73,7 +84,7 @@ class NoSchemaDescriptor implements SchemaDescriptor {
 
     @Override
     public AnyTokenSchemaDescriptor asAnyTokenSchemaDescriptor() {
-        throw new IllegalStateException("NO_SCHEMA cannot be cast to a AnyTokenSchemaDescriptor.");
+        throw new IllegalStateException(CAST_ERROR_FMT.formatted("AnyTokenSchemaDescriptor"));
     }
 
     @Override
