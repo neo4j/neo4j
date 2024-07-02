@@ -25,6 +25,8 @@ case class Variable(name: String)(val position: InputPosition) extends LogicalVa
   override def withPosition(position: InputPosition): LogicalVariable = copy()(position = position)
 
   override def renameId(newName: String): Variable = copy(name = newName)(position)
+
+  override def asCanonicalStringVal: String = name
 }
 
 object Variable {

@@ -19,8 +19,32 @@
  */
 package org.neo4j.cypher.internal.runtime.ast
 
+import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.runtime.ast.MakeTraversable.STRINGIFIER
 
 case class MakeTraversable(e: Expression) extends RuntimeExpression {
   override def isConstantForQuery: Boolean = e.isConstantForQuery
+
+  override def asCanonicalStringVal: String = STRINGIFIER(e)
+}
+
+object MakeTraversable {
+
+  val STRINGIFIER: ExpressionStringifier = ExpressionStringifier(
+    extensionStringifier = EXTENSION,
+    alwaysParens = false,
+    alwaysBacktick = false,
+    preferSingleQuotes = true,
+    sensitiveParamsAsParams = false
+  )
+
+  private object EXTENSION extends ExpressionStringifier.Extension {
+
+    override def apply(ctx: ExpressionStringifier)(expression: Expression): String = expression match {
+      case MakeTraversable(inner)  => ctx(inner)
+      case e if ctx ne STRINGIFIER => ctx(e)
+      case e                       => e.asCanonicalStringVal
+    }
+  }
 }

@@ -141,6 +141,7 @@ import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.expressions.functions.Collect
 import org.neo4j.cypher.internal.expressions.functions.Count
+import org.neo4j.cypher.internal.expressions.functions.IsEmpty
 import org.neo4j.cypher.internal.expressions.functions.Point
 import org.neo4j.cypher.internal.frontend.phases.FieldSignature
 import org.neo4j.cypher.internal.frontend.phases.ProcedureReadOnlyAccess
@@ -420,6 +421,7 @@ import org.neo4j.cypher.internal.plandescription.asPrettyString.PrettyStringInte
 import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.EffectiveCardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
+import org.neo4j.cypher.internal.runtime.ast.MakeTraversable
 import org.neo4j.cypher.internal.runtime.ast.RuntimeConstant
 import org.neo4j.cypher.internal.util.EffectiveCardinality
 import org.neo4j.cypher.internal.util.ExactSize
@@ -8046,6 +8048,26 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         "NonFuseable",
         SingleChild(lhsPD),
         Seq.empty,
+        Set("a")
+      )
+    )
+  }
+
+  test("MakeTraversable + Variable") {
+    assertGood(
+      attach(
+        SelectOrSemiApply(
+          lhsLP,
+          rhsLP,
+          IsEmpty.asInvocation(MakeTraversable(Variable("n")(pos)))(InputPosition.NONE)
+        ),
+        2345.0
+      ),
+      planDescription(
+        id,
+        "SelectOrSemiApply",
+        TwoChildren(lhsPD, rhsPD),
+        Seq(details("isEmpty(n)")),
         Set("a")
       )
     )
