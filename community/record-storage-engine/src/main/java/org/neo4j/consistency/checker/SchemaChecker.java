@@ -44,12 +44,10 @@ import org.neo4j.internal.recordstorage.SchemaStorage;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexType;
-import org.neo4j.internal.schema.LabelSchemaDescriptor;
-import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
-import org.neo4j.internal.schema.SchemaProcessor;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.internal.schema.constraints.PropertyTypeSet;
+import org.neo4j.internal.schema.constraints.TypeConstraintDescriptor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.impl.store.DynamicStringStore;
@@ -208,11 +206,11 @@ class SchemaChecker {
             StoreCursors storeCursors,
             CursorContext cursorContext) {
         SchemaRecord record = reader.record();
-        SchemaProcessor basicSchemaCheck = new BasicSchemaCheck(record, storeCursors);
-        SchemaProcessor mandatoryPropertiesBuilder =
-                new MandatoryPropertiesBuilder(mandatoryNodeProperties, mandatoryRelationshipProperties);
-        AllowedTypesBuilder allowedTypesBuilder =
-                new AllowedTypesBuilder(allowedNodePropertyTypes, allowedRelationshipPropertyTypes);
+        BasicSchemaCheck basicSchemaCheck = new BasicSchemaCheck(record, storeCursors);
+        MandatoryPropertiesCollector mandatoryPropertiesCollector =
+                new MandatoryPropertiesCollector(mandatoryNodeProperties, mandatoryRelationshipProperties);
+        AllowedTypesCollector allowedTypesCollector =
+                new AllowedTypesCollector(allowedNodePropertyTypes, allowedRelationshipPropertyTypes);
         var propertyValues = new IntObjectHashMap<Value>();
         try (var propertyReader = new SafePropertyChainReader(context, cursorContext, true)) {
             for (long id = schemaStore.getNumberOfReservedLowIds(); id < highId && !context.isCancelled(); id++) {
@@ -228,7 +226,7 @@ class SchemaChecker {
                         }
 
                         SchemaRule schemaRule = schemaStorage.loadSingleSchemaRule(id, storeCursors);
-                        schemaRule.schema().processWith(basicSchemaCheck);
+                        basicSchemaCheck.check(schemaRule.schema());
                         if (schemaRule instanceof IndexDescriptor rule) {
                             if (rule.isUnique()) {
                                 SchemaRecord obligation = indexObligations.get(rule.getId());
@@ -273,12 +271,10 @@ class SchemaChecker {
                                 }
                             }
                             if (rule.enforcesPropertyExistence()) {
-                                rule.schema().processWith(mandatoryPropertiesBuilder);
+                                mandatoryPropertiesCollector.collect(rule.schema());
                             }
                             if (rule.enforcesPropertyType()) {
-                                allowedTypesBuilder.setAllowedTypesForSchema(
-                                        rule.asPropertyTypeConstraint().propertyType());
-                                rule.schema().processWith(allowedTypesBuilder);
+                                allowedTypesCollector.collect(rule.asPropertyTypeConstraint());
                             }
                         } else {
                             reporter.forSchema(record).unsupportedSchemaRuleType(null);
@@ -363,7 +359,11 @@ class SchemaChecker {
         };
     }
 
-    private class BasicSchemaCheck implements SchemaProcessor {
+    /**
+     * This check is responsible to check, for a {@link SchemaDescriptor}, if all token
+     * (label/relType/propKey) ids referenced by it are present in the store.
+     */
+    private final class BasicSchemaCheck {
         private final SchemaRecord record;
         private final StoreCursors storeCursors;
 
@@ -372,34 +372,12 @@ class SchemaChecker {
             this.storeCursors = storeCursors;
         }
 
-        @Override
-        public void processSpecific(LabelSchemaDescriptor schema) {
-            checkValidToken(
-                    null,
-                    schema.getLabelId(),
-                    tokenHolders.labelTokens(),
-                    neoStores.getLabelTokenStore(),
-                    (record, id) -> {},
-                    (ignore, token) -> reporter.forSchema(record).labelNotInUse(token),
-                    storeCursors);
+        public void check(SchemaDescriptor schema) {
+            checkValidEntityTokensIds(schema);
             checkValidPropertyKeyIds(schema);
         }
 
-        @Override
-        public void processSpecific(RelationTypeSchemaDescriptor schema) {
-            checkValidToken(
-                    null,
-                    schema.getRelTypeId(),
-                    tokenHolders.relationshipTypeTokens(),
-                    neoStores.getRelationshipTypeTokenStore(),
-                    (record, id) -> {},
-                    (ignore, token) -> reporter.forSchema(record).relationshipTypeNotInUse(token),
-                    storeCursors);
-            checkValidPropertyKeyIds(schema);
-        }
-
-        @Override
-        public void processSpecific(SchemaDescriptor schema) {
+        private void checkValidEntityTokensIds(SchemaDescriptor schema) {
             switch (schema.entityType()) {
                 case NODE -> {
                     for (int labelTokenId : schema.getEntityTokenIds()) {
@@ -428,7 +406,6 @@ class SchemaChecker {
                 default -> throw new IllegalArgumentException(
                         "Schema with given entity type is not supported: " + schema.entityType());
             }
-            checkValidPropertyKeyIds(schema);
         }
 
         private void checkValidPropertyKeyIds(SchemaDescriptor schema) {
@@ -445,84 +422,73 @@ class SchemaChecker {
         }
     }
 
-    private static class MandatoryPropertiesBuilder implements SchemaProcessor {
+    /**
+     * This collector is used to accumulate all the mandatory properties found on all
+     * {@link SchemaDescriptor}s passed to {@link #collect(SchemaDescriptor)}.
+     */
+    private static class MandatoryPropertiesCollector {
         private final MutableIntObjectMap<MutableIntSet> mandatoryNodeProperties;
         private final MutableIntObjectMap<MutableIntSet> mandatoryRelationshipProperties;
 
-        MandatoryPropertiesBuilder(
+        MandatoryPropertiesCollector(
                 MutableIntObjectMap<MutableIntSet> mandatoryNodeProperties,
                 MutableIntObjectMap<MutableIntSet> mandatoryRelationshipProperties) {
             this.mandatoryNodeProperties = mandatoryNodeProperties;
             this.mandatoryRelationshipProperties = mandatoryRelationshipProperties;
         }
 
-        @Override
-        public void processSpecific(LabelSchemaDescriptor schema) {
+        public void collect(SchemaDescriptor schema) {
+            MutableIntObjectMap<MutableIntSet> targetMap;
+            if (schema.isLabelSchemaDescriptor()) {
+                targetMap = mandatoryNodeProperties;
+            } else if (schema.isRelationshipTypeSchemaDescriptor()) {
+                targetMap = mandatoryRelationshipProperties;
+            } else {
+                // We want to process only LabelSchemaDescriptor and RelationshipTypeSchemaDescriptors.
+                return;
+            }
+
             for (int entityToken : schema.getEntityTokenIds()) {
-                putMandatoryProperty(mandatoryNodeProperties, entityToken, schema.getPropertyIds());
+                MutableIntSet keys = targetMap.getIfAbsentPut(entityToken, IntHashSet::new);
+                keys.addAll(schema.getPropertyIds());
             }
-        }
-
-        @Override
-        public void processSpecific(RelationTypeSchemaDescriptor schema) {
-            putMandatoryProperty(mandatoryRelationshipProperties, schema.getRelTypeId(), schema.getPropertyIds());
-        }
-
-        private static void putMandatoryProperty(
-                MutableIntObjectMap<MutableIntSet> mandatoryProperties, int entityToken, int[] propertyIds) {
-            MutableIntSet keys = mandatoryProperties.get(entityToken);
-            if (keys == null) {
-                keys = new IntHashSet();
-                mandatoryProperties.put(entityToken, keys);
-            }
-            keys.addAll(propertyIds);
-        }
-
-        @Override
-        public void processSpecific(SchemaDescriptor schema) {
-            throw new UnsupportedOperationException();
         }
     }
 
-    private static class AllowedTypesBuilder implements SchemaProcessor {
+    /**
+     * This collector is used to accumulate all the allowed types for properties found on all
+     * {@link TypeConstraintDescriptor}s passed to {@link #collect(TypeConstraintDescriptor)}.
+     */
+    private static class AllowedTypesCollector {
         private final MutableIntObjectMap<MutableIntObjectMap<PropertyTypeSet>> allowedNodePropertyTypes;
         private final MutableIntObjectMap<MutableIntObjectMap<PropertyTypeSet>> allowedRelationshipPropertyTypes;
-        private PropertyTypeSet allowedTypesForSchema = null;
 
-        AllowedTypesBuilder(
+        AllowedTypesCollector(
                 MutableIntObjectMap<MutableIntObjectMap<PropertyTypeSet>> allowedNodePropertyTypes,
                 MutableIntObjectMap<MutableIntObjectMap<PropertyTypeSet>> allowedRelationshipPropertyTypes) {
             this.allowedNodePropertyTypes = allowedNodePropertyTypes;
             this.allowedRelationshipPropertyTypes = allowedRelationshipPropertyTypes;
         }
 
-        public void setAllowedTypesForSchema(PropertyTypeSet allowedTypes) {
-            this.allowedTypesForSchema = allowedTypes;
-        }
+        public void collect(TypeConstraintDescriptor constraintDescriptor) {
+            var schema = constraintDescriptor.schema();
 
-        @Override
-        public void processSpecific(LabelSchemaDescriptor schema) {
-            for (int entityToken : schema.getEntityTokenIds()) {
-                putAllowedType(allowedNodePropertyTypes, entityToken, schema.getPropertyId());
+            MutableIntObjectMap<MutableIntObjectMap<PropertyTypeSet>> targetMap;
+            if (schema.isLabelSchemaDescriptor()) {
+                targetMap = allowedNodePropertyTypes;
+            } else if (schema.isRelationshipTypeSchemaDescriptor()) {
+                targetMap = allowedRelationshipPropertyTypes;
+            } else {
+                // We want to process only LabelSchemaDescriptor and RelationshipTypeSchemaDescriptors.
+                return;
             }
-        }
 
-        @Override
-        public void processSpecific(RelationTypeSchemaDescriptor schema) {
-            putAllowedType(allowedRelationshipPropertyTypes, schema.getRelTypeId(), schema.getPropertyId());
-        }
-
-        private void putAllowedType(
-                MutableIntObjectMap<MutableIntObjectMap<PropertyTypeSet>> allowedProperties,
-                int entityToken,
-                int propertyId) {
-            var allowedTypesByPropertyKey = allowedProperties.getIfAbsentPut(entityToken, IntObjectHashMap::new);
-            allowedTypesByPropertyKey.put(propertyId, allowedTypesForSchema);
-        }
-
-        @Override
-        public void processSpecific(SchemaDescriptor schema) {
-            throw new UnsupportedOperationException();
+            for (int entityToken : schema.getEntityTokenIds()) {
+                var allowedTypesByPropertyKey = targetMap.getIfAbsentPut(entityToken, IntObjectHashMap::new);
+                // We "know" that constraints that enforces the type for properties only target
+                // a single property, otherwise we could have done a loop on `schema.getPropertyIds()`.
+                allowedTypesByPropertyKey.put(schema.getPropertyId(), constraintDescriptor.propertyType());
+            }
         }
     }
 
