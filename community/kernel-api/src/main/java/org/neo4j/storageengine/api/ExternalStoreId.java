@@ -23,6 +23,11 @@ import static java.util.Objects.requireNonNull;
 
 import java.util.UUID;
 
+/**
+ * Database identifier exposed as external store identity.
+ * Generated on creation and never updated, including on a
+ * store copy, format migration, restore, etc.
+ */
 public record ExternalStoreId(UUID id) {
     public ExternalStoreId {
         requireNonNull(id);
