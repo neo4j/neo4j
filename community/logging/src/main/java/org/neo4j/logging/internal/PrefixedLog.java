@@ -102,33 +102,79 @@ public class PrefixedLog implements InternalLog {
     }
 
     @Override
-    public void debug(Neo4jLogMessage message) {}
+    public void debug(Neo4jLogMessage message) {
+        delegate.debug(new PrefixedNeo4jLogMessage(message));
+    }
 
     @Override
-    public void debug(Neo4jMessageSupplier supplier) {}
+    public void debug(Neo4jMessageSupplier supplier) {
+        delegate.debug(() -> new PrefixedNeo4jLogMessage(supplier.get()));
+    }
 
     @Override
-    public void info(Neo4jLogMessage message) {}
+    public void info(Neo4jLogMessage message) {
+        delegate.info(new PrefixedNeo4jLogMessage(message));
+    }
 
     @Override
-    public void info(Neo4jMessageSupplier supplier) {}
+    public void info(Neo4jMessageSupplier supplier) {
+        delegate.info(() -> new PrefixedNeo4jLogMessage(supplier.get()));
+    }
 
     @Override
-    public void warn(Neo4jLogMessage message) {}
+    public void warn(Neo4jLogMessage message) {
+        delegate.warn(new PrefixedNeo4jLogMessage(message));
+    }
 
     @Override
-    public void warn(Neo4jMessageSupplier supplier) {}
+    public void warn(Neo4jMessageSupplier supplier) {
+        delegate.warn(() -> new PrefixedNeo4jLogMessage(supplier.get()));
+    }
 
     @Override
-    public void error(Neo4jLogMessage message) {}
+    public void error(Neo4jLogMessage message) {
+        delegate.error(new PrefixedNeo4jLogMessage(message));
+    }
 
     @Override
-    public void error(Neo4jMessageSupplier supplier) {}
+    public void error(Neo4jMessageSupplier supplier) {
+        delegate.error(() -> new PrefixedNeo4jLogMessage(supplier.get()));
+    }
 
     @Override
-    public void error(Neo4jLogMessage message, Throwable throwable) {}
+    public void error(Neo4jLogMessage message, Throwable throwable) {
+        delegate.error(new PrefixedNeo4jLogMessage(message), throwable);
+    }
 
     private String withPrefix(String message) {
         return prefix + message;
+    }
+
+    private class PrefixedNeo4jLogMessage implements Neo4jLogMessage {
+        private final Neo4jLogMessage delegate;
+
+        private PrefixedNeo4jLogMessage(Neo4jLogMessage delegate) {
+            this.delegate = delegate;
+        }
+
+        @Override
+        public String getFormattedMessage() {
+            return withPrefix(delegate.getFormattedMessage());
+        }
+
+        @Override
+        public String getFormat() {
+            return withPrefix(delegate.getFormat());
+        }
+
+        @Override
+        public Object[] getParameters() {
+            return delegate.getParameters();
+        }
+
+        @Override
+        public Throwable getThrowable() {
+            return delegate.getThrowable();
+        }
     }
 }
