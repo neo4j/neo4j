@@ -37,14 +37,16 @@ import org.neo4j.kernel.impl.transaction.log.LogPosition;
  * @see ReversedMultiFileCommandBatchCursor
  */
 public class EagerlyReversedCommandBatchCursor implements CommandBatchCursor {
-    private final List<CommittedCommandBatch> batches = new ArrayList<>();
+    private final List<ReservedBatch> batches = new ArrayList<>();
     private final CommandBatchCursor cursor;
     private int indexToReturn;
 
-    public EagerlyReversedCommandBatchCursor(CommandBatchCursor cursor) throws IOException {
+    private EagerlyReversedCommandBatchCursor(CommandBatchCursor cursor) throws IOException {
         this.cursor = cursor;
+        LogPosition batchPosition = cursor.position();
         while (cursor.next()) {
-            batches.add(cursor.get());
+            batches.add(new ReservedBatch(cursor.get(), batchPosition));
+            batchPosition = cursor.position();
         }
         this.indexToReturn = batches.size();
     }
@@ -65,12 +67,12 @@ public class EagerlyReversedCommandBatchCursor implements CommandBatchCursor {
 
     @Override
     public CommittedCommandBatch get() {
-        return batches.get(indexToReturn);
+        return batches.get(indexToReturn).commitedBatch();
     }
 
     @Override
     public LogPosition position() {
-        throw new UnsupportedOperationException("Should not be called");
+        return batches.get(indexToReturn).batchStartPosition();
     }
 
     public static CommandBatchCursor eagerlyReverse(CommandBatchCursor cursor) throws IOException {

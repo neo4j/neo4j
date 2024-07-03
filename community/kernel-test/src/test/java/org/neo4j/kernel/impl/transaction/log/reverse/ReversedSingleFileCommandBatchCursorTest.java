@@ -19,10 +19,9 @@
  */
 package org.neo4j.kernel.impl.transaction.log.reverse;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.common.Subject.ANONYMOUS;
 import static org.neo4j.kernel.impl.api.TransactionToApply.NOT_SPECIFIED_CHUNK_ID;
 import static org.neo4j.kernel.impl.transaction.log.GivenCommandBatchCursor.exhaust;
@@ -35,6 +34,7 @@ import static org.neo4j.test.LatestVersions.LATEST_KERNEL_VERSION_PROVIDER;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -52,6 +52,7 @@ import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.CompleteTransaction;
 import org.neo4j.kernel.impl.transaction.log.FlushableLogPositionAwareChannel;
+import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
 import org.neo4j.kernel.impl.transaction.log.TransactionLogWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
@@ -116,6 +117,22 @@ class ReversedSingleFileCommandBatchCursorTest {
     }
 
     @Test
+    void reverseCursorBatchStartPositions() throws IOException {
+        List<LogPosition> startPositions = writeTransactions(10, 10, 15);
+        Collections.reverse(startPositions);
+
+        int transaction = 0;
+        long expectedTxId = txId;
+        try (var cursor = txCursor(false)) {
+            while (cursor.next()) {
+                var committedCommandBatch = cursor.get();
+                assertEquals(expectedTxId--, committedCommandBatch.txId());
+                assertEquals(startPositions.get(transaction++), cursor.position());
+            }
+        }
+    }
+
+    @Test
     void shouldHandleVerySmallTransactions() throws Exception {
         // given
         writeTransactions(10, 1, 1);
@@ -172,11 +189,10 @@ class ReversedSingleFileCommandBatchCursorTest {
         // when
         try (ReadAheadLogChannel channel = (ReadAheadLogChannel)
                 logFile.getReader(logFiles.getLogFile().extractHeader(0).getStartPosition())) {
-            new ReversedSingleFileCommandBatchCursor(channel, logEntryReader(), false, monitor);
-            fail("Should've failed");
-        } catch (IllegalArgumentException e) {
-            // then good
-            assertThat(e.getMessage()).contains("multiple log versions");
+            assertThatThrownBy(
+                            () -> new ReversedSingleFileCommandBatchCursor(channel, logEntryReader(), false, monitor))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("multiple log versions");
         }
     }
 
@@ -236,14 +252,16 @@ class ReversedSingleFileCommandBatchCursorTest {
         }
     }
 
-    private void writeTransactions(int transactionCount, int minTransactionSize, int maxTransactionSize)
+    private List<LogPosition> writeTransactions(int transactionCount, int minTransactionSize, int maxTransactionSize)
             throws IOException {
         FlushableLogPositionAwareChannel channel =
                 logFile.getTransactionLogWriter().getChannel();
         TransactionLogWriter writer = logFile.getTransactionLogWriter();
         int previousChecksum = BASE_TX_CHECKSUM;
+        List<LogPosition> startPositions = new ArrayList<>(transactionCount);
         for (int i = 0; i < transactionCount; i++) {
             long txId = ++this.txId;
+            startPositions.add(writer.getCurrentPosition());
             previousChecksum = writer.append(
                     tx(random.intBetween(minTransactionSize, maxTransactionSize)),
                     txId,
@@ -255,6 +273,8 @@ class ReversedSingleFileCommandBatchCursorTest {
         }
         channel.prepareForFlush().flush();
         // Don't close the channel, LogFile owns it
+
+        return startPositions;
     }
 
     private void appendCorruptedTransaction() throws IOException {

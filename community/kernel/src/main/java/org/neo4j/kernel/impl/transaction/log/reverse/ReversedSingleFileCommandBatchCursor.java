@@ -70,9 +70,12 @@ public class ReversedSingleFileCommandBatchCursor implements CommandBatchCursor 
     private final CommandBatchCursor commandBatchCursor;
     // Should be generally large enough to hold transactions in a chunk, where one chunk is the read-ahead size of
     // ReadAheadLogChannel
-    private final Deque<CommittedCommandBatch> chunkBatches = new ArrayDeque<>(20);
+    private final Deque<ReservedBatch> chunkBatches = new ArrayDeque<>(20);
     private final SketchingCommandBatchCursor sketchingCursor;
+
     private CommittedCommandBatch currentCommandBatch;
+    private LogPosition currentBatchStartPosition;
+
     // May be longer than required, offsetLength holds the actual length.
     private final long[] offsets;
     private int offsetsLength;
@@ -138,7 +141,9 @@ public class ReversedSingleFileCommandBatchCursor implements CommandBatchCursor 
             if (currentChunkExhausted()) {
                 readNextChunk();
             }
-            currentCommandBatch = chunkBatches.pop();
+            ReservedBatch reservedBatch = chunkBatches.pop();
+            currentCommandBatch = reservedBatch.commitedBatch();
+            currentBatchStartPosition = reservedBatch.batchStartPosition();
             return true;
         }
         return false;
@@ -169,8 +174,8 @@ public class ReversedSingleFileCommandBatchCursor implements CommandBatchCursor 
         for (int i = 0; i < chunkLength; i++) {
             boolean success = commandBatchCursor.next();
             assert success;
-
-            chunkBatches.push(commandBatchCursor.get());
+            var batchStartPosition = new LogPosition(channel.getLogVersion(), offsets[chunkStartOffsetIndex + i]);
+            chunkBatches.push(new ReservedBatch(commandBatchCursor.get(), batchStartPosition));
         }
     }
 
@@ -194,6 +199,6 @@ public class ReversedSingleFileCommandBatchCursor implements CommandBatchCursor 
 
     @Override
     public LogPosition position() {
-        throw new UnsupportedOperationException("Should not be called");
+        return currentBatchStartPosition;
     }
 }
