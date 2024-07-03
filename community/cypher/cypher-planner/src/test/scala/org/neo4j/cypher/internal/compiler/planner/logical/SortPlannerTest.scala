@@ -25,6 +25,8 @@ import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.planner.logical.SortPlanner.SatisfiedForPlan
 import org.neo4j.cypher.internal.compiler.planner.logical.SortPlanner.planIfAsSortedAsPossible
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
+import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.functions.Rand
 import org.neo4j.cypher.internal.ir.RegularQueryProjection
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
@@ -415,6 +417,65 @@ class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
     }
   }
 
+  test(
+    "should return None if required sort is a variable that takes its value from a non-deterministic function and we would be pushing down Sort"
+  ) {
+    new givenConfig().withLogicalPlanningContext { (_, context) =>
+      val io = InterestingOrder.required(RequiredOrderCandidate.asc(
+        v"x",
+        Map[LogicalVariable, Expression](v"x" -> function(Rand.name))
+      ))
+      val inputPlan = fakeLogicalPlanFor(context.staticComponents.planningAttributes, "x")
+
+      // When
+      val sortedPlan = SortPlanner.maybeSortedPlan(
+        inputPlan,
+        InterestingOrderConfig(io),
+        isPushDownSort = true,
+        context,
+        updateSolved = true
+      )
+
+      // Then
+      sortedPlan shouldBe None
+    }
+  }
+
+  test(
+    "should return sorted plan if required sort is a variable that takes value from non-deterministic function and we are not pushing down Sort"
+  ) {
+    new givenConfig().withLogicalPlanningContext { (_, context) =>
+      val io = InterestingOrder.required(RequiredOrderCandidate.asc(
+        v"r",
+        Map(v"r" -> function(Rand.name))
+      ))
+      val inputPlan = fakeLogicalPlanFor(context.staticComponents.planningAttributes, "x")
+
+      // When
+      val sortedPlan = SortPlanner.maybeSortedPlan(
+        inputPlan,
+        InterestingOrderConfig(io),
+        isPushDownSort = false,
+        context,
+        updateSolved = true
+      )
+
+      // Then
+      val sorted = new LogicalPlanBuilder(wholePlan = false)
+        .sort("r ASC")
+        .projection("rand() AS r")
+        .fakeLeafPlan("x")
+        .build()
+
+      sortedPlan shouldBe Some(sorted)
+      context.staticComponents.planningAttributes.solveds.get(sortedPlan.get.id) should equal(
+        RegularSinglePlannerQuery(
+          interestingOrder = io,
+          horizon = RegularQueryProjection(Map(v"r" -> function(Rand.name)))
+        )
+      )
+    }
+  }
   // ----------------
   // SatisfiedForPlan
   // ----------------

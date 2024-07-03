@@ -364,9 +364,11 @@ class ProvidedOrderTest extends CypherFunSuite with AstConstructionTestSupport {
     ) should matchPattern { case NoSatisfaction() => }
   }
 
-  test("Function invocation rand should never satisfy interesting order") {
+  test("Non-deterministic function invocation should never satisfy interesting order") {
     val interestingOrder = InterestingOrder.required(RequiredOrderCandidate.asc(function("rand")))
     ProvidedOrder.asc(function("rand")).satisfies(interestingOrder) should matchPattern { case NoSatisfaction() => }
+    ProvidedOrder.asc(function("randomUUID")).satisfies(interestingOrder) should matchPattern { case NoSatisfaction() =>
+    }
   }
 
 }

@@ -1471,6 +1471,57 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     plan shouldEqual expectedPlan
   }
 
+  test("should not push down a sort when ordering by a non-deterministic variable") {
+    val query =
+      """
+        |MATCH (n)-[:REL]->(m)
+        |WITH m, rand() as r
+        |ORDER BY r
+        |LIMIT 20
+        |RETURN id(m), r
+        |""".stripMargin
+
+    val plan = relationshipTypeScanConfig.plan(query).stripProduceResults
+
+    // the rand() as r should happen for each produced relationship. If it comes after an all-node-scan instead, we will end up with different number of random numbers generated for different cardinalities.
+    val expectedPlan = relationshipTypeScanConfig.subPlanBuilder()
+      .projection("id(m) AS `id(m)`")
+      .top(20, "r ASC")
+      .projection("rand() AS r")
+      .relationshipTypeScan("(n)-[anon_0:REL]->(m)", IndexOrderNone)
+      .build()
+
+    plan shouldEqual expectedPlan
+  }
+
+  test("should not push down a partial sort when ordering by a non-deterministic variable") {
+    val query =
+      """
+        |MATCH (i)-[:REL]->(j)
+        |WITH i, rand() as r
+        |ORDER BY r
+        |MATCH (k)-[:REL]->(i)
+        |WHERE i <> k
+        |WITH k,rand() as r  ORDER BY r LIMIT 1
+        |RETURN k,r
+        |""".stripMargin
+
+    val plan = relationshipTypeScanConfig.plan(query).stripProduceResults
+
+    // the rand() as r should happen for each produced relationship. If it comes after an all-node-scan instead, we will end up with different number of random numbers generated for different cardinalities.
+    val expectedPlan = relationshipTypeScanConfig.subPlanBuilder()
+      .top(1, "r ASC")
+      .projection("rand() AS r")
+      .filter("NOT i = k")
+      .expandAll("(i)<-[anon_1:REL]-(k)")
+      .sort("r ASC")
+      .projection("rand() AS r")
+      .relationshipTypeScan("(i)-[anon_0:REL]->(j)", IndexOrderNone)
+      .build()
+
+    plan shouldEqual expectedPlan
+  }
+
   test("should plan relationship type scan with filter for already bound start node with hint") {
     val query =
       """

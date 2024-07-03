@@ -240,8 +240,11 @@ object SortPlanner {
     val providedOrderColumns = sortItems.map(_.providedOrderColumn)
 
     val sortSymbolsAvailable = sortColumns.forall(column => projected2.availableSymbols.contains(column.id))
-    def deterministicSortExpressionsOnly = providedOrderColumns.forall(_.expression.isDeterministic)
-    def okToSortNow = !isPushDownSort || deterministicSortExpressionsOnly
+    def deterministicSortExpressionsOnly =
+      providedOrderColumns.forall(providedOrderColumn => providedOrderColumn.expression.isDeterministic)
+    def deterministicProjectionsOnly = projections.forall(_._2.isDeterministic)
+    def deterministicSortedOrderOnly = deterministicSortExpressionsOnly && deterministicProjectionsOnly
+    def okToSortNow = !isPushDownSort || deterministicSortedOrderOnly
 
     if (sortSymbolsAvailable && okToSortNow) {
       // Parallel runtime does currently not support PartialSort

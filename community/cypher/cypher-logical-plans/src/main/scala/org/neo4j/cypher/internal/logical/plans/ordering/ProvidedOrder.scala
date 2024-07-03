@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.logical.plans.ordering
 
 import org.neo4j.cypher.internal.expressions.Expression
-import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.ir.ordering.ColumnOrder
 import org.neo4j.cypher.internal.ir.ordering.ColumnOrder.Asc
@@ -273,11 +272,6 @@ sealed trait ProvidedOrder {
    * Checks if a RequiredOrder is satisfied by a ProvidedOrder
    */
   def satisfies(interestingOrder: InterestingOrder): Satisfaction = {
-    def containsRand(expression: Expression): Boolean =
-      expression match {
-        case FunctionInvocation(functionName, _, _, _, _) if functionName.name == "rand" => true
-        case _                                                                           => false
-      }
 
     @tailrec
     def satisfied(
@@ -286,7 +280,7 @@ sealed trait ProvidedOrder {
       projections: Map[LogicalVariable, Expression]
     ): Boolean = {
       val projected = projectExpression(requiredOrder, projections)
-      if (containsRand(requiredOrder))
+      if (!requiredOrder.isDeterministic)
         false
       else if (providedOrder == requiredOrder || providedOrder == projected) {
         true
