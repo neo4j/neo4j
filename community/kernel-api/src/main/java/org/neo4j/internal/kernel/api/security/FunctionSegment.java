@@ -19,6 +19,8 @@
  */
 package org.neo4j.internal.kernel.api.security;
 
+import org.neo4j.internal.helpers.NameUtil;
+
 public class FunctionSegment implements Segment
 {
     private final String function;
@@ -42,6 +44,18 @@ public class FunctionSegment implements Segment
             return function == null || function.equals( other.function );
         }
         return false;
+    }
+
+    public String toCypherSnippet()
+    {
+        if ( function == null )
+        {
+            return "*";
+        }
+        else
+        {
+            return NameUtil.escapeGlob( function );
+        }
     }
 
     @Override

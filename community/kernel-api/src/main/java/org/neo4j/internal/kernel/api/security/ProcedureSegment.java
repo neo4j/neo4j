@@ -19,6 +19,8 @@
  */
 package org.neo4j.internal.kernel.api.security;
 
+import org.neo4j.internal.helpers.NameUtil;
+
 public class ProcedureSegment implements Segment
 {
     private final String procedure;
@@ -42,6 +44,18 @@ public class ProcedureSegment implements Segment
             return procedure == null || procedure.equals( other.procedure );
         }
         return false;
+    }
+
+    public String toCypherSnippet()
+    {
+        if ( procedure == null )
+        {
+            return "*";
+        }
+        else
+        {
+            return NameUtil.escapeGlob( procedure );
+        }
     }
 
     @Override
