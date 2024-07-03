@@ -2313,7 +2313,7 @@ public class Operations implements Write, SchemaWrite, Upgrade {
 
         if (constraint.graphTypeDependence() == GraphTypeDependence.DEPENDENT && !canDropDependent) {
             throw new DropConstraintFailureException(
-                    constraint, "Cannot drop a constraint with dependence: " + GraphTypeDependence.DEPENDENT);
+                    constraint, new IllegalStateException("Cannot drop dependent constraint"));
         }
 
         // verify data integrity
