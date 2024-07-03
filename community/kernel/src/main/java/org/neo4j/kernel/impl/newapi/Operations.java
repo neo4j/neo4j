@@ -50,7 +50,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
-import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.NotImplementedException;
 import org.eclipse.collections.api.RichIterable;
 import org.eclipse.collections.api.iterator.IntIterator;
 import org.eclipse.collections.api.map.primitive.IntObjectMap;
@@ -124,7 +124,6 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.api.AccessModeProvider;
-import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
@@ -160,7 +159,6 @@ import org.neo4j.storageengine.api.StorageLocks;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.token.api.TokenConstants;
 import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.Values;
 
 /**
  * Collects all Kernel API operations and guards them from being used outside of transaction.
@@ -189,6 +187,7 @@ public class Operations implements Write, SchemaWrite, Upgrade {
     private final boolean additionLockVerification;
     private final boolean typeConstraintEnabled;
     private final boolean dependentConstraintsEnabled;
+    private final boolean relationshipEndpointConstraintsEnabled;
     private DefaultNodeCursor nodeCursor;
     private DefaultNodeCursor restrictedNodeCursor;
     private DefaultPropertyCursor propertyCursor;
@@ -234,6 +233,8 @@ public class Operations implements Write, SchemaWrite, Upgrade {
         this.additionLockVerification = config.get(additional_lock_verification);
         this.typeConstraintEnabled = config.get(GraphDatabaseInternalSettings.type_constraints);
         this.dependentConstraintsEnabled = config.get(GraphDatabaseInternalSettings.dependent_constraints_enabled);
+        this.relationshipEndpointConstraintsEnabled =
+                config.get(GraphDatabaseInternalSettings.relationship_endpoint_constraints_enabled);
     }
 
     public void initialize(CursorContext cursorContext) {
@@ -532,8 +533,8 @@ public class Operations implements Write, SchemaWrite, Upgrade {
                         storageReader.valueIndexesGetRelated(new int[] {nodeLabel}, existingPropertyKeyIds, NODE);
                 for (IndexDescriptor index : indexes) {
                     if (index.isUnique()) {
-                        PropertyIndexQuery.ExactPredicate[] propertyValues = getAllPropertyValues(
-                                nodeCursor, index.schema(), StatementConstants.NO_SUCH_PROPERTY_KEY, Values.NO_VALUE);
+                        PropertyIndexQuery.ExactPredicate[] propertyValues =
+                                getAllPropertyValues(nodeCursor, index.schema(), NO_SUCH_PROPERTY_KEY, NO_VALUE);
                         if (propertyValues != null) {
                             validateNoExistingNodeWithExactValues(
                                     (UniquenessConstraintDescriptor)
@@ -564,7 +565,7 @@ public class Operations implements Write, SchemaWrite, Upgrade {
 
     private int[] doLoadSortedPropertyKeyList() {
         if (!propertyCursor.next()) {
-            return ArrayUtils.EMPTY_INT_ARRAY;
+            return EMPTY_INT_ARRAY;
         }
 
         int[] propertyKeyIds = new int[4]; // just some arbitrary starting point, it grows on demand
@@ -678,9 +679,9 @@ public class Operations implements Write, SchemaWrite, Upgrade {
         cursor.properties(propertyCursor, PropertySelection.selection(schemaPropertyIds));
         while (propertyCursor.next()) {
             int entityPropertyId = propertyCursor.propertyKey();
-            int k = ArrayUtils.indexOf(schemaPropertyIds, entityPropertyId);
+            int k = indexOf(schemaPropertyIds, entityPropertyId);
             if (k >= 0) {
-                if (entityPropertyId != StatementConstants.NO_SUCH_PROPERTY_KEY) {
+                if (entityPropertyId != NO_SUCH_PROPERTY_KEY) {
                     values[k] = PropertyIndexQuery.exact(entityPropertyId, propertyCursor.propertyValue());
                 }
                 nMatched++;
@@ -689,7 +690,7 @@ public class Operations implements Write, SchemaWrite, Upgrade {
 
         // This is true if we are adding a property
         if (changedPropertyKeyId != NO_SUCH_PROPERTY_KEY) {
-            int k = ArrayUtils.indexOf(schemaPropertyIds, changedPropertyKeyId);
+            int k = indexOf(schemaPropertyIds, changedPropertyKeyId);
             if (k >= 0) {
                 values[k] = PropertyIndexQuery.exact(changedPropertyKeyId, changedValue);
                 nMatched++;
@@ -715,9 +716,9 @@ public class Operations implements Write, SchemaWrite, Upgrade {
         cursor.properties(propertyCursor, PropertySelection.selection(schemaPropertyIds));
         while (propertyCursor.next()) {
             int entityPropertyId = propertyCursor.propertyKey();
-            int k = ArrayUtils.indexOf(schemaPropertyIds, entityPropertyId);
+            int k = indexOf(schemaPropertyIds, entityPropertyId);
             if (k >= 0) {
-                if (entityPropertyId != StatementConstants.NO_SUCH_PROPERTY_KEY) {
+                if (entityPropertyId != NO_SUCH_PROPERTY_KEY) {
                     values[k] = PropertyIndexQuery.exact(entityPropertyId, propertyCursor.propertyValue());
                 }
                 nMatched++;
@@ -728,7 +729,7 @@ public class Operations implements Write, SchemaWrite, Upgrade {
         for (IntObjectPair<Value> changedProperty : changedProperties.keyValuesView()) {
             int changedPropertyKeyId = changedProperty.getOne();
             if (changedPropertyKeyId != NO_SUCH_PROPERTY_KEY) {
-                int k = ArrayUtils.indexOf(schemaPropertyIds, changedPropertyKeyId);
+                int k = indexOf(schemaPropertyIds, changedPropertyKeyId);
                 if (k >= 0) {
                     values[k] = PropertyIndexQuery.exact(changedPropertyKeyId, changedProperty.getTwo());
                     nMatched++;
@@ -1063,9 +1064,8 @@ public class Operations implements Write, SchemaWrite, Upgrade {
             }
         }
         int[] afterPropertyKeyIds = afterPropertyKeyIdsSet.toSortedArray();
-        int[] changedPropertyKeyIds = changedPropertyKeyIdsSet != null
-                ? changedPropertyKeyIdsSet.toSortedArray()
-                : ArrayUtils.EMPTY_INT_ARRAY;
+        int[] changedPropertyKeyIds =
+                changedPropertyKeyIdsSet != null ? changedPropertyKeyIdsSet.toSortedArray() : EMPTY_INT_ARRAY;
 
         // Check uniqueness constraints for the added labels and _actually_ changed properties
         // TODO Due to previous assumptions around very specific use cases for the schema "get related" lookups and its
@@ -1128,7 +1128,7 @@ public class Operations implements Write, SchemaWrite, Upgrade {
                             .assertAllowsSetProperty(
                                     ktx.securityContext(), this::resolvePropertyKey, existingLabelsMinusRemoved, key);
                     ktx.txState().nodeDoRemoveProperty(node, key);
-                    existingPropertyKeyIds = ArrayUtils.remove(existingPropertyKeyIds, existingPropertyKeyIdIndex);
+                    existingPropertyKeyIds = remove(existingPropertyKeyIds, existingPropertyKeyIdIndex);
                     if (storageReader.hasRelatedSchema(existingLabelsMinusRemovedArray, key, NODE)) {
                         updater.onPropertyRemove(
                                 nodeCursor,
@@ -1261,9 +1261,8 @@ public class Operations implements Write, SchemaWrite, Upgrade {
             }
         }
 
-        int[] changedPropertyKeyIds = changedPropertyKeyIdsSet != null
-                ? changedPropertyKeyIdsSet.toSortedArray()
-                : ArrayUtils.EMPTY_INT_ARRAY;
+        int[] changedPropertyKeyIds =
+                changedPropertyKeyIdsSet != null ? changedPropertyKeyIdsSet.toSortedArray() : EMPTY_INT_ARRAY;
 
         // Check uniqueness constraints for the _actually_ changed properties
         if (changedPropertyKeyIdsSet != null) {
@@ -1803,7 +1802,7 @@ public class Operations implements Write, SchemaWrite, Upgrade {
         UniquenessConstraintDescriptor constraint =
                 ConstraintDescriptorFactory.uniqueForSchema(schema, prototype.getIndexType());
         try {
-            assertValidDescriptor(schema, SchemaKernelException.OperationContext.CONSTRAINT_CREATION);
+            assertValidDescriptor(schema, CONSTRAINT_CREATION);
             if (prototype.getName().isEmpty()) {
                 constraint = ensureConstraintHasName(constraint);
                 prototype = prototype.withName(constraint.getName());
@@ -2005,7 +2004,7 @@ public class Operations implements Write, SchemaWrite, Upgrade {
 
         try {
             // Check data integrity
-            assertValidDescriptor(schema, SchemaKernelException.OperationContext.CONSTRAINT_CREATION);
+            assertValidDescriptor(schema, CONSTRAINT_CREATION);
 
             if (prototype.getName().isEmpty()) {
                 constraint = ensureConstraintHasName(constraint);
@@ -2286,7 +2285,7 @@ public class Operations implements Write, SchemaWrite, Upgrade {
 
         try {
             // Verify data integrity.
-            assertValidDescriptor(descriptor, SchemaKernelException.OperationContext.CONSTRAINT_CREATION);
+            assertValidDescriptor(descriptor, CONSTRAINT_CREATION);
             ConstraintDescriptor constraint =
                     constraintFunction.apply(descriptor).withName(name);
             if (!dependentConstraintsEnabled && constraint.graphTypeDependence() == GraphTypeDependence.DEPENDENT) {
