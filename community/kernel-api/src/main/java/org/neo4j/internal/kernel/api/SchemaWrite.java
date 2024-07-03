@@ -23,12 +23,14 @@ import java.util.List;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
+import org.neo4j.internal.schema.EndpointType;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
+import org.neo4j.internal.schema.RelationshipEndpointSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.constraints.PropertyTypeSet;
 
@@ -113,7 +115,7 @@ public interface SchemaWrite {
     /**
      * Create node property existence constraint
      *
-     * @param schema description of the constraint
+     * @param schema descriptor of the constraint
      * @param isDependent graph type dependence
      */
     ConstraintDescriptor nodePropertyExistenceConstraintCreate(
@@ -122,7 +124,7 @@ public interface SchemaWrite {
     /**
      * Create relationship property existence constraint
      *
-     * @param schema description of the constraint
+     * @param schema descriptor of the constraint
      * @param isDependent graph type dependence
      */
     ConstraintDescriptor relationshipPropertyExistenceConstraintCreate(
@@ -131,7 +133,7 @@ public interface SchemaWrite {
     /**
      * Create property type constraint
      *
-     * @param schema description of the constraint
+     * @param schema descriptor of the constraint
      * @param name the name the created constraint should have, or null
      * @param propertyType the allowed property types
      * @param isDependent  graph type dependence
@@ -140,6 +142,20 @@ public interface SchemaWrite {
      */
     ConstraintDescriptor propertyTypeConstraintCreate(
             SchemaDescriptor schema, String name, PropertyTypeSet propertyType, boolean isDependent)
+            throws KernelException;
+
+    /**
+     * Create a relationship endpoint constraint
+     *
+     * @param name the name the created constraint should have, or null (when null a generated name will be chosen)
+     * @param schema descriptor of entities that the constraint applies to
+     * @param endpointLabelId the token id for the Label that the endpoint will be required to have
+     * @param endpointType the {@link EndpointType} of the node which we are constraining on
+     * @return the created constraint
+     * @throws KernelException
+     */
+    ConstraintDescriptor relationshipEndpointConstraintCreate(
+            RelationshipEndpointSchemaDescriptor schema, String name, int endpointLabelId, EndpointType endpointType)
             throws KernelException;
 
     /**
@@ -153,7 +169,7 @@ public interface SchemaWrite {
     /**
      * Drop the specific constraint.
      *
-     * @param constraint description of the constraint
+     * @param constraint descriptor of the constraint
      * @param canDropDependent if the drop is privileged to drop a dependent constraint
      */
     void constraintDrop(ConstraintDescriptor constraint, boolean canDropDependent) throws SchemaKernelException;

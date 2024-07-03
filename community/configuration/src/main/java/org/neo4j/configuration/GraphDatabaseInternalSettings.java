@@ -1174,6 +1174,12 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
                     "internal.dbms.dependent_constraints_enabled", BOOL, false)
             .build();
 
+    @Internal
+    @Description("Enables usage of relationship endpoint constraints")
+    public static final Setting<Boolean> relationship_endpoint_constraints_enabled = newBuilder(
+                    "internal.dbms.relationship_endpoint_constraints_enabled", BOOL, false)
+            .build();
+
     public enum ExtractLiteral {
         ALWAYS,
         NEVER,

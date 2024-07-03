@@ -100,6 +100,7 @@ import org.neo4j.internal.kernel.api.helpers.RelationshipSelections;
 import org.neo4j.internal.kernel.api.security.AccessMode.Static;
 import org.neo4j.internal.schema.AnyTokenSchemaDescriptor;
 import org.neo4j.internal.schema.ConstraintDescriptor;
+import org.neo4j.internal.schema.EndpointType;
 import org.neo4j.internal.schema.FulltextSchemaDescriptor;
 import org.neo4j.internal.schema.GraphTypeDependence;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -108,6 +109,7 @@ import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
+import org.neo4j.internal.schema.RelationshipEndpointSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorImplementation;
 import org.neo4j.internal.schema.SchemaDescriptorSupplier;
@@ -2244,6 +2246,19 @@ public class Operations implements Write, SchemaWrite, Upgrade {
 
         ktx.txState().constraintDoAdd(constraint);
         return constraint;
+    }
+
+    @Override
+    public ConstraintDescriptor relationshipEndpointConstraintCreate(
+            RelationshipEndpointSchemaDescriptor schema, String name, int endpointLabelId, EndpointType endpointType)
+            throws KernelException {
+
+        if (!relationshipEndpointConstraintsEnabled) {
+            throw new UnsupportedOperationException("Relationship endpoint constraints are not enabled, setting: "
+                    + GraphDatabaseInternalSettings.relationship_endpoint_constraints_enabled.name());
+        }
+        throw new NotImplementedException(
+                "relationshipEndpointConstraint is in its infancy, thus this operation is not supported");
     }
 
     private ConstraintDescriptor lockAndValidatePropertyExistenceConstraint(

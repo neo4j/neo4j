@@ -27,12 +27,14 @@ import org.neo4j.internal.kernel.api.security.PrivilegeAction;
 import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.internal.schema.ConstraintDescriptor;
+import org.neo4j.internal.schema.EndpointType;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
+import org.neo4j.internal.schema.RelationshipEndpointSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.constraints.PropertyTypeSet;
 
@@ -115,6 +117,14 @@ public class RestrictedSchemaWrite implements SchemaWrite {
             throws KernelException {
         securityAuthorizationHandler.assertSchemaWrites(securityContext, PrivilegeAction.CREATE_CONSTRAINT);
         return inner.propertyTypeConstraintCreate(schema, name, propertyType, isDependent);
+    }
+
+    @Override
+    public ConstraintDescriptor relationshipEndpointConstraintCreate(
+            RelationshipEndpointSchemaDescriptor schema, String name, int endpointLabelId, EndpointType endpointType)
+            throws KernelException {
+        securityAuthorizationHandler.assertSchemaWrites(securityContext, PrivilegeAction.CREATE_CONSTRAINT);
+        return inner.relationshipEndpointConstraintCreate(schema, name, endpointLabelId, endpointType);
     }
 
     @Override
