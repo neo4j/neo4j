@@ -20,6 +20,7 @@
 package org.neo4j.internal.helpers;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.internal.helpers.NameUtil.escapeGlob;
 import static org.neo4j.internal.helpers.NameUtil.escapeName;
 import static org.neo4j.internal.helpers.NameUtil.escapeSingleQuotes;
 import static org.neo4j.internal.helpers.NameUtil.forceEscapeName;
@@ -66,5 +67,20 @@ public class NameUtilTest {
         assertThat(unescapeName("`comma, separated`")).isEqualTo("comma, separated");
         assertThat(unescapeName("`escaped content ``back ticks #`")).isEqualTo("escaped content `back ticks #");
         assertThat(unescapeName("`escaped content two ``back ``ticks`")).isEqualTo("escaped content two `back `ticks");
+    }
+
+    @Test
+    void escapeNonGlobStrings() {
+        assertThat(escapeGlob("abc.1?2_A")).isEqualTo("abc.1?2_A");
+        assertThat(escapeGlob("Åbc*12_A")).isEqualTo("Åbc*12_A");
+        assertThat(escapeGlob("*")).isEqualTo("*");
+        assertThat(escapeGlob("?")).isEqualTo("?");
+        assertThat(escapeGlob("abc.glob")).isEqualTo("abc.glob");
+        assertThat(escapeGlob(".glob")).isEqualTo("`.glob`");
+        assertThat(escapeGlob("\0")).isEqualTo("`\0`");
+        assertThat(escapeGlob("\n")).isEqualTo("`\n`");
+        assertThat(escapeGlob("comma, separated")).isEqualTo("`comma, separated`");
+        assertThat(escapeGlob("escaped content `back ticks #")).isEqualTo("`escaped content ``back ticks #`");
+        assertThat(escapeGlob("escaped content two `back `ticks")).isEqualTo("`escaped content two ``back ``ticks`");
     }
 }

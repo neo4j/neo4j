@@ -19,6 +19,8 @@
  */
 package org.neo4j.internal.kernel.api.security;
 
+import org.neo4j.internal.helpers.NameUtil;
+
 public record ProcedureSegment(String procedure) implements Segment {
     @Override
     public boolean satisfies(Segment segment) {
@@ -30,7 +32,11 @@ public record ProcedureSegment(String procedure) implements Segment {
 
     @Override
     public String toCypherSnippet() {
-        return nullToStar(procedure);
+        if (procedure == null) {
+            return "*";
+        } else {
+            return NameUtil.escapeGlob(procedure);
+        }
     }
 
     @Override

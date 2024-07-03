@@ -19,6 +19,8 @@
  */
 package org.neo4j.internal.kernel.api.security;
 
+import org.neo4j.internal.helpers.NameUtil;
+
 public record FunctionSegment(String function) implements Segment {
 
     @Override
@@ -31,7 +33,11 @@ public record FunctionSegment(String function) implements Segment {
 
     @Override
     public String toCypherSnippet() {
-        return nullToStar(function);
+        if (function == null) {
+            return "*";
+        } else {
+            return NameUtil.escapeGlob(function);
+        }
     }
 
     @Override

@@ -31,6 +31,7 @@ public class NameUtil {
     // Java allows for multiple 'u' in escaped unicodes
     private static final Pattern BACKTICK_UNICODE_ESCAPED = Pattern.compile("\\\\u+0060");
     private static final Pattern ALPHA_NUMERIC = Pattern.compile("^[\\p{L}_][\\p{L}0-9_]*");
+    private static final Pattern GLOB = Pattern.compile("^[\\p{L}_?*][\\p{L}0-9_*?.]*");
 
     public static String escapeBackticks(String string) {
         return BACKTICK_UNICODE_ESCAPED.matcher(string).replaceAll(BACKTICK).replace(BACKTICK, BACKTICK_ESCAPED);
@@ -45,11 +46,7 @@ public class NameUtil {
     }
 
     public static String escapeName(String string) {
-        Matcher alphaNumericMatcher = ALPHA_NUMERIC.matcher(string);
-        if (!alphaNumericMatcher.matches()) {
-            return forceEscapeName(string);
-        }
-        return string;
+        return escape(ALPHA_NUMERIC, string);
     }
 
     public static String unescapeName(String string) {
@@ -60,5 +57,17 @@ public class NameUtil {
         } else {
             return string;
         }
+    }
+
+    public static String escapeGlob(String string) {
+        return escape(GLOB, string);
+    }
+
+    private static String escape(Pattern pattern, String string) {
+        Matcher matcher = pattern.matcher(string);
+        if (!matcher.matches()) {
+            return forceEscapeName(string);
+        }
+        return string;
     }
 }
