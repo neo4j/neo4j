@@ -247,7 +247,7 @@ abstract class ProfilePageCacheStatsTestBase[CONTEXT <: RuntimeContext](
       withClue(s"Incorrect page cache stats for operator $i.") {
         if (expectedOperatorPageCacheStats.contains(i)) {
           val expectedBehaviour = expectedOperatorPageCacheStats(i)
-          withClue("hits: ") {
+          withClue(s"hits: (hits=$hits, misses=$misses)") {
             expectedBehaviour.op match {
               case PageCacheStatsAssertion.Equal =>
                 hits should be(expectedBehaviour.stats.hits)
@@ -257,7 +257,7 @@ abstract class ProfilePageCacheStatsTestBase[CONTEXT <: RuntimeContext](
                 hits should be <= expectedBehaviour.stats.hits
             }
           }
-          withClue("misses: ") {
+          withClue(s"misses: (hits=$hits, misses=$misses)") {
             expectedBehaviour.op match {
               case PageCacheStatsAssertion.Equal =>
                 misses should be(expectedBehaviour.stats.misses)
@@ -268,10 +268,10 @@ abstract class ProfilePageCacheStatsTestBase[CONTEXT <: RuntimeContext](
             }
           }
         } else {
-          withClue("hits: ") {
+          withClue(s"hits: (hits=$hits, misses=$misses)") {
             hits should be >= 0L
           }
-          withClue("misses: ") {
+          withClue(s"misses: (hits=$hits, misses=$misses)") {
             misses should be >= 0L
           }
         }
