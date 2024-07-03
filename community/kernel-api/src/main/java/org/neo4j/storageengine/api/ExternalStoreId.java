@@ -29,6 +29,9 @@ import java.util.UUID;
  * store copy, format migration, restore, etc.
  */
 public record ExternalStoreId(UUID id) {
+    public static final String DESCRIPTION =
+            "Database identifier exposed as external store identity. Generated on creation and never updated";
+
     public ExternalStoreId {
         requireNonNull(id);
     }

@@ -86,10 +86,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord, NoStoreHe
     // Most values stored in the store take more than one slot.
     // Position is information about which slots are occupied by which value.
     private enum Position {
-        EXTERNAL_STORE_UUID(
-                0,
-                2,
-                "Database identifier exposed as external store identity. Generated on creation and never updated"),
+        EXTERNAL_STORE_UUID(0, 2, ExternalStoreId.DESCRIPTION),
         DATABASE_ID(2, 2, "The last used DatabaseId for this database"),
         LEGACY_STORE_VERSION(
                 4,
