@@ -54,23 +54,42 @@ public interface Location {
      */
     interface Remote extends Location {
 
-        RemoteUri getUri();
-
         /**
          * A Remote.Internal location refers to a graph/database running on another instance of Neo4j within
          * the same DBMS.
          */
-        record Internal(long graphId, DatabaseReferenceImpl.Internal databaseReference, RemoteUri uri)
-                implements Location.Remote {
+        interface Internal extends Remote {
 
-            @Override
-            public String getDatabaseName() {
-                return databaseReference.databaseId().name();
+            /**
+             * A Remote.Internal.Routing location refers to a graph/database running on another instance of
+             * Neo4j within the same DBMS.
+             * This location does not indicate a concrete server and finding the servers with the graph/database
+             * and choosing among them is left to the driver responsible for the in-cluster communication.
+             */
+            record Routing(long graphId, DatabaseReferenceImpl.Internal databaseReference)
+                    implements Location.Remote.Internal {
+
+                @Override
+                public String getDatabaseName() {
+                    return databaseReference.databaseId().name();
+                }
             }
 
-            @Override
-            public RemoteUri getUri() {
-                return uri;
+            /**
+             * A Remote.Internal.Direct location refers to a graph/database running on a concrete instance of
+             * Neo4j within the same DBMS.
+             */
+            record Direct(long graphId, DatabaseReferenceImpl.Internal databaseReference, RemoteUri uri)
+                    implements Location.Remote.Internal {
+
+                @Override
+                public String getDatabaseName() {
+                    return databaseReference.databaseId().name();
+                }
+
+                public RemoteUri getUri() {
+                    return uri;
+                }
             }
         }
 
@@ -84,7 +103,6 @@ public interface Location {
                 return databaseReference.targetAlias().name();
             }
 
-            @Override
             public RemoteUri getUri() {
                 return databaseReference.externalUri();
             }
