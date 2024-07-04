@@ -176,9 +176,9 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer {
         }
         var lastClosedTxData = metadataProvider.getLastClosedTransaction();
         var lastClosedTransaction = lastClosedTxData.transactionId();
-        var lastAppendBatch = metadataProvider.lastBatch();
+        var lastClosedBatch = metadataProvider.getLastClosedBatch();
         return checkpointByExternalParams(
-                lastClosedTransaction, lastClosedTxData.logPosition(), lastAppendBatch.appendIndex(), triggerInfo);
+                lastClosedTransaction, lastClosedTxData.logPosition(), lastClosedBatch.appendIndex(), triggerInfo);
     }
 
     private long checkpointByExternalParams(

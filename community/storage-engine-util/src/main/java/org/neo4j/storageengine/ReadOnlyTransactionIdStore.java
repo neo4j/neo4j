@@ -24,6 +24,7 @@ import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.log.AppendBatchInfo;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogTailLogVersionsMetadata;
+import org.neo4j.storageengine.api.ClosedBatchMetadata;
 import org.neo4j.storageengine.api.ClosedTransactionMetadata;
 import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.storageengine.api.TransactionIdStore;
@@ -81,6 +82,11 @@ public class ReadOnlyTransactionIdStore implements TransactionIdStore {
     }
 
     @Override
+    public ClosedBatchMetadata getLastClosedBatch() {
+        return new ClosedBatchMetadata(lastBatch.appendIndex(), lastCommittedTransaction.kernelVersion(), logPosition);
+    }
+
+    @Override
     public void setLastCommittedAndClosedTransactionId(
             long transactionId,
             long transactionAppendIndex,
@@ -104,6 +110,11 @@ public class ReadOnlyTransactionIdStore implements TransactionIdStore {
             int checksum,
             long commitTimestamp,
             long consensusIndex) {
+        throw new UnsupportedOperationException("Read-only transaction ID store");
+    }
+
+    @Override
+    public void batchClosed(long appendIndex, KernelVersion kernelVersion, LogPosition logPositionAfter) {
         throw new UnsupportedOperationException("Read-only transaction ID store");
     }
 

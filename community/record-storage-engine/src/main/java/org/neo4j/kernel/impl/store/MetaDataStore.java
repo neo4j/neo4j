@@ -57,6 +57,7 @@ import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogTailLogVersionsMetadata;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.storageengine.StoreFileClosedException;
+import org.neo4j.storageengine.api.ClosedBatchMetadata;
 import org.neo4j.storageengine.api.ClosedTransactionMetadata;
 import org.neo4j.storageengine.api.ExternalStoreId;
 import org.neo4j.storageengine.api.MetadataProvider;
@@ -120,6 +121,8 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord, NoStoreHe
     private final HighestTransactionId highestCommittedTransaction;
 
     private final OutOfOrderSequence lastClosedTx;
+    private final OutOfOrderSequence lastClosedBatch;
+
     private volatile boolean closed;
     private final AtomicLong appendIndex;
     private volatile AppendBatchInfo lastBatch;
@@ -163,17 +166,16 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord, NoStoreHe
         var logPosition = logTailMetadata.getLastTransactionLogPosition();
         lastBatch = logTailMetadata.lastBatch();
         appendIndex = new AtomicLong(lastBatch.appendIndex());
-        lastClosedTx = new ArrayQueueOutOfOrderSequence(
-                lastCommittedTx.id(),
-                200,
-                new Meta(
-                        logPosition.getLogVersion(),
-                        logPosition.getByteOffset(),
-                        lastCommittedTx.kernelVersion().version(),
-                        lastCommittedTx.checksum(),
-                        lastCommittedTx.commitTimestamp(),
-                        lastCommittedTx.consensusIndex(),
-                        lastCommittedTx.appendIndex()));
+        var initialMeta = new Meta(
+                logPosition.getLogVersion(),
+                logPosition.getByteOffset(),
+                lastCommittedTx.kernelVersion().version(),
+                lastCommittedTx.checksum(),
+                lastCommittedTx.commitTimestamp(),
+                lastCommittedTx.consensusIndex(),
+                lastCommittedTx.appendIndex());
+        lastClosedTx = new ArrayQueueOutOfOrderSequence(lastCommittedTx.id(), 128, initialMeta);
+        lastClosedBatch = new ArrayQueueOutOfOrderSequence(lastBatch.appendIndex(), 128, initialMeta);
     }
 
     private static ImmutableSet<OpenOption> buildOptions(ImmutableSet<OpenOption> openOptions) {
@@ -240,16 +242,16 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord, NoStoreHe
             long appendIndex) {
         assertNotClosed();
         lastCommittingTx.set(transactionId);
-        lastClosedTx.set(
-                transactionId,
-                new Meta(
-                        logVersion,
-                        byteOffset,
-                        kernelVersion.version(),
-                        checksum,
-                        commitTimestamp,
-                        consensusIndex,
-                        transactionAppendIndex));
+        var meta = new Meta(
+                logVersion,
+                byteOffset,
+                kernelVersion.version(),
+                checksum,
+                commitTimestamp,
+                consensusIndex,
+                transactionAppendIndex);
+        lastClosedBatch.set(appendIndex, meta);
+        lastClosedTx.set(transactionId, meta);
         highestCommittedTransaction.set(
                 transactionId, transactionAppendIndex, kernelVersion, checksum, commitTimestamp, consensusIndex);
         this.appendIndex.set(appendIndex);
@@ -354,6 +356,12 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord, NoStoreHe
     }
 
     @Override
+    public ClosedBatchMetadata getLastClosedBatch() {
+        assertNotClosed();
+        return new ClosedBatchMetadata(lastClosedBatch.get());
+    }
+
+    @Override
     public void transactionClosed(
             long transactionId,
             long appendIndex,
@@ -376,6 +384,20 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord, NoStoreHe
     }
 
     @Override
+    public void batchClosed(long appendIndex, KernelVersion kernelVersion, LogPosition logPositionAfter) {
+        lastClosedBatch.offer(
+                appendIndex,
+                new Meta(
+                        logPositionAfter.getLogVersion(),
+                        logPositionAfter.getByteOffset(),
+                        kernelVersion.version(),
+                        UNKNOWN_TX_CHECKSUM,
+                        UNKNOWN_TX_COMMIT_TIMESTAMP,
+                        UNKNOWN_CONSENSUS_INDEX,
+                        appendIndex));
+    }
+
+    @Override
     public void resetLastClosedTransaction(
             long transactionId,
             long appendIndex,
@@ -386,16 +408,16 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord, NoStoreHe
             long commitTimestamp,
             long consensusIndex) {
         assertNotClosed();
-        lastClosedTx.set(
-                transactionId,
-                new Meta(
-                        logVersion,
-                        byteOffset,
-                        kernelVersion.version(),
-                        checksum,
-                        commitTimestamp,
-                        consensusIndex,
-                        appendIndex));
+        var meta = new Meta(
+                logVersion,
+                byteOffset,
+                kernelVersion.version(),
+                checksum,
+                commitTimestamp,
+                consensusIndex,
+                appendIndex);
+        lastClosedBatch.set(appendIndex, meta);
+        lastClosedTx.set(transactionId, meta);
     }
 
     @Override

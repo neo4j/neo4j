@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
+import static org.neo4j.storageengine.AppendIndexProvider.UNKNOWN_APPEND_INDEX;
+
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.storageengine.api.Commitment;
 import org.neo4j.storageengine.api.TransactionIdStore;
@@ -28,12 +30,15 @@ public class TransactionCommitment implements Commitment {
     private final TransactionIdStore transactionIdStore;
     private boolean committed;
     private long transactionId;
-    private long appendIndex;
     private int checksum;
     private long consensusIndex;
     private KernelVersion kernelVersion;
     private LogPosition logPositionAfterCommit;
     private long transactionCommitTimestamp;
+
+    private long firstAppendIndex;
+    private long currentBatchAppendIndex = UNKNOWN_APPEND_INDEX;
+    private long lastClosedAppendIndex = UNKNOWN_APPEND_INDEX;
 
     TransactionCommitment(TransactionIdStore transactionIdStore) {
         this.transactionIdStore = transactionIdStore;
@@ -52,24 +57,29 @@ public class TransactionCommitment implements Commitment {
         this.logPositionAfterCommit = logPositionAfterCommit;
         this.checksum = checksum;
         this.consensusIndex = consensusIndex;
+        this.currentBatchAppendIndex = appendIndex;
         transactionIdStore.appendBatch(appendIndex, logPositionAfterCommit);
     }
 
     @Override
-    public void publishAsCommitted(long transactionCommitTimestamp, long appendIndex) {
+    public void publishAsCommitted(long transactionCommitTimestamp, long firstAppendIndex) {
         this.committed = true;
-        this.appendIndex = appendIndex;
+        this.firstAppendIndex = firstAppendIndex;
         this.transactionCommitTimestamp = transactionCommitTimestamp;
         transactionIdStore.transactionCommitted(
-                transactionId, appendIndex, kernelVersion, checksum, transactionCommitTimestamp, consensusIndex);
+                transactionId, firstAppendIndex, kernelVersion, checksum, transactionCommitTimestamp, consensusIndex);
     }
 
     @Override
     public void publishAsClosed() {
+        if (lastClosedAppendIndex != currentBatchAppendIndex) {
+            transactionIdStore.batchClosed(currentBatchAppendIndex, kernelVersion, logPositionAfterCommit);
+            lastClosedAppendIndex = currentBatchAppendIndex;
+        }
         if (committed) {
             transactionIdStore.transactionClosed(
                     transactionId,
-                    appendIndex,
+                    firstAppendIndex,
                     kernelVersion,
                     logPositionAfterCommit.getLogVersion(),
                     logPositionAfterCommit.getByteOffset(),

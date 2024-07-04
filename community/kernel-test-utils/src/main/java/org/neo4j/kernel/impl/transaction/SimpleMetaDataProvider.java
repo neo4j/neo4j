@@ -30,6 +30,7 @@ import org.neo4j.io.pagecache.context.TransactionIdSnapshot;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.log.AppendBatchInfo;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.storageengine.api.ClosedBatchMetadata;
 import org.neo4j.storageengine.api.ClosedTransactionMetadata;
 import org.neo4j.storageengine.api.ExternalStoreId;
 import org.neo4j.storageengine.api.MetadataProvider;
@@ -134,6 +135,11 @@ public class SimpleMetaDataProvider implements MetadataProvider {
     }
 
     @Override
+    public ClosedBatchMetadata getLastClosedBatch() {
+        return transactionIdStore.getLastClosedBatch();
+    }
+
+    @Override
     public void setLastCommittedAndClosedTransactionId(
             long transactionId,
             long transactionAppendIndex,
@@ -177,6 +183,11 @@ public class SimpleMetaDataProvider implements MetadataProvider {
                 checksum,
                 commitTimestamp,
                 consensusIndex);
+    }
+
+    @Override
+    public void batchClosed(long appendIndex, KernelVersion kernelVersion, LogPosition logPositionAfter) {
+        transactionIdStore.batchClosed(appendIndex, kernelVersion, logPositionAfter);
     }
 
     @Override

@@ -160,6 +160,23 @@ public interface TransactionIdStore {
     ClosedTransactionMetadata getLastClosedTransaction();
 
     /**
+     * Returns information about the last closed transactional batch, i.e.
+     * append index id as well as the log position following the last entry in the transaction log.
+     * @return information about the last closed (highest gap-free) batch.
+     */
+    ClosedBatchMetadata getLastClosedBatch();
+
+    /**
+     *
+     * Signals that a batch with the given append index has been fully applied. Calls to this method
+     * may come in out-of-transaction-id order.
+     * @param appendIndex append index of the closed batch
+     * @param kernelVersion the closed batch kernel version
+     * @param logPositionAfter log position after closed batch
+     */
+    void batchClosed(long appendIndex, KernelVersion kernelVersion, LogPosition logPositionAfter);
+
+    /**
      * Used by recovery, where last committed/closed transaction ids are set.
      *
      * @param transactionId transaction id that will be the last closed/committed id.

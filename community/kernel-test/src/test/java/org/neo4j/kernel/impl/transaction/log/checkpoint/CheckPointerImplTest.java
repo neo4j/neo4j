@@ -65,6 +65,7 @@ import org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.Panic;
+import org.neo4j.storageengine.api.ClosedBatchMetadata;
 import org.neo4j.storageengine.api.ClosedTransactionMetadata;
 import org.neo4j.storageengine.api.MetadataProvider;
 import org.neo4j.storageengine.api.StoreId;
@@ -440,6 +441,8 @@ class CheckPointerImplTest {
         when(metadataProvider.getLastClosedTransactionId())
                 .thenReturn(initialAppendIndex, transactionId, transactionId);
         when(metadataProvider.lastBatch()).thenReturn(new AppendBatchInfo(TRANSACTION_APPEND_INDEX, logPosition));
+        when(metadataProvider.getLastClosedBatch())
+                .thenReturn(new ClosedBatchMetadata(8, LATEST_KERNEL_VERSION, logPosition));
     }
 
     private class CheckpointCountingLock extends ReentrantLock {
