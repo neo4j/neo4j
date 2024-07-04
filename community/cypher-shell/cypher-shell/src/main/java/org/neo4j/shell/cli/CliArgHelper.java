@@ -33,6 +33,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Locale;
@@ -51,6 +52,7 @@ import net.sourceforge.argparse4j.inf.ArgumentGroup;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import net.sourceforge.argparse4j.inf.ArgumentType;
+import net.sourceforge.argparse4j.inf.FeatureControl;
 import net.sourceforge.argparse4j.inf.MutuallyExclusiveGroup;
 import net.sourceforge.argparse4j.inf.Namespace;
 import org.neo4j.shell.Environment;
@@ -71,6 +73,8 @@ public class CliArgHelper {
     private static final String HISTORY_ENV_VAR = "NEO4J_CYPHER_SHELL_HISTORY";
     private static final String DEFAULT_ADDRESS = format("%s://%s:%d", DEFAULT_SCHEME, DEFAULT_HOST, DEFAULT_PORT);
     private static final AccessMode DEFAULT_ACCESS_MODE = AccessMode.WRITE;
+    public static final Duration DEFAULT_IDLE_TIMEOUT = Duration.ofSeconds(-1);
+    public static final Duration DEFAULT_IDLE_TIMEOUT_DELAY = Duration.ofMinutes(5);
 
     private final Environment environment;
 
@@ -108,8 +112,7 @@ public class CliArgHelper {
         final CliArgs cliArgs = new CliArgs();
         final ArgumentParser parser = setupParser();
         preValidateArguments(parser, args);
-        final Namespace ns = parser.parseArgs(args);
-        return getCliArgs(cliArgs, parser, ns);
+        return getCliArgs(cliArgs, parser, parser.parseArgs(args));
     }
 
     private Optional<String> addressFromEnvironment() {
@@ -196,6 +199,9 @@ public class CliArgHelper {
         cliArgs.setHistoryBehaviour(historyBehaviour);
 
         cliArgs.setNotificationsEnabled(ns.getBoolean("enable-notifications"));
+
+        ofNullable(ns.<Duration>get("idle-timeout")).ifPresent(cliArgs::setIdleTimeout);
+        ofNullable(ns.<Duration>get("hidden-idle-timeout-delay")).ifPresent(cliArgs::setIdleTimeoutDelay);
 
         return cliArgs;
     }
@@ -321,10 +327,11 @@ public class CliArgHelper {
 
         parser.addArgument("--format")
                 .help(
-                        "Desired output format. Displays the results in tabular format if you use the shell interactively "
-                                + "and with minimal formatting if you use it for scripting.\n"
-                                + "`verbose` displays results in tabular format and prints statistics.\n"
-                                + "`plain` displays data with minimal formatting.")
+                        """
+                                Desired output format. Displays the results in tabular format if you use the shell interactively \
+                                and with minimal formatting if you use it for scripting.
+                                `verbose` displays results in tabular format and prints statistics.
+                                `plain` displays data with minimal formatting.""")
                 .choices(new CollectionArgumentChoice<>(
                         Format.AUTO.name().toLowerCase(Locale.ROOT),
                         Format.VERBOSE.name().toLowerCase(Locale.ROOT),
@@ -394,6 +401,17 @@ public class CliArgHelper {
                 .dest("enable-notifications")
                 .action(Arguments.storeTrue());
 
+        parser.addArgument("--idle-timeout")
+                .dest("idle-timeout")
+                .type(new TimeoutHandler())
+                .help(
+                        "Closes the application after the specified amount of idle time in interactive mode. You can specify the duration using the format `<hours>h<minutes>m<seconds>s`, for example `1h` (1 hour), `1h30m` (1 hour 30 minutes), or `30m` (30 minutes).");
+
+        parser.addArgument("--hidden-idle-timeout-delay")
+                .dest("hidden-idle-timeout-delay")
+                .type(new TimeoutHandler())
+                .help(FeatureControl.SUPPRESS);
+
         return parser;
     }
 
@@ -443,6 +461,22 @@ public class CliArgHelper {
                 return new CypherShellTerminal.FileHistory(Path.of(path));
             } catch (InvalidPathException e) {
                 throw new IllegalArgumentException("Invalid history file path " + path);
+            }
+        }
+    }
+
+    private static class TimeoutHandler implements ArgumentType<Duration> {
+
+        @Override
+        public Duration convert(ArgumentParser parser, Argument arg, String value) throws ArgumentParserException {
+            try {
+                if ("disable".equalsIgnoreCase(value)) return null;
+                else return Duration.parse("PT" + value);
+            } catch (Exception e) {
+                throw new ArgumentParserException(
+                        "Invalid timeout value, valid values are for example 1h30m (1 hour and 30 minutes), 1h (1 hour), 10m (10 minutes): "
+                                + value,
+                        parser);
             }
         }
     }

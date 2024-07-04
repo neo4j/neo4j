@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
+import java.time.Duration;
 import java.util.function.Supplier;
 import org.jline.keymap.KeyMap;
 import org.jline.reader.LineReader;
@@ -54,6 +55,8 @@ public class CypherShellTerminalBuilder {
     private ParameterService parameters;
     private Supplier<SimplePrompt> simplePromptSupplier = SimplePrompt::defaultPrompt;
     private boolean enableCypherCompletion = false;
+    private Duration idleTimeout;
+    private Duration idleDelay;
 
     /** if enabled is true, this is an interactive terminal that supports user input */
     public CypherShellTerminalBuilder interactive(boolean isInteractive) {
@@ -68,6 +71,12 @@ public class CypherShellTerminalBuilder {
 
     public CypherShellTerminalBuilder parameters(ParameterService parameters) {
         this.parameters = parameters;
+        return this;
+    }
+
+    public CypherShellTerminalBuilder idleTimeout(Duration idleTimeout, Duration delay) {
+        this.idleTimeout = idleTimeout;
+        this.idleDelay = delay;
         return this;
     }
 
@@ -151,7 +160,7 @@ public class CypherShellTerminalBuilder {
 
         bindKeyPadKeys(reader);
 
-        return new JlineTerminal(reader, isInteractive, printer, simplePromptSupplier);
+        return new JlineTerminal(reader, isInteractive, printer, simplePromptSupplier, idleTimeout, idleDelay);
     }
 
     public static CypherShellTerminalBuilder terminalBuilder() {

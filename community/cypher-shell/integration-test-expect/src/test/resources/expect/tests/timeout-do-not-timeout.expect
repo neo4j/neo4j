@@ -1,0 +1,18 @@
+#!/usr/bin/expect -f
+
+# High risk of this test becoming flaky, the --idle-timeout might need to be increased.
+
+set extra_args {"--idle-timeout" "5s" "--hidden-idle-timeout-delay" "0.2s"}
+source "common.expect"
+
+expectPrompt
+
+# Sleeps a total of 10 seconds
+foreach char [split "return 1 as result;" ""] {
+    send "$char"
+    sleep 0.5
+}
+send "\r"
+
+sendQuery ":exit"
+expectCleanExit

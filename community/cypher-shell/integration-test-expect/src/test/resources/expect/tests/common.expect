@@ -45,8 +45,13 @@ proc expectCleanExit {} {
 
 # Start Cypher Shell
 # ------------------
+#
+set default_args {"-a" $neo4j_address "-u" $neo4j_user "-p" $neo4j_password}
+if {![info exists extra_args]} {
+    set extra_args {}
+}
 
-spawn "${cypher_shell_path}" -a "$neo4j_address" -u "${neo4j_user}" -p "${neo4j_password}"
+eval spawn $cypher_shell_path [concat $default_args $extra_args]
 
 expect_after {
     eof     { puts stderr "\rError: Unexpected EOF\r"; exit 1 }

@@ -1,0 +1,7 @@
+#!/usr/bin/expect -f
+
+set extra_args {"--idle-timeout" "1s" "--hidden-idle-timeout-delay" "1s"}
+source "common.expect"
+
+expect "Timeout after idling"
+expect eof { exit 0 }

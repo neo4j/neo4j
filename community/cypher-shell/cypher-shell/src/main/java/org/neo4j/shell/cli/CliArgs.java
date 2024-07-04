@@ -20,8 +20,11 @@
 package org.neo4j.shell.cli;
 
 import static org.neo4j.shell.DatabaseManager.ABSENT_DB_NAME;
+import static org.neo4j.shell.cli.CliArgHelper.DEFAULT_IDLE_TIMEOUT;
+import static org.neo4j.shell.cli.CliArgHelper.DEFAULT_IDLE_TIMEOUT_DELAY;
 
 import java.net.URI;
+import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 import java.util.logging.Handler;
@@ -57,12 +60,18 @@ public class CliArgs {
     private CypherShellTerminal.HistoryBehaviour historyBehaviour;
     private Handler logHandler;
     private boolean notificationsEnabled;
+    private Duration idleTimeout = DEFAULT_IDLE_TIMEOUT;
+    private Duration idleTimeoutDelay = DEFAULT_IDLE_TIMEOUT_DELAY;
 
     /**
      * Set the username to the primary value, or if null, the fallback value.
      */
     public void setUsername(String primary, String fallback) {
         username = primary == null ? fallback : primary;
+    }
+
+    public Optional<String> getImpersonatedUser() {
+        return impersonatedUser;
     }
 
     public void setImpersonatedUser(String impersonatedUser) {
@@ -258,5 +267,21 @@ public class CliArgs {
 
     public void setNotificationsEnabled(boolean enabled) {
         this.notificationsEnabled = enabled;
+    }
+
+    public void setIdleTimeout(Duration timeout) {
+        this.idleTimeout = timeout;
+    }
+
+    public Duration getIdleTimeout() {
+        return idleTimeout;
+    }
+
+    public void setIdleTimeoutDelay(Duration delay) {
+        this.idleTimeoutDelay = delay;
+    }
+
+    public Duration getIdleTimeoutDelay() {
+        return idleTimeoutDelay;
     }
 }

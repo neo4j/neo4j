@@ -30,7 +30,7 @@ import org.neo4j.shell.printer.AnsiFormattedText;
 /**
  * Handles user input and output.
  */
-public interface CypherShellTerminal {
+public interface CypherShellTerminal extends AutoCloseable {
     int PROMPT_MAX_LENGTH = 50;
 
     /** Start reading statements interactively */
@@ -71,12 +71,12 @@ public interface CypherShellTerminal {
          * Reads any string from the terminal.
          *
          * @param prompt user prompt
-         * @param mask the mask character, null (no mask) or 0 (hide)
+         * @param mask true if input should be masked
          * @return the read line, never null
          * @throws NoMoreInputException if there is no more input (user press ctrl+d for example)
          * @throws UserInterruptException if user interrupted input (user press ctrl+c for example)
          */
-        String simplePrompt(String prompt, Character mask) throws NoMoreInputException, UserInterruptException;
+        String simplePrompt(String prompt, boolean mask) throws NoMoreInputException, UserInterruptException;
     }
 
     interface Writer {

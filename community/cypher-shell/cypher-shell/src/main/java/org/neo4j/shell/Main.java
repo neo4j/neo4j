@@ -24,7 +24,6 @@ import static org.neo4j.shell.ShellRunner.shouldBeInteractive;
 import static org.neo4j.shell.terminal.CypherShellTerminalBuilder.terminalBuilder;
 import static org.neo4j.shell.util.Versions.isPasswordChangeRequiredException;
 
-import java.io.Closeable;
 import java.io.PrintStream;
 import org.neo4j.driver.exceptions.AuthenticationException;
 import org.neo4j.driver.exceptions.Neo4jException;
@@ -46,7 +45,7 @@ import org.neo4j.shell.state.BoltStateHandler;
 import org.neo4j.shell.terminal.CypherShellTerminal;
 import org.neo4j.util.VisibleForTesting;
 
-public class Main implements Closeable {
+public class Main implements AutoCloseable {
     private static final Logger log = Logger.create();
     public static final int EXIT_FAILURE = 1;
     public static final int EXIT_SUCCESS = 0;
@@ -70,6 +69,7 @@ public class Main implements Closeable {
                 .interactive(isInteractive)
                 .logger(printer)
                 .parameters(parameters)
+                .idleTimeout(args.getIdleTimeout(), args.getIdleTimeoutDelay())
                 .build();
         this.shell = new CypherShell(
                 printer, boltStateHandler, new PrettyPrinter(PrettyConfig.from(args, isInteractive)), parameters);
@@ -317,9 +317,10 @@ public class Main implements Closeable {
     @Override
     public void close() {
         try {
+            terminal.close();
             shell.disconnect();
         } catch (Exception e) {
-            log.warn("Failed to disconnect on exit", e);
+            log.warn("Failed to exit", e);
         }
     }
 }

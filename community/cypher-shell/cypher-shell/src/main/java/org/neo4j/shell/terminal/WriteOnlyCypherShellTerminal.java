@@ -71,6 +71,9 @@ public class WriteOnlyCypherShellTerminal implements CypherShellTerminal {
         throw new UnsupportedOperationException();
     }
 
+    @Override
+    public void close() {}
+
     private class ReadOnlyWriter implements Writer {
         @Override
         public void println(String line) {

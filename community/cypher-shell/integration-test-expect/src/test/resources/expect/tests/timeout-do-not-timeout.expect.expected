@@ -1,0 +1,17 @@
+Connected to Neo4j using Bolt protocol version <removed> at neo4j://neo4j:7687 as user neo4j.
+Type :help for a list of available commands or :exit to exit the shell.
+Note that Cypher queries must end with a semicolon.
+neo4j@neo4j> return 1 as result;
+
++--------+
+| result |
++--------+
+| 1      |
++--------+
+
+1 row
+ready to start consuming query after <removed> ms, results consumed after another <removed> ms
+neo4j@neo4j> :exit
+
+
+Bye!

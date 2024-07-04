@@ -74,10 +74,10 @@ public class Connect implements Command {
                         "You cannot provide password only, please provide a username using '-u USERNAME'");
             } else if (user == null) // We know password is null because of the previous if statement
             {
-                user = promptForNonEmptyText("username", null);
-                password = promptForText("password", '*');
+                user = promptForNonEmptyText("username", false);
+                password = promptForText("password", true);
             } else if (password == null) {
-                password = promptForText("password", '*');
+                password = promptForText("password", true);
             }
 
             shell.connect(user, password, database(args));
@@ -96,7 +96,7 @@ public class Connect implements Command {
         return parser;
     }
 
-    private String promptForNonEmptyText(String prompt, Character mask) throws CommandException {
+    private String promptForNonEmptyText(String prompt, boolean mask) throws CommandException {
         String text = promptForText(prompt, mask);
         if (!text.isEmpty()) {
             return text;
@@ -106,7 +106,7 @@ public class Connect implements Command {
         return promptForNonEmptyText(prompt, mask);
     }
 
-    private String promptForText(String prompt, Character mask) throws CommandException {
+    private String promptForText(String prompt, boolean mask) throws CommandException {
         try {
             return terminal.read().simplePrompt(prompt + ": ", mask);
         } catch (NoMoreInputException | UserInterruptException e) {

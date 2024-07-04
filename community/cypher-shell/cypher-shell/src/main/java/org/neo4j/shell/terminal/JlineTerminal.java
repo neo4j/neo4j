@@ -27,11 +27,13 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.PosixFilePermissions;
+import java.time.Duration;
 import java.util.List;
 import java.util.function.Supplier;
 import org.jline.reader.Expander;
 import org.jline.reader.History;
 import org.jline.reader.LineReader;
+import org.jline.reader.MaskingCallback;
 import org.jline.reader.ParsedLine;
 import org.jline.terminal.Terminal;
 import org.neo4j.shell.Historian;
@@ -41,6 +43,7 @@ import org.neo4j.shell.log.Logger;
 import org.neo4j.shell.parser.StatementParser.ParsedStatements;
 import org.neo4j.shell.printer.AnsiFormattedText;
 import org.neo4j.shell.printer.Printer;
+import org.neo4j.shell.timeout.IdleTimeoutService;
 
 /**
  * CypherShellTerminal backed by jline.
@@ -55,12 +58,16 @@ public class JlineTerminal implements CypherShellTerminal {
     private final Writer writer;
     private final boolean isInteractive;
     private final Supplier<SimplePrompt> simplePromptSupplier;
+    private final IdleTimeoutService idleTimeoutService;
+    private final IdleTimeoutHook idleTimeoutHook;
 
     public JlineTerminal(
             LineReader jLineReader,
             boolean isInteractive,
             Printer printer,
-            Supplier<SimplePrompt> simplePromptSupplier) {
+            Supplier<SimplePrompt> simplePromptSupplier,
+            Duration idleTimeout,
+            Duration idleDelay) {
         assert jLineReader.getParser() instanceof StatementJlineParser;
         this.jLineReader = jLineReader;
         this.printer = printer;
@@ -68,6 +75,8 @@ public class JlineTerminal implements CypherShellTerminal {
         this.simplePromptSupplier = simplePromptSupplier;
         this.reader = new JLineReader();
         this.writer = new JLineWriter();
+        this.idleTimeoutService = IdleTimeoutService.create(idleTimeout, idleDelay);
+        this.idleTimeoutHook = new IdleTimeoutHook();
     }
 
     private StatementJlineParser getParser() {
@@ -168,6 +177,11 @@ public class JlineTerminal implements CypherShellTerminal {
         }
     }
 
+    @Override
+    public void close() throws Exception {
+        idleTimeoutService.close();
+    }
+
     private class JlineHistorian implements Historian {
         @Override
         public List<String> getHistory() {
@@ -189,13 +203,17 @@ public class JlineTerminal implements CypherShellTerminal {
     }
 
     private class JLineReader implements Reader {
-        private String readLine(String prompt, Character mask) throws NoMoreInputException, UserInterruptException {
+        private String readLine(String prompt, boolean mask) throws NoMoreInputException, UserInterruptException {
             try {
-                return jLineReader.readLine(prompt, mask);
+                idleTimeoutService.resume();
+                final var hook = mask ? new MaskingIdleTimeoutHook() : idleTimeoutHook;
+                return jLineReader.readLine(prompt, null, hook, null);
             } catch (org.jline.reader.EndOfFileException e) {
                 throw new NoMoreInputException();
             } catch (org.jline.reader.UserInterruptException e) {
                 throw new UserInterruptException(e.getPartialLine());
+            } finally {
+                idleTimeoutService.pause();
             }
         }
 
@@ -205,7 +223,7 @@ public class JlineTerminal implements CypherShellTerminal {
             getParser().setEnableStatementParsing(true);
             jLineReader.setVariable(LineReader.SECONDARY_PROMPT_PATTERN, continuationPromptPattern(prompt));
 
-            var line = readLine(prompt.resetAndRender(), null);
+            var line = readLine(prompt.resetAndRender(), false);
             var parsed = jLineReader.getParsedLine();
 
             if (parsed instanceof ParsedLineStatements statements) {
@@ -230,7 +248,7 @@ public class JlineTerminal implements CypherShellTerminal {
         }
 
         @Override
-        public String simplePrompt(String prompt, Character mask) throws NoMoreInputException, UserInterruptException {
+        public String simplePrompt(String prompt, boolean mask) throws NoMoreInputException, UserInterruptException {
             try {
                 // Temporarily disable history, completion and statement parsing for simple prompts
                 jLineReader.getVariables().put(LineReader.DISABLE_HISTORY, Boolean.TRUE);
@@ -262,6 +280,33 @@ public class JlineTerminal implements CypherShellTerminal {
         @Override
         public String expandVar(String word) {
             return word;
+        }
+    }
+
+    // This is a hack to let us timeout on idle inside of jline
+    private class IdleTimeoutHook implements MaskingCallback {
+        @Override
+        public String display(String line) {
+            idleTimeoutService.imAwake();
+            return line;
+        }
+
+        @Override
+        public String history(String line) {
+            return line;
+        }
+    }
+
+    private class MaskingIdleTimeoutHook implements MaskingCallback {
+        @Override
+        public String display(String line) {
+            idleTimeoutService.imAwake();
+            return "*".repeat(line.length());
+        }
+
+        @Override
+        public String history(String line) {
+            return null;
         }
     }
 
