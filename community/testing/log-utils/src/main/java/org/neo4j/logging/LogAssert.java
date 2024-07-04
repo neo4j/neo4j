@@ -261,6 +261,29 @@ public class LogAssert extends AbstractAssert<LogAssert, AssertableLogProvider> 
         return this;
     }
 
+    /**
+     * Checks that there is only one message that contains all the supplies message snippets.
+     */
+    public LogAssert containsMessageWithAllOnce(String... snippets) {
+        isNotNull();
+
+        var logCalls = actual.getLogCalls();
+        boolean matched = logCalls.stream()
+                        .filter(call -> matchedLogger(call)
+                                && matchedLevel(call)
+                                && Arrays.stream(snippets).allMatch(snippet -> matchedMessage(snippet, call)))
+                        .count()
+                == 1;
+
+        if (!matched) {
+            failWithMessage(
+                    "Expected log to contain a message containing: `%s`. " + "But more than one matches found in:%s",
+                    Arrays.toString(snippets), actual.serialize());
+        }
+
+        return this;
+    }
+
     public LogAssert eachMessageContains(String message) {
         isNotNull();
         for (LogCall logCall : actual.getLogCalls()) {
