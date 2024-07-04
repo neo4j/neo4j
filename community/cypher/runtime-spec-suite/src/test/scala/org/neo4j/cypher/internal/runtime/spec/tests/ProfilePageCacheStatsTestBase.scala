@@ -45,11 +45,10 @@ abstract class ProfilePageCacheStatsTestBase[CONTEXT <: RuntimeContext](
   // This needs to be big enough to trigger some page cache hits & misses
   protected val SIZE = 5000
 
-  val PageCacheIsNotUsed: PageCacheStatsAssertion =
-    PageCacheStatsAssertion(PageCacheStatsAssertion.Equal, PageCacheStats(0, 0))
+  val PageCacheIsNotUsed: PageCacheAssertionOp = PageCacheAssertionOp.Equal(PageCacheStats(0, 0))
 
-  val NoEntryInPageCacheStat: PageCacheStatsAssertion =
-    PageCacheStatsAssertion(PageCacheStatsAssertion.Equal, PageCacheStats(-1, -1))
+  val NoEntryInPageCacheStat: PageCacheAssertionOp =
+    PageCacheAssertionOp.Equal(PageCacheStats(-1, -1))
 
   test("should profile page cache stats of linear plan") {
     givenGraph {
@@ -74,7 +73,7 @@ abstract class ProfilePageCacheStatsTestBase[CONTEXT <: RuntimeContext](
     consume(runtimeResult)
 
     // then
-    val expectedOperatorPageCacheStats: Map[Int, PageCacheStatsAssertion] =
+    val expectedOperatorPageCacheStats: Map[Int, PageCacheAssertionOp] =
       if (canFuse && !isParallel) {
         Map(
           0 -> NoEntryInPageCacheStat, // ProduceResults is part of a fused pipeline
@@ -117,7 +116,7 @@ abstract class ProfilePageCacheStatsTestBase[CONTEXT <: RuntimeContext](
     consume(runtimeResult)
 
     // then
-    val expectedOperatorPageCacheStats: Map[Int, PageCacheStatsAssertion] =
+    val expectedOperatorPageCacheStats: Map[Int, PageCacheAssertionOp] =
       if (canFuse) {
         Map(
           1 -> NoEntryInPageCacheStat, // Aggregation is part of a fused pipeline
@@ -159,7 +158,7 @@ abstract class ProfilePageCacheStatsTestBase[CONTEXT <: RuntimeContext](
     consume(runtimeResult)
 
     // then
-    val expectedOperatorPageCacheStats: Map[Int, PageCacheStatsAssertion] =
+    val expectedOperatorPageCacheStats: Map[Int, PageCacheAssertionOp] =
       if (canFuse) {
         Map(
           2 -> PageCacheIsNotUsed, // A join should not access store
@@ -205,7 +204,7 @@ abstract class ProfilePageCacheStatsTestBase[CONTEXT <: RuntimeContext](
     consume(runtimeResult)
 
     // then
-    val expectedOperatorPageCacheStats: Map[Int, PageCacheStatsAssertion] =
+    val expectedOperatorPageCacheStats: Map[Int, PageCacheAssertionOp] =
       if (canFuse) {
         Map(
           0 -> PageCacheIsNotUsed, // Produce result should not access store
@@ -221,19 +220,50 @@ abstract class ProfilePageCacheStatsTestBase[CONTEXT <: RuntimeContext](
     checkProfilerStatsMakeSense(runtimeResult, 8, expectedOperatorPageCacheStats)
   }
 
-  case class PageCacheStatsAssertion(op: PageCacheStatsAssertion.AssertionOp, stats: PageCacheStats)
+  sealed trait PageCacheAssertionOp {
+    def check(hits: Long, misses: Long): Unit
+  }
 
-  object PageCacheStatsAssertion {
-    sealed trait AssertionOp
-    case object Equal extends AssertionOp
-    case object GreaterThanOrEqual extends AssertionOp
-    case object LessThanOrEqual extends AssertionOp
+  object PageCacheAssertionOp {
+
+    case class Equal(expected: PageCacheStats) extends PageCacheAssertionOp {
+
+      override def check(hits: Long, misses: Long): Unit = {
+        withClue("hits:") {
+          hits shouldBe expected.hits
+        }
+        withClue("missed:") {
+          misses shouldBe expected.misses
+        }
+      }
+    }
+
+    case class GreaterThanOrEqual(expected: PageCacheStats) extends PageCacheAssertionOp {
+
+      override def check(hits: Long, misses: Long): Unit = {
+        withClue("hits:") {
+          hits should be >= expected.hits
+        }
+        withClue("misses:") {
+          misses should be >= expected.misses
+        }
+      }
+    }
+
+    case class SumGreaterThanOrEqual(expected: Long) extends PageCacheAssertionOp {
+
+      override def check(hits: Long, misses: Long): Unit = {
+        withClue(s"$hits + $misses >= $expected?:") {
+          hits + misses should be >= expected
+        }
+      }
+    }
   }
 
   protected def checkProfilerStatsMakeSense(
     runtimeResult: RecordingRuntimeResult,
     numberOfOperators: Int,
-    expectedOperatorPageCacheStats: Map[Int, PageCacheStatsAssertion] = Map.empty,
+    expectedOperatorPageCacheStats: Map[Int, PageCacheAssertionOp] = Map.empty,
     isOnlyOneTransaction: Boolean = true
   ): Unit = {
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
@@ -247,25 +277,8 @@ abstract class ProfilePageCacheStatsTestBase[CONTEXT <: RuntimeContext](
       withClue(s"Incorrect page cache stats for operator $i.") {
         if (expectedOperatorPageCacheStats.contains(i)) {
           val expectedBehaviour = expectedOperatorPageCacheStats(i)
-          withClue(s"hits: (hits=$hits, misses=$misses)") {
-            expectedBehaviour.op match {
-              case PageCacheStatsAssertion.Equal =>
-                hits should be(expectedBehaviour.stats.hits)
-              case PageCacheStatsAssertion.GreaterThanOrEqual =>
-                hits should be >= expectedBehaviour.stats.hits
-              case PageCacheStatsAssertion.LessThanOrEqual =>
-                hits should be <= expectedBehaviour.stats.hits
-            }
-          }
-          withClue(s"misses: (hits=$hits, misses=$misses)") {
-            expectedBehaviour.op match {
-              case PageCacheStatsAssertion.Equal =>
-                misses should be(expectedBehaviour.stats.misses)
-              case PageCacheStatsAssertion.GreaterThanOrEqual =>
-                misses should be >= expectedBehaviour.stats.misses
-              case PageCacheStatsAssertion.LessThanOrEqual =>
-                misses should be(expectedBehaviour.stats.misses)
-            }
+          withClue(s"hits=$hits, misses=$misses)") {
+            expectedBehaviour.check(hits, misses)
           }
         } else {
           withClue(s"hits: (hits=$hits, misses=$misses)") {
@@ -373,12 +386,12 @@ trait TransactionForeachPageCacheStatsTestBase[CONTEXT <: RuntimeContext] extend
       consume(runtimeResult)
 
       // then
-      val expectedOperatorPageCacheStats: Map[Int, PageCacheStatsAssertion] =
+      val expectedOperatorPageCacheStats: Map[Int, PageCacheAssertionOp] =
         Map(
           0 -> PageCacheIsNotUsed, // produceResult
           1 -> PageCacheIsNotUsed, // transactionForeach
           2 -> PageCacheIsNotUsed, // emptyResult
-          3 -> PageCacheStatsAssertion(PageCacheStatsAssertion.GreaterThanOrEqual, PageCacheStats(1, 0)), // allNodeScan
+          3 -> PageCacheAssertionOp.SumGreaterThanOrEqual(20), // allNodeScan (at least one per incoming from unwind)
           4 -> PageCacheIsNotUsed, // unwind
           5 -> PageCacheIsNotUsed // argument
         )
@@ -413,11 +426,11 @@ trait TransactionForeachPageCacheStatsTestBase[CONTEXT <: RuntimeContext] extend
       consume(runtimeResult)
 
       // then
-      val expectedOperatorPageCacheStats: Map[Int, PageCacheStatsAssertion] =
+      val expectedOperatorPageCacheStats: Map[Int, PageCacheAssertionOp] =
         Map(
           0 -> PageCacheIsNotUsed, // produceResult
           1 -> PageCacheIsNotUsed, // transactionApply
-          2 -> PageCacheStatsAssertion(PageCacheStatsAssertion.GreaterThanOrEqual, PageCacheStats(1, 0)), // allNodeScan
+          3 -> PageCacheAssertionOp.SumGreaterThanOrEqual(2), // allNodeScan (at least one per incoming from unwind)
           3 -> PageCacheIsNotUsed, // unwind
           4 -> PageCacheIsNotUsed // argument
         )
@@ -457,19 +470,15 @@ trait TransactionForeachPageCacheStatsTestBase[CONTEXT <: RuntimeContext] extend
       consume(runtimeResult)
 
       // then
-      val expectedOperatorPageCacheStats: Map[Int, PageCacheStatsAssertion] =
+      val expectedOperatorPageCacheStats: Map[Int, PageCacheAssertionOp] =
         Map(
           0 -> PageCacheIsNotUsed, // produceResult
-          1 -> PageCacheStatsAssertion(
-            PageCacheStatsAssertion.GreaterThanOrEqual,
-            PageCacheStats(1, 1)
-          ), // transactionForeach
+          1 ->
+            PageCacheAssertionOp.GreaterThanOrEqual(PageCacheStats(1, 1)), // transactionForeach
           2 -> PageCacheIsNotUsed, // emptyResult
           3 -> PageCacheIsNotUsed, // create
-          4 -> PageCacheStatsAssertion(
-            PageCacheStatsAssertion.GreaterThanOrEqual,
-            PageCacheStats(1, 0)
-          ), // nodeByLabelScan
+          4 ->
+            PageCacheAssertionOp.GreaterThanOrEqual(PageCacheStats(1, 0)), // nodeByLabelScan
           5 -> PageCacheIsNotUsed, // unwind
           6 -> PageCacheIsNotUsed // argument
         )
@@ -513,29 +522,17 @@ trait TransactionForeachPageCacheStatsTestBase[CONTEXT <: RuntimeContext] extend
       consume(runtimeResult)
 
       // then
-      val expectedOperatorPageCacheStats: Map[Int, PageCacheStatsAssertion] =
+      val expectedOperatorPageCacheStats: Map[Int, PageCacheAssertionOp] =
         Map(
           0 -> PageCacheIsNotUsed, // produceResult
-          1 -> PageCacheStatsAssertion(
-            PageCacheStatsAssertion.GreaterThanOrEqual,
-            PageCacheStats(1, 1)
-          ), // transactionForeach
+          1 -> PageCacheAssertionOp.GreaterThanOrEqual(PageCacheStats(1, 1)), // transactionForeach
           2 -> PageCacheIsNotUsed, // emptyResult
           3 -> PageCacheIsNotUsed, // create
-          4 -> PageCacheStatsAssertion(
-            PageCacheStatsAssertion.GreaterThanOrEqual,
-            PageCacheStats(1, 0)
-          ), // nodeByLabelScan
-          5 -> PageCacheStatsAssertion(
-            PageCacheStatsAssertion.GreaterThanOrEqual,
-            PageCacheStats(1, 1)
-          ), // transactionForeach
+          4 -> PageCacheAssertionOp.GreaterThanOrEqual(PageCacheStats(1, 0)), // nodeByLabelScan
+          5 -> PageCacheAssertionOp.GreaterThanOrEqual(PageCacheStats(1, 1)), // transactionForeach
           6 -> PageCacheIsNotUsed, // emptyResult
           7 -> PageCacheIsNotUsed, // create
-          8 -> PageCacheStatsAssertion(
-            PageCacheStatsAssertion.GreaterThanOrEqual,
-            PageCacheStats(1, 0)
-          ), // nodeByLabelScan
+          8 -> PageCacheAssertionOp.GreaterThanOrEqual(PageCacheStats(1, 0)), // nodeByLabelScan
           9 -> PageCacheIsNotUsed, // unwind
           10 -> PageCacheIsNotUsed // argument
         )
