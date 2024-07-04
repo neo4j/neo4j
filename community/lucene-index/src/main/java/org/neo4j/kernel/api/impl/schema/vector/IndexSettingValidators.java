@@ -80,7 +80,7 @@ class IndexSettingValidators {
         protected Valid trustIsValid(SettingsAccessor accessor) {
             final VALUE rawValue = accessor.get(setting);
             final var value = missing(rawValue) ? readDefault : map(rawValue);
-            return new Valid(setting, value, rawValue);
+            return new Valid(setting, value, map(value));
         }
 
         protected IndexSetting setting() {
@@ -109,7 +109,7 @@ class IndexSettingValidators {
             if (!missing(rawValue)) {
                 return new UnrecognizedSetting(setting.getSettingName());
             }
-            return new Valid(setting, readDefault, Values.NO_VALUE);
+            return new Valid(setting, readDefault, map(readDefault));
         }
     }
 

@@ -29,6 +29,7 @@ import java.util.Objects;
 import org.eclipse.collections.api.RichIterable;
 import org.eclipse.collections.api.block.predicate.Predicate;
 import org.eclipse.collections.api.map.sorted.ImmutableSortedMap;
+import org.eclipse.collections.impl.block.factory.Predicates;
 import org.neo4j.graphdb.schema.IndexSetting;
 import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexConfigValidationRecords;
@@ -86,14 +87,16 @@ public class VectorIndexConfigUtils {
         return toIndexConfig(validRecords, valid -> true);
     }
 
-    static IndexConfig toIndexConfig(RichIterable<Valid> validRecords, RichIterable<IndexSetting> filter) {
-        return toIndexConfig(validRecords, valid -> filter.contains(valid.setting()));
+    static IndexConfig toIndexConfig(RichIterable<Valid> validRecords, RichIterable<String> validSettingNames) {
+        return toIndexConfig(validRecords, Predicates.attributeIn(Valid::settingName, validSettingNames));
     }
 
     static IndexConfig toIndexConfig(RichIterable<Valid> validRecords, Predicate<Valid> filter) {
         return IndexConfig.with(validRecords
                 .asLazy()
                 .select(filter)
+                .select(Predicates.attributeNotNull(Valid::stored))
+                .select(Predicates.attributeNotEqual(Valid::stored, Values.NO_VALUE))
                 .toMap(valid -> valid.setting().getSettingName(), Valid::stored));
     }
 

@@ -120,7 +120,7 @@ public interface VectorIndexSettingsValidator {
             final var validRecords = validationRecords.validRecords();
             return new VectorIndexConfig(
                     descriptor,
-                    toIndexConfig(validRecords, settings.settings()),
+                    toIndexConfig(validRecords, validSettingNames),
                     toValidSettings(validRecords),
                     validSettingNames,
                     handledSettingNames);
@@ -128,7 +128,7 @@ public interface VectorIndexSettingsValidator {
 
         @Override
         public VectorIndexConfig trustIsValidToVectorIndexConfig(SettingsAccessor settings) {
-            final var validRecords = validators.asLazy().collect(validator -> validator.trustIsValid(settings));
+            final var validRecords = validators.collect(validator -> validator.trustIsValid(settings));
             return new VectorIndexConfig(
                     descriptor,
                     toIndexConfig(validRecords),
