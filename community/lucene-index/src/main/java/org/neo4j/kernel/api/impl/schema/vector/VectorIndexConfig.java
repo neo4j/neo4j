@@ -20,6 +20,7 @@
 package org.neo4j.kernel.api.impl.schema.vector;
 
 import static org.neo4j.kernel.api.impl.schema.vector.VectorIndexConfigUtils.DIMENSIONS;
+import static org.neo4j.kernel.api.impl.schema.vector.VectorIndexConfigUtils.QUANTIZATION;
 import static org.neo4j.kernel.api.impl.schema.vector.VectorIndexConfigUtils.SIMILARITY_FUNCTION;
 
 import org.eclipse.collections.api.map.sorted.ImmutableSortedMap;
@@ -28,11 +29,13 @@ import org.neo4j.graphdb.schema.IndexSetting;
 import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexConfigValidationWrapper;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
+import org.neo4j.kernel.api.vector.VectorQuantization;
 import org.neo4j.kernel.api.vector.VectorSimilarityFunction;
 
 public class VectorIndexConfig extends IndexConfigValidationWrapper {
     private final int dimensions;
     private final VectorSimilarityFunction similarityFunction;
+    private final VectorQuantization quantization;
 
     VectorIndexConfig(
             IndexProviderDescriptor descriptor,
@@ -43,6 +46,7 @@ public class VectorIndexConfig extends IndexConfigValidationWrapper {
         super(descriptor, config, settings, validSettingNames, possibleValidSettingNames);
         this.dimensions = get(DIMENSIONS);
         this.similarityFunction = get(SIMILARITY_FUNCTION);
+        this.quantization = get(QUANTIZATION);
     }
 
     public int dimensions() {
@@ -51,5 +55,9 @@ public class VectorIndexConfig extends IndexConfigValidationWrapper {
 
     public VectorSimilarityFunction similarityFunction() {
         return similarityFunction;
+    }
+
+    public VectorQuantization quantization() {
+        return quantization;
     }
 }

@@ -46,6 +46,7 @@ import org.neo4j.values.utils.PrettyPrinter;
 public class VectorIndexConfigUtils {
     static final IndexSetting DIMENSIONS = IndexSetting.vector_Dimensions();
     static final IndexSetting SIMILARITY_FUNCTION = IndexSetting.vector_Similarity_Function();
+    static final IndexSetting QUANTIZATION = IndexSetting.vector_Quantization();
 
     public record Range<T extends Comparable<T>>(T min, T max) {
         public Range {

@@ -33,6 +33,7 @@ import org.neo4j.internal.schema.IndexConfigValidationRecords.UnrecognizedSettin
 import org.neo4j.internal.schema.IndexConfigValidationRecords.Valid;
 import org.neo4j.internal.schema.SettingsAccessor;
 import org.neo4j.kernel.api.impl.schema.vector.VectorIndexConfigUtils.Range;
+import org.neo4j.kernel.api.vector.VectorQuantization;
 import org.neo4j.kernel.api.vector.VectorSimilarityFunction;
 import org.neo4j.values.storable.IntegralValue;
 import org.neo4j.values.storable.NoValue;
@@ -182,6 +183,45 @@ class IndexSettingValidators {
             return similarityFunction == null
                     ? new InvalidValue(pending, similarityFunctions.keysView())
                     : new Valid(setting, similarityFunction, map(similarityFunction));
+        }
+    }
+
+    static final class QuantizationValidator extends IndexSettingValidator<TextValue, VectorQuantization> {
+        private final MapIterable<String, VectorQuantization> quantizations;
+
+        QuantizationValidator(
+                VectorQuantization readDefaultQuantization,
+                VectorQuantization writeDefaultQuantization,
+                MapIterable<String, VectorQuantization> supportedQuantizations) {
+            super(IndexSetting.vector_Quantization(), readDefaultQuantization, writeDefaultQuantization);
+            this.quantizations = supportedQuantizations;
+        }
+
+        @Override
+        VectorQuantization map(TextValue textValue) {
+            return quantizations.get(textValue.stringValue().toUpperCase(Locale.ROOT));
+        }
+
+        @Override
+        Value map(VectorQuantization quantization) {
+            return Values.stringValue(quantization.name());
+        }
+
+        @Override
+        IndexConfigValidationRecord validate(SettingsAccessor accessor) {
+            final var record = extractOrDefault(accessor);
+            if (!(record instanceof final Pending pending)) {
+                return record;
+            }
+
+            if (!(pending.rawValue() instanceof final TextValue textValue)) {
+                return new IncorrectType(pending, TextValue.class);
+            }
+
+            final var quantization = map(textValue);
+            return quantization == null
+                    ? new InvalidValue(pending, quantizations.keysView())
+                    : new Valid(setting, quantization, map(quantization));
         }
     }
 }
