@@ -50,6 +50,11 @@ public class DynamicLongArray extends DynamicNumberArray<LongArray> implements L
     }
 
     @Override
+    public boolean compareAndSwap(long index, long expectedValue, long updatedValue) {
+        return at(index).compareAndSwap(index, expectedValue, updatedValue);
+    }
+
+    @Override
     protected LongArray addChunk(long chunkSize, long base) {
         return factory.newLongArray(chunkSize, defaultValue, base, memoryTracker);
     }

@@ -30,6 +30,10 @@ public interface LongArray extends NumberArray<LongArray> {
 
     void set(long index, long value);
 
+    default boolean compareAndSwap(long index, long expectedValue, long updatedValue) {
+        throw new UnsupportedOperationException();
+    }
+
     @Override
     default void swap(long fromIndex, long toIndex) {
         long intermediary = get(fromIndex);

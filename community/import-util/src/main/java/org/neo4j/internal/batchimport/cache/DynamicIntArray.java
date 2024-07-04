@@ -49,6 +49,11 @@ public class DynamicIntArray extends DynamicNumberArray<IntArray> implements Int
     }
 
     @Override
+    public boolean compareAndSwap(long index, int expectedValue, int updatedValue) {
+        return at(index).compareAndSwap(index, expectedValue, updatedValue);
+    }
+
+    @Override
     protected IntArray addChunk(long chunkSize, long base) {
         return factory.newIntArray(chunkSize, defaultValue, base, memoryTracker);
     }
