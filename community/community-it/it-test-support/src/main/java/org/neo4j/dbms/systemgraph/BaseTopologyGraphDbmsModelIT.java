@@ -46,7 +46,6 @@ import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_SEED_CO
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_SEED_CREDENTIALS_ENCRYPTED_PROPERTY;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_SEED_CREDENTIALS_IV_PROPERTY;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_SEED_URI_PROPERTY;
-import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_SHARD_COUNT_PROPERTY;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_STATUS_PROPERTY;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_STORE_FORMAT_NEW_DB_PROPERTY;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_STORE_RANDOM_ID_PROPERTY;
@@ -59,6 +58,8 @@ import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DELETED_DATABASE
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DELETED_DATABASE_LABEL;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DRIVER_SETTINGS_LABEL;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DatabaseStatus.OFFLINE;
+import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.HAS_SHARD;
+import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.HAS_SHARD_INDEX_PROPERTY;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.HOSTED_ON_BOOTSTRAPPER_PROPERTY;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.HOSTED_ON_MODE_PROPERTY;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.HOSTED_ON_RAFT_MEMBER_ID_PROPERTY;
@@ -399,8 +400,16 @@ public abstract class BaseTopologyGraphDbmsModelIT {
             return this;
         }
 
-        public DatabaseNodeBuilder withShardCount(int shardCount) {
-            node.setProperty(DATABASE_SHARD_COUNT_PROPERTY, shardCount);
+        public DatabaseNodeBuilder withShards(NamedDatabaseId... databaseIds) {
+            int index = 0;
+            for (var databaseId : databaseIds) {
+                var otherDatabase = tx.findNode(
+                        DATABASE_LABEL,
+                        DATABASE_UUID_PROPERTY,
+                        databaseId.databaseId().uuid().toString());
+                var relationship = node.createRelationshipTo(otherDatabase, HAS_SHARD);
+                relationship.setProperty(HAS_SHARD_INDEX_PROPERTY, index++);
+            }
             return this;
         }
 

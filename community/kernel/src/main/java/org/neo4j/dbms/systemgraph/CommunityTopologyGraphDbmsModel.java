@@ -25,6 +25,8 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
+import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
@@ -163,7 +165,7 @@ public class CommunityTopologyGraphDbmsModel implements TopologyGraphDbmsModel {
     private Stream<DatabaseReferenceImpl.SPD> getAllShardedPropertyDatabaseReferencesInRoot() {
         return getAliasNodesInNamespace(DATABASE_NAME_LABEL, DEFAULT_NAMESPACE)
                 .flatMap(alias -> CommunityTopologyGraphDbmsModelUtil.getTargetedDatabaseNode(alias)
-                        .filter(db -> db.hasProperty(DATABASE_SHARD_COUNT_PROPERTY))
+                        .filter(db -> db.getDegree(HAS_SHARD, Direction.OUTGOING) > 0)
                         .flatMap(db -> createShardedPropertyDatabaseReference(alias, db))
                         .stream());
     }
@@ -171,7 +173,7 @@ public class CommunityTopologyGraphDbmsModel implements TopologyGraphDbmsModel {
     private Optional<DatabaseReferenceImpl.SPD> getShardedPropertyDatabaseReferenceInRoot(String databaseName) {
         return getAliasNodesInNamespace(DATABASE_NAME_LABEL, DEFAULT_NAMESPACE, databaseName)
                 .flatMap(alias -> CommunityTopologyGraphDbmsModelUtil.getTargetedDatabaseNode(alias)
-                        .filter(db -> db.hasProperty(DATABASE_SHARD_COUNT_PROPERTY))
+                        .filter(db -> db.getDegree(HAS_SHARD, Direction.OUTGOING) > 0)
                         .flatMap(db -> createShardedPropertyDatabaseReference(alias, db))
                         .stream())
                 .findFirst();
@@ -181,9 +183,14 @@ public class CommunityTopologyGraphDbmsModel implements TopologyGraphDbmsModel {
         return CommunityTopologyGraphDbmsModelUtil.ignoreConcurrentDeletes(() -> {
             var aliasName = CommunityTopologyGraphDbmsModelUtil.getNameProperty(DATABASE_NAME, alias);
             var databaseId = CommunityTopologyGraphDbmsModelUtil.getDatabaseId(db);
-            int shardCount = (int) db.getProperty(DATABASE_SHARD_COUNT_PROPERTY, 0);
-            var shards = DatabaseReferenceImpl.SPD.createForShards(
-                    aliasName.name(), shardCount, this::getDatabaseRefByAlias);
+            var shards = StreamSupport.stream(
+                            db.getRelationships(Direction.OUTGOING, TopologyGraphDbmsModel.HAS_SHARD)
+                                    .spliterator(),
+                            false)
+                    .collect(Collectors.toMap(
+                            r -> (int) r.getProperty(HAS_SHARD_INDEX_PROPERTY),
+                            r -> getDatabaseRefByAlias((String) r.getEndNode().getProperty(DATABASE_NAME_PROPERTY))
+                                    .orElseThrow()));
             return Optional.of(new DatabaseReferenceImpl.SPD(aliasName, databaseId, shards));
         });
     }
@@ -220,7 +227,7 @@ public class CommunityTopologyGraphDbmsModel implements TopologyGraphDbmsModel {
         return getAliasNodesInNamespace(DATABASE_NAME_LABEL, namespace)
                 .flatMap(alias -> CommunityTopologyGraphDbmsModelUtil.getTargetedDatabaseNode(alias)
                         .filter(node -> !node.hasProperty(DATABASE_VIRTUAL_PROPERTY))
-                        .filter(node -> !node.hasProperty(DATABASE_SHARD_COUNT_PROPERTY))
+                        .filter(node -> node.getDegree(HAS_SHARD, Direction.OUTGOING) == 0)
                         .map(CommunityTopologyGraphDbmsModelUtil::getDatabaseId)
                         .flatMap(db -> CommunityTopologyGraphDbmsModelUtil.createInternalReference(alias, db))
                         .stream());

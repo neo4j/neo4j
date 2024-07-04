@@ -179,7 +179,6 @@ public interface TopologyGraphDbmsModel {
     String DELETED_DATABASE_KEEP_DATA_PROPERTY = "keep_data";
     String DATABASE_LOG_ENRICHMENT_PROPERTY = "txLogEnrichment";
     String DATABASE_BOOTSTRAP_KERNEL_VERSION_PROPERTY = "bootstrapKernelVersion";
-    String DATABASE_SHARD_COUNT_PROPERTY = "shard_count";
 
     Label DATABASE_NAME_LABEL = Label.label("DatabaseName");
     String DATABASE_NAME = DATABASE_NAME_LABEL.name();
@@ -255,6 +254,9 @@ public interface TopologyGraphDbmsModel {
     String SUPPORTED_COMPONENT_VERSIONS_UUID_PROPERTY = "__uuid";
     RelationshipType LATEST_SUPPORTED_COMPONENT_VERSIONS_RELATIONSHIP =
             RelationshipType.withName("LATEST_SUPPORTED_VERSIONS");
+
+    RelationshipType HAS_SHARD = RelationshipType.withName("HAS_SHARD");
+    String HAS_SHARD_INDEX_PROPERTY = "index";
 
     /**
      * Fetches the {@link NamedDatabaseId} corresponding to the provided alias, if one exists in this DBMS.

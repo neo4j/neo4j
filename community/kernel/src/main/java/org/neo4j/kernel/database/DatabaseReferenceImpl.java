@@ -26,9 +26,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import org.neo4j.configuration.helpers.RemoteUri;
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel;
 
@@ -320,13 +317,6 @@ public abstract class DatabaseReferenceImpl implements DatabaseReference {
             return String.format("%s-shard-%02d", databaseName, index);
         }
 
-        public static <T> Map<Integer, T> createForShards(
-                String databaseName, int count, Function<String, Optional<T>> mapper) {
-            return IntStream.range(0, count).boxed().collect(Collectors.toMap(i -> i, i -> mapper.apply(
-                            shardName(databaseName, i))
-                    .orElseThrow()));
-        }
-
         private final Map<Integer, DatabaseReference> entityDetailStores;
 
         /**
@@ -371,6 +361,12 @@ public abstract class DatabaseReferenceImpl implements DatabaseReference {
                     + namedDatabaseId + ", primary="
                     + primary + ", entityDetailStores="
                     + entityDetailStores + '}';
+        }
+    }
+
+    public static final class SPDShard extends DatabaseReferenceImpl.Internal {
+        public SPDShard(NormalizedDatabaseName alias, NamedDatabaseId namedDatabaseId, boolean primary) {
+            super(alias, namedDatabaseId, primary);
         }
     }
 }

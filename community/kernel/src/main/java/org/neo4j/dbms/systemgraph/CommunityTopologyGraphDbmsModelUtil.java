@@ -54,13 +54,14 @@ public final class CommunityTopologyGraphDbmsModelUtil {
     static Stream<Internal> getAllPrimaryStandardDatabaseReferencesInRoot(Transaction tx) {
         return tx.findNodes(TopologyGraphDbmsModel.DATABASE_LABEL).stream()
                 .filter(node -> !node.hasProperty(TopologyGraphDbmsModel.DATABASE_VIRTUAL_PROPERTY))
-                .map(CommunityTopologyGraphDbmsModelUtil::getDatabaseId)
-                .map(CommunityTopologyGraphDbmsModelUtil::primaryRefFromDatabaseId);
-    }
-
-    private static Internal primaryRefFromDatabaseId(NamedDatabaseId databaseId) {
-        var alias = new NormalizedDatabaseName(databaseId.name());
-        return new Internal(alias, databaseId, true);
+                .map(node -> {
+                    var databaseId = getDatabaseId(node);
+                    var alias = new NormalizedDatabaseName(databaseId.name());
+                    if (node.getDegree(TopologyGraphDbmsModel.HAS_SHARD, Direction.INCOMING) > 0) {
+                        return new DatabaseReferenceImpl.SPDShard(alias, databaseId, true);
+                    }
+                    return new Internal(alias, databaseId, true);
+                });
     }
 
     static NormalizedDatabaseName getNameProperty(String labelName, Node node) {

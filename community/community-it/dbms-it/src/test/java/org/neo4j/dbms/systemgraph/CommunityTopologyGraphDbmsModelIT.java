@@ -174,7 +174,7 @@ public class CommunityTopologyGraphDbmsModelIT extends BaseTopologyGraphDbmsMode
         // given
         var foo0 = newDatabase(b -> b.withDatabase(shardName("foo", 0)));
         var foo1 = newDatabase(b -> b.withDatabase(shardName("foo", 1)));
-        var foo = newDatabase(b -> b.withDatabase("foo").withShardCount(2));
+        var foo = newDatabase(b -> b.withDatabase("foo").withShards(foo0, foo1));
         createInternalReferenceForDatabase(tx, foo0.name(), true, foo0);
         createInternalReferenceForDatabase(tx, foo1.name(), true, foo1);
         createInternalReferenceForDatabase(tx, foo.name(), true, foo);
@@ -183,7 +183,7 @@ public class CommunityTopologyGraphDbmsModelIT extends BaseTopologyGraphDbmsMode
         var bar1 = newDatabase(b -> b.withDatabase(shardName("bar", 1)));
         var bar2 = newDatabase(b -> b.withDatabase(shardName("bar", 2)));
         var bar3 = newDatabase(b -> b.withDatabase(shardName("bar", 3)));
-        var bar = newDatabase(b -> b.withDatabase("bar").withShardCount(4));
+        var bar = newDatabase(b -> b.withDatabase("bar").withShards(bar0, bar1, bar2, bar3));
         createInternalReferenceForDatabase(tx, bar0.name(), true, bar0);
         createInternalReferenceForDatabase(tx, bar1.name(), true, bar1);
         createInternalReferenceForDatabase(tx, bar2.name(), true, bar2);
