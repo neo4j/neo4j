@@ -20,14 +20,13 @@ import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.test.util.AstParsing.Cypher5JavaCc
 import org.neo4j.cypher.internal.ast.test.util.AstParsingTestBase
-import org.neo4j.cypher.internal.ast.test.util.LegacyAstParsingTestSupport
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.label_expressions.LabelExpression
 import org.neo4j.cypher.internal.util.symbols.CTAny
 
-class InsertParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport {
+class InsertParserTest extends AstParsingTestBase {
 
   private def assertExpectedNodeAst(nodePattern: NodePattern): Unit = {
     parsesTo[Statement](
@@ -143,14 +142,6 @@ class InsertParserTest extends AstParsingTestBase with LegacyAstParsingTestSuppo
     // :A
     (":A", nodePat(None, Some(labelLeaf("A")))),
     ("n :A", nodePat(Some("n"), Some(labelLeaf("A")))),
-    (
-      ":A $map",
-      nodePat(
-        None,
-        Some(labelLeaf("A")),
-        Some(parameter("map", CTAny))
-      )
-    ),
     (
       "x :A {prop1: 'a', prop2: 42}",
       nodePat(
@@ -303,14 +294,7 @@ class InsertParserTest extends AstParsingTestBase with LegacyAstParsingTestSuppo
       }
 
       test(s"INSERT ($nodeText1)<-[IS A $$map]-($nodeText2)") {
-        assertExpectedRelAst(
-          nodePattern1,
-          None,
-          labelRelTypeLeaf("A", containsIs = true),
-          Some(parameter("map", CTAny)),
-          SemanticDirection.INCOMING,
-          nodePattern2
-        )
+        failsParsing[Statements].withSyntaxErrorContaining("Invalid input '$'")
       }
 
       test(s"INSERT ($nodeText1)-[:A {prop: $$value}]->($nodeText2)") {
@@ -489,7 +473,7 @@ class InsertParserTest extends AstParsingTestBase with LegacyAstParsingTestSuppo
     failsParsing[Statements].in {
       case Cypher5JavaCc => _.withMessageStart("Invalid input 'n'")
       case _ => _.withSyntaxError(
-          """Invalid input 'n': expected a parameter, '&', ')', ':' or '{' (line 1, column 12 (offset: 11))
+          """Invalid input 'n': expected '&', ')', ':' or '{' (line 1, column 12 (offset: 11))
             |"INSERT (:A n)"
             |            ^""".stripMargin
         )
@@ -588,7 +572,7 @@ class InsertParserTest extends AstParsingTestBase with LegacyAstParsingTestSuppo
     failsParsing[Statements].in {
       case Cypher5JavaCc => _.withMessageStart("Invalid input 'r'")
       case _ => _.withSyntaxError(
-          """Invalid input 'r': expected a parameter, ']' or '{' (line 1, column 15 (offset: 14))
+          """Invalid input 'r': expected ']' or '{' (line 1, column 15 (offset: 14))
             |"INSERT ()-[:R r]->()"
             |               ^""".stripMargin
         )
@@ -670,7 +654,7 @@ class InsertParserTest extends AstParsingTestBase with LegacyAstParsingTestSuppo
     failsParsing[Statements].in {
       case Cypher5JavaCc => _.withMessageStart("Invalid input '|'")
       case _ => _.withSyntaxError(
-          """Invalid input '|': expected a parameter, '&', ')', ':' or '{' (line 1, column 12 (offset: 11))
+          """Invalid input '|': expected '&', ')', ':' or '{' (line 1, column 12 (offset: 11))
             |"INSERT (n:A|B)"
             |            ^""".stripMargin
         )
@@ -681,7 +665,7 @@ class InsertParserTest extends AstParsingTestBase with LegacyAstParsingTestSuppo
     failsParsing[Statements].in {
       case Cypher5JavaCc => _.withMessageStart("Invalid input '|'")
       case _ => _.withSyntaxError(
-          """Invalid input '|': expected a parameter, '&', ')', ':' or '{' (line 1, column 12 (offset: 11))
+          """Invalid input '|': expected '&', ')', ':' or '{' (line 1, column 12 (offset: 11))
             |"INSERT (n:A|:B)"
             |            ^""".stripMargin
         )
@@ -692,7 +676,7 @@ class InsertParserTest extends AstParsingTestBase with LegacyAstParsingTestSuppo
     failsParsing[Statements].in {
       case Cypher5JavaCc => _.withMessageStart("Invalid input '|'")
       case _ => _.withSyntaxError(
-          """Invalid input '|': expected a parameter, '&', ')', ':' or '{' (line 1, column 15 (offset: 14))
+          """Invalid input '|': expected '&', ')', ':' or '{' (line 1, column 15 (offset: 14))
             |"INSERT (n IS A|B)"
             |               ^""".stripMargin
         )
@@ -718,7 +702,7 @@ class InsertParserTest extends AstParsingTestBase with LegacyAstParsingTestSuppo
     failsParsing[Statements].in {
       case Cypher5JavaCc => _.withMessageStart("Invalid input '%'")
       case _ => _.withSyntaxError(
-          """Invalid input '%': expected a parameter, an identifier, ')', ':', 'IS' or '{' (line 1, column 12 (offset: 11))
+          """Invalid input '%': expected an identifier, ')', ':', 'IS' or '{' (line 1, column 12 (offset: 11))
             |"INSERT (IS %)"
             |            ^""".stripMargin
         )
@@ -729,7 +713,7 @@ class InsertParserTest extends AstParsingTestBase with LegacyAstParsingTestSuppo
     failsParsing[Statements].in {
       case Cypher5JavaCc => _.withMessageStart("Invalid input 'true'")
       case _ => _.withSyntaxError(
-          """Invalid input 'true': expected a parameter, ')', ':', 'IS' or '{' (line 1, column 15 (offset: 14))
+          """Invalid input 'true': expected ')', ':', 'IS' or '{' (line 1, column 15 (offset: 14))
             |"INSERT (WHERE true)"
             |               ^""".stripMargin
         )
@@ -740,7 +724,7 @@ class InsertParserTest extends AstParsingTestBase with LegacyAstParsingTestSuppo
     failsParsing[Statements].in {
       case Cypher5JavaCc => _.withMessageStart("Invalid input 'WHERE'")
       case _ => _.withSyntaxError(
-          """Invalid input 'WHERE': expected a parameter, ')', ':', 'IS' or '{' (line 1, column 11 (offset: 10))
+          """Invalid input 'WHERE': expected ')', ':', 'IS' or '{' (line 1, column 11 (offset: 10))
             |"INSERT (n WHERE n.prop = 1)"
             |           ^""".stripMargin
         )
@@ -773,7 +757,7 @@ class InsertParserTest extends AstParsingTestBase with LegacyAstParsingTestSuppo
     failsParsing[Statements].in {
       case Cypher5JavaCc => _.withMessageStart("Invalid input 'WHERE'")
       case _ => _.withSyntaxError(
-          """Invalid input 'WHERE': expected a parameter, '&', ')', ':' or '{' (line 1, column 12 (offset: 11))
+          """Invalid input 'WHERE': expected '&', ')', ':' or '{' (line 1, column 12 (offset: 11))
             |"INSERT (:A WHERE true)"
             |            ^""".stripMargin
         )
@@ -784,7 +768,7 @@ class InsertParserTest extends AstParsingTestBase with LegacyAstParsingTestSuppo
     failsParsing[Statements].in {
       case Cypher5JavaCc => _.withMessageStart("Invalid input 'WHERE'")
       case _ => _.withSyntaxError(
-          """Invalid input 'WHERE': expected a parameter, '&', ')', ':' or '{' (line 1, column 13 (offset: 12))
+          """Invalid input 'WHERE': expected '&', ')', ':' or '{' (line 1, column 13 (offset: 12))
             |"INSERT (n:A WHERE true)"
             |             ^""".stripMargin
         )
@@ -861,7 +845,7 @@ class InsertParserTest extends AstParsingTestBase with LegacyAstParsingTestSuppo
     failsParsing[Statements].in {
       case Cypher5JavaCc => _.withMessageStart("Invalid input '|'")
       case _ => _.withSyntaxError(
-          """Invalid input '|': expected a parameter, ']' or '{' (line 1, column 17 (offset: 16))
+          """Invalid input '|': expected ']' or '{' (line 1, column 17 (offset: 16))
             |"INSERT ()-[:Rel1|Rel2]->()"
             |                 ^""".stripMargin
         )
@@ -872,7 +856,7 @@ class InsertParserTest extends AstParsingTestBase with LegacyAstParsingTestSuppo
     failsParsing[Statements].in {
       case Cypher5JavaCc => _.withMessageStart("Invalid input '&'")
       case _ => _.withSyntaxError(
-          """Invalid input '&': expected a parameter, ']' or '{' (line 1, column 17 (offset: 16))
+          """Invalid input '&': expected ']' or '{' (line 1, column 17 (offset: 16))
             |"INSERT ()-[:Rel1&Rel2]->()"
             |                 ^""".stripMargin
         )
@@ -1059,7 +1043,7 @@ class InsertParserTest extends AstParsingTestBase with LegacyAstParsingTestSuppo
     failsParsing[Statements].in {
       case Cypher5JavaCc => _.withMessageStart("Invalid input '*'")
       case _ => _.withSyntaxError(
-          """Invalid input '*': expected a parameter, ']' or '{' (line 1, column 15 (offset: 14))
+          """Invalid input '*': expected ']' or '{' (line 1, column 15 (offset: 14))
             |"INSERT ()-[:R *1..3]->()"
             |               ^""".stripMargin
         )
@@ -1070,7 +1054,7 @@ class InsertParserTest extends AstParsingTestBase with LegacyAstParsingTestSuppo
     failsParsing[Statements].in {
       case Cypher5JavaCc => _.withMessageStart("Invalid input 'WHERE'")
       case _ => _.withSyntaxError(
-          """Invalid input 'WHERE': expected a parameter, ']' or '{' (line 1, column 15 (offset: 14))
+          """Invalid input 'WHERE': expected ']' or '{' (line 1, column 15 (offset: 14))
             |"INSERT ()-[:R WHERE true]->()"
             |               ^""".stripMargin
         )
@@ -1081,7 +1065,7 @@ class InsertParserTest extends AstParsingTestBase with LegacyAstParsingTestSuppo
     failsParsing[Statements].in {
       case Cypher5JavaCc => _.withMessageStart("Invalid input '*'")
       case _ => _.withSyntaxError(
-          """Invalid input '*': expected a parameter, ']' or '{' (line 1, column 18 (offset: 17))
+          """Invalid input '*': expected ']' or '{' (line 1, column 18 (offset: 17))
             |"INSERT ()<-[r :R *1..3]-()"
             |                  ^""".stripMargin
         )
@@ -1092,7 +1076,7 @@ class InsertParserTest extends AstParsingTestBase with LegacyAstParsingTestSuppo
     failsParsing[Statements].in {
       case Cypher5JavaCc => _.withMessageStart("Invalid input 'WHERE'")
       case _ => _.withSyntaxError(
-          """Invalid input 'WHERE': expected a parameter, ']' or '{' (line 1, column 17 (offset: 16))
+          """Invalid input 'WHERE': expected ']' or '{' (line 1, column 17 (offset: 16))
             |"INSERT ()-[r :R WHERE true]->()"
             |                 ^""".stripMargin
         )
@@ -1103,7 +1087,7 @@ class InsertParserTest extends AstParsingTestBase with LegacyAstParsingTestSuppo
     failsParsing[Statements].in {
       case Cypher5JavaCc => _.withMessageStart("Invalid input '*'")
       case _ => _.withSyntaxError(
-          """Invalid input '*': expected a parameter, ']' or '{' (line 1, column 16 (offset: 15))
+          """Invalid input '*': expected ']' or '{' (line 1, column 16 (offset: 15))
             |"INSERT ()<-[:R *1..3 {prop:2} ]-()"
             |                ^""".stripMargin
         )
@@ -1125,7 +1109,7 @@ class InsertParserTest extends AstParsingTestBase with LegacyAstParsingTestSuppo
     failsParsing[Statements].in {
       case Cypher5JavaCc => _.withMessageStart("Invalid input '*'")
       case _ => _.withSyntaxError(
-          """Invalid input '*': expected a parameter, ']' or '{' (line 1, column 16 (offset: 15))
+          """Invalid input '*': expected ']' or '{' (line 1, column 16 (offset: 15))
             |"INSERT ()<-[:R *1..3 WHERE true]-()"
             |                ^""".stripMargin
         )
@@ -1136,7 +1120,7 @@ class InsertParserTest extends AstParsingTestBase with LegacyAstParsingTestSuppo
     failsParsing[Statements].in {
       case Cypher5JavaCc => _.withMessageStart("Invalid input '*'")
       case _ => _.withSyntaxError(
-          """Invalid input '*': expected a parameter, ']' or '{' (line 1, column 17 (offset: 16))
+          """Invalid input '*': expected ']' or '{' (line 1, column 17 (offset: 16))
             |"INSERT ()-[r :R *1..3 {prop:2}]->()"
             |                 ^""".stripMargin
         )
@@ -1158,7 +1142,7 @@ class InsertParserTest extends AstParsingTestBase with LegacyAstParsingTestSuppo
     failsParsing[Statements].in {
       case Cypher5JavaCc => _.withMessageStart("Invalid input '*'")
       case _ => _.withSyntaxError(
-          """Invalid input '*': expected a parameter, ']' or '{' (line 1, column 17 (offset: 16))
+          """Invalid input '*': expected ']' or '{' (line 1, column 17 (offset: 16))
             |"INSERT ()-[r :R *1..3 WHERE true]->()"
             |                 ^""".stripMargin
         )
@@ -1169,7 +1153,7 @@ class InsertParserTest extends AstParsingTestBase with LegacyAstParsingTestSuppo
     failsParsing[Statements].in {
       case Cypher5JavaCc => _.withMessageStart("Invalid input '*'")
       case _ => _.withSyntaxError(
-          """Invalid input '*': expected a parameter, ']' or '{' (line 1, column 17 (offset: 16))
+          """Invalid input '*': expected ']' or '{' (line 1, column 17 (offset: 16))
             |"INSERT ()-[r :R *1..3 {prop:2} WHERE true]->()"
             |                 ^""".stripMargin
         )
@@ -1215,7 +1199,7 @@ class InsertParserTest extends AstParsingTestBase with LegacyAstParsingTestSuppo
     failsParsing[Statements].in {
       case Cypher5JavaCc => _.withMessageStart("Invalid input '('")
       case _ => _.withSyntaxError(
-          """Invalid input '(': expected a parameter, a variable name, ')', ':', 'IS' or '{' (line 1, column 9 (offset: 8))
+          """Invalid input '(': expected a variable name, ')', ':', 'IS' or '{' (line 1, column 9 (offset: 8))
             |"INSERT ((n)-[r]->(m))*"
             |         ^""".stripMargin
         )
@@ -1226,7 +1210,7 @@ class InsertParserTest extends AstParsingTestBase with LegacyAstParsingTestSuppo
     failsParsing[Statements].in {
       case Cypher5JavaCc => _.withMessageStart("Invalid input '('")
       case _ => _.withSyntaxError(
-          """Invalid input '(': expected a parameter, a variable name, ')', ':', 'IS' or '{' (line 1, column 9 (offset: 8))
+          """Invalid input '(': expected a variable name, ')', ':', 'IS' or '{' (line 1, column 9 (offset: 8))
             |"INSERT ((a)-->(b) WHERE a.prop > b.prop)"
             |         ^""".stripMargin
         )
@@ -1251,7 +1235,7 @@ class InsertParserTest extends AstParsingTestBase with LegacyAstParsingTestSuppo
     failsParsing[Statements].in {
       case Cypher5JavaCc => _.withMessageStart("Invalid input '('")
       case _ => _.withSyntaxError(
-          """Invalid input '(': expected a parameter, an identifier, ')', ':', 'IS' or '{' (line 1, column 12 (offset: 11))
+          """Invalid input '(': expected an identifier, ')', ':', 'IS' or '{' (line 1, column 12 (offset: 11))
             |"INSERT (IS (A&B)&C)"
             |            ^""".stripMargin
         )

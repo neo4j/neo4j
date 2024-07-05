@@ -1249,7 +1249,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     variable <- option(_variable)
     containsIs <- boolean
     labelExpression <- option(_insertNodeLabelExpression(containsIs))
-    properties <- option(oneOf(_map, _parameter))
+    properties <- option(_map)
   } yield NodePattern(variable, labelExpression, properties, None)(pos)
 
   def _insertNodeLabelExpression(containsIs: Boolean): Gen[LabelExpression] = {
@@ -1280,7 +1280,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     variable <- option(_variable)
     containsIs <- boolean
     labelExpression <- _relTypeName.map(Leaf(_, containsIs))
-    properties <- option(oneOf(_map, _parameter))
+    properties <- option(_map)
     direction <- _semanticDirection
   } yield RelationshipPattern(variable, Some(labelExpression), None, properties, None, direction)(pos)
 

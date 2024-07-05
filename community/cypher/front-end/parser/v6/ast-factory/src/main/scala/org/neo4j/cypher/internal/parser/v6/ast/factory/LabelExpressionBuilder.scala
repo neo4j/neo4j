@@ -25,7 +25,6 @@ import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
-import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.label_expressions.LabelExpression
 import org.neo4j.cypher.internal.label_expressions.LabelExpression.ColonConjunction
 import org.neo4j.cypher.internal.label_expressions.LabelExpression.ColonDisjunction
@@ -42,6 +41,7 @@ import org.neo4j.cypher.internal.parser.ast.util.Util.ctxChild
 import org.neo4j.cypher.internal.parser.ast.util.Util.lastChild
 import org.neo4j.cypher.internal.parser.ast.util.Util.nodeChild
 import org.neo4j.cypher.internal.parser.ast.util.Util.pos
+import org.neo4j.cypher.internal.parser.ast.util.Util.semanticDirection
 import org.neo4j.cypher.internal.parser.v6.Cypher6Parser
 import org.neo4j.cypher.internal.parser.v6.Cypher6Parser.AnyLabelContext
 import org.neo4j.cypher.internal.parser.v6.Cypher6Parser.AnyLabelIsContext
@@ -66,22 +66,15 @@ trait LabelExpressionBuilder extends Cypher6ParserListener {
     ctx.ast = NodePattern(variable, labelExpression, properties, expression)(pos(ctx))
   }
 
-  final override def exitRelationshipPattern(
-    ctx: Cypher6Parser.RelationshipPatternContext
-  ): Unit = {
-    val variable = astOpt[LogicalVariable](ctx.variable())
-    val labelExpression = astOpt[LabelExpression](ctx.labelExpression())
-    val pathLength = astOpt[Option[expressions.Range]](ctx.pathLength())
-    val properties = astOpt[Expression](ctx.properties())
-    val expression = astOpt[Expression](ctx.expression())
-
-    val direction = (ctx.leftArrow() != null, ctx.rightArrow() != null) match {
-      case (true, false) => SemanticDirection.INCOMING
-      case (false, true) => SemanticDirection.OUTGOING
-      case _             => SemanticDirection.BOTH
-    }
-
-    ctx.ast = RelationshipPattern(variable, labelExpression, pathLength, properties, expression, direction)(pos(ctx))
+  final override def exitRelationshipPattern(ctx: Cypher6Parser.RelationshipPatternContext): Unit = {
+    ctx.ast = RelationshipPattern(
+      variable = astOpt[LogicalVariable](ctx.variable()),
+      labelExpression = astOpt[LabelExpression](ctx.labelExpression()),
+      length = astOpt[Option[expressions.Range]](ctx.pathLength()),
+      properties = astOpt[Expression](ctx.properties()),
+      predicate = astOpt[Expression](ctx.expression()),
+      direction = semanticDirection(hasRightArrow = ctx.rightArrow() != null, hasLeftArrow = ctx.leftArrow() != null)
+    )(pos(ctx))
   }
 
   final override def exitNodeLabels(ctx: Cypher6Parser.NodeLabelsContext): Unit = {
@@ -322,18 +315,13 @@ trait LabelExpressionBuilder extends Cypher6ParserListener {
     }
   }
 
-  final override def exitInsertNodePattern(
-    ctx: Cypher6Parser.InsertNodePatternContext
-  ): Unit = {
-    val variable =
-      if (ctx.variable() != null) Some(ctx.variable().ast[LogicalVariable]()) else None
-    val labelExpression =
-      if (ctx.insertNodeLabelExpression() != null) Some(ctx.insertNodeLabelExpression().ast[LabelExpression]())
-      else None
-    val properties =
-      if (ctx.properties() != null) Some(ctx.properties().ast[Expression]()) else None
-    ctx.ast = NodePattern(variable, labelExpression, properties, None)(pos(ctx))
-
+  final override def exitInsertNodePattern(ctx: Cypher6Parser.InsertNodePatternContext): Unit = {
+    ctx.ast = NodePattern(
+      variable = astOpt(ctx.variable()),
+      labelExpression = astOpt(ctx.insertNodeLabelExpression()),
+      properties = astOpt(ctx.map()),
+      None
+    )(pos(ctx))
   }
 
   final override def exitInsertNodeLabelExpression(
@@ -368,27 +356,15 @@ trait LabelExpressionBuilder extends Cypher6ParserListener {
     ctx.ast = result
   }
 
-  final override def exitInsertRelationshipPattern(
-    ctx: Cypher6Parser.InsertRelationshipPatternContext
-  ): Unit = {
-    val hasRightArrow = ctx.rightArrow() != null
-    val hasLeftArrow = ctx.leftArrow() != null
-    val variable =
-      if (ctx.variable() != null) Some(ctx.variable().ast[LogicalVariable]()) else None
-    val labelExpression =
-      if (ctx.insertRelationshipLabelExpression() != null)
-        Some(ctx.insertRelationshipLabelExpression().ast[LabelExpression]())
-      else None
-    val properties =
-      if (ctx.properties() != null) Some(ctx.properties().ast[Expression]()) else None
-    val direction =
-      if (hasLeftArrow && hasRightArrow) SemanticDirection.BOTH
-      else if (!hasLeftArrow && !hasRightArrow) SemanticDirection.BOTH
-      else if (hasLeftArrow) SemanticDirection.INCOMING
-      else SemanticDirection.OUTGOING
-
-    ctx.ast = RelationshipPattern(variable, labelExpression, None, properties, None, direction)(pos(ctx))
-
+  final override def exitInsertRelationshipPattern(ctx: Cypher6Parser.InsertRelationshipPatternContext): Unit = {
+    ctx.ast = RelationshipPattern(
+      variable = astOpt(ctx.variable()),
+      labelExpression = astOpt(ctx.insertRelationshipLabelExpression()),
+      length = None,
+      properties = astOpt(ctx.map),
+      None,
+      direction = semanticDirection(hasRightArrow = ctx.rightArrow() != null, hasLeftArrow = ctx.leftArrow() != null)
+    )(pos(ctx))
   }
 
   final override def exitInsertRelationshipLabelExpression(

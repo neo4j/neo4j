@@ -295,7 +295,7 @@ nodePattern
    ;
 
 insertNodePattern
-   : LPAREN variable? insertNodeLabelExpression? properties? RPAREN
+   : LPAREN variable? insertNodeLabelExpression? map? RPAREN
    ;
 
 parenthesizedPath
@@ -340,7 +340,7 @@ relationshipPattern
    ;
 
 insertRelationshipPattern
-   : leftArrow? arrowLine LBRACKET variable? insertRelationshipLabelExpression properties? RBRACKET arrowLine rightArrow?
+   : leftArrow? arrowLine LBRACKET variable? insertRelationshipLabelExpression map? RBRACKET arrowLine rightArrow?
    ;
 
 leftArrow

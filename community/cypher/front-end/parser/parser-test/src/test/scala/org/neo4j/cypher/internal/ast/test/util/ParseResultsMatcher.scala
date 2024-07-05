@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.ast.test.util.VerifyStatementUseGraph.findUseGr
 import org.neo4j.cypher.internal.parser.ast.AstBuildingAntlrParser
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
 import org.neo4j.exceptions.SyntaxException
 import org.scalatest.matchers.MatchResult
 import org.scalatest.matchers.Matcher
@@ -86,8 +87,6 @@ trait FluentMatchers[Self <: FluentMatchers[Self, T], T <: ASTNode] extends AstM
   def errorShould(matcher: Matcher[Throwable]): Self = and(failLike(matcher))
   def messageShould(matcher: Matcher[String]): Self = errorShould(matcher.compose(t => norm(t.getMessage)))
   def withError(assertion: Throwable => Unit): Self = errorShould(beLike(assertion))
-  def withSyntaxError(message: String): Self = throws[SyntaxException].withMessage(message)
-  def withSyntaxErrorContaining(message: String): Self = throws[SyntaxException].withMessageContaining(message)
   def withMessage(expected: String): Self = messageShould(be(norm(expected)))
   def withMessageStart(expected: String): Self = messageShould(startWith(norm(expected)))
   def withMessageContaining(expected: String): Self = messageShould(include(norm(expected)))
@@ -96,6 +95,12 @@ trait FluentMatchers[Self <: FluentMatchers[Self, T], T <: ASTNode] extends AstM
   def similarTo(expected: Throwable): Self = throws(expected.getClass).withMessage(expected.getMessage)
   def withAnyFailure: Self = and(beFailure)
   def withEqualPositions: Self = addIfMultiParsers(haveEqualPositions(supportedParsers))
+  def withSyntaxError(message: String): Self = throws[SyntaxException].withMessage(message)
+
+  def withSyntaxErrorContaining(message: String): Self =
+    // Note, this can be changed to throws[SyntaxException].withMessageContaining(message) after javacc is gone.
+    and(AstMatchers.beFailure[SyntaxException].or(AstMatchers.beFailure[OpenCypherExceptionFactory.SyntaxException]))
+      .withMessageContaining(message)
 
   final private def and(matcher: Matcher[ParseResult]): Self =
     addAll(supportedParsers.map(asResultsMatcher(_, matcher)))

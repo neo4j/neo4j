@@ -2731,10 +2731,10 @@ NODE_PATTERN InsertNodePattern() throws Exception:
 {
     t=<LPAREN>
     (
-       LOOKAHEAD(3) v=Variable() labelExpression = InsertNodeLabelExpression() ( properties=Properties() )?
-       | LOOKAHEAD(2) v=Variable() properties=Properties()
-       | LOOKAHEAD(2) labelExpression = InsertNodeLabelExpression() ( properties=Properties() )?
-       | properties=Properties()
+       LOOKAHEAD(3) v=Variable() labelExpression = InsertNodeLabelExpression() ( properties=MapLiteral() )?
+       | LOOKAHEAD(2) v=Variable() properties=MapLiteral()
+       | LOOKAHEAD(2) labelExpression = InsertNodeLabelExpression() ( properties=MapLiteral() )?
+       | properties=MapLiteral()
        | ( v = Variable() )?
     )
     <RPAREN>
@@ -3107,8 +3107,8 @@ REL_PATTERN InsertRelationshipPattern() throws Exception:
     ( LeftArrow() { left = true; })? ArrowLine()
     <LBRACKET>
    (
-   LOOKAHEAD(3) v=Variable() labelExpression = InsertRelationshipLabelExpression() ( properties=Properties() )?
-   | labelExpression = InsertRelationshipLabelExpression() ( properties=Properties() )?
+   LOOKAHEAD(3) v=Variable() labelExpression = InsertRelationshipLabelExpression() ( properties=MapLiteral() )?
+   | labelExpression = InsertRelationshipLabelExpression() ( properties=MapLiteral() )?
     )
     <RBRACKET>
     ArrowLine() ( RightArrow() { right = true; } )?
