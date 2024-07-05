@@ -91,7 +91,7 @@ public class Cypher6AstLexerTest {
         assertThatThrownBy(() -> Cypher6AstLexer.fromString(in, rand.nextInt(in.length()) + 2, rand.nextBoolean()))
                 .isInstanceOf(InvalidUnicodeLiteral.class)
                 .hasMessage("Invalid input 'ohno': expected four hexadecimal digits specifying a unicode character")
-                .extracting("offset", "column", "line")
+                .extracting("offset", "col", "line")
                 .containsExactly(expectedOffset, expectedCol, expectedLine);
     }
 
