@@ -24,42 +24,30 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import org.neo4j.dbms.archive.ArchiveFormat;
 
-public class BackupTarFormatV1 implements BackupCompressionFormat {
-    static final String MAGIC_HEADER = ArchiveFormat.BACKUP_PREFIX + "TV1";
-
-    private BackupMetadataV1 metadata;
-
-    @Override
-    public void setMetadata(BackupDescription description) {
-        this.metadata = new BackupMetadataV1(description);
-    }
+public class BackupTarFormatV2 extends BackupV2CompressionFormat {
+    static final String MAGIC_HEADER = ArchiveFormat.BACKUP_PREFIX + "TV2";
 
     @Override
     public OutputStream compress(OutputStream stream) throws IOException {
         stream.write(MAGIC_HEADER.getBytes());
-        metadata.writeToStreamV1(stream);
+        writeDescriptionToStream(stream);
         return stream;
     }
 
     @Override
     public InputStream decompress(InputStream stream) throws IOException {
-        BackupMetadataV1.readFromStream(stream);
+        readDescriptionFromStream(stream);
         return stream;
     }
 
     @Override
     public StreamWithDescription decompressAndDescribe(InputStream stream) throws IOException {
-        var description = BackupMetadataV1.readFromStream(stream).toBackupDescription();
+        var description = readDescriptionFromStream(stream);
         return new StreamWithDescription(stream, description);
     }
 
     @Override
     public BackupDescription readMetadata(InputStream inputStream) throws IOException {
-        return BackupMetadataV1.readFromStream(inputStream).toBackupDescription();
-    }
-
-    @Override
-    public String toString() {
-        return "BackupTarFormatV1{metadata=" + metadata + '}';
+        return readDescriptionFromStream(inputStream);
     }
 }

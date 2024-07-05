@@ -25,66 +25,33 @@ import java.io.OutputStream;
 import org.neo4j.dbms.archive.ArchiveFormat;
 import org.neo4j.dbms.archive.StandardCompressionFormat;
 
-public class BackupZstdFormatV1 implements BackupCompressionFormat {
-    static final String MAGIC_HEADER = ArchiveFormat.BACKUP_PREFIX + "ZV1";
-
-    private BackupMetadataV1 metadata;
-
-    @Override
-    public void setMetadata(BackupDescription description) {
-        this.metadata = new BackupMetadataV1(description);
-    }
+public class BackupZstdFormatV2 extends BackupV2CompressionFormat {
+    static final String MAGIC_HEADER = ArchiveFormat.BACKUP_PREFIX + "ZV2";
 
     @Override
     public OutputStream compress(OutputStream stream) throws IOException {
         stream.write(MAGIC_HEADER.getBytes());
         OutputStream compressionStream = StandardCompressionFormat.ZSTD.compress(stream);
-        try {
-            metadata.writeToStreamV1(compressionStream);
-            return compressionStream;
-        } catch (IOException e) {
-            compressionStream.close();
-            throw e;
-        }
+        writeDescriptionToStream(compressionStream);
+        return compressionStream;
     }
 
     @Override
     public InputStream decompress(InputStream stream) throws IOException {
         InputStream decompress = StandardCompressionFormat.ZSTD.decompress(stream);
-        try {
-            readMetadataFromZstdStream(decompress);
-            return decompress;
-        } catch (IOException e) {
-            decompress.close();
-            throw e;
-        }
+        readDescriptionFromStream(decompress);
+        return decompress;
     }
 
     @Override
     public StreamWithDescription decompressAndDescribe(InputStream stream) throws IOException {
         InputStream decompress = StandardCompressionFormat.ZSTD.decompress(stream);
-        try {
-            var description = readMetadataFromZstdStream(decompress).toBackupDescription();
-            return new StreamWithDescription(decompress, description);
-        } catch (IOException e) {
-            decompress.close();
-            throw e;
-        }
+        var description = readDescriptionFromStream(decompress);
+        return new StreamWithDescription(decompress, description);
     }
 
     @Override
     public BackupDescription readMetadata(InputStream inputStream) throws IOException {
-        try (var decompress = StandardCompressionFormat.ZSTD.decompress(inputStream)) {
-            return readMetadataFromZstdStream(decompress).toBackupDescription();
-        }
-    }
-
-    private static BackupMetadataV1 readMetadataFromZstdStream(InputStream inputStream) throws IOException {
-        return BackupMetadataV1.readFromStream(inputStream);
-    }
-
-    @Override
-    public String toString() {
-        return "BackupZstdFormatV1{metadata=" + metadata + '}';
+        return readDescriptionFromStream(StandardCompressionFormat.ZSTD.decompress(inputStream));
     }
 }
