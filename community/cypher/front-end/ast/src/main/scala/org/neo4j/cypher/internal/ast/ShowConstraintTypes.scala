@@ -83,7 +83,7 @@ case object RelKeyConstraints extends ShowConstraintType {
 }
 
 case object PropTypeConstraints extends ShowConstraintType {
-  override val output: String = "PROPERTY TYPE"
+  override val output: String = "PROPERTY_TYPE"
   override val prettyPrint: String = "PROPERTY TYPE"
   override val description: String = "propertyTypeConstraints"
 }
