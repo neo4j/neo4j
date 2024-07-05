@@ -201,3 +201,24 @@ Feature: MiscAcceptance
       | r     |
       | false |
     And no side effects
+
+  Scenario: Github issue number 13484
+    Given an empty graph
+    When executing query:
+      """
+      with *,'a test'  as this
+      //===================================================
+      call{ with this
+          with *, '"' as DQe
+          with *, '\'' as SQe
+          with *, '\\' as BS1
+          with *, '
+      ' as LF
+          return  SQe, LF, BS1
+      }
+      return LF+BS1+LF+LF as x
+      """
+    Then the result should be, in order:
+      | x     |
+      | '\n\\\\\n\n' |
+    And no side effects

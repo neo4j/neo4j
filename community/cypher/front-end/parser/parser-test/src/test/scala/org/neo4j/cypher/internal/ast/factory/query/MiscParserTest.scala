@@ -17,6 +17,7 @@
 package org.neo4j.cypher.internal.ast.factory.query
 
 import org.neo4j.cypher.internal.ast.AliasedReturnItem
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.LoadCSV
 import org.neo4j.cypher.internal.ast.Match
@@ -687,5 +688,38 @@ class MiscParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport
         )
       )
     }
+  }
+
+  test("GitHub issue 13484") {
+    val query =
+      """
+        |with *,'a test'  as this
+        |//===================================================
+        |call{ with this
+        |    with *, '"' as DQe
+        |    with *, '\'' as SQe
+        |    with *, '\\' as BS1
+        |    with *, '
+        |' as LF
+        |    return  SQe, LF, BS1
+        |}
+        |return LF+BS1+LF+LF as x
+        |""".stripMargin
+    query should parseTo[Statements](singleQuery(
+      withAll(aliasedReturnItem(literal("a test"), "this")),
+      subqueryCall(singleQuery(
+        with_(returnItem(v"this", "this")),
+        withAll(aliasedReturnItem(literal("\""), "DQe")),
+        withAll(aliasedReturnItem(literal("'"), "SQe")),
+        withAll(aliasedReturnItem(literal("\\"), "BS1")),
+        withAll(aliasedReturnItem(literal("\n"), "LF")),
+        return_(
+          returnItem(v"SQe", "SQe"),
+          returnItem(v"LF", "LF"),
+          returnItem(v"BS1", "BS1")
+        )
+      )),
+      return_(aliasedReturnItem(add(add(add(v"LF", v"BS1"), v"LF"), v"LF"), "x"))
+    ))
   }
 }
