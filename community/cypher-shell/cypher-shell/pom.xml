@@ -54,7 +54,7 @@
         <dependency>
             <groupId>org.neo4j</groupId>
             <artifactId>neo4j-cypher-dsl</artifactId>
-            <version>2024.0.0</version>
+            <version>2024.0.1</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.apiguardian</groupId>
