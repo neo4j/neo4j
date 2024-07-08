@@ -181,7 +181,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](
       logicalPlanResult.plannerContext.debugOptions.renderDistinctnessEnabled,
       cachedExecutionPlan.providedOrders,
       cachedExecutionPlan.executionPlan,
-      logicalPlanResult.notifications ++ query.notifications,
+      (logicalPlanResult.notifications ++ query.notifications).distinct,
       logicalPlanResult.reusability,
       logicalPlanResult.paramNames.toArray,
       logicalPlanResult.extractedParams,

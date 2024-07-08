@@ -127,7 +127,7 @@ object RewindableExecutionResult {
     try {
       val (executionMode, notifications, gqlStatusObjectsCallable) = result match {
         case r: InternalExecutionResult =>
-          (r.executionMode, r.notifications.toSet, () => r.gqlStatusObjects)
+          (r.executionMode, r.notifications, () => r.gqlStatusObjects)
         case _ =>
           (NormalMode, Set.empty[NotificationImplementation], () => Seq.empty[GqlStatusObject])
       }
@@ -139,7 +139,7 @@ object RewindableExecutionResult {
         result.fieldNames(),
         executionMode,
         () => result.executionPlanDescription().asInstanceOf[InternalPlanDescription],
-        notifications ++ internalNotifications,
+        notifications ++ internalNotifications.filterNot(notification => notifications.exists(notification.equals(_))),
         gqlStatusObjectsCallable
       )
     } finally {
@@ -155,7 +155,7 @@ object RewindableExecutionResult {
     columns: Array[String],
     executionMode: ExecutionMode,
     planDescription: () => InternalPlanDescription,
-    notifications: Set[NotificationImplementation],
+    notifications: Iterable[NotificationImplementation],
     gqlStatusObjectsCallable: () => Iterable[GqlStatusObject]
   ): RewindableExecutionResult = {
     subscription.request(Long.MaxValue)
