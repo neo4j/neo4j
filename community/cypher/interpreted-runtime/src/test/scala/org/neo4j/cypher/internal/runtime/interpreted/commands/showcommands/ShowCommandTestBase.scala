@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.dbms.database.DatabaseContext
 import org.neo4j.graphdb.ExecutionPlanDescription
+import org.neo4j.graphdb.GqlStatusObject
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.Notification
 import org.neo4j.graphdb.QueryExecutionType
@@ -216,6 +217,8 @@ class ShowCommandTestBase extends CypherFunSuite {
     override def writeAsStringTo(writer: java.io.PrintWriter): Unit = ???
 
     override def getNotifications: java.lang.Iterable[Notification] = ???
+
+    override def getGqlStatusObjects: java.lang.Iterable[GqlStatusObject] = ???
 
     override def accept[VisitationException <: Exception](visitor: Result.ResultVisitor[VisitationException]): Unit =
       ???

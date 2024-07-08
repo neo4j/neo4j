@@ -27,5 +27,6 @@ import org.neo4j.annotations.api.PublicApi;
 @PublicApi
 public enum SeverityLevel {
     WARNING,
-    INFORMATION
+    INFORMATION,
+    UNKNOWN
 }

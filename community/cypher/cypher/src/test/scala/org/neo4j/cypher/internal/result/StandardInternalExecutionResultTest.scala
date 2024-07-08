@@ -183,6 +183,8 @@ class StandardInternalExecutionResultTest extends CypherFunSuite {
       else if (iterator.hasNext) ConsumptionState.HAS_MORE
       else ConsumptionState.EXHAUSTED
 
+    override def hasServedRows: Boolean = served > 0
+
     override def queryStatistics(): QueryStatistics = QueryStatistics()
 
     override def heapHighWaterMark(): Long = HeapHighWaterMarkTracker.ALLOCATIONS_NOT_TRACKED

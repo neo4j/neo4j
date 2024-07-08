@@ -31,12 +31,13 @@ class RuntimeUnsupportedNotificationTest extends ExecutionEngineFunSuite {
 
   test("Should say when an enterprise runtime is not supported on community") {
     val result = execute("CYPHER runtime=pipelined EXPLAIN RETURN 1")
-    result.notifications should contain(runtimeUnsupported(
+    val runtimeUnsupportedNotification = runtimeUnsupported(
       InputPosition.empty,
       "runtime=pipelined",
       "runtime=slotted",
       "This version of Neo4j does not support the requested runtime: `pipelined`"
-    ))
+    )
+    result should containNotifications(runtimeUnsupportedNotification)
   }
 
   test("can also be configured to fail hard") {

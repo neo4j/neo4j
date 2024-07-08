@@ -36,6 +36,11 @@ public interface RuntimeResult extends AutoCloseable, QuerySubscription, HeapHig
     }
 
     /**
+     * Returns true if at least one result row has been processed
+     */
+    boolean hasServedRows();
+
+    /**
      * Names of the returned fields of this result.
      */
     String[] fieldNames();

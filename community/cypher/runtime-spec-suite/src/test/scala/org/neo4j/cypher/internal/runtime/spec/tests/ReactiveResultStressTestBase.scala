@@ -103,6 +103,7 @@ abstract class ReactiveResultStressTestBase[CONTEXT <: RuntimeContext](
     val subscriber = TestSubscriber.concurrent
     val data = inputValues((1 to sizeHint).map(Array[Any](_)): _*)
     val runtimeResult = execute(logicalQuery, runtime, data.stream(), subscriber)
+    runtimeResult.hasServedRows shouldBe false
     var hasMore = true
     var totalNumberOfRequests: Long = 0L
     while (hasMore) {
@@ -110,6 +111,7 @@ abstract class ReactiveResultStressTestBase[CONTEXT <: RuntimeContext](
       runtimeResult.request(requested)
       totalNumberOfRequests += requested
       hasMore = runtimeResult.await()
+      runtimeResult.hasServedRows shouldBe true
 
       if (!hasMore) {
         subscriber.isCompleted should equal(true)

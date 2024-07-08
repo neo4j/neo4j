@@ -20,10 +20,16 @@
 package org.neo4j.cypher.internal.javacompat;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.notifications.StandardGqlStatusObject.isStandardGqlStatusCode;
 import static org.neo4j.test.conditions.Conditions.instanceOf;
 
+import java.util.List;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 import org.assertj.core.api.Condition;
+import org.neo4j.gqlstatus.GqlStatusInfoCodes;
+import org.neo4j.graphdb.GqlStatusObject;
 import org.neo4j.graphdb.InputPosition;
 import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.NotificationCategory;
@@ -47,10 +53,18 @@ public class NotificationTestSupport {
     @Inject
     protected GraphDatabaseAPI db;
 
-    void assertNotifications(String query, Condition<Iterable<? extends Notification>> matchesExpectation) {
+    void assertNotifications(
+            String query,
+            Condition<Iterable<? extends Notification>> matchesNotificationExpectation,
+            Condition<Iterable<? extends String>> matchesGqlStatusExpectation) {
         try (Transaction transaction = db.beginTx();
                 Result result = transaction.execute(query)) {
-            assertThat(result.getNotifications()).is(matchesExpectation);
+            assertThat(result.getNotifications()).is(matchesNotificationExpectation);
+
+            Stream<GqlStatusObject> stream =
+                    StreamSupport.stream(result.getGqlStatusObjects().spliterator(), false);
+            List<String> gqlStatusCodes = stream.map(GqlStatusObject::gqlStatus).toList();
+            assertThat(gqlStatusCodes).is(matchesGqlStatusExpectation);
         }
     }
 
@@ -72,7 +86,13 @@ public class NotificationTestSupport {
                 description);
     }
 
-    public static Condition<Iterable<? extends Notification>> contains(Condition<Notification> condition) {
+    public static Condition<String> gqlStatusCode(GqlStatusInfoCodes expectedGqlStatus) {
+        final var description = String.format("GQLSTATUS: %s", expectedGqlStatus);
+        return new Condition<>(
+                gqlStatusString -> gqlStatusString.equals(expectedGqlStatus.getStatusString()), description);
+    }
+
+    public static Condition<Iterable<? extends Notification>> containsNotification(Condition<Notification> condition) {
         return new Condition<>(
                 notifications -> {
                     for (var notification : notifications) {
@@ -85,7 +105,21 @@ public class NotificationTestSupport {
                 "an iterable containing " + condition.description());
     }
 
-    public static Condition<Iterable<? extends Notification>> doesNotContain(Condition<Notification> condition) {
+    public static Condition<Iterable<? extends String>> containsGqlStatus(Condition<String> condition) {
+        return new Condition<>(
+                gqlStatusCodes -> {
+                    for (var gqlStatus : gqlStatusCodes) {
+                        if (condition.matches(gqlStatus)) {
+                            return true;
+                        }
+                    }
+                    return false;
+                },
+                "an iterable containing " + condition.description());
+    }
+
+    public static Condition<Iterable<? extends Notification>> doesNotContainNotification(
+            Condition<Notification> condition) {
         return new Condition<>(
                 notifications -> {
                     for (var notification : notifications) {
@@ -98,12 +132,30 @@ public class NotificationTestSupport {
                 "an iterable not containing " + condition.description());
     }
 
-    void shouldNotifyInStream(String query, NotificationImplementation expectedNotification) {
+    public static Condition<Iterable<? extends String>> doesNotContainGqlStatus(Condition<String> condition) {
+        return new Condition<>(
+                gqlStatusCodes -> {
+                    for (var gqlStatus : gqlStatusCodes) {
+                        if (condition.matches(gqlStatus)) {
+                            return false;
+                        }
+                    }
+                    return true;
+                },
+                "an iterable not containing " + condition.description());
+    }
+
+    void shouldNotifyInStream(
+            String query, NotificationImplementation expectedNotification, GqlStatusInfoCodes gqlStatusInfo) {
         try (Transaction transaction = db.beginTx()) {
             // when
             try (Result result = transaction.execute(query)) {
                 // then
                 assertThat(result.getNotifications()).contains(expectedNotification);
+
+                assertThat(result.getGqlStatusObjects())
+                        .anySatisfy(gqlStatusObject ->
+                                assertEquals(gqlStatusInfo.getStatusString(), gqlStatusObject.gqlStatus()));
             }
             transaction.commit();
         }
@@ -115,6 +167,9 @@ public class NotificationTestSupport {
             try (Result result = transaction.execute(query)) {
                 // then
                 assertThat(result.getNotifications()).isEmpty();
+                assertThat(StreamSupport.stream(result.getGqlStatusObjects().spliterator(), false)
+                                .filter(gso -> !isStandardGqlStatusCode(gso)))
+                        .isEmpty();
             }
             transaction.commit();
         }

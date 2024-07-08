@@ -86,7 +86,6 @@ import org.apache.commons.codec.digest.DigestUtils;
 import org.junit.jupiter.api.Test;
 import org.neo4j.common.EntityType;
 import org.neo4j.exceptions.IndexHintException.IndexHintIndexType;
-import org.neo4j.exceptions.InvalidArgumentException;
 import org.neo4j.gqlstatus.DiagnosticRecord;
 import org.neo4j.graphdb.InputPosition;
 import org.neo4j.graphdb.NotificationCategory;
@@ -1371,9 +1370,9 @@ class NotificationCodeWithDescriptionTest {
         assertThat(notification.getDescription()).isEqualTo(description);
         assertThat(notification.getCategory()).isEqualTo(category);
         assertThat(notification.getClassification()).isEqualTo(classification);
-        assertThat(notification.getGqlStatus()).isEqualTo(gqlStatusString);
-        assertThat(notification.getDiagnosticRecord()).isEqualTo(diagnosticRecord);
-        assertThat(notification.getStatusDescription()).isEqualTo(statusDescription);
+        assertThat(notification.gqlStatus()).isEqualTo(gqlStatusString);
+        assertThat(notification.diagnosticRecord()).isEqualTo(diagnosticRecord);
+        assertThat(notification.statusDescription()).isEqualTo(statusDescription);
     }
 
     private final String warning = SeverityLevel.WARNING.name();
@@ -1406,52 +1405,63 @@ class NotificationCodeWithDescriptionTest {
     @Test
     void noNotificationShouldHaveUnknownClassification() {
         Arrays.stream(NotificationCodeWithDescription.values()).forEach(notification -> {
-            var notificationImpl = new NotificationImplementation.NotificationBuilder(notification).build();
+            var notificationImpl = new NotificationImplementation.NotificationBuilder(notification)
+                    // We need to fake a message parameter value array here
+                    // To make sure it has the correct length we set it to the message parameter key array
+                    .setMessageParameters(notification.getGqlStatusInfo().getStatusParameterKeys())
+                    .build();
             assertThat(notificationImpl.getClassification()).isNotEqualTo(NotificationClassification.UNKNOWN);
         });
     }
 
     @Test
     void notificationsShouldNotHaveTooFewParameterValues() {
-        var notificationImpl =
+        var notificationBuilder =
                 new NotificationImplementation.NotificationBuilder(NotificationCodeWithDescription.MISSING_REL_TYPE);
 
-        Exception e = assertThrows(
-                InvalidArgumentException.class, () -> notificationImpl.setMessageParameters(new String[] {}));
+        Exception e = assertThrows(IllegalArgumentException.class, () -> {
+            notificationBuilder.setMessageParameters(new String[] {});
+            notificationBuilder.build();
+        });
         assertThat(e.getMessage())
                 .isEqualTo("Expected parameterKeys: [reltype] and parameterValues: [] to have the same length.");
     }
 
     @Test
     void notificationsShouldNotHaveTooManyParameterValues() {
-        var notificationImpl =
+        var notificationBuilder =
                 new NotificationImplementation.NotificationBuilder(NotificationCodeWithDescription.MISSING_REL_TYPE);
 
-        Exception e = assertThrows(
-                InvalidArgumentException.class, () -> notificationImpl.setMessageParameters(new String[] {"A", "B"}));
+        Exception e = assertThrows(IllegalArgumentException.class, () -> {
+            notificationBuilder.setMessageParameters(new String[] {"A", "B"});
+            notificationBuilder.build();
+        });
         assertThat(e.getMessage())
                 .isEqualTo("Expected parameterKeys: [reltype] and parameterValues: [A, B] to have the same length.");
     }
 
     @Test
     void notificationsShouldNotHaveParameterValuesOfUnsupportedType() {
-        var notificationImpl = new NotificationImplementation.NotificationBuilder(
+        var notificationBuilder = new NotificationImplementation.NotificationBuilder(
                 NotificationCodeWithDescription.DEPRECATED_PROCEDURE_WITH_REPLACEMENT);
 
-        Exception e = assertThrows(
-                InvalidArgumentException.class, () -> notificationImpl.setMessageParameters(new Object[] {"A", 1.13}));
+        Exception e = assertThrows(IllegalArgumentException.class, () -> {
+            notificationBuilder.setMessageParameters(new Object[] {"A", 1.13});
+            notificationBuilder.build();
+        });
         assertThat(e.getMessage())
                 .isEqualTo("Expected parameter to be String, Boolean, Integer or List<String> but was 1.13");
     }
 
     @Test
     void notificationsShouldNotHaveParameterValuesOfUnsupportedListType() {
-        var notificationImpl = new NotificationImplementation.NotificationBuilder(
+        var notificationBuilder = new NotificationImplementation.NotificationBuilder(
                 NotificationCodeWithDescription.DEPRECATED_PROCEDURE_WITH_REPLACEMENT);
         var illegalList = List.of(true);
-        Exception e = assertThrows(
-                InvalidArgumentException.class,
-                () -> notificationImpl.setMessageParameters(new Object[] {"A", illegalList}));
+        Exception e = assertThrows(IllegalArgumentException.class, () -> {
+            notificationBuilder.setMessageParameters(new Object[] {"A", illegalList});
+            notificationBuilder.build();
+        });
         assertThat(e.getMessage())
                 .isEqualTo("Expected parameter to be String, Boolean, Integer or List<String> but was [true]");
     }
@@ -1472,8 +1482,7 @@ class NotificationCodeWithDescriptionTest {
             // Covers all notification information except NotificationDetail and position, which are query dependent
             notificationBuilder.append(notificationCode.description()); // Title
             notificationBuilder.append(notification.getDescription()); // Description
-            notificationBuilder.append(notification.getGqlStatus());
-            notificationBuilder.append(notification.getMessage());
+            notificationBuilder.append(notification.getGqlStatusInfo());
             notificationBuilder.append(notificationCode.serialize());
             notificationBuilder.append(notificationCode.getSeverity());
             notificationBuilder.append(notificationCode.getNotificationCategory());
@@ -1482,9 +1491,8 @@ class NotificationCodeWithDescriptionTest {
         byte[] notificationHash = DigestUtils.sha256(notificationBuilder.toString());
 
         byte[] expectedHash = new byte[] {
-            -73, -2, -116, 52, -18, 118, 21, -122, -3, 59, 40, -84,
-            120, 21, 85, -60, -38, 89, 64, -23, -111, 36, 100, -89,
-            -5, -111, -9, 29, -11, -57, -73, 69
+            102, -22, -83, -7, 41, -14, 54, -57, 32, 118, 81, -126, 39, -10, 49, 27, -127, 25, 22, -64, -56, -126, -97,
+            77, 117, -38, 15, -31, -13, 71, 62, -48
         };
 
         if (!Arrays.equals(notificationHash, expectedHash)) {

@@ -20,6 +20,17 @@
 package org.neo4j.cypher.internal.javacompat;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.gqlstatus.GqlStatusInfoCodes.STATUS_01N01;
+import static org.neo4j.gqlstatus.GqlStatusInfoCodes.STATUS_01N31;
+import static org.neo4j.gqlstatus.GqlStatusInfoCodes.STATUS_01N40;
+import static org.neo4j.gqlstatus.GqlStatusInfoCodes.STATUS_01N50;
+import static org.neo4j.gqlstatus.GqlStatusInfoCodes.STATUS_01N51;
+import static org.neo4j.gqlstatus.GqlStatusInfoCodes.STATUS_01N52;
+import static org.neo4j.gqlstatus.GqlStatusInfoCodes.STATUS_03N90;
+import static org.neo4j.gqlstatus.GqlStatusInfoCodes.STATUS_03N91;
+import static org.neo4j.gqlstatus.GqlStatusInfoCodes.STATUS_03N93;
+import static org.neo4j.gqlstatus.GqlStatusInfoCodes.STATUS_03N94;
+import static org.neo4j.gqlstatus.GqlStatusInfoCodes.STATUS_03N95;
 import static org.neo4j.graphdb.Label.label;
 
 import java.util.ArrayList;
@@ -29,6 +40,7 @@ import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.exceptions.IndexHintException.IndexHintIndexType;
+import org.neo4j.graphdb.GqlStatusObject;
 import org.neo4j.graphdb.InputPosition;
 import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.Transaction;
@@ -46,7 +58,8 @@ class NotificationAcceptanceTest extends NotificationTestSupport {
                         InputPosition.empty,
                         "runtime=pipelined",
                         "runtime=slotted",
-                        "This version of Neo4j does not support the requested runtime: `pipelined`"));
+                        "This version of Neo4j does not support the requested runtime: `pipelined`"),
+                STATUS_01N40);
     }
 
     @Test
@@ -63,7 +76,10 @@ class NotificationAcceptanceTest extends NotificationTestSupport {
 
     @Test
     void shouldWarnOnPotentiallyCachedQueries() {
-        assertNotifications("explain match (a)-->(b), (c)-->(d) return *", contains(cartesianProductNotification));
+        assertNotifications(
+                "explain match (a)-->(b), (c)-->(d) return *",
+                containsNotification(cartesianProductNotification),
+                containsGqlStatus(gqlStatusCode(STATUS_03N90)));
     }
 
     @Test
@@ -73,7 +89,8 @@ class NotificationAcceptanceTest extends NotificationTestSupport {
                 NotificationCodeWithDescription.indexHintUnfulfillable(
                         InputPosition.empty,
                         NotificationDetail.indexHint(EntityType.NODE, IndexHintIndexType.ANY, "n", "Person", "name"),
-                        NotificationDetail.index(IndexHintIndexType.ANY, "Person", List.of("name"))));
+                        NotificationDetail.index(IndexHintIndexType.ANY, "Person", List.of("name"))),
+                STATUS_01N31);
     }
 
     @Test
@@ -91,25 +108,29 @@ class NotificationAcceptanceTest extends NotificationTestSupport {
                 NotificationCodeWithDescription.indexHintUnfulfillable(
                         InputPosition.empty,
                         NotificationDetail.indexHint(EntityType.NODE, IndexHintIndexType.ANY, "n", "Person", "name"),
-                        NotificationDetail.index(IndexHintIndexType.ANY, "Person", List.of("name"))));
+                        NotificationDetail.index(IndexHintIndexType.ANY, "Person", List.of("name"))),
+                STATUS_01N31);
         shouldNotifyInStream(
                 query,
                 NotificationCodeWithDescription.indexHintUnfulfillable(
                         InputPosition.empty,
                         NotificationDetail.indexHint(EntityType.NODE, IndexHintIndexType.ANY, "m", "Party", "city"),
-                        NotificationDetail.index(IndexHintIndexType.ANY, "Party", List.of("city"))));
+                        NotificationDetail.index(IndexHintIndexType.ANY, "Party", List.of("city"))),
+                STATUS_01N31);
         shouldNotifyInStream(
                 query,
                 NotificationCodeWithDescription.indexHintUnfulfillable(
                         InputPosition.empty,
                         NotificationDetail.indexHint(EntityType.NODE, IndexHintIndexType.ANY, "k", "Animal", "species"),
-                        NotificationDetail.index(IndexHintIndexType.ANY, "Animal", List.of("species"))));
+                        NotificationDetail.index(IndexHintIndexType.ANY, "Animal", List.of("species"))),
+                STATUS_01N31);
         shouldNotifyInStream(
                 query,
                 NotificationCodeWithDescription.indexHintUnfulfillable(
                         InputPosition.empty,
                         NotificationDetail.indexHint(EntityType.NODE, IndexHintIndexType.TEXT, "o", "Other", "text"),
-                        NotificationDetail.index(IndexHintIndexType.TEXT, "Other", List.of("text"))));
+                        NotificationDetail.index(IndexHintIndexType.TEXT, "Other", List.of("text"))),
+                STATUS_01N31);
     }
 
     @Test
@@ -160,14 +181,16 @@ class NotificationAcceptanceTest extends NotificationTestSupport {
     void shouldNotNotifyOnEagerBeforeLoadCSVCreate() {
         assertNotifications(
                 "EXPLAIN MATCH (a), (b) CREATE (c) WITH c LOAD CSV FROM 'file:///ignore/ignore.csv' AS line RETURN *",
-                doesNotContain(eagerOperatorNotification));
+                doesNotContainNotification(eagerOperatorNotification),
+                doesNotContainGqlStatus(gqlStatusCode(STATUS_03N94)));
     }
 
     @Test
     void shouldWarnOnEagerAfterLoadCSV() {
         shouldNotifyInStream(
                 "EXPLAIN MATCH (n) LOAD CSV FROM 'file:///ignore/ignore.csv' AS line WITH * DELETE n MERGE () RETURN line",
-                NotificationCodeWithDescription.eagerLoadCsv(InputPosition.empty));
+                NotificationCodeWithDescription.eagerLoadCsv(InputPosition.empty),
+                STATUS_03N94);
     }
 
     @Test
@@ -178,7 +201,10 @@ class NotificationAcceptanceTest extends NotificationTestSupport {
 
     @Test
     void shouldNotNotifyOnEagerWithoutLoadCSV() {
-        assertNotifications("EXPLAIN MATCH (a), (b) CREATE (c) RETURN *", doesNotContain(eagerOperatorNotification));
+        assertNotifications(
+                "EXPLAIN MATCH (a), (b) CREATE (c) RETURN *",
+                doesNotContainNotification(eagerOperatorNotification),
+                doesNotContainGqlStatus(gqlStatusCode(STATUS_03N94)));
     }
 
     @Test
@@ -191,7 +217,8 @@ class NotificationAcceptanceTest extends NotificationTestSupport {
         }
         assertNotifications(
                 "EXPLAIN LOAD CSV FROM 'file:///ignore/ignore.csv' AS line MATCH (a:A) RETURN *",
-                doesNotContain(largeLabelCSVNotification));
+                doesNotContainNotification(largeLabelCSVNotification),
+                doesNotContainGqlStatus(gqlStatusCode(STATUS_03N93)));
     }
 
     @Test
@@ -204,7 +231,8 @@ class NotificationAcceptanceTest extends NotificationTestSupport {
         }
         assertNotifications(
                 "EXPLAIN LOAD CSV FROM 'file:///ignore/ignore.csv' AS line MERGE (a:A) RETURN *",
-                doesNotContain(largeLabelCSVNotification));
+                doesNotContainNotification(largeLabelCSVNotification),
+                doesNotContainGqlStatus(gqlStatusCode(STATUS_03N93)));
     }
 
     @Test
@@ -221,7 +249,8 @@ class NotificationAcceptanceTest extends NotificationTestSupport {
     void shouldWarnOnUnboundedShortestPath() {
         shouldNotifyInStream(
                 "EXPLAIN MATCH p = shortestPath((n)-[*]->(m)) RETURN m",
-                NotificationCodeWithDescription.unboundedShortestPath(new InputPosition(31, 1, 32), "(n)-[*]->(m)"));
+                NotificationCodeWithDescription.unboundedShortestPath(new InputPosition(31, 1, 32), "(n)-[*]->(m)"),
+                STATUS_03N91);
     }
 
     @Test
@@ -256,7 +285,8 @@ class NotificationAcceptanceTest extends NotificationTestSupport {
         db.executeTransactionally("Call db.awaitIndexes()");
         assertNotifications(
                 "EXPLAIN MATCH (n:Person) WHERE n.foo = 'Tobias' AND n['key-' + n.name] = 'value' RETURN n",
-                contains(dynamicPropertyNotification));
+                containsNotification(dynamicPropertyNotification),
+                containsGqlStatus(gqlStatusCode(STATUS_03N95)));
     }
 
     @Test
@@ -290,7 +320,10 @@ class NotificationAcceptanceTest extends NotificationTestSupport {
         db.executeTransactionally("CREATE INDEX FOR (n:Person) ON (n.name)");
         db.executeTransactionally("Call db.awaitIndexes()");
         for (String query : queries) {
-            assertNotifications(query, contains(dynamicPropertyNotification));
+            assertNotifications(
+                    query,
+                    containsNotification(dynamicPropertyNotification),
+                    containsGqlStatus(gqlStatusCode(STATUS_03N95)));
         }
     }
 
@@ -307,7 +340,8 @@ class NotificationAcceptanceTest extends NotificationTestSupport {
         db.executeTransactionally("Call db.awaitIndexes()");
         assertNotifications(
                 "EXPLAIN MATCH (n:Person:Foo) WHERE n['key-' + n.name] = 'value' RETURN n",
-                contains(dynamicPropertyNotification));
+                containsNotification(dynamicPropertyNotification),
+                containsGqlStatus(gqlStatusCode(STATUS_03N95)));
     }
 
     @Test
@@ -317,27 +351,38 @@ class NotificationAcceptanceTest extends NotificationTestSupport {
         db.executeTransactionally("Call db.awaitIndexes()");
         assertNotifications(
                 "EXPLAIN MATCH (n:Person:Jedi) WHERE n['key-' + n.name] = 'value' RETURN n",
-                contains(dynamicPropertyNotification));
+                containsNotification(dynamicPropertyNotification),
+                containsGqlStatus(gqlStatusCode(STATUS_03N95)));
     }
 
     @Test
     void shouldWarnOnCartesianProduct() {
 
-        assertNotifications("explain match (a)-->(b), (c)-->(d) return *", contains(cartesianProductNotification));
+        assertNotifications(
+                "explain match (a)-->(b), (c)-->(d) return *",
+                containsNotification(cartesianProductNotification),
+                containsGqlStatus(gqlStatusCode(STATUS_03N90)));
 
         assertNotifications(
                 "explain cypher runtime=interpreted match (a)-->(b), (c)-->(d) return *",
-                contains(cartesianProductNotification));
+                containsNotification(cartesianProductNotification),
+                containsGqlStatus(gqlStatusCode(STATUS_03N90)));
     }
 
     @Test
     void shouldNotifyOnCartesianProductWithoutExplain() {
-        assertNotifications("match (a)-->(b), (c)-->(d) return *", contains(cartesianProductNotification));
+        assertNotifications(
+                "match (a)-->(b), (c)-->(d) return *",
+                containsNotification(cartesianProductNotification),
+                containsGqlStatus(gqlStatusCode(STATUS_03N90)));
     }
 
     @Test
     void shouldWarnOnMissingLabel() {
-        assertNotifications("EXPLAIN MATCH (a:NO_SUCH_THING) RETURN a", contains(unknownLabelNotification));
+        assertNotifications(
+                "EXPLAIN MATCH (a:NO_SUCH_THING) RETURN a",
+                containsNotification(unknownLabelNotification),
+                containsGqlStatus(gqlStatusCode(STATUS_01N50)));
     }
 
     @Test
@@ -347,31 +392,43 @@ class NotificationAcceptanceTest extends NotificationTestSupport {
             tx.commit();
         }
 
-        assertNotifications("EXPLAIN MATCH (n:Preson) RETURN *", contains(unknownLabelNotification));
+        assertNotifications(
+                "EXPLAIN MATCH (n:Preson) RETURN *",
+                containsNotification(unknownLabelNotification),
+                containsGqlStatus(gqlStatusCode(STATUS_01N50)));
         shouldNotNotifyInStream("EXPLAIN MATCH (n:Person) RETURN *");
     }
 
     @Test
     void shouldWarnOnMissingLabelWithCommentInBeginning() {
-        assertNotifications("EXPLAIN//TESTING \nMATCH (n:X) return n Limit 1", contains(unknownLabelNotification));
+        assertNotifications(
+                "EXPLAIN//TESTING \nMATCH (n:X) return n Limit 1",
+                containsNotification(unknownLabelNotification),
+                containsGqlStatus(gqlStatusCode(STATUS_01N50)));
     }
 
     @Test
     void shouldWarnOnMissingLabelWithCommentInBeginningTwoLines() {
         assertNotifications(
                 "//TESTING \n //TESTING \n EXPLAIN MATCH (n)\n MATCH (b:X) return n,b Limit 1",
-                contains(unknownLabelNotification));
+                containsNotification(unknownLabelNotification),
+                containsGqlStatus(gqlStatusCode(STATUS_01N50)));
     }
 
     @Test
     void shouldWarnOnMissingLabelWithCommentInBeginningOnOneLine() {
-        assertNotifications("explain /* Testing */ MATCH (n:X) RETURN n", contains(unknownLabelNotification));
+        assertNotifications(
+                "explain /* Testing */ MATCH (n:X) RETURN n",
+                containsNotification(unknownLabelNotification),
+                containsGqlStatus(gqlStatusCode(STATUS_01N50)));
     }
 
     @Test
     void shouldWarnOnMissingLabelWithCommentInMiddle() {
         assertNotifications(
-                "EXPLAIN\nMATCH (n)\n//TESTING \nMATCH (n:X)\nreturn n Limit 1", contains(unknownLabelNotification));
+                "EXPLAIN\nMATCH (n)\n//TESTING \nMATCH (n:X)\nreturn n Limit 1",
+                containsNotification(unknownLabelNotification),
+                containsGqlStatus(gqlStatusCode(STATUS_01N50)));
     }
 
     @Test
@@ -382,7 +439,9 @@ class NotificationAcceptanceTest extends NotificationTestSupport {
     @Test
     void shouldWarnOnMissingRelationshipType() {
         assertNotifications(
-                "EXPLAIN MATCH ()-[a:NO_SUCH_THING]->() RETURN a", contains(unknownRelationshipNotification));
+                "EXPLAIN MATCH ()-[a:NO_SUCH_THING]->() RETURN a",
+                containsNotification(unknownRelationshipNotification),
+                containsGqlStatus(gqlStatusCode(STATUS_01N51)));
     }
 
     @Test
@@ -393,7 +452,10 @@ class NotificationAcceptanceTest extends NotificationTestSupport {
         }
 
         db.executeTransactionally("CREATE (n)-[r:R]->(m)");
-        assertNotifications("EXPLAIN MATCH ()-[r:r]->() RETURN *", contains(unknownRelationshipNotification));
+        assertNotifications(
+                "EXPLAIN MATCH ()-[r:r]->() RETURN *",
+                containsNotification(unknownRelationshipNotification),
+                containsGqlStatus(gqlStatusCode(STATUS_01N51)));
         shouldNotNotifyInStream("EXPLAIN MATCH ()-[r:R]->() RETURN *");
     }
 
@@ -401,20 +463,26 @@ class NotificationAcceptanceTest extends NotificationTestSupport {
     void shouldWarnOnMissingRelationshipTypeWithComment() {
         assertNotifications(
                 "EXPLAIN /*Comment*/ MATCH ()-[a:NO_SUCH_THING]->() RETURN a",
-                contains(unknownRelationshipNotification));
+                containsNotification(unknownRelationshipNotification),
+                containsGqlStatus(gqlStatusCode(STATUS_01N51)));
     }
 
     @Test
     void shouldWarnOnMissingProperty() {
         assertNotifications(
-                "EXPLAIN MATCH (a {NO_SUCH_THING: 1337}) RETURN a", contains(unknownPropertyKeyNotification));
+                "EXPLAIN MATCH (a {NO_SUCH_THING: 1337}) RETURN a",
+                containsNotification(unknownPropertyKeyNotification),
+                containsGqlStatus(gqlStatusCode(STATUS_01N52)));
     }
 
     @Test
     void shouldWarnOnMisspelledProperty() {
         db.executeTransactionally("CREATE (n {prop : 42})");
         db.executeTransactionally("CREATE (n)-[r:R]->(m)");
-        assertNotifications("EXPLAIN MATCH (n) WHERE n.propp = 43 RETURN n", contains(unknownPropertyKeyNotification));
+        assertNotifications(
+                "EXPLAIN MATCH (n) WHERE n.propp = 43 RETURN n",
+                containsNotification(unknownPropertyKeyNotification),
+                containsGqlStatus(gqlStatusCode(STATUS_01N52)));
         shouldNotNotifyInStream("EXPLAIN MATCH (n) WHERE n.prop = 43 RETURN n");
     }
 
@@ -422,7 +490,8 @@ class NotificationAcceptanceTest extends NotificationTestSupport {
     void shouldWarnOnMissingPropertyWithComment() {
         assertNotifications(
                 "EXPLAIN /*Comment*/ MATCH (a {NO_SUCH_THING: 1337}) RETURN a",
-                contains(unknownPropertyKeyNotification));
+                containsNotification(unknownPropertyKeyNotification),
+                containsGqlStatus(gqlStatusCode(STATUS_01N52)));
     }
 
     @Test
@@ -431,7 +500,7 @@ class NotificationAcceptanceTest extends NotificationTestSupport {
     }
 
     @Test
-    void shouldGiveCorrectPositionWhetherFromCacheOrNot() {
+    void shouldGiveCorrectPositionWhetherFromCacheOrNotNotificationApi() {
         // Given
         String cachedQuery = "MATCH (a:L1) RETURN a";
         String nonCachedQuery = "MATCH (a:L2) RETURN a";
@@ -462,8 +531,42 @@ class NotificationAcceptanceTest extends NotificationTestSupport {
     }
 
     @Test
+    void shouldGiveCorrectPositionWhetherFromCacheOrNotGqlStatusObjectApi() {
+        // Given
+        String cachedQuery = "MATCH (a:L1) RETURN a";
+        String nonCachedQuery = "MATCH (a:L2) RETURN a";
+        // make sure we cache the query
+        int limit = db.getDependencyResolver()
+                .resolveDependency(Config.class)
+                .get(GraphDatabaseInternalSettings.cypher_expression_recompilation_limit);
+        try (Transaction transaction = db.beginTx()) {
+            for (int i = 0; i < limit + 1; i++) {
+                transaction.execute(cachedQuery).resultAsString();
+            }
+            transaction.commit();
+        }
+
+        // When
+        try (Transaction transaction = db.beginTx()) {
+            GqlStatusObject cachedGqlStatusObject = Iterables.asList(
+                            transaction.execute("EXPLAIN " + cachedQuery).getGqlStatusObjects())
+                    .get(0);
+            GqlStatusObject nonCachedGqlStatusObject = Iterables.asList(
+                            transaction.execute("EXPLAIN " + nonCachedQuery).getGqlStatusObjects())
+                    .get(0);
+
+            // Then
+            assertThat(cachedGqlStatusObject.getPosition()).isEqualTo(new InputPosition(17, 1, 18));
+            assertThat(nonCachedGqlStatusObject.getPosition()).isEqualTo(new InputPosition(17, 1, 18));
+        }
+    }
+
+    @Test
     void shouldWarnOnExecute() {
-        assertNotifications("MATCH (a {NO_SUCH_THING: 1337}) RETURN a", contains(unknownPropertyKeyNotification));
+        assertNotifications(
+                "MATCH (a {NO_SUCH_THING: 1337}) RETURN a",
+                containsNotification(unknownPropertyKeyNotification),
+                containsGqlStatus(gqlStatusCode(STATUS_01N52)));
     }
 
     @Test
@@ -474,7 +577,8 @@ class NotificationAcceptanceTest extends NotificationTestSupport {
                         InputPosition.empty,
                         "'runtime=interpreted' is deprecated, please use 'runtime=slotted' instead",
                         "runtime=interpreted",
-                        "runtime=slotted"));
+                        "runtime=slotted"),
+                STATUS_01N01);
     }
 
     @Test
@@ -482,6 +586,7 @@ class NotificationAcceptanceTest extends NotificationTestSupport {
         db.executeTransactionally("MATCH (a)-[:A|:B]-() RETURN a");
         assertNotifications(
                 "CYPHER replan=force EXPLAIN MATCH (a)-[:A|:B]-() RETURN a",
-                contains(deprecatedRelationshipTypeSeparator));
+                containsNotification(deprecatedRelationshipTypeSeparator),
+                containsGqlStatus(gqlStatusCode(STATUS_01N01)));
     }
 }

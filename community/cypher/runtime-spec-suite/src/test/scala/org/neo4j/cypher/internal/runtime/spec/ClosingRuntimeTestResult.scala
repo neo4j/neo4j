@@ -62,6 +62,8 @@ class ClosingRuntimeTestResult(
 
   override def consumptionState(): RuntimeResult.ConsumptionState = inner.consumptionState()
 
+  override def hasServedRows: Boolean = inner.hasServedRows
+
   override def queryStatistics(): QueryStatistics = inner.queryStatistics()
 
   override def heapHighWaterMark(): Long = inner.heapHighWaterMark()

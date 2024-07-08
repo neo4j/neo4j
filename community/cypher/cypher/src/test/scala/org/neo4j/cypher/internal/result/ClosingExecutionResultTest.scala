@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.runtime.ExecutionMode
 import org.neo4j.cypher.internal.runtime.InternalQueryType
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.exceptions.Neo4jException
+import org.neo4j.graphdb.GqlStatusObject
 import org.neo4j.kernel.api.exceptions.Status
 import org.neo4j.kernel.api.query.ExecutingQuery
 import org.neo4j.kernel.impl.query.QueryExecutionMonitor
@@ -85,6 +86,10 @@ class ClosingExecutionResultTest extends CypherFunSuite {
 
   test("should close on exploding notifications") {
     assertCloseOnExplodingMethod(_.notifications, "notifications")
+  }
+
+  test("should close on exploding gqlStatusObjects") {
+    assertCloseOnExplodingMethod(_.gqlStatusObjects, "gqlStatusObjects")
   }
 
   test("should close on exploding request") {
@@ -164,6 +169,8 @@ class ClosingExecutionResultTest extends CypherFunSuite {
 
     override def notifications: Iterable[NotificationImplementation] = null
 
+    override def gqlStatusObjects: Iterable[GqlStatusObject] = null
+
     override def fieldNames(): Array[String] = Array("x", "y")
 
     override def request(numberOfRecords: Long): Unit = {}
@@ -191,6 +198,8 @@ class ClosingExecutionResultTest extends CypherFunSuite {
     override def queryType: InternalQueryType = throw TestClosingException("queryType")
 
     override def notifications: Iterable[NotificationImplementation] = throw TestClosingException("notifications")
+
+    override def gqlStatusObjects: Iterable[GqlStatusObject] = throw TestClosingException("gqlStatusObjects")
 
     override def close(reason: CloseReason): Unit = {
       super.close(reason)

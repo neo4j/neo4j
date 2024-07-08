@@ -46,6 +46,9 @@ class PipeExecutionResult(
   private var cancelled = false
   private var inner: ClosingIterator[_] = _
   private val numberOfFields = fieldNames.length
+  private var nonEmptyResult = false
+
+  override def hasServedRows: Boolean = nonEmptyResult
 
   override def getErrorOrNull: Throwable = null
 
@@ -93,6 +96,7 @@ class PipeExecutionResult(
 
   private def serveResults(): Unit = {
     while (inner.hasNext && demand > 0 && !cancelled) {
+      nonEmptyResult = true
       inner.next()
       demand -= 1L
     }

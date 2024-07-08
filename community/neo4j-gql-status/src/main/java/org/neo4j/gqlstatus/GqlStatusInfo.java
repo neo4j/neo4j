@@ -28,11 +28,15 @@ public sealed interface GqlStatusInfo permits GqlStatusInfoCodes {
 
     String getMessage(List<String> param);
 
+    Condition getCondition();
+
     String getSubCondition();
 
     GqlStatus getGqlStatus();
 
     String getStatusString();
+
+    String[] getStatusParameterKeys();
 
     default String toJavaFormattable(String message) {
         String regex = "\\$\\w+";

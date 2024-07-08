@@ -24,6 +24,7 @@ import java.util.Collection;
 import java.util.List;
 import org.neo4j.fabric.stream.summary.Summary;
 import org.neo4j.graphdb.ExecutionPlanDescription;
+import org.neo4j.graphdb.GqlStatusObject;
 import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.QueryStatistics;
 import org.neo4j.kernel.impl.query.QueryExecution;
@@ -47,6 +48,13 @@ public class LocalExecutionSummary implements Summary {
         List<Notification> notifications = new ArrayList<>();
         queryExecution.getNotifications().forEach(notifications::add);
         return notifications;
+    }
+
+    @Override
+    public Collection<GqlStatusObject> getGqlStatusObjects() {
+        List<GqlStatusObject> gqlStatusObjects = new ArrayList<>();
+        queryExecution.getGqlStatusObjects().forEach(gqlStatusObjects::add);
+        return gqlStatusObjects;
     }
 
     @Override

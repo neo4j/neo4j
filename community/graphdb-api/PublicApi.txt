@@ -79,6 +79,10 @@ org.neo4j.graphdb.ExecutionPlanDescription::getIdentifiers() java.util.Set<java.
 org.neo4j.graphdb.ExecutionPlanDescription::getName() java.lang.String public abstract
 org.neo4j.graphdb.ExecutionPlanDescription::getProfilerStatistics() org.neo4j.graphdb.ExecutionPlanDescription.ProfilerStatistics public abstract
 org.neo4j.graphdb.ExecutionPlanDescription::hasProfilerStatistics() boolean public abstract
+org.neo4j.graphdb.GqlStatusObject public abstract interface implements org.neo4j.gqlstatus.CommonGqlStatusObject
+org.neo4j.graphdb.GqlStatusObject::getClassification() org.neo4j.graphdb.NotificationClassification public default
+org.neo4j.graphdb.GqlStatusObject::getPosition() org.neo4j.graphdb.InputPosition public default
+org.neo4j.graphdb.GqlStatusObject::getSeverity() org.neo4j.graphdb.SeverityLevel public default
 org.neo4j.graphdb.GraphDatabaseService public abstract interface
 org.neo4j.graphdb.GraphDatabaseService::<T extends java.lang.Object>executeTransactionally(java.lang.String, java.util.Map<java.lang.String,java.lang.Object>, org.neo4j.graphdb.ResultTransformer<T>) #T public abstract throws org.neo4j.graphdb.QueryExecutionException
 org.neo4j.graphdb.GraphDatabaseService::<T extends java.lang.Object>executeTransactionally(java.lang.String, java.util.Map<java.lang.String,java.lang.Object>, org.neo4j.graphdb.ResultTransformer<T>, java.time.Duration) #T public abstract throws org.neo4j.graphdb.QueryExecutionException
@@ -278,6 +282,7 @@ org.neo4j.graphdb.Result::<VisitationException extends java.lang.Exception>accep
 org.neo4j.graphdb.Result::close() void public abstract
 org.neo4j.graphdb.Result::columns() java.util.List<java.lang.String> public abstract
 org.neo4j.graphdb.Result::getExecutionPlanDescription() org.neo4j.graphdb.ExecutionPlanDescription public abstract
+org.neo4j.graphdb.Result::getGqlStatusObjects() java.lang.Iterable<org.neo4j.graphdb.GqlStatusObject> public abstract
 org.neo4j.graphdb.Result::getNotifications() java.lang.Iterable<org.neo4j.graphdb.Notification> public abstract
 org.neo4j.graphdb.Result::getQueryExecutionType() org.neo4j.graphdb.QueryExecutionType public abstract
 org.neo4j.graphdb.Result::getQueryStatistics() org.neo4j.graphdb.QueryStatistics public abstract
@@ -290,6 +295,7 @@ org.neo4j.graphdb.ResultTransformer<T extends java.lang.Object> public abstract 
 org.neo4j.graphdb.ResultTransformer<T>::EMPTY_TRANSFORMER org.neo4j.graphdb.ResultTransformer<java.lang.Void> public static final
 org.neo4j.graphdb.SeverityLevel public final enum extends java.lang.Enum<org.neo4j.graphdb.SeverityLevel>
 org.neo4j.graphdb.SeverityLevel::INFORMATION org.neo4j.graphdb.SeverityLevel public static final
+org.neo4j.graphdb.SeverityLevel::UNKNOWN org.neo4j.graphdb.SeverityLevel public static final
 org.neo4j.graphdb.SeverityLevel::WARNING org.neo4j.graphdb.SeverityLevel public static final
 org.neo4j.graphdb.SeverityLevel::valueOf(java.lang.String) org.neo4j.graphdb.SeverityLevel public static
 org.neo4j.graphdb.SeverityLevel::values() org.neo4j.graphdb.SeverityLevel[] public static

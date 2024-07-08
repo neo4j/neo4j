@@ -118,6 +118,8 @@ object PredicateExecutionPlan {
 case class NoRuntimeResult(subscriber: QuerySubscriber, runtimeNotifications: Set[InternalNotification])
     extends EmptyQuerySubscription(subscriber) with RuntimeResult {
 
+  override def hasServedRows: Boolean = false
+
   override def fieldNames(): Array[String] = Array.empty
 
   override def queryStatistics(): QueryStatistics = QueryStatistics()

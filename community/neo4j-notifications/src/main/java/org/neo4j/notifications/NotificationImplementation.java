@@ -19,17 +19,11 @@
  */
 package org.neo4j.notifications;
 
-import static org.neo4j.gqlstatus.Condition.createStandardDescription;
-
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import java.util.Objects;
-import org.neo4j.exceptions.InvalidArgumentException;
-import org.neo4j.gqlstatus.Condition;
+import org.neo4j.gqlstatus.CommonGqlStatusObjectImplementation;
 import org.neo4j.gqlstatus.DiagnosticRecord;
-import org.neo4j.gqlstatus.GqlStatus;
+import org.neo4j.gqlstatus.GqlStatusInfo;
+import org.neo4j.graphdb.GqlStatusObject;
 import org.neo4j.graphdb.InputPosition;
 import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.NotificationCategory;
@@ -37,79 +31,44 @@ import org.neo4j.graphdb.NotificationClassification;
 import org.neo4j.graphdb.SeverityLevel;
 import org.neo4j.kernel.api.exceptions.Status;
 
-public final class NotificationImplementation implements Notification {
+public final class NotificationImplementation extends CommonGqlStatusObjectImplementation
+        implements Notification, GqlStatusObject {
     private final Status neo4jStatus;
-    private final GqlStatus gqlStatus;
-    private final DiagnosticRecord diagnosticRecord;
     private final String title;
-    private final String description;
+    private final String descriptionWithParameters;
     private final InputPosition position;
-    private final String message;
-    private final String severity;
-    private final String subCondition;
-    private final Condition condition;
 
     NotificationImplementation(
-            NotificationCodeWithDescription notificationCodeWithDescription,
-            GqlStatus gqlStatus,
+            Status neo4jStatus,
+            GqlStatusInfo gqlStatusInfo,
+            DiagnosticRecord diagnosticRecord,
             InputPosition position,
             String title,
-            String description,
-            String message,
-            String subCondition,
-            Condition condition,
-            Map<String, Object> statusParameters) {
+            String descriptionWithParameters,
+            Object[] messageParameterValues) {
 
-        this.neo4jStatus = notificationCodeWithDescription.getStatus();
+        super(gqlStatusInfo, diagnosticRecord, messageParameterValues);
 
-        String classification;
-        this.subCondition = subCondition;
-        this.condition = condition;
-
-        var statusCode = neo4jStatus.code();
-        if (statusCode instanceof Status.NotificationCode) {
-            this.severity = ((Status.NotificationCode) statusCode).getSeverity();
-            classification = ((Status.NotificationCode) statusCode).getNotificationCategory();
-        } else {
-            throw new IllegalStateException("'" + statusCode + "' is not a notification code.");
-        }
-
-        this.diagnosticRecord = new DiagnosticRecord(
-                this.severity,
-                classification,
-                position.getOffset(),
-                position.getLine(),
-                position.getColumn(),
-                statusParameters);
-        this.gqlStatus = gqlStatus;
+        // Legacy parts of the notification API
+        this.neo4jStatus = neo4jStatus;
         this.position = position;
         this.title = title;
-        this.description = description;
-        this.message = message;
+        this.descriptionWithParameters = descriptionWithParameters;
     }
 
     public static class NotificationBuilder {
         private final NotificationCodeWithDescription notificationCodeWithDescription;
-        private final GqlStatus gqlStatus;
+        private final GqlStatusInfo gqlStatusInfo;
+        private Object[] messageParameterValues = new String[] {};
         private String title;
-        private final String description;
         private InputPosition position;
-        private final String message;
-        private final String subCondition;
-        private final Condition condition;
-        private String[] messageParameters;
-        private Map<String, Object> statusParameters;
         private String[] notificationDetails;
 
         public NotificationBuilder(NotificationCodeWithDescription notificationCodeWithDescription) {
             this.notificationCodeWithDescription = notificationCodeWithDescription;
-            this.gqlStatus = notificationCodeWithDescription.getGqlStatus();
-            this.description = notificationCodeWithDescription.getDescription();
+            this.gqlStatusInfo = notificationCodeWithDescription.getGqlStatusInfo();
             this.title = notificationCodeWithDescription.getStatus().code().description();
             this.position = InputPosition.empty;
-            this.message = notificationCodeWithDescription.getMessage();
-            this.subCondition = notificationCodeWithDescription.getSubCondition();
-            this.condition = notificationCodeWithDescription.getCondition();
         }
 
         public NotificationBuilder setPosition(InputPosition position) {
@@ -129,76 +88,39 @@ public final class NotificationImplementation implements Notification {
             return this;
         }
 
-        public NotificationBuilder setMessageParameters(Object[] parameterValues) {
-            String[] parameterKeys = notificationCodeWithDescription.getStatusParameterKeys();
-            this.statusParameters = new HashMap<>();
-            this.messageParameters = new String[parameterValues.length];
-
-            if (parameterKeys.length != parameterValues.length) {
-                throw new InvalidArgumentException(String.format(
-                        "Expected parameterKeys: %s and parameterValues: %s to have the same length.",
-                        Arrays.toString(parameterKeys), Arrays.toString(parameterValues)));
-            }
-
-            for (int i = 0; i < parameterKeys.length; i++) {
-                String key = parameterKeys[i];
-                Object value = parameterValues[i];
-
-                if (value instanceof String s) {
-                    this.statusParameters.put(key, value);
-                    this.messageParameters[i] = s;
-                } else if (value instanceof Boolean b) {
-                    this.statusParameters.put(key, value);
-                    this.messageParameters[i] = b.toString();
-                } else if (value instanceof Integer nbr) {
-                    this.statusParameters.put(key, value);
-                    this.messageParameters[i] = nbr.toString();
-                } else if (isListOfString(value)) {
-                    this.statusParameters.put(key, value);
-
-                    //noinspection unchecked
-                    this.messageParameters[i] = String.join(", ", ((List<String>) value));
-                } else {
-                    throw new InvalidArgumentException(String.format(
-                            "Expected parameter to be String, Boolean, Integer or List<String> but was %s", value));
-                }
-            }
+        public NotificationBuilder setMessageParameters(Object[] messageParameterValues) {
+            this.messageParameterValues = messageParameterValues;
             return this;
         }
 
-        private boolean isListOfString(Object obj) {
-            if (!(obj instanceof List<?> list)) {
-                return false;
-            }
-
-            for (Object element : list) {
-                if (!(element instanceof String)) {
-                    return false;
-                }
-            }
-            return true;
-        }
-
         public NotificationImplementation build() {
-            var detailedDescription = description;
+            var detailedDescription = notificationCodeWithDescription.getDescription();
             if (notificationDetails != null) {
-                detailedDescription = String.format(description, (Object[]) notificationDetails);
+                detailedDescription = String.format(detailedDescription, (Object[]) notificationDetails);
             }
-            var detailedMessage = message;
-            if (messageParameters != null) {
-                detailedMessage = String.format(message, (Object[]) messageParameters);
+
+            String severity;
+            String classification;
+
+            var statusCode = notificationCodeWithDescription.getStatus().code();
+            if (statusCode instanceof Status.NotificationCode notificationCode) {
+                severity = notificationCode.getSeverity();
+                classification = notificationCode.getNotificationCategory();
+            } else {
+                throw new IllegalStateException("'" + statusCode + "' is not a notification code.");
             }
+
+            var diagnosticRecord = new DiagnosticRecord(
+                    severity, classification, position.getOffset(), position.getLine(), position.getColumn());
 
             return new NotificationImplementation(
-                    notificationCodeWithDescription,
-                    gqlStatus,
+                    notificationCodeWithDescription.getStatus(),
+                    gqlStatusInfo,
+                    diagnosticRecord,
                     position,
                     title,
                     detailedDescription,
-                    detailedMessage,
-                    subCondition,
-                    condition,
-                    statusParameters);
+                    messageParameterValues);
         }
     }
 
@@ -218,7 +140,7 @@ public final class NotificationImplementation implements Notification {
 
     @Override
     public String getDescription() {
-        return description;
+        return descriptionWithParameters;
     }
 
     @Override
@@ -231,6 +153,7 @@ public final class NotificationImplementation implements Notification {
         return mapCategory(diagnosticRecord.asMap().get("_classification").toString());
     }
 
+    @Override
     public NotificationClassification getClassification() {
         return mapClassification(diagnosticRecord.asMap().get("_classification").toString());
     }
@@ -242,7 +165,7 @@ public final class NotificationImplementation implements Notification {
 
     @Override
     public String toString() {
-        return "Notification{" + "position=" + position + ", description='" + description + '\'' + '}';
+        return "Notification{" + "position=" + position + ", description='" + descriptionWithParameters + '\'' + '}';
     }
 
     @Override
@@ -255,16 +178,15 @@ public final class NotificationImplementation implements Notification {
         }
         NotificationImplementation that = (NotificationImplementation) o;
         return Objects.equals(position, that.position)
-                && Objects.equals(description, that.description)
+                && Objects.equals(descriptionWithParameters, that.descriptionWithParameters)
+                && Objects.equals(gqlStatusInfo, that.gqlStatusInfo)
                 && Objects.equals(title, that.title)
-                && Objects.equals(message, that.message)
-                && Objects.equals(gqlStatus, that.gqlStatus)
                 && Objects.equals(diagnosticRecord, that.diagnosticRecord);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(position, description, title, message, gqlStatus, diagnosticRecord);
+        return Objects.hash(position, descriptionWithParameters, gqlStatusInfo, title, diagnosticRecord);
     }
 
     private SeverityLevel mapSeverity(String severityLevel) {
@@ -277,23 +199,5 @@ public final class NotificationImplementation implements Notification {
 
     private NotificationClassification mapClassification(String classification) {
         return NotificationClassification.valueOf(classification);
-    }
-
-    // Note: this should not be in the public interface until we have decided what name this field/function should have.
-    public String getMessage() {
-        return message;
-    }
-
-    public String getGqlStatus() {
-        return gqlStatus.gqlStatusString();
-    }
-
-    public Map<String, Object> getDiagnosticRecord() {
-        return diagnosticRecord.asMap();
-    }
-
-    public String getStatusDescription() {
-
-        return (createStandardDescription(this.condition, this.subCondition) + ". " + this.message);
     }
 }

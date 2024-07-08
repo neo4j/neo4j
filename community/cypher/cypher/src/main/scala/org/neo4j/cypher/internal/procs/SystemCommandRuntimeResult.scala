@@ -52,6 +52,8 @@ case class SystemCommandRuntimeResult(
   override val fieldNames: Array[String] = execution.fieldNames
   private var state = ConsumptionState.NOT_STARTED
 
+  // This will be overwritten to false for updating commands
+  override def hasServedRows: Boolean = true
   override def queryStatistics(): QueryStatistics = QueryStatistics()
 
   override def heapHighWaterMark(): Long = HeapHighWaterMarkTracker.ALLOCATIONS_NOT_TRACKED

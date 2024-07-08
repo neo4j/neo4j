@@ -29,6 +29,7 @@ import org.neo4j.fabric.stream.Rx2SyncStream;
 import org.neo4j.fabric.stream.StatementResult;
 import org.neo4j.fabric.stream.summary.Summary;
 import org.neo4j.graphdb.ExecutionPlanDescription;
+import org.neo4j.graphdb.GqlStatusObject;
 import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.QueryExecutionType;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -128,6 +129,11 @@ public class BoltQueryExecutionImpl implements BoltQueryExecution {
         @Override
         public Iterable<Notification> getNotifications() {
             return getSummary().getNotifications();
+        }
+
+        @Override
+        public Iterable<GqlStatusObject> getGqlStatusObjects() {
+            return getSummary().getGqlStatusObjects();
         }
 
         @Override

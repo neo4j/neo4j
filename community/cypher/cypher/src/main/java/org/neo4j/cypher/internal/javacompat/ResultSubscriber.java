@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.result.string.ResultStringBuilder;
 import org.neo4j.exceptions.CypherExecutionException;
 import org.neo4j.exceptions.Neo4jException;
 import org.neo4j.graphdb.ExecutionPlanDescription;
+import org.neo4j.graphdb.GqlStatusObject;
 import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.QueryExecutionException;
 import org.neo4j.graphdb.QueryExecutionType;
@@ -239,6 +240,8 @@ public class ResultSubscriber extends PrefetchingResourceIterator<Map<String, Ob
             }
             accept(stringBuilder);
             stringBuilder.result(writer, statistics);
+            // Note: this will be part of what is written out when calling tx.run(query).resultAsString() in Core API
+            // It is therefore a breaking change to adapt the format to GqlStatusObject API
             for (Notification notification : getNotifications()) {
                 writer.println(notification.getDescription());
             }
@@ -251,6 +254,11 @@ public class ResultSubscriber extends PrefetchingResourceIterator<Map<String, Ob
     @Override
     public Iterable<Notification> getNotifications() {
         return execution.getNotifications();
+    }
+
+    @Override
+    public Iterable<GqlStatusObject> getGqlStatusObjects() {
+        return execution.getGqlStatusObjects();
     }
 
     @Override

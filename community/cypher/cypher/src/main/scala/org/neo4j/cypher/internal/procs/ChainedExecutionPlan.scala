@@ -130,6 +130,8 @@ abstract class AdministrationChainedExecutionPlan(source: Option[ExecutionPlan])
 
 case class IgnoredRuntimeResult(runtimeNotifications: Set[InternalNotification]) extends RuntimeResult {
   import org.neo4j.cypher.internal.runtime.QueryStatistics
+
+  override def hasServedRows: Boolean = false
   override def fieldNames(): Array[String] = Array.empty
   override def queryStatistics(): QueryStatistics = QueryStatistics()
   override def heapHighWaterMark(): Long = HeapHighWaterMarkTracker.ALLOCATIONS_NOT_TRACKED

@@ -22,8 +22,10 @@ package org.neo4j.cypher.internal.result
 import org.neo4j.cypher.internal.plandescription.InternalPlanDescription
 import org.neo4j.cypher.internal.runtime.InternalQueryType
 import org.neo4j.cypher.internal.runtime.QueryStatistics
+import org.neo4j.graphdb.GqlStatusObject
 import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.notifications.NotificationImplementation
+import org.neo4j.notifications.StandardGqlStatusObject
 
 class ExplainExecutionResult(
   fieldNames: Array[String],
@@ -43,4 +45,20 @@ class ExplainExecutionResult(
   }
 
   override def await(): Boolean = false
+
+  override def gqlStatusObjects: Iterable[GqlStatusObject] = {
+
+    // EXPLAIN queries always give OMITTED RESULT
+    val gqlStatusObjects = notifications.toSeq ++ Seq(StandardGqlStatusObject.OMITTED_RESULT)
+
+    // Sort according to GQL, so the most severe GqlStatusObject is first in the list
+    // NO DATA < WARNING < SUCCESSFUL RESULT < INFORMATION
+    gqlStatusObjects.sortBy {
+      case x: NotificationImplementation => x.getCondition
+      case x: StandardGqlStatusObject    => x.getCondition
+      case x => throw new IllegalArgumentException(
+          s"Expected a NotificationImplementation or StandardGqlStatusObject but got ${x.getClass}."
+        )
+    }
+  }
 }

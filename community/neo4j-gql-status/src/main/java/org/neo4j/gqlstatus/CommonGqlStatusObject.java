@@ -17,29 +17,33 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.fabric.stream.summary;
+package org.neo4j.gqlstatus;
 
-import java.util.Collection;
-import org.neo4j.graphdb.ExecutionPlanDescription;
-import org.neo4j.graphdb.GqlStatusObject;
-import org.neo4j.graphdb.Notification;
-import org.neo4j.graphdb.QueryStatistics;
+import java.util.Map;
+import org.neo4j.annotations.api.PublicApi;
 
-public interface Summary {
-    /**
-     * @return The plan description of the query.
-     */
-    ExecutionPlanDescription executionPlanDescription();
+/**
+ * Representation for a GQL-status object.
+ * A GQL-status object can be visualized in a client to show diagnostic information and the status of the execution.
+ */
+@PublicApi
+public interface CommonGqlStatusObject {
 
     /**
-     * @return all notifications and warnings of the query.
+     * Returns a GQLSTATUS code representing the status of the query execution.
+     * @return the GQLSTATUS code
      */
-    Collection<Notification> getNotifications();
+    String gqlStatus();
 
     /**
-     * @return all GQL-status objects of the query.
+     * Returns a longer description of the GQLSTATUS code.
+     * @return the status description
      */
-    Collection<GqlStatusObject> getGqlStatusObjects();
+    String statusDescription();
 
-    QueryStatistics getQueryStatistics();
+    /**
+     * Returns diagnostic information associated with the GQLSTATUS code.
+     * @return the diagnostic record
+     */
+    Map<String, Object> diagnosticRecord();
 }

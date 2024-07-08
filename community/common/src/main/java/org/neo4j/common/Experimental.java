@@ -17,29 +17,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.fabric.stream.summary;
+package org.neo4j.common;
 
-import java.util.Collection;
-import org.neo4j.graphdb.ExecutionPlanDescription;
-import org.neo4j.graphdb.GqlStatusObject;
-import org.neo4j.graphdb.Notification;
-import org.neo4j.graphdb.QueryStatistics;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+import org.neo4j.annotations.api.PublicApi;
 
-public interface Summary {
-    /**
-     * @return The plan description of the query.
-     */
-    ExecutionPlanDescription executionPlanDescription();
-
-    /**
-     * @return all notifications and warnings of the query.
-     */
-    Collection<Notification> getNotifications();
-
-    /**
-     * @return all GQL-status objects of the query.
-     */
-    Collection<GqlStatusObject> getGqlStatusObjects();
-
-    QueryStatistics getQueryStatistics();
-}
+/**
+ * Used to mark a method as experimental.
+ * This implies that the result of a call to the method might not be stable over time.
+ */
+@PublicApi
+@Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.METHOD)
+public @interface Experimental {}

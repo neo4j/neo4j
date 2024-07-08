@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.NonFatalCypherError
 import org.neo4j.cypher.internal.runtime.ExecutionMode
 import org.neo4j.cypher.internal.runtime.InternalQueryType
 import org.neo4j.graphdb.ExecutionPlanDescription
+import org.neo4j.graphdb.GqlStatusObject
 import org.neo4j.internal.helpers.Exceptions
 import org.neo4j.kernel.api.exceptions.Status.HasStatus
 import org.neo4j.kernel.api.query.ExecutingQuery
@@ -95,6 +96,8 @@ class ClosingExecutionResult private (
   override def queryType: InternalQueryType = safely { inner.queryType }
 
   override def notifications: Iterable[NotificationImplementation] = safely { inner.notifications }
+
+  override def gqlStatusObjects: Iterable[GqlStatusObject] = safely { inner.gqlStatusObjects }
 
   override def executionMode: ExecutionMode = safely { inner.executionMode }
 

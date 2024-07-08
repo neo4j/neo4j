@@ -1,0 +1,4 @@
+org.neo4j.gqlstatus.CommonGqlStatusObject public abstract interface
+org.neo4j.gqlstatus.CommonGqlStatusObject::diagnosticRecord() java.util.Map<java.lang.String,java.lang.Object> public abstract
+org.neo4j.gqlstatus.CommonGqlStatusObject::gqlStatus() java.lang.String public abstract
+org.neo4j.gqlstatus.CommonGqlStatusObject::statusDescription() java.lang.String public abstract

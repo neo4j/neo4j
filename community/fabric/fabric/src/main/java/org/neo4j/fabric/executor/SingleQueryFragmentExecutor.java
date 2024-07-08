@@ -49,6 +49,7 @@ import org.neo4j.fabric.stream.summary.Summary;
 import org.neo4j.fabric.transaction.FabricTransaction;
 import org.neo4j.fabric.transaction.TransactionMode;
 import org.neo4j.graphdb.ExecutionPlanDescription;
+import org.neo4j.graphdb.GqlStatusObject;
 import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.QueryExecutionType;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -74,6 +75,7 @@ abstract class SingleQueryFragmentExecutor {
     private final MapValue queryParams;
     private final AccessMode accessMode;
     private final Set<Notification> notifications;
+    private final Set<GqlStatusObject> gqlStatusObjects;
     private final QueryStatementLifecycles.StatementLifecycle lifecycle;
     private final Prefetcher prefetcher;
     private final QueryRoutingMonitor queryRoutingMonitor;
@@ -90,6 +92,7 @@ abstract class SingleQueryFragmentExecutor {
             MapValue queryParams,
             AccessMode accessMode,
             Set<Notification> notifications,
+            Set<GqlStatusObject> gqlStatusObjects,
             QueryStatementLifecycles.StatementLifecycle lifecycle,
             Prefetcher prefetcher,
             QueryRoutingMonitor queryRoutingMonitor,
@@ -104,6 +107,7 @@ abstract class SingleQueryFragmentExecutor {
         this.queryParams = queryParams;
         this.accessMode = accessMode;
         this.notifications = notifications;
+        this.gqlStatusObjects = gqlStatusObjects;
         this.lifecycle = lifecycle;
         this.prefetcher = prefetcher;
         this.queryRoutingMonitor = queryRoutingMonitor;
@@ -366,6 +370,7 @@ abstract class SingleQueryFragmentExecutor {
         if (summary != null) {
             this.statistics.add(summary.getQueryStatistics());
             this.notifications.addAll(summary.getNotifications());
+            this.gqlStatusObjects.addAll(summary.getGqlStatusObjects());
         }
     }
 

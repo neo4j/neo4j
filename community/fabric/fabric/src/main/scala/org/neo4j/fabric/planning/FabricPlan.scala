@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.internal.util.ObfuscationMetadata
 import org.neo4j.fabric.planning.FabricPlan.DebugOptions
-import org.neo4j.graphdb.Notification
+import org.neo4j.notifications.NotificationImplementation
 import org.neo4j.notifications.NotificationWrapping
 
 case class FabricPlan(
@@ -42,7 +42,7 @@ case class FabricPlan(
   queryOptionsOffset: InputPosition
 ) {
 
-  def notifications: Seq[Notification] =
+  def notifications: Seq[NotificationImplementation] =
     internalNotifications.toSeq.map(NotificationWrapping.asKernelNotification(Some(queryOptionsOffset)))
 
   def deprecationNotificationsProvider: CypherDeprecationNotificationsProvider = {

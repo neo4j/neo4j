@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.query
 
 import org.neo4j.graphdb.ExecutionPlanDescription
+import org.neo4j.graphdb.GqlStatusObject
 import org.neo4j.graphdb.Notification
 import org.neo4j.graphdb.QueryExecutionType
 import org.neo4j.graphdb.QueryStatistics
@@ -79,6 +80,9 @@ class TestQueryExecution(
     }
 
   def getNotifications: lang.Iterable[Notification] =
+    Collections.emptyList
+
+  def getGqlStatusObjects: lang.Iterable[GqlStatusObject] =
     Collections.emptyList
 }
 

@@ -19,9 +19,11 @@
  */
 package org.neo4j.cypher.util
 
+import org.neo4j.graphdb.GqlStatusObject
 import org.neo4j.graphdb.Notification
 import org.neo4j.graphdb.Result
 import org.neo4j.kernel.api.exceptions.Status
+import org.neo4j.notifications.StandardGqlStatusObject.isStandardGqlStatusCode
 import org.scalatest.Assertions
 import org.scalatest.matchers.should.Matchers
 
@@ -30,8 +32,9 @@ import scala.jdk.CollectionConverters.IterableHasAsScala
 trait WarningAssertions {
   self: Assertions with Matchers =>
 
-  def shouldHaveWarning(result: Result, statusCode: Status, detailMessage: String): Unit = {
+  def shouldHaveWarning(result: Result, statusCode: Status, detailMessage: String, gqlStatus: String): Unit = {
     val notifications: Iterable[Notification] = result.getNotifications.asScala
+    val gqlStatusObjects: Iterable[GqlStatusObject] = result.getGqlStatusObjects.asScala
 
     withClue(
       s"Expected a notification with status code: $statusCode and detail message: $detailMessage\nBut got: $notifications"
@@ -41,9 +44,18 @@ trait WarningAssertions {
         notification.getDescription == detailMessage
       } should be(true)
     }
+
+    withClue(
+      s"Expected a GQL-status objects with GQLSTATUS: $gqlStatus\nBut got: $gqlStatusObjects"
+    ) {
+      gqlStatusObjects.exists { gqlStatusObject =>
+        gqlStatusObject.gqlStatus.equals(gqlStatus)
+      } should be(true)
+    }
   }
 
   def shouldHaveNoWarnings(result: Result): Unit = {
     result.getNotifications.asScala should be(empty)
+    result.getGqlStatusObjects.asScala.filter(status => !isStandardGqlStatusCode(status)) should be(empty)
   }
 }

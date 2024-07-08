@@ -39,6 +39,7 @@ case class UpdatingSystemCommandRuntimeResult(
 ) extends RuntimeResult {
   override val fieldNames: Array[String] = Array.empty
 
+  override def hasServedRows: Boolean = false
   override def queryStatistics(): QueryStatistics = ctx.getOptStatistics.getOrElse(QueryStatistics())
 
   override def consumptionState: RuntimeResult.ConsumptionState = ConsumptionState.EXHAUSTED

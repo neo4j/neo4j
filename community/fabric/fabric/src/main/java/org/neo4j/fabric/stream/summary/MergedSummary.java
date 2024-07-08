@@ -22,6 +22,7 @@ package org.neo4j.fabric.stream.summary;
 import java.util.Collection;
 import java.util.Set;
 import org.neo4j.graphdb.ExecutionPlanDescription;
+import org.neo4j.graphdb.GqlStatusObject;
 import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.QueryStatistics;
 import reactor.core.publisher.Mono;
@@ -29,15 +30,18 @@ import reactor.core.publisher.Mono;
 public class MergedSummary implements Summary {
     private final MergedQueryStatistics statistics;
     private final Set<Notification> notifications;
+    private final Set<GqlStatusObject> gqlStatusObjects;
     private Mono<ExecutionPlanDescription> executionPlanDescription;
 
     public MergedSummary(
             Mono<ExecutionPlanDescription> executionPlanDescription,
             MergedQueryStatistics statistics,
-            Set<Notification> notifications) {
+            Set<Notification> notifications,
+            Set<GqlStatusObject> gqlStatusObjects) {
         this.executionPlanDescription = executionPlanDescription;
         this.statistics = statistics;
         this.notifications = notifications;
+        this.gqlStatusObjects = gqlStatusObjects;
     }
 
     @Override
@@ -48,6 +52,11 @@ public class MergedSummary implements Summary {
     @Override
     public Collection<Notification> getNotifications() {
         return notifications;
+    }
+
+    @Override
+    public Collection<GqlStatusObject> getGqlStatusObjects() {
+        return gqlStatusObjects;
     }
 
     @Override

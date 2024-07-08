@@ -19,10 +19,14 @@
  */
 package org.neo4j.cypher
 
+import org.neo4j.cypher.internal.RewindableExecutionResult
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.graphdb.GqlStatusObject
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.schema.IndexType
+import org.neo4j.notifications.NotificationImplementation
 import org.scalatest.BeforeAndAfterAll
+import org.scalatest.matchers.Matcher
 
 import java.nio.file.Path
 
@@ -30,7 +34,17 @@ abstract class ExecutionEngineFunSuite
     extends CypherFunSuite
     with GraphDatabaseTestSupport
     with ExecutionEngineTestSupport
-    with QueryPlanTestSupport
+    with QueryPlanTestSupport {
+
+  def containNotifications(notifications: NotificationImplementation*): Matcher[RewindableExecutionResult] = {
+    contain.allElementsOf(notifications).matcher[Iterable[NotificationImplementation]].compose(
+      (r: RewindableExecutionResult) => r.notifications
+    )
+      .and(contain.allElementsOf(notifications).matcher[Iterable[GqlStatusObject]].compose(
+        (r: RewindableExecutionResult) => r.gqlStatusObjects
+      ))
+  }
+}
 
 abstract class ExecutionEngineWithoutRestartFunSuite
     extends ExecutionEngineFunSuite

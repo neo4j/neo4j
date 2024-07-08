@@ -24,6 +24,8 @@ import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.cypher.internal.cache.CacheTracer
 import org.neo4j.cypher.internal.cache.CypherQueryCaches
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.gqlstatus.GqlStatusInfoCodes.STATUS_00001
+import org.neo4j.gqlstatus.GqlStatusInfoCodes.STATUS_01N60
 import org.neo4j.graphdb.Label
 import org.neo4j.graphdb.QueryExecutionException
 import org.neo4j.graphdb.Result
@@ -520,7 +522,7 @@ abstract class QueryCachingTest(executionPlanCacheSize: Int =
     ))
   }
 
-  test("EXPLAIN Query with missing parameters should not be cached") {
+  test("EXPLAIN query with missing parameters should not be cached - using Notifications API") {
     val cacheListener = new LoggingTracer()
 
     val actualQuery = "RETURN $n,$m"
@@ -538,6 +540,35 @@ abstract class QueryCachingTest(executionPlanCacheSize: Int =
       acc = acc + 1
     })
     acc should be(1)
+
+    // The query is not even run by the AST cache
+    cacheListener.expectTrace(List(
+      s"String: cacheFlushDetected",
+      s"AST:    cacheFlushDetected",
+      // 1st run
+      s"String: cacheMiss: CacheKey($actualQuery,Map(n -> ParameterTypeInfo(Integer,UnknownSize)),false)",
+      s"String: cacheCompile: CacheKey($actualQuery,Map(n -> ParameterTypeInfo(Integer,UnknownSize)),false)",
+      // 2nd run
+      s"String: cacheMiss: CacheKey($actualQuery,Map(n -> ParameterTypeInfo(Integer,UnknownSize)),false)",
+      s"String: cacheCompile: CacheKey($actualQuery,Map(n -> ParameterTypeInfo(Integer,UnknownSize)),false)"
+    ))
+  }
+
+  test("EXPLAIN query with missing parameters should not be cached - using GqlStatusObject API") {
+    val cacheListener = new LoggingTracer()
+
+    val actualQuery = "RETURN $n,$m"
+    val executedQuery = "EXPLAIN " + actualQuery
+    val params: Map[String, AnyRef] = Map("n" -> Long.box(42))
+
+    val gqlStatusObjects = graph.withTx(tx => { tx.execute(executedQuery, params.asJava).getGqlStatusObjects })
+    graph.withTx(tx => { tx.execute(executedQuery, params.asJava).getGqlStatusObjects })
+
+    gqlStatusObjects.asScala.size should be(2)
+    gqlStatusObjects.asScala.map(_.gqlStatus) shouldBe List(
+      STATUS_01N60.getStatusString,
+      STATUS_00001.getStatusString
+    )
 
     // The query is not even run by the AST cache
     cacheListener.expectTrace(List(

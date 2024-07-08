@@ -24,6 +24,7 @@ import java.util.List;
 import org.neo4j.cypher.result.EagerQuerySubscription;
 import org.neo4j.exceptions.CypherExecutionException;
 import org.neo4j.graphdb.ExecutionPlanDescription;
+import org.neo4j.graphdb.GqlStatusObject;
 import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.QueryExecutionType;
 import org.neo4j.graphdb.QueryStatistics;
@@ -121,6 +122,11 @@ class MaterialisedResult implements QuerySubscriber {
         @Override
         public Iterable<Notification> getNotifications() {
             return queryExecution.getNotifications();
+        }
+
+        @Override
+        public Iterable<GqlStatusObject> getGqlStatusObjects() {
+            return queryExecution.getGqlStatusObjects();
         }
 
         @Override

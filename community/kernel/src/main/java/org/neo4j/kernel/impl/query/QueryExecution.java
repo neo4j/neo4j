@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.query;
 
 import org.neo4j.graphdb.ExecutionPlanDescription;
+import org.neo4j.graphdb.GqlStatusObject;
 import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.QueryExecutionType;
 
@@ -53,6 +54,11 @@ public interface QueryExecution extends QuerySubscription {
      * @return all notifications and warnings of the query.
      */
     Iterable<Notification> getNotifications();
+
+    /**
+     * @return all GQL-status objects from the execution of the query.
+     */
+    Iterable<GqlStatusObject> getGqlStatusObjects();
 
     /**
      * The name of the fields of each record

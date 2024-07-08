@@ -24,6 +24,7 @@ import static org.neo4j.graphdb.QueryStatistics.EMPTY;
 import java.util.Collection;
 import java.util.Collections;
 import org.neo4j.graphdb.ExecutionPlanDescription;
+import org.neo4j.graphdb.GqlStatusObject;
 import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.QueryStatistics;
 
@@ -35,6 +36,11 @@ public class EmptySummary implements Summary {
 
     @Override
     public Collection<Notification> getNotifications() {
+        return Collections.emptyList();
+    }
+
+    @Override
+    public Collection<GqlStatusObject> getGqlStatusObjects() {
         return Collections.emptyList();
     }
 

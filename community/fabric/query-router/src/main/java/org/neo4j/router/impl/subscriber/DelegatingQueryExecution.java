@@ -20,6 +20,7 @@
 package org.neo4j.router.impl.subscriber;
 
 import org.neo4j.graphdb.ExecutionPlanDescription;
+import org.neo4j.graphdb.GqlStatusObject;
 import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.QueryExecutionType;
 import org.neo4j.kernel.impl.query.QueryExecution;
@@ -49,6 +50,11 @@ public class DelegatingQueryExecution implements QueryExecution {
     @Override
     public Iterable<Notification> getNotifications() {
         return queryExecution.getNotifications();
+    }
+
+    @Override
+    public Iterable<GqlStatusObject> getGqlStatusObjects() {
+        return queryExecution.getGqlStatusObjects();
     }
 
     @Override

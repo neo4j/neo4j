@@ -46,6 +46,27 @@ public class DiagnosticRecord {
         innerDiagnosticRecord.put("_status_parameters", statusParameters);
     }
 
+    public DiagnosticRecord(String severity, String classification, int offset, int line, int column) {
+        innerDiagnosticRecord = new HashMap<>();
+        innerDiagnosticRecord.put("CURRENT_SCHEMA", CURRENT_SCHEMA_DEFAULT);
+        innerDiagnosticRecord.put("OPERATION", OPERATION_DEFAULT);
+        innerDiagnosticRecord.put("OPERATION_CODE", OPERATION_CODE_DEFAULT);
+        innerDiagnosticRecord.put("_severity", severity);
+        innerDiagnosticRecord.put("_classification", classification);
+        innerDiagnosticRecord.put("_position", Map.of("offset", offset, "line", line, "column", column));
+    }
+
+    public DiagnosticRecord() {
+        innerDiagnosticRecord = new HashMap<>();
+        innerDiagnosticRecord.put("CURRENT_SCHEMA", CURRENT_SCHEMA_DEFAULT);
+        innerDiagnosticRecord.put("OPERATION", OPERATION_DEFAULT);
+        innerDiagnosticRecord.put("OPERATION_CODE", OPERATION_CODE_DEFAULT);
+    }
+
+    public void setStatusParameters(Map<String, Object> statusParameters) {
+        innerDiagnosticRecord.put("_status_parameters", statusParameters);
+    }
+
     public int hashCode() {
         return innerDiagnosticRecord.hashCode();
     }

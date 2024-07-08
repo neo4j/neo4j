@@ -3010,10 +3010,12 @@ public enum GqlStatusInfoCodes implements GqlStatusInfo {
         return subCondition;
     }
 
+    @Override
     public Condition getCondition() {
         return condition;
     }
 
+    @Override
     public String[] getStatusParameterKeys() {
         return statusParameterKeys;
     }

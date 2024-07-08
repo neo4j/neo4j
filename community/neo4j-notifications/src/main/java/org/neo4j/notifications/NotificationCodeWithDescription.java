@@ -20,8 +20,7 @@
 package org.neo4j.notifications;
 
 import java.util.List;
-import org.neo4j.gqlstatus.Condition;
-import org.neo4j.gqlstatus.GqlStatus;
+import org.neo4j.gqlstatus.GqlStatusInfo;
 import org.neo4j.gqlstatus.GqlStatusInfoCodes;
 import org.neo4j.graphdb.InputPosition;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -317,28 +316,12 @@ public enum NotificationCodeWithDescription {
         return status;
     }
 
-    public GqlStatus getGqlStatus() {
-        return gqlStatusInfo.getGqlStatus();
+    public GqlStatusInfo getGqlStatusInfo() {
+        return gqlStatusInfo;
     }
 
     public String getDescription() {
         return description;
-    }
-
-    public String getMessage() {
-        return gqlStatusInfo.getMessage();
-    }
-
-    public String getSubCondition() {
-        return gqlStatusInfo.getSubCondition();
-    }
-
-    public Condition getCondition() {
-        return gqlStatusInfo.getCondition();
-    }
-
-    public String[] getStatusParameterKeys() {
-        return gqlStatusInfo.getStatusParameterKeys();
     }
 
     public static NotificationImplementation cartesianProduct(

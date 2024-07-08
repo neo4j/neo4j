@@ -45,6 +45,7 @@ import org.neo4j.fabric.stream.StatementResult;
 import org.neo4j.fabric.stream.summary.MergedQueryStatistics;
 import org.neo4j.fabric.transaction.FabricTransaction;
 import org.neo4j.fabric.transaction.TransactionMode;
+import org.neo4j.graphdb.GqlStatusObject;
 import org.neo4j.graphdb.Notification;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.query.QueryRoutingMonitor;
@@ -80,6 +81,7 @@ class CallInTransactionsExecutor extends SingleQueryFragmentExecutor {
             MapValue queryParams,
             AccessMode accessMode,
             Set<Notification> notifications,
+            Set<GqlStatusObject> gqlStatusObjects,
             QueryStatementLifecycles.StatementLifecycle lifecycle,
             Prefetcher prefetcher,
             QueryRoutingMonitor queryRoutingMonitor,
@@ -95,6 +97,7 @@ class CallInTransactionsExecutor extends SingleQueryFragmentExecutor {
                 queryParams,
                 accessMode,
                 notifications,
+                gqlStatusObjects,
                 lifecycle,
                 prefetcher,
                 queryRoutingMonitor,

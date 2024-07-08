@@ -50,7 +50,14 @@ public enum Condition {
                     yield successBaseMessage + " - " + subcondition;
                 }
             }
-            case NO_DATA -> "note: no data";
+            case NO_DATA -> {
+                String successBaseMessage = "note: no data";
+                if (subcondition.isEmpty()) {
+                    yield successBaseMessage;
+                } else {
+                    yield successBaseMessage + " - " + subcondition;
+                }
+            }
             default -> {
                 String exceptionBaseMessage = "error: " + condition.createConditionString();
                 if (subcondition.isEmpty()) {

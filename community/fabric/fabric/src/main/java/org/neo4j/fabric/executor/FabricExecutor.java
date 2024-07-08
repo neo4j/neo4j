@@ -53,6 +53,7 @@ import org.neo4j.fabric.stream.summary.MergedQueryStatistics;
 import org.neo4j.fabric.stream.summary.MergedSummary;
 import org.neo4j.fabric.stream.summary.Summary;
 import org.neo4j.fabric.transaction.FabricTransaction;
+import org.neo4j.graphdb.GqlStatusObject;
 import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.QueryExecutionType;
 import org.neo4j.kernel.database.NormalizedDatabaseName;
@@ -194,6 +195,7 @@ public class FabricExecutor {
         private final FabricTransaction.FabricExecutionContext ctx;
         private final MergedQueryStatistics statistics = new MergedQueryStatistics();
         private final Set<Notification> notifications = ConcurrentHashMap.newKeySet();
+        private final Set<GqlStatusObject> gqlStatusObjects = ConcurrentHashMap.newKeySet();
         private final StatementLifecycle lifecycle;
         private final Prefetcher prefetcher;
         private final AccessMode accessMode;
@@ -225,6 +227,7 @@ public class FabricExecutor {
                     .filter(notificationConfiguration::includes)
                     .toList();
             notifications.addAll(asJava(filteredNotifications));
+            gqlStatusObjects.addAll(asJava(filteredNotifications));
 
             lifecycle.startExecution(false);
             var query = plan.query();
@@ -236,7 +239,8 @@ public class FabricExecutor {
                 return StatementResults.create(
                         asJava(query.outputColumns()),
                         Flux.empty(),
-                        Mono.just(new MergedSummary(Mono.just(plan.query().description()), statistics, notifications)),
+                        Mono.just(new MergedSummary(
+                                Mono.just(plan.query().description()), statistics, notifications, gqlStatusObjects)),
                         Mono.just(EffectiveQueryType.queryExecutionType(plan, accessMode)));
             } else {
                 FragmentResult fragmentResult = run(query, null);
@@ -252,8 +256,8 @@ public class FabricExecutor {
                             fragmentResult.records().then(Mono.<Record>empty()).flux();
                 }
 
-                Mono<Summary> summary =
-                        Mono.just(new MergedSummary(fragmentResult.planDescription(), statistics, notifications));
+                Mono<Summary> summary = Mono.just(new MergedSummary(
+                        fragmentResult.planDescription(), statistics, notifications, gqlStatusObjects));
 
                 return StatementResults.create(
                         columns,
@@ -337,6 +341,7 @@ public class FabricExecutor {
                             queryParams,
                             accessMode,
                             notifications,
+                            gqlStatusObjects,
                             lifecycle,
                             prefetcher,
                             queryRoutingMonitor,
@@ -357,6 +362,7 @@ public class FabricExecutor {
                             queryParams,
                             accessMode,
                             notifications,
+                            gqlStatusObjects,
                             lifecycle,
                             prefetcher,
                             queryRoutingMonitor,

@@ -30,8 +30,10 @@ import org.neo4j.cypher.internal.runtime.WRITE
 import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.cypher.result.RuntimeResult.ConsumptionState
 import org.neo4j.exceptions.ProfilerStatisticsNotReadyException
+import org.neo4j.graphdb.GqlStatusObject
 import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.notifications.NotificationImplementation
+import org.neo4j.notifications.StandardGqlStatusObject
 
 class StandardInternalExecutionResult(
   runtimeResult: RuntimeResult,
@@ -100,7 +102,8 @@ class StandardInternalExecutionResult(
     }
   }
 
-  override def request(numberOfRows: Long): Unit = runtimeResult.request(numberOfRows)
+  override def request(numberOfRows: Long): Unit =
+    runtimeResult.request(numberOfRows)
 
   override def cancel(): Unit = {
     close()
@@ -144,6 +147,39 @@ class StandardInternalExecutionResult(
   }
 
   override def notifications: Iterable[NotificationImplementation] = internalNotifications
+
+  override def gqlStatusObjects: Iterable[GqlStatusObject] = {
+    val gqlStatusObjectsNotifications = internalNotifications.asInstanceOf[Iterable[GqlStatusObject]]
+
+    val allGqlStatusObjects = {
+
+      if (fieldNames().isEmpty) {
+        // No result columns =>  OMITTED RESULT
+        gqlStatusObjectsNotifications ++ Seq(StandardGqlStatusObject.OMITTED_RESULT)
+      } else if (!runtimeResult.hasServedRows) {
+        if (runtimeResult.consumptionState() == ConsumptionState.EXHAUSTED) {
+          // Exhausted without result rows => NO DATA
+          gqlStatusObjectsNotifications ++ Seq(StandardGqlStatusObject.NO_DATA)
+        } else {
+          // Not exhausted without result rows => UNKNOWN NO DATA
+          gqlStatusObjectsNotifications ++ Seq(StandardGqlStatusObject.UNKNOWN_NO_DATA)
+        }
+      } else {
+        // At least one result row => SUCCESS
+        gqlStatusObjectsNotifications ++ Seq(StandardGqlStatusObject.SUCCESS)
+      }
+    }.toSeq
+
+    // Sort according to GQL, so the most severe GqlStatusObject is first in the list
+    // NO DATA < WARNING < SUCCESSFUL RESULT < INFORMATION
+    allGqlStatusObjects.sortBy {
+      case x: NotificationImplementation => x.getCondition
+      case x: StandardGqlStatusObject    => x.getCondition
+      case x => throw new IllegalArgumentException(
+          s"Expected a NotificationImplementation or StandardGqlStatusObject but got ${x.getClass}."
+        )
+    }
+  }
 
   override def getError: Option[Throwable] = Option(runtimeResult.getErrorOrNull)
 }

@@ -158,6 +158,22 @@ abstract class ReactiveResultTestBase[CONTEXT <: RuntimeContext](
     subscriber.isCompleted shouldBe true
   }
 
+  test("should get expected value of hasServedRows") {
+    // Given
+    val subscriber = TestSubscriber.concurrent
+    val result = runtimeResult(subscriber, Array(1), Array(2), Array(3))
+
+    // Then
+    result.hasServedRows shouldBe false
+
+    // When
+    result.request(1)
+    result.await()
+
+    // Then
+    result.hasServedRows shouldBe true
+  }
+
   test("should handle cancel stream") {
     // Given
     val subscriber = TestSubscriber.concurrent

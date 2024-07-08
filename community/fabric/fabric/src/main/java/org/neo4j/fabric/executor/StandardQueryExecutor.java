@@ -36,6 +36,7 @@ import org.neo4j.fabric.stream.StatementResult;
 import org.neo4j.fabric.stream.summary.MergedQueryStatistics;
 import org.neo4j.fabric.transaction.FabricTransaction;
 import org.neo4j.fabric.transaction.TransactionMode;
+import org.neo4j.graphdb.GqlStatusObject;
 import org.neo4j.graphdb.Notification;
 import org.neo4j.kernel.impl.query.QueryRoutingMonitor;
 import org.neo4j.values.AnyValue;
@@ -62,6 +63,7 @@ class StandardQueryExecutor extends SingleQueryFragmentExecutor {
             MapValue queryParams,
             AccessMode accessMode,
             Set<Notification> notifications,
+            Set<GqlStatusObject> gqlStatusObjects,
             QueryStatementLifecycles.StatementLifecycle lifecycle,
             Prefetcher prefetcher,
             QueryRoutingMonitor queryRoutingMonitor,
@@ -77,6 +79,7 @@ class StandardQueryExecutor extends SingleQueryFragmentExecutor {
                 queryParams,
                 accessMode,
                 notifications,
+                gqlStatusObjects,
                 lifecycle,
                 prefetcher,
                 queryRoutingMonitor,

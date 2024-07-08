@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.result
 
 import org.neo4j.cypher.internal.plandescription.InternalPlanDescription
 import org.neo4j.cypher.internal.runtime.InternalQueryType
+import org.neo4j.graphdb.GqlStatusObject
 import org.neo4j.kernel.impl.query.QuerySubscriber
 
 class FailedExecutionResult(fieldNames: Array[String], queryType: InternalQueryType, subscriber: QuerySubscriber)
@@ -40,4 +41,6 @@ class FailedExecutionResult(fieldNames: Array[String], queryType: InternalQueryT
   }
 
   override def await(): Boolean = false
+
+  override def gqlStatusObjects: Iterable[GqlStatusObject] = Seq.empty[GqlStatusObject]
 }

@@ -25,11 +25,13 @@ import org.neo4j.cypher.ExecutionEngineTestSupport
 import org.neo4j.cypher.GraphDatabaseTestSupport
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.util.CacheCountsTestSupport
+import org.neo4j.gqlstatus.GqlStatusInfoCodes.STATUS_01N02
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes
 import org.neo4j.kernel.api.ResourceMonitor
 import org.neo4j.kernel.api.procedure.CallableProcedure.BasicProcedure
 import org.neo4j.kernel.api.procedure.Context
+import org.neo4j.notifications.StandardGqlStatusObject
 import org.neo4j.values.AnyValue
 
 class CypherQueryCachesTest extends CypherFunSuite with GraphDatabaseTestSupport with ExecutionEngineTestSupport
@@ -293,18 +295,21 @@ class CypherQueryCachesTest extends CypherFunSuite with GraphDatabaseTestSupport
     eengine.queryCaches.executionPlanCache.clear()
     eengine.masterCompiler.clearCaches()
 
-    execute("CYPHER connectComponentsPlanner=greedy RETURN  1").notifications.map(_.getDescription) should contain(
-      ccpDescription
-    )
-
+    val result = execute("CYPHER connectComponentsPlanner=greedy RETURN  1")
+    result.notifications.map(_.getDescription) should contain(ccpDescription)
+    result.gqlStatusObjects.map(_.gqlStatus) should contain(STATUS_01N02.getStatusString)
   }
 
   test("Logical plan cache does only cache its own notifications") {
-    execute("CREATE (a {f\\u0085oo:1})").notifications should not be empty
+    val result1 = execute("CREATE (a {f\\u0085oo:1})")
+    result1.notifications.size shouldBe 1
+    result1.gqlStatusObjects.size shouldBe 2
     // If we wrongly cache the notification from the above query in the logical plan cache, then
     // the 2nd query will also get it. It will miss the String cache but hit the AST cache and
     // thus get the cached logical plan
-    execute("CREATE (a {`f\\u0085oo`:1})").notifications should be(empty)
+    val result2 = execute("CREATE (a {`f\\u0085oo`:1})")
+    result2.notifications should be(empty)
+    result2.gqlStatusObjects should be(List(StandardGqlStatusObject.OMITTED_RESULT))
   }
 
 }
