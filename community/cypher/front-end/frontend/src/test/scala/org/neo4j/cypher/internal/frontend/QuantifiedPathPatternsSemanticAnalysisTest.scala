@@ -86,7 +86,7 @@ class QuantifiedPathPatternsSemanticAnalysisTest extends NameBasedSemanticAnalys
   test("MATCH (p = (a)--(b))+ (p = (c)--(d)) RETURN p") {
     runSemanticAnalysis().errorMessages shouldEqual Seq(
       "Assigning a path in a quantified path pattern is not yet supported.",
-      "Type mismatch: p defined with conflicting type List<T> (expected Path)",
+      "Variable `p` already declared",
       "Sub-path assignment is currently not supported."
     )
   }

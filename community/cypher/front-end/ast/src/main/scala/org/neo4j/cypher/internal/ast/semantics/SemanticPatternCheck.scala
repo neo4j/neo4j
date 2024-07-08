@@ -603,24 +603,27 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
         // During later checks, we only have access to a normalized path, thus we use it here as well to be able to lookup recorded scopes later.
         val normalized = normalizeParenthesizedPath(p)
 
-        withScopedState {
-          // Variables from parenthesized path are exported into the parent scope, because of that we can't tell whether a variable was declared inside
-          // or outside of a given parenthesized path. By recording scopes before and after declaring variables, we can then later compute a diff to
-          // get this information back.
-          recordCurrentScope(ScopeBeforeParenthesizedPath(normalized)) chain
-            declareVariables(ctx, pattern.element) chain
-            declarePathVariable(pattern) chain
-            recordCurrentScope(normalized) chain
-            // Record the same scope again, because the current `normalized` scope
-            // will be overwritten and lost after we check WHERE predicates at a later time.
-            recordCurrentScope(ScopeAfterParenthesizedPath(normalized))
-        } chain
+        // We will declare the path variable first so that we can verify if the variable declaration clashes with the parent scope.
+        // If it does not, with scoped state will stash the parent scope and run semantic analysis on a fresh child scope and finally merge it with the parent scope.
+        declarePathVariable(pattern) chain
+          withScopedState {
+            // Variables from parenthesized path are exported into the parent scope, because of that we can't tell whether a variable was declared inside
+            // or outside of a given parenthesized path. By recording scopes before and after declaring variables, we can then later compute a diff to
+            // get this information back.
+            recordCurrentScope(ScopeBeforeParenthesizedPath(normalized)) chain
+              declareVariables(ctx, pattern.element) chain
+              recordCurrentScope(normalized) chain
+              // Record the same scope again, because the current `normalized` scope
+              // will be overwritten and lost after we check WHERE predicates at a later time.
+              recordCurrentScope(ScopeAfterParenthesizedPath(normalized))
+          } chain
           importValuesFromRecordedScope(normalized)
+
     }
 
   private def declarePathVariable(pattern: PatternPart): SemanticCheck =
     pattern match {
-      case n: NamedPatternPart => implicitVariable(n.variable, CTPath)
+      case n: NamedPatternPart => declareVariable(n.variable, CTPath)
       case _                   => SemanticCheck.success
     }
 

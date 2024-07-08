@@ -68,4 +68,26 @@ class ParenthesizedPathSemanticAnalysisTest extends SemanticAnalysisTestSuite wi
         |In this case, `p` is defined in the same `MATCH` clause as ((a) (()-[r]->())+ (b) WHERE 0 = COUNT { MATCH (x)-->(y)
         |  WHERE length(p) % 2 = 0 }).""".stripMargin
   }
+
+  test("can not re-declare a path variable from the outer MATCH clause in a subquery expression") {
+    val q =
+      """
+        |MATCH p = ()--()
+        |MATCH ANY (p = ()--+())
+        |RETURN *""".stripMargin
+
+    runSemanticAnalysis(q).errorMessages.loneElement shouldEqual
+      """Variable `p` already declared""".stripMargin
+  }
+
+  test("can not shadow a path variable in a subquery expression") {
+    val q =
+      """
+        |MATCH p = (a:A)-->+(b:B)
+        |WHERE NOT EXISTS { ANY (p = (a)<--+(b) WHERE length(p) % 2 = 1) }
+        |RETURN *""".stripMargin
+
+    runSemanticAnalysis(q).errorMessages.loneElement shouldEqual
+      """The variable `p` is shadowing a variable with the same name from the outer scope and needs to be renamed""".stripMargin
+  }
 }
