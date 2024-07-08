@@ -178,7 +178,7 @@ class IndexSettingValidators {
                 return new IncorrectType(pending, TextValue.class);
             }
 
-            final var similarityFunction = similarityFunctions.get(textValue.stringValue());
+            final var similarityFunction = map(textValue);
             return similarityFunction == null
                     ? new InvalidValue(pending, similarityFunctions.keysView())
                     : new Valid(setting, similarityFunction, map(similarityFunction));
