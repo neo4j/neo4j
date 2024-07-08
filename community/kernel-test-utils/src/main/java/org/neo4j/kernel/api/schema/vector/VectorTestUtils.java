@@ -43,6 +43,7 @@ import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.SettingsAccessor;
 import org.neo4j.internal.schema.SettingsAccessor.IndexSettingObjectMapAccessor;
 import org.neo4j.kernel.api.impl.schema.vector.VectorSimilarityFunctions;
+import org.neo4j.kernel.api.vector.VectorQuantization;
 import org.neo4j.kernel.api.vector.VectorSimilarityFunction;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.SequenceValue;
@@ -664,6 +665,14 @@ public class VectorTestUtils {
 
         public VectorIndexSettings withSimilarityFunction(String similarityFunction) {
             return set(IndexSetting.vector_Similarity_Function(), similarityFunction);
+        }
+
+        public VectorIndexSettings withQuantization(VectorQuantization quantization) {
+            return withQuantization(quantization.name());
+        }
+
+        public VectorIndexSettings withQuantization(String quantization) {
+            return set(IndexSetting.vector_Quantization(), quantization);
         }
 
         public IndexConfig toIndexConfig() {

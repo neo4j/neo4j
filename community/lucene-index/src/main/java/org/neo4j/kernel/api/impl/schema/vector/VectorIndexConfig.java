@@ -23,6 +23,7 @@ import static org.neo4j.kernel.api.impl.schema.vector.VectorIndexConfigUtils.DIM
 import static org.neo4j.kernel.api.impl.schema.vector.VectorIndexConfigUtils.QUANTIZATION;
 import static org.neo4j.kernel.api.impl.schema.vector.VectorIndexConfigUtils.SIMILARITY_FUNCTION;
 
+import java.util.Objects;
 import org.eclipse.collections.api.map.sorted.ImmutableSortedMap;
 import org.eclipse.collections.api.set.sorted.ImmutableSortedSet;
 import org.neo4j.graphdb.schema.IndexSetting;
@@ -59,5 +60,23 @@ public class VectorIndexConfig extends IndexConfigValidationWrapper {
 
     public VectorQuantization quantization() {
         return quantization;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(dimensions, similarityFunction, quantization);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof VectorIndexConfig that)) {
+            return false;
+        }
+        return dimensions == that.dimensions
+                && Objects.equals(similarityFunction, that.similarityFunction)
+                && quantization == that.quantization;
     }
 }

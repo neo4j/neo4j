@@ -27,10 +27,12 @@ import static org.neo4j.internal.schema.IndexConfigValidationRecords.State.INVAL
 import static org.neo4j.internal.schema.IndexConfigValidationRecords.State.MISSING_SETTING;
 import static org.neo4j.internal.schema.IndexConfigValidationRecords.State.UNRECOGNIZED_SETTING;
 import static org.neo4j.kernel.api.impl.schema.vector.VectorIndexConfigUtils.DIMENSIONS;
+import static org.neo4j.kernel.api.impl.schema.vector.VectorIndexConfigUtils.QUANTIZATION;
 import static org.neo4j.kernel.api.impl.schema.vector.VectorIndexConfigUtils.SIMILARITY_FUNCTION;
 
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.assertj.core.api.InstanceOfAssertFactories;
+import org.eclipse.collections.api.tuple.Pair;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -42,6 +44,7 @@ import org.neo4j.internal.schema.IndexConfigValidationRecords.UnrecognizedSettin
 import org.neo4j.internal.schema.SettingsAccessor;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.api.schema.vector.VectorTestUtils.VectorIndexSettings;
+import org.neo4j.kernel.api.vector.VectorQuantization;
 import org.neo4j.kernel.api.vector.VectorSimilarityFunction;
 import org.neo4j.values.storable.IntegralValue;
 import org.neo4j.values.storable.NumberValue;
@@ -65,12 +68,17 @@ class VectorIndexV1ForV511ConfigValidationTest {
         final var ref = new MutableObject<VectorIndexConfig>();
         assertThatCode(() -> ref.setValue(VALIDATOR.validateToVectorIndexConfig(settings)))
                 .doesNotThrowAnyException();
-        final var vectorIndexConfigAssert = assertThat(ref.getValue());
+        final var vectorIndexConfig = ref.getValue();
 
-        vectorIndexConfigAssert.extracting(VectorIndexConfig::dimensions).isEqualTo(VERSION.maxDimensions());
-        vectorIndexConfigAssert
-                .extracting(VectorIndexConfig::similarityFunction)
-                .isEqualTo(VERSION.similarityFunction("COSINE"));
+        assertThat(vectorIndexConfig)
+                .extracting(
+                        VectorIndexConfig::dimensions,
+                        VectorIndexConfig::similarityFunction,
+                        VectorIndexConfig::quantization)
+                .containsExactly(VERSION.maxDimensions(), VERSION.similarityFunction("COSINE"), VectorQuantization.OFF);
+
+        assertThat(vectorIndexConfig.config().entries().collect(Pair::getOne))
+                .containsExactlyInAnyOrder(DIMENSIONS.getSettingName(), SIMILARITY_FUNCTION.getSettingName());
     }
 
     @Test
@@ -84,12 +92,10 @@ class VectorIndexV1ForV511ConfigValidationTest {
 
         final var validationRecords = VALIDATOR.validate(settings);
         assertThat(validationRecords.invalid()).isTrue();
-        final var invalidSettingAssert = assertThat(
-                        validationRecords.get(UNRECOGNIZED_SETTING).castToSortedSet())
+        assertThat(validationRecords.get(UNRECOGNIZED_SETTING).castToSortedSet())
                 .hasSize(1)
                 .first()
-                .asInstanceOf(InstanceOfAssertFactories.type(UnrecognizedSetting.class));
-        invalidSettingAssert
+                .asInstanceOf(InstanceOfAssertFactories.type(UnrecognizedSetting.class))
                 .extracting(UnrecognizedSetting::settingName)
                 .isEqualTo(unrecognisedSetting.getSettingName());
 
@@ -109,12 +115,12 @@ class VectorIndexV1ForV511ConfigValidationTest {
 
         final var validationRecords = VALIDATOR.validate(config);
         assertThat(validationRecords.invalid()).isTrue();
-        final var missingSettingAssert = assertThat(
-                        validationRecords.get(MISSING_SETTING).castToSortedSet())
+        assertThat(validationRecords.get(MISSING_SETTING).castToSortedSet())
                 .hasSize(1)
                 .first()
-                .asInstanceOf(InstanceOfAssertFactories.type(MissingSetting.class));
-        missingSettingAssert.extracting(MissingSetting::setting).isEqualTo(DIMENSIONS);
+                .asInstanceOf(InstanceOfAssertFactories.type(MissingSetting.class))
+                .extracting(MissingSetting::setting)
+                .isEqualTo(DIMENSIONS);
 
         assertThatThrownBy(() -> VALIDATOR.validateToVectorIndexConfig(config))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -136,8 +142,9 @@ class VectorIndexV1ForV511ConfigValidationTest {
                 .hasSize(1)
                 .first()
                 .asInstanceOf(InstanceOfAssertFactories.type(IncorrectType.class));
-        incorrectTypeAssert.extracting(IncorrectType::setting).isEqualTo(DIMENSIONS);
-        incorrectTypeAssert.extracting(IncorrectType::rawValue).isEqualTo(Values.stringValue(incorrectDimensions));
+        incorrectTypeAssert
+                .extracting(IncorrectType::setting, IncorrectType::rawValue)
+                .containsExactly(DIMENSIONS, Values.stringValue(incorrectDimensions));
         incorrectTypeAssert
                 .extracting(IncorrectType::providedType)
                 .asInstanceOf(InstanceOfAssertFactories.CLASS)
@@ -179,24 +186,22 @@ class VectorIndexV1ForV511ConfigValidationTest {
         final var ref = new MutableObject<VectorIndexConfig>();
         assertThatCode(() -> ref.setValue(VALIDATOR.trustIsValidToVectorIndexConfig(settings)))
                 .doesNotThrowAnyException();
-        final var vectorIndexConfigAssert = assertThat(ref.getValue());
+        final var vectorIndexConfig = ref.getValue();
 
-        vectorIndexConfigAssert.extracting(VectorIndexConfig::dimensions).isEqualTo(invalidDimensions);
-        vectorIndexConfigAssert
-                .extracting(VectorIndexConfig::similarityFunction)
-                .isEqualTo(VERSION.similarityFunction("COSINE"));
+        assertThat(vectorIndexConfig)
+                .extracting(VectorIndexConfig::dimensions, VectorIndexConfig::similarityFunction)
+                .containsExactly(invalidDimensions, VERSION.similarityFunction("COSINE"));
     }
 
     private void assertInvalidDimensions(int invalidDimensions, SettingsAccessor settings) {
         final var validationRecords = VALIDATOR.validate(settings);
         assertThat(validationRecords.invalid()).isTrue();
-        final var invalidValueAssert = assertThat(
-                        validationRecords.get(INVALID_VALUE).castToSortedSet())
+        assertThat(validationRecords.get(INVALID_VALUE).castToSortedSet())
                 .hasSize(1)
                 .first()
-                .asInstanceOf(InstanceOfAssertFactories.type(InvalidValue.class));
-        invalidValueAssert.extracting(InvalidValue::setting).isEqualTo(DIMENSIONS);
-        invalidValueAssert.extracting(InvalidValue::value).isEqualTo(invalidDimensions);
+                .asInstanceOf(InstanceOfAssertFactories.type(InvalidValue.class))
+                .extracting(InvalidValue::setting, InvalidValue::value)
+                .containsExactly(DIMENSIONS, invalidDimensions);
 
         assertThatThrownBy(() -> VALIDATOR.validateToVectorIndexConfig(settings))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -212,12 +217,12 @@ class VectorIndexV1ForV511ConfigValidationTest {
 
         final var validationRecords = VALIDATOR.validate(settings);
         assertThat(validationRecords.invalid()).isTrue();
-        final var missingSettingAssert = assertThat(
-                        validationRecords.get(MISSING_SETTING).castToSortedSet())
+        assertThat(validationRecords.get(MISSING_SETTING).castToSortedSet())
                 .hasSize(1)
                 .first()
-                .asInstanceOf(InstanceOfAssertFactories.type(MissingSetting.class));
-        missingSettingAssert.extracting(MissingSetting::setting).isEqualTo(SIMILARITY_FUNCTION);
+                .asInstanceOf(InstanceOfAssertFactories.type(MissingSetting.class))
+                .extracting(MissingSetting::setting)
+                .isEqualTo(SIMILARITY_FUNCTION);
 
         assertThatThrownBy(() -> VALIDATOR.validateToVectorIndexConfig(settings))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -228,7 +233,7 @@ class VectorIndexV1ForV511ConfigValidationTest {
     void incorrectTypeForSimilarityFunction() {
         final var incorrectSimilarityFunction = 123L;
         final var settings = VectorIndexSettings.create()
-                .set(DIMENSIONS, VERSION.maxDimensions())
+                .withDimensions(VERSION.maxDimensions())
                 .set(SIMILARITY_FUNCTION, incorrectSimilarityFunction)
                 .toSettingsAccessor();
 
@@ -239,10 +244,9 @@ class VectorIndexV1ForV511ConfigValidationTest {
                 .hasSize(1)
                 .first()
                 .asInstanceOf(InstanceOfAssertFactories.type(IncorrectType.class));
-        incorrectTypeAssert.extracting(IncorrectType::setting).isEqualTo(SIMILARITY_FUNCTION);
         incorrectTypeAssert
-                .extracting(IncorrectType::rawValue)
-                .isEqualTo(Values.longValue(incorrectSimilarityFunction));
+                .extracting(IncorrectType::setting, IncorrectType::rawValue)
+                .containsExactly(SIMILARITY_FUNCTION, Values.longValue(incorrectSimilarityFunction));
         incorrectTypeAssert
                 .extracting(IncorrectType::providedType)
                 .asInstanceOf(InstanceOfAssertFactories.CLASS)
@@ -270,13 +274,12 @@ class VectorIndexV1ForV511ConfigValidationTest {
 
         final var validationRecords = VALIDATOR.validate(settings);
         assertThat(validationRecords.invalid()).isTrue();
-        final var invalidValueAssert = assertThat(
-                        validationRecords.get(INVALID_VALUE).castToSortedSet())
+        assertThat(validationRecords.get(INVALID_VALUE).castToSortedSet())
                 .hasSize(1)
                 .first()
-                .asInstanceOf(InstanceOfAssertFactories.type(InvalidValue.class));
-        invalidValueAssert.extracting(InvalidValue::setting).isEqualTo(SIMILARITY_FUNCTION);
-        invalidValueAssert.extracting(InvalidValue::rawValue).isEqualTo(Values.stringValue(invalidSimilarityFunction));
+                .asInstanceOf(InstanceOfAssertFactories.type(InvalidValue.class))
+                .extracting(InvalidValue::setting, InvalidValue::rawValue)
+                .containsExactly(SIMILARITY_FUNCTION, Values.stringValue(invalidSimilarityFunction));
 
         assertThatThrownBy(() -> VALIDATOR.validateToVectorIndexConfig(settings))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -287,5 +290,23 @@ class VectorIndexV1ForV511ConfigValidationTest {
                         VERSION.supportedSimilarityFunctions()
                                 .collect(VectorSimilarityFunction::name)
                                 .toString());
+    }
+
+    @Test
+    void cannotSetQuantization() {
+        final var settings = VectorIndexSettings.create()
+                .withDimensions(VERSION.maxDimensions())
+                .withSimilarityFunction(VERSION.similarityFunction("COSINE"))
+                .withQuantization("OFF")
+                .toSettingsAccessor();
+
+        final var validationRecords = VALIDATOR.validate(settings);
+        assertThat(validationRecords.invalid()).isTrue();
+        assertThat(validationRecords.get(UNRECOGNIZED_SETTING).castToSortedSet())
+                .hasSize(1)
+                .first()
+                .asInstanceOf(InstanceOfAssertFactories.type(UnrecognizedSetting.class))
+                .extracting(UnrecognizedSetting::settingName)
+                .isEqualTo(QUANTIZATION.getSettingName());
     }
 }

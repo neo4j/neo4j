@@ -42,6 +42,7 @@ import org.neo4j.internal.schema.IndexConfigValidationRecords.InvalidValue;
 import org.neo4j.internal.schema.IndexConfigValidationRecords.MissingSetting;
 import org.neo4j.internal.schema.IndexConfigValidationRecords.UnrecognizedSetting;
 import org.neo4j.internal.schema.SettingsAccessor;
+import org.neo4j.internal.schema.SettingsAccessor.IndexConfigAccessor;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.api.schema.vector.VectorTestUtils.VectorIndexSettings;
 import org.neo4j.kernel.api.vector.VectorQuantization;
@@ -51,14 +52,32 @@ import org.neo4j.values.storable.NumberValue;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Values;
 
-class VectorIndexV2ForV518ConfigValidationTest {
+class VectorIndexV2ForGloriousFutureConfigValidationTest {
     private static final VectorIndexVersion VERSION = VectorIndexVersion.V2_0;
-    private static final VectorIndexSettingsValidator VALIDATOR = VERSION.indexSettingValidator(KernelVersion.V5_18);
+    private static final VectorIndexSettingsValidator VALIDATOR =
+            VERSION.indexSettingValidator(KernelVersion.GLORIOUS_FUTURE);
+
+    @Test
+    void validV2ForV518IndexConfig() {
+        final var settings = VectorIndexSettings.create()
+                .withDimensions(VERSION.maxDimensions())
+                .withSimilarityFunction(VERSION.similarityFunction("COSINE"))
+                .toSettingsAccessor();
+
+        final var vectorIndexConfigAsIfCreatedOn518 =
+                VERSION.indexSettingValidator(KernelVersion.V5_18).validateToVectorIndexConfig(settings);
+
+        final var vectorIndexConfig = VALIDATOR.trustIsValidToVectorIndexConfig(
+                new IndexConfigAccessor(vectorIndexConfigAsIfCreatedOn518.config()));
+
+        assertThat(vectorIndexConfig).isEqualTo(vectorIndexConfigAsIfCreatedOn518);
+    }
 
     @Test
     void validIndexConfig() {
         final var settings = VectorIndexSettings.create()
                 .withDimensions(VERSION.maxDimensions())
+                .withQuantization(VERSION.quantization("OFF"))
                 .withSimilarityFunction(VERSION.similarityFunction("COSINE"))
                 .toSettingsAccessor();
 
@@ -78,7 +97,40 @@ class VectorIndexV2ForV518ConfigValidationTest {
                 .containsExactly(VERSION.maxDimensions(), VERSION.similarityFunction("COSINE"), VectorQuantization.OFF);
 
         assertThat(vectorIndexConfig.config().entries().collect(Pair::getOne))
-                .containsExactlyInAnyOrder(DIMENSIONS.getSettingName(), SIMILARITY_FUNCTION.getSettingName());
+                .containsExactlyInAnyOrder(
+                        DIMENSIONS.getSettingName(),
+                        SIMILARITY_FUNCTION.getSettingName(),
+                        QUANTIZATION.getSettingName());
+    }
+
+    @Test
+    void validIndexConfigWithDefaults() {
+        final var settings = VectorIndexSettings.create()
+                .withDimensions(VERSION.maxDimensions())
+                .withSimilarityFunction(VERSION.similarityFunction("COSINE"))
+                .toSettingsAccessor();
+
+        final var validationRecords = VALIDATOR.validate(settings);
+        assertThat(validationRecords.valid()).isTrue();
+
+        final var ref = new MutableObject<VectorIndexConfig>();
+        assertThatCode(() -> ref.setValue(VALIDATOR.validateToVectorIndexConfig(settings)))
+                .doesNotThrowAnyException();
+        final var vectorIndexConfig = ref.getValue();
+
+        assertThat(vectorIndexConfig)
+                .extracting(
+                        VectorIndexConfig::dimensions,
+                        VectorIndexConfig::similarityFunction,
+                        VectorIndexConfig::quantization)
+                .containsExactly(
+                        VERSION.maxDimensions(), VERSION.similarityFunction("COSINE"), VectorQuantization.LUCENE);
+
+        assertThat(vectorIndexConfig.config().entries().collect(Pair::getOne))
+                .containsExactlyInAnyOrder(
+                        DIMENSIONS.getSettingName(),
+                        SIMILARITY_FUNCTION.getSettingName(),
+                        QUANTIZATION.getSettingName());
     }
 
     @Test
@@ -282,20 +334,66 @@ class VectorIndexV2ForV518ConfigValidationTest {
     }
 
     @Test
-    void cannotSetQuantization() {
+    void incorrectTypeForQuantization() {
+        final var incorrectQuantization = 123L;
         final var settings = VectorIndexSettings.create()
                 .withDimensions(VERSION.maxDimensions())
                 .withSimilarityFunction(VERSION.similarityFunction("COSINE"))
-                .withQuantization("OFF")
+                .set(QUANTIZATION, incorrectQuantization)
                 .toSettingsAccessor();
 
         final var validationRecords = VALIDATOR.validate(settings);
         assertThat(validationRecords.invalid()).isTrue();
-        assertThat(validationRecords.get(UNRECOGNIZED_SETTING).castToSortedSet())
+        final var incorrectTypeAssert = assertThat(
+                        validationRecords.get(INCORRECT_TYPE).castToSortedSet())
                 .hasSize(1)
                 .first()
-                .asInstanceOf(InstanceOfAssertFactories.type(UnrecognizedSetting.class))
-                .extracting(UnrecognizedSetting::settingName)
-                .isEqualTo(QUANTIZATION.getSettingName());
+                .asInstanceOf(InstanceOfAssertFactories.type(IncorrectType.class));
+        incorrectTypeAssert
+                .extracting(IncorrectType::setting, IncorrectType::rawValue)
+                .containsExactly(QUANTIZATION, Values.longValue(incorrectQuantization));
+        incorrectTypeAssert
+                .extracting(IncorrectType::providedType)
+                .asInstanceOf(InstanceOfAssertFactories.CLASS)
+                .isAssignableTo(NumberValue.class);
+        incorrectTypeAssert
+                .extracting(IncorrectType::targetType)
+                .asInstanceOf(InstanceOfAssertFactories.CLASS)
+                .isAssignableTo(TextValue.class);
+
+        assertThatThrownBy(() -> VALIDATOR.validateToVectorIndexConfig(settings))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContainingAll(
+                        QUANTIZATION.getSettingName(), "is expected to have been", TextValue.class.getSimpleName());
+    }
+
+    @Test
+    void invalidQuantization() {
+        final var invalidQuantization = "ClearlyThisIsNotAQuantization";
+        final var settings = VectorIndexSettings.create()
+                .withDimensions(VERSION.maxDimensions())
+                .withSimilarityFunction(VERSION.similarityFunction("COSINE"))
+                .set(QUANTIZATION, invalidQuantization)
+                .toSettingsAccessor();
+
+        final var validationRecords = VALIDATOR.validate(settings);
+        assertThat(validationRecords.invalid()).isTrue();
+        assertThat(validationRecords.get(INVALID_VALUE).castToSortedSet())
+                .hasSize(1)
+                .first()
+                .asInstanceOf(InstanceOfAssertFactories.type(InvalidValue.class))
+
+                .extracting(InvalidValue::setting, InvalidValue::rawValue)
+                .containsExactly(QUANTIZATION, Values.stringValue(invalidQuantization));
+
+        assertThatThrownBy(() -> VALIDATOR.validateToVectorIndexConfig(settings))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContainingAll(
+                        invalidQuantization,
+                        "is an unsupported",
+                        QUANTIZATION.getSettingName(),
+                        VERSION.supportedQuantizations()
+                                .collect(VectorQuantization::name)
+                                .toString());
     }
 }
