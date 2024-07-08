@@ -372,8 +372,8 @@ object ReadsAndWritesFinder {
     /**
      * @return all plans that could read the given label.
      */
-    def plansReadingLabel(label: LabelName): Iterator[PlanWithAccessor] =
-      readLabels.plansReadingSymbol(label)
+    def plansReadingLabel(label: Option[LabelName]): Iterator[PlanWithAccessor] =
+      label.map(readLabels.plansReadingSymbol).getOrElse(readLabels.plansReadingAnySymbol)
 
     def withNodePropertyRead(accessedProperty: AccessedProperty, plan: LogicalPlan): Reads =
       copy(readNodeProperties =
@@ -640,13 +640,16 @@ object ReadsAndWritesFinder {
   /**
    * An accumulator of SETs in the logical plan tree.
    *
-   * @param writtenNodeProperties a provider to find out which plans set which properties.
+   * @param writtenNodeProperties a provider to find out which plans set which Node properties.
+   * @param writtenRelProperties  a provider to find out which plans set which Relationship properties.
    * @param writtenLabels         for each label, all the plans that set that label.
+   * @param writtenUnknownLabels  all the plans that set an unknown label.
    */
   private[eager] case class Sets(
     writtenNodeProperties: PropertyWritingPlansProvider = PropertyWritingPlansProvider(),
     writtenRelProperties: PropertyWritingPlansProvider = PropertyWritingPlansProvider(),
-    writtenLabels: Map[LabelName, Set[PlanWithAccessor]] = Map.empty
+    writtenLabels: Map[LabelName, Set[PlanWithAccessor]] = Map.empty,
+    writtenUnknownLabels: Set[PlanWithAccessor] = Set.empty
   ) {
 
     def withNodePropertyWritten(accessedProperty: AccessedProperty, plan: LogicalPlan): Sets =
@@ -682,13 +685,19 @@ object ReadsAndWritesFinder {
       )
     }
 
+    def withUnknownLabelWritten(plan: LogicalPlan, accessor: Option[LogicalVariable]): Sets =
+      copy(writtenUnknownLabels =
+        writtenUnknownLabels + PlanWithAccessor(Ref(plan), accessor)
+      )
+
     def includePlanSets(plan: LogicalPlan, planSets: PlanSets): Sets = {
       Function.chain[Sets](Seq(
         acc => planSets.writtenNodeProperties.foldLeft(acc)(_.withNodePropertyWritten(_, plan)),
         acc => planSets.unknownNodePropertiesAccessors.foldLeft(acc)(_.withUnknownNodePropertyWritten(plan, _)),
         acc => planSets.writtenLabels.foldLeft(acc)(_.withLabelWritten(_, plan)),
         acc => planSets.writtenRelProperties.foldLeft(acc)(_.withRelPropertyWritten(_, plan)),
-        acc => planSets.unknownRelPropertiesAccessors.foldLeft(acc)(_.withUnknownRelPropertyWritten(plan, _))
+        acc => planSets.unknownRelPropertiesAccessors.foldLeft(acc)(_.withUnknownRelPropertyWritten(plan, _)),
+        acc => planSets.unknownLabelAccessors.foldLeft(acc)(_.withUnknownLabelWritten(plan, _))
       ))(this)
     }
 
@@ -696,7 +705,8 @@ object ReadsAndWritesFinder {
       copy(
         writtenNodeProperties = this.writtenNodeProperties ++ other.writtenNodeProperties,
         writtenLabels = this.writtenLabels.fuse(other.writtenLabels)(_ ++ _),
-        writtenRelProperties = this.writtenRelProperties ++ other.writtenRelProperties
+        writtenRelProperties = this.writtenRelProperties ++ other.writtenRelProperties,
+        writtenUnknownLabels = this.writtenUnknownLabels ++ other.writtenUnknownLabels
       )
     }
   }

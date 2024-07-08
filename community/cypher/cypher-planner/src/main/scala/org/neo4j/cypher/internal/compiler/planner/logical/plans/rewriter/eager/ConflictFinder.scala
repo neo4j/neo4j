@@ -42,6 +42,8 @@ import org.neo4j.cypher.internal.ir.EagernessReason.PropertyReadSetConflict
 import org.neo4j.cypher.internal.ir.EagernessReason.ReadCreateConflict
 import org.neo4j.cypher.internal.ir.EagernessReason.ReadDeleteConflict
 import org.neo4j.cypher.internal.ir.EagernessReason.TypeReadSetConflict
+import org.neo4j.cypher.internal.ir.EagernessReason.UnknownLabelReadRemoveConflict
+import org.neo4j.cypher.internal.ir.EagernessReason.UnknownLabelReadSetConflict
 import org.neo4j.cypher.internal.ir.EagernessReason.UnknownPropertyReadSetConflict
 import org.neo4j.cypher.internal.ir.RemoveLabelPattern
 import org.neo4j.cypher.internal.ir.helpers.CachedFunction
@@ -123,11 +125,17 @@ sealed trait ConflictFinder {
     }
   }
 
+  private def allWrittenLabels(readsAndWrites: ReadsAndWrites): Iterator[(Option[LabelName], Set[PlanWithAccessor])] = {
+    readsAndWrites.writes.sets.writtenLabels.iterator.map {
+      case (labelName, plansWithAccessors) => (Some(labelName), plansWithAccessors)
+    } ++ Seq((Option.empty, readsAndWrites.writes.sets.writtenUnknownLabels))
+  }
+
   private def labelConflicts(readsAndWrites: ReadsAndWrites, leftMostLeaf: LogicalPlan)(implicit
   planChildrenLookup: PlanChildrenLookup): Iterator[ConflictingPlanPair] = {
     for {
-      (label, writePlans) <- readsAndWrites.writes.sets.writtenLabels.iterator
-      read @ PlanWithAccessor(Ref(readPlan), _) <- readsAndWrites.reads.plansReadingLabel(label)
+      (maybeLabel, writePlans) <- allWrittenLabels(readsAndWrites)
+      read @ PlanWithAccessor(Ref(readPlan), _) <- readsAndWrites.reads.plansReadingLabel(maybeLabel)
       write @ PlanWithAccessor(Ref(writePlan), _) <- writePlans.iterator
       if !distinctConflictOnSameSymbol(read, write)
       if isValidConflict(readPlan, writePlan, leftMostLeaf)
@@ -138,16 +146,32 @@ sealed trait ConflictFinder {
           ConflictingPlanPair(
             Ref(writePlan),
             Ref(readPlan),
-            set1(LabelReadRemoveConflict(label).withConflict(conflict))
+            maybeLabel.map(label =>
+              set1(LabelReadRemoveConflict(label).withConflict(conflict))
+            ).getOrElse(
+              set1(UnknownLabelReadRemoveConflict.withConflict(conflict))
+            ).toSet
           )
         case forEach: Foreach if forEach.mutations.exists(_.isInstanceOf[RemoveLabelPattern]) =>
           ConflictingPlanPair(
             Ref(writePlan),
             Ref(readPlan),
-            set1(LabelReadRemoveConflict(label).withConflict(conflict))
+            maybeLabel.map(label =>
+              set1(LabelReadRemoveConflict(label).withConflict(conflict))
+            ).getOrElse(
+              set1(UnknownLabelReadRemoveConflict.withConflict(conflict))
+            ).toSet
           )
         case _ =>
-          ConflictingPlanPair(Ref(writePlan), Ref(readPlan), set1(LabelReadSetConflict(label).withConflict(conflict)))
+          ConflictingPlanPair(
+            Ref(writePlan),
+            Ref(readPlan),
+            maybeLabel.map(label =>
+              set1(LabelReadSetConflict(maybeLabel.get).withConflict(conflict))
+            ).getOrElse(
+              set1(UnknownLabelReadSetConflict.withConflict(conflict))
+            ).toSet
+          )
       }
     }
   }

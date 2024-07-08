@@ -57,6 +57,8 @@ object EagernessReason {
   final case class LabelReadSetConflict(label: LabelName) extends NonUnique
   final case class TypeReadSetConflict(relType: RelTypeName) extends NonUnique
   final case class LabelReadRemoveConflict(label: LabelName) extends NonUnique
+  case object UnknownLabelReadSetConflict extends NonUnique
+  case object UnknownLabelReadRemoveConflict extends NonUnique
 
   /**
    * Note: 

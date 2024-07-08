@@ -3437,6 +3437,10 @@ case class LogicalPlan2PlanDescription(
         (pretty"read/set conflict for property: ${asPrettyString(property)}")
       case EagernessReason.UnknownPropertyReadSetConflict =>
         (pretty"read/set conflict for some property")
+      case EagernessReason.UnknownLabelReadRemoveConflict =>
+        (pretty"read/remove conflict for some label")
+      case EagernessReason.UnknownLabelReadSetConflict =>
+        (pretty"read/set conflict for some label")
     }
   }
 

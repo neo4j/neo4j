@@ -1988,6 +1988,10 @@ object LogicalPlanToPlanBuilderString {
       s"${objectName(EagernessReason.TypeReadSetConflict)}(RelTypeName(${wrapInQuotations(relType.name)})(InputPosition.NONE))"
     case EagernessReason.LabelReadRemoveConflict(label) =>
       s"${objectName(EagernessReason.LabelReadRemoveConflict)}(LabelName(${wrapInQuotations(label.name)})(InputPosition.NONE))"
+    case EagernessReason.UnknownLabelReadSetConflict =>
+      s"${objectName(EagernessReason.UnknownLabelReadSetConflict)}"
+    case EagernessReason.UnknownLabelReadRemoveConflict =>
+      s"${objectName(EagernessReason.UnknownLabelReadRemoveConflict)}"
     case EagernessReason.ReadDeleteConflict(identifier) =>
       s"${objectName(EagernessReason.ReadDeleteConflict)}(${wrapInQuotations(identifier)})"
     case EagernessReason.ReadCreateConflict =>

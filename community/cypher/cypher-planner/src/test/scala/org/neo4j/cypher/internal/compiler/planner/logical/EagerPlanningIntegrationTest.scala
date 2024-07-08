@@ -38,9 +38,14 @@ import org.neo4j.cypher.internal.ir.EagernessReason.ReadCreateConflict
 import org.neo4j.cypher.internal.ir.EagernessReason.ReadDeleteConflict
 import org.neo4j.cypher.internal.ir.EagernessReason.TypeReadSetConflict
 import org.neo4j.cypher.internal.ir.EagernessReason.Unknown
+import org.neo4j.cypher.internal.ir.EagernessReason.UnknownLabelReadRemoveConflict
+import org.neo4j.cypher.internal.ir.EagernessReason.UnknownLabelReadSetConflict
+import org.neo4j.cypher.internal.ir.HasHeaders
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.column
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNodeWithProperties
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createRelationship
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setLabel
 import org.neo4j.cypher.internal.logical.builder.TestNFABuilder
 import org.neo4j.cypher.internal.logical.plans.Expand.ExpandAll
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
@@ -1574,6 +1579,234 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
           createNode("anon_1", "L0"),
           createRelationship("anon_0", "var1", "REL", "anon_1", OUTGOING)
         )
+        .argument()
+        .build()
+    )
+  }
+
+  test("MATCH (n:Label), (m:Label) SET n:$(\"Label\") RETURN m, n") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setLabelCardinality("Label", 50)
+      .setLabelCardinality("Label2", 50)
+      .addSemanticFeature(SemanticFeature.DynamicProperties)
+      .build()
+
+    val query = """MATCH (n:Label), (m:Label2) SET n:$("Label2") RETURN m, n""".stripMargin
+
+    val plan = planner.plan(query)
+
+    plan should equal(
+      planner.planBuilder()
+        .produceResults("m", "n")
+        .lpEager(ListSet(UnknownLabelReadSetConflict.withConflict(Conflict(Id(2), Id(0)))))
+        .setLabels("n", Seq(), Seq("'Label2'"))
+        .lpEager(ListSet(UnknownLabelReadSetConflict.withConflict(Conflict(Id(2), Id(5)))))
+        .cartesianProduct()
+        .|.nodeByLabelScan("m", "Label2", IndexOrderNone)
+        .nodeByLabelScan("n", "Label", IndexOrderNone)
+        .build()
+    )
+  }
+
+  test("MATCH (n:Movie) SET n:$(n.genre) REMOVE n.genre RETURN n;") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setLabelCardinality("Label", 50)
+      .addSemanticFeature(SemanticFeature.DynamicProperties)
+      .build()
+
+    val query = """MATCH (n:Label)
+                  |SET n:$(n.genre)
+                  |REMOVE n.genre
+                  |RETURN n""".stripMargin
+
+    val plan = planner.plan(query)
+//Produces no eager since n is unique so no risk of overwrite. For LP Eagerness
+    plan should equal(
+      planner.planBuilder()
+        .produceResults("n")
+        .irEager(ListSet(EagernessReason.Unknown))
+        .setNodeProperty("n", "genre", "NULL")
+        .irEager(ListSet(EagernessReason.Unknown))
+        .setLabels("n", Seq(), Seq("n.genre"))
+        .irEager(ListSet(EagernessReason.Unknown))
+        .nodeByLabelScan("n", "Label", IndexOrderNone)
+        .build()
+    )
+  }
+
+  test("MATCH (m:Label), (n) SET m: $(n.genre) REMOVE m.genre RETURN n") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setLabelCardinality("Label", 50)
+      .addSemanticFeature(SemanticFeature.DynamicProperties)
+      .build()
+
+    val query = """MATCH (m:Label), (n)
+                  |SET m:$(n.genre)
+                  |REMOVE m.genre
+                  |RETURN n""".stripMargin
+
+    val plan = planner.plan(query)
+
+    val expected = impl match {
+      case GraphDatabaseInternalSettings.EagerAnalysisImplementation.IR => planner.planBuilder()
+          .produceResults(column("n", "cacheN[n.genre]"))
+          .eager(ListSet(Unknown))
+          .setNodeProperty("m", "genre", "NULL")
+          .eager(ListSet(Unknown))
+          .setLabels("m", Seq(), Seq("cacheN[n.genre]"))
+          .cartesianProduct()
+          .|.nodeByLabelScan("m", "Label", IndexOrderNone)
+          .cacheProperties("cacheNFromStore[n.genre]")
+          .allNodeScan("n")
+          .build()
+      case GraphDatabaseInternalSettings.EagerAnalysisImplementation.LP => planner.planBuilder()
+          .produceResults("n")
+          .lpEager(ListSet(PropertyReadSetConflict(propName("genre")).withConflict(Conflict(Id(2), Id(0)))))
+          .setNodeProperty("m", "genre", "NULL")
+          .lpEager(ListSet(
+            UnknownLabelReadSetConflict.withConflict(Conflict(Id(4), Id(0))),
+            PropertyReadSetConflict(propName("genre")).withConflict(Conflict(Id(2), Id(4)))
+          ))
+          .setLabels("m", Seq(), Seq("n.genre"))
+          .lpEager(ListSet(UnknownLabelReadSetConflict.withConflict(Conflict(Id(4), Id(7)))))
+          .cartesianProduct()
+          .|.nodeByLabelScan("m", "Label", IndexOrderNone)
+          .allNodeScan("n")
+          .build()
+    }
+
+    plan shouldEqual expected
+  }
+
+  test("MATCH (n:Label), (m) SET n: $(toString(n.year)) REMOVE n.genre, n.year RETURN n") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setLabelCardinality("Label", 50)
+      .addSemanticFeature(SemanticFeature.DynamicProperties)
+      .build()
+
+    val query = """MATCH (n:Label), (m)
+                  |SET n:$(toString(n.year))
+                  |REMOVE n.genre, n.year
+                  |RETURN n""".stripMargin
+
+    val plan = planner.plan(query)
+
+    plan should equal(
+      planner.planBuilder()
+        .produceResults("n")
+        .eager(lpReasons(PropertyReadSetConflict(propName("year")).withConflict(Conflict(Id(2), Id(0)))))
+        .setNodeProperty("n", "year", "NULL")
+        .lpEager(ListSet(
+          PropertyReadSetConflict(propName("genre")).withConflict(Conflict(Id(4), Id(0))),
+          UnknownLabelReadSetConflict.withConflict(Conflict(Id(5), Id(0))),
+          PropertyReadSetConflict(propName("year")).withConflict(Conflict(Id(2), Id(5)))
+        ))
+        .setNodeProperty("n", "genre", "NULL")
+        .irEager(ListSet(Unknown))
+        .setLabels("n", Seq(), Seq("toString(n.year)"))
+        .lpEager(ListSet(UnknownLabelReadSetConflict.withConflict(Conflict(Id(5), Id(8)))))
+        .cartesianProduct()
+        .|.nodeByLabelScan("n", "Label", IndexOrderNone)
+        .allNodeScan("m")
+        .build()
+    )
+  }
+
+  test("Should eagerize Load CSV with dynamic labels") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setLabelCardinality("Label", 50)
+      .addSemanticFeature(SemanticFeature.DynamicProperties)
+      .build()
+
+    val query = """LOAD CSV WITH HEADERS FROM 'file:///artists-with-headers.csv' AS line
+                  |CREATE (n {name: line.Name})
+                  |SET n:$(line.label)
+                  |RETURN n""".stripMargin
+
+    val plan = planner.plan(query)
+
+    plan should equal(
+      planner.planBuilder()
+        .produceResults("n")
+        .lpEager(ListSet(UnknownLabelReadSetConflict.withConflict(Conflict(Id(2), Id(0)))))
+        .setLabels("n", Seq(), Seq("line.label"))
+        .create(createNodeWithProperties("n", Seq(), "{name: line.Name}"))
+        .loadCSV("'file:///artists-with-headers.csv'", "line", HasHeaders, None)
+        .argument()
+        .build()
+    )
+  }
+
+  test("Should eagerize removal of dynamic labels list from COLLECT") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setLabelCardinality("Label", 50)
+      .addSemanticFeature(SemanticFeature.DynamicProperties)
+      .build()
+
+    val query = """WITH COLLECT { UNWIND range(0,3) AS id RETURN id} as labels
+                  |MATCH (n), (m)
+                  |REMOVE n:$(labels)
+                  |RETURN labels(m) AS leftoverLabels""".stripMargin
+
+    val plan = planner.plan(query)
+
+    plan should equal(
+      planner.planBuilder()
+        .produceResults("leftoverLabels")
+        .projection("labels(m) AS leftoverLabels")
+        .lpEager(ListSet(UnknownLabelReadRemoveConflict.withConflict(Conflict(Id(3), Id(1)))))
+        .removeLabels("n", Seq(), Seq("labels"))
+        .apply()
+        .|.cartesianProduct()
+        .|.|.allNodeScan("m", "labels")
+        .|.allNodeScan("n", "labels")
+        .rollUpApply("labels", "id")
+        .|.unwind("range(0, 3) AS id")
+        .|.argument()
+        .argument()
+        .build()
+    )
+  }
+
+  test("Should not eagerize Merge with dynamic labels since merge is distinct") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setLabelCardinality("Label", 50)
+      .addSemanticFeature(SemanticFeature.DynamicProperties)
+      .build()
+    // Node is distinct so no eager is necessary.
+    val query = """WITH "NewLabel" AS label, "OldLabel" AS label2
+                  |MERGE (gem:Label {name: "Gem"})
+                  |ON CREATE
+                  |  SET gem:$(label)
+                  |ON MATCH
+                  |  SET gem:$(label2)
+                  |RETURN labels(gem) AS labels
+                  |""".stripMargin
+
+    val plan = planner.plan(query)
+
+    plan should equal(
+      planner.planBuilder()
+        .produceResults("labels")
+        .projection("labels(gem) AS labels")
+        .apply()
+        .|.merge(
+          Seq(createNodeWithProperties("gem", Seq("Label"), "{name: 'Gem'}")),
+          Seq(),
+          Seq(setLabel("gem", Seq(), Seq("label2"))),
+          Seq(setLabel("gem", Seq(), Seq("label"))),
+          Set()
+        )
+        .|.filter("gem.name = 'Gem'")
+        .|.nodeByLabelScan("gem", "Label", IndexOrderNone, "label", "label2")
+        .projection("'NewLabel' AS label", "'OldLabel' AS label2")
         .argument()
         .build()
     )

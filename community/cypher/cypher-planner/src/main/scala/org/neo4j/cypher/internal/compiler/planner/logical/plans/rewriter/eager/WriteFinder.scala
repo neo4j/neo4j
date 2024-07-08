@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.ReadFinder.AccessedLabel
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.ReadFinder.AccessedProperty
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.ReadFinder.asMaybeVar
+import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.MapExpression
@@ -89,13 +90,15 @@ object WriteFinder {
    * @param writtenLabels                  all labels written by this plan
    * @param writtenRelProperties           all relationship properties written by this plan
    * @param unknownRelPropertiesAccessors  for each unknown relationship properties access, e.g. by by doing SET m = n, the accessor variable, if available.
+   * @param unknownLabelAccessors          for each unknown label access, e.g. using dynamic labels, if available.
    */
   private[eager] case class PlanSets(
     writtenNodeProperties: Seq[AccessedProperty] = Seq.empty,
     writtenRelProperties: Seq[AccessedProperty] = Seq.empty,
     unknownNodePropertiesAccessors: Seq[Option[LogicalVariable]] = Seq.empty,
     unknownRelPropertiesAccessors: Seq[Option[LogicalVariable]] = Seq.empty,
-    writtenLabels: Set[AccessedLabel] = Set.empty
+    writtenLabels: Set[AccessedLabel] = Set.empty,
+    unknownLabelAccessors: Seq[Option[LogicalVariable]] = Seq.empty
   ) {
 
     def withNodePropertyWritten(accessedProperty: AccessedProperty): PlanSets =
@@ -114,6 +117,9 @@ object WriteFinder {
      * Call this to signal that this plan writes some labels.
      */
     def withLabelsWritten(labels: Set[AccessedLabel]): PlanSets = copy(writtenLabels = writtenLabels ++ labels)
+
+    def withUnknownLabelsWritten(accessor: Option[LogicalVariable]): PlanSets =
+      copy(unknownLabelAccessors = unknownLabelAccessors :+ accessor)
   }
 
   sealed private[eager] trait CreatedEntity[A] {
@@ -281,13 +287,11 @@ object WriteFinder {
         case SetNodePropertiesFromMap(_, variable, _, _) =>
           PlanWrites(sets = PlanSets(unknownNodePropertiesAccessors = Seq(Some(variable))))
 
-        // TODO dynamic labels
-        case SetLabels(_, variable, labelNames, _) =>
-          PlanWrites(sets = PlanSets(writtenLabels = labelNames.map(AccessedLabel(_, Some(variable)))))
+        case SetLabels(_, variable, labelNames, dynamicLabels) =>
+          processWrittenLabel(variable, labelNames, dynamicLabels)
 
-        // TODO dynamic labels
-        case RemoveLabels(_, variable, labelNames, _) =>
-          PlanWrites(sets = PlanSets(writtenLabels = labelNames.map(AccessedLabel(_, Some(variable)))))
+        case RemoveLabels(_, variable, labelNames, dynamicLabels) =>
+          processWrittenLabel(variable, labelNames, dynamicLabels)
 
         case c: Create =>
           val nodeCreates = processCreateNodes(PlanCreates(), c.nodes)
@@ -365,6 +369,28 @@ object WriteFinder {
           PlanWrites(deletes = deletes)
       }
     case _ => PlanWrites()
+  }
+
+  private def processWrittenLabel(
+    variable: LogicalVariable,
+    labelNames: Set[LabelName],
+    dynamicLabels: Set[Expression]
+  ): PlanWrites = {
+    val writtenLabels = labelNames.map(AccessedLabel(_, Some(variable)))
+    if (dynamicLabels.nonEmpty) {
+      PlanWrites(sets =
+        PlanSets(
+          writtenLabels = writtenLabels,
+          unknownLabelAccessors = Seq(Some(variable))
+        )
+      )
+    } else {
+      PlanWrites(sets =
+        PlanSets(
+          writtenLabels = writtenLabels
+        )
+      )
+    }
   }
 
   private def processNodePropertyMap(
