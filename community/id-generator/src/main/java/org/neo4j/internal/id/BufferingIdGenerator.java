@@ -20,18 +20,14 @@
 package org.neo4j.internal.id;
 
 import static org.neo4j.internal.id.IdUtils.combinedIdAndNumberOfIds;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
 import java.util.List;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import org.neo4j.collection.trackable.HeapTrackingLongArrayList;
 import org.neo4j.internal.id.range.PageIdRange;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.memory.MemoryTracker;
 
 class BufferingIdGenerator extends IdGenerator.Delegate {
-    private static final int MAX_BUFFERED_RANGES = 1000;
-    private final ConcurrentLinkedQueue<PageIdRange> rangeCache = new ConcurrentLinkedQueue<>();
 
     private final BufferingIdGeneratorFactory bufferedFactory;
     private final int idTypeOrdinal;
@@ -59,26 +55,16 @@ class BufferingIdGenerator extends IdGenerator.Delegate {
 
     @Override
     public PageIdRange nextPageRange(CursorContext cursorContext, int idsPerPage) {
-        var range = rangeCache.poll();
-        if (range != null) {
-            return range;
-        }
-
-        return delegate.nextPageRange(cursorContext, idsPerPage);
+        throw new UnsupportedOperationException("Range allocation supported only in multi versioned id allocators.");
     }
 
     @Override
     public void releasePageRange(PageIdRange range, CursorContext cursorContext) {
-        if (rangeCache.size() < MAX_BUFFERED_RANGES && range.hasNext()) {
-            rangeCache.add(range);
-        } else {
-            delegate.releasePageRange(range, cursorContext);
-        }
+        throw new UnsupportedOperationException("Range allocation supported only in multi versioned id allocators.");
     }
 
     @Override
     public void close() {
-        releaseRanges();
         bufferedFactory.release(idType());
         delegate.close();
     }
@@ -111,13 +97,6 @@ class BufferingIdGenerator extends IdGenerator.Delegate {
             newFreeBuffer();
         }
         delegate.clearCache(allocationEnabled, cursorContext);
-    }
-
-    public void releaseRanges() {
-        if (!rangeCache.isEmpty()) {
-            rangeCache.forEach(pageIdRange -> delegate.releasePageRange(pageIdRange, NULL_CONTEXT));
-            rangeCache.clear();
-        }
     }
 
     synchronized void collectBufferedIds(List<BufferingIdGeneratorFactory.IdBuffer> idBuffers) {
