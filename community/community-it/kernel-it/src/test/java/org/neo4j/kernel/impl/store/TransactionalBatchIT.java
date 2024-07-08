@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.store;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.neo4j.collection.Dependencies.dependenciesOf;
 
 import java.nio.file.Path;
@@ -50,7 +51,7 @@ import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.Inject;
 
 @DbmsExtension(configurationCallback = "configure")
-public class LastCloseBatchIT {
+public class TransactionalBatchIT {
     @Inject
     private GraphDatabaseAPI db;
 
@@ -64,6 +65,25 @@ public class LastCloseBatchIT {
         postCommitCallback = new PostCommitChecker();
         var testTracers = new TransactionPostCommitTracers(postCommitCallback);
         builder.setExternalDependencies(dependenciesOf(testTracers));
+    }
+
+    @Test
+    void noOldestOpenOnNewProvider() {
+        assertNull(metadataProvider.getOldestOpenTransaction());
+    }
+
+    @Test
+    void appliedTransactionDoNotInfluenceOldestOpen() {
+        for (int i = 0; i < 10; i++) {
+            try (Transaction transaction = db.beginTx()) {
+                transaction.createNode();
+                assertNull(metadataProvider.getOldestOpenTransaction());
+
+                transaction.commit();
+            }
+        }
+
+        assertNull(metadataProvider.getOldestOpenTransaction());
     }
 
     @Test

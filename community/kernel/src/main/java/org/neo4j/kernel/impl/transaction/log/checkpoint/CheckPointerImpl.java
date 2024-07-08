@@ -41,6 +41,7 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.monitoring.Panic;
+import org.neo4j.storageengine.api.ClosedBatchMetadata;
 import org.neo4j.storageengine.api.MetadataProvider;
 import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.time.Stopwatch;
@@ -123,7 +124,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer {
             TransactionId transactionId, long appendIndex, LogPosition position, TriggerInfo triggerInfo)
             throws IOException {
         try (Resource lock = mutex.checkPoint()) {
-            return checkpointByExternalParams(transactionId, position, appendIndex, triggerInfo);
+            return checkpointByExternalParams(transactionId, position, position, appendIndex, triggerInfo);
         }
     }
 
@@ -174,25 +175,39 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer {
             logShutdownMessage(triggerInfo);
             return NO_TRANSACTION_ID;
         }
-        var lastClosedTxData = metadataProvider.getLastClosedTransaction();
-        var lastClosedTransaction = lastClosedTxData.transactionId();
+        var lastClosedTransaction = metadataProvider.getLastClosedTransaction().transactionId();
         var lastClosedBatch = metadataProvider.getLastClosedBatch();
+        var oldestNotVisibleTransaction = evaluateOldestNotVisibleTransactionStartPosition(lastClosedBatch);
+
         return checkpointByExternalParams(
-                lastClosedTransaction, lastClosedTxData.logPosition(), lastClosedBatch.appendIndex(), triggerInfo);
+                lastClosedTransaction,
+                oldestNotVisibleTransaction,
+                lastClosedBatch.logPosition(),
+                lastClosedBatch.appendIndex(),
+                triggerInfo);
     }
 
     private long checkpointByExternalParams(
-            TransactionId transactionId, LogPosition logPosition, long appendIndex, TriggerInfo triggerInfo)
+            TransactionId transactionId,
+            LogPosition oldestNotCompletedPosition,
+            LogPosition checkpointedLogPosition,
+            long appendIndex,
+            TriggerInfo triggerInfo)
             throws IOException {
         if (shutdown) {
             logShutdownMessage(triggerInfo);
             return NO_TRANSACTION_ID;
         }
-        return doCheckpoint(transactionId, appendIndex, logPosition, triggerInfo);
+        return doCheckpoint(
+                transactionId, appendIndex, oldestNotCompletedPosition, checkpointedLogPosition, triggerInfo);
     }
 
     private long doCheckpoint(
-            TransactionId transactionId, long appendIndex, LogPosition logPosition, TriggerInfo triggerInfo)
+            TransactionId transactionId,
+            long appendIndex,
+            LogPosition oldestNotCompletedPosition,
+            LogPosition checkpointedLogPosition,
+            TriggerInfo triggerInfo)
             throws IOException {
         var databaseTracer = tracers.getDatabaseTracer();
         try (var cursorContext = cursorContextFactory.create(CHECKPOINT_TAG);
@@ -231,11 +246,11 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer {
                     transactionId,
                     appendIndex,
                     kernelVersion,
-                    logPosition,
-                    logPosition,
+                    oldestNotCompletedPosition,
+                    checkpointedLogPosition,
                     clock.instant(),
                     checkpointReason);
-            threshold.checkPointHappened(appendIndex, logPosition);
+            threshold.checkPointHappened(appendIndex, checkpointedLogPosition);
             long durationMillis = startTime.elapsed(MILLISECONDS);
             checkPointEvent.checkpointCompleted(durationMillis);
             log.info(createCheckpointMessageDescription(checkPointEvent, checkpointReason, durationMillis));
@@ -244,7 +259,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer {
              * Prune up to the version pointed from the latest check point,
              * since it might be an earlier version than the current log version.
              */
-            logPruning.pruneLogs(logPosition.getLogVersion());
+            logPruning.pruneLogs(oldestNotCompletedPosition.getLogVersion());
             latestCheckPointInfo = ongoingCheckpoint;
             return lastClosedTransactionId;
         } catch (Throwable t) {
@@ -277,6 +292,21 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer {
     private void logShutdownMessage(TriggerInfo triggerInfo) {
         log.warn("Checkpoint was requested on already shutdown checkpointer. Requester: "
                 + triggerInfo.describe(UNKNOWN_CHECKPOINT_INFO));
+    }
+
+    private LogPosition evaluateOldestNotVisibleTransactionStartPosition(ClosedBatchMetadata lastClosedBatch) {
+        var openTransactionMetadata = metadataProvider.getOldestOpenTransaction();
+        if (openTransactionMetadata == null) {
+            return lastClosedBatch.logPosition();
+        }
+
+        long oldestBatchAppendIndex = openTransactionMetadata.appendIndex();
+        // oldest not closed is after closed tx id so nothing to guard
+        if (oldestBatchAppendIndex > lastClosedBatch.appendIndex()) {
+            return lastClosedBatch.logPosition();
+        }
+
+        return openTransactionMetadata.logPosition();
     }
 
     @Override

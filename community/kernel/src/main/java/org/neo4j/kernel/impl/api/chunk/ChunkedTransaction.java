@@ -149,7 +149,10 @@ public class ChunkedTransaction implements CommandBatchToApply {
         this.commitment.commit(
                 transactionId,
                 appendIndex,
+                chunk.chunkMetadata().first(),
+                chunk.chunkMetadata().last(),
                 chunk.kernelVersion(),
+                beforeStart,
                 positionAfter,
                 checksum,
                 chunk.chunkMetadata().consensusIndex().longValue());

@@ -152,7 +152,10 @@ public class TransactionToApply implements CommandBatchToApply {
         this.commitment.commit(
                 transactionId,
                 appendIndex,
+                true,
+                true,
                 commandBatch.kernelVersion(),
+                beforeCommit,
                 positionAfter,
                 checksum,
                 commandBatch.consensusIndex());

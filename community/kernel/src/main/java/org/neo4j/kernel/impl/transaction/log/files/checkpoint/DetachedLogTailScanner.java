@@ -169,7 +169,7 @@ public class DetachedLogTailScanner {
                 getPostCheckpointInfo(logFile, checkpoint.kernelVersion(), checkpoint.transactionLogPosition());
         return new LogTailInformation(
                 loadConsensusIndexIfNeeded(logFile, checkpoint),
-                postCheckPointInfo.isPresent(),
+                checkpoint.olderTransactionRecoveryRequired() || postCheckPointInfo.isPresent(),
                 postCheckPointInfo.appendIndex(),
                 lowestLogVersion == UNKNOWN,
                 highestLogVersion,
@@ -399,7 +399,7 @@ public class DetachedLogTailScanner {
         }
         // create new CheckpointInfo with new TransactionId which has proper consensus index
         return new CheckpointInfo(
-                checkpoint.transactionLogPosition(),
+                checkpoint.oldestNotVisibleTransactionLogPosition(),
                 checkpoint.transactionLogPosition(),
                 checkpoint.storeId(),
                 checkpoint.checkpointEntryPosition(),

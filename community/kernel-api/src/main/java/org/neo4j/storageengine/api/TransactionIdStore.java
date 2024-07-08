@@ -167,14 +167,22 @@ public interface TransactionIdStore {
     ClosedBatchMetadata getLastClosedBatch();
 
     /**
-     *
      * Signals that a batch with the given append index has been fully applied. Calls to this method
      * may come in out-of-transaction-id order.
+     * @param transactionId closed batch transaction id
      * @param appendIndex append index of the closed batch
+     * @param firstBatch is the batch first for particular transaction
+     * @param lastBatch is the batch last for particular transaction
      * @param kernelVersion the closed batch kernel version
      * @param logPositionAfter log position after closed batch
      */
-    void batchClosed(long appendIndex, KernelVersion kernelVersion, LogPosition logPositionAfter);
+    void batchClosed(
+            long transactionId,
+            long appendIndex,
+            boolean firstBatch,
+            boolean lastBatch,
+            KernelVersion kernelVersion,
+            LogPosition logPositionAfter);
 
     /**
      * Used by recovery, where last committed/closed transaction ids are set.
@@ -248,10 +256,20 @@ public interface TransactionIdStore {
     /**
      * Signals that some new chunk of info was added to transaction logs with new provided index and position
      *
+     * @param transactionId transaction id of particular batch
      * @param appendIndex latest append index
+     * @param firstBatch is the batch first for particular transaction
+     * @param lastBatch is the batch last for particular transaction
+     * @param logPositionBefore log position before entry with provided appendIndex
      * @param logPositionAfter log position after entry with provided appendIndex
      */
-    void appendBatch(long appendIndex, LogPosition logPositionAfter);
+    void appendBatch(
+            long transactionId,
+            long appendIndex,
+            boolean firstBatch,
+            boolean lastBatch,
+            LogPosition logPositionBefore,
+            LogPosition logPositionAfter);
 
     /**
      * Returns information about last encountered appended registered batch.
@@ -259,4 +277,9 @@ public interface TransactionIdStore {
      * parties should do lookup in their side.
      */
     AppendBatchInfo lastBatch();
+
+    /**
+     * Returns information about the oldest registered chunked open transaction.
+     */
+    OpenTransactionMetadata getOldestOpenTransaction();
 }

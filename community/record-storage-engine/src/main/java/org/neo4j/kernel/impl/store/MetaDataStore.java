@@ -61,9 +61,11 @@ import org.neo4j.storageengine.api.ClosedBatchMetadata;
 import org.neo4j.storageengine.api.ClosedTransactionMetadata;
 import org.neo4j.storageengine.api.ExternalStoreId;
 import org.neo4j.storageengine.api.MetadataProvider;
+import org.neo4j.storageengine.api.OpenTransactionMetadata;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.StoreIdSerialization;
 import org.neo4j.storageengine.api.TransactionId;
+import org.neo4j.storageengine.util.ChunkedTransactionRegistry;
 import org.neo4j.storageengine.util.HighestTransactionId;
 import org.neo4j.util.concurrent.ArrayQueueOutOfOrderSequence;
 import org.neo4j.util.concurrent.OutOfOrderSequence;
@@ -123,6 +125,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord, NoStoreHe
     private volatile boolean closed;
     private final AtomicLong appendIndex;
     private volatile AppendBatchInfo lastBatch;
+    private final ChunkedTransactionRegistry chunkedTransactionRegistry = new ChunkedTransactionRegistry();
 
     MetaDataStore(
             FileSystemAbstraction fileSystem,
@@ -381,7 +384,13 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord, NoStoreHe
     }
 
     @Override
-    public void batchClosed(long appendIndex, KernelVersion kernelVersion, LogPosition logPositionAfter) {
+    public void batchClosed(
+            long transactionId,
+            long appendIndex,
+            boolean firstBatch,
+            boolean lastBatch,
+            KernelVersion kernelVersion,
+            LogPosition logPositionAfter) {
         lastClosedBatch.offer(
                 appendIndex,
                 new Meta(
@@ -392,6 +401,10 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord, NoStoreHe
                         UNKNOWN_TX_COMMIT_TIMESTAMP,
                         UNKNOWN_CONSENSUS_INDEX,
                         appendIndex));
+        // only remove transaction if this is the last batch in multi batch transaction
+        if (lastBatch && !firstBatch) {
+            chunkedTransactionRegistry.removeTransaction(transactionId);
+        }
     }
 
     @Override
@@ -418,13 +431,32 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord, NoStoreHe
     }
 
     @Override
-    public void appendBatch(long appendIndex, LogPosition logPositionAfter) {
-        lastBatch = new AppendBatchInfo(appendIndex, logPositionAfter);
+    public void appendBatch(
+            long transactionId,
+            long appendIndex,
+            boolean firstBatch,
+            boolean lastBatch,
+            LogPosition logPositionBefore,
+            LogPosition logPositionAfter) {
+        this.lastBatch = new AppendBatchInfo(appendIndex, logPositionAfter);
+
+        // this is the first and last batch, no need to register in progress transaction
+        if (firstBatch && lastBatch) {
+            return;
+        }
+        if (firstBatch) {
+            chunkedTransactionRegistry.registerTransaction(transactionId, appendIndex, logPositionBefore);
+        }
     }
 
     @Override
     public AppendBatchInfo lastBatch() {
         return lastBatch;
+    }
+
+    @Override
+    public OpenTransactionMetadata getOldestOpenTransaction() {
+        return chunkedTransactionRegistry.oldestOpenTransactionMetadata();
     }
 
     public void logRecords(final DiagnosticsLogger logger) {

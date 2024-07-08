@@ -35,7 +35,10 @@ public interface Commitment {
         public void commit(
                 long transactionId,
                 long appendIndex,
+                boolean firstBatch,
+                boolean lastBatch,
                 KernelVersion kernelVersion,
+                LogPosition logPositionBeforeCommit,
                 LogPosition logPositionAfterCommit,
                 int checksum,
                 long consensusIndex) {}
@@ -50,7 +53,10 @@ public interface Commitment {
     void commit(
             long transactionId,
             long appendIndex,
+            boolean firstBatch,
+            boolean lastBatch,
             KernelVersion kernelVersion,
+            LogPosition logPositionBeforeCommit,
             LogPosition logPositionAfterCommit,
             int checksum,
             long consensusIndex);

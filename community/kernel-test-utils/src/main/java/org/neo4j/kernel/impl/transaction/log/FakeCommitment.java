@@ -45,7 +45,10 @@ public class FakeCommitment implements Commitment {
     public void commit(
             long transactionId,
             long appendIndex,
+            boolean firstBatch,
+            boolean lastBatch,
             KernelVersion kernelVersion,
+            LogPosition logPositionBeforeCommit,
             LogPosition logPositionAfterCommit,
             int checksum,
             long consensusIndex) {}

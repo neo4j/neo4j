@@ -29,6 +29,8 @@ public class TransactionCommitment implements Commitment {
 
     private final TransactionIdStore transactionIdStore;
     private boolean committed;
+    private boolean firstBatch;
+    private boolean lastBatch;
     private long transactionId;
     private int checksum;
     private long consensusIndex;
@@ -48,7 +50,10 @@ public class TransactionCommitment implements Commitment {
     public void commit(
             long transactionId,
             long appendIndex,
+            boolean firstBatch,
+            boolean lastBatch,
             KernelVersion kernelVersion,
+            LogPosition logPositionBeforeCommit,
             LogPosition logPositionAfterCommit,
             int checksum,
             long consensusIndex) {
@@ -57,8 +62,11 @@ public class TransactionCommitment implements Commitment {
         this.logPositionAfterCommit = logPositionAfterCommit;
         this.checksum = checksum;
         this.consensusIndex = consensusIndex;
+        this.firstBatch = firstBatch;
+        this.lastBatch = lastBatch;
         this.currentBatchAppendIndex = appendIndex;
-        transactionIdStore.appendBatch(appendIndex, logPositionAfterCommit);
+        transactionIdStore.appendBatch(
+                transactionId, appendIndex, firstBatch, lastBatch, logPositionBeforeCommit, logPositionAfterCommit);
     }
 
     @Override
@@ -73,7 +81,13 @@ public class TransactionCommitment implements Commitment {
     @Override
     public void publishAsClosed() {
         if (lastClosedAppendIndex != currentBatchAppendIndex) {
-            transactionIdStore.batchClosed(currentBatchAppendIndex, kernelVersion, logPositionAfterCommit);
+            transactionIdStore.batchClosed(
+                    transactionId,
+                    currentBatchAppendIndex,
+                    firstBatch,
+                    lastBatch,
+                    kernelVersion,
+                    logPositionAfterCommit);
             lastClosedAppendIndex = currentBatchAppendIndex;
         }
         if (committed) {

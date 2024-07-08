@@ -23,6 +23,7 @@ import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.neo4j.kernel.recovery.Recovery.throwUnableToCleanRecover;
 import static org.neo4j.kernel.recovery.RecoveryMode.FORWARD;
+import static org.neo4j.kernel.recovery.TransactionStatus.RECOVERABLE;
 import static org.neo4j.storageengine.AppendIndexProvider.BASE_APPEND_INDEX;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.RECOVERY;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.REVERSE_RECOVERY;
@@ -140,7 +141,7 @@ public class TransactionLogsRecovery extends LifecycleAdapter {
         try {
             if (!recoveryStartInformation.missingLogs()) {
                 try {
-                    reverseRecovery(recoveryStartInformation, transactionIdTracker, recoveryStartPosition);
+                    reverseRecovery(recoveryStartInformation, transactionIdTracker);
 
                     // We cannot initialise the schema (tokens, schema cache, indexing service, etc.) until we have
                     // returned
@@ -343,19 +344,22 @@ public class TransactionLogsRecovery extends LifecycleAdapter {
     }
 
     private void reverseRecovery(
-            RecoveryStartInformation recoveryStartInformation,
-            TransactionIdTracker transactionIdTracker,
-            LogPosition recoveryStartPosition)
+            RecoveryStartInformation recoveryStartInformation, TransactionIdTracker transactionIdTracker)
             throws Exception {
 
         if (mode == FORWARD) {
             // nothing to do, update the progress to match this
-            initProgressReporter(recoveryStartInformation, recoveryStartPosition);
+            initProgressReporter(recoveryStartInformation, recoveryStartInformation.transactionLogPosition());
             return;
         }
         CommittedCommandBatch lastReversedCommandBatch = null;
+
+        var oldestNotVisibleTransactionLogPosition = recoveryStartInformation.oldestNotVisibleTransactionLogPosition();
+        var checkpointedLogPosition = recoveryStartInformation.transactionLogPosition();
+
         long lowestRecoveredAppendIndex = recoveryStartInformation.firstAppendIndexAfterLastCheckPoint();
-        try (var transactionsToRecover = recoveryService.getCommandBatchesInReverseOrder(recoveryStartPosition);
+        try (var transactionsToRecover =
+                        recoveryService.getCommandBatchesInReverseOrder(oldestNotVisibleTransactionLogPosition);
                 var recoveryVisitor =
                         recoveryService.getRecoveryApplier(REVERSE_RECOVERY, contextFactory, REVERSE_RECOVERY_TAG)) {
             while (transactionsToRecover.next()) {
@@ -365,13 +369,26 @@ public class TransactionLogsRecovery extends LifecycleAdapter {
                     lastReversedCommandBatch = commandBatch;
                     initProgressReporter(recoveryStartInformation, lastReversedCommandBatch, mode);
                 }
-                recoveryVisitor.visit(commandBatch);
                 transactionIdTracker.trackBatch(commandBatch);
+                // we need to unroll transactions that were never completed or located after checkpointed position
+                if (shouldReverseBatch(
+                        transactionIdTracker, transactionsToRecover, checkpointedLogPosition, commandBatch)) {
+                    recoveryVisitor.visit(commandBatch);
+                }
                 lowestRecoveredAppendIndex = commandBatch.appendIndex();
                 reportProgress();
             }
         }
         monitor.reverseStoreRecoveryCompleted(lowestRecoveredAppendIndex);
+    }
+
+    private static boolean shouldReverseBatch(
+            TransactionIdTracker transactionIdTracker,
+            CommandBatchCursor transactionsToRecover,
+            LogPosition checkpointedLogPosition,
+            CommittedCommandBatch commandBatch) {
+        return transactionsToRecover.position().compareTo(checkpointedLogPosition) >= 0
+                || (RECOVERABLE != transactionIdTracker.transactionStatus(commandBatch.txId()));
     }
 
     private void initProgressReporter(

@@ -34,6 +34,7 @@ import org.neo4j.storageengine.api.ClosedBatchMetadata;
 import org.neo4j.storageengine.api.ClosedTransactionMetadata;
 import org.neo4j.storageengine.api.ExternalStoreId;
 import org.neo4j.storageengine.api.MetadataProvider;
+import org.neo4j.storageengine.api.OpenTransactionMetadata;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionId;
 
@@ -186,8 +187,15 @@ public class SimpleMetaDataProvider implements MetadataProvider {
     }
 
     @Override
-    public void batchClosed(long appendIndex, KernelVersion kernelVersion, LogPosition logPositionAfter) {
-        transactionIdStore.batchClosed(appendIndex, kernelVersion, logPositionAfter);
+    public void batchClosed(
+            long transactionId,
+            long appendIndex,
+            boolean firstBatch,
+            boolean lastBatch,
+            KernelVersion kernelVersion,
+            LogPosition logPositionAfter) {
+        transactionIdStore.batchClosed(
+                transactionId, appendIndex, firstBatch, lastBatch, kernelVersion, logPositionAfter);
     }
 
     @Override
@@ -212,13 +220,24 @@ public class SimpleMetaDataProvider implements MetadataProvider {
     }
 
     @Override
-    public void appendBatch(long appendIndex, LogPosition logPositionAfter) {
+    public void appendBatch(
+            long transactionId,
+            long appendIndex,
+            boolean firstBatch,
+            boolean lastBatch,
+            LogPosition logPositionBefore,
+            LogPosition logPositionAfter) {
         this.appendBatchInfo = new AppendBatchInfo(appendIndex, logPositionAfter);
     }
 
     @Override
     public AppendBatchInfo lastBatch() {
         return appendBatchInfo;
+    }
+
+    @Override
+    public OpenTransactionMetadata getOldestOpenTransaction() {
+        return transactionIdStore.getOldestOpenTransaction();
     }
 
     @Override
