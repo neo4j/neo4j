@@ -134,9 +134,13 @@ public class ServerSettings implements SettingsDeclaration {
     public static final Setting<String> http_static_content_security_policy = newBuilder(
                     "dbms.security.http_static_content_security_policy_header",
                     STRING,
-                    "default-src 'self'; script-src 'self' cdn.segment.com canny.io; img-src 'self' data:; "
-                            + "style-src 'self' fonts.googleapis.com 'unsafe-inline'; font-src 'self' "
-                            + "fonts.gstatic.com; base-uri 'none'; object-src 'none'; frame-ancestors 'none'; "
+                    "default-src 'self'; script-src 'self' cdn.segment.com canny.io; "
+                            + "img-src 'self' guides.neo4j.com data:; "
+                            + "style-src 'self' fonts.googleapis.com 'unsafe-inline'; "
+                            + "font-src 'self' fonts.gstatic.com; "
+                            + "base-uri 'none'; "
+                            + "object-src 'none'; "
+                            + "frame-ancestors 'none'; "
                             + "connect-src 'self' api.canny.io api.segment.io ws: wss: http: https:")
             .build();
 
