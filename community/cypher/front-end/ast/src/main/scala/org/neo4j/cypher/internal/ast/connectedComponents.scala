@@ -55,11 +55,22 @@ object connectedComponents {
       else {
         val part = remaining.head
 
-        val newConnected = connectedComponents.zipWithIndex.collectFirst {
-          case (cc, index) if cc connectedTo part => connectedComponents.updated(index, cc + part)
-        } getOrElse connectedComponents :+ ConnectedComponent(part)
+        val (componentsConnectedByPart, componentsNotConnectedByPart) =
+          connectedComponents.partition(_.connectedTo(part))
 
-        loop(remaining.tail, newConnected)
+        val singleConnectedComponentForPart = componentsConnectedByPart.foldLeft(ConnectedComponent(part))(_.union(_))
+
+        // If the first component was part of the connected components, then the new connected component is the first element in the component list
+        // otherwise it is at the end.
+        // The cartesian product notification assumes the first component to be the desired component to connect and reports on the rest of the components as disconnected.
+        // So we need to maintain order for the first component at least.
+        val newConnectedList = if (connectedComponents.headOption.exists(_.connectedTo(part))) {
+          singleConnectedComponentForPart +: componentsNotConnectedByPart
+        } else {
+          componentsNotConnectedByPart :+ singleConnectedComponentForPart
+        }
+
+        loop(remaining.tail, newConnectedList)
       }
     }
     loop(parts, IndexedSeq.empty)

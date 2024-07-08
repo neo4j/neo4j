@@ -87,5 +87,19 @@ class ConnectedComponentsTest extends CypherFunSuite {
     ))
   }
 
+  test("(a)->(b), (c)->(d), (d)->(a) contains one component ") {
+    val connected = connectedComponents(Vector(
+      ComponentPart(varFor("a"), varFor("b")),
+      ComponentPart(varFor("c"), varFor("d")),
+      ComponentPart(varFor("d"), varFor("a"))
+    ))
+
+    connected shouldBe Vector(ConnectedComponent(
+      ComponentPart(varFor("a"), varFor("b")),
+      ComponentPart(varFor("c"), varFor("d")),
+      ComponentPart(varFor("d"), varFor("a"))
+    ))
+  }
+
   private def varFor(name: String): LogicalVariable = Variable(name)(null)
 }
