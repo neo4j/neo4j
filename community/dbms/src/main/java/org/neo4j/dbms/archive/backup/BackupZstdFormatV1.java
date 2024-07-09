@@ -40,7 +40,7 @@ public class BackupZstdFormatV1 implements BackupCompressionFormat {
         stream.write(MAGIC_HEADER.getBytes());
         OutputStream compressionStream = StandardCompressionFormat.ZSTD.compress(stream);
         try {
-            metadata.writeToStreamV1(compressionStream);
+            metadata.writeToStream(compressionStream);
             return compressionStream;
         } catch (IOException e) {
             compressionStream.close();

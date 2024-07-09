@@ -31,12 +31,11 @@ public class BackupFormatSelector {
     private BackupFormatSelector() {}
 
     public static List<BackupCompressionFormat> availableFormats() {
-        return List.of(
-                new BackupZstdFormatV1(), new BackupTarFormatV1(), new BackupZstdFormatV2(), new BackupTarFormatV2());
+        return List.of(new BackupZstdFormatV1(), new BackupTarFormatV1());
     }
 
     public static BackupCompressionFormat selectFormat(boolean compress) {
-        return compress ? new BackupZstdFormatV2() : new BackupTarFormatV2();
+        return compress ? new BackupZstdFormatV1() : new BackupTarFormatV1();
     }
 
     public static BackupDescription readDescription(InputStream inputStream) throws IOException {
@@ -58,8 +57,6 @@ public class BackupFormatSelector {
         return switch (magicPrefix) {
             case BackupZstdFormatV1.MAGIC_HEADER -> Optional.of(new BackupZstdFormatV1());
             case BackupTarFormatV1.MAGIC_HEADER -> Optional.of(new BackupTarFormatV1());
-            case BackupZstdFormatV2.MAGIC_HEADER -> Optional.of(new BackupZstdFormatV2());
-            case BackupTarFormatV2.MAGIC_HEADER -> Optional.of(new BackupTarFormatV2());
             default -> Optional.empty();
         };
     }
