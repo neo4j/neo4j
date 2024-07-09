@@ -21,7 +21,7 @@ package org.neo4j.internal.batchimport.input.csv;
 
 import java.util.ArrayList;
 import java.util.List;
-import org.neo4j.internal.batchimport.input.Group;
+import org.neo4j.batchimport.api.input.Group;
 import org.neo4j.internal.helpers.collection.Iterables;
 
 /**

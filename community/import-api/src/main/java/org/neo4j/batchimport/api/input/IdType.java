@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.internal.batchimport.input;
+package org.neo4j.batchimport.api.input;
 
 /**
  * Defines different types that input ids can come in. Enum names in here are user facing.

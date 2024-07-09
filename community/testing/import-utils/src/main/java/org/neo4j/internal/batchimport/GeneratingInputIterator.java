@@ -25,8 +25,10 @@ import static java.lang.Math.toIntExact;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.function.LongFunction;
-import org.neo4j.internal.batchimport.input.InputChunk;
-import org.neo4j.internal.batchimport.input.InputEntityVisitor;
+import org.neo4j.batchimport.api.InputIterable;
+import org.neo4j.batchimport.api.InputIterator;
+import org.neo4j.batchimport.api.input.InputChunk;
+import org.neo4j.batchimport.api.input.InputEntityVisitor;
 
 /**
  * A utility to be able to write an {@link InputIterator} with low effort.

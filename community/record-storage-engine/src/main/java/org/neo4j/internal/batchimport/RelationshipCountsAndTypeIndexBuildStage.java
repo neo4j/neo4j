@@ -22,6 +22,8 @@ package org.neo4j.internal.batchimport;
 import static org.neo4j.internal.batchimport.RecordIdIterators.allIn;
 
 import java.util.function.Function;
+import org.neo4j.batchimport.api.Configuration;
+import org.neo4j.batchimport.api.IndexImporterFactory;
 import org.neo4j.counts.CountsUpdater;
 import org.neo4j.internal.batchimport.cache.NodeLabelsCache;
 import org.neo4j.internal.batchimport.cache.NumberArrayFactory;

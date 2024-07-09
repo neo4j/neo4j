@@ -30,6 +30,8 @@ import java.io.IOException;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
+import org.neo4j.batchimport.api.input.Group;
+import org.neo4j.batchimport.api.input.InputEntityVisitor;
 import org.neo4j.internal.batchimport.input.csv.Decorator;
 import org.neo4j.internal.helpers.ArrayUtil;
 

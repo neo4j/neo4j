@@ -22,9 +22,9 @@ package org.neo4j.internal.batchimport.cache.idmapping;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.neo4j.batchimport.api.input.Collector.STRICT;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
-import static org.neo4j.internal.batchimport.input.Collector.STRICT;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.io.pagecache.context.CursorContextFactory.NULL_CONTEXT_FACTORY;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
@@ -45,12 +45,12 @@ import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.neo4j.batchimport.api.Configuration;
+import org.neo4j.batchimport.api.PropertyValueLookup;
+import org.neo4j.batchimport.api.input.Collector;
+import org.neo4j.batchimport.api.input.Group;
 import org.neo4j.configuration.Config;
-import org.neo4j.internal.batchimport.Configuration;
 import org.neo4j.internal.batchimport.PopulationWorkJobScheduler;
-import org.neo4j.internal.batchimport.PropertyValueLookup;
-import org.neo4j.internal.batchimport.input.Collector;
-import org.neo4j.internal.batchimport.input.Group;
 import org.neo4j.internal.batchimport.input.Groups;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -93,19 +93,14 @@ class IndexIdMapperIT {
     private static final int ID_THRESHOLD = 1_000;
     private static final LongToObjectFunction<Object> ID_FUNCTION =
             id -> id < ID_THRESHOLD ? String.valueOf(id) : String.valueOf(id - ID_THRESHOLD);
-    private static final PropertyValueLookup ID_LOOKUP = new PropertyValueLookup() {
+    private static final PropertyValueLookup ID_LOOKUP = () -> new PropertyValueLookup.Lookup() {
         @Override
-        public Lookup newLookup() {
-            return new Lookup() {
-                @Override
-                public Object lookupProperty(long nodeId) {
-                    return ID_FUNCTION.valueOf(nodeId);
-                }
-
-                @Override
-                public void close() {}
-            };
+        public Object lookupProperty(long nodeId) {
+            return ID_FUNCTION.valueOf(nodeId);
         }
+
+        @Override
+        public void close() {}
     };
 
     @Inject

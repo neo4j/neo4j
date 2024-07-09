@@ -30,6 +30,8 @@ import static org.neo4j.internal.helpers.ArrayUtil.array;
 
 import java.util.Map;
 import org.junit.jupiter.api.Test;
+import org.neo4j.batchimport.api.input.Group;
+import org.neo4j.batchimport.api.input.IdType;
 import org.neo4j.csv.reader.CharReadable;
 import org.neo4j.csv.reader.CharSeeker;
 import org.neo4j.csv.reader.CharSeekers;
@@ -40,9 +42,7 @@ import org.neo4j.csv.reader.MultiReadable;
 import org.neo4j.csv.reader.Readables;
 import org.neo4j.function.IOFunctions;
 import org.neo4j.internal.batchimport.input.DuplicateHeaderException;
-import org.neo4j.internal.batchimport.input.Group;
 import org.neo4j.internal.batchimport.input.Groups;
-import org.neo4j.internal.batchimport.input.IdType;
 import org.neo4j.internal.batchimport.input.InputException;
 import org.neo4j.values.storable.CSVHeaderInformation;
 import org.neo4j.values.storable.DateTimeValue;

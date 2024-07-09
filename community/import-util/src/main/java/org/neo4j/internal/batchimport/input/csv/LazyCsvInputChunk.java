@@ -22,14 +22,14 @@ package org.neo4j.internal.batchimport.input.csv;
 import static org.neo4j.internal.batchimport.input.csv.CsvInputIterator.seeker;
 
 import java.io.IOException;
+import org.neo4j.batchimport.api.input.Collector;
+import org.neo4j.batchimport.api.input.IdType;
+import org.neo4j.batchimport.api.input.InputChunk;
+import org.neo4j.batchimport.api.input.InputEntityVisitor;
 import org.neo4j.csv.reader.Chunker;
 import org.neo4j.csv.reader.Configuration;
 import org.neo4j.csv.reader.Extractors;
 import org.neo4j.csv.reader.Source.Chunk;
-import org.neo4j.internal.batchimport.input.Collector;
-import org.neo4j.internal.batchimport.input.IdType;
-import org.neo4j.internal.batchimport.input.InputChunk;
-import org.neo4j.internal.batchimport.input.InputEntityVisitor;
 
 /**
  * {@link InputChunk} parsing next entry on each call to {@link #next(InputEntityVisitor)}.

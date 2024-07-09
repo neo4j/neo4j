@@ -20,6 +20,7 @@
 package org.neo4j.internal.batchimport;
 
 import java.util.function.Predicate;
+import org.neo4j.batchimport.api.Configuration;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.internal.batchimport.cache.NodeRelationshipCache;
 import org.neo4j.internal.batchimport.cache.idmapping.IdMapper;

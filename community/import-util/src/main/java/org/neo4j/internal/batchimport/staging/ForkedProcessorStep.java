@@ -29,7 +29,7 @@ import java.lang.invoke.VarHandle;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.StampedLock;
-import org.neo4j.internal.batchimport.Configuration;
+import org.neo4j.batchimport.api.Configuration;
 import org.neo4j.internal.batchimport.stats.StatsProvider;
 
 /**

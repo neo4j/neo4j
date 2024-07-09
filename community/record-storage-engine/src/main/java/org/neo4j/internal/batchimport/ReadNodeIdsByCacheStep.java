@@ -23,6 +23,7 @@ import static java.lang.System.nanoTime;
 import static org.neo4j.collection.PrimitiveLongCollections.iterator;
 
 import java.util.Arrays;
+import org.neo4j.batchimport.api.Configuration;
 import org.neo4j.internal.batchimport.cache.ByteArray;
 import org.neo4j.internal.batchimport.cache.NodeRelationshipCache;
 import org.neo4j.internal.batchimport.staging.ProducerStep;

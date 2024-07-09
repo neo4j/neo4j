@@ -22,6 +22,7 @@ package org.neo4j.internal.batchimport.input;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.stream.Stream;
+import org.neo4j.batchimport.api.input.InputEntityVisitor;
 import org.neo4j.internal.batchimport.input.csv.Decorator;
 
 /**

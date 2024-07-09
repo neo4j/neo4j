@@ -26,7 +26,10 @@ import static org.neo4j.io.ByteUnit.gibiBytes;
 
 import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.impl.iterator.ImmutableEmptyLongIterator;
-import org.neo4j.internal.batchimport.PropertyValueLookup;
+import org.neo4j.batchimport.api.PropertyValueLookup;
+import org.neo4j.batchimport.api.input.Collector;
+import org.neo4j.batchimport.api.input.Group;
+import org.neo4j.batchimport.api.input.ReadableGroups;
 import org.neo4j.internal.batchimport.cache.MemoryStatsVisitor;
 import org.neo4j.internal.batchimport.cache.NumberArrayFactory;
 import org.neo4j.internal.batchimport.cache.idmapping.string.EncodingIdMapper;
@@ -36,10 +39,7 @@ import org.neo4j.internal.batchimport.cache.idmapping.string.ParallelSort;
 import org.neo4j.internal.batchimport.cache.idmapping.string.Radix;
 import org.neo4j.internal.batchimport.cache.idmapping.string.StringCollisionValues;
 import org.neo4j.internal.batchimport.cache.idmapping.string.StringEncoder;
-import org.neo4j.internal.batchimport.input.Collector;
-import org.neo4j.internal.batchimport.input.Group;
 import org.neo4j.internal.batchimport.input.Groups;
-import org.neo4j.internal.batchimport.input.ReadableGroups;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.memory.MemoryTracker;
 

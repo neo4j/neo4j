@@ -24,6 +24,7 @@ import static org.neo4j.internal.recordstorage.RecordCursorTypes.PROPERTY_CURSOR
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
 import java.util.concurrent.atomic.LongAdder;
+import org.neo4j.batchimport.api.Configuration;
 import org.neo4j.internal.batchimport.staging.BatchSender;
 import org.neo4j.internal.batchimport.staging.ProcessorStep;
 import org.neo4j.internal.batchimport.staging.StageControl;

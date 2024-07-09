@@ -24,7 +24,7 @@ import static org.neo4j.internal.batchimport.staging.ControlledStep.stepWithStat
 
 import java.util.Arrays;
 import org.junit.jupiter.api.Test;
-import org.neo4j.internal.batchimport.Configuration;
+import org.neo4j.batchimport.api.Configuration;
 import org.neo4j.internal.batchimport.stats.Keys;
 
 class DynamicProcessorAssignerTest {

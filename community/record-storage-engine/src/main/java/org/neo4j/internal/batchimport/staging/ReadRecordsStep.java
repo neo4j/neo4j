@@ -22,7 +22,7 @@ package org.neo4j.internal.batchimport.staging;
 import static java.lang.Integer.min;
 
 import org.eclipse.collections.api.iterator.LongIterator;
-import org.neo4j.internal.batchimport.Configuration;
+import org.neo4j.batchimport.api.Configuration;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;

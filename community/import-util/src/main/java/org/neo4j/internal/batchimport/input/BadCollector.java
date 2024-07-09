@@ -27,6 +27,8 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.LockSupport;
+import org.neo4j.batchimport.api.input.Collector;
+import org.neo4j.batchimport.api.input.Group;
 import org.neo4j.common.EntityType;
 import org.neo4j.internal.batchimport.cache.idmapping.string.DuplicateInputIdException;
 import org.neo4j.util.concurrent.AsyncEvent;

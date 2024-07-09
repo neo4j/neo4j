@@ -35,6 +35,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.neo4j.batchimport.api.Configuration;
 import org.neo4j.internal.batchimport.ReadGroupsFromCacheStepTest.Group;
 import org.neo4j.internal.batchimport.staging.BatchSender;
 import org.neo4j.internal.batchimport.staging.SimpleStageControl;

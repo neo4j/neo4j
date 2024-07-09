@@ -39,11 +39,12 @@ import java.util.Map;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.neo4j.batchimport.api.Configuration;
+import org.neo4j.batchimport.api.input.Collector;
 import org.neo4j.configuration.Config;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.internal.batchimport.cache.idmapping.IdMappers;
-import org.neo4j.internal.batchimport.input.Collector;
 import org.neo4j.internal.batchimport.store.BatchingNeoStores;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
@@ -92,7 +93,7 @@ class NodeImporterTest {
                 layout,
                 Configuration.DEFAULT,
                 NullLogService.getInstance(),
-                AdditionalInitialIds.EMPTY,
+                DefaultAdditionalIds.EMPTY,
                 LogTailLogVersionsMetadata.EMPTY_LOG_TAIL,
                 Config.defaults(),
                 INSTANCE);

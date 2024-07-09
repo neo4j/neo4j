@@ -29,7 +29,6 @@ import static org.neo4j.csv.reader.CharSeekers.charSeeker;
 import static org.neo4j.csv.reader.Configuration.COMMAS;
 import static org.neo4j.csv.reader.Readables.wrap;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
-import static org.neo4j.internal.batchimport.AdditionalInitialIds.EMPTY;
 import static org.neo4j.internal.batchimport.input.RandomEntityDataGenerator.convert;
 import static org.neo4j.internal.batchimport.input.csv.DataFactories.defaultFormatNodeFileHeader;
 import static org.neo4j.internal.batchimport.input.csv.DataFactories.defaultFormatRelationshipFileHeader;
@@ -53,18 +52,19 @@ import java.util.List;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.neo4j.batchimport.api.Configuration;
+import org.neo4j.batchimport.api.IndexImporterFactory;
+import org.neo4j.batchimport.api.Monitor;
+import org.neo4j.batchimport.api.input.Collector;
+import org.neo4j.batchimport.api.input.IdType;
+import org.neo4j.batchimport.api.input.Input;
+import org.neo4j.batchimport.api.input.InputChunk;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
-import org.neo4j.internal.batchimport.Configuration;
-import org.neo4j.internal.batchimport.IndexImporterFactory;
-import org.neo4j.internal.batchimport.Monitor;
+import org.neo4j.internal.batchimport.DefaultAdditionalIds;
 import org.neo4j.internal.batchimport.ParallelBatchImporter;
-import org.neo4j.internal.batchimport.input.Collector;
 import org.neo4j.internal.batchimport.input.DataGeneratorInput;
 import org.neo4j.internal.batchimport.input.Groups;
-import org.neo4j.internal.batchimport.input.IdType;
-import org.neo4j.internal.batchimport.input.Input;
-import org.neo4j.internal.batchimport.input.InputChunk;
 import org.neo4j.internal.batchimport.input.InputEntity;
 import org.neo4j.internal.batchimport.input.InputEntityDecorators;
 import org.neo4j.internal.batchimport.input.RandomEntityDataGenerator;
@@ -165,7 +165,7 @@ class CsvInputEstimateCalculationIT {
                             PBI_CONFIG,
                             NullLogService.getInstance(),
                             INVISIBLE,
-                            EMPTY,
+                            DefaultAdditionalIds.EMPTY,
                             new EmptyLogTailMetadata(config),
                             config,
                             Monitor.NO_MONITOR,

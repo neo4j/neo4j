@@ -26,9 +26,9 @@ import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.neo4j.batchimport.api.Configuration.DEFAULT;
+import static org.neo4j.batchimport.api.Monitor.NO_MONITOR;
 import static org.neo4j.configuration.Config.defaults;
-import static org.neo4j.internal.batchimport.Configuration.DEFAULT;
-import static org.neo4j.internal.batchimport.Monitor.NO_MONITOR;
 import static org.neo4j.internal.batchimport.store.BatchingNeoStores.batchingNeoStoresWithExternalPageCache;
 import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
@@ -40,10 +40,11 @@ import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.neo4j.batchimport.api.IndexImporterFactory;
+import org.neo4j.batchimport.api.input.Collector;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.internal.batchimport.cache.NodeRelationshipCache;
 import org.neo4j.internal.batchimport.cache.NumberArrayFactories;
-import org.neo4j.internal.batchimport.input.Collector;
 import org.neo4j.internal.batchimport.staging.ExecutionMonitor;
 import org.neo4j.internal.batchimport.store.BatchingNeoStores;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -91,7 +92,7 @@ class ImportLogicTest {
                 databaseLayout,
                 DEFAULT,
                 getInstance(),
-                AdditionalInitialIds.EMPTY,
+                DefaultAdditionalIds.EMPTY,
                 LogTailLogVersionsMetadata.EMPTY_LOG_TAIL,
                 defaults(),
                 INSTANCE)) {
@@ -182,7 +183,7 @@ class ImportLogicTest {
                 databaseLayout,
                 DEFAULT,
                 getInstance(),
-                AdditionalInitialIds.EMPTY,
+                DefaultAdditionalIds.EMPTY,
                 LogTailLogVersionsMetadata.EMPTY_LOG_TAIL,
                 defaults(),
                 INSTANCE)) {

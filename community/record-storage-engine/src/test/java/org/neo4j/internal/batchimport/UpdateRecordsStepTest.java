@@ -35,6 +35,7 @@ import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_C
 import java.util.Arrays;
 import java.util.function.Function;
 import org.junit.jupiter.api.Test;
+import org.neo4j.batchimport.api.Configuration;
 import org.neo4j.internal.batchimport.staging.BatchSender;
 import org.neo4j.internal.batchimport.staging.StageControl;
 import org.neo4j.internal.batchimport.stats.Keys;

@@ -17,15 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.internal.batchimport.input;
+package org.neo4j.batchimport.api.input;
 
-import java.io.Closeable;
-import java.io.IOException;
+import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.memory.MemoryTracker;
+import org.neo4j.values.storable.Value;
 
-/**
- * A chunk of data which an {@link InputEntityVisitor} can visit to extract data from. There may be zero or
- * more entities in a chunk.
- */
-public interface InputChunk extends Closeable {
-    boolean next(InputEntityVisitor visitor) throws IOException;
+public interface PropertySizeCalculator {
+    int calculateSize(Value[] values, CursorContext cursorContext, MemoryTracker memoryTracker);
 }

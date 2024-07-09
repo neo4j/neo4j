@@ -23,13 +23,12 @@ import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.neo4j.batchimport.api.Configuration.DEFAULT;
+import static org.neo4j.batchimport.api.Monitor.NO_MONITOR;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.index_population_queue_threshold;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
-import static org.neo4j.internal.batchimport.AdditionalInitialIds.EMPTY;
-import static org.neo4j.internal.batchimport.Configuration.DEFAULT;
-import static org.neo4j.internal.batchimport.Monitor.NO_MONITOR;
-import static org.neo4j.internal.batchimport.input.Input.knownEstimates;
+import static org.neo4j.internal.batchimport.DefaultAdditionalIds.EMPTY;
 import static org.neo4j.io.pagecache.context.CursorContextFactory.NULL_CONTEXT_FACTORY;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
@@ -43,6 +42,15 @@ import org.assertj.core.api.AutoCloseableSoftAssertions;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.neo4j.batchimport.api.BatchImporter;
+import org.neo4j.batchimport.api.IndexImporterFactory;
+import org.neo4j.batchimport.api.InputIterable;
+import org.neo4j.batchimport.api.input.Collector;
+import org.neo4j.batchimport.api.input.IdType;
+import org.neo4j.batchimport.api.input.Input;
+import org.neo4j.batchimport.api.input.InputEntityVisitor;
+import org.neo4j.batchimport.api.input.PropertySizeCalculator;
+import org.neo4j.batchimport.api.input.ReadableGroups;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.SettingValueParsers;
@@ -57,19 +65,10 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.AnyTokens;
 import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.internal.batchimport.BatchImporter;
 import org.neo4j.internal.batchimport.GeneratingInputIterator;
-import org.neo4j.internal.batchimport.IndexImporterFactory;
-import org.neo4j.internal.batchimport.InputIterable;
 import org.neo4j.internal.batchimport.ParallelBatchImporter;
 import org.neo4j.internal.batchimport.RandomsStates;
 import org.neo4j.internal.batchimport.input.BadCollector;
-import org.neo4j.internal.batchimport.input.Collector;
-import org.neo4j.internal.batchimport.input.IdType;
-import org.neo4j.internal.batchimport.input.Input;
-import org.neo4j.internal.batchimport.input.InputEntityVisitor;
-import org.neo4j.internal.batchimport.input.PropertySizeCalculator;
-import org.neo4j.internal.batchimport.input.ReadableGroups;
 import org.neo4j.internal.batchimport.staging.ExecutionMonitor;
 import org.neo4j.internal.helpers.TimeUtil;
 import org.neo4j.internal.helpers.collection.Iterables;
@@ -453,7 +452,7 @@ class MultipleIndexPopulationStressIT {
             long nodePropSize = nodePropCount * Long.BYTES;
             long relPropCount = relCount * TOKENS.length / 2;
             long relPropSize = relPropCount * Long.BYTES;
-            return knownEstimates(
+            return Input.knownEstimates(
                     nodeCount, relCount, nodePropCount, relPropCount, nodePropSize, relPropSize, labelCount);
         }
 

@@ -21,8 +21,8 @@ package org.neo4j.kernel.impl.index.schema;
 
 import java.nio.file.OpenOption;
 import org.eclipse.collections.api.set.ImmutableSet;
-import org.neo4j.internal.batchimport.IndexImporter;
-import org.neo4j.internal.batchimport.IndexImporterFactory;
+import org.neo4j.batchimport.api.IndexImporter;
+import org.neo4j.batchimport.api.IndexImporterFactory;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
 import org.neo4j.io.fs.FileSystemAbstraction;

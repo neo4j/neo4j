@@ -21,7 +21,7 @@ package org.neo4j.internal.batchimport.staging;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-import org.neo4j.internal.batchimport.Configuration;
+import org.neo4j.batchimport.api.Configuration;
 import org.neo4j.internal.batchimport.stats.Keys;
 import org.neo4j.internal.helpers.collection.Iterables;
 

@@ -17,31 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.internal.batchimport.input;
+package org.neo4j.batchimport.api.input;
+
+import java.io.Closeable;
+import java.io.IOException;
 
 /**
- * Group of input ids. Used primarily in mapping otherwise equal ids into different groups.
+ * A chunk of data which an {@link InputEntityVisitor} can visit to extract data from. There may be zero or
+ * more entities in a chunk.
  */
-public record Group(int id, String name, String specificIdType) {
-    public String descriptiveName() {
-        return name != null ? name : "global id space";
-    }
-
-    @Override
-    public int hashCode() {
-        final int prime = 31;
-        int result = 1;
-        result = prime * result + id;
-        return result;
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        return obj instanceof Group && ((Group) obj).id() == id;
-    }
-
-    @Override
-    public String toString() {
-        return descriptiveName();
-    }
+public interface InputChunk extends Closeable {
+    boolean next(InputEntityVisitor visitor) throws IOException;
 }

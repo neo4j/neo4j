@@ -24,7 +24,7 @@ import static java.lang.System.nanoTime;
 
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicLong;
-import org.neo4j.internal.batchimport.Configuration;
+import org.neo4j.batchimport.api.Configuration;
 import org.neo4j.internal.batchimport.executor.DynamicTaskExecutor;
 import org.neo4j.internal.batchimport.executor.TaskExecutor;
 import org.neo4j.internal.batchimport.stats.StatsProvider;

@@ -19,10 +19,10 @@
  */
 package org.neo4j.internal.batchimport.staging;
 
-import static org.neo4j.internal.batchimport.Monitor.NO_MONITOR;
+import static org.neo4j.batchimport.api.Monitor.NO_MONITOR;
 
 import java.io.PrintStream;
-import org.neo4j.internal.batchimport.Monitor;
+import org.neo4j.batchimport.api.Monitor;
 
 /**
  * Common {@link ExecutionMonitor} implementations.

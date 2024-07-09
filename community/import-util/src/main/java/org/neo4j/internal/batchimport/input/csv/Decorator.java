@@ -20,8 +20,8 @@
 package org.neo4j.internal.batchimport.input.csv;
 
 import java.util.function.Function;
+import org.neo4j.batchimport.api.input.InputEntityVisitor;
 import org.neo4j.graphdb.Resource;
-import org.neo4j.internal.batchimport.input.InputEntityVisitor;
 
 public interface Decorator extends Function<InputEntityVisitor, InputEntityVisitor>, Resource {
     /**

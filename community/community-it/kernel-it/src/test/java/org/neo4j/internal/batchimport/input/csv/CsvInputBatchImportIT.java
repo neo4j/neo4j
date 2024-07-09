@@ -28,7 +28,6 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 import static org.neo4j.configuration.GraphDatabaseSettings.db_timezone;
 import static org.neo4j.configuration.GraphDatabaseSettings.dense_node_threshold;
 import static org.neo4j.csv.reader.Configuration.COMMAS;
-import static org.neo4j.internal.batchimport.AdditionalInitialIds.EMPTY;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 import static org.neo4j.internal.kernel.api.TokenRead.ANY_LABEL;
 import static org.neo4j.internal.kernel.api.TokenRead.ANY_RELATIONSHIP_TYPE;
@@ -73,6 +72,12 @@ import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.neo4j.batchimport.api.BatchImporter;
+import org.neo4j.batchimport.api.Monitor;
+import org.neo4j.batchimport.api.input.Collector;
+import org.neo4j.batchimport.api.input.Group;
+import org.neo4j.batchimport.api.input.IdType;
+import org.neo4j.batchimport.api.input.Input;
 import org.neo4j.configuration.Config;
 import org.neo4j.csv.reader.Configuration;
 import org.neo4j.dbms.api.DatabaseManagementService;
@@ -82,14 +87,9 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.internal.batchimport.BatchImporter;
-import org.neo4j.internal.batchimport.Monitor;
+import org.neo4j.internal.batchimport.DefaultAdditionalIds;
 import org.neo4j.internal.batchimport.ParallelBatchImporter;
-import org.neo4j.internal.batchimport.input.Collector;
-import org.neo4j.internal.batchimport.input.Group;
 import org.neo4j.internal.batchimport.input.Groups;
-import org.neo4j.internal.batchimport.input.IdType;
-import org.neo4j.internal.batchimport.input.Input;
 import org.neo4j.internal.batchimport.input.InputEntity;
 import org.neo4j.internal.batchimport.input.InputEntityDecorators;
 import org.neo4j.internal.batchimport.staging.ExecutionMonitor;
@@ -154,7 +154,7 @@ class CsvInputBatchImportIT {
                     smallBatchSizeConfig(),
                     NullLogService.getInstance(),
                     ExecutionMonitor.INVISIBLE,
-                    EMPTY,
+                    DefaultAdditionalIds.EMPTY,
                     new EmptyLogTailMetadata(dbConfig),
                     dbConfig,
                     Monitor.NO_MONITOR,
@@ -236,9 +236,9 @@ class CsvInputBatchImportIT {
         return labels;
     }
 
-    private static org.neo4j.internal.batchimport.Configuration smallBatchSizeConfig() {
-        return org.neo4j.internal.batchimport.Configuration.withBatchSize(
-                org.neo4j.internal.batchimport.Configuration.DEFAULT, 100);
+    private static org.neo4j.batchimport.api.Configuration smallBatchSizeConfig() {
+        return org.neo4j.batchimport.api.Configuration.withBatchSize(
+                org.neo4j.batchimport.api.Configuration.DEFAULT, 100);
     }
 
     private Path relationshipDataAsFile(List<InputEntity> relationshipData) throws IOException {

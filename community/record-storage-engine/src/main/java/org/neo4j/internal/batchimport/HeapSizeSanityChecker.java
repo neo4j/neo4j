@@ -22,8 +22,9 @@ package org.neo4j.internal.batchimport;
 import static org.neo4j.io.os.OsBeanUtil.VALUE_UNAVAILABLE;
 
 import java.util.function.LongSupplier;
+import org.neo4j.batchimport.api.Monitor;
+import org.neo4j.batchimport.api.input.Input;
 import org.neo4j.internal.batchimport.cache.MemoryStatsVisitor;
-import org.neo4j.internal.batchimport.input.Input;
 import org.neo4j.io.os.OsBeanUtil;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 

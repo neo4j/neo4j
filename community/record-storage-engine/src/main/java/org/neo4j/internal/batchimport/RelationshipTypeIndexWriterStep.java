@@ -23,6 +23,9 @@ import static org.neo4j.common.EntityType.RELATIONSHIP;
 import static org.neo4j.io.IOUtils.closeAll;
 
 import java.util.function.Function;
+import org.neo4j.batchimport.api.Configuration;
+import org.neo4j.batchimport.api.IndexImporter;
+import org.neo4j.batchimport.api.IndexImporterFactory;
 import org.neo4j.internal.batchimport.staging.BatchSender;
 import org.neo4j.internal.batchimport.staging.StageControl;
 import org.neo4j.internal.batchimport.store.BatchingNeoStores;

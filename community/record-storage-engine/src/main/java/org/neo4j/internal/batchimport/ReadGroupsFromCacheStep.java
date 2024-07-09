@@ -23,6 +23,7 @@ import static org.neo4j.internal.helpers.collection.Iterators.prefetching;
 
 import java.util.Arrays;
 import java.util.Iterator;
+import org.neo4j.batchimport.api.Configuration;
 import org.neo4j.internal.batchimport.staging.ProcessContext;
 import org.neo4j.internal.batchimport.staging.PullingProducerStep;
 import org.neo4j.internal.batchimport.staging.StageControl;

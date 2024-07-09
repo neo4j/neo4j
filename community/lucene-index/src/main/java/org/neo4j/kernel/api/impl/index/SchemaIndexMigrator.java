@@ -23,9 +23,9 @@ import static org.neo4j.storageengine.api.format.MultiVersionedIndexesCompatibil
 
 import java.io.IOException;
 import java.nio.file.Path;
+import org.neo4j.batchimport.api.IndexImporterFactory;
 import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
-import org.neo4j.internal.batchimport.IndexImporterFactory;
 import org.neo4j.internal.helpers.progress.ProgressListener;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.io.fs.FileSystemAbstraction;

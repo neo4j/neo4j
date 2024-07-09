@@ -27,6 +27,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import org.neo4j.batchimport.api.input.Group;
+import org.neo4j.batchimport.api.input.IdType;
+import org.neo4j.batchimport.api.input.ReadableGroups;
 
 /**
  * Mapping from name to {@link Group}. Assigns proper {@link Group#id() ids} to created groups.

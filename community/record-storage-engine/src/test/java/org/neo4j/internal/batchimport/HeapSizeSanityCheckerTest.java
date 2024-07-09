@@ -29,8 +29,9 @@ import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.defaultFor
 
 import java.util.function.LongSupplier;
 import org.junit.jupiter.api.Test;
+import org.neo4j.batchimport.api.Monitor;
+import org.neo4j.batchimport.api.input.Input;
 import org.neo4j.internal.batchimport.cache.MemoryStatsVisitor;
-import org.neo4j.internal.batchimport.input.Input;
 
 class HeapSizeSanityCheckerTest {
     private final LongSupplier freeMemorySupplier = mock(LongSupplier.class);

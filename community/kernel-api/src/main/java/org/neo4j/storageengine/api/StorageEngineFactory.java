@@ -34,6 +34,14 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.annotations.service.Service;
+import org.neo4j.batchimport.api.AdditionalInitialIds;
+import org.neo4j.batchimport.api.BatchImporter;
+import org.neo4j.batchimport.api.IncrementalBatchImporter;
+import org.neo4j.batchimport.api.IndexImporterFactory;
+import org.neo4j.batchimport.api.Monitor;
+import org.neo4j.batchimport.api.ReadBehaviour;
+import org.neo4j.batchimport.api.input.Collector;
+import org.neo4j.batchimport.api.input.Input;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -44,14 +52,6 @@ import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
-import org.neo4j.internal.batchimport.AdditionalInitialIds;
-import org.neo4j.internal.batchimport.BatchImporter;
-import org.neo4j.internal.batchimport.IncrementalBatchImporter;
-import org.neo4j.internal.batchimport.IndexImporterFactory;
-import org.neo4j.internal.batchimport.Monitor;
-import org.neo4j.internal.batchimport.ReadBehaviour;
-import org.neo4j.internal.batchimport.input.Collector;
-import org.neo4j.internal.batchimport.input.Input;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.schema.IndexConfigCompleter;
 import org.neo4j.internal.schema.SchemaRule;
@@ -374,7 +374,7 @@ public interface StorageEngineFactory {
             DatabaseLayout databaseLayout,
             FileSystemAbstraction fileSystem,
             PageCacheTracer pageCacheTracer,
-            org.neo4j.internal.batchimport.Configuration config,
+            org.neo4j.batchimport.api.Configuration config,
             LogService logService,
             PrintStream progressOutput,
             boolean verboseProgressOutput,
@@ -404,7 +404,7 @@ public interface StorageEngineFactory {
             DatabaseLayout databaseLayout,
             FileSystemAbstraction fileSystem,
             PageCacheTracer pageCacheTracer,
-            org.neo4j.internal.batchimport.Configuration config,
+            org.neo4j.batchimport.api.Configuration config,
             LogService logService,
             PrintStream progressOutput,
             boolean verboseProgressOutput,

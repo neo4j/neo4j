@@ -21,6 +21,7 @@ package org.neo4j.internal.batchimport;
 
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
+import org.neo4j.batchimport.api.Configuration;
 import org.neo4j.internal.batchimport.cache.ByteArray;
 import org.neo4j.internal.batchimport.staging.BatchSender;
 import org.neo4j.internal.batchimport.staging.ProcessorStep;

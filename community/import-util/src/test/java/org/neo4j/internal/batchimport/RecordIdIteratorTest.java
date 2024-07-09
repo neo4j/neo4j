@@ -26,6 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 
 import org.eclipse.collections.api.iterator.LongIterator;
 import org.junit.jupiter.api.Test;
+import org.neo4j.batchimport.api.Configuration;
 
 class RecordIdIteratorTest {
     @Test

@@ -22,8 +22,8 @@ package org.neo4j.kernel.impl.storemigration;
 import static org.neo4j.storageengine.api.PropertySelection.ALL_PROPERTIES;
 
 import java.io.IOException;
-import org.neo4j.internal.batchimport.input.InputChunk;
-import org.neo4j.internal.batchimport.input.InputEntityVisitor;
+import org.neo4j.batchimport.api.input.InputChunk;
+import org.neo4j.batchimport.api.input.InputEntityVisitor;
 import org.neo4j.internal.recordstorage.RecordStorageReader;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.pagecache.context.CursorContext;

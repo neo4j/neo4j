@@ -22,7 +22,8 @@ package org.neo4j.internal.batchimport.input;
 import static java.lang.Long.min;
 
 import java.io.IOException;
-import org.neo4j.internal.batchimport.InputIterator;
+import org.neo4j.batchimport.api.InputIterator;
+import org.neo4j.batchimport.api.input.InputChunk;
 import org.neo4j.kernel.impl.store.CommonAbstractStore;
 
 public abstract class LenientInputChunkIterator implements InputIterator {

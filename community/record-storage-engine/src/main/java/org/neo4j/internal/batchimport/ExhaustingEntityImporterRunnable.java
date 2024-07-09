@@ -21,7 +21,8 @@ package org.neo4j.internal.batchimport;
 
 import java.io.IOException;
 import java.util.concurrent.atomic.LongAdder;
-import org.neo4j.internal.batchimport.input.InputChunk;
+import org.neo4j.batchimport.api.InputIterator;
+import org.neo4j.batchimport.api.input.InputChunk;
 import org.neo4j.internal.batchimport.staging.StageControl;
 
 /**

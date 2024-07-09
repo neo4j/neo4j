@@ -26,7 +26,7 @@ import static org.neo4j.io.ByteUnit.gibiBytes;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import org.junit.jupiter.api.Test;
-import org.neo4j.internal.batchimport.Monitor;
+import org.neo4j.batchimport.api.Monitor;
 
 /**
  * Why test a silly thing like this? This implementation contains some printf calls that needs to get arguments correct

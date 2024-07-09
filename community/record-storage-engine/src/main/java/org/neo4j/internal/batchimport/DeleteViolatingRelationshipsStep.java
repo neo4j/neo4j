@@ -24,6 +24,7 @@ import static org.neo4j.internal.recordstorage.RecordCursorTypes.RELATIONSHIP_CU
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
 import org.eclipse.collections.api.iterator.LongIterator;
+import org.neo4j.batchimport.api.Configuration;
 import org.neo4j.internal.batchimport.staging.LonelyProcessingStep;
 import org.neo4j.internal.batchimport.staging.StageControl;
 import org.neo4j.io.pagecache.context.CursorContextFactory;

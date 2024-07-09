@@ -20,9 +20,9 @@
 package org.neo4j.storageengine.migration;
 
 import java.io.IOException;
+import org.neo4j.batchimport.api.IndexImporterFactory;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.exceptions.UnsatisfiedDependencyException;
-import org.neo4j.internal.batchimport.IndexImporterFactory;
 import org.neo4j.internal.helpers.progress.ProgressListener;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;

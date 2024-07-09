@@ -17,16 +17,32 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.internal.batchimport;
+package org.neo4j.batchimport.api;
 
-@FunctionalInterface
-public interface PropertyValueLookup {
-    Lookup newLookup();
+public class IndexConfig {
+    public static final IndexConfig DEFAULT = new IndexConfig();
+    private boolean createLabelIndex;
+    private boolean createRelationTypeIndex;
 
-    interface Lookup extends AutoCloseable {
-        Object lookupProperty(long nodeId);
+    public IndexConfig withLabelIndex() {
+        this.createLabelIndex = true;
+        return this;
+    }
 
-        @Override
-        void close();
+    public IndexConfig withRelationshipTypeIndex() {
+        this.createRelationTypeIndex = true;
+        return this;
+    }
+
+    public boolean createLabelIndex() {
+        return createLabelIndex;
+    }
+
+    public boolean createRelationshipIndex() {
+        return createRelationTypeIndex;
+    }
+
+    public static IndexConfig create() {
+        return new IndexConfig();
     }
 }

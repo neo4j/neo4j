@@ -21,8 +21,15 @@ package org.neo4j.internal.batchimport.input;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import org.neo4j.internal.batchimport.InputIterable;
-import org.neo4j.internal.batchimport.ReadBehaviour;
+import org.neo4j.batchimport.api.InputIterable;
+import org.neo4j.batchimport.api.ReadBehaviour;
+import org.neo4j.batchimport.api.input.Collector;
+import org.neo4j.batchimport.api.input.Group;
+import org.neo4j.batchimport.api.input.IdType;
+import org.neo4j.batchimport.api.input.Input;
+import org.neo4j.batchimport.api.input.InputChunk;
+import org.neo4j.batchimport.api.input.PropertySizeCalculator;
+import org.neo4j.batchimport.api.input.ReadableGroups;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.impl.store.CommonAbstractStore;

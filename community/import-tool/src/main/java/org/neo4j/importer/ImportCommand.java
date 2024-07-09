@@ -24,10 +24,10 @@ import static java.lang.String.format;
 import static java.util.Arrays.stream;
 import static java.util.stream.Collectors.toSet;
 import static org.eclipse.collections.impl.tuple.Tuples.pair;
+import static org.neo4j.batchimport.api.Configuration.DEFAULT;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.csv.reader.Configuration.COMMAS;
 import static org.neo4j.importer.CsvImporter.DEFAULT_REPORT_FILE_NAME;
-import static org.neo4j.internal.batchimport.Configuration.DEFAULT;
 import static org.neo4j.kernel.database.DatabaseTracers.EMPTY;
 import static org.neo4j.storageengine.api.StorageEngineFactory.SELECTOR;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
@@ -50,6 +50,12 @@ import java.util.Set;
 import java.util.function.Function;
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.collections.api.tuple.Pair;
+import org.neo4j.batchimport.api.BatchImporter;
+import org.neo4j.batchimport.api.Configuration;
+import org.neo4j.batchimport.api.IndexConfig;
+import org.neo4j.batchimport.api.input.Collector;
+import org.neo4j.batchimport.api.input.IdType;
+import org.neo4j.batchimport.api.input.Input;
 import org.neo4j.cli.AbstractAdminCommand;
 import org.neo4j.cli.CommandFailedException;
 import org.neo4j.cli.Converters.ByteUnitConverter;
@@ -63,13 +69,7 @@ import org.neo4j.commandline.dbms.LockChecker;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.importer.CsvImporter.CsvImportException;
-import org.neo4j.internal.batchimport.AdditionalInitialIds;
-import org.neo4j.internal.batchimport.BatchImporter;
-import org.neo4j.internal.batchimport.Configuration;
-import org.neo4j.internal.batchimport.IndexConfig;
-import org.neo4j.internal.batchimport.input.Collector;
-import org.neo4j.internal.batchimport.input.IdType;
-import org.neo4j.internal.batchimport.input.Input;
+import org.neo4j.internal.batchimport.DefaultAdditionalIds;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
@@ -542,7 +542,7 @@ public class ImportCommand {
                     .build();
         }
 
-        private org.neo4j.internal.batchimport.Configuration importConfiguration() {
+        private org.neo4j.batchimport.api.Configuration importConfiguration() {
             return new Configuration.Overridden(Configuration.defaultConfiguration()) {
                 @Override
                 public int maxNumberOfWorkerThreads() {
@@ -678,7 +678,7 @@ public class ImportCommand {
                     logService,
                     stdOut,
                     verbose,
-                    AdditionalInitialIds.EMPTY,
+                    DefaultAdditionalIds.EMPTY,
                     databaseConfig,
                     new PrintingImportLogicMonitor(stdOut, stdErr),
                     jobScheduler,
@@ -760,7 +760,7 @@ public class ImportCommand {
                         logService,
                         stdOut,
                         verbose,
-                        AdditionalInitialIds.EMPTY,
+                        DefaultAdditionalIds.EMPTY,
                         () -> readLogTailMetaData(fileSystem, databaseLayout, storageEngineFactory),
                         databaseConfig,
                         new PrintingImportLogicMonitor(stdOut, stdErr),

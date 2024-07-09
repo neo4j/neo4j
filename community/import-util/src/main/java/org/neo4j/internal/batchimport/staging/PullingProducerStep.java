@@ -21,7 +21,7 @@ package org.neo4j.internal.batchimport.staging;
 
 import static java.lang.System.nanoTime;
 
-import org.neo4j.internal.batchimport.Configuration;
+import org.neo4j.batchimport.api.Configuration;
 
 public abstract class PullingProducerStep<T extends ProcessContext> extends ProducerStep {
 

@@ -19,10 +19,10 @@
  */
 package org.neo4j.internal.batchimport.cache.idmapping.string;
 
+import org.neo4j.batchimport.api.input.Collector;
+import org.neo4j.batchimport.api.input.Group;
 import org.neo4j.internal.batchimport.cache.MemoryStatsVisitor;
 import org.neo4j.internal.batchimport.cache.idmapping.IdMapper;
-import org.neo4j.internal.batchimport.input.Collector;
-import org.neo4j.internal.batchimport.input.Group;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 
 /**

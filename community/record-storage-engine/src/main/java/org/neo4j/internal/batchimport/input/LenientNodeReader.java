@@ -23,8 +23,10 @@ import static org.neo4j.internal.recordstorage.RecordCursorTypes.NODE_CURSOR;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 
 import java.io.IOException;
+import org.neo4j.batchimport.api.ReadBehaviour;
+import org.neo4j.batchimport.api.input.Group;
+import org.neo4j.batchimport.api.input.InputEntityVisitor;
 import org.neo4j.common.EntityType;
-import org.neo4j.internal.batchimport.ReadBehaviour;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;

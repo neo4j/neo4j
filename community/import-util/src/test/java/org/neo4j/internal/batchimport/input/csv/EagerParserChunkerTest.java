@@ -22,10 +22,10 @@ package org.neo4j.internal.batchimport.input.csv;
 import static java.lang.String.format;
 import static org.apache.commons.lang3.StringUtils.join;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.batchimport.api.input.Collector.STRICT;
+import static org.neo4j.batchimport.api.input.IdType.INTEGER;
 import static org.neo4j.csv.reader.Configuration.COMMAS;
 import static org.neo4j.csv.reader.Readables.wrap;
-import static org.neo4j.internal.batchimport.input.Collector.STRICT;
-import static org.neo4j.internal.batchimport.input.IdType.INTEGER;
 import static org.neo4j.internal.batchimport.input.InputEntityDecorators.NO_DECORATOR;
 
 import java.io.IOException;

@@ -22,8 +22,10 @@ package org.neo4j.internal.batchimport.input;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.RELATIONSHIP_CURSOR;
 
 import java.io.IOException;
+import org.neo4j.batchimport.api.ReadBehaviour;
+import org.neo4j.batchimport.api.input.Group;
+import org.neo4j.batchimport.api.input.InputEntityVisitor;
 import org.neo4j.common.EntityType;
-import org.neo4j.internal.batchimport.ReadBehaviour;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;

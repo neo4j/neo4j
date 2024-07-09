@@ -30,6 +30,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.ToIntFunction;
+import org.neo4j.batchimport.api.input.Group;
+import org.neo4j.batchimport.api.input.InputEntityVisitor;
 import org.neo4j.internal.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.internal.helpers.collection.PrefetchingIterator;
 import org.neo4j.internal.id.IdSequence;

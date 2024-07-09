@@ -20,7 +20,8 @@
 package org.neo4j.internal.batchimport.input;
 
 import java.util.function.BiConsumer;
-import org.neo4j.internal.batchimport.Monitor;
+import org.neo4j.batchimport.api.Monitor;
+import org.neo4j.batchimport.api.input.Input;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 
 public class EstimationSanityChecker {

@@ -22,9 +22,9 @@ package org.neo4j.internal.batchimport;
 import static org.neo4j.io.ByteUnit.gibiBytes;
 import static org.neo4j.kernel.impl.store.NoStoreHeader.NO_STORE_HEADER;
 
+import org.neo4j.batchimport.api.input.Input;
 import org.neo4j.internal.batchimport.cache.GatheringMemoryStatsVisitor;
 import org.neo4j.internal.batchimport.cache.MemoryStatsVisitor;
-import org.neo4j.internal.batchimport.input.Input;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 
 /**

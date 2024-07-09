@@ -20,8 +20,8 @@
 package org.neo4j.internal.batchimport.input.csv;
 
 import java.io.IOException;
+import org.neo4j.batchimport.api.input.InputChunk;
 import org.neo4j.csv.reader.Chunker;
-import org.neo4j.internal.batchimport.input.InputChunk;
 
 /**
  * {@link InputChunk} that gets data from {@link Chunker}. Making it explicit in the interface simplifies implementation

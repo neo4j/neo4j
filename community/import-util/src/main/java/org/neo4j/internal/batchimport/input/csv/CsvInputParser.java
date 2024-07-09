@@ -24,13 +24,13 @@ import static java.lang.String.format;
 import java.io.Closeable;
 import java.io.IOException;
 import java.lang.reflect.Array;
+import org.neo4j.batchimport.api.input.Collector;
+import org.neo4j.batchimport.api.input.IdType;
+import org.neo4j.batchimport.api.input.InputEntityVisitor;
 import org.neo4j.csv.reader.CharSeeker;
 import org.neo4j.csv.reader.Extractor;
 import org.neo4j.csv.reader.Extractors;
 import org.neo4j.csv.reader.Mark;
-import org.neo4j.internal.batchimport.input.Collector;
-import org.neo4j.internal.batchimport.input.IdType;
-import org.neo4j.internal.batchimport.input.InputEntityVisitor;
 import org.neo4j.internal.batchimport.input.InputException;
 import org.neo4j.internal.batchimport.input.UnexpectedEndOfInputException;
 

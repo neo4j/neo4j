@@ -17,29 +17,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.internal.batchimport.input;
+package org.neo4j.batchimport.api;
 
-public interface ReadableGroups {
-    Group get(int id);
+import java.io.Closeable;
+import java.io.IOException;
+import org.neo4j.batchimport.api.input.Input;
 
-    Group get(String name);
+public interface IncrementalBatchImporter extends BatchImporter, Closeable {
+    @Override
+    default void doImport(Input input) throws IOException {
+        prepare(input);
+        build(input);
+        merge();
+    }
 
-    int size();
+    void prepare(Input input) throws IOException;
 
-    ReadableGroups EMPTY = new ReadableGroups() {
-        @Override
-        public Group get(int id) {
-            throw new IllegalArgumentException("No group by id " + id);
-        }
+    void build(Input input) throws IOException;
 
-        @Override
-        public Group get(String name) {
-            throw new IllegalArgumentException("No group by name '" + name + "'");
-        }
-
-        @Override
-        public int size() {
-            return 0;
-        }
-    };
+    void merge() throws IOException;
 }

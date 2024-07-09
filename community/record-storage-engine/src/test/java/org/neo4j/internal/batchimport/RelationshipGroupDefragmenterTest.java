@@ -45,6 +45,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.neo4j.batchimport.api.Configuration;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.internal.batchimport.cache.NumberArrayFactories;
@@ -112,7 +113,7 @@ class RelationshipGroupDefragmenterTest {
                 databaseLayout,
                 CONFIG,
                 NullLogService.getInstance(),
-                AdditionalInitialIds.EMPTY,
+                DefaultAdditionalIds.EMPTY,
                 LogTailLogVersionsMetadata.EMPTY_LOG_TAIL,
                 config,
                 jobScheduler,

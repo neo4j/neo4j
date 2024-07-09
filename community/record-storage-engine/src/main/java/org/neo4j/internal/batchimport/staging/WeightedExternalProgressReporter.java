@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.batchimport.staging;
 
-import org.neo4j.internal.batchimport.Monitor;
+import org.neo4j.batchimport.api.Monitor;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 
 /**

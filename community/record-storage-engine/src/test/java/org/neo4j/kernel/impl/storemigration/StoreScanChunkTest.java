@@ -27,8 +27,8 @@ import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import org.junit.jupiter.api.Test;
+import org.neo4j.batchimport.api.input.InputEntityVisitor;
 import org.neo4j.configuration.Config;
-import org.neo4j.internal.batchimport.input.InputEntityVisitor;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.recordstorage.RecordStorageReader;
 import org.neo4j.io.fs.FileSystemAbstraction;

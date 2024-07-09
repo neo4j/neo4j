@@ -28,6 +28,7 @@ import static org.neo4j.internal.batchimport.input.BadCollector.NO_MONITOR;
 
 import java.io.OutputStream;
 import java.util.function.Function;
+import org.neo4j.batchimport.api.input.Collector;
 
 /**
  * Common implementations of {@link Collector}

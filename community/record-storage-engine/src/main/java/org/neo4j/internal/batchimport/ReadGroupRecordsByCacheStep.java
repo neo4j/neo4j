@@ -21,6 +21,7 @@ package org.neo4j.internal.batchimport;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.neo4j.batchimport.api.Configuration;
 import org.neo4j.collection.PrimitiveLongCollections.RangedLongIterator;
 import org.neo4j.internal.batchimport.cache.ByteArray;
 import org.neo4j.internal.batchimport.cache.NodeRelationshipCache;

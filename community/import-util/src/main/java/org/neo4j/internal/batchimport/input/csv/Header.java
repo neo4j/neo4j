@@ -26,12 +26,12 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
+import org.neo4j.batchimport.api.input.Group;
+import org.neo4j.batchimport.api.input.IdType;
 import org.neo4j.csv.reader.CharSeeker;
 import org.neo4j.csv.reader.Configuration;
 import org.neo4j.csv.reader.Extractor;
-import org.neo4j.internal.batchimport.input.Group;
 import org.neo4j.internal.batchimport.input.Groups;
-import org.neo4j.internal.batchimport.input.IdType;
 import org.neo4j.values.storable.CSVHeaderInformation;
 
 /**

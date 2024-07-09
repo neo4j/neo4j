@@ -20,7 +20,7 @@
 package org.neo4j.internal.batchimport.staging;
 
 import java.util.Collection;
-import org.neo4j.internal.batchimport.Configuration;
+import org.neo4j.batchimport.api.Configuration;
 import org.neo4j.internal.batchimport.IoThroughputStat;
 import org.neo4j.internal.batchimport.stats.Key;
 import org.neo4j.internal.batchimport.stats.Keys;

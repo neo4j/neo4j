@@ -17,12 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.internal.batchimport.input;
+package org.neo4j.batchimport.api;
 
-import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.memory.MemoryTracker;
-import org.neo4j.values.storable.Value;
+import java.io.IOException;
+import org.neo4j.batchimport.api.input.Input;
 
-public interface PropertySizeCalculator {
-    int calculateSize(Value[] values, CursorContext cursorContext, MemoryTracker memoryTracker);
+/**
+ * Imports graph data given as {@link Input}.
+ */
+public interface BatchImporter {
+    void doImport(Input input) throws IOException;
 }

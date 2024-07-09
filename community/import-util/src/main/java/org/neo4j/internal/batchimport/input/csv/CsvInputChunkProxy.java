@@ -21,9 +21,9 @@ package org.neo4j.internal.batchimport.input.csv;
 
 import java.io.IOException;
 import java.util.function.Supplier;
+import org.neo4j.batchimport.api.InputIterator;
+import org.neo4j.batchimport.api.input.InputEntityVisitor;
 import org.neo4j.csv.reader.Chunker;
-import org.neo4j.internal.batchimport.InputIterator;
-import org.neo4j.internal.batchimport.input.InputEntityVisitor;
 
 /**
  * {@link CsvInputChunk} that adapts new input source groups during the streaming of data.

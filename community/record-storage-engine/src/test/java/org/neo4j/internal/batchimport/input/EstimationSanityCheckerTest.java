@@ -25,7 +25,8 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.defaultFormat;
 
 import org.junit.jupiter.api.Test;
-import org.neo4j.internal.batchimport.Monitor;
+import org.neo4j.batchimport.api.Monitor;
+import org.neo4j.batchimport.api.input.Input;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 
 class EstimationSanityCheckerTest {

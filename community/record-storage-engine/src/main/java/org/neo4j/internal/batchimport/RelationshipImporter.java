@@ -23,11 +23,11 @@ import static java.lang.String.format;
 import static org.neo4j.storageengine.util.IdUpdateListener.IGNORE;
 
 import java.util.function.LongFunction;
+import org.neo4j.batchimport.api.input.Collector;
+import org.neo4j.batchimport.api.input.Group;
+import org.neo4j.batchimport.api.input.InputChunk;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.batchimport.cache.idmapping.IdMapper;
-import org.neo4j.internal.batchimport.input.Collector;
-import org.neo4j.internal.batchimport.input.Group;
-import org.neo4j.internal.batchimport.input.InputChunk;
 import org.neo4j.internal.batchimport.input.MissingRelationshipDataException;
 import org.neo4j.internal.batchimport.input.csv.Type;
 import org.neo4j.internal.batchimport.store.BatchingNeoStores;

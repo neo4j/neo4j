@@ -23,8 +23,8 @@ import static org.neo4j.internal.batchimport.cache.NumberArrayFactories.NO_MONIT
 import static org.neo4j.internal.batchimport.staging.ExecutionSupervisors.superviseDynamicExecution;
 
 import java.util.function.Function;
+import org.neo4j.batchimport.api.Configuration;
 import org.neo4j.counts.CountsUpdater;
-import org.neo4j.internal.batchimport.Configuration;
 import org.neo4j.internal.batchimport.NodeCountsStage;
 import org.neo4j.internal.batchimport.RelationshipCountsStage;
 import org.neo4j.internal.batchimport.cache.NodeLabelsCache;

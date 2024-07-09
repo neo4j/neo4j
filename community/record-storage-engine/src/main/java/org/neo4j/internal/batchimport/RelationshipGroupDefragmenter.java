@@ -20,6 +20,7 @@
 package org.neo4j.internal.batchimport;
 
 import java.util.function.Function;
+import org.neo4j.batchimport.api.Configuration;
 import org.neo4j.internal.batchimport.cache.ByteArray;
 import org.neo4j.internal.batchimport.cache.NumberArrayFactory;
 import org.neo4j.internal.batchimport.staging.ExecutionMonitor;

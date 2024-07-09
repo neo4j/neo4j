@@ -20,8 +20,9 @@
 package org.neo4j.internal.batchimport;
 
 import org.eclipse.collections.api.iterator.LongIterator;
+import org.neo4j.batchimport.api.Configuration;
+import org.neo4j.batchimport.api.input.Collector;
 import org.neo4j.internal.batchimport.cache.idmapping.IdMapper;
-import org.neo4j.internal.batchimport.input.Collector;
 import org.neo4j.internal.batchimport.staging.Stage;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.pagecache.context.CursorContextFactory;

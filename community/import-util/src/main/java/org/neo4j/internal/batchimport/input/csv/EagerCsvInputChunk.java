@@ -20,10 +20,10 @@
 package org.neo4j.internal.batchimport.input.csv;
 
 import java.io.IOException;
+import org.neo4j.batchimport.api.input.InputEntityVisitor;
 import org.neo4j.csv.reader.Chunker;
 import org.neo4j.csv.reader.Source;
 import org.neo4j.internal.batchimport.input.InputEntity;
-import org.neo4j.internal.batchimport.input.InputEntityVisitor;
 
 class EagerCsvInputChunk implements CsvInputChunk, Source.Chunk {
     private InputEntity[] entities;

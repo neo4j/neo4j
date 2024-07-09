@@ -27,7 +27,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.configuration.Config.defaults;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_memory;
-import static org.neo4j.internal.batchimport.AdditionalInitialIds.EMPTY;
 import static org.neo4j.internal.batchimport.input.DataGeneratorInput.bareboneNodeHeader;
 import static org.neo4j.internal.batchimport.input.DataGeneratorInput.bareboneRelationshipHeader;
 import static org.neo4j.io.ByteUnit.mebiBytes;
@@ -38,22 +37,23 @@ import java.io.OutputStream;
 import java.io.PrintStream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.neo4j.batchimport.api.Configuration;
+import org.neo4j.batchimport.api.IndexImporterFactory;
+import org.neo4j.batchimport.api.Monitor;
+import org.neo4j.batchimport.api.input.Collector;
+import org.neo4j.batchimport.api.input.Group;
+import org.neo4j.batchimport.api.input.IdType;
+import org.neo4j.batchimport.api.input.Input;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.csv.reader.Extractors;
-import org.neo4j.internal.batchimport.Configuration;
 import org.neo4j.internal.batchimport.DataStatistics;
-import org.neo4j.internal.batchimport.IndexImporterFactory;
-import org.neo4j.internal.batchimport.Monitor;
+import org.neo4j.internal.batchimport.DefaultAdditionalIds;
 import org.neo4j.internal.batchimport.NodeDegreeCountStage;
 import org.neo4j.internal.batchimport.ParallelBatchImporter;
 import org.neo4j.internal.batchimport.cache.PageCacheArrayFactoryMonitor;
 import org.neo4j.internal.batchimport.cache.idmapping.IdMappers;
-import org.neo4j.internal.batchimport.input.Collector;
 import org.neo4j.internal.batchimport.input.DataGeneratorInput;
-import org.neo4j.internal.batchimport.input.Group;
 import org.neo4j.internal.batchimport.input.Groups;
-import org.neo4j.internal.batchimport.input.IdType;
-import org.neo4j.internal.batchimport.input.Input;
 import org.neo4j.internal.batchimport.store.BatchingNeoStores;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -116,7 +116,7 @@ class HumanUnderstandableExecutionMonitorIT {
                             Configuration.DEFAULT,
                             NullLogService.getInstance(),
                             monitor,
-                            EMPTY,
+                            DefaultAdditionalIds.EMPTY,
                             new EmptyLogTailMetadata(defaults()),
                             defaults(pagecache_memory, mebiBytes(8)),
                             Monitor.NO_MONITOR,

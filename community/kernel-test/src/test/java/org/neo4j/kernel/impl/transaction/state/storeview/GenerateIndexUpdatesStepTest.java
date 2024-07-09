@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.transaction.state.storeview;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.neo4j.internal.batchimport.Configuration.DEFAULT;
+import static org.neo4j.batchimport.api.Configuration.DEFAULT;
 import static org.neo4j.io.ByteUnit.mebiBytes;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;

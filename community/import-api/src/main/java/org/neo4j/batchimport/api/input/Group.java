@@ -17,23 +17,31 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.internal.batchimport;
+package org.neo4j.batchimport.api.input;
 
-import java.io.Closeable;
-import java.io.IOException;
-import org.neo4j.internal.batchimport.input.Input;
-
-public interface IncrementalBatchImporter extends BatchImporter, Closeable {
-    @Override
-    default void doImport(Input input) throws IOException {
-        prepare(input);
-        build(input);
-        merge();
+/**
+ * Group of input ids. Used primarily in mapping otherwise equal ids into different groups.
+ */
+public record Group(int id, String name, String specificIdType) {
+    public String descriptiveName() {
+        return name != null ? name : "global id space";
     }
 
-    void prepare(Input input) throws IOException;
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + id;
+        return result;
+    }
 
-    void build(Input input) throws IOException;
+    @Override
+    public boolean equals(Object obj) {
+        return obj instanceof Group && ((Group) obj).id() == id;
+    }
 
-    void merge() throws IOException;
+    @Override
+    public String toString() {
+        return descriptiveName();
+    }
 }

@@ -20,7 +20,7 @@
 package org.neo4j.internal.batchimport;
 
 import java.util.Random;
-import org.neo4j.internal.batchimport.input.Group;
+import org.neo4j.batchimport.api.input.Group;
 import org.neo4j.internal.batchimport.input.Groups;
 
 /**

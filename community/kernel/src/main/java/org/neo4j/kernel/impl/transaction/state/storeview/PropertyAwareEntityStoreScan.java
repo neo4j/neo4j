@@ -25,9 +25,9 @@ import static org.neo4j.internal.batchimport.staging.ExecutionSupervisors.superv
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.function.LongFunction;
+import org.neo4j.batchimport.api.Configuration;
 import org.neo4j.collection.PrimitiveLongResourceCollections.AbstractPrimitiveLongBaseResourceIterator;
 import org.neo4j.configuration.Config;
-import org.neo4j.internal.batchimport.Configuration;
 import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;

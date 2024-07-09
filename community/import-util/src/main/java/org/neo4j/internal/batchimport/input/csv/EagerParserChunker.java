@@ -23,6 +23,9 @@ import static org.neo4j.csv.reader.CharSeekers.charSeeker;
 
 import java.io.IOException;
 import java.util.Objects;
+import org.neo4j.batchimport.api.input.Collector;
+import org.neo4j.batchimport.api.input.IdType;
+import org.neo4j.batchimport.api.input.InputEntityVisitor;
 import org.neo4j.csv.reader.AutoReadingSource;
 import org.neo4j.csv.reader.CharReadable;
 import org.neo4j.csv.reader.CharSeeker;
@@ -33,9 +36,6 @@ import org.neo4j.csv.reader.HeaderSkipper;
 import org.neo4j.csv.reader.SectionedCharBuffer;
 import org.neo4j.csv.reader.Source;
 import org.neo4j.csv.reader.Source.Chunk;
-import org.neo4j.internal.batchimport.input.Collector;
-import org.neo4j.internal.batchimport.input.IdType;
-import org.neo4j.internal.batchimport.input.InputEntityVisitor;
 
 /**
  * {@link Chunker} which parses a chunk of entities when calling {@link #nextChunk(Chunk)},

@@ -17,9 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.internal.batchimport;
+package org.neo4j.batchimport.api;
 
-import static org.neo4j.internal.batchimport.IndexImporter.EMPTY_IMPORTER;
+import static org.neo4j.batchimport.api.IndexImporter.EMPTY_IMPORTER;
 
 import java.nio.file.OpenOption;
 import org.eclipse.collections.api.set.ImmutableSet;

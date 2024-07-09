@@ -108,7 +108,7 @@
       -Dorg.neo4j.kernel.impl.api.parallel.ParallelAccessCheck.CHECK_PARALLEL_ACCESS=true
       -Dorg.neo4j.io.pagecache.impl.muninn.usePreciseCursorErrorStackTraces=true
       -Dorg.neo4j.codegen.bytecode.ByteCodeExpressionVisitor.checkByteCode=false
-      -Dorg.neo4j.internal.batchimport.Configuration.DEFAULT_BATCH_SIZE=10
+      -Dorg.neo4j.batchimport.api.Configuration.DEFAULT_BATCH_SIZE=10
       -Dorg.neo4j.kernel.impl.scheduler.ThreadPool.shutdownTimeout=2
       -Dorg.neo4j.server.HeapDumpDiagnostics.ENABLED=false
       -Dorg.neo4j.service.Services.throwServiceLoaderExceptions=true

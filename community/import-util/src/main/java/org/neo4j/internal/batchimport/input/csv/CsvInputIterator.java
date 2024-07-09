@@ -31,6 +31,8 @@ import java.util.Locale;
 import java.util.function.Supplier;
 import org.eclipse.collections.api.map.ImmutableMap;
 import org.eclipse.collections.impl.factory.Lists;
+import org.neo4j.batchimport.api.input.Collector;
+import org.neo4j.batchimport.api.input.IdType;
 import org.neo4j.csv.reader.BufferedCharSeeker;
 import org.neo4j.csv.reader.CharReadable;
 import org.neo4j.csv.reader.CharReadableChunker.ChunkImpl;
@@ -43,9 +45,7 @@ import org.neo4j.csv.reader.HeaderSkipper;
 import org.neo4j.csv.reader.Source;
 import org.neo4j.csv.reader.Source.Chunk;
 import org.neo4j.csv.reader.SourceTraceability;
-import org.neo4j.internal.batchimport.input.Collector;
 import org.neo4j.internal.batchimport.input.Groups;
-import org.neo4j.internal.batchimport.input.IdType;
 import org.neo4j.internal.batchimport.input.csv.Header.Monitor;
 
 /**

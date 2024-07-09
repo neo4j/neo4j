@@ -22,7 +22,7 @@ package org.neo4j.importer;
 import static org.neo4j.io.ByteUnit.bytesToString;
 
 import java.io.PrintStream;
-import org.neo4j.internal.batchimport.Monitor;
+import org.neo4j.batchimport.api.Monitor;
 
 public class PrintingImportLogicMonitor implements Monitor {
     private final PrintStream out;

@@ -21,8 +21,8 @@ package org.neo4j.internal.batchimport.input.csv;
 
 import static java.lang.String.format;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.batchimport.api.input.Collector.EMPTY;
 import static org.neo4j.csv.reader.Configuration.COMMAS;
-import static org.neo4j.internal.batchimport.input.Collector.EMPTY;
 import static org.neo4j.internal.batchimport.input.csv.DataFactories.defaultFormatNodeFileHeader;
 import static org.neo4j.internal.batchimport.input.csv.Header.NO_MONITOR;
 
@@ -31,13 +31,13 @@ import java.util.List;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.junit.jupiter.api.Test;
+import org.neo4j.batchimport.api.input.IdType;
 import org.neo4j.csv.reader.CharReadable;
 import org.neo4j.csv.reader.Configuration;
 import org.neo4j.csv.reader.Extractors;
 import org.neo4j.csv.reader.MultiReadable;
 import org.neo4j.csv.reader.Readables;
 import org.neo4j.internal.batchimport.input.Groups;
-import org.neo4j.internal.batchimport.input.IdType;
 import org.neo4j.internal.batchimport.input.InputEntity;
 
 class CsvInputIteratorTest {

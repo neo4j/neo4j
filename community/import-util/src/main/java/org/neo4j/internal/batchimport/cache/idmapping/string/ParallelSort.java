@@ -25,9 +25,9 @@ import java.util.Arrays;
 import java.util.concurrent.ThreadLocalRandom;
 import org.eclipse.collections.api.stack.primitive.MutableLongStack;
 import org.eclipse.collections.impl.stack.mutable.primitive.LongArrayStack;
+import org.neo4j.batchimport.api.input.Group;
 import org.neo4j.internal.batchimport.Utils;
 import org.neo4j.internal.batchimport.cache.LongArray;
-import org.neo4j.internal.batchimport.input.Group;
 import org.neo4j.internal.helpers.progress.ProgressListener;
 
 /**

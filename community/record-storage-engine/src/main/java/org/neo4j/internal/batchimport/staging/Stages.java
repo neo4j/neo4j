@@ -20,8 +20,8 @@
 package org.neo4j.internal.batchimport.staging;
 
 import java.util.function.Function;
+import org.neo4j.batchimport.api.Configuration;
 import org.neo4j.function.ThrowingConsumer;
-import org.neo4j.internal.batchimport.Configuration;
 import org.neo4j.internal.batchimport.RecordIdIterator;
 import org.neo4j.internal.batchimport.UpdateRecordsStep;
 import org.neo4j.internal.batchimport.store.PrepareIdSequence;

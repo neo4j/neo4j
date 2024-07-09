@@ -34,6 +34,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.neo4j.batchimport.api.input.Collector;
+import org.neo4j.batchimport.api.input.Group;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.extension.EphemeralFileSystemExtension;

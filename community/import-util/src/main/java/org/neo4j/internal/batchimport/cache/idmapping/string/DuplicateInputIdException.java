@@ -21,8 +21,8 @@ package org.neo4j.internal.batchimport.cache.idmapping.string;
 
 import static java.lang.String.format;
 
+import org.neo4j.batchimport.api.input.Group;
 import org.neo4j.internal.batchimport.input.DataException;
-import org.neo4j.internal.batchimport.input.Group;
 
 public class DuplicateInputIdException extends DataException {
     public DuplicateInputIdException(Object id, Group group) {

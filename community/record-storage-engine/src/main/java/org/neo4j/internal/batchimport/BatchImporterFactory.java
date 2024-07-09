@@ -21,8 +21,13 @@ package org.neo4j.internal.batchimport;
 
 import java.util.NoSuchElementException;
 import org.neo4j.annotations.service.Service;
+import org.neo4j.batchimport.api.AdditionalInitialIds;
+import org.neo4j.batchimport.api.BatchImporter;
+import org.neo4j.batchimport.api.Configuration;
+import org.neo4j.batchimport.api.IndexImporterFactory;
+import org.neo4j.batchimport.api.Monitor;
+import org.neo4j.batchimport.api.input.Collector;
 import org.neo4j.configuration.Config;
-import org.neo4j.internal.batchimport.input.Collector;
 import org.neo4j.internal.batchimport.staging.ExecutionMonitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;

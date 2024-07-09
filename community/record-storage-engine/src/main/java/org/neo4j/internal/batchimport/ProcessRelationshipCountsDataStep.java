@@ -23,6 +23,7 @@ import static java.lang.Math.max;
 import static java.lang.Math.toIntExact;
 
 import java.util.function.Function;
+import org.neo4j.batchimport.api.Configuration;
 import org.neo4j.counts.CountsUpdater;
 import org.neo4j.internal.batchimport.cache.GatheringMemoryStatsVisitor;
 import org.neo4j.internal.batchimport.cache.NodeLabelsCache;

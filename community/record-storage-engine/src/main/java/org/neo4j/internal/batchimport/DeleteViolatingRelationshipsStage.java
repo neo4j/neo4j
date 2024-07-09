@@ -20,6 +20,7 @@
 package org.neo4j.internal.batchimport;
 
 import org.eclipse.collections.api.iterator.LongIterator;
+import org.neo4j.batchimport.api.Configuration;
 import org.neo4j.internal.batchimport.staging.Stage;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.impl.store.NeoStores;

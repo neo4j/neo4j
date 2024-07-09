@@ -20,8 +20,8 @@
 package org.neo4j.internal.batchimport.input;
 
 import java.util.List;
+import org.neo4j.batchimport.api.InputIterator;
 import org.neo4j.internal.batchimport.GeneratingInputIterator;
-import org.neo4j.internal.batchimport.InputIterator;
 import org.neo4j.internal.batchimport.RandomsStates;
 import org.neo4j.internal.batchimport.input.DataGeneratorInput.DataDistribution;
 import org.neo4j.internal.batchimport.input.csv.Deserialization;

@@ -23,6 +23,7 @@ import static org.neo4j.internal.recordstorage.RecordCursorTypes.PROPERTY_CURSOR
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 
 import java.util.function.Supplier;
+import org.neo4j.batchimport.api.PropertyValueLookup;
 import org.neo4j.internal.batchimport.cache.idmapping.string.EncodingIdMapper;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.storageengine.api.cursor.StoreCursors;

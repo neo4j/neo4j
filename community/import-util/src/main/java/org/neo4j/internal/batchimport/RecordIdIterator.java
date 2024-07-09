@@ -24,6 +24,7 @@ import static java.lang.Long.min;
 import static org.neo4j.collection.PrimitiveLongCollections.range;
 
 import org.eclipse.collections.api.iterator.LongIterator;
+import org.neo4j.batchimport.api.Configuration;
 import org.neo4j.collection.PrimitiveLongCollections.RangedLongIterator;
 import org.neo4j.internal.helpers.progress.ProgressListener;
 

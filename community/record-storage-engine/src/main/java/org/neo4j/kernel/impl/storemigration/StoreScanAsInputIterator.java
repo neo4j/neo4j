@@ -21,8 +21,8 @@ package org.neo4j.kernel.impl.storemigration;
 
 import static java.lang.Long.min;
 
-import org.neo4j.internal.batchimport.InputIterator;
-import org.neo4j.internal.batchimport.input.InputChunk;
+import org.neo4j.batchimport.api.InputIterator;
+import org.neo4j.batchimport.api.input.InputChunk;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 

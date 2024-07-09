@@ -22,6 +22,7 @@ package org.neo4j.internal.batchimport;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.GROUP_CURSOR;
 
 import java.util.function.Function;
+import org.neo4j.batchimport.api.Configuration;
 import org.neo4j.internal.batchimport.cache.NodeRelationshipCache;
 import org.neo4j.internal.batchimport.staging.BatchFeedStep;
 import org.neo4j.internal.batchimport.staging.Stage;

@@ -22,9 +22,9 @@ package org.neo4j.internal.batchimport.input.csv;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
-import org.neo4j.internal.batchimport.input.Group;
+import org.neo4j.batchimport.api.input.Group;
+import org.neo4j.batchimport.api.input.InputEntityVisitor;
 import org.neo4j.internal.batchimport.input.InputEntity;
-import org.neo4j.internal.batchimport.input.InputEntityVisitor;
 import org.neo4j.internal.id.IdSequence;
 
 /**

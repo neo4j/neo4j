@@ -22,14 +22,14 @@ package org.neo4j.internal.batchimport.input.csv;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Iterator;
+import org.neo4j.batchimport.api.InputIterator;
+import org.neo4j.batchimport.api.input.Collector;
+import org.neo4j.batchimport.api.input.IdType;
+import org.neo4j.batchimport.api.input.InputChunk;
 import org.neo4j.csv.reader.Configuration;
 import org.neo4j.csv.reader.Extractors;
 import org.neo4j.csv.reader.MultiReadable;
-import org.neo4j.internal.batchimport.InputIterator;
-import org.neo4j.internal.batchimport.input.Collector;
 import org.neo4j.internal.batchimport.input.Groups;
-import org.neo4j.internal.batchimport.input.IdType;
-import org.neo4j.internal.batchimport.input.InputChunk;
 import org.neo4j.internal.batchimport.input.csv.Header.Monitor;
 
 /**

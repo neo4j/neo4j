@@ -17,13 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.internal.batchimport.input;
+package org.neo4j.batchimport.api.input;
 
 import java.io.IOException;
 import java.util.Map;
-import org.neo4j.internal.batchimport.BatchImporter;
-import org.neo4j.internal.batchimport.InputIterable;
-import org.neo4j.internal.batchimport.InputIterator;
+import org.neo4j.batchimport.api.BatchImporter;
+import org.neo4j.batchimport.api.InputIterable;
+import org.neo4j.batchimport.api.InputIterator;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.token.TokenHolders;
 
@@ -136,7 +136,7 @@ public interface Input extends AutoCloseable {
         };
     }
 
-    static Estimates knownEstimates(
+    public static Estimates knownEstimates(
             long numberOfNodes,
             long numberOfRelationships,
             long numberOfNodeProperties,

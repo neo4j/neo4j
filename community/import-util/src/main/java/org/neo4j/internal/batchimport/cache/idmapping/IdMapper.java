@@ -20,11 +20,11 @@
 package org.neo4j.internal.batchimport.cache.idmapping;
 
 import org.eclipse.collections.api.iterator.LongIterator;
-import org.neo4j.internal.batchimport.PropertyValueLookup;
+import org.neo4j.batchimport.api.PropertyValueLookup;
+import org.neo4j.batchimport.api.input.Collector;
+import org.neo4j.batchimport.api.input.Group;
+import org.neo4j.batchimport.api.input.InputEntityVisitor;
 import org.neo4j.internal.batchimport.cache.MemoryStatsVisitor;
-import org.neo4j.internal.batchimport.input.Collector;
-import org.neo4j.internal.batchimport.input.Group;
-import org.neo4j.internal.batchimport.input.InputEntityVisitor;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 
 /**

@@ -23,6 +23,7 @@ import static org.neo4j.internal.batchimport.RecordIdIterators.allIn;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.NODE_CURSOR;
 
 import java.util.function.Function;
+import org.neo4j.batchimport.api.Configuration;
 import org.neo4j.internal.batchimport.cache.ByteArray;
 import org.neo4j.internal.batchimport.staging.BatchFeedStep;
 import org.neo4j.internal.batchimport.staging.ReadRecordsStep;

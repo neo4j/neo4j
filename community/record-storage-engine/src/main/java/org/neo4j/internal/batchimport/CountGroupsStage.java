@@ -21,6 +21,7 @@ package org.neo4j.internal.batchimport;
 
 import static org.neo4j.internal.batchimport.RecordIdIterators.allIn;
 
+import org.neo4j.batchimport.api.Configuration;
 import org.neo4j.internal.batchimport.staging.BatchFeedStep;
 import org.neo4j.internal.batchimport.staging.ReadRecordsStep;
 import org.neo4j.internal.batchimport.staging.Stage;

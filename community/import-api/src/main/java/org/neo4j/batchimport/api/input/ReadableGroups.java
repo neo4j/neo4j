@@ -17,32 +17,29 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.internal.batchimport;
+package org.neo4j.batchimport.api.input;
 
-public class IndexConfig {
-    public static final IndexConfig DEFAULT = new IndexConfig();
-    private boolean createLabelIndex;
-    private boolean createRelationTypeIndex;
+public interface ReadableGroups {
+    Group get(int id);
 
-    public IndexConfig withLabelIndex() {
-        this.createLabelIndex = true;
-        return this;
-    }
+    Group get(String name);
 
-    public IndexConfig withRelationshipTypeIndex() {
-        this.createRelationTypeIndex = true;
-        return this;
-    }
+    int size();
 
-    public boolean createLabelIndex() {
-        return createLabelIndex;
-    }
+    ReadableGroups EMPTY = new ReadableGroups() {
+        @Override
+        public Group get(int id) {
+            throw new IllegalArgumentException("No group by id " + id);
+        }
 
-    public boolean createRelationshipIndex() {
-        return createRelationTypeIndex;
-    }
+        @Override
+        public Group get(String name) {
+            throw new IllegalArgumentException("No group by name '" + name + "'");
+        }
 
-    public static IndexConfig create() {
-        return new IndexConfig();
-    }
+        @Override
+        public int size() {
+            return 0;
+        }
+    };
 }

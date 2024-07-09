@@ -21,6 +21,7 @@ package org.neo4j.internal.batchimport;
 
 import java.util.Arrays;
 import org.eclipse.collections.api.iterator.LongIterator;
+import org.neo4j.batchimport.api.Configuration;
 import org.neo4j.internal.batchimport.staging.ProducerStep;
 import org.neo4j.internal.batchimport.staging.StageControl;
 

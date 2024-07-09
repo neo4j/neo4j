@@ -17,14 +17,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.internal.batchimport;
+package org.neo4j.batchimport.api;
 
-import java.io.IOException;
-import org.neo4j.internal.batchimport.input.Input;
+@FunctionalInterface
+public interface PropertyValueLookup {
+    Lookup newLookup();
 
-/**
- * Imports graph data given as {@link Input}.
- */
-public interface BatchImporter {
-    void doImport(Input input) throws IOException;
+    interface Lookup extends AutoCloseable {
+        Object lookupProperty(long nodeId);
+
+        @Override
+        void close();
+    }
 }

@@ -19,8 +19,8 @@
  */
 package org.neo4j.internal.batchimport;
 
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.csv.reader.Configuration.COMMAS;
 import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
@@ -34,14 +34,18 @@ import java.nio.file.Path;
 import java.util.function.Supplier;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.neo4j.batchimport.api.BatchImporter;
+import org.neo4j.batchimport.api.Configuration;
+import org.neo4j.batchimport.api.IndexImporterFactory;
+import org.neo4j.batchimport.api.Monitor;
+import org.neo4j.batchimport.api.input.Collector;
+import org.neo4j.batchimport.api.input.IdType;
+import org.neo4j.batchimport.api.input.Input;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.csv.reader.CharReadable;
 import org.neo4j.csv.reader.DataAfterQuoteException;
 import org.neo4j.csv.reader.Readables;
-import org.neo4j.internal.batchimport.input.Collector;
-import org.neo4j.internal.batchimport.input.IdType;
-import org.neo4j.internal.batchimport.input.Input;
 import org.neo4j.internal.batchimport.input.InputEntityDecorators;
 import org.neo4j.internal.batchimport.input.InputException;
 import org.neo4j.internal.batchimport.input.csv.CsvInput;
@@ -94,7 +98,7 @@ class ImportPanicIT {
                     Configuration.DEFAULT,
                     NullLogService.getInstance(),
                     ExecutionMonitor.INVISIBLE,
-                    AdditionalInitialIds.EMPTY,
+                    DefaultAdditionalIds.EMPTY,
                     new EmptyLogTailMetadata(config),
                     config,
                     Monitor.NO_MONITOR,
@@ -117,7 +121,7 @@ class ImportPanicIT {
                     CsvInput.NO_MONITOR,
                     INSTANCE);
             var e = assertThrows(InputException.class, () -> importer.doImport(brokenCsvInput));
-            assertTrue(e.getCause() instanceof DataAfterQuoteException);
+            assertInstanceOf(DataAfterQuoteException.class, e.getCause());
         }
     }
 

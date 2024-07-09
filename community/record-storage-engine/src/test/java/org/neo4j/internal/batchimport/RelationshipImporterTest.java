@@ -20,9 +20,9 @@
 package org.neo4j.internal.batchimport;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.batchimport.api.Configuration.DEFAULT;
 import static org.neo4j.configuration.Config.defaults;
-import static org.neo4j.internal.batchimport.AdditionalInitialIds.EMPTY;
-import static org.neo4j.internal.batchimport.Configuration.DEFAULT;
+import static org.neo4j.internal.batchimport.DefaultAdditionalIds.EMPTY;
 import static org.neo4j.internal.batchimport.store.BatchingNeoStores.batchingNeoStoresWithExternalPageCache;
 import static org.neo4j.io.pagecache.context.CursorContextFactory.NULL_CONTEXT_FACTORY;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
