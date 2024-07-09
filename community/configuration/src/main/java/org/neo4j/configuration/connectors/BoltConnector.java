@@ -34,9 +34,11 @@ import static org.neo4j.configuration.SettingValueParsers.INT;
 import static org.neo4j.configuration.SettingValueParsers.LONG;
 import static org.neo4j.configuration.SettingValueParsers.SOCKET_ADDRESS;
 import static org.neo4j.configuration.SettingValueParsers.ofEnum;
+import static org.neo4j.configuration.SettingValueParsers.setOf;
 import static org.neo4j.configuration.connectors.BoltConnector.EncryptionLevel.DISABLED;
 
 import java.time.Duration;
+import java.util.Set;
 import org.neo4j.annotations.api.PublicApi;
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.configuration.Description;
@@ -69,6 +71,11 @@ public final class BoltConnector implements SettingsDeclaration {
     public static final Setting<SocketAddress> listen_address = newBuilder(
                     "server.bolt.listen_address", SOCKET_ADDRESS, new SocketAddress(DEFAULT_PORT))
             .setDependency(default_listen_address)
+            .build();
+
+    @Description("Additional addresses the connector should bind to.")
+    public static final Setting<Set<SocketAddress>> additional_listen_addresses = newBuilder(
+                    "server.bolt.additional_listen_addresses", setOf(SOCKET_ADDRESS), Set.of())
             .build();
 
     @Description("Advertised address for this connector.")

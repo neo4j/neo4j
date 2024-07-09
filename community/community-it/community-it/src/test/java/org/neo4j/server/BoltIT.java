@@ -28,11 +28,15 @@ import static org.neo4j.server.helpers.CommunityWebContainerBuilder.serverOnRand
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.util.HashSet;
 import java.util.Map;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.neo4j.bolt.BoltServer;
 import org.neo4j.bolt.testing.client.SocketConnection;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
@@ -94,6 +98,37 @@ class BoltIT extends ExclusiveWebContainerTestBase {
         assertThat(String.valueOf(map.get("bolt_direct"))).contains("bolt://" + host + ":" + 9999);
     }
 
+    @Test
+    void shouldBindToMultipleAddresses() throws Exception {
+        testWebContainer = serverOnRandomPorts()
+                .withProperty(BoltConnector.enabled.name(), TRUE)
+                .withProperty(BoltConnector.encryption_level.name(), "DISABLED")
+                .withProperty(BoltConnector.advertised_address.name(), "127.0.0.1:0")
+                .withProperty(BoltConnector.listen_address.name(), "127.0.0.1:0")
+                .withProperty(BoltConnector.additional_listen_addresses.name(), "[::1]:0,127.0.0.1:0")
+                .usingDataDir(testDirectory.homePath().toString())
+                .build();
+
+        var registeredConnectors =
+                testWebContainer.resolveDependency(BoltServer.class).getConnectors();
+
+        assertThat(registeredConnectors).hasSize(3);
+
+        var encounteredAddresses = new HashSet<SocketAddress>();
+        for (var connector : registeredConnectors) {
+            var addr = connector.address();
+
+            Assertions.assertThat(encounteredAddresses).isNotIn(encounteredAddresses);
+
+            try (var connection = new SocketConnection(addr)) {
+                connection.connect().sendDefaultProtocolVersion();
+                assertThat(connection).negotiatesDefaultVersion();
+            }
+
+            encounteredAddresses.add(addr);
+        }
+    }
+
     private void startServerWithBoltEnabled() throws IOException {
         startServerWithBoltEnabled("localhost", 0, "localhost", 0);
     }
@@ -107,6 +142,8 @@ class BoltIT extends ExclusiveWebContainerTestBase {
                 .withProperty(BoltConnector.listen_address.name(), listenHost + ":" + listenPort)
                 .usingDataDir(testDirectory.homePath().toString())
                 .build();
+
+        testWebContainer.resolveDependency(ConnectorPortRegister.class);
     }
 
     private static void assertEventuallyServerResponds(String host, int port) throws Exception {

@@ -139,11 +139,19 @@ public class SocketNettyConnector extends AbstractNettyConnector<SocketConfigura
 
     @Override
     protected void onChannelBound(Channel channel) {
+        this.registerChannel();
+    }
+
+    protected void registerChannel() {
         portRegister.register(connectorType, (InetSocketAddress) address());
     }
 
     @Override
     protected void onChannelClose(Channel channel) {
+        this.deregisterChannel();
+    }
+
+    protected void deregisterChannel() {
         portRegister.deregister(connectorType);
     }
 

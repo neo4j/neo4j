@@ -34,6 +34,9 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.time.Clock;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
@@ -63,6 +66,7 @@ import org.neo4j.bolt.protocol.common.connector.listener.MetricsConnectorListene
 import org.neo4j.bolt.protocol.common.connector.listener.ReadLimitConnectorListener;
 import org.neo4j.bolt.protocol.common.connector.listener.ResetMessageConnectorListener;
 import org.neo4j.bolt.protocol.common.connector.listener.ResponseMetricsConnectorListener;
+import org.neo4j.bolt.protocol.common.connector.netty.AdditionalSocketNettyConnector;
 import org.neo4j.bolt.protocol.common.connector.netty.DomainSocketNettyConnector;
 import org.neo4j.bolt.protocol.common.connector.netty.LocalNettyConnector;
 import org.neo4j.bolt.protocol.common.connector.netty.LocalNettyConnector.LocalConfiguration;
@@ -132,6 +136,7 @@ public class BoltServer extends LifecycleAdapter {
     private final RoutingService routingService;
     private final InternalLog log;
 
+    private final List<Connector> connectors = new ArrayList<>();
     private final LifeSupport connectorLife = new LifeSupport();
     private BoltMemoryPool memoryPool;
     private EventLoopGroup bossEventLoopGroup;
@@ -202,6 +207,11 @@ public class BoltServer extends LifecycleAdapter {
     @VisibleForTesting
     public ExecutorService getExecutorService() {
         return executorService;
+    }
+
+    @VisibleForTesting
+    public List<Connector> getConnectors() {
+        return Collections.unmodifiableList(this.connectors);
     }
 
     @Override
@@ -284,6 +294,18 @@ public class BoltServer extends LifecycleAdapter {
                 createAuthentication(externalAuthManager),
                 ConnectorType.BOLT,
                 allocator));
+
+        for (var address : config.get(BoltConnector.additional_listen_addresses)) {
+            registerConnector(createAdditionalSocketConnector(
+                    address.socketAddress(),
+                    connectionFactory,
+                    encryptionRequired,
+                    transport,
+                    sslContext,
+                    createAuthentication(externalAuthManager),
+                    ConnectorType.BOLT,
+                    allocator));
+        }
 
         log.info("Configured external Bolt connector with listener address %s", listenAddress);
 
@@ -468,6 +490,7 @@ public class BoltServer extends LifecycleAdapter {
         // Register the reset message connection listener
         connector.registerListener(new ResetMessageConnectorListener(logService.getInternalLogProvider()));
 
+        connectors.add(connector);
         connectorLife.add(connector);
     }
 
@@ -523,6 +546,67 @@ public class BoltServer extends LifecycleAdapter {
                 this.config.get(BoltConnectorInternalSettings.tcp_keep_alive));
 
         return new SocketNettyConnector(
+                BoltConnector.NAME,
+                bindAddress,
+                connectorType,
+                connectorPortRegister,
+                memoryPool,
+                clock,
+                allocator,
+                bossEventLoopGroup,
+                workerEventLoopGroup,
+                transport,
+                connectionFactory,
+                connectionTracker,
+                protocolRegistry,
+                authentication,
+                authConfigProvider,
+                defaultDatabaseResolver,
+                connectionHintRegistry,
+                transactionManager,
+                routingService,
+                createErrorAccountant(),
+                createTrafficAccountant(),
+                driverMetricsMonitor,
+                config,
+                logService.getUserLogProvider(),
+                logService.getInternalLogProvider());
+    }
+
+    private Connector createAdditionalSocketConnector(
+            SocketAddress bindAddress,
+            Connection.Factory connectionFactory,
+            boolean encryptionRequired,
+            ConnectorTransport transport,
+            SslContext sslContext,
+            Authentication authentication,
+            ConnectorType connectorType,
+            ByteBufAllocator allocator) {
+        var config = new SocketNettyConnector.SocketConfiguration(
+                this.config.get(BoltConnectorInternalSettings.protocol_capture),
+                this.config.get(BoltConnectorInternalSettings.protocol_capture_path),
+                this.config.get(BoltConnectorInternalSettings.protocol_logging),
+                this.config.get(BoltConnectorInternalSettings.protocol_logging_mode),
+                this.config.get(BoltConnectorInternalSettings.unsupported_bolt_unauth_connection_max_inbound_bytes),
+                this.config.get(BoltConnectorInternalSettings.bolt_unauth_connection_max_structure_elements),
+                this.config.get(BoltConnectorInternalSettings.bolt_unauth_connection_max_structure_depth),
+                this.config.get(BoltConnectorInternalSettings.bolt_outbound_buffer_throttle),
+                this.config.get(BoltConnectorInternalSettings.bolt_outbound_buffer_throttle_low_water_mark),
+                this.config.get(BoltConnectorInternalSettings.bolt_outbound_buffer_throttle_high_water_mark),
+                this.config.get(BoltConnectorInternalSettings.bolt_outbound_buffer_throttle_max_duration),
+                this.config.get(BoltConnectorInternalSettings.bolt_inbound_message_throttle_low_water_mark),
+                this.config.get(BoltConnectorInternalSettings.bolt_inbound_message_throttle_high_water_mark),
+                this.config.get(BoltConnectorInternalSettings.streaming_buffer_size),
+                this.config.get(BoltConnectorInternalSettings.streaming_flush_threshold),
+                this.config.get(BoltConnectorInternalSettings.connection_shutdown_wait_time),
+                this.config.get(BoltConnectorInternalSettings.transaction_thread_binding),
+                this.config.get(BoltConnectorInternalSettings.thread_binding_timeout),
+                this.config.get(BoltConnectorInternalSettings.netty_message_merge_cumulator),
+                encryptionRequired,
+                sslContext,
+                this.config.get(BoltConnectorInternalSettings.tcp_keep_alive));
+
+        return new AdditionalSocketNettyConnector(
                 BoltConnector.NAME,
                 bindAddress,
                 connectorType,

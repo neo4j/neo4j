@@ -190,6 +190,7 @@ org.neo4j.configuration.connectors.BoltConnector::BoltConnector() void public
 org.neo4j.configuration.connectors.BoltConnector::DEFAULT_PORT int public static final = 7687
 org.neo4j.configuration.connectors.BoltConnector::INTERNAL_NAME java.lang.String public static final = bolt-internal
 org.neo4j.configuration.connectors.BoltConnector::NAME java.lang.String public static final = bolt
+org.neo4j.configuration.connectors.BoltConnector::additional_listen_addresses org.neo4j.graphdb.config.Setting<java.util.Set<org.neo4j.configuration.helpers.SocketAddress>> public static final
 org.neo4j.configuration.connectors.BoltConnector::advertised_address org.neo4j.graphdb.config.Setting<org.neo4j.configuration.helpers.SocketAddress> public static final
 org.neo4j.configuration.connectors.BoltConnector::connection_keep_alive org.neo4j.graphdb.config.Setting<java.time.Duration> public static final
 org.neo4j.configuration.connectors.BoltConnector::connection_keep_alive_probes org.neo4j.graphdb.config.Setting<java.lang.Integer> public static final
