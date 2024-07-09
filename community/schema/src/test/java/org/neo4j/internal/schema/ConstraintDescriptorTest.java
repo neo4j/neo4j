@@ -20,12 +20,15 @@
 package org.neo4j.internal.schema;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.endpointForRelType;
 import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.existsForLabel;
 import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.nodeKeyForLabel;
+import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.relationshipEndpointForRelType;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.internal.schema.constraints.KeyConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.RelationshipEndpointConstraintDescriptor;
@@ -99,17 +102,36 @@ class ConstraintDescriptorTest extends SchemaRuleTestBase {
                 () -> constraint.asIndexBackedConstraint().ownedIndexId());
     }
 
-    @Test
-    void shouldCreateRelationshipEndpointConstraint() {
+    @ParameterizedTest
+    @EnumSource(EndpointType.class)
+    void shouldCreateRelationshipEndpointConstraint(EndpointType endpointType) {
         // GIVEN
         RelationshipEndpointConstraintDescriptor descriptor =
-                endpointForRelType(REL_TYPE_ID, LABEL_ID, EndpointType.END);
+                relationshipEndpointForRelType(REL_TYPE_ID, LABEL_ID, endpointType);
         var constraint = descriptor.withId(RULE_ID);
+        var endpointConstraint = constraint.asRelationshipEndpointConstraint();
 
         assertThat(constraint.getId()).isEqualTo(RULE_ID);
         assertThat(constraint.schema()).isEqualTo(descriptor.schema());
         assertThat(constraint).isEqualTo(descriptor);
-        assertThrows(IllegalStateException.class, () -> constraint.asPropertyExistenceConstraint());
+        assertThat(endpointConstraint.endpointLabelId()).isEqualTo(LABEL_ID);
+        assertThat(endpointConstraint.endpointType()).isEqualTo(endpointType);
+        assertThrows(IllegalStateException.class, constraint::asPropertyExistenceConstraint);
+    }
+
+    @Test
+    void shouldFailToCreateRelationshipEndpointConstraintWithBadContent() {
+        // GIVEN invalid arguments for descriptor creation
+        // THEN throw
+
+        assertThatThrownBy(() -> relationshipEndpointForRelType(-1, LABEL_ID, EndpointType.END))
+                .hasMessageContaining("must not have a negative entity token id");
+
+        assertThatThrownBy(() -> relationshipEndpointForRelType(REL_TYPE_ID, -1, EndpointType.END))
+                .hasMessageContaining("endpointLabelId cannot be negative");
+
+        assertThatThrownBy(() -> relationshipEndpointForRelType(REL_TYPE_ID, LABEL_ID, null))
+                .hasMessageContaining("EndpointType cannot be null");
     }
 
     @Test

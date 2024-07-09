@@ -54,8 +54,10 @@ class ConstraintSubSectionTest {
                 SchemaDescriptors.forRelType(0, 0), PropertyTypeSet.of(SchemaValueType.INTEGER), false)),
         NODE_KEY(ConstraintDescriptorFactory.keyForSchema(SchemaDescriptors.forLabel(0, 0))),
         RELATIONSHIP_KEY(ConstraintDescriptorFactory.keyForSchema(SchemaDescriptors.forRelType(0, 0))),
-        ENDPOINT(ConstraintDescriptorFactory.endpointForSchema(
-                SchemaDescriptors.forRelEndpoint(0), 0, EndpointType.END));
+        ENDPOINT_START(ConstraintDescriptorFactory.relationshipEndpointForSchema(
+                SchemaDescriptors.forRelationshipEndpoint(0), 0, EndpointType.START)),
+        ENDPOINT_END(ConstraintDescriptorFactory.relationshipEndpointForSchema(
+                SchemaDescriptors.forRelationshipEndpoint(0), 0, EndpointType.END));
 
         public final ConstraintDescriptor descriptor;
 
@@ -169,5 +171,24 @@ class ConstraintSubSectionTest {
                 "type", "Node Key", // TODO: do we really want to serialize a relationship key constraint as Node Key?
                 "properties", List.of("prop"));
         assertEquals(serializeConstraint(Constraint.RELATIONSHIP_KEY), expectedData);
+    }
+
+    @Test
+    void relationshipEndpointConstraintSerialization() {
+        Map<String, Object> expectedDataStart = Map.of(
+                "relationshipType", "REL",
+                "type", "Relationship endpoint constraint",
+                "endpointType", "START",
+                "endpointLabel", "Label",
+                "properties", List.of());
+        assertEquals(serializeConstraint(Constraint.ENDPOINT_START), expectedDataStart);
+
+        Map<String, Object> expectedDataEnd = Map.of(
+                "relationshipType", "REL",
+                "type", "Relationship endpoint constraint",
+                "endpointType", "END",
+                "endpointLabel", "Label",
+                "properties", List.of());
+        assertEquals(serializeConstraint(Constraint.ENDPOINT_END), expectedDataEnd);
     }
 }

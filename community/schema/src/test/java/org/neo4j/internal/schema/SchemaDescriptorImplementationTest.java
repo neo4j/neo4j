@@ -26,6 +26,7 @@ import static org.neo4j.common.EntityType.RELATIONSHIP;
 import static org.neo4j.internal.schema.SchemaPatternMatchingType.COMPLETE_ALL_TOKENS;
 import static org.neo4j.internal.schema.SchemaPatternMatchingType.ENTITY_TOKENS;
 import static org.neo4j.internal.schema.SchemaPatternMatchingType.PARTIAL_ANY_TOKEN;
+import static org.neo4j.internal.schema.SchemaPatternMatchingType.SINGLE_ENTITY_TOKEN;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -75,13 +76,15 @@ final class SchemaDescriptorImplementationTest {
                 LabelSchemaDescriptor.class,
                 RelationTypeSchemaDescriptor.class,
                 FulltextSchemaDescriptor.class,
-                AnyTokenSchemaDescriptor.class);
+                AnyTokenSchemaDescriptor.class,
+                RelationshipEndpointSchemaDescriptor.class);
 
-        final List<Supplier<SchemaDescriptor>> schemaSuppliers = new ArrayList<>(Arrays.asList(
+        final List<Supplier<SchemaDescriptor>> schemaSuppliers = Arrays.asList(
                 LABEL_SCHEMA_DESCRIPTOR_SUPPLIER,
                 RELATIONSHIP_SCHEMA_DESCRIPTOR_SUPPLIER,
                 FULLTEXT_SCHEMA_DESCRIPTOR_SUPPLIER,
-                ANY_TOKEN_SCHEMA_DESCRIPTOR_SUPPLIER));
+                ANY_TOKEN_SCHEMA_DESCRIPTOR_SUPPLIER,
+                RELATIONSHIP_ENDPOINT_SCHEMA_DESCRIPTOR_SUPPLIER);
 
         final Map<String, Set<Class<? extends SchemaDescriptor>>> shouldBeTrue = new HashMap<>();
         shouldBeTrue.put(
@@ -96,6 +99,9 @@ final class SchemaDescriptorImplementationTest {
         shouldBeTrue.put(
                 ANY_TOKEN_SCHEMA_DESCRIPTOR_SUPPLIER.toString(),
                 new HashSet<>(Arrays.asList(SchemaDescriptor.class, AnyTokenSchemaDescriptor.class)));
+        shouldBeTrue.put(
+                RELATIONSHIP_ENDPOINT_SCHEMA_DESCRIPTOR_SUPPLIER.toString(),
+                new HashSet<>(Arrays.asList(SchemaDescriptor.class, RelationshipEndpointSchemaDescriptor.class)));
 
         final List<Arguments> cases = new ArrayList<>();
         for (var s : schemaSuppliers) {
@@ -119,6 +125,10 @@ final class SchemaDescriptorImplementationTest {
 
     private static final Supplier<SchemaDescriptor> ANY_TOKEN_SCHEMA_DESCRIPTOR_SUPPLIER = supplierFor(
             new SchemaDescriptorImplementation(NODE, ENTITY_TOKENS, new int[] {}, new int[] {}), "ANY_TOKEN");
+
+    private static final Supplier<SchemaDescriptor> RELATIONSHIP_ENDPOINT_SCHEMA_DESCRIPTOR_SUPPLIER = supplierFor(
+            new SchemaDescriptorImplementation(RELATIONSHIP, SINGLE_ENTITY_TOKEN, new int[] {1}, new int[] {}),
+            "RELATIONSHIP_ENDPOINT");
 
     private static Supplier<SchemaDescriptor> supplierFor(SchemaDescriptor schemaDescriptor, String name) {
         return new Supplier<>() {

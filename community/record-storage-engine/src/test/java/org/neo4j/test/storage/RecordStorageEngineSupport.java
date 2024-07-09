@@ -29,6 +29,7 @@ import org.neo4j.graphdb.config.Setting;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.IdGeneratorFactory;
+import org.neo4j.internal.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.internal.recordstorage.LockVerificationFactory;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.internal.recordstorage.TransactionApplierFactoryChain;
@@ -36,6 +37,7 @@ import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexConfigCompleter;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.internal.schema.constraints.KeyConstraintDescriptor;
+import org.neo4j.internal.schema.constraints.RelationshipEndpointConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.TypeConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -159,6 +161,13 @@ public class RecordStorageEngineSupport {
 
             @Override
             public ConstraintDescriptor createPropertyTypeConstraint(long ruleId, TypeConstraintDescriptor descriptor) {
+                throw new UnsupportedOperationException("Not needed a.t.m.");
+            }
+
+            @Override
+            public ConstraintDescriptor createRelationshipEndpointConstraint(
+                    long ruleId, RelationshipEndpointConstraintDescriptor descriptor)
+                    throws CreateConstraintFailureException {
                 throw new UnsupportedOperationException("Not needed a.t.m.");
             }
         };
