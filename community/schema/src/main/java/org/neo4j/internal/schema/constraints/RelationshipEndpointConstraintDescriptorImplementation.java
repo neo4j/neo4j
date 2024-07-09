@@ -190,13 +190,13 @@ final class RelationshipEndpointConstraintDescriptorImplementation implements Re
     }
 
     @Override
-    public ConstraintDescriptor withId(long newId) {
+    public RelationshipEndpointConstraintDescriptor withId(long newId) {
         return new RelationshipEndpointConstraintDescriptorImplementation(
                 schema, newId, endpointLabelId, name, endpointType);
     }
 
     @Override
-    public ConstraintDescriptor withName(String newName) {
+    public RelationshipEndpointConstraintDescriptor withName(String newName) {
         if (newName == null) {
             return this;
         }

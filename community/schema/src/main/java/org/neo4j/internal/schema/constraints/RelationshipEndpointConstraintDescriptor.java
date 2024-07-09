@@ -25,6 +25,12 @@ import org.neo4j.internal.schema.EndpointType;
 public interface RelationshipEndpointConstraintDescriptor extends ConstraintDescriptor {
     EndpointType endpointType();
 
+    @Override
+    RelationshipEndpointConstraintDescriptor withName(String name);
+
+    @Override
+    RelationshipEndpointConstraintDescriptor withId(long id);
+
     /**
      * @return the id of the required label in the endpoint, enforced by this constraint
      */

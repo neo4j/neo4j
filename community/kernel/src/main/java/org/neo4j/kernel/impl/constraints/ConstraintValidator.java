@@ -31,6 +31,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.CreateConstraintFailureEx
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.constraints.RelationshipEndpointConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.TypeConstraintDescriptor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.memory.MemoryTracker;
@@ -139,6 +140,23 @@ public interface ConstraintValidator {
             RelationshipTypeIndexCursor allRelationships,
             PropertyCursor propertyCursor,
             TypeConstraintDescriptor descriptor,
+            TokenNameLookup tokenNameLookup)
+            throws CreateConstraintFailureException;
+
+    /**
+     * Verify that none of relationships from `relCursor` violates the relationship endpoint constraint
+     * defined by `descriptor`.
+     *
+     * @param relCursor initialized scan cursor with all relationships that are going to be checked.
+     * @param nodeCursor auxiliary NodeCursor to perform the endpoint checks on each relationship.
+     * @param descriptor the descriptor of the constraint being checked.
+     * @param tokenNameLookup used to resolve token names for exception messages.
+     * @throws CreateConstraintFailureException when one relationship violates the constraint.
+     */
+    void validateRelationshipEndpointConstraint(
+            RelationshipScanCursor relCursor,
+            NodeCursor nodeCursor,
+            RelationshipEndpointConstraintDescriptor descriptor,
             TokenNameLookup tokenNameLookup)
             throws CreateConstraintFailureException;
 }

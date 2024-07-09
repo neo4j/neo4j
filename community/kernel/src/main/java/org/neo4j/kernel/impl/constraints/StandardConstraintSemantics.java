@@ -288,4 +288,14 @@ public class StandardConstraintSemantics extends ConstraintSemantics {
             throws CreateConstraintFailureException {
         throw propertyTypeConstraintsNotAllowed(descriptor);
     }
+
+    @Override
+    public void validateRelationshipEndpointConstraint(
+            RelationshipScanCursor relCursor,
+            NodeCursor nodeCursor,
+            RelationshipEndpointConstraintDescriptor descriptor,
+            TokenNameLookup tokenNameLookup)
+            throws CreateConstraintFailureException {
+        throw relationshipEndpointLabelConstraintsNotAllowed(descriptor);
+    }
 }

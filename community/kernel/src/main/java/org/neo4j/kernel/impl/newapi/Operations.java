@@ -2283,8 +2283,27 @@ public class Operations implements Write, SchemaWrite, Upgrade {
         RelationshipEndpointConstraintDescriptor constraint =
                 lockAndValidateRelationshipEndpointConstraint(schema, name, endpointLabelId, endpointType);
 
+        enforceRelationshipEndpointConstraint(constraint);
+
         ktx.txState().constraintDoAdd(constraint);
         return constraint;
+    }
+
+    private void enforceRelationshipEndpointConstraint(RelationshipEndpointConstraintDescriptor descriptor)
+            throws KernelException {
+        exclusiveLock(ResourceType.LABEL, new long[] {descriptor.endpointLabelId()});
+        // TODO add check for usable index for possible speedup
+        try (var allRelationshipsCursor = cursors.allocateFullAccessRelationshipScanCursor(ktx.cursorContext());
+                var nodeCursor = cursors.allocateFullAccessNodeCursor(ktx.cursorContext())) {
+            kernelRead.allRelationshipsScan(allRelationshipsCursor);
+            constraintSemantics.validateRelationshipEndpointConstraint(
+                    new FilteringRelationshipScanCursorWrapper(
+                            allRelationshipsCursor,
+                            CursorPredicates.hasType(descriptor.schema().getRelTypeId())),
+                    nodeCursor,
+                    descriptor,
+                    token);
+        }
     }
 
     private RelationshipEndpointConstraintDescriptor lockAndValidateRelationshipEndpointConstraint(
@@ -2298,17 +2317,23 @@ public class Operations implements Write, SchemaWrite, Upgrade {
 
         try {
             assertValidDescriptor(schemaDescriptor, CONSTRAINT_CREATION);
+        } catch (SchemaKernelException e) {
+            exclusiveSchemaUnlock(schemaDescriptor);
+            throw new RuntimeException(e);
+        }
 
-            var constraint = (RelationshipEndpointConstraintDescriptor)
-                    ConstraintDescriptorFactory.relationshipEndpointForSchema(
-                                    schemaDescriptor, endpointLabelId, endpointType)
-                            .withName(name);
+        RelationshipEndpointConstraintDescriptor constraint = ConstraintDescriptorFactory.relationshipEndpointForSchema(
+                        schemaDescriptor, endpointLabelId, endpointType)
+                .withName(name);
 
-            constraint = ensureConstraintHasName(constraint);
-            exclusiveSchemaNameLock(constraint.getName());
+        constraint = ensureConstraintHasName(constraint);
+        exclusiveSchemaNameLock(constraint.getName());
+
+        try {
             assertNoBlockingSchemaRulesExists(constraint);
             return constraint;
         } catch (SchemaKernelException e) {
+            exclusiveSchemaUnlock(schemaDescriptor);
             throw new RuntimeException(e);
         }
     }
