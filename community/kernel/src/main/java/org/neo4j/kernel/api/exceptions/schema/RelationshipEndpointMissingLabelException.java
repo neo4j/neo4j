@@ -29,16 +29,19 @@ public final class RelationshipEndpointMissingLabelException extends ConstraintV
     private final long relationshipReference;
     private final Phase phase;
     private final RelationshipEndpointConstraintDescriptor descriptor;
+    private final long nodeReference;
 
     public RelationshipEndpointMissingLabelException(
             RelationshipEndpointConstraintDescriptor descriptor,
             Phase phase,
             long relationshipReference,
+            long nodeReference,
             TokenNameLookup tokenNameLookup) {
         super(descriptor, phase, "Relationship(" + relationshipReference + ")", tokenNameLookup);
         this.relationshipReference = relationshipReference;
         this.phase = phase;
         this.descriptor = descriptor;
+        this.nodeReference = nodeReference;
     }
 
     @Override
@@ -48,7 +51,7 @@ public final class RelationshipEndpointMissingLabelException extends ConstraintV
                 relationshipReference,
                 tokenNameLookup.relationshipTypeGetName(descriptor.schema().getRelTypeId()),
                 descriptor.endpointType().name(),
-                relationshipReference,
+                nodeReference,
                 tokenNameLookup.labelGetName(descriptor.endpointLabelId()));
     }
 }

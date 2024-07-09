@@ -39,6 +39,7 @@ import static org.neo4j.values.storable.Values.intValue;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.eclipse.collections.impl.factory.primitive.IntObjectMaps;
 import org.eclipse.collections.impl.factory.primitive.IntSets;
@@ -68,9 +69,11 @@ import org.neo4j.internal.kernel.api.security.AccessMode.Static;
 import org.neo4j.internal.kernel.api.security.CommunitySecurityLog;
 import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
+import org.neo4j.internal.schema.EndpointType;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
+import org.neo4j.internal.schema.RelationshipEndpointSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorImplementation;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.internal.schema.SchemaState;
@@ -161,12 +164,14 @@ abstract class OperationsTest {
         when(cursors.allocateFullAccessNodeCursor(NULL_CONTEXT)).thenReturn(nodeCursor);
         when(cursors.allocateFullAccessPropertyCursor(NULL_CONTEXT, INSTANCE)).thenReturn(propertyCursor);
         when(cursors.allocateFullAccessRelationshipScanCursor(NULL_CONTEXT)).thenReturn(relationshipCursor);
+        when(cursors.allocateFullAccessRelationshipScanCursor(any())).thenReturn(relationshipCursor);
         StorageEngine engine = mock(StorageEngine.class);
         storageReader = mock(StorageReader.class);
         storageReaderSnapshot = mock(StorageSchemaReader.class);
         when(storageReader.nodeExists(anyLong(), any())).thenReturn(true);
         when(storageReader.constraintsGetForLabel(anyInt())).thenReturn(Collections.emptyIterator());
         when(storageReader.constraintsGetAll()).thenReturn(Collections.emptyIterator());
+        when(storageReader.constraintsGetForSchema(any())).thenReturn(Collections.emptyIterator());
         when(storageReader.schemaSnapshot()).thenReturn(storageReaderSnapshot);
         when(engine.newReader()).thenReturn(storageReader);
         when(engine.createStorageCursors(any())).thenReturn(storeCursors);
@@ -244,7 +249,11 @@ abstract class OperationsTest {
                 constraintIndexCreator,
                 mock(ConstraintSemantics.class),
                 indexingProvidersService,
-                Config.defaults(GraphDatabaseInternalSettings.type_constraints, true),
+                Config.defaults(Map.of(
+                        GraphDatabaseInternalSettings.type_constraints,
+                        true,
+                        GraphDatabaseInternalSettings.relationship_endpoint_constraints_enabled,
+                        true)),
                 INSTANCE,
                 () -> Static.FULL);
         operations.initialize(NULL_CONTEXT);
@@ -354,6 +363,21 @@ abstract class OperationsTest {
         // then
         verify(locks).acquireExclusive(any(), eq(ResourceType.RELATIONSHIP), eq(1L));
         verify(locks).acquireShared(any(), eq(ResourceType.RELATIONSHIP_TYPE), eq((long) type));
+    }
+
+    @Test
+    void creationOfEndpointConstraintShouldLockTypeAndLabels() throws Exception {
+        int expectedType = 5;
+        int expectedLabelId = 1;
+
+        when(relationshipCursor.next()).thenReturn(false);
+        RelationshipEndpointSchemaDescriptor relationshipEndpointSchemaDescriptor =
+                SchemaDescriptors.forRelationshipEndpoint(expectedType);
+        operations.relationshipEndpointConstraintCreate(
+                relationshipEndpointSchemaDescriptor, "SomeName", expectedLabelId, EndpointType.START);
+
+        verify(locks).acquireExclusive(any(), eq(ResourceType.RELATIONSHIP_TYPE), eq((long) expectedType));
+        verify(locks).acquireExclusive(any(), eq(ResourceType.LABEL), eq(((long) expectedLabelId)));
     }
 
     protected String runForSecurityLevel(Executable executable, AccessMode mode, boolean shoudldBeAuthorized)
