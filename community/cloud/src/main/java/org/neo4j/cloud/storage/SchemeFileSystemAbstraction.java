@@ -208,7 +208,9 @@ public class SchemeFileSystemAbstraction implements FileSystemAbstraction, Stora
 
     @Override
     public boolean fileExists(Path file) {
-        return fs.fileExists(file);
+        return fs.fileExists(file)
+                // we pretend the file exists if it is a dir in cloud backends that don't support empty directories
+                || StoragePath.isStorageDir(file);
     }
 
     @Override

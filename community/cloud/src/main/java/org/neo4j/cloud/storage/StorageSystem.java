@@ -59,6 +59,11 @@ public abstract class StorageSystem extends FileSystem {
     protected abstract void internalClose() throws IOException;
 
     /**
+     * @return does the underlying file system support creating empty directories
+     */
+    protected abstract boolean supportsEmptyDirs();
+
+    /**
      *
      * @param path the path to check
      * @return <code>true</code> if this system can handle access operations for the provided path

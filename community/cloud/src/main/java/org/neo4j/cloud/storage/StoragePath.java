@@ -60,6 +60,19 @@ public class StoragePath implements Path {
         return storagePath.path.isRoot();
     }
 
+    /**
+     * Checks if the given path is a storage path for a backend that doesn't support empty directories
+     *
+     * This can be useful because we don't create empty directories in some cloud providers.
+     * If that is the case, checking for the existence of a directory in tools like backup doesn't make sense, but it does make sense for your local file system.
+     */
+    public static boolean isStorageDir(Path path) {
+        if (path instanceof StoragePath storagePath) {
+            return storagePath.isDirectory() && !storagePath.storage.supportsEmptyDirs();
+        }
+        return false;
+    }
+
     public static boolean isEmpty(StoragePath storagePath) {
         return Objects.equals(storagePath.path, EMPTY_PATH);
     }

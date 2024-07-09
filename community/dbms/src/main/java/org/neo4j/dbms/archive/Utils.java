@@ -30,18 +30,19 @@ import java.nio.file.AccessDeniedException;
 import java.nio.file.FileSystemException;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
+import org.neo4j.cloud.storage.StoragePath;
 
 public class Utils {
     private Utils() {}
 
     public static void checkWritableDirectory(Path directory) throws FileSystemException {
-        if (!exists(directory)) {
+        if (!(exists(directory) || StoragePath.isStorageDir(directory))) {
             throw new NoSuchFileException(directory.toString());
         }
         if (isRegularFile(directory)) {
             throw new FileSystemException(directory + ": Not a directory");
         }
-        if (!isWritable(directory)) {
+        if (!(isWritable(directory) || StoragePath.isStorageDir(directory))) {
             throw new AccessDeniedException(directory.toString());
         }
     }

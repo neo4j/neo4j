@@ -77,19 +77,21 @@ class SchemeFileSystemAbstractionTest {
 
     private StoragePath schemePath;
 
+    private StorageSystem storageSystem;
+
     @BeforeEach
     void setup() {
         systemProvider = mock(StorageSystemProvider.class);
         when(systemProvider.getScheme()).thenReturn(SCHEME);
 
-        final var storageSystem = mock(StorageSystem.class);
+        storageSystem = mock(StorageSystem.class);
         when(storageSystem.scheme()).thenReturn(SCHEME);
         when(storageSystem.provider()).thenReturn(systemProvider);
         when(storageSystem.uriPrefix()).thenReturn(SCHEME + "://remote");
 
         when(systemProvider.create(any())).thenReturn(storageSystem);
 
-        schemePath = new StoragePath(storageSystem, PathRepresentation.of("/stuff"));
+        schemePath = newSchemePath("/stuff");
         when(systemProvider.getPath(eq(URI.create(SCHEME + "://remote/stuff")))).thenReturn(schemePath);
 
         fs = mock(FileSystemAbstraction.class);
@@ -116,6 +118,10 @@ class SchemeFileSystemAbstractionTest {
                 Config.defaults(),
                 NullLogProvider.getInstance(),
                 EmptyMemoryTracker.INSTANCE);
+    }
+
+    private StoragePath newSchemePath(String path) {
+        return new StoragePath(storageSystem, PathRepresentation.of(path));
     }
 
     @Test
@@ -250,6 +256,9 @@ class SchemeFileSystemAbstractionTest {
     void fileExists() throws Exception {
         verifyFileSystemCall("fileExists", FS_PATH);
         verifyFileSystemCall("fileExists", schemePath);
+
+        when(storageSystem.supportsEmptyDirs()).thenReturn(false);
+        assertThat(schemeFs.fileExists(newSchemePath("/some-dir/"))).isTrue();
     }
 
     @Test
