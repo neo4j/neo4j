@@ -58,6 +58,8 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.memory.MemoryPool;
 import org.neo4j.memory.MemoryPools;
@@ -439,7 +441,10 @@ public abstract class AbstractNeoWebServer extends LifecycleAdapter implements N
         binder.addSingletonBinding(databaseResolver, DefaultDatabaseResolver.class);
         binder.addLazyBinding(authManagerSupplier, AuthManager.class);
         binder.addSingletonBinding(userLogProvider, InternalLogProvider.class);
-        binder.addSingletonBinding(userLogProvider.getLog(NeoWebServer.class), InternalLog.class);
+        binder.addSingletonBinding(userLogProvider, LogProvider.class);
+        var webserverLog = userLogProvider.getLog(NeoWebServer.class);
+        binder.addSingletonBinding(webserverLog, InternalLog.class);
+        binder.addSingletonBinding(webserverLog, Log.class);
         binder.addLazyBinding(this::getOrCreateDriver, Driver.class);
         binder.addSingletonBinding(metricsMonitor, QueryAPIMetricsMonitor.class);
 
