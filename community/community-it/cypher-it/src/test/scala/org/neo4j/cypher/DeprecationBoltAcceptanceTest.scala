@@ -20,7 +20,6 @@
 package org.neo4j.cypher
 
 import org.neo4j.configuration.Config
-import org.neo4j.configuration.GraphDatabaseInternalSettings.query_router_new_stack
 import org.neo4j.configuration.connectors.BoltConnector
 import org.neo4j.configuration.helpers.SocketAddress
 import org.neo4j.cypher.testing.api.CypherExecutorFactory
@@ -32,10 +31,7 @@ import org.neo4j.test.TestDatabaseManagementServiceBuilder
 
 import scala.jdk.CollectionConverters.MapHasAsJava
 
-class OlStackDeprecationBoltAcceptanceTest() extends DeprecationBoltAcceptanceTest(false)
-class QueryRouterDeprecationBoltAcceptanceTest() extends DeprecationBoltAcceptanceTest(true)
-
-abstract class DeprecationBoltAcceptanceTest(queryRouter: Boolean) extends DeprecationAcceptanceTestBase {
+class DeprecationBoltAcceptanceTest extends DeprecationAcceptanceTestBase {
 
   val boltConfig: Map[Setting[_], Object] =
     Map(
@@ -44,7 +40,6 @@ abstract class DeprecationBoltAcceptanceTest(queryRouter: Boolean) extends Depre
     )
 
   private val config = Config.newBuilder()
-    .set(query_router_new_stack, Boolean.box(queryRouter))
     .set(boltConfig.asJava)
     .build()
 

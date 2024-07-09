@@ -20,7 +20,6 @@
 package org.neo4j.cypher
 
 import org.neo4j.configuration.Config
-import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME
 import org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -32,17 +31,13 @@ import org.neo4j.kernel.api.exceptions.Status
 import org.neo4j.test.TestDatabaseManagementServiceBuilder
 import org.scalatest.BeforeAndAfterAll
 
-class CommunityQueryRoutingBoltAcceptanceTest extends CommunityQueryRoutingAcceptanceTest(java.lang.Boolean.TRUE)
+class CommunityQueryRoutingBoltAcceptanceTest extends CommunityQueryRoutingAcceptanceTest
     with FeatureDatabaseManagementService.TestUsingBolt
 
-class CommunityQueryRoutingHttpAcceptanceTest extends CommunityQueryRoutingAcceptanceTest(java.lang.Boolean.TRUE)
+class CommunityQueryRoutingHttpAcceptanceTest extends CommunityQueryRoutingAcceptanceTest
     with FeatureDatabaseManagementService.TestUsingHttp
 
-class CommunityQueryRoutingBoltOldStackAcceptanceTest
-    extends CommunityQueryRoutingAcceptanceTest(java.lang.Boolean.FALSE)
-    with FeatureDatabaseManagementService.TestUsingBolt
-
-abstract class CommunityQueryRoutingAcceptanceTest(newStackEnabled: java.lang.Boolean) extends CypherFunSuite
+abstract class CommunityQueryRoutingAcceptanceTest extends CypherFunSuite
     with FeatureDatabaseManagementService.TestBase
     with BeforeAndAfterAll {
 
@@ -79,25 +74,15 @@ abstract class CommunityQueryRoutingAcceptanceTest(newStackEnabled: java.lang.Bo
         |RETURN 1 AS x
         |""".stripMargin
 
-    if (newStackEnabled) {
-      Seq(DEFAULT_DATABASE_NAME, SYSTEM_DATABASE_NAME).foreach { sessionDbName =>
-        failWithError(
-          sessionDbName,
-          query,
-          Status.Database.DatabaseNotFound,
-          "Graph not found: nonexistent"
-        )
-      }
-    } else {
-      Seq(DEFAULT_DATABASE_NAME, SYSTEM_DATABASE_NAME).foreach { sessionDbName =>
-        failWithError(
-          sessionDbName,
-          query,
-          Status.Statement.EntityNotFound,
-          "Graph not found: nonexistent"
-        )
-      }
+    Seq(DEFAULT_DATABASE_NAME, SYSTEM_DATABASE_NAME).foreach { sessionDbName =>
+      failWithError(
+        sessionDbName,
+        query,
+        Status.Database.DatabaseNotFound,
+        "Graph not found: nonexistent"
+      )
     }
+
   }
 
   test("should not accept dynamic USE target") {
@@ -108,21 +93,13 @@ abstract class CommunityQueryRoutingAcceptanceTest(newStackEnabled: java.lang.Bo
         |RETURN 1
         |""".stripMargin
 
-    if (newStackEnabled) {
-      failWithError(
-        SYSTEM_DATABASE_NAME,
-        query,
-        Status.Statement.SyntaxError,
-        MessageUtilProvider.createDynamicGraphReferenceUnsupportedError("graph.byElementId(g)")
-      )
-    } else {
-      failWithError(
-        SYSTEM_DATABASE_NAME,
-        query,
-        Status.Statement.SyntaxError,
-        "USE clause must be either the first clause in a (sub-)query or preceded by an importing WITH clause in a sub-query."
-      )
-    }
+    failWithError(
+      SYSTEM_DATABASE_NAME,
+      query,
+      Status.Statement.SyntaxError,
+      MessageUtilProvider.createDynamicGraphReferenceUnsupportedError("graph.byElementId(g)")
+    )
+
   }
 
   test("should route a query with multiple USE targeting the same graph") {
@@ -189,21 +166,13 @@ abstract class CommunityQueryRoutingAcceptanceTest(newStackEnabled: java.lang.Bo
         |RETURN x, 1 AS y
         |""".stripMargin
 
-    if (newStackEnabled) {
-      failWithError(
-        DEFAULT_DATABASE_NAME,
-        query,
-        Status.Database.DatabaseNotFound,
-        "Database foo not found"
-      )
-    } else {
-      failWithError(
-        DEFAULT_DATABASE_NAME,
-        query,
-        Status.Statement.SyntaxError,
-        MessageUtilProvider.createMultipleGraphReferencesError("foo")
-      )
-    }
+    failWithError(
+      DEFAULT_DATABASE_NAME,
+      query,
+      Status.Database.DatabaseNotFound,
+      "Database foo not found"
+    )
+
   }
 
   test("should route Administration command to System database") {
@@ -227,9 +196,6 @@ abstract class CommunityQueryRoutingAcceptanceTest(newStackEnabled: java.lang.Bo
       result.toList should equal(List(Map("name" -> "myIndex")))
     }
   }
-
-  override def baseConfig: Config.Builder = super.baseConfig
-    .set(GraphDatabaseInternalSettings.query_router_new_stack, newStackEnabled)
 
   override def createBackingDbms(config: Config): DatabaseManagementService =
     new TestDatabaseManagementServiceBuilder().impermanent.setConfig(config).build()
