@@ -180,7 +180,7 @@
     <javapoet.version>1.13.0</javapoet.version>
     <grpc.version>1.65.0</grpc.version>
     <testcontainers.version>1.19.8</testcontainers.version>
-    <build-resources.version>2024-05.1</build-resources.version>
+    <build-resources.version>2024-07.1</build-resources.version>
   </properties>
 
   <modules>
