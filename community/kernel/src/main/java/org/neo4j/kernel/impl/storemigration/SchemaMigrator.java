@@ -189,6 +189,14 @@ public class SchemaMigrator {
                                                     .propertyType(),
                                             constraintDescriptor.graphTypeDependence()
                                                     == GraphTypeDependence.DEPENDENT);
+                                    case ENDPOINT -> {
+                                        var relEndpointSchemaDescriptor =
+                                                constraintDescriptor.asRelationshipEndpointConstraint();
+                                        yield ConstraintDescriptorFactory.relationshipEndpointForSchema(
+                                                schema,
+                                                relEndpointSchemaDescriptor.endpointLabelId(),
+                                                relEndpointSchemaDescriptor.endpointType());
+                                    }
                                 };
                         descriptor = descriptor.withName(constraintDescriptor.getName());
 

@@ -22,6 +22,7 @@ package org.neo4j.internal.schema;
 import org.neo4j.internal.schema.constraints.ExistenceConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.KeyConstraintDescriptor;
+import org.neo4j.internal.schema.constraints.RelationshipEndpointConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.TypeConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
 
@@ -46,6 +47,12 @@ public interface ConstraintDescriptor extends SchemaDescriptorSupplier, SchemaRu
      * @return {@code true} if calling {@link #asPropertyTypeConstraint()} would not throw.
      */
     boolean isPropertyTypeConstraint();
+
+    /**
+     * Test if this constraint descriptor is a endpoint constraint.
+     * @return {@code true} if calling {@link #asPropertyTypeConstraint()} would not throw.
+     */
+    boolean isRelationshipEndpointConstraint();
 
     /**
      * Test if this constraint descriptor is a node property type constraint.
@@ -135,6 +142,11 @@ public interface ConstraintDescriptor extends SchemaDescriptorSupplier, SchemaRu
      * @return this constraint descriptor as an {@link KeyConstraintDescriptor} if possible, or throw a {@link IllegalStateException}.
      */
     KeyConstraintDescriptor asKeyConstraint();
+
+    /**
+     * @return this constraint descriptor as an {@link KeyConstraintDescriptor} if possible, or throw a {@link IllegalStateException}.
+     */
+    RelationshipEndpointConstraintDescriptor asRelationshipEndpointConstraint();
 
     /**
      * Produce a copy of this constraint descriptor, that has the given id.

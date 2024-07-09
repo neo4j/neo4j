@@ -25,6 +25,7 @@ import static org.neo4j.common.EntityType.RELATIONSHIP;
 import static org.neo4j.internal.schema.SchemaPatternMatchingType.COMPLETE_ALL_TOKENS;
 import static org.neo4j.internal.schema.SchemaPatternMatchingType.ENTITY_TOKENS;
 import static org.neo4j.internal.schema.SchemaPatternMatchingType.PARTIAL_ANY_TOKEN;
+import static org.neo4j.internal.schema.SchemaPatternMatchingType.SINGLE_ENTITY_TOKEN;
 import static org.neo4j.internal.schema.SchemaUserDescription.TOKEN_ID_NAME_LOOKUP;
 
 import java.util.Arrays;
@@ -41,7 +42,8 @@ public final class SchemaDescriptorImplementation
                 LabelSchemaDescriptor,
                 RelationTypeSchemaDescriptor,
                 FulltextSchemaDescriptor,
-                AnyTokenSchemaDescriptor {
+                AnyTokenSchemaDescriptor,
+                RelationshipEndpointSchemaDescriptor {
     public static final int TOKEN_INDEX_LOCKING_ID = Integer.MAX_VALUE;
     public static final long[] TOKEN_INDEX_LOCKING_IDS = {TOKEN_INDEX_LOCKING_ID};
 
@@ -67,13 +69,30 @@ public final class SchemaDescriptorImplementation
         this.entityTokens = requireNonNull(entityTokens, "Entity tokens array cannot be null.");
         this.propertyKeyIds = requireNonNull(propertyKeyIds, "Property key ids array cannot be null.");
 
-        if (schemaPatternMatchingType != ENTITY_TOKENS) {
-            validatePropertySchema(entityType, entityTokens, propertyKeyIds);
-        } else {
-            validateEntityTokenSchema(entityType, entityTokens, propertyKeyIds);
+        switch (schemaPatternMatchingType) {
+            case SINGLE_ENTITY_TOKEN -> validateSingleEntityTokenSchema(entityTokens, propertyKeyIds);
+            case ENTITY_TOKENS -> validateEntityTokensSchema(entityType, entityTokens, propertyKeyIds);
+            default -> validatePropertySchema(entityType, entityTokens, propertyKeyIds);
         }
 
         schemaArchetype = detectArchetype(entityType, schemaPatternMatchingType, entityTokens);
+    }
+
+    private static void validateSingleEntityTokenSchema(int[] entityTokens, int[] propertyKeyIds) {
+        if (entityTokens.length != 1) {
+            throw new IllegalArgumentException("Schema descriptor of schema pattern matching type "
+                    + SINGLE_ENTITY_TOKEN + " must have exactly one entity token.");
+        }
+
+        if (entityTokens[0] < 0) {
+            throw new IllegalArgumentException("Schema descriptor of schema pattern matching type "
+                    + SINGLE_ENTITY_TOKEN + " must not have a negative entity token id");
+        }
+
+        if (propertyKeyIds.length != 0) {
+            throw new IllegalArgumentException("Schema descriptor of schema pattern matching type "
+                    + SINGLE_ENTITY_TOKEN + " must not have any property key ids");
+        }
     }
 
     private SchemaArchetype detectArchetype(
@@ -89,6 +108,10 @@ public final class SchemaDescriptorImplementation
             return SchemaArchetype.MULTI_TOKEN;
         } else if (schemaPatternMatchingType == ENTITY_TOKENS) {
             return SchemaArchetype.ANY_TOKEN;
+        } else if (schemaPatternMatchingType == SINGLE_ENTITY_TOKEN) {
+            if (entityType == RELATIONSHIP) {
+                return SchemaArchetype.SINGLE_RELATIONSHIP;
+            }
         }
         throw new IllegalArgumentException("Can't detect schema archetype for arguments: " + entityType + " "
                 + schemaPatternMatchingType + " " + Arrays.toString(entityTokens));
@@ -111,7 +134,7 @@ public final class SchemaDescriptorImplementation
         validatePropertyIds(propertyKeyIds);
     }
 
-    private static void validateEntityTokenSchema(EntityType entityType, int[] entityTokens, int[] propertyKeyIds) {
+    private static void validateEntityTokensSchema(EntityType entityType, int[] entityTokens, int[] propertyKeyIds) {
         if (entityTokens.length != 0) {
             throw new IllegalArgumentException("Schema descriptor with schema pattern matching type " + ENTITY_TOKENS
                     + " should not have any specified " + (entityType == NODE ? "labels." : "relationship types."));
@@ -159,6 +182,7 @@ public final class SchemaDescriptorImplementation
             case "RelationTypeSchemaDescriptor" -> schemaArchetype == SchemaArchetype.RELATIONSHIP_PROPERTY;
             case "FulltextSchemaDescriptor" -> schemaArchetype == SchemaArchetype.MULTI_TOKEN;
             case "AnyTokenSchemaDescriptor" -> schemaArchetype == SchemaArchetype.ANY_TOKEN;
+            case "RelationshipEndpointSchemaDescriptor" -> schemaArchetype == SchemaArchetype.SINGLE_RELATIONSHIP;
             default -> false;
         };
     }
@@ -258,5 +282,28 @@ public final class SchemaDescriptorImplementation
     @Override
     public String toString() {
         return userDescription(TOKEN_ID_NAME_LOOKUP);
+    }
+
+    /**
+     * Currently there are 4 schema archetypes:
+     * 1. LABEL_PROPERTY - schema that describes exactly one label, and one or more properties.
+     *      This schema matches nodes that are labeled with specified label, and have all specified properties.
+     * 2. RELATIONSHIP_PROPERTY - schema that describes exactly one relationship type, and one or more properties.
+     *      This schema matches relationship of specified type that have all specified properties.
+     * 3. MULTI_TOKEN - schema that describes at least one label or type, and one or more properties.
+     *      This schema matches node/relationship if at least one of it's label/type is specified by the schema,
+     *      and if node/relationship has at least one property specified by the schema.
+     *      I.e. fulltext indexes are described by this kind of schema
+     * 4. ANY_TOKEN - schema that describes any labels or any relationship types, not specifying any properties.
+     *      Any labeled node or any relationship type is matched by this schema
+     * 5. SINGLE_RELATIONSHIP - schema that describes exactly one relationship type and no properties.
+     *      This schema matches relationships of specified type
+     */
+    private enum SchemaArchetype {
+        LABEL_PROPERTY,
+        RELATIONSHIP_PROPERTY,
+        MULTI_TOKEN,
+        ANY_TOKEN,
+        SINGLE_RELATIONSHIP
     }
 }

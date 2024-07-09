@@ -33,6 +33,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.MalformedSchemaRuleExcept
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.PropertyTypeSet;
+import org.neo4j.internal.schema.constraints.RelationshipEndpointConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.SchemaValueType;
 import org.neo4j.internal.schema.constraints.TypeConstraintDescriptor;
 import org.neo4j.values.storable.IntArray;
@@ -50,6 +51,8 @@ public class SchemaRuleMapifier {
     private static final String PROP_CONSTRAINT_RULE_TYPE =
             PROP_SCHEMA_RULE_PREFIX + "constraintRuleType"; // Existence / Uniqueness / ...
     private static final String PROP_SCHEMA_GRAPH_TYPE_DEPENDENCE = PROP_SCHEMA_RULE_PREFIX + "graphTypeDependence";
+    private static final String PROP_SCHEMA_ENDPOINT_TYPE = PROP_SCHEMA_RULE_PREFIX + "endpointType";
+    private static final String PROP_SCHEMA_ENDPOINT_LABEL_ID = PROP_SCHEMA_RULE_PREFIX + "endpointLabelId";
     private static final String PROP_SCHEMA_RULE_NAME = PROP_SCHEMA_RULE_PREFIX + "name";
     private static final String PROP_OWNED_INDEX = PROP_SCHEMA_RULE_PREFIX + "ownedIndex";
     public static final String PROP_OWNING_CONSTRAINT = PROP_SCHEMA_RULE_PREFIX + "owningConstraint";
@@ -190,6 +193,15 @@ public class SchemaRuleMapifier {
                     typeArray[i++] = schemaValueType.serialize();
                 }
                 putStringArrayProperty(map, PROP_CONSTRAINT_ALLOWED_TYPES, typeArray);
+            }
+            case ENDPOINT -> {
+                RelationshipEndpointConstraintDescriptor endpointConstraintDescriptor =
+                        rule.asRelationshipEndpointConstraint();
+                putStringProperty(
+                        map,
+                        PROP_SCHEMA_ENDPOINT_TYPE,
+                        endpointConstraintDescriptor.endpointType().name());
+                putLongProperty(map, PROP_SCHEMA_ENDPOINT_LABEL_ID, endpointConstraintDescriptor.endpointLabelId());
             }
 
             default -> {}
@@ -352,6 +364,9 @@ public class SchemaRuleMapifier {
                     schema,
                     getAllowedTypes(getStringArray(PROP_CONSTRAINT_ALLOWED_TYPES, props)),
                     graphTypeDependence == GraphTypeDependence.DEPENDENT);
+
+            case ENDPOINT -> ConstraintDescriptorFactory.relationshipEndpointForSchema(
+                    schema, (int) getLong(PROP_SCHEMA_ENDPOINT_LABEL_ID, props), getEndpointType(props));
         };
     }
 
@@ -435,6 +450,20 @@ public class SchemaRuleMapifier {
             return graphTypeDependence;
         }
         return constraintType.enforcesUniqueness() ? GraphTypeDependence.UNDESIGNATED : GraphTypeDependence.INDEPENDENT;
+    }
+
+    static EndpointType getEndpointType(Map<String, Value> props) throws MalformedSchemaRuleException {
+        Optional<String> maybeEndpointType = getOptionalString(PROP_SCHEMA_ENDPOINT_TYPE, props);
+        if (maybeEndpointType.isPresent()) {
+            String enumName = maybeEndpointType.get();
+            try {
+                return EndpointType.valueOf(enumName);
+            } catch (IllegalArgumentException e) {
+                throw new MalformedSchemaRuleException("Endpoint type with name " + enumName + " not recognized");
+            }
+        } else {
+            throw new MalformedSchemaRuleException("Endpoint type of endpoint label constraint not found");
+        }
     }
 
     static ConstraintType getConstraintType(String constraintType) throws MalformedSchemaRuleException {

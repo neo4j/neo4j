@@ -38,6 +38,7 @@ import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.internal.schema.constraints.KeyConstraintDescriptor;
+import org.neo4j.internal.schema.constraints.RelationshipEndpointConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.TypeConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -52,6 +53,8 @@ public class StandardConstraintSemantics extends ConstraintSemantics {
     public static final String ERROR_MESSAGE_EXISTS = "Property existence constraint requires Neo4j Enterprise Edition";
     public static final String ERROR_MESSAGE_KEY_SUFFIX = "Key constraint requires Neo4j Enterprise Edition";
     public static final String ERROR_MESSAGE_TYPE = "Property type constraint requires Neo4j Enterprise Edition";
+    public static final String ERROR_MESSAGE_ENDPOINT =
+            "Relationship endpoint label constraint requires Neo4j Enterprise Edition";
 
     protected final StandardConstraintRuleAccessor accessor = new StandardConstraintRuleAccessor();
 
@@ -156,6 +159,11 @@ public class StandardConstraintSemantics extends ConstraintSemantics {
         return new CreateConstraintFailureException(descriptor, ERROR_MESSAGE_TYPE);
     }
 
+    private static CreateConstraintFailureException relationshipEndpointLabelConstraintsNotAllowed(
+            RelationshipEndpointConstraintDescriptor descriptor) {
+        return new CreateConstraintFailureException(descriptor, ERROR_MESSAGE_ENDPOINT);
+    }
+
     private static String keyConstraintErrorMessage(SchemaDescriptor descriptor) {
         return (descriptor.entityType() == NODE ? "Node " : "Relationship ") + ERROR_MESSAGE_KEY_SUFFIX;
     }
@@ -189,6 +197,12 @@ public class StandardConstraintSemantics extends ConstraintSemantics {
     public ConstraintDescriptor createPropertyTypeConstraint(long ruleId, TypeConstraintDescriptor descriptor)
             throws CreateConstraintFailureException {
         throw propertyTypeConstraintsNotAllowed(descriptor);
+    }
+
+    @Override
+    public ConstraintDescriptor createRelationshipEndpointConstraint(
+            long ruleId, RelationshipEndpointConstraintDescriptor descriptor) throws CreateConstraintFailureException {
+        throw relationshipEndpointLabelConstraintsNotAllowed(descriptor);
     }
 
     @Override

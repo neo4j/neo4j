@@ -30,10 +30,14 @@ package org.neo4j.internal.schema;
  * {@link SchemaPatternMatchingType#ENTITY_TOKENS} this schema should match on ANY/ALL entities of this schema {@link org.neo4j.common.EntityType}.
  * i.e. for a schema with EntityType.NODE it will match all nodes or any index / constraint that operates on nodes
  * <p>
+ * {@link SchemaPatternMatchingType#SINGLE_ENTITY_TOKEN} this schema holds a single entity token and no property tokens, and should match on its presence
+ * example: in relationship endpoint constraints this holds the id of the relationship type of the relationships we want to constraint
+ * <p>
  * NOTE: The ordinal is used in the hash function for the auto-generated SchemaRule names, so avoid changing the ordinals when modifying this enum.
  */
 public enum SchemaPatternMatchingType {
     COMPLETE_ALL_TOKENS,
     PARTIAL_ANY_TOKEN,
-    ENTITY_TOKENS
+    ENTITY_TOKENS,
+    SINGLE_ENTITY_TOKEN
 }

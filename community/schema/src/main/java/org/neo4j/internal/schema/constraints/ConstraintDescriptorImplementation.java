@@ -265,6 +265,16 @@ public class ConstraintDescriptorImplementation
         return this;
     }
 
+    @Override
+    public boolean isRelationshipEndpointConstraint() {
+        return true;
+    }
+
+    @Override
+    public RelationshipEndpointConstraintDescriptor asRelationshipEndpointConstraint() {
+        throw conversionException(RelationshipEndpointConstraintDescriptor.class);
+    }
+
     private IllegalStateException conversionException(Class<? extends ConstraintDescriptor> targetType) {
         return new IllegalStateException("Cannot cast this schema to a " + targetType
                 + " because it does not match that structure: " + this + ".");

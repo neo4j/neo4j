@@ -25,6 +25,7 @@ import static org.neo4j.common.EntityType.RELATIONSHIP;
 import static org.neo4j.internal.schema.SchemaPatternMatchingType.COMPLETE_ALL_TOKENS;
 import static org.neo4j.internal.schema.SchemaPatternMatchingType.ENTITY_TOKENS;
 import static org.neo4j.internal.schema.SchemaPatternMatchingType.PARTIAL_ANY_TOKEN;
+import static org.neo4j.internal.schema.SchemaPatternMatchingType.SINGLE_ENTITY_TOKEN;
 
 import java.util.function.Predicate;
 import org.neo4j.common.EntityType;
@@ -66,6 +67,16 @@ public class SchemaDescriptors {
             case NODE -> ANY_TOKEN_NODE_SCHEMA_DESCRIPTOR;
             case RELATIONSHIP -> ANY_TOKEN_RELATIONSHIP_SCHEMA_DESCRIPTOR;
         };
+    }
+
+    /**
+     *
+     * @param relationshipTypeId the relationship type id for the schema descriptor
+     * @return {@link RelationshipEndpointSchemaDescriptor} with the provided relationship type id
+     */
+    public static RelationshipEndpointSchemaDescriptor forRelationshipEndpoint(int relationshipTypeId) {
+        return new SchemaDescriptorImplementation(
+                RELATIONSHIP, SINGLE_ENTITY_TOKEN, new int[] {relationshipTypeId}, EMPTY_INT_ARRAY);
     }
 
     /**

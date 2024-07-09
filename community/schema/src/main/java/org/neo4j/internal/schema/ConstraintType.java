@@ -29,7 +29,8 @@ public enum ConstraintType {
     UNIQUE(true, false, false),
     EXISTS(false, true, false),
     UNIQUE_EXISTS(true, true, false),
-    PROPERTY_TYPE(false, false, true);
+    PROPERTY_TYPE(false, false, true),
+    ENDPOINT(false, false, false);
 
     private final boolean isUnique;
     private final boolean mustExist;

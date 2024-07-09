@@ -17,11 +17,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.internal.schema;
+package org.neo4j.internal.schema.constraints;
 
-public enum SchemaArchetype {
-    LABEL_PROPERTY,
-    RELATIONSHIP_PROPERTY,
-    MULTI_TOKEN,
-    ANY_TOKEN
+import org.neo4j.internal.schema.ConstraintDescriptor;
+import org.neo4j.internal.schema.EndpointType;
+
+public interface RelationshipEndpointConstraintDescriptor extends ConstraintDescriptor {
+    EndpointType endpointType();
+
+    /**
+     * @return the id of the required label in the endpoint, enforced by this constraint
+     */
+    int endpointLabelId();
 }

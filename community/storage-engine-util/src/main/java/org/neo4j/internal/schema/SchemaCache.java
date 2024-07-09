@@ -671,6 +671,7 @@ public class SchemaCache {
                 case UNIQUE -> 1;
                 case EXISTS -> 2;
                 case PROPERTY_TYPE -> 3;
+                case ENDPOINT -> 4;
             };
         }
     }

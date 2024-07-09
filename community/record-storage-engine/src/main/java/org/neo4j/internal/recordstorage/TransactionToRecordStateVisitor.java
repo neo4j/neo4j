@@ -163,6 +163,11 @@ class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter {
                         constraintId, constraint.asPropertyTypeConstraint());
                 schemaStateChanger.createSchemaRule(recordState, rule);
             }
+            case ENDPOINT -> {
+                ConstraintDescriptor rule = constraintSemantics.createRelationshipEndpointConstraint(
+                        constraintId, constraint.asRelationshipEndpointConstraint());
+                schemaStateChanger.createSchemaRule(recordState, rule);
+            }
             default -> throw new IllegalStateException(constraint.type().toString());
         }
     }

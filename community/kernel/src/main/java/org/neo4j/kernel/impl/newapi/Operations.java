@@ -50,7 +50,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
-import org.apache.commons.lang3.NotImplementedException;
 import org.eclipse.collections.api.RichIterable;
 import org.eclipse.collections.api.iterator.IntIterator;
 import org.eclipse.collections.api.map.primitive.IntObjectMap;
@@ -119,6 +118,7 @@ import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.KeyConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.PropertyTypeSet;
+import org.neo4j.internal.schema.constraints.RelationshipEndpointConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.TypeConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.TypeRepresentation;
 import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
@@ -2257,8 +2257,37 @@ public class Operations implements Write, SchemaWrite, Upgrade {
             throw new UnsupportedOperationException("Relationship endpoint constraints are not enabled, setting: "
                     + GraphDatabaseInternalSettings.relationship_endpoint_constraints_enabled.name());
         }
-        throw new NotImplementedException(
-                "relationshipEndpointConstraint is in its infancy, thus this operation is not supported");
+
+        // TODO: Add assertSupportedInVersion check
+
+        RelationshipEndpointConstraintDescriptor constraint =
+                lockAndValidateRelationshipEndpointConstraint(schema, name, endpointLabelId, endpointType);
+
+        ktx.txState().constraintDoAdd(constraint);
+        return constraint;
+    }
+
+    private RelationshipEndpointConstraintDescriptor lockAndValidateRelationshipEndpointConstraint(
+            SchemaDescriptor schemaDescriptor, String name, int endpointLabelId, EndpointType endpointType)
+            throws KernelException {
+        exclusiveSchemaLock(schemaDescriptor);
+        ktx.assertOpen();
+
+        try {
+            assertValidDescriptor(schemaDescriptor, CONSTRAINT_CREATION);
+
+            var constraint = (RelationshipEndpointConstraintDescriptor)
+                    ConstraintDescriptorFactory.relationshipEndpointForSchema(
+                                    schemaDescriptor, endpointLabelId, endpointType)
+                            .withName(name);
+
+            constraint = ensureConstraintHasName(constraint);
+            exclusiveSchemaNameLock(constraint.getName());
+            assertNoBlockingSchemaRulesExists(constraint);
+            return constraint;
+        } catch (SchemaKernelException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private ConstraintDescriptor lockAndValidatePropertyExistenceConstraint(

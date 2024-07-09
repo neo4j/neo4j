@@ -19,9 +19,11 @@
  */
 package org.neo4j.internal.schema.constraints;
 
+import org.neo4j.internal.schema.EndpointType;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptors;
+import org.neo4j.util.VisibleForTesting;
 
 public class ConstraintDescriptorFactory {
     private ConstraintDescriptorFactory() {}
@@ -51,6 +53,11 @@ public class ConstraintDescriptorFactory {
         return ConstraintDescriptorImplementation.makePropertyTypeConstraint(schema, allowedTypes, isDependent);
     }
 
+    public static RelationshipEndpointConstraintDescriptor relationshipEndpointForSchema(
+            SchemaDescriptor schema, int endpointLabelId, EndpointType endpointType) {
+        return RelationshipEndpointConstraintDescriptorImplementation.make(schema, endpointLabelId, endpointType);
+    }
+
     public static ExistenceConstraintDescriptor existsForLabel(boolean isDependent, int labelId, int... propertyIds) {
         return existsForSchema(SchemaDescriptors.forLabel(labelId, propertyIds), isDependent);
     }
@@ -74,5 +81,12 @@ public class ConstraintDescriptorFactory {
 
     public static KeyConstraintDescriptor nodeKeyForLabel(IndexType indexType, int labelId, int... propertyIds) {
         return keyForSchema(SchemaDescriptors.forLabel(labelId, propertyIds), indexType);
+    }
+
+    @VisibleForTesting
+    public static RelationshipEndpointConstraintDescriptor relationshipEndpointForRelType(
+            int relTypeId, int endpointLabelId, EndpointType endpointType) {
+        return relationshipEndpointForSchema(
+                SchemaDescriptors.forRelationshipEndpoint(relTypeId), endpointLabelId, endpointType);
     }
 }

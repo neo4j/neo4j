@@ -21,12 +21,14 @@ package org.neo4j.internal.schema;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.endpointForRelType;
 import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.existsForLabel;
 import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.nodeKeyForLabel;
 
 import org.junit.jupiter.api.Test;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.internal.schema.constraints.KeyConstraintDescriptor;
+import org.neo4j.internal.schema.constraints.RelationshipEndpointConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
 
 class ConstraintDescriptorTest extends SchemaRuleTestBase {
@@ -95,6 +97,19 @@ class ConstraintDescriptorTest extends SchemaRuleTestBase {
         assertThrows(
                 IllegalStateException.class,
                 () -> constraint.asIndexBackedConstraint().ownedIndexId());
+    }
+
+    @Test
+    void shouldCreateRelationshipEndpointConstraint() {
+        // GIVEN
+        RelationshipEndpointConstraintDescriptor descriptor =
+                endpointForRelType(REL_TYPE_ID, LABEL_ID, EndpointType.END);
+        var constraint = descriptor.withId(RULE_ID);
+
+        assertThat(constraint.getId()).isEqualTo(RULE_ID);
+        assertThat(constraint.schema()).isEqualTo(descriptor.schema());
+        assertThat(constraint).isEqualTo(descriptor);
+        assertThrows(IllegalStateException.class, () -> constraint.asPropertyExistenceConstraint());
     }
 
     @Test

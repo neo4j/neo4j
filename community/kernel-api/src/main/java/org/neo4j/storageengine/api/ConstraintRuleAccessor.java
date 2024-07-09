@@ -22,6 +22,7 @@ package org.neo4j.storageengine.api;
 import org.neo4j.internal.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.KeyConstraintDescriptor;
+import org.neo4j.internal.schema.constraints.RelationshipEndpointConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.TypeConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
 
@@ -39,4 +40,7 @@ public interface ConstraintRuleAccessor {
 
     ConstraintDescriptor createPropertyTypeConstraint(long ruleId, TypeConstraintDescriptor descriptor)
             throws CreateConstraintFailureException;
+
+    ConstraintDescriptor createRelationshipEndpointConstraint(
+            long ruleId, RelationshipEndpointConstraintDescriptor descriptor) throws CreateConstraintFailureException;
 }

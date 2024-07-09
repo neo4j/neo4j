@@ -32,6 +32,7 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.ConstraintType;
+import org.neo4j.internal.schema.EndpointType;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.internal.schema.constraints.PropertyTypeSet;
@@ -52,7 +53,9 @@ class ConstraintSubSectionTest {
         RELATIONSHIP_PROPERTY_TYPE(ConstraintDescriptorFactory.typeForSchema(
                 SchemaDescriptors.forRelType(0, 0), PropertyTypeSet.of(SchemaValueType.INTEGER), false)),
         NODE_KEY(ConstraintDescriptorFactory.keyForSchema(SchemaDescriptors.forLabel(0, 0))),
-        RELATIONSHIP_KEY(ConstraintDescriptorFactory.keyForSchema(SchemaDescriptors.forRelType(0, 0)));
+        RELATIONSHIP_KEY(ConstraintDescriptorFactory.keyForSchema(SchemaDescriptors.forRelType(0, 0))),
+        ENDPOINT(ConstraintDescriptorFactory.endpointForSchema(
+                SchemaDescriptors.forRelEndpoint(0), 0, EndpointType.END));
 
         public final ConstraintDescriptor descriptor;
 

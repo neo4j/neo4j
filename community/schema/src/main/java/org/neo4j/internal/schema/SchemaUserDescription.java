@@ -131,6 +131,7 @@ public final class SchemaUserDescription {
             case UNIQUE -> entityType == NODE ? "UNIQUENESS" : entityType.name() + " UNIQUENESS";
             case UNIQUE_EXISTS -> entityType.name() + " KEY";
             case PROPERTY_TYPE -> entityType.name() + " PROPERTY TYPE";
+            case ENDPOINT -> entityType.name() + " ENDPOINT";
         };
     }
 

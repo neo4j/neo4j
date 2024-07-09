@@ -27,6 +27,7 @@ import org.neo4j.common.EntityType;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.PropertyTypeSet;
+import org.neo4j.internal.schema.constraints.RelationshipEndpointConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.SchemaValueType;
 import org.neo4j.internal.schema.constraints.TypeConstraintDescriptor;
 
@@ -76,6 +77,14 @@ final class ConstraintSubSection {
                         propertyTypeSet.stream().map(SchemaValueType::serialize).toList();
                 data.put("propertyTypes", propertyTypes);
                 break;
+            case ENDPOINT:
+                RelationshipEndpointConstraintDescriptor endpointConstraintDescriptor =
+                        constraint.asRelationshipEndpointConstraint();
+                data.put("type", "Relationship endpoint constraint");
+                data.put("endpointLabel", tokens.labelGetName(endpointConstraintDescriptor.endpointLabelId()));
+                data.put(
+                        "endpointType",
+                        endpointConstraintDescriptor.endpointType().name());
             default:
         }
 
