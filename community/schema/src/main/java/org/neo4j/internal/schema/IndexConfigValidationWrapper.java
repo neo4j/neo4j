@@ -22,9 +22,9 @@ package org.neo4j.internal.schema;
 import static org.neo4j.internal.schema.IndexConfigValidationRecords.State.INVALID_STATES;
 
 import org.eclipse.collections.api.factory.Sets;
-import org.eclipse.collections.api.map.ImmutableMap;
-import org.eclipse.collections.api.set.ImmutableSet;
+import org.eclipse.collections.api.map.sorted.ImmutableSortedMap;
 import org.eclipse.collections.api.set.SetIterable;
+import org.eclipse.collections.api.set.sorted.ImmutableSortedSet;
 import org.eclipse.collections.api.tuple.Pair;
 import org.neo4j.graphdb.schema.IndexSetting;
 import org.neo4j.internal.schema.IndexConfigValidationRecords.UnrecognizedSetting;
@@ -32,18 +32,18 @@ import org.neo4j.values.storable.Value;
 
 public abstract class IndexConfigValidationWrapper {
     private final IndexProviderDescriptor descriptor;
-    private final ImmutableSet<String> validSettingNames;
-    private final ImmutableSet<String> possibleValidSettingNames;
+    private final ImmutableSortedSet<String> validSettingNames;
+    private final ImmutableSortedSet<String> possibleValidSettingNames;
 
     private final IndexConfig config;
-    private final ImmutableMap<IndexSetting, Object> settings;
+    private final ImmutableSortedMap<IndexSetting, Object> settings;
 
     protected IndexConfigValidationWrapper(
             IndexProviderDescriptor descriptor,
             IndexConfig config,
-            ImmutableMap<IndexSetting, Object> settings,
-            ImmutableSet<String> validSettingNames,
-            ImmutableSet<String> possibleValidSettingNames) {
+            ImmutableSortedMap<IndexSetting, Object> settings,
+            ImmutableSortedSet<String> validSettingNames,
+            ImmutableSortedSet<String> possibleValidSettingNames) {
         this.descriptor = descriptor;
         this.validSettingNames = validSettingNames;
         this.possibleValidSettingNames = possibleValidSettingNames;
@@ -93,8 +93,8 @@ public abstract class IndexConfigValidationWrapper {
         return config;
     }
 
-    private ImmutableMap<IndexSetting, Object> validatePossibleSettingNames(
-            ImmutableMap<IndexSetting, Object> settings) {
+    private ImmutableSortedMap<IndexSetting, Object> validatePossibleSettingNames(
+            ImmutableSortedMap<IndexSetting, Object> settings) {
         final var settingNames = settings.keysView()
                 .asLazy()
                 .collect(IndexSetting::getSettingName)

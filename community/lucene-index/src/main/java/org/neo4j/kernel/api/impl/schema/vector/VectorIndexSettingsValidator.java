@@ -27,7 +27,7 @@ import static org.neo4j.kernel.api.impl.schema.vector.VectorIndexConfigUtils.toV
 import java.util.Comparator;
 import org.eclipse.collections.api.factory.Lists;
 import org.eclipse.collections.api.factory.Sets;
-import org.eclipse.collections.api.set.ImmutableSet;
+import org.eclipse.collections.api.factory.SortedSets;
 import org.eclipse.collections.api.set.sorted.ImmutableSortedSet;
 import org.neo4j.graphdb.schema.IndexSetting;
 import org.neo4j.internal.schema.IndexConfigValidationRecords;
@@ -54,11 +54,14 @@ public interface VectorIndexSettingsValidator {
 
     VectorIndexConfig trustIsValidToVectorIndexConfig(IndexConfigValidationRecords validationRecords);
 
+    ImmutableSortedSet<IndexSetting> validSettings();
+
     class Validators implements VectorIndexSettingsValidator {
         private final IndexProviderDescriptor descriptor;
         private final ImmutableSortedSet<IndexSettingValidator<? extends Value, ?>> validators;
-        private final ImmutableSet<String> handledSettingNames;
-        private final ImmutableSet<String> validSettingNames;
+        private final ImmutableSortedSet<IndexSetting> validSettings;
+        private final ImmutableSortedSet<String> validSettingNames;
+        private final ImmutableSortedSet<String> handledSettingNames;
 
         @SafeVarargs
         Validators(IndexProviderDescriptor descriptor, IndexSettingValidator<? extends Value, ?>... validators) {
@@ -81,18 +84,22 @@ public interface VectorIndexSettingsValidator {
             this.validators = checkedValidators.toImmutableSortedSet(
                     Comparator.comparing(validator -> validator.setting().getSettingName(), CASE_INSENSITIVE_ORDER));
 
-            this.handledSettingNames = this.validators
-                    .asLazy()
-                    .collect(IndexSettingValidator::setting)
-                    .collect(IndexSetting::getSettingName)
-                    .toImmutableSet();
+            final var handledSettings =
+                    this.validators.collect(IndexSettingValidator::setting).toSet();
+            this.handledSettingNames =
+                    handledSettings.collect(IndexSetting::getSettingName).toImmutableSortedSet(CASE_INSENSITIVE_ORDER);
 
-            this.validSettingNames = this.handledSettingNames.difference(this.validators
-                    .asLazy()
-                    .selectInstancesOf(ReadDefaultOnly.class)
-                    .collect(IndexSettingValidator::setting)
+            this.validSettings = handledSettings
+                    .difference(this.validators
+                            .asLazy()
+                            .selectInstancesOf(ReadDefaultOnly.class)
+                            .collect(IndexSettingValidator::setting)
+                            .toSet())
+                    .toImmutableSortedSet(Comparator.comparing(IndexSetting::getSettingName, CASE_INSENSITIVE_ORDER));
+
+            this.validSettingNames = this.validSettings
                     .collect(IndexSetting::getSettingName)
-                    .toSet());
+                    .toImmutableSortedSet(CASE_INSENSITIVE_ORDER);
         }
 
         @Override
@@ -140,6 +147,11 @@ public interface VectorIndexSettingsValidator {
                     validSettingNames,
                     handledSettingNames);
         }
+
+        @Override
+        public ImmutableSortedSet<IndexSetting> validSettings() {
+            return validSettings;
+        }
     }
 
     class ValidatorNotFound implements VectorIndexSettingsValidator {
@@ -173,6 +185,11 @@ public interface VectorIndexSettingsValidator {
         @Override
         public VectorIndexConfig trustIsValidToVectorIndexConfig(IndexConfigValidationRecords validationRecords) {
             throw exception;
+        }
+
+        @Override
+        public ImmutableSortedSet<IndexSetting> validSettings() {
+            return SortedSets.immutable.empty();
         }
     }
 

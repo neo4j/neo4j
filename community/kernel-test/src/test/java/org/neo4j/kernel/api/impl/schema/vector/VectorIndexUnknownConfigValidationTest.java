@@ -81,6 +81,8 @@ public class VectorIndexUnknownConfigValidationTest {
                         VectorIndexSettingsValidator.class.getSimpleName(),
                         "not found for",
                         version.descriptor().name());
+
+        assertThat(validator.validSettings().castToSortedSet()).isEmpty();
     }
 
     @ParameterizedTest
@@ -187,5 +189,7 @@ public class VectorIndexUnknownConfigValidationTest {
                         version.descriptor().name(),
                         "on",
                         kernelVersion.toString());
+
+        assertThat(validator.validSettings().castToSortedSet()).isEmpty();
     }
 }

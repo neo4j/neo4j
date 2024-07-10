@@ -19,14 +19,16 @@
  */
 package org.neo4j.kernel.api.impl.schema.vector;
 
+import static java.lang.String.CASE_INSENSITIVE_ORDER;
 import static org.neo4j.internal.schema.IndexConfigValidationRecords.State.INVALID_STATES;
 import static org.neo4j.internal.schema.IndexConfigValidationRecords.State.VALID;
 import static org.neo4j.internal.schema.IndexConfigValidationWrapper.unrecognizedSetting;
 
+import java.util.Comparator;
 import java.util.Objects;
 import org.eclipse.collections.api.RichIterable;
 import org.eclipse.collections.api.block.predicate.Predicate;
-import org.eclipse.collections.api.map.ImmutableMap;
+import org.eclipse.collections.api.map.sorted.ImmutableSortedMap;
 import org.neo4j.graphdb.schema.IndexSetting;
 import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexConfigValidationRecords;
@@ -71,8 +73,13 @@ public class VectorIndexConfigUtils {
         return value == null || value == Values.NO_VALUE;
     }
 
-    static ImmutableMap<IndexSetting, Object> toValidSettings(RichIterable<Valid> validRecords) {
-        return validRecords.toImmutableMap(Valid::setting, Valid::value);
+    static ImmutableSortedMap<IndexSetting, Object> toValidSettings(RichIterable<Valid> validRecords) {
+        return validRecords
+                .toSortedMap(
+                        Comparator.comparing(IndexSetting::getSettingName, CASE_INSENSITIVE_ORDER),
+                        Valid::setting,
+                        Valid::value)
+                .toImmutable();
     }
 
     static IndexConfig toIndexConfig(RichIterable<Valid> validRecords) {

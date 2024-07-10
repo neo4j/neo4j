@@ -22,8 +22,8 @@ package org.neo4j.kernel.api.impl.schema.vector;
 import static org.neo4j.kernel.api.impl.schema.vector.VectorIndexConfigUtils.DIMENSIONS;
 import static org.neo4j.kernel.api.impl.schema.vector.VectorIndexConfigUtils.SIMILARITY_FUNCTION;
 
-import org.eclipse.collections.api.map.ImmutableMap;
-import org.eclipse.collections.api.set.ImmutableSet;
+import org.eclipse.collections.api.map.sorted.ImmutableSortedMap;
+import org.eclipse.collections.api.set.sorted.ImmutableSortedSet;
 import org.neo4j.graphdb.schema.IndexSetting;
 import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexConfigValidationWrapper;
@@ -37,9 +37,9 @@ public class VectorIndexConfig extends IndexConfigValidationWrapper {
     VectorIndexConfig(
             IndexProviderDescriptor descriptor,
             IndexConfig config,
-            ImmutableMap<IndexSetting, Object> settings,
-            ImmutableSet<String> validSettingNames,
-            ImmutableSet<String> possibleValidSettingNames) {
+            ImmutableSortedMap<IndexSetting, Object> settings,
+            ImmutableSortedSet<String> validSettingNames,
+            ImmutableSortedSet<String> possibleValidSettingNames) {
         super(descriptor, config, settings, validSettingNames, possibleValidSettingNames);
         this.dimensions = get(DIMENSIONS);
         this.similarityFunction = get(SIMILARITY_FUNCTION);
