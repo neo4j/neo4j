@@ -78,7 +78,7 @@ final class NoSchemaDescriptor implements SchemaDescriptor {
     }
 
     @Override
-    public PropertySchemaType propertySchemaType() {
+    public SchemaPatternMatchingType schemaPatternMatchingType() {
         return null;
     }
 

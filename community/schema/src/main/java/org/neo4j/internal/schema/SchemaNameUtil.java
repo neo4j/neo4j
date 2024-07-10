@@ -73,7 +73,7 @@ public class SchemaNameUtil {
         HashFunction hf = HashFunction.incrementalXXH64();
         long key = hf.initialise(Boolean.hashCode(rule instanceof ConstraintDescriptor));
         key = hf.update(key, rule.schema().entityType().ordinal());
-        key = hf.update(key, rule.schema().propertySchemaType().ordinal());
+        key = hf.update(key, rule.schema().schemaPatternMatchingType().ordinal());
         key = hf.updateWithArray(key, entityTokenNames, String::hashCode);
         key = hf.updateWithArray(key, propertyNames, String::hashCode);
 

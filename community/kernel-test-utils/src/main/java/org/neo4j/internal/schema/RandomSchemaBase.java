@@ -318,7 +318,7 @@ public abstract class RandomSchemaBase implements Supplier<SchemaRule> {
 
     public static boolean schemaDeepEquals(SchemaDescriptor a, SchemaDescriptor b) {
         return a.entityType() == b.entityType()
-                && a.propertySchemaType() == b.propertySchemaType()
+                && a.schemaPatternMatchingType() == b.schemaPatternMatchingType()
                 && Arrays.equals(a.getEntityTokenIds(), b.getEntityTokenIds())
                 && Arrays.equals(a.getPropertyIds(), b.getPropertyIds());
     }

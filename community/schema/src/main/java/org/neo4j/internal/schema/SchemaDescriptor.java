@@ -143,10 +143,10 @@ public interface SchemaDescriptor {
     EntityType entityType();
 
     /**
-     * Returns the type of this schema. See {@link PropertySchemaType}.
-     * @return PropertySchemaType of this schema unit.
+     * Returns the type of this schema. See {@link SchemaPatternMatchingType}.
+     * @return SchemaPatternMatchingType of this schema unit.
      */
-    PropertySchemaType propertySchemaType();
+    SchemaPatternMatchingType schemaPatternMatchingType();
 
     /**
      * Produce a user-friendly description of this schema entity.

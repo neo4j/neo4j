@@ -23,7 +23,7 @@ import org.neo4j.util.MarkerInterface;
 
 /**
  * Schema descriptors of this sub-type are guaranteed to have exactly one relationship type, and match index updates with
- * {@link PropertySchemaType#COMPLETE_ALL_TOKENS}.
+ * {@link SchemaPatternMatchingType#COMPLETE_ALL_TOKENS}.
  */
 @MarkerInterface
 public interface RelationTypeSchemaDescriptor extends SchemaDescriptor {}

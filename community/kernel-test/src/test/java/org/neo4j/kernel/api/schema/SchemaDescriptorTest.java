@@ -29,9 +29,9 @@ import org.junit.jupiter.params.provider.EnumSource;
 import org.neo4j.common.EntityType;
 import org.neo4j.internal.schema.AnyTokenSchemaDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
-import org.neo4j.internal.schema.PropertySchemaType;
 import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptors;
+import org.neo4j.internal.schema.SchemaPatternMatchingType;
 
 class SchemaDescriptorTest {
     private static final int REL_TYPE_ID = 0;
@@ -43,7 +43,7 @@ class SchemaDescriptorTest {
         labelDesc = SchemaDescriptors.forLabel(LABEL_ID, 1);
         assertThat(labelDesc.getLabelId()).isEqualTo(LABEL_ID);
         assertThat(labelDesc.entityType()).isEqualTo(EntityType.NODE);
-        assertThat(labelDesc.propertySchemaType()).isEqualTo(PropertySchemaType.COMPLETE_ALL_TOKENS);
+        assertThat(labelDesc.schemaPatternMatchingType()).isEqualTo(SchemaPatternMatchingType.COMPLETE_ALL_TOKENS);
         assertArray(labelDesc.getPropertyIds(), 1);
 
         labelDesc = SchemaDescriptors.forLabel(LABEL_ID, 1, 2, 3);
@@ -57,7 +57,7 @@ class SchemaDescriptorTest {
         relTypeDesc = SchemaDescriptors.forRelType(REL_TYPE_ID, 1);
         assertThat(relTypeDesc.getRelTypeId()).isEqualTo(REL_TYPE_ID);
         assertThat(relTypeDesc.entityType()).isEqualTo(EntityType.RELATIONSHIP);
-        assertThat(relTypeDesc.propertySchemaType()).isEqualTo(PropertySchemaType.COMPLETE_ALL_TOKENS);
+        assertThat(relTypeDesc.schemaPatternMatchingType()).isEqualTo(SchemaPatternMatchingType.COMPLETE_ALL_TOKENS);
         assertArray(relTypeDesc.getPropertyIds(), 1);
 
         relTypeDesc = SchemaDescriptors.forRelType(REL_TYPE_ID, 1, 2, 3);
@@ -97,7 +97,7 @@ class SchemaDescriptorTest {
     void shouldCreateAllTokenDescriptors(EntityType entityType) {
         AnyTokenSchemaDescriptor allLabelsDesc = SchemaDescriptors.forAnyEntityTokens(entityType);
         assertThat(allLabelsDesc.entityType()).isEqualTo(entityType);
-        assertThat(allLabelsDesc.propertySchemaType()).isEqualTo(PropertySchemaType.ENTITY_TOKENS);
+        assertThat(allLabelsDesc.schemaPatternMatchingType()).isEqualTo(SchemaPatternMatchingType.ENTITY_TOKENS);
         assertThat(allLabelsDesc.getEntityTokenIds()).isEmpty();
         assertThat(allLabelsDesc.getPropertyIds()).isEmpty();
     }

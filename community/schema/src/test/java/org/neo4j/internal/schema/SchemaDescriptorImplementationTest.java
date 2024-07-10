@@ -23,9 +23,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.common.EntityType.NODE;
 import static org.neo4j.common.EntityType.RELATIONSHIP;
-import static org.neo4j.internal.schema.PropertySchemaType.COMPLETE_ALL_TOKENS;
-import static org.neo4j.internal.schema.PropertySchemaType.ENTITY_TOKENS;
-import static org.neo4j.internal.schema.PropertySchemaType.PARTIAL_ANY_TOKEN;
+import static org.neo4j.internal.schema.SchemaPatternMatchingType.COMPLETE_ALL_TOKENS;
+import static org.neo4j.internal.schema.SchemaPatternMatchingType.ENTITY_TOKENS;
+import static org.neo4j.internal.schema.SchemaPatternMatchingType.PARTIAL_ANY_TOKEN;
 
 import java.util.ArrayList;
 import java.util.Arrays;

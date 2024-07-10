@@ -48,8 +48,8 @@ import org.neo4j.internal.helpers.collection.LongRange;
 import org.neo4j.internal.helpers.progress.ProgressListener;
 import org.neo4j.internal.recordstorage.RelationshipCounter;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.PropertySchemaType;
 import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaPatternMatchingType;
 import org.neo4j.internal.schema.constraints.PropertyTypeSet;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -386,7 +386,7 @@ class NodeChecker implements Checker {
             EntityTokenRange entityTokenRange,
             StoreCursors storeCursors) {
         compareTwoSortedIntArrays(
-                PropertySchemaType.COMPLETE_ALL_TOKENS,
+                SchemaPatternMatchingType.COMPLETE_ALL_TOKENS,
                 labelsInStore,
                 labelsInIndex,
                 indexLabel -> reporter.forNodeLabelScan(new TokenScanDocument(entityTokenRange))
@@ -396,7 +396,7 @@ class NodeChecker implements Checker {
     }
 
     static void compareTwoSortedIntArrays(
-            PropertySchemaType propertySchemaType,
+            SchemaPatternMatchingType schemaPatternMatchingType,
             int[] a,
             int[] b,
             IntConsumer bHasSomethingThatAIsMissingReport,
@@ -410,12 +410,12 @@ class NodeChecker implements Checker {
             int aValue = a[aCursor];
 
             if (bValue < aValue) { // node store has a label which isn't in label scan store
-                if (propertySchemaType == PropertySchemaType.COMPLETE_ALL_TOKENS) {
+                if (schemaPatternMatchingType == SchemaPatternMatchingType.COMPLETE_ALL_TOKENS) {
                     bHasSomethingThatAIsMissingReport.accept(bValue);
                 }
                 bCursor++;
             } else if (bValue > aValue) { // label scan store has a label which isn't in node store
-                if (propertySchemaType == PropertySchemaType.COMPLETE_ALL_TOKENS) {
+                if (schemaPatternMatchingType == SchemaPatternMatchingType.COMPLETE_ALL_TOKENS) {
                     aHasSomethingThatBIsMissingReport.accept(aValue);
                 }
                 aCursor++;
@@ -426,14 +426,14 @@ class NodeChecker implements Checker {
             }
         }
 
-        if (propertySchemaType == PropertySchemaType.COMPLETE_ALL_TOKENS) {
+        if (schemaPatternMatchingType == SchemaPatternMatchingType.COMPLETE_ALL_TOKENS) {
             while (bCursor < b.length && b[bCursor] != -1) {
                 bHasSomethingThatAIsMissingReport.accept(b[bCursor++]);
             }
             while (aCursor < a.length && a[aCursor] != -1) {
                 aHasSomethingThatBIsMissingReport.accept(a[aCursor++]);
             }
-        } else if (propertySchemaType == PropertySchemaType.PARTIAL_ANY_TOKEN) {
+        } else if (schemaPatternMatchingType == SchemaPatternMatchingType.PARTIAL_ANY_TOKEN) {
             if (!anyFound) {
                 while (bCursor < b.length) {
                     bHasSomethingThatAIsMissingReport.accept(b[bCursor++]);
@@ -447,7 +447,7 @@ class NodeChecker implements Checker {
         IndexAccessor accessor = context.indexAccessors.accessorFor(descriptor);
         RelationshipCounter.NodeLabelsLookup nodeLabelsLookup = observedCounts.nodeLabelsLookup();
         SchemaDescriptor schema = descriptor.schema();
-        PropertySchemaType propertySchemaType = schema.propertySchemaType();
+        SchemaPatternMatchingType schemaPatternMatchingType = schema.schemaPatternMatchingType();
         int[] indexEntityTokenIds = schema.getEntityTokenIds();
         indexEntityTokenIds = sortAndDeduplicate(indexEntityTokenIds);
         try (var cursorContext = context.contextFactory.create(NODE_INDEXES_CHECKER_TAG);
@@ -463,7 +463,7 @@ class NodeChecker implements Checker {
                     } else {
                         int[] entityTokenIds = nodeLabelsLookup.nodeLabels(entityId);
                         compareTwoSortedIntArrays(
-                                propertySchemaType,
+                                schemaPatternMatchingType,
                                 entityTokenIds,
                                 indexEntityTokenIds,
                                 indexLabel -> reporter.forIndexEntry(

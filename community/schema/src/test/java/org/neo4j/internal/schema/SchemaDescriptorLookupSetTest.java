@@ -23,7 +23,7 @@ import static java.util.Arrays.stream;
 import static org.apache.commons.lang3.ArrayUtils.contains;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
-import static org.neo4j.internal.schema.PropertySchemaType.COMPLETE_ALL_TOKENS;
+import static org.neo4j.internal.schema.SchemaPatternMatchingType.COMPLETE_ALL_TOKENS;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -204,7 +204,7 @@ class SchemaDescriptorLookupSetTest {
             int[] entityTokenIds, int[] propertyKeyIds) {
         return holder -> {
             IntPredicate propertyKeyPredicate = indexPropertyId -> contains(propertyKeyIds, indexPropertyId);
-            boolean propertiesAccepted = holder.schema().propertySchemaType() == COMPLETE_ALL_TOKENS
+            boolean propertiesAccepted = holder.schema().schemaPatternMatchingType() == COMPLETE_ALL_TOKENS
                     // For typical indexes (COMPLETE_ALL_TOKENS) all must match
                     ? stream(holder.schema().getPropertyIds()).allMatch(propertyKeyPredicate)
                     // For multi-token (e.g. full-text) descriptors any property key match is to be considered a match

@@ -71,7 +71,7 @@ import org.neo4j.values.storable.Value;
  *         <li>Schema descriptor:</li>
  *         <ul>
  *             <li>schemaEntityType: String, "NODE" or "RELATIONSHIP"</li>
- *             <li>schemaPropertySchemaType: String, "COMPLETE_ALL_TOKENS" or "PARTIAL_ANY_TOKEN"</li>
+ *             <li>schemaSchemaPatternMatchingType: String, "COMPLETE_ALL_TOKENS" or "PARTIAL_ANY_TOKEN"</li>
  *             <li>schemaEntityIds: int[] -- IDs for either labels or relationship types, depending on schemaEntityType</li>
  *             <li>schemaPropertyIds: int[]</li>
  *         </ul>

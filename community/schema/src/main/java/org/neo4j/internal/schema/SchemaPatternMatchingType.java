@@ -20,18 +20,19 @@
 package org.neo4j.internal.schema;
 
 /**
- * This enum signifies how this schema should behave in regards to updates.
- * {@link PropertySchemaType#COMPLETE_ALL_TOKENS} signifies that this schema unit only should be affected by updates that match the entire schema,
- * i.e. when all properties are present. If you are unsure then this is probably what you want.
- * {@link PropertySchemaType#PARTIAL_ANY_TOKEN} signifies that this schema unit should be affected by any update that is partial match of the schema,
- *  i.e. at least one of the properties of this schema unit is present.
- * {@link PropertySchemaType#ENTITY_TOKENS} signifies that this schema unit should be affected by any update that concerns entity tokens
- * of the schema's entity type,
- * i.e. any changes of labels for a schema that handles nodes.
+ * This enum signifies how this schema should behave in regard to updates.
+ * {@link SchemaPatternMatchingType#COMPLETE_ALL_TOKENS} this schema should match on ALL properties for the entities (node/relationships) with the specified single entity token (label/ relationship type)
+ * i.e. when all properties are present: (prop1 && prop2 && ... && propN)
+ * <p>
+ * {@link SchemaPatternMatchingType#PARTIAL_ANY_TOKEN} this schema should match on ANY properties for the entities (node/relationships) with the specified single entity token (label/ relationship type)
+ *  i.e. at least one of the properties is present: (prop1 || prop2 || ... || propN)
+ * <p>
+ * {@link SchemaPatternMatchingType#ENTITY_TOKENS} this schema should match on ANY/ALL entities of this schema {@link org.neo4j.common.EntityType}.
+ * i.e. for a schema with EntityType.NODE it will match all nodes or any index / constraint that operates on nodes
  * <p>
  * NOTE: The ordinal is used in the hash function for the auto-generated SchemaRule names, so avoid changing the ordinals when modifying this enum.
  */
-public enum PropertySchemaType {
+public enum SchemaPatternMatchingType {
     COMPLETE_ALL_TOKENS,
     PARTIAL_ANY_TOKEN,
     ENTITY_TOKENS

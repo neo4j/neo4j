@@ -33,8 +33,8 @@ import java.util.Set;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.helpers.StubPropertyCursor;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.PropertySchemaType;
 import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaPatternMatchingType;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
@@ -68,7 +68,7 @@ public class IndexTxStateUpdaterTestBase {
             for (IndexDescriptor index : indexes) {
                 SchemaDescriptor schema = index.schema();
                 if (schema.isAffected(tokens) && contains(schema.getPropertyIds(), propertyKeyId)) {
-                    if (schema.propertySchemaType() == PropertySchemaType.COMPLETE_ALL_TOKENS) {
+                    if (schema.schemaPatternMatchingType() == SchemaPatternMatchingType.COMPLETE_ALL_TOKENS) {
                         descriptors.add(index);
                     }
                 }

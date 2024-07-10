@@ -41,7 +41,7 @@ import org.neo4j.consistency.RecordType;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.function.ThrowingIntFunction;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.PropertySchemaType;
+import org.neo4j.internal.schema.SchemaPatternMatchingType;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.DynamicNodeLabels;
@@ -124,7 +124,7 @@ class RecordLoading {
         }
 
         final var capability = index.getCapability();
-        final var noValueIsValid = schema.propertySchemaType() == PropertySchemaType.PARTIAL_ANY_TOKEN;
+        final var noValueIsValid = schema.schemaPatternMatchingType() == SchemaPatternMatchingType.PARTIAL_ANY_TOKEN;
         final var propertyKeyIds = schema.getPropertyIds();
         final var matched = new Value[propertyKeyIds.length];
         for (int i = 0; i < propertyKeyIds.length; i++) {

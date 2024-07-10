@@ -39,9 +39,9 @@ import org.neo4j.internal.kernel.api.exceptions.schema.MalformedSchemaRuleExcept
 import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
-import org.neo4j.internal.schema.PropertySchemaType;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorImplementation;
+import org.neo4j.internal.schema.SchemaPatternMatchingType;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
@@ -86,7 +86,10 @@ public class SchemaStore44Reader implements AutoCloseable {
     private static final String PROP_SCHEMA_DESCRIPTOR_ENTITY_TYPE = PROP_SCHEMA_RULE_PREFIX + "schemaEntityType";
     private static final String PROP_SCHEMA_DESCRIPTOR_ENTITY_IDS = PROP_SCHEMA_RULE_PREFIX + "schemaEntityIds";
     private static final String PROP_SCHEMA_DESCRIPTOR_PROPERTY_IDS = PROP_SCHEMA_RULE_PREFIX + "schemaPropertyIds";
-    private static final String PROP_SCHEMA_DESCRIPTOR_PROPERTY_SCHEMA_TYPE =
+
+    // The class name PropertySchemaType has been renamed to SchemaPatternMatchingType,
+    // but this key is kept as the old string for backwards compatibility
+    private static final String PROP_SCHEMA_DESCRIPTOR_SCHEMA_PATTERN_MATCHING_TYPE =
             PROP_SCHEMA_RULE_PREFIX + "schemaPropertySchemaType";
 
     private static final String PROP_INDEX_TYPE = PROP_SCHEMA_RULE_PREFIX + "indexType";
@@ -305,12 +308,12 @@ public class SchemaStore44Reader implements AutoCloseable {
     private static SchemaDescriptor buildSchemaDescriptor(Map<String, Value> props)
             throws MalformedSchemaRuleException {
         EntityType entityType = getEntityType(getString(PROP_SCHEMA_DESCRIPTOR_ENTITY_TYPE, props));
-        PropertySchemaType propertySchemaType =
-                getPropertySchemaType(getString(PROP_SCHEMA_DESCRIPTOR_PROPERTY_SCHEMA_TYPE, props));
+        SchemaPatternMatchingType schemaPatternMatchingType =
+                getSchemaPatternMatchingType(getString(PROP_SCHEMA_DESCRIPTOR_SCHEMA_PATTERN_MATCHING_TYPE, props));
         int[] entityIds = getIntArray(PROP_SCHEMA_DESCRIPTOR_ENTITY_IDS, props);
         int[] propertyIds = getIntArray(PROP_SCHEMA_DESCRIPTOR_PROPERTY_IDS, props);
 
-        return new SchemaDescriptorImplementation(entityType, propertySchemaType, entityIds, propertyIds);
+        return new SchemaDescriptorImplementation(entityType, schemaPatternMatchingType, entityIds, propertyIds);
     }
 
     private static IndexConfig extractIndexConfig(Map<String, Value> props) {
@@ -344,12 +347,13 @@ public class SchemaStore44Reader implements AutoCloseable {
         }
     }
 
-    private static PropertySchemaType getPropertySchemaType(String propertySchemaType)
+    private static SchemaPatternMatchingType getSchemaPatternMatchingType(String schemaPatternMatchingType)
             throws MalformedSchemaRuleException {
         try {
-            return PropertySchemaType.valueOf(propertySchemaType);
+            return SchemaPatternMatchingType.valueOf(schemaPatternMatchingType);
         } catch (Exception e) {
-            throw new MalformedSchemaRuleException("Did not recognize property schema type: " + propertySchemaType, e);
+            throw new MalformedSchemaRuleException(
+                    "Did not recognize schema pattern matching type: " + schemaPatternMatchingType, e);
         }
     }
 

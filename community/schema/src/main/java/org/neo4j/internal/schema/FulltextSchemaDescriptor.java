@@ -23,7 +23,7 @@ import org.neo4j.util.MarkerInterface;
 
 /**
  * Schema descriptors of this sub-type are guaranteed to be of {@link IndexType#FULLTEXT}, and capture index updates with
- * {@link PropertySchemaType#PARTIAL_ANY_TOKEN}.
+ * {@link SchemaPatternMatchingType#PARTIAL_ANY_TOKEN}.
  */
 @MarkerInterface
 public interface FulltextSchemaDescriptor extends SchemaDescriptor {}

@@ -42,7 +42,7 @@ import org.neo4j.internal.helpers.collection.LongRange;
 import org.neo4j.internal.helpers.progress.ProgressListener;
 import org.neo4j.internal.recordstorage.RelationshipCounter;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.PropertySchemaType;
+import org.neo4j.internal.schema.SchemaPatternMatchingType;
 import org.neo4j.internal.schema.constraints.PropertyTypeSet;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
@@ -384,7 +384,7 @@ class RelationshipChecker implements Checker {
             EntityTokenRange entityTokenRange,
             StoreCursors storeCursors) {
         compareTwoSortedIntArrays(
-                PropertySchemaType.COMPLETE_ALL_TOKENS,
+                SchemaPatternMatchingType.COMPLETE_ALL_TOKENS,
                 new int[] {typeInStore},
                 relationshipTypesInTypeIndex,
                 indexType -> reporter.forRelationshipTypeScan(new TokenScanDocument(entityTokenRange))

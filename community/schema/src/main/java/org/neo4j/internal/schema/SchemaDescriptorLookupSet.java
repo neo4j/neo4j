@@ -20,8 +20,8 @@
 package org.neo4j.internal.schema;
 
 import static java.lang.Math.toIntExact;
-import static org.neo4j.internal.schema.PropertySchemaType.COMPLETE_ALL_TOKENS;
-import static org.neo4j.internal.schema.PropertySchemaType.PARTIAL_ANY_TOKEN;
+import static org.neo4j.internal.schema.SchemaPatternMatchingType.COMPLETE_ALL_TOKENS;
+import static org.neo4j.internal.schema.SchemaPatternMatchingType.PARTIAL_ANY_TOKEN;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -221,11 +221,12 @@ public class SchemaDescriptorLookupSet<T extends SchemaDescriptorSupplier> {
             // Add optimized path for when property list is fully known
             descriptors.add(schemaDescriptor);
             int[] propertyKeyIds = sortedPropertyKeyIds(schemaDescriptor.schema());
-            PropertySchemaType propertySchemaType = schemaDescriptor.schema().propertySchemaType();
-            if (propertySchemaType == COMPLETE_ALL_TOKENS) {
+            SchemaPatternMatchingType schemaPatternMatchingType =
+                    schemaDescriptor.schema().schemaPatternMatchingType();
+            if (schemaPatternMatchingType == COMPLETE_ALL_TOKENS) {
                 // Just add the first token id to the top level set
                 next.getIfAbsentPut(propertyKeyIds[0], PropertySet::new).add(schemaDescriptor, propertyKeyIds, 0);
-            } else if (propertySchemaType == PARTIAL_ANY_TOKEN) {
+            } else if (schemaPatternMatchingType == PARTIAL_ANY_TOKEN) {
                 // The internal data structure is built and optimized for when all property key tokens are required to
                 // match
                 // a particular descriptor. However to support the partial type, where any property key may match
@@ -235,7 +236,8 @@ public class SchemaDescriptorLookupSet<T extends SchemaDescriptorSupplier> {
                             .add(schemaDescriptor, new int[] {propertyKeyId}, 0);
                 }
             } else {
-                throw new UnsupportedOperationException("Unknown property schema type " + propertySchemaType);
+                throw new UnsupportedOperationException(
+                        "Unknown schema pattern matching type " + schemaPatternMatchingType);
             }
 
             // Add fall-back path for when property list is only partly known
@@ -253,14 +255,15 @@ public class SchemaDescriptorLookupSet<T extends SchemaDescriptorSupplier> {
             // Remove from the optimized path
             descriptors.remove(schemaDescriptor);
             int[] propertyKeyIds = sortedPropertyKeyIds(schemaDescriptor.schema());
-            PropertySchemaType propertySchemaType = schemaDescriptor.schema().propertySchemaType();
-            if (propertySchemaType == COMPLETE_ALL_TOKENS) {
+            SchemaPatternMatchingType schemaPatternMatchingType =
+                    schemaDescriptor.schema().schemaPatternMatchingType();
+            if (schemaPatternMatchingType == COMPLETE_ALL_TOKENS) {
                 int firstPropertyKeyId = propertyKeyIds[0];
                 PropertySet firstPropertySet = next.get(firstPropertyKeyId);
                 if (firstPropertySet != null && firstPropertySet.remove(schemaDescriptor, propertyKeyIds, 0)) {
                     next.remove(firstPropertyKeyId);
                 }
-            } else if (propertySchemaType == PARTIAL_ANY_TOKEN) {
+            } else if (schemaPatternMatchingType == PARTIAL_ANY_TOKEN) {
                 for (int propertyKeyId : propertyKeyIds) {
                     PropertySet propertySet = next.get(propertyKeyId);
                     if (propertySet != null && propertySet.remove(schemaDescriptor, new int[] {propertyKeyId}, 0)) {
@@ -268,7 +271,8 @@ public class SchemaDescriptorLookupSet<T extends SchemaDescriptorSupplier> {
                     }
                 }
             } else {
-                throw new UnsupportedOperationException("Unknown property schema type " + propertySchemaType);
+                throw new UnsupportedOperationException(
+                        "Unknown schema pattern matching type" + schemaPatternMatchingType);
             }
 
             // Remove from the fall-back path

@@ -58,7 +58,10 @@ public class SchemaRuleMapifier {
     private static final String PROP_SCHEMA_DESCRIPTOR_ENTITY_TYPE = PROP_SCHEMA_RULE_PREFIX + "schemaEntityType";
     private static final String PROP_SCHEMA_DESCRIPTOR_ENTITY_IDS = PROP_SCHEMA_RULE_PREFIX + "schemaEntityIds";
     private static final String PROP_SCHEMA_DESCRIPTOR_PROPERTY_IDS = PROP_SCHEMA_RULE_PREFIX + "schemaPropertyIds";
-    private static final String PROP_SCHEMA_DESCRIPTOR_PROPERTY_SCHEMA_TYPE =
+
+    // The class name PropertySchemaType has been renamed to SchemaPatternMatchingType,
+    // but this key is kept as the old string for backwards compatibility
+    private static final String PROP_SCHEMA_DESCRIPTOR_SCHEMA_PATTERN_MATCHING_TYPE =
             PROP_SCHEMA_RULE_PREFIX + "schemaPropertySchemaType";
 
     private static final String PROP_INDEX_TYPE = PROP_SCHEMA_RULE_PREFIX + "indexType";
@@ -109,12 +112,12 @@ public class SchemaRuleMapifier {
 
     private static void schemaDescriptorToMap(SchemaDescriptor schemaDescriptor, Map<String, Value> map) {
         EntityType entityType = schemaDescriptor.entityType();
-        PropertySchemaType propertySchemaType = schemaDescriptor.propertySchemaType();
+        SchemaPatternMatchingType schemaPatternMatchingType = schemaDescriptor.schemaPatternMatchingType();
         int[] entityTokenIds = schemaDescriptor.getEntityTokenIds();
         int[] propertyIds = schemaDescriptor.getPropertyIds();
 
         putStringProperty(map, PROP_SCHEMA_DESCRIPTOR_ENTITY_TYPE, entityType.name());
-        putStringProperty(map, PROP_SCHEMA_DESCRIPTOR_PROPERTY_SCHEMA_TYPE, propertySchemaType.name());
+        putStringProperty(map, PROP_SCHEMA_DESCRIPTOR_SCHEMA_PATTERN_MATCHING_TYPE, schemaPatternMatchingType.name());
         putIntArrayProperty(map, PROP_SCHEMA_DESCRIPTOR_ENTITY_IDS, entityTokenIds);
         putIntArrayProperty(map, PROP_SCHEMA_DESCRIPTOR_PROPERTY_IDS, propertyIds);
     }
@@ -355,12 +358,12 @@ public class SchemaRuleMapifier {
     private static SchemaDescriptor buildSchemaDescriptor(Map<String, Value> props)
             throws MalformedSchemaRuleException {
         EntityType entityType = getEntityType(getString(PROP_SCHEMA_DESCRIPTOR_ENTITY_TYPE, props));
-        PropertySchemaType propertySchemaType =
-                getPropertySchemaType(getString(PROP_SCHEMA_DESCRIPTOR_PROPERTY_SCHEMA_TYPE, props));
+        SchemaPatternMatchingType schemaPatternMatchingType =
+                getSchemaPatternMatchingType(getString(PROP_SCHEMA_DESCRIPTOR_SCHEMA_PATTERN_MATCHING_TYPE, props));
         int[] entityIds = getIntArray(PROP_SCHEMA_DESCRIPTOR_ENTITY_IDS, props);
         int[] propertyIds = getIntArray(PROP_SCHEMA_DESCRIPTOR_PROPERTY_IDS, props);
 
-        return new SchemaDescriptorImplementation(entityType, propertySchemaType, entityIds, propertyIds);
+        return new SchemaDescriptorImplementation(entityType, schemaPatternMatchingType, entityIds, propertyIds);
     }
 
     private static IndexConfig extractIndexConfig(Map<String, Value> props) {
@@ -381,12 +384,13 @@ public class SchemaRuleMapifier {
         }
     }
 
-    private static PropertySchemaType getPropertySchemaType(String propertySchemaType)
+    private static SchemaPatternMatchingType getSchemaPatternMatchingType(String schemaPatternMatchingType)
             throws MalformedSchemaRuleException {
         try {
-            return PropertySchemaType.valueOf(propertySchemaType);
+            return SchemaPatternMatchingType.valueOf(schemaPatternMatchingType);
         } catch (Exception e) {
-            throw new MalformedSchemaRuleException("Did not recognize property schema type: " + propertySchemaType, e);
+            throw new MalformedSchemaRuleException(
+                    "Did not recognize schema pattern matching type: " + schemaPatternMatchingType, e);
         }
     }
 

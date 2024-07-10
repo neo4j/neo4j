@@ -22,9 +22,9 @@ package org.neo4j.internal.schema;
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.common.EntityType.NODE;
 import static org.neo4j.common.EntityType.RELATIONSHIP;
-import static org.neo4j.internal.schema.PropertySchemaType.COMPLETE_ALL_TOKENS;
-import static org.neo4j.internal.schema.PropertySchemaType.ENTITY_TOKENS;
-import static org.neo4j.internal.schema.PropertySchemaType.PARTIAL_ANY_TOKEN;
+import static org.neo4j.internal.schema.SchemaPatternMatchingType.COMPLETE_ALL_TOKENS;
+import static org.neo4j.internal.schema.SchemaPatternMatchingType.ENTITY_TOKENS;
+import static org.neo4j.internal.schema.SchemaPatternMatchingType.PARTIAL_ANY_TOKEN;
 import static org.neo4j.internal.schema.SchemaUserDescription.TOKEN_ID_NAME_LOOKUP;
 
 import java.util.Arrays;
@@ -46,7 +46,7 @@ public final class SchemaDescriptorImplementation
     public static final long[] TOKEN_INDEX_LOCKING_IDS = {TOKEN_INDEX_LOCKING_ID};
 
     private final EntityType entityType;
-    private final PropertySchemaType propertySchemaType;
+    private final SchemaPatternMatchingType schemaPatternMatchingType;
     private final int[] entityTokens;
     private final int[] propertyKeyIds;
 
@@ -57,37 +57,43 @@ public final class SchemaDescriptorImplementation
      * Use the static methods on {@link SchemaDescriptors} to create the usual kinds of schemas.
      */
     public SchemaDescriptorImplementation(
-            EntityType entityType, PropertySchemaType propertySchemaType, int[] entityTokens, int[] propertyKeyIds) {
+            EntityType entityType,
+            SchemaPatternMatchingType schemaPatternMatchingType,
+            int[] entityTokens,
+            int[] propertyKeyIds) {
         this.entityType = requireNonNull(entityType, "EntityType cannot be null.");
-        this.propertySchemaType = requireNonNull(propertySchemaType, "PropertySchemaType cannot be null.");
+        this.schemaPatternMatchingType =
+                requireNonNull(schemaPatternMatchingType, "Schema pattern matching type cannot be null.");
         this.entityTokens = requireNonNull(entityTokens, "Entity tokens array cannot be null.");
         this.propertyKeyIds = requireNonNull(propertyKeyIds, "Property key ids array cannot be null.");
 
-        if (propertySchemaType != ENTITY_TOKENS) {
+        if (schemaPatternMatchingType != ENTITY_TOKENS) {
             validatePropertySchema(entityType, entityTokens, propertyKeyIds);
         } else {
             validateEntityTokenSchema(entityType, entityTokens, propertyKeyIds);
         }
 
-        schemaArchetype = detectArchetype(entityType, propertySchemaType, entityTokens);
+        schemaArchetype = detectArchetype(entityType, schemaPatternMatchingType, entityTokens);
     }
 
     private SchemaArchetype detectArchetype(
-            EntityType entityType, PropertySchemaType propertySchemaType, int[] entityTokens) {
-        if (entityType == NODE && entityTokens.length == 1 && propertySchemaType == COMPLETE_ALL_TOKENS) {
+            EntityType entityType, SchemaPatternMatchingType schemaPatternMatchingType, int[] entityTokens) {
+        if (entityType == NODE && entityTokens.length == 1 && schemaPatternMatchingType == COMPLETE_ALL_TOKENS) {
             return SchemaArchetype.LABEL_PROPERTY;
         }
-        if (entityType == RELATIONSHIP && entityTokens.length == 1 && propertySchemaType == COMPLETE_ALL_TOKENS) {
+        if (entityType == RELATIONSHIP
+                && entityTokens.length == 1
+                && schemaPatternMatchingType == COMPLETE_ALL_TOKENS) {
             return SchemaArchetype.RELATIONSHIP_PROPERTY;
         }
-        if (propertySchemaType == PARTIAL_ANY_TOKEN) {
+        if (schemaPatternMatchingType == PARTIAL_ANY_TOKEN) {
             return SchemaArchetype.MULTI_TOKEN;
         }
-        if (propertySchemaType == ENTITY_TOKENS) {
+        if (schemaPatternMatchingType == ENTITY_TOKENS) {
             return SchemaArchetype.ANY_TOKEN;
         }
         throw new IllegalArgumentException("Can't detect schema archetype for arguments: " + entityType + " "
-                + propertySchemaType + " " + Arrays.toString(entityTokens));
+                + schemaPatternMatchingType + " " + Arrays.toString(entityTokens));
     }
 
     private static void validatePropertySchema(EntityType entityType, int[] entityTokens, int[] propertyKeyIds) {
@@ -109,11 +115,11 @@ public final class SchemaDescriptorImplementation
 
     private static void validateEntityTokenSchema(EntityType entityType, int[] entityTokens, int[] propertyKeyIds) {
         if (entityTokens.length != 0) {
-            throw new IllegalArgumentException("Schema descriptor with propertySchemaType " + ENTITY_TOKENS
+            throw new IllegalArgumentException("Schema descriptor with schema pattern matching type " + ENTITY_TOKENS
                     + " should not have any specified " + (entityType == NODE ? "labels." : "relationship types."));
         }
         if (propertyKeyIds.length != 0) {
-            throw new IllegalArgumentException("Schema descriptor with propertySchemaType " + ENTITY_TOKENS
+            throw new IllegalArgumentException("Schema descriptor with schema pattern matching type " + ENTITY_TOKENS
                     + " should not have any specified property key ids.");
         }
     }
@@ -208,8 +214,8 @@ public final class SchemaDescriptorImplementation
     }
 
     @Override
-    public PropertySchemaType propertySchemaType() {
-        return propertySchemaType;
+    public SchemaPatternMatchingType schemaPatternMatchingType() {
+        return schemaPatternMatchingType;
     }
 
     @Override
@@ -238,14 +244,14 @@ public final class SchemaDescriptorImplementation
             return false;
         }
         return entityType == that.entityType()
-                && propertySchemaType == that.propertySchemaType()
+                && schemaPatternMatchingType == that.schemaPatternMatchingType()
                 && Arrays.equals(entityTokens, that.getEntityTokenIds())
                 && Arrays.equals(propertyKeyIds, that.getPropertyIds());
     }
 
     @Override
     public int hashCode() {
-        int result = Objects.hash(entityType, propertySchemaType);
+        int result = Objects.hash(entityType, schemaPatternMatchingType);
         result = 31 * result + Arrays.hashCode(entityTokens);
         result = 31 * result + Arrays.hashCode(propertyKeyIds);
         return result;

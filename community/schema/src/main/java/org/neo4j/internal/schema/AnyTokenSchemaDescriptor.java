@@ -23,7 +23,7 @@ import org.neo4j.util.MarkerInterface;
 
 /**
  * It matches all entities (nodes or relationships) that has any entity tokens (labels or relationship types),
- * and match index updates with {@link PropertySchemaType#ENTITY_TOKENS any entity tokens}.
+ * and match index updates with {@link SchemaPatternMatchingType#ENTITY_TOKENS any entity tokens}.
  */
 @MarkerInterface
 public interface AnyTokenSchemaDescriptor extends SchemaDescriptor {}

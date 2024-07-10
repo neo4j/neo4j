@@ -21,7 +21,7 @@ package org.neo4j.storageengine.api;
 
 import static java.lang.String.format;
 import static org.apache.commons.lang3.ArrayUtils.EMPTY_INT_ARRAY;
-import static org.neo4j.internal.schema.PropertySchemaType.COMPLETE_ALL_TOKENS;
+import static org.neo4j.internal.schema.SchemaPatternMatchingType.COMPLETE_ALL_TOKENS;
 import static org.neo4j.storageengine.api.EntityUpdates.PropertyValueType.Changed;
 import static org.neo4j.storageengine.api.EntityUpdates.PropertyValueType.NoValue;
 import static org.neo4j.storageengine.api.EntityUpdates.PropertyValueType.UnChanged;
@@ -39,9 +39,9 @@ import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
 import org.neo4j.collection.PrimitiveArrays;
 import org.neo4j.common.EntityType;
 import org.neo4j.internal.helpers.collection.Iterables;
-import org.neo4j.internal.schema.PropertySchemaType;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorSupplier;
+import org.neo4j.internal.schema.SchemaPatternMatchingType;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
@@ -238,7 +238,7 @@ public class EntityUpdates {
             } else if (!relevantBefore && relevantAfter) {
                 indexUpdates.add(IndexEntryUpdate.add(entityId, indexKey, valuesAfter(propertyIds)));
             } else if (relevantBefore && relevantAfter) {
-                if (valuesChanged(propertyIds, schema.propertySchemaType(), defaultToNoValue)) {
+                if (valuesChanged(propertyIds, schema.schemaPatternMatchingType(), defaultToNoValue)) {
                     indexUpdates.add(IndexEntryUpdate.change(
                             entityId, indexKey, valuesBefore(propertyIds, defaultToNoValue), valuesAfter(propertyIds)));
                 }
@@ -264,12 +264,12 @@ public class EntityUpdates {
 
     private boolean relevantBefore(SchemaDescriptor schema) {
         return schema.isAffected(entityTokensBefore)
-                && hasPropsBefore(schema.getPropertyIds(), schema.propertySchemaType());
+                && hasPropsBefore(schema.getPropertyIds(), schema.schemaPatternMatchingType());
     }
 
     private boolean relevantAfter(SchemaDescriptor schema) {
         return schema.isAffected(entityTokensAfter)
-                && hasPropsAfter(schema.getPropertyIds(), schema.propertySchemaType());
+                && hasPropsAfter(schema.getPropertyIds(), schema.schemaPatternMatchingType());
     }
 
     private void loadProperties(
@@ -341,12 +341,12 @@ public class EntityUpdates {
         return affectedBefore || affectedAfter;
     }
 
-    private boolean hasPropsBefore(int[] propertyIds, PropertySchemaType propertySchemaType) {
+    private boolean hasPropsBefore(int[] propertyIds, SchemaPatternMatchingType schemaPatternMatchingType) {
         boolean found = false;
         for (int propertyId : propertyIds) {
             PropertyValue propertyValue = knownProperties.getIfAbsent(propertyId, () -> NO_VALUE);
             if (!propertyValue.hasBefore()) {
-                if (propertySchemaType == COMPLETE_ALL_TOKENS) {
+                if (schemaPatternMatchingType == COMPLETE_ALL_TOKENS) {
                     return false;
                 }
             } else {
@@ -356,12 +356,12 @@ public class EntityUpdates {
         return found;
     }
 
-    private boolean hasPropsAfter(int[] propertyIds, PropertySchemaType propertySchemaType) {
+    private boolean hasPropsAfter(int[] propertyIds, SchemaPatternMatchingType schemaPatternMatchingType) {
         boolean found = false;
         for (int propertyId : propertyIds) {
             PropertyValue propertyValue = knownProperties.getIfAbsent(propertyId, () -> NO_VALUE);
             if (!propertyValue.hasAfter()) {
-                if (propertySchemaType == COMPLETE_ALL_TOKENS) {
+                if (schemaPatternMatchingType == COMPLETE_ALL_TOKENS) {
                     return false;
                 }
             } else {
@@ -391,8 +391,9 @@ public class EntityUpdates {
     /**
      * This method should only be called in a context where you know that your entity is relevant both before and after
      */
-    private boolean valuesChanged(int[] propertyIds, PropertySchemaType propertySchemaType, boolean defaultToNoValue) {
-        if (propertySchemaType == COMPLETE_ALL_TOKENS) {
+    private boolean valuesChanged(
+            int[] propertyIds, SchemaPatternMatchingType schemaPatternMatchingType, boolean defaultToNoValue) {
+        if (schemaPatternMatchingType == COMPLETE_ALL_TOKENS) {
             // In the case of indexes were all entries must have all indexed tokens, one of the properties must have
             // changed for us to generate a change.
             for (int propertyId : propertyIds) {

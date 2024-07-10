@@ -247,7 +247,7 @@ public class SchemaMigrator {
             ReadBehaviour readBehaviour, TokenHolders tokenHolders, SchemaDescriptor schemaDescriptor) {
         String[] entityTokenNames =
                 tokenHolders.entityTokensGetNames(schemaDescriptor.entityType(), schemaDescriptor.getEntityTokenIds());
-        switch (schemaDescriptor.propertySchemaType()) {
+        switch (schemaDescriptor.schemaPatternMatchingType()) {
             case COMPLETE_ALL_TOKENS -> {
                 switch (schemaDescriptor.entityType()) {
                     case NODE -> {
@@ -306,7 +306,7 @@ public class SchemaMigrator {
             case ENTITY_TOKENS -> {
                 // Are not copied
                 throw new IllegalArgumentException(
-                        schemaDescriptor.propertySchemaType().name());
+                        schemaDescriptor.schemaPatternMatchingType().name());
             }
         }
         return false;
