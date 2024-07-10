@@ -21,12 +21,12 @@ package org.neo4j.kernel.database;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.automatic_upgrade_enabled;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.kernel.KernelVersion.GLORIOUS_FUTURE;
+import static org.neo4j.kernel.TxLogValidationUtils.assertLogHeaderExpectedVersion;
+import static org.neo4j.kernel.TxLogValidationUtils.assertWholeTransactionsIn;
+import static org.neo4j.kernel.TxLogValidationUtils.assertWholeTransactionsWithCorrectVersionInSpecificLogVersion;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogSegments.DEFAULT_LOG_SEGMENT_SIZE;
 import static org.neo4j.kernel.recovery.RecoveryHelpers.getLatestCheckpoint;
 import static org.neo4j.kernel.recovery.RecoveryHelpers.removeLastCheckpointRecordFromLastLogFile;
@@ -37,10 +37,8 @@ import static org.neo4j.test.UpgradeTestUtil.createWriteTransaction;
 import static org.neo4j.test.UpgradeTestUtil.upgradeDatabase;
 import static org.neo4j.test.UpgradeTestUtil.upgradeDbms;
 
-import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Consumer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -58,28 +56,14 @@ import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
-import org.neo4j.kernel.BinarySupportedKernelVersions;
-import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.api.tracer.DefaultTracer;
 import org.neo4j.kernel.impl.coreapi.TransactionImpl;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
-import org.neo4j.kernel.impl.transaction.log.LogVersionBridge;
-import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommand;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.entry.LogFormat;
-import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
-import org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader;
-import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
-import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.internal.event.InternalTransactionEventListener;
-import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.storageengine.api.CommandReaderFactory;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.TransactionIdStore;
@@ -142,6 +126,7 @@ class TransactionLogsUpgradeIT {
                 .getLastClosedTransactionId();
         LogFiles logFiles = testDb.getDependencyResolver().resolveDependency(LogFiles.class);
         assertLogHeaderExpectedVersion(
+                fileSystem,
                 logFiles,
                 INITIAL_LOG_VERSION,
                 null /* latest format doesn't include the version */,
@@ -154,6 +139,7 @@ class TransactionLogsUpgradeIT {
                 (commitEntry) -> latestChecksum.set(commitEntry.getChecksum()),
                 commandReaderFactory);
         assertLogHeaderExpectedVersion(
+                fileSystem,
                 logFiles,
                 logFiles.getLogFile().getHighestLogVersion(),
                 GLORIOUS_FUTURE,
@@ -161,10 +147,13 @@ class TransactionLogsUpgradeIT {
                 latestChecksum.get());
 
         assertWholeTransactionsWithCorrectVersionInSpecificLogVersion(
-                logFiles.getLogFile(), INITIAL_LOG_VERSION, LATEST_KERNEL_VERSION, (int)
-                        (firstNewTransaction - 1 - TransactionIdStore.BASE_TX_ID));
+                logFiles.getLogFile(),
+                INITIAL_LOG_VERSION,
+                LATEST_KERNEL_VERSION,
+                (int) (firstNewTransaction - 1 - TransactionIdStore.BASE_TX_ID),
+                commandReaderFactory);
         assertWholeTransactionsWithCorrectVersionInSpecificLogVersion(
-                logFiles.getLogFile(), INITIAL_LOG_VERSION + 1, GLORIOUS_FUTURE, 1);
+                logFiles.getLogFile(), INITIAL_LOG_VERSION + 1, GLORIOUS_FUTURE, 1, commandReaderFactory);
     }
 
     @ParameterizedTest
@@ -217,23 +206,31 @@ class TransactionLogsUpgradeIT {
 
         LogFiles logFiles = testDb.getDependencyResolver().resolveDependency(LogFiles.class);
         assertLogHeaderExpectedVersion(
+                fileSystem,
                 logFiles,
                 INITIAL_LOG_VERSION,
                 null /* latest format doesn't contain version yet */,
                 TransactionIdStore.BASE_TX_ID);
         assertWholeTransactionsWithCorrectVersionInSpecificLogVersion(
-                logFiles.getLogFile(), INITIAL_LOG_VERSION, LATEST_KERNEL_VERSION, (int)
-                        (lastClosedTransactionIdBeforeUpgrade + 1 - TransactionIdStore.BASE_TX_ID));
+                logFiles.getLogFile(),
+                INITIAL_LOG_VERSION,
+                LATEST_KERNEL_VERSION,
+                (int) (lastClosedTransactionIdBeforeUpgrade + 1 - TransactionIdStore.BASE_TX_ID),
+                commandReaderFactory);
         assertLogHeaderExpectedVersion(
-                logFiles, INITIAL_LOG_VERSION + 1, null, lastClosedTransactionIdBeforeUpgrade + 1);
+                fileSystem, logFiles, INITIAL_LOG_VERSION + 1, null, lastClosedTransactionIdBeforeUpgrade + 1);
         assertThat(fileSystem.getFileSize(logFiles.getLogFile().getLogFileForVersion(INITIAL_LOG_VERSION + 1)))
                 .isEqualTo(LogFormat.fromKernelVersion(LATEST_KERNEL_VERSION).getHeaderSize());
         assertWholeTransactionsWithCorrectVersionInSpecificLogVersion(
-                logFiles.getLogFile(), INITIAL_LOG_VERSION + 1, LATEST_KERNEL_VERSION, 0);
+                logFiles.getLogFile(), INITIAL_LOG_VERSION + 1, LATEST_KERNEL_VERSION, 0, commandReaderFactory);
         assertLogHeaderExpectedVersion(
-                logFiles, INITIAL_LOG_VERSION + 2, GLORIOUS_FUTURE, lastClosedTransactionIdBeforeUpgrade + 1);
+                fileSystem,
+                logFiles,
+                INITIAL_LOG_VERSION + 2,
+                GLORIOUS_FUTURE,
+                lastClosedTransactionIdBeforeUpgrade + 1);
         assertWholeTransactionsWithCorrectVersionInSpecificLogVersion(
-                logFiles.getLogFile(), INITIAL_LOG_VERSION + 2, GLORIOUS_FUTURE, 1);
+                logFiles.getLogFile(), INITIAL_LOG_VERSION + 2, GLORIOUS_FUTURE, 1, commandReaderFactory);
     }
 
     @ParameterizedTest
@@ -296,6 +293,7 @@ class TransactionLogsUpgradeIT {
         LogFiles logFiles = testDb.getDependencyResolver().resolveDependency(LogFiles.class);
 
         assertLogHeaderExpectedVersion(
+                fileSystem,
                 logFiles,
                 INITIAL_LOG_VERSION,
                 null /* latest format doesn't contain version yet */,
@@ -311,13 +309,14 @@ class TransactionLogsUpgradeIT {
         assertThat(fileSystem.getFileSize(logFiles.getLogFile().getLogFileForVersion(INITIAL_LOG_VERSION)))
                 .isEqualTo(positionAfterUpgrade.getByteOffset());
         assertLogHeaderExpectedVersion(
+                fileSystem,
                 logFiles,
                 INITIAL_LOG_VERSION + 1,
                 GLORIOUS_FUTURE,
                 lastClosedTransactionIdBeforeUpgrade + 1,
                 latestChecksum.get());
         assertWholeTransactionsWithCorrectVersionInSpecificLogVersion(
-                logFiles.getLogFile(), INITIAL_LOG_VERSION + 1, GLORIOUS_FUTURE, 1);
+                logFiles.getLogFile(), INITIAL_LOG_VERSION + 1, GLORIOUS_FUTURE, 1, commandReaderFactory);
     }
 
     @ParameterizedTest
@@ -364,17 +363,19 @@ class TransactionLogsUpgradeIT {
 
         LogFiles logFiles = testDb.getDependencyResolver().resolveDependency(LogFiles.class);
         assertLogHeaderExpectedVersion(
+                fileSystem,
                 logFiles,
                 INITIAL_LOG_VERSION,
                 null /* latest format doesn't include the version */,
                 TransactionIdStore.BASE_TX_ID);
-        assertLogHeaderExpectedVersion(logFiles, logFiles.getLogFile().getHighestLogVersion(), GLORIOUS_FUTURE);
+        assertLogHeaderExpectedVersion(
+                fileSystem, logFiles, logFiles.getLogFile().getHighestLogVersion(), GLORIOUS_FUTURE);
 
         int nbrTxsIn0 = assertWholeTransactionsWithCorrectVersionInSpecificLogVersion(
-                logFiles.getLogFile(), INITIAL_LOG_VERSION, LATEST_KERNEL_VERSION);
+                logFiles.getLogFile(), INITIAL_LOG_VERSION, LATEST_KERNEL_VERSION, commandReaderFactory);
         assertThat(nbrTxsIn0).isGreaterThanOrEqualTo(2); // At least upgrade and one before
         int nbrTxsIn1 = assertWholeTransactionsWithCorrectVersionInSpecificLogVersion(
-                logFiles.getLogFile(), INITIAL_LOG_VERSION + 1, GLORIOUS_FUTURE);
+                logFiles.getLogFile(), INITIAL_LOG_VERSION + 1, GLORIOUS_FUTURE, commandReaderFactory);
         assertThat(nbrTxsIn1).isGreaterThanOrEqualTo(1); // At least the one waiting for the barrier
         assertThat(nbrTxsIn0 + nbrTxsIn1)
                 .isEqualTo(nbrContestants * nbrTxsPerContestant
@@ -403,84 +404,6 @@ class TransactionLogsUpgradeIT {
             managementService.shutdown();
             managementService = null;
         }
-    }
-
-    private LogHeader assertLogHeaderExpectedVersion(
-            LogFiles logFiles, long logVersion, KernelVersion expectedVersion, long lastExpectedTxId)
-            throws IOException {
-        LogHeader logHeader = LogHeaderReader.readLogHeader(
-                fileSystem, logFiles.getLogFile().getLogFileForVersion(logVersion), EmptyMemoryTracker.INSTANCE);
-        assertThat(logHeader.getLastAppendIndex()).isEqualTo(lastExpectedTxId);
-        assertThat(logHeader.getKernelVersion()).isEqualTo(expectedVersion);
-        return logHeader;
-    }
-
-    private void assertLogHeaderExpectedVersion(
-            LogFiles logFiles, long logVersion, KernelVersion expectedVersion, long lastExpectedTxId, int checksum)
-            throws IOException {
-        LogHeader logHeader = assertLogHeaderExpectedVersion(logFiles, logVersion, expectedVersion, lastExpectedTxId);
-        assertThat(logHeader.getPreviousLogFileChecksum()).isEqualTo(checksum);
-    }
-
-    private void assertLogHeaderExpectedVersion(LogFiles logFiles, long logVersion, KernelVersion expectedVersion)
-            throws IOException {
-        LogHeader logHeader = LogHeaderReader.readLogHeader(
-                fileSystem, logFiles.getLogFile().getLogFileForVersion(logVersion), EmptyMemoryTracker.INSTANCE);
-        assertThat(logHeader.getKernelVersion()).isEqualTo(expectedVersion);
-    }
-
-    private void assertWholeTransactionsWithCorrectVersionInSpecificLogVersion(
-            LogFile logFile, long logVersion, KernelVersion kernelVersion, int expectedNbrTxs) throws IOException {
-        assertThat(assertWholeTransactionsWithCorrectVersionInSpecificLogVersion(logFile, logVersion, kernelVersion))
-                .isEqualTo(expectedNbrTxs);
-    }
-
-    private int assertWholeTransactionsWithCorrectVersionInSpecificLogVersion(
-            LogFile logFile, long logVersion, KernelVersion kernelVersion) throws IOException {
-        return assertWholeTransactionsIn(
-                logFile,
-                logVersion,
-                startEntry -> assertThat(startEntry.kernelVersion()).isEqualTo(kernelVersion),
-                commitEntry -> {},
-                commandReaderFactory);
-    }
-
-    private static int assertWholeTransactionsIn(
-            LogFile logFile,
-            long logVersion,
-            Consumer<LogEntryStart> extraStartCheck,
-            Consumer<LogEntryCommit> extraCommitCheck,
-            CommandReaderFactory commandReaderFactory)
-            throws IOException {
-        int transactions = 0;
-
-        try (ReadableLogChannel reader = logFile.getReader(
-                logFile.extractHeader(logVersion).getStartPosition(), LogVersionBridge.NO_MORE_CHANNELS)) {
-            LogEntryReader entryReader = new VersionAwareLogEntryReader(
-                    commandReaderFactory,
-                    new BinarySupportedKernelVersions(Config.defaults(
-                            GraphDatabaseInternalSettings.latest_kernel_version, GLORIOUS_FUTURE.version())));
-            LogEntry entry;
-            boolean inTx = false;
-            while ((entry = entryReader.readLogEntry(reader)) != null) {
-                if (!inTx) // Expects start entry
-                {
-                    assertInstanceOf(LogEntryStart.class, entry);
-                    extraStartCheck.accept((LogEntryStart) entry);
-                    inTx = true;
-                } else // Expects command/commit entry
-                {
-                    assertTrue(entry instanceof LogEntryCommand || entry instanceof LogEntryCommit);
-                    if (entry instanceof LogEntryCommit commit) {
-                        inTx = false;
-                        transactions++;
-                        extraCommitCheck.accept(commit);
-                    }
-                }
-            }
-            assertFalse(inTx);
-        }
-        return transactions;
     }
 
     @FunctionalInterface
