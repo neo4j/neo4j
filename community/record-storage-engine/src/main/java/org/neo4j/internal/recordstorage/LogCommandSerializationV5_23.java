@@ -21,11 +21,11 @@ package org.neo4j.internal.recordstorage;
 
 import org.neo4j.kernel.KernelVersion;
 
-class LogCommandSerializationVGloriousFuture extends LogCommandSerializationV5_23 {
-    static final LogCommandSerializationVGloriousFuture INSTANCE = new LogCommandSerializationVGloriousFuture();
+class LogCommandSerializationV5_23 extends LogCommandSerializationV5_22 {
+    static final LogCommandSerializationV5_23 INSTANCE = new LogCommandSerializationV5_23();
 
     @Override
     public KernelVersion kernelVersion() {
-        return KernelVersion.GLORIOUS_FUTURE;
+        return KernelVersion.V5_23;
     }
 }

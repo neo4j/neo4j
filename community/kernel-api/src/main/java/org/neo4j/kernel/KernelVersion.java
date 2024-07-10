@@ -62,6 +62,7 @@ public enum KernelVersion {
     V5_19((byte) 16), // 5.19. Introduce commit timestamps to change identifiers
     V5_20((byte) 17), // 5.20. Append index for commands, logs, checkpoint
     V5_22((byte) 18), // 5.22. Checkpoint entry with the earliest not completed position
+    V5_23((byte) 19), // 5.23. Introduce quantization for vector index
 
     // An unreleased future version.
     // This version is meant to be used when developing a new feature
@@ -71,7 +72,7 @@ public enum KernelVersion {
     public static final KernelVersion EARLIEST = V4_2;
     // The latest version should be kept private to be able to override it from tests.
     // getLatestVersion should be used when the latest version is required.
-    private static final KernelVersion LATEST = V5_22;
+    private static final KernelVersion LATEST = V5_23;
     public static final KernelVersion VERSION_IN_WHICH_TOKEN_INDEXES_ARE_INTRODUCED = V4_3_D4;
     public static final KernelVersion VERSION_RANGE_POINT_TEXT_INDEXES_ARE_INTRODUCED = V4_4;
     public static final KernelVersion VERSION_LITTLE_ENDIAN_TX_LOG_INTRODUCED = V5_0;
@@ -90,10 +91,11 @@ public enum KernelVersion {
     public static final KernelVersion VERSION_CDC_CHECKSUMS_INTRODUCED = V5_19;
     public static final KernelVersion VERSION_APPEND_INDEX_INTRODUCED = V5_20;
     public static final KernelVersion VERSION_CHECKPOINT_NOT_COMPLETED_POSITION_INTRODUCED = V5_22;
+    public static final KernelVersion VERSION_VECTOR_QUANTIZATION = V5_23;
 
     // Keep updated each time there is an new schema rule added
     // related to IntegrityValidator
-    public static final KernelVersion LATEST_SCHEMA_CHANGE = VERSION_VECTOR_2_INTRODUCED;
+    public static final KernelVersion LATEST_SCHEMA_CHANGE = VERSION_VECTOR_QUANTIZATION;
 
     // All neo4j 5.0-5.6 members defaulted to this version when bootstrapping a rafted database
     public static final KernelVersion DEFAULT_BOOTSTRAP_VERSION = V5_0;
