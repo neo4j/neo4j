@@ -649,6 +649,11 @@ public class VectorTestUtils {
             return this;
         }
 
+        public VectorIndexSettings unset(IndexSetting setting) {
+            settings.remove(setting);
+            return this;
+        }
+
         public VectorIndexSettings withDimensions(int dimensions) {
             return set(IndexSetting.vector_Dimensions(), dimensions);
         }
