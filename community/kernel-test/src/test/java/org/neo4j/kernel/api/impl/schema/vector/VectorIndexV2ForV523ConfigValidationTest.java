@@ -52,10 +52,9 @@ import org.neo4j.values.storable.NumberValue;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Values;
 
-class VectorIndexV2ForGloriousFutureConfigValidationTest {
+class VectorIndexV2ForV523ConfigValidationTest {
     private static final VectorIndexVersion VERSION = VectorIndexVersion.V2_0;
-    private static final VectorIndexSettingsValidator VALIDATOR =
-            VERSION.indexSettingValidator(KernelVersion.GLORIOUS_FUTURE);
+    private static final VectorIndexSettingsValidator VALIDATOR = VERSION.indexSettingValidator(KernelVersion.V5_23);
 
     @Test
     void validV2ForV518IndexConfig() {
@@ -382,7 +381,6 @@ class VectorIndexV2ForGloriousFutureConfigValidationTest {
                 .hasSize(1)
                 .first()
                 .asInstanceOf(InstanceOfAssertFactories.type(InvalidValue.class))
-
                 .extracting(InvalidValue::setting, InvalidValue::rawValue)
                 .containsExactly(QUANTIZATION, Values.stringValue(invalidQuantization));
 

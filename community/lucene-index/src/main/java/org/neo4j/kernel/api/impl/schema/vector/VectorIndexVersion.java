@@ -110,7 +110,7 @@ public enum VectorIndexVersion {
                                     new SimilarityFunctionValidator(nameToSimilarityFunction()),
                                     new ReadDefaultOnly<>(IndexSetting.vector_Quantization(), VectorQuantization.OFF))),
                     Tuples.pair(
-                            KernelVersion.GLORIOUS_FUTURE,
+                            KernelVersion.VERSION_VECTOR_QUANTIZATION,
                             new Validators(
                                     descriptor(),
                                     new DimensionsValidator(new Range<>(1, maxDimensions())),
