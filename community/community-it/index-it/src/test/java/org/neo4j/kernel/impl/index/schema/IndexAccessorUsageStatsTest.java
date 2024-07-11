@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.assertj.core.api.Assumptions.assumeThat;
 import static org.neo4j.internal.kernel.api.PropertyIndexQuery.allEntries;
 import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
 import static org.neo4j.token.api.TokenHolder.TYPE_LABEL;
@@ -33,6 +34,7 @@ import org.assertj.core.api.Assertions;
 import org.eclipse.collections.api.factory.Sets;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -86,6 +88,8 @@ import org.neo4j.time.FakeClock;
 import org.neo4j.token.CreatingTokenHolder;
 import org.neo4j.token.ReadOnlyTokenCreator;
 import org.neo4j.token.TokenHolders;
+import org.neo4j.values.storable.CoordinateReferenceSystem;
+import org.neo4j.values.storable.Values;
 
 @EphemeralPageCacheExtension
 @EphemeralNeo4jLayoutExtension
@@ -124,6 +128,12 @@ public class IndexAccessorUsageStatsTest {
     private final TokenNameLookup nameLookup = SchemaTestUtil.SIMPLE_NAME_LOOKUP;
     private final ImmutableSet<OpenOption> openOptions = Sets.immutable.empty();
     private final StorageEngineIndexingBehaviour indexingBehaviour = StorageEngineIndexingBehaviour.EMPTY;
+    private StaticIndexProviderMap providerMap;
+
+    @BeforeEach
+    void instantiateIndexProviderMap() {
+        providerMap = lifeSupport.add(createIndexProviderMap());
+    }
 
     @ParameterizedTest
     @MethodSource("propertyIndexAccessors")
@@ -147,10 +157,15 @@ public class IndexAccessorUsageStatsTest {
 
     @ParameterizedTest
     @MethodSource("propertyIndexAccessors")
-    void propertyIndexShouldIncrementUsageCountOnIndexSeek(IndexProviderDescriptor descriptor, PropertyIndexQuery query)
-            throws IOException {
+    void propertyIndexShouldIncrementUsageCountOnIndexSeek(
+            IndexProviderDescriptor providerDescriptor, PropertyIndexQuery query) throws IOException {
+        var provider = providerMap.lookup(providerDescriptor);
+        var completeDescriptor = provider.completeConfiguration(descriptor, indexingBehaviour);
+        assumeThat(completeDescriptor.getCapability().supportPartitionedScan(query))
+                .isTrue();
+
         // Given
-        try (var indexAccessor = createIndexAccessor(descriptor);
+        try (var indexAccessor = createIndexAccessor(providerDescriptor);
                 var reader = indexAccessor.newValueReader(usageTracking)) {
             // When
             for (int i = 0; i < queryCount; i++) {
@@ -250,6 +265,12 @@ public class IndexAccessorUsageStatsTest {
         return Stream.of(
                 Arguments.of(RangeIndexProvider.DESCRIPTOR, allEntries()),
                 Arguments.of(PointIndexProvider.DESCRIPTOR, allEntries()),
+                Arguments.of(
+                        PointIndexProvider.DESCRIPTOR,
+                        PropertyIndexQuery.boundingBox(
+                                0,
+                                Values.pointValue(CoordinateReferenceSystem.CARTESIAN, 1, 2),
+                                Values.pointValue(CoordinateReferenceSystem.CARTESIAN, 4, 5))),
                 Arguments.of(TextIndexProvider.DESCRIPTOR, allEntries()),
                 Arguments.of(TrigramIndexProvider.DESCRIPTOR, allEntries()),
                 Arguments.of(FulltextIndexProviderFactory.DESCRIPTOR, PropertyIndexQuery.fulltextSearch("*")));
@@ -260,7 +281,6 @@ public class IndexAccessorUsageStatsTest {
     }
 
     private IndexAccessor createIndexAccessor(IndexProviderDescriptor providerDescriptor) throws IOException {
-        var providerMap = lifeSupport.add(createIndexProviderMap());
         var provider = providerMap.lookup(providerDescriptor);
         var completeDescriptor = provider.completeConfiguration(descriptor, indexingBehaviour);
         var populator = provider.getPopulator(

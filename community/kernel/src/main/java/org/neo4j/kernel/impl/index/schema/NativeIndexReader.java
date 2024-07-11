@@ -47,7 +47,7 @@ import org.neo4j.values.storable.Value;
 
 abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>> implements ValueIndexReader {
     protected final IndexDescriptor descriptor;
-    private final IndexUsageTracking usageTracker;
+    protected final IndexUsageTracking usageTracker;
     final IndexLayout<KEY> layout;
     final GBPTree<KEY, NullValue> tree;
 

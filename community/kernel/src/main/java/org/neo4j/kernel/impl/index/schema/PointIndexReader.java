@@ -98,6 +98,7 @@ class PointIndexReader extends NativeIndexReader<PointKey> {
 
         PropertyIndexQuery predicate = predicates[0];
         if (predicate.type() == IndexQueryType.BOUNDING_BOX) {
+            usageTracker.queried();
             context.monitor().queried(descriptor);
             validateQuery(constraints, predicates);
             PropertyIndexQuery.BoundingBoxPredicate boundingBoxPredicate =
