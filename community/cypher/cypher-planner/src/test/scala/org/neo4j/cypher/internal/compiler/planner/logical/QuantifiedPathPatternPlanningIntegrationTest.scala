@@ -46,6 +46,7 @@ import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.crea
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNodeWithProperties
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createRelationship
 import org.neo4j.cypher.internal.logical.plans.Expand.ExpandAll
+import org.neo4j.cypher.internal.logical.plans.Expand.ExpandInto
 import org.neo4j.cypher.internal.logical.plans.Expand.VariablePredicate
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.NestedPlanExistsExpression
@@ -2922,5 +2923,52 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
         .nodeByLabelScan("n1", "A")
         .build()
     )
+  }
+
+  test("should rewrite QPP to VarLengthExpand(Into)") {
+
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setRelationshipCardinality("()-[]->()", 500)
+      .build()
+
+    val query =
+      """
+        |MATCH (a)-[r1]->(b), (a)-[r2]->*(b)
+        |RETURN a,b,r1,r2
+        |""".stripMargin
+
+    val plan = planner.plan(query)
+
+    plan shouldEqual planner.subPlanBuilder()
+      .produceResults("a", "b", "r1", "r2")
+      .filter("NOT r1 IN r2")
+      .expand("(a)-[r2*0..]->(b)", expandMode = ExpandInto, projectedDir = OUTGOING)
+      .allRelationshipsScan("(a)-[r1]->(b)")
+      .build()
+  }
+
+  test("should rewrite QPP to VarLengthExpand(All)") {
+
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setRelationshipCardinality("()-[]->()", 500)
+      .build()
+
+    val query =
+      """
+        |MATCH (a)-[r1]->(b), (a)-[r2]->*(c)
+        |WHERE b=c
+        |RETURN a,b,c
+        |""".stripMargin
+
+    val plan = planner.plan(query)
+
+    plan shouldEqual planner.subPlanBuilder()
+      .produceResults("a", "b", "c")
+      .filter("b = c", "NOT r1 IN r2")
+      .expand("(a)-[r2*0..]->(c)", expandMode = ExpandAll, projectedDir = OUTGOING)
+      .allRelationshipsScan("(a)-[r1]->(b)")
+      .build()
   }
 }

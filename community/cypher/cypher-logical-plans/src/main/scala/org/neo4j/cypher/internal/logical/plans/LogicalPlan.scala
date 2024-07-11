@@ -4158,6 +4158,8 @@ case class Trail(
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(left = newLHS)(idGen)
   override def withRhs(newRHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(right = newRHS)(idGen)
 
+  def withEnd(newEnd: LogicalVariable)(idGen: IdGen): Trail = copy(end = newEnd)(idGen)
+
   override def withVariableGroupings(
     nodeVariableGroupings: Set[VariableGrouping],
     relationshipVariableGroupings: Set[VariableGrouping]

@@ -35,6 +35,8 @@ import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.Predicate
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.TrailParameters
+import org.neo4j.cypher.internal.logical.plans.Expand.ExpandAll
+import org.neo4j.cypher.internal.logical.plans.Expand.ExpandInto
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.util.UpperBound
 import org.neo4j.cypher.internal.util.UpperBound.Limited
@@ -874,6 +876,211 @@ class TrailToVarExpandRewriterTest extends CypherFunSuite with LogicalPlanningTe
       .allNodeScan("a")
       .build()
     preserves(trail)
+  }
+
+  val `(a) ((x_i)-[r_i]-(y_i))+ (  UNNAMED4)` : TrailParameters = TrailParameters(
+    min = 1,
+    max = Unlimited,
+    start = "a",
+    end = "  UNNAMED4",
+    innerStart = "x_i",
+    innerEnd = "y_i",
+    groupNodes = Set.empty,
+    groupRelationships = Set.empty,
+    innerRelationships = Set("r_i"),
+    previouslyBoundRelationships = Set.empty,
+    previouslyBoundRelationshipGroups = Set.empty,
+    reverseGroupVariableProjections = false
+  )
+
+  test("Rewrite selection and trail to VarLengthExpand(Into)") {
+    val selectionAndTrail = subPlanBuilder
+      .projection("1 AS s")
+      .filter("`  UNNAMED4` = b")
+      .trail(`(a) ((x_i)-[r_i]-(y_i))+ (  UNNAMED4)`)
+      .|.filterExpression(isRepeatTrailUnique("r_i"))
+      .|.expandAll("(`  UNNAMED2`)-[`r_i`]->(`  UNNAMED3`)")
+      .|.argument("  UNNAMED1")
+      .allRelationshipsScan("(a)-[r_j]->(b)")
+      .build()
+
+    val expand = subPlanBuilder
+      .projection("1 AS s")
+      .expand("(a)-[r_i*1..]->(b)", ExpandInto)
+      .allRelationshipsScan("(a)-[r_j]->(b)")
+      .build()
+
+    rewrites(selectionAndTrail, expand)
+  }
+
+  test(
+    "Rewrite selection and trail to VarLengthExpand(Into) - cartesian product and expandInto for the first relationship"
+  ) {
+    val selectionAndTrail = subPlanBuilder
+      .projection("1 AS s")
+      .filter("`  UNNAMED4` = b")
+      .trail(`(a) ((x_i)-[r_i]-(y_i))+ (  UNNAMED4)`)
+      .|.filterExpression(isRepeatTrailUnique("r_i"))
+      .|.expandAll("(`  UNNAMED2`)-[`r_i`]->(`  UNNAMED3`)")
+      .|.argument("  UNNAMED1")
+      .expandInto("(a)-[r_j]->(b)")
+      .cartesianProduct()
+      .|.allNodeScan("b")
+      .allNodeScan("a")
+      .build()
+
+    val expand = subPlanBuilder
+      .projection("1 AS s")
+      .expand("(a)-[r_i*1..]->(b)", ExpandInto)
+      .expandInto("(a)-[r_j]->(b)")
+      .cartesianProduct()
+      .|.allNodeScan("b")
+      .allNodeScan("a")
+      .build()
+
+    rewrites(selectionAndTrail, expand)
+  }
+
+  test(
+    "Do not rewrite selection and trail to VarLengthExpand(Into) when the selection does not refer to the end node of the trail - it refers to the innerEnd"
+  ) {
+    // This plan cannot be generated because the filter cannot refer to the innerEnd node of the QPP.
+    // It tests that having a `  UNNAMED` node is not enough. It should be the end point of the QPP.
+    val selectionAndTrail = subPlanBuilder
+      .projection("1 AS s")
+      .filter("`  UNNAMED3` = b")
+      .trail(`(a) ((x_i)-[r_i]-(y_i))+ (  UNNAMED4)`)
+      .|.filterExpression(isRepeatTrailUnique("r_i"))
+      .|.expandAll("(`  UNNAMED2`)-[`r_i`]->(`  UNNAMED3`)")
+      .|.argument("  UNNAMED1")
+      .allRelationshipsScan("(a)-[r_j]->(b)")
+      .build()
+
+    val expand = subPlanBuilder
+      .projection("1 AS s")
+      .filter("`  UNNAMED3` = b")
+      .expand("(a)-[r_i*1..]->(`  UNNAMED4`)", ExpandAll)
+      .allRelationshipsScan("(a)-[r_j]->(b)")
+      .build()
+
+    rewrites(selectionAndTrail, expand)
+  }
+
+  test(
+    "Do not rewrite selection and trail to VarLengthExpand(Into) when the selection does not refer to the end node of the trail - it refers to a previously bound node"
+  ) {
+    val selectionAndTrail = subPlanBuilder
+      .projection("1 AS s")
+      .filter("a = b")
+      .trail(`(a) ((x_i)-[r_i]-(y_i))+ (  UNNAMED4)`)
+      .|.filterExpression(isRepeatTrailUnique("r_i"))
+      .|.expandAll("(`  UNNAMED2`)-[`r_i`]->(`  UNNAMED3`)")
+      .|.argument("  UNNAMED1")
+      .allRelationshipsScan("(a)-[r_j]->(b)")
+      .build()
+
+    val expand = subPlanBuilder
+      .projection("1 AS s")
+      .filter("a = b")
+      .expand("(a)-[r_i*1..]->(`  UNNAMED4`)", ExpandAll)
+      .allRelationshipsScan("(a)-[r_j]->(b)")
+      .build()
+
+    rewrites(selectionAndTrail, expand)
+  }
+
+  test(
+    "Do not rewrite selection and trail to VarLengthExpand(Into) when the selection does not refer a previously bound node"
+  ) {
+    // This plan cannot be generated because 'c' in the filter does not refer to anything
+    val selectionAndTrail = subPlanBuilder
+      .projection("1 AS s")
+      .expandAll("(b)-[r_k]->(c)")
+      .filter("`  UNNAMED4` = c")
+      .trail(`(a) ((x_i)-[r_i]-(y_i))+ (  UNNAMED4)`)
+      .|.filterExpression(isRepeatTrailUnique("r_i"))
+      .|.expandAll("(`  UNNAMED2`)-[`r_i`]->(`  UNNAMED3`)")
+      .|.argument("  UNNAMED1")
+      .allRelationshipsScan("(a)-[r_j]->(b)")
+      .build()
+
+    val expand = subPlanBuilder
+      .projection("1 AS s")
+      .expandAll("(b)-[r_k]->(c)")
+      .filter("`  UNNAMED4` = c")
+      .expand("(a)-[r_i*1..]->(`  UNNAMED4`)", ExpandAll)
+      .allRelationshipsScan("(a)-[r_j]->(b)")
+      .build()
+
+    rewrites(selectionAndTrail, expand)
+  }
+
+  test(
+    "Do not rewrite selection and trail to VarLengthExpand(Into) when the selection does not refer a previously bound node - it refers to the innerEnd"
+  ) {
+    val selectionAndTrail = subPlanBuilder
+      .projection("1 AS s")
+      .filter("`  UNNAMED4` = `  UNNAMED3`")
+      .trail(`(a) ((x_i)-[r_i]-(y_i))+ (  UNNAMED4)`)
+      .|.filterExpression(isRepeatTrailUnique("r_i"))
+      .|.expandAll("(`  UNNAMED2`)-[`r_i`]->(`  UNNAMED3`)")
+      .|.argument("  UNNAMED1")
+      .allRelationshipsScan("(a)-[r_j]->(b)")
+      .build()
+
+    val expand = subPlanBuilder
+      .projection("1 AS s")
+      .filter("`  UNNAMED4` = `  UNNAMED3`")
+      .expand("(a)-[r_i*1..]->(`  UNNAMED4`)", ExpandAll)
+      .allRelationshipsScan("(a)-[r_j]->(b)")
+      .build()
+
+    rewrites(selectionAndTrail, expand)
+  }
+
+  test(
+    "Do not rewrite selection and trail to VarLengthExpand(Into) when the endpoint of the trail is not an UNNAMED node"
+  ) {
+    // Node 'b' might be used in other places of the query, therefore we cannot override it with 'c' to create a VarLengthExpand(Into)
+    val selectionAndTrail = subPlanBuilder
+      .projection("1 AS s")
+      .filter("b = c")
+      .trail(`(a) ((n)-[r]-(m))+ (b)`.empty)
+      .|.filterExpression(isRepeatTrailUnique("r_i"))
+      .|.expandAll("(`  UNNAMED2`)-[`r_i`]->(`  UNNAMED3`)")
+      .|.argument("  UNNAMED1")
+      .allRelationshipsScan("(a)-[r_j]->(c)")
+      .build()
+
+    val expand = subPlanBuilder
+      .projection("1 AS s")
+      .filter("b = c")
+      .expand("(a)-[r_i*1..]->(b)", ExpandAll)
+      .allRelationshipsScan("(a)-[r_j]->(c)")
+      .build()
+
+    rewrites(selectionAndTrail, expand)
+  }
+
+  test("De not rewrite selection and trail to VarLengthExpand(Into) when the selection has more than 1 predicate") {
+    val selectionAndTrail = subPlanBuilder
+      .projection("1 AS s")
+      .filter("`  UNNAMED4` = b", "not a = b")
+      .trail(`(a) ((x_i)-[r_i]-(y_i))+ (  UNNAMED4)`)
+      .|.filterExpression(isRepeatTrailUnique("r_i"))
+      .|.expandAll("(`  UNNAMED2`)-[`r_i`]->(`  UNNAMED3`)")
+      .|.argument("  UNNAMED1")
+      .allRelationshipsScan("(a)-[r_j]->(b)")
+      .build()
+
+    val expand = subPlanBuilder
+      .projection("1 AS s")
+      .filter("`  UNNAMED4` = b", "not a = b")
+      .expand("(a)-[r_i*1..]->(`  UNNAMED4`)", ExpandAll)
+      .allRelationshipsScan("(a)-[r_j]->(b)")
+      .build()
+
+    rewrites(selectionAndTrail, expand)
   }
 }
 

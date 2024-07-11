@@ -140,4 +140,11 @@ object ListSet extends IterableFactory[ListSet] {
 
   def newBuilder[A]: mutable.Builder[A, ListSet[A]] =
     new Builder[A]
+
+  object Singleton {
+
+    def unapply[A](list: ListSet[A]): Option[A] = {
+      Option.when(list.size == 1)(list.head)
+    }
+  }
 }
