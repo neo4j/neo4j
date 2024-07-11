@@ -42,6 +42,7 @@ import org.neo4j.graphdb.schema.IndexSettingUtil;
 import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.SettingsAccessor;
 import org.neo4j.internal.schema.SettingsAccessor.IndexSettingObjectMapAccessor;
+import org.neo4j.kernel.api.impl.schema.vector.VectorIndexVersion;
 import org.neo4j.kernel.api.impl.schema.vector.VectorSimilarityFunctions;
 import org.neo4j.kernel.api.vector.VectorQuantization;
 import org.neo4j.kernel.api.vector.VectorSimilarityFunction;
@@ -679,8 +680,18 @@ public class VectorTestUtils {
             return IndexSettingUtil.toIndexConfigFromIndexSettingObjectMap(settings);
         }
 
+        public IndexConfig toIndexConfigWith(VectorIndexVersion version) {
+            return version.indexSettingValidator()
+                    .validateToVectorIndexConfig(toSettingsAccessor())
+                    .config();
+        }
+
         public Map<IndexSetting, Object> toMap() {
             return settings.asUnmodifiable();
+        }
+
+        public Map<IndexSetting, Object> toMapWith(VectorIndexVersion version) {
+            return from(toIndexConfigWith(version)).toMap();
         }
 
         public SortedMap<String, Object> toStringObjectMap() {
@@ -690,6 +701,10 @@ public class VectorTestUtils {
                     .asUnmodifiable();
         }
 
+        public SortedMap<String, Object> toStringObjectMapWith(VectorIndexVersion version) {
+            return from(toIndexConfigWith(version)).toStringObjectMap();
+        }
+
         public MapValue toMapValue() {
             final var mapBuilder = new MapValueBuilder(settings.size());
             settings.keyValuesView()
@@ -697,8 +712,16 @@ public class VectorTestUtils {
             return mapBuilder.build();
         }
 
+        public MapValue toMapValueWith(VectorIndexVersion version) {
+            return from(toIndexConfigWith(version)).toMapValue();
+        }
+
         public SettingsAccessor toSettingsAccessor() {
             return new IndexSettingObjectMapAccessor(toMap());
+        }
+
+        public SettingsAccessor toSettingsAccessorWith(VectorIndexVersion version) {
+            return new IndexSettingObjectMapAccessor(toMapWith(version));
         }
     }
 }
