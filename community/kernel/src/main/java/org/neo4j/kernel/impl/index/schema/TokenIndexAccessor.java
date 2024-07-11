@@ -124,12 +124,12 @@ public class TokenIndexAccessor extends TokenIndex implements IndexAccessor {
     }
 
     @Override
-    public ValueIndexReader newValueReader(IndexUsageTracker usageTracker) {
+    public ValueIndexReader newValueReader(IndexUsageTracking usageTracker) {
         throw new UnsupportedOperationException("Not applicable for token indexes ");
     }
 
     @Override
-    public TokenIndexReader newTokenReader(IndexUsageTracker usageTracker) {
+    public TokenIndexReader newTokenReader(IndexUsageTracking usageTracker) {
         assertTreeOpen();
         return new DefaultTokenIndexReader(index, usageTracker, idLayout);
     }

@@ -24,26 +24,21 @@ import org.neo4j.kernel.api.index.IndexUsageStats;
 /**
  * Meant to be used by an {@link org.neo4j.kernel.api.index.IndexAccessor} to keep usage statistics,
  * and to later report those via {@link #getAndReset()}.
- * <p>
- * Individual {@link org.neo4j.kernel.api.index.IndexReader} instances should {@link #track()} usage,
- * which will be reported to the parent {@link IndexUsageTracking} instance.
  */
 public interface IndexUsageTracking {
     IndexUsageStats EMPTY_USAGE_STATS = new IndexUsageStats(0, 0, 0);
 
     IndexUsageTracking NO_USAGE_TRACKING = new IndexUsageTracking() {
         @Override
-        public IndexUsageTracker track() {
-            return IndexUsageTracker.NO_USAGE_TRACKER;
-        }
-
-        @Override
         public IndexUsageStats getAndReset() {
             return EMPTY_USAGE_STATS;
         }
+
+        @Override
+        public void queried() {}
     };
 
-    IndexUsageTracker track();
-
     IndexUsageStats getAndReset();
+
+    void queried();
 }

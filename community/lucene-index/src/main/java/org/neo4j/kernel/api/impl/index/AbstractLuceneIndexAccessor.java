@@ -51,7 +51,7 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.index.schema.IndexUpdateIgnoreStrategy;
-import org.neo4j.kernel.impl.index.schema.IndexUsageTracker;
+import org.neo4j.kernel.impl.index.schema.IndexUsageTracking;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
@@ -177,7 +177,7 @@ public abstract class AbstractLuceneIndexAccessor<READER extends ValueIndexReade
     }
 
     @Override
-    public READER newValueReader(IndexUsageTracker usageTracker) {
+    public READER newValueReader(IndexUsageTracking usageTracker) {
         try {
             return luceneIndex.getIndexReader(usageTracker);
         } catch (IOException e) {

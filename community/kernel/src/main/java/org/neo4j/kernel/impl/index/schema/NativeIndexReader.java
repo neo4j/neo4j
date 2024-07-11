@@ -47,7 +47,7 @@ import org.neo4j.values.storable.Value;
 
 abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>> implements ValueIndexReader {
     protected final IndexDescriptor descriptor;
-    private final IndexUsageTracker usageTracker;
+    private final IndexUsageTracking usageTracker;
     final IndexLayout<KEY> layout;
     final GBPTree<KEY, NullValue> tree;
 
@@ -55,7 +55,7 @@ abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>> implements Val
             GBPTree<KEY, NullValue> tree,
             IndexLayout<KEY> layout,
             IndexDescriptor descriptor,
-            IndexUsageTracker usageTracker) {
+            IndexUsageTracking usageTracker) {
         this.tree = tree;
         this.layout = layout;
         this.descriptor = descriptor;
@@ -63,9 +63,7 @@ abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>> implements Val
     }
 
     @Override
-    public void close() {
-        usageTracker.close();
-    }
+    public void close() {}
 
     @Override
     public IndexSampler createSampler() {

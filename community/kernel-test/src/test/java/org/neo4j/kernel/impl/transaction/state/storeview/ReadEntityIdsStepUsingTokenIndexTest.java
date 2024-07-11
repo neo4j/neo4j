@@ -29,7 +29,7 @@ import static org.neo4j.internal.schema.SchemaDescriptors.ANY_TOKEN_NODE_SCHEMA_
 import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 import static org.neo4j.kernel.impl.api.index.IndexUpdateMode.ONLINE;
-import static org.neo4j.kernel.impl.index.schema.IndexUsageTracker.NO_USAGE_TRACKER;
+import static org.neo4j.kernel.impl.index.schema.IndexUsageTracking.NO_USAGE_TRACKING;
 
 import java.util.BitSet;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -108,7 +108,7 @@ class ReadEntityIdsStepUsingTokenIndexTest {
                             control(),
                             configuration,
                             (cursorContext, storeCursors) -> new TokenIndexScanIdIterator(
-                                    indexAccessor.newTokenReader(NO_USAGE_TRACKER),
+                                    indexAccessor.newTokenReader(NO_USAGE_TRACKING),
                                     new int[] {TOKEN_ID},
                                     CursorContext.NULL_CONTEXT),
                             any -> StoreCursors.NULL,

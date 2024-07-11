@@ -27,7 +27,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-import static org.neo4j.kernel.impl.index.schema.IndexUsageTracker.NO_USAGE_TRACKER;
+import static org.neo4j.kernel.impl.index.schema.IndexUsageTracking.NO_USAGE_TRACKING;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -99,7 +99,7 @@ class DefaultTokenIndexReaderTest {
     @Test
     void shouldFindMultipleEntitiesInEachRange() {
         // WHEN
-        var reader = new DefaultTokenIndexReader(index, NO_USAGE_TRACKER, new DefaultTokenIndexIdLayout());
+        var reader = new DefaultTokenIndexReader(index, NO_USAGE_TRACKING, new DefaultTokenIndexIdLayout());
         SimpleEntityTokenClient tokenClient = new SimpleEntityTokenClient();
         reader.query(tokenClient, unconstrained(), new TokenPredicate(LABEL_ID), NULL_CONTEXT);
 
@@ -110,7 +110,7 @@ class DefaultTokenIndexReaderTest {
     @Test
     void shouldFindMultipleWithProgressorAscending() {
         // WHEN
-        var reader = new DefaultTokenIndexReader(index, NO_USAGE_TRACKER, new DefaultTokenIndexIdLayout());
+        var reader = new DefaultTokenIndexReader(index, NO_USAGE_TRACKING, new DefaultTokenIndexIdLayout());
         SimpleEntityTokenClient tokenClient = new SimpleEntityTokenClient();
         reader.query(
                 tokenClient,
@@ -125,7 +125,7 @@ class DefaultTokenIndexReaderTest {
     @Test
     void shouldFindMultipleWithProgressorDescending() {
         // WHEN
-        var reader = new DefaultTokenIndexReader(index, NO_USAGE_TRACKER, new DefaultTokenIndexIdLayout());
+        var reader = new DefaultTokenIndexReader(index, NO_USAGE_TRACKING, new DefaultTokenIndexIdLayout());
         SimpleEntityTokenClient tokenClient = new SimpleEntityTokenClient();
         reader.query(
                 tokenClient,

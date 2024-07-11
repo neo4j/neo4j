@@ -159,7 +159,7 @@ import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingController;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.index.DatabaseIndexStats;
-import org.neo4j.kernel.impl.index.schema.IndexUsageTracker;
+import org.neo4j.kernel.impl.index.schema.IndexUsageTracking;
 import org.neo4j.kernel.impl.index.schema.NodeIdsIndexReaderQueryAnswer;
 import org.neo4j.kernel.impl.index.schema.PartitionedTokenScan;
 import org.neo4j.kernel.impl.index.schema.PartitionedValueSeek;
@@ -2002,7 +2002,7 @@ class IndexingServiceTest {
         }
 
         @Override
-        public ValueIndexReader newValueReader(IndexUsageTracker usageTracker) {
+        public ValueIndexReader newValueReader(IndexUsageTracking usageTracker) {
             throw new UnsupportedOperationException("Not required");
         }
 
@@ -2106,9 +2106,9 @@ class IndexingServiceTest {
     }
 
     private static class UsageReportingIndexReader implements ValueIndexReader, TokenIndexReader {
-        private final IndexUsageTracker tracker;
+        private final IndexUsageTracking tracker;
 
-        UsageReportingIndexReader(IndexUsageTracker tracker) {
+        UsageReportingIndexReader(IndexUsageTracking tracker) {
             this.tracker = tracker;
         }
 
@@ -2139,9 +2139,7 @@ class IndexingServiceTest {
         }
 
         @Override
-        public void close() {
-            tracker.close();
-        }
+        public void close() {}
 
         @Override
         public void query(

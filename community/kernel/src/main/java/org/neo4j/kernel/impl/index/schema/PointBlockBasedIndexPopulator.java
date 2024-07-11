@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import static org.neo4j.kernel.impl.index.schema.IndexUsageTracker.NO_USAGE_TRACKER;
 import static org.neo4j.kernel.impl.index.schema.PointIndexProvider.UPDATE_IGNORE_STRATEGY;
 
 import java.nio.file.OpenOption;
@@ -79,7 +78,8 @@ public class PointBlockBasedIndexPopulator extends BlockBasedIndexPopulator<Poin
 
     @Override
     NativeIndexReader<PointKey> newReader() {
-        return new PointIndexReader(tree, layout, descriptor, spatialSettings, configuration, NO_USAGE_TRACKER);
+        return new PointIndexReader(
+                tree, layout, descriptor, spatialSettings, configuration, IndexUsageTracking.NO_USAGE_TRACKING);
     }
 
     @Override

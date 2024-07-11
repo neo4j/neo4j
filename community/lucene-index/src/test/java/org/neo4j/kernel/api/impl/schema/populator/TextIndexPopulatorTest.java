@@ -25,7 +25,7 @@ import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.kernel.api.impl.schema.AbstractTextIndexProvider.UPDATE_IGNORE_STRATEGY;
 import static org.neo4j.kernel.api.index.IndexQueryHelper.add;
-import static org.neo4j.kernel.impl.index.schema.IndexUsageTracker.NO_USAGE_TRACKER;
+import static org.neo4j.kernel.impl.index.schema.IndexUsageTracking.NO_USAGE_TRACKING;
 
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -145,7 +145,7 @@ class TextIndexPopulatorTest {
         populator.add(updates, CursorContext.NULL_CONTEXT);
 
         index.maybeRefreshBlocking();
-        try (ValueIndexReader reader = index.getIndexReader(NO_USAGE_TRACKER);
+        try (ValueIndexReader reader = index.getIndexReader(NO_USAGE_TRACKING);
                 NodeValueIterator allEntities = new NodeValueIterator()) {
             reader.query(allEntities, QueryContext.NULL_CONTEXT, unconstrained(), PropertyIndexQuery.allEntries());
             assertArrayEquals(new long[] {1, 2, 42}, PrimitiveLongCollections.asArray(allEntities));

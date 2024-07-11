@@ -32,7 +32,7 @@ import org.neo4j.kernel.api.impl.index.backup.WritableIndexSnapshotFileIterator;
 import org.neo4j.kernel.api.impl.index.partition.AbstractIndexPartition;
 import org.neo4j.kernel.api.impl.schema.writer.LuceneIndexWriter;
 import org.neo4j.kernel.api.index.ValueIndexReader;
-import org.neo4j.kernel.impl.index.schema.IndexUsageTracker;
+import org.neo4j.kernel.impl.index.schema.IndexUsageTracking;
 
 /**
  * Lucene index that may consist of one or multiple separate lucene indexes that are represented as independent
@@ -139,7 +139,7 @@ public interface DatabaseIndex<READER extends ValueIndexReader> extends IndexFil
 
     LuceneIndexWriter getIndexWriter();
 
-    READER getIndexReader(IndexUsageTracker usageTracker) throws IOException;
+    READER getIndexReader(IndexUsageTracking usageTracker) throws IOException;
 
     IndexDescriptor getDescriptor();
 

@@ -28,7 +28,7 @@ import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unorderedValue
 import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
 import static org.neo4j.internal.schema.IndexPrototype.forSchema;
 import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
-import static org.neo4j.kernel.impl.index.schema.IndexUsageTracker.NO_USAGE_TRACKER;
+import static org.neo4j.kernel.impl.index.schema.IndexUsageTracking.NO_USAGE_TRACKING;
 import static org.neo4j.kernel.impl.index.schema.ValueCreatorUtil.FRACTION_DUPLICATE_NON_UNIQUE;
 
 import java.util.Arrays;
@@ -115,7 +115,7 @@ class PointIndexAccessorTest extends NativeIndexAccessorTests<PointKey> {
     @ParameterizedTest
     @MethodSource("unsupportedPredicates")
     void readerShouldThrowOnUnsupportedPredicates(PropertyIndexQuery predicate) {
-        try (var reader = accessor.newValueReader(NO_USAGE_TRACKER)) {
+        try (var reader = accessor.newValueReader(NO_USAGE_TRACKING)) {
             assertThatThrownBy(
                             () -> reader.query(
                                     new SimpleEntityValueClient(), NULL_CONTEXT, unorderedValues(), predicate),
@@ -131,7 +131,7 @@ class PointIndexAccessorTest extends NativeIndexAccessorTests<PointKey> {
     @ParameterizedTest
     @MethodSource("unsupportedOrders")
     void readerShouldThrowOnUnsupportedOrder(IndexOrder indexOrder) {
-        try (var reader = accessor.newValueReader(NO_USAGE_TRACKER)) {
+        try (var reader = accessor.newValueReader(NO_USAGE_TRACKING)) {
             PropertyIndexQuery.ExactPredicate query = PropertyIndexQuery.exact(0, PointValue.MAX_VALUE);
             assertThatThrownBy(
                             () -> reader.query(

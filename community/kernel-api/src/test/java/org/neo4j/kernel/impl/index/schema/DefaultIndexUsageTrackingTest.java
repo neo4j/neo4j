@@ -45,13 +45,10 @@ class DefaultIndexUsageTrackingTest {
     @Test
     void shouldAddLocalStatisticsToParent() {
         for (int i = 0; i < 2; i++) {
-            try (var tracker = tracking.track()) {
-                // when
-                clock.forward(5, TimeUnit.SECONDS);
-                tracker.queried();
-                clock.forward(1, TimeUnit.SECONDS);
-                tracker.queried();
-            }
+            clock.forward(5, TimeUnit.SECONDS);
+            tracking.queried();
+            clock.forward(1, TimeUnit.SECONDS);
+            tracking.queried();
 
             // then
             var stats = tracking.getAndReset();
@@ -69,11 +66,9 @@ class DefaultIndexUsageTrackingTest {
         var queriesPerThread = 100;
         race.addContestants(numThreads, () -> {
             var rng = ThreadLocalRandom.current();
-            try (var tracker = tracking.track()) {
-                for (var i = 0; i < queriesPerThread; i++) {
-                    clock.forward(rng.nextInt(1, 100), TimeUnit.MILLISECONDS);
-                    tracker.queried();
-                }
+            for (var i = 0; i < queriesPerThread; i++) {
+                clock.forward(rng.nextInt(1, 100), TimeUnit.MILLISECONDS);
+                tracking.queried();
             }
         });
 

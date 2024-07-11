@@ -40,7 +40,7 @@ import static org.neo4j.internal.kernel.api.PropertyIndexQuery.stringPrefix;
 import static org.neo4j.internal.kernel.api.PropertyIndexQuery.stringSuffix;
 import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
 import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
-import static org.neo4j.kernel.impl.index.schema.IndexUsageTracker.NO_USAGE_TRACKER;
+import static org.neo4j.kernel.impl.index.schema.IndexUsageTracking.NO_USAGE_TRACKING;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.CARTESIAN;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS_84;
 import static org.neo4j.values.storable.DateTimeValue.datetime;
@@ -1144,7 +1144,7 @@ abstract class CompositeIndexAccessorCompatibility extends IndexAccessorCompatib
                 of(new PropertyIndexQuery[] {firstContains, secondContains}, false));
 
         SimpleEntityValueClient client = new SimpleEntityValueClient();
-        try (ValueIndexReader reader = accessor.newValueReader(NO_USAGE_TRACKER)) {
+        try (ValueIndexReader reader = accessor.newValueReader(NO_USAGE_TRACKING)) {
             for (Pair<PropertyIndexQuery[], Boolean> pair : queries) {
                 PropertyIndexQuery[] theQuery = pair.first();
                 Boolean legal = pair.other();

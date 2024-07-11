@@ -25,7 +25,7 @@ import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
 import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
-import static org.neo4j.kernel.impl.index.schema.IndexUsageTracker.NO_USAGE_TRACKER;
+import static org.neo4j.kernel.impl.index.schema.IndexUsageTracking.NO_USAGE_TRACKING;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.IndexEntryUpdate.add;
 
@@ -83,7 +83,7 @@ abstract class CompositeIndexPopulatorCompatibility extends PropertyIndexProvide
                     tokenNameLookup,
                     Sets.immutable.empty(),
                     StorageEngineIndexingBehaviour.EMPTY)) {
-                try (ValueIndexReader reader = accessor.newValueReader(NO_USAGE_TRACKER);
+                try (ValueIndexReader reader = accessor.newValueReader(NO_USAGE_TRACKING);
                         NodeValueIterator nodes = new NodeValueIterator()) {
                     reader.query(
                             nodes,

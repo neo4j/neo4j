@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.index.schema.tracking;
 import java.util.concurrent.atomic.AtomicLong;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.ValueIndexReader;
-import org.neo4j.kernel.impl.index.schema.IndexUsageTracker;
+import org.neo4j.kernel.impl.index.schema.IndexUsageTracking;
 
 public class TrackingReadersIndexAccessor extends IndexAccessor.Delegating {
     private static final AtomicLong openReaders = new AtomicLong();
@@ -41,7 +41,7 @@ public class TrackingReadersIndexAccessor extends IndexAccessor.Delegating {
     }
 
     @Override
-    public ValueIndexReader newValueReader(IndexUsageTracker usageTracker) {
+    public ValueIndexReader newValueReader(IndexUsageTracking usageTracker) {
         openReaders.incrementAndGet();
         return new TrackingIndexReader(super.newValueReader(usageTracker), closedReaders);
     }

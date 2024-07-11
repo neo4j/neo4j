@@ -37,14 +37,14 @@ import org.neo4j.kernel.api.impl.index.collector.DocValuesCollector;
 import org.neo4j.kernel.api.impl.index.collector.DocValuesCollector.InRangeEntityConsumer;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.index.ValueIndexReader;
-import org.neo4j.kernel.impl.index.schema.IndexUsageTracker;
+import org.neo4j.kernel.impl.index.schema.IndexUsageTracking;
 import org.neo4j.kernel.impl.index.schema.PartitionedValueSeek;
 
 public abstract class AbstractLuceneIndexReader implements ValueIndexReader {
     private final IndexDescriptor descriptor;
-    private final IndexUsageTracker usageTracker;
+    private final IndexUsageTracking usageTracker;
 
-    public AbstractLuceneIndexReader(IndexDescriptor descriptor, IndexUsageTracker usageTracker) {
+    public AbstractLuceneIndexReader(IndexDescriptor descriptor, IndexUsageTracking usageTracker) {
         this.descriptor = descriptor;
         this.usageTracker = usageTracker;
     }
@@ -110,9 +110,7 @@ public abstract class AbstractLuceneIndexReader implements ValueIndexReader {
     }
 
     @Override
-    public void close() {
-        usageTracker.close();
-    }
+    public void close() {}
 
     protected DocValuesCollector search(IndexSearcher searcher, Query query) {
         try {

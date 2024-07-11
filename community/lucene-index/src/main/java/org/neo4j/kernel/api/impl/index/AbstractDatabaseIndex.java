@@ -26,7 +26,7 @@ import org.neo4j.function.ThrowingBiConsumer;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.impl.index.partition.AbstractIndexPartition;
 import org.neo4j.kernel.api.index.ValueIndexReader;
-import org.neo4j.kernel.impl.index.schema.IndexUsageTracker;
+import org.neo4j.kernel.impl.index.schema.IndexUsageTracking;
 
 /**
  * This class collects the common features of {@link MinimalDatabaseIndex} and {@link WritableDatabaseIndex}.
@@ -94,7 +94,7 @@ abstract class AbstractDatabaseIndex<INDEX extends AbstractLuceneIndex<READER>, 
     }
 
     @Override
-    public READER getIndexReader(IndexUsageTracker usageTracker) throws IOException {
+    public READER getIndexReader(IndexUsageTracking usageTracker) throws IOException {
         return luceneIndex.getIndexReader(usageTracker);
     }
 

@@ -24,7 +24,7 @@ import java.util.concurrent.atomic.LongAccumulator;
 import java.util.concurrent.atomic.LongAdder;
 import org.neo4j.kernel.api.index.IndexUsageStats;
 
-public class DefaultIndexUsageTracking implements IndexUsageTracking {
+public final class DefaultIndexUsageTracking implements IndexUsageTracking {
     private final long trackedSince;
     private final LongAdder readCount = new LongAdder();
     private final LongAccumulator lastRead = new LongAccumulator(Long::max, 0);
@@ -36,34 +36,13 @@ public class DefaultIndexUsageTracking implements IndexUsageTracking {
     }
 
     @Override
-    public IndexUsageTracker track() {
-        return new DefaultIndexUsageTracker();
+    public IndexUsageStats getAndReset() {
+        return new IndexUsageStats(lastRead.longValue(), readCount.sumThenReset(), trackedSince);
     }
 
     @Override
-    public IndexUsageStats getAndReset() {
-        long queryCount = this.readCount.sumThenReset();
-        return new IndexUsageStats(lastRead.longValue(), queryCount, trackedSince);
-    }
-
-    private void add(long queryCount, long lastTimeUsed) {
-        this.readCount.add(queryCount);
-        this.lastRead.accumulate(lastTimeUsed);
-    }
-
-    private class DefaultIndexUsageTracker implements IndexUsageTracker {
-        private long localLastRead;
-        private long localReadCount;
-
-        @Override
-        public void queried() {
-            localReadCount++;
-            localLastRead = clock.millis();
-        }
-
-        @Override
-        public void close() {
-            add(localReadCount, localLastRead);
-        }
+    public void queried() {
+        readCount.increment();
+        lastRead.accumulate(clock.millis());
     }
 }

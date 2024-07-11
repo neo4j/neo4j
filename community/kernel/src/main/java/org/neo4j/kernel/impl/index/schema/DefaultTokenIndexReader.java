@@ -39,11 +39,11 @@ import org.neo4j.util.Preconditions;
 public class DefaultTokenIndexReader implements TokenIndexReader {
 
     private final GBPTree<TokenScanKey, TokenScanValue> index;
-    private final IndexUsageTracker usageTracker;
+    private final IndexUsageTracking usageTracker;
     private final TokenIndexIdLayout idLayout;
 
     public DefaultTokenIndexReader(
-            GBPTree<TokenScanKey, TokenScanValue> index, IndexUsageTracker usageTracker, TokenIndexIdLayout idLayout) {
+            GBPTree<TokenScanKey, TokenScanValue> index, IndexUsageTracking usageTracker, TokenIndexIdLayout idLayout) {
         this.index = index;
         this.usageTracker = usageTracker;
         this.idLayout = idLayout;
@@ -119,9 +119,7 @@ public class DefaultTokenIndexReader implements TokenIndexReader {
     }
 
     @Override
-    public void close() {
-        usageTracker.close();
-    }
+    public void close() {}
 
     private class NativePartitionedTokenScan implements PartitionedTokenScan {
         private final EntityRange range = EntityRange.FULL;

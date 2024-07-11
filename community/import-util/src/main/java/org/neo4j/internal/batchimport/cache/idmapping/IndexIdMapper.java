@@ -24,7 +24,6 @@ import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.internal.kernel.api.PropertyIndexQuery.exact;
 import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
 import static org.neo4j.io.IOUtils.closeAllUnchecked;
-import static org.neo4j.kernel.impl.index.schema.IndexUsageTracker.NO_USAGE_TRACKER;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -70,6 +69,7 @@ import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.PhaseTracker;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
+import org.neo4j.kernel.impl.index.schema.IndexUsageTracking;
 import org.neo4j.kernel.impl.index.schema.NodeValueIterator;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
@@ -158,7 +158,7 @@ public class IndexIdMapper implements IdMapper {
     private Index index(Group group) {
         return threadLocal.get().computeIfAbsent(group.name(), groupName -> {
             var accessor = accessors.get(groupName);
-            var reader = accessor.newValueReader(NO_USAGE_TRACKER);
+            var reader = accessor.newValueReader(IndexUsageTracking.NO_USAGE_TRACKING);
             var schemaDescriptor = indexDescriptors.get(groupName);
             var index = new Index(reader, schemaDescriptor.schema());
             indexes.add(index);

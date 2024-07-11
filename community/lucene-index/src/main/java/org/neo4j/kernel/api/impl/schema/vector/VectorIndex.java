@@ -27,7 +27,7 @@ import org.neo4j.kernel.api.impl.index.AbstractLuceneIndex;
 import org.neo4j.kernel.api.impl.index.partition.AbstractIndexPartition;
 import org.neo4j.kernel.api.impl.index.partition.IndexPartitionFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
-import org.neo4j.kernel.impl.index.schema.IndexUsageTracker;
+import org.neo4j.kernel.impl.index.schema.IndexUsageTracking;
 
 class VectorIndex extends AbstractLuceneIndex<VectorIndexReader> {
     private final VectorIndexConfig vectorIndexConfig;
@@ -47,13 +47,13 @@ class VectorIndex extends AbstractLuceneIndex<VectorIndexReader> {
 
     @Override
     protected VectorIndexReader createSimpleReader(
-            List<AbstractIndexPartition> partitions, IndexUsageTracker usageTracker) throws IOException {
+            List<AbstractIndexPartition> partitions, IndexUsageTracking usageTracker) throws IOException {
         return createPartitionedReader(partitions, usageTracker);
     }
 
     @Override
     protected VectorIndexReader createPartitionedReader(
-            List<AbstractIndexPartition> partitions, IndexUsageTracker usageTracker) throws IOException {
+            List<AbstractIndexPartition> partitions, IndexUsageTracking usageTracker) throws IOException {
         final var searchers = acquireSearchers(partitions);
         return new VectorIndexReader(descriptor, vectorIndexConfig, documentStructure, searchers, usageTracker);
     }

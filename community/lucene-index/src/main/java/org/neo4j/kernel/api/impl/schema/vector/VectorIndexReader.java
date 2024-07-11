@@ -42,7 +42,7 @@ import org.neo4j.kernel.api.impl.schema.reader.IndexReaderCloseException;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.index.IndexProgressor.EntityValueClient;
 import org.neo4j.kernel.api.index.IndexSampler;
-import org.neo4j.kernel.impl.index.schema.IndexUsageTracker;
+import org.neo4j.kernel.impl.index.schema.IndexUsageTracking;
 import org.neo4j.values.storable.Value;
 
 class VectorIndexReader extends AbstractLuceneIndexReader {
@@ -55,7 +55,7 @@ class VectorIndexReader extends AbstractLuceneIndexReader {
             VectorIndexConfig vectorIndexConfig,
             VectorDocumentStructure documentStructure,
             List<SearcherReference> searchers,
-            IndexUsageTracker usageTracker) {
+            IndexUsageTracking usageTracker) {
         super(descriptor, usageTracker);
         this.documentStructure = documentStructure;
         this.dimensions = vectorIndexConfig.dimensions();

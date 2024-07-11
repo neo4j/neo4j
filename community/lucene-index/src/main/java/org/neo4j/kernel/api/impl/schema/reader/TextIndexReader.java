@@ -43,7 +43,7 @@ import org.neo4j.kernel.api.impl.schema.TextDocumentStructure;
 import org.neo4j.kernel.api.impl.schema.sampler.LuceneIndexSampler;
 import org.neo4j.kernel.api.index.IndexSampler;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
-import org.neo4j.kernel.impl.index.schema.IndexUsageTracker;
+import org.neo4j.kernel.impl.index.schema.IndexUsageTracking;
 import org.neo4j.values.storable.Value;
 
 /**
@@ -60,7 +60,7 @@ public class TextIndexReader extends AbstractTextIndexReader {
             IndexDescriptor descriptor,
             IndexSamplingConfig samplingConfig,
             TaskCoordinator taskCoordinator,
-            IndexUsageTracker usageTracker) {
+            IndexUsageTracking usageTracker) {
         super(descriptor, searcherReference, usageTracker);
         this.samplingConfig = samplingConfig;
         this.taskCoordinator = taskCoordinator;

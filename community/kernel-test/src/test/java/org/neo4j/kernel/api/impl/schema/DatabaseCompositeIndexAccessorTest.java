@@ -37,7 +37,7 @@ import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
 import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 import static org.neo4j.kernel.api.schema.SchemaTestUtil.SIMPLE_NAME_LOOKUP;
-import static org.neo4j.kernel.impl.index.schema.IndexUsageTracker.NO_USAGE_TRACKER;
+import static org.neo4j.kernel.impl.index.schema.IndexUsageTracking.NO_USAGE_TRACKING;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.test.extension.Threading.waitingWhileIn;
 
@@ -179,7 +179,7 @@ public class DatabaseCompositeIndexAccessorTest {
             // GIVEN
             try (accessor) {
                 updateAndCommit(accessor, asList(add(nodeId, values), add(nodeId2, values2)));
-                try (var reader = accessor.newValueReader(NO_USAGE_TRACKER)) {
+                try (var reader = accessor.newValueReader(NO_USAGE_TRACKING)) {
 
                     // WHEN
                     Set<Long> results =
@@ -200,9 +200,9 @@ public class DatabaseCompositeIndexAccessorTest {
             // WHEN
             try (accessor) {
                 updateAndCommit(accessor, singletonList(add(nodeId, values)));
-                var firstReader = accessor.newValueReader(NO_USAGE_TRACKER);
+                var firstReader = accessor.newValueReader(NO_USAGE_TRACKING);
                 updateAndCommit(accessor, singletonList(add(nodeId2, values2)));
-                var secondReader = accessor.newValueReader(NO_USAGE_TRACKER);
+                var secondReader = accessor.newValueReader(NO_USAGE_TRACKING);
 
                 // THEN
                 assertEquals(
@@ -227,7 +227,7 @@ public class DatabaseCompositeIndexAccessorTest {
             // WHEN
             try (accessor) {
                 updateAndCommit(accessor, asList(add(nodeId, values), add(nodeId2, values2)));
-                try (var reader = accessor.newValueReader(NO_USAGE_TRACKER)) {
+                try (var reader = accessor.newValueReader(NO_USAGE_TRACKING)) {
                     assertEquals(
                             asSet(nodeId), resultSet(reader, exact(PROP_ID1, values[0]), exact(PROP_ID2, values[1])));
                 }
@@ -243,7 +243,7 @@ public class DatabaseCompositeIndexAccessorTest {
 
                 // WHEN
                 updateAndCommit(accessor, singletonList(change(nodeId, values, values2)));
-                try (var reader = accessor.newValueReader(NO_USAGE_TRACKER)) {
+                try (var reader = accessor.newValueReader(NO_USAGE_TRACKING)) {
                     // THEN
                     assertEquals(
                             asSet(nodeId), resultSet(reader, exact(PROP_ID1, values2[0]), exact(PROP_ID2, values2[1])));
@@ -261,7 +261,7 @@ public class DatabaseCompositeIndexAccessorTest {
 
                 // WHEN
                 updateAndCommit(accessor, singletonList(remove(nodeId, values)));
-                try (var reader = accessor.newValueReader(NO_USAGE_TRACKER)) {
+                try (var reader = accessor.newValueReader(NO_USAGE_TRACKING)) {
                     // THEN
                     assertEquals(
                             asSet(nodeId2),
@@ -280,7 +280,7 @@ public class DatabaseCompositeIndexAccessorTest {
 
                 // when
                 var indexReader =
-                        accessor.newValueReader(NO_USAGE_TRACKER); // needs to be acquired before drop() is called
+                        accessor.newValueReader(NO_USAGE_TRACKING); // needs to be acquired before drop() is called
                 IndexSampler indexSampler = indexReader.createSampler();
 
                 AtomicBoolean droppedLatch = new AtomicBoolean();

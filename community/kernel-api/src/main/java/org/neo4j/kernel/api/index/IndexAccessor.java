@@ -44,7 +44,7 @@ import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.SwallowingIndexUpdater;
 import org.neo4j.kernel.impl.index.schema.ConsistencyCheckable;
 import org.neo4j.kernel.impl.index.schema.EntityTokenRange;
-import org.neo4j.kernel.impl.index.schema.IndexUsageTracker;
+import org.neo4j.kernel.impl.index.schema.IndexUsageTracking;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.values.storable.Value;
 
@@ -57,7 +57,7 @@ public interface IndexAccessor extends Closeable, ConsistencyCheckable, MinimalI
 
     /**
      * Return an updater for applying a set of changes to this index.
-     * Updates must be visible in {@link #newValueReader(IndexUsageTracker) value} and {@link #newTokenReader(IndexUsageTracker)} token} readers created after this update.
+     * Updates must be visible in {@link #newValueReader(IndexUsageTracking) value} and {@link #newTokenReader(IndexUsageTracking)} token} readers created after this update.
      * <p>
      * This is called with IndexUpdateMode.RECOVERY when starting up after
      * a crash or similar. Updates given then may have already been applied to this index, so
@@ -81,7 +81,7 @@ public interface IndexAccessor extends Closeable, ConsistencyCheckable, MinimalI
     void force(FileFlushEvent flushEvent, CursorContext cursorContext);
 
     /**
-     * Refreshes this index, so that {@link #newValueReader(IndexUsageTracker) readers} created after completion of this call
+     * Refreshes this index, so that {@link #newValueReader(IndexUsageTracking) readers} created after completion of this call
      * will see the latest updates. This happens automatically on closing {@link #newUpdater(IndexUpdateMode, CursorContext, boolean)}
      * w/ {@link IndexUpdateMode#ONLINE}, but not guaranteed for {@link IndexUpdateMode#RECOVERY}.
      * Therefore this call is complementary for updates that has taken place with {@link IndexUpdateMode#RECOVERY}.
@@ -103,14 +103,14 @@ public interface IndexAccessor extends Closeable, ConsistencyCheckable, MinimalI
      * @return a new {@link ValueIndexReader} responsible for looking up results in the index. The returned reader must honor repeatable reads.
      * @throws UnsupportedOperationException if underline index is not Value Index
      */
-    ValueIndexReader newValueReader(IndexUsageTracker usageTracker);
+    ValueIndexReader newValueReader(IndexUsageTracking usageTracker);
 
     /**
      * @return a new {@link TokenIndexReader} responsible for looking up token to entity mappings from the index.
      * The returned reader must honor repeatable reads.
      * @throws UnsupportedOperationException if underline index is not Token Index
      */
-    default TokenIndexReader newTokenReader(IndexUsageTracker usageTracker) {
+    default TokenIndexReader newTokenReader(IndexUsageTracking usageTracker) {
         throw new UnsupportedOperationException(
                 "Not supported for " + getClass().getSimpleName());
     }
@@ -258,7 +258,7 @@ public interface IndexAccessor extends Closeable, ConsistencyCheckable, MinimalI
         public void close() {}
 
         @Override
-        public ValueIndexReader newValueReader(IndexUsageTracker usageTracker) {
+        public ValueIndexReader newValueReader(IndexUsageTracking usageTracker) {
             return ValueIndexReader.EMPTY;
         }
 
@@ -355,12 +355,12 @@ public interface IndexAccessor extends Closeable, ConsistencyCheckable, MinimalI
         }
 
         @Override
-        public ValueIndexReader newValueReader(IndexUsageTracker usageTracker) {
+        public ValueIndexReader newValueReader(IndexUsageTracking usageTracker) {
             return delegate.newValueReader(usageTracker);
         }
 
         @Override
-        public TokenIndexReader newTokenReader(IndexUsageTracker usageTracker) {
+        public TokenIndexReader newTokenReader(IndexUsageTracking usageTracker) {
             return delegate.newTokenReader(usageTracker);
         }
 

@@ -147,12 +147,12 @@ public class OnlineIndexProxy implements IndexProxy {
 
     @Override
     public ValueIndexReader newValueReader() {
-        return accessor.newValueReader(usageTracking.track());
+        return accessor.newValueReader(usageTracking);
     }
 
     @Override
     public TokenIndexReader newTokenReader() {
-        return accessor.newTokenReader(usageTracking.track());
+        return accessor.newTokenReader(usageTracking);
     }
 
     @Override

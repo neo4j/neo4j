@@ -32,7 +32,7 @@ import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_C
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 import static org.neo4j.kernel.api.schema.SchemaTestUtil.SIMPLE_NAME_LOOKUP;
 import static org.neo4j.kernel.impl.api.index.PhaseTracker.nullInstance;
-import static org.neo4j.kernel.impl.index.schema.IndexUsageTracker.NO_USAGE_TRACKER;
+import static org.neo4j.kernel.impl.index.schema.IndexUsageTracking.NO_USAGE_TRACKING;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.IndexEntryUpdate.add;
 import static org.neo4j.storageengine.api.IndexEntryUpdate.change;
@@ -221,8 +221,8 @@ abstract class IndexPopulationStressTest {
                         tokenNameLookup,
                         Sets.immutable.empty(),
                         StorageEngineIndexingBehaviour.EMPTY);
-                var reader = accessor.newValueReader(NO_USAGE_TRACKER);
-                var referenceReader = referenceAccessor.newValueReader(NO_USAGE_TRACKER)) {
+                var reader = accessor.newValueReader(NO_USAGE_TRACKING);
+                var referenceReader = referenceAccessor.newValueReader(NO_USAGE_TRACKING)) {
             RecordingClient entries = new RecordingClient();
             RecordingClient referenceEntries = new RecordingClient();
             reader.query(entries, QueryContext.NULL_CONTEXT, unordered(hasValues), allEntries());

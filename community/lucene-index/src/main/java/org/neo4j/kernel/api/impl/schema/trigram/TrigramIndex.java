@@ -29,7 +29,7 @@ import org.neo4j.kernel.api.impl.index.partition.IndexPartitionFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.kernel.api.impl.schema.reader.PartitionedValueIndexReader;
 import org.neo4j.kernel.api.index.ValueIndexReader;
-import org.neo4j.kernel.impl.index.schema.IndexUsageTracker;
+import org.neo4j.kernel.impl.index.schema.IndexUsageTracking;
 
 class TrigramIndex extends AbstractLuceneIndex<ValueIndexReader> {
 
@@ -43,14 +43,14 @@ class TrigramIndex extends AbstractLuceneIndex<ValueIndexReader> {
 
     @Override
     protected TrigramIndexReader createSimpleReader(
-            List<AbstractIndexPartition> partitions, IndexUsageTracker usageTracker) throws IOException {
+            List<AbstractIndexPartition> partitions, IndexUsageTracking usageTracker) throws IOException {
         AbstractIndexPartition searcher = getFirstPartition(partitions);
         return new TrigramIndexReader(searcher.acquireSearcher(), descriptor, usageTracker);
     }
 
     @Override
     protected PartitionedValueIndexReader createPartitionedReader(
-            List<AbstractIndexPartition> partitions, IndexUsageTracker usageTracker) throws IOException {
+            List<AbstractIndexPartition> partitions, IndexUsageTracking usageTracker) throws IOException {
         List<ValueIndexReader> readers = acquireSearchers(partitions).stream()
                 .map(partitionSearcher ->
                         (ValueIndexReader) new TrigramIndexReader(partitionSearcher, descriptor, usageTracker))

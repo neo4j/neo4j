@@ -51,7 +51,7 @@ class PointIndexReader extends NativeIndexReader<PointKey> {
             IndexDescriptor descriptor,
             IndexSpecificSpaceFillingCurveSettings spaceFillingCurveSettings,
             SpaceFillingCurveConfiguration configuration,
-            IndexUsageTracker usageTracker) {
+            IndexUsageTracking usageTracker) {
         super(tree, layout, descriptor, usageTracker);
 
         this.spaceFillingCurveSettings = spaceFillingCurveSettings;

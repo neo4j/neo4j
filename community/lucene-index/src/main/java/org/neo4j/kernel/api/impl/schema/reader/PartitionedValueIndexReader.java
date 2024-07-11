@@ -35,7 +35,7 @@ import org.neo4j.kernel.api.index.BridgingIndexProgressor;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.index.IndexSampler;
 import org.neo4j.kernel.api.index.ValueIndexReader;
-import org.neo4j.kernel.impl.index.schema.IndexUsageTracker;
+import org.neo4j.kernel.impl.index.schema.IndexUsageTracking;
 import org.neo4j.kernel.impl.index.schema.PartitionedValueSeek;
 import org.neo4j.values.storable.Value;
 
@@ -46,10 +46,10 @@ import org.neo4j.values.storable.Value;
 public class PartitionedValueIndexReader implements ValueIndexReader {
     private final IndexDescriptor descriptor;
     private final List<ValueIndexReader> indexReaders;
-    private final IndexUsageTracker usageTracker;
+    private final IndexUsageTracking usageTracker;
 
     public PartitionedValueIndexReader(
-            IndexDescriptor descriptor, List<ValueIndexReader> readers, IndexUsageTracker usageTracker) {
+            IndexDescriptor descriptor, List<ValueIndexReader> readers, IndexUsageTracking usageTracker) {
         this.descriptor = descriptor;
         this.indexReaders = readers;
         this.usageTracker = usageTracker;
@@ -117,9 +117,7 @@ public class PartitionedValueIndexReader implements ValueIndexReader {
     @Override
     public void close() {
         try {
-            List<AutoCloseable> resources = new ArrayList<>();
-            resources.addAll(indexReaders);
-            resources.add(usageTracker);
+            List<AutoCloseable> resources = new ArrayList<>(indexReaders);
             IOUtils.closeAll(resources);
         } catch (IOException e) {
             throw new IndexReaderCloseException(e);

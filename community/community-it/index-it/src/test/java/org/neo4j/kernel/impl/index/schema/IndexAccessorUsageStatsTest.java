@@ -131,7 +131,7 @@ public class IndexAccessorUsageStatsTest {
             throws IndexNotApplicableKernelException, IOException {
         // Given
         try (IndexAccessor accessor = createIndexAccessor(descriptor);
-                var reader = accessor.newValueReader(usageTracking.track())) {
+                var reader = accessor.newValueReader(usageTracking)) {
             // When
             for (int i = 0; i < queryCount; i++) {
                 propertyQuery(reader, clock, query);
@@ -151,7 +151,7 @@ public class IndexAccessorUsageStatsTest {
             throws IOException {
         // Given
         try (var indexAccessor = createIndexAccessor(descriptor);
-                var reader = indexAccessor.newValueReader(usageTracking.track())) {
+                var reader = indexAccessor.newValueReader(usageTracking)) {
             // When
             for (int i = 0; i < queryCount; i++) {
                 partitionedPropertyQuery(reader, query);
@@ -172,7 +172,7 @@ public class IndexAccessorUsageStatsTest {
     void tokenIndexShouldIncrementUsageCountOnQuery(IndexProviderDescriptor providerDescriptor) throws IOException {
         // Given
         try (var indexAccessor = createIndexAccessor(providerDescriptor);
-                var reader = indexAccessor.newTokenReader(usageTracking.track())) {
+                var reader = indexAccessor.newTokenReader(usageTracking)) {
             // When
             for (int i = 0; i < queryCount; i++) {
                 tokenQuery(reader, clock);
@@ -192,7 +192,7 @@ public class IndexAccessorUsageStatsTest {
             throws IOException {
         // Given
         try (var indexAccessor = createIndexAccessor(providerDescriptor);
-                var reader = indexAccessor.newTokenReader(usageTracking.track())) {
+                var reader = indexAccessor.newTokenReader(usageTracking)) {
             // When
             for (int i = 0; i < queryCount; i++) {
                 tokenQueryWithRange(reader, clock);
@@ -211,7 +211,7 @@ public class IndexAccessorUsageStatsTest {
             throws IOException {
         // Given
         try (var indexAccessor = createIndexAccessor(providerDescriptor);
-                var reader = indexAccessor.newTokenReader(usageTracking.track())) {
+                var reader = indexAccessor.newTokenReader(usageTracking)) {
             // When
             for (int i = 0; i < queryCount; i++) {
                 partitionedEntityTokenScan(reader, clock);
@@ -231,7 +231,7 @@ public class IndexAccessorUsageStatsTest {
             IndexProviderDescriptor providerDescriptor) throws IOException {
         // Given
         try (var indexAccessor = createIndexAccessor(providerDescriptor);
-                var reader = indexAccessor.newTokenReader(usageTracking.track())) {
+                var reader = indexAccessor.newTokenReader(usageTracking)) {
             // When
             var leadingPartition = reader.entityTokenScan(1, CursorContext.NULL_CONTEXT, new TokenPredicate(1));
             for (int i = 0; i < queryCount; i++) {

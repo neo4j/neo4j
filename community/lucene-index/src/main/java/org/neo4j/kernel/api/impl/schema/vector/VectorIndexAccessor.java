@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.api.impl.schema.vector;
 
-import static org.neo4j.kernel.impl.index.schema.IndexUsageTracker.NO_USAGE_TRACKER;
+import static org.neo4j.kernel.impl.index.schema.IndexUsageTracking.NO_USAGE_TRACKING;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -55,7 +55,7 @@ class VectorIndexAccessor extends AbstractLuceneIndexAccessor<VectorIndexReader,
             long fromIdInclusive, long toIdExclusive, CursorContext cursorContext) {
         try {
             return luceneIndex
-                    .getIndexReader(NO_USAGE_TRACKER)
+                    .getIndexReader(NO_USAGE_TRACKING)
                     .newAllEntriesValueReader(fromIdInclusive, toIdExclusive);
         } catch (IOException e) {
             throw new UncheckedIOException(e);

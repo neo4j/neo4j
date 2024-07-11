@@ -31,7 +31,7 @@ import org.neo4j.kernel.api.impl.index.SearcherReference;
 import org.neo4j.kernel.api.impl.index.partition.AbstractIndexPartition;
 import org.neo4j.kernel.api.impl.index.partition.IndexPartitionFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
-import org.neo4j.kernel.impl.index.schema.IndexUsageTracker;
+import org.neo4j.kernel.impl.index.schema.IndexUsageTracking;
 import org.neo4j.token.api.TokenHolder;
 
 public class FulltextIndex extends AbstractLuceneIndex<FulltextIndexReader> implements Closeable {
@@ -72,13 +72,13 @@ public class FulltextIndex extends AbstractLuceneIndex<FulltextIndexReader> impl
 
     @Override
     protected FulltextIndexReader createSimpleReader(
-            List<AbstractIndexPartition> partitions, IndexUsageTracker usageTracker) throws IOException {
+            List<AbstractIndexPartition> partitions, IndexUsageTracking usageTracker) throws IOException {
         return createPartitionedReader(partitions, usageTracker);
     }
 
     @Override
     protected FulltextIndexReader createPartitionedReader(
-            List<AbstractIndexPartition> partitions, IndexUsageTracker usageTracker) throws IOException {
+            List<AbstractIndexPartition> partitions, IndexUsageTracking usageTracker) throws IOException {
         List<SearcherReference> searchers = acquireSearchers(partitions);
         return new FulltextIndexReader(
                 searchers, propertyKeyTokenHolder, getDescriptor(), config, analyzer, propertyNames, usageTracker);

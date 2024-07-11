@@ -42,7 +42,7 @@ public class RangeIndexReader extends NativeIndexReader<RangeKey> {
             GBPTree<RangeKey, NullValue> tree,
             IndexLayout<RangeKey> layout,
             IndexDescriptor descriptor,
-            IndexUsageTracker usageTracker) {
+            IndexUsageTracking usageTracker) {
         super(tree, layout, descriptor, usageTracker);
     }
 
