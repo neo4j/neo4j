@@ -4,7 +4,7 @@
     <parent>
         <groupId>org.neo4j</groupId>
         <artifactId>cypher-v5-javacc-parser-parent</artifactId>
-        <version>5.22.0-SNAPSHOT</version>
+        <version>5.23.0-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
