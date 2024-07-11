@@ -6,7 +6,7 @@
     <parent>
         <groupId>org.neo4j</groupId>
         <artifactId>community-integration-tests</artifactId>
-        <version>5.22.0-SNAPSHOT</version>
+        <version>5.22.0</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
