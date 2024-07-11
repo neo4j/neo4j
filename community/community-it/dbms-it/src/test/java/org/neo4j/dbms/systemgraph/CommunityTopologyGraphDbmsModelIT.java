@@ -35,6 +35,7 @@ import org.neo4j.configuration.helpers.RemoteUri;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.database.DatabaseReferenceImpl;
+import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.database.NormalizedDatabaseName;
 
 public class CommunityTopologyGraphDbmsModelIT extends BaseTopologyGraphDbmsModelIT {
@@ -197,16 +198,16 @@ public class CommunityTopologyGraphDbmsModelIT extends BaseTopologyGraphDbmsMode
                                 new NormalizedDatabaseName(foo.name()),
                                 foo,
                                 Map.of(
-                                        0, new DatabaseReferenceImpl.Internal(name(foo0.name()), foo0, true),
-                                        1, new DatabaseReferenceImpl.Internal(name(foo1.name()), foo1, true))),
+                                        0, shardReference(name(foo0.name()), foo0),
+                                        1, shardReference(name(foo1.name()), foo1))),
                         new DatabaseReferenceImpl.SPD(
                                 new NormalizedDatabaseName(bar.name()),
                                 bar,
                                 Map.of(
-                                        0, new DatabaseReferenceImpl.Internal(name(bar0.name()), bar0, true),
-                                        1, new DatabaseReferenceImpl.Internal(name(bar1.name()), bar1, true),
-                                        2, new DatabaseReferenceImpl.Internal(name(bar2.name()), bar2, true),
-                                        3, new DatabaseReferenceImpl.Internal(name(bar3.name()), bar3, true)))));
+                                        0, shardReference(name(bar0.name()), bar0),
+                                        1, shardReference(name(bar1.name()), bar1),
+                                        2, shardReference(name(bar2.name()), bar2),
+                                        3, shardReference(name(bar3.name()), bar3)))));
     }
 
     @Test
@@ -317,5 +318,10 @@ public class CommunityTopologyGraphDbmsModelIT extends BaseTopologyGraphDbmsMode
         // then
         assertThat(result).isPresent();
         assertThat(result.get()).isEqualTo(properties);
+    }
+
+    protected DatabaseReferenceImpl.Internal shardReference(
+            NormalizedDatabaseName alias, NamedDatabaseId namedDatabaseId) {
+        return new DatabaseReferenceImpl.SPDShard(alias, namedDatabaseId, true);
     }
 }

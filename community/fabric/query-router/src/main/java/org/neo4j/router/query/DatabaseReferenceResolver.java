@@ -30,6 +30,4 @@ public interface DatabaseReferenceResolver {
     DatabaseReference resolve(String name);
 
     DatabaseReference resolve(NormalizedDatabaseName name);
-
-    boolean isPropertyShardDatabase(NormalizedDatabaseName name);
 }

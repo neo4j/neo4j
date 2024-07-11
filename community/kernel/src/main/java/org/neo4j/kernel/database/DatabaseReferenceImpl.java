@@ -368,5 +368,14 @@ public abstract class DatabaseReferenceImpl implements DatabaseReference {
         public SPDShard(NormalizedDatabaseName alias, NamedDatabaseId namedDatabaseId, boolean primary) {
             super(alias, namedDatabaseId, primary);
         }
+
+        @Override
+        public String toString() {
+            return "Shard{" + "alias="
+                    + alias + ", namespace="
+                    + namespace + ", namedDatabaseId="
+                    + namedDatabaseId + ", primary="
+                    + primary + '}';
+        }
     }
 }

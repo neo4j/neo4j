@@ -140,6 +140,7 @@ public class QueryRouterImpl implements QueryRouter {
         var locationService = createLocationService(routingInfo);
         var routerTransaction = createRouterTransaction(transactionInfo, transactionBookmarkManager);
         transactionManager.registerTransaction(routerTransaction);
+        boolean rpcCall = isRpcCall(sessionDatabaseReference);
 
         // Try to create a dummy kernel transaction so that this router transaction can be monitored
         DatabaseTransaction sessionTransaction = null;
@@ -147,7 +148,9 @@ public class QueryRouterImpl implements QueryRouter {
             var dummyTransactionMode = transactionInfo.accessMode().equals(AccessMode.READ)
                     ? TransactionMode.DEFINITELY_READ
                     : TransactionMode.MAYBE_WRITE;
-            Location location = locationService.locationOf(sessionDatabaseReference);
+            Location location = rpcCall
+                    ? new Location.Local(-1, (DatabaseReferenceImpl.Internal) sessionDatabaseReference)
+                    : locationService.locationOf(sessionDatabaseReference);
             sessionTransaction = routerTransaction.transactionFor(location, dummyTransactionMode, locationService);
         } catch (Exception e) {
             queryRouterLog.warn("Could not eagerly create kernel transaction due to: %s".formatted(e));
@@ -161,7 +164,7 @@ public class QueryRouterImpl implements QueryRouter {
                 locationService,
                 transactionBookmarkManager,
                 sessionTransaction,
-                isRpcCall(sessionDatabaseReference));
+                rpcCall);
     }
 
     private DatabaseReference resolveSessionDatabaseReference(TransactionInfo transactionInfo) {
@@ -212,7 +215,7 @@ public class QueryRouterImpl implements QueryRouter {
     }
 
     private boolean isRpcCall(DatabaseReference databaseReference) {
-        return databaseReferenceResolver.isPropertyShardDatabase(databaseReference.fullName());
+        return databaseReference instanceof DatabaseReferenceImpl.SPDShard;
     }
 
     @Override
