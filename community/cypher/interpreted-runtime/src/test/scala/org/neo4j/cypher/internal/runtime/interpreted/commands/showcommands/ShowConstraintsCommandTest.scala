@@ -41,6 +41,7 @@ import org.neo4j.cypher.internal.runtime.ConstraintInfo
 import org.neo4j.cypher.internal.runtime.IndexInfo
 import org.neo4j.cypher.internal.runtime.IndexStatus
 import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.internal.schema.EndpointType
 import org.neo4j.internal.schema.IndexPrototype
 import org.neo4j.internal.schema.IndexType
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory
@@ -1088,5 +1089,87 @@ class ShowConstraintsCommandTest extends ShowCommandTestBase {
       createStatement =
         s"CREATE CONSTRAINT `constraint3` FOR ()-[r:`$relType`]-() REQUIRE (r.`$prop`) IS NOT NULL"
     )
+  }
+
+  // These tests should be merged later, we need some way to disambiguate between different endpoint constraints...
+  test("show end point constraints - target") {
+    // Given
+    val relTargetConstraintDescriptor =
+      ConstraintDescriptorFactory.relationshipEndpointForSchema(
+        relTypeDescriptor,
+        labelDescriptor.getLabelId,
+        EndpointType.END
+      )
+        .withName("constraint0")
+        .withId(0)
+    val constraintInfo =
+      ConstraintInfo(List(relType), List(), None)
+
+    // Set-up which constraints to return:
+    when(ctx.getAllConstraints()).thenReturn(Map(
+      relTargetConstraintDescriptor -> constraintInfo
+    ))
+
+    // When
+    val showConstraints = ShowConstraintsCommand(AllConstraints, allColumns, List.empty)
+    val result = showConstraints.originalNameRows(queryState, initialCypherRow).toList
+
+    // Then
+    result should have size 1
+    checkResult(
+      result.head,
+      name = "constraint0",
+      id = 0,
+      constraintType = "RELATIONSHIP_ENDPOINT_LABEL",
+      entityType = "RELATIONSHIP",
+      labelsOrTypes = List(relType),
+      properties = List.empty[String],
+      index = Some(null),
+      propType = Some(null),
+      options = Values.NO_VALUE,
+      createStatement = ""
+    )
+  }
+
+  // These tests should be merged later, we need some way to disambiguate between different endpoint constraints...
+  test("show end point constraints - source") {
+    // Given
+    val relSourceConstraintDescriptor =
+      ConstraintDescriptorFactory.relationshipEndpointForSchema(
+        relTypeDescriptor,
+        labelDescriptor.getLabelId,
+        EndpointType.START
+      )
+        .withName("constraint0")
+        .withId(0)
+
+    val constraintInfo =
+      ConstraintInfo(List(relType), List(), None)
+
+    // Set-up which constraints to return:
+    when(ctx.getAllConstraints()).thenReturn(Map(
+      relSourceConstraintDescriptor -> constraintInfo
+    ))
+
+    // When
+    val showConstraints = ShowConstraintsCommand(AllConstraints, allColumns, List.empty)
+    val result = showConstraints.originalNameRows(queryState, initialCypherRow).toList
+
+    // Then
+    result should have size 1
+    checkResult(
+      result.head,
+      name = "constraint0",
+      id = 0,
+      constraintType = "RELATIONSHIP_ENDPOINT_LABEL",
+      entityType = "RELATIONSHIP",
+      labelsOrTypes = List(relType),
+      properties = List.empty[String],
+      index = Some(null),
+      propType = Some(null),
+      options = Values.NO_VALUE,
+      createStatement = ""
+    )
+
   }
 }

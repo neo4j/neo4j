@@ -442,6 +442,18 @@ class ConstraintsJsonTest extends CypherFunSuite with TableDrivenPropertyChecks 
           properties = List("prop"),
           `type` = ConstraintType.PROPERTY_TYPE,
           propertyTypes = List(SchemaValueType.INTEGER)
+        ),
+      """{
+        |    "relationshipType": "REL",
+        |    "type": "Relationship endpoint label constraint",
+        |    "endpointLabelId": "Integer"
+        |}""".stripMargin ->
+        Constraint(
+          label = None,
+          relationshipType = Some("REL"),
+          properties = List.empty,
+          `type` = ConstraintType.ENDPOINT,
+          propertyTypes = Nil
         )
     )
 

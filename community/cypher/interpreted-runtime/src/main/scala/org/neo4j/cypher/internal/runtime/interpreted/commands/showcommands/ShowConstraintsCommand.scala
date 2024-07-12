@@ -33,6 +33,7 @@ import org.neo4j.cypher.internal.ast.RelExistsConstraints
 import org.neo4j.cypher.internal.ast.RelKeyConstraints
 import org.neo4j.cypher.internal.ast.RelPropTypeConstraints
 import org.neo4j.cypher.internal.ast.RelUniqueConstraints
+import org.neo4j.cypher.internal.ast.RelationshipEndpointConstraints
 import org.neo4j.cypher.internal.ast.ShowColumn
 import org.neo4j.cypher.internal.ast.ShowConstraintType
 import org.neo4j.cypher.internal.ast.ShowConstraintsClause.createStatementColumn
@@ -244,6 +245,9 @@ object ShowConstraintsCommand {
           throw new IllegalArgumentException(s"Expected a property type for $constraintType constraint.")
         )
         createRelConstraintCommand(name, labelsOrTypes, properties, s"IS :: $typeString")
+      case RelationshipEndpointConstraints =>
+        // Currently not implemented
+        ""
       case _ => throw new IllegalArgumentException(
           s"Did not expect constraint type ${constraintType.prettyPrint} for constraint create command."
         )
@@ -263,6 +267,7 @@ object ShowConstraintsCommand {
       case (schema.ConstraintType.EXISTS, EntityType.RELATIONSHIP)        => RelExistsConstraints
       case (schema.ConstraintType.PROPERTY_TYPE, EntityType.NODE)         => NodePropTypeConstraints
       case (schema.ConstraintType.PROPERTY_TYPE, EntityType.RELATIONSHIP) => RelPropTypeConstraints
+      case (schema.ConstraintType.ENDPOINT, EntityType.RELATIONSHIP)      => RelationshipEndpointConstraints
       case _ => throw new IllegalStateException(
           s"Invalid constraint combination: ConstraintType $internalConstraintType and EntityType $entityType."
         )

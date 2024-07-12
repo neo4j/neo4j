@@ -99,3 +99,9 @@ case object RelPropTypeConstraints extends ShowConstraintType {
   override val prettyPrint: String = "RELATIONSHIP PROPERTY TYPE"
   override val description: String = "relationshipPropertyTypeConstraints"
 }
+
+case object RelationshipEndpointConstraints extends ShowConstraintType {
+  override val output: String = "RELATIONSHIP_ENDPOINT_LABEL"
+  override val prettyPrint: String = "RELATIONSHIP ENDPOINT LABEL"
+  override val description: String = "relationshipEndpointLabelConstraints"
+}
