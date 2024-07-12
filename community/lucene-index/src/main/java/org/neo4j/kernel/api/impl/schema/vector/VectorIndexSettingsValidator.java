@@ -20,6 +20,7 @@
 package org.neo4j.kernel.api.impl.schema.vector;
 
 import static java.lang.String.CASE_INSENSITIVE_ORDER;
+import static org.neo4j.kernel.api.impl.schema.vector.VectorIndexConfigUtils.INDEX_SETTING_COMPARATOR;
 import static org.neo4j.kernel.api.impl.schema.vector.VectorIndexConfigUtils.assertValidRecords;
 import static org.neo4j.kernel.api.impl.schema.vector.VectorIndexConfigUtils.toIndexConfig;
 import static org.neo4j.kernel.api.impl.schema.vector.VectorIndexConfigUtils.toValidSettings;
@@ -95,7 +96,7 @@ public interface VectorIndexSettingsValidator {
                             .selectInstancesOf(ReadDefaultOnly.class)
                             .collect(IndexSettingValidator::setting)
                             .toSet())
-                    .toImmutableSortedSet(Comparator.comparing(IndexSetting::getSettingName, CASE_INSENSITIVE_ORDER));
+                    .toImmutableSortedSet(INDEX_SETTING_COMPARATOR);
 
             this.validSettingNames = this.validSettings
                     .collect(IndexSetting::getSettingName)

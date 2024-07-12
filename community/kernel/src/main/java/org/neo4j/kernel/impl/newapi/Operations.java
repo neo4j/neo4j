@@ -36,6 +36,7 @@ import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_LABEL;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_PROPERTY_KEY;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_RELATIONSHIP;
+import static org.neo4j.kernel.api.impl.schema.vector.VectorIndexConfigUtils.INDEX_SETTING_INTRODUCED_VERSIONS;
 import static org.neo4j.kernel.impl.locking.ResourceIds.indexEntryResourceId;
 import static org.neo4j.kernel.impl.newapi.IndexTxStateUpdater.LabelChangeType.ADDED_LABEL;
 import static org.neo4j.kernel.impl.newapi.IndexTxStateUpdater.LabelChangeType.REMOVED_LABEL;
@@ -57,7 +58,9 @@ import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
 import org.eclipse.collections.api.set.primitive.IntSet;
 import org.eclipse.collections.api.set.primitive.LongSet;
 import org.eclipse.collections.api.set.primitive.MutableIntSet;
+import org.eclipse.collections.api.tuple.Pair;
 import org.eclipse.collections.api.tuple.primitive.IntObjectPair;
+import org.eclipse.collections.impl.block.factory.Predicates;
 import org.eclipse.collections.impl.factory.primitive.IntObjectMaps;
 import org.eclipse.collections.impl.factory.primitive.IntSets;
 import org.neo4j.common.EntityType;
@@ -114,6 +117,7 @@ import org.neo4j.internal.schema.SchemaDescriptorImplementation;
 import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.internal.schema.SchemaNameUtil;
+import org.neo4j.internal.schema.SettingsAccessor;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.KeyConstraintDescriptor;
@@ -1655,7 +1659,7 @@ public class Operations implements Write, SchemaWrite, Upgrade {
                     final var descriptor = prototype.getIndexProvider();
                     final var version = VectorIndexVersion.fromDescriptor(descriptor);
                     final var unsupportedMessage =
-                            new StringBuilder(384).append("Failed to create relationship vector index.");
+                            new StringBuilder().append("Failed to create relationship vector index.");
                     if (version == VectorIndexVersion.V1_0) {
                         supported = false;
                         final var latestDescriptor = VectorIndexVersion.latestSupportedVersion(
@@ -1690,6 +1694,22 @@ public class Operations implements Write, SchemaWrite, Upgrade {
                 && prototype.schema().getPropertyIds().length > 1) {
             throw new UnsupportedOperationException(
                     "Composite indexes are not supported for " + indexType.name() + " index type.");
+        }
+
+        // valid config settings
+        if (indexType == IndexType.VECTOR) {
+            prototype
+                    .getIndexConfig()
+                    .entries()
+                    .asLazy()
+                    .collect(Pair::getOne)
+                    .collect(SettingsAccessor.INDEX_SETTING_LOOKUP::get)
+                    .collectIf(
+                            Predicates.in(INDEX_SETTING_INTRODUCED_VERSIONS.keysView()),
+                            INDEX_SETTING_INTRODUCED_VERSIONS::get)
+                    .maxOptional()
+                    .ifPresent(kernelVersion -> assertSupportedInVersion(
+                            kernelVersion, "Failed to create vector index with provided settings."));
         }
 
         // ensure named
@@ -1957,7 +1977,7 @@ public class Operations implements Write, SchemaWrite, Upgrade {
     }
 
     private void assertSupportedInVersion(KernelVersion minimumVersionForSupport, String message, Object... args) {
-        final var unsupportedMessage = new StringBuilder(256).append(message.formatted(args));
+        final var unsupportedMessage = new StringBuilder().append(message.formatted(args));
         if (!checkSupportedInVerson(unsupportedMessage, minimumVersionForSupport)) {
             throw new UnsupportedOperationException(unsupportedMessage.toString());
         }

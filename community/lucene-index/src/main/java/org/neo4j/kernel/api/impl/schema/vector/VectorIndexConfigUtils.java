@@ -30,6 +30,7 @@ import org.eclipse.collections.api.RichIterable;
 import org.eclipse.collections.api.block.predicate.Predicate;
 import org.eclipse.collections.api.map.sorted.ImmutableSortedMap;
 import org.eclipse.collections.impl.block.factory.Predicates;
+import org.eclipse.collections.impl.factory.SortedMaps;
 import org.neo4j.graphdb.schema.IndexSetting;
 import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexConfigValidationRecords;
@@ -38,15 +39,31 @@ import org.neo4j.internal.schema.IndexConfigValidationRecords.IndexConfigValidat
 import org.neo4j.internal.schema.IndexConfigValidationRecords.InvalidValue;
 import org.neo4j.internal.schema.IndexConfigValidationRecords.Valid;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.util.Preconditions;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.Values;
 import org.neo4j.values.utils.PrettyPrinter;
 
 public class VectorIndexConfigUtils {
+    static final Comparator<IndexSetting> INDEX_SETTING_COMPARATOR =
+            Comparator.comparing(IndexSetting::getSettingName, CASE_INSENSITIVE_ORDER);
+
     static final IndexSetting DIMENSIONS = IndexSetting.vector_Dimensions();
     static final IndexSetting SIMILARITY_FUNCTION = IndexSetting.vector_Similarity_Function();
     static final IndexSetting QUANTIZATION = IndexSetting.vector_Quantization();
+
+    public static final ImmutableSortedMap<IndexSetting, KernelVersion> INDEX_SETTING_INTRODUCED_VERSIONS =
+            SortedMaps.mutable
+                    .of(
+                            INDEX_SETTING_COMPARATOR,
+                            DIMENSIONS,
+                            KernelVersion.VERSION_NODE_VECTOR_INDEX_INTRODUCED,
+                            SIMILARITY_FUNCTION,
+                            KernelVersion.VERSION_NODE_VECTOR_INDEX_INTRODUCED,
+                            QUANTIZATION,
+                            KernelVersion.VERSION_VECTOR_QUANTIZATION)
+                    .toImmutable();
 
     public record Range<T extends Comparable<T>>(T min, T max) {
         public Range {
