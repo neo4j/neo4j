@@ -65,9 +65,11 @@ public interface IndexingProvidersService {
 
     /**
      * Validate the given index prototype, or throw an {@link IllegalArgumentException}.
+     *
      * @param prototype The prototype to the validated.
+     * @return
      */
-    void validateIndexPrototype(IndexPrototype prototype);
+    IndexPrototype validateIndexPrototype(IndexPrototype prototype);
 
     /**
      * See {@link IndexConfigCompleter#completeConfiguration(IndexDescriptor, StorageEngineIndexingBehaviour)}

@@ -90,10 +90,13 @@ public class VectorIndexProvider extends AbstractLuceneIndexProvider {
     }
 
     @Override
-    public void validatePrototype(IndexPrototype prototype) {
-        super.validatePrototype(prototype);
-        settingsValidator.validateToVectorIndexConfig(
-                new IndexConfigAccessor(prototype.getIndexConfig())); // construction handles validation
+    public IndexPrototype validatePrototype(IndexPrototype prototype) {
+        prototype = super.validatePrototype(prototype);
+        // construction handles validation
+        final var vectorIndexConfig =
+                settingsValidator.validateToVectorIndexConfig(new IndexConfigAccessor(prototype.getIndexConfig()));
+        // replaces provided config with validated config with set defaults
+        return prototype.withIndexConfig(vectorIndexConfig.config());
     }
 
     @Override

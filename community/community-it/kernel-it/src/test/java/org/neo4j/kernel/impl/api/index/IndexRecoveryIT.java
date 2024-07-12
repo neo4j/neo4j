@@ -62,6 +62,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -131,6 +132,7 @@ class IndexRecoveryIT {
         when(mockedIndexProvider.completeConfiguration(any(IndexDescriptor.class), any()))
                 .then(inv -> inv.getArgument(0));
         when(mockedIndexProvider.getIndexType()).thenReturn(LOOKUP);
+        when(mockedIndexProvider.validatePrototype(any(IndexPrototype.class))).thenAnswer(i -> i.getArguments()[0]);
     }
 
     @AfterEach

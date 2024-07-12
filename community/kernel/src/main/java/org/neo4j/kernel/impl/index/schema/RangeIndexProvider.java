@@ -172,7 +172,7 @@ public class RangeIndexProvider extends NativeIndexProvider<RangeKey, RangeLayou
     }
 
     @Override
-    public void validatePrototype(IndexPrototype prototype) {
+    public IndexPrototype validatePrototype(IndexPrototype prototype) {
         IndexType indexType = prototype.getIndexType();
         if (indexType != IndexType.RANGE) {
             String providerName = getProviderDescriptor().name();
@@ -186,6 +186,7 @@ public class RangeIndexProvider extends NativeIndexProvider<RangeKey, RangeLayou
                     + " index schema is not a range index schema, which it is required to be for the '"
                     + getProviderDescriptor().name() + "' index provider to be able to create an index.");
         }
+        return prototype;
     }
 
     @Override

@@ -68,6 +68,7 @@ import org.neo4j.internal.kernel.api.security.AccessMode.Static;
 import org.neo4j.internal.kernel.api.security.CommunitySecurityLog;
 import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
+import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorImplementation;
@@ -218,6 +219,8 @@ abstract class OperationsTest {
         when(indexingProvidersService.getFulltextProvider())
                 .thenAnswer(inv -> fulltextProvider.getProviderDescriptor());
         when(indexingProvidersService.getDefaultProvider()).thenAnswer(inv -> rangeProvider.getProviderDescriptor());
+        when(indexingProvidersService.validateIndexPrototype(any(IndexPrototype.class)))
+                .thenAnswer(i -> i.getArguments()[0]);
         List.of(fulltextProvider, rangeProvider, provider).forEach(indexProvider -> {
             IndexProviderDescriptor descriptor = indexProvider.getProviderDescriptor();
             String name = descriptor.name();

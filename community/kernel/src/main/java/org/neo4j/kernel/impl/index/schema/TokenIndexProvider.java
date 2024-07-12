@@ -185,7 +185,7 @@ public class TokenIndexProvider extends IndexProvider {
     }
 
     @Override
-    public void validatePrototype(IndexPrototype prototype) {
+    public IndexPrototype validatePrototype(IndexPrototype prototype) {
         IndexType indexType = prototype.getIndexType();
         if (indexType != IndexType.LOOKUP) {
             throw new IllegalArgumentException("The '" + getProviderDescriptor().name()
@@ -204,6 +204,7 @@ public class TokenIndexProvider extends IndexProvider {
             throw new IllegalArgumentException("The '" + getProviderDescriptor().name()
                     + "' index provider does not support uniqueness indexes: " + prototype);
         }
+        return prototype;
     }
 
     @Override

@@ -304,8 +304,9 @@ public class FulltextIndexProvider extends IndexProvider {
     }
 
     @Override
-    public void validatePrototype(IndexPrototype prototype) {
+    public IndexPrototype validatePrototype(IndexPrototype prototype) {
         validateIndexRef(prototype);
+        return prototype;
     }
 
     @Override

@@ -1711,7 +1711,7 @@ public class Operations implements Write, SchemaWrite, Upgrade {
     }
 
     private IndexDescriptor indexDoCreate(IndexPrototype prototype) {
-        indexProviders.validateIndexPrototype(prototype);
+        prototype = indexProviders.validateIndexPrototype(prototype);
         TransactionState transactionState = ktx.txState();
         long schemaRecordId = commandCreationContext.reserveSchema();
         IndexDescriptor index = prototype.materialise(schemaRecordId);

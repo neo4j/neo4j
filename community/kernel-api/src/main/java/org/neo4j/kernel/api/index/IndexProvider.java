@@ -175,7 +175,9 @@ public abstract class IndexProvider extends LifecycleAdapter implements IndexCon
                 }
 
                 @Override
-                public void validatePrototype(IndexPrototype prototype) {}
+                public IndexPrototype validatePrototype(IndexPrototype prototype) {
+                    return prototype;
+                }
 
                 @Override
                 public IndexType getIndexType() {
@@ -290,9 +292,11 @@ public abstract class IndexProvider extends LifecycleAdapter implements IndexCon
     /**
      * Validate that the given index prototype can be used to create an index with the given index provider, or throw an {@link IllegalArgumentException} if
      * that is not the case.
+     *
      * @param prototype The prototype to be validated.
+     * @return
      */
-    public abstract void validatePrototype(IndexPrototype prototype);
+    public abstract IndexPrototype validatePrototype(IndexPrototype prototype);
 
     /**
      * @return a description of this index provider
@@ -399,8 +403,8 @@ public abstract class IndexProvider extends LifecycleAdapter implements IndexCon
         }
 
         @Override
-        public void validatePrototype(IndexPrototype prototype) {
-            provider.validatePrototype(prototype);
+        public IndexPrototype validatePrototype(IndexPrototype prototype) {
+            return provider.validatePrototype(prototype);
         }
 
         @Override

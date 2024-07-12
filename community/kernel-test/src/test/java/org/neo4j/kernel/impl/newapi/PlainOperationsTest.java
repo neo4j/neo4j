@@ -1089,6 +1089,8 @@ public class PlainOperationsTest extends OperationsTest {
         IndexingProvidersService indexingProvidersService = mock(IndexingProvidersService.class);
         when(indexingProvidersService.getDefaultProvider()).thenReturn(indexProviderDescriptor);
         when(indexingProvidersService.getIndexProvider(any())).thenReturn(indexProvider);
+        when(indexingProvidersService.validateIndexPrototype(any(IndexPrototype.class)))
+                .thenAnswer(i -> i.getArguments()[0]);
         KernelSchemaRead kernelSchemaRead = mock(KernelSchemaRead.class);
         when(kernelSchemaRead.index(any(), any())).thenReturn(IndexDescriptor.NO_INDEX);
         when(kernelSchemaRead.indexGetForName(any())).thenReturn(IndexDescriptor.NO_INDEX);

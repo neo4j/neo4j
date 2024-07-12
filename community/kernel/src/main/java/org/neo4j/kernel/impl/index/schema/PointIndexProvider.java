@@ -159,7 +159,7 @@ public class PointIndexProvider extends NativeIndexProvider<PointKey, PointLayou
     }
 
     @Override
-    public void validatePrototype(IndexPrototype prototype) {
+    public IndexPrototype validatePrototype(IndexPrototype prototype) {
         IndexType indexType = prototype.getIndexType();
         if (indexType != IndexType.POINT) {
             String providerName = getProviderDescriptor().name();
@@ -192,6 +192,7 @@ public class PointIndexProvider extends NativeIndexProvider<PointKey, PointLayou
         } catch (IllegalArgumentException e) {
             throw new IllegalArgumentException("Invalid spatial index settings.", e);
         }
+        return prototype;
     }
 
     @Override

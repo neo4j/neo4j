@@ -509,9 +509,9 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
     }
 
     @Override
-    public void validateIndexPrototype(IndexPrototype prototype) {
+    public IndexPrototype validateIndexPrototype(IndexPrototype prototype) {
         IndexProvider provider = providerMap.lookup(prototype.getIndexProvider());
-        provider.validatePrototype(prototype);
+        return provider.validatePrototype(prototype);
     }
 
     @Override

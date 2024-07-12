@@ -51,6 +51,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -172,6 +173,7 @@ class IndexCRUDIT {
         when(mockedIndexProvider.completeConfiguration(any(IndexDescriptor.class), any()))
                 .then(inv -> inv.getArgument(0));
         when(mockedIndexProvider.getIndexType()).thenReturn(LOOKUP);
+        when(mockedIndexProvider.validatePrototype(any(IndexPrototype.class))).thenAnswer(i -> i.getArguments()[0]);
 
         managementService = new TestDatabaseManagementServiceBuilder()
                 .setFileSystem(fs)

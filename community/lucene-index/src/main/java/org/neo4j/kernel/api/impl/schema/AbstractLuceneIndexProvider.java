@@ -84,7 +84,7 @@ public abstract class AbstractLuceneIndexProvider extends IndexProvider {
     }
 
     @Override
-    public void validatePrototype(IndexPrototype prototype) {
+    public IndexPrototype validatePrototype(IndexPrototype prototype) {
         final var indexType = prototype.getIndexType();
         final var providerName = getProviderDescriptor().name();
         if (indexType != supportedIndexType) {
@@ -95,6 +95,7 @@ public abstract class AbstractLuceneIndexProvider extends IndexProvider {
             throw new IllegalArgumentException(
                     "The '%s' index provider does not support unique indexes: %s".formatted(providerName, prototype));
         }
+        return prototype;
     }
 
     @Override
