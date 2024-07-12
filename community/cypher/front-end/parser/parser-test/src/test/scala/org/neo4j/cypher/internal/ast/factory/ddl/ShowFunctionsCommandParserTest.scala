@@ -16,8 +16,13 @@
  */
 package org.neo4j.cypher.internal.ast.factory.ddl
 
-import org.neo4j.cypher.internal.ast
+import org.neo4j.cypher.internal.ast.AllFunctions
+import org.neo4j.cypher.internal.ast.BuiltInFunctions
+import org.neo4j.cypher.internal.ast.CurrentUser
+import org.neo4j.cypher.internal.ast.ShowFunctionsClause
 import org.neo4j.cypher.internal.ast.Statements
+import org.neo4j.cypher.internal.ast.User
+import org.neo4j.cypher.internal.ast.UserDefinedFunctions
 import org.neo4j.cypher.internal.ast.test.util.AstParsing.Cypher5JavaCc
 import org.neo4j.cypher.internal.expressions.AllIterablePredicate
 import org.neo4j.cypher.internal.util.symbols.IntegerType
@@ -27,21 +32,21 @@ class ShowFunctionsCommandParserTest extends AdministrationAndSchemaCommandParse
 
   Seq("FUNCTION", "FUNCTIONS").foreach { funcKeyword =>
     Seq(
-      ("", ast.AllFunctions),
-      ("ALL", ast.AllFunctions),
-      ("BUILT IN", ast.BuiltInFunctions),
-      ("USER DEFINED", ast.UserDefinedFunctions)
+      ("", AllFunctions),
+      ("ALL", AllFunctions),
+      ("BUILT IN", BuiltInFunctions),
+      ("USER DEFINED", UserDefinedFunctions)
     ).foreach { case (typeString, functionType) =>
       test(s"SHOW $typeString $funcKeyword") {
         assertAst(
-          singleQuery(ast.ShowFunctionsClause(functionType, None, None, List.empty, yieldAll = false)(defaultPos))
+          singleQuery(ShowFunctionsClause(functionType, None, None, List.empty, yieldAll = false)(defaultPos))
         )
       }
 
       test(s"SHOW $typeString $funcKeyword EXECUTABLE") {
         assertAst(
           singleQuery(
-            ast.ShowFunctionsClause(functionType, Some(ast.CurrentUser), None, List.empty, yieldAll = false)(defaultPos)
+            ShowFunctionsClause(functionType, Some(CurrentUser), None, List.empty, yieldAll = false)(defaultPos)
           )
         )
       }
@@ -49,7 +54,7 @@ class ShowFunctionsCommandParserTest extends AdministrationAndSchemaCommandParse
       test(s"SHOW $typeString $funcKeyword EXECUTABLE BY CURRENT USER") {
         assertAst(
           singleQuery(
-            ast.ShowFunctionsClause(functionType, Some(ast.CurrentUser), None, List.empty, yieldAll = false)(defaultPos)
+            ShowFunctionsClause(functionType, Some(CurrentUser), None, List.empty, yieldAll = false)(defaultPos)
           )
         )
       }
@@ -57,9 +62,9 @@ class ShowFunctionsCommandParserTest extends AdministrationAndSchemaCommandParse
       test(s"SHOW $typeString $funcKeyword EXECUTABLE BY user") {
         assertAst(
           singleQuery(
-            ast.ShowFunctionsClause(
+            ShowFunctionsClause(
               functionType,
-              Some(ast.User("user")),
+              Some(User("user")),
               None,
               List.empty,
               yieldAll = false
@@ -71,9 +76,9 @@ class ShowFunctionsCommandParserTest extends AdministrationAndSchemaCommandParse
       test(s"SHOW $typeString $funcKeyword EXECUTABLE BY CURRENT") {
         assertAst(
           singleQuery(
-            ast.ShowFunctionsClause(
+            ShowFunctionsClause(
               functionType,
-              Some(ast.User("CURRENT")),
+              Some(User("CURRENT")),
               None,
               List.empty,
               yieldAll = false
@@ -85,9 +90,9 @@ class ShowFunctionsCommandParserTest extends AdministrationAndSchemaCommandParse
       test(s"SHOW $typeString $funcKeyword EXECUTABLE BY SHOW") {
         assertAst(
           singleQuery(
-            ast.ShowFunctionsClause(
+            ShowFunctionsClause(
               functionType,
-              Some(ast.User("SHOW")),
+              Some(User("SHOW")),
               None,
               List.empty,
               yieldAll = false
@@ -99,9 +104,9 @@ class ShowFunctionsCommandParserTest extends AdministrationAndSchemaCommandParse
       test(s"SHOW $typeString $funcKeyword EXECUTABLE BY TERMINATE") {
         assertAst(
           singleQuery(
-            ast.ShowFunctionsClause(
+            ShowFunctionsClause(
               functionType,
-              Some(ast.User("TERMINATE")),
+              Some(User("TERMINATE")),
               None,
               List.empty,
               yieldAll = false
@@ -114,7 +119,7 @@ class ShowFunctionsCommandParserTest extends AdministrationAndSchemaCommandParse
         assertAst(
           singleQuery(
             use(List("db")),
-            ast.ShowFunctionsClause(functionType, None, None, List.empty, yieldAll = false)(defaultPos)
+            ShowFunctionsClause(functionType, None, None, List.empty, yieldAll = false)(defaultPos)
           ),
           comparePosition = false
         )
@@ -127,8 +132,8 @@ class ShowFunctionsCommandParserTest extends AdministrationAndSchemaCommandParse
 
   test("SHOW FUNCTION WHERE name = 'my.func'") {
     assertAst(
-      singleQuery(ast.ShowFunctionsClause(
-        ast.AllFunctions,
+      singleQuery(ShowFunctionsClause(
+        AllFunctions,
         None,
         Some(where(equals(varFor("name"), literalString("my.func")))),
         List.empty,
@@ -140,8 +145,8 @@ class ShowFunctionsCommandParserTest extends AdministrationAndSchemaCommandParse
 
   test("SHOW FUNCTIONS YIELD description") {
     assertAst(singleQuery(
-      ast.ShowFunctionsClause(
-        ast.AllFunctions,
+      ShowFunctionsClause(
+        AllFunctions,
         None,
         None,
         List(commandResultItem("description")),
@@ -156,9 +161,9 @@ class ShowFunctionsCommandParserTest extends AdministrationAndSchemaCommandParse
   test("SHOW USER DEFINED FUNCTIONS EXECUTABLE BY user YIELD *") {
     assertAst(
       singleQuery(
-        ast.ShowFunctionsClause(
-          ast.UserDefinedFunctions,
-          Some(ast.User("user")),
+        ShowFunctionsClause(
+          UserDefinedFunctions,
+          Some(User("user")),
           None,
           List.empty,
           yieldAll = true
@@ -172,7 +177,7 @@ class ShowFunctionsCommandParserTest extends AdministrationAndSchemaCommandParse
   test("SHOW FUNCTIONS YIELD * ORDER BY name SKIP 2 LIMIT 5") {
     assertAst(
       singleQuery(
-        ast.ShowFunctionsClause(ast.AllFunctions, None, None, List.empty, yieldAll = true)(defaultPos),
+        ShowFunctionsClause(AllFunctions, None, None, List.empty, yieldAll = true)(defaultPos),
         withFromYield(returnAllItems, Some(orderBy(sortItem(varFor("name")))), Some(skip(2)), Some(limit(5)))
       ),
       comparePosition = false
@@ -183,8 +188,8 @@ class ShowFunctionsCommandParserTest extends AdministrationAndSchemaCommandParse
     assertAst(
       singleQuery(
         use(List("db")),
-        ast.ShowFunctionsClause(
-          ast.BuiltInFunctions,
+        ShowFunctionsClause(
+          BuiltInFunctions,
           None,
           None,
           List(
@@ -209,9 +214,9 @@ class ShowFunctionsCommandParserTest extends AdministrationAndSchemaCommandParse
     assertAst(
       singleQuery(
         use(List("db")),
-        ast.ShowFunctionsClause(
-          ast.AllFunctions,
-          Some(ast.CurrentUser),
+        ShowFunctionsClause(
+          AllFunctions,
+          Some(CurrentUser),
           None,
           List(
             commandResultItem("name"),
@@ -235,8 +240,8 @@ class ShowFunctionsCommandParserTest extends AdministrationAndSchemaCommandParse
   test("SHOW ALL FUNCTIONS YIELD name AS FUNCTION, mode AS OUTPUT") {
     assertAst(
       singleQuery(
-        ast.ShowFunctionsClause(
-          ast.AllFunctions,
+        ShowFunctionsClause(
+          AllFunctions,
           None,
           None,
           List(
@@ -253,8 +258,8 @@ class ShowFunctionsCommandParserTest extends AdministrationAndSchemaCommandParse
 
   test("SHOW FUNCTIONS YIELD a ORDER BY a WHERE a = 1") {
     assertAst(singleQuery(
-      ast.ShowFunctionsClause(
-        ast.AllFunctions,
+      ShowFunctionsClause(
+        AllFunctions,
         None,
         None,
         List(commandResultItem("a")),
@@ -270,8 +275,8 @@ class ShowFunctionsCommandParserTest extends AdministrationAndSchemaCommandParse
 
   test("SHOW FUNCTIONS YIELD a AS b ORDER BY b WHERE b = 1") {
     assertAst(singleQuery(
-      ast.ShowFunctionsClause(
-        ast.AllFunctions,
+      ShowFunctionsClause(
+        AllFunctions,
         None,
         None,
         List(commandResultItem("a", Some("b"))),
@@ -287,8 +292,8 @@ class ShowFunctionsCommandParserTest extends AdministrationAndSchemaCommandParse
 
   test("SHOW FUNCTIONS YIELD a AS b ORDER BY a WHERE a = 1") {
     assertAst(singleQuery(
-      ast.ShowFunctionsClause(
-        ast.AllFunctions,
+      ShowFunctionsClause(
+        AllFunctions,
         None,
         None,
         List(commandResultItem("a", Some("b"))),
@@ -304,8 +309,8 @@ class ShowFunctionsCommandParserTest extends AdministrationAndSchemaCommandParse
 
   test("SHOW FUNCTIONS YIELD a ORDER BY EXISTS { (a) } WHERE EXISTS { (a) }") {
     assertAst(singleQuery(
-      ast.ShowFunctionsClause(
-        ast.AllFunctions,
+      ShowFunctionsClause(
+        AllFunctions,
         None,
         None,
         List(commandResultItem("a")),
@@ -321,8 +326,8 @@ class ShowFunctionsCommandParserTest extends AdministrationAndSchemaCommandParse
 
   test("SHOW FUNCTIONS YIELD a ORDER BY EXISTS { (b) } WHERE EXISTS { (b) }") {
     assertAst(singleQuery(
-      ast.ShowFunctionsClause(
-        ast.AllFunctions,
+      ShowFunctionsClause(
+        AllFunctions,
         None,
         None,
         List(commandResultItem("a")),
@@ -338,8 +343,8 @@ class ShowFunctionsCommandParserTest extends AdministrationAndSchemaCommandParse
 
   test("SHOW FUNCTIONS YIELD a AS b ORDER BY COUNT { (b) } WHERE EXISTS { (b) }") {
     assertAst(singleQuery(
-      ast.ShowFunctionsClause(
-        ast.AllFunctions,
+      ShowFunctionsClause(
+        AllFunctions,
         None,
         None,
         List(commandResultItem("a", Some("b"))),
@@ -355,8 +360,8 @@ class ShowFunctionsCommandParserTest extends AdministrationAndSchemaCommandParse
 
   test("SHOW FUNCTIONS YIELD a AS b ORDER BY EXISTS { (a) } WHERE COLLECT { MATCH (a) RETURN a } <> []") {
     assertAst(singleQuery(
-      ast.ShowFunctionsClause(
-        ast.AllFunctions,
+      ShowFunctionsClause(
+        AllFunctions,
         None,
         None,
         List(commandResultItem("a", Some("b"))),
@@ -375,8 +380,8 @@ class ShowFunctionsCommandParserTest extends AdministrationAndSchemaCommandParse
 
   test("SHOW FUNCTIONS YIELD a AS b ORDER BY b + COUNT { () } WHERE b OR EXISTS { () }") {
     assertAst(singleQuery(
-      ast.ShowFunctionsClause(
-        ast.AllFunctions,
+      ShowFunctionsClause(
+        AllFunctions,
         None,
         None,
         List(commandResultItem("a", Some("b"))),
@@ -392,8 +397,8 @@ class ShowFunctionsCommandParserTest extends AdministrationAndSchemaCommandParse
 
   test("SHOW FUNCTIONS YIELD a AS b ORDER BY a + EXISTS { () } WHERE a OR ALL (x IN [1, 2] WHERE x IS :: INT)") {
     assertAst(singleQuery(
-      ast.ShowFunctionsClause(
-        ast.AllFunctions,
+      ShowFunctionsClause(
+        AllFunctions,
         None,
         None,
         List(commandResultItem("a", Some("b"))),
@@ -416,8 +421,8 @@ class ShowFunctionsCommandParserTest extends AdministrationAndSchemaCommandParse
 
   test("SHOW FUNCTIONS YIELD name as option, category as name where size(name) > 0 RETURN option as name") {
     assertAst(singleQuery(
-      ast.ShowFunctionsClause(
-        ast.AllFunctions,
+      ShowFunctionsClause(
+        AllFunctions,
         None,
         None,
         List(

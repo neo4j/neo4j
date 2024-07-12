@@ -16,7 +16,17 @@
  */
 package org.neo4j.cypher.internal.ast.factory.ddl
 
-import org.neo4j.cypher.internal.ast
+import org.neo4j.cypher.internal.ast.AdministrationCommand
+import org.neo4j.cypher.internal.ast.CreateRole
+import org.neo4j.cypher.internal.ast.DropRole
+import org.neo4j.cypher.internal.ast.GrantRolesToUsers
+import org.neo4j.cypher.internal.ast.IfExistsDoNothing
+import org.neo4j.cypher.internal.ast.IfExistsInvalidSyntax
+import org.neo4j.cypher.internal.ast.IfExistsReplace
+import org.neo4j.cypher.internal.ast.IfExistsThrowError
+import org.neo4j.cypher.internal.ast.RenameRole
+import org.neo4j.cypher.internal.ast.RevokeRolesFromUsers
+import org.neo4j.cypher.internal.ast.ShowRoles
 import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.test.util.AstParsing.Cypher5JavaCc
 import org.neo4j.cypher.internal.util.InputPosition
@@ -28,28 +38,28 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
 
   Seq("ROLES", "ROLE").foreach(roleKeyword => {
     test(s"SHOW $roleKeyword") {
-      parsesTo[Statements](ast.ShowRoles(withUsers = false, showAll = true, None)(pos))
+      parsesTo[Statements](ShowRoles(withUsers = false, showAll = true, None)(pos))
     }
 
     test(s"SHOW ALL $roleKeyword") {
-      parsesTo[Statements](ast.ShowRoles(withUsers = false, showAll = true, None)(pos))
+      parsesTo[Statements](ShowRoles(withUsers = false, showAll = true, None)(pos))
     }
 
     test(s"SHOW POPULATED $roleKeyword") {
-      parsesTo[Statements](ast.ShowRoles(withUsers = false, showAll = false, None)(pos))
+      parsesTo[Statements](ShowRoles(withUsers = false, showAll = false, None)(pos))
     }
 
     Seq("USERS", "USER").foreach(userKeyword => {
       test(s"SHOW $roleKeyword WITH $userKeyword") {
-        parsesTo[Statements](ast.ShowRoles(withUsers = true, showAll = true, None)(pos))
+        parsesTo[Statements](ShowRoles(withUsers = true, showAll = true, None)(pos))
       }
 
       test(s"SHOW ALL $roleKeyword WITH $userKeyword") {
-        parsesTo[Statements](ast.ShowRoles(withUsers = true, showAll = true, None)(pos))
+        parsesTo[Statements](ShowRoles(withUsers = true, showAll = true, None)(pos))
       }
 
       test(s"SHOW POPULATED $roleKeyword WITH $userKeyword") {
-        parsesTo[Statements](ast.ShowRoles(withUsers = true, showAll = false, None)(pos))
+        parsesTo[Statements](ShowRoles(withUsers = true, showAll = false, None)(pos))
       }
 
     })
@@ -58,19 +68,19 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
 
   test("USE neo4j SHOW ROLES") {
     parsesTo[Statements] {
-      ast.ShowRoles(withUsers = false, showAll = true, None)(pos).withGraph(Some(use(List("neo4j"))))
+      ShowRoles(withUsers = false, showAll = true, None)(pos).withGraph(Some(use(List("neo4j"))))
     }
   }
 
   test("USE GRAPH SYSTEM SHOW ROLES") {
     parsesTo[Statements] {
-      ast.ShowRoles(withUsers = false, showAll = true, None)(pos).withGraph(Some(use(List("SYSTEM"))))
+      ShowRoles(withUsers = false, showAll = true, None)(pos).withGraph(Some(use(List("SYSTEM"))))
     }
   }
 
   test("SHOW ALL ROLES YIELD role") {
     parsesTo[Statements](
-      ast.ShowRoles(
+      ShowRoles(
         withUsers = false,
         showAll = true,
         Some(Left((yieldClause(returnItems(variableReturnItem(roleString))), None)))
@@ -80,7 +90,7 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
 
   test("SHOW ALL ROLE YIELD role") {
     parsesTo[Statements](
-      ast.ShowRoles(
+      ShowRoles(
         withUsers = false,
         showAll = true,
         Some(Left((yieldClause(returnItems(variableReturnItem(roleString))), None)))
@@ -90,7 +100,7 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
 
   test("SHOW ALL ROLES WHERE role='PUBLIC'") {
     parsesTo[Statements](
-      ast.ShowRoles(
+      ShowRoles(
         withUsers = false,
         showAll = true,
         Some(Right(where(equals(varFor(roleString), literalString("PUBLIC")))))
@@ -100,7 +110,7 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
 
   test("SHOW ALL ROLE WHERE role='PUBLIC'") {
     parsesTo[Statements](
-      ast.ShowRoles(
+      ShowRoles(
         withUsers = false,
         showAll = true,
         Some(Right(where(equals(varFor(roleString), literalString("PUBLIC")))))
@@ -109,7 +119,7 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
   }
 
   test("SHOW ALL ROLES YIELD role RETURN role") {
-    parsesTo[Statements](ast.ShowRoles(
+    parsesTo[Statements](ShowRoles(
       withUsers = false,
       showAll = true,
       Some(Left((
@@ -120,7 +130,7 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
   }
 
   test("SHOW ALL ROLES YIELD return, return RETURN return") {
-    parsesTo[Statements](ast.ShowRoles(
+    parsesTo[Statements](ShowRoles(
       withUsers = false,
       showAll = true,
       Some(Left((
@@ -131,7 +141,7 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
   }
 
   test("SHOW POPULATED ROLES YIELD role WHERE role='PUBLIC' RETURN role") {
-    parsesTo[Statements](ast.ShowRoles(
+    parsesTo[Statements](ShowRoles(
       withUsers = false,
       showAll = false,
       Some(Left((
@@ -145,7 +155,7 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
   }
 
   test("SHOW POPULATED ROLES YIELD * RETURN *") {
-    parsesTo[Statements](ast.ShowRoles(
+    parsesTo[Statements](ShowRoles(
       withUsers = false,
       showAll = false,
       Some(Left((yieldClause(returnAllItems), Some(returnClause(returnAllItems)))))
@@ -153,7 +163,7 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
   }
 
   test("SHOW POPULATED ROLE WITH USER YIELD * RETURN *") {
-    parsesTo[Statements](ast.ShowRoles(
+    parsesTo[Statements](ShowRoles(
       withUsers = true,
       showAll = false,
       Some(Left((yieldClause(returnAllItems), Some(returnClause(returnAllItems)))))
@@ -161,7 +171,7 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
   }
 
   test("SHOW ROLES WITH USERS YIELD * LIMIT 10 WHERE foo='bar' RETURN some,columns LIMIT 10") {
-    parsesTo[Statements](ast.ShowRoles(
+    parsesTo[Statements](ShowRoles(
       withUsers = true,
       showAll = true,
       Some(Left((
@@ -180,7 +190,7 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
 
   test("SHOW POPULATED ROLES YIELD role ORDER BY role SKIP -1") {
     parsesTo[Statements](
-      ast.ShowRoles(
+      ShowRoles(
         withUsers = false,
         showAll = false,
         Some(Left((
@@ -197,7 +207,7 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
 
   test("SHOW POPULATED ROLES YIELD role ORDER BY role LIMIT -1") {
     parsesTo[Statements](
-      ast.ShowRoles(
+      ShowRoles(
         withUsers = false,
         showAll = false,
         Some(Left((
@@ -285,59 +295,59 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
   //  Creating role
 
   test("CREATE ROLE foo") {
-    parsesTo[Statements](ast.CreateRole(literalFoo, None, ast.IfExistsThrowError)(pos))
+    parsesTo[Statements](CreateRole(literalFoo, None, IfExistsThrowError)(pos))
   }
 
   test("CREATE ROLE $foo") {
-    parsesTo[Statements](ast.CreateRole(paramFoo, None, ast.IfExistsThrowError)(pos))
+    parsesTo[Statements](CreateRole(paramFoo, None, IfExistsThrowError)(pos))
   }
 
   test("CREATE ROLE `fo!$o`") {
-    parsesTo[Statements](ast.CreateRole(literal("fo!$o"), None, ast.IfExistsThrowError)(pos))
+    parsesTo[Statements](CreateRole(literal("fo!$o"), None, IfExistsThrowError)(pos))
   }
 
   test("CREATE ROLE ``") {
-    parsesTo[Statements](ast.CreateRole(literalEmpty, None, ast.IfExistsThrowError)(pos))
+    parsesTo[Statements](CreateRole(literalEmpty, None, IfExistsThrowError)(pos))
   }
 
   test("CREATE ROLE foo AS COPY OF bar") {
-    parsesTo[Statements](ast.CreateRole(literalFoo, Some(literalBar), ast.IfExistsThrowError)(pos))
+    parsesTo[Statements](CreateRole(literalFoo, Some(literalBar), IfExistsThrowError)(pos))
   }
 
   test("CREATE ROLE foo AS COPY OF $bar") {
-    parsesTo[Statements](ast.CreateRole(literalFoo, Some(stringParam("bar")), ast.IfExistsThrowError)(pos))
+    parsesTo[Statements](CreateRole(literalFoo, Some(stringParam("bar")), IfExistsThrowError)(pos))
   }
 
   test("CREATE ROLE foo AS COPY OF ``") {
-    parsesTo[Statements](ast.CreateRole(literalFoo, Some(literalEmpty), ast.IfExistsThrowError)(pos))
+    parsesTo[Statements](CreateRole(literalFoo, Some(literalEmpty), IfExistsThrowError)(pos))
   }
 
   test("CREATE ROLE `` AS COPY OF bar") {
-    parsesTo[Statements](ast.CreateRole(literalEmpty, Some(literalBar), ast.IfExistsThrowError)(pos))
+    parsesTo[Statements](CreateRole(literalEmpty, Some(literalBar), IfExistsThrowError)(pos))
   }
 
   test("CREATE ROLE foo IF NOT EXISTS") {
-    parsesTo[Statements](ast.CreateRole(literalFoo, None, ast.IfExistsDoNothing)(pos))
+    parsesTo[Statements](CreateRole(literalFoo, None, IfExistsDoNothing)(pos))
   }
 
   test("CREATE ROLE foo IF NOT EXISTS AS COPY OF bar") {
-    parsesTo[Statements](ast.CreateRole(literalFoo, Some(literalBar), ast.IfExistsDoNothing)(pos))
+    parsesTo[Statements](CreateRole(literalFoo, Some(literalBar), IfExistsDoNothing)(pos))
   }
 
   test("CREATE OR REPLACE ROLE foo") {
-    parsesTo[Statements](ast.CreateRole(literalFoo, None, ast.IfExistsReplace)(pos))
+    parsesTo[Statements](CreateRole(literalFoo, None, IfExistsReplace)(pos))
   }
 
   test("CREATE OR REPLACE ROLE foo AS COPY OF bar") {
-    parsesTo[Statements](ast.CreateRole(literalFoo, Some(literalBar), ast.IfExistsReplace)(pos))
+    parsesTo[Statements](CreateRole(literalFoo, Some(literalBar), IfExistsReplace)(pos))
   }
 
   test("CREATE OR REPLACE ROLE foo IF NOT EXISTS") {
-    parsesTo[Statements](ast.CreateRole(literalFoo, None, ast.IfExistsInvalidSyntax)(pos))
+    parsesTo[Statements](CreateRole(literalFoo, None, IfExistsInvalidSyntax)(pos))
   }
 
   test("CREATE OR REPLACE ROLE foo IF NOT EXISTS AS COPY OF bar") {
-    parsesTo[Statements](ast.CreateRole(literalFoo, Some(literalBar), ast.IfExistsInvalidSyntax)(pos))
+    parsesTo[Statements](CreateRole(literalFoo, Some(literalBar), IfExistsInvalidSyntax)(pos))
   }
 
   test("CREATE ROLE \"foo\"") {
@@ -419,43 +429,43 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
   // Renaming role
 
   test("RENAME ROLE foo TO bar") {
-    parsesTo[Statements](ast.RenameRole(literalFoo, literalBar, ifExists = false)(pos))
+    parsesTo[Statements](RenameRole(literalFoo, literalBar, ifExists = false)(pos))
   }
 
   test("RENAME ROLE foo TO $bar") {
-    parsesTo[Statements](ast.RenameRole(literalFoo, stringParam("bar"), ifExists = false)(pos))
+    parsesTo[Statements](RenameRole(literalFoo, stringParam("bar"), ifExists = false)(pos))
   }
 
   test("RENAME ROLE $foo TO bar") {
-    parsesTo[Statements](ast.RenameRole(stringParam("foo"), literalBar, ifExists = false)(pos))
+    parsesTo[Statements](RenameRole(stringParam("foo"), literalBar, ifExists = false)(pos))
   }
 
   test("RENAME ROLE $foo TO $bar") {
-    parsesTo[Statements](ast.RenameRole(stringParam("foo"), stringParam("bar"), ifExists = false)(pos))
+    parsesTo[Statements](RenameRole(stringParam("foo"), stringParam("bar"), ifExists = false)(pos))
   }
 
   test("RENAME ROLE foo IF EXISTS TO bar") {
-    parsesTo[Statements](ast.RenameRole(literalFoo, literalBar, ifExists = true)(pos))
+    parsesTo[Statements](RenameRole(literalFoo, literalBar, ifExists = true)(pos))
   }
 
   test("RENAME ROLE foo IF EXISTS TO $bar") {
-    parsesTo[Statements](ast.RenameRole(literalFoo, stringParam("bar"), ifExists = true)(pos))
+    parsesTo[Statements](RenameRole(literalFoo, stringParam("bar"), ifExists = true)(pos))
   }
 
   test("RENAME ROLE $foo IF EXISTS TO bar") {
-    parsesTo[Statements](ast.RenameRole(stringParam("foo"), literalBar, ifExists = true)(pos))
+    parsesTo[Statements](RenameRole(stringParam("foo"), literalBar, ifExists = true)(pos))
   }
 
   test("RENAME ROLE $foo IF EXISTS TO $bar") {
-    parsesTo[Statements](ast.RenameRole(stringParam("foo"), stringParam("bar"), ifExists = true)(pos))
+    parsesTo[Statements](RenameRole(stringParam("foo"), stringParam("bar"), ifExists = true)(pos))
   }
 
   test("RENAME ROLE foo TO ``") {
-    parsesTo[Statements](ast.RenameRole(literalFoo, literalEmpty, ifExists = false)(pos))
+    parsesTo[Statements](RenameRole(literalFoo, literalEmpty, ifExists = false)(pos))
   }
 
   test("RENAME ROLE `` TO bar") {
-    parsesTo[Statements](ast.RenameRole(literalEmpty, literalBar, ifExists = false)(pos))
+    parsesTo[Statements](RenameRole(literalEmpty, literalBar, ifExists = false)(pos))
   }
 
   test("RENAME ROLE foo TO") {
@@ -600,23 +610,23 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
   //  Dropping role
 
   test("DROP ROLE foo") {
-    parsesTo[Statements](ast.DropRole(literalFoo, ifExists = false)(pos))
+    parsesTo[Statements](DropRole(literalFoo, ifExists = false)(pos))
   }
 
   test("DROP ROLE $foo") {
-    parsesTo[Statements](ast.DropRole(paramFoo, ifExists = false)(pos))
+    parsesTo[Statements](DropRole(paramFoo, ifExists = false)(pos))
   }
 
   test("DROP ROLE ``") {
-    parsesTo[Statements](ast.DropRole(literalEmpty, ifExists = false)(pos))
+    parsesTo[Statements](DropRole(literalEmpty, ifExists = false)(pos))
   }
 
   test("DROP ROLE foo IF EXISTS") {
-    parsesTo[Statements](ast.DropRole(literalFoo, ifExists = true)(pos))
+    parsesTo[Statements](DropRole(literalFoo, ifExists = true)(pos))
   }
 
   test("DROP ROLE `` IF EXISTS") {
-    parsesTo[Statements](ast.DropRole(literalEmpty, ifExists = true)(pos))
+    parsesTo[Statements](DropRole(literalEmpty, ifExists = true)(pos))
   }
 
   test("DROP ROLE ") {
@@ -641,16 +651,16 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
 
   //  Granting/revoking roles to/from users
 
-  private type grantOrRevokeRoleFunc = (Seq[String], Seq[String]) => InputPosition => ast.AdministrationCommand
+  private type grantOrRevokeRoleFunc = (Seq[String], Seq[String]) => InputPosition => AdministrationCommand
 
-  private def grantRole(r: Seq[String], u: Seq[String]): InputPosition => ast.AdministrationCommand =
-    ast.GrantRolesToUsers(
+  private def grantRole(r: Seq[String], u: Seq[String]): InputPosition => AdministrationCommand =
+    GrantRolesToUsers(
       r.map(roleName => literalString(roleName)),
       u.map(userName => literalString(userName))
     )
 
-  private def revokeRole(r: Seq[String], u: Seq[String]): InputPosition => ast.AdministrationCommand =
-    ast.RevokeRolesFromUsers(
+  private def revokeRole(r: Seq[String], u: Seq[String]): InputPosition => AdministrationCommand =
+    RevokeRolesFromUsers(
       r.map(roleName => literalString(roleName)),
       u.map(userName => literalString(userName))
     )
@@ -663,31 +673,31 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
       ).foreach {
         case (verb: String, preposition: String, func: grantOrRevokeRoleFunc) =>
           test(s"$verb $roleKeyword foo $preposition abc") {
-            yields[Statements](func(Seq("foo"), Seq("abc")))
+            parsesTo[Statements](func(Seq("foo"), Seq("abc"))(defaultPos))
           }
 
           test(s"$verb $roleKeyword foo, bar $preposition abc") {
-            yields[Statements](func(Seq("foo", "bar"), Seq("abc")))
+            parsesTo[Statements](func(Seq("foo", "bar"), Seq("abc"))(defaultPos))
           }
 
           test(s"$verb $roleKeyword foo $preposition abc, def") {
-            yields[Statements](func(Seq("foo"), Seq("abc", "def")))
+            parsesTo[Statements](func(Seq("foo"), Seq("abc", "def"))(defaultPos))
           }
 
           test(s"$verb $roleKeyword foo,bla,roo $preposition bar, baz,abc,  def") {
-            yields[Statements](func(Seq("foo", "bla", "roo"), Seq("bar", "baz", "abc", "def")))
+            parsesTo[Statements](func(Seq("foo", "bla", "roo"), Seq("bar", "baz", "abc", "def"))(defaultPos))
           }
 
           test(s"$verb $roleKeyword `fo:o` $preposition bar") {
-            yields[Statements](func(Seq("fo:o"), Seq("bar")))
+            parsesTo[Statements](func(Seq("fo:o"), Seq("bar"))(defaultPos))
           }
 
           test(s"$verb $roleKeyword foo $preposition `b:ar`") {
-            yields[Statements](func(Seq("foo"), Seq("b:ar")))
+            parsesTo[Statements](func(Seq("foo"), Seq("b:ar"))(defaultPos))
           }
 
           test(s"$verb $roleKeyword `$$f00`,bar $preposition abc,`$$a&c`") {
-            yields[Statements](func(Seq("$f00", "bar"), Seq("abc", s"$$a&c")))
+            parsesTo[Statements](func(Seq("$f00", "bar"), Seq("abc", s"$$a&c"))(defaultPos))
           }
 
           // Should fail to parse if not following the pattern $command $roleKeyword role(s) $preposition user(s)
@@ -756,25 +766,25 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
   }
 
   test(s"GRANT ROLE $$a TO $$x") {
-    yields[Statements](ast.GrantRolesToUsers(Seq(stringParam("a")), Seq(stringParam("x"))))
+    parsesTo[Statements](GrantRolesToUsers(Seq(stringParam("a")), Seq(stringParam("x")))(defaultPos))
   }
 
   test(s"REVOKE ROLE $$a FROM $$x") {
-    yields[Statements](ast.RevokeRolesFromUsers(Seq(stringParam("a")), Seq(stringParam("x"))))
+    parsesTo[Statements](RevokeRolesFromUsers(Seq(stringParam("a")), Seq(stringParam("x")))(defaultPos))
   }
 
   test(s"GRANT ROLES a, $$b, $$c TO $$x, y, z") {
-    yields[Statements](ast.GrantRolesToUsers(
+    parsesTo[Statements](GrantRolesToUsers(
       Seq(literal("a"), stringParam("b"), stringParam("c")),
       Seq(stringParam("x"), literal("y"), literal("z"))
-    ))
+    )(defaultPos))
   }
 
   test(s"REVOKE ROLES a, $$b, $$c FROM $$x, y, z") {
-    yields[Statements](ast.RevokeRolesFromUsers(
+    parsesTo[Statements](RevokeRolesFromUsers(
       Seq(literal("a"), stringParam("b"), stringParam("c")),
       Seq(stringParam("x"), literal("y"), literal("z"))
-    ))
+    )(defaultPos))
   }
 
   // ROLE[S] TO USER only have GRANT and REVOKE and not DENY

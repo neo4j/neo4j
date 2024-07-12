@@ -16,15 +16,11 @@
  */
 package org.neo4j.cypher.internal.ast.test.util
 
-import org.neo4j.cypher.internal.ast.Statement
-import org.neo4j.cypher.internal.ast.Statements
-import org.neo4j.cypher.internal.ast.test.util.AstParsing.Cypher5JavaCc
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.InputPosition
 
-import scala.language.implicitConversions
 import scala.reflect.ClassTag
 
 /**
@@ -38,19 +34,6 @@ import scala.reflect.ClassTag
 @deprecated("Use AstParsingTestBase", "-")
 trait LegacyAstParsingTestSupport {
   self: AstParsingTestBase =>
-  implicit protected def lift(pos: (Int, Int, Int)): InputPosition = InputPosition(pos._3, pos._1, pos._2)
-  implicit def statementToStatements(statement: Statement): Statements = Statements(Seq(statement))
-
-  implicit def posToStatementToStatements(statement: InputPosition => Statement): InputPosition => Statements =
-    p => Statements(Seq(statement(p)))
-
-  /**
-   * @deprecated use [[parsesTo]], `parsesTo[T](expected)`
-   *             or [[parseTo]], `"cypher" should parseTo[T](expected)`
-   */
-  @deprecated("Use methods from AstParsingTestBase", "-")
-  final def yields[T <: ASTNode : ClassTag](expected: InputPosition => T)(implicit p: Parsers[T]): Unit =
-    parses[T].toAst(expected(InputPosition.NONE))
 
   /**
    * @deprecated use [[parsesTo]], `parsesTo[T](expected)`
@@ -74,109 +57,6 @@ trait LegacyAstParsingTestSupport {
   @deprecated("Use methods from AstParsingTestBase", "-")
   final def parsing[T <: ASTNode : ClassTag](cypher: String): LegacyParse[T] = new LegacyParse(cypher)
 
-  /**
-   * @deprecated use [[failsParsing]].
-   */
-  @deprecated("Use methods from AstParsingTestBase", "-")
-  def failsToParse[T <: ASTNode : ClassTag]()(implicit p: Parsers[T]): Unit = failsParsing[T]
-
-  /**
-   * @deprecated use [[notParse]].
-   */
-  @deprecated("Use methods from AstParsingTestBase", "-")
-  def failsToParse[T <: ASTNode : ClassTag](cypher: String)(implicit p: Parsers[T]): Unit =
-    cypher should notParse[T]
-
-  /**
-   * @deprecated use [[notParse]] instead.
-   */
-  @deprecated("Use methods from AstParsingTestBase", "-")
-  def assertFails[T <: ASTNode : ClassTag](cypher: String)(implicit p: Parsers[T]): Unit =
-    cypher should notParse[T]
-
-  /**
-   * @deprecated use [[parseIn]], `"cypher" should parseIn[T] { case JavaCc =>_.withAnyFailure }`.
-   */
-  @deprecated("Use methods from AstParsingTestBase", "-")
-  def failsToParseOnlyJavaCC[T <: ASTNode : ClassTag](query: String)(implicit p: Parsers[T]): Unit =
-    assertFailsOnlyJavaCC[T](query)
-
-  /**
-   * @deprecated use [[parsesIn]], `parsesIn[T] { case JavaCc =>_.withAnyFailure)` }.
-   */
-  @deprecated("Use methods from AstParsingTestBase", "-")
-  def failsToParseOnlyJavaCC[T <: ASTNode : ClassTag]()(implicit p: Parsers[T]): Unit =
-    assertFailsOnlyJavaCC[T](testName)
-
-  /**
-   * @deprecated use [[parseIn]], `"cypher" should parseIn[T] { case JavaCc =>_.withAnyFailure }`.
-   */
-  @deprecated("Use methods from AstParsingTestBase", "-")
-  def assertFailsOnlyJavaCC[T <: ASTNode : ClassTag](s: String)(implicit p: Parsers[T]): Unit = {
-    s should parseIn[T] {
-      case Cypher5JavaCc => _.withAnyFailure
-      case _             => _.withoutErrors
-    }
-  }
-
-  /**
-   * @deprecated use [[parses]] and create ast with [[AstConstructionTestSupport]] instead.
-   */
-  @deprecated("Use methods from AstParsingTestBase", "-")
-  def assertFailsWithMessage[T <: ASTNode : ClassTag](
-    cypher: String,
-    expectedMessage: String,
-    failsOnlyJavaCC: Boolean = false
-  )(implicit p: Parsers[T]): Unit = {
-    if (failsOnlyJavaCC)
-      cypher should parseIn[T] {
-        case Cypher5JavaCc => _.withAnyFailure.withMessage(expectedMessage)
-        case _             => _.withoutErrors
-      }
-    else
-      cypher should notParse[T].withMessage(expectedMessage)
-  }
-
-  /**
-   * @deprecated use [[parseIn]].
-   */
-  @deprecated("Use methods from AstParsingTestBase", "-")
-  def assertFailsWithMessageStart[T <: ASTNode : ClassTag](
-    cypher: String,
-    expectedMessage: String,
-    failsOnlyJavaCC: Boolean = false
-  )(implicit p: Parsers[T]): Unit = {
-    if (failsOnlyJavaCC)
-      cypher should parseIn[T] {
-        case Cypher5JavaCc => _.withAnyFailure.withMessageStart(expectedMessage)
-        case _             => _.withoutErrors
-      }
-    else
-      cypher should notParse[T].withMessageStart(expectedMessage)
-  }
-
-  /**
-   * @deprecated use [[notParse]]
-   */
-  @deprecated("Use methods from AstParsingTestBase", "-")
-  def assertFailsWithMessageContains[T <: ASTNode : ClassTag](
-    cypher: String,
-    expectedMessage: String
-  )(implicit p: Parsers[T]): Unit = {
-    cypher should notParse[T].withMessageContaining(expectedMessage)
-  }
-
-  /**
-   * @deprecated use [[notParse]]
-   */
-  @deprecated("Use methods from AstParsingTestBase", "-")
-  def assertFailsWithException[T <: ASTNode : ClassTag](
-    cypher: String,
-    expected: Exception
-  )(implicit p: Parsers[T]): Unit = {
-    cypher should notParse[T].similarTo(expected)
-  }
-
   // If these are helpful, why not add them to AstConstructionTestSupport!
   final def id(id: String): Variable = varFor(id)
   final def lt(lhs: Expression, rhs: Expression): Expression = lessThan(lhs, rhs)
@@ -184,7 +64,6 @@ trait LegacyAstParsingTestSupport {
   final def gt(lhs: Expression, rhs: Expression): Expression = greaterThan(lhs, rhs)
   final def gte(lhs: Expression, rhs: Expression): Expression = greaterThanOrEqual(lhs, rhs)
   final def eq(lhs: Expression, rhs: Expression): Expression = equals(lhs, rhs)
-  final def ne(lhs: Expression, rhs: Expression): Expression = notEquals(lhs, rhs)
 
   class LegacyParse[T <: ASTNode : ClassTag](cypher: String) {
     def shouldVerify(assertion: T => Unit)(implicit p: Parsers[T]): Unit = cypher should parse[T].withAstLike(assertion)

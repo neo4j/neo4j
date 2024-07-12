@@ -16,7 +16,24 @@
  */
 package org.neo4j.cypher.internal.ast.factory.ddl.privilege
 
-import org.neo4j.cypher.internal.ast
+import org.neo4j.cypher.internal.ast.ActionResource
+import org.neo4j.cypher.internal.ast.AllGraphsScope
+import org.neo4j.cypher.internal.ast.AllPropertyResource
+import org.neo4j.cypher.internal.ast.DefaultGraphScope
+import org.neo4j.cypher.internal.ast.ElementQualifier
+import org.neo4j.cypher.internal.ast.ElementsAllQualifier
+import org.neo4j.cypher.internal.ast.GraphAction
+import org.neo4j.cypher.internal.ast.GraphPrivilege
+import org.neo4j.cypher.internal.ast.GraphScope
+import org.neo4j.cypher.internal.ast.HomeGraphScope
+import org.neo4j.cypher.internal.ast.LabelAllQualifier
+import org.neo4j.cypher.internal.ast.LabelQualifier
+import org.neo4j.cypher.internal.ast.MatchAction
+import org.neo4j.cypher.internal.ast.NamedGraphsScope
+import org.neo4j.cypher.internal.ast.PropertiesResource
+import org.neo4j.cypher.internal.ast.ReadAction
+import org.neo4j.cypher.internal.ast.RelationshipAllQualifier
+import org.neo4j.cypher.internal.ast.RelationshipQualifier
 import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.factory.ddl.AdministrationAndSchemaCommandParserTestBase
 
@@ -24,26 +41,26 @@ class ReadMatchPrivilegeAdministrationCommandParserTest extends AdministrationAn
   // Granting/denying/revoking read and match to/from role
 
   Seq(
-    (ast.ReadAction, "GRANT", "TO", grantGraphPrivilege: resourcePrivilegeFunc),
-    (ast.ReadAction, "DENY", "TO", denyGraphPrivilege: resourcePrivilegeFunc),
-    (ast.ReadAction, "REVOKE GRANT", "FROM", revokeGrantGraphPrivilege: resourcePrivilegeFunc),
-    (ast.ReadAction, "REVOKE DENY", "FROM", revokeDenyGraphPrivilege: resourcePrivilegeFunc),
-    (ast.ReadAction, "REVOKE", "FROM", revokeGraphPrivilege: resourcePrivilegeFunc),
-    (ast.MatchAction, "GRANT", "TO", grantGraphPrivilege: resourcePrivilegeFunc),
-    (ast.MatchAction, "DENY", "TO", denyGraphPrivilege: resourcePrivilegeFunc),
-    (ast.MatchAction, "REVOKE GRANT", "FROM", revokeGrantGraphPrivilege: resourcePrivilegeFunc),
-    (ast.MatchAction, "REVOKE DENY", "FROM", revokeDenyGraphPrivilege: resourcePrivilegeFunc),
-    (ast.MatchAction, "REVOKE", "FROM", revokeGraphPrivilege: resourcePrivilegeFunc)
+    (ReadAction, "GRANT", "TO", grantGraphPrivilege: resourcePrivilegeFunc),
+    (ReadAction, "DENY", "TO", denyGraphPrivilege: resourcePrivilegeFunc),
+    (ReadAction, "REVOKE GRANT", "FROM", revokeGrantGraphPrivilege: resourcePrivilegeFunc),
+    (ReadAction, "REVOKE DENY", "FROM", revokeDenyGraphPrivilege: resourcePrivilegeFunc),
+    (ReadAction, "REVOKE", "FROM", revokeGraphPrivilege: resourcePrivilegeFunc),
+    (MatchAction, "GRANT", "TO", grantGraphPrivilege: resourcePrivilegeFunc),
+    (MatchAction, "DENY", "TO", denyGraphPrivilege: resourcePrivilegeFunc),
+    (MatchAction, "REVOKE GRANT", "FROM", revokeGrantGraphPrivilege: resourcePrivilegeFunc),
+    (MatchAction, "REVOKE DENY", "FROM", revokeDenyGraphPrivilege: resourcePrivilegeFunc),
+    (MatchAction, "REVOKE", "FROM", revokeGraphPrivilege: resourcePrivilegeFunc)
   ).foreach {
-    case (action: ast.GraphAction, verb: String, preposition: String, func: resourcePrivilegeFunc) =>
+    case (action: GraphAction, verb: String, preposition: String, func: resourcePrivilegeFunc) =>
       Seq[Immutable](true, false).foreach {
         immutable =>
           val immutableString = immutableOrEmpty(immutable)
           test(s"$verb$immutableString ${action.name} { prop } ON HOME GRAPH $preposition role") {
             parsesTo[Statements](func(
-              ast.GraphPrivilege(action, ast.HomeGraphScope()(pos))(pos),
-              ast.PropertiesResource(propSeq)(pos),
-              List(ast.ElementsAllQualifier() _),
+              GraphPrivilege(action, HomeGraphScope()(pos))(pos),
+              PropertiesResource(propSeq)(pos),
+              List(ElementsAllQualifier() _),
               Seq(literalRole),
               immutable
             )(pos))
@@ -51,8 +68,8 @@ class ReadMatchPrivilegeAdministrationCommandParserTest extends AdministrationAn
 
           test(s"$verb$immutableString ${action.name} { prop } ON HOME GRAPH NODE A $preposition role") {
             parsesTo[Statements](func(
-              ast.GraphPrivilege(action, ast.HomeGraphScope()(pos))(pos),
-              ast.PropertiesResource(propSeq)(pos),
+              GraphPrivilege(action, HomeGraphScope()(pos))(pos),
+              PropertiesResource(propSeq)(pos),
               List(labelQualifierA),
               Seq(literalRole),
               immutable
@@ -61,9 +78,9 @@ class ReadMatchPrivilegeAdministrationCommandParserTest extends AdministrationAn
 
           test(s"$verb$immutableString ${action.name} { prop } ON DEFAULT GRAPH $preposition role") {
             parsesTo[Statements](func(
-              ast.GraphPrivilege(action, ast.DefaultGraphScope()(pos))(pos),
-              ast.PropertiesResource(propSeq)(pos),
-              List(ast.ElementsAllQualifier() _),
+              GraphPrivilege(action, DefaultGraphScope()(pos))(pos),
+              PropertiesResource(propSeq)(pos),
+              List(ElementsAllQualifier() _),
               Seq(literalRole),
               immutable
             )(pos))
@@ -71,8 +88,8 @@ class ReadMatchPrivilegeAdministrationCommandParserTest extends AdministrationAn
 
           test(s"$verb$immutableString ${action.name} { prop } ON DEFAULT GRAPH NODE A $preposition role") {
             parsesTo[Statements](func(
-              ast.GraphPrivilege(action, ast.DefaultGraphScope()(pos))(pos),
-              ast.PropertiesResource(propSeq)(pos),
+              GraphPrivilege(action, DefaultGraphScope()(pos))(pos),
+              PropertiesResource(propSeq)(pos),
               List(labelQualifierA),
               Seq(literalRole),
               immutable
@@ -84,18 +101,18 @@ class ReadMatchPrivilegeAdministrationCommandParserTest extends AdministrationAn
               Seq("NODE", "NODES").foreach {
                 nodeKeyword =>
                   Seq(
-                    ("*", ast.AllPropertyResource()(pos), "*", ast.AllGraphsScope()(pos)),
-                    ("*", ast.AllPropertyResource()(pos), "foo", graphScopeFoo(pos)),
-                    ("bar", ast.PropertiesResource(Seq("bar"))(pos), "*", ast.AllGraphsScope()(pos)),
-                    ("bar", ast.PropertiesResource(Seq("bar"))(pos), "foo", graphScopeFoo(pos)),
-                    ("foo, bar", ast.PropertiesResource(Seq("foo", "bar"))(pos), "*", ast.AllGraphsScope()(pos)),
-                    ("foo, bar", ast.PropertiesResource(Seq("foo", "bar"))(pos), "foo", graphScopeFoo(pos))
+                    ("*", AllPropertyResource()(pos), "*", AllGraphsScope()(pos)),
+                    ("*", AllPropertyResource()(pos), "foo", graphScopeFoo(pos)),
+                    ("bar", PropertiesResource(Seq("bar"))(pos), "*", AllGraphsScope()(pos)),
+                    ("bar", PropertiesResource(Seq("bar"))(pos), "foo", graphScopeFoo(pos)),
+                    ("foo, bar", PropertiesResource(Seq("foo", "bar"))(pos), "*", AllGraphsScope()(pos)),
+                    ("foo, bar", PropertiesResource(Seq("foo", "bar"))(pos), "foo", graphScopeFoo(pos))
                   ).foreach {
                     case (
                         properties: String,
-                        resource: ast.ActionResource,
+                        resource: ActionResource,
                         graphName: String,
-                        graphScope: ast.GraphScope
+                        graphScope: GraphScope
                       ) =>
                       test(
                         s"validExpressions $verb$immutableString ${action.name} {$properties} $graphKeyword $graphName $nodeKeyword $preposition"
@@ -103,9 +120,9 @@ class ReadMatchPrivilegeAdministrationCommandParserTest extends AdministrationAn
                         s"$verb$immutableString ${action.name} {$properties} ON $graphKeyword $graphName $nodeKeyword * $preposition $$role" should
                           parseTo[Statements](
                             func(
-                              ast.GraphPrivilege(action, graphScope)(pos),
+                              GraphPrivilege(action, graphScope)(pos),
                               resource,
-                              List(ast.LabelAllQualifier() _),
+                              List(LabelAllQualifier() _),
                               Seq(paramRole),
                               immutable
                             )(pos)
@@ -114,9 +131,9 @@ class ReadMatchPrivilegeAdministrationCommandParserTest extends AdministrationAn
                         s"$verb$immutableString ${action.name} {$properties} ON $graphKeyword $graphName $nodeKeyword * (*) $preposition role" should
                           parseTo[Statements](
                             func(
-                              ast.GraphPrivilege(action, graphScope)(pos),
+                              GraphPrivilege(action, graphScope)(pos),
                               resource,
-                              List(ast.LabelAllQualifier() _),
+                              List(LabelAllQualifier() _),
                               Seq(literalRole),
                               immutable
                             )(pos)
@@ -124,7 +141,7 @@ class ReadMatchPrivilegeAdministrationCommandParserTest extends AdministrationAn
                         s"$verb$immutableString ${action.name} {$properties} ON $graphKeyword $graphName $nodeKeyword A $preposition role" should
                           parseTo[Statements](
                             func(
-                              ast.GraphPrivilege(action, graphScope)(pos),
+                              GraphPrivilege(action, graphScope)(pos),
                               resource,
                               List(labelQualifierA),
                               Seq(literalRole),
@@ -135,7 +152,7 @@ class ReadMatchPrivilegeAdministrationCommandParserTest extends AdministrationAn
                         s"$verb$immutableString ${action.name} {$properties} ON $graphKeyword $graphName $nodeKeyword A (*) $preposition role" should
                           parseTo[Statements](
                             func(
-                              ast.GraphPrivilege(action, graphScope)(pos),
+                              GraphPrivilege(action, graphScope)(pos),
                               resource,
                               List(labelQualifierA),
                               Seq(literalRole),
@@ -146,9 +163,9 @@ class ReadMatchPrivilegeAdministrationCommandParserTest extends AdministrationAn
                         s"$verb$immutableString ${action.name} {$properties} ON $graphKeyword $graphName $nodeKeyword `A B` (*) $preposition role" should
                           parseTo[Statements](
                             func(
-                              ast.GraphPrivilege(action, graphScope)(pos),
+                              GraphPrivilege(action, graphScope)(pos),
                               resource,
-                              List(ast.LabelQualifier("A B") _),
+                              List(LabelQualifier("A B") _),
                               Seq(literalRole),
                               immutable
                             )(pos)
@@ -157,7 +174,7 @@ class ReadMatchPrivilegeAdministrationCommandParserTest extends AdministrationAn
                         s"$verb$immutableString ${action.name} {$properties} ON $graphKeyword $graphName $nodeKeyword A, B (*) $preposition role1, $$role2" should
                           parseTo[Statements](
                             func(
-                              ast.GraphPrivilege(action, graphScope)(pos),
+                              GraphPrivilege(action, graphScope)(pos),
                               resource,
                               List(labelQualifierA, labelQualifierB),
                               Seq(literalRole1, paramRole2),
@@ -168,9 +185,9 @@ class ReadMatchPrivilegeAdministrationCommandParserTest extends AdministrationAn
                         s"$verb$immutableString ${action.name} {$properties} ON $graphKeyword $graphName $nodeKeyword * $preposition `r:ole`" should
                           parseTo[Statements](
                             func(
-                              ast.GraphPrivilege(action, graphScope)(pos),
+                              GraphPrivilege(action, graphScope)(pos),
                               resource,
-                              List(ast.LabelAllQualifier() _),
+                              List(LabelAllQualifier() _),
                               Seq(literalRColonOle),
                               immutable
                             )(pos)
@@ -179,9 +196,9 @@ class ReadMatchPrivilegeAdministrationCommandParserTest extends AdministrationAn
                         s"$verb$immutableString ${action.name} {$properties} ON $graphKeyword $graphName $nodeKeyword `:A` (*) $preposition role" should
                           parseTo[Statements](
                             func(
-                              ast.GraphPrivilege(action, graphScope)(pos),
+                              GraphPrivilege(action, graphScope)(pos),
                               resource,
-                              List(ast.LabelQualifier(":A") _),
+                              List(LabelQualifier(":A") _),
                               Seq(literalRole),
                               immutable
                             )(pos)
@@ -219,9 +236,9 @@ class ReadMatchPrivilegeAdministrationCommandParserTest extends AdministrationAn
                     s"$verb$immutableString ${action.name} {*} ON $graphKeyword `f:oo` $nodeKeyword * $preposition role" should
                       parseTo[Statements](
                         func(
-                          ast.GraphPrivilege(action, ast.NamedGraphsScope(Seq(namespacedName("f:oo"))) _)(pos),
-                          ast.AllPropertyResource() _,
-                          List(ast.LabelAllQualifier() _),
+                          GraphPrivilege(action, NamedGraphsScope(Seq(namespacedName("f:oo"))) _)(pos),
+                          AllPropertyResource() _,
+                          List(LabelAllQualifier() _),
                           Seq(literalRole),
                           immutable
                         )(pos)
@@ -230,9 +247,9 @@ class ReadMatchPrivilegeAdministrationCommandParserTest extends AdministrationAn
                     s"$verb$immutableString ${action.name} {bar} ON $graphKeyword `f:oo` $nodeKeyword * $preposition role" should
                       parseTo[Statements](
                         func(
-                          ast.GraphPrivilege(action, ast.NamedGraphsScope(Seq(namespacedName("f:oo"))) _)(pos),
-                          ast.PropertiesResource(Seq("bar")) _,
-                          List(ast.LabelAllQualifier() _),
+                          GraphPrivilege(action, NamedGraphsScope(Seq(namespacedName("f:oo"))) _)(pos),
+                          PropertiesResource(Seq("bar")) _,
+                          List(LabelAllQualifier() _),
                           Seq(literalRole),
                           immutable
                         )(pos)
@@ -241,9 +258,9 @@ class ReadMatchPrivilegeAdministrationCommandParserTest extends AdministrationAn
                     s"$verb$immutableString ${action.name} {`b:ar`} ON $graphKeyword foo $nodeKeyword * $preposition role" should
                       parseTo[Statements](
                         func(
-                          ast.GraphPrivilege(action, graphScopeFoo)(pos),
-                          ast.PropertiesResource(Seq("b:ar")) _,
-                          List(ast.LabelAllQualifier() _),
+                          GraphPrivilege(action, graphScopeFoo)(pos),
+                          PropertiesResource(Seq("b:ar")) _,
+                          List(LabelAllQualifier() _),
                           Seq(literalRole),
                           immutable
                         )(pos)
@@ -252,8 +269,8 @@ class ReadMatchPrivilegeAdministrationCommandParserTest extends AdministrationAn
                     s"$verb$immutableString ${action.name} {*} ON $graphKeyword foo, baz $nodeKeyword A (*) $preposition role" should
                       parseTo[Statements](
                         func(
-                          ast.GraphPrivilege(action, graphScopeFooBaz)(pos),
-                          ast.AllPropertyResource() _,
+                          GraphPrivilege(action, graphScopeFooBaz)(pos),
+                          AllPropertyResource() _,
                           List(labelQualifierA),
                           Seq(literalRole),
                           immutable
@@ -263,8 +280,8 @@ class ReadMatchPrivilegeAdministrationCommandParserTest extends AdministrationAn
                     s"$verb$immutableString ${action.name} {bar} ON $graphKeyword foo, baz $nodeKeyword A (*) $preposition role" should
                       parseTo[Statements](
                         func(
-                          ast.GraphPrivilege(action, graphScopeFooBaz)(pos),
-                          ast.PropertiesResource(Seq("bar")) _,
+                          GraphPrivilege(action, graphScopeFooBaz)(pos),
+                          PropertiesResource(Seq("bar")) _,
                           List(labelQualifierA),
                           Seq(literalRole),
                           immutable
@@ -276,6 +293,7 @@ class ReadMatchPrivilegeAdministrationCommandParserTest extends AdministrationAn
                     s"parsingFailures $verb$immutableString ${action.name} $graphKeyword $nodeKeyword $preposition"
                   ) {
                     // Invalid graph name
+
                     s"$verb$immutableString ${action.name} {*} ON $graphKeyword f:oo $nodeKeyword * $preposition role" should
                       notParse[Statements]
 
@@ -283,6 +301,7 @@ class ReadMatchPrivilegeAdministrationCommandParserTest extends AdministrationAn
                       notParse[Statements]
 
                     // mixing specific graph and *
+
                     s"$verb$immutableString ${action.name} {*} ON $graphKeyword foo, * $nodeKeyword * $preposition role" should
                       notParse[Statements]
 
@@ -290,10 +309,12 @@ class ReadMatchPrivilegeAdministrationCommandParserTest extends AdministrationAn
                       notParse[Statements]
 
                     // invalid property definition
+
                     s"$verb$immutableString ${action.name} {b:ar} ON $graphKeyword foo $nodeKeyword * $preposition role" should
                       notParse[Statements]
 
                     // missing graph name
+
                     s"$verb$immutableString ${action.name} {*} ON $graphKeyword $nodeKeyword * $preposition role" should
                       notParse[Statements]
 
@@ -345,6 +366,7 @@ class ReadMatchPrivilegeAdministrationCommandParserTest extends AdministrationAn
                       notParse[Statements]
 
                     // missing property list
+
                     s"$verb$immutableString ${action.name} {} ON $graphKeyword * $nodeKeyword * $preposition role" should
                       notParse[Statements]
 
@@ -374,18 +396,18 @@ class ReadMatchPrivilegeAdministrationCommandParserTest extends AdministrationAn
               Seq("RELATIONSHIP", "RELATIONSHIPS").foreach {
                 relTypeKeyword =>
                   Seq(
-                    ("*", ast.AllPropertyResource()(pos), "*", ast.AllGraphsScope()(pos)),
-                    ("*", ast.AllPropertyResource()(pos), "foo", graphScopeFoo(pos)),
-                    ("bar", ast.PropertiesResource(Seq("bar"))(pos), "*", ast.AllGraphsScope()(pos)),
-                    ("bar", ast.PropertiesResource(Seq("bar"))(pos), "foo", graphScopeFoo(pos)),
-                    ("foo, bar", ast.PropertiesResource(Seq("foo", "bar"))(pos), "*", ast.AllGraphsScope()(pos)),
-                    ("foo, bar", ast.PropertiesResource(Seq("foo", "bar"))(pos), "foo", graphScopeFoo(pos))
+                    ("*", AllPropertyResource()(pos), "*", AllGraphsScope()(pos)),
+                    ("*", AllPropertyResource()(pos), "foo", graphScopeFoo(pos)),
+                    ("bar", PropertiesResource(Seq("bar"))(pos), "*", AllGraphsScope()(pos)),
+                    ("bar", PropertiesResource(Seq("bar"))(pos), "foo", graphScopeFoo(pos)),
+                    ("foo, bar", PropertiesResource(Seq("foo", "bar"))(pos), "*", AllGraphsScope()(pos)),
+                    ("foo, bar", PropertiesResource(Seq("foo", "bar"))(pos), "foo", graphScopeFoo(pos))
                   ).foreach {
                     case (
                         properties: String,
-                        resource: ast.ActionResource,
+                        resource: ActionResource,
                         graphName: String,
-                        graphScope: ast.GraphScope
+                        graphScope: GraphScope
                       ) =>
                       test(
                         s"validExpressions $verb$immutableString ${action.name} {$properties} $graphKeyword $graphName $relTypeKeyword $preposition"
@@ -394,9 +416,9 @@ class ReadMatchPrivilegeAdministrationCommandParserTest extends AdministrationAn
                         s"$verb$immutableString ${action.name} {$properties} ON $graphKeyword $graphName $relTypeKeyword * $preposition role" should
                           parseTo[Statements](
                             func(
-                              ast.GraphPrivilege(action, graphScope)(pos),
+                              GraphPrivilege(action, graphScope)(pos),
                               resource,
-                              List(ast.RelationshipAllQualifier() _),
+                              List(RelationshipAllQualifier() _),
                               Seq(literalRole),
                               immutable
                             )(pos)
@@ -405,9 +427,9 @@ class ReadMatchPrivilegeAdministrationCommandParserTest extends AdministrationAn
                         s"$verb$immutableString ${action.name} {$properties} ON $graphKeyword $graphName $relTypeKeyword * (*) $preposition $$role" should
                           parseTo[Statements](
                             func(
-                              ast.GraphPrivilege(action, graphScope)(pos),
+                              GraphPrivilege(action, graphScope)(pos),
                               resource,
-                              List(ast.RelationshipAllQualifier() _),
+                              List(RelationshipAllQualifier() _),
                               Seq(paramRole),
                               immutable
                             )(pos)
@@ -416,7 +438,7 @@ class ReadMatchPrivilegeAdministrationCommandParserTest extends AdministrationAn
                         s"$verb$immutableString ${action.name} {$properties} ON $graphKeyword $graphName $relTypeKeyword A $preposition role" should
                           parseTo[Statements](
                             func(
-                              ast.GraphPrivilege(action, graphScope)(pos),
+                              GraphPrivilege(action, graphScope)(pos),
                               resource,
                               List(relQualifierA),
                               Seq(literalRole),
@@ -427,7 +449,7 @@ class ReadMatchPrivilegeAdministrationCommandParserTest extends AdministrationAn
                         s"$verb$immutableString ${action.name} {$properties} ON $graphKeyword $graphName $relTypeKeyword A (*) $preposition role" should
                           parseTo[Statements](
                             func(
-                              ast.GraphPrivilege(action, graphScope)(pos),
+                              GraphPrivilege(action, graphScope)(pos),
                               resource,
                               List(relQualifierA),
                               Seq(literalRole),
@@ -438,9 +460,9 @@ class ReadMatchPrivilegeAdministrationCommandParserTest extends AdministrationAn
                         s"$verb$immutableString ${action.name} {$properties} ON $graphKeyword $graphName $relTypeKeyword `A B` (*) $preposition role" should
                           parseTo[Statements](
                             func(
-                              ast.GraphPrivilege(action, graphScope)(pos),
+                              GraphPrivilege(action, graphScope)(pos),
                               resource,
-                              List(ast.RelationshipQualifier("A B") _),
+                              List(RelationshipQualifier("A B") _),
                               Seq(literalRole),
                               immutable
                             )(pos)
@@ -449,7 +471,7 @@ class ReadMatchPrivilegeAdministrationCommandParserTest extends AdministrationAn
                         s"$verb$immutableString ${action.name} {$properties} ON $graphKeyword $graphName $relTypeKeyword A, B (*) $preposition $$role1, role2" should
                           parseTo[Statements](
                             func(
-                              ast.GraphPrivilege(action, graphScope)(pos),
+                              GraphPrivilege(action, graphScope)(pos),
                               resource,
                               List(relQualifierA, relQualifierB),
                               Seq(paramRole1, literalRole2),
@@ -460,9 +482,9 @@ class ReadMatchPrivilegeAdministrationCommandParserTest extends AdministrationAn
                         s"$verb$immutableString ${action.name} {$properties} ON $graphKeyword $graphName $relTypeKeyword * $preposition `r:ole`" should
                           parseTo[Statements](
                             func(
-                              ast.GraphPrivilege(action, graphScope)(pos),
+                              GraphPrivilege(action, graphScope)(pos),
                               resource,
-                              List(ast.RelationshipAllQualifier() _),
+                              List(RelationshipAllQualifier() _),
                               Seq(literalRColonOle),
                               immutable
                             )(pos)
@@ -471,9 +493,9 @@ class ReadMatchPrivilegeAdministrationCommandParserTest extends AdministrationAn
                         s"$verb$immutableString ${action.name} {$properties} ON $graphKeyword $graphName $relTypeKeyword `:A` (*) $preposition role" should
                           parseTo[Statements](
                             func(
-                              ast.GraphPrivilege(action, graphScope)(pos),
+                              GraphPrivilege(action, graphScope)(pos),
                               resource,
-                              List(ast.RelationshipQualifier(":A") _),
+                              List(RelationshipQualifier(":A") _),
                               Seq(literalRole),
                               immutable
                             )(pos)
@@ -511,9 +533,9 @@ class ReadMatchPrivilegeAdministrationCommandParserTest extends AdministrationAn
                     s"$verb$immutableString ${action.name} {*} ON $graphKeyword `f:oo` $relTypeKeyword * $preposition role" should
                       parseTo[Statements](
                         func(
-                          ast.GraphPrivilege(action, ast.NamedGraphsScope(Seq(namespacedName("f:oo"))) _)(pos),
-                          ast.AllPropertyResource() _,
-                          List(ast.RelationshipAllQualifier() _),
+                          GraphPrivilege(action, NamedGraphsScope(Seq(namespacedName("f:oo"))) _)(pos),
+                          AllPropertyResource() _,
+                          List(RelationshipAllQualifier() _),
                           Seq(literalRole),
                           immutable
                         )(pos)
@@ -522,9 +544,9 @@ class ReadMatchPrivilegeAdministrationCommandParserTest extends AdministrationAn
                     s"$verb$immutableString ${action.name} {bar} ON $graphKeyword `f:oo` $relTypeKeyword * $preposition role" should
                       parseTo[Statements](
                         func(
-                          ast.GraphPrivilege(action, ast.NamedGraphsScope(Seq(namespacedName("f:oo"))) _)(pos),
-                          ast.PropertiesResource(Seq("bar")) _,
-                          List(ast.RelationshipAllQualifier() _),
+                          GraphPrivilege(action, NamedGraphsScope(Seq(namespacedName("f:oo"))) _)(pos),
+                          PropertiesResource(Seq("bar")) _,
+                          List(RelationshipAllQualifier() _),
                           Seq(literalRole),
                           immutable
                         )(pos)
@@ -533,9 +555,9 @@ class ReadMatchPrivilegeAdministrationCommandParserTest extends AdministrationAn
                     s"$verb$immutableString ${action.name} {`b:ar`} ON $graphKeyword foo $relTypeKeyword * $preposition role" should
                       parseTo[Statements](
                         func(
-                          ast.GraphPrivilege(action, graphScopeFoo)(pos),
-                          ast.PropertiesResource(Seq("b:ar")) _,
-                          List(ast.RelationshipAllQualifier() _),
+                          GraphPrivilege(action, graphScopeFoo)(pos),
+                          PropertiesResource(Seq("b:ar")) _,
+                          List(RelationshipAllQualifier() _),
                           Seq(literalRole),
                           immutable
                         )(pos)
@@ -544,8 +566,8 @@ class ReadMatchPrivilegeAdministrationCommandParserTest extends AdministrationAn
                     s"$verb$immutableString ${action.name} {*} ON $graphKeyword foo, baz $relTypeKeyword A (*) $preposition role" should
                       parseTo[Statements](
                         func(
-                          ast.GraphPrivilege(action, graphScopeFooBaz)(pos),
-                          ast.AllPropertyResource() _,
+                          GraphPrivilege(action, graphScopeFooBaz)(pos),
+                          AllPropertyResource() _,
                           List(relQualifierA),
                           Seq(literalRole),
                           immutable
@@ -555,8 +577,8 @@ class ReadMatchPrivilegeAdministrationCommandParserTest extends AdministrationAn
                     s"$verb$immutableString ${action.name} {bar} ON $graphKeyword foo, baz $relTypeKeyword A (*) $preposition role" should
                       parseTo[Statements](
                         func(
-                          ast.GraphPrivilege(action, graphScopeFooBaz)(pos),
-                          ast.PropertiesResource(Seq("bar")) _,
+                          GraphPrivilege(action, graphScopeFooBaz)(pos),
+                          PropertiesResource(Seq("bar")) _,
                           List(relQualifierA),
                           Seq(literalRole),
                           immutable
@@ -568,6 +590,7 @@ class ReadMatchPrivilegeAdministrationCommandParserTest extends AdministrationAn
                     s"parsingFailures$verb$immutableString ${action.name} $graphKeyword $relTypeKeyword $preposition"
                   ) {
                     // Invalid graph name
+
                     s"$verb$immutableString ${action.name} {*} ON $graphKeyword f:oo $relTypeKeyword * $preposition role" should
                       notParse[Statements]
 
@@ -575,10 +598,12 @@ class ReadMatchPrivilegeAdministrationCommandParserTest extends AdministrationAn
                       notParse[Statements]
 
                     // invalid property definition
+
                     s"$verb$immutableString ${action.name} {b:ar} ON $graphKeyword foo $relTypeKeyword * $preposition role" should
                       notParse[Statements]
 
                     // missing graph name
+
                     s"$verb$immutableString ${action.name} {*} ON $graphKeyword $relTypeKeyword * $preposition role" should
                       notParse[Statements]
 
@@ -604,6 +629,7 @@ class ReadMatchPrivilegeAdministrationCommandParserTest extends AdministrationAn
                       notParse[Statements]
 
                     // missing property definition
+
                     s"$verb$immutableString ${action.name} ON $graphKeyword * $relTypeKeyword * $preposition role" should
                       notParse[Statements]
 
@@ -629,6 +655,7 @@ class ReadMatchPrivilegeAdministrationCommandParserTest extends AdministrationAn
                       notParse[Statements]
 
                     // missing property list
+
                     s"$verb$immutableString ${action.name} {} ON $graphKeyword * $relTypeKeyword * $preposition role" should
                       notParse[Statements]
 
@@ -658,18 +685,18 @@ class ReadMatchPrivilegeAdministrationCommandParserTest extends AdministrationAn
               Seq("ELEMENT", "ELEMENTS").foreach {
                 elementKeyword =>
                   Seq(
-                    ("*", ast.AllPropertyResource()(pos), "*", ast.AllGraphsScope()(pos)),
-                    ("*", ast.AllPropertyResource()(pos), "foo", graphScopeFoo(pos)),
-                    ("bar", ast.PropertiesResource(Seq("bar"))(pos), "*", ast.AllGraphsScope()(pos)),
-                    ("bar", ast.PropertiesResource(Seq("bar"))(pos), "foo", graphScopeFoo(pos)),
-                    ("foo, bar", ast.PropertiesResource(Seq("foo", "bar"))(pos), "*", ast.AllGraphsScope()(pos)),
-                    ("foo, bar", ast.PropertiesResource(Seq("foo", "bar"))(pos), "foo", graphScopeFoo(pos))
+                    ("*", AllPropertyResource()(pos), "*", AllGraphsScope()(pos)),
+                    ("*", AllPropertyResource()(pos), "foo", graphScopeFoo(pos)),
+                    ("bar", PropertiesResource(Seq("bar"))(pos), "*", AllGraphsScope()(pos)),
+                    ("bar", PropertiesResource(Seq("bar"))(pos), "foo", graphScopeFoo(pos)),
+                    ("foo, bar", PropertiesResource(Seq("foo", "bar"))(pos), "*", AllGraphsScope()(pos)),
+                    ("foo, bar", PropertiesResource(Seq("foo", "bar"))(pos), "foo", graphScopeFoo(pos))
                   ).foreach {
                     case (
                         properties: String,
-                        resource: ast.ActionResource,
+                        resource: ActionResource,
                         graphName: String,
-                        graphScope: ast.GraphScope
+                        graphScope: GraphScope
                       ) =>
                       test(
                         s"validExpressions $verb$immutableString ${action.name} {$properties} $graphKeyword $graphName $elementKeyword $preposition"
@@ -678,9 +705,9 @@ class ReadMatchPrivilegeAdministrationCommandParserTest extends AdministrationAn
                         s"$verb$immutableString ${action.name} {$properties} ON $graphKeyword $graphName $elementKeyword * $preposition role" should
                           parseTo[Statements](
                             func(
-                              ast.GraphPrivilege(action, graphScope)(pos),
+                              GraphPrivilege(action, graphScope)(pos),
                               resource,
-                              List(ast.ElementsAllQualifier() _),
+                              List(ElementsAllQualifier() _),
                               Seq(literalRole),
                               immutable
                             )(pos)
@@ -689,9 +716,9 @@ class ReadMatchPrivilegeAdministrationCommandParserTest extends AdministrationAn
                         s"$verb$immutableString ${action.name} {$properties} ON $graphKeyword $graphName $elementKeyword * (*) $preposition role" should
                           parseTo[Statements](
                             func(
-                              ast.GraphPrivilege(action, graphScope)(pos),
+                              GraphPrivilege(action, graphScope)(pos),
                               resource,
-                              List(ast.ElementsAllQualifier() _),
+                              List(ElementsAllQualifier() _),
                               Seq(literalRole),
                               immutable
                             )(pos)
@@ -700,7 +727,7 @@ class ReadMatchPrivilegeAdministrationCommandParserTest extends AdministrationAn
                         s"$verb$immutableString ${action.name} {$properties} ON $graphKeyword $graphName $elementKeyword A $preposition $$role" should
                           parseTo[Statements](
                             func(
-                              ast.GraphPrivilege(action, graphScope)(pos),
+                              GraphPrivilege(action, graphScope)(pos),
                               resource,
                               List(elemQualifierA),
                               Seq(paramRole),
@@ -711,7 +738,7 @@ class ReadMatchPrivilegeAdministrationCommandParserTest extends AdministrationAn
                         s"$verb$immutableString ${action.name} {$properties} ON $graphKeyword $graphName $elementKeyword A (*) $preposition role" should
                           parseTo[Statements](
                             func(
-                              ast.GraphPrivilege(action, graphScope)(pos),
+                              GraphPrivilege(action, graphScope)(pos),
                               resource,
                               List(elemQualifierA),
                               Seq(literalRole),
@@ -722,9 +749,9 @@ class ReadMatchPrivilegeAdministrationCommandParserTest extends AdministrationAn
                         s"$verb$immutableString ${action.name} {$properties} ON $graphKeyword $graphName $elementKeyword `A B` (*) $preposition role" should
                           parseTo[Statements](
                             func(
-                              ast.GraphPrivilege(action, graphScope)(pos),
+                              GraphPrivilege(action, graphScope)(pos),
                               resource,
-                              List(ast.ElementQualifier("A B") _),
+                              List(ElementQualifier("A B") _),
                               Seq(literalRole),
                               immutable
                             )(pos)
@@ -733,7 +760,7 @@ class ReadMatchPrivilegeAdministrationCommandParserTest extends AdministrationAn
                         s"$verb$immutableString ${action.name} {$properties} ON $graphKeyword $graphName $elementKeyword A, B (*) $preposition $$role1, $$role2" should
                           parseTo[Statements](
                             func(
-                              ast.GraphPrivilege(action, graphScope)(pos),
+                              GraphPrivilege(action, graphScope)(pos),
                               resource,
                               List(elemQualifierA, elemQualifierB),
                               Seq(paramRole1, paramRole2),
@@ -744,9 +771,9 @@ class ReadMatchPrivilegeAdministrationCommandParserTest extends AdministrationAn
                         s"$verb$immutableString ${action.name} {$properties} ON $graphKeyword $graphName $elementKeyword * $preposition `r:ole`" should
                           parseTo[Statements](
                             func(
-                              ast.GraphPrivilege(action, graphScope)(pos),
+                              GraphPrivilege(action, graphScope)(pos),
                               resource,
-                              List(ast.ElementsAllQualifier() _),
+                              List(ElementsAllQualifier() _),
                               Seq(literalRColonOle),
                               immutable
                             )(pos)
@@ -755,9 +782,9 @@ class ReadMatchPrivilegeAdministrationCommandParserTest extends AdministrationAn
                         s"$verb$immutableString ${action.name} {$properties} ON $graphKeyword $graphName $elementKeyword `:A` (*) $preposition role" should
                           parseTo[Statements](
                             func(
-                              ast.GraphPrivilege(action, graphScope)(pos),
+                              GraphPrivilege(action, graphScope)(pos),
                               resource,
-                              List(ast.ElementQualifier(":A") _),
+                              List(ElementQualifier(":A") _),
                               Seq(literalRole),
                               immutable
                             )(pos)
@@ -795,9 +822,9 @@ class ReadMatchPrivilegeAdministrationCommandParserTest extends AdministrationAn
                     s"$verb$immutableString ${action.name} {*} ON $graphKeyword `f:oo` $elementKeyword * $preposition role" should
                       parseTo[Statements](
                         func(
-                          ast.GraphPrivilege(action, ast.NamedGraphsScope(Seq(namespacedName("f:oo"))) _)(pos),
-                          ast.AllPropertyResource() _,
-                          List(ast.ElementsAllQualifier() _),
+                          GraphPrivilege(action, NamedGraphsScope(Seq(namespacedName("f:oo"))) _)(pos),
+                          AllPropertyResource() _,
+                          List(ElementsAllQualifier() _),
                           Seq(literalRole),
                           immutable
                         )(pos)
@@ -806,9 +833,9 @@ class ReadMatchPrivilegeAdministrationCommandParserTest extends AdministrationAn
                     s"$verb$immutableString ${action.name} {bar} ON $graphKeyword `f:oo` $elementKeyword * $preposition role" should
                       parseTo[Statements](
                         func(
-                          ast.GraphPrivilege(action, ast.NamedGraphsScope(Seq(namespacedName("f:oo"))) _)(pos),
-                          ast.PropertiesResource(Seq("bar")) _,
-                          List(ast.ElementsAllQualifier() _),
+                          GraphPrivilege(action, NamedGraphsScope(Seq(namespacedName("f:oo"))) _)(pos),
+                          PropertiesResource(Seq("bar")) _,
+                          List(ElementsAllQualifier() _),
                           Seq(literalRole),
                           immutable
                         )(pos)
@@ -817,9 +844,9 @@ class ReadMatchPrivilegeAdministrationCommandParserTest extends AdministrationAn
                     s"$verb$immutableString ${action.name} {`b:ar`} ON $graphKeyword foo $elementKeyword * $preposition role" should
                       parseTo[Statements](
                         func(
-                          ast.GraphPrivilege(action, graphScopeFoo)(pos),
-                          ast.PropertiesResource(Seq("b:ar")) _,
-                          List(ast.ElementsAllQualifier() _),
+                          GraphPrivilege(action, graphScopeFoo)(pos),
+                          PropertiesResource(Seq("b:ar")) _,
+                          List(ElementsAllQualifier() _),
                           Seq(literalRole),
                           immutable
                         )(pos)
@@ -828,8 +855,8 @@ class ReadMatchPrivilegeAdministrationCommandParserTest extends AdministrationAn
                     s"$verb$immutableString ${action.name} {*} ON $graphKeyword foo, baz $elementKeyword A (*) $preposition role" should
                       parseTo[Statements](
                         func(
-                          ast.GraphPrivilege(action, graphScopeFooBaz)(pos),
-                          ast.AllPropertyResource() _,
+                          GraphPrivilege(action, graphScopeFooBaz)(pos),
+                          AllPropertyResource() _,
                           List(elemQualifierA),
                           Seq(literalRole),
                           immutable
@@ -839,8 +866,8 @@ class ReadMatchPrivilegeAdministrationCommandParserTest extends AdministrationAn
                     s"$verb$immutableString ${action.name} {bar} ON $graphKeyword foo, baz $elementKeyword A (*) $preposition role" should
                       parseTo[Statements](
                         func(
-                          ast.GraphPrivilege(action, graphScopeFooBaz)(pos),
-                          ast.PropertiesResource(Seq("bar")) _,
+                          GraphPrivilege(action, graphScopeFooBaz)(pos),
+                          PropertiesResource(Seq("bar")) _,
                           List(elemQualifierA),
                           Seq(literalRole),
                           immutable
@@ -852,6 +879,7 @@ class ReadMatchPrivilegeAdministrationCommandParserTest extends AdministrationAn
                     s"parsingFailures $verb$immutableString ${action.name} $graphKeyword $elementKeyword $preposition"
                   ) {
                     // Invalid graph name
+
                     s"$verb$immutableString ${action.name} {*} ON $graphKeyword f:oo $elementKeyword * $preposition role" should
                       notParse[Statements]
 
@@ -859,10 +887,12 @@ class ReadMatchPrivilegeAdministrationCommandParserTest extends AdministrationAn
                       notParse[Statements]
 
                     // invalid property definition
+
                     s"$verb$immutableString ${action.name} {b:ar} ON $graphKeyword foo $elementKeyword * $preposition role" should
                       notParse[Statements]
 
                     // missing graph name
+
                     s"$verb$immutableString ${action.name} {*} ON $graphKeyword $elementKeyword * $preposition role" should
                       notParse[Statements]
 
@@ -888,6 +918,7 @@ class ReadMatchPrivilegeAdministrationCommandParserTest extends AdministrationAn
                       notParse[Statements]
 
                     // missing property definition
+
                     s"$verb$immutableString ${action.name} ON $graphKeyword * $elementKeyword * $preposition role" should
                       notParse[Statements]
 
@@ -913,6 +944,7 @@ class ReadMatchPrivilegeAdministrationCommandParserTest extends AdministrationAn
                       notParse[Statements]
 
                     // missing property list
+
                     s"$verb$immutableString ${action.name} {} ON $graphKeyword * $elementKeyword * $preposition role" should
                       notParse[Statements]
 
@@ -941,27 +973,27 @@ class ReadMatchPrivilegeAdministrationCommandParserTest extends AdministrationAn
 
               // Needs to be separate loop to avoid duplicate tests since the test does not have any segment keyword
               Seq(
-                ("*", ast.AllPropertyResource()(pos), "*", ast.AllGraphsScope()(pos)),
-                ("*", ast.AllPropertyResource()(pos), "foo", graphScopeFoo(pos)),
-                ("*", ast.AllPropertyResource()(pos), "$foo", graphScopeParamFoo(pos)),
-                ("bar", ast.PropertiesResource(Seq("bar"))(pos), "*", ast.AllGraphsScope()(pos)),
-                ("bar", ast.PropertiesResource(Seq("bar"))(pos), "foo", graphScopeFoo(pos)),
-                ("foo, bar", ast.PropertiesResource(Seq("foo", "bar"))(pos), "*", ast.AllGraphsScope()(pos)),
-                ("foo, bar", ast.PropertiesResource(Seq("foo", "bar"))(pos), "foo", graphScopeFoo(pos))
+                ("*", AllPropertyResource()(pos), "*", AllGraphsScope()(pos)),
+                ("*", AllPropertyResource()(pos), "foo", graphScopeFoo(pos)),
+                ("*", AllPropertyResource()(pos), "$foo", graphScopeParamFoo(pos)),
+                ("bar", PropertiesResource(Seq("bar"))(pos), "*", AllGraphsScope()(pos)),
+                ("bar", PropertiesResource(Seq("bar"))(pos), "foo", graphScopeFoo(pos)),
+                ("foo, bar", PropertiesResource(Seq("foo", "bar"))(pos), "*", AllGraphsScope()(pos)),
+                ("foo, bar", PropertiesResource(Seq("foo", "bar"))(pos), "foo", graphScopeFoo(pos))
               ).foreach {
                 case (
                     properties: String,
-                    resource: ast.ActionResource,
+                    resource: ActionResource,
                     graphName: String,
-                    graphScope: ast.GraphScope
+                    graphScope: GraphScope
                   ) =>
                   test(
                     s"$verb$immutableString ${action.name} {$properties} ON $graphKeyword $graphName $preposition role"
                   ) {
                     parsesTo[Statements](func(
-                      ast.GraphPrivilege(action, graphScope)(pos),
+                      GraphPrivilege(action, graphScope)(pos),
                       resource,
-                      List(ast.ElementsAllQualifier() _),
+                      List(ElementsAllQualifier() _),
                       Seq(literalRole),
                       immutable
                     )(pos))

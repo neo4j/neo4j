@@ -16,11 +16,17 @@
  */
 package org.neo4j.cypher.internal.ast.factory.ddl
 
-import org.neo4j.cypher.internal.ast
+import org.neo4j.cypher.internal.ast.AlterServer
+import org.neo4j.cypher.internal.ast.DeallocateServers
+import org.neo4j.cypher.internal.ast.DropServer
+import org.neo4j.cypher.internal.ast.EnableServer
 import org.neo4j.cypher.internal.ast.NoOptions
 import org.neo4j.cypher.internal.ast.OptionsMap
 import org.neo4j.cypher.internal.ast.OptionsParam
+import org.neo4j.cypher.internal.ast.ReallocateDatabases
+import org.neo4j.cypher.internal.ast.RenameServer
 import org.neo4j.cypher.internal.ast.Return
+import org.neo4j.cypher.internal.ast.ShowServers
 import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.Yield
 import org.neo4j.cypher.internal.ast.test.util.AstParsing.Cypher5JavaCc
@@ -30,37 +36,38 @@ import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CTMap
 
 class ServerManagementCommandParserTest extends AdministrationAndSchemaCommandParserTestBase {
+
   // SHOW
 
   test("SHOW SERVERS") {
-    assertAst(ast.ShowServers(None)(defaultPos))
+    assertAst(ShowServers(None)(defaultPos))
   }
 
   test("SHOW SERVER") {
-    assertAst(ast.ShowServers(None)(defaultPos))
+    assertAst(ShowServers(None)(defaultPos))
   }
 
   test("SHOW SERVERS YIELD *") {
     val yieldOrWhere = Left((yieldClause(returnAllItems), None))
-    assertAst(ast.ShowServers(Some(yieldOrWhere))(defaultPos))
+    assertAst(ShowServers(Some(yieldOrWhere))(defaultPos))
   }
 
   test("SHOW SERVER YIELD *") {
     val yieldOrWhere = Left((yieldClause(returnAllItems), None))
-    assertAst(ast.ShowServers(Some(yieldOrWhere))(defaultPos))
+    assertAst(ShowServers(Some(yieldOrWhere))(defaultPos))
   }
 
   test("SHOW SERVERS YIELD address") {
     val columns = yieldClause(returnItems(variableReturnItem("address")), None)
     val yieldOrWhere = Some(Left((columns, None)))
-    assertAst(ast.ShowServers(yieldOrWhere)(defaultPos))
+    assertAst(ShowServers(yieldOrWhere)(defaultPos))
   }
 
   test("SHOW SERVERS YIELD address ORDER BY name") {
     val orderByClause = Some(orderBy(sortItem(varFor("name"))))
     val columns = yieldClause(returnItems(variableReturnItem("address")), orderByClause)
     val yieldOrWhere = Some(Left((columns, None)))
-    assertAst(ast.ShowServers(yieldOrWhere)(defaultPos))
+    assertAst(ShowServers(yieldOrWhere)(defaultPos))
   }
 
   test("SHOW SERVERS YIELD address ORDER BY name SKIP 1 LIMIT 2 WHERE name = 'badger' RETURN *") {
@@ -74,23 +81,23 @@ class ServerManagementCommandParserTest extends AdministrationAndSchemaCommandPa
       Some(whereClause)
     )
     val yieldOrWhere = Some(Left((columns, Some(returnAll))))
-    assertAst(ast.ShowServers(yieldOrWhere)(defaultPos))
+    assertAst(ShowServers(yieldOrWhere)(defaultPos))
   }
 
   test("SHOW SERVERS YIELD * RETURN id") {
     val yieldOrWhere: Left[(Yield, Some[Return]), Nothing] =
       Left((yieldClause(returnAllItems), Some(return_(variableReturnItem("id")))))
-    assertAst(ast.ShowServers(Some(yieldOrWhere))(defaultPos))
+    assertAst(ShowServers(Some(yieldOrWhere))(defaultPos))
   }
 
   test("SHOW SERVERS WHERE name = 'badger'") {
     val yieldOrWhere = Right(where(equals(varFor("name"), literalString("badger"))))
-    assertAst(ast.ShowServers(Some(yieldOrWhere))(defaultPos))
+    assertAst(ShowServers(Some(yieldOrWhere))(defaultPos))
   }
 
   test("SHOW SERVER WHERE name = 'badger'") {
     val yieldOrWhere = Right(where(equals(varFor("name"), literalString("badger"))))
-    assertAst(ast.ShowServers(Some(yieldOrWhere))(defaultPos))
+    assertAst(ShowServers(Some(yieldOrWhere))(defaultPos))
   }
 
   test("SHOW SERVERS RETURN *") {
@@ -135,23 +142,23 @@ class ServerManagementCommandParserTest extends AdministrationAndSchemaCommandPa
   // ENABLE
 
   test("ENABLE SERVER 'name'") {
-    assertAst(ast.EnableServer(literal("name"), NoOptions)(defaultPos))
+    assertAst(EnableServer(literal("name"), NoOptions)(defaultPos))
   }
 
   test("ENABLE SERVER $name OPTIONS { tags: ['snake', 'flower'] }") {
     val listLiteral = ListLiteral(List(literalString("snake"), literalString("flower")))(InputPosition(36, 1, 37))
     val optionsMap = OptionsMap(Map("tags" -> listLiteral))
-    assertAst(ast.EnableServer(Right(stringParam("name")), optionsMap)(defaultPos))
+    assertAst(EnableServer(Right(stringParam("name")), optionsMap)(defaultPos))
   }
 
   test("ENABLE SERVER 'name' OPTIONS { modeConstraint: $mode }") {
     val optionsMap = OptionsMap(Map("modeConstraint" -> parameter("mode", CTAny)))
-    assertAst(ast.EnableServer(literal("name"), optionsMap)(defaultPos))
+    assertAst(EnableServer(literal("name"), optionsMap)(defaultPos))
   }
 
   test("ENABLE SERVER 'name' OPTIONS $op") {
     val optionsParam = OptionsParam(parameter("op", CTMap))
-    assertAst(ast.EnableServer(literal("name"), optionsParam)(defaultPos))
+    assertAst(EnableServer(literal("name"), optionsParam)(defaultPos))
   }
 
   test("ENABLE SERVER name") {
@@ -180,16 +187,16 @@ class ServerManagementCommandParserTest extends AdministrationAndSchemaCommandPa
 
   test("ALTER SERVER 'name' SET OPTIONS { modeConstraint: 'PRIMARY'}") {
     val optionsMap = OptionsMap(Map("modeConstraint" -> literalString("PRIMARY")))
-    assertAst(ast.AlterServer(literal("name"), optionsMap)(defaultPos))
+    assertAst(AlterServer(literal("name"), optionsMap)(defaultPos))
   }
 
   test("ALTER SERVER $name SET OPTIONS {}") {
     val optionsMap = OptionsMap(Map.empty)
-    assertAst(ast.AlterServer(Right(stringParam("name")), optionsMap)(defaultPos))
+    assertAst(AlterServer(Right(stringParam("name")), optionsMap)(defaultPos))
   }
 
   test("ALTER SERVER 'name' SET OPTIONS $map") {
-    assertAst(ast.AlterServer(literal("name"), OptionsParam(parameter("map", CTMap)))(defaultPos))
+    assertAst(AlterServer(literal("name"), OptionsParam(parameter("map", CTMap)))(defaultPos))
   }
 
   test("ALTER SERVER 'name'") {
@@ -217,11 +224,11 @@ class ServerManagementCommandParserTest extends AdministrationAndSchemaCommandPa
   // RENAME
 
   test("RENAME SERVER 'badger' TO 'snake'") {
-    assertAst(ast.RenameServer(literal("badger"), literal("snake"))(defaultPos))
+    assertAst(RenameServer(literal("badger"), literal("snake"))(defaultPos))
   }
 
   test("RENAME SERVER $from TO $to") {
-    assertAst(ast.RenameServer(Right(stringParam("from")), Right(stringParam("to")))(defaultPos))
+    assertAst(RenameServer(Right(stringParam("from")), Right(stringParam("to")))(defaultPos))
   }
 
   test("RENAME SERVER `bad,ger` TO $to") {
@@ -249,11 +256,11 @@ class ServerManagementCommandParserTest extends AdministrationAndSchemaCommandPa
   // DROP
 
   test("DROP SERVER 'name'") {
-    assertAst(ast.DropServer(literal("name"))(defaultPos))
+    assertAst(DropServer(literal("name"))(defaultPos))
   }
 
   test("DROP SERVER $name") {
-    assertAst(ast.DropServer(Right(stringParam("name")))(defaultPos))
+    assertAst(DropServer(Right(stringParam("name")))(defaultPos))
   }
 
   test("DROP SERVER name") {
@@ -285,21 +292,21 @@ class ServerManagementCommandParserTest extends AdministrationAndSchemaCommandPa
   // DEALLOCATE
 
   test("DEALLOCATE DATABASES FROM SERVER 'badger', 'snake'") {
-    assertAst(ast.DeallocateServers(dryRun = false, Seq(literal("badger"), literal("snake")))(defaultPos))
+    assertAst(DeallocateServers(dryRun = false, Seq(literal("badger"), literal("snake")))(defaultPos))
   }
 
   test("DRYRUN DEALLOCATE DATABASES FROM SERVER 'badger', 'snake'") {
     assertAst(
-      ast.DeallocateServers(dryRun = true, Seq(literal("badger"), literal("snake")))(InputPosition(7, 1, 8))
+      DeallocateServers(dryRun = true, Seq(literal("badger"), literal("snake")))(InputPosition(7, 1, 8))
     )
   }
 
   test("DEALLOCATE DATABASES FROM SERVER $name") {
-    assertAst(ast.DeallocateServers(dryRun = false, Seq(Right(stringParam("name"))))(defaultPos))
+    assertAst(DeallocateServers(dryRun = false, Seq(Right(stringParam("name"))))(defaultPos))
   }
 
   test("DEALLOCATE DATABASE FROM SERVERS $name, 'foo'") {
-    assertAst(ast.DeallocateServers(dryRun = false, Seq(Right(stringParam("name")), literal("foo")))(defaultPos))
+    assertAst(DeallocateServers(dryRun = false, Seq(Right(stringParam("name")), literal("foo")))(defaultPos))
   }
 
   test("DEALLOCATE SERVERS $name, 'foo'") {
@@ -313,16 +320,18 @@ class ServerManagementCommandParserTest extends AdministrationAndSchemaCommandPa
     }
   }
 
+  // REALLOCATE
+
   test("REALLOCATE DATABASE") {
-    assertAst(ast.ReallocateDatabases(dryRun = false)(defaultPos))
+    assertAst(ReallocateDatabases(dryRun = false)(defaultPos))
   }
 
   test("REALLOCATE DATABASES") {
-    assertAst(ast.ReallocateDatabases(dryRun = false)(defaultPos))
+    assertAst(ReallocateDatabases(dryRun = false)(defaultPos))
   }
 
   test("DRYRUN REALLOCATE DATABASES") {
-    assertAst(ast.ReallocateDatabases(dryRun = true)(InputPosition(7, 1, 8)))
+    assertAst(ReallocateDatabases(dryRun = true)(InputPosition(7, 1, 8)))
   }
 
   test("REALLOCATE SERVERS") {

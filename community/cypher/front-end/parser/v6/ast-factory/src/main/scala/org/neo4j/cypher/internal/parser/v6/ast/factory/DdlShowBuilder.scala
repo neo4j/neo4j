@@ -121,7 +121,13 @@ trait DdlShowBuilder extends Cypher6ParserListener {
     }
   }
 
-  // YIELD Context and helpers
+  final override def exitTerminateCommand(
+    ctx: Cypher6Parser.TerminateCommandContext
+  ): Unit = {
+    ctx.ast = ctxChild(ctx, 1).ast
+  }
+
+  // YIELD context and helpers
 
   private def decomposeYield(
     yieldOrWhere: YieldOrWhere
@@ -224,15 +230,54 @@ trait DdlShowBuilder extends Cypher6ParserListener {
       Right[(Yield, Option[Return]), Where](whereClause.ast[Where]())
   }
 
-  // Show Command Contexts
+  // Non-admin show and terminate command contexts (ordered as in parser file)
 
-  final override def exitShowAliases(
-    ctx: Cypher6Parser.ShowAliasesContext
+  final override def exitComposableCommandClauses(
+    ctx: Cypher6Parser.ComposableCommandClausesContext
   ): Unit = {
-    ctx.ast = ShowAliases(
-      astOpt[DatabaseName](ctx.symbolicAliasNameOrParameter()),
-      astOpt[Either[(Yield, Option[Return]), Where]](ctx.showCommandYield())
-    )(pos(ctx))
+    ctx.ast = ctxChild(ctx, 0).ast
+  }
+
+  override def exitComposableShowCommandClauses(
+    ctx: Cypher6Parser.ComposableShowCommandClausesContext
+  ): Unit = {
+    ctx.ast = ctxChild(ctx, 1).ast
+  }
+
+  override def exitShowIndexCommand(
+    ctx: Cypher6Parser.ShowIndexCommandContext
+  ): Unit = {
+    val noBrief = ctx.showIndexesNoBrief()
+    val parentPos = pos(ctx.getParent)
+    ctx.ast = if (noBrief != null) {
+      val indexType = nodeChild(ctx, 0).getSymbol.getType match {
+        case Cypher6Parser.FULLTEXT => FulltextIndexes
+        case Cypher6Parser.LOOKUP   => LookupIndexes
+        case Cypher6Parser.POINT    => PointIndexes
+        case Cypher6Parser.RANGE    => RangeIndexes
+        case Cypher6Parser.TEXT     => TextIndexes
+        case Cypher6Parser.VECTOR   => VectorIndexes
+        case _                      => throw new IllegalStateException("Unexpected index type")
+      }
+      ctx.showIndexesNoBrief().ast[ShowWrapper].buildIndexClauses(indexType, parentPos)
+    } else {
+      val indexType = if (ctx.BTREE() != null) BtreeIndexes else AllIndexes
+      ctx.showIndexesAllowBrief().ast[ShowWrapper].buildIndexClauses(indexType, parentPos)
+    }
+  }
+
+  final override def exitShowIndexesAllowBrief(
+    ctx: Cypher6Parser.ShowIndexesAllowBriefContext
+  ): Unit = {
+    ctx.ast = astOpt[ShowWrapper](ctx.showBriefAndYield(), ShowWrapper())
+      .copy(composableClauses = astOpt[Seq[Clause]](ctx.composableCommandClauses()))
+  }
+
+  final override def exitShowIndexesNoBrief(
+    ctx: Cypher6Parser.ShowIndexesNoBriefContext
+  ): Unit = {
+    ctx.ast = decomposeYield(astOpt(ctx.showCommandYield()))
+      .copy(composableClauses = astOpt[Seq[Clause]](ctx.composableCommandClauses()))
   }
 
   override def exitShowConstraintCommand(ctx: Cypher6Parser.ShowConstraintCommandContext): Unit = {
@@ -353,27 +398,12 @@ trait DdlShowBuilder extends Cypher6ParserListener {
       .copy(composableClauses = astOpt[Seq[Clause]](ctx.composableCommandClauses()))
   }
 
-  final override def exitShowCurrentUser(
-    ctx: Cypher6Parser.ShowCurrentUserContext
+  final override def exitShowProcedures(
+    ctx: Cypher6Parser.ShowProceduresContext
   ): Unit = {
-    ctx.ast = ShowCurrentUser(
-      astOpt[Either[(Yield, Option[Return]), Where]](ctx.showCommandYield())
-    )(pos(ctx))
-  }
-
-  final override def exitShowDatabase(
-    ctx: Cypher6Parser.ShowDatabaseContext
-  ): Unit = {
-    val dbName = ctx.symbolicAliasNameOrParameter()
-    val dbScope =
-      if (dbName != null) SingleNamedDatabaseScope(dbName.ast[DatabaseName]())(pos(ctx))
-      else if (ctx.HOME() != null) HomeDatabaseScope()(pos(ctx))
-      else if (ctx.DEFAULT() != null) DefaultDatabaseScope()(pos(ctx))
-      else AllDatabasesScope()(pos(ctx))
-    ctx.ast = ShowDatabase(
-      dbScope,
-      astOpt[Either[(Yield, Option[Return]), Where]](ctx.showCommandYield())
-    )(pos(ctx.getParent))
+    ctx.ast = decomposeYield(astOpt(ctx.showCommandYield()))
+      .copy(composableClauses = astOpt[Seq[Clause]](ctx.composableCommandClauses()))
+      .buildProcedureClauses(astOpt[ExecutableBy](ctx.executableBy), pos(ctx.getParent))
   }
 
   final override def exitShowFunctions(
@@ -388,40 +418,114 @@ trait DdlShowBuilder extends Cypher6ParserListener {
       )
   }
 
-  override def exitShowIndexCommand(
-    ctx: Cypher6Parser.ShowIndexCommandContext
+  final override def exitShowFunctionsType(
+    ctx: Cypher6Parser.ShowFunctionsTypeContext
   ): Unit = {
-    val noBrief = ctx.showIndexesNoBrief()
-    val parentPos = pos(ctx.getParent)
-    ctx.ast = if (noBrief != null) {
-      val indexType = nodeChild(ctx, 0).getSymbol.getType match {
-        case Cypher6Parser.FULLTEXT => FulltextIndexes
-        case Cypher6Parser.LOOKUP   => LookupIndexes
-        case Cypher6Parser.POINT    => PointIndexes
-        case Cypher6Parser.RANGE    => RangeIndexes
-        case Cypher6Parser.TEXT     => TextIndexes
-        case Cypher6Parser.VECTOR   => VectorIndexes
-        case _                      => throw new IllegalStateException("Unexpected index type")
-      }
-      ctx.showIndexesNoBrief().ast[ShowWrapper].buildIndexClauses(indexType, parentPos)
+    ctx.ast = if (ctx.BUILT() != null) {
+      BuiltInFunctions
+    } else if (ctx.USER() != null) {
+      UserDefinedFunctions
+    } else AllFunctions
+  }
+
+  final override def exitExecutableBy(ctx: Cypher6Parser.ExecutableByContext): Unit = {
+    val name = ctx.symbolicNameString()
+    ctx.ast =
+      if (name != null) {
+        User(ctx.symbolicNameString().ast())
+      } else CurrentUser
+  }
+
+  final override def exitShowTransactions(
+    ctx: Cypher6Parser.ShowTransactionsContext
+  ): Unit = {
+    ctx.ast = ctx.namesAndClauses().ast[ShowWrapper]().buildShowTransactions(pos(ctx.getParent))
+  }
+
+  final override def exitTerminateTransactions(
+    ctx: Cypher6Parser.TerminateTransactionsContext
+  ): Unit = {
+    ctx.ast = ctx.namesAndClauses().ast[ShowWrapper]().buildTerminateTransaction(pos(ctx.getParent))
+  }
+
+  final override def exitShowSettings(
+    ctx: Cypher6Parser.ShowSettingsContext
+  ): Unit = {
+    ctx.ast = ctx.namesAndClauses().ast[ShowWrapper]().buildSettingsClauses(pos(ctx.getParent))
+  }
+
+  override def exitNamesAndClauses(
+    ctx: Cypher6Parser.NamesAndClausesContext
+  ): Unit = {
+    ctx.ast = decomposeYield(astOpt(ctx.showCommandYield()))
+      .copy(
+        composableClauses = astOpt[Seq[Clause]](ctx.composableCommandClauses()),
+        names = astOpt[Either[List[String], Expression]](ctx.stringsOrExpression(), Left(List.empty))
+      )
+  }
+
+  final override def exitStringsOrExpression(
+    ctx: Cypher6Parser.StringsOrExpressionContext
+  ): Unit = {
+    val stringList = ctx.stringList()
+    ctx.ast = if (stringList != null) {
+      Left[List[String], Expression](
+        stringList.ast[Seq[StringLiteral]]().map(_.value).toList
+      )
     } else {
-      val indexType = if (ctx.BTREE() != null) BtreeIndexes else AllIndexes
-      ctx.showIndexesAllowBrief().ast[ShowWrapper].buildIndexClauses(indexType, parentPos)
+      Right[List[String], Expression](ctx.expression.ast())
     }
   }
 
-  final override def exitShowIndexesAllowBrief(
-    ctx: Cypher6Parser.ShowIndexesAllowBriefContext
+  final override def exitStringList(
+    ctx: Cypher6Parser.StringListContext
   ): Unit = {
-    ctx.ast = astOpt[ShowWrapper](ctx.showBriefAndYield(), ShowWrapper())
-      .copy(composableClauses = astOpt[Seq[Clause]](ctx.composableCommandClauses()))
+    ctx.ast = astSeq[StringLiteral](ctx.stringLiteral())
   }
 
-  final override def exitShowIndexesNoBrief(
-    ctx: Cypher6Parser.ShowIndexesNoBriefContext
+  // Admin show command contexts (ordered as in parser file)
+
+  final override def exitShowServers(
+    ctx: Cypher6Parser.ShowServersContext
   ): Unit = {
-    ctx.ast = decomposeYield(astOpt(ctx.showCommandYield()))
-      .copy(composableClauses = astOpt[Seq[Clause]](ctx.composableCommandClauses()))
+    ctx.ast = ShowServers(
+      astOpt[Either[(Yield, Option[Return]), Where]](ctx.showCommandYield())
+    )(pos(ctx))
+  }
+
+  final override def exitShowRoles(
+    ctx: Cypher6Parser.ShowRolesContext
+  ): Unit = {
+    ctx.ast = ShowRoles(
+      ctx.WITH() != null,
+      ctx.POPULATED() == null,
+      astOpt[Either[(Yield, Option[Return]), Where]](ctx.showCommandYield())
+    )(pos(ctx))
+  }
+
+  final override def exitShowUsers(
+    ctx: Cypher6Parser.ShowUsersContext
+  ): Unit = {
+    ctx.ast = ShowUsers(
+      astOpt[Either[(Yield, Option[Return]), Where]](ctx.showCommandYield()),
+      withAuth = ctx.AUTH() != null
+    )(pos(ctx))
+  }
+
+  final override def exitShowCurrentUser(
+    ctx: Cypher6Parser.ShowCurrentUserContext
+  ): Unit = {
+    ctx.ast = ShowCurrentUser(
+      astOpt[Either[(Yield, Option[Return]), Where]](ctx.showCommandYield())
+    )(pos(ctx))
+  }
+
+  final override def exitShowSupportedPrivileges(
+    ctx: Cypher6Parser.ShowSupportedPrivilegesContext
+  ): Unit = {
+    ctx.ast = ShowSupportedPrivilegeCommand(
+      astOpt[Either[(Yield, Option[Return]), Where]](ctx.showCommandYield())
+    )(pos(ctx))
   }
 
   final override def exitShowPrivileges(
@@ -434,14 +538,6 @@ trait DdlShowBuilder extends Cypher6ParserListener {
     else {
       ShowPrivileges(ShowAllPrivileges()(pos(ctx)), cmdYield)(pos(ctx))
     }
-  }
-
-  final override def exitShowSupportedPrivileges(
-    ctx: Cypher6Parser.ShowSupportedPrivilegesContext
-  ): Unit = {
-    ctx.ast = ShowSupportedPrivilegeCommand(
-      astOpt[Either[(Yield, Option[Return]), Where]](ctx.showCommandYield())
-    )(pos(ctx))
   }
 
   final override def exitShowRolePrivileges(
@@ -479,116 +575,28 @@ trait DdlShowBuilder extends Cypher6ParserListener {
     ctx.ast = (ctx.AS() != null, ctx.REVOKE() != null)
   }
 
-  final override def exitShowProcedures(
-    ctx: Cypher6Parser.ShowProceduresContext
+  final override def exitShowDatabase(
+    ctx: Cypher6Parser.ShowDatabaseContext
   ): Unit = {
-    ctx.ast = decomposeYield(astOpt(ctx.showCommandYield()))
-      .copy(composableClauses = astOpt[Seq[Clause]](ctx.composableCommandClauses()))
-      .buildProcedureClauses(astOpt[ExecutableBy](ctx.executableBy), pos(ctx.getParent))
+    val dbName = ctx.symbolicAliasNameOrParameter()
+    val dbScope =
+      if (dbName != null) SingleNamedDatabaseScope(dbName.ast[DatabaseName]())(pos(ctx))
+      else if (ctx.HOME() != null) HomeDatabaseScope()(pos(ctx))
+      else if (ctx.DEFAULT() != null) DefaultDatabaseScope()(pos(ctx))
+      else AllDatabasesScope()(pos(ctx))
+    ctx.ast = ShowDatabase(
+      dbScope,
+      astOpt[Either[(Yield, Option[Return]), Where]](ctx.showCommandYield())
+    )(pos(ctx.getParent))
   }
 
-  final override def exitShowRoles(
-    ctx: Cypher6Parser.ShowRolesContext
+  final override def exitShowAliases(
+    ctx: Cypher6Parser.ShowAliasesContext
   ): Unit = {
-    ctx.ast = ShowRoles(
-      ctx.WITH() != null,
-      ctx.POPULATED() == null,
+    ctx.ast = ShowAliases(
+      astOpt[DatabaseName](ctx.symbolicAliasNameOrParameter()),
       astOpt[Either[(Yield, Option[Return]), Where]](ctx.showCommandYield())
     )(pos(ctx))
-  }
-
-  final override def exitShowServers(
-    ctx: Cypher6Parser.ShowServersContext
-  ): Unit = {
-    ctx.ast = ShowServers(
-      astOpt[Either[(Yield, Option[Return]), Where]](ctx.showCommandYield())
-    )(pos(ctx))
-  }
-
-  final override def exitShowSettings(
-    ctx: Cypher6Parser.ShowSettingsContext
-  ): Unit = {
-    ctx.ast = ctx.namesAndClauses().ast[ShowWrapper]().buildSettingsClauses(pos(ctx.getParent))
-  }
-
-  final override def exitShowTransactions(
-    ctx: Cypher6Parser.ShowTransactionsContext
-  ): Unit = {
-    ctx.ast = ctx.namesAndClauses().ast[ShowWrapper]().buildShowTransactions(pos(ctx.getParent))
-  }
-
-  final override def exitTerminateTransactions(
-    ctx: Cypher6Parser.TerminateTransactionsContext
-  ): Unit = {
-    ctx.ast = ctx.namesAndClauses().ast[ShowWrapper]().buildTerminateTransaction(pos(ctx.getParent))
-  }
-
-  final override def exitShowFunctionsType(
-    ctx: Cypher6Parser.ShowFunctionsTypeContext
-  ): Unit = {
-    ctx.ast = if (ctx.BUILT() != null) {
-      BuiltInFunctions
-    } else if (ctx.USER() != null) {
-      UserDefinedFunctions
-    } else AllFunctions
-  }
-
-  final override def exitShowUsers(
-    ctx: Cypher6Parser.ShowUsersContext
-  ): Unit = {
-    ctx.ast = ShowUsers(
-      astOpt[Either[(Yield, Option[Return]), Where]](ctx.showCommandYield()),
-      withAuth = ctx.AUTH() != null
-    )(pos(ctx))
-  }
-
-  final override def exitExecutableBy(ctx: Cypher6Parser.ExecutableByContext): Unit = {
-    val name = ctx.symbolicNameString()
-    ctx.ast =
-      if (name != null) {
-        User(ctx.symbolicNameString().ast())
-      } else CurrentUser
-  }
-
-  override def exitNamesAndClauses(
-    ctx: Cypher6Parser.NamesAndClausesContext
-  ): Unit = {
-    ctx.ast = decomposeYield(astOpt(ctx.showCommandYield()))
-      .copy(
-        composableClauses = astOpt[Seq[Clause]](ctx.composableCommandClauses()),
-        names = astOpt[Either[List[String], Expression]](ctx.stringsOrExpression(), Left(List.empty))
-      )
-  }
-
-  final override def exitStringsOrExpression(
-    ctx: Cypher6Parser.StringsOrExpressionContext
-  ): Unit = {
-    val stringList = ctx.stringList()
-    ctx.ast = if (stringList != null) {
-      Left[List[String], Expression](
-        stringList.ast[Seq[StringLiteral]]().map(_.value).toList
-      )
-    } else {
-      Right[List[String], Expression](ctx.expression.ast())
-    }
-  }
-
-  final override def exitStringList(
-    ctx: Cypher6Parser.StringListContext
-  ): Unit = {
-    ctx.ast = astSeq[StringLiteral](ctx.stringLiteral())
-  }
-
-  override def exitComposableShowCommandClauses(
-    ctx: Cypher6Parser.ComposableShowCommandClausesContext
-  ): Unit = {
-    ctx.ast = ctxChild(ctx, 1).ast
-  }
-
-  final override def exitComposableCommandClauses(
-    ctx: Cypher6Parser.ComposableCommandClausesContext
-  ): Unit = {
-    ctx.ast = ctxChild(ctx, 0).ast
   }
 
 }

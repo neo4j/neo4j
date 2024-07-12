@@ -16,8 +16,8 @@
  */
 package org.neo4j.cypher.internal.ast.factory.ddl
 
-import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.Statements
+import org.neo4j.cypher.internal.ast.TerminateTransactionsClause
 import org.neo4j.cypher.internal.ast.test.util.AstParsing.Cypher5JavaCc
 import org.neo4j.cypher.internal.expressions.AllIterablePredicate
 import org.neo4j.cypher.internal.util.InputPosition
@@ -30,13 +30,13 @@ class TerminateTransactionsCommandParserTest extends AdministrationAndSchemaComm
   Seq("TRANSACTION", "TRANSACTIONS").foreach { transactionKeyword =>
     test(s"TERMINATE $transactionKeyword") {
       assertAst(
-        singleQuery(ast.TerminateTransactionsClause(Left(List.empty), List.empty, yieldAll = false, None)(defaultPos))
+        singleQuery(TerminateTransactionsClause(Left(List.empty), List.empty, yieldAll = false, None)(defaultPos))
       )
     }
 
     test(s"TERMINATE $transactionKeyword 'db1-transaction-123'") {
       assertAst(
-        singleQuery(ast.TerminateTransactionsClause(
+        singleQuery(TerminateTransactionsClause(
           Right(literalString("db1-transaction-123")),
           List.empty,
           yieldAll = false,
@@ -47,7 +47,7 @@ class TerminateTransactionsCommandParserTest extends AdministrationAndSchemaComm
 
     test(s"""TERMINATE $transactionKeyword "db1-transaction-123"""") {
       assertAst(
-        singleQuery(ast.TerminateTransactionsClause(
+        singleQuery(TerminateTransactionsClause(
           Right(literalString("db1-transaction-123")),
           List.empty,
           yieldAll = false,
@@ -59,7 +59,7 @@ class TerminateTransactionsCommandParserTest extends AdministrationAndSchemaComm
     test(s"TERMINATE $transactionKeyword 'my.db-transaction-123'") {
       assertAst(
         singleQuery(
-          ast.TerminateTransactionsClause(
+          TerminateTransactionsClause(
             Right(literalString("my.db-transaction-123")),
             List.empty,
             yieldAll = false,
@@ -73,7 +73,7 @@ class TerminateTransactionsCommandParserTest extends AdministrationAndSchemaComm
     test(s"TERMINATE $transactionKeyword $$param") {
       assertAst(
         singleQuery(
-          ast.TerminateTransactionsClause(Right(parameter("param", CTAny)), List.empty, yieldAll = false, None)(pos)
+          TerminateTransactionsClause(Right(parameter("param", CTAny)), List.empty, yieldAll = false, None)(pos)
         ),
         comparePosition = false
       )
@@ -82,14 +82,14 @@ class TerminateTransactionsCommandParserTest extends AdministrationAndSchemaComm
     test(s"TERMINATE $transactionKeyword $$yield") {
       assertAst(
         singleQuery(
-          ast.TerminateTransactionsClause(Right(parameter("yield", CTAny)), List.empty, yieldAll = false, None)(pos)
+          TerminateTransactionsClause(Right(parameter("yield", CTAny)), List.empty, yieldAll = false, None)(pos)
         ),
         comparePosition = false
       )
     }
 
     test(s"""TERMINATE $transactionKeyword 'db1 - transaction - 123', "db2-transaction-45a6"""") {
-      assertAst(singleQuery(ast.TerminateTransactionsClause(
+      assertAst(singleQuery(TerminateTransactionsClause(
         Left(List("db1 - transaction - 123", "db2-transaction-45a6")),
         List.empty,
         yieldAll = false,
@@ -99,7 +99,7 @@ class TerminateTransactionsCommandParserTest extends AdministrationAndSchemaComm
 
     test(s"TERMINATE $transactionKeyword 'yield-transaction-123'") {
       assertAst(
-        singleQuery(ast.TerminateTransactionsClause(
+        singleQuery(TerminateTransactionsClause(
           Right(literalString("yield-transaction-123")),
           List.empty,
           yieldAll = false,
@@ -111,7 +111,7 @@ class TerminateTransactionsCommandParserTest extends AdministrationAndSchemaComm
     test(s"TERMINATE $transactionKeyword 'where-transaction-123'") {
       assertAst(
         singleQuery(
-          ast.TerminateTransactionsClause(
+          TerminateTransactionsClause(
             Right(literalString("where-transaction-123")),
             List.empty,
             yieldAll = false,
@@ -126,7 +126,7 @@ class TerminateTransactionsCommandParserTest extends AdministrationAndSchemaComm
       assertAst(
         singleQuery(
           use(List("db")),
-          ast.TerminateTransactionsClause(
+          TerminateTransactionsClause(
             Right(literalString("db1-transaction-123")),
             List.empty,
             yieldAll = false,
@@ -141,7 +141,7 @@ class TerminateTransactionsCommandParserTest extends AdministrationAndSchemaComm
 
   test("TERMINATE TRANSACTION db-transaction-123") {
     assertAst(singleQuery(
-      ast.TerminateTransactionsClause(
+      TerminateTransactionsClause(
         Right(subtract(subtract(varFor("db"), varFor("transaction")), literalInt(123))),
         List.empty,
         yieldAll = false,
@@ -152,7 +152,7 @@ class TerminateTransactionsCommandParserTest extends AdministrationAndSchemaComm
 
   test("TERMINATE TRANSACTIONS ['db1-transaction-123', 'db2-transaction-456']") {
     assertAst(singleQuery(
-      ast.TerminateTransactionsClause(
+      TerminateTransactionsClause(
         Right(listOfString("db1-transaction-123", "db2-transaction-456")),
         List.empty,
         yieldAll = false,
@@ -163,19 +163,19 @@ class TerminateTransactionsCommandParserTest extends AdministrationAndSchemaComm
 
   test("TERMINATE TRANSACTION foo") {
     assertAst(singleQuery(
-      ast.TerminateTransactionsClause(Right(varFor("foo")), List.empty, yieldAll = false, None)(pos)
+      TerminateTransactionsClause(Right(varFor("foo")), List.empty, yieldAll = false, None)(pos)
     ))
   }
 
   test("TERMINATE TRANSACTION x+2") {
     assertAst(singleQuery(
-      ast.TerminateTransactionsClause(Right(add(varFor("x"), literalInt(2))), List.empty, yieldAll = false, None)(pos)
+      TerminateTransactionsClause(Right(add(varFor("x"), literalInt(2))), List.empty, yieldAll = false, None)(pos)
     ))
   }
 
   test("TERMINATE TRANSACTIONS ALL") {
     assertAst(singleQuery(
-      ast.TerminateTransactionsClause(Right(varFor("ALL")), List.empty, yieldAll = false, None)(pos)
+      TerminateTransactionsClause(Right(varFor("ALL")), List.empty, yieldAll = false, None)(pos)
     ))
   }
 
@@ -184,7 +184,7 @@ class TerminateTransactionsCommandParserTest extends AdministrationAndSchemaComm
   test(
     "TERMINATE TRANSACTION 'db1-transaction-123', 'db2-transaction-456' WHERE transactionId = 'db1-transaction-123'"
   ) {
-    assertAst(singleQuery(ast.TerminateTransactionsClause(
+    assertAst(singleQuery(TerminateTransactionsClause(
       Left(List("db1-transaction-123", "db2-transaction-456")),
       List.empty,
       yieldAll = false,
@@ -195,7 +195,7 @@ class TerminateTransactionsCommandParserTest extends AdministrationAndSchemaComm
   test("TERMINATE TRANSACTIONS YIELD username") {
     assertAst(
       singleQuery(
-        ast.TerminateTransactionsClause(
+        TerminateTransactionsClause(
           Left(List.empty),
           List(commandResultItem("username")),
           yieldAll = false,
@@ -210,7 +210,7 @@ class TerminateTransactionsCommandParserTest extends AdministrationAndSchemaComm
   test("TERMINATE TRANSACTIONS 'db1-transaction-123', 'db2-transaction-456' YIELD *") {
     assertAst(
       singleQuery(
-        ast.TerminateTransactionsClause(
+        TerminateTransactionsClause(
           Left(List("db1-transaction-123", "db2-transaction-456")),
           List.empty,
           yieldAll = true,
@@ -224,7 +224,7 @@ class TerminateTransactionsCommandParserTest extends AdministrationAndSchemaComm
   test("TERMINATE TRANSACTIONS 'db1-transaction-123', 'db2-transaction-456', 'yield' YIELD *") {
     assertAst(
       singleQuery(
-        ast.TerminateTransactionsClause(
+        TerminateTransactionsClause(
           Left(List("db1-transaction-123", "db2-transaction-456", "yield")),
           List.empty,
           yieldAll = true,
@@ -239,7 +239,7 @@ class TerminateTransactionsCommandParserTest extends AdministrationAndSchemaComm
   test("TERMINATE TRANSACTIONS $param YIELD * ORDER BY transactionId SKIP 2 LIMIT 5") {
     assertAst(
       singleQuery(
-        ast.TerminateTransactionsClause(Right(parameter("param", CTAny)), List.empty, yieldAll = true, None)(pos),
+        TerminateTransactionsClause(Right(parameter("param", CTAny)), List.empty, yieldAll = true, None)(pos),
         withFromYield(returnAllItems, Some(orderBy(sortItem(varFor("transactionId")))), Some(skip(2)), Some(limit(5)))
       ),
       comparePosition = false
@@ -252,7 +252,7 @@ class TerminateTransactionsCommandParserTest extends AdministrationAndSchemaComm
     assertAst(
       singleQuery(
         use(List("db")),
-        ast.TerminateTransactionsClause(
+        TerminateTransactionsClause(
           Right(literalString("db1-transaction-123")),
           List(commandResultItem("transactionId"), commandResultItem("username", Some("pp"))),
           yieldAll = false,
@@ -274,7 +274,7 @@ class TerminateTransactionsCommandParserTest extends AdministrationAndSchemaComm
   test("TERMINATE TRANSACTIONS 'where' YIELD transactionId AS TRANSACTION, username AS OUTPUT") {
     assertAst(
       singleQuery(
-        ast.TerminateTransactionsClause(
+        TerminateTransactionsClause(
           Right(literalString("where")),
           List(commandResultItem("transactionId", Some("TRANSACTION")), commandResultItem("username", Some("OUTPUT"))),
           yieldAll = false,
@@ -289,7 +289,7 @@ class TerminateTransactionsCommandParserTest extends AdministrationAndSchemaComm
   test("TERMINATE TRANSACTION 'yield' YIELD * WHERE transactionId = 'where'") {
     assertAst(
       singleQuery(
-        ast.TerminateTransactionsClause(Right(literalString("yield")), List.empty, yieldAll = true, None)(pos),
+        TerminateTransactionsClause(Right(literalString("yield")), List.empty, yieldAll = true, None)(pos),
         withFromYield(returnAllItems, where = Some(where(equals(varFor("transactionId"), literalString("where")))))
       ),
       comparePosition = false
@@ -299,7 +299,7 @@ class TerminateTransactionsCommandParserTest extends AdministrationAndSchemaComm
   test("TERMINATE TRANSACTION $yield YIELD * WHERE transactionId IN ['yield', $where]") {
     assertAst(
       singleQuery(
-        ast.TerminateTransactionsClause(Right(parameter("yield", CTAny)), List.empty, yieldAll = true, None)(pos),
+        TerminateTransactionsClause(Right(parameter("yield", CTAny)), List.empty, yieldAll = true, None)(pos),
         withFromYield(
           returnAllItems,
           where = Some(where(in(varFor("transactionId"), listOf(literalString("yield"), parameter("where", CTAny)))))
@@ -313,7 +313,7 @@ class TerminateTransactionsCommandParserTest extends AdministrationAndSchemaComm
     "TERMINATE TRANSACTION db1-transaction-123 WHERE transactionId IN ['db1-transaction-124', 'db1-transaction-125']"
   ) {
     assertAst(
-      singleQuery(ast.TerminateTransactionsClause(
+      singleQuery(TerminateTransactionsClause(
         Right(subtract(subtract(varFor("db1"), varFor("transaction")), literalInt(123))),
         List.empty,
         yieldAll = false,
@@ -326,7 +326,7 @@ class TerminateTransactionsCommandParserTest extends AdministrationAndSchemaComm
   test("TERMINATE TRANSACTIONS ['db1-transaction-123', 'db2-transaction-456'] YIELD *") {
     assertAst(
       singleQuery(
-        ast.TerminateTransactionsClause(
+        TerminateTransactionsClause(
           Right(listOfString("db1-transaction-123", "db2-transaction-456")),
           List.empty,
           yieldAll = true,
@@ -341,7 +341,7 @@ class TerminateTransactionsCommandParserTest extends AdministrationAndSchemaComm
   test("TERMINATE TRANSACTIONS x*2 YIELD transactionId AS TRANSACTION, database AS SHOW") {
     assertAst(
       singleQuery(
-        ast.TerminateTransactionsClause(
+        TerminateTransactionsClause(
           Right(multiply(varFor("x"), literalInt(2))),
           List(commandResultItem("transactionId", Some("TRANSACTION")), commandResultItem("database", Some("SHOW"))),
           yieldAll = false,
@@ -356,7 +356,7 @@ class TerminateTransactionsCommandParserTest extends AdministrationAndSchemaComm
   test("TERMINATE TRANSACTIONS where YIELD *") {
     assertAst(
       singleQuery(
-        ast.TerminateTransactionsClause(
+        TerminateTransactionsClause(
           Right(varFor("where")),
           List.empty,
           yieldAll = true,
@@ -371,7 +371,7 @@ class TerminateTransactionsCommandParserTest extends AdministrationAndSchemaComm
   test("TERMINATE TRANSACTIONS yield YIELD *") {
     assertAst(
       singleQuery(
-        ast.TerminateTransactionsClause(
+        TerminateTransactionsClause(
           Right(varFor("yield")),
           List.empty,
           yieldAll = true,
@@ -386,7 +386,7 @@ class TerminateTransactionsCommandParserTest extends AdministrationAndSchemaComm
   test("TERMINATE TRANSACTIONS show YIELD *") {
     assertAst(
       singleQuery(
-        ast.TerminateTransactionsClause(
+        TerminateTransactionsClause(
           Right(varFor("show")),
           List.empty,
           yieldAll = true,
@@ -401,7 +401,7 @@ class TerminateTransactionsCommandParserTest extends AdministrationAndSchemaComm
   test("TERMINATE TRANSACTIONS terminate YIELD *") {
     assertAst(
       singleQuery(
-        ast.TerminateTransactionsClause(
+        TerminateTransactionsClause(
           Right(varFor("terminate")),
           List.empty,
           yieldAll = true,
@@ -416,7 +416,7 @@ class TerminateTransactionsCommandParserTest extends AdministrationAndSchemaComm
   test("TERMINATE TRANSACTIONS YIELD yield") {
     assertAst(
       singleQuery(
-        ast.TerminateTransactionsClause(
+        TerminateTransactionsClause(
           Left(List.empty),
           List(commandResultItem("yield")),
           yieldAll = false,
@@ -431,7 +431,7 @@ class TerminateTransactionsCommandParserTest extends AdministrationAndSchemaComm
   test("TERMINATE TRANSACTIONS where WHERE true") {
     assertAst(
       singleQuery(
-        ast.TerminateTransactionsClause(
+        TerminateTransactionsClause(
           Right(varFor("where")),
           List.empty,
           yieldAll = false,
@@ -445,7 +445,7 @@ class TerminateTransactionsCommandParserTest extends AdministrationAndSchemaComm
   test("TERMINATE TRANSACTIONS yield WHERE true") {
     assertAst(
       singleQuery(
-        ast.TerminateTransactionsClause(
+        TerminateTransactionsClause(
           Right(varFor("yield")),
           List.empty,
           yieldAll = false,
@@ -459,7 +459,7 @@ class TerminateTransactionsCommandParserTest extends AdministrationAndSchemaComm
   test("TERMINATE TRANSACTIONS show WHERE true") {
     assertAst(
       singleQuery(
-        ast.TerminateTransactionsClause(
+        TerminateTransactionsClause(
           Right(varFor("show")),
           List.empty,
           yieldAll = false,
@@ -473,7 +473,7 @@ class TerminateTransactionsCommandParserTest extends AdministrationAndSchemaComm
   test("TERMINATE TRANSACTIONS terminate WHERE true") {
     assertAst(
       singleQuery(
-        ast.TerminateTransactionsClause(
+        TerminateTransactionsClause(
           Right(varFor("terminate")),
           List.empty,
           yieldAll = false,
@@ -487,7 +487,7 @@ class TerminateTransactionsCommandParserTest extends AdministrationAndSchemaComm
   test("TERMINATE TRANSACTIONS `yield` YIELD *") {
     assertAst(
       singleQuery(
-        ast.TerminateTransactionsClause(
+        TerminateTransactionsClause(
           Right(varFor("yield")),
           List.empty,
           yieldAll = true,
@@ -502,7 +502,7 @@ class TerminateTransactionsCommandParserTest extends AdministrationAndSchemaComm
   test("TERMINATE TRANSACTIONS `where` WHERE true") {
     assertAst(
       singleQuery(
-        ast.TerminateTransactionsClause(
+        TerminateTransactionsClause(
           Right(varFor("where")),
           List.empty,
           yieldAll = false,
@@ -515,7 +515,7 @@ class TerminateTransactionsCommandParserTest extends AdministrationAndSchemaComm
 
   test("TERMINATE TRANSACTIONS YIELD a ORDER BY a WHERE a = 1") {
     assertAst(singleQuery(
-      ast.TerminateTransactionsClause(
+      TerminateTransactionsClause(
         Left(List.empty),
         List(commandResultItem("a")),
         yieldAll = false,
@@ -531,7 +531,7 @@ class TerminateTransactionsCommandParserTest extends AdministrationAndSchemaComm
 
   test("TERMINATE TRANSACTIONS YIELD a AS b ORDER BY b WHERE b = 1") {
     assertAst(singleQuery(
-      ast.TerminateTransactionsClause(
+      TerminateTransactionsClause(
         Left(List.empty),
         List(commandResultItem("a", Some("b"))),
         yieldAll = false,
@@ -547,7 +547,7 @@ class TerminateTransactionsCommandParserTest extends AdministrationAndSchemaComm
 
   test("TERMINATE TRANSACTIONS YIELD a AS b ORDER BY a WHERE a = 1") {
     assertAst(singleQuery(
-      ast.TerminateTransactionsClause(
+      TerminateTransactionsClause(
         Left(List.empty),
         List(commandResultItem("a", Some("b"))),
         yieldAll = false,
@@ -563,7 +563,7 @@ class TerminateTransactionsCommandParserTest extends AdministrationAndSchemaComm
 
   test("TERMINATE TRANSACTIONS YIELD a ORDER BY EXISTS { (a) } WHERE EXISTS { (a) }") {
     assertAst(singleQuery(
-      ast.TerminateTransactionsClause(
+      TerminateTransactionsClause(
         Left(List.empty),
         List(commandResultItem("a")),
         yieldAll = false,
@@ -579,7 +579,7 @@ class TerminateTransactionsCommandParserTest extends AdministrationAndSchemaComm
 
   test("TERMINATE TRANSACTIONS YIELD a ORDER BY EXISTS { (b) } WHERE EXISTS { (b) }") {
     assertAst(singleQuery(
-      ast.TerminateTransactionsClause(
+      TerminateTransactionsClause(
         Left(List.empty),
         List(commandResultItem("a")),
         yieldAll = false,
@@ -595,7 +595,7 @@ class TerminateTransactionsCommandParserTest extends AdministrationAndSchemaComm
 
   test("TERMINATE TRANSACTIONS YIELD a AS b ORDER BY COUNT { (b) } WHERE EXISTS { (b) }") {
     assertAst(singleQuery(
-      ast.TerminateTransactionsClause(
+      TerminateTransactionsClause(
         Left(List.empty),
         List(commandResultItem("a", Some("b"))),
         yieldAll = false,
@@ -611,7 +611,7 @@ class TerminateTransactionsCommandParserTest extends AdministrationAndSchemaComm
 
   test("TERMINATE TRANSACTIONS YIELD a AS b ORDER BY EXISTS { (a) } WHERE COLLECT { MATCH (a) RETURN a } <> []") {
     assertAst(singleQuery(
-      ast.TerminateTransactionsClause(
+      TerminateTransactionsClause(
         Left(List.empty),
         List(commandResultItem("a", Some("b"))),
         yieldAll = false,
@@ -630,7 +630,7 @@ class TerminateTransactionsCommandParserTest extends AdministrationAndSchemaComm
 
   test("TERMINATE TRANSACTIONS YIELD a AS b ORDER BY b + COUNT { () } WHERE b OR EXISTS { () }") {
     assertAst(singleQuery(
-      ast.TerminateTransactionsClause(
+      TerminateTransactionsClause(
         Left(List.empty),
         List(commandResultItem("a", Some("b"))),
         yieldAll = false,
@@ -648,7 +648,7 @@ class TerminateTransactionsCommandParserTest extends AdministrationAndSchemaComm
     "TERMINATE TRANSACTIONS YIELD a AS b ORDER BY a + EXISTS { () } WHERE a OR ALL (x IN [1, 2] WHERE x IS :: INT)"
   ) {
     assertAst(singleQuery(
-      ast.TerminateTransactionsClause(
+      TerminateTransactionsClause(
         Left(List.empty),
         List(commandResultItem("a", Some("b"))),
         yieldAll = false,
@@ -673,7 +673,7 @@ class TerminateTransactionsCommandParserTest extends AdministrationAndSchemaComm
     "TERMINATE TRANSACTIONS 'id', 'id' YIELD username as transactionId, transactionId as username WHERE size(transactionId) > 0 RETURN transactionId as username"
   ) {
     assertAst(singleQuery(
-      ast.TerminateTransactionsClause(
+      TerminateTransactionsClause(
         Left(List("id", "id")),
         List(
           commandResultItem("username", Some("transactionId")),

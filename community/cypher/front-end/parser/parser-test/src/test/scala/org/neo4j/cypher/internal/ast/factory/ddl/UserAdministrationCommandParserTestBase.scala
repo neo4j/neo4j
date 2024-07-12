@@ -164,7 +164,7 @@ abstract class UserAdministrationCommandParserTestBase extends AdministrationAnd
   // * SET ID and SET ID
   // * SET PW and SET PW CHANGE and SET ID
   protected val innerNewSyntaxAtLeastTwoClauses: Set[(List[String], List[AuthAttribute])] =
-    (passwordClauseVariations.flatMap { case (pwClause, pwAst) =>
+    passwordClauseVariations.flatMap { case (pwClause, pwAst) =>
       passwordChangeRequiredClauseVariations.flatMap { case (crClause, crAst) =>
         val passwordAndChangeRequiredCombinations =
           Set((List(pwClause, crClause), List(pwAst, crAst)), (List(crClause, pwClause), List(crAst, pwAst)))
@@ -189,5 +189,5 @@ abstract class UserAdministrationCommandParserTestBase extends AdministrationAnd
           allClauseCombinations ++ idAndPasswordCombinations ++ idAndChangeRequiredCombinations
         } ++ passwordAndChangeRequiredCombinations
       }
-    } ++ doubleClauses)
+    } ++ doubleClauses
 }

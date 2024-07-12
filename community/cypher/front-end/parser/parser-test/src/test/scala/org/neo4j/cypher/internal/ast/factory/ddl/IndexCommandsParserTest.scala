@@ -17,7 +17,6 @@
 package org.neo4j.cypher.internal.ast.factory.ddl
 
 import org.neo4j.cypher.internal.ast
-import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.test.util.AstParsing.Cypher5JavaCc
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.Parameter
@@ -32,18 +31,21 @@ import org.neo4j.cypher.internal.util.symbols.CTMap
 
 /* Tests for creating and dropping indexes */
 class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBase {
+
   // Create node index (old syntax)
 
   test("CREATE INDEX ON :Person(name)") {
-    parsesTo[Statements](ast.CreateIndexOldSyntax(labelName("Person"), List(propName("name")))(pos))
+    parsesTo[ast.Statements](ast.CreateIndexOldSyntax(labelName("Person"), List(propName("name")))(pos))
   }
 
   test("CREATE INDEX ON :Person(name,age)") {
-    parsesTo[Statements](ast.CreateIndexOldSyntax(labelName("Person"), List(propName("name"), propName("age")))(pos))
+    parsesTo[ast.Statements](
+      ast.CreateIndexOldSyntax(labelName("Person"), List(propName("name"), propName("age")))(pos)
+    )
   }
 
   test("CREATE INDEX my_index ON :Person(name)") {
-    failsParsing[Statements].in {
+    failsParsing[ast.Statements].in {
       case Cypher5JavaCc =>
         _.withMessageStart("Invalid input 'ON': expected \"FOR\" or \"IF\" (line 1, column 23 (offset: 22))")
       case _ => _.withSyntaxError(
@@ -55,7 +57,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   }
 
   test("CREATE INDEX my_index ON :Person(name,age)") {
-    failsParsing[Statements].in {
+    failsParsing[ast.Statements].in {
       case Cypher5JavaCc =>
         _.withMessageStart("Invalid input 'ON': expected \"FOR\" or \"IF\" (line 1, column 23 (offset: 22))")
       case _ => _.withSyntaxError(
@@ -67,7 +69,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   }
 
   test("CREATE OR REPLACE INDEX ON :Person(name)") {
-    failsParsing[Statements].in {
+    failsParsing[ast.Statements].in {
       case Cypher5JavaCc =>
         _.withMessageStart("'REPLACE' is not allowed for this index syntax (line 1, column 1 (offset: 0))")
       case _ => _.withSyntaxError(
@@ -81,7 +83,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   // Create index
 
   test("CrEATe INDEX FOR (n1:Person) ON (n2.name)") {
-    parsesTo[Statements](rangeNodeIndex(
+    parsesTo[ast.Statements](rangeNodeIndex(
       List(prop("n2", "name")),
       None,
       posN2(testName),
@@ -100,7 +102,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   ).foreach {
     case (pattern, createIndex: CreateRangeIndexFunction) =>
       test(s"CREATE INDEX FOR $pattern ON (n2.name)") {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n2", "name")),
           None,
           posN2(testName),
@@ -111,7 +113,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"USE neo4j CREATE INDEX FOR $pattern ON (n2.name)") {
-        parsesTo[Statements](
+        parsesTo[ast.Statements](
           createIndex(
             List(prop("n2", "name")),
             None,
@@ -124,7 +126,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE INDEX FOR $pattern ON (n2.name, n3.age)") {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n2", "name"), prop("n3", "age")),
           None,
           posN2(testName),
@@ -135,7 +137,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE INDEX my_index FOR $pattern ON (n2.name)") {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n2", "name")),
           Some(Left("my_index")),
           posN2(testName),
@@ -146,7 +148,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE INDEX my_index FOR $pattern ON (n2.name, n3.age)") {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n2", "name"), prop("n3", "age")),
           Some(Left("my_index")),
           posN2(testName),
@@ -157,7 +159,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE INDEX `$$my_index` FOR $pattern ON (n2.name)") {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n2", "name")),
           Some("$my_index"),
           posN2(testName),
@@ -168,7 +170,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE INDEX ON FOR $pattern ON (n2.name)") {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n2", "name")),
           Some("ON"),
           posN2(testName),
@@ -179,7 +181,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE OR REPLACE INDEX FOR $pattern ON (n2.name)") {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n2", "name")),
           None,
           posN2(testName),
@@ -190,7 +192,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE OR REPLACE INDEX my_index FOR $pattern ON (n2.name, n3.age)") {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n2", "name"), prop("n3", "age")),
           Some(Left("my_index")),
           posN2(testName),
@@ -201,7 +203,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE OR REPLACE INDEX IF NOT EXISTS FOR $pattern ON (n2.name)") {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n2", "name")),
           None,
           posN2(testName),
@@ -212,7 +214,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE OR REPLACE INDEX my_index IF NOT EXISTS FOR $pattern ON (n2.name)") {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n2", "name")),
           Some(Left("my_index")),
           posN2(testName),
@@ -223,7 +225,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE INDEX IF NOT EXISTS FOR $pattern ON (n2.name, n3.age)") {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n2", "name"), prop("n3", "age")),
           None,
           posN2(testName),
@@ -234,7 +236,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE INDEX my_index IF NOT EXISTS FOR $pattern ON (n2.name)") {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n2", "name")),
           Some(Left("my_index")),
           posN2(testName),
@@ -245,7 +247,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE INDEX FOR $pattern ON (n2.name) OPTIONS {indexProvider : 'range-1.0'}") {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n2", "name")),
           None,
           posN2(testName),
@@ -259,7 +261,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
         s"CREATE INDEX FOR $pattern ON (n2.name) OPTIONS {indexProvider : 'native-btree-1.0', indexConfig : {`spatial.cartesian.max`: [100.0,100.0], `spatial.cartesian.min`: [-100.0,-100.0] }}"
       ) {
         // will fail in options converter
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n2", "name")),
           None,
           posN2(testName),
@@ -279,7 +281,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
         s"CREATE INDEX FOR $pattern ON (n2.name) OPTIONS {indexConfig : {`spatial.cartesian.max`: [100.0,100.0], `spatial.cartesian.min`: [-100.0,-100.0] }, indexProvider : 'native-btree-1.0'}"
       ) {
         // will fail in options converter
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n2", "name")),
           None,
           posN2(testName),
@@ -296,7 +298,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE INDEX FOR $pattern ON (n2.name) OPTIONS {indexConfig : {someConfig: 'toShowItCanBeParsed' }}") {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n2", "name")),
           None,
           posN2(testName),
@@ -307,7 +309,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE INDEX FOR $pattern ON (n2.name) OPTIONS $$options") {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n2", "name")),
           None,
           posN2(testName),
@@ -318,7 +320,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE INDEX FOR $pattern ON (n2.name) OPTIONS {nonValidOption : 42}") {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n2", "name")),
           None,
           posN2(testName),
@@ -329,7 +331,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE INDEX my_index FOR $pattern ON (n2.name) OPTIONS {}") {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n2", "name")),
           Some(Left("my_index")),
           posN2(testName),
@@ -340,7 +342,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE INDEX $$my_index FOR $pattern ON (n.name)") {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n", "name")),
           Some(Right(stringParam("my_index"))),
           posN2(testName),
@@ -384,11 +386,11 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE INDEX FOR $pattern ON (n.name) {indexProvider : 'range-1.0'}") {
-        failsParsing[Statements].withMessageStart("Invalid input '{'")
+        failsParsing[ast.Statements].withMessageStart("Invalid input '{'")
       }
 
       test(s"CREATE INDEX FOR $pattern ON (n.name) OPTIONS") {
-        failsParsing[Statements].withMessageStart("Invalid input ''")
+        failsParsing[ast.Statements].withMessageStart("Invalid input ''")
       }
   }
 
@@ -401,7 +403,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   ).foreach {
     case (pattern, createIndex: CreateRangeIndexFunction) =>
       test(s"CREATE RANGE INDEX FOR $pattern ON (n2.name)") {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n2", "name")),
           None,
           posN2(testName),
@@ -412,7 +414,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"USE neo4j CREATE RANGE INDEX FOR $pattern ON (n2.name)") {
-        parsesTo[Statements](
+        parsesTo[ast.Statements](
           createIndex(
             List(prop("n2", "name")),
             None,
@@ -425,7 +427,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE RANGE INDEX FOR $pattern ON (n2.name, n3.age)") {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n2", "name"), prop("n3", "age")),
           None,
           posN2(testName),
@@ -436,7 +438,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE RANGE INDEX my_index FOR $pattern ON (n2.name)") {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n2", "name")),
           Some(Left("my_index")),
           posN2(testName),
@@ -447,7 +449,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE RANGE INDEX my_index FOR $pattern ON (n2.name, n3.age)") {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n2", "name"), prop("n3", "age")),
           Some(Left("my_index")),
           posN2(testName),
@@ -458,7 +460,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE RANGE INDEX `$$my_index` FOR $pattern ON (n2.name)") {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n2", "name")),
           Some("$my_index"),
           posN2(testName),
@@ -469,7 +471,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE OR REPLACE RANGE INDEX FOR $pattern ON (n2.name)") {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n2", "name")),
           None,
           posN2(testName),
@@ -480,7 +482,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE OR REPLACE RANGE INDEX my_index FOR $pattern ON (n2.name, n3.age)") {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n2", "name"), prop("n3", "age")),
           Some(Left("my_index")),
           posN2(testName),
@@ -491,7 +493,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE OR REPLACE RANGE INDEX IF NOT EXISTS FOR $pattern ON (n2.name)") {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n2", "name")),
           None,
           posN2(testName),
@@ -502,7 +504,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE OR REPLACE RANGE INDEX my_index IF NOT EXISTS FOR $pattern ON (n2.name)") {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n2", "name")),
           Some(Left("my_index")),
           posN2(testName),
@@ -513,7 +515,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE RANGE INDEX IF NOT EXISTS FOR $pattern ON (n2.name, n3.age)") {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n2", "name"), prop("n3", "age")),
           None,
           posN2(testName),
@@ -524,7 +526,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE RANGE INDEX my_index IF NOT EXISTS FOR $pattern ON (n2.name)") {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n2", "name")),
           Some(Left("my_index")),
           posN2(testName),
@@ -535,7 +537,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE RANGE INDEX FOR $pattern ON (n2.name) OPTIONS {indexProvider : 'range-1.0'}") {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n2", "name")),
           None,
           posN2(testName),
@@ -548,7 +550,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       test(
         s"CREATE RANGE INDEX FOR $pattern ON (n2.name) OPTIONS {indexProvider : 'range-1.0', indexConfig : {someConfig: 'toShowItCanBeParsed'}}"
       ) {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n2", "name")),
           None,
           posN2(testName),
@@ -564,7 +566,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       test(
         s"CREATE RANGE INDEX FOR $pattern ON (n2.name) OPTIONS {indexConfig : {someConfig: 'toShowItCanBeParsed'}, indexProvider : 'range-1.0'}"
       ) {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n2", "name")),
           None,
           posN2(testName),
@@ -578,7 +580,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE RANGE INDEX FOR $pattern ON (n2.name) OPTIONS {indexConfig : {}}") {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n2", "name")),
           None,
           posN2(testName),
@@ -589,7 +591,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE RANGE INDEX FOR $pattern ON (n2.name) OPTIONS $$options") {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n2", "name")),
           None,
           posN2(testName),
@@ -600,7 +602,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE RANGE INDEX FOR $pattern ON (n2.name) OPTIONS {nonValidOption : 42}") {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n2", "name")),
           None,
           posN2(testName),
@@ -611,7 +613,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE RANGE INDEX my_index FOR $pattern ON (n2.name) OPTIONS {}") {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n2", "name")),
           Some(Left("my_index")),
           posN2(testName),
@@ -622,7 +624,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE RANGE INDEX $$my_index FOR $pattern ON (n2.name)") {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n2", "name")),
           Some(Right(stringParam("my_index"))),
           posN2(testName),
@@ -665,11 +667,11 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE RANGE INDEX FOR $pattern ON (n.name) {indexProvider : 'range-1.0'}") {
-        failsParsing[Statements].withMessageStart("Invalid input '{'")
+        failsParsing[ast.Statements].withMessageStart("Invalid input '{'")
       }
 
       test(s"CREATE RANGE INDEX FOR $pattern ON (n.name) OPTIONS") {
-        failsParsing[Statements].withMessageStart("Invalid input ''")
+        failsParsing[ast.Statements].withMessageStart("Invalid input ''")
       }
   }
 
@@ -682,7 +684,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   ).foreach {
     case (pattern, createIndex: CreateIndexFunction) =>
       test(s"CREATE BTREE INDEX FOR $pattern ON (n2.name)") {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n2", "name")),
           None,
           posN2(testName),
@@ -692,7 +694,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"USE neo4j CREATE BTREE INDEX FOR $pattern ON (n2.name)") {
-        parsesTo[Statements](
+        parsesTo[ast.Statements](
           createIndex(List(prop("n2", "name")), None, posN2(testName), ast.IfExistsThrowError, ast.NoOptions).withGraph(
             Some(use(List("neo4j")))
           )
@@ -700,7 +702,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE BTREE INDEX FOR $pattern ON (n2.name, n3.age)") {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n2", "name"), prop("n3", "age")),
           None,
           posN2(testName),
@@ -710,7 +712,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE BTREE INDEX my_index FOR $pattern ON (n2.name)") {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n2", "name")),
           Some(Left("my_index")),
           posN2(testName),
@@ -720,7 +722,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE BTREE INDEX my_index FOR $pattern ON (n2.name, n3.age)") {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n2", "name"), prop("n3", "age")),
           Some(Left("my_index")),
           posN2(testName),
@@ -730,7 +732,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE BTREE INDEX `$$my_index` FOR $pattern ON (n2.name)") {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n2", "name")),
           Some("$my_index"),
           posN2(testName),
@@ -740,7 +742,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE OR REPLACE BTREE INDEX FOR $pattern ON (n2.name)") {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n2", "name")),
           None,
           posN2(testName),
@@ -750,7 +752,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE OR REPLACE BTREE INDEX my_index FOR $pattern ON (n2.name, n3.age)") {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n2", "name"), prop("n3", "age")),
           Some(Left("my_index")),
           posN2(testName),
@@ -760,7 +762,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE OR REPLACE BTREE INDEX IF NOT EXISTS FOR $pattern ON (n2.name)") {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n2", "name")),
           None,
           posN2(testName),
@@ -770,7 +772,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE OR REPLACE BTREE INDEX my_index IF NOT EXISTS FOR $pattern ON (n2.name)") {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n2", "name")),
           Some(Left("my_index")),
           posN2(testName),
@@ -780,7 +782,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE BTREE INDEX IF NOT EXISTS FOR $pattern ON (n2.name, n3.age)") {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n2", "name"), prop("n3", "age")),
           None,
           posN2(testName),
@@ -790,7 +792,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE BTREE INDEX my_index IF NOT EXISTS FOR $pattern ON (n2.name)") {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n2", "name")),
           Some(Left("my_index")),
           posN2(testName),
@@ -800,7 +802,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE BTREE INDEX FOR $pattern ON (n2.name) OPTIONS {indexProvider : 'native-btree-1.0'}") {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n2", "name")),
           None,
           posN2(testName),
@@ -812,7 +814,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       test(
         s"CREATE BTREE INDEX FOR $pattern ON (n2.name) OPTIONS {indexProvider : 'native-btree-1.0', indexConfig : {`spatial.cartesian.max`: [100.0,100.0], `spatial.cartesian.min`: [-100.0,-100.0] }}"
       ) {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n2", "name")),
           None,
           posN2(testName),
@@ -830,7 +832,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       test(
         s"CREATE BTREE INDEX FOR $pattern ON (n2.name) OPTIONS {indexConfig : {`spatial.cartesian.max`: [100.0,100.0], `spatial.cartesian.min`: [-100.0,-100.0] }, indexProvider : 'native-btree-1.0'}"
       ) {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n2", "name")),
           None,
           posN2(testName),
@@ -848,7 +850,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       test(
         s"CREATE BTREE INDEX FOR $pattern ON (n2.name) OPTIONS {indexConfig : {`spatial.wgs-84.max`: [60.0,60.0], `spatial.wgs-84.min`: [-40.0,-40.0] }}"
       ) {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n2", "name")),
           None,
           posN2(testName),
@@ -861,7 +863,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE BTREE INDEX FOR $pattern ON (n2.name) OPTIONS $$options") {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n2", "name")),
           None,
           posN2(testName),
@@ -871,7 +873,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE BTREE INDEX FOR $pattern ON (n2.name) OPTIONS {nonValidOption : 42}") {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n2", "name")),
           None,
           posN2(testName),
@@ -881,7 +883,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE BTREE INDEX my_index FOR $pattern ON (n2.name) OPTIONS {}") {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n2", "name")),
           Some(Left("my_index")),
           posN2(testName),
@@ -891,7 +893,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE BTREE INDEX $$my_index FOR $pattern ON (n2.name)") {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n2", "name")),
           Some(Right(stringParam("my_index"))),
           posN2(testName),
@@ -931,11 +933,11 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE BTREE INDEX FOR $pattern ON (n.name) {indexProvider : 'native-btree-1.0'}") {
-        failsParsing[Statements].withMessageStart("Invalid input '{'")
+        failsParsing[ast.Statements].withMessageStart("Invalid input '{'")
       }
 
       test(s"CREATE BTREE INDEX FOR $pattern ON (n.name) OPTIONS") {
-        failsParsing[Statements].withMessageStart("Invalid input ''")
+        failsParsing[ast.Statements].withMessageStart("Invalid input ''")
       }
   }
 
@@ -948,18 +950,18 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   ).foreach {
     case (pattern, function, createIndex: CreateLookupIndexFunction) =>
       test(s"CREATE LOOKUP INDEX FOR $pattern ON EACH $function") {
-        parsesTo[Statements](createIndex(None, posN2(testName), ast.IfExistsThrowError, ast.NoOptions)(pos))
+        parsesTo[ast.Statements](createIndex(None, posN2(testName), ast.IfExistsThrowError, ast.NoOptions)(pos))
       }
 
       test(s"USE neo4j CREATE LOOKUP INDEX FOR $pattern ON EACH $function") {
-        parsesTo[Statements](
+        parsesTo[ast.Statements](
           createIndex(None, posN2(testName), ast.IfExistsThrowError, ast.NoOptions)
             .withGraph(Some(use(List("neo4j"))))
         )
       }
 
       test(s"CREATE LOOKUP INDEX my_index FOR $pattern ON EACH $function") {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           Some(Left("my_index")),
           posN2(testName),
           ast.IfExistsThrowError,
@@ -968,27 +970,27 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE LOOKUP INDEX `$$my_index` FOR $pattern ON EACH $function") {
-        parsesTo[Statements](
+        parsesTo[ast.Statements](
           createIndex(Some("$my_index"), posN2(testName), ast.IfExistsThrowError, ast.NoOptions)(pos)
         )
       }
 
       test(s"CREATE OR REPLACE LOOKUP INDEX FOR $pattern ON EACH $function") {
-        parsesTo[Statements](createIndex(None, posN2(testName), ast.IfExistsReplace, ast.NoOptions)(pos))
+        parsesTo[ast.Statements](createIndex(None, posN2(testName), ast.IfExistsReplace, ast.NoOptions)(pos))
       }
 
       test(s"CREATE OR REPLACE LOOKUP INDEX my_index FOR $pattern ON EACH $function") {
-        parsesTo[Statements](
+        parsesTo[ast.Statements](
           createIndex(Some(Left("my_index")), posN2(testName), ast.IfExistsReplace, ast.NoOptions)(pos)
         )
       }
 
       test(s"CREATE OR REPLACE LOOKUP INDEX IF NOT EXISTS FOR $pattern ON EACH $function") {
-        parsesTo[Statements](createIndex(None, posN2(testName), ast.IfExistsInvalidSyntax, ast.NoOptions)(pos))
+        parsesTo[ast.Statements](createIndex(None, posN2(testName), ast.IfExistsInvalidSyntax, ast.NoOptions)(pos))
       }
 
       test(s"CREATE OR REPLACE LOOKUP INDEX my_index IF NOT EXISTS FOR $pattern ON EACH $function") {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           Some(Left("my_index")),
           posN2(testName),
           ast.IfExistsInvalidSyntax,
@@ -997,17 +999,17 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE LOOKUP INDEX IF NOT EXISTS FOR $pattern ON EACH $function") {
-        parsesTo[Statements](createIndex(None, posN2(testName), ast.IfExistsDoNothing, ast.NoOptions)(pos))
+        parsesTo[ast.Statements](createIndex(None, posN2(testName), ast.IfExistsDoNothing, ast.NoOptions)(pos))
       }
 
       test(s"CREATE LOOKUP INDEX my_index IF NOT EXISTS FOR $pattern ON EACH $function") {
-        parsesTo[Statements](
+        parsesTo[ast.Statements](
           createIndex(Some(Left("my_index")), posN2(testName), ast.IfExistsDoNothing, ast.NoOptions)(pos)
         )
       }
 
       test(s"CREATE LOOKUP INDEX FOR $pattern ON EACH $function OPTIONS {anyOption : 42}") {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           None,
           posN2(testName),
           ast.IfExistsThrowError,
@@ -1016,7 +1018,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE LOOKUP INDEX my_index FOR $pattern ON EACH $function OPTIONS {}") {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           Some(Left("my_index")),
           posN2(testName),
           ast.IfExistsThrowError,
@@ -1025,7 +1027,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE LOOKUP INDEX $$my_index FOR $pattern ON EACH $function") {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           Some(Right(stringParam("my_index"))),
           posN2(testName),
           ast.IfExistsThrowError,
@@ -1034,11 +1036,11 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE LOOKUP INDEX FOR $pattern ON EACH $function {indexProvider : 'range-1.0'}") {
-        failsParsing[Statements].withMessageStart("Invalid input '{'")
+        failsParsing[ast.Statements].withMessageStart("Invalid input '{'")
       }
 
       test(s"CREATE LOOKUP INDEX FOR $pattern ON EACH $function OPTIONS") {
-        failsParsing[Statements].withMessageStart("Invalid input ''")
+        failsParsing[ast.Statements].withMessageStart("Invalid input ''")
       }
   }
 
@@ -1051,7 +1053,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   ).foreach {
     case (pattern, isNodeIndex: Boolean, labelsOrTypes: List[String]) =>
       test(s"CREATE FULLTEXT INDEX FOR $pattern ON EACH [n2.name]") {
-        parsesTo[Statements](fulltextIndex(
+        parsesTo[ast.Statements](fulltextIndex(
           isNodeIndex,
           List(prop("n2", "name")),
           labelsOrTypes,
@@ -1063,7 +1065,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"USE neo4j CREATE FULLTEXT INDEX FOR $pattern ON EACH [n2.name]") {
-        parsesTo[Statements](
+        parsesTo[ast.Statements](
           fulltextIndex(
             isNodeIndex,
             List(prop("n2", "name")),
@@ -1077,7 +1079,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE FULLTEXT INDEX FOR $pattern ON EACH [n2.name, n3.age]") {
-        parsesTo[Statements](fulltextIndex(
+        parsesTo[ast.Statements](fulltextIndex(
           isNodeIndex,
           List(prop("n2", "name"), prop("n3", "age")),
           labelsOrTypes,
@@ -1089,7 +1091,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE FULLTEXT INDEX my_index FOR $pattern ON EACH [n2.name]") {
-        parsesTo[Statements](fulltextIndex(
+        parsesTo[ast.Statements](fulltextIndex(
           isNodeIndex,
           List(prop("n2", "name")),
           labelsOrTypes,
@@ -1101,7 +1103,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE FULLTEXT INDEX my_index FOR $pattern ON EACH [n2.name, n3.age]") {
-        parsesTo[Statements](fulltextIndex(
+        parsesTo[ast.Statements](fulltextIndex(
           isNodeIndex,
           List(prop("n2", "name"), prop("n3", "age")),
           labelsOrTypes,
@@ -1113,7 +1115,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE FULLTEXT INDEX `$$my_index` FOR $pattern ON EACH [n2.name]") {
-        parsesTo[Statements](fulltextIndex(
+        parsesTo[ast.Statements](fulltextIndex(
           isNodeIndex,
           List(prop("n2", "name")),
           labelsOrTypes,
@@ -1125,7 +1127,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE OR REPLACE FULLTEXT INDEX FOR $pattern ON EACH [n2.name]") {
-        parsesTo[Statements](fulltextIndex(
+        parsesTo[ast.Statements](fulltextIndex(
           isNodeIndex,
           List(prop("n2", "name")),
           labelsOrTypes,
@@ -1137,7 +1139,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE OR REPLACE FULLTEXT INDEX my_index FOR $pattern ON EACH [n2.name, n3.age]") {
-        parsesTo[Statements](fulltextIndex(
+        parsesTo[ast.Statements](fulltextIndex(
           isNodeIndex,
           List(prop("n2", "name"), prop("n3", "age")),
           labelsOrTypes,
@@ -1149,7 +1151,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE OR REPLACE FULLTEXT INDEX IF NOT EXISTS FOR $pattern ON EACH [n2.name]") {
-        parsesTo[Statements](fulltextIndex(
+        parsesTo[ast.Statements](fulltextIndex(
           isNodeIndex,
           List(prop("n2", "name")),
           labelsOrTypes,
@@ -1161,7 +1163,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE OR REPLACE FULLTEXT INDEX my_index IF NOT EXISTS FOR $pattern ON EACH [n2.name]") {
-        parsesTo[Statements](fulltextIndex(
+        parsesTo[ast.Statements](fulltextIndex(
           isNodeIndex,
           List(prop("n2", "name")),
           labelsOrTypes,
@@ -1173,7 +1175,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE FULLTEXT INDEX IF NOT EXISTS FOR $pattern ON EACH [n2.name, n3.age]") {
-        parsesTo[Statements](fulltextIndex(
+        parsesTo[ast.Statements](fulltextIndex(
           isNodeIndex,
           List(prop("n2", "name"), prop("n3", "age")),
           labelsOrTypes,
@@ -1185,7 +1187,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE FULLTEXT INDEX my_index IF NOT EXISTS FOR $pattern ON EACH [n2.name]") {
-        parsesTo[Statements](fulltextIndex(
+        parsesTo[ast.Statements](fulltextIndex(
           isNodeIndex,
           List(prop("n2", "name")),
           labelsOrTypes,
@@ -1197,7 +1199,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE FULLTEXT INDEX FOR $pattern ON EACH [n2.name] OPTIONS {indexProvider : 'fulltext-1.0'}") {
-        parsesTo[Statements](fulltextIndex(
+        parsesTo[ast.Statements](fulltextIndex(
           isNodeIndex,
           List(prop("n2", "name")),
           labelsOrTypes,
@@ -1211,7 +1213,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       test(
         s"CREATE FULLTEXT INDEX FOR $pattern ON EACH [n2.name] OPTIONS {indexProvider : 'fulltext-1.0', indexConfig : {`fulltext.analyzer`: 'some_analyzer'}}"
       ) {
-        parsesTo[Statements](fulltextIndex(
+        parsesTo[ast.Statements](fulltextIndex(
           isNodeIndex,
           List(prop("n2", "name")),
           labelsOrTypes,
@@ -1228,7 +1230,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       test(
         s"CREATE FULLTEXT INDEX FOR $pattern ON EACH [n2.name] OPTIONS {indexConfig : {`fulltext.eventually_consistent`: false}, indexProvider : 'fulltext-1.0'}"
       ) {
-        parsesTo[Statements](fulltextIndex(
+        parsesTo[ast.Statements](fulltextIndex(
           isNodeIndex,
           List(prop("n2", "name")),
           labelsOrTypes,
@@ -1245,7 +1247,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       test(
         s"CREATE FULLTEXT INDEX FOR $pattern ON EACH [n2.name] OPTIONS {indexConfig : {`fulltext.analyzer`: 'some_analyzer', `fulltext.eventually_consistent`: true}}"
       ) {
-        parsesTo[Statements](fulltextIndex(
+        parsesTo[ast.Statements](fulltextIndex(
           isNodeIndex,
           List(prop("n2", "name")),
           labelsOrTypes,
@@ -1260,7 +1262,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE FULLTEXT INDEX FOR $pattern ON EACH [n2.name] OPTIONS {nonValidOption : 42}") {
-        parsesTo[Statements](fulltextIndex(
+        parsesTo[ast.Statements](fulltextIndex(
           isNodeIndex,
           List(prop("n2", "name")),
           labelsOrTypes,
@@ -1272,7 +1274,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE FULLTEXT INDEX my_index FOR $pattern ON EACH [n2.name] OPTIONS {}") {
-        parsesTo[Statements](fulltextIndex(
+        parsesTo[ast.Statements](fulltextIndex(
           isNodeIndex,
           List(prop("n2", "name")),
           labelsOrTypes,
@@ -1284,7 +1286,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE FULLTEXT INDEX my_index FOR $pattern ON EACH [n2.name] OPTIONS $$options") {
-        parsesTo[Statements](fulltextIndex(
+        parsesTo[ast.Statements](fulltextIndex(
           isNodeIndex,
           List(prop("n2", "name")),
           labelsOrTypes,
@@ -1296,7 +1298,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE FULLTEXT INDEX $$my_index FOR $pattern ON EACH [n2.name]") {
-        parsesTo[Statements](fulltextIndex(
+        parsesTo[ast.Statements](fulltextIndex(
           isNodeIndex,
           List(prop("n2", "name")),
           labelsOrTypes,
@@ -1308,38 +1310,38 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE FULLTEXT INDEX FOR $pattern ON EACH [n2.name] {indexProvider : 'fulltext-1.0'}") {
-        failsParsing[Statements].withMessageStart("Invalid input '{'")
+        failsParsing[ast.Statements].withMessageStart("Invalid input '{'")
       }
 
       test(s"CREATE FULLTEXT INDEX FOR $pattern ON EACH [n2.name] OPTIONS") {
-        failsParsing[Statements].withMessageStart("Invalid input ''")
+        failsParsing[ast.Statements].withMessageStart("Invalid input ''")
       }
 
       test(s"CREATE FULLTEXT INDEX FOR $pattern ON EACH (n2.name)") {
-        failsParsing[Statements].withMessageStart("Invalid input '('")
+        failsParsing[ast.Statements].withMessageStart("Invalid input '('")
       }
 
       test(s"CREATE FULLTEXT INDEX FOR $pattern ON EACH n2.name") {
-        failsParsing[Statements].withMessageStart("Invalid input 'n2'")
+        failsParsing[ast.Statements].withMessageStart("Invalid input 'n2'")
       }
 
       test(s"CREATE FULLTEXT INDEX FOR $pattern ON EACH []") {
-        failsParsing[Statements].withMessageStart("Invalid input ']'")
+        failsParsing[ast.Statements].withMessageStart("Invalid input ']'")
       }
 
       test(s"CREATE FULLTEXT INDEX FOR $pattern ON EACH") {
-        failsParsing[Statements].withMessageStart("Invalid input ''")
+        failsParsing[ast.Statements].withMessageStart("Invalid input ''")
       }
 
       test(s"CREATE FULLTEXT INDEX FOR $pattern ON [n2.name]") {
-        failsParsing[Statements].in {
+        failsParsing[ast.Statements].in {
           case Cypher5JavaCc => _.withMessageStart("Invalid input '['")
           case _             => _.withSyntaxErrorContaining("Invalid input '[': expected 'EACH'")
         }
       }
 
       test(s"CREATE INDEX FOR $pattern ON EACH [n2.name]") {
-        failsParsing[Statements]
+        failsParsing[ast.Statements]
           // different failures depending on pattern
           .withMessageStart("Invalid input")
       }
@@ -1348,7 +1350,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       test(
         s"CREATE FULLTEXT INDEX FOR $pattern ON EACH [n2.name] OPTIONS {indexConfig : {fulltext.analyzer: 'some_analyzer'}}"
       ) {
-        failsParsing[Statements].in {
+        failsParsing[ast.Statements].in {
           case Cypher5JavaCc => _.withMessageStart("Invalid input '{': expected \"+\" or \"-\"")
           case _             => _.withSyntaxErrorContaining("Invalid input '.': expected ':'")
         }
@@ -1364,7 +1366,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   ).foreach {
     case (pattern, createIndex: CreateIndexFunction) =>
       test(s"CREATE TEXT INDEX FOR $pattern ON (n2.name)") {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n2", "name")),
           None,
           posN2(testName),
@@ -1374,7 +1376,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"USE neo4j CREATE TEXT INDEX FOR $pattern ON (n2.name)") {
-        parsesTo[Statements](
+        parsesTo[ast.Statements](
           createIndex(List(prop("n2", "name")), None, posN2(testName), ast.IfExistsThrowError, ast.NoOptions).withGraph(
             Some(use(List("neo4j")))
           )
@@ -1382,7 +1384,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE TEXT INDEX FOR $pattern ON (n2.name, n3.age)") {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n2", "name"), prop("n3", "age")),
           None,
           posN2(testName),
@@ -1392,7 +1394,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE TEXT INDEX my_index FOR $pattern ON (n2.name)") {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n2", "name")),
           Some(Left("my_index")),
           posN2(testName),
@@ -1402,7 +1404,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE TEXT INDEX my_index FOR $pattern ON (n2.name, n3.age)") {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n2", "name"), prop("n3", "age")),
           Some(Left("my_index")),
           posN2(testName),
@@ -1412,7 +1414,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE TEXT INDEX `$$my_index` FOR $pattern ON (n2.name)") {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n2", "name")),
           Some("$my_index"),
           posN2(testName),
@@ -1422,7 +1424,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE OR REPLACE TEXT INDEX FOR $pattern ON (n2.name)") {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n2", "name")),
           None,
           posN2(testName),
@@ -1432,7 +1434,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE OR REPLACE TEXT INDEX my_index FOR $pattern ON (n2.name, n3.age)") {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n2", "name"), prop("n3", "age")),
           Some(Left("my_index")),
           posN2(testName),
@@ -1442,7 +1444,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE OR REPLACE TEXT INDEX IF NOT EXISTS FOR $pattern ON (n2.name)") {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n2", "name")),
           None,
           posN2(testName),
@@ -1452,7 +1454,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE OR REPLACE TEXT INDEX my_index IF NOT EXISTS FOR $pattern ON (n2.name)") {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n2", "name")),
           Some(Left("my_index")),
           posN2(testName),
@@ -1462,7 +1464,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE TEXT INDEX IF NOT EXISTS FOR $pattern ON (n2.name, n3.age)") {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n2", "name"), prop("n3", "age")),
           None,
           posN2(testName),
@@ -1472,7 +1474,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE TEXT INDEX my_index IF NOT EXISTS FOR $pattern ON (n2.name)") {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n2", "name")),
           Some(Left("my_index")),
           posN2(testName),
@@ -1482,7 +1484,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE TEXT INDEX FOR $pattern ON (n2.name) OPTIONS {indexProvider : 'text-1.0'}") {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n2", "name")),
           None,
           posN2(testName),
@@ -1494,7 +1496,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       test(
         s"CREATE TEXT INDEX FOR $pattern ON (n2.name) OPTIONS {indexProvider : 'text-1.0', indexConfig : {`spatial.cartesian.max`: [100.0,100.0], `spatial.cartesian.min`: [-100.0,-100.0] }}"
       ) {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n2", "name")),
           None,
           posN2(testName),
@@ -1512,7 +1514,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       test(
         s"CREATE TEXT INDEX FOR $pattern ON (n2.name) OPTIONS {indexConfig : {`spatial.cartesian.max`: [100.0,100.0], `spatial.cartesian.min`: [-100.0,-100.0] }, indexProvider : 'text-1.0'}"
       ) {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n2", "name")),
           None,
           posN2(testName),
@@ -1530,7 +1532,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       test(
         s"CREATE TEXT INDEX FOR $pattern ON (n2.name) OPTIONS {indexConfig : {`spatial.wgs-84.max`: [60.0,60.0], `spatial.wgs-84.min`: [-40.0,-40.0] }}"
       ) {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n2", "name")),
           None,
           posN2(testName),
@@ -1543,7 +1545,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE TEXT INDEX FOR $pattern ON (n2.name) OPTIONS $$options") {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n2", "name")),
           None,
           posN2(testName),
@@ -1553,7 +1555,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE TEXT INDEX FOR $pattern ON (n2.name) OPTIONS {nonValidOption : 42}") {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n2", "name")),
           None,
           posN2(testName),
@@ -1563,7 +1565,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE TEXT INDEX my_index FOR $pattern ON (n2.name) OPTIONS {}") {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n2", "name")),
           Some(Left("my_index")),
           posN2(testName),
@@ -1573,7 +1575,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE TEXT INDEX $$my_index FOR $pattern ON (n2.name)") {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n2", "name")),
           Some(Right(stringParam("my_index"))),
           posN2(testName),
@@ -1613,15 +1615,15 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE TEXT INDEX FOR $pattern ON n.name, n.age") {
-        failsParsing[Statements].withMessageStart("Invalid input ','")
+        failsParsing[ast.Statements].withMessageStart("Invalid input ','")
       }
 
       test(s"CREATE TEXT INDEX FOR $pattern ON (n.name) {indexProvider : 'text-1.0'}") {
-        failsParsing[Statements].withMessageStart("Invalid input '{'")
+        failsParsing[ast.Statements].withMessageStart("Invalid input '{'")
       }
 
       test(s"CREATE TEXT INDEX FOR $pattern ON (n.name) OPTIONS") {
-        failsParsing[Statements].withMessageStart("Invalid input ''")
+        failsParsing[ast.Statements].withMessageStart("Invalid input ''")
       }
   }
 
@@ -1634,7 +1636,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   ).foreach {
     case (pattern, createIndex: CreateIndexFunction) =>
       test(s"CREATE POINT INDEX FOR $pattern ON (n2.name)") {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n2", "name")),
           None,
           posN2(testName),
@@ -1644,7 +1646,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"USE neo4j CREATE POINT INDEX FOR $pattern ON (n2.name)") {
-        parsesTo[Statements](
+        parsesTo[ast.Statements](
           createIndex(List(prop("n2", "name")), None, posN2(testName), ast.IfExistsThrowError, ast.NoOptions).withGraph(
             Some(use(List("neo4j")))
           )
@@ -1652,7 +1654,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE POINT INDEX FOR $pattern ON (n2.name, n3.age)") {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n2", "name"), prop("n3", "age")),
           None,
           posN2(testName),
@@ -1662,7 +1664,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE POINT INDEX my_index FOR $pattern ON (n2.name)") {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n2", "name")),
           Some(Left("my_index")),
           posN2(testName),
@@ -1672,7 +1674,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE POINT INDEX my_index FOR $pattern ON (n2.name, n3.age)") {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n2", "name"), prop("n3", "age")),
           Some(Left("my_index")),
           posN2(testName),
@@ -1682,7 +1684,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE POINT INDEX `$$my_index` FOR $pattern ON (n2.name)") {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n2", "name")),
           Some("$my_index"),
           posN2(testName),
@@ -1692,7 +1694,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE OR REPLACE POINT INDEX FOR $pattern ON (n2.name)") {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n2", "name")),
           None,
           posN2(testName),
@@ -1702,7 +1704,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE OR REPLACE POINT INDEX my_index FOR $pattern ON (n2.name, n3.age)") {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n2", "name"), prop("n3", "age")),
           Some(Left("my_index")),
           posN2(testName),
@@ -1712,7 +1714,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE OR REPLACE POINT INDEX IF NOT EXISTS FOR $pattern ON (n2.name)") {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n2", "name")),
           None,
           posN2(testName),
@@ -1722,7 +1724,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE OR REPLACE POINT INDEX my_index IF NOT EXISTS FOR $pattern ON (n2.name)") {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n2", "name")),
           Some(Left("my_index")),
           posN2(testName),
@@ -1732,7 +1734,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE POINT INDEX IF NOT EXISTS FOR $pattern ON (n2.name, n3.age)") {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n2", "name"), prop("n3", "age")),
           None,
           posN2(testName),
@@ -1742,7 +1744,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE POINT INDEX my_index IF NOT EXISTS FOR $pattern ON (n2.name)") {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n2", "name")),
           Some(Left("my_index")),
           posN2(testName),
@@ -1752,7 +1754,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE POINT INDEX FOR $pattern ON (n2.name) OPTIONS {indexProvider : 'point-1.0'}") {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n2", "name")),
           None,
           posN2(testName),
@@ -1764,7 +1766,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       test(
         s"CREATE POINT INDEX FOR $pattern ON (n2.name) OPTIONS {indexProvider : 'point-1.0', indexConfig : {`spatial.cartesian.max`: [100.0,100.0], `spatial.cartesian.min`: [-100.0,-100.0] }}"
       ) {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n2", "name")),
           None,
           posN2(testName),
@@ -1782,7 +1784,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       test(
         s"CREATE POINT INDEX FOR $pattern ON (n2.name) OPTIONS {indexConfig : {`spatial.cartesian.max`: [100.0,100.0], `spatial.cartesian.min`: [-100.0,-100.0] }, indexProvider : 'point-1.0'}"
       ) {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n2", "name")),
           None,
           posN2(testName),
@@ -1800,7 +1802,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       test(
         s"CREATE POINT INDEX FOR $pattern ON (n2.name) OPTIONS {indexConfig : {`spatial.wgs-84.max`: [60.0,60.0], `spatial.wgs-84.min`: [-40.0,-40.0] }}"
       ) {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n2", "name")),
           None,
           posN2(testName),
@@ -1813,7 +1815,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE POINT INDEX FOR $pattern ON (n2.name) OPTIONS $$options") {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n2", "name")),
           None,
           posN2(testName),
@@ -1823,7 +1825,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE POINT INDEX FOR $pattern ON (n2.name) OPTIONS {nonValidOption : 42}") {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n2", "name")),
           None,
           posN2(testName),
@@ -1833,7 +1835,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE POINT INDEX my_index FOR $pattern ON (n2.name) OPTIONS {}") {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n2", "name")),
           Some(Left("my_index")),
           posN2(testName),
@@ -1843,7 +1845,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE POINT INDEX $$my_index FOR $pattern ON (n.name)") {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n", "name")),
           Some(Right(stringParam("my_index"))),
           posN2(testName),
@@ -1882,15 +1884,15 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
         )(defaultPos))
       }
       test(s"CREATE POINT INDEX FOR $pattern ON n2.name, n3.age") {
-        failsParsing[Statements].withMessageStart("Invalid input ','")
+        failsParsing[ast.Statements].withMessageStart("Invalid input ','")
       }
 
       test(s"CREATE POINT INDEX FOR $pattern ON (n.name) {indexProvider : 'point-1.0'}") {
-        failsParsing[Statements].withMessageStart("Invalid input '{'")
+        failsParsing[ast.Statements].withMessageStart("Invalid input '{'")
       }
 
       test(s"CREATE POINT INDEX FOR $pattern ON (n.name) OPTIONS") {
-        failsParsing[Statements].withMessageStart("Invalid input ''")
+        failsParsing[ast.Statements].withMessageStart("Invalid input ''")
       }
   }
 
@@ -1903,7 +1905,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   ).foreach {
     case (pattern, createIndex: CreateIndexFunction) =>
       test(s"CREATE VECTOR INDEX FOR $pattern ON (n2.name)") {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n2", "name")),
           None,
           posN2(testName),
@@ -1913,7 +1915,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"USE neo4j CREATE VECTOR INDEX FOR $pattern ON (n2.name)") {
-        parsesTo[Statements](
+        parsesTo[ast.Statements](
           createIndex(List(prop("n2", "name")), None, posN2(testName), ast.IfExistsThrowError, ast.NoOptions).withGraph(
             Some(use(List("neo4j")))
           )
@@ -1921,7 +1923,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE VECTOR INDEX FOR $pattern ON (n2.name, n3.age)") {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n2", "name"), prop("n3", "age")),
           None,
           posN2(testName),
@@ -1931,7 +1933,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE VECTOR INDEX my_index FOR $pattern ON (n2.name)") {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n2", "name")),
           Some(Left("my_index")),
           posN2(testName),
@@ -1941,7 +1943,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE VECTOR INDEX my_index FOR $pattern ON (n2.name, n3.age)") {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n2", "name"), prop("n3", "age")),
           Some(Left("my_index")),
           posN2(testName),
@@ -1951,7 +1953,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE VECTOR INDEX `$$my_index` FOR $pattern ON (n2.name)") {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n2", "name")),
           Some("$my_index"),
           posN2(testName),
@@ -1961,7 +1963,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE OR REPLACE VECTOR INDEX FOR $pattern ON (n2.name)") {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n2", "name")),
           None,
           posN2(testName),
@@ -1971,7 +1973,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE OR REPLACE VECTOR INDEX my_index FOR $pattern ON (n2.name, n3.age)") {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n2", "name"), prop("n3", "age")),
           Some(Left("my_index")),
           posN2(testName),
@@ -1981,7 +1983,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE OR REPLACE VECTOR INDEX IF NOT EXISTS FOR $pattern ON (n2.name)") {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n2", "name")),
           None,
           posN2(testName),
@@ -1991,7 +1993,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE OR REPLACE VECTOR INDEX my_index IF NOT EXISTS FOR $pattern ON (n2.name)") {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n2", "name")),
           Some(Left("my_index")),
           posN2(testName),
@@ -2001,7 +2003,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE VECTOR INDEX IF NOT EXISTS FOR $pattern ON (n2.name, n3.age)") {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n2", "name"), prop("n3", "age")),
           None,
           posN2(testName),
@@ -2011,7 +2013,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE VECTOR INDEX my_index IF NOT EXISTS FOR $pattern ON (n2.name)") {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n2", "name")),
           Some(Left("my_index")),
           posN2(testName),
@@ -2021,7 +2023,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE VECTOR INDEX FOR $pattern ON (n2.name) OPTIONS {indexProvider : 'vector-1.0'}") {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n2", "name")),
           None,
           posN2(testName),
@@ -2033,7 +2035,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       test(
         s"CREATE VECTOR INDEX FOR $pattern ON (n2.name) OPTIONS {indexProvider : 'vector-1.0', indexConfig : {`vector.dimensions`: 50, `vector.similarity_function`: 'euclidean' }}"
       ) {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n2", "name")),
           None,
           posN2(testName),
@@ -2051,7 +2053,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       test(
         s"CREATE VECTOR INDEX FOR $pattern ON (n2.name) OPTIONS {indexConfig : {`vector.dimensions`: 50, `vector.similarity_function`: 'cosine' }, indexProvider : 'vector-1.0'}"
       ) {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n2", "name")),
           None,
           posN2(testName),
@@ -2069,7 +2071,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       test(
         s"CREATE VECTOR INDEX FOR $pattern ON (n2.name) OPTIONS {indexConfig : {`vector.dimensions`: 50, `vector.similarity_function`: 'cosine' }}"
       ) {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n2", "name")),
           None,
           posN2(testName),
@@ -2082,7 +2084,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE VECTOR INDEX FOR $pattern ON (n2.name) OPTIONS $$options") {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n2", "name")),
           None,
           posN2(testName),
@@ -2092,7 +2094,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE VECTOR INDEX FOR $pattern ON (n2.name) OPTIONS {nonValidOption : 42}") {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n2", "name")),
           None,
           posN2(testName),
@@ -2102,7 +2104,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE VECTOR INDEX my_index FOR $pattern ON (n2.name) OPTIONS {}") {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n2", "name")),
           Some(Left("my_index")),
           posN2(testName),
@@ -2112,7 +2114,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE VECTOR INDEX $$my_index FOR $pattern ON (n.name)") {
-        parsesTo[Statements](createIndex(
+        parsesTo[ast.Statements](createIndex(
           List(prop("n", "name")),
           Some(Right(stringParam("my_index"))),
           posN2(testName),
@@ -2152,7 +2154,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE VECTOR INDEX FOR $pattern ON n2.name, n3.age") {
-        failsParsing[Statements].in {
+        failsParsing[ast.Statements].in {
           case Cypher5JavaCc =>
             _.withMessageStart("Invalid input ',': expected \"OPTIONS\" or <EOF>")
           case _ => _.withSyntaxErrorContaining(
@@ -2162,20 +2164,20 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE VECTOR INDEX FOR $pattern ON (n.name) {indexProvider : 'vector-1.0'}") {
-        failsParsing[Statements].in {
+        failsParsing[ast.Statements].in {
           case Cypher5JavaCc => _.withMessageStart("Invalid input '{'")
           case _             => _.withSyntaxErrorContaining("Invalid input '{': expected 'OPTIONS' or <EOF>")
         }
       }
 
       test(s"CREATE VECTOR INDEX FOR $pattern ON (n.name) OPTIONS") {
-        failsParsing[Statements].withMessageStart("Invalid input ''")
+        failsParsing[ast.Statements].withMessageStart("Invalid input ''")
       }
   }
 
   test("CREATE INDEX $ FOR (n1:Label) ON (n2.name)") {
     // Missing parameter name (or backticks)
-    failsParsing[Statements].in {
+    failsParsing[ast.Statements].in {
       case Cypher5JavaCc =>
         _.withMessageStart("Invalid input '(': expected \"FOR\" or \"IF\" (line 1, column 20 (offset: 19))")
       case _ => _.withSyntaxError(
@@ -2187,7 +2189,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   }
 
   test("CREATE LOOKUP INDEX FOR (x1) ON EACH labels(x2)") {
-    parsesTo[Statements](ast.CreateLookupIndex(
+    parsesTo[ast.Statements](ast.CreateLookupIndex(
       varFor("x1"),
       isNodeIndex = true,
       function(Labels.name, varFor("x2")),
@@ -2198,7 +2200,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   }
 
   test("CREATE LOOKUP INDEX FOR ()-[x1]-() ON EACH type(x2)") {
-    parsesTo[Statements](ast.CreateLookupIndex(
+    parsesTo[ast.Statements](ast.CreateLookupIndex(
       varFor("x1"),
       isNodeIndex = false,
       function(Type.name, varFor("x2")),
@@ -2209,7 +2211,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   }
 
   test("CREATE LOOKUP INDEX FOR (n1) ON EACH count(n2)") {
-    parsesTo[Statements](ast.CreateLookupIndex(
+    parsesTo[ast.Statements](ast.CreateLookupIndex(
       varFor("n1"),
       isNodeIndex = true,
       function(Count.name, varFor("n2")),
@@ -2220,7 +2222,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   }
 
   test("CREATE LOOKUP INDEX FOR (n1) ON EACH type(n2)") {
-    parsesTo[Statements](ast.CreateLookupIndex(
+    parsesTo[ast.Statements](ast.CreateLookupIndex(
       varFor("n1"),
       isNodeIndex = true,
       function(Type.name, varFor("n2")),
@@ -2231,7 +2233,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   }
 
   test("CREATE LOOKUP INDEX FOR (n) ON EACH labels(x)") {
-    parsesTo[Statements](ast.CreateLookupIndex(
+    parsesTo[ast.Statements](ast.CreateLookupIndex(
       varFor("n"),
       isNodeIndex = true,
       function(Labels.name, varFor("x")),
@@ -2242,7 +2244,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   }
 
   test("CREATE LOOKUP INDEX FOR ()-[r1]-() ON EACH count(r2)") {
-    parsesTo[Statements](ast.CreateLookupIndex(
+    parsesTo[ast.Statements](ast.CreateLookupIndex(
       varFor("r1"),
       isNodeIndex = false,
       function(Count.name, varFor("r2")),
@@ -2253,7 +2255,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   }
 
   test("CREATE LOOKUP INDEX FOR ()-[r1]-() ON EACH labels(r2)") {
-    parsesTo[Statements](ast.CreateLookupIndex(
+    parsesTo[ast.Statements](ast.CreateLookupIndex(
       varFor("r1"),
       isNodeIndex = false,
       function(Labels.name, varFor("r2")),
@@ -2264,7 +2266,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   }
 
   test("CREATE LOOKUP INDEX FOR ()-[r]-() ON EACH type(x)") {
-    parsesTo[Statements](ast.CreateLookupIndex(
+    parsesTo[ast.Statements](ast.CreateLookupIndex(
       varFor("r"),
       isNodeIndex = false,
       function(Type.name, varFor("x")),
@@ -2275,7 +2277,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   }
 
   test("CREATE LOOKUP INDEX FOR ()-[r1]-() ON type(r2)") {
-    parsesTo[Statements](ast.CreateLookupIndex(
+    parsesTo[ast.Statements](ast.CreateLookupIndex(
       varFor("r1"),
       isNodeIndex = false,
       function(Type.name, varFor("r2")),
@@ -2286,7 +2288,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   }
 
   test("CREATE LOOKUP INDEX FOR (x) ON EACH EACH(x)") {
-    parsesTo[Statements](ast.CreateLookupIndex(
+    parsesTo[ast.Statements](ast.CreateLookupIndex(
       varFor("x"),
       isNodeIndex = true,
       function("EACH", varFor("x")),
@@ -2297,7 +2299,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   }
 
   test("CREATE LOOKUP INDEX FOR ()-[x]-() ON EACH EACH(x)") {
-    parsesTo[Statements](ast.CreateLookupIndex(
+    parsesTo[ast.Statements](ast.CreateLookupIndex(
       varFor("x"),
       isNodeIndex = false,
       function("EACH", varFor("x")),
@@ -2309,7 +2311,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
 
   test("CREATE LOOKUP INDEX FOR ()-[x]-() ON EACH(x)") {
     // Thinks it is missing the function name since `EACH` is parsed as keyword
-    failsParsing[Statements].in {
+    failsParsing[ast.Statements].in {
       case Cypher5JavaCc =>
         _.withMessageStart("Invalid input '(': expected an identifier (line 1, column 42 (offset: 41))")
       case _ => _.withSyntaxError(
@@ -2321,7 +2323,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   }
 
   test("CREATE INDEX FOR n1:Person ON (n2.name)") {
-    failsParsing[Statements].in {
+    failsParsing[ast.Statements].in {
       case Cypher5JavaCc =>
         _.withMessageStart("Invalid input 'n1': expected \"FOR\" or \"IF\" (line 1, column 18 (offset: 17))")
       case _ => _.withSyntaxError(
@@ -2334,7 +2336,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
 
   test("CREATE INDEX FOR (n1) ON (n2.name)") {
     // missing label
-    failsParsing[Statements].in {
+    failsParsing[ast.Statements].in {
       case Cypher5JavaCc => _.withMessageStart("Invalid input ')': expected \":\" (line 1, column 21 (offset: 20))")
       case _ => _.withSyntaxError(
           """Invalid input ')': expected ':' (line 1, column 21 (offset: 20))
@@ -2346,7 +2348,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
 
   test("CREATE INDEX FOR ()-[n1]-() ON (n2.name)") {
     // missing relationship type
-    failsParsing[Statements].in {
+    failsParsing[ast.Statements].in {
       case Cypher5JavaCc => _.withMessageStart("Invalid input ']': expected \":\" (line 1, column 24 (offset: 23))")
       case _ => _.withSyntaxError(
           """Invalid input ']': expected ':' (line 1, column 24 (offset: 23))
@@ -2357,7 +2359,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   }
 
   test("CREATE INDEX FOR -[r1:R]-() ON (r2.name)") {
-    failsParsing[Statements].in {
+    failsParsing[ast.Statements].in {
       case Cypher5JavaCc =>
         _.withMessageStart("Invalid input '-': expected \"FOR\" or \"IF\" (line 1, column 18 (offset: 17))")
       case _ => _.withSyntaxError(
@@ -2369,7 +2371,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   }
 
   test("CREATE INDEX FOR ()-[r1:R]- ON (r2.name)") {
-    failsParsing[Statements].in {
+    failsParsing[ast.Statements].in {
       case Cypher5JavaCc => _.withMessageStart(
           "Invalid input 'ON': expected \"(\", \">\" or <ARROW_RIGHT_HEAD> (line 1, column 29 (offset: 28))"
         )
@@ -2382,7 +2384,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   }
 
   test("CREATE INDEX FOR -[r1:R]- ON (r2.name)") {
-    failsParsing[Statements].in {
+    failsParsing[ast.Statements].in {
       case Cypher5JavaCc =>
         _.withMessageStart("Invalid input '-': expected \"FOR\" or \"IF\" (line 1, column 18 (offset: 17))")
       case _ => _.withSyntaxError(
@@ -2394,7 +2396,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   }
 
   test("CREATE INDEX FOR [r1:R] ON (r2.name)") {
-    failsParsing[Statements].in {
+    failsParsing[ast.Statements].in {
       case Cypher5JavaCc =>
         _.withMessageStart("Invalid input '[': expected \"FOR\" or \"IF\" (line 1, column 18 (offset: 17))")
       case _ => _.withSyntaxError(
@@ -2407,7 +2409,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
 
   test("CREATE INDEX FOR (:A)-[n1:R]-() ON (n2.name)") {
     // label on node
-    failsParsing[Statements].in {
+    failsParsing[ast.Statements].in {
       case Cypher5JavaCc => _.withMessageStart("""Invalid input ':': expected ")" or an identifier""")
       case _ => _.withSyntaxError(
           """Invalid input ':': expected a variable name or ')' (line 1, column 19 (offset: 18))
@@ -2419,7 +2421,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
 
   test("CREATE INDEX FOR ()-[n1:R]-(:A) ON (n2.name)") {
     // label on node
-    failsParsing[Statements].in {
+    failsParsing[ast.Statements].in {
       case Cypher5JavaCc => _.withMessageStart("""Invalid input ':': expected ")"""")
       case _ => _.withSyntaxError(
           """Invalid input ':': expected ')' (line 1, column 29 (offset: 28))
@@ -2431,7 +2433,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
 
   test("CREATE INDEX FOR (n2)-[n1:R]-() ON (n2.name)") {
     // variable on node
-    failsParsing[Statements].in {
+    failsParsing[ast.Statements].in {
       case Cypher5JavaCc => _.withMessageStart("""Invalid input ')': expected ":"""")
       case _ => _.withSyntaxError(
           """Invalid input ')': expected ':' (line 1, column 21 (offset: 20))
@@ -2443,7 +2445,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
 
   test("CREATE INDEX FOR ()-[n1:R]-(n2) ON (n2.name)") {
     // variable on node
-    failsParsing[Statements].in {
+    failsParsing[ast.Statements].in {
       case Cypher5JavaCc => _.withMessageStart("""Invalid input 'n2': expected ")"""")
       case _ => _.withSyntaxError(
           """Invalid input 'n2': expected ')' (line 1, column 29 (offset: 28))
@@ -2455,7 +2457,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
 
   test("CREATE INDEX FOR (n2:A)-[n1:R]-() ON (n2.name)") {
     // variable on node
-    failsParsing[Statements].in {
+    failsParsing[ast.Statements].in {
       case Cypher5JavaCc => _.withMessageStart("""Invalid input '-': expected "ON"""")
       case _ => _.withSyntaxError(
           """Invalid input '-': expected 'ON' (line 1, column 24 (offset: 23))
@@ -2467,7 +2469,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
 
   test("CREATE INDEX FOR ()-[n1:R]-(n2:A) ON (n2.name)") {
     // variable on node
-    failsParsing[Statements].in {
+    failsParsing[ast.Statements].in {
       case Cypher5JavaCc => _.withMessageStart("""Invalid input 'n2': expected ")"""")
       case _ => _.withSyntaxError(
           """Invalid input 'n2': expected ')' (line 1, column 29 (offset: 28))
@@ -2478,7 +2480,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   }
 
   test("CREATE TEXT INDEX FOR n1:Person ON (n2.name)") {
-    failsParsing[Statements].in {
+    failsParsing[ast.Statements].in {
       case Cypher5JavaCc =>
         _.withMessageStart("Invalid input 'n1': expected \"FOR\" or \"IF\" (line 1, column 23 (offset: 22))")
       case _ => _.withSyntaxError(
@@ -2491,7 +2493,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
 
   test("CREATE TEXT INDEX FOR (n1) ON (n2.name)") {
     // missing label
-    failsParsing[Statements].in {
+    failsParsing[ast.Statements].in {
       case Cypher5JavaCc => _.withMessageStart("Invalid input ')': expected \":\" (line 1, column 26 (offset: 25))")
       case _ => _.withSyntaxError(
           """Invalid input ')': expected ':' (line 1, column 26 (offset: 25))
@@ -2503,7 +2505,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
 
   test("CREATE TEXT INDEX FOR ()-[n1]-() ON (n2.name)") {
     // missing relationship type
-    failsParsing[Statements].in {
+    failsParsing[ast.Statements].in {
       case Cypher5JavaCc => _.withMessageStart("Invalid input ']': expected \":\" (line 1, column 29 (offset: 28))")
       case _ => _.withSyntaxError(
           """Invalid input ']': expected ':' (line 1, column 29 (offset: 28))
@@ -2514,7 +2516,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   }
 
   test("CREATE TEXT INDEX FOR -[r1:R]-() ON (r2.name)") {
-    failsParsing[Statements].in {
+    failsParsing[ast.Statements].in {
       case Cypher5JavaCc =>
         _.withMessageStart("Invalid input '-': expected \"FOR\" or \"IF\" (line 1, column 23 (offset: 22))")
       case _ => _.withSyntaxError(
@@ -2526,7 +2528,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   }
 
   test("CREATE TEXT INDEX FOR ()-[r1:R]- ON (r2.name)") {
-    failsParsing[Statements].in {
+    failsParsing[ast.Statements].in {
       case Cypher5JavaCc => _.withMessageStart(
           "Invalid input 'ON': expected \"(\", \">\" or <ARROW_RIGHT_HEAD> (line 1, column 34 (offset: 33))"
         )
@@ -2539,7 +2541,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   }
 
   test("CREATE TEXT INDEX FOR -[r1:R]- ON (r2.name)") {
-    failsParsing[Statements].in {
+    failsParsing[ast.Statements].in {
       case Cypher5JavaCc =>
         _.withMessageStart("Invalid input '-': expected \"FOR\" or \"IF\" (line 1, column 23 (offset: 22))")
       case _ => _.withSyntaxError(
@@ -2551,7 +2553,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   }
 
   test("CREATE TEXT INDEX FOR [r1:R] ON (r2.name)") {
-    failsParsing[Statements].in {
+    failsParsing[ast.Statements].in {
       case Cypher5JavaCc =>
         _.withMessageStart("Invalid input '[': expected \"FOR\" or \"IF\" (line 1, column 23 (offset: 22))")
       case _ => _.withSyntaxError(
@@ -2564,7 +2566,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
 
   test("CREATE TEXT INDEX FOR (:A)-[n1:R]-() ON (n2.name)") {
     // label on node
-    failsParsing[Statements].in {
+    failsParsing[ast.Statements].in {
       case Cypher5JavaCc => _.withMessageStart("""Invalid input ':': expected ")" or an identifier""")
       case _ => _.withSyntaxError(
           """Invalid input ':': expected a variable name or ')' (line 1, column 24 (offset: 23))
@@ -2576,7 +2578,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
 
   test("CREATE TEXT INDEX FOR ()-[n1:R]-(:A) ON (n2.name)") {
     // label on node
-    failsParsing[Statements].in {
+    failsParsing[ast.Statements].in {
       case Cypher5JavaCc => _.withMessageStart("""Invalid input ':': expected ")"""")
       case _ => _.withSyntaxError(
           """Invalid input ':': expected ')' (line 1, column 34 (offset: 33))
@@ -2588,7 +2590,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
 
   test("CREATE TEXT INDEX FOR (n2)-[n1:R]-() ON (n2.name)") {
     // variable on node
-    failsParsing[Statements].in {
+    failsParsing[ast.Statements].in {
       case Cypher5JavaCc => _.withMessageStart("""Invalid input ')': expected ":"""")
       case _ => _.withSyntaxError(
           """Invalid input ')': expected ':' (line 1, column 26 (offset: 25))
@@ -2600,7 +2602,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
 
   test("CREATE TEXT INDEX FOR ()-[n1:R]-(n2) ON (n2.name)") {
     // variable on node
-    failsParsing[Statements].in {
+    failsParsing[ast.Statements].in {
       case Cypher5JavaCc => _.withMessageStart("""Invalid input 'n2': expected ")"""")
       case _ => _.withSyntaxError(
           """Invalid input 'n2': expected ')' (line 1, column 34 (offset: 33))
@@ -2612,7 +2614,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
 
   test("CREATE TEXT INDEX FOR (n2:A)-[n1:R]-() ON (n2.name)") {
     // variable on node
-    failsParsing[Statements].in {
+    failsParsing[ast.Statements].in {
       case Cypher5JavaCc => _.withMessageStart("""Invalid input '-': expected "ON"""")
       case _ => _.withSyntaxError(
           """Invalid input '-': expected 'ON' (line 1, column 29 (offset: 28))
@@ -2624,7 +2626,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
 
   test("CREATE TEXT INDEX FOR ()-[n1:R]-(n2:A) ON (n2.name)") {
     // variable on node
-    failsParsing[Statements].in {
+    failsParsing[ast.Statements].in {
       case Cypher5JavaCc => _.withMessageStart("""Invalid input 'n2': expected ")"""")
       case _ => _.withSyntaxError(
           """Invalid input 'n2': expected ')' (line 1, column 34 (offset: 33))
@@ -2635,7 +2637,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   }
 
   test("CREATE POINT INDEX FOR n1:Person ON (n2.name)") {
-    failsParsing[Statements].in {
+    failsParsing[ast.Statements].in {
       case Cypher5JavaCc =>
         _.withMessageStart("Invalid input 'n1': expected \"FOR\" or \"IF\" (line 1, column 24 (offset: 23))")
       case _ => _.withSyntaxError(
@@ -2648,7 +2650,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
 
   test("CREATE POINT INDEX FOR (n1) ON (n2.name)") {
     // missing label
-    failsParsing[Statements].in {
+    failsParsing[ast.Statements].in {
       case Cypher5JavaCc => _.withMessageStart("Invalid input ')': expected \":\" (line 1, column 27 (offset: 26))")
       case _ => _.withSyntaxError(
           """Invalid input ')': expected ':' (line 1, column 27 (offset: 26))
@@ -2660,7 +2662,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
 
   test("CREATE POINT INDEX FOR ()-[n1]-() ON (n2.name)") {
     // missing relationship type
-    failsParsing[Statements].in {
+    failsParsing[ast.Statements].in {
       case Cypher5JavaCc => _.withMessageStart("Invalid input ']': expected \":\" (line 1, column 30 (offset: 29))")
       case _ => _.withSyntaxError(
           """Invalid input ']': expected ':' (line 1, column 30 (offset: 29))
@@ -2671,7 +2673,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   }
 
   test("CREATE POINT INDEX FOR -[r1:R]-() ON (r2.name)") {
-    failsParsing[Statements].in {
+    failsParsing[ast.Statements].in {
       case Cypher5JavaCc =>
         _.withMessageStart("Invalid input '-': expected \"FOR\" or \"IF\" (line 1, column 24 (offset: 23))")
       case _ => _.withSyntaxError(
@@ -2683,7 +2685,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   }
 
   test("CREATE POINT INDEX FOR ()-[r1:R]- ON (r2.name)") {
-    failsParsing[Statements].in {
+    failsParsing[ast.Statements].in {
       case Cypher5JavaCc => _.withMessageStart(
           "Invalid input 'ON': expected \"(\", \">\" or <ARROW_RIGHT_HEAD> (line 1, column 35 (offset: 34))"
         )
@@ -2696,7 +2698,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   }
 
   test("CREATE POINT INDEX FOR -[r1:R]- ON (r2.name)") {
-    failsParsing[Statements].in {
+    failsParsing[ast.Statements].in {
       case Cypher5JavaCc =>
         _.withMessageStart("Invalid input '-': expected \"FOR\" or \"IF\" (line 1, column 24 (offset: 23))")
       case _ => _.withSyntaxError(
@@ -2708,7 +2710,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   }
 
   test("CREATE POINT INDEX FOR [r1:R] ON (r2.name)") {
-    failsParsing[Statements].in {
+    failsParsing[ast.Statements].in {
       case Cypher5JavaCc =>
         _.withMessageStart("Invalid input '[': expected \"FOR\" or \"IF\" (line 1, column 24 (offset: 23))")
       case _ => _.withSyntaxError(
@@ -2721,7 +2723,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
 
   test("CREATE POINT INDEX FOR (:A)-[n1:R]-() ON (n2.name)") {
     // label on node
-    failsParsing[Statements].in {
+    failsParsing[ast.Statements].in {
       case Cypher5JavaCc => _.withMessageStart("""Invalid input ':': expected ")" or an identifier""")
       case _ => _.withSyntaxError(
           """Invalid input ':': expected a variable name or ')' (line 1, column 25 (offset: 24))
@@ -2733,7 +2735,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
 
   test("CREATE POINT INDEX FOR ()-[n1:R]-(:A) ON (n2.name)") {
     // label on node
-    failsParsing[Statements].in {
+    failsParsing[ast.Statements].in {
       case Cypher5JavaCc => _.withMessageStart("""Invalid input ':': expected ")"""")
       case _ => _.withSyntaxError(
           """Invalid input ':': expected ')' (line 1, column 35 (offset: 34))
@@ -2745,7 +2747,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
 
   test("CREATE POINT INDEX FOR (n2)-[n1:R]-() ON (n2.name)") {
     // variable on node
-    failsParsing[Statements].in {
+    failsParsing[ast.Statements].in {
       case Cypher5JavaCc => _.withMessageStart("""Invalid input ')': expected ":"""")
       case _ => _.withSyntaxError(
           """Invalid input ')': expected ':' (line 1, column 27 (offset: 26))
@@ -2757,7 +2759,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
 
   test("CREATE POINT INDEX FOR ()-[n1:R]-(n2) ON (n2.name)") {
     // variable on node
-    failsParsing[Statements].in {
+    failsParsing[ast.Statements].in {
       case Cypher5JavaCc => _.withMessageStart("""Invalid input 'n2': expected ")"""")
       case _ => _.withSyntaxError(
           """Invalid input 'n2': expected ')' (line 1, column 35 (offset: 34))
@@ -2769,7 +2771,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
 
   test("CREATE POINT INDEX FOR (n2:A)-[n1:R]-() ON (n2.name)") {
     // variable on node
-    failsParsing[Statements].in {
+    failsParsing[ast.Statements].in {
       case Cypher5JavaCc => _.withMessageStart("""Invalid input '-': expected "ON"""")
       case _ => _.withSyntaxError(
           """Invalid input '-': expected 'ON' (line 1, column 30 (offset: 29))
@@ -2781,7 +2783,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
 
   test("CREATE POINT INDEX FOR ()-[n1:R]-(n2:A) ON (n2.name)") {
     // variable on node
-    failsParsing[Statements].in {
+    failsParsing[ast.Statements].in {
       case Cypher5JavaCc => _.withMessageStart("""Invalid input 'n2': expected ")"""")
       case _ => _.withSyntaxError(
           """Invalid input 'n2': expected ')' (line 1, column 35 (offset: 34))
@@ -2792,7 +2794,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   }
 
   test("CREATE VECTOR INDEX FOR n1:Person ON (n2.name)") {
-    failsParsing[Statements].in {
+    failsParsing[ast.Statements].in {
       case Cypher5JavaCc =>
         _.withMessageStart("Invalid input 'n1': expected \"FOR\" or \"IF\" (line 1, column 25 (offset: 24))")
       case _ => _.withSyntaxError(
@@ -2805,7 +2807,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
 
   test("CREATE VECTOR INDEX FOR (n1) ON (n2.name)") {
     // missing label
-    failsParsing[Statements].in {
+    failsParsing[ast.Statements].in {
       case Cypher5JavaCc => _.withMessageStart("Invalid input ')': expected \":\" (line 1, column 28 (offset: 27))")
       case _ => _.withSyntaxError(
           """Invalid input ')': expected ':' (line 1, column 28 (offset: 27))
@@ -2817,7 +2819,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
 
   test("CREATE VECTOR INDEX FOR ()-[n1]-() ON (n2.name)") {
     // missing relationship type
-    failsParsing[Statements].in {
+    failsParsing[ast.Statements].in {
       case Cypher5JavaCc => _.withMessageStart("Invalid input ']': expected \":\" (line 1, column 31 (offset: 30))")
       case _ => _.withSyntaxError(
           """Invalid input ']': expected ':' (line 1, column 31 (offset: 30))
@@ -2828,7 +2830,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   }
 
   test("CREATE VECTOR INDEX FOR -[r1:R]-() ON (r2.name)") {
-    failsParsing[Statements].in {
+    failsParsing[ast.Statements].in {
       case Cypher5JavaCc =>
         _.withMessageStart("Invalid input '-': expected \"FOR\" or \"IF\" (line 1, column 25 (offset: 24))")
       case _ => _.withSyntaxError(
@@ -2840,7 +2842,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   }
 
   test("CREATE VECTOR INDEX FOR ()-[r1:R]- ON (r2.name)") {
-    failsParsing[Statements].in {
+    failsParsing[ast.Statements].in {
       case Cypher5JavaCc => _.withMessageStart(
           "Invalid input 'ON': expected \"(\", \">\" or <ARROW_RIGHT_HEAD> (line 1, column 36 (offset: 35))"
         )
@@ -2853,7 +2855,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   }
 
   test("CREATE VECTOR INDEX FOR -[r1:R]- ON (r2.name)") {
-    failsParsing[Statements].in {
+    failsParsing[ast.Statements].in {
       case Cypher5JavaCc =>
         _.withMessageStart("Invalid input '-': expected \"FOR\" or \"IF\" (line 1, column 25 (offset: 24))")
       case _ => _.withSyntaxError(
@@ -2865,7 +2867,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   }
 
   test("CREATE VECTOR INDEX FOR [r1:R] ON (r2.name)") {
-    failsParsing[Statements].in {
+    failsParsing[ast.Statements].in {
       case Cypher5JavaCc =>
         _.withMessageStart("Invalid input '[': expected \"FOR\" or \"IF\" (line 1, column 25 (offset: 24))")
       case _ => _.withSyntaxError(
@@ -2878,7 +2880,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
 
   test("CREATE VECTOR INDEX FOR (:A)-[n1:R]-() ON (n2.name)") {
     // label on node
-    failsParsing[Statements].in {
+    failsParsing[ast.Statements].in {
       case Cypher5JavaCc => _.withMessageStart("""Invalid input ':': expected ")" or an identifier""")
       case _ => _.withSyntaxError(
           """Invalid input ':': expected a variable name or ')' (line 1, column 26 (offset: 25))
@@ -2890,7 +2892,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
 
   test("CREATE VECTOR INDEX FOR ()-[n1:R]-(:A) ON (n2.name)") {
     // label on node
-    failsParsing[Statements].in {
+    failsParsing[ast.Statements].in {
       case Cypher5JavaCc => _.withMessageStart("""Invalid input ':': expected ")"""")
       case _ => _.withSyntaxError(
           """Invalid input ':': expected ')' (line 1, column 36 (offset: 35))
@@ -2902,7 +2904,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
 
   test("CREATE VECTOR INDEX FOR (n2)-[n1:R]-() ON (n2.name)") {
     // variable on node
-    failsParsing[Statements].in {
+    failsParsing[ast.Statements].in {
       case Cypher5JavaCc => _.withMessageStart("""Invalid input ')': expected ":"""")
       case _ => _.withSyntaxError(
           """Invalid input ')': expected ':' (line 1, column 28 (offset: 27))
@@ -2914,7 +2916,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
 
   test("CREATE VECTOR INDEX FOR ()-[n1:R]-(n2) ON (n2.name)") {
     // variable on node
-    failsParsing[Statements].in {
+    failsParsing[ast.Statements].in {
       case Cypher5JavaCc => _.withMessageStart("""Invalid input 'n2': expected ")"""")
       case _ => _.withSyntaxError(
           """Invalid input 'n2': expected ')' (line 1, column 36 (offset: 35))
@@ -2926,7 +2928,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
 
   test("CREATE VECTOR INDEX FOR (n2:A)-[n1:R]-() ON (n2.name)") {
     // variable on node
-    failsParsing[Statements].in {
+    failsParsing[ast.Statements].in {
       case Cypher5JavaCc => _.withMessageStart("""Invalid input '-': expected "ON"""")
       case _ => _.withSyntaxError(
           """Invalid input '-': expected 'ON' (line 1, column 31 (offset: 30))
@@ -2938,7 +2940,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
 
   test("CREATE VECTOR INDEX FOR ()-[n1:R]-(n2:A) ON (n2.name)") {
     // variable on node
-    failsParsing[Statements].in {
+    failsParsing[ast.Statements].in {
       case Cypher5JavaCc => _.withMessageStart("""Invalid input 'n2': expected ")"""")
       case _ => _.withSyntaxError(
           """Invalid input 'n2': expected ')' (line 1, column 36 (offset: 35))
@@ -2949,7 +2951,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   }
 
   test("CREATE LOOKUP INDEX FOR n1 ON EACH labels(n2)") {
-    failsParsing[Statements].in {
+    failsParsing[ast.Statements].in {
       case Cypher5JavaCc =>
         _.withMessageStart("Invalid input 'n1': expected \"FOR\" or \"IF\" (line 1, column 25 (offset: 24))")
       case _ => _.withSyntaxError(
@@ -2961,7 +2963,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   }
 
   test("CREATE LOOKUP INDEX FOR -[r1]-() ON EACH type(r2)") {
-    failsParsing[Statements].in {
+    failsParsing[ast.Statements].in {
       case Cypher5JavaCc =>
         _.withMessageStart("Invalid input '-': expected \"FOR\" or \"IF\" (line 1, column 25 (offset: 24))")
       case _ => _.withSyntaxError(
@@ -2973,7 +2975,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   }
 
   test("CREATE LOOKUP INDEX FOR ()-[r1]- ON EACH type(r2)") {
-    failsParsing[Statements].in {
+    failsParsing[ast.Statements].in {
       case Cypher5JavaCc => _.withMessageStart(
           "Invalid input 'ON': expected \"(\", \">\" or <ARROW_RIGHT_HEAD> (line 1, column 34 (offset: 33))"
         )
@@ -2986,7 +2988,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   }
 
   test("CREATE LOOKUP INDEX FOR -[r1]- ON EACH type(r2)") {
-    failsParsing[Statements].in {
+    failsParsing[ast.Statements].in {
       case Cypher5JavaCc =>
         _.withMessageStart("Invalid input '-': expected \"FOR\" or \"IF\" (line 1, column 25 (offset: 24))")
       case _ => _.withSyntaxError(
@@ -2998,7 +3000,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   }
 
   test("CREATE LOOKUP INDEX FOR [r1] ON EACH type(r2)") {
-    failsParsing[Statements].in {
+    failsParsing[ast.Statements].in {
       case Cypher5JavaCc =>
         _.withMessageStart("Invalid input '[': expected \"FOR\" or \"IF\" (line 1, column 25 (offset: 24))")
       case _ => _.withSyntaxError(
@@ -3010,7 +3012,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   }
 
   test("CREATE LOOKUP INDEX FOR (n1) EACH labels(n1)") {
-    failsParsing[Statements].in {
+    failsParsing[ast.Statements].in {
       case Cypher5JavaCc => _.withMessageStart("Invalid input 'EACH': expected \"ON\" (line 1, column 30 (offset: 29))")
       case _ => _.withSyntaxError(
           """Invalid input 'EACH': expected 'ON EACH' (line 1, column 30 (offset: 29))
@@ -3021,7 +3023,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   }
 
   test("CREATE LOOKUP INDEX FOR ()-[r1]-() EACH type(r2)") {
-    failsParsing[Statements].in {
+    failsParsing[ast.Statements].in {
       case Cypher5JavaCc => _.withMessageStart("Invalid input 'EACH': expected \"ON\" (line 1, column 36 (offset: 35))")
       case _ => _.withSyntaxError(
           """Invalid input 'EACH': expected 'ON' (line 1, column 36 (offset: 35))
@@ -3032,7 +3034,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   }
 
   test("CREATE LOOKUP INDEX FOR (n1) ON labels(n2)") {
-    failsParsing[Statements].in {
+    failsParsing[ast.Statements].in {
       case Cypher5JavaCc =>
         _.withMessageStart("Invalid input 'labels': expected \"EACH\" (line 1, column 33 (offset: 32))")
       case _ => _.withSyntaxError(
@@ -3044,7 +3046,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   }
 
   test("CREATE INDEX FOR (n1) ON EACH labels(n2)") {
-    failsParsing[Statements].in {
+    failsParsing[ast.Statements].in {
       case Cypher5JavaCc => _.withMessageStart("Invalid input ')': expected \":\" (line 1, column 21 (offset: 20))")
       case _ => _.withSyntaxError(
           """Invalid input ')': expected ':' (line 1, column 21 (offset: 20))
@@ -3055,7 +3057,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   }
 
   test("CREATE INDEX FOR ()-[r1]-() ON EACH type(r2)") {
-    failsParsing[Statements].in {
+    failsParsing[ast.Statements].in {
       case Cypher5JavaCc => _.withMessageStart("Invalid input ']': expected \":\" (line 1, column 24 (offset: 23))")
       case _ => _.withSyntaxError(
           """Invalid input ']': expected ':' (line 1, column 24 (offset: 23))
@@ -3067,7 +3069,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
 
   test("CREATE FULLTEXT INDEX FOR (n1) ON EACH [n2.x]") {
     // missing label
-    failsParsing[Statements].in {
+    failsParsing[ast.Statements].in {
       case Cypher5JavaCc => _.withMessageStart("Invalid input ')': expected \":\" (line 1, column 30 (offset: 29))")
       case _ => _.withSyntaxError(
           """Invalid input ')': expected ':' (line 1, column 30 (offset: 29))
@@ -3079,7 +3081,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
 
   test("CREATE FULLTEXT INDEX FOR ()-[n1]-() ON EACH [n2.x]") {
     // missing relationship type
-    failsParsing[Statements].in {
+    failsParsing[ast.Statements].in {
       case Cypher5JavaCc => _.withMessageStart("Invalid input ']': expected \":\" (line 1, column 33 (offset: 32))")
       case _ => _.withSyntaxError(
           """Invalid input ']': expected ':' (line 1, column 33 (offset: 32))
@@ -3090,7 +3092,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   }
 
   test("CREATE FULLTEXT INDEX FOR (n1|:A) ON EACH [n2.x]") {
-    failsParsing[Statements].in {
+    failsParsing[ast.Statements].in {
       case Cypher5JavaCc => _.withMessageStart("Invalid input '|': expected \":\" (line 1, column 30 (offset: 29))")
       case _ => _.withSyntaxError(
           """Invalid input '|': expected ':' (line 1, column 30 (offset: 29))
@@ -3101,7 +3103,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   }
 
   test("CREATE FULLTEXT INDEX FOR ()-[n1|:R]-() ON EACH [n2.x]") {
-    failsParsing[Statements].in {
+    failsParsing[ast.Statements].in {
       case Cypher5JavaCc => _.withMessageStart("Invalid input '|': expected \":\" (line 1, column 33 (offset: 32))")
       case _ => _.withSyntaxError(
           """Invalid input '|': expected ':' (line 1, column 33 (offset: 32))
@@ -3112,7 +3114,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   }
 
   test("CREATE FULLTEXT INDEX FOR (n1:A|:B) ON EACH [n2.x]") {
-    failsParsing[Statements].in {
+    failsParsing[ast.Statements].in {
       case Cypher5JavaCc =>
         _.withMessageStart("Invalid input ':': expected an identifier (line 1, column 33 (offset: 32))")
       case _ => _.withSyntaxError(
@@ -3124,7 +3126,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   }
 
   test("CREATE FULLTEXT INDEX FOR ()-[n1:R|:S]-() ON EACH [n2.x]") {
-    failsParsing[Statements].in {
+    failsParsing[ast.Statements].in {
       case Cypher5JavaCc =>
         _.withMessageStart("Invalid input ':': expected an identifier (line 1, column 36 (offset: 35))")
       case _ => _.withSyntaxError(
@@ -3136,7 +3138,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   }
 
   test("CREATE FULLTEXT INDEX FOR (n1:A||B) ON EACH [n2.x]") {
-    failsParsing[Statements].in {
+    failsParsing[ast.Statements].in {
       case Cypher5JavaCc =>
         _.withMessageStart("Invalid input '||': expected \")\" or \"|\" (line 1, column 32 (offset: 31))")
       case _ => _.withSyntaxError(
@@ -3148,7 +3150,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   }
 
   test("CREATE FULLTEXT INDEX FOR ()-[n1:R||S]-() ON EACH [n2.x]") {
-    failsParsing[Statements].in {
+    failsParsing[ast.Statements].in {
       case Cypher5JavaCc =>
         _.withMessageStart("Invalid input '||': expected \"]\" or \"|\" (line 1, column 35 (offset: 34))")
       case _ => _.withSyntaxError(
@@ -3160,7 +3162,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   }
 
   test("CREATE FULLTEXT INDEX FOR (n1:A:B) ON EACH [n2.x]") {
-    failsParsing[Statements].in {
+    failsParsing[ast.Statements].in {
       case Cypher5JavaCc =>
         _.withMessageStart("Invalid input ':': expected \")\" or \"|\" (line 1, column 32 (offset: 31))")
       case _ => _.withSyntaxError(
@@ -3172,7 +3174,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   }
 
   test("CREATE FULLTEXT INDEX FOR ()-[n1:R:S]-() ON EACH [n2.x]") {
-    failsParsing[Statements].in {
+    failsParsing[ast.Statements].in {
       case Cypher5JavaCc =>
         _.withMessageStart("Invalid input ':': expected \"]\" or \"|\" (line 1, column 35 (offset: 34))")
       case _ => _.withSyntaxError(
@@ -3184,7 +3186,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   }
 
   test("CREATE FULLTEXT INDEX FOR (n1:A&B) ON EACH [n2.x]") {
-    failsParsing[Statements].in {
+    failsParsing[ast.Statements].in {
       case Cypher5JavaCc =>
         _.withMessageStart("Invalid input '&': expected \")\" or \"|\" (line 1, column 32 (offset: 31))")
       case _ => _.withSyntaxError(
@@ -3196,7 +3198,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   }
 
   test("CREATE FULLTEXT INDEX FOR ()-[n1:R&S]-() ON EACH [n2.x]") {
-    failsParsing[Statements].in {
+    failsParsing[ast.Statements].in {
       case Cypher5JavaCc =>
         _.withMessageStart("Invalid input '&': expected \"]\" or \"|\" (line 1, column 35 (offset: 34))")
       case _ => _.withSyntaxError(
@@ -3208,7 +3210,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   }
 
   test("CREATE FULLTEXT INDEX FOR (n1:A B) ON EACH [n2.x]") {
-    failsParsing[Statements].in {
+    failsParsing[ast.Statements].in {
       case Cypher5JavaCc =>
         _.withMessageStart("Invalid input 'B': expected \")\" or \"|\" (line 1, column 33 (offset: 32))")
       case _ => _.withSyntaxError(
@@ -3220,7 +3222,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   }
 
   test("CREATE FULLTEXT INDEX FOR ()-[n1:R S]-() ON EACH [n2.x]") {
-    failsParsing[Statements].in {
+    failsParsing[ast.Statements].in {
       case Cypher5JavaCc =>
         _.withMessageStart("Invalid input 'S': expected \"]\" or \"|\" (line 1, column 36 (offset: 35))")
       case _ => _.withSyntaxError(
@@ -3233,7 +3235,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
 
   test("CREATE FULLTEXT INDEX FOR (:A)-[n1:R]-() ON EACH [n2.name]") {
     // label on node
-    failsParsing[Statements].in {
+    failsParsing[ast.Statements].in {
       case Cypher5JavaCc => _.withMessageStart("""Invalid input ':': expected ")" or an identifier""")
       case _ => _.withSyntaxError(
           """Invalid input ':': expected a variable name or ')' (line 1, column 28 (offset: 27))
@@ -3245,7 +3247,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
 
   test("CREATE FULLTEXT INDEX FOR ()-[n1:R]-(:A) ON EACH [n2.name]") {
     // label on node
-    failsParsing[Statements].in {
+    failsParsing[ast.Statements].in {
       case Cypher5JavaCc => _.withMessageStart("""Invalid input ':': expected ")"""")
       case _ => _.withSyntaxError(
           """Invalid input ':': expected ')' (line 1, column 38 (offset: 37))
@@ -3257,7 +3259,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
 
   test("CREATE FULLTEXT INDEX FOR (n2)-[n1:R]-() ON EACH [n2.name]") {
     // variable on node
-    failsParsing[Statements].in {
+    failsParsing[ast.Statements].in {
       case Cypher5JavaCc => _.withMessageStart("""Invalid input ')': expected ":"""")
       case _ => _.withSyntaxError(
           """Invalid input ')': expected ':' (line 1, column 30 (offset: 29))
@@ -3269,7 +3271,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
 
   test("CREATE FULLTEXT INDEX FOR ()-[n1:R]-(n2) ON EACH [n2.name]") {
     // variable on node
-    failsParsing[Statements].in {
+    failsParsing[ast.Statements].in {
       case Cypher5JavaCc => _.withMessageStart("""Invalid input 'n2': expected ")"""")
       case _ => _.withSyntaxError(
           """Invalid input 'n2': expected ')' (line 1, column 38 (offset: 37))
@@ -3281,7 +3283,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
 
   test("CREATE FULLTEXT INDEX FOR (n2:A)-[n1:R]-() ON EACH [n2.name]") {
     // variable on node
-    failsParsing[Statements].in {
+    failsParsing[ast.Statements].in {
       case Cypher5JavaCc => _.withMessageStart("""Invalid input '-': expected "ON"""")
       case _ => _.withSyntaxError(
           """Invalid input '-': expected 'ON' (line 1, column 33 (offset: 32))
@@ -3293,7 +3295,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
 
   test("CREATE FULLTEXT INDEX FOR ()-[n1:R]-(n2:A) ON EACH [n2.name]") {
     // variable on node
-    failsParsing[Statements].in {
+    failsParsing[ast.Statements].in {
       case Cypher5JavaCc => _.withMessageStart("""Invalid input 'n2': expected ")"""")
       case _ => _.withSyntaxError(
           """Invalid input 'n2': expected ')' (line 1, column 38 (offset: 37))
@@ -3304,7 +3306,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   }
 
   test("CREATE UNKNOWN INDEX FOR (n1:Person) ON (n2.name)") {
-    failsParsing[Statements].in {
+    failsParsing[ast.Statements].in {
       case Cypher5JavaCc => _.withMessageStart(
           "Invalid input 'UNKNOWN': expected \"(\", \"ALL\", \"ANY\" or \"SHORTEST\" (line 1, column 8 (offset: 7))"
         )
@@ -3317,7 +3319,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   }
 
   test("CREATE BUILT IN INDEX FOR (n1:Person) ON (n2.name)") {
-    failsParsing[Statements].in {
+    failsParsing[ast.Statements].in {
       case Cypher5JavaCc => _.withMessageStart(
           "Invalid input 'BUILT': expected \"(\", \"ALL\", \"ANY\" or \"SHORTEST\" (line 1, column 8 (offset: 7))"
         )
@@ -3332,31 +3334,31 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   // Drop index
 
   test("DROP INDEX ON :Person(name)") {
-    parsesTo[Statements](ast.DropIndex(labelName("Person"), List(propName("name")))(pos))
+    parsesTo[ast.Statements](ast.DropIndex(labelName("Person"), List(propName("name")))(pos))
   }
 
   test("DROP INDEX ON :Person(name, age)") {
-    parsesTo[Statements](ast.DropIndex(labelName("Person"), List(propName("name"), propName("age")))(pos))
+    parsesTo[ast.Statements](ast.DropIndex(labelName("Person"), List(propName("name"), propName("age")))(pos))
   }
 
   test("DROP INDEX my_index") {
-    parsesTo[Statements](ast.DropIndexOnName(Left("my_index"), ifExists = false)(pos))
+    parsesTo[ast.Statements](ast.DropIndexOnName(Left("my_index"), ifExists = false)(pos))
   }
 
   test("DROP INDEX `$my_index`") {
-    parsesTo[Statements](ast.DropIndexOnName(Left("$my_index"), ifExists = false)(pos))
+    parsesTo[ast.Statements](ast.DropIndexOnName(Left("$my_index"), ifExists = false)(pos))
   }
 
   test("DROP INDEX my_index IF EXISTS") {
-    parsesTo[Statements](ast.DropIndexOnName(Left("my_index"), ifExists = true)(pos))
+    parsesTo[ast.Statements](ast.DropIndexOnName(Left("my_index"), ifExists = true)(pos))
   }
 
   test("DROP INDEX $my_index") {
-    parsesTo[Statements](ast.DropIndexOnName(Right(stringParam("my_index")), ifExists = false)(pos))
+    parsesTo[ast.Statements](ast.DropIndexOnName(Right(stringParam("my_index")), ifExists = false)(pos))
   }
 
   test("DROP INDEX my_index ON :Person(name)") {
-    failsParsing[Statements].in {
+    failsParsing[ast.Statements].in {
       case Cypher5JavaCc =>
         _.withMessageStart("Invalid input 'ON': expected \"IF\" or <EOF> (line 1, column 21 (offset: 20))")
       case _ => _.withSyntaxError(
@@ -3368,7 +3370,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   }
 
   test("DROP INDEX ON (:Person(name))") {
-    failsParsing[Statements].in {
+    failsParsing[ast.Statements].in {
       case Cypher5JavaCc =>
         _.withMessageStart("Invalid input '(': expected \"IF\" or <EOF> (line 1, column 15 (offset: 14))")
       case _ => _.withSyntaxError(
@@ -3380,7 +3382,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   }
 
   test("DROP INDEX ON (:Person {name})") {
-    failsParsing[Statements].in {
+    failsParsing[ast.Statements].in {
       case Cypher5JavaCc =>
         _.withMessageStart("Invalid input '(': expected \"IF\" or <EOF> (line 1, column 15 (offset: 14))")
       case _ => _.withSyntaxError(
@@ -3392,7 +3394,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   }
 
   test("DROP INDEX ON [:Person(name)]") {
-    failsParsing[Statements].in {
+    failsParsing[ast.Statements].in {
       case Cypher5JavaCc =>
         _.withMessageStart("Invalid input '[': expected \"IF\" or <EOF> (line 1, column 15 (offset: 14))")
       case _ => _.withSyntaxError(
@@ -3404,7 +3406,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   }
 
   test("DROP INDEX ON -[:Person(name)]-") {
-    failsParsing[Statements].in {
+    failsParsing[ast.Statements].in {
       case Cypher5JavaCc =>
         _.withMessageStart("Invalid input '-': expected \"IF\" or <EOF> (line 1, column 15 (offset: 14))")
       case _ => _.withSyntaxError(
@@ -3416,7 +3418,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   }
 
   test("DROP INDEX ON ()-[:Person(name)]-()") {
-    failsParsing[Statements].in {
+    failsParsing[ast.Statements].in {
       case Cypher5JavaCc =>
         _.withMessageStart("Invalid input '(': expected \"IF\" or <EOF> (line 1, column 15 (offset: 14))")
       case _ => _.withSyntaxError(
@@ -3428,7 +3430,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   }
 
   test("DROP INDEX ON [:Person {name}]") {
-    failsParsing[Statements].in {
+    failsParsing[ast.Statements].in {
       case Cypher5JavaCc =>
         _.withMessageStart("Invalid input '[': expected \"IF\" or <EOF> (line 1, column 15 (offset: 14))")
       case _ => _.withSyntaxError(
@@ -3440,7 +3442,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   }
 
   test("DROP INDEX ON -[:Person {name}]-") {
-    failsParsing[Statements].in {
+    failsParsing[ast.Statements].in {
       case Cypher5JavaCc =>
         _.withMessageStart("Invalid input '-': expected \"IF\" or <EOF> (line 1, column 15 (offset: 14))")
       case _ => _.withSyntaxError(
@@ -3452,7 +3454,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   }
 
   test("DROP INDEX ON ()-[:Person {name}]-()") {
-    failsParsing[Statements].in {
+    failsParsing[ast.Statements].in {
       case Cypher5JavaCc =>
         _.withMessageStart("Invalid input '(': expected \"IF\" or <EOF> (line 1, column 15 (offset: 14))")
       case _ => _.withSyntaxError(
@@ -3464,15 +3466,15 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   }
 
   test("DROP INDEX on IF EXISTS") {
-    parsesTo[Statements](ast.DropIndexOnName(Left("on"), ifExists = true)(pos))
+    parsesTo[ast.Statements](ast.DropIndexOnName(Left("on"), ifExists = true)(pos))
   }
 
   test("DROP INDEX on") {
-    parsesTo[Statements](ast.DropIndexOnName(Left("on"), ifExists = false)(pos))
+    parsesTo[ast.Statements](ast.DropIndexOnName(Left("on"), ifExists = false)(pos))
   }
 
   test("DROP INDEX ON :if(exists)") {
-    parsesTo[Statements](ast.DropIndex(labelName("if"), List(propName("exists")))(pos))
+    parsesTo[ast.Statements](ast.DropIndex(labelName("if"), List(propName("exists")))(pos))
   }
 
   // help methods

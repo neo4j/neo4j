@@ -16,7 +16,23 @@
  */
 package org.neo4j.cypher.internal.ast.factory.ddl.privilege
 
-import org.neo4j.cypher.internal.ast
+import org.neo4j.cypher.internal.ast.DenyPrivilege
+import org.neo4j.cypher.internal.ast.FileResource
+import org.neo4j.cypher.internal.ast.GrantPrivilege
+import org.neo4j.cypher.internal.ast.LoadActions
+import org.neo4j.cypher.internal.ast.LoadAllDataAction
+import org.neo4j.cypher.internal.ast.LoadAllQualifier
+import org.neo4j.cypher.internal.ast.LoadCidrAction
+import org.neo4j.cypher.internal.ast.LoadCidrQualifier
+import org.neo4j.cypher.internal.ast.LoadPrivilege
+import org.neo4j.cypher.internal.ast.LoadPrivilegeQualifier
+import org.neo4j.cypher.internal.ast.LoadUrlAction
+import org.neo4j.cypher.internal.ast.LoadUrlQualifier
+import org.neo4j.cypher.internal.ast.RevokeBothType
+import org.neo4j.cypher.internal.ast.RevokeDenyType
+import org.neo4j.cypher.internal.ast.RevokeGrantType
+import org.neo4j.cypher.internal.ast.RevokePrivilege
+import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.factory.ddl.AdministrationAndSchemaCommandParserTestBase
 import org.neo4j.cypher.internal.ast.test.util.AstParsing.Cypher5JavaCc
@@ -39,8 +55,8 @@ class LoadPrivilegeParserTest extends AdministrationAndSchemaCommandParserTestBa
 
           test(s"""$verb$immutableString LOAD ON URL "https://my.server.com/some/file.csv" $preposition role""") {
             parsesTo[Statements](func(
-              ast.LoadUrlAction,
-              ast.LoadUrlQualifier("https://my.server.com/some/file.csv")(InputPosition.NONE),
+              LoadUrlAction,
+              LoadUrlQualifier("https://my.server.com/some/file.csv")(InputPosition.NONE),
               Seq(literalRole),
               immutable
             )(pos))
@@ -48,8 +64,8 @@ class LoadPrivilegeParserTest extends AdministrationAndSchemaCommandParserTestBa
 
           test(s"""$verb$immutableString LOAD ON CIDR "192.168.1.0/24" $preposition role""") {
             parsesTo[Statements](func(
-              ast.LoadCidrAction,
-              ast.LoadCidrQualifier("192.168.1.0/24")(InputPosition.NONE),
+              LoadCidrAction,
+              LoadCidrQualifier("192.168.1.0/24")(InputPosition.NONE),
               Seq(literalRole),
               immutable
             )(pos))
@@ -57,8 +73,8 @@ class LoadPrivilegeParserTest extends AdministrationAndSchemaCommandParserTestBa
 
           test(s"""$verb$immutableString LOAD ON URL $$foo $preposition role""") {
             parsesTo[Statements](func(
-              ast.LoadUrlAction,
-              ast.LoadUrlQualifier(Right(paramFoo))(InputPosition.NONE),
+              LoadUrlAction,
+              LoadUrlQualifier(Right(paramFoo))(InputPosition.NONE),
               Seq(literalRole),
               immutable
             )(pos))
@@ -66,8 +82,8 @@ class LoadPrivilegeParserTest extends AdministrationAndSchemaCommandParserTestBa
 
           test(s"""$verb$immutableString LOAD ON CIDR $$foo $preposition role""") {
             parsesTo[Statements](func(
-              ast.LoadCidrAction,
-              ast.LoadCidrQualifier(Right(paramFoo))(InputPosition.NONE),
+              LoadCidrAction,
+              LoadCidrQualifier(Right(paramFoo))(InputPosition.NONE),
               Seq(literalRole),
               immutable
             )(pos))
@@ -75,8 +91,8 @@ class LoadPrivilegeParserTest extends AdministrationAndSchemaCommandParserTestBa
 
           test(s"""$verb$immutableString LOAD ON ALL DATA $preposition role""") {
             parsesTo[Statements](func(
-              ast.LoadAllDataAction,
-              ast.LoadAllQualifier()(InputPosition.NONE),
+              LoadAllDataAction,
+              LoadAllQualifier()(InputPosition.NONE),
               Seq(literalRole),
               immutable
             )(pos))
@@ -87,8 +103,8 @@ class LoadPrivilegeParserTest extends AdministrationAndSchemaCommandParserTestBa
 
   test("""DENY LOAD ON URL "not really a url" TO $role""") {
     parsesTo[Statements](denyLoadPrivilege(
-      ast.LoadUrlAction,
-      ast.LoadUrlQualifier("not really a url")(InputPosition.NONE),
+      LoadUrlAction,
+      LoadUrlQualifier("not really a url")(InputPosition.NONE),
       Seq(paramRole),
       i = false
     )(pos))
@@ -96,8 +112,8 @@ class LoadPrivilegeParserTest extends AdministrationAndSchemaCommandParserTestBa
 
   test("""REVOKE GRANT LOAD ON CIDR 'not a cidr' FROM $role""") {
     parsesTo[Statements](revokeGrantLoadPrivilege(
-      ast.LoadCidrAction,
-      ast.LoadCidrQualifier("not a cidr")(InputPosition.NONE),
+      LoadCidrAction,
+      LoadCidrQualifier("not a cidr")(InputPosition.NONE),
       Seq(paramRole),
       i = false
     )(pos))
@@ -105,8 +121,8 @@ class LoadPrivilegeParserTest extends AdministrationAndSchemaCommandParserTestBa
 
   test("GRANT LOAD ON CIDR $x TO `\u0885`, `x\u0885y`") {
     parsesTo[Statements](grantLoadPrivilege(
-      ast.LoadCidrAction,
-      ast.LoadCidrQualifier(Right(stringParam("x")))(InputPosition.NONE),
+      LoadCidrAction,
+      LoadCidrQualifier(Right(stringParam("x")))(InputPosition.NONE),
       Seq(literalString("\u0885"), literalString("x\u0885y")),
       i = false
     )(pos))
@@ -284,75 +300,75 @@ class LoadPrivilegeParserTest extends AdministrationAndSchemaCommandParserTestBa
   // help methods
 
   def grantLoadPrivilege(
-    a: ast.LoadActions,
-    q: ast.LoadPrivilegeQualifier,
+    a: LoadActions,
+    q: LoadPrivilegeQualifier,
     r: Seq[Expression],
     i: Immutable
-  ): InputPosition => ast.Statement =
-    ast.GrantPrivilege(
-      ast.LoadPrivilege(a)(InputPosition.NONE),
+  ): InputPosition => Statement =
+    GrantPrivilege(
+      LoadPrivilege(a)(InputPosition.NONE),
       i,
-      Some(ast.FileResource()(InputPosition.NONE)),
+      Some(FileResource()(InputPosition.NONE)),
       List(q),
       r
     )
 
   def denyLoadPrivilege(
-    a: ast.LoadActions,
-    q: ast.LoadPrivilegeQualifier,
+    a: LoadActions,
+    q: LoadPrivilegeQualifier,
     r: Seq[Expression],
     i: Immutable
-  ): InputPosition => ast.Statement =
-    ast.DenyPrivilege(
-      ast.LoadPrivilege(a)(InputPosition.NONE),
+  ): InputPosition => Statement =
+    DenyPrivilege(
+      LoadPrivilege(a)(InputPosition.NONE),
       i,
-      Some(ast.FileResource()(InputPosition.NONE)),
+      Some(FileResource()(InputPosition.NONE)),
       List(q),
       r
     )
 
   def revokeGrantLoadPrivilege(
-    a: ast.LoadActions,
-    q: ast.LoadPrivilegeQualifier,
+    a: LoadActions,
+    q: LoadPrivilegeQualifier,
     r: Seq[Expression],
     i: Immutable
-  ): InputPosition => ast.Statement =
-    ast.RevokePrivilege(
-      ast.LoadPrivilege(a)(InputPosition.NONE),
+  ): InputPosition => Statement =
+    RevokePrivilege(
+      LoadPrivilege(a)(InputPosition.NONE),
       i,
-      Some(ast.FileResource()(InputPosition.NONE)),
+      Some(FileResource()(InputPosition.NONE)),
       List(q),
       r,
-      ast.RevokeGrantType()(pos)
+      RevokeGrantType()(pos)
     )
 
   def revokeDenyLoadPrivilege(
-    a: ast.LoadActions,
-    q: ast.LoadPrivilegeQualifier,
+    a: LoadActions,
+    q: LoadPrivilegeQualifier,
     r: Seq[Expression],
     i: Immutable
-  ): InputPosition => ast.Statement =
-    ast.RevokePrivilege(
-      ast.LoadPrivilege(a)(InputPosition.NONE),
+  ): InputPosition => Statement =
+    RevokePrivilege(
+      LoadPrivilege(a)(InputPosition.NONE),
       i,
-      Some(ast.FileResource()(InputPosition.NONE)),
+      Some(FileResource()(InputPosition.NONE)),
       List(q),
       r,
-      ast.RevokeDenyType()(pos)
+      RevokeDenyType()(pos)
     )
 
   def revokeLoadPrivilege(
-    a: ast.LoadActions,
-    q: ast.LoadPrivilegeQualifier,
+    a: LoadActions,
+    q: LoadPrivilegeQualifier,
     r: Seq[Expression],
     i: Immutable
-  ): InputPosition => ast.Statement =
-    ast.RevokePrivilege(
-      ast.LoadPrivilege(a)(InputPosition.NONE),
+  ): InputPosition => Statement =
+    RevokePrivilege(
+      LoadPrivilege(a)(InputPosition.NONE),
       i,
-      Some(ast.FileResource()(InputPosition.NONE)),
+      Some(FileResource()(InputPosition.NONE)),
       List(q),
       r,
-      ast.RevokeBothType()(pos)
+      RevokeBothType()(pos)
     )
 }

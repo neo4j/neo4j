@@ -16,8 +16,14 @@
  */
 package org.neo4j.cypher.internal.ast.factory.ddl.privilege
 
-import org.neo4j.cypher.internal.ast
+import org.neo4j.cypher.internal.ast.AllGraphsScope
+import org.neo4j.cypher.internal.ast.DefaultGraphScope
+import org.neo4j.cypher.internal.ast.ElementsAllQualifier
+import org.neo4j.cypher.internal.ast.GraphPrivilege
+import org.neo4j.cypher.internal.ast.HomeGraphScope
+import org.neo4j.cypher.internal.ast.NamedGraphsScope
 import org.neo4j.cypher.internal.ast.Statements
+import org.neo4j.cypher.internal.ast.WriteAction
 import org.neo4j.cypher.internal.ast.factory.ddl.AdministrationAndSchemaCommandParserTestBase
 import org.neo4j.cypher.internal.ast.test.util.AstParsing.Cypher5JavaCc
 
@@ -36,8 +42,8 @@ class WritePrivilegeAdministrationCommandParserTest extends AdministrationAndSch
           val immutableString = immutableOrEmpty(immutable)
           test(s"$verb$immutableString WRITE ON GRAPH foo $preposition role") {
             parsesTo[Statements](func(
-              ast.GraphPrivilege(ast.WriteAction, graphScopeFoo)(pos),
-              List(ast.ElementsAllQualifier() _),
+              GraphPrivilege(WriteAction, graphScopeFoo)(pos),
+              List(ElementsAllQualifier() _),
               Seq(literalRole),
               immutable
             )(pos))
@@ -45,8 +51,8 @@ class WritePrivilegeAdministrationCommandParserTest extends AdministrationAndSch
 
           test(s"$verb$immutableString WRITE ON GRAPHS foo $preposition role") {
             parsesTo[Statements](func(
-              ast.GraphPrivilege(ast.WriteAction, graphScopeFoo)(pos),
-              List(ast.ElementsAllQualifier() _),
+              GraphPrivilege(WriteAction, graphScopeFoo)(pos),
+              List(ElementsAllQualifier() _),
               Seq(literalRole),
               immutable
             )(pos))
@@ -56,8 +62,8 @@ class WritePrivilegeAdministrationCommandParserTest extends AdministrationAndSch
 
           test(s"$verb$immutableString WRITE ON GRAPH * $preposition role") {
             parsesTo[Statements](func(
-              ast.GraphPrivilege(ast.WriteAction, ast.AllGraphsScope()(_))(pos),
-              List(ast.ElementsAllQualifier() _),
+              GraphPrivilege(WriteAction, AllGraphsScope()(_))(pos),
+              List(ElementsAllQualifier() _),
               Seq(literalRole),
               immutable
             )(pos))
@@ -65,8 +71,8 @@ class WritePrivilegeAdministrationCommandParserTest extends AdministrationAndSch
 
           test(s"$verb$immutableString WRITE ON GRAPHS * $preposition role") {
             parsesTo[Statements](func(
-              ast.GraphPrivilege(ast.WriteAction, ast.AllGraphsScope()(_))(pos),
-              List(ast.ElementsAllQualifier() _),
+              GraphPrivilege(WriteAction, AllGraphsScope()(_))(pos),
+              List(ElementsAllQualifier() _),
               Seq(literalRole),
               immutable
             )(pos))
@@ -74,8 +80,8 @@ class WritePrivilegeAdministrationCommandParserTest extends AdministrationAndSch
 
           test(s"$verb$immutableString WRITE ON GRAPH foo, baz $preposition role") {
             parsesTo[Statements](func(
-              ast.GraphPrivilege(ast.WriteAction, graphScopeFooBaz)(pos),
-              List(ast.ElementsAllQualifier() _),
+              GraphPrivilege(WriteAction, graphScopeFooBaz)(pos),
+              List(ElementsAllQualifier() _),
               List(literalRole),
               immutable
             )(pos))
@@ -83,8 +89,8 @@ class WritePrivilegeAdministrationCommandParserTest extends AdministrationAndSch
 
           test(s"$verb$immutableString WRITE ON GRAPHS foo, baz $preposition role") {
             parsesTo[Statements](func(
-              ast.GraphPrivilege(ast.WriteAction, graphScopeFooBaz)(pos),
-              List(ast.ElementsAllQualifier() _),
+              GraphPrivilege(WriteAction, graphScopeFooBaz)(pos),
+              List(ElementsAllQualifier() _),
               List(literalRole),
               immutable
             )(pos))
@@ -94,8 +100,8 @@ class WritePrivilegeAdministrationCommandParserTest extends AdministrationAndSch
 
           test(s"$verb$immutableString WRITE ON HOME GRAPH $preposition role") {
             parsesTo[Statements](func(
-              ast.GraphPrivilege(ast.WriteAction, ast.HomeGraphScope()(_))(pos),
-              List(ast.ElementsAllQualifier() _),
+              GraphPrivilege(WriteAction, HomeGraphScope()(_))(pos),
+              List(ElementsAllQualifier() _),
               Seq(literalRole),
               immutable
             )(pos))
@@ -103,8 +109,8 @@ class WritePrivilegeAdministrationCommandParserTest extends AdministrationAndSch
 
           test(s"$verb$immutableString WRITE ON DEFAULT GRAPH $preposition role") {
             parsesTo[Statements](func(
-              ast.GraphPrivilege(ast.WriteAction, ast.DefaultGraphScope()(_))(pos),
-              List(ast.ElementsAllQualifier() _),
+              GraphPrivilege(WriteAction, DefaultGraphScope()(_))(pos),
+              List(ElementsAllQualifier() _),
               Seq(literalRole),
               immutable
             )(pos))
@@ -114,8 +120,8 @@ class WritePrivilegeAdministrationCommandParserTest extends AdministrationAndSch
 
           test(s"$verb$immutableString WRITE ON GRAPH foo $preposition role1, role2") {
             parsesTo[Statements](func(
-              ast.GraphPrivilege(ast.WriteAction, graphScopeFoo)(_),
-              List(ast.ElementsAllQualifier() _),
+              GraphPrivilege(WriteAction, graphScopeFoo)(_),
+              List(ElementsAllQualifier() _),
               Seq(literalRole1, literalRole2),
               immutable
             )(pos))
@@ -125,8 +131,8 @@ class WritePrivilegeAdministrationCommandParserTest extends AdministrationAndSch
 
           test(s"$verb$immutableString WRITE ON GRAPH $$foo $preposition role") {
             parsesTo[Statements](func(
-              ast.GraphPrivilege(ast.WriteAction, graphScopeParamFoo)(pos),
-              List(ast.ElementsAllQualifier() _),
+              GraphPrivilege(WriteAction, graphScopeParamFoo)(pos),
+              List(ElementsAllQualifier() _),
               Seq(literalRole),
               immutable
             )(pos))
@@ -134,8 +140,8 @@ class WritePrivilegeAdministrationCommandParserTest extends AdministrationAndSch
 
           test(s"$verb$immutableString WRITE ON GRAPH `f:oo` $preposition role") {
             parsesTo[Statements](func(
-              ast.GraphPrivilege(ast.WriteAction, ast.NamedGraphsScope(Seq(namespacedName("f:oo")))(_))(pos),
-              List(ast.ElementsAllQualifier() _),
+              GraphPrivilege(WriteAction, NamedGraphsScope(Seq(namespacedName("f:oo")))(_))(pos),
+              List(ElementsAllQualifier() _),
               Seq(literalRole),
               immutable
             )(pos))
@@ -143,8 +149,8 @@ class WritePrivilegeAdministrationCommandParserTest extends AdministrationAndSch
 
           test(s"$verb$immutableString WRITE ON GRAPH foo $preposition $$role") {
             parsesTo[Statements](func(
-              ast.GraphPrivilege(ast.WriteAction, graphScopeFoo)(pos),
-              List(ast.ElementsAllQualifier() _),
+              GraphPrivilege(WriteAction, graphScopeFoo)(pos),
+              List(ElementsAllQualifier() _),
               Seq(paramRole),
               immutable
             )(pos))
@@ -152,8 +158,8 @@ class WritePrivilegeAdministrationCommandParserTest extends AdministrationAndSch
 
           test(s"$verb$immutableString WRITE ON GRAPH foo $preposition `r:ole`") {
             parsesTo[Statements](func(
-              ast.GraphPrivilege(ast.WriteAction, graphScopeFoo)(pos),
-              List(ast.ElementsAllQualifier() _),
+              GraphPrivilege(WriteAction, graphScopeFoo)(pos),
+              List(ElementsAllQualifier() _),
               Seq(literalRColonOle),
               immutable
             )(pos))

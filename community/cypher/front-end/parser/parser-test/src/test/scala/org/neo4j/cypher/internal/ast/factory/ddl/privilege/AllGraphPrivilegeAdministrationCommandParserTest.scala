@@ -16,7 +16,12 @@
  */
 package org.neo4j.cypher.internal.ast.factory.ddl.privilege
 
-import org.neo4j.cypher.internal.ast
+import org.neo4j.cypher.internal.ast.AllGraphAction
+import org.neo4j.cypher.internal.ast.AllGraphsScope
+import org.neo4j.cypher.internal.ast.AllQualifier
+import org.neo4j.cypher.internal.ast.DefaultGraphScope
+import org.neo4j.cypher.internal.ast.GraphPrivilege
+import org.neo4j.cypher.internal.ast.HomeGraphScope
 import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.factory.ddl.AdministrationAndSchemaCommandParserTestBase
 import org.neo4j.cypher.internal.ast.test.util.AstParsing.Cypher5JavaCc
@@ -38,8 +43,8 @@ class AllGraphPrivilegeAdministrationCommandParserTest extends AdministrationAnd
 
           test(s"$verb$immutableString ALL ON GRAPH foo $preposition role") {
             parsesTo[Statements](func(
-              ast.GraphPrivilege(ast.AllGraphAction, graphScopeFoo)(_),
-              List(ast.AllQualifier()(_)),
+              GraphPrivilege(AllGraphAction, graphScopeFoo)(_),
+              List(AllQualifier()(_)),
               Seq(literalRole),
               immutable
             )(pos))
@@ -47,8 +52,8 @@ class AllGraphPrivilegeAdministrationCommandParserTest extends AdministrationAnd
 
           test(s"$verb$immutableString ALL PRIVILEGES ON GRAPH foo $preposition role") {
             parsesTo[Statements](func(
-              ast.GraphPrivilege(ast.AllGraphAction, graphScopeFoo)(_),
-              List(ast.AllQualifier()(_)),
+              GraphPrivilege(AllGraphAction, graphScopeFoo)(_),
+              List(AllQualifier()(_)),
               Seq(literalRole),
               immutable
             )(pos))
@@ -56,8 +61,8 @@ class AllGraphPrivilegeAdministrationCommandParserTest extends AdministrationAnd
 
           test(s"$verb$immutableString ALL GRAPH PRIVILEGES ON GRAPH foo $preposition role") {
             parsesTo[Statements](func(
-              ast.GraphPrivilege(ast.AllGraphAction, graphScopeFoo)(_),
-              List(ast.AllQualifier()(_)),
+              GraphPrivilege(AllGraphAction, graphScopeFoo)(_),
+              List(AllQualifier()(_)),
               Seq(literalRole),
               immutable
             )(pos))
@@ -67,8 +72,8 @@ class AllGraphPrivilegeAdministrationCommandParserTest extends AdministrationAnd
 
           test(s"$verb$immutableString ALL ON HOME GRAPH $preposition role") {
             parsesTo[Statements](func(
-              ast.GraphPrivilege(ast.AllGraphAction, ast.HomeGraphScope()(_))(_),
-              List(ast.AllQualifier()(_)),
+              GraphPrivilege(AllGraphAction, HomeGraphScope()(_))(_),
+              List(AllQualifier()(_)),
               Seq(literalRole),
               immutable
             )(pos))
@@ -76,8 +81,8 @@ class AllGraphPrivilegeAdministrationCommandParserTest extends AdministrationAnd
 
           test(s"$verb$immutableString ALL PRIVILEGES ON HOME GRAPH $preposition role") {
             parsesTo[Statements](func(
-              ast.GraphPrivilege(ast.AllGraphAction, ast.HomeGraphScope()(_))(_),
-              List(ast.AllQualifier()(_)),
+              GraphPrivilege(AllGraphAction, HomeGraphScope()(_))(_),
+              List(AllQualifier()(_)),
               Seq(literalRole),
               immutable
             )(pos))
@@ -85,8 +90,8 @@ class AllGraphPrivilegeAdministrationCommandParserTest extends AdministrationAnd
 
           test(s"$verb$immutableString ALL GRAPH PRIVILEGES ON HOME GRAPH $preposition role") {
             parsesTo[Statements](func(
-              ast.GraphPrivilege(ast.AllGraphAction, ast.HomeGraphScope()(_))(_),
-              List(ast.AllQualifier()(_)),
+              GraphPrivilege(AllGraphAction, HomeGraphScope()(_))(_),
+              List(AllQualifier()(_)),
               Seq(literalRole),
               immutable
             )(pos))
@@ -96,8 +101,8 @@ class AllGraphPrivilegeAdministrationCommandParserTest extends AdministrationAnd
 
           test(s"$verb$immutableString ALL ON DEFAULT GRAPH $preposition role") {
             parsesTo[Statements](func(
-              ast.GraphPrivilege(ast.AllGraphAction, ast.DefaultGraphScope()(_))(_),
-              List(ast.AllQualifier()(_)),
+              GraphPrivilege(AllGraphAction, DefaultGraphScope()(_))(_),
+              List(AllQualifier()(_)),
               Seq(literalRole),
               immutable
             )(pos))
@@ -105,8 +110,8 @@ class AllGraphPrivilegeAdministrationCommandParserTest extends AdministrationAnd
 
           test(s"$verb$immutableString ALL PRIVILEGES ON DEFAULT GRAPH $preposition role") {
             parsesTo[Statements](func(
-              ast.GraphPrivilege(ast.AllGraphAction, ast.DefaultGraphScope()(_))(_),
-              List(ast.AllQualifier()(_)),
+              GraphPrivilege(AllGraphAction, DefaultGraphScope()(_))(_),
+              List(AllQualifier()(_)),
               Seq(literalRole),
               immutable
             )(pos))
@@ -114,8 +119,8 @@ class AllGraphPrivilegeAdministrationCommandParserTest extends AdministrationAnd
 
           test(s"$verb$immutableString ALL GRAPH PRIVILEGES ON DEFAULT GRAPH $preposition role") {
             parsesTo[Statements](func(
-              ast.GraphPrivilege(ast.AllGraphAction, ast.DefaultGraphScope()(_))(_),
-              List(ast.AllQualifier()(_)),
+              GraphPrivilege(AllGraphAction, DefaultGraphScope()(_))(_),
+              List(AllQualifier()(_)),
               Seq(literalRole),
               immutable
             )(pos))
@@ -125,8 +130,8 @@ class AllGraphPrivilegeAdministrationCommandParserTest extends AdministrationAnd
 
           test(s"$verb$immutableString ALL GRAPH PRIVILEGES ON GRAPHS * $preposition role") {
             parsesTo[Statements](func(
-              ast.GraphPrivilege(ast.AllGraphAction, ast.AllGraphsScope()(_))(_),
-              List(ast.AllQualifier()(_)),
+              GraphPrivilege(AllGraphAction, AllGraphsScope()(_))(_),
+              List(AllQualifier()(_)),
               Seq(literalRole),
               immutable
             )(pos))
@@ -134,8 +139,8 @@ class AllGraphPrivilegeAdministrationCommandParserTest extends AdministrationAnd
 
           test(s"$verb$immutableString ALL GRAPH PRIVILEGES ON GRAPHS foo,baz $preposition role") {
             parsesTo[Statements](func(
-              ast.GraphPrivilege(ast.AllGraphAction, graphScopeFooBaz)(_),
-              List(ast.AllQualifier()(_)),
+              GraphPrivilege(AllGraphAction, graphScopeFooBaz)(_),
+              List(AllQualifier()(_)),
               Seq(literalRole),
               immutable
             )(pos))
@@ -145,8 +150,8 @@ class AllGraphPrivilegeAdministrationCommandParserTest extends AdministrationAnd
 
           test(s"$verb$immutableString ALL GRAPH PRIVILEGES ON GRAPHS foo $preposition role1, role2") {
             parsesTo[Statements](func(
-              ast.GraphPrivilege(ast.AllGraphAction, graphScopeFoo)(_),
-              List(ast.AllQualifier()(_)),
+              GraphPrivilege(AllGraphAction, graphScopeFoo)(_),
+              List(AllQualifier()(_)),
               Seq(literalRole1, literalRole2),
               immutable
             )(pos))
@@ -156,8 +161,8 @@ class AllGraphPrivilegeAdministrationCommandParserTest extends AdministrationAnd
 
           test(s"$verb$immutableString ALL GRAPH PRIVILEGES ON GRAPH $$foo $preposition role") {
             parsesTo[Statements](func(
-              ast.GraphPrivilege(ast.AllGraphAction, graphScopeParamFoo)(_),
-              List(ast.AllQualifier()(_)),
+              GraphPrivilege(AllGraphAction, graphScopeParamFoo)(_),
+              List(AllQualifier()(_)),
               Seq(literalRole),
               immutable
             )(pos))
@@ -165,8 +170,8 @@ class AllGraphPrivilegeAdministrationCommandParserTest extends AdministrationAnd
 
           test(s"$verb$immutableString ALL GRAPH PRIVILEGES ON GRAPH foo $preposition $$role") {
             parsesTo[Statements](func(
-              ast.GraphPrivilege(ast.AllGraphAction, graphScopeFoo)(_),
-              List(ast.AllQualifier()(_)),
+              GraphPrivilege(AllGraphAction, graphScopeFoo)(_),
+              List(AllQualifier()(_)),
               Seq(paramRole),
               immutable
             )(pos))

@@ -297,15 +297,21 @@ public interface Cypher6ParserListener extends ParseTreeListener {
 
     void exitNonEmptyNameList(Cypher6Parser.NonEmptyNameListContext ctx);
 
+    void exitType(Cypher6Parser.TypeContext ctx);
+
+    void exitTypePart(Cypher6Parser.TypePartContext ctx);
+
+    void exitTypeName(Cypher6Parser.TypeNameContext ctx);
+
+    void exitTypeNullability(Cypher6Parser.TypeNullabilityContext ctx);
+
+    void exitTypeListSuffix(Cypher6Parser.TypeListSuffixContext ctx);
+
     void exitCommand(Cypher6Parser.CommandContext ctx);
 
     void exitCreateCommand(Cypher6Parser.CreateCommandContext ctx);
 
     void exitDropCommand(Cypher6Parser.DropCommandContext ctx);
-
-    void exitAlterCommand(Cypher6Parser.AlterCommandContext ctx);
-
-    void exitRenameCommand(Cypher6Parser.RenameCommandContext ctx);
 
     void exitShowCommand(Cypher6Parser.ShowCommandContext ctx);
 
@@ -318,6 +324,14 @@ public interface Cypher6ParserListener extends ParseTreeListener {
     void exitYieldLimit(Cypher6Parser.YieldLimitContext ctx);
 
     void exitYieldClause(Cypher6Parser.YieldClauseContext ctx);
+
+    void exitCommandOptions(Cypher6Parser.CommandOptionsContext ctx);
+
+    void exitTerminateCommand(Cypher6Parser.TerminateCommandContext ctx);
+
+    void exitComposableCommandClauses(Cypher6Parser.ComposableCommandClausesContext ctx);
+
+    void exitComposableShowCommandClauses(Cypher6Parser.ComposableShowCommandClausesContext ctx);
 
     void exitShowBriefAndYield(Cypher6Parser.ShowBriefAndYieldContext ctx);
 
@@ -353,8 +367,6 @@ public interface Cypher6ParserListener extends ParseTreeListener {
 
     void exitShowTransactions(Cypher6Parser.ShowTransactionsContext ctx);
 
-    void exitTerminateCommand(Cypher6Parser.TerminateCommandContext ctx);
-
     void exitTerminateTransactions(Cypher6Parser.TerminateTransactionsContext ctx);
 
     void exitShowSettings(Cypher6Parser.ShowSettingsContext ctx);
@@ -363,21 +375,7 @@ public interface Cypher6ParserListener extends ParseTreeListener {
 
     void exitNamesAndClauses(Cypher6Parser.NamesAndClausesContext ctx);
 
-    void exitComposableCommandClauses(Cypher6Parser.ComposableCommandClausesContext ctx);
-
-    void exitComposableShowCommandClauses(Cypher6Parser.ComposableShowCommandClausesContext ctx);
-
     void exitStringsOrExpression(Cypher6Parser.StringsOrExpressionContext ctx);
-
-    void exitType(Cypher6Parser.TypeContext ctx);
-
-    void exitTypePart(Cypher6Parser.TypePartContext ctx);
-
-    void exitTypeName(Cypher6Parser.TypeNameContext ctx);
-
-    void exitTypeNullability(Cypher6Parser.TypeNullabilityContext ctx);
-
-    void exitTypeListSuffix(Cypher6Parser.TypeListSuffixContext ctx);
 
     void exitCommandNodePattern(Cypher6Parser.CommandNodePatternContext ctx);
 
@@ -413,6 +411,22 @@ public interface Cypher6ParserListener extends ParseTreeListener {
 
     void exitEnclosedPropertyList(Cypher6Parser.EnclosedPropertyListContext ctx);
 
+    void exitAlterCommand(Cypher6Parser.AlterCommandContext ctx);
+
+    void exitRenameCommand(Cypher6Parser.RenameCommandContext ctx);
+
+    void exitGrantCommand(Cypher6Parser.GrantCommandContext ctx);
+
+    void exitDenyCommand(Cypher6Parser.DenyCommandContext ctx);
+
+    void exitRevokeCommand(Cypher6Parser.RevokeCommandContext ctx);
+
+    void exitUserNames(Cypher6Parser.UserNamesContext ctx);
+
+    void exitRoleNames(Cypher6Parser.RoleNamesContext ctx);
+
+    void exitRoleToken(Cypher6Parser.RoleTokenContext ctx);
+
     void exitEnableServerCommand(Cypher6Parser.EnableServerCommandContext ctx);
 
     void exitAlterServer(Cypher6Parser.AlterServerContext ctx);
@@ -437,7 +451,9 @@ public interface Cypher6ParserListener extends ParseTreeListener {
 
     void exitShowRoles(Cypher6Parser.ShowRolesContext ctx);
 
-    void exitRoleToken(Cypher6Parser.RoleTokenContext ctx);
+    void exitGrantRole(Cypher6Parser.GrantRoleContext ctx);
+
+    void exitRevokeRole(Cypher6Parser.RevokeRoleContext ctx);
 
     void exitCreateUser(Cypher6Parser.CreateUserContext ctx);
 
@@ -471,9 +487,9 @@ public interface Cypher6ParserListener extends ParseTreeListener {
 
     void exitShowCurrentUser(Cypher6Parser.ShowCurrentUserContext ctx);
 
-    void exitShowPrivileges(Cypher6Parser.ShowPrivilegesContext ctx);
-
     void exitShowSupportedPrivileges(Cypher6Parser.ShowSupportedPrivilegesContext ctx);
+
+    void exitShowPrivileges(Cypher6Parser.ShowPrivilegesContext ctx);
 
     void exitShowRolePrivileges(Cypher6Parser.ShowRolePrivilegesContext ctx);
 
@@ -482,20 +498,6 @@ public interface Cypher6ParserListener extends ParseTreeListener {
     void exitPrivilegeAsCommand(Cypher6Parser.PrivilegeAsCommandContext ctx);
 
     void exitPrivilegeToken(Cypher6Parser.PrivilegeTokenContext ctx);
-
-    void exitGrantCommand(Cypher6Parser.GrantCommandContext ctx);
-
-    void exitGrantRole(Cypher6Parser.GrantRoleContext ctx);
-
-    void exitUserNames(Cypher6Parser.UserNamesContext ctx);
-
-    void exitRoleNames(Cypher6Parser.RoleNamesContext ctx);
-
-    void exitDenyCommand(Cypher6Parser.DenyCommandContext ctx);
-
-    void exitRevokeCommand(Cypher6Parser.RevokeCommandContext ctx);
-
-    void exitRevokeRole(Cypher6Parser.RevokeRoleContext ctx);
 
     void exitPrivilege(Cypher6Parser.PrivilegeContext ctx);
 
@@ -557,6 +559,12 @@ public interface Cypher6ParserListener extends ParseTreeListener {
 
     void exitGlobs(Cypher6Parser.GlobsContext ctx);
 
+    void exitGlob(Cypher6Parser.GlobContext ctx);
+
+    void exitGlobRecursive(Cypher6Parser.GlobRecursiveContext ctx);
+
+    void exitGlobPart(Cypher6Parser.GlobPartContext ctx);
+
     void exitQualifiedGraphPrivilegesWithProperty(Cypher6Parser.QualifiedGraphPrivilegesWithPropertyContext ctx);
 
     void exitQualifiedGraphPrivileges(Cypher6Parser.QualifiedGraphPrivilegesContext ctx);
@@ -576,6 +584,10 @@ public interface Cypher6ParserListener extends ParseTreeListener {
     void exitElementToken(Cypher6Parser.ElementTokenContext ctx);
 
     void exitNodeToken(Cypher6Parser.NodeTokenContext ctx);
+
+    void exitDatabaseScope(Cypher6Parser.DatabaseScopeContext ctx);
+
+    void exitGraphScope(Cypher6Parser.GraphScopeContext ctx);
 
     void exitCreateCompositeDatabase(Cypher6Parser.CreateCompositeDatabaseContext ctx);
 
@@ -609,16 +621,6 @@ public interface Cypher6ParserListener extends ParseTreeListener {
 
     void exitShowDatabase(Cypher6Parser.ShowDatabaseContext ctx);
 
-    void exitDatabaseScope(Cypher6Parser.DatabaseScopeContext ctx);
-
-    void exitGraphScope(Cypher6Parser.GraphScopeContext ctx);
-
-    void exitCommandOptions(Cypher6Parser.CommandOptionsContext ctx);
-
-    void exitCommandNameExpression(Cypher6Parser.CommandNameExpressionContext ctx);
-
-    void exitSymbolicNameOrStringParameter(Cypher6Parser.SymbolicNameOrStringParameterContext ctx);
-
     void exitCreateAlias(Cypher6Parser.CreateAliasContext ctx);
 
     void exitDropAlias(Cypher6Parser.DropAliasContext ctx);
@@ -637,19 +639,17 @@ public interface Cypher6ParserListener extends ParseTreeListener {
 
     void exitShowAliases(Cypher6Parser.ShowAliasesContext ctx);
 
+    void exitSymbolicNameOrStringParameter(Cypher6Parser.SymbolicNameOrStringParameterContext ctx);
+
+    void exitCommandNameExpression(Cypher6Parser.CommandNameExpressionContext ctx);
+
+    void exitSymbolicNameOrStringParameterList(Cypher6Parser.SymbolicNameOrStringParameterListContext ctx);
+
     void exitSymbolicAliasNameList(Cypher6Parser.SymbolicAliasNameListContext ctx);
 
     void exitSymbolicAliasNameOrParameter(Cypher6Parser.SymbolicAliasNameOrParameterContext ctx);
 
     void exitSymbolicAliasName(Cypher6Parser.SymbolicAliasNameContext ctx);
-
-    void exitSymbolicNameOrStringParameterList(Cypher6Parser.SymbolicNameOrStringParameterListContext ctx);
-
-    void exitGlob(Cypher6Parser.GlobContext ctx);
-
-    void exitGlobRecursive(Cypher6Parser.GlobRecursiveContext ctx);
-
-    void exitGlobPart(Cypher6Parser.GlobPartContext ctx);
 
     void exitStringListLiteral(Cypher6Parser.StringListLiteralContext ctx);
 

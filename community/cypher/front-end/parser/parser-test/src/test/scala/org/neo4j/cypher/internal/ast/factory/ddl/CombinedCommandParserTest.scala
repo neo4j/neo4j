@@ -17,7 +17,6 @@
 package org.neo4j.cypher.internal.ast.factory.ddl
 
 import org.neo4j.cypher.internal.ast
-import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.test.util.AstParsing.Cypher5JavaCc
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.SignedHexIntegerLiteral
@@ -906,9 +905,12 @@ class CombinedCommandParserTest extends AdministrationAndSchemaCommandParserTest
 
       test(s"$firstCommand YIELD transactionId AS txId $secondCommand 'db1-transaction-123'") {
         assertAst(singleQuery(
-          firstClause(Left(List.empty), None, false, List(commandResultItem("transactionId", Some("txId"))))(
-            defaultPos
-          ),
+          firstClause(
+            Left(List.empty),
+            None,
+            false,
+            List(commandResultItem("transactionId", Some("txId")))
+          )(defaultPos),
           withFromYield(returnAllItems.withDefaultOrderOnColumns(List("txId"))),
           secondClause(Right(literalString("db1-transaction-123")), None, false, List.empty)(pos)
         ))
@@ -931,9 +933,12 @@ class CombinedCommandParserTest extends AdministrationAndSchemaCommandParserTest
         s"$firstCommand YIELD transactionId AS txId $secondCommand 'db1-transaction-123' YIELD username"
       ) {
         assertAst(singleQuery(
-          firstClause(Left(List.empty), None, false, List(commandResultItem("transactionId", Some("txId"))))(
-            defaultPos
-          ),
+          firstClause(
+            Left(List.empty),
+            None,
+            false,
+            List(commandResultItem("transactionId", Some("txId")))
+          )(defaultPos),
           withFromYield(returnAllItems.withDefaultOrderOnColumns(List("txId"))),
           secondClause(
             Right(literalString("db1-transaction-123")),
@@ -949,9 +954,12 @@ class CombinedCommandParserTest extends AdministrationAndSchemaCommandParserTest
         s"$firstCommand YIELD transactionId AS txId RETURN txId $secondCommand 'db1-transaction-123' YIELD username RETURN txId, username"
       ) {
         assertAst(singleQuery(
-          firstClause(Left(List.empty), None, false, List(commandResultItem("transactionId", Some("txId"))))(
-            defaultPos
-          ),
+          firstClause(
+            Left(List.empty),
+            None,
+            false,
+            List(commandResultItem("transactionId", Some("txId")))
+          )(defaultPos),
           withFromYield(returnAllItems.withDefaultOrderOnColumns(List("txId"))),
           returnClause(returnItems(variableReturnItem("txId"))),
           secondClause(
@@ -969,9 +977,12 @@ class CombinedCommandParserTest extends AdministrationAndSchemaCommandParserTest
         s"$firstCommand YIELD transactionId AS txId $secondCommand 'db1-transaction-123' YIELD username RETURN txId, username"
       ) {
         assertAst(singleQuery(
-          firstClause(Left(List.empty), None, false, List(commandResultItem("transactionId", Some("txId"))))(
-            defaultPos
-          ),
+          firstClause(
+            Left(List.empty),
+            None,
+            false,
+            List(commandResultItem("transactionId", Some("txId")))
+          )(defaultPos),
           withFromYield(returnAllItems.withDefaultOrderOnColumns(List("txId"))),
           secondClause(
             Right(literalString("db1-transaction-123")),
@@ -1928,59 +1939,59 @@ class CombinedCommandParserTest extends AdministrationAndSchemaCommandParserTest
     "SHOW USERS"
   ).foreach(otherClause => {
     test(s"SHOW TRANSACTIONS $otherClause") {
-      failsParsing[Statements].withMessageStart("Invalid input")
+      failsParsing[ast.Statements].withMessageStart("Invalid input")
     }
 
     test(s"$otherClause SHOW TRANSACTIONS") {
-      failsParsing[Statements].withMessageStart("Invalid input")
+      failsParsing[ast.Statements].withMessageStart("Invalid input")
     }
 
     test(s"TERMINATE TRANSACTIONS $otherClause") {
-      failsParsing[Statements].withMessageStart("Invalid input")
+      failsParsing[ast.Statements].withMessageStart("Invalid input")
     }
 
     test(s"$otherClause TERMINATE TRANSACTIONS") {
-      failsParsing[Statements].withMessageStart("Invalid input")
+      failsParsing[ast.Statements].withMessageStart("Invalid input")
     }
 
     test(s"SHOW SETTINGS $otherClause") {
-      failsParsing[Statements].withMessageStart("Invalid input")
+      failsParsing[ast.Statements].withMessageStart("Invalid input")
     }
 
     test(s"$otherClause SHOW SETTINGS") {
-      failsParsing[Statements].withMessageStart("Invalid input")
+      failsParsing[ast.Statements].withMessageStart("Invalid input")
     }
 
     test(s"SHOW FUNCTIONS $otherClause") {
-      failsParsing[Statements].withMessageStart("Invalid input")
+      failsParsing[ast.Statements].withMessageStart("Invalid input")
     }
 
     test(s"$otherClause SHOW FUNCTIONS") {
-      failsParsing[Statements].withMessageStart("Invalid input")
+      failsParsing[ast.Statements].withMessageStart("Invalid input")
     }
 
     test(s"SHOW PROCEDURES $otherClause") {
-      failsParsing[Statements].withMessageStart("Invalid input")
+      failsParsing[ast.Statements].withMessageStart("Invalid input")
     }
 
     test(s"$otherClause SHOW PROCEDURES") {
-      failsParsing[Statements].withMessageStart("Invalid input")
+      failsParsing[ast.Statements].withMessageStart("Invalid input")
     }
 
     test(s"SHOW CONSTRAINTS $otherClause") {
-      failsParsing[Statements].withMessageStart("Invalid input")
+      failsParsing[ast.Statements].withMessageStart("Invalid input")
     }
 
     test(s"$otherClause SHOW CONSTRAINTS") {
-      failsParsing[Statements].withMessageStart("Invalid input")
+      failsParsing[ast.Statements].withMessageStart("Invalid input")
     }
 
     test(s"SHOW INDEXES $otherClause") {
-      failsParsing[Statements].withMessageStart("Invalid input")
+      failsParsing[ast.Statements].withMessageStart("Invalid input")
     }
 
     test(s"$otherClause SHOW INDEXES") {
-      failsParsing[Statements].withMessageStart("Invalid input")
+      failsParsing[ast.Statements].withMessageStart("Invalid input")
     }
 
   })
@@ -1992,7 +2003,7 @@ class CombinedCommandParserTest extends AdministrationAndSchemaCommandParserTest
   }
 
   test("MATCH (n) TERMINATE TRANSACTION") {
-    failsParsing[Statements].in {
+    failsParsing[ast.Statements].in {
       case Cypher5JavaCc => _.withMessageStart("Invalid input")
       case _ => _.withSyntaxError(
           """Invalid input 'TERMINATE': expected a graph pattern, 'FOREACH', ',', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'UNION', 'UNWIND', 'USE', 'USING', 'WHERE', 'WITH' or <EOF> (line 1, column 11 (offset: 10))

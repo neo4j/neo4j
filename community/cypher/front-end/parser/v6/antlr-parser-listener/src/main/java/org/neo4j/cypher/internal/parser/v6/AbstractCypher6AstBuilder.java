@@ -218,11 +218,14 @@ public abstract class AbstractCypher6AstBuilder implements Cypher6ParserListener
             case Cypher6Parser.RULE_variable -> exitVariable((Cypher6Parser.VariableContext) ctx);
             case Cypher6Parser.RULE_nonEmptyNameList -> exitNonEmptyNameList(
                     (Cypher6Parser.NonEmptyNameListContext) ctx);
+            case Cypher6Parser.RULE_type -> exitType((Cypher6Parser.TypeContext) ctx);
+            case Cypher6Parser.RULE_typePart -> exitTypePart((Cypher6Parser.TypePartContext) ctx);
+            case Cypher6Parser.RULE_typeName -> exitTypeName((Cypher6Parser.TypeNameContext) ctx);
+            case Cypher6Parser.RULE_typeNullability -> exitTypeNullability((Cypher6Parser.TypeNullabilityContext) ctx);
+            case Cypher6Parser.RULE_typeListSuffix -> exitTypeListSuffix((Cypher6Parser.TypeListSuffixContext) ctx);
             case Cypher6Parser.RULE_command -> exitCommand((Cypher6Parser.CommandContext) ctx);
             case Cypher6Parser.RULE_createCommand -> exitCreateCommand((Cypher6Parser.CreateCommandContext) ctx);
             case Cypher6Parser.RULE_dropCommand -> exitDropCommand((Cypher6Parser.DropCommandContext) ctx);
-            case Cypher6Parser.RULE_alterCommand -> exitAlterCommand((Cypher6Parser.AlterCommandContext) ctx);
-            case Cypher6Parser.RULE_renameCommand -> exitRenameCommand((Cypher6Parser.RenameCommandContext) ctx);
             case Cypher6Parser.RULE_showCommand -> exitShowCommand((Cypher6Parser.ShowCommandContext) ctx);
             case Cypher6Parser.RULE_showCommandYield -> exitShowCommandYield(
                     (Cypher6Parser.ShowCommandYieldContext) ctx);
@@ -230,6 +233,13 @@ public abstract class AbstractCypher6AstBuilder implements Cypher6ParserListener
             case Cypher6Parser.RULE_yieldSkip -> exitYieldSkip((Cypher6Parser.YieldSkipContext) ctx);
             case Cypher6Parser.RULE_yieldLimit -> exitYieldLimit((Cypher6Parser.YieldLimitContext) ctx);
             case Cypher6Parser.RULE_yieldClause -> exitYieldClause((Cypher6Parser.YieldClauseContext) ctx);
+            case Cypher6Parser.RULE_commandOptions -> exitCommandOptions((Cypher6Parser.CommandOptionsContext) ctx);
+            case Cypher6Parser.RULE_terminateCommand -> exitTerminateCommand(
+                    (Cypher6Parser.TerminateCommandContext) ctx);
+            case Cypher6Parser.RULE_composableCommandClauses -> exitComposableCommandClauses(
+                    (Cypher6Parser.ComposableCommandClausesContext) ctx);
+            case Cypher6Parser.RULE_composableShowCommandClauses -> exitComposableShowCommandClauses(
+                    (Cypher6Parser.ComposableShowCommandClausesContext) ctx);
             case Cypher6Parser.RULE_showBriefAndYield -> exitShowBriefAndYield(
                     (Cypher6Parser.ShowBriefAndYieldContext) ctx);
             case Cypher6Parser.RULE_showIndexCommand -> exitShowIndexCommand(
@@ -260,24 +270,13 @@ public abstract class AbstractCypher6AstBuilder implements Cypher6ParserListener
                     (Cypher6Parser.ShowFunctionsTypeContext) ctx);
             case Cypher6Parser.RULE_showTransactions -> exitShowTransactions(
                     (Cypher6Parser.ShowTransactionsContext) ctx);
-            case Cypher6Parser.RULE_terminateCommand -> exitTerminateCommand(
-                    (Cypher6Parser.TerminateCommandContext) ctx);
             case Cypher6Parser.RULE_terminateTransactions -> exitTerminateTransactions(
                     (Cypher6Parser.TerminateTransactionsContext) ctx);
             case Cypher6Parser.RULE_showSettings -> exitShowSettings((Cypher6Parser.ShowSettingsContext) ctx);
             case Cypher6Parser.RULE_settingToken -> exitSettingToken((Cypher6Parser.SettingTokenContext) ctx);
             case Cypher6Parser.RULE_namesAndClauses -> exitNamesAndClauses((Cypher6Parser.NamesAndClausesContext) ctx);
-            case Cypher6Parser.RULE_composableCommandClauses -> exitComposableCommandClauses(
-                    (Cypher6Parser.ComposableCommandClausesContext) ctx);
-            case Cypher6Parser.RULE_composableShowCommandClauses -> exitComposableShowCommandClauses(
-                    (Cypher6Parser.ComposableShowCommandClausesContext) ctx);
             case Cypher6Parser.RULE_stringsOrExpression -> exitStringsOrExpression(
                     (Cypher6Parser.StringsOrExpressionContext) ctx);
-            case Cypher6Parser.RULE_type -> exitType((Cypher6Parser.TypeContext) ctx);
-            case Cypher6Parser.RULE_typePart -> exitTypePart((Cypher6Parser.TypePartContext) ctx);
-            case Cypher6Parser.RULE_typeName -> exitTypeName((Cypher6Parser.TypeNameContext) ctx);
-            case Cypher6Parser.RULE_typeNullability -> exitTypeNullability((Cypher6Parser.TypeNullabilityContext) ctx);
-            case Cypher6Parser.RULE_typeListSuffix -> exitTypeListSuffix((Cypher6Parser.TypeListSuffixContext) ctx);
             case Cypher6Parser.RULE_commandNodePattern -> exitCommandNodePattern(
                     (Cypher6Parser.CommandNodePatternContext) ctx);
             case Cypher6Parser.RULE_commandRelPattern -> exitCommandRelPattern(
@@ -305,6 +304,14 @@ public abstract class AbstractCypher6AstBuilder implements Cypher6ParserListener
             case Cypher6Parser.RULE_propertyList -> exitPropertyList((Cypher6Parser.PropertyListContext) ctx);
             case Cypher6Parser.RULE_enclosedPropertyList -> exitEnclosedPropertyList(
                     (Cypher6Parser.EnclosedPropertyListContext) ctx);
+            case Cypher6Parser.RULE_alterCommand -> exitAlterCommand((Cypher6Parser.AlterCommandContext) ctx);
+            case Cypher6Parser.RULE_renameCommand -> exitRenameCommand((Cypher6Parser.RenameCommandContext) ctx);
+            case Cypher6Parser.RULE_grantCommand -> exitGrantCommand((Cypher6Parser.GrantCommandContext) ctx);
+            case Cypher6Parser.RULE_denyCommand -> exitDenyCommand((Cypher6Parser.DenyCommandContext) ctx);
+            case Cypher6Parser.RULE_revokeCommand -> exitRevokeCommand((Cypher6Parser.RevokeCommandContext) ctx);
+            case Cypher6Parser.RULE_userNames -> exitUserNames((Cypher6Parser.UserNamesContext) ctx);
+            case Cypher6Parser.RULE_roleNames -> exitRoleNames((Cypher6Parser.RoleNamesContext) ctx);
+            case Cypher6Parser.RULE_roleToken -> exitRoleToken((Cypher6Parser.RoleTokenContext) ctx);
             case Cypher6Parser.RULE_enableServerCommand -> exitEnableServerCommand(
                     (Cypher6Parser.EnableServerCommandContext) ctx);
             case Cypher6Parser.RULE_alterServer -> exitAlterServer((Cypher6Parser.AlterServerContext) ctx);
@@ -321,7 +328,8 @@ public abstract class AbstractCypher6AstBuilder implements Cypher6ParserListener
             case Cypher6Parser.RULE_dropRole -> exitDropRole((Cypher6Parser.DropRoleContext) ctx);
             case Cypher6Parser.RULE_renameRole -> exitRenameRole((Cypher6Parser.RenameRoleContext) ctx);
             case Cypher6Parser.RULE_showRoles -> exitShowRoles((Cypher6Parser.ShowRolesContext) ctx);
-            case Cypher6Parser.RULE_roleToken -> exitRoleToken((Cypher6Parser.RoleTokenContext) ctx);
+            case Cypher6Parser.RULE_grantRole -> exitGrantRole((Cypher6Parser.GrantRoleContext) ctx);
+            case Cypher6Parser.RULE_revokeRole -> exitRevokeRole((Cypher6Parser.RevokeRoleContext) ctx);
             case Cypher6Parser.RULE_createUser -> exitCreateUser((Cypher6Parser.CreateUserContext) ctx);
             case Cypher6Parser.RULE_dropUser -> exitDropUser((Cypher6Parser.DropUserContext) ctx);
             case Cypher6Parser.RULE_renameUser -> exitRenameUser((Cypher6Parser.RenameUserContext) ctx);
@@ -343,9 +351,9 @@ public abstract class AbstractCypher6AstBuilder implements Cypher6ParserListener
                     (Cypher6Parser.UserAuthAttributeContext) ctx);
             case Cypher6Parser.RULE_showUsers -> exitShowUsers((Cypher6Parser.ShowUsersContext) ctx);
             case Cypher6Parser.RULE_showCurrentUser -> exitShowCurrentUser((Cypher6Parser.ShowCurrentUserContext) ctx);
-            case Cypher6Parser.RULE_showPrivileges -> exitShowPrivileges((Cypher6Parser.ShowPrivilegesContext) ctx);
             case Cypher6Parser.RULE_showSupportedPrivileges -> exitShowSupportedPrivileges(
                     (Cypher6Parser.ShowSupportedPrivilegesContext) ctx);
+            case Cypher6Parser.RULE_showPrivileges -> exitShowPrivileges((Cypher6Parser.ShowPrivilegesContext) ctx);
             case Cypher6Parser.RULE_showRolePrivileges -> exitShowRolePrivileges(
                     (Cypher6Parser.ShowRolePrivilegesContext) ctx);
             case Cypher6Parser.RULE_showUserPrivileges -> exitShowUserPrivileges(
@@ -353,13 +361,6 @@ public abstract class AbstractCypher6AstBuilder implements Cypher6ParserListener
             case Cypher6Parser.RULE_privilegeAsCommand -> exitPrivilegeAsCommand(
                     (Cypher6Parser.PrivilegeAsCommandContext) ctx);
             case Cypher6Parser.RULE_privilegeToken -> exitPrivilegeToken((Cypher6Parser.PrivilegeTokenContext) ctx);
-            case Cypher6Parser.RULE_grantCommand -> exitGrantCommand((Cypher6Parser.GrantCommandContext) ctx);
-            case Cypher6Parser.RULE_grantRole -> exitGrantRole((Cypher6Parser.GrantRoleContext) ctx);
-            case Cypher6Parser.RULE_userNames -> exitUserNames((Cypher6Parser.UserNamesContext) ctx);
-            case Cypher6Parser.RULE_roleNames -> exitRoleNames((Cypher6Parser.RoleNamesContext) ctx);
-            case Cypher6Parser.RULE_denyCommand -> exitDenyCommand((Cypher6Parser.DenyCommandContext) ctx);
-            case Cypher6Parser.RULE_revokeCommand -> exitRevokeCommand((Cypher6Parser.RevokeCommandContext) ctx);
-            case Cypher6Parser.RULE_revokeRole -> exitRevokeRole((Cypher6Parser.RevokeRoleContext) ctx);
             case Cypher6Parser.RULE_privilege -> exitPrivilege((Cypher6Parser.PrivilegeContext) ctx);
             case Cypher6Parser.RULE_allPrivilege -> exitAllPrivilege((Cypher6Parser.AllPrivilegeContext) ctx);
             case Cypher6Parser.RULE_allPrivilegeType -> exitAllPrivilegeType(
@@ -402,6 +403,9 @@ public abstract class AbstractCypher6AstBuilder implements Cypher6ParserListener
             case Cypher6Parser.RULE_settingQualifier -> exitSettingQualifier(
                     (Cypher6Parser.SettingQualifierContext) ctx);
             case Cypher6Parser.RULE_globs -> exitGlobs((Cypher6Parser.GlobsContext) ctx);
+            case Cypher6Parser.RULE_glob -> exitGlob((Cypher6Parser.GlobContext) ctx);
+            case Cypher6Parser.RULE_globRecursive -> exitGlobRecursive((Cypher6Parser.GlobRecursiveContext) ctx);
+            case Cypher6Parser.RULE_globPart -> exitGlobPart((Cypher6Parser.GlobPartContext) ctx);
             case Cypher6Parser.RULE_qualifiedGraphPrivilegesWithProperty -> exitQualifiedGraphPrivilegesWithProperty(
                     (Cypher6Parser.QualifiedGraphPrivilegesWithPropertyContext) ctx);
             case Cypher6Parser.RULE_qualifiedGraphPrivileges -> exitQualifiedGraphPrivileges(
@@ -417,6 +421,8 @@ public abstract class AbstractCypher6AstBuilder implements Cypher6ParserListener
             case Cypher6Parser.RULE_relToken -> exitRelToken((Cypher6Parser.RelTokenContext) ctx);
             case Cypher6Parser.RULE_elementToken -> exitElementToken((Cypher6Parser.ElementTokenContext) ctx);
             case Cypher6Parser.RULE_nodeToken -> exitNodeToken((Cypher6Parser.NodeTokenContext) ctx);
+            case Cypher6Parser.RULE_databaseScope -> exitDatabaseScope((Cypher6Parser.DatabaseScopeContext) ctx);
+            case Cypher6Parser.RULE_graphScope -> exitGraphScope((Cypher6Parser.GraphScopeContext) ctx);
             case Cypher6Parser.RULE_createCompositeDatabase -> exitCreateCompositeDatabase(
                     (Cypher6Parser.CreateCompositeDatabaseContext) ctx);
             case Cypher6Parser.RULE_createDatabase -> exitCreateDatabase((Cypher6Parser.CreateDatabaseContext) ctx);
@@ -438,13 +444,6 @@ public abstract class AbstractCypher6AstBuilder implements Cypher6ParserListener
             case Cypher6Parser.RULE_waitClause -> exitWaitClause((Cypher6Parser.WaitClauseContext) ctx);
             case Cypher6Parser.RULE_secondsToken -> exitSecondsToken((Cypher6Parser.SecondsTokenContext) ctx);
             case Cypher6Parser.RULE_showDatabase -> exitShowDatabase((Cypher6Parser.ShowDatabaseContext) ctx);
-            case Cypher6Parser.RULE_databaseScope -> exitDatabaseScope((Cypher6Parser.DatabaseScopeContext) ctx);
-            case Cypher6Parser.RULE_graphScope -> exitGraphScope((Cypher6Parser.GraphScopeContext) ctx);
-            case Cypher6Parser.RULE_commandOptions -> exitCommandOptions((Cypher6Parser.CommandOptionsContext) ctx);
-            case Cypher6Parser.RULE_commandNameExpression -> exitCommandNameExpression(
-                    (Cypher6Parser.CommandNameExpressionContext) ctx);
-            case Cypher6Parser.RULE_symbolicNameOrStringParameter -> exitSymbolicNameOrStringParameter(
-                    (Cypher6Parser.SymbolicNameOrStringParameterContext) ctx);
             case Cypher6Parser.RULE_createAlias -> exitCreateAlias((Cypher6Parser.CreateAliasContext) ctx);
             case Cypher6Parser.RULE_dropAlias -> exitDropAlias((Cypher6Parser.DropAliasContext) ctx);
             case Cypher6Parser.RULE_alterAlias -> exitAlterAlias((Cypher6Parser.AlterAliasContext) ctx);
@@ -458,17 +457,18 @@ public abstract class AbstractCypher6AstBuilder implements Cypher6ParserListener
             case Cypher6Parser.RULE_alterAliasProperties -> exitAlterAliasProperties(
                     (Cypher6Parser.AlterAliasPropertiesContext) ctx);
             case Cypher6Parser.RULE_showAliases -> exitShowAliases((Cypher6Parser.ShowAliasesContext) ctx);
+            case Cypher6Parser.RULE_symbolicNameOrStringParameter -> exitSymbolicNameOrStringParameter(
+                    (Cypher6Parser.SymbolicNameOrStringParameterContext) ctx);
+            case Cypher6Parser.RULE_commandNameExpression -> exitCommandNameExpression(
+                    (Cypher6Parser.CommandNameExpressionContext) ctx);
+            case Cypher6Parser.RULE_symbolicNameOrStringParameterList -> exitSymbolicNameOrStringParameterList(
+                    (Cypher6Parser.SymbolicNameOrStringParameterListContext) ctx);
             case Cypher6Parser.RULE_symbolicAliasNameList -> exitSymbolicAliasNameList(
                     (Cypher6Parser.SymbolicAliasNameListContext) ctx);
             case Cypher6Parser.RULE_symbolicAliasNameOrParameter -> exitSymbolicAliasNameOrParameter(
                     (Cypher6Parser.SymbolicAliasNameOrParameterContext) ctx);
             case Cypher6Parser.RULE_symbolicAliasName -> exitSymbolicAliasName(
                     (Cypher6Parser.SymbolicAliasNameContext) ctx);
-            case Cypher6Parser.RULE_symbolicNameOrStringParameterList -> exitSymbolicNameOrStringParameterList(
-                    (Cypher6Parser.SymbolicNameOrStringParameterListContext) ctx);
-            case Cypher6Parser.RULE_glob -> exitGlob((Cypher6Parser.GlobContext) ctx);
-            case Cypher6Parser.RULE_globRecursive -> exitGlobRecursive((Cypher6Parser.GlobRecursiveContext) ctx);
-            case Cypher6Parser.RULE_globPart -> exitGlobPart((Cypher6Parser.GlobPartContext) ctx);
             case Cypher6Parser.RULE_stringListLiteral -> exitStringListLiteral(
                     (Cypher6Parser.StringListLiteralContext) ctx);
             case Cypher6Parser.RULE_stringList -> exitStringList((Cypher6Parser.StringListContext) ctx);

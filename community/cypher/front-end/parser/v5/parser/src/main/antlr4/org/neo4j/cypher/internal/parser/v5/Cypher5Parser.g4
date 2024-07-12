@@ -705,6 +705,64 @@ nonEmptyNameList
    : symbolicNameString (COMMA symbolicNameString)*
    ;
 
+type
+   : typePart (BAR typePart)*
+   ;
+
+typePart
+   : typeName typeNullability? typeListSuffix*
+   ;
+
+typeName
+   // Note! These are matched based on the first token. Take precaution in ExpressionBuilder.scala when modifying
+   : NOTHING
+   | NULL
+   | BOOL
+   | BOOLEAN
+   | VARCHAR
+   | STRING
+   | INT
+   | SIGNED? INTEGER
+   | FLOAT
+   | DATE
+   | LOCAL (TIME | DATETIME)
+   | ZONED (TIME | DATETIME)
+   | TIME (WITHOUT TIMEZONE | WITH TIMEZONE)
+   | TIMESTAMP (WITHOUT TIMEZONE | WITH TIMEZONE)
+   | DURATION
+   | POINT
+   | NODE
+   | VERTEX
+   | RELATIONSHIP
+   | EDGE
+   | MAP
+   | (LIST | ARRAY) LT type GT
+   | PATH
+   | PATHS
+   | PROPERTY VALUE
+   | ANY (
+      NODE
+      | VERTEX
+      | RELATIONSHIP
+      | EDGE
+      | MAP
+      | PROPERTY VALUE
+      | VALUE? LT type GT
+      | VALUE
+   )?
+   ;
+
+typeNullability
+   : NOT NULL
+   | EXCLAMATION_MARK
+   ;
+
+typeListSuffix
+   : (LIST | ARRAY) typeNullability?
+   ;
+
+// Show, terminate, schema and admin commands
+
 command
    : useClause? (
       createCommand
@@ -747,20 +805,6 @@ dropCommand
    )
    ;
 
-alterCommand
-   : ALTER (
-      alterAlias
-      | alterCurrentUser
-      | alterDatabase
-      | alterUser
-      | alterServer
-   )
-   ;
-
-renameCommand
-   : RENAME (renameRole | renameServer | renameUser)
-   ;
-
 showCommand
    : SHOW (
       showAliases
@@ -801,6 +845,32 @@ yieldLimit
 
 yieldClause
    : YIELD (TIMES | yieldItem (COMMA yieldItem)*) orderBy? yieldSkip? yieldLimit? whereClause?
+   ;
+
+commandOptions
+   : OPTIONS mapOrParameter
+   ;
+
+// Non-admin show and terminate commands
+
+terminateCommand
+   : TERMINATE terminateTransactions
+   ;
+
+composableCommandClauses
+   : terminateCommand
+   | composableShowCommandClauses
+   ;
+
+composableShowCommandClauses
+   : SHOW (
+      showIndexCommand
+      | showConstraintCommand
+      | showFunctions
+      | showProcedures
+      | showSettings
+      | showTransactions
+   )
    ;
 
 showBriefAndYield
@@ -897,10 +967,6 @@ showTransactions
    : transactionToken namesAndClauses
    ;
 
-terminateCommand
-   : TERMINATE terminateTransactions
-   ;
-
 terminateTransactions
    : transactionToken namesAndClauses
    ;
@@ -917,82 +983,12 @@ namesAndClauses
    : (showCommandYield? | stringsOrExpression showCommandYield?) composableCommandClauses?
    ;
 
-composableCommandClauses
-   : terminateCommand
-   | composableShowCommandClauses
-   ;
-
-composableShowCommandClauses
-   : SHOW (
-      showIndexCommand
-      | showConstraintCommand
-      | showFunctions
-      | showProcedures
-      | showSettings
-      | showTransactions
-   )
-   ;
-
 stringsOrExpression
    : stringList
    | expression
    ;
 
-type
-   : typePart (BAR typePart)*
-   ;
-
-typePart
-   : typeName typeNullability? typeListSuffix*
-   ;
-
-typeName
-   // Note! These are matched based on the first token. Take precaution in ExpressionBuilder.scala when modifying
-   : NOTHING
-   | NULL
-   | BOOL
-   | BOOLEAN
-   | VARCHAR
-   | STRING
-   | INT
-   | SIGNED? INTEGER
-   | FLOAT
-   | DATE
-   | LOCAL (TIME | DATETIME)
-   | ZONED (TIME | DATETIME)
-   | TIME (WITHOUT TIMEZONE | WITH TIMEZONE)
-   | TIMESTAMP (WITHOUT TIMEZONE | WITH TIMEZONE)
-   | DURATION
-   | POINT
-   | NODE
-   | VERTEX
-   | RELATIONSHIP
-   | EDGE
-   | MAP
-   | (LIST | ARRAY) LT type GT
-   | PATH
-   | PATHS
-   | PROPERTY VALUE
-   | ANY (
-      NODE
-      | VERTEX
-      | RELATIONSHIP
-      | EDGE
-      | MAP
-      | PROPERTY VALUE
-      | VALUE? LT type GT
-      | VALUE
-   )?
-   ;
-
-typeNullability
-   : NOT NULL
-   | EXCLAMATION_MARK
-   ;
-
-typeListSuffix
-   : (LIST | ARRAY) typeNullability?
-   ;
+// Schema commands
 
 commandNodePattern
    : LPAREN variable labelType RPAREN
@@ -1073,6 +1069,55 @@ enclosedPropertyList
    : variable property (COMMA variable property)*
    ;
 
+// Admin commands
+
+alterCommand
+   : ALTER (
+      alterAlias
+      | alterCurrentUser
+      | alterDatabase
+      | alterUser
+      | alterServer
+   )
+   ;
+
+renameCommand
+   : RENAME (renameRole | renameServer | renameUser)
+   ;
+
+grantCommand
+   : GRANT (
+      IMMUTABLE? privilege TO roleNames
+      | roleToken grantRole
+   )
+   ;
+
+denyCommand
+   : DENY IMMUTABLE? privilege TO roleNames
+   ;
+
+revokeCommand
+   : REVOKE (
+      (DENY | GRANT)? IMMUTABLE? privilege FROM roleNames
+      | roleToken revokeRole
+   )
+   ;
+
+userNames
+   : symbolicNameOrStringParameterList
+   ;
+
+roleNames
+   : symbolicNameOrStringParameterList
+   ;
+
+roleToken
+   : ROLES
+   | ROLE
+   ;
+
+// Server commands
+
 enableServerCommand
    : ENABLE SERVER stringOrParameter commandOptions?
    ;
@@ -1105,6 +1150,8 @@ reallocateDatabases
    : REALLOCATE (DATABASE | DATABASES)
    ;
 
+// Role commands
+
 createRole
    : ROLE commandNameExpression (IF NOT EXISTS)? (AS COPY OF commandNameExpression)?
    ;
@@ -1121,10 +1168,15 @@ showRoles
    : (ALL | POPULATED)? roleToken (WITH (USER | USERS))? showCommandYield?
    ;
 
- roleToken
-   : ROLES
-   | ROLE
+grantRole
+   : roleNames TO userNames
    ;
+
+revokeRole
+   : roleNames FROM userNames
+   ;
+
+// User commands
 
 createUser
    : USER commandNameExpression (IF NOT EXISTS)? (SET (
@@ -1210,12 +1262,14 @@ showCurrentUser
    : CURRENT USER showCommandYield?
    ;
 
-showPrivileges
-   : ALL? privilegeToken privilegeAsCommand? showCommandYield?
-   ;
+// Privilege commands
 
 showSupportedPrivileges
    : SUPPORTED privilegeToken showCommandYield?
+   ;
+
+showPrivileges
+   : ALL? privilegeToken privilegeAsCommand? showCommandYield?
    ;
 
 showRolePrivileges
@@ -1233,40 +1287,6 @@ privilegeAsCommand
 privilegeToken
    : PRIVILEGE
    | PRIVILEGES
-   ;
-
-grantCommand
-   : GRANT (
-      IMMUTABLE? privilege TO roleNames
-      | roleToken grantRole
-   )
-   ;
-
-grantRole
-   : roleNames TO userNames
-   ;
-
-userNames
-   : symbolicNameOrStringParameterList
-   ;
-
-roleNames
-   : symbolicNameOrStringParameterList
-   ;
-
-denyCommand
-   : DENY IMMUTABLE? privilege TO roleNames
-   ;
-
-revokeCommand
-   : REVOKE (
-      (DENY | GRANT)? IMMUTABLE? privilege FROM roleNames
-      | roleToken revokeRole
-   )
-   ;
-
-revokeRole
-   : roleNames FROM userNames
    ;
 
 privilege
@@ -1458,6 +1478,22 @@ globs
    : glob (COMMA glob)*
    ;
 
+glob
+   : escapedSymbolicNameString globRecursive?
+   | globRecursive
+   ;
+
+globRecursive
+   : globPart globRecursive?
+   ;
+
+globPart
+   : DOT escapedSymbolicNameString?
+   | QUESTION
+   | TIMES
+   | unescapedSymbolicNameString
+   ;
+
 qualifiedGraphPrivilegesWithProperty
    : (TRAVERSE | (READ | MATCH) propertiesResource) ON graphScope graphQualifier (LPAREN TIMES RPAREN)?
    ;
@@ -1507,6 +1543,18 @@ nodeToken
    : NODE
    | NODES
    ;
+
+databaseScope
+   : (DEFAULT | HOME) DATABASE
+   | (DATABASE | DATABASES) (TIMES | symbolicAliasNameList)
+   ;
+
+graphScope
+   : (DEFAULT | HOME) GRAPH
+   | (GRAPH | GRAPHS) (TIMES | symbolicAliasNameList)
+   ;
+
+// Database commands
 
 createCompositeDatabase
    : COMPOSITE DATABASE symbolicAliasNameOrParameter (IF NOT EXISTS)? commandOptions? waitClause?
@@ -1576,31 +1624,7 @@ showDatabase
    | (DATABASE | DATABASES) symbolicAliasNameOrParameter? showCommandYield?
    ;
 
-databaseScope
-   : (DEFAULT | HOME) DATABASE
-   | (DATABASE | DATABASES) (TIMES | symbolicAliasNameList)
-   ;
-
-graphScope
-   : (DEFAULT | HOME) GRAPH
-   | (GRAPH | GRAPHS) (TIMES | symbolicAliasNameList)
-   ;
-
-commandOptions
-   : OPTIONS mapOrParameter
-   ;
-
-// Should return an Expression
-commandNameExpression
-   : symbolicNameString
-   | parameter["STRING"]
-   ;
-
-// Should return an Either[String, Parameter]
-symbolicNameOrStringParameter
-   : symbolicNameString
-   | parameter["STRING"]
-   ;
+// Alias commands
 
 createAlias
    : ALIAS symbolicAliasNameOrParameter (IF NOT EXISTS)? FOR DATABASE symbolicAliasNameOrParameter (AT stringOrParameter USER commandNameExpression PASSWORD passwordExpression (DRIVER mapOrParameter)?)? (PROPERTIES mapOrParameter)?
@@ -1644,6 +1668,24 @@ showAliases
    : (ALIAS | ALIASES) symbolicAliasNameOrParameter? FOR (DATABASE | DATABASES) showCommandYield?
    ;
 
+// Various strings, symbolic names, lists and maps
+
+// Should return an Either[String, Parameter]
+symbolicNameOrStringParameter
+   : symbolicNameString
+   | parameter["STRING"]
+   ;
+
+// Should return an Expression
+commandNameExpression
+   : symbolicNameString
+   | parameter["STRING"]
+   ;
+
+symbolicNameOrStringParameterList
+   : commandNameExpression (COMMA commandNameExpression)*
+   ;
+
 symbolicAliasNameList
    : symbolicAliasNameOrParameter (COMMA symbolicAliasNameOrParameter)*
    ;
@@ -1655,26 +1697,6 @@ symbolicAliasNameOrParameter
 
 symbolicAliasName
    : symbolicNameString (DOT symbolicNameString)*
-   ;
-
-symbolicNameOrStringParameterList
-   : commandNameExpression (COMMA commandNameExpression)*
-   ;
-
-glob
-   : escapedSymbolicNameString globRecursive?
-   | globRecursive
-   ;
-
-globRecursive
-   : globPart globRecursive?
-   ;
-
-globPart
-   : DOT escapedSymbolicNameString?
-   | QUESTION
-   | TIMES
-   | unescapedSymbolicNameString
    ;
 
 stringListLiteral

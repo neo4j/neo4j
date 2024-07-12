@@ -16,50 +16,50 @@
  */
 package org.neo4j.cypher.internal.ast.factory.ddl
 
-import org.neo4j.cypher.internal.ast
+import org.neo4j.cypher.internal.ast.RenameUser
 import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.test.util.AstParsing.Cypher5JavaCc
 
 class RenameUserAdministrationCommandParserTest extends UserAdministrationCommandParserTestBase {
 
   test("RENAME USER foo TO bar") {
-    parsesTo[Statements](ast.RenameUser(literalFoo, literalBar, ifExists = false)(pos))
+    parsesTo[Statements](RenameUser(literalFoo, literalBar, ifExists = false)(pos))
   }
 
   test("RENAME USER foo TO $bar") {
-    parsesTo[Statements](ast.RenameUser(literalFoo, stringParam("bar"), ifExists = false)(pos))
+    parsesTo[Statements](RenameUser(literalFoo, stringParam("bar"), ifExists = false)(pos))
   }
 
   test("RENAME USER $foo TO bar") {
-    parsesTo[Statements](ast.RenameUser(stringParam("foo"), literalBar, ifExists = false)(pos))
+    parsesTo[Statements](RenameUser(stringParam("foo"), literalBar, ifExists = false)(pos))
   }
 
   test("RENAME USER $foo TO $bar") {
-    parsesTo[Statements](ast.RenameUser(stringParam("foo"), stringParam("bar"), ifExists = false)(pos))
+    parsesTo[Statements](RenameUser(stringParam("foo"), stringParam("bar"), ifExists = false)(pos))
   }
 
   test("RENAME USER foo IF EXISTS TO bar") {
-    parsesTo[Statements](ast.RenameUser(literalFoo, literalBar, ifExists = true)(pos))
+    parsesTo[Statements](RenameUser(literalFoo, literalBar, ifExists = true)(pos))
   }
 
   test("RENAME USER foo IF EXISTS TO $bar") {
-    parsesTo[Statements](ast.RenameUser(literalFoo, stringParam("bar"), ifExists = true)(pos))
+    parsesTo[Statements](RenameUser(literalFoo, stringParam("bar"), ifExists = true)(pos))
   }
 
   test("RENAME USER $foo IF EXISTS TO bar") {
-    parsesTo[Statements](ast.RenameUser(stringParam("foo"), literalBar, ifExists = true)(pos))
+    parsesTo[Statements](RenameUser(stringParam("foo"), literalBar, ifExists = true)(pos))
   }
 
   test("RENAME USER $foo IF EXISTS TO $bar") {
-    parsesTo[Statements](ast.RenameUser(stringParam("foo"), stringParam("bar"), ifExists = true)(pos))
+    parsesTo[Statements](RenameUser(stringParam("foo"), stringParam("bar"), ifExists = true)(pos))
   }
 
   test("RENAME USER foo TO ``") {
-    parsesTo[Statements](ast.RenameUser(literalFoo, literalEmpty, ifExists = false)(pos))
+    parsesTo[Statements](RenameUser(literalFoo, literalEmpty, ifExists = false)(pos))
   }
 
   test("RENAME USER `` TO bar") {
-    parsesTo[Statements](ast.RenameUser(literalEmpty, literalBar, ifExists = false)(pos))
+    parsesTo[Statements](RenameUser(literalEmpty, literalBar, ifExists = false)(pos))
   }
 
   // fails parsing

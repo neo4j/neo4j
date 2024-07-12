@@ -297,15 +297,21 @@ public interface Cypher5ParserListener extends ParseTreeListener {
 
     void exitNonEmptyNameList(Cypher5Parser.NonEmptyNameListContext ctx);
 
+    void exitType(Cypher5Parser.TypeContext ctx);
+
+    void exitTypePart(Cypher5Parser.TypePartContext ctx);
+
+    void exitTypeName(Cypher5Parser.TypeNameContext ctx);
+
+    void exitTypeNullability(Cypher5Parser.TypeNullabilityContext ctx);
+
+    void exitTypeListSuffix(Cypher5Parser.TypeListSuffixContext ctx);
+
     void exitCommand(Cypher5Parser.CommandContext ctx);
 
     void exitCreateCommand(Cypher5Parser.CreateCommandContext ctx);
 
     void exitDropCommand(Cypher5Parser.DropCommandContext ctx);
-
-    void exitAlterCommand(Cypher5Parser.AlterCommandContext ctx);
-
-    void exitRenameCommand(Cypher5Parser.RenameCommandContext ctx);
 
     void exitShowCommand(Cypher5Parser.ShowCommandContext ctx);
 
@@ -318,6 +324,14 @@ public interface Cypher5ParserListener extends ParseTreeListener {
     void exitYieldLimit(Cypher5Parser.YieldLimitContext ctx);
 
     void exitYieldClause(Cypher5Parser.YieldClauseContext ctx);
+
+    void exitCommandOptions(Cypher5Parser.CommandOptionsContext ctx);
+
+    void exitTerminateCommand(Cypher5Parser.TerminateCommandContext ctx);
+
+    void exitComposableCommandClauses(Cypher5Parser.ComposableCommandClausesContext ctx);
+
+    void exitComposableShowCommandClauses(Cypher5Parser.ComposableShowCommandClausesContext ctx);
 
     void exitShowBriefAndYield(Cypher5Parser.ShowBriefAndYieldContext ctx);
 
@@ -353,8 +367,6 @@ public interface Cypher5ParserListener extends ParseTreeListener {
 
     void exitShowTransactions(Cypher5Parser.ShowTransactionsContext ctx);
 
-    void exitTerminateCommand(Cypher5Parser.TerminateCommandContext ctx);
-
     void exitTerminateTransactions(Cypher5Parser.TerminateTransactionsContext ctx);
 
     void exitShowSettings(Cypher5Parser.ShowSettingsContext ctx);
@@ -363,21 +375,7 @@ public interface Cypher5ParserListener extends ParseTreeListener {
 
     void exitNamesAndClauses(Cypher5Parser.NamesAndClausesContext ctx);
 
-    void exitComposableCommandClauses(Cypher5Parser.ComposableCommandClausesContext ctx);
-
-    void exitComposableShowCommandClauses(Cypher5Parser.ComposableShowCommandClausesContext ctx);
-
     void exitStringsOrExpression(Cypher5Parser.StringsOrExpressionContext ctx);
-
-    void exitType(Cypher5Parser.TypeContext ctx);
-
-    void exitTypePart(Cypher5Parser.TypePartContext ctx);
-
-    void exitTypeName(Cypher5Parser.TypeNameContext ctx);
-
-    void exitTypeNullability(Cypher5Parser.TypeNullabilityContext ctx);
-
-    void exitTypeListSuffix(Cypher5Parser.TypeListSuffixContext ctx);
 
     void exitCommandNodePattern(Cypher5Parser.CommandNodePatternContext ctx);
 
@@ -413,6 +411,22 @@ public interface Cypher5ParserListener extends ParseTreeListener {
 
     void exitEnclosedPropertyList(Cypher5Parser.EnclosedPropertyListContext ctx);
 
+    void exitAlterCommand(Cypher5Parser.AlterCommandContext ctx);
+
+    void exitRenameCommand(Cypher5Parser.RenameCommandContext ctx);
+
+    void exitGrantCommand(Cypher5Parser.GrantCommandContext ctx);
+
+    void exitDenyCommand(Cypher5Parser.DenyCommandContext ctx);
+
+    void exitRevokeCommand(Cypher5Parser.RevokeCommandContext ctx);
+
+    void exitUserNames(Cypher5Parser.UserNamesContext ctx);
+
+    void exitRoleNames(Cypher5Parser.RoleNamesContext ctx);
+
+    void exitRoleToken(Cypher5Parser.RoleTokenContext ctx);
+
     void exitEnableServerCommand(Cypher5Parser.EnableServerCommandContext ctx);
 
     void exitAlterServer(Cypher5Parser.AlterServerContext ctx);
@@ -437,7 +451,9 @@ public interface Cypher5ParserListener extends ParseTreeListener {
 
     void exitShowRoles(Cypher5Parser.ShowRolesContext ctx);
 
-    void exitRoleToken(Cypher5Parser.RoleTokenContext ctx);
+    void exitGrantRole(Cypher5Parser.GrantRoleContext ctx);
+
+    void exitRevokeRole(Cypher5Parser.RevokeRoleContext ctx);
 
     void exitCreateUser(Cypher5Parser.CreateUserContext ctx);
 
@@ -471,9 +487,9 @@ public interface Cypher5ParserListener extends ParseTreeListener {
 
     void exitShowCurrentUser(Cypher5Parser.ShowCurrentUserContext ctx);
 
-    void exitShowPrivileges(Cypher5Parser.ShowPrivilegesContext ctx);
-
     void exitShowSupportedPrivileges(Cypher5Parser.ShowSupportedPrivilegesContext ctx);
+
+    void exitShowPrivileges(Cypher5Parser.ShowPrivilegesContext ctx);
 
     void exitShowRolePrivileges(Cypher5Parser.ShowRolePrivilegesContext ctx);
 
@@ -482,20 +498,6 @@ public interface Cypher5ParserListener extends ParseTreeListener {
     void exitPrivilegeAsCommand(Cypher5Parser.PrivilegeAsCommandContext ctx);
 
     void exitPrivilegeToken(Cypher5Parser.PrivilegeTokenContext ctx);
-
-    void exitGrantCommand(Cypher5Parser.GrantCommandContext ctx);
-
-    void exitGrantRole(Cypher5Parser.GrantRoleContext ctx);
-
-    void exitUserNames(Cypher5Parser.UserNamesContext ctx);
-
-    void exitRoleNames(Cypher5Parser.RoleNamesContext ctx);
-
-    void exitDenyCommand(Cypher5Parser.DenyCommandContext ctx);
-
-    void exitRevokeCommand(Cypher5Parser.RevokeCommandContext ctx);
-
-    void exitRevokeRole(Cypher5Parser.RevokeRoleContext ctx);
 
     void exitPrivilege(Cypher5Parser.PrivilegeContext ctx);
 
@@ -557,6 +559,12 @@ public interface Cypher5ParserListener extends ParseTreeListener {
 
     void exitGlobs(Cypher5Parser.GlobsContext ctx);
 
+    void exitGlob(Cypher5Parser.GlobContext ctx);
+
+    void exitGlobRecursive(Cypher5Parser.GlobRecursiveContext ctx);
+
+    void exitGlobPart(Cypher5Parser.GlobPartContext ctx);
+
     void exitQualifiedGraphPrivilegesWithProperty(Cypher5Parser.QualifiedGraphPrivilegesWithPropertyContext ctx);
 
     void exitQualifiedGraphPrivileges(Cypher5Parser.QualifiedGraphPrivilegesContext ctx);
@@ -576,6 +584,10 @@ public interface Cypher5ParserListener extends ParseTreeListener {
     void exitElementToken(Cypher5Parser.ElementTokenContext ctx);
 
     void exitNodeToken(Cypher5Parser.NodeTokenContext ctx);
+
+    void exitDatabaseScope(Cypher5Parser.DatabaseScopeContext ctx);
+
+    void exitGraphScope(Cypher5Parser.GraphScopeContext ctx);
 
     void exitCreateCompositeDatabase(Cypher5Parser.CreateCompositeDatabaseContext ctx);
 
@@ -609,16 +621,6 @@ public interface Cypher5ParserListener extends ParseTreeListener {
 
     void exitShowDatabase(Cypher5Parser.ShowDatabaseContext ctx);
 
-    void exitDatabaseScope(Cypher5Parser.DatabaseScopeContext ctx);
-
-    void exitGraphScope(Cypher5Parser.GraphScopeContext ctx);
-
-    void exitCommandOptions(Cypher5Parser.CommandOptionsContext ctx);
-
-    void exitCommandNameExpression(Cypher5Parser.CommandNameExpressionContext ctx);
-
-    void exitSymbolicNameOrStringParameter(Cypher5Parser.SymbolicNameOrStringParameterContext ctx);
-
     void exitCreateAlias(Cypher5Parser.CreateAliasContext ctx);
 
     void exitDropAlias(Cypher5Parser.DropAliasContext ctx);
@@ -637,19 +639,17 @@ public interface Cypher5ParserListener extends ParseTreeListener {
 
     void exitShowAliases(Cypher5Parser.ShowAliasesContext ctx);
 
+    void exitSymbolicNameOrStringParameter(Cypher5Parser.SymbolicNameOrStringParameterContext ctx);
+
+    void exitCommandNameExpression(Cypher5Parser.CommandNameExpressionContext ctx);
+
+    void exitSymbolicNameOrStringParameterList(Cypher5Parser.SymbolicNameOrStringParameterListContext ctx);
+
     void exitSymbolicAliasNameList(Cypher5Parser.SymbolicAliasNameListContext ctx);
 
     void exitSymbolicAliasNameOrParameter(Cypher5Parser.SymbolicAliasNameOrParameterContext ctx);
 
     void exitSymbolicAliasName(Cypher5Parser.SymbolicAliasNameContext ctx);
-
-    void exitSymbolicNameOrStringParameterList(Cypher5Parser.SymbolicNameOrStringParameterListContext ctx);
-
-    void exitGlob(Cypher5Parser.GlobContext ctx);
-
-    void exitGlobRecursive(Cypher5Parser.GlobRecursiveContext ctx);
-
-    void exitGlobPart(Cypher5Parser.GlobPartContext ctx);
 
     void exitStringListLiteral(Cypher5Parser.StringListLiteralContext ctx);
 

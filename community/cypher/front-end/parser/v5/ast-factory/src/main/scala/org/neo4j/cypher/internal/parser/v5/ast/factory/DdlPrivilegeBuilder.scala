@@ -182,15 +182,6 @@ trait DdlPrivilegeBuilder extends Cypher5ParserListener {
     }
   }
 
-  final override def exitGrantRole(
-    ctx: Cypher5Parser.GrantRoleContext
-  ): Unit = {
-    ctx.ast = (
-      ctx.roleNames.ast[Seq[Expression]](),
-      ctx.userNames.ast[Seq[Expression]]()
-    )
-  }
-
   final override def exitDenyCommand(
     ctx: Cypher5Parser.DenyCommandContext
   ): Unit = {
@@ -221,6 +212,17 @@ trait DdlPrivilegeBuilder extends Cypher5ParserListener {
     }
   }
 
+  // Role command contexts
+
+  final override def exitGrantRole(
+    ctx: Cypher5Parser.GrantRoleContext
+  ): Unit = {
+    ctx.ast = (
+      ctx.roleNames.ast[Seq[Expression]](),
+      ctx.userNames.ast[Seq[Expression]]()
+    )
+  }
+
   final override def exitRevokeRole(
     ctx: Cypher5Parser.RevokeRoleContext
   ): Unit = {
@@ -229,6 +231,8 @@ trait DdlPrivilegeBuilder extends Cypher5ParserListener {
       ctx.userNames.ast[Seq[Either[String, Parameter]]]()
     )
   }
+
+  // Privilege command contexts
 
   final override def exitPrivilege(
     ctx: Cypher5Parser.PrivilegeContext
@@ -733,7 +737,38 @@ trait DdlPrivilegeBuilder extends Cypher5ParserListener {
     ctx.ast = ctx.symbolicNameOrStringParameterList().ast[ArraySeq[Expression]]()
   }
 
+  // SCOPE CONTEXTS
+
+  final override def exitDatabaseScope(
+    ctx: Cypher5Parser.DatabaseScopeContext
+  ): Unit = {
+    ctx.ast = if (ctx.DEFAULT() != null) {
+      DefaultDatabaseScope()(pos(ctx))
+    } else if (ctx.HOME() != null) {
+      HomeDatabaseScope()(pos(ctx))
+    } else if (ctx.TIMES() != null) {
+      AllDatabasesScope()(pos(ctx))
+    } else {
+      NamedDatabasesScope(ctx.symbolicAliasNameList().ast())(pos(ctx))
+    }
+  }
+
+  final override def exitGraphScope(
+    ctx: Cypher5Parser.GraphScopeContext
+  ): Unit = {
+    ctx.ast = if (ctx.DEFAULT() != null) {
+      DefaultGraphScope()(pos(ctx))
+    } else if (ctx.HOME() != null) {
+      HomeGraphScope()(pos(ctx))
+    } else if (ctx.TIMES() != null) {
+      AllGraphsScope()(pos(ctx))
+    } else {
+      NamedGraphsScope(ctx.symbolicAliasNameList().ast())(pos(ctx))
+    }
+  }
+
   // TOKEN CONTEXTS
+
   override def exitAdminToken(ctx: Cypher5Parser.AdminTokenContext): Unit = {}
 
   override def exitConstraintToken(ctx: Cypher5Parser.ConstraintTokenContext): Unit = {

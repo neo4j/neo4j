@@ -102,51 +102,7 @@ trait DdlCreateBuilder extends Cypher6ParserListener {
     ctx.ast = lastChild[AstRuleCtx](ctx).ast
   }
 
-  final override def exitCreateAlias(
-    ctx: Cypher6Parser.CreateAliasContext
-  ): Unit = {
-    val parent = ctx.getParent.asInstanceOf[CreateCommandContext]
-    val aliasName = ctx.symbolicAliasNameOrParameter(0).ast[DatabaseName]()
-    val dbName = ctx.symbolicAliasNameOrParameter(1).ast[DatabaseName]()
-    val ifNotExists = ctx.EXISTS() != null
-    val properties =
-      if (ctx.PROPERTIES() != null) {
-        if (ctx.DRIVER() != null) Some(ctx.mapOrParameter(1).ast[Either[Map[String, Expression], Parameter]]())
-        else Some(ctx.mapOrParameter(0).ast[Either[Map[String, Expression], Parameter]]())
-      } else None
-
-    ctx.ast = if (ctx.AT() == null) {
-      CreateLocalDatabaseAlias(aliasName, dbName, ifExistsDo(parent.REPLACE() != null, ifNotExists), properties)(pos(
-        parent
-      ))
-    } else {
-      val driverSettings =
-        if (ctx.DRIVER() != null) Some(ctx.mapOrParameter(0).ast[Either[Map[String, Expression], Parameter]]())
-        else None
-      CreateRemoteDatabaseAlias(
-        aliasName,
-        dbName,
-        ifExistsDo(parent.REPLACE() != null, ifNotExists),
-        ctx.stringOrParameter().ast[Either[String, Parameter]](),
-        ctx.commandNameExpression().ast[Expression](),
-        ctx.passwordExpression().ast[Expression](),
-        driverSettings,
-        properties
-      )(pos(parent))
-    }
-  }
-
-  final override def exitCreateCompositeDatabase(
-    ctx: Cypher6Parser.CreateCompositeDatabaseContext
-  ): Unit = {
-    val parent = ctx.getParent.asInstanceOf[CreateCommandContext]
-    ctx.ast = CreateCompositeDatabase(
-      ctx.symbolicAliasNameOrParameter().ast[DatabaseName](),
-      ifExistsDo(parent.REPLACE() != null, ctx.EXISTS() != null),
-      astOpt[Options](ctx.commandOptions(), NoOptions),
-      astOpt[WaitUntilComplete](ctx.waitClause(), NoWait)
-    )(pos(parent))
-  }
+  // Create constraint and index command contexts
 
   final override def exitCreateConstraint(
     ctx: Cypher6Parser.CreateConstraintContext
@@ -294,33 +250,6 @@ trait DdlCreateBuilder extends Cypher6ParserListener {
         (constraintVersion, properties, None)
       case _ => throw new IllegalStateException("Unknown Constraint Command")
     }
-  }
-
-  final override def exitCreateDatabase(
-    ctx: Cypher6Parser.CreateDatabaseContext
-  ): Unit = {
-    val parent = ctx.getParent.asInstanceOf[CreateCommandContext]
-    val topology =
-      if (ctx.TOPOLOGY() != null) {
-        val pT = astOptFromList[Int](ctx.primaryTopology(), None)
-        val sT = astOptFromList[Int](ctx.secondaryTopology(), None)
-        Some(Topology(pT, sT))
-      } else None
-    ctx.ast = CreateDatabase(
-      ctx.symbolicAliasNameOrParameter().ast[DatabaseName](),
-      ifExistsDo(parent.REPLACE() != null, ctx.EXISTS() != null),
-      astOpt[Options](ctx.commandOptions(), NoOptions),
-      astOpt[WaitUntilComplete](ctx.waitClause(), NoWait),
-      topology
-    )(pos(parent))
-  }
-
-  final override def exitPrimaryTopology(ctx: Cypher6Parser.PrimaryTopologyContext): Unit = {
-    ctx.ast = nodeChild(ctx, 0).getText.toInt
-  }
-
-  final override def exitSecondaryTopology(ctx: Cypher6Parser.SecondaryTopologyContext): Unit = {
-    ctx.ast = nodeChild(ctx, 0).getText.toInt
   }
 
   final override def exitCreateIndex(
@@ -559,6 +488,8 @@ trait DdlCreateBuilder extends Cypher6ParserListener {
     )(pos(grandparent))
   }
 
+  // Create admin command contexts (ordered as in parser file)
+
   final override def exitCreateRole(
     ctx: Cypher6Parser.CreateRoleContext
   ): Unit = {
@@ -600,5 +531,70 @@ trait DdlCreateBuilder extends Cypher6ParserListener {
       setAuth,
       nativeAuth
     )(pos(parent))
+  }
+
+  final override def exitCreateCompositeDatabase(
+    ctx: Cypher6Parser.CreateCompositeDatabaseContext
+  ): Unit = {
+    val parent = ctx.getParent.asInstanceOf[CreateCommandContext]
+    ctx.ast = CreateCompositeDatabase(
+      ctx.symbolicAliasNameOrParameter().ast[DatabaseName](),
+      ifExistsDo(parent.REPLACE() != null, ctx.EXISTS() != null),
+      astOpt[Options](ctx.commandOptions(), NoOptions),
+      astOpt[WaitUntilComplete](ctx.waitClause(), NoWait)
+    )(pos(parent))
+  }
+
+  final override def exitCreateDatabase(
+    ctx: Cypher6Parser.CreateDatabaseContext
+  ): Unit = {
+    val parent = ctx.getParent.asInstanceOf[CreateCommandContext]
+    val topology =
+      if (ctx.TOPOLOGY() != null) {
+        val pT = astOptFromList[Int](ctx.primaryTopology(), None)
+        val sT = astOptFromList[Int](ctx.secondaryTopology(), None)
+        Some(Topology(pT, sT))
+      } else None
+    ctx.ast = CreateDatabase(
+      ctx.symbolicAliasNameOrParameter().ast[DatabaseName](),
+      ifExistsDo(parent.REPLACE() != null, ctx.EXISTS() != null),
+      astOpt[Options](ctx.commandOptions(), NoOptions),
+      astOpt[WaitUntilComplete](ctx.waitClause(), NoWait),
+      topology
+    )(pos(parent))
+  }
+
+  final override def exitCreateAlias(
+    ctx: Cypher6Parser.CreateAliasContext
+  ): Unit = {
+    val parent = ctx.getParent.asInstanceOf[CreateCommandContext]
+    val aliasName = ctx.symbolicAliasNameOrParameter(0).ast[DatabaseName]()
+    val dbName = ctx.symbolicAliasNameOrParameter(1).ast[DatabaseName]()
+    val ifNotExists = ctx.EXISTS() != null
+    val properties =
+      if (ctx.PROPERTIES() != null) {
+        if (ctx.DRIVER() != null) Some(ctx.mapOrParameter(1).ast[Either[Map[String, Expression], Parameter]]())
+        else Some(ctx.mapOrParameter(0).ast[Either[Map[String, Expression], Parameter]]())
+      } else None
+
+    ctx.ast = if (ctx.AT() == null) {
+      CreateLocalDatabaseAlias(aliasName, dbName, ifExistsDo(parent.REPLACE() != null, ifNotExists), properties)(pos(
+        parent
+      ))
+    } else {
+      val driverSettings =
+        if (ctx.DRIVER() != null) Some(ctx.mapOrParameter(0).ast[Either[Map[String, Expression], Parameter]]())
+        else None
+      CreateRemoteDatabaseAlias(
+        aliasName,
+        dbName,
+        ifExistsDo(parent.REPLACE() != null, ifNotExists),
+        ctx.stringOrParameter().ast[Either[String, Parameter]](),
+        ctx.commandNameExpression().ast[Expression](),
+        ctx.passwordExpression().ast[Expression](),
+        driverSettings,
+        properties
+      )(pos(parent))
+    }
   }
 }

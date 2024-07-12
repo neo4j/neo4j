@@ -16,36 +16,44 @@
  */
 package org.neo4j.cypher.internal.ast.factory.ddl.privilege
 
-import org.neo4j.cypher.internal.ast
+import org.neo4j.cypher.internal.ast.ShowAllPrivileges
+import org.neo4j.cypher.internal.ast.ShowPrivilegeCommands
+import org.neo4j.cypher.internal.ast.ShowPrivilegeScope
+import org.neo4j.cypher.internal.ast.ShowPrivileges
+import org.neo4j.cypher.internal.ast.ShowRolesPrivileges
+import org.neo4j.cypher.internal.ast.ShowSupportedPrivilegeCommand
+import org.neo4j.cypher.internal.ast.ShowUserPrivileges
+import org.neo4j.cypher.internal.ast.ShowUsersPrivileges
 import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.factory.ddl.AdministrationAndSchemaCommandParserTestBase
 import org.neo4j.cypher.internal.ast.test.util.AstParsing.Cypher5JavaCc
 import org.neo4j.cypher.internal.expressions.Expression
 
 class ShowPrivilegesAdministrationCommandParserTest extends AdministrationAndSchemaCommandParserTestBase {
+
   // Show supported privileges
 
   test("SHOW SUPPORTED PRIVILEGES") {
-    parsesTo[Statements](ast.ShowSupportedPrivilegeCommand(None)(pos))
+    parsesTo[Statements](ShowSupportedPrivilegeCommand(None)(pos))
   }
 
   test("use system show supported privileges") {
-    parsesTo[Statements](ast.ShowSupportedPrivilegeCommand(None)(pos).withGraph(Some(use(List("system")))))
+    parsesTo[Statements](ShowSupportedPrivilegeCommand(None)(pos).withGraph(Some(use(List("system")))))
   }
 
   test("show supported privileges YIELD *") {
-    parsesTo[Statements](ast.ShowSupportedPrivilegeCommand(Some(Left((yieldClause(returnAllItems, None), None))))(pos))
+    parsesTo[Statements](ShowSupportedPrivilegeCommand(Some(Left((yieldClause(returnAllItems, None), None))))(pos))
   }
 
   test("show supported privileges YIELD action") {
-    parsesTo[Statements](ast.ShowSupportedPrivilegeCommand(Some(Left((
+    parsesTo[Statements](ShowSupportedPrivilegeCommand(Some(Left((
       yieldClause(returnItems(variableReturnItem("action"))),
       None
     ))))(pos))
   }
 
   test("show supported privileges WHERE action = 'read'") {
-    parsesTo[Statements](ast.ShowSupportedPrivilegeCommand(Some(Right(where(equals(
+    parsesTo[Statements](ShowSupportedPrivilegeCommand(Some(Right(where(equals(
       varFor("action"),
       literalString("read")
     )))))(pos))
@@ -64,109 +72,109 @@ class ShowPrivilegesAdministrationCommandParserTest extends AdministrationAndSch
       Some(whereClause)
     )
     parsesTo[Statements](
-      ast.ShowSupportedPrivilegeCommand(Some(Left((columns, Some(returnClause(returnAllItems))))))(pos)
+      ShowSupportedPrivilegeCommand(Some(Left((columns, Some(returnClause(returnAllItems))))))(pos)
     )
   }
 
   // Show privileges
 
   test("SHOW PRIVILEGES") {
-    parsesTo[Statements](ast.ShowPrivileges(ast.ShowAllPrivileges()(pos), None)(pos))
+    parsesTo[Statements](ShowPrivileges(ShowAllPrivileges()(pos), None)(pos))
   }
 
   test("SHOW PRIVILEGE") {
-    parsesTo[Statements](ast.ShowPrivileges(ast.ShowAllPrivileges()(pos), None)(pos))
+    parsesTo[Statements](ShowPrivileges(ShowAllPrivileges()(pos), None)(pos))
   }
 
   test("use system show privileges") {
-    parsesTo[Statements](ast.ShowPrivileges(ast.ShowAllPrivileges()(pos), None)(pos)
+    parsesTo[Statements](ShowPrivileges(ShowAllPrivileges()(pos), None)(pos)
       .withGraph(Some(use(List("system")))))
   }
 
   test("SHOW ALL PRIVILEGES") {
-    parsesTo[Statements](ast.ShowPrivileges(ast.ShowAllPrivileges()(pos), None)(pos))
+    parsesTo[Statements](ShowPrivileges(ShowAllPrivileges()(pos), None)(pos))
   }
 
   // Show user privileges
 
   test("SHOW USER user PRIVILEGES") {
-    parsesTo[Statements](ast.ShowPrivileges(ast.ShowUsersPrivileges(List(literalUser))(pos), None)(pos))
+    parsesTo[Statements](ShowPrivileges(ShowUsersPrivileges(List(literalUser))(pos), None)(pos))
   }
 
   test("SHOW USERS $user PRIVILEGES") {
-    parsesTo[Statements](ast.ShowPrivileges(ast.ShowUsersPrivileges(List(paramUser))(pos), None)(pos))
+    parsesTo[Statements](ShowPrivileges(ShowUsersPrivileges(List(paramUser))(pos), None)(pos))
   }
 
   test("SHOW USER `us%er` PRIVILEGES") {
-    parsesTo[Statements](ast.ShowPrivileges(ast.ShowUsersPrivileges(List(literal("us%er")))(pos), None)(pos))
+    parsesTo[Statements](ShowPrivileges(ShowUsersPrivileges(List(literal("us%er")))(pos), None)(pos))
   }
 
   test("SHOW USER user, $user PRIVILEGES") {
-    parsesTo[Statements](ast.ShowPrivileges(ast.ShowUsersPrivileges(List(literalUser, paramUser))(pos), None)(pos))
+    parsesTo[Statements](ShowPrivileges(ShowUsersPrivileges(List(literalUser, paramUser))(pos), None)(pos))
   }
 
   test("SHOW USER user, $user PRIVILEGE") {
-    parsesTo[Statements](ast.ShowPrivileges(ast.ShowUsersPrivileges(List(literalUser, paramUser))(pos), None)(pos))
+    parsesTo[Statements](ShowPrivileges(ShowUsersPrivileges(List(literalUser, paramUser))(pos), None)(pos))
   }
 
   test("SHOW USERS user1, $user, user2 PRIVILEGES") {
-    parsesTo[Statements](ast.ShowPrivileges(
-      ast.ShowUsersPrivileges(List(literalUser1, paramUser, literal("user2")))(pos),
+    parsesTo[Statements](ShowPrivileges(
+      ShowUsersPrivileges(List(literalUser1, paramUser, literal("user2")))(pos),
       None
     )(pos))
   }
 
   test("SHOW USER PRIVILEGES") {
-    parsesTo[Statements](ast.ShowPrivileges(ast.ShowUserPrivileges(None)(pos), None)(pos))
+    parsesTo[Statements](ShowPrivileges(ShowUserPrivileges(None)(pos), None)(pos))
   }
 
   test("SHOW USERS PRIVILEGES") {
-    parsesTo[Statements](ast.ShowPrivileges(ast.ShowUserPrivileges(None)(pos), None)(pos))
+    parsesTo[Statements](ShowPrivileges(ShowUserPrivileges(None)(pos), None)(pos))
   }
 
   test("SHOW USER PRIVILEGE") {
-    parsesTo[Statements](ast.ShowPrivileges(ast.ShowUserPrivileges(None)(pos), None)(pos))
+    parsesTo[Statements](ShowPrivileges(ShowUserPrivileges(None)(pos), None)(pos))
   }
 
   test("SHOW USER privilege PRIVILEGE") {
-    parsesTo[Statements](ast.ShowPrivileges(ast.ShowUsersPrivileges(List(literal("privilege")))(pos), None)(pos))
+    parsesTo[Statements](ShowPrivileges(ShowUsersPrivileges(List(literal("privilege")))(pos), None)(pos))
   }
 
   test("SHOW USER privilege, privileges PRIVILEGES") {
-    parsesTo[Statements](ast.ShowPrivileges(
-      ast.ShowUsersPrivileges(List(literal("privilege"), literal("privileges")))(pos),
+    parsesTo[Statements](ShowPrivileges(
+      ShowUsersPrivileges(List(literal("privilege"), literal("privileges")))(pos),
       None
     )(pos))
   }
 
   test("SHOW USER defined PRIVILEGES") {
-    parsesTo[Statements](ast.ShowPrivileges(ast.ShowUsersPrivileges(List(literal("defined")))(pos), None)(pos))
+    parsesTo[Statements](ShowPrivileges(ShowUsersPrivileges(List(literal("defined")))(pos), None)(pos))
   }
 
   test("SHOW USERS yield, where PRIVILEGES") {
-    parsesTo[Statements](ast.ShowPrivileges(
-      ast.ShowUsersPrivileges(List(literal("yield"), literal("where")))(pos),
+    parsesTo[Statements](ShowPrivileges(
+      ShowUsersPrivileges(List(literal("yield"), literal("where")))(pos),
       None
     )(pos))
   }
 
   test("SHOW USERS where PRIVILEGES") {
-    parsesTo[Statements](ast.ShowPrivileges(
-      ast.ShowUsersPrivileges(List(literal("where")))(pos),
+    parsesTo[Statements](ShowPrivileges(
+      ShowUsersPrivileges(List(literal("where")))(pos),
       None
     )(pos))
   }
 
   test("SHOW USERS with PRIVILEGES") {
-    parsesTo[Statements](ast.ShowPrivileges(
-      ast.ShowUsersPrivileges(List(literal("with")))(pos),
+    parsesTo[Statements](ShowPrivileges(
+      ShowUsersPrivileges(List(literal("with")))(pos),
       None
     )(pos))
   }
 
   test("SHOW USERS with, yield PRIVILEGES") {
-    parsesTo[Statements](ast.ShowPrivileges(
-      ast.ShowUsersPrivileges(List(literal("with"), literal("yield")))(pos),
+    parsesTo[Statements](ShowPrivileges(
+      ShowUsersPrivileges(List(literal("with"), literal("yield")))(pos),
       None
     )(pos))
   }
@@ -174,160 +182,158 @@ class ShowPrivilegesAdministrationCommandParserTest extends AdministrationAndSch
   // Show role privileges
 
   test("SHOW ROLE role PRIVILEGES") {
-    parsesTo[Statements](ast.ShowPrivileges(ast.ShowRolesPrivileges(List(literalRole))(pos), None)(pos))
+    parsesTo[Statements](ShowPrivileges(ShowRolesPrivileges(List(literalRole))(pos), None)(pos))
   }
 
   test("SHOW ROLE role PRIVILEGE") {
-    parsesTo[Statements](ast.ShowPrivileges(ast.ShowRolesPrivileges(List(literalRole))(pos), None)(pos))
+    parsesTo[Statements](ShowPrivileges(ShowRolesPrivileges(List(literalRole))(pos), None)(pos))
   }
 
   test("SHOW ROLE $role PRIVILEGES") {
-    parsesTo[Statements](ast.ShowPrivileges(ast.ShowRolesPrivileges(List(paramRole))(pos), None)(pos))
+    parsesTo[Statements](ShowPrivileges(ShowRolesPrivileges(List(paramRole))(pos), None)(pos))
   }
 
   test("SHOW ROLES `ro%le` PRIVILEGES") {
-    parsesTo[Statements](ast.ShowPrivileges(ast.ShowRolesPrivileges(List(literal("ro%le")))(pos), None)(pos))
+    parsesTo[Statements](ShowPrivileges(ShowRolesPrivileges(List(literal("ro%le")))(pos), None)(pos))
   }
 
   test("SHOW ROLE role1, $roleParam, role2, role3 PRIVILEGES") {
-    parsesTo[Statements](ast.ShowPrivileges(
-      ast.ShowRolesPrivileges(List(literalRole1, stringParam("roleParam"), literalRole2, literal("role3")))(pos),
+    parsesTo[Statements](ShowPrivileges(
+      ShowRolesPrivileges(List(literalRole1, stringParam("roleParam"), literalRole2, literal("role3")))(pos),
       None
     )(pos))
   }
 
   test("SHOW ROLES role1, $roleParam1, role2, $roleParam2 PRIVILEGES") {
-    parsesTo[Statements](ast.ShowPrivileges(
-      ast.ShowRolesPrivileges(List(literalRole1, stringParam("roleParam1"), literalRole2, stringParam("roleParam2")))(
-        pos
-      ),
+    parsesTo[Statements](ShowPrivileges(
+      ShowRolesPrivileges(List(literalRole1, stringParam("roleParam1"), literalRole2, stringParam("roleParam2")))(pos),
       None
     )(pos))
   }
 
   test("SHOW ROLES privilege PRIVILEGE") {
-    parsesTo[Statements](ast.ShowPrivileges(ast.ShowRolesPrivileges(List(literal("privilege")))(pos), None)(pos))
+    parsesTo[Statements](ShowPrivileges(ShowRolesPrivileges(List(literal("privilege")))(pos), None)(pos))
   }
 
   test("SHOW ROLE privilege, privileges PRIVILEGES") {
-    parsesTo[Statements](ast.ShowPrivileges(
-      ast.ShowRolesPrivileges(List(literal("privilege"), literal("privileges")))(pos),
+    parsesTo[Statements](ShowPrivileges(
+      ShowRolesPrivileges(List(literal("privilege"), literal("privileges")))(pos),
       None
     )(pos))
   }
 
   test(s"SHOW ROLES yield, where PRIVILEGES") {
-    parsesTo[Statements](ast.ShowPrivileges(
-      ast.ShowRolesPrivileges(List(literal("yield"), literal("where")))(pos),
+    parsesTo[Statements](ShowPrivileges(
+      ShowRolesPrivileges(List(literal("yield"), literal("where")))(pos),
       None
     )(pos))
   }
 
   test(s"SHOW ROLES with PRIVILEGES") {
-    parsesTo[Statements](ast.ShowPrivileges(ast.ShowRolesPrivileges(List(literal("with")))(pos), None)(pos))
+    parsesTo[Statements](ShowPrivileges(ShowRolesPrivileges(List(literal("with")))(pos), None)(pos))
   }
 
   // Show privileges as commands
 
   test("SHOW PRIVILEGES AS COMMAND") {
-    parsesTo[Statements](ast.ShowPrivilegeCommands(ast.ShowAllPrivileges()(pos), asRevoke = false, None)(pos))
+    parsesTo[Statements](ShowPrivilegeCommands(ShowAllPrivileges()(pos), asRevoke = false, None)(pos))
   }
 
   test("SHOW PRIVILEGES AS COMMANDS") {
-    parsesTo[Statements](ast.ShowPrivilegeCommands(ast.ShowAllPrivileges()(pos), asRevoke = false, None)(pos))
+    parsesTo[Statements](ShowPrivilegeCommands(ShowAllPrivileges()(pos), asRevoke = false, None)(pos))
   }
 
   test("SHOW PRIVILEGES AS REVOKE COMMAND") {
-    parsesTo[Statements](ast.ShowPrivilegeCommands(ast.ShowAllPrivileges()(pos), asRevoke = true, None)(pos))
+    parsesTo[Statements](ShowPrivilegeCommands(ShowAllPrivileges()(pos), asRevoke = true, None)(pos))
   }
 
   test("SHOW PRIVILEGES AS REVOKE COMMANDS") {
-    parsesTo[Statements](ast.ShowPrivilegeCommands(ast.ShowAllPrivileges()(pos), asRevoke = true, None)(pos))
+    parsesTo[Statements](ShowPrivilegeCommands(ShowAllPrivileges()(pos), asRevoke = true, None)(pos))
   }
 
   test("SHOW ALL PRIVILEGES AS COMMAND") {
-    parsesTo[Statements](ast.ShowPrivilegeCommands(ast.ShowAllPrivileges()(pos), asRevoke = false, None)(pos))
+    parsesTo[Statements](ShowPrivilegeCommands(ShowAllPrivileges()(pos), asRevoke = false, None)(pos))
   }
 
   test("SHOW ALL PRIVILEGE AS COMMAND") {
-    parsesTo[Statements](ast.ShowPrivilegeCommands(ast.ShowAllPrivileges()(pos), asRevoke = false, None)(pos))
+    parsesTo[Statements](ShowPrivilegeCommands(ShowAllPrivileges()(pos), asRevoke = false, None)(pos))
   }
 
   test("SHOW ALL PRIVILEGES AS REVOKE COMMANDS") {
-    parsesTo[Statements](ast.ShowPrivilegeCommands(ast.ShowAllPrivileges()(pos), asRevoke = true, None)(pos))
+    parsesTo[Statements](ShowPrivilegeCommands(ShowAllPrivileges()(pos), asRevoke = true, None)(pos))
   }
 
   test("SHOW USER user PRIVILEGES AS COMMANDS") {
-    parsesTo[Statements](ast.ShowPrivilegeCommands(
-      ast.ShowUsersPrivileges(List(literalUser))(pos),
+    parsesTo[Statements](ShowPrivilegeCommands(
+      ShowUsersPrivileges(List(literalUser))(pos),
       asRevoke = false,
       None
     )(pos))
   }
 
   test("SHOW USERS $user PRIVILEGES AS REVOKE COMMAND") {
-    parsesTo[Statements](ast.ShowPrivilegeCommands(
-      ast.ShowUsersPrivileges(List(paramUser))(pos),
+    parsesTo[Statements](ShowPrivilegeCommands(
+      ShowUsersPrivileges(List(paramUser))(pos),
       asRevoke = true,
       None
     )(pos))
   }
 
   test("SHOW USER `us%er` PRIVILEGES AS COMMANDS") {
-    parsesTo[Statements](ast.ShowPrivilegeCommands(
-      ast.ShowUsersPrivileges(List(literal("us%er")))(pos),
+    parsesTo[Statements](ShowPrivilegeCommands(
+      ShowUsersPrivileges(List(literal("us%er")))(pos),
       asRevoke = false,
       None
     )(pos))
   }
 
   test("SHOW USER `us%er` PRIVILEGE AS COMMANDS") {
-    parsesTo[Statements](ast.ShowPrivilegeCommands(
-      ast.ShowUsersPrivileges(List(literal("us%er")))(pos),
+    parsesTo[Statements](ShowPrivilegeCommands(
+      ShowUsersPrivileges(List(literal("us%er")))(pos),
       asRevoke = false,
       None
     )(pos))
   }
 
   test("SHOW USER user, $user PRIVILEGES AS REVOKE COMMANDS") {
-    parsesTo[Statements](ast.ShowPrivilegeCommands(
-      ast.ShowUsersPrivileges(List(literalUser, paramUser))(pos),
+    parsesTo[Statements](ShowPrivilegeCommands(
+      ShowUsersPrivileges(List(literalUser, paramUser))(pos),
       asRevoke = true,
       None
     )(pos))
   }
 
   test("SHOW USER PRIVILEGES AS COMMAND") {
-    parsesTo[Statements](ast.ShowPrivilegeCommands(ast.ShowUserPrivileges(None)(pos), asRevoke = false, None)(pos))
+    parsesTo[Statements](ShowPrivilegeCommands(ShowUserPrivileges(None)(pos), asRevoke = false, None)(pos))
   }
 
   test("SHOW USERS PRIVILEGES AS REVOKE COMMANDS") {
-    parsesTo[Statements](ast.ShowPrivilegeCommands(ast.ShowUserPrivileges(None)(pos), asRevoke = true, None)(pos))
+    parsesTo[Statements](ShowPrivilegeCommands(ShowUserPrivileges(None)(pos), asRevoke = true, None)(pos))
   }
 
   test("SHOW USERS PRIVILEGE AS REVOKE COMMANDS") {
-    parsesTo[Statements](ast.ShowPrivilegeCommands(ast.ShowUserPrivileges(None)(pos), asRevoke = true, None)(pos))
+    parsesTo[Statements](ShowPrivilegeCommands(ShowUserPrivileges(None)(pos), asRevoke = true, None)(pos))
   }
 
   test("SHOW ROLE role PRIVILEGES AS COMMANDS") {
-    parsesTo[Statements](ast.ShowPrivilegeCommands(
-      ast.ShowRolesPrivileges(List(literalRole))(pos),
+    parsesTo[Statements](ShowPrivilegeCommands(
+      ShowRolesPrivileges(List(literalRole))(pos),
       asRevoke = false,
       None
     )(pos))
   }
 
   test("SHOW ROLE role PRIVILEGE AS COMMANDS") {
-    parsesTo[Statements](ast.ShowPrivilegeCommands(
-      ast.ShowRolesPrivileges(List(literalRole))(pos),
+    parsesTo[Statements](ShowPrivilegeCommands(
+      ShowRolesPrivileges(List(literalRole))(pos),
       asRevoke = false,
       None
     )(pos))
   }
 
   test("SHOW ROLE $role PRIVILEGES AS REVOKE COMMAND") {
-    parsesTo[Statements](ast.ShowPrivilegeCommands(
-      ast.ShowRolesPrivileges(List(paramRole))(pos),
+    parsesTo[Statements](ShowPrivilegeCommands(
+      ShowRolesPrivileges(List(paramRole))(pos),
       asRevoke = true,
       None
     )(pos))
@@ -341,13 +347,13 @@ class ShowPrivilegesAdministrationCommandParserTest extends AdministrationAndSch
     ("", false)
   ).foreach { case (optionalAsRev: String, asRev) =>
     Seq(
-      ("", ast.ShowAllPrivileges()(pos)),
-      ("ALL", ast.ShowAllPrivileges()(pos)),
-      ("USER", ast.ShowUserPrivileges(None)(pos)),
-      ("USER neo4j", ast.ShowUsersPrivileges(List(literal("neo4j")))(pos)),
-      ("USERS neo4j, $user", ast.ShowUsersPrivileges(List(literal("neo4j"), paramUser))(pos)),
-      ("ROLES $role", ast.ShowRolesPrivileges(List(paramRole))(pos)),
-      ("ROLE $role, reader", ast.ShowRolesPrivileges(List(paramRole, literal("reader")))(pos))
+      ("", ShowAllPrivileges()(pos)),
+      ("ALL", ShowAllPrivileges()(pos)),
+      ("USER", ShowUserPrivileges(None)(pos)),
+      ("USER neo4j", ShowUsersPrivileges(List(literal("neo4j")))(pos)),
+      ("USERS neo4j, $user", ShowUsersPrivileges(List(literal("neo4j"), paramUser))(pos)),
+      ("ROLES $role", ShowRolesPrivileges(List(paramRole))(pos)),
+      ("ROLE $role, reader", ShowRolesPrivileges(List(paramRole, literal("reader")))(pos))
     ).foreach { case (privType, privilege) =>
       Seq(
         "PRIVILEGE",
@@ -356,10 +362,10 @@ class ShowPrivilegesAdministrationCommandParserTest extends AdministrationAndSch
         test(s"SHOW $privType $privilegeOrPrivileges$optionalAsRev WHERE access = 'GRANTED'") {
           if (optionalAsRev.isEmpty) {
             parsesTo[Statements](
-              ast.ShowPrivileges(privilege, Some(Right(where(equals(accessVar, grantedString)))))(pos)
+              ShowPrivileges(privilege, Some(Right(where(equals(accessVar, grantedString)))))(pos)
             )
           } else {
-            parsesTo[Statements](ast.ShowPrivilegeCommands(
+            parsesTo[Statements](ShowPrivilegeCommands(
               privilege,
               asRev,
               Some(Right(where(equals(accessVar, grantedString))))
@@ -371,12 +377,12 @@ class ShowPrivilegesAdministrationCommandParserTest extends AdministrationAndSch
           val accessPredicate = equals(accessVar, grantedString)
           val matchPredicate = equals(varFor(actionString), literalString("match"))
           if (optionalAsRev.isEmpty) {
-            parsesTo[Statements](ast.ShowPrivileges(
+            parsesTo[Statements](ShowPrivileges(
               privilege,
               Some(Right(where(and(accessPredicate, matchPredicate))))
             )(pos))
           } else {
-            parsesTo[Statements](ast.ShowPrivilegeCommands(
+            parsesTo[Statements](ShowPrivilegeCommands(
               privilege,
               asRev,
               Some(Right(where(and(accessPredicate, matchPredicate))))
@@ -388,9 +394,9 @@ class ShowPrivilegesAdministrationCommandParserTest extends AdministrationAndSch
           val orderByClause = orderBy(sortItem(accessVar))
           val columns = yieldClause(returnItems(variableReturnItem(accessString)), Some(orderByClause))
           if (optionalAsRev.isEmpty) {
-            parsesTo[Statements](ast.ShowPrivileges(privilege, Some(Left((columns, None))))(pos))
+            parsesTo[Statements](ShowPrivileges(privilege, Some(Left((columns, None))))(pos))
           } else {
-            parsesTo[Statements](ast.ShowPrivilegeCommands(privilege, asRev, Some(Left((columns, None))))(pos))
+            parsesTo[Statements](ShowPrivilegeCommands(privilege, asRev, Some(Left((columns, None))))(pos))
           }
         }
 
@@ -402,9 +408,9 @@ class ShowPrivilegesAdministrationCommandParserTest extends AdministrationAndSch
           val columns =
             yieldClause(returnItems(variableReturnItem(accessString)), Some(orderByClause), where = Some(whereClause))
           if (optionalAsRev.isEmpty) {
-            parsesTo[Statements](ast.ShowPrivileges(privilege, Some(Left((columns, None))))(pos))
+            parsesTo[Statements](ShowPrivileges(privilege, Some(Left((columns, None))))(pos))
           } else {
-            parsesTo[Statements](ast.ShowPrivilegeCommands(privilege, asRev, Some(Left((columns, None))))(pos))
+            parsesTo[Statements](ShowPrivilegeCommands(privilege, asRev, Some(Left((columns, None))))(pos))
           }
         }
 
@@ -421,18 +427,18 @@ class ShowPrivilegesAdministrationCommandParserTest extends AdministrationAndSch
             Some(whereClause)
           )
           if (optionalAsRev.isEmpty) {
-            parsesTo[Statements](ast.ShowPrivileges(privilege, Some(Left((columns, None))))(pos))
+            parsesTo[Statements](ShowPrivileges(privilege, Some(Left((columns, None))))(pos))
           } else {
-            parsesTo[Statements](ast.ShowPrivilegeCommands(privilege, asRev, Some(Left((columns, None))))(pos))
+            parsesTo[Statements](ShowPrivilegeCommands(privilege, asRev, Some(Left((columns, None))))(pos))
           }
         }
 
         test(s"SHOW $privType $privilegeOrPrivileges$optionalAsRev YIELD access SKIP -1") {
           val columns = yieldClause(returnItems(variableReturnItem(accessString)), skip = Some(skip(-1)))
           if (optionalAsRev.isEmpty) {
-            parsesTo[Statements](ast.ShowPrivileges(privilege, Some(Left((columns, None))))(pos))
+            parsesTo[Statements](ShowPrivileges(privilege, Some(Left((columns, None))))(pos))
           } else {
-            parsesTo[Statements](ast.ShowPrivilegeCommands(privilege, asRev, Some(Left((columns, None))))(pos))
+            parsesTo[Statements](ShowPrivilegeCommands(privilege, asRev, Some(Left((columns, None))))(pos))
           }
         }
 
@@ -446,10 +452,10 @@ class ShowPrivilegesAdministrationCommandParserTest extends AdministrationAndSch
           val yieldColumns = yieldClause(returnItems(accessColumn, actionColumn))
           val returns = returnClause(returnItems(accessColumn, countColumn), Some(orderByClause))
           if (optionalAsRev.isEmpty) {
-            parsesTo[Statements](ast.ShowPrivileges(privilege, Some(Left((yieldColumns, Some(returns)))))(pos))
+            parsesTo[Statements](ShowPrivileges(privilege, Some(Left((yieldColumns, Some(returns)))))(pos))
           } else {
             parsesTo[Statements](
-              ast.ShowPrivilegeCommands(privilege, asRev, Some(Left((yieldColumns, Some(returns)))))(pos)
+              ShowPrivilegeCommands(privilege, asRev, Some(Left((yieldColumns, Some(returns)))))(pos)
             )
           }
         }
@@ -459,12 +465,12 @@ class ShowPrivilegesAdministrationCommandParserTest extends AdministrationAndSch
         ) {
           val returnItemsPart = returnItems(variableReturnItem(accessString), variableReturnItem(actionString))
           if (optionalAsRev.isEmpty) {
-            parsesTo[Statements](ast.ShowPrivileges(
+            parsesTo[Statements](ShowPrivileges(
               privilege,
               Some(Left((yieldClause(returnItemsPart, skip = Some(skip(1))), Some(returnClause(returnItemsPart)))))
             )(pos))
           } else {
-            parsesTo[Statements](ast.ShowPrivilegeCommands(
+            parsesTo[Statements](ShowPrivilegeCommands(
               privilege,
               asRev,
               Some(Left((yieldClause(returnItemsPart, skip = Some(skip(1))), Some(returnClause(returnItemsPart)))))
@@ -479,7 +485,7 @@ class ShowPrivilegesAdministrationCommandParserTest extends AdministrationAndSch
           val actionColumn = variableReturnItem(actionString)
           val whereClause = where(equals(accessVar, noneString))
           if (optionalAsRev.isEmpty) {
-            parsesTo[Statements](ast.ShowPrivileges(
+            parsesTo[Statements](ShowPrivileges(
               privilege,
               Some(Left((
                 yieldClause(returnItems(accessColumn, actionColumn), where = Some(whereClause)),
@@ -487,7 +493,7 @@ class ShowPrivilegesAdministrationCommandParserTest extends AdministrationAndSch
               )))
             )(pos))
           } else {
-            parsesTo[Statements](ast.ShowPrivilegeCommands(
+            parsesTo[Statements](ShowPrivilegeCommands(
               privilege,
               asRev,
               Some(Left((
@@ -500,12 +506,12 @@ class ShowPrivilegesAdministrationCommandParserTest extends AdministrationAndSch
 
         test(s"SHOW $privType $privilegeOrPrivileges$optionalAsRev YIELD * RETURN *") {
           if (optionalAsRev.isEmpty) {
-            parsesTo[Statements](ast.ShowPrivileges(
+            parsesTo[Statements](ShowPrivileges(
               privilege,
               Some(Left((yieldClause(returnAllItems), Some(returnClause(returnAllItems)))))
             )(pos))
           } else {
-            parsesTo[Statements](ast.ShowPrivilegeCommands(
+            parsesTo[Statements](ShowPrivilegeCommands(
               privilege,
               asRev,
               Some(Left((yieldClause(returnAllItems), Some(returnClause(returnAllItems)))))
@@ -515,12 +521,12 @@ class ShowPrivilegesAdministrationCommandParserTest extends AdministrationAndSch
 
         test(s"SHOW $privType $privilegeOrPrivileges$optionalAsRev YIELD `access`") {
           if (optionalAsRev.isEmpty) {
-            parsesTo[Statements](ast.ShowPrivileges(
+            parsesTo[Statements](ShowPrivileges(
               privilege,
               Some(Left((yieldClause(returnItems(returnItem(varFor("access"), "`access`"))), None)))
             )(pos))
           } else {
-            parsesTo[Statements](ast.ShowPrivilegeCommands(
+            parsesTo[Statements](ShowPrivilegeCommands(
               privilege,
               asRev,
               Some(Left((yieldClause(returnItems(returnItem(varFor("access"), "`access`"))), None)))
@@ -532,16 +538,16 @@ class ShowPrivilegesAdministrationCommandParserTest extends AdministrationAndSch
 
     // yield and where edge cases
 
-    type privilegeFunc = List[String] => ast.ShowPrivilegeScope
+    type privilegeFunc = List[String] => ShowPrivilegeScope
 
-    def userPrivilegeFunc(users: List[String]): ast.ShowPrivilegeScope = {
+    def userPrivilegeFunc(users: List[String]): ShowPrivilegeScope = {
       val literalUsers: List[Expression] = users.map(u => literal(u))
-      ast.ShowUsersPrivileges(literalUsers)(pos)
+      ShowUsersPrivileges(literalUsers)(pos)
     }
 
-    def rolePrivilegeFunc(roles: List[String]): ast.ShowPrivilegeScope = {
+    def rolePrivilegeFunc(roles: List[String]): ShowPrivilegeScope = {
       val literalRoles: List[Expression] = roles.map(r => literal(r))
-      ast.ShowRolesPrivileges(literalRoles)(pos)
+      ShowRolesPrivileges(literalRoles)(pos)
     }
 
     Seq(
@@ -554,12 +560,12 @@ class ShowPrivilegesAdministrationCommandParserTest extends AdministrationAndSch
         test(s"SHOW $privType yield PRIVILEGES$optionalAsRev YIELD access RETURN *") {
           val accessColumn = returnItems(variableReturnItem(accessString))
           if (optionalAsRev.isEmpty) {
-            parsesTo[Statements](ast.ShowPrivileges(
+            parsesTo[Statements](ShowPrivileges(
               func(List("yield")),
               Some(Left((yieldClause(accessColumn), Some(returnClause(returnAllItems)))))
             )(pos))
           } else {
-            parsesTo[Statements](ast.ShowPrivilegeCommands(
+            parsesTo[Statements](ShowPrivilegeCommands(
               func(List("yield")),
               asRev,
               Some(Left((yieldClause(accessColumn), Some(returnClause(returnAllItems)))))
@@ -570,12 +576,12 @@ class ShowPrivilegesAdministrationCommandParserTest extends AdministrationAndSch
         test(s"SHOW $privType yield, where PRIVILEGES$optionalAsRev YIELD access RETURN *") {
           val accessColumn = returnItems(variableReturnItem(accessString))
           if (optionalAsRev.isEmpty) {
-            parsesTo[Statements](ast.ShowPrivileges(
+            parsesTo[Statements](ShowPrivileges(
               func(List("yield", "where")),
               Some(Left((yieldClause(accessColumn), Some(returnClause(returnAllItems)))))
             )(pos))
           } else {
-            parsesTo[Statements](ast.ShowPrivilegeCommands(
+            parsesTo[Statements](ShowPrivilegeCommands(
               func(List("yield", "where")),
               asRev,
               Some(Left((yieldClause(accessColumn), Some(returnClause(returnAllItems)))))
@@ -585,12 +591,12 @@ class ShowPrivilegesAdministrationCommandParserTest extends AdministrationAndSch
 
         test(s"SHOW $privType where PRIVILEGE$optionalAsRev WHERE access = 'none'") {
           if (optionalAsRev.isEmpty) {
-            parsesTo[Statements](ast.ShowPrivileges(
+            parsesTo[Statements](ShowPrivileges(
               func(List("where")),
               Some(Right(where(equals(accessVar, noneString))))
             )(pos))
           } else {
-            parsesTo[Statements](ast.ShowPrivilegeCommands(
+            parsesTo[Statements](ShowPrivilegeCommands(
               func(List("where")),
               asRev,
               Some(Right(where(equals(accessVar, noneString))))
@@ -601,12 +607,12 @@ class ShowPrivilegesAdministrationCommandParserTest extends AdministrationAndSch
         test(s"SHOW $privType privilege PRIVILEGE$optionalAsRev YIELD access RETURN *") {
           val accessColumn = returnItems(variableReturnItem(accessString))
           if (optionalAsRev.isEmpty) {
-            parsesTo[Statements](ast.ShowPrivileges(
+            parsesTo[Statements](ShowPrivileges(
               func(List("privilege")),
               Some(Left((yieldClause(accessColumn), Some(returnClause(returnAllItems)))))
             )(pos))
           } else {
-            parsesTo[Statements](ast.ShowPrivilegeCommands(
+            parsesTo[Statements](ShowPrivilegeCommands(
               func(List("privilege")),
               asRev,
               Some(Left((yieldClause(accessColumn), Some(returnClause(returnAllItems)))))
@@ -617,12 +623,12 @@ class ShowPrivilegesAdministrationCommandParserTest extends AdministrationAndSch
         test(s"SHOW $privType privileges PRIVILEGES$optionalAsRev YIELD access RETURN *") {
           val accessColumn = returnItems(variableReturnItem(accessString))
           if (optionalAsRev.isEmpty) {
-            parsesTo[Statements](ast.ShowPrivileges(
+            parsesTo[Statements](ShowPrivileges(
               func(List("privileges")),
               Some(Left((yieldClause(accessColumn), Some(returnClause(returnAllItems)))))
             )(pos))
           } else {
-            parsesTo[Statements](ast.ShowPrivilegeCommands(
+            parsesTo[Statements](ShowPrivilegeCommands(
               func(List("privileges")),
               asRev,
               Some(Left((yieldClause(accessColumn), Some(returnClause(returnAllItems)))))
@@ -633,12 +639,12 @@ class ShowPrivilegesAdministrationCommandParserTest extends AdministrationAndSch
         test(s"SHOW $privType privilege, privileges PRIVILEGES$optionalAsRev YIELD access RETURN *") {
           val accessColumn = returnItems(variableReturnItem(accessString))
           if (optionalAsRev.isEmpty) {
-            parsesTo[Statements](ast.ShowPrivileges(
+            parsesTo[Statements](ShowPrivileges(
               func(List("privilege", "privileges")),
               Some(Left((yieldClause(accessColumn), Some(returnClause(returnAllItems)))))
             )(pos))
           } else {
-            parsesTo[Statements](ast.ShowPrivilegeCommands(
+            parsesTo[Statements](ShowPrivilegeCommands(
               func(List("privilege", "privileges")),
               asRev,
               Some(Left((yieldClause(accessColumn), Some(returnClause(returnAllItems)))))

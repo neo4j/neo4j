@@ -187,8 +187,12 @@ trait AstConstructionTestSupport {
   protected val pos: InputPosition = DummyPosition(0)
   protected val defaultPos: InputPosition = InputPosition(0, 1, 1)
 
-  // noinspection LanguageFeature
   implicit def withPos[T](expr: InputPosition => T): T = expr(pos)
+
+  implicit protected def lift(pos: (Int, Int, Int)): InputPosition = InputPosition(pos._3, pos._1, pos._2)
+
+  implicit protected def statementToStatements(statement: Statement): Statements =
+    Statements(Seq(statement))
 
   def varFor(name: String): Variable = varFor(name, pos)
   def varFor(name: String, position: InputPosition): Variable = Variable(name)(position)

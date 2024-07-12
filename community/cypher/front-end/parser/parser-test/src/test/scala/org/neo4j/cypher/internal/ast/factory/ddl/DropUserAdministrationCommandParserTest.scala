@@ -16,38 +16,38 @@
  */
 package org.neo4j.cypher.internal.ast.factory.ddl
 
-import org.neo4j.cypher.internal.ast
+import org.neo4j.cypher.internal.ast.DropUser
 import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.test.util.AstParsing.Cypher5JavaCc
 
 class DropUserAdministrationCommandParserTest extends UserAdministrationCommandParserTestBase {
 
   test("DROP USER foo") {
-    parsesTo[Statements](ast.DropUser(literalFoo, ifExists = false)(pos))
+    parsesTo[Statements](DropUser(literalFoo, ifExists = false)(pos))
   }
 
   test("DROP USER $foo") {
-    parsesTo[Statements](ast.DropUser(paramFoo, ifExists = false)(pos))
+    parsesTo[Statements](DropUser(paramFoo, ifExists = false)(pos))
   }
 
   test("DROP USER ``") {
-    parsesTo[Statements](ast.DropUser(literalEmpty, ifExists = false)(pos))
+    parsesTo[Statements](DropUser(literalEmpty, ifExists = false)(pos))
   }
 
   test("DROP USER `f:oo`") {
-    parsesTo[Statements](ast.DropUser(literalFColonOo, ifExists = false)(pos))
+    parsesTo[Statements](DropUser(literalFColonOo, ifExists = false)(pos))
   }
 
   test("DROP USER foo IF EXISTS") {
-    parsesTo[Statements](ast.DropUser(literalFoo, ifExists = true)(pos))
+    parsesTo[Statements](DropUser(literalFoo, ifExists = true)(pos))
   }
 
   test("DROP USER `` IF EXISTS") {
-    parsesTo[Statements](ast.DropUser(literalEmpty, ifExists = true)(pos))
+    parsesTo[Statements](DropUser(literalEmpty, ifExists = true)(pos))
   }
 
   test("DROP USER `f:oo` IF EXISTS") {
-    parsesTo[Statements](ast.DropUser(literalFColonOo, ifExists = true)(pos))
+    parsesTo[Statements](DropUser(literalFColonOo, ifExists = true)(pos))
   }
 
   // fails parsing

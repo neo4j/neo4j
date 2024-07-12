@@ -128,7 +128,7 @@ class ShowSettingsCommandParserTest extends AdministrationAndSchemaCommandParser
     assertAst(singleQuery(ShowSettingsClause(
       Left(List.empty[String]),
       Some(where(
-        eq(
+        equals(
           varFor("name"),
           parameter("name", CTAny)
         )
@@ -142,7 +142,7 @@ class ShowSettingsCommandParserTest extends AdministrationAndSchemaCommandParser
     assertAst(singleQuery(ShowSettingsClause(
       Left(List.empty),
       Some(where(
-        eq(
+        equals(
           varFor("name"),
           parameter("s", CTAny)
         )
@@ -234,7 +234,7 @@ class ShowSettingsCommandParserTest extends AdministrationAndSchemaCommandParser
       withFromYield(
         returnAllItems.withDefaultOrderOnColumns(List("name", "description", "value")),
         where = Some(where(
-          eq(
+          equals(
             varFor("name"),
             literalString("db.setting.sub_setting")
           )

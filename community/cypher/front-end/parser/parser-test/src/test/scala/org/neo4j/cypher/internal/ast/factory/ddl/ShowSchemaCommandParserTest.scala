@@ -48,6 +48,7 @@ import org.neo4j.cypher.internal.util.symbols.IntegerType
 
 /* Tests for listing indexes and constraints */
 class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTestBase {
+
   // Show indexes
 
   Seq("INDEX", "INDEXES").foreach { indexKeyword =>

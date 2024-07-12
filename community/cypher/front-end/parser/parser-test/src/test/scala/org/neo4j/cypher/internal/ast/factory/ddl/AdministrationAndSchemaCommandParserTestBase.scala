@@ -17,12 +17,7 @@
 package org.neo4j.cypher.internal.ast.factory.ddl
 
 import org.neo4j.cypher.internal.ast
-import org.neo4j.cypher.internal.ast.DatabaseName
-import org.neo4j.cypher.internal.ast.NamespacedName
-import org.neo4j.cypher.internal.ast.ParameterName
-import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.test.util.AstParsingTestBase
-import org.neo4j.cypher.internal.ast.test.util.LegacyAstParsingTestSupport
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.expressions.SensitiveStringLiteral
@@ -33,16 +28,16 @@ import org.neo4j.cypher.internal.util.symbols.CTString
 
 import java.nio.charset.StandardCharsets
 
-class AdministrationAndSchemaCommandParserTestBase extends AstParsingTestBase with LegacyAstParsingTestSupport {
+class AdministrationAndSchemaCommandParserTestBase extends AstParsingTestBase {
 
   protected def assertAst(expected: ast.Statement, comparePosition: Boolean = true): Unit = {
-    if (comparePosition) parses[Statements].toAstPositioned(Statements(Seq(expected)))
-    else parses[Statements].toAst(Statements(Seq(expected)))
+    if (comparePosition) parses[ast.Statements].toAstPositioned(ast.Statements(Seq(expected)))
+    else parses[ast.Statements].toAst(ast.Statements(Seq(expected)))
   }
 
   implicit val stringConvertor: String => Either[String, Parameter] = s => Left(s)
   implicit val rolenameConvertor: String => Expression = s => literalString(s)
-  implicit val namespacedNameConvertor: String => DatabaseName = s => NamespacedName(s)(pos)
+  implicit val namespacedNameConvertor: String => ast.DatabaseName = s => ast.NamespacedName(s)(pos)
 
   val propSeq: Seq[String] = Seq("prop")
   val accessString = "access"
@@ -61,7 +56,7 @@ class AdministrationAndSchemaCommandParserTestBase extends AstParsingTestBase wi
   val literalRole2: Expression = literal("role2")
   val paramUser: Parameter = stringParam("user")
   val paramFoo: Parameter = stringParam("foo")
-  val namespacedParamFoo: ParameterName = stringParamName("foo")
+  val namespacedParamFoo: ast.ParameterName = stringParamName("foo")
   val paramRole: Expression = stringParam("role")
   val paramRole1: Expression = stringParam("role1")
   val paramRole2: Expression = stringParam("role2")
@@ -79,11 +74,11 @@ class AdministrationAndSchemaCommandParserTestBase extends AstParsingTestBase wi
   def literal[T](name: String)(implicit convertor: String => T): T = convertor(name)
 
   def stringParam(name: String): Parameter = parameter(name, CTString)
-  def stringParamName(name: String): ParameterName = ParameterName(parameter(name, CTString))(pos)
+  def stringParamName(name: String): ast.ParameterName = ast.ParameterName(parameter(name, CTString))(pos)
 
-  def namespacedName(nameParts: String*): NamespacedName =
-    if (nameParts.size == 1) NamespacedName(nameParts.head)(_)
-    else NamespacedName(nameParts.tail.toList, Some(nameParts.head))(_)
+  def namespacedName(nameParts: String*): ast.NamespacedName =
+    if (nameParts.size == 1) ast.NamespacedName(nameParts.head)(_)
+    else ast.NamespacedName(nameParts.tail.toList, Some(nameParts.head))(_)
 
   def toUtf8Bytes(pw: String): Array[Byte] = pw.getBytes(StandardCharsets.UTF_8)
 
