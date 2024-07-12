@@ -28,7 +28,6 @@ import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.time.LocalDateTime;
 import java.util.BitSet;
-import java.util.Objects;
 import java.util.UUID;
 import org.neo4j.io.fs.InputStreamReadableChannel;
 import org.neo4j.io.fs.OutputStreamWritableChannel;
@@ -48,7 +47,7 @@ public class BackupMetadataV1 implements BackupMetadata {
     private final long highestAppendIndex;
 
     public static BackupMetadataV1 readFromStream(InputStream inputStream) throws IOException {
-        return readMetadataV1(inputStream);
+        return readMetadata(inputStream);
     }
 
     public BackupMetadataV1(BackupDescription description) {
@@ -113,21 +112,13 @@ public class BackupMetadataV1 implements BackupMetadata {
         return compressed;
     }
 
-    public long getLowestAppendIndex() {
-        return lowestAppendIndex;
-    }
-
-    public long getHighestAppendIndex() {
-        return highestAppendIndex;
-    }
-
-    void writeToStreamV1(OutputStream compressionStream) throws IOException {
+    public void writeToStream(OutputStream compressionStream) throws IOException {
         writeStoreId(compressionStream, getStoreId());
         writeDatabaseId(compressionStream, getDatabaseId());
         writeString(compressionStream, getDatabaseName());
         writeLong(compressionStream, getBackupTime().toEpochSecond(UTC));
-        writeLong(compressionStream, getLowestAppendIndex());
-        writeLong(compressionStream, getHighestAppendIndex());
+        writeLong(compressionStream, lowestAppendIndex);
+        writeLong(compressionStream, highestAppendIndex);
 
         BitSet flags = new BitSet(3);
         flags.set(0, isRecovered());
@@ -136,7 +127,7 @@ public class BackupMetadataV1 implements BackupMetadata {
         writeBitSet(compressionStream, flags);
     }
 
-    static BackupMetadataV1 readMetadataV1(InputStream inputStream) throws IOException {
+    private static BackupMetadataV1 readMetadata(InputStream inputStream) throws IOException {
         var storeId = readStoreId(inputStream);
         var databaseId = readDatabaseId(inputStream);
         var databaseName = readString(inputStream);
@@ -156,13 +147,13 @@ public class BackupMetadataV1 implements BackupMetadata {
                 flags.get(2));
     }
 
-    static void writeLong(OutputStream compressionStream, long value) throws IOException {
+    private static void writeLong(OutputStream compressionStream, long value) throws IOException {
         ByteBuffer byteBuffer = ByteBuffer.allocate(Long.BYTES);
         byteBuffer.putLong(value);
         compressionStream.write(byteBuffer.array());
     }
 
-    static long readLong(InputStream inputStream) throws IOException {
+    private static long readLong(InputStream inputStream) throws IOException {
         return ByteBuffer.wrap(inputStream.readNBytes(Long.BYTES)).getLong();
     }
 
@@ -215,36 +206,6 @@ public class BackupMetadataV1 implements BackupMetadata {
     @Override
     public BackupDescription toBackupDescription() {
         return new BackupDescription(
-                databaseName,
-                storeId,
-                databaseId,
-                backupTime,
-                recovered,
-                compressed,
-                full,
-                lowestAppendIndex,
-                highestAppendIndex);
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        BackupMetadataV1 that = (BackupMetadataV1) o;
-        return recovered == that.recovered
-                && compressed == that.compressed
-                && full == that.full
-                && lowestAppendIndex == that.lowestAppendIndex
-                && highestAppendIndex == that.highestAppendIndex
-                && Objects.equals(databaseName, that.databaseName)
-                && Objects.equals(storeId, that.storeId)
-                && Objects.equals(databaseId, that.databaseId)
-                && Objects.equals(backupTime, that.backupTime);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(
                 databaseName,
                 storeId,
                 databaseId,

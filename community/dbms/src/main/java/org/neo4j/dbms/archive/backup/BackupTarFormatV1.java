@@ -37,7 +37,7 @@ public class BackupTarFormatV1 implements BackupCompressionFormat {
     @Override
     public OutputStream compress(OutputStream stream) throws IOException {
         stream.write(MAGIC_HEADER.getBytes());
-        metadata.writeToStreamV1(stream);
+        metadata.writeToStream(stream);
         return stream;
     }
 

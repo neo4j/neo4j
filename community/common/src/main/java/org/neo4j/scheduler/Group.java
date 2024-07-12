@@ -138,7 +138,6 @@ public enum Group {
     CONNECTIVITY_CHECKS("ConnectivityChecks"),
     RAFTED_STATUS_CHECKS("RaftedStatusChecks"),
     COMMIT_COORDINATOR("CommitCoordinator"),
-    METADATA_SCRIPT_PROVIDER("MetadataScriptProvider"),
 
     /** Rolls back idle transactions on the server. */
     SERVER_TRANSACTION_TIMEOUT("ServerTransactionTimeout"),
