@@ -202,6 +202,11 @@
             <version>${project.version}</version>
         </dependency>
         <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-genai-plugin</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
             <groupId>org.neo4j.driver</groupId>
             <artifactId>neo4j-java-driver</artifactId>
             <!-- scope from public pom seems to overwrite the scope from cypher-shell -->

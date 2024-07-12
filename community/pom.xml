@@ -84,6 +84,7 @@
     <module>cloud</module>
     <module>neo4j-gql-status</module>
     <module>udc</module>
+    <module>genai-plugin</module>
   </modules>
 
   <profiles>

@@ -83,8 +83,20 @@
       <useProjectArtifact>false</useProjectArtifact>
       <useStrictFiltering>true</useStrictFiltering>
       <excludes>
+        <exclude>org.neo4j:neo4j-genai-plugin</exclude>
         <exclude>org.ow2.asm:*</exclude>
       </excludes>
+    </dependencySet>
+    <dependencySet>
+      <outputDirectory>products</outputDirectory>
+      <directoryMode>0755</directoryMode>
+      <fileMode>0644</fileMode>
+      <unpack>false</unpack>
+      <useProjectArtifact>false</useProjectArtifact>
+      <useStrictFiltering>true</useStrictFiltering>
+      <includes>
+        <include>org.neo4j:neo4j-genai-plugin</include>
+      </includes>
     </dependencySet>
  </dependencySets>
 
