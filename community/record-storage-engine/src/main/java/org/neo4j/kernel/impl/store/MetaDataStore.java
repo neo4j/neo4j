@@ -207,12 +207,6 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord, NoStoreHe
         }
     }
 
-    public long getHighId() {
-        Position[] values = Position.values();
-        Position lastPosition = values[values.length - 1];
-        return lastPosition.firstSlotId + lastPosition.slotCount + 1;
-    }
-
     @Override
     public long getCheckpointLogVersion() {
         assertNotClosed();
