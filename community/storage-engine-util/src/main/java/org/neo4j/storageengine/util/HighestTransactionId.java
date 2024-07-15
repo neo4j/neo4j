@@ -54,17 +54,17 @@ public class HighestTransactionId {
             int checksum,
             long commitTimestamp,
             long consensusIndex) {
-        TransactionId high = highest.get();
+        TransactionId high = highest.getAcquire();
         if (transactionId < high.id()) { // a higher id has already been offered
             return false;
         }
 
         TransactionId update =
                 new TransactionId(transactionId, appendIndex, kernelVersion, checksum, commitTimestamp, consensusIndex);
-        while (!highest.compareAndSet(high, update)) {
-            high = highest.get();
-            if (high.id()
-                    >= transactionId) { // apparently someone else set a higher id while we were trying to set this id
+        while (!highest.weakCompareAndSetVolatile(high, update)) {
+            high = highest.getAcquire();
+            // Someone else set a higher id while we were trying to set this id
+            if (high.id() >= transactionId) {
                 return false;
             }
         }
