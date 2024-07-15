@@ -78,18 +78,16 @@ public final class SchemaDescriptorImplementation
 
     private SchemaArchetype detectArchetype(
             EntityType entityType, SchemaPatternMatchingType schemaPatternMatchingType, int[] entityTokens) {
-        if (entityType == NODE && entityTokens.length == 1 && schemaPatternMatchingType == COMPLETE_ALL_TOKENS) {
-            return SchemaArchetype.LABEL_PROPERTY;
-        }
-        if (entityType == RELATIONSHIP
-                && entityTokens.length == 1
-                && schemaPatternMatchingType == COMPLETE_ALL_TOKENS) {
-            return SchemaArchetype.RELATIONSHIP_PROPERTY;
-        }
-        if (schemaPatternMatchingType == PARTIAL_ANY_TOKEN) {
+
+        if (entityTokens.length == 1 && schemaPatternMatchingType == COMPLETE_ALL_TOKENS) {
+            if (entityType == NODE) {
+                return SchemaArchetype.LABEL_PROPERTY;
+            } else if (entityType == RELATIONSHIP) {
+                return SchemaArchetype.RELATIONSHIP_PROPERTY;
+            }
+        } else if (schemaPatternMatchingType == PARTIAL_ANY_TOKEN) {
             return SchemaArchetype.MULTI_TOKEN;
-        }
-        if (schemaPatternMatchingType == ENTITY_TOKENS) {
+        } else if (schemaPatternMatchingType == ENTITY_TOKENS) {
             return SchemaArchetype.ANY_TOKEN;
         }
         throw new IllegalArgumentException("Can't detect schema archetype for arguments: " + entityType + " "
