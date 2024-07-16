@@ -79,8 +79,9 @@ class OnlineIndexSamplingJob implements IndexSamplingJob {
                         IndexSampler sampler = reader.createSampler()) {
                     IndexSample sample = sampler.sampleIndex(cursorContext, stopped);
 
+                    boolean wasInterrupted = stopped.get();
                     // check again if the index is online before saving the counts in the store
-                    if (indexProxy.getState() == ONLINE) {
+                    if (indexProxy.getState() == ONLINE && !wasInterrupted) {
                         indexStatisticsStore.setSampleStats(indexId, sample);
                         durationLogger.markAsFinished();
                         log.debug(format(
@@ -88,7 +89,8 @@ class OnlineIndexSamplingJob implements IndexSamplingJob {
                                         + "index containing %d entries",
                                 indexUserDescription, sample.uniqueValues(), sample.sampleSize(), sample.indexSize()));
                     } else {
-                        durationLogger.markAsAborted("Index no longer ONLINE");
+                        durationLogger.markAsAborted(
+                                wasInterrupted ? "Sampling job aborted" : "Index no longer ONLINE");
                     }
                 }
             } catch (IndexNotFoundKernelException e) {

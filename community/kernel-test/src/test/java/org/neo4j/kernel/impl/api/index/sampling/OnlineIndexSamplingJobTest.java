@@ -103,6 +103,21 @@ class OnlineIndexSamplingJobTest {
     }
 
     @Test
+    void shouldNotUpdateStatisticsStoreForStoppedSamplingJob() {
+        // given
+        OnlineIndexSamplingJob job = new OnlineIndexSamplingJob(
+                indexId, indexProxy, indexStatisticsStore, "Foo", "Foo", logProvider, CONTEXT_FACTORY);
+        when(indexProxy.getState()).thenReturn(ONLINE);
+
+        // when
+        AtomicBoolean stopped = new AtomicBoolean(true);
+        job.run(stopped);
+
+        // then
+        verifyNoMoreInteractions(indexStatisticsStore);
+    }
+
+    @Test
     void usePageCursorToTraceIndexSampling() throws IndexNotFoundKernelException {
         var pageCacheTracer = mock(PageCacheTracer.class);
         var pageCursorTracer = mock(PageCursorTracer.class);

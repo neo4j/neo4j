@@ -40,6 +40,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.RETURNS_MOCKS;
+import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
@@ -1726,7 +1727,7 @@ class IndexingServiceTest {
     }
 
     @Test
-    void shouldStopBackgroundSampling() throws Exception {
+    void shouldStopBackgroundSampling() {
         assertTimeoutPreemptively(Duration.ofSeconds(30), () -> {
             var localLife = new LifeSupport();
             var indexingService = newIndexingServiceWithMockedDependencies(
@@ -1745,9 +1746,12 @@ class IndexingServiceTest {
             when(indexReader.createSampler()).thenReturn(neverEndingSampler);
             when(accessor.newValueReader(any())).thenReturn(indexReader);
 
+            clearInvocations(indexStatisticsStore);
             indexingService.triggerIndexSampling(backgroundRebuildAll());
             // shouldn't hang
             localLife.stop();
+            // and the index statistics store should not have been updated
+            verifyNoInteractions(indexStatisticsStore);
         });
     }
 
