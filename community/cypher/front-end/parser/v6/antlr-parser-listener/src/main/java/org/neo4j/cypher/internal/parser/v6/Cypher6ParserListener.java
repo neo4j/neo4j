@@ -333,27 +333,19 @@ public interface Cypher6ParserListener extends ParseTreeListener {
 
     void exitComposableShowCommandClauses(Cypher6Parser.ComposableShowCommandClausesContext ctx);
 
-    void exitShowBriefAndYield(Cypher6Parser.ShowBriefAndYieldContext ctx);
-
     void exitShowIndexCommand(Cypher6Parser.ShowIndexCommandContext ctx);
 
-    void exitShowIndexesAllowBrief(Cypher6Parser.ShowIndexesAllowBriefContext ctx);
+    void exitShowIndexType(Cypher6Parser.ShowIndexTypeContext ctx);
 
-    void exitShowIndexesNoBrief(Cypher6Parser.ShowIndexesNoBriefContext ctx);
+    void exitShowIndexesEnd(Cypher6Parser.ShowIndexesEndContext ctx);
 
     void exitShowConstraintCommand(Cypher6Parser.ShowConstraintCommandContext ctx);
 
-    void exitConstraintAllowYieldType(Cypher6Parser.ConstraintAllowYieldTypeContext ctx);
+    void exitShowConstraintEntity(Cypher6Parser.ShowConstraintEntityContext ctx);
 
     void exitConstraintExistType(Cypher6Parser.ConstraintExistTypeContext ctx);
 
-    void exitConstraintBriefAndYieldType(Cypher6Parser.ConstraintBriefAndYieldTypeContext ctx);
-
-    void exitShowConstraintsAllowBriefAndYield(Cypher6Parser.ShowConstraintsAllowBriefAndYieldContext ctx);
-
-    void exitShowConstraintsAllowBrief(Cypher6Parser.ShowConstraintsAllowBriefContext ctx);
-
-    void exitShowConstraintsAllowYield(Cypher6Parser.ShowConstraintsAllowYieldContext ctx);
+    void exitShowConstraintsEnd(Cypher6Parser.ShowConstraintsEndContext ctx);
 
     void exitShowProcedures(Cypher6Parser.ShowProceduresContext ctx);
 
@@ -388,8 +380,6 @@ public interface Cypher6ParserListener extends ParseTreeListener {
     void exitDropConstraint(Cypher6Parser.DropConstraintContext ctx);
 
     void exitCreateIndex(Cypher6Parser.CreateIndexContext ctx);
-
-    void exitOldCreateIndex(Cypher6Parser.OldCreateIndexContext ctx);
 
     void exitCreateIndex_(Cypher6Parser.CreateIndex_Context ctx);
 

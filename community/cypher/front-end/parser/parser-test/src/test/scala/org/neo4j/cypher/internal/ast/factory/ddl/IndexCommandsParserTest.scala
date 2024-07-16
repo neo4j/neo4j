@@ -17,6 +17,7 @@
 package org.neo4j.cypher.internal.ast.factory.ddl
 
 import org.neo4j.cypher.internal.ast
+import org.neo4j.cypher.internal.ast.test.util.AstParsing.Cypher5
 import org.neo4j.cypher.internal.ast.test.util.AstParsing.Cypher5JavaCc
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.Parameter
@@ -35,13 +36,41 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   // Create node index (old syntax)
 
   test("CREATE INDEX ON :Person(name)") {
-    parsesTo[ast.Statements](ast.CreateIndexOldSyntax(labelName("Person"), List(propName("name")))(pos))
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc =>
+        _.withMessageStart(
+          "Invalid create index syntax, use `CREATE INDEX FOR ...` instead. (line 1, column 1 (offset: 0))"
+        )
+      case Cypher5 => _.withSyntaxError(
+          """Invalid create index syntax, use `CREATE INDEX FOR ...` instead. (line 1, column 14 (offset: 13))
+            |"CREATE INDEX ON :Person(name)"
+            |              ^""".stripMargin
+        )
+      case _ => _.withSyntaxError(
+          """Invalid input ':': expected 'IF NOT EXISTS' or 'FOR' (line 1, column 17 (offset: 16))
+            |"CREATE INDEX ON :Person(name)"
+            |                 ^""".stripMargin
+        )
+    }
   }
 
   test("CREATE INDEX ON :Person(name,age)") {
-    parsesTo[ast.Statements](
-      ast.CreateIndexOldSyntax(labelName("Person"), List(propName("name"), propName("age")))(pos)
-    )
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc =>
+        _.withMessageStart(
+          "Invalid create index syntax, use `CREATE INDEX FOR ...` instead. (line 1, column 1 (offset: 0))"
+        )
+      case Cypher5 => _.withSyntaxError(
+          """Invalid create index syntax, use `CREATE INDEX FOR ...` instead. (line 1, column 14 (offset: 13))
+            |"CREATE INDEX ON :Person(name,age)"
+            |              ^""".stripMargin
+        )
+      case _ => _.withSyntaxError(
+          """Invalid input ':': expected 'IF NOT EXISTS' or 'FOR' (line 1, column 17 (offset: 16))
+            |"CREATE INDEX ON :Person(name,age)"
+            |                 ^""".stripMargin
+        )
+    }
   }
 
   test("CREATE INDEX my_index ON :Person(name)") {
@@ -72,10 +101,15 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
     failsParsing[ast.Statements].in {
       case Cypher5JavaCc =>
         _.withMessageStart("'REPLACE' is not allowed for this index syntax (line 1, column 1 (offset: 0))")
-      case _ => _.withSyntaxError(
+      case Cypher5 => _.withSyntaxError(
           """'REPLACE' is not allowed for this index syntax (line 1, column 11 (offset: 10))
             |"CREATE OR REPLACE INDEX ON :Person(name)"
             |           ^""".stripMargin
+        )
+      case _ => _.withSyntaxError(
+          """Invalid input ':': expected 'IF NOT EXISTS' or 'FOR' (line 1, column 28 (offset: 27))
+            |"CREATE OR REPLACE INDEX ON :Person(name)"
+            |                            ^""".stripMargin
         )
     }
   }
@@ -3334,11 +3368,41 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   // Drop index
 
   test("DROP INDEX ON :Person(name)") {
-    parsesTo[ast.Statements](ast.DropIndex(labelName("Person"), List(propName("name")))(pos))
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc =>
+        _.withMessageStart(
+          "Indexes cannot be dropped by schema, please drop by name instead: DROP INDEX index_name. The index name can be found using SHOW INDEXES. (line 1, column 1 (offset: 0))"
+        )
+      case Cypher5 => _.withSyntaxError(
+          """Indexes cannot be dropped by schema, please drop by name instead: DROP INDEX index_name. The index name can be found using SHOW INDEXES. (line 1, column 12 (offset: 11))
+            |"DROP INDEX ON :Person(name)"
+            |            ^""".stripMargin
+        )
+      case _ => _.withSyntaxError(
+          """Invalid input ':': expected 'IF EXISTS' or <EOF> (line 1, column 15 (offset: 14))
+            |"DROP INDEX ON :Person(name)"
+            |               ^""".stripMargin
+        )
+    }
   }
 
   test("DROP INDEX ON :Person(name, age)") {
-    parsesTo[ast.Statements](ast.DropIndex(labelName("Person"), List(propName("name"), propName("age")))(pos))
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc =>
+        _.withMessageStart(
+          "Indexes cannot be dropped by schema, please drop by name instead: DROP INDEX index_name. The index name can be found using SHOW INDEXES. (line 1, column 1 (offset: 0))"
+        )
+      case Cypher5 => _.withSyntaxError(
+          """Indexes cannot be dropped by schema, please drop by name instead: DROP INDEX index_name. The index name can be found using SHOW INDEXES. (line 1, column 12 (offset: 11))
+            |"DROP INDEX ON :Person(name, age)"
+            |            ^""".stripMargin
+        )
+      case _ => _.withSyntaxError(
+          """Invalid input ':': expected 'IF EXISTS' or <EOF> (line 1, column 15 (offset: 14))
+            |"DROP INDEX ON :Person(name, age)"
+            |               ^""".stripMargin
+        )
+    }
   }
 
   test("DROP INDEX my_index") {
@@ -3373,8 +3437,13 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
     failsParsing[ast.Statements].in {
       case Cypher5JavaCc =>
         _.withMessageStart("Invalid input '(': expected \"IF\" or <EOF> (line 1, column 15 (offset: 14))")
-      case _ => _.withSyntaxError(
+      case Cypher5 => _.withSyntaxError(
           """Invalid input '(': expected ':', 'IF EXISTS' or <EOF> (line 1, column 15 (offset: 14))
+            |"DROP INDEX ON (:Person(name))"
+            |               ^""".stripMargin
+        )
+      case _ => _.withSyntaxError(
+          """Invalid input '(': expected 'IF EXISTS' or <EOF> (line 1, column 15 (offset: 14))
             |"DROP INDEX ON (:Person(name))"
             |               ^""".stripMargin
         )
@@ -3385,8 +3454,13 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
     failsParsing[ast.Statements].in {
       case Cypher5JavaCc =>
         _.withMessageStart("Invalid input '(': expected \"IF\" or <EOF> (line 1, column 15 (offset: 14))")
-      case _ => _.withSyntaxError(
+      case Cypher5 => _.withSyntaxError(
           """Invalid input '(': expected ':', 'IF EXISTS' or <EOF> (line 1, column 15 (offset: 14))
+            |"DROP INDEX ON (:Person {name})"
+            |               ^""".stripMargin
+        )
+      case _ => _.withSyntaxError(
+          """Invalid input '(': expected 'IF EXISTS' or <EOF> (line 1, column 15 (offset: 14))
             |"DROP INDEX ON (:Person {name})"
             |               ^""".stripMargin
         )
@@ -3397,8 +3471,13 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
     failsParsing[ast.Statements].in {
       case Cypher5JavaCc =>
         _.withMessageStart("Invalid input '[': expected \"IF\" or <EOF> (line 1, column 15 (offset: 14))")
-      case _ => _.withSyntaxError(
+      case Cypher5 => _.withSyntaxError(
           """Invalid input '[': expected ':', 'IF EXISTS' or <EOF> (line 1, column 15 (offset: 14))
+            |"DROP INDEX ON [:Person(name)]"
+            |               ^""".stripMargin
+        )
+      case _ => _.withSyntaxError(
+          """Invalid input '[': expected 'IF EXISTS' or <EOF> (line 1, column 15 (offset: 14))
             |"DROP INDEX ON [:Person(name)]"
             |               ^""".stripMargin
         )
@@ -3409,8 +3488,13 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
     failsParsing[ast.Statements].in {
       case Cypher5JavaCc =>
         _.withMessageStart("Invalid input '-': expected \"IF\" or <EOF> (line 1, column 15 (offset: 14))")
-      case _ => _.withSyntaxError(
+      case Cypher5 => _.withSyntaxError(
           """Invalid input '-': expected ':', 'IF EXISTS' or <EOF> (line 1, column 15 (offset: 14))
+            |"DROP INDEX ON -[:Person(name)]-"
+            |               ^""".stripMargin
+        )
+      case _ => _.withSyntaxError(
+          """Invalid input '-': expected 'IF EXISTS' or <EOF> (line 1, column 15 (offset: 14))
             |"DROP INDEX ON -[:Person(name)]-"
             |               ^""".stripMargin
         )
@@ -3421,8 +3505,13 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
     failsParsing[ast.Statements].in {
       case Cypher5JavaCc =>
         _.withMessageStart("Invalid input '(': expected \"IF\" or <EOF> (line 1, column 15 (offset: 14))")
-      case _ => _.withSyntaxError(
+      case Cypher5 => _.withSyntaxError(
           """Invalid input '(': expected ':', 'IF EXISTS' or <EOF> (line 1, column 15 (offset: 14))
+            |"DROP INDEX ON ()-[:Person(name)]-()"
+            |               ^""".stripMargin
+        )
+      case _ => _.withSyntaxError(
+          """Invalid input '(': expected 'IF EXISTS' or <EOF> (line 1, column 15 (offset: 14))
             |"DROP INDEX ON ()-[:Person(name)]-()"
             |               ^""".stripMargin
         )
@@ -3433,8 +3522,13 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
     failsParsing[ast.Statements].in {
       case Cypher5JavaCc =>
         _.withMessageStart("Invalid input '[': expected \"IF\" or <EOF> (line 1, column 15 (offset: 14))")
-      case _ => _.withSyntaxError(
+      case Cypher5 => _.withSyntaxError(
           """Invalid input '[': expected ':', 'IF EXISTS' or <EOF> (line 1, column 15 (offset: 14))
+            |"DROP INDEX ON [:Person {name}]"
+            |               ^""".stripMargin
+        )
+      case _ => _.withSyntaxError(
+          """Invalid input '[': expected 'IF EXISTS' or <EOF> (line 1, column 15 (offset: 14))
             |"DROP INDEX ON [:Person {name}]"
             |               ^""".stripMargin
         )
@@ -3445,8 +3539,13 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
     failsParsing[ast.Statements].in {
       case Cypher5JavaCc =>
         _.withMessageStart("Invalid input '-': expected \"IF\" or <EOF> (line 1, column 15 (offset: 14))")
-      case _ => _.withSyntaxError(
+      case Cypher5 => _.withSyntaxError(
           """Invalid input '-': expected ':', 'IF EXISTS' or <EOF> (line 1, column 15 (offset: 14))
+            |"DROP INDEX ON -[:Person {name}]-"
+            |               ^""".stripMargin
+        )
+      case _ => _.withSyntaxError(
+          """Invalid input '-': expected 'IF EXISTS' or <EOF> (line 1, column 15 (offset: 14))
             |"DROP INDEX ON -[:Person {name}]-"
             |               ^""".stripMargin
         )
@@ -3457,8 +3556,13 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
     failsParsing[ast.Statements].in {
       case Cypher5JavaCc =>
         _.withMessageStart("Invalid input '(': expected \"IF\" or <EOF> (line 1, column 15 (offset: 14))")
-      case _ => _.withSyntaxError(
+      case Cypher5 => _.withSyntaxError(
           """Invalid input '(': expected ':', 'IF EXISTS' or <EOF> (line 1, column 15 (offset: 14))
+            |"DROP INDEX ON ()-[:Person {name}]-()"
+            |               ^""".stripMargin
+        )
+      case _ => _.withSyntaxError(
+          """Invalid input '(': expected 'IF EXISTS' or <EOF> (line 1, column 15 (offset: 14))
             |"DROP INDEX ON ()-[:Person {name}]-()"
             |               ^""".stripMargin
         )
@@ -3474,7 +3578,22 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   }
 
   test("DROP INDEX ON :if(exists)") {
-    parsesTo[ast.Statements](ast.DropIndex(labelName("if"), List(propName("exists")))(pos))
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc =>
+        _.withMessageStart(
+          "Indexes cannot be dropped by schema, please drop by name instead: DROP INDEX index_name. The index name can be found using SHOW INDEXES. (line 1, column 1 (offset: 0))"
+        )
+      case Cypher5 => _.withSyntaxError(
+          """Indexes cannot be dropped by schema, please drop by name instead: DROP INDEX index_name. The index name can be found using SHOW INDEXES. (line 1, column 12 (offset: 11))
+            |"DROP INDEX ON :if(exists)"
+            |            ^""".stripMargin
+        )
+      case _ => _.withSyntaxError(
+          """Invalid input ':': expected 'IF EXISTS' or <EOF> (line 1, column 15 (offset: 14))
+            |"DROP INDEX ON :if(exists)"
+            |               ^""".stripMargin
+        )
+    }
   }
 
   // help methods

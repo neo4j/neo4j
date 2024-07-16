@@ -36,9 +36,6 @@ import org.neo4j.cypher.internal.ast.AlterUser
 import org.neo4j.cypher.internal.ast.AscSortItem
 import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.CommandResultItem
-import org.neo4j.cypher.internal.ast.ConstraintVersion
-import org.neo4j.cypher.internal.ast.ConstraintVersion0
-import org.neo4j.cypher.internal.ast.ConstraintVersion2
 import org.neo4j.cypher.internal.ast.Create
 import org.neo4j.cypher.internal.ast.CreateCompositeDatabase
 import org.neo4j.cypher.internal.ast.CreateDatabase
@@ -355,12 +352,6 @@ case class Prettifier(
     def fulltextPropertiesToString(properties: Seq[Property]): String =
       properties.map(propertyToString).mkString("[", ", ", "]")
     def propertyToString(property: Property): String = s"${expr(property.map)}.${backtick(property.propertyKey.name)}"
-    def propertyToStringExistenceConstraint(property: Property, constraintVersion: ConstraintVersion): String = {
-      constraintVersion match {
-        case ConstraintVersion0 => s"exists(${propertyToString(property)})"
-        case _                  => s"(${propertyToString(property)}) IS NOT NULL"
-      }
-    }
 
     def getStartOfCommand(
       name: Option[Either[String, Parameter]],
@@ -484,14 +475,10 @@ case class Prettifier(
           name,
           ifExistsDo,
           options,
-          containsOn,
-          constraintVersion,
           _
         ) =>
         val startOfCommand = getStartOfCommand(name, ifExistsDo, "CONSTRAINT")
-        val forOrOn = if (containsOn) "ON" else "FOR"
-        val assertOrRequire = if (constraintVersion == ConstraintVersion2) "REQUIRE" else "ASSERT"
-        s"$startOfCommand$forOrOn (${backtick(variable)}:${backtick(label)}) $assertOrRequire ${propertiesToString(properties)} IS NODE KEY${asString(options)}"
+        s"${startOfCommand}FOR (${backtick(variable)}:${backtick(label)}) REQUIRE ${propertiesToString(properties)} IS NODE KEY${asString(options)}"
 
       case CreateRelationshipKeyConstraint(
           Variable(variable),
@@ -500,14 +487,10 @@ case class Prettifier(
           name,
           ifExistsDo,
           options,
-          containsOn,
-          constraintVersion,
           _
         ) =>
         val startOfCommand = getStartOfCommand(name, ifExistsDo, "CONSTRAINT")
-        val forOrOn = if (containsOn) "ON" else "FOR"
-        val assertOrRequire = if (constraintVersion == ConstraintVersion2) "REQUIRE" else "ASSERT"
-        s"$startOfCommand$forOrOn ()-[${backtick(variable)}:${backtick(relType)}]-() $assertOrRequire ${propertiesToString(properties)} IS RELATIONSHIP KEY${asString(options)}"
+        s"${startOfCommand}FOR ()-[${backtick(variable)}:${backtick(relType)}]-() REQUIRE ${propertiesToString(properties)} IS RELATIONSHIP KEY${asString(options)}"
 
       case CreateNodePropertyUniquenessConstraint(
           Variable(variable),
@@ -516,14 +499,10 @@ case class Prettifier(
           name,
           ifExistsDo,
           options,
-          containsOn,
-          constraintVersion,
           _
         ) =>
         val startOfCommand = getStartOfCommand(name, ifExistsDo, "CONSTRAINT")
-        val forOrOn = if (containsOn) "ON" else "FOR"
-        val assertOrRequire = if (constraintVersion == ConstraintVersion2) "REQUIRE" else "ASSERT"
-        s"$startOfCommand$forOrOn (${backtick(variable)}:${backtick(label)}) $assertOrRequire ${propertiesToString(properties)} IS UNIQUE${asString(options)}"
+        s"${startOfCommand}FOR (${backtick(variable)}:${backtick(label)}) REQUIRE ${propertiesToString(properties)} IS UNIQUE${asString(options)}"
 
       case CreateRelationshipPropertyUniquenessConstraint(
           Variable(variable),
@@ -532,14 +511,10 @@ case class Prettifier(
           name,
           ifExistsDo,
           options,
-          containsOn,
-          constraintVersion,
           _
         ) =>
         val startOfCommand = getStartOfCommand(name, ifExistsDo, "CONSTRAINT")
-        val forOrOn = if (containsOn) "ON" else "FOR"
-        val assertOrRequire = if (constraintVersion == ConstraintVersion2) "REQUIRE" else "ASSERT"
-        s"$startOfCommand$forOrOn ()-[${backtick(variable)}:${backtick(relType)}]-() $assertOrRequire ${propertiesToString(properties)} IS UNIQUE${asString(options)}"
+        s"${startOfCommand}FOR ()-[${backtick(variable)}:${backtick(relType)}]-() REQUIRE ${propertiesToString(properties)} IS UNIQUE${asString(options)}"
 
       case CreateNodePropertyExistenceConstraint(
           Variable(variable),
@@ -548,16 +523,11 @@ case class Prettifier(
           name,
           ifExistsDo,
           options,
-          containsOn,
-          constraintVersion,
           _
         ) =>
         val startOfCommand = getStartOfCommand(name, ifExistsDo, "CONSTRAINT")
-        val propertyString = propertyToStringExistenceConstraint(property, constraintVersion)
         val optionsString = asString(options)
-        val forOrOn = if (containsOn) "ON" else "FOR"
-        val assertOrRequire = if (constraintVersion == ConstraintVersion2) "REQUIRE" else "ASSERT"
-        s"$startOfCommand$forOrOn (${backtick(variable)}:${backtick(label)}) $assertOrRequire $propertyString$optionsString"
+        s"${startOfCommand}FOR (${backtick(variable)}:${backtick(label)}) REQUIRE (${propertyToString(property)}) IS NOT NULL$optionsString"
 
       case CreateRelationshipPropertyExistenceConstraint(
           Variable(variable),
@@ -566,16 +536,11 @@ case class Prettifier(
           name,
           ifExistsDo,
           options,
-          containsOn,
-          constraintVersion,
           _
         ) =>
         val startOfCommand = getStartOfCommand(name, ifExistsDo, "CONSTRAINT")
-        val propertyString = propertyToStringExistenceConstraint(property, constraintVersion)
         val optionsString = asString(options)
-        val forOrOn = if (containsOn) "ON" else "FOR"
-        val assertOrRequire = if (constraintVersion == ConstraintVersion2) "REQUIRE" else "ASSERT"
-        s"$startOfCommand$forOrOn ()-[${backtick(variable)}:${backtick(relType)}]-() $assertOrRequire $propertyString$optionsString"
+        s"${startOfCommand}FOR ()-[${backtick(variable)}:${backtick(relType)}]-() REQUIRE (${propertyToString(property)}) IS NOT NULL$optionsString"
 
       case c @ CreateNodePropertyTypeConstraint(
           Variable(variable),
@@ -585,16 +550,12 @@ case class Prettifier(
           name,
           ifExistsDo,
           options,
-          containsOn,
-          constraintVersion,
           _
         ) =>
         val startOfCommand = getStartOfCommand(name, ifExistsDo, "CONSTRAINT")
         val propertyString = s"(${propertyToString(property)}) IS :: ${c.normalizedPropertyType.description}"
         val optionsString = asString(options)
-        val forOrOn = if (containsOn) "ON" else "FOR"
-        val assertOrRequire = if (constraintVersion == ConstraintVersion2) "REQUIRE" else "ASSERT"
-        s"$startOfCommand$forOrOn (${backtick(variable)}:${backtick(label)}) $assertOrRequire $propertyString$optionsString"
+        s"${startOfCommand}FOR (${backtick(variable)}:${backtick(label)}) REQUIRE $propertyString$optionsString"
 
       case c @ CreateRelationshipPropertyTypeConstraint(
           Variable(variable),
@@ -604,16 +565,12 @@ case class Prettifier(
           name,
           ifExistsDo,
           options,
-          containsOn,
-          constraintVersion,
           _
         ) =>
         val startOfCommand = getStartOfCommand(name, ifExistsDo, "CONSTRAINT")
         val propertyString = s"(${propertyToString(property)}) IS :: ${c.normalizedPropertyType.description}"
         val optionsString = asString(options)
-        val forOrOn = if (containsOn) "ON" else "FOR"
-        val assertOrRequire = if (constraintVersion == ConstraintVersion2) "REQUIRE" else "ASSERT"
-        s"$startOfCommand$forOrOn ()-[${backtick(variable)}:${backtick(relType)}]-() $assertOrRequire $propertyString$optionsString"
+        s"${startOfCommand}FOR ()-[${backtick(variable)}:${backtick(relType)}]-() REQUIRE $propertyString$optionsString"
 
       case DropConstraintOnName(name, ifExists, _) =>
         val ifExistsString = if (ifExists) " IF EXISTS" else ""

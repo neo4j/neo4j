@@ -33,7 +33,6 @@ import org.neo4j.cypher.internal.parser.common.ast.factory.ASTExceptionFactory
 import org.neo4j.cypher.internal.parser.common.ast.factory.ConstraintType
 import org.neo4j.cypher.internal.parser.common.ast.factory.HintIndexType
 import org.neo4j.cypher.internal.parser.v6.Cypher6Parser
-import org.neo4j.cypher.internal.parser.v6.Cypher6Parser.ConstraintExistsContext
 import org.neo4j.cypher.internal.parser.v6.Cypher6Parser.ConstraintIsNotNullContext
 import org.neo4j.cypher.internal.parser.v6.Cypher6Parser.ConstraintIsUniqueContext
 import org.neo4j.cypher.internal.parser.v6.Cypher6Parser.ConstraintKeyContext
@@ -67,10 +66,8 @@ final class Cypher6SyntaxChecker(exceptionFactory: CypherExceptionFactory) exten
     ctx.getRuleIndex match {
       case Cypher6Parser.RULE_periodicCommitQueryHintFailure   => checkPeriodicCommitQueryHintFailure(cast(ctx))
       case Cypher6Parser.RULE_subqueryInTransactionsParameters => checkSubqueryInTransactionsParameters(cast(ctx))
-      case Cypher6Parser.RULE_createCommand                    => checkCreateCommand(cast(ctx))
       case Cypher6Parser.RULE_createConstraint                 => checkCreateConstraint(cast(ctx))
       case Cypher6Parser.RULE_enclosedPropertyList             => checkEnclosedPropertyList(cast(ctx))
-      case Cypher6Parser.RULE_dropConstraint                   => checkDropConstraint(cast(ctx))
       case Cypher6Parser.RULE_createLookupIndex                => checkCreateLookupIndex(cast(ctx))
       case Cypher6Parser.RULE_createUser                       => checkCreateUser(cast(ctx))
       case Cypher6Parser.RULE_alterUser                        => checkAlterUser(cast(ctx))
@@ -346,7 +343,7 @@ final class Cypher6SyntaxChecker(exceptionFactory: CypherExceptionFactory) exten
             inputPosition(ctx.commandRelPattern().getStart)
           )
         }
-      case _: ConstraintExistsContext | _: ConstraintTypedContext | _: ConstraintIsNotNullContext =>
+      case _: ConstraintTypedContext | _: ConstraintIsNotNullContext =>
       case _ =>
         _errors :+= exceptionFactory.syntaxException(
           "Constraint type is not recognized",
@@ -359,11 +356,6 @@ final class Cypher6SyntaxChecker(exceptionFactory: CypherExceptionFactory) exten
     if (ctx.property().size() > 1 && ctx.getParent != null) {
       val secondProperty = ctx.property(1).start
       ctx.getParent.getParent match {
-        case _: ConstraintExistsContext =>
-          _errors :+= exceptionFactory.syntaxException(
-            "Constraint type 'EXISTS' does not allow multiple properties",
-            inputPosition(secondProperty)
-          )
         case _: ConstraintTypedContext =>
           _errors :+= exceptionFactory.syntaxException(
             "Constraint type 'IS TYPED' does not allow multiple properties",
@@ -381,31 +373,6 @@ final class Cypher6SyntaxChecker(exceptionFactory: CypherExceptionFactory) exten
           )
         case _ =>
       }
-    }
-  }
-
-  private def checkDropConstraint(ctx: Cypher6Parser.DropConstraintContext): Unit = {
-    val relPattern = ctx.commandRelPattern()
-    if (relPattern != null) {
-      val errorMessageEnd = "does not allow relationship patterns"
-      if (ctx.KEY() != null) {
-        _errors :+= exceptionFactory.syntaxException(
-          s"'${ConstraintType.NODE_KEY.description()}' $errorMessageEnd",
-          inputPosition(relPattern.getStart)
-        )
-      } else if (ctx.UNIQUE() != null) {
-        _errors :+= exceptionFactory.syntaxException(
-          s"'${ConstraintType.NODE_UNIQUE.description()}' $errorMessageEnd",
-          inputPosition(relPattern.getStart)
-        )
-      }
-    }
-
-    if (ctx.NULL() != null) {
-      _errors :+= exceptionFactory.syntaxException(
-        "Unsupported drop constraint command: Please delete the constraint by name instead",
-        inputPosition(ctx.start)
-      )
     }
   }
 
@@ -469,20 +436,6 @@ final class Cypher6SyntaxChecker(exceptionFactory: CypherExceptionFactory) exten
       "The PERIODIC COMMIT query hint is no longer supported. Please use CALL { ... } IN TRANSACTIONS instead.",
       inputPosition(periodic)
     )
-  }
-
-  private def checkCreateCommand(ctx: Cypher6Parser.CreateCommandContext): Unit = {
-    val createIndex = ctx.createIndex()
-    val replace = ctx.REPLACE()
-
-    if (createIndex != null && replace != null) {
-      if (createIndex.oldCreateIndex() != null) {
-        _errors :+= exceptionFactory.syntaxException(
-          "'REPLACE' is not allowed for this index syntax",
-          inputPosition(replace.getSymbol)
-        )
-      }
-    }
   }
 
   private def checkCreateLookupIndex(ctx: Cypher6Parser.CreateLookupIndexContext): Unit = {

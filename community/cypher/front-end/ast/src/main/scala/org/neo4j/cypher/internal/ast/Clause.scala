@@ -1987,8 +1987,6 @@ case class ShowIndexesClause(
   briefConstraintColumns: List[ShowAndTerminateColumn],
   allConstraintColumns: List[ShowAndTerminateColumn],
   indexType: ShowIndexType,
-  brief: Boolean,
-  verbose: Boolean,
   where: Option[Where],
   yieldItems: List[CommandResultItem],
   yieldAll: Boolean
@@ -2009,13 +2007,7 @@ case class ShowIndexesClause(
   override def moveWhereToProjection: CommandClause = copy(where = None)(position)
 
   override def clauseSpecificSemanticCheck: SemanticCheck =
-    if (brief || verbose)
-      error(
-        """`SHOW INDEXES` no longer allows the `BRIEF` and `VERBOSE` keywords,
-          |please omit `BRIEF` and use `YIELD *` instead of `VERBOSE`.""".stripMargin,
-        position
-      )
-    else if (indexType == BtreeIndexes) error("Invalid index type b-tree, please omit the `BTREE` filter.", position)
+    if (indexType == BtreeIndexes) error("Invalid index type b-tree, please omit the `BTREE` filter.", position)
     else super.clauseSpecificSemanticCheck
 }
 
@@ -2039,8 +2031,6 @@ object ShowIndexesClause {
 
   def apply(
     indexType: ShowIndexType,
-    brief: Boolean,
-    verbose: Boolean,
     where: Option[Where],
     yieldItems: List[CommandResultItem],
     yieldAll: Boolean
@@ -2070,8 +2060,6 @@ object ShowIndexesClause {
       briefCols,
       briefCols ++ verboseCols,
       indexType,
-      brief,
-      verbose,
       where,
       yieldItems,
       yieldAll
@@ -2083,8 +2071,6 @@ case class ShowConstraintsClause(
   briefConstraintColumns: List[ShowAndTerminateColumn],
   allConstraintColumns: List[ShowAndTerminateColumn],
   constraintType: ShowConstraintType,
-  brief: Boolean,
-  verbose: Boolean,
   where: Option[Where],
   yieldItems: List[CommandResultItem],
   yieldAll: Boolean
@@ -2103,22 +2089,6 @@ case class ShowConstraintsClause(
     DefaultOrAllShowColumns(useAllColumns, briefColumns, allColumns)
 
   override def moveWhereToProjection: CommandClause = copy(where = None)(position)
-
-  val existsErrorMessage =
-    "`SHOW CONSTRAINTS` no longer allows the `EXISTS` keyword, please use `EXIST` or `PROPERTY EXISTENCE` instead."
-
-  override def clauseSpecificSemanticCheck: SemanticCheck = constraintType match {
-    case ExistsConstraints(RemovedSyntax)     => error(existsErrorMessage, position)
-    case NodeExistsConstraints(RemovedSyntax) => error(existsErrorMessage, position)
-    case RelExistsConstraints(RemovedSyntax)  => error(existsErrorMessage, position)
-    case _ if brief || verbose =>
-      error(
-        """`SHOW CONSTRAINTS` no longer allows the `BRIEF` and `VERBOSE` keywords,
-          |please omit `BRIEF` and use `YIELD *` instead of `VERBOSE`.""".stripMargin,
-        position
-      )
-    case _ => super.clauseSpecificSemanticCheck
-  }
 }
 
 object ShowConstraintsClause {
@@ -2135,8 +2105,6 @@ object ShowConstraintsClause {
 
   def apply(
     constraintType: ShowConstraintType,
-    brief: Boolean,
-    verbose: Boolean,
     where: Option[Where],
     yieldItems: List[CommandResultItem],
     yieldAll: Boolean
@@ -2160,8 +2128,6 @@ object ShowConstraintsClause {
       briefCols,
       briefCols ++ verboseCols,
       constraintType,
-      brief,
-      verbose,
       where,
       yieldItems,
       yieldAll

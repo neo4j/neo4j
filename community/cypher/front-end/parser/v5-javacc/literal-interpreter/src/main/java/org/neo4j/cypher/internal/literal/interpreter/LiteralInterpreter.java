@@ -36,7 +36,6 @@ import org.neo4j.cypher.internal.parser.common.ast.factory.AccessType;
 import org.neo4j.cypher.internal.parser.common.ast.factory.ActionType;
 import org.neo4j.cypher.internal.parser.common.ast.factory.CallInTxsOnErrorBehaviourType;
 import org.neo4j.cypher.internal.parser.common.ast.factory.ConstraintType;
-import org.neo4j.cypher.internal.parser.common.ast.factory.ConstraintVersion;
 import org.neo4j.cypher.internal.parser.common.ast.factory.CreateIndexTypes;
 import org.neo4j.cypher.internal.parser.common.ast.factory.HintIndexType;
 import org.neo4j.cypher.internal.parser.common.ast.factory.ParameterType;
@@ -523,19 +522,12 @@ public class LiteralInterpreter
     }
 
     @Override
-    public NULL showIndexClause(
-            NULL p, ShowCommandFilterTypes indexType, boolean brief, boolean verbose, NULL where, NULL yieldClause) {
+    public NULL showIndexClause(NULL p, ShowCommandFilterTypes indexType, NULL where, NULL yieldClause) {
         throw new UnsupportedOperationException("showIndexClause is not a literal");
     }
 
     @Override
-    public NULL showConstraintClause(
-            NULL p,
-            ShowCommandFilterTypes constraintType,
-            boolean brief,
-            boolean verbose,
-            NULL where,
-            NULL yieldClause) {
+    public NULL showConstraintClause(NULL p, ShowCommandFilterTypes constraintType, NULL where, NULL yieldClause) {
         throw new UnsupportedOperationException("showConstraintClause is not a literal");
     }
 
@@ -589,26 +581,13 @@ public class LiteralInterpreter
             StringPos<NULL> label,
             List<Object> objects,
             ParserCypherTypeName propertyType,
-            SimpleEither<Map<String, Object>, Object> options,
-            boolean containsOn,
-            ConstraintVersion constraintVersion) {
+            SimpleEither<Map<String, Object>, Object> options) {
         throw new UnsupportedOperationException("createConstraint is not a literal");
     }
 
     @Override
     public NULL dropConstraint(NULL p, SimpleEither<StringPos<NULL>, Object> name, boolean ifExists) {
         throw new UnsupportedOperationException("dropConstraint is not a literal");
-    }
-
-    @Override
-    public NULL dropConstraint(
-            NULL p, ConstraintType constraintType, Object o, StringPos<NULL> label, List<Object> objects) {
-        throw new UnsupportedOperationException("dropConstraint is not a literal");
-    }
-
-    @Override
-    public NULL createIndexWithOldSyntax(NULL p, StringPos<NULL> label, List<StringPos<NULL>> properties) {
-        throw new UnsupportedOperationException("createIndexWithOldSyntax is not a literal");
     }
 
     @Override
@@ -656,11 +635,6 @@ public class LiteralInterpreter
 
     @Override
     public NULL dropIndex(NULL p, SimpleEither<StringPos<NULL>, Object> name, boolean ifExists) {
-        throw new UnsupportedOperationException("dropIndex is not a literal");
-    }
-
-    @Override
-    public NULL dropIndex(NULL p, StringPos<NULL> label, List<StringPos<NULL>> propertyNames) {
         throw new UnsupportedOperationException("dropIndex is not a literal");
     }
 

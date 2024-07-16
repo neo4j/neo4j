@@ -71,6 +71,9 @@ final class Cypher5SyntaxChecker(exceptionFactory: CypherExceptionFactory) exten
       case Cypher5Parser.RULE_createConstraint                 => checkCreateConstraint(cast(ctx))
       case Cypher5Parser.RULE_enclosedPropertyList             => checkEnclosedPropertyList(cast(ctx))
       case Cypher5Parser.RULE_dropConstraint                   => checkDropConstraint(cast(ctx))
+      case Cypher5Parser.RULE_showConstraintCommand            => checkShowConstraint(cast(ctx))
+      case Cypher5Parser.RULE_showBriefAndYield                => checkBriefAndVerbose(cast(ctx))
+      case Cypher5Parser.RULE_dropIndex                        => checkDropIndex(cast(ctx))
       case Cypher5Parser.RULE_createLookupIndex                => checkCreateLookupIndex(cast(ctx))
       case Cypher5Parser.RULE_createUser                       => checkCreateUser(cast(ctx))
       case Cypher5Parser.RULE_alterUser                        => checkAlterUser(cast(ctx))
@@ -318,6 +321,68 @@ final class Cypher5SyntaxChecker(exceptionFactory: CypherExceptionFactory) exten
   }
 
   private def checkCreateConstraint(ctx: Cypher5Parser.CreateConstraintContext): Unit = {
+    // Error messages for mixing old and new constraint syntax
+    val errorMessageOnRequire: String =
+      "Invalid constraint syntax, ON should not be used in combination with REQUIRE. Replace ON with FOR."
+
+    val errorMessageForAssert: String =
+      "Invalid constraint syntax, FOR should not be used in combination with ASSERT. Replace ASSERT with REQUIRE."
+
+    val errorMessageForAssertExists: String =
+      "Invalid constraint syntax, FOR should not be used in combination with ASSERT EXISTS. Replace ASSERT EXISTS with REQUIRE ... IS NOT NULL."
+
+    val errorMessageOnAssert: String =
+      "Invalid constraint syntax, ON and ASSERT should not be used. Replace ON with FOR and ASSERT with REQUIRE."
+
+    val errorMessageOnAssertExists: String =
+      "Invalid constraint syntax, ON and ASSERT EXISTS should not be used. Replace ON with FOR and ASSERT EXISTS with REQUIRE ... IS NOT NULL."
+
+    def checkForInvalidExistence(assert: TerminalNode): Unit = {
+      val containsOn = ctx.ON() != null
+      val containsFor = ctx.FOR() != null
+      val containsAssert = assert != null
+
+      if (containsFor && containsAssert) {
+        // FOR ... ASSERT EXISTS ...
+        _errors :+= exceptionFactory.syntaxException(
+          errorMessageForAssertExists,
+          inputPosition(assert.getSymbol)
+        )
+      } else if (containsOn && containsAssert) {
+        // ON ... ASSERT EXISTS ...
+        _errors :+= exceptionFactory.syntaxException(
+          errorMessageOnAssertExists,
+          inputPosition(ctx.ON().getSymbol)
+        )
+      }
+    }
+
+    def checkForInvalidOthers(assert: TerminalNode, require: TerminalNode): Unit = {
+      val containsOn = ctx.ON() != null
+      val containsFor = ctx.FOR() != null
+      val containsAssert = assert != null
+      val containsRequire = require != null
+
+      if (containsOn && containsRequire) {
+        // ON ... REQUIRE
+        _errors :+= exceptionFactory.syntaxException(
+          errorMessageOnRequire,
+          inputPosition(ctx.ON().getSymbol)
+        )
+      } else if (containsFor && containsAssert) {
+        // FOR ... ASSERT
+        _errors :+= exceptionFactory.syntaxException(
+          errorMessageForAssert,
+          inputPosition(assert.getSymbol)
+        )
+      } else if (containsOn && containsAssert) {
+        // ON ... ASSERT
+        _errors :+= exceptionFactory.syntaxException(
+          errorMessageOnAssert,
+          inputPosition(ctx.ON().getSymbol)
+        )
+      }
+    }
 
     ctx.constraintType() match {
       case c: ConstraintIsUniqueContext =>
@@ -333,6 +398,7 @@ final class Cypher5SyntaxChecker(exceptionFactory: CypherExceptionFactory) exten
             inputPosition(ctx.commandRelPattern().getStart)
           )
         }
+        checkForInvalidOthers(c.ASSERT(), c.REQUIRE())
       case c: ConstraintKeyContext =>
         if (ctx.commandNodePattern() != null && (c.RELATIONSHIP() != null || c.REL() != null)) {
           _errors :+= exceptionFactory.syntaxException(
@@ -346,7 +412,13 @@ final class Cypher5SyntaxChecker(exceptionFactory: CypherExceptionFactory) exten
             inputPosition(ctx.commandRelPattern().getStart)
           )
         }
-      case _: ConstraintExistsContext | _: ConstraintTypedContext | _: ConstraintIsNotNullContext =>
+        checkForInvalidOthers(c.ASSERT(), c.REQUIRE())
+      case c: ConstraintTypedContext =>
+        checkForInvalidOthers(c.ASSERT(), c.REQUIRE())
+      case c: ConstraintIsNotNullContext =>
+        checkForInvalidOthers(c.ASSERT(), c.REQUIRE())
+      case c: ConstraintExistsContext =>
+        checkForInvalidExistence(c.ASSERT())
       case _ =>
         _errors :+= exceptionFactory.syntaxException(
           "Constraint type is not recognized",
@@ -401,10 +473,89 @@ final class Cypher5SyntaxChecker(exceptionFactory: CypherExceptionFactory) exten
       }
     }
 
+    val alwaysInvalidDropCommand = "Unsupported drop constraint command: Please delete the constraint by name instead"
     if (ctx.NULL() != null) {
       _errors :+= exceptionFactory.syntaxException(
-        "Unsupported drop constraint command: Please delete the constraint by name instead",
+        alwaysInvalidDropCommand,
         inputPosition(ctx.start)
+      )
+    }
+
+    val constraintName = ctx.symbolicNameOrStringParameter()
+    if (constraintName == null) {
+      // old drop constraint by schema
+      def invalidPreviouslyAllowedDropConstraint(constraintType: String) =
+        s"$constraintType constraints cannot be dropped by schema, please drop by name instead: DROP CONSTRAINT constraint_name. The constraint name can be found using SHOW CONSTRAINTS."
+
+      if (ctx.commandNodePattern() != null) {
+        if (ctx.EXISTS() != null) {
+          _errors :+= exceptionFactory.syntaxException(
+            invalidPreviouslyAllowedDropConstraint("Node property existence"),
+            inputPosition(ctx.start)
+          )
+        } else if (ctx.UNIQUE() != null) {
+          _errors :+= exceptionFactory.syntaxException(
+            invalidPreviouslyAllowedDropConstraint("Uniqueness"),
+            inputPosition(ctx.start)
+          )
+        } else if (ctx.KEY() != null) {
+          _errors :+= exceptionFactory.syntaxException(
+            invalidPreviouslyAllowedDropConstraint("Node key"),
+            inputPosition(ctx.start)
+          )
+        } else {
+          _errors :+= exceptionFactory.syntaxException(
+            alwaysInvalidDropCommand,
+            inputPosition(ctx.start)
+          )
+        }
+      } else {
+        if (ctx.EXISTS() != null) {
+          _errors :+= exceptionFactory.syntaxException(
+            invalidPreviouslyAllowedDropConstraint("Relationship property existence"),
+            inputPosition(ctx.start)
+          )
+        } else {
+          _errors :+= exceptionFactory.syntaxException(
+            alwaysInvalidDropCommand,
+            inputPosition(ctx.start)
+          )
+        }
+      }
+    }
+  }
+
+  private def checkShowConstraint(ctx: Cypher5Parser.ShowConstraintCommandContext): Unit = {
+    ctx match {
+      case c: Cypher5Parser.ShowConstraintOldExistsContext =>
+        _errors :+= exceptionFactory.syntaxException(
+          "`SHOW CONSTRAINTS` no longer allows the `EXISTS` keyword, please use `EXIST` or `PROPERTY EXISTENCE` instead.",
+          inputPosition(c.EXISTS().getSymbol)
+        )
+      case _ =>
+    }
+  }
+
+  private def checkBriefAndVerbose(ctx: Cypher5Parser.ShowBriefAndYieldContext): Unit = {
+    if (ctx.BRIEF() != null || ctx.VERBOSE() != null) {
+      val posSymbol =
+        if (ctx.BRIEF() != null) ctx.BRIEF().getSymbol
+        else ctx.VERBOSE().getSymbol
+
+      val command = ctx.parent match {
+        case _: Cypher5Parser.ShowIndexesAllowBriefContext =>
+          "SHOW INDEXES"
+        case _: Cypher5Parser.ShowConstraintsAllowBriefAndYieldContext =>
+          "SHOW CONSTRAINTS"
+        case _ =>
+          // should not get here
+          ""
+      }
+
+      _errors :+= exceptionFactory.syntaxException(
+        s"""`$command` no longer allows the `BRIEF` and `VERBOSE` keywords,
+           |please omit `BRIEF` and use `YIELD *` instead of `VERBOSE`.""".stripMargin,
+        inputPosition(posSymbol)
       )
     }
   }
@@ -473,13 +624,20 @@ final class Cypher5SyntaxChecker(exceptionFactory: CypherExceptionFactory) exten
 
   private def checkCreateCommand(ctx: Cypher5Parser.CreateCommandContext): Unit = {
     val createIndex = ctx.createIndex()
-    val replace = ctx.REPLACE()
+    if (createIndex != null) {
+      val replace = ctx.REPLACE()
+      val oldIndex = createIndex.oldCreateIndex()
 
-    if (createIndex != null && replace != null) {
-      if (createIndex.oldCreateIndex() != null) {
+      if (replace != null && oldIndex != null) {
         _errors :+= exceptionFactory.syntaxException(
           "'REPLACE' is not allowed for this index syntax",
           inputPosition(replace.getSymbol)
+        )
+      }
+      if (oldIndex != null) {
+        _errors :+= exceptionFactory.syntaxException(
+          "Invalid create index syntax, use `CREATE INDEX FOR ...` instead.",
+          inputPosition(createIndex.ON().getSymbol)
         )
       }
     }
@@ -499,6 +657,17 @@ final class Cypher5SyntaxChecker(exceptionFactory: CypherExceptionFactory) exten
       _errors :+= exceptionFactory.syntaxException(
         "Missing function name for the LOOKUP INDEX",
         inputPosition(ctx.LPAREN().getSymbol)
+      )
+    }
+  }
+
+  private def checkDropIndex(ctx: Cypher5Parser.DropIndexContext): Unit = {
+    val indexName = ctx.symbolicNameOrStringParameter()
+    if (indexName == null) {
+      // old drop index by schema
+      _errors :+= exceptionFactory.syntaxException(
+        "Indexes cannot be dropped by schema, please drop by name instead: DROP INDEX index_name. The index name can be found using SHOW INDEXES.",
+        inputPosition(ctx.ON().getSymbol)
       )
     }
   }

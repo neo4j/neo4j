@@ -50,7 +50,6 @@ import org.neo4j.cypher.internal.ast.RelExistsConstraints
 import org.neo4j.cypher.internal.ast.RelKeyConstraints
 import org.neo4j.cypher.internal.ast.RelPropTypeConstraints
 import org.neo4j.cypher.internal.ast.RelUniqueConstraints
-import org.neo4j.cypher.internal.ast.RemovedSyntax
 import org.neo4j.cypher.internal.ast.Return
 import org.neo4j.cypher.internal.ast.ReturnItem
 import org.neo4j.cypher.internal.ast.ReturnItems
@@ -86,7 +85,6 @@ import org.neo4j.cypher.internal.ast.UnaliasedReturnItem
 import org.neo4j.cypher.internal.ast.UniqueConstraints
 import org.neo4j.cypher.internal.ast.User
 import org.neo4j.cypher.internal.ast.UserDefinedFunctions
-import org.neo4j.cypher.internal.ast.ValidSyntax
 import org.neo4j.cypher.internal.ast.VectorIndexes
 import org.neo4j.cypher.internal.ast.Where
 import org.neo4j.cypher.internal.ast.With
@@ -206,8 +204,6 @@ trait DdlShowBuilder extends Cypher5ParserListener {
       if (yieldClause != null) getYieldAllAndYieldItems(yieldClause.ast())
       else (false, List[CommandResultItem](), None)
     ctx.ast = ShowWrapper(
-      ctx.BRIEF() != null,
-      ctx.VERBOSE() != null,
       where = astOpt[Where](ctx.whereClause()),
       yieldedItems = yieldedItems,
       yieldAll = yieldAll,
@@ -306,17 +302,12 @@ trait DdlShowBuilder extends Cypher5ParserListener {
         c.showConstraintsAllowYield().ast[ShowWrapper]().buildConstraintClauses(constraintType, parentPos)
 
       case c: Cypher5Parser.ShowConstraintRelExistContext =>
-        val constraintType = RelExistsConstraints(ValidSyntax)
+        val constraintType = RelExistsConstraints
         c.showConstraintsAllowYield().ast[ShowWrapper]().buildConstraintClauses(constraintType, parentPos)
 
-      case c: Cypher5Parser.ShowConstraintOldExistsContext =>
-        val entityType = if (c.NODE() != null) Node else if (c.RELATIONSHIP() != null) Rel else NoEntity
-        val constraintType = entityType match {
-          case Node     => NodeExistsConstraints(RemovedSyntax)
-          case Rel      => RelExistsConstraints(RemovedSyntax)
-          case NoEntity => ExistsConstraints(RemovedSyntax)
-        }
-        c.showConstraintsAllowBrief().ast[ShowWrapper].buildConstraintClauses(constraintType, parentPos)
+      case _: Cypher5Parser.ShowConstraintOldExistsContext =>
+        // old show [node | relationship] exists constraint, errors in SyntaxChecker
+        null
 
       case c: Cypher5Parser.ShowConstraintBriefAndYieldContext =>
         val constraintType = astOpt[ShowConstraintType](c.constraintBriefAndYieldType(), AllConstraints)
@@ -339,9 +330,9 @@ trait DdlShowBuilder extends Cypher5ParserListener {
       case (Node, _, true)     => NodeUniqueConstraints
       case (Rel, _, true)      => RelUniqueConstraints
       case (NoEntity, _, true) => UniqueConstraints
-      case (Node, _, _)        => NodeExistsConstraints(ValidSyntax)
-      case (Rel, _, _)         => RelExistsConstraints(ValidSyntax)
-      case (NoEntity, _, _)    => ExistsConstraints(ValidSyntax)
+      case (Node, _, _)        => NodeExistsConstraints
+      case (Rel, _, _)         => RelExistsConstraints
+      case (NoEntity, _, _)    => ExistsConstraints
     }
   }
 
@@ -355,11 +346,11 @@ trait DdlShowBuilder extends Cypher5ParserListener {
     ctx.ast = nodeChild(ctx, 0).getSymbol.getType match {
       case Cypher5Parser.ALL    => AllConstraints
       case Cypher5Parser.UNIQUE => UniqueConstraints
-      case Cypher5Parser.EXIST  => ExistsConstraints(ValidSyntax)
+      case Cypher5Parser.EXIST  => ExistsConstraints
       case Cypher5Parser.NODE =>
-        if (ctx.EXIST() != null) NodeExistsConstraints(ValidSyntax) else NodeKeyConstraints
+        if (ctx.EXIST() != null) NodeExistsConstraints else NodeKeyConstraints
       case Cypher5Parser.RELATIONSHIP =>
-        RelExistsConstraints(ValidSyntax)
+        RelExistsConstraints
     }
   }
 
@@ -379,16 +370,7 @@ trait DdlShowBuilder extends Cypher5ParserListener {
   final override def exitShowConstraintsAllowBrief(
     ctx: Cypher5Parser.ShowConstraintsAllowBriefContext
   ): Unit = {
-    ctx.ast = ShowWrapper(
-      ctx.BRIEF() != null,
-      ctx.VERBOSE() != null,
-      None,
-      List.empty,
-      yieldAll = false,
-      None,
-      None,
-      astOpt[Seq[Clause]](ctx.composableCommandClauses())
-    )
+    // old show [node | relationship] exists constraint, errors in SyntaxChecker
   }
 
   final override def exitShowConstraintsAllowYield(
@@ -604,8 +586,6 @@ trait DdlShowBuilder extends Cypher5ParserListener {
 object DdlShowBuilder {
 
   case class ShowWrapper(
-    isBrief: Boolean = false,
-    isVerbose: Boolean = false,
     where: Option[Where] = None,
     yieldedItems: List[CommandResultItem] = List.empty,
     yieldAll: Boolean = false,
@@ -619,8 +599,6 @@ object DdlShowBuilder {
       buildClauses(
         ShowConstraintsClause(
           constraintType,
-          isBrief,
-          isVerbose,
           where,
           yieldedItems,
           yieldAll
@@ -632,8 +610,6 @@ object DdlShowBuilder {
       buildClauses(
         ShowIndexesClause(
           indexType,
-          isBrief,
-          isVerbose,
           where,
           yieldedItems,
           yieldAll = yieldAll

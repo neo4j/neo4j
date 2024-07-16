@@ -33,12 +33,7 @@ import org.neo4j.cypher.internal.ast.DestroyData
 import org.neo4j.cypher.internal.ast.DropConstraintOnName
 import org.neo4j.cypher.internal.ast.DropDatabase
 import org.neo4j.cypher.internal.ast.DropDatabaseAlias
-import org.neo4j.cypher.internal.ast.DropIndex
 import org.neo4j.cypher.internal.ast.DropIndexOnName
-import org.neo4j.cypher.internal.ast.DropNodeKeyConstraint
-import org.neo4j.cypher.internal.ast.DropNodePropertyExistenceConstraint
-import org.neo4j.cypher.internal.ast.DropPropertyUniquenessConstraint
-import org.neo4j.cypher.internal.ast.DropRelationshipPropertyExistenceConstraint
 import org.neo4j.cypher.internal.ast.DropRole
 import org.neo4j.cypher.internal.ast.DropServer
 import org.neo4j.cypher.internal.ast.DropUser
@@ -100,7 +95,6 @@ import org.neo4j.cypher.internal.parser.ast.util.Util.rangePos
 import org.neo4j.cypher.internal.parser.v6.Cypher6Parser
 import org.neo4j.cypher.internal.parser.v6.Cypher6ParserListener
 import org.neo4j.cypher.internal.util.symbols.CTString
-import org.neo4j.exceptions.SyntaxException
 
 import java.nio.charset.StandardCharsets
 
@@ -176,49 +170,14 @@ trait DdlBuilder extends Cypher6ParserListener {
   ): Unit = {
     val p = pos(ctx.getParent)
     val constraintName = ctx.symbolicNameOrStringParameter()
-    ctx.ast = if (constraintName != null) {
-      DropConstraintOnName(constraintName.ast(), ctx.EXISTS() != null)(p)
-    } else {
-      val properties = ctx.propertyList().ast[ArraySeq[Property]]()
-      val nodePattern = ctx.commandNodePattern()
-      val isNode = nodePattern != null
-      if (isNode) {
-        val (variable, label) = nodePattern.ast[(Variable, LabelName)]()
-        if (ctx.EXISTS() != null) {
-          DropNodePropertyExistenceConstraint(variable, label, properties(0))(p)
-        } else if (ctx.UNIQUE() != null) {
-          DropPropertyUniquenessConstraint(variable, label, properties)(p)
-        } else if (ctx.KEY() != null) {
-          DropNodeKeyConstraint(variable, label, properties)(p)
-        } else {
-          throw new SyntaxException("Unsupported drop constraint command: Please delete the constraint by name instead")
-        }
-      } else {
-        if (ctx.EXISTS() != null) {
-          val (variable, relType) = ctx.commandRelPattern().ast[(Variable, RelTypeName)]()
-          DropRelationshipPropertyExistenceConstraint(variable, relType, properties(0))(p)
-        } else {
-          throw new SyntaxException("Unsupported drop constraint command: Please delete the constraint by name instead")
-        }
-      }
-    }
+    ctx.ast = DropConstraintOnName(constraintName.ast(), ctx.EXISTS() != null)(p)
   }
 
   final override def exitDropIndex(
     ctx: Cypher6Parser.DropIndexContext
   ): Unit = {
     val indexName = ctx.symbolicNameOrStringParameter()
-    ctx.ast = if (indexName != null) {
-      DropIndexOnName(
-        indexName.ast[Either[String, Parameter]](),
-        ctx.EXISTS() != null
-      )(pos(ctx.getParent))
-    } else {
-      DropIndex(
-        ctx.labelType().ast[LabelName],
-        ctx.nonEmptyNameList().ast[ArraySeq[PropertyKeyName]].toList
-      )(pos(ctx.getParent))
-    }
+    ctx.ast = DropIndexOnName(indexName.ast[Either[String, Parameter]](), ctx.EXISTS() != null)(pos(ctx.getParent))
   }
 
   final override def exitPropertyList(

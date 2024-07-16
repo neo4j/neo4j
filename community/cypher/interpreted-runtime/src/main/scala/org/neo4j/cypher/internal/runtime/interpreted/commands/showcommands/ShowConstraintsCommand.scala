@@ -96,10 +96,10 @@ case class ShowConstraintsCommand(
         c => c.`type`().equals(schema.ConstraintType.UNIQUE_EXISTS) && c.schema.entityType.equals(EntityType.NODE)
       case RelKeyConstraints => c =>
           c.`type`().equals(schema.ConstraintType.UNIQUE_EXISTS) && c.schema.entityType.equals(EntityType.RELATIONSHIP)
-      case _: ExistsConstraints => c => c.`type`().equals(schema.ConstraintType.EXISTS)
-      case _: NodeExistsConstraints =>
+      case ExistsConstraints => c => c.`type`().equals(schema.ConstraintType.EXISTS)
+      case NodeExistsConstraints =>
         c => c.`type`().equals(schema.ConstraintType.EXISTS) && c.schema.entityType.equals(EntityType.NODE)
-      case _: RelExistsConstraints =>
+      case RelExistsConstraints =>
         c => c.`type`().equals(schema.ConstraintType.EXISTS) && c.schema.entityType.equals(EntityType.RELATIONSHIP)
       case PropTypeConstraints => c => c.`type`().equals(schema.ConstraintType.PROPERTY_TYPE)
       case NodePropTypeConstraints =>
@@ -230,9 +230,9 @@ object ShowConstraintsCommand {
         createNodeConstraintCommand(name, labelsOrTypes, properties, "IS NODE KEY")
       case RelKeyConstraints =>
         createRelConstraintCommand(name, labelsOrTypes, properties, "IS RELATIONSHIP KEY")
-      case _: NodeExistsConstraints =>
+      case NodeExistsConstraints =>
         createNodeConstraintCommand(name, labelsOrTypes, properties, "IS NOT NULL")
-      case _: RelExistsConstraints =>
+      case RelExistsConstraints =>
         createRelConstraintCommand(name, labelsOrTypes, properties, "IS NOT NULL")
       case NodePropTypeConstraints =>
         val typeString = propertyType.getOrElse(
@@ -259,8 +259,8 @@ object ShowConstraintsCommand {
       case (schema.ConstraintType.UNIQUE, EntityType.RELATIONSHIP)        => RelUniqueConstraints
       case (schema.ConstraintType.UNIQUE_EXISTS, EntityType.NODE)         => NodeKeyConstraints
       case (schema.ConstraintType.UNIQUE_EXISTS, EntityType.RELATIONSHIP) => RelKeyConstraints
-      case (schema.ConstraintType.EXISTS, EntityType.NODE)                => NodeExistsConstraints()
-      case (schema.ConstraintType.EXISTS, EntityType.RELATIONSHIP)        => RelExistsConstraints()
+      case (schema.ConstraintType.EXISTS, EntityType.NODE)                => NodeExistsConstraints
+      case (schema.ConstraintType.EXISTS, EntityType.RELATIONSHIP)        => RelExistsConstraints
       case (schema.ConstraintType.PROPERTY_TYPE, EntityType.NODE)         => NodePropTypeConstraints
       case (schema.ConstraintType.PROPERTY_TYPE, EntityType.RELATIONSHIP) => RelPropTypeConstraints
       case _ => throw new IllegalStateException(

@@ -63,7 +63,6 @@ import org.neo4j.cypher.internal.ast.CollectExpression
 import org.neo4j.cypher.internal.ast.CommandClause
 import org.neo4j.cypher.internal.ast.CommandResultItem
 import org.neo4j.cypher.internal.ast.CompositeDatabaseManagementActions
-import org.neo4j.cypher.internal.ast.ConstraintVersion2
 import org.neo4j.cypher.internal.ast.CountExpression
 import org.neo4j.cypher.internal.ast.Create
 import org.neo4j.cypher.internal.ast.CreateAliasAction
@@ -346,7 +345,6 @@ import org.neo4j.cypher.internal.ast.UsingIndexHint.UsingRangeIndexType
 import org.neo4j.cypher.internal.ast.UsingIndexHint.UsingTextIndexType
 import org.neo4j.cypher.internal.ast.UsingJoinHint
 import org.neo4j.cypher.internal.ast.UsingScanHint
-import org.neo4j.cypher.internal.ast.ValidSyntax
 import org.neo4j.cypher.internal.ast.VectorIndexes
 import org.neo4j.cypher.internal.ast.WaitUntilComplete
 import org.neo4j.cypher.internal.ast.Where
@@ -1586,9 +1584,9 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
       UniqueConstraints,
       NodeUniqueConstraints,
       RelUniqueConstraints,
-      ExistsConstraints(ValidSyntax),
-      NodeExistsConstraints(ValidSyntax),
-      RelExistsConstraints(ValidSyntax),
+      ExistsConstraints,
+      NodeExistsConstraints,
+      RelExistsConstraints,
       KeyConstraints,
       NodeKeyConstraints,
       RelKeyConstraints,
@@ -1609,8 +1607,6 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
         Seq(
           ShowIndexesClause(
             indexType,
-            brief = false,
-            verbose = false,
             Some(w),
             List.empty,
             yieldAll = false
@@ -1621,8 +1617,6 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
         Seq(
           ShowIndexesClause(
             indexType,
-            brief = false,
-            verbose = false,
             None,
             yi,
             yieldAll = false
@@ -1635,8 +1629,6 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
         Seq(
           ShowIndexesClause(
             indexType,
-            brief = false,
-            verbose = false,
             None,
             yi,
             yieldAll = false
@@ -1647,8 +1639,6 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
         Seq(
           ShowIndexesClause(
             indexType,
-            brief = false,
-            verbose = false,
             None,
             List.empty,
             yieldAll = true
@@ -1659,8 +1649,6 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
         Seq(
           ShowIndexesClause(
             indexType,
-            brief = false,
-            verbose = false,
             None,
             List.empty,
             yieldAll = false
@@ -1682,8 +1670,6 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
         Seq(
           ShowConstraintsClause(
             constraintType,
-            brief = false,
-            verbose = false,
             Some(w),
             List.empty,
             yieldAll = false
@@ -1692,22 +1678,20 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
       case Some(Left((y, Some(r)))) =>
         val (w, yi) = turnYieldToWith(y)
         Seq(
-          ShowConstraintsClause(constraintType, brief = false, verbose = false, None, yi, yieldAll = false)(pos),
+          ShowConstraintsClause(constraintType, None, yi, yieldAll = false)(pos),
           w,
           r
         )
       case Some(Left((y, None))) =>
         val (w, yi) = turnYieldToWith(y)
         Seq(
-          ShowConstraintsClause(constraintType, brief = false, verbose = false, None, yi, yieldAll = false)(pos),
+          ShowConstraintsClause(constraintType, None, yi, yieldAll = false)(pos),
           w
         )
       case _ if yieldAll =>
         Seq(
           ShowConstraintsClause(
             constraintType,
-            brief = false,
-            verbose = false,
             None,
             List.empty,
             yieldAll = true
@@ -1718,8 +1702,6 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
         Seq(
           ShowConstraintsClause(
             constraintType,
-            brief = false,
-            verbose = false,
             None,
             List.empty,
             yieldAll = false
@@ -1898,9 +1880,9 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
       (item: List[CommandResultItem], all: Boolean) => ShowProceduresClause(exec, None, item, all)(pos),
       (item: List[CommandResultItem], all: Boolean) => ShowSettingsClause(ids, None, item, all)(pos),
       (item: List[CommandResultItem], all: Boolean) =>
-        ShowConstraintsClause(constraintType, brief = false, verbose = false, None, item, all)(pos),
+        ShowConstraintsClause(constraintType, None, item, all)(pos),
       (item: List[CommandResultItem], all: Boolean) =>
-        ShowIndexesClause(indexType, brief = false, verbose = false, None, item, all)(pos)
+        ShowIndexesClause(indexType, None, item, all)(pos)
     )
   } yield {
     val (withClause, items) = turnYieldToWith(yields)
@@ -2134,7 +2116,6 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     propType <- _cypherTypeName
     name <- option(_nameAsEither)
     ifExistsDo <- _ifExistsDo
-    containsOn <- boolean
     options <- _optionsMapAsEitherOrNone
     use <- option(_use)
     nodeKey = CreateNodeKeyConstraint(
@@ -2144,8 +2125,6 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
       name,
       ifExistsDo,
       options,
-      containsOn,
-      ConstraintVersion2,
       use
     )(pos)
     relKey = CreateRelationshipKeyConstraint(
@@ -2155,8 +2134,6 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
       name,
       ifExistsDo,
       options,
-      containsOn,
-      ConstraintVersion2,
       use
     )(pos)
     nodeUniqueness = CreateNodePropertyUniquenessConstraint(
@@ -2166,8 +2143,6 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
       name,
       ifExistsDo,
       options,
-      containsOn,
-      ConstraintVersion2,
       use
     )(pos)
     compositeUniqueness = CreateNodePropertyUniquenessConstraint(
@@ -2177,8 +2152,6 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
       name,
       ifExistsDo,
       options,
-      containsOn,
-      ConstraintVersion2,
       use
     )(pos)
     relUniqueness = CreateRelationshipPropertyUniquenessConstraint(
@@ -2188,8 +2161,6 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
       name,
       ifExistsDo,
       options,
-      containsOn,
-      ConstraintVersion2,
       use
     )(pos)
     nodeExistence = CreateNodePropertyExistenceConstraint(
@@ -2199,8 +2170,6 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
       name,
       ifExistsDo,
       options,
-      containsOn,
-      ConstraintVersion2,
       use
     )(pos)
     relExistence = CreateRelationshipPropertyExistenceConstraint(
@@ -2210,8 +2179,6 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
       name,
       ifExistsDo,
       options,
-      containsOn,
-      ConstraintVersion2,
       use
     )(pos)
     nodePropType = CreateNodePropertyTypeConstraint(
@@ -2222,8 +2189,6 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
       name,
       ifExistsDo,
       options,
-      containsOn,
-      ConstraintVersion2,
       use
     )(pos)
     relPropType = CreateRelationshipPropertyTypeConstraint(
@@ -2234,8 +2199,6 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
       name,
       ifExistsDo,
       options,
-      containsOn,
-      ConstraintVersion2,
       use
     )(pos)
     command <- oneOf(

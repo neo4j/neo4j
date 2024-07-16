@@ -50,7 +50,6 @@ import org.neo4j.cypher.internal.ast.RelExistsConstraints
 import org.neo4j.cypher.internal.ast.RelKeyConstraints
 import org.neo4j.cypher.internal.ast.RelPropTypeConstraints
 import org.neo4j.cypher.internal.ast.RelUniqueConstraints
-import org.neo4j.cypher.internal.ast.RemovedSyntax
 import org.neo4j.cypher.internal.ast.Return
 import org.neo4j.cypher.internal.ast.ReturnItem
 import org.neo4j.cypher.internal.ast.ReturnItems
@@ -86,7 +85,6 @@ import org.neo4j.cypher.internal.ast.UnaliasedReturnItem
 import org.neo4j.cypher.internal.ast.UniqueConstraints
 import org.neo4j.cypher.internal.ast.User
 import org.neo4j.cypher.internal.ast.UserDefinedFunctions
-import org.neo4j.cypher.internal.ast.ValidSyntax
 import org.neo4j.cypher.internal.ast.VectorIndexes
 import org.neo4j.cypher.internal.ast.Where
 import org.neo4j.cypher.internal.ast.With
@@ -103,7 +101,6 @@ import org.neo4j.cypher.internal.parser.ast.util.Util.inputText
 import org.neo4j.cypher.internal.parser.ast.util.Util.nodeChild
 import org.neo4j.cypher.internal.parser.ast.util.Util.pos
 import org.neo4j.cypher.internal.parser.v6.Cypher6Parser
-import org.neo4j.cypher.internal.parser.v6.Cypher6Parser.ShowConstraintMultiContext
 import org.neo4j.cypher.internal.parser.v6.Cypher6ParserListener
 import org.neo4j.cypher.internal.parser.v6.ast.factory.DdlShowBuilder.ShowWrapper
 import org.neo4j.cypher.internal.util.InputPosition
@@ -198,24 +195,6 @@ trait DdlShowBuilder extends Cypher6ParserListener {
     )(pos(ctx))
   }
 
-  final override def exitShowBriefAndYield(
-    ctx: Cypher6Parser.ShowBriefAndYieldContext
-  ): Unit = {
-    val yieldClause = ctx.yieldClause()
-    val (yieldAll, yieldedItems, y) =
-      if (yieldClause != null) getYieldAllAndYieldItems(yieldClause.ast())
-      else (false, List[CommandResultItem](), None)
-    ctx.ast = ShowWrapper(
-      ctx.BRIEF() != null,
-      ctx.VERBOSE() != null,
-      where = astOpt[Where](ctx.whereClause()),
-      yieldedItems = yieldedItems,
-      yieldAll = yieldAll,
-      yieldClause = y,
-      returnClause = astOpt[Return](ctx.returnClause())
-    )
-  }
-
   final override def exitShowCommandYield(
     ctx: Cypher6Parser.ShowCommandYieldContext
   ): Unit = {
@@ -247,34 +226,31 @@ trait DdlShowBuilder extends Cypher6ParserListener {
   override def exitShowIndexCommand(
     ctx: Cypher6Parser.ShowIndexCommandContext
   ): Unit = {
-    val noBrief = ctx.showIndexesNoBrief()
     val parentPos = pos(ctx.getParent)
-    ctx.ast = if (noBrief != null) {
-      val indexType = nodeChild(ctx, 0).getSymbol.getType match {
-        case Cypher6Parser.FULLTEXT => FulltextIndexes
-        case Cypher6Parser.LOOKUP   => LookupIndexes
-        case Cypher6Parser.POINT    => PointIndexes
-        case Cypher6Parser.RANGE    => RangeIndexes
-        case Cypher6Parser.TEXT     => TextIndexes
-        case Cypher6Parser.VECTOR   => VectorIndexes
-        case _                      => throw new IllegalStateException("Unexpected index type")
-      }
-      ctx.showIndexesNoBrief().ast[ShowWrapper].buildIndexClauses(indexType, parentPos)
-    } else {
-      val indexType = if (ctx.BTREE() != null) BtreeIndexes else AllIndexes
-      ctx.showIndexesAllowBrief().ast[ShowWrapper].buildIndexClauses(indexType, parentPos)
+    ctx.ast = {
+      val indexType = astOpt[ShowIndexType](ctx.showIndexType()).getOrElse(AllIndexes)
+      ctx.showIndexesEnd().ast[ShowWrapper].buildIndexClauses(indexType, parentPos)
     }
   }
 
-  final override def exitShowIndexesAllowBrief(
-    ctx: Cypher6Parser.ShowIndexesAllowBriefContext
+  override def exitShowIndexType(
+    ctx: Cypher6Parser.ShowIndexTypeContext
   ): Unit = {
-    ctx.ast = astOpt[ShowWrapper](ctx.showBriefAndYield(), ShowWrapper())
-      .copy(composableClauses = astOpt[Seq[Clause]](ctx.composableCommandClauses()))
+    ctx.ast = nodeChild(ctx, 0).getSymbol.getType match {
+      case Cypher6Parser.ALL      => AllIndexes
+      case Cypher6Parser.BTREE    => BtreeIndexes
+      case Cypher6Parser.FULLTEXT => FulltextIndexes
+      case Cypher6Parser.LOOKUP   => LookupIndexes
+      case Cypher6Parser.POINT    => PointIndexes
+      case Cypher6Parser.RANGE    => RangeIndexes
+      case Cypher6Parser.TEXT     => TextIndexes
+      case Cypher6Parser.VECTOR   => VectorIndexes
+      case _                      => throw new IllegalStateException("Unexpected index type")
+    }
   }
 
-  final override def exitShowIndexesNoBrief(
-    ctx: Cypher6Parser.ShowIndexesNoBriefContext
+  final override def exitShowIndexesEnd(
+    ctx: Cypher6Parser.ShowIndexesEndContext
   ): Unit = {
     ctx.ast = decomposeYield(astOpt(ctx.showCommandYield()))
       .copy(composableClauses = astOpt[Seq[Clause]](ctx.composableCommandClauses()))
@@ -283,65 +259,55 @@ trait DdlShowBuilder extends Cypher6ParserListener {
   override def exitShowConstraintCommand(ctx: Cypher6Parser.ShowConstraintCommandContext): Unit = {
     val parentPos = pos(ctx.getParent)
     ctx.ast = ctx match {
-      case c: Cypher6Parser.ShowConstraintMultiContext =>
-        val constraintType = c.constraintAllowYieldType().ast[ShowConstraintType]()
-        c.showConstraintsAllowYield().ast[ShowWrapper]().buildConstraintClauses(constraintType, parentPos)
-
-      case c: Cypher6Parser.ShowConstraintUniqueContext =>
-        val entityType = if (c.NODE() != null) Node else Rel
-        val constraintType = entityType match {
-          case Node     => NodeUniqueConstraints
-          case Rel      => RelUniqueConstraints
-          case NoEntity => throw new IllegalStateException("Invalid Constraint Type")
-        }
-        c.showConstraintsAllowYield().ast[ShowWrapper]().buildConstraintClauses(constraintType, parentPos)
-
+      case c: Cypher6Parser.ShowConstraintAllContext =>
+        val constraintType = AllConstraints
+        c.showConstraintsEnd().ast[ShowWrapper]().buildConstraintClauses(constraintType, parentPos)
+      case c: Cypher6Parser.ShowConstraintExistContext =>
+        val constraintType = pickShowConstraintType(
+          c.showConstraintEntity(),
+          NodeExistsConstraints,
+          RelExistsConstraints,
+          ExistsConstraints
+        )
+        c.showConstraintsEnd().ast[ShowWrapper]().buildConstraintClauses(constraintType, parentPos)
       case c: Cypher6Parser.ShowConstraintKeyContext =>
-        val entityType = if (c.RELATIONSHIP() != null || c.REL() != null) Rel else NoEntity
-        val constraintType = entityType match {
-          case Rel      => RelKeyConstraints
-          case NoEntity => KeyConstraints
-          case Node     => throw new IllegalStateException("Invalid Constraint Type")
-        }
-        c.showConstraintsAllowYield().ast[ShowWrapper]().buildConstraintClauses(constraintType, parentPos)
-
-      case c: Cypher6Parser.ShowConstraintRelExistContext =>
-        val constraintType = RelExistsConstraints(ValidSyntax)
-        c.showConstraintsAllowYield().ast[ShowWrapper]().buildConstraintClauses(constraintType, parentPos)
-
-      case c: Cypher6Parser.ShowConstraintOldExistsContext =>
-        val entityType = if (c.NODE() != null) Node else if (c.RELATIONSHIP() != null) Rel else NoEntity
-        val constraintType = entityType match {
-          case Node     => NodeExistsConstraints(RemovedSyntax)
-          case Rel      => RelExistsConstraints(RemovedSyntax)
-          case NoEntity => ExistsConstraints(RemovedSyntax)
-        }
-        c.showConstraintsAllowBrief().ast[ShowWrapper].buildConstraintClauses(constraintType, parentPos)
-
-      case c: Cypher6Parser.ShowConstraintBriefAndYieldContext =>
-        val constraintType = astOpt[ShowConstraintType](c.constraintBriefAndYieldType(), AllConstraints)
-        c.showConstraintsAllowBriefAndYield().ast[ShowWrapper]()
-          .buildConstraintClauses(constraintType, parentPos)
+        val constraintType = pickShowConstraintType(
+          c.showConstraintEntity(),
+          NodeKeyConstraints,
+          RelKeyConstraints,
+          KeyConstraints
+        )
+        c.showConstraintsEnd().ast[ShowWrapper]().buildConstraintClauses(constraintType, parentPos)
+      case c: Cypher6Parser.ShowConstraintPropTypeContext =>
+        val constraintType = pickShowConstraintType(
+          c.showConstraintEntity(),
+          NodePropTypeConstraints,
+          RelPropTypeConstraints,
+          PropTypeConstraints
+        )
+        c.showConstraintsEnd().ast[ShowWrapper]().buildConstraintClauses(constraintType, parentPos)
+      case c: Cypher6Parser.ShowConstraintUniqueContext =>
+        val constraintType = pickShowConstraintType(
+          c.showConstraintEntity(),
+          NodeUniqueConstraints,
+          RelUniqueConstraints,
+          UniqueConstraints
+        )
+        c.showConstraintsEnd().ast[ShowWrapper]().buildConstraintClauses(constraintType, parentPos)
       case _ => throw new IllegalStateException("Invalid Constraint Type")
     }
   }
 
-  override def exitConstraintAllowYieldType(
-    ctx: Cypher6Parser.ConstraintAllowYieldTypeContext
-  ): Unit = {
-    val parent = ctx.getParent.asInstanceOf[ShowConstraintMultiContext]
-    val entityType =
-      if (parent.NODE() != null) Node else if (parent.RELATIONSHIP() != null || parent.REL() != null) Rel else NoEntity
-    ctx.ast = (entityType, ctx.PROPERTY() != null, ctx.UNIQUENESS() != null) match {
-      case (Node, true, _)     => NodePropTypeConstraints
-      case (Rel, true, _)      => RelPropTypeConstraints
-      case (NoEntity, true, _) => PropTypeConstraints
-      case (Node, _, true)     => NodeUniqueConstraints
-      case (Rel, _, true)      => RelUniqueConstraints
-      case (NoEntity, _, true) => UniqueConstraints
-      case (Node, _, _)        => NodeExistsConstraints(ValidSyntax)
-      case (Rel, _, _)         => RelExistsConstraints(ValidSyntax)
-      case (NoEntity, _, _)    => ExistsConstraints(ValidSyntax)
+  private def pickShowConstraintType(
+    enitityTypeContext: Cypher6Parser.ShowConstraintEntityContext,
+    nodeType: ShowConstraintType,
+    relType: ShowConstraintType,
+    allType: ShowConstraintType
+  ): ShowConstraintType = {
+    astOpt[ConstraintEntity](enitityTypeContext).getOrElse(NoEntity) match {
+      case Node => nodeType
+      case Rel  => relType
+      case _    => allType
     }
   }
 
@@ -349,17 +315,13 @@ trait DdlShowBuilder extends Cypher6ParserListener {
     ctx: Cypher6Parser.ConstraintExistTypeContext
   ): Unit = {}
 
-  override def exitConstraintBriefAndYieldType(
-    ctx: Cypher6Parser.ConstraintBriefAndYieldTypeContext
+  override def exitShowConstraintEntity(
+    ctx: Cypher6Parser.ShowConstraintEntityContext
   ): Unit = {
-    ctx.ast = nodeChild(ctx, 0).getSymbol.getType match {
-      case Cypher6Parser.ALL    => AllConstraints
-      case Cypher6Parser.UNIQUE => UniqueConstraints
-      case Cypher6Parser.EXIST  => ExistsConstraints(ValidSyntax)
-      case Cypher6Parser.NODE =>
-        if (ctx.EXIST() != null) NodeExistsConstraints(ValidSyntax) else NodeKeyConstraints
-      case Cypher6Parser.RELATIONSHIP =>
-        RelExistsConstraints(ValidSyntax)
+    ctx.ast = ctx match {
+      case _: Cypher6Parser.NodeEntityContext => Node
+      case _: Cypher6Parser.RelEntityContext  => Rel
+      case _                                  => NoEntity
     }
   }
 
@@ -368,31 +330,8 @@ trait DdlShowBuilder extends Cypher6ParserListener {
   private case object Rel extends ConstraintEntity
   private case object NoEntity extends ConstraintEntity
 
-  final override def exitShowConstraintsAllowBriefAndYield(
-    ctx: Cypher6Parser.ShowConstraintsAllowBriefAndYieldContext
-  ): Unit = {
-    ctx.ast =
-      astOpt[ShowWrapper](ctx.showBriefAndYield(), ShowWrapper())
-        .copy(composableClauses = astOpt[Seq[Clause]](ctx.composableCommandClauses()))
-  }
-
-  final override def exitShowConstraintsAllowBrief(
-    ctx: Cypher6Parser.ShowConstraintsAllowBriefContext
-  ): Unit = {
-    ctx.ast = ShowWrapper(
-      ctx.BRIEF() != null,
-      ctx.VERBOSE() != null,
-      None,
-      List.empty,
-      yieldAll = false,
-      None,
-      None,
-      astOpt[Seq[Clause]](ctx.composableCommandClauses())
-    )
-  }
-
-  final override def exitShowConstraintsAllowYield(
-    ctx: Cypher6Parser.ShowConstraintsAllowYieldContext
+  final override def exitShowConstraintsEnd(
+    ctx: Cypher6Parser.ShowConstraintsEndContext
   ): Unit = {
     ctx.ast = decomposeYield(astOpt(ctx.showCommandYield()))
       .copy(composableClauses = astOpt[Seq[Clause]](ctx.composableCommandClauses()))
@@ -604,8 +543,6 @@ trait DdlShowBuilder extends Cypher6ParserListener {
 object DdlShowBuilder {
 
   case class ShowWrapper(
-    isBrief: Boolean = false,
-    isVerbose: Boolean = false,
     where: Option[Where] = None,
     yieldedItems: List[CommandResultItem] = List.empty,
     yieldAll: Boolean = false,
@@ -619,8 +556,6 @@ object DdlShowBuilder {
       buildClauses(
         ShowConstraintsClause(
           constraintType,
-          isBrief,
-          isVerbose,
           where,
           yieldedItems,
           yieldAll
@@ -632,8 +567,6 @@ object DdlShowBuilder {
       buildClauses(
         ShowIndexesClause(
           indexType,
-          isBrief,
-          isVerbose,
           where,
           yieldedItems,
           yieldAll = yieldAll

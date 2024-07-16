@@ -45,8 +45,100 @@ public interface ASTExceptionFactory {
         return String.format("Filter type %s is not defined for show %s command.", got.description(), command);
     }
 
+    String invalidExistsForShowConstraints =
+            "`SHOW CONSTRAINTS` no longer allows the `EXISTS` keyword, please use `EXIST` or `PROPERTY EXISTENCE` instead.";
+
+    static String invalidBriefVerbose(String command) {
+        return String.format(
+                """
+`%s` no longer allows the `BRIEF` and `VERBOSE` keywords,
+please omit `BRIEF` and use `YIELD *` instead of `VERBOSE`.""",
+                command);
+    }
+
     static String invalidCreateIndexType(CreateIndexTypes got) {
         return String.format("Index type %s is not defined for create index command.", got.description());
+    }
+
+    // gives back error message if the command is invalid, null if valid
+    static String checkForInvalidCreateConstraint(
+            ConstraintType type, ConstraintVersion constraintVersion, Boolean containsOn, Boolean moreThanOneProperty) {
+        // Error messages for mixing old and new constraint syntax
+        String errorMessageOnRequire =
+                "Invalid constraint syntax, ON should not be used in combination with REQUIRE. Replace ON with FOR.";
+        String errorMessageForAssert =
+                "Invalid constraint syntax, FOR should not be used in combination with ASSERT. Replace ASSERT with REQUIRE.";
+        String errorMessageForAssertExists =
+                "Invalid constraint syntax, FOR should not be used in combination with ASSERT EXISTS. Replace ASSERT EXISTS with REQUIRE ... IS NOT NULL.";
+        String errorMessageOnAssert =
+                "Invalid constraint syntax, ON and ASSERT should not be used. Replace ON with FOR and ASSERT with REQUIRE.";
+        String errorMessageOnAssertExists =
+                "Invalid constraint syntax, ON and ASSERT EXISTS should not be used. Replace ON with FOR and ASSERT EXISTS with REQUIRE ... IS NOT NULL.";
+
+        String message = null;
+        if (type == ConstraintType.NODE_EXISTS
+                || type == ConstraintType.NODE_IS_NOT_NULL
+                || type == ConstraintType.REL_EXISTS
+                || type == ConstraintType.REL_IS_NOT_NULL) {
+            // existence constraints
+            if (moreThanOneProperty && (type == ConstraintType.NODE_EXISTS || type == ConstraintType.REL_EXISTS)) {
+                // previously thrown during ast construction so need to check this first to keep order of checks
+                message = onlySinglePropertyAllowed(type);
+            } else if (constraintVersion == ConstraintVersion.CONSTRAINT_VERSION_2 && containsOn) {
+                message = errorMessageOnRequire; // ON ... REQUIRE ... IS NOT NULL
+            } else if (constraintVersion == ConstraintVersion.CONSTRAINT_VERSION_1 && !containsOn) {
+                message = errorMessageForAssert; // FOR ... ASSERT ... IS NOT NULL
+            } else if (constraintVersion == ConstraintVersion.CONSTRAINT_VERSION_0 && !containsOn) {
+                message = errorMessageForAssertExists; // FOR ... ASSERT EXISTS ...
+            } else if (constraintVersion == ConstraintVersion.CONSTRAINT_VERSION_1) {
+                message = errorMessageOnAssert; // ON ... ASSERT ... IS NOT NULL
+            } else if (constraintVersion == ConstraintVersion.CONSTRAINT_VERSION_0) {
+                message = errorMessageOnAssertExists; // ON ... ASSERT EXISTS ...
+            }
+        } else {
+            // remaining constraints
+            if (constraintVersion == ConstraintVersion.CONSTRAINT_VERSION_2 && containsOn) {
+                message = errorMessageOnRequire; // ON ... REQUIRE
+            } else if (constraintVersion == ConstraintVersion.CONSTRAINT_VERSION_0 && !containsOn) {
+                message = errorMessageForAssert; // FOR ... ASSERT
+            } else if (constraintVersion == ConstraintVersion.CONSTRAINT_VERSION_0) {
+                message = errorMessageOnAssert; // ON ... ASSERT
+            }
+        }
+        return message;
+    }
+
+    static String invalidDropConstraint(ConstraintType type, Boolean moreThanOneProperty) {
+        String messageFormat =
+                "%s constraints cannot be dropped by schema, please drop by name instead: DROP CONSTRAINT constraint_name. The constraint name can be found using SHOW CONSTRAINTS.";
+        String message;
+        switch (type) {
+            case NODE_UNIQUE:
+                message = String.format(messageFormat, "Uniqueness");
+                break;
+            case NODE_KEY:
+                message = String.format(messageFormat, "Node key");
+                break;
+            case NODE_EXISTS:
+                if (moreThanOneProperty) {
+                    message = onlySinglePropertyAllowed(type);
+                } else {
+                    message = String.format(messageFormat, "Node property existence");
+                }
+                break;
+            case REL_EXISTS:
+                if (moreThanOneProperty) {
+                    message = onlySinglePropertyAllowed(type);
+                } else {
+                    message = String.format(messageFormat, "Relationship property existence");
+                }
+                break;
+            default:
+                // ConstraintType.NODE_IS_NOT_NULL, ConstraintType.REL_IS_NOT_NULL,
+                // ConstraintType.REL_UNIQUE, ConstraintType.REL_KEY
+                message = invalidDropCommand;
+        }
+        return message;
     }
 
     static String invalidDotsInRemoteAliasName(String name) {

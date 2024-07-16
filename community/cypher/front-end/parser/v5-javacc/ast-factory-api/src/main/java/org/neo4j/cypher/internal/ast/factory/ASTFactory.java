@@ -23,7 +23,6 @@ import org.neo4j.cypher.internal.parser.common.ast.factory.AccessType;
 import org.neo4j.cypher.internal.parser.common.ast.factory.ActionType;
 import org.neo4j.cypher.internal.parser.common.ast.factory.CallInTxsOnErrorBehaviourType;
 import org.neo4j.cypher.internal.parser.common.ast.factory.ConstraintType;
-import org.neo4j.cypher.internal.parser.common.ast.factory.ConstraintVersion;
 import org.neo4j.cypher.internal.parser.common.ast.factory.CreateIndexTypes;
 import org.neo4j.cypher.internal.parser.common.ast.factory.HintIndexType;
 import org.neo4j.cypher.internal.parser.common.ast.factory.ParserCypherTypeName;
@@ -366,16 +365,9 @@ public interface ASTFactory<
             POS limitPosition,
             WHERE where);
 
-    CLAUSE showIndexClause(
-            POS p, ShowCommandFilterTypes indexType, boolean brief, boolean verbose, WHERE where, YIELD yieldClause);
+    CLAUSE showIndexClause(POS p, ShowCommandFilterTypes indexType, WHERE where, YIELD yieldClause);
 
-    CLAUSE showConstraintClause(
-            POS p,
-            ShowCommandFilterTypes constraintType,
-            boolean brief,
-            boolean verbose,
-            WHERE where,
-            YIELD yieldClause);
+    CLAUSE showConstraintClause(POS p, ShowCommandFilterTypes constraintType, WHERE where, YIELD yieldClause);
 
     CLAUSE showProcedureClause(POS p, boolean currentUser, String user, WHERE where, YIELD yieldClause);
 
@@ -409,18 +401,11 @@ public interface ASTFactory<
             StringPos<POS> label,
             List<PROPERTY> properties,
             ParserCypherTypeName propertyType,
-            SimpleEither<Map<String, EXPRESSION>, PARAMETER> options,
-            boolean containsOn,
-            ConstraintVersion constraintVersion);
+            SimpleEither<Map<String, EXPRESSION>, PARAMETER> options);
 
     SCHEMA_COMMAND dropConstraint(POS p, SimpleEither<StringPos<POS>, PARAMETER> name, boolean ifExists);
 
-    SCHEMA_COMMAND dropConstraint(
-            POS p, ConstraintType constraintType, VARIABLE variable, StringPos<POS> label, List<PROPERTY> properties);
-
     // Index Commands
-
-    SCHEMA_COMMAND createIndexWithOldSyntax(POS p, StringPos<POS> label, List<StringPos<POS>> properties);
 
     SCHEMA_COMMAND createLookupIndex(
             POS p,
@@ -457,8 +442,6 @@ public interface ASTFactory<
             SimpleEither<Map<String, EXPRESSION>, PARAMETER> options);
 
     SCHEMA_COMMAND dropIndex(POS p, SimpleEither<StringPos<POS>, PARAMETER> name, boolean ifExists);
-
-    SCHEMA_COMMAND dropIndex(POS p, StringPos<POS> label, List<StringPos<POS>> propertyNames);
 
     // Administration Commands
     // Role Administration Commands

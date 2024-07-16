@@ -100,7 +100,6 @@ import org.neo4j.cypher.internal.ast.User
 import org.neo4j.cypher.internal.ast.UserAllQualifier
 import org.neo4j.cypher.internal.ast.UserDefinedFunctions
 import org.neo4j.cypher.internal.ast.UserQualifier
-import org.neo4j.cypher.internal.ast.ValidSyntax
 import org.neo4j.cypher.internal.ast.VectorIndexes
 import org.neo4j.cypher.internal.ast.WriteAction
 import org.neo4j.cypher.internal.expressions.Add
@@ -4351,7 +4350,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     assertGood(
       attach(
         ShowConstraints(
-          constraintType = ExistsConstraints(ValidSyntax),
+          constraintType = ExistsConstraints,
           List.empty,
           List.empty,
           yieldAll = true
@@ -4364,7 +4363,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     assertGood(
       attach(
         ShowConstraints(
-          constraintType = NodeExistsConstraints(),
+          constraintType = NodeExistsConstraints,
           List.empty,
           List.empty,
           yieldAll = false
@@ -4383,7 +4382,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     assertGood(
       attach(
         ShowConstraints(
-          constraintType = RelExistsConstraints(),
+          constraintType = RelExistsConstraints,
           List.empty,
           List.empty,
           yieldAll = true

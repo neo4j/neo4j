@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.ast.UseGraph
 import org.neo4j.cypher.internal.ast.Yield
 import org.neo4j.cypher.internal.ast.test.util.AstParsingTestBase
 import org.neo4j.cypher.internal.expressions.ContainerIndex
+import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.ListSlice
 import org.neo4j.cypher.internal.expressions.NonPrefixedPatternPart
 import org.neo4j.cypher.internal.expressions.Pattern
@@ -134,7 +135,9 @@ class ParserPositionTest extends AstParsingTestBase with LoneElement {
     }
   }
 
-  test("DROP INDEX ON :Person(name)") {
-    parses[Statements].withPositionOf[PropertyKeyName](InputPosition(22, 1, 23))
+  test("CREATE INDEX FOR (p:Person) ON (p.name)") {
+    parses[Statements]
+      .withPositionOf[PropertyKeyName](InputPosition(34, 1, 35))
+      .withPositionOf[LabelName](InputPosition(20, 1, 21))
   }
 }

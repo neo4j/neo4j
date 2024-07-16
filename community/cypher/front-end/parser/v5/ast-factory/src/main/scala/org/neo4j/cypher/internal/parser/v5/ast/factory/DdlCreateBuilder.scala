@@ -19,10 +19,6 @@ package org.neo4j.cypher.internal.parser.v5.ast.factory
 import org.neo4j.cypher.internal.ast.AdministrationCommand.NATIVE_AUTH
 import org.neo4j.cypher.internal.ast.Auth
 import org.neo4j.cypher.internal.ast.AuthAttribute
-import org.neo4j.cypher.internal.ast.ConstraintVersion
-import org.neo4j.cypher.internal.ast.ConstraintVersion0
-import org.neo4j.cypher.internal.ast.ConstraintVersion1
-import org.neo4j.cypher.internal.ast.ConstraintVersion2
 import org.neo4j.cypher.internal.ast.CreateBtreeNodeIndex
 import org.neo4j.cypher.internal.ast.CreateBtreeRelationshipIndex
 import org.neo4j.cypher.internal.ast.CreateCompositeDatabase
@@ -30,7 +26,6 @@ import org.neo4j.cypher.internal.ast.CreateDatabase
 import org.neo4j.cypher.internal.ast.CreateFulltextNodeIndex
 import org.neo4j.cypher.internal.ast.CreateFulltextRelationshipIndex
 import org.neo4j.cypher.internal.ast.CreateIndex
-import org.neo4j.cypher.internal.ast.CreateIndexOldSyntax
 import org.neo4j.cypher.internal.ast.CreateLocalDatabaseAlias
 import org.neo4j.cypher.internal.ast.CreateLookupIndex
 import org.neo4j.cypher.internal.ast.CreateNodeKeyConstraint
@@ -88,7 +83,6 @@ import org.neo4j.cypher.internal.parser.v5.Cypher5Parser.ConstraintTypedContext
 import org.neo4j.cypher.internal.parser.v5.Cypher5Parser.CreateCommandContext
 import org.neo4j.cypher.internal.parser.v5.Cypher5Parser.CreateIndexContext
 import org.neo4j.cypher.internal.parser.v5.Cypher5ParserListener
-import org.neo4j.cypher.internal.parser.v5.ast.factory.Cypher5AstUtil.nonEmptyPropertyKeyName
 import org.neo4j.cypher.internal.util.symbols.CypherType
 
 import scala.collection.immutable.ArraySeq
@@ -112,11 +106,10 @@ trait DdlCreateBuilder extends Cypher5ParserListener {
     val isNode = nodePattern != null
     val constraintName = astOpt[Either[String, Parameter]](ctx.symbolicNameOrStringParameter())
     val existsDo = ifExistsDo(parent.REPLACE() != null, ctx.EXISTS() != null)
-    val containsOn = ctx.ON() != null
     val options = astOpt[Options](ctx.commandOptions(), NoOptions)
     val cT = ctx.constraintType()
-    val (constraintVersion, properties, propertyType) =
-      cT.ast[(ConstraintVersion, ArraySeq[Property], Option[CypherType])]
+    val (properties, propertyType) =
+      cT.ast[(ArraySeq[Property], Option[CypherType])]
 
     ctx.ast = if (isNode) {
       val (variable, label) = nodePattern.ast[(Variable, LabelName)]()
@@ -128,9 +121,7 @@ trait DdlCreateBuilder extends Cypher5ParserListener {
             properties(0),
             constraintName,
             existsDo,
-            options,
-            containsOn,
-            constraintVersion
+            options
           )(pos(parent))
         case _: ConstraintTypedContext =>
           CreateNodePropertyTypeConstraint(
@@ -140,9 +131,7 @@ trait DdlCreateBuilder extends Cypher5ParserListener {
             propertyType.get,
             constraintName,
             existsDo,
-            options,
-            containsOn,
-            constraintVersion
+            options
           )(pos(parent))
         case _: ConstraintIsUniqueContext =>
           CreateNodePropertyUniquenessConstraint(
@@ -151,9 +140,7 @@ trait DdlCreateBuilder extends Cypher5ParserListener {
             properties,
             constraintName,
             existsDo,
-            options,
-            containsOn,
-            constraintVersion
+            options
           )(pos(parent))
         case _: ConstraintKeyContext =>
           CreateNodeKeyConstraint(
@@ -162,9 +149,7 @@ trait DdlCreateBuilder extends Cypher5ParserListener {
             properties,
             constraintName,
             existsDo,
-            options,
-            containsOn,
-            constraintVersion
+            options
           )(pos(parent))
         case _ => throw new IllegalStateException("Unknown Constraint Command")
       }
@@ -178,9 +163,7 @@ trait DdlCreateBuilder extends Cypher5ParserListener {
             properties(0),
             constraintName,
             existsDo,
-            options,
-            containsOn,
-            constraintVersion
+            options
           )(pos(parent))
         case _: ConstraintTypedContext =>
           CreateRelationshipPropertyTypeConstraint(
@@ -190,9 +173,7 @@ trait DdlCreateBuilder extends Cypher5ParserListener {
             propertyType.get,
             constraintName,
             existsDo,
-            options,
-            containsOn,
-            constraintVersion
+            options
           )(pos(parent))
         case _: ConstraintIsUniqueContext =>
           CreateRelationshipPropertyUniquenessConstraint(
@@ -201,9 +182,7 @@ trait DdlCreateBuilder extends Cypher5ParserListener {
             properties,
             constraintName,
             existsDo,
-            options,
-            containsOn,
-            constraintVersion
+            options
           )(pos(parent))
         case _: ConstraintKeyContext =>
           CreateRelationshipKeyConstraint(
@@ -212,9 +191,7 @@ trait DdlCreateBuilder extends Cypher5ParserListener {
             properties,
             constraintName,
             existsDo,
-            options,
-            containsOn,
-            constraintVersion
+            options
           )(pos(parent))
         case _ => throw new IllegalStateException("Unexpected Constraint Command")
       }
@@ -224,30 +201,21 @@ trait DdlCreateBuilder extends Cypher5ParserListener {
   override def exitConstraintType(ctx: Cypher5Parser.ConstraintTypeContext): Unit = {
     ctx.ast = ctx match {
       case cTC: ConstraintExistsContext =>
-        val constraintVersion = ConstraintVersion0
         val properties = cTC.propertyList.ast[ArraySeq[Property]]()
-        (constraintVersion, properties, None)
+        (properties, None)
       case cTC: ConstraintIsNotNullContext =>
-        val constraintVersion =
-          if (cTC.REQUIRE() != null) ConstraintVersion2 else ConstraintVersion1
         val properties = cTC.propertyList.ast[ArraySeq[Property]]()
-        (constraintVersion, properties, None)
+        (properties, None)
       case cTC: ConstraintTypedContext =>
-        val constraintVersion =
-          if (cTC.REQUIRE() != null) ConstraintVersion2 else ConstraintVersion0
         val properties = cTC.propertyList.ast[ArraySeq[Property]]()
         val propertyType = cTC.`type`().ast[CypherType]()
-        (constraintVersion, properties, Some(propertyType))
+        (properties, Some(propertyType))
       case cTC: ConstraintIsUniqueContext =>
-        val constraintVersion =
-          if (cTC.REQUIRE() != null) ConstraintVersion2 else ConstraintVersion0
         val properties = cTC.propertyList.ast[ArraySeq[Property]]()
-        (constraintVersion, properties, None)
+        (properties, None)
       case cTC: ConstraintKeyContext =>
-        val constraintVersion =
-          if (cTC.REQUIRE() != null) ConstraintVersion2 else ConstraintVersion0
         val properties = cTC.propertyList().ast[Seq[Property]]()
-        (constraintVersion, properties, None)
+        (properties, None)
       case _ => throw new IllegalStateException("Unknown Constraint Command")
     }
   }
@@ -261,11 +229,7 @@ trait DdlCreateBuilder extends Cypher5ParserListener {
   final override def exitOldCreateIndex(
     ctx: Cypher5Parser.OldCreateIndexContext
   ): Unit = {
-    val grandparent = ctx.getParent.getParent.asInstanceOf[CreateCommandContext]
-    ctx.ast = CreateIndexOldSyntax(
-      ctx.labelType().ast[LabelName](),
-      nonEmptyPropertyKeyName(ctx.nonEmptyNameList()).toList
-    )(pos(grandparent))
+    // errors in SyntaxChecker
   }
 
   final override def exitCreateIndex_(

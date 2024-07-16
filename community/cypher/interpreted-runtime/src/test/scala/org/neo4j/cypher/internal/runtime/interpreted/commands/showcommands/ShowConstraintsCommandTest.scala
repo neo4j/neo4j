@@ -36,7 +36,6 @@ import org.neo4j.cypher.internal.ast.RelPropTypeConstraints
 import org.neo4j.cypher.internal.ast.RelUniqueConstraints
 import org.neo4j.cypher.internal.ast.ShowConstraintsClause
 import org.neo4j.cypher.internal.ast.UniqueConstraints
-import org.neo4j.cypher.internal.ast.ValidSyntax
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.runtime.ConstraintInfo
 import org.neo4j.cypher.internal.runtime.IndexInfo
@@ -57,8 +56,6 @@ class ShowConstraintsCommandTest extends ShowCommandTestBase {
   private val defaultColumns =
     ShowConstraintsClause(
       AllConstraints,
-      brief = false,
-      verbose = false,
       None,
       List.empty,
       yieldAll = false
@@ -69,8 +66,6 @@ class ShowConstraintsCommandTest extends ShowCommandTestBase {
   private val allColumns =
     ShowConstraintsClause(
       AllConstraints,
-      brief = false,
-      verbose = false,
       None,
       List.empty,
       yieldAll = true
@@ -640,7 +635,7 @@ class ShowConstraintsCommandTest extends ShowCommandTestBase {
     setupAllConstraints()
 
     // When
-    val showConstraints = ShowConstraintsCommand(ExistsConstraints(ValidSyntax), allColumns, List.empty)
+    val showConstraints = ShowConstraintsCommand(ExistsConstraints, allColumns, List.empty)
     val result = showConstraints.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -674,7 +669,7 @@ class ShowConstraintsCommandTest extends ShowCommandTestBase {
     setupAllConstraints()
 
     // When
-    val showConstraints = ShowConstraintsCommand(NodeExistsConstraints(), allColumns, List.empty)
+    val showConstraints = ShowConstraintsCommand(NodeExistsConstraints, allColumns, List.empty)
     val result = showConstraints.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -699,7 +694,7 @@ class ShowConstraintsCommandTest extends ShowCommandTestBase {
     setupAllConstraints()
 
     // When
-    val showConstraints = ShowConstraintsCommand(RelExistsConstraints(), allColumns, List.empty)
+    val showConstraints = ShowConstraintsCommand(RelExistsConstraints, allColumns, List.empty)
     val result = showConstraints.originalNameRows(queryState, initialCypherRow).toList
 
     // Then

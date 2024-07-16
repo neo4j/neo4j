@@ -80,8 +80,6 @@ class ShowIndexesCommandTest extends ShowCommandTestBase {
   private val defaultColumns =
     ShowIndexesClause(
       AllIndexes,
-      brief = false,
-      verbose = false,
       None,
       List.empty,
       yieldAll = false
@@ -92,8 +90,6 @@ class ShowIndexesCommandTest extends ShowCommandTestBase {
   private val allColumns =
     ShowIndexesClause(
       AllIndexes,
-      brief = false,
-      verbose = false,
       None,
       List.empty,
       yieldAll = true

@@ -19,7 +19,6 @@ package org.neo4j.cypher.internal.parser.v6.ast.factory
 import org.neo4j.cypher.internal.ast.factory.neo4j.completion.CodeCompletionCore.CandidatesCollection
 import org.neo4j.cypher.internal.parser.CypherErrorVocabulary
 import org.neo4j.cypher.internal.parser.v6.Cypher6Parser
-import org.neo4j.cypher.internal.parser.v6.ast.factory.Cypher6ErrorStrategyConf
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class Cypher6VocabularyTest extends CypherFunSuite {
@@ -85,7 +84,6 @@ class Cypher6VocabularyTest extends CypherFunSuite {
     Cypher6Parser.AS -> "'AS'",
     Cypher6Parser.ASC -> "'ASC'",
     Cypher6Parser.ASCENDING -> "'ASCENDING'",
-    Cypher6Parser.ASSERT -> "'ASSERT'",
     Cypher6Parser.ASSIGN -> "'ASSIGN'",
     Cypher6Parser.AT -> "'AT'",
     Cypher6Parser.AUTH -> "'AUTH'",
@@ -96,7 +94,6 @@ class Cypher6VocabularyTest extends CypherFunSuite {
     Cypher6Parser.BOOSTED -> "'BOOSTED'",
     Cypher6Parser.BOTH -> "'BOTH'",
     Cypher6Parser.BREAK -> "'BREAK'",
-    Cypher6Parser.BRIEF -> "'BRIEF'",
     Cypher6Parser.BTREE -> "'BTREE'",
     Cypher6Parser.BUILT -> "'BUILT'",
     Cypher6Parser.BY -> "'BY'",
@@ -250,7 +247,6 @@ class Cypher6VocabularyTest extends CypherFunSuite {
     Cypher6Parser.OPTION -> "'OPTION'",
     Cypher6Parser.OR -> "'OR'",
     Cypher6Parser.ORDER -> "'ORDER'",
-    Cypher6Parser.OUTPUT -> "'OUTPUT'",
     Cypher6Parser.PASSWORD -> "'PASSWORD'",
     Cypher6Parser.PASSWORDS -> "'PASSWORDS'",
     Cypher6Parser.PATH -> "'PATH'",
@@ -354,7 +350,6 @@ class Cypher6VocabularyTest extends CypherFunSuite {
     Cypher6Parser.VALUE -> "'VALUE'",
     Cypher6Parser.VARCHAR -> "'VARCHAR'",
     Cypher6Parser.VECTOR -> "'VECTOR'",
-    Cypher6Parser.VERBOSE -> "'VERBOSE'",
     Cypher6Parser.VERTEX -> "'VERTEX'",
     Cypher6Parser.WAIT -> "'WAIT'",
     Cypher6Parser.WHEN -> "'WHEN'",

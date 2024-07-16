@@ -66,9 +66,6 @@ import org.neo4j.cypher.internal.ast.CollectExpression
 import org.neo4j.cypher.internal.ast.CommandClause
 import org.neo4j.cypher.internal.ast.CommandResultItem
 import org.neo4j.cypher.internal.ast.CompositeDatabaseManagementActions
-import org.neo4j.cypher.internal.ast.ConstraintVersion0
-import org.neo4j.cypher.internal.ast.ConstraintVersion1
-import org.neo4j.cypher.internal.ast.ConstraintVersion2
 import org.neo4j.cypher.internal.ast.CountExpression
 import org.neo4j.cypher.internal.ast.Create
 import org.neo4j.cypher.internal.ast.CreateAliasAction
@@ -84,7 +81,6 @@ import org.neo4j.cypher.internal.ast.CreateFulltextNodeIndex
 import org.neo4j.cypher.internal.ast.CreateFulltextRelationshipIndex
 import org.neo4j.cypher.internal.ast.CreateIndex
 import org.neo4j.cypher.internal.ast.CreateIndexAction
-import org.neo4j.cypher.internal.ast.CreateIndexOldSyntax
 import org.neo4j.cypher.internal.ast.CreateLocalDatabaseAlias
 import org.neo4j.cypher.internal.ast.CreateLookupIndex
 import org.neo4j.cypher.internal.ast.CreateNodeLabelAction
@@ -127,13 +123,8 @@ import org.neo4j.cypher.internal.ast.DropDatabase
 import org.neo4j.cypher.internal.ast.DropDatabaseAction
 import org.neo4j.cypher.internal.ast.DropDatabaseAdditionalAction
 import org.neo4j.cypher.internal.ast.DropDatabaseAlias
-import org.neo4j.cypher.internal.ast.DropIndex
 import org.neo4j.cypher.internal.ast.DropIndexAction
 import org.neo4j.cypher.internal.ast.DropIndexOnName
-import org.neo4j.cypher.internal.ast.DropNodeKeyConstraint
-import org.neo4j.cypher.internal.ast.DropNodePropertyExistenceConstraint
-import org.neo4j.cypher.internal.ast.DropPropertyUniquenessConstraint
-import org.neo4j.cypher.internal.ast.DropRelationshipPropertyExistenceConstraint
 import org.neo4j.cypher.internal.ast.DropRole
 import org.neo4j.cypher.internal.ast.DropRoleAction
 import org.neo4j.cypher.internal.ast.DropServer
@@ -246,7 +237,6 @@ import org.neo4j.cypher.internal.ast.RemoveLabelItem
 import org.neo4j.cypher.internal.ast.RemovePrivilegeAction
 import org.neo4j.cypher.internal.ast.RemovePropertyItem
 import org.neo4j.cypher.internal.ast.RemoveRoleAction
-import org.neo4j.cypher.internal.ast.RemovedSyntax
 import org.neo4j.cypher.internal.ast.RenameRole
 import org.neo4j.cypher.internal.ast.RenameRoleAction
 import org.neo4j.cypher.internal.ast.RenameServer
@@ -351,7 +341,6 @@ import org.neo4j.cypher.internal.ast.UsingIndexHint.UsingRangeIndexType
 import org.neo4j.cypher.internal.ast.UsingIndexHint.UsingTextIndexType
 import org.neo4j.cypher.internal.ast.UsingJoinHint
 import org.neo4j.cypher.internal.ast.UsingScanHint
-import org.neo4j.cypher.internal.ast.ValidSyntax
 import org.neo4j.cypher.internal.ast.VectorIndexes
 import org.neo4j.cypher.internal.ast.WaitUntilComplete
 import org.neo4j.cypher.internal.ast.Where
@@ -485,7 +474,6 @@ import org.neo4j.cypher.internal.parser.common.ast.factory.AccessType.READ_WRITE
 import org.neo4j.cypher.internal.parser.common.ast.factory.ActionType
 import org.neo4j.cypher.internal.parser.common.ast.factory.CallInTxsOnErrorBehaviourType
 import org.neo4j.cypher.internal.parser.common.ast.factory.ConstraintType
-import org.neo4j.cypher.internal.parser.common.ast.factory.ConstraintVersion
 import org.neo4j.cypher.internal.parser.common.ast.factory.CreateIndexTypes
 import org.neo4j.cypher.internal.parser.common.ast.factory.HintIndexType
 import org.neo4j.cypher.internal.parser.common.ast.factory.ParameterType
@@ -1653,8 +1641,6 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
   override def showIndexClause(
     p: InputPosition,
     initialIndexType: ShowCommandFilterTypes,
-    brief: Boolean,
-    verbose: Boolean,
     where: Where,
     yieldClause: Yield
   ): Clause = {
@@ -1670,41 +1656,36 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
       case t => throw new Neo4jASTConstructionException(ASTExceptionFactory.invalidShowFilterType("indexes", t))
     }
     val (yieldAll, yieldedItems) = getYieldAllAndYieldItems(yieldClause)
-    ShowIndexesClause(indexType, brief, verbose, Option(where), yieldedItems, yieldAll)(p)
+    ShowIndexesClause(indexType, Option(where), yieldedItems, yieldAll)(p)
   }
 
   override def showConstraintClause(
     p: InputPosition,
     initialConstraintType: ShowCommandFilterTypes,
-    brief: Boolean,
-    verbose: Boolean,
     where: Where,
     yieldClause: Yield
   ): Clause = {
     val constraintType: ShowConstraintType = initialConstraintType match {
-      case ShowCommandFilterTypes.ALL                     => AllConstraints
-      case ShowCommandFilterTypes.UNIQUE                  => UniqueConstraints
-      case ShowCommandFilterTypes.NODE_UNIQUE             => NodeUniqueConstraints
-      case ShowCommandFilterTypes.RELATIONSHIP_UNIQUE     => RelUniqueConstraints
-      case ShowCommandFilterTypes.KEY                     => KeyConstraints
-      case ShowCommandFilterTypes.NODE_KEY                => NodeKeyConstraints
-      case ShowCommandFilterTypes.RELATIONSHIP_KEY        => RelKeyConstraints
-      case ShowCommandFilterTypes.EXIST                   => ExistsConstraints(ValidSyntax)
-      case ShowCommandFilterTypes.OLD_EXISTS              => ExistsConstraints(RemovedSyntax)
-      case ShowCommandFilterTypes.OLD_EXIST               => ExistsConstraints(ValidSyntax)
-      case ShowCommandFilterTypes.NODE_EXIST              => NodeExistsConstraints(ValidSyntax)
-      case ShowCommandFilterTypes.NODE_OLD_EXISTS         => NodeExistsConstraints(RemovedSyntax)
-      case ShowCommandFilterTypes.NODE_OLD_EXIST          => NodeExistsConstraints(ValidSyntax)
-      case ShowCommandFilterTypes.RELATIONSHIP_EXIST      => RelExistsConstraints(ValidSyntax)
-      case ShowCommandFilterTypes.RELATIONSHIP_OLD_EXISTS => RelExistsConstraints(RemovedSyntax)
-      case ShowCommandFilterTypes.RELATIONSHIP_OLD_EXIST  => RelExistsConstraints(ValidSyntax)
-      case ShowCommandFilterTypes.PROP_TYPE               => PropTypeConstraints
-      case ShowCommandFilterTypes.NODE_PROP_TYPE          => NodePropTypeConstraints
-      case ShowCommandFilterTypes.RELATIONSHIP_PROP_TYPE  => RelPropTypeConstraints
+      case ShowCommandFilterTypes.ALL                    => AllConstraints
+      case ShowCommandFilterTypes.UNIQUE                 => UniqueConstraints
+      case ShowCommandFilterTypes.NODE_UNIQUE            => NodeUniqueConstraints
+      case ShowCommandFilterTypes.RELATIONSHIP_UNIQUE    => RelUniqueConstraints
+      case ShowCommandFilterTypes.KEY                    => KeyConstraints
+      case ShowCommandFilterTypes.NODE_KEY               => NodeKeyConstraints
+      case ShowCommandFilterTypes.RELATIONSHIP_KEY       => RelKeyConstraints
+      case ShowCommandFilterTypes.EXIST                  => ExistsConstraints
+      case ShowCommandFilterTypes.OLD_EXIST              => ExistsConstraints
+      case ShowCommandFilterTypes.NODE_EXIST             => NodeExistsConstraints
+      case ShowCommandFilterTypes.NODE_OLD_EXIST         => NodeExistsConstraints
+      case ShowCommandFilterTypes.RELATIONSHIP_EXIST     => RelExistsConstraints
+      case ShowCommandFilterTypes.RELATIONSHIP_OLD_EXIST => RelExistsConstraints
+      case ShowCommandFilterTypes.PROP_TYPE              => PropTypeConstraints
+      case ShowCommandFilterTypes.NODE_PROP_TYPE         => NodePropTypeConstraints
+      case ShowCommandFilterTypes.RELATIONSHIP_PROP_TYPE => RelPropTypeConstraints
       case t => throw new Neo4jASTConstructionException(ASTExceptionFactory.invalidShowFilterType("constraints", t))
     }
     val (yieldAll, yieldedItems) = getYieldAllAndYieldItems(yieldClause)
-    ShowConstraintsClause(constraintType, brief, verbose, Option(where), yieldedItems, yieldAll)(p)
+    ShowConstraintsClause(constraintType, Option(where), yieldedItems, yieldAll)(p)
   }
 
   override def showProcedureClause(
@@ -1818,17 +1799,8 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
     label: StringPos[InputPosition],
     javaProperties: util.List[Property],
     javaPropertyType: ParserCypherTypeName,
-    options: SimpleEither[util.Map[String, Expression], Parameter],
-    containsOn: Boolean,
-    constraintVersion: ConstraintVersion
+    options: SimpleEither[util.Map[String, Expression], Parameter]
   ): SchemaCommand = {
-    // Convert ConstraintVersion from Java to Scala
-    val constraintVersionScala = constraintVersion match {
-      case ConstraintVersion.CONSTRAINT_VERSION_0 => ConstraintVersion0
-      case ConstraintVersion.CONSTRAINT_VERSION_1 => ConstraintVersion1
-      case ConstraintVersion.CONSTRAINT_VERSION_2 => ConstraintVersion2
-    }
-
     val name = Option(constraintName).map(_.asScala.left.map(_.string))
     val properties = javaProperties.asScala.toSeq
     constraintType match {
@@ -1838,9 +1810,7 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
           properties,
           name,
           ifExistsDo(replace, ifNotExists),
-          asOptionsAst(options),
-          containsOn,
-          constraintVersionScala
+          asOptionsAst(options)
         )(p)
       case ConstraintType.REL_UNIQUE => ast.CreateRelationshipPropertyUniquenessConstraint(
           variable,
@@ -1848,9 +1818,7 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
           properties,
           name,
           ifExistsDo(replace, ifNotExists),
-          asOptionsAst(options),
-          containsOn,
-          constraintVersionScala
+          asOptionsAst(options)
         )(p)
       case ConstraintType.NODE_KEY => ast.CreateNodeKeyConstraint(
           variable,
@@ -1858,9 +1826,7 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
           properties,
           name,
           ifExistsDo(replace, ifNotExists),
-          asOptionsAst(options),
-          containsOn,
-          constraintVersionScala
+          asOptionsAst(options)
         )(p)
       case ConstraintType.REL_KEY => ast.CreateRelationshipKeyConstraint(
           variable,
@@ -1868,11 +1834,11 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
           properties,
           name,
           ifExistsDo(replace, ifNotExists),
-          asOptionsAst(options),
-          containsOn,
-          constraintVersionScala
+          asOptionsAst(options)
         )(p)
       case ConstraintType.NODE_EXISTS | ConstraintType.NODE_IS_NOT_NULL =>
+        // Will only get here for IS NOT NULL as EXISTS throws before getting here,
+        // but let's keep it to avoid scala warnings on not covering all parts of the enum in the match case
         validateSingleProperty(properties, constraintType)
         ast.CreateNodePropertyExistenceConstraint(
           variable,
@@ -1880,11 +1846,11 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
           properties.head,
           name,
           ifExistsDo(replace, ifNotExists),
-          asOptionsAst(options),
-          containsOn,
-          constraintVersionScala
+          asOptionsAst(options)
         )(p)
       case ConstraintType.REL_EXISTS | ConstraintType.REL_IS_NOT_NULL =>
+        // Will only get here for IS NOT NULL as EXISTS throws before getting here,
+        // but let's keep it to avoid scala warnings on not covering all parts of the enum in the match case
         validateSingleProperty(properties, constraintType)
         ast.CreateRelationshipPropertyExistenceConstraint(
           variable,
@@ -1892,9 +1858,7 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
           properties.head,
           name,
           ifExistsDo(replace, ifNotExists),
-          asOptionsAst(options),
-          containsOn,
-          constraintVersionScala
+          asOptionsAst(options)
         )(p)
       case ConstraintType.NODE_IS_TYPED =>
         validateSingleProperty(properties, constraintType)
@@ -1906,9 +1870,7 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
           scalaPropertyType,
           name,
           ifExistsDo(replace, ifNotExists),
-          asOptionsAst(options),
-          containsOn,
-          constraintVersionScala
+          asOptionsAst(options)
         )(p)
       case ConstraintType.REL_IS_TYPED =>
         validateSingleProperty(properties, constraintType)
@@ -1920,9 +1882,7 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
           scalaPropertyTypes,
           name,
           ifExistsDo(replace, ifNotExists),
-          asOptionsAst(options),
-          containsOn,
-          constraintVersionScala
+          asOptionsAst(options)
         )(p)
     }
   }
@@ -1933,30 +1893,6 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
     ifExists: Boolean
   ): DropConstraintOnName =
     DropConstraintOnName(name.asScala.left.map(_.string), ifExists)(p)
-
-  override def dropConstraint(
-    p: InputPosition,
-    constraintType: ConstraintType,
-    variable: Variable,
-    label: StringPos[InputPosition],
-    javaProperties: util.List[Property]
-  ): SchemaCommand = {
-    val properties = javaProperties.asScala.toSeq
-    constraintType match {
-      case ConstraintType.NODE_UNIQUE =>
-        DropPropertyUniquenessConstraint(variable, LabelName(label.string)(label.pos), properties)(p)
-      case ConstraintType.NODE_KEY => DropNodeKeyConstraint(variable, LabelName(label.string)(label.pos), properties)(p)
-      case ConstraintType.NODE_EXISTS =>
-        validateSingleProperty(properties, constraintType)
-        DropNodePropertyExistenceConstraint(variable, LabelName(label.string)(label.pos), properties.head)(p)
-      case ConstraintType.REL_EXISTS =>
-        validateSingleProperty(properties, constraintType)
-        DropRelationshipPropertyExistenceConstraint(variable, RelTypeName(label.string)(label.pos), properties.head)(p)
-      case _ =>
-        // ConstraintType.NODE_IS_NOT_NULL, ConstraintType.REL_IS_NOT_NULL, ConstraintType.REL_UNIQUE, ConstraintType.REL_KEY
-        throw new Neo4jASTConstructionException(ASTExceptionFactory.invalidDropCommand)
-    }
-  }
 
   private def validateSingleProperty(seq: Seq[_], constraintType: ConstraintType): Unit = {
     if (seq.size != 1)
@@ -2090,17 +2026,6 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
       name,
       ifExistsDo(replace, ifNotExists),
       asOptionsAst(options)
-    )(p)
-  }
-
-  override def createIndexWithOldSyntax(
-    p: InputPosition,
-    label: StringPos[InputPosition],
-    properties: util.List[StringPos[InputPosition]]
-  ): CreateIndexOldSyntax = {
-    CreateIndexOldSyntax(
-      LabelName(label.string)(label.pos),
-      properties.asScala.toList.map(prop => PropertyKeyName(prop.string)(prop.pos))
     )(p)
   }
 
@@ -2278,15 +2203,6 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
     ifExists: Boolean
   ): DropIndexOnName =
     DropIndexOnName(name.asScala.left.map(_.string), ifExists)(p)
-
-  override def dropIndex(
-    p: InputPosition,
-    label: StringPos[InputPosition],
-    javaProperties: util.List[StringPos[InputPosition]]
-  ): DropIndex = {
-    val properties = javaProperties.asScala.map(property => PropertyKeyName(property.string)(property.pos)).toList
-    DropIndex(LabelName(label.string)(label.pos), properties)(p)
-  }
 
   // Administration Commands
   // Role commands

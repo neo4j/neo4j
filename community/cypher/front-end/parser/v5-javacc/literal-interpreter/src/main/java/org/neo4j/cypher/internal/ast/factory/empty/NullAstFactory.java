@@ -28,7 +28,6 @@ import org.neo4j.cypher.internal.parser.common.ast.factory.AccessType;
 import org.neo4j.cypher.internal.parser.common.ast.factory.ActionType;
 import org.neo4j.cypher.internal.parser.common.ast.factory.CallInTxsOnErrorBehaviourType;
 import org.neo4j.cypher.internal.parser.common.ast.factory.ConstraintType;
-import org.neo4j.cypher.internal.parser.common.ast.factory.ConstraintVersion;
 import org.neo4j.cypher.internal.parser.common.ast.factory.CreateIndexTypes;
 import org.neo4j.cypher.internal.parser.common.ast.factory.HintIndexType;
 import org.neo4j.cypher.internal.parser.common.ast.factory.ParameterType;
@@ -917,19 +916,12 @@ public class NullAstFactory
     }
 
     @Override
-    public NULL showIndexClause(
-            NULL p, ShowCommandFilterTypes indexType, boolean brief, boolean verbose, NULL aNull, NULL yieldClause) {
+    public NULL showIndexClause(NULL p, ShowCommandFilterTypes indexType, NULL aNull, NULL yieldClause) {
         return null;
     }
 
     @Override
-    public NULL showConstraintClause(
-            NULL p,
-            ShowCommandFilterTypes constraintType,
-            boolean brief,
-            boolean verbose,
-            NULL aNull,
-            NULL yieldClause) {
+    public NULL showConstraintClause(NULL p, ShowCommandFilterTypes constraintType, NULL aNull, NULL yieldClause) {
         return null;
     }
 
@@ -981,25 +973,12 @@ public class NullAstFactory
             StringPos<NULL> label,
             List<NULL> nulls,
             ParserCypherTypeName propertyType,
-            SimpleEither<Map<String, NULL>, NULL> options,
-            boolean containsOn,
-            ConstraintVersion constraintVersion) {
+            SimpleEither<Map<String, NULL>, NULL> options) {
         return null;
     }
 
     @Override
     public NULL dropConstraint(NULL p, SimpleEither<StringPos<NULL>, NULL> name, boolean ifExists) {
-        return null;
-    }
-
-    @Override
-    public NULL dropConstraint(
-            NULL p, ConstraintType constraintType, NULL aNull, StringPos<NULL> label, List<NULL> nulls) {
-        return null;
-    }
-
-    @Override
-    public NULL createIndexWithOldSyntax(NULL p, StringPos<NULL> label, List<StringPos<NULL>> properties) {
         return null;
     }
 
@@ -1048,11 +1027,6 @@ public class NullAstFactory
 
     @Override
     public NULL dropIndex(NULL p, SimpleEither<StringPos<NULL>, NULL> name, boolean ifExists) {
-        return null;
-    }
-
-    @Override
-    public NULL dropIndex(NULL p, StringPos<NULL> label, List<StringPos<NULL>> propertyNames) {
         return null;
     }
 

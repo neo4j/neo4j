@@ -18,9 +18,8 @@ package org.neo4j.cypher.internal.ast.factory.ddl
 
 import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.factory.neo4j.Neo4jASTConstructionException
+import org.neo4j.cypher.internal.ast.test.util.AstParsing.Cypher5
 import org.neo4j.cypher.internal.ast.test.util.AstParsing.Cypher5JavaCc
-import org.neo4j.cypher.internal.expressions.Property
-import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.parser.common.ast.factory.ASTExceptionFactory
 import org.neo4j.cypher.internal.parser.common.ast.factory.ConstraintType
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
@@ -52,2152 +51,1701 @@ import org.neo4j.exceptions.SyntaxException
 /* Tests for creating and dropping constraints */
 class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserTestBase {
 
-  Seq("ON", "FOR")
-    .foreach { forOrOnString =>
-      Seq("ASSERT", "REQUIRE")
-        .foreach { requireOrAssertString =>
-          val containsOn = forOrOnString == "ON"
-          val constraintVersion =
-            if (requireOrAssertString == "REQUIRE") ast.ConstraintVersion2 else ast.ConstraintVersion0
-          val constraintVersionOneOrTwo =
-            if (requireOrAssertString == "REQUIRE") ast.ConstraintVersion2 else ast.ConstraintVersion1
-
-          // Create constraint: Without name
-
-          Seq("NODE", "").foreach(nodeKeyword => {
-            // Node key
-
-            test(
-              s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString (node.prop) IS $nodeKeyword KEY"
-            ) {
-              parsesTo[ast.Statements](ast.CreateNodeKeyConstraint(
-                varFor("node"),
-                labelName("Label"),
-                Seq(prop("node", "prop")),
-                None,
-                ast.IfExistsThrowError,
-                ast.NoOptions,
-                containsOn,
-                constraintVersion
-              )(pos))
-            }
-
-            test(
-              s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString node.prop IS $nodeKeyword KEY"
-            ) {
-              parsesTo[ast.Statements](ast.CreateNodeKeyConstraint(
-                varFor("node"),
-                labelName("Label"),
-                Seq(prop("node", "prop")),
-                None,
-                ast.IfExistsThrowError,
-                ast.NoOptions,
-                containsOn,
-                constraintVersion
-              )(pos))
-            }
-
-            test(
-              s"CREATE OR REPLACE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString (node.prop) IS $nodeKeyword KEY"
-            ) {
-              parsesTo[ast.Statements](ast.CreateNodeKeyConstraint(
-                varFor("node"),
-                labelName("Label"),
-                Seq(prop("node", "prop")),
-                None,
-                ast.IfExistsReplace,
-                ast.NoOptions,
-                containsOn,
-                constraintVersion
-              )(pos))
-            }
-
-            test(
-              s"CREATE CONSTRAINT IF NOT EXISTS $forOrOnString (node:Label) $requireOrAssertString (node.prop) IS $nodeKeyword KEY"
-            ) {
-              parsesTo[ast.Statements](ast.CreateNodeKeyConstraint(
-                varFor("node"),
-                labelName("Label"),
-                Seq(prop("node", "prop")),
-                None,
-                ast.IfExistsDoNothing,
-                ast.NoOptions,
-                containsOn,
-                constraintVersion
-              )(pos))
-            }
-
-            test(
-              s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString (node.prop1,node.prop2) IS $nodeKeyword KEY"
-            ) {
-              parsesTo[ast.Statements](ast.CreateNodeKeyConstraint(
-                varFor("node"),
-                labelName("Label"),
-                Seq(prop("node", "prop1"), prop("node", "prop2")),
-                None,
-                ast.IfExistsThrowError,
-                ast.NoOptions,
-                containsOn,
-                constraintVersion
-              )(pos))
-            }
-
-            test(
-              s"CREATE OR REPLACE CONSTRAINT IF NOT EXISTS $forOrOnString (node:Label) $requireOrAssertString (node.prop1,node.prop2) IS $nodeKeyword KEY"
-            ) {
-              parsesTo[ast.Statements](ast.CreateNodeKeyConstraint(
-                varFor("node"),
-                labelName("Label"),
-                Seq(prop("node", "prop1"), prop("node", "prop2")),
-                None,
-                ast.IfExistsInvalidSyntax,
-                ast.NoOptions,
-                containsOn,
-                constraintVersion
-              )(pos))
-            }
-
-            test(
-              s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString (node.prop) IS $nodeKeyword KEY OPTIONS {indexProvider : 'range-1.0'}"
-            ) {
-              parsesTo[ast.Statements](ast.CreateNodeKeyConstraint(
-                varFor("node"),
-                labelName("Label"),
-                Seq(prop("node", "prop")),
-                None,
-                ast.IfExistsThrowError,
-                ast.OptionsMap(Map("indexProvider" -> literalString("range-1.0"))),
-                containsOn,
-                constraintVersion
-              )(pos))
-            }
-
-            test(
-              s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString (node.prop) IS $nodeKeyword KEY OPTIONS {indexProvider : 'native-btree-1.0', indexConfig : {`spatial.cartesian.max`: [100.0,100.0], `spatial.cartesian.min`: [-100.0,-100.0] }}"
-            ) {
-              // will fail in options converter
-              parsesTo[ast.Statements](ast.CreateNodeKeyConstraint(
-                varFor("node"),
-                labelName("Label"),
-                Seq(prop("node", "prop")),
-                None,
-                ast.IfExistsThrowError,
-                ast.OptionsMap(Map(
-                  "indexProvider" -> literalString("native-btree-1.0"),
-                  "indexConfig" -> mapOf(
-                    "spatial.cartesian.max" -> listOf(literalFloat(100.0), literalFloat(100.0)),
-                    "spatial.cartesian.min" -> listOf(literalFloat(-100.0), literalFloat(-100.0))
-                  )
-                )),
-                containsOn,
-                constraintVersion
-              )(pos))
-            }
-
-            test(
-              s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString (node.prop) IS $nodeKeyword KEY OPTIONS {indexConfig : {someConfig: 'toShowItCanBeParsed' }}"
-            ) {
-              parsesTo[ast.Statements](ast.CreateNodeKeyConstraint(
-                varFor("node"),
-                labelName("Label"),
-                Seq(prop("node", "prop")),
-                None,
-                ast.IfExistsThrowError,
-                ast.OptionsMap(Map("indexConfig" -> mapOf("someConfig" -> literalString("toShowItCanBeParsed")))),
-                containsOn,
-                constraintVersion
-              )(pos))
-            }
-
-            test(
-              s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString (node.prop) IS $nodeKeyword KEY OPTIONS {nonValidOption : 42}"
-            ) {
-              parsesTo[ast.Statements](ast.CreateNodeKeyConstraint(
-                varFor("node"),
-                labelName("Label"),
-                Seq(prop("node", "prop")),
-                None,
-                ast.IfExistsThrowError,
-                ast.OptionsMap(Map("nonValidOption" -> literalInt(42))),
-                containsOn,
-                constraintVersion
-              )(pos))
-            }
-
-            test(
-              s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString (node.prop) IS $nodeKeyword KEY OPTIONS {}"
-            ) {
-              parsesTo[ast.Statements](ast.CreateNodeKeyConstraint(
-                varFor("node"),
-                labelName("Label"),
-                Seq(prop("node", "prop")),
-                None,
-                ast.IfExistsThrowError,
-                ast.OptionsMap(Map.empty),
-                containsOn,
-                constraintVersion
-              )(pos))
-            }
-
-            test(
-              s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString (node.prop) IS $nodeKeyword KEY OPTIONS $$param"
-            ) {
-              parsesTo[ast.Statements](ast.CreateNodeKeyConstraint(
-                varFor("node"),
-                labelName("Label"),
-                Seq(prop("node", "prop")),
-                None,
-                ast.IfExistsThrowError,
-                ast.OptionsParam(parameter("param", CTMap)),
-                containsOn,
-                constraintVersion
-              )(pos))
-            }
-
-            // Node uniqueness
-
-            test(
-              s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString node.prop IS $nodeKeyword UNIQUE"
-            ) {
-              parsesTo[ast.Statements](ast.CreateNodePropertyUniquenessConstraint(
-                varFor("node"),
-                labelName("Label"),
-                Seq(prop("node", "prop")),
-                None,
-                ast.IfExistsThrowError,
-                ast.NoOptions,
-                containsOn,
-                constraintVersion
-              )(pos))
-            }
-
-            test(
-              s"CREATE OR REPLACE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString node.prop IS $nodeKeyword UNIQUE"
-            ) {
-              parsesTo[ast.Statements](ast.CreateNodePropertyUniquenessConstraint(
-                varFor("node"),
-                labelName("Label"),
-                Seq(prop("node", "prop")),
-                None,
-                ast.IfExistsReplace,
-                ast.NoOptions,
-                containsOn,
-                constraintVersion
-              )(pos))
-            }
-
-            test(
-              s"CREATE CONSTRAINT IF NOT EXISTS $forOrOnString (node:Label) $requireOrAssertString node.prop IS $nodeKeyword UNIQUE"
-            ) {
-              parsesTo[ast.Statements](ast.CreateNodePropertyUniquenessConstraint(
-                varFor("node"),
-                labelName("Label"),
-                Seq(prop("node", "prop")),
-                None,
-                ast.IfExistsDoNothing,
-                ast.NoOptions,
-                containsOn,
-                constraintVersion
-              )(pos))
-            }
-
-            test(
-              s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString (node.prop) IS $nodeKeyword UNIQUE"
-            ) {
-              parsesTo[ast.Statements](ast.CreateNodePropertyUniquenessConstraint(
-                varFor("node"),
-                labelName("Label"),
-                Seq(prop("node", "prop")),
-                None,
-                ast.IfExistsThrowError,
-                ast.NoOptions,
-                containsOn,
-                constraintVersion
-              )(pos))
-            }
-
-            test(
-              s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString (node.prop1,node.prop2) IS $nodeKeyword UNIQUE"
-            ) {
-              parsesTo[ast.Statements](ast.CreateNodePropertyUniquenessConstraint(
-                varFor("node"),
-                labelName("Label"),
-                Seq(prop("node", "prop1"), prop("node", "prop2")),
-                None,
-                ast.IfExistsThrowError,
-                ast.NoOptions,
-                containsOn,
-                constraintVersion
-              )(pos))
-            }
-
-            test(
-              s"CREATE OR REPLACE CONSTRAINT IF NOT EXISTS $forOrOnString (node:Label) $requireOrAssertString (node.prop1,node.prop2) IS $nodeKeyword UNIQUE"
-            ) {
-              parsesTo[ast.Statements](ast.CreateNodePropertyUniquenessConstraint(
-                varFor("node"),
-                labelName("Label"),
-                Seq(prop("node", "prop1"), prop("node", "prop2")),
-                None,
-                ast.IfExistsInvalidSyntax,
-                ast.NoOptions,
-                containsOn,
-                constraintVersion
-              )(pos))
-            }
-
-            test(
-              s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString (node.prop) IS $nodeKeyword UNIQUE OPTIONS {indexConfig : {`spatial.wgs-84.max`: [60.0,60.0], `spatial.wgs-84.min`: [-40.0,-40.0]}, indexProvider : 'native-btree-1.0'}"
-            ) {
-              // will fail in options converter
-              parsesTo[ast.Statements](ast.CreateNodePropertyUniquenessConstraint(
-                varFor("node"),
-                labelName("Label"),
-                Seq(prop("node", "prop")),
-                None,
-                ast.IfExistsThrowError,
-                ast.OptionsMap(Map(
-                  "indexProvider" -> literalString("native-btree-1.0"),
-                  "indexConfig" -> mapOf(
-                    "spatial.wgs-84.max" -> listOf(literalFloat(60.0), literalFloat(60.0)),
-                    "spatial.wgs-84.min" -> listOf(literalFloat(-40.0), literalFloat(-40.0))
-                  )
-                )),
-                containsOn,
-                constraintVersion
-              )(pos))
-            }
-
-            test(
-              s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString (node.prop) IS $nodeKeyword UNIQUE OPTIONS $$options"
-            ) {
-              parsesTo[ast.Statements](ast.CreateNodePropertyUniquenessConstraint(
-                varFor("node"),
-                labelName("Label"),
-                Seq(prop("node", "prop")),
-                None,
-                ast.IfExistsThrowError,
-                ast.OptionsParam(parameter("options", CTMap)),
-                containsOn,
-                constraintVersion
-              )(pos))
-            }
-          })
-
-          Seq("RELATIONSHIP", "REL", "").foreach(relKeyWord => {
-            // Relationship key
-
-            test(s"CREATE CONSTRAINT $forOrOnString ()-[r1:R]-() $requireOrAssertString (r2.prop) IS $relKeyWord KEY") {
-              parsesTo[ast.Statements](ast.CreateRelationshipKeyConstraint(
-                varFor("r1"),
-                relTypeName("R"),
-                Seq(prop("r2", "prop")),
-                None,
-                ast.IfExistsThrowError,
-                ast.NoOptions,
-                containsOn,
-                constraintVersion
-              )(pos))
-            }
-
-            test(
-              s"CREATE CONSTRAINT $forOrOnString ()-[r1:R]->() $requireOrAssertString (r2.prop1, r3.prop2) IS $relKeyWord KEY"
-            ) {
-              parsesTo[ast.Statements](ast.CreateRelationshipKeyConstraint(
-                varFor("r1"),
-                relTypeName("R"),
-                Seq(prop("r2", "prop1"), prop("r3", "prop2")),
-                None,
-                ast.IfExistsThrowError,
-                ast.NoOptions,
-                containsOn,
-                constraintVersion
-              )(pos))
-            }
-
-            test(
-              s"CREATE CONSTRAINT $forOrOnString ()<-[r1:R]-() $requireOrAssertString (r2.prop) IS $relKeyWord KEY"
-            ) {
-              parsesTo[ast.Statements](ast.CreateRelationshipKeyConstraint(
-                varFor("r1"),
-                relTypeName("R"),
-                Seq(prop("r2", "prop")),
-                None,
-                ast.IfExistsThrowError,
-                ast.NoOptions,
-                containsOn,
-                constraintVersion
-              )(pos))
-            }
-
-            test(
-              s"CREATE CONSTRAINT $forOrOnString ()<-[r1:R]->() $requireOrAssertString (r2.prop) IS $relKeyWord KEY"
-            ) {
-              parsesTo[ast.Statements](ast.CreateRelationshipKeyConstraint(
-                varFor("r1"),
-                relTypeName("R"),
-                Seq(prop("r2", "prop")),
-                None,
-                ast.IfExistsThrowError,
-                ast.NoOptions,
-                containsOn,
-                constraintVersion
-              )(pos))
-            }
-
-            test(
-              s"CREATE OR REPLACE CONSTRAINT $forOrOnString ()-[r1:R]-() $requireOrAssertString (r2.prop) IS $relKeyWord KEY"
-            ) {
-              parsesTo[ast.Statements](ast.CreateRelationshipKeyConstraint(
-                varFor("r1"),
-                relTypeName("R"),
-                Seq(prop("r2", "prop")),
-                None,
-                ast.IfExistsReplace,
-                ast.NoOptions,
-                containsOn,
-                constraintVersion
-              )(pos))
-            }
-
-            test(
-              s"CREATE OR REPLACE CONSTRAINT IF NOT EXISTS $forOrOnString ()-[r1:R]-() $requireOrAssertString (r2.prop) IS $relKeyWord KEY"
-            ) {
-              parsesTo[ast.Statements](ast.CreateRelationshipKeyConstraint(
-                varFor("r1"),
-                relTypeName("R"),
-                Seq(prop("r2", "prop")),
-                None,
-                ast.IfExistsInvalidSyntax,
-                ast.NoOptions,
-                containsOn,
-                constraintVersion
-              )(pos))
-            }
-
-            test(
-              s"CREATE CONSTRAINT IF NOT EXISTS $forOrOnString ()-[r1:R]-() $requireOrAssertString (r2.prop) IS $relKeyWord KEY"
-            ) {
-              parsesTo[ast.Statements](ast.CreateRelationshipKeyConstraint(
-                varFor("r1"),
-                relTypeName("R"),
-                Seq(prop("r2", "prop")),
-                None,
-                ast.IfExistsDoNothing,
-                ast.NoOptions,
-                containsOn,
-                constraintVersion
-              )(pos))
-            }
-
-            test(
-              s"CREATE CONSTRAINT $forOrOnString ()-[r1:R]-() $requireOrAssertString (r2.prop) IS $relKeyWord KEY OPTIONS {key: 'value'}"
-            ) {
-              parsesTo[ast.Statements](ast.CreateRelationshipKeyConstraint(
-                varFor("r1"),
-                relTypeName("R"),
-                Seq(prop("r2", "prop")),
-                None,
-                ast.IfExistsThrowError,
-                ast.OptionsMap(Map("key" -> literalString("value"))),
-                containsOn,
-                constraintVersion
-              )(pos))
-            }
-
-            // Relationship uniqueness
-
-            test(
-              s"CREATE CONSTRAINT $forOrOnString ()-[r1:R]-() $requireOrAssertString (r2.prop) IS $relKeyWord UNIQUE"
-            ) {
-              parsesTo[ast.Statements](ast.CreateRelationshipPropertyUniquenessConstraint(
-                varFor("r1"),
-                relTypeName("R"),
-                Seq(prop("r2", "prop")),
-                None,
-                ast.IfExistsThrowError,
-                ast.NoOptions,
-                containsOn,
-                constraintVersion
-              )(pos))
-            }
-
-            test(
-              s"CREATE CONSTRAINT $forOrOnString ()-[r1:R]->() $requireOrAssertString (r2.prop1, r3.prop2) IS $relKeyWord UNIQUE"
-            ) {
-              parsesTo[ast.Statements](ast.CreateRelationshipPropertyUniquenessConstraint(
-                varFor("r1"),
-                relTypeName("R"),
-                Seq(prop("r2", "prop1"), prop("r3", "prop2")),
-                None,
-                ast.IfExistsThrowError,
-                ast.NoOptions,
-                containsOn,
-                constraintVersion
-              )(pos))
-            }
-
-            test(
-              s"CREATE CONSTRAINT $forOrOnString ()<-[r1:R]-() $requireOrAssertString (r2.prop) IS $relKeyWord UNIQUE"
-            ) {
-              parsesTo[ast.Statements](ast.CreateRelationshipPropertyUniquenessConstraint(
-                varFor("r1"),
-                relTypeName("R"),
-                Seq(prop("r2", "prop")),
-                None,
-                ast.IfExistsThrowError,
-                ast.NoOptions,
-                containsOn,
-                constraintVersion
-              )(pos))
-            }
-
-            test(
-              s"CREATE CONSTRAINT $forOrOnString ()<-[r1:R]->() $requireOrAssertString (r2.prop) IS $relKeyWord UNIQUE"
-            ) {
-              parsesTo[ast.Statements](ast.CreateRelationshipPropertyUniquenessConstraint(
-                varFor("r1"),
-                relTypeName("R"),
-                Seq(prop("r2", "prop")),
-                None,
-                ast.IfExistsThrowError,
-                ast.NoOptions,
-                containsOn,
-                constraintVersion
-              )(pos))
-            }
-
-            test(
-              s"CREATE OR REPLACE CONSTRAINT $forOrOnString ()-[r1:R]-() $requireOrAssertString (r2.prop) IS $relKeyWord UNIQUE"
-            ) {
-              parsesTo[ast.Statements](ast.CreateRelationshipPropertyUniquenessConstraint(
-                varFor("r1"),
-                relTypeName("R"),
-                Seq(prop("r2", "prop")),
-                None,
-                ast.IfExistsReplace,
-                ast.NoOptions,
-                containsOn,
-                constraintVersion
-              )(pos))
-            }
-
-            test(
-              s"CREATE OR REPLACE CONSTRAINT IF NOT EXISTS $forOrOnString ()-[r1:R]-() $requireOrAssertString (r2.prop) IS $relKeyWord UNIQUE"
-            ) {
-              parsesTo[ast.Statements](ast.CreateRelationshipPropertyUniquenessConstraint(
-                varFor("r1"),
-                relTypeName("R"),
-                Seq(prop("r2", "prop")),
-                None,
-                ast.IfExistsInvalidSyntax,
-                ast.NoOptions,
-                containsOn,
-                constraintVersion
-              )(pos))
-            }
-
-            test(
-              s"CREATE CONSTRAINT IF NOT EXISTS $forOrOnString ()-[r1:R]-() $requireOrAssertString (r2.prop) IS $relKeyWord UNIQUE"
-            ) {
-              parsesTo[ast.Statements](ast.CreateRelationshipPropertyUniquenessConstraint(
-                varFor("r1"),
-                relTypeName("R"),
-                Seq(prop("r2", "prop")),
-                None,
-                ast.IfExistsDoNothing,
-                ast.NoOptions,
-                containsOn,
-                constraintVersion
-              )(pos))
-            }
-
-            test(
-              s"CREATE CONSTRAINT $forOrOnString ()-[r1:R]-() $requireOrAssertString (r2.prop) IS $relKeyWord UNIQUE OPTIONS {key: 'value'}"
-            ) {
-              parsesTo[ast.Statements](ast.CreateRelationshipPropertyUniquenessConstraint(
-                varFor("r1"),
-                relTypeName("R"),
-                Seq(prop("r2", "prop")),
-                None,
-                ast.IfExistsThrowError,
-                ast.OptionsMap(Map("key" -> literalString("value"))),
-                containsOn,
-                constraintVersion
-              )(pos))
-            }
-          })
-
-          // Node property existence
-
-          test(s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString node.prop IS NOT NULL") {
-            parsesTo[ast.Statements](ast.CreateNodePropertyExistenceConstraint(
-              varFor("node"),
-              labelName("Label"),
-              prop("node", "prop"),
-              None,
-              ast.IfExistsThrowError,
-              ast.NoOptions,
-              containsOn,
-              constraintVersionOneOrTwo
-            )(pos))
-          }
-
-          test(s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString (node.prop) IS NOT NULL") {
-            parsesTo[ast.Statements](ast.CreateNodePropertyExistenceConstraint(
-              varFor("node"),
-              labelName("Label"),
-              prop("node", "prop"),
-              None,
-              ast.IfExistsThrowError,
-              ast.NoOptions,
-              containsOn,
-              constraintVersionOneOrTwo
-            )(pos))
-          }
-
-          test(
-            s"CREATE OR REPLACE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString node.prop IS NOT NULL"
-          ) {
-            parsesTo[ast.Statements](ast.CreateNodePropertyExistenceConstraint(
-              varFor("node"),
-              labelName("Label"),
-              prop("node", "prop"),
-              None,
-              ast.IfExistsReplace,
-              ast.NoOptions,
-              containsOn,
-              constraintVersionOneOrTwo
-            )(pos))
-          }
-
-          test(
-            s"CREATE OR REPLACE CONSTRAINT IF NOT EXISTS $forOrOnString (node:Label) $requireOrAssertString node.prop IS NOT NULL"
-          ) {
-            parsesTo[ast.Statements](ast.CreateNodePropertyExistenceConstraint(
-              varFor("node"),
-              labelName("Label"),
-              prop("node", "prop"),
-              None,
-              ast.IfExistsInvalidSyntax,
-              ast.NoOptions,
-              containsOn,
-              constraintVersionOneOrTwo
-            )(pos))
-          }
-
-          test(
-            s"CREATE CONSTRAINT IF NOT EXISTS $forOrOnString (node:Label) $requireOrAssertString (node.prop) IS NOT NULL"
-          ) {
-            parsesTo[ast.Statements](ast.CreateNodePropertyExistenceConstraint(
-              varFor("node"),
-              labelName("Label"),
-              prop("node", "prop"),
-              None,
-              ast.IfExistsDoNothing,
-              ast.NoOptions,
-              containsOn,
-              constraintVersionOneOrTwo
-            )(pos))
-          }
-
-          // Relationship property existence
-
-          test(s"CREATE CONSTRAINT $forOrOnString ()-[r:R]-() $requireOrAssertString r.prop IS NOT NULL") {
-            parsesTo[ast.Statements](ast.CreateRelationshipPropertyExistenceConstraint(
-              varFor("r"),
-              relTypeName("R"),
-              prop("r", "prop"),
-              None,
-              ast.IfExistsThrowError,
-              ast.NoOptions,
-              containsOn,
-              constraintVersionOneOrTwo
-            )(pos))
-          }
-
-          test(s"CREATE CONSTRAINT $forOrOnString ()-[r:R]->() $requireOrAssertString r.prop IS NOT NULL") {
-            parsesTo[ast.Statements](ast.CreateRelationshipPropertyExistenceConstraint(
-              varFor("r"),
-              relTypeName("R"),
-              prop("r", "prop"),
-              None,
-              ast.IfExistsThrowError,
-              ast.NoOptions,
-              containsOn,
-              constraintVersionOneOrTwo
-            )(pos))
-          }
-
-          test(s"CREATE CONSTRAINT $forOrOnString ()<-[r:R]-() $requireOrAssertString (r.prop) IS NOT NULL") {
-            parsesTo[ast.Statements](ast.CreateRelationshipPropertyExistenceConstraint(
-              varFor("r"),
-              relTypeName("R"),
-              prop("r", "prop"),
-              None,
-              ast.IfExistsThrowError,
-              ast.NoOptions,
-              containsOn,
-              constraintVersionOneOrTwo
-            )(pos))
-          }
-
-          test(s"CREATE CONSTRAINT $forOrOnString ()<-[r:R]->() $requireOrAssertString (r.prop) IS NOT NULL") {
-            parsesTo[ast.Statements](ast.CreateRelationshipPropertyExistenceConstraint(
-              varFor("r"),
-              relTypeName("R"),
-              prop("r", "prop"),
-              None,
-              ast.IfExistsThrowError,
-              ast.NoOptions,
-              containsOn,
-              constraintVersionOneOrTwo
-            )(pos))
-          }
-
-          test(s"CREATE OR REPLACE CONSTRAINT $forOrOnString ()<-[r:R]-() $requireOrAssertString r.prop IS NOT NULL") {
-            parsesTo[ast.Statements](ast.CreateRelationshipPropertyExistenceConstraint(
-              varFor("r"),
-              relTypeName("R"),
-              prop("r", "prop"),
-              None,
-              ast.IfExistsReplace,
-              ast.NoOptions,
-              containsOn,
-              constraintVersionOneOrTwo
-            )(pos))
-          }
-
-          test(
-            s"CREATE OR REPLACE CONSTRAINT IF NOT EXISTS $forOrOnString ()-[r:R]-() $requireOrAssertString r.prop IS NOT NULL"
-          ) {
-            parsesTo[ast.Statements](ast.CreateRelationshipPropertyExistenceConstraint(
-              varFor("r"),
-              relTypeName("R"),
-              prop("r", "prop"),
-              None,
-              ast.IfExistsInvalidSyntax,
-              ast.NoOptions,
-              containsOn,
-              constraintVersionOneOrTwo
-            )(pos))
-          }
-
-          test(
-            s"CREATE CONSTRAINT IF NOT EXISTS $forOrOnString ()-[r:R]->() $requireOrAssertString r.prop IS NOT NULL"
-          ) {
-            parsesTo[ast.Statements](ast.CreateRelationshipPropertyExistenceConstraint(
-              varFor("r"),
-              relTypeName("R"),
-              prop("r", "prop"),
-              None,
-              ast.IfExistsDoNothing,
-              ast.NoOptions,
-              containsOn,
-              constraintVersionOneOrTwo
-            )(pos))
-          }
-
-          test(s"CREATE CONSTRAINT $forOrOnString ()-[r:R]-() $requireOrAssertString (r.prop) IS NOT NULL OPTIONS {}") {
-            parsesTo[ast.Statements](ast.CreateRelationshipPropertyExistenceConstraint(
-              varFor("r"),
-              relTypeName("R"),
-              prop("r", "prop"),
-              None,
-              ast.IfExistsThrowError,
-              ast.OptionsMap(Map.empty),
-              containsOn,
-              constraintVersionOneOrTwo
-            )(pos))
-          }
-
-          Seq("IS TYPED", "IS ::", "::").foreach(typeKeyword => {
-            // Node property type
-
-            test(
-              s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString node.prop $typeKeyword BOOLEAN"
-            ) {
-              parsesTo[ast.Statements](ast.CreateNodePropertyTypeConstraint(
-                varFor("node"),
-                labelName("Label"),
-                prop("node", "prop"),
-                BooleanType(isNullable = true)(pos),
-                None,
-                ast.IfExistsThrowError,
-                ast.NoOptions,
-                containsOn,
-                constraintVersion
-              )(pos))
-            }
-
-            test(
-              s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString (node.prop) $typeKeyword BOOLEAN"
-            ) {
-              parsesTo[ast.Statements](ast.CreateNodePropertyTypeConstraint(
-                varFor("node"),
-                labelName("Label"),
-                prop("node", "prop"),
-                BooleanType(isNullable = true)(pos),
-                None,
-                ast.IfExistsThrowError,
-                ast.NoOptions,
-                containsOn,
-                constraintVersion
-              )(pos))
-            }
-
-            test(
-              s"CREATE OR REPLACE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString node.prop $typeKeyword BOOLEAN"
-            ) {
-              parsesTo[ast.Statements](ast.CreateNodePropertyTypeConstraint(
-                varFor("node"),
-                labelName("Label"),
-                prop("node", "prop"),
-                BooleanType(isNullable = true)(pos),
-                None,
-                ast.IfExistsReplace,
-                ast.NoOptions,
-                containsOn,
-                constraintVersion
-              )(pos))
-            }
-
-            test(
-              s"CREATE OR REPLACE CONSTRAINT IF NOT EXISTS $forOrOnString (node:Label) $requireOrAssertString node.prop $typeKeyword BOOLEAN"
-            ) {
-              parsesTo[ast.Statements](ast.CreateNodePropertyTypeConstraint(
-                varFor("node"),
-                labelName("Label"),
-                prop("node", "prop"),
-                BooleanType(isNullable = true)(pos),
-                None,
-                ast.IfExistsInvalidSyntax,
-                ast.NoOptions,
-                containsOn,
-                constraintVersion
-              )(pos))
-            }
-
-            test(
-              s"CREATE CONSTRAINT IF NOT EXISTS $forOrOnString (node:Label) $requireOrAssertString (node.prop) $typeKeyword BOOLEAN"
-            ) {
-              parsesTo[ast.Statements](ast.CreateNodePropertyTypeConstraint(
-                varFor("node"),
-                labelName("Label"),
-                prop("node", "prop"),
-                BooleanType(isNullable = true)(pos),
-                None,
-                ast.IfExistsDoNothing,
-                ast.NoOptions,
-                containsOn,
-                constraintVersion
-              )(pos))
-            }
-
-            // Relationship property type
-
-            test(s"CREATE CONSTRAINT $forOrOnString ()-[r:R]-() $requireOrAssertString r.prop $typeKeyword BOOLEAN") {
-              parsesTo[ast.Statements](ast.CreateRelationshipPropertyTypeConstraint(
-                varFor("r"),
-                relTypeName("R"),
-                prop("r", "prop"),
-                BooleanType(isNullable = true)(pos),
-                None,
-                ast.IfExistsThrowError,
-                ast.NoOptions,
-                containsOn,
-                constraintVersion
-              )(pos))
-            }
-
-            test(s"CREATE CONSTRAINT $forOrOnString ()-[r:R]->() $requireOrAssertString r.prop $typeKeyword BOOLEAN") {
-              parsesTo[ast.Statements](ast.CreateRelationshipPropertyTypeConstraint(
-                varFor("r"),
-                relTypeName("R"),
-                prop("r", "prop"),
-                BooleanType(isNullable = true)(pos),
-                None,
-                ast.IfExistsThrowError,
-                ast.NoOptions,
-                containsOn,
-                constraintVersion
-              )(pos))
-            }
-
-            test(
-              s"CREATE CONSTRAINT $forOrOnString ()<-[r:R]-() $requireOrAssertString (r.prop) $typeKeyword BOOLEAN"
-            ) {
-              parsesTo[ast.Statements](ast.CreateRelationshipPropertyTypeConstraint(
-                varFor("r"),
-                relTypeName("R"),
-                prop("r", "prop"),
-                BooleanType(isNullable = true)(pos),
-                None,
-                ast.IfExistsThrowError,
-                ast.NoOptions,
-                containsOn,
-                constraintVersion
-              )(pos))
-            }
-
-            test(
-              s"CREATE CONSTRAINT $forOrOnString ()<-[r:R]->() $requireOrAssertString (r.prop) $typeKeyword BOOLEAN"
-            ) {
-              parsesTo[ast.Statements](ast.CreateRelationshipPropertyTypeConstraint(
-                varFor("r"),
-                relTypeName("R"),
-                prop("r", "prop"),
-                BooleanType(isNullable = true)(pos),
-                None,
-                ast.IfExistsThrowError,
-                ast.NoOptions,
-                containsOn,
-                constraintVersion
-              )(pos))
-            }
-
-            test(
-              s"CREATE OR REPLACE CONSTRAINT $forOrOnString ()<-[r:R]-() $requireOrAssertString r.prop $typeKeyword BOOLEAN"
-            ) {
-              parsesTo[ast.Statements](ast.CreateRelationshipPropertyTypeConstraint(
-                varFor("r"),
-                relTypeName("R"),
-                prop("r", "prop"),
-                BooleanType(isNullable = true)(pos),
-                None,
-                ast.IfExistsReplace,
-                ast.NoOptions,
-                containsOn,
-                constraintVersion
-              )(pos))
-            }
-
-            test(
-              s"CREATE OR REPLACE CONSTRAINT IF NOT EXISTS $forOrOnString ()-[r:R]-() $requireOrAssertString r.prop $typeKeyword BOOLEAN"
-            ) {
-              parsesTo[ast.Statements](ast.CreateRelationshipPropertyTypeConstraint(
-                varFor("r"),
-                relTypeName("R"),
-                prop("r", "prop"),
-                BooleanType(isNullable = true)(pos),
-                None,
-                ast.IfExistsInvalidSyntax,
-                ast.NoOptions,
-                containsOn,
-                constraintVersion
-              )(pos))
-            }
-
-            test(
-              s"CREATE CONSTRAINT IF NOT EXISTS $forOrOnString ()-[r:R]->() $requireOrAssertString r.prop $typeKeyword BOOLEAN"
-            ) {
-              parsesTo[ast.Statements](ast.CreateRelationshipPropertyTypeConstraint(
-                varFor("r"),
-                relTypeName("R"),
-                prop("r", "prop"),
-                BooleanType(isNullable = true)(pos),
-                None,
-                ast.IfExistsDoNothing,
-                ast.NoOptions,
-                containsOn,
-                constraintVersion
-              )(pos))
-            }
-
-            test(
-              s"CREATE CONSTRAINT $forOrOnString ()-[r:R]-() $requireOrAssertString (r.prop) $typeKeyword BOOLEAN OPTIONS {}"
-            ) {
-              parsesTo[ast.Statements](ast.CreateRelationshipPropertyTypeConstraint(
-                varFor("r"),
-                relTypeName("R"),
-                prop("r", "prop"),
-                BooleanType(isNullable = true)(pos),
-                None,
-                ast.IfExistsThrowError,
-                ast.OptionsMap(Map.empty),
-                containsOn,
-                constraintVersion
-              )(pos))
-            }
-          })
-
-          // Create constraint: With name
-
-          Seq("NODE", "").foreach(nodeKeyword => {
-            // Node key
-            test(
-              s"USE neo4j CREATE CONSTRAINT my_constraint $forOrOnString (node:Label) $requireOrAssertString (node.prop) IS $nodeKeyword KEY"
-            ) {
-              parsesTo[ast.Statements](ast.CreateNodeKeyConstraint(
-                varFor("node"),
-                labelName("Label"),
-                Seq(prop("node", "prop")),
-                Some("my_constraint"),
-                ast.IfExistsThrowError,
-                ast.NoOptions,
-                containsOn,
-                constraintVersion,
-                Some(use(List("neo4j")))
-              )(pos))
-            }
-
-            test(
-              s"USE neo4j CREATE OR REPLACE CONSTRAINT my_constraint IF NOT EXISTS $forOrOnString (node:Label) $requireOrAssertString (node.prop) IS $nodeKeyword KEY"
-            ) {
-              parsesTo[ast.Statements](ast.CreateNodeKeyConstraint(
-                varFor("node"),
-                labelName("Label"),
-                Seq(prop("node", "prop")),
-                Some("my_constraint"),
-                ast.IfExistsInvalidSyntax,
-                ast.NoOptions,
-                containsOn,
-                constraintVersion,
-                Some(use(List("neo4j")))
-              )(pos))
-            }
-
-            test(
-              s"CREATE CONSTRAINT my_constraint $forOrOnString (node:Label) $requireOrAssertString (node.prop1,node.prop2) IS $nodeKeyword KEY"
-            ) {
-              parsesTo[ast.Statements](ast.CreateNodeKeyConstraint(
-                varFor("node"),
-                labelName("Label"),
-                Seq(prop("node", "prop1"), prop("node", "prop2")),
-                Some("my_constraint"),
-                ast.IfExistsThrowError,
-                ast.NoOptions,
-                containsOn,
-                constraintVersion
-              )(pos))
-            }
-
-            test(
-              s"CREATE OR REPLACE CONSTRAINT my_constraint $forOrOnString (node:Label) $requireOrAssertString (node.prop1,node.prop2) IS $nodeKeyword KEY"
-            ) {
-              parsesTo[ast.Statements](ast.CreateNodeKeyConstraint(
-                varFor("node"),
-                labelName("Label"),
-                Seq(prop("node", "prop1"), prop("node", "prop2")),
-                Some("my_constraint"),
-                ast.IfExistsReplace,
-                ast.NoOptions,
-                containsOn,
-                constraintVersion
-              )(pos))
-            }
-
-            test(
-              s"CREATE CONSTRAINT my_constraint IF NOT EXISTS $forOrOnString (node:Label) $requireOrAssertString (node.prop1,node.prop2) IS $nodeKeyword KEY"
-            ) {
-              parsesTo[ast.Statements](ast.CreateNodeKeyConstraint(
-                varFor("node"),
-                labelName("Label"),
-                Seq(prop("node", "prop1"), prop("node", "prop2")),
-                Some("my_constraint"),
-                ast.IfExistsDoNothing,
-                ast.NoOptions,
-                containsOn,
-                constraintVersion
-              )(pos))
-            }
-
-            test(
-              s"CREATE CONSTRAINT my_constraint $forOrOnString (node:Label) $requireOrAssertString (node.prop) IS $nodeKeyword KEY OPTIONS {indexProvider : 'native-btree-1.0', indexConfig : {`spatial.wgs-84.max`: [60.0,60.0], `spatial.wgs-84.min`: [-40.0,-40.0]}}"
-            ) {
-              // will fail in options converter
-              parsesTo[ast.Statements](ast.CreateNodeKeyConstraint(
-                varFor("node"),
-                labelName("Label"),
-                Seq(prop("node", "prop")),
-                Some("my_constraint"),
-                ast.IfExistsThrowError,
-                ast.OptionsMap(Map(
-                  "indexProvider" -> literalString("native-btree-1.0"),
-                  "indexConfig" -> mapOf(
-                    "spatial.wgs-84.max" -> listOf(literalFloat(60.0), literalFloat(60.0)),
-                    "spatial.wgs-84.min" -> listOf(literalFloat(-40.0), literalFloat(-40.0))
-                  )
-                )),
-                containsOn,
-                constraintVersion
-              )(pos))
-            }
-
-            // Node uniqueness
-
-            test(
-              s"CREATE CONSTRAINT my_constraint $forOrOnString (node:Label) $requireOrAssertString node.prop IS $nodeKeyword UNIQUE"
-            ) {
-              parsesTo[ast.Statements](ast.CreateNodePropertyUniquenessConstraint(
-                varFor("node"),
-                labelName("Label"),
-                Seq(prop("node", "prop")),
-                Some("my_constraint"),
-                ast.IfExistsThrowError,
-                ast.NoOptions,
-                containsOn,
-                constraintVersion
-              )(pos))
-            }
-
-            test(
-              s"CREATE CONSTRAINT my_constraint $forOrOnString (node:Label) $requireOrAssertString (node.prop) IS $nodeKeyword UNIQUE"
-            ) {
-              parsesTo[ast.Statements](ast.CreateNodePropertyUniquenessConstraint(
-                varFor("node"),
-                labelName("Label"),
-                Seq(prop("node", "prop")),
-                Some("my_constraint"),
-                ast.IfExistsThrowError,
-                ast.NoOptions,
-                containsOn,
-                constraintVersion
-              )(pos))
-            }
-
-            test(
-              s"CREATE OR REPLACE CONSTRAINT my_constraint IF NOT EXISTS $forOrOnString (node:Label) $requireOrAssertString (node.prop) IS $nodeKeyword UNIQUE"
-            ) {
-              parsesTo[ast.Statements](ast.CreateNodePropertyUniquenessConstraint(
-                varFor("node"),
-                labelName("Label"),
-                Seq(prop("node", "prop")),
-                Some("my_constraint"),
-                ast.IfExistsInvalidSyntax,
-                ast.NoOptions,
-                containsOn,
-                constraintVersion
-              )(pos))
-            }
-
-            test(
-              s"CREATE CONSTRAINT my_constraint $forOrOnString (node:Label) $requireOrAssertString (node.prop1,node.prop2) IS $nodeKeyword UNIQUE"
-            ) {
-              parsesTo[ast.Statements](ast.CreateNodePropertyUniquenessConstraint(
-                varFor("node"),
-                labelName("Label"),
-                Seq(prop("node", "prop1"), prop("node", "prop2")),
-                Some("my_constraint"),
-                ast.IfExistsThrowError,
-                ast.NoOptions,
-                containsOn,
-                constraintVersion
-              )(pos))
-            }
-
-            test(
-              s"CREATE OR REPLACE CONSTRAINT my_constraint $forOrOnString (node:Label) $requireOrAssertString (node.prop1,node.prop2) IS $nodeKeyword UNIQUE"
-            ) {
-              parsesTo[ast.Statements](ast.CreateNodePropertyUniquenessConstraint(
-                varFor("node"),
-                labelName("Label"),
-                Seq(prop("node", "prop1"), prop("node", "prop2")),
-                Some("my_constraint"),
-                ast.IfExistsReplace,
-                ast.NoOptions,
-                containsOn,
-                constraintVersion
-              )(pos))
-            }
-
-            test(
-              s"CREATE CONSTRAINT my_constraint IF NOT EXISTS $forOrOnString (node:Label) $requireOrAssertString (node.prop1,node.prop2) IS $nodeKeyword UNIQUE"
-            ) {
-              parsesTo[ast.Statements](ast.CreateNodePropertyUniquenessConstraint(
-                varFor("node"),
-                labelName("Label"),
-                Seq(prop("node", "prop1"), prop("node", "prop2")),
-                Some("my_constraint"),
-                ast.IfExistsDoNothing,
-                ast.NoOptions,
-                containsOn,
-                constraintVersion
-              )(pos))
-            }
-
-            test(
-              s"CREATE CONSTRAINT my_constraint $forOrOnString (node:Label) $requireOrAssertString (node.prop) IS $nodeKeyword UNIQUE OPTIONS {indexProvider : 'range-1.0'}"
-            ) {
-              parsesTo[ast.Statements](ast.CreateNodePropertyUniquenessConstraint(
-                varFor("node"),
-                labelName("Label"),
-                Seq(prop("node", "prop")),
-                Some("my_constraint"),
-                ast.IfExistsThrowError,
-                ast.OptionsMap(Map("indexProvider" -> literalString("range-1.0"))),
-                containsOn,
-                constraintVersion
-              )(pos))
-            }
-
-            test(
-              s"CREATE CONSTRAINT my_constraint $forOrOnString (node:Label) $requireOrAssertString (node.prop) IS $nodeKeyword UNIQUE OPTIONS {indexProvider : 'native-btree-1.0', indexConfig : {`spatial.cartesian.max`: [100.0,100.0], `spatial.cartesian.min`: [-100.0,-100.0] }}"
-            ) {
-              // will fail in options converter
-              parsesTo[ast.Statements](ast.CreateNodePropertyUniquenessConstraint(
-                varFor("node"),
-                labelName("Label"),
-                Seq(prop("node", "prop")),
-                Some("my_constraint"),
-                ast.IfExistsThrowError,
-                ast.OptionsMap(Map(
-                  "indexProvider" -> literalString("native-btree-1.0"),
-                  "indexConfig" -> mapOf(
-                    "spatial.cartesian.max" -> listOf(literalFloat(100.0), literalFloat(100.0)),
-                    "spatial.cartesian.min" -> listOf(literalFloat(-100.0), literalFloat(-100.0))
-                  )
-                )),
-                containsOn,
-                constraintVersion
-              )(pos))
-            }
-
-            test(
-              s"CREATE CONSTRAINT my_constraint $forOrOnString (node:Label) $requireOrAssertString (node.prop) IS $nodeKeyword UNIQUE OPTIONS {indexConfig : {someConfig: 'toShowItCanBeParsed' }}"
-            ) {
-              parsesTo[ast.Statements](ast.CreateNodePropertyUniquenessConstraint(
-                varFor("node"),
-                labelName("Label"),
-                Seq(prop("node", "prop")),
-                Some("my_constraint"),
-                ast.IfExistsThrowError,
-                ast.OptionsMap(Map("indexConfig" -> mapOf("someConfig" -> literalString("toShowItCanBeParsed")))),
-                containsOn,
-                constraintVersion
-              )(pos))
-            }
-
-            test(
-              s"CREATE CONSTRAINT my_constraint $forOrOnString (node:Label) $requireOrAssertString (node.prop) IS $nodeKeyword UNIQUE OPTIONS {nonValidOption : 42}"
-            ) {
-              parsesTo[ast.Statements](ast.CreateNodePropertyUniquenessConstraint(
-                varFor("node"),
-                labelName("Label"),
-                Seq(prop("node", "prop")),
-                Some("my_constraint"),
-                ast.IfExistsThrowError,
-                ast.OptionsMap(Map("nonValidOption" -> literalInt(42))),
-                containsOn,
-                constraintVersion
-              )(pos))
-            }
-
-            test(
-              s"CREATE CONSTRAINT my_constraint $forOrOnString (node:Label) $requireOrAssertString (node.prop1,node.prop2) IS $nodeKeyword UNIQUE OPTIONS {}"
-            ) {
-              parsesTo[ast.Statements](ast.CreateNodePropertyUniquenessConstraint(
-                varFor("node"),
-                labelName("Label"),
-                Seq(prop("node", "prop1"), prop("node", "prop2")),
-                Some("my_constraint"),
-                ast.IfExistsThrowError,
-                ast.OptionsMap(Map.empty),
-                containsOn,
-                constraintVersion
-              )(pos))
-            }
-          })
-
-          Seq("RELATIONSHIP", "REL", "").foreach(relKeyWord => {
-            // Relationship key
-
-            test(
-              s"CREATE CONSTRAINT my_constraint $forOrOnString ()-[r1:R]-() $requireOrAssertString (r2.prop) IS $relKeyWord KEY"
-            ) {
-              parsesTo[ast.Statements](ast.CreateRelationshipKeyConstraint(
-                varFor("r1"),
-                relTypeName("R"),
-                Seq(prop("r2", "prop")),
-                Some("my_constraint"),
-                ast.IfExistsThrowError,
-                ast.NoOptions,
-                containsOn,
-                constraintVersion
-              )(pos))
-            }
-
-            test(
-              s"CREATE CONSTRAINT my_constraint $forOrOnString ()-[r1:R]->() $requireOrAssertString (r2.prop1, r3.prop2) IS $relKeyWord KEY"
-            ) {
-              parsesTo[ast.Statements](ast.CreateRelationshipKeyConstraint(
-                varFor("r1"),
-                relTypeName("R"),
-                Seq(prop("r2", "prop1"), prop("r3", "prop2")),
-                Some("my_constraint"),
-                ast.IfExistsThrowError,
-                ast.NoOptions,
-                containsOn,
-                constraintVersion
-              )(pos))
-            }
-
-            test(
-              s"CREATE CONSTRAINT my_constraint $forOrOnString ()<-[r1:R]-() $requireOrAssertString (r2.prop) IS $relKeyWord KEY"
-            ) {
-              parsesTo[ast.Statements](ast.CreateRelationshipKeyConstraint(
-                varFor("r1"),
-                relTypeName("R"),
-                Seq(prop("r2", "prop")),
-                Some("my_constraint"),
-                ast.IfExistsThrowError,
-                ast.NoOptions,
-                containsOn,
-                constraintVersion
-              )(pos))
-            }
-
-            test(
-              s"CREATE CONSTRAINT my_constraint $forOrOnString ()<-[r1:R]->() $requireOrAssertString (r2.prop) IS $relKeyWord KEY"
-            ) {
-              parsesTo[ast.Statements](ast.CreateRelationshipKeyConstraint(
-                varFor("r1"),
-                relTypeName("R"),
-                Seq(prop("r2", "prop")),
-                Some("my_constraint"),
-                ast.IfExistsThrowError,
-                ast.NoOptions,
-                containsOn,
-                constraintVersion
-              )(pos))
-            }
-
-            test(
-              s"CREATE OR REPLACE CONSTRAINT my_constraint $forOrOnString ()-[r1:R]-() $requireOrAssertString (r2.prop) IS $relKeyWord KEY"
-            ) {
-              parsesTo[ast.Statements](ast.CreateRelationshipKeyConstraint(
-                varFor("r1"),
-                relTypeName("R"),
-                Seq(prop("r2", "prop")),
-                Some("my_constraint"),
-                ast.IfExistsReplace,
-                ast.NoOptions,
-                containsOn,
-                constraintVersion
-              )(pos))
-            }
-
-            test(
-              s"CREATE OR REPLACE CONSTRAINT my_constraint IF NOT EXISTS $forOrOnString ()-[r1:R]-() $requireOrAssertString (r2.prop) IS $relKeyWord KEY"
-            ) {
-              parsesTo[ast.Statements](ast.CreateRelationshipKeyConstraint(
-                varFor("r1"),
-                relTypeName("R"),
-                Seq(prop("r2", "prop")),
-                Some("my_constraint"),
-                ast.IfExistsInvalidSyntax,
-                ast.NoOptions,
-                containsOn,
-                constraintVersion
-              )(pos))
-            }
-
-            test(
-              s"CREATE CONSTRAINT my_constraint IF NOT EXISTS $forOrOnString ()-[r1:R]-() $requireOrAssertString (r2.prop) IS $relKeyWord KEY"
-            ) {
-              parsesTo[ast.Statements](ast.CreateRelationshipKeyConstraint(
-                varFor("r1"),
-                relTypeName("R"),
-                Seq(prop("r2", "prop")),
-                Some("my_constraint"),
-                ast.IfExistsDoNothing,
-                ast.NoOptions,
-                containsOn,
-                constraintVersion
-              )(pos))
-            }
-
-            test(
-              s"CREATE CONSTRAINT my_constraint $forOrOnString ()-[r1:R]-() $requireOrAssertString (r2.prop) IS $relKeyWord KEY OPTIONS {key: 'value'}"
-            ) {
-              parsesTo[ast.Statements](ast.CreateRelationshipKeyConstraint(
-                varFor("r1"),
-                relTypeName("R"),
-                Seq(prop("r2", "prop")),
-                Some("my_constraint"),
-                ast.IfExistsThrowError,
-                ast.OptionsMap(Map("key" -> literalString("value"))),
-                containsOn,
-                constraintVersion
-              )(pos))
-            }
-
-            // Relationship uniqueness
-
-            test(
-              s"CREATE CONSTRAINT my_constraint $forOrOnString ()-[r1:R]-() $requireOrAssertString (r2.prop) IS $relKeyWord UNIQUE"
-            ) {
-              parsesTo[ast.Statements](ast.CreateRelationshipPropertyUniquenessConstraint(
-                varFor("r1"),
-                relTypeName("R"),
-                Seq(prop("r2", "prop")),
-                Some("my_constraint"),
-                ast.IfExistsThrowError,
-                ast.NoOptions,
-                containsOn,
-                constraintVersion
-              )(pos))
-            }
-
-            test(
-              s"CREATE CONSTRAINT my_constraint $forOrOnString ()-[r1:R]->() $requireOrAssertString (r2.prop1, r3.prop2) IS $relKeyWord UNIQUE"
-            ) {
-              parsesTo[ast.Statements](ast.CreateRelationshipPropertyUniquenessConstraint(
-                varFor("r1"),
-                relTypeName("R"),
-                Seq(prop("r2", "prop1"), prop("r3", "prop2")),
-                Some("my_constraint"),
-                ast.IfExistsThrowError,
-                ast.NoOptions,
-                containsOn,
-                constraintVersion
-              )(pos))
-            }
-
-            test(
-              s"CREATE CONSTRAINT my_constraint $forOrOnString ()<-[r1:R]-() $requireOrAssertString (r2.prop) IS $relKeyWord UNIQUE"
-            ) {
-              parsesTo[ast.Statements](ast.CreateRelationshipPropertyUniquenessConstraint(
-                varFor("r1"),
-                relTypeName("R"),
-                Seq(prop("r2", "prop")),
-                Some("my_constraint"),
-                ast.IfExistsThrowError,
-                ast.NoOptions,
-                containsOn,
-                constraintVersion
-              )(pos))
-            }
-
-            test(
-              s"CREATE CONSTRAINT my_constraint $forOrOnString ()<-[r1:R]->() $requireOrAssertString (r2.prop) IS $relKeyWord UNIQUE"
-            ) {
-              parsesTo[ast.Statements](ast.CreateRelationshipPropertyUniquenessConstraint(
-                varFor("r1"),
-                relTypeName("R"),
-                Seq(prop("r2", "prop")),
-                Some("my_constraint"),
-                ast.IfExistsThrowError,
-                ast.NoOptions,
-                containsOn,
-                constraintVersion
-              )(pos))
-            }
-
-            test(
-              s"CREATE OR REPLACE CONSTRAINT my_constraint $forOrOnString ()-[r1:R]-() $requireOrAssertString (r2.prop) IS $relKeyWord UNIQUE"
-            ) {
-              parsesTo[ast.Statements](ast.CreateRelationshipPropertyUniquenessConstraint(
-                varFor("r1"),
-                relTypeName("R"),
-                Seq(prop("r2", "prop")),
-                Some("my_constraint"),
-                ast.IfExistsReplace,
-                ast.NoOptions,
-                containsOn,
-                constraintVersion
-              )(pos))
-            }
-
-            test(
-              s"CREATE OR REPLACE CONSTRAINT my_constraint IF NOT EXISTS $forOrOnString ()-[r1:R]-() $requireOrAssertString (r2.prop) IS $relKeyWord UNIQUE"
-            ) {
-              parsesTo[ast.Statements](ast.CreateRelationshipPropertyUniquenessConstraint(
-                varFor("r1"),
-                relTypeName("R"),
-                Seq(prop("r2", "prop")),
-                Some("my_constraint"),
-                ast.IfExistsInvalidSyntax,
-                ast.NoOptions,
-                containsOn,
-                constraintVersion
-              )(pos))
-            }
-
-            test(
-              s"CREATE CONSTRAINT my_constraint IF NOT EXISTS $forOrOnString ()-[r1:R]-() $requireOrAssertString (r2.prop) IS $relKeyWord UNIQUE"
-            ) {
-              parsesTo[ast.Statements](ast.CreateRelationshipPropertyUniquenessConstraint(
-                varFor("r1"),
-                relTypeName("R"),
-                Seq(prop("r2", "prop")),
-                Some("my_constraint"),
-                ast.IfExistsDoNothing,
-                ast.NoOptions,
-                containsOn,
-                constraintVersion
-              )(pos))
-            }
-
-            test(
-              s"CREATE CONSTRAINT my_constraint $forOrOnString ()-[r1:R]-() $requireOrAssertString (r2.prop) IS $relKeyWord UNIQUE OPTIONS {key: 'value'}"
-            ) {
-              parsesTo[ast.Statements](ast.CreateRelationshipPropertyUniquenessConstraint(
-                varFor("r1"),
-                relTypeName("R"),
-                Seq(prop("r2", "prop")),
-                Some("my_constraint"),
-                ast.IfExistsThrowError,
-                ast.OptionsMap(Map("key" -> literalString("value"))),
-                containsOn,
-                constraintVersion
-              )(pos))
-            }
-          })
-
-          // Node property existence
-
-          test(
-            s"CREATE CONSTRAINT my_constraint $forOrOnString (node:Label) $requireOrAssertString (node.prop) IS NOT NULL"
-          ) {
-            parsesTo[ast.Statements](ast.CreateNodePropertyExistenceConstraint(
-              varFor("node"),
-              labelName("Label"),
-              prop("node", "prop"),
-              Some("my_constraint"),
-              ast.IfExistsThrowError,
-              ast.NoOptions,
-              containsOn,
-              constraintVersionOneOrTwo
-            )(pos))
-          }
-
-          test(
-            s"CREATE OR REPLACE CONSTRAINT my_constraint $forOrOnString (node:Label) $requireOrAssertString node.prop IS NOT NULL"
-          ) {
-            parsesTo[ast.Statements](ast.CreateNodePropertyExistenceConstraint(
-              varFor("node"),
-              labelName("Label"),
-              prop("node", "prop"),
-              Some("my_constraint"),
-              ast.IfExistsReplace,
-              ast.NoOptions,
-              containsOn,
-              constraintVersionOneOrTwo
-            )(pos))
-          }
-
-          test(
-            s"CREATE OR REPLACE CONSTRAINT my_constraint IF NOT EXISTS $forOrOnString (node:Label) $requireOrAssertString node.prop IS NOT NULL"
-          ) {
-            parsesTo[ast.Statements](ast.CreateNodePropertyExistenceConstraint(
-              varFor("node"),
-              labelName("Label"),
-              prop("node", "prop"),
-              Some("my_constraint"),
-              ast.IfExistsInvalidSyntax,
-              ast.NoOptions,
-              containsOn,
-              constraintVersionOneOrTwo
-            )(pos))
-          }
-
-          test(
-            s"CREATE CONSTRAINT my_constraint IF NOT EXISTS $forOrOnString (node:Label) $requireOrAssertString node.prop IS NOT NULL"
-          ) {
-            parsesTo[ast.Statements](ast.CreateNodePropertyExistenceConstraint(
-              varFor("node"),
-              labelName("Label"),
-              prop("node", "prop"),
-              Some("my_constraint"),
-              ast.IfExistsDoNothing,
-              ast.NoOptions,
-              containsOn,
-              constraintVersionOneOrTwo
-            )(pos))
-          }
-
-          test(
-            s"CREATE CONSTRAINT my_constraint $forOrOnString (node:Label) $requireOrAssertString node.prop IS NOT NULL OPTIONS {}"
-          ) {
-            parsesTo[ast.Statements](ast.CreateNodePropertyExistenceConstraint(
-              varFor("node"),
-              labelName("Label"),
-              prop("node", "prop"),
-              Some("my_constraint"),
-              ast.IfExistsThrowError,
-              ast.OptionsMap(Map.empty),
-              containsOn,
-              constraintVersionOneOrTwo
-            )(pos))
-          }
-
-          test(
-            s"CREATE OR REPLACE CONSTRAINT my_constraint $forOrOnString (node:Label) $requireOrAssertString (node.prop2, node.prop3) IS NOT NULL"
-          ) {
-            failsParsing[ast.Statements].in {
-              case Cypher5JavaCc => _.throws[Neo4jASTConstructionException].withMessage(
-                  ASTExceptionFactory.onlySinglePropertyAllowed(ConstraintType.NODE_IS_NOT_NULL)
-                )
-              case _ => _.withSyntaxErrorContaining(
-                  ASTExceptionFactory.onlySinglePropertyAllowed(ConstraintType.NODE_IS_NOT_NULL)
-                )
-            }
-          }
-
-          // Relationship property existence
-
-          test(
-            s"CREATE CONSTRAINT `$$my_constraint` $forOrOnString ()-[r:R]-() $requireOrAssertString r.prop IS NOT NULL"
-          ) {
-            parsesTo[ast.Statements](ast.CreateRelationshipPropertyExistenceConstraint(
-              varFor("r"),
-              relTypeName("R"),
-              prop("r", "prop"),
-              Some("$my_constraint"),
-              ast.IfExistsThrowError,
-              ast.NoOptions,
-              containsOn,
-              constraintVersionOneOrTwo
-            )(pos))
-          }
-
-          test(
-            s"CREATE CONSTRAINT my_constraint $forOrOnString ()-[r:R]-() $requireOrAssertString (r.prop) IS NOT NULL"
-          ) {
-            parsesTo[ast.Statements](ast.CreateRelationshipPropertyExistenceConstraint(
-              varFor("r"),
-              relTypeName("R"),
-              prop("r", "prop"),
-              Some("my_constraint"),
-              ast.IfExistsThrowError,
-              ast.NoOptions,
-              containsOn,
-              constraintVersionOneOrTwo
-            )(pos))
-          }
-
-          test(
-            s"CREATE OR REPLACE CONSTRAINT `$$my_constraint` $forOrOnString ()-[r:R]-() $requireOrAssertString r.prop IS NOT NULL"
-          ) {
-            parsesTo[ast.Statements](ast.CreateRelationshipPropertyExistenceConstraint(
-              varFor("r"),
-              relTypeName("R"),
-              prop("r", "prop"),
-              Some("$my_constraint"),
-              ast.IfExistsReplace,
-              ast.NoOptions,
-              containsOn,
-              constraintVersionOneOrTwo
-            )(pos))
-          }
-
-          test(
-            s"CREATE OR REPLACE CONSTRAINT `$$my_constraint` IF NOT EXISTS $forOrOnString ()-[r:R]->() $requireOrAssertString (r.prop) IS NOT NULL"
-          ) {
-            parsesTo[ast.Statements](ast.CreateRelationshipPropertyExistenceConstraint(
-              varFor("r"),
-              relTypeName("R"),
-              prop("r", "prop"),
-              Some("$my_constraint"),
-              ast.IfExistsInvalidSyntax,
-              ast.NoOptions,
-              containsOn,
-              constraintVersionOneOrTwo
-            )(pos))
-          }
-
-          test(
-            s"CREATE CONSTRAINT `$$my_constraint` IF NOT EXISTS $forOrOnString ()<-[r:R]-() $requireOrAssertString r.prop IS NOT NULL"
-          ) {
-            parsesTo[ast.Statements](ast.CreateRelationshipPropertyExistenceConstraint(
-              varFor("r"),
-              relTypeName("R"),
-              prop("r", "prop"),
-              Some("$my_constraint"),
-              ast.IfExistsDoNothing,
-              ast.NoOptions,
-              containsOn,
-              constraintVersionOneOrTwo
-            )(pos))
-          }
-
-          test(
-            s"CREATE OR REPLACE CONSTRAINT my_constraint $forOrOnString ()-[r1:REL]-() $requireOrAssertString (r2.prop2, r3.prop3) IS NOT NULL"
-          ) {
-            failsParsing[ast.Statements].in {
-              case Cypher5JavaCc => _.throws[Neo4jASTConstructionException].withMessage(
-                  ASTExceptionFactory.onlySinglePropertyAllowed(ConstraintType.REL_IS_NOT_NULL)
-                )
-              case _ => _.withSyntaxErrorContaining(
-                  ASTExceptionFactory.onlySinglePropertyAllowed(ConstraintType.REL_IS_NOT_NULL)
-                )
-            }
-          }
-
-          Seq("IS TYPED", "IS ::", "::").foreach(typeKeyword => {
-            // Node property type
-
-            test(
-              s"CREATE CONSTRAINT my_constraint $forOrOnString (node:Label) $requireOrAssertString (node.prop) $typeKeyword STRING"
-            ) {
-              parsesTo[ast.Statements](ast.CreateNodePropertyTypeConstraint(
-                varFor("node"),
-                labelName("Label"),
-                prop("node", "prop"),
-                StringType(isNullable = true)(pos),
-                Some("my_constraint"),
-                ast.IfExistsThrowError,
-                ast.NoOptions,
-                containsOn,
-                constraintVersion
-              )(pos))
-            }
-
-            test(
-              s"CREATE OR REPLACE CONSTRAINT my_constraint $forOrOnString (node:Label) $requireOrAssertString node.prop $typeKeyword STRING"
-            ) {
-              parsesTo[ast.Statements](ast.CreateNodePropertyTypeConstraint(
-                varFor("node"),
-                labelName("Label"),
-                prop("node", "prop"),
-                StringType(isNullable = true)(pos),
-                Some("my_constraint"),
-                ast.IfExistsReplace,
-                ast.NoOptions,
-                containsOn,
-                constraintVersion
-              )(pos))
-            }
-
-            test(
-              s"CREATE OR REPLACE CONSTRAINT my_constraint IF NOT EXISTS $forOrOnString (node:Label) $requireOrAssertString node.prop $typeKeyword STRING"
-            ) {
-              parsesTo[ast.Statements](ast.CreateNodePropertyTypeConstraint(
-                varFor("node"),
-                labelName("Label"),
-                prop("node", "prop"),
-                StringType(isNullable = true)(pos),
-                Some("my_constraint"),
-                ast.IfExistsInvalidSyntax,
-                ast.NoOptions,
-                containsOn,
-                constraintVersion
-              )(pos))
-            }
-
-            test(
-              s"CREATE CONSTRAINT my_constraint IF NOT EXISTS $forOrOnString (node:Label) $requireOrAssertString node.prop $typeKeyword STRING"
-            ) {
-              parsesTo[ast.Statements](ast.CreateNodePropertyTypeConstraint(
-                varFor("node"),
-                labelName("Label"),
-                prop("node", "prop"),
-                StringType(isNullable = true)(pos),
-                Some("my_constraint"),
-                ast.IfExistsDoNothing,
-                ast.NoOptions,
-                containsOn,
-                constraintVersion
-              )(pos))
-            }
-
-            test(
-              s"CREATE CONSTRAINT my_constraint $forOrOnString (node:Label) $requireOrAssertString node.prop $typeKeyword STRING OPTIONS {}"
-            ) {
-              parsesTo[ast.Statements](ast.CreateNodePropertyTypeConstraint(
-                varFor("node"),
-                labelName("Label"),
-                prop("node", "prop"),
-                StringType(isNullable = true)(pos),
-                Some("my_constraint"),
-                ast.IfExistsThrowError,
-                ast.OptionsMap(Map.empty),
-                containsOn,
-                constraintVersion
-              )(pos))
-            }
-
-            test(
-              s"CREATE OR REPLACE CONSTRAINT my_constraint $forOrOnString (node:Label) $requireOrAssertString (node.prop2, node.prop3) $typeKeyword STRING"
-            ) {
-              failsParsing[ast.Statements].in {
-                case Cypher5JavaCc => _.throws[Neo4jASTConstructionException].withMessage(
-                    ASTExceptionFactory.onlySinglePropertyAllowed(ConstraintType.NODE_IS_TYPED)
-                  )
-                case _ => _.withSyntaxErrorContaining(
-                    ASTExceptionFactory.onlySinglePropertyAllowed(ConstraintType.NODE_IS_TYPED)
-                  )
-              }
-            }
-
-            // Relationship property type
-
-            test(
-              s"CREATE CONSTRAINT `$$my_constraint` $forOrOnString ()-[r:R]-() $requireOrAssertString r.prop $typeKeyword STRING"
-            ) {
-              parsesTo[ast.Statements](ast.CreateRelationshipPropertyTypeConstraint(
-                varFor("r"),
-                relTypeName("R"),
-                prop("r", "prop"),
-                StringType(isNullable = true)(pos),
-                Some("$my_constraint"),
-                ast.IfExistsThrowError,
-                ast.NoOptions,
-                containsOn,
-                constraintVersion
-              )(pos))
-            }
-
-            test(
-              s"CREATE CONSTRAINT my_constraint $forOrOnString ()-[r:R]-() $requireOrAssertString (r.prop) $typeKeyword STRING"
-            ) {
-              parsesTo[ast.Statements](ast.CreateRelationshipPropertyTypeConstraint(
-                varFor("r"),
-                relTypeName("R"),
-                prop("r", "prop"),
-                StringType(isNullable = true)(pos),
-                Some("my_constraint"),
-                ast.IfExistsThrowError,
-                ast.NoOptions,
-                containsOn,
-                constraintVersion
-              )(pos))
-            }
-
-            test(
-              s"CREATE OR REPLACE CONSTRAINT `$$my_constraint` $forOrOnString ()-[r:R]-() $requireOrAssertString r.prop $typeKeyword STRING"
-            ) {
-              parsesTo[ast.Statements](ast.CreateRelationshipPropertyTypeConstraint(
-                varFor("r"),
-                relTypeName("R"),
-                prop("r", "prop"),
-                StringType(isNullable = true)(pos),
-                Some("$my_constraint"),
-                ast.IfExistsReplace,
-                ast.NoOptions,
-                containsOn,
-                constraintVersion
-              )(pos))
-            }
-
-            test(
-              s"CREATE OR REPLACE CONSTRAINT `$$my_constraint` IF NOT EXISTS $forOrOnString ()-[r:R]->() $requireOrAssertString (r.prop) $typeKeyword STRING"
-            ) {
-              parsesTo[ast.Statements](ast.CreateRelationshipPropertyTypeConstraint(
-                varFor("r"),
-                relTypeName("R"),
-                prop("r", "prop"),
-                StringType(isNullable = true)(pos),
-                Some("$my_constraint"),
-                ast.IfExistsInvalidSyntax,
-                ast.NoOptions,
-                containsOn,
-                constraintVersion
-              )(pos))
-            }
-
-            test(
-              s"CREATE CONSTRAINT `$$my_constraint` IF NOT EXISTS $forOrOnString ()<-[r:R]-() $requireOrAssertString r.prop $typeKeyword STRING"
-            ) {
-              parsesTo[ast.Statements](ast.CreateRelationshipPropertyTypeConstraint(
-                varFor("r"),
-                relTypeName("R"),
-                prop("r", "prop"),
-                StringType(isNullable = true)(pos),
-                Some("$my_constraint"),
-                ast.IfExistsDoNothing,
-                ast.NoOptions,
-                containsOn,
-                constraintVersion
-              )(pos))
-            }
-
-            test(
-              s"CREATE OR REPLACE CONSTRAINT my_constraint $forOrOnString ()-[r1:REL]-() $requireOrAssertString (r2.prop2, r3.prop3) $typeKeyword STRING"
-            ) {
-              failsParsing[ast.Statements].in {
-                case Cypher5JavaCc => _.throws[Neo4jASTConstructionException].withMessage(
-                    ASTExceptionFactory.onlySinglePropertyAllowed(ConstraintType.REL_IS_TYPED)
-                  )
-                case _ => _.withSyntaxErrorContaining(
-                    ASTExceptionFactory.onlySinglePropertyAllowed(ConstraintType.REL_IS_TYPED)
-                  )
-              }
-            }
-          })
-
-          // Negative tests
-
-          test(
-            s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString (node.prop) IS NODE KEY {indexProvider : 'range-1.0'}"
-          ) {
-            failsParsing[ast.Statements].in {
-              case Cypher5JavaCc => _.withMessageStart("Invalid input '{': expected \"OPTIONS\" or <EOF>")
-              case _ =>
-                _.withSyntaxErrorContaining("Invalid input '{': expected 'OPTIONS' or <EOF>")
-            }
-          }
-
-          test(
-            s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString (node.prop) IS NODE KEY OPTIONS"
-          ) {
-            failsParsing[ast.Statements].in {
-              case Cypher5JavaCc => _.withMessageStart("Invalid input '': expected \"{\" or a parameter")
-              case _ =>
-                _.withSyntaxErrorContaining("Invalid input '': expected a parameter or '{'")
-
-            }
-          }
-
-          test(s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString node.prop.part IS UNIQUE") {
-            failsParsing[ast.Statements].in {
-              case Cypher5JavaCc => _.withMessageStart("Invalid input '.': expected \"::\" or \"IS\"")
-              case _             => _.withSyntaxErrorContaining("Invalid input '.': expected '::' or 'IS'")
-            }
-          }
-
-          test(s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString (node.prop.part) IS UNIQUE") {
-            failsParsing[ast.Statements].in {
-              case Cypher5JavaCc => _.withMessageStart("Invalid input '.': expected \")\" or \",\"")
-              case _             => _.withSyntaxErrorContaining("Invalid input '.': expected ')' or ','")
-            }
-          }
-
-          test(
-            s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString (node.prop) IS UNIQUE {indexProvider : 'range-1.0'}"
-          ) {
-            failsParsing[ast.Statements].in {
-              case Cypher5JavaCc =>
-                _.withMessageStart("Invalid input '{': expected \"OPTIONS\" or <EOF>")
-              case _ => _.withSyntaxErrorContaining(
-                  "Invalid input '{': expected 'OPTIONS' or <EOF>"
-                )
-            }
-          }
-
-          test(
-            s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString (node.prop1, node.prop2) IS UNIQUE OPTIONS"
-          ) {
-            failsParsing[ast.Statements].in {
-              case Cypher5JavaCc => _.withMessageStart("Invalid input '': expected \"{\" or a parameter")
-              case _ => _.withSyntaxErrorContaining(
-                  "Invalid input '': expected a parameter or '{'"
-                )
-            }
-          }
-
-          test(
-            s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString (node.prop1, node.prop2) IS NOT NULL"
-          ) {
-            failsParsing[ast.Statements].in {
-              case Cypher5JavaCc => _.withMessage("Constraint type 'IS NOT NULL' does not allow multiple properties")
-              case _ => _.withSyntaxErrorContaining(
-                  "Constraint type 'IS NOT NULL' does not allow multiple properties"
-                )
-            }
-          }
-
-          test(
-            s"CREATE CONSTRAINT $forOrOnString ()-[r:R]-() $requireOrAssertString (r.prop1, r.prop2) IS NOT NULL"
-          ) {
-            failsParsing[ast.Statements].in {
-              case Cypher5JavaCc => _.withMessage("Constraint type 'IS NOT NULL' does not allow multiple properties")
-              case _ => _.withSyntaxErrorContaining(
-                  "Constraint type 'IS NOT NULL' does not allow multiple properties"
-                )
-            }
-          }
-
-          test(s"CREATE CONSTRAINT $forOrOnString ()-[r1:REL]-() $requireOrAssertString (r2.prop) IS NODE KEY") {
-            failsParsing[ast.Statements]
-              .withMessageStart(ASTExceptionFactory.relationshipPatternNotAllowed(ConstraintType.NODE_KEY))
-              .in {
-                case Cypher5JavaCc => _.throws[OpenCypherExceptionFactory.SyntaxException]
-                case _             => _.throws[SyntaxException]
-              }
-          }
-
-          test(s"CREATE CONSTRAINT $forOrOnString ()-[r1:REL]-() $requireOrAssertString (r2.prop) IS NODE UNIQUE") {
-            failsParsing[ast.Statements]
-              .withMessageStart(ASTExceptionFactory.relationshipPatternNotAllowed(ConstraintType.NODE_UNIQUE))
-              .in {
-                case Cypher5JavaCc => _.throws[OpenCypherExceptionFactory.SyntaxException]
-                case _             => _.throws[SyntaxException]
-              }
-          }
-
-          test(s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString (r.prop) IS RELATIONSHIP KEY") {
-            failsParsing[ast.Statements]
-              .withMessageStart(ASTExceptionFactory.nodePatternNotAllowed(ConstraintType.REL_KEY))
-              .in {
-                case Cypher5JavaCc => _.throws[OpenCypherExceptionFactory.SyntaxException]
-                case _             => _.throws[SyntaxException]
-              }
-          }
-
-          test(s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString (r.prop) IS REL KEY") {
-            failsParsing[ast.Statements]
-              .withMessageStart(ASTExceptionFactory.nodePatternNotAllowed(ConstraintType.REL_KEY))
-              .in {
-                case Cypher5JavaCc => _.throws[OpenCypherExceptionFactory.SyntaxException]
-                case _             => _.throws[SyntaxException]
-              }
-          }
-
-          test(
-            s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString (r.prop) IS RELATIONSHIP UNIQUE"
-          ) {
-            failsParsing[ast.Statements]
-              .withMessageStart(ASTExceptionFactory.nodePatternNotAllowed(ConstraintType.REL_UNIQUE))
-              .in {
-                case Cypher5JavaCc => _.throws[OpenCypherExceptionFactory.SyntaxException]
-                case _             => _.throws[SyntaxException]
-              }
-          }
-
-          test(s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString (r.prop) IS REL UNIQUE") {
-            failsParsing[ast.Statements]
-              .withMessageStart(ASTExceptionFactory.nodePatternNotAllowed(ConstraintType.REL_UNIQUE))
-              .in {
-                case Cypher5JavaCc => _.throws[OpenCypherExceptionFactory.SyntaxException]
-                case _             => _.throws[SyntaxException]
-              }
-          }
-
-          test(
-            s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString node.prop IS UNIQUENESS"
-          ) {
-            failsParsing[ast.Statements].withMessageStart("Invalid input 'UNIQUENESS'")
-          }
-
-          test(
-            s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString node.prop IS NODE UNIQUENESS"
-          ) {
-            failsParsing[ast.Statements].withMessageStart("Invalid input 'UNIQUENESS'")
-          }
-
-          test(
-            s"CREATE CONSTRAINT $forOrOnString ()-[r:R]-() $requireOrAssertString r.prop IS UNIQUENESS"
-          ) {
-            failsParsing[ast.Statements].withMessageStart("Invalid input 'UNIQUENESS'")
-          }
-
-          test(
-            s"CREATE CONSTRAINT $forOrOnString ()-[r:R]-() $requireOrAssertString r.prop IS RELATIONSHIP UNIQUENESS"
-          ) {
-            failsParsing[ast.Statements].withMessageStart("Invalid input 'UNIQUENESS'")
-          }
-
-          test(
-            s"CREATE CONSTRAINT $forOrOnString ()-[r:R]-() $requireOrAssertString r.prop IS REL UNIQUENESS"
-          ) {
-            failsParsing[ast.Statements].withMessageStart("Invalid input 'UNIQUENESS'")
-          }
-
-          // constraint name parameter
-
-          test(s"CREATE CONSTRAINT $$name $forOrOnString (n:L) $requireOrAssertString n.prop IS NODE KEY") {
-            parsesTo[ast.Statements](ast.CreateNodeKeyConstraint(
-              varFor("n"),
-              labelName("L"),
-              Seq(prop("n", "prop")),
-              Some(Right(stringParam("name"))),
-              ast.IfExistsThrowError,
-              ast.NoOptions,
-              containsOn,
-              constraintVersion
-            )(pos))
-          }
-
-          test(
-            s"CREATE CONSTRAINT $$name $forOrOnString ()-[r:R]-() $requireOrAssertString r.prop IS RELATIONSHIP KEY"
-          ) {
-            parsesTo[ast.Statements](ast.CreateRelationshipKeyConstraint(
-              varFor("r"),
-              relTypeName("R"),
-              Seq(prop("r", "prop")),
-              Some(Right(stringParam("name"))),
-              ast.IfExistsThrowError,
-              ast.NoOptions,
-              containsOn,
-              constraintVersion
-            )(pos))
-          }
-
-          test(s"CREATE CONSTRAINT $$name $forOrOnString (n:L) $requireOrAssertString n.prop IS UNIQUE") {
-            parsesTo[ast.Statements](ast.CreateNodePropertyUniquenessConstraint(
-              varFor("n"),
-              labelName("L"),
-              Seq(prop("n", "prop")),
-              Some(Right(stringParam("name"))),
-              ast.IfExistsThrowError,
-              ast.NoOptions,
-              containsOn,
-              constraintVersion
-            )(pos))
-          }
-
-          test(s"CREATE CONSTRAINT $$name $forOrOnString ()-[r:R]-() $requireOrAssertString r.prop IS UNIQUE") {
-            parsesTo[ast.Statements](ast.CreateRelationshipPropertyUniquenessConstraint(
-              varFor("r"),
-              relTypeName("R"),
-              Seq(prop("r", "prop")),
-              Some(Right(stringParam("name"))),
-              ast.IfExistsThrowError,
-              ast.NoOptions,
-              containsOn,
-              constraintVersion
-            )(pos))
-          }
-
-          test(s"CREATE CONSTRAINT $$name $forOrOnString (n:L) $requireOrAssertString n.prop IS NOT NULL") {
-            parsesTo[ast.Statements](ast.CreateNodePropertyExistenceConstraint(
-              varFor("n"),
-              labelName("L"),
-              prop("n", "prop"),
-              Some(Right(stringParam("name"))),
-              ast.IfExistsThrowError,
-              ast.NoOptions,
-              containsOn,
-              constraintVersionOneOrTwo
-            )(pos))
-          }
-
-          test(s"CREATE CONSTRAINT $$name $forOrOnString ()-[r:R]-() $requireOrAssertString r.prop IS NOT NULL") {
-            parsesTo[ast.Statements](ast.CreateRelationshipPropertyExistenceConstraint(
-              varFor("r"),
-              relTypeName("R"),
-              prop("r", "prop"),
-              Some(Right(stringParam("name"))),
-              ast.IfExistsThrowError,
-              ast.NoOptions,
-              containsOn,
-              constraintVersionOneOrTwo
-            )(pos))
-          }
-
-          test(s"CREATE CONSTRAINT $$name $forOrOnString (n:L) $requireOrAssertString n.prop IS TYPED STRING") {
-            parsesTo[ast.Statements](ast.CreateNodePropertyTypeConstraint(
-              varFor("n"),
-              labelName("L"),
-              prop("n", "prop"),
-              StringType(isNullable = true)(pos),
-              Some(Right(stringParam("name"))),
-              ast.IfExistsThrowError,
-              ast.NoOptions,
-              containsOn,
-              constraintVersion
-            )(pos))
-          }
-
-          test(s"CREATE CONSTRAINT $$name $forOrOnString ()-[r:R]-() $requireOrAssertString r.prop IS TYPED STRING") {
-            parsesTo[ast.Statements](ast.CreateRelationshipPropertyTypeConstraint(
-              varFor("r"),
-              relTypeName("R"),
-              prop("r", "prop"),
-              StringType(isNullable = true)(pos),
-              Some(Right(stringParam("name"))),
-              ast.IfExistsThrowError,
-              ast.NoOptions,
-              containsOn,
-              constraintVersion
-            )(pos))
-          }
-        }
+  // Key and uniqueness
+
+  Seq("NODE", "").foreach(nodeKeyword => {
+    // Node key
+
+    test(
+      s"CREATE CONSTRAINT FOR (node:Label) REQUIRE (node.prop) IS $nodeKeyword KEY"
+    ) {
+      parsesTo[ast.Statements](ast.CreateNodeKeyConstraint(
+        varFor("node"),
+        labelName("Label"),
+        Seq(prop("node", "prop")),
+        None,
+        ast.IfExistsThrowError,
+        ast.NoOptions
+      )(pos))
     }
 
-  // Property types
+    test(
+      s"CREATE CONSTRAINT FOR (node:Label) REQUIRE node.prop IS $nodeKeyword KEY"
+    ) {
+      parsesTo[ast.Statements](ast.CreateNodeKeyConstraint(
+        varFor("node"),
+        labelName("Label"),
+        Seq(prop("node", "prop")),
+        None,
+        ast.IfExistsThrowError,
+        ast.NoOptions
+      )(pos))
+    }
+
+    test(
+      s"CREATE OR REPLACE CONSTRAINT FOR (node:Label) REQUIRE (node.prop) IS $nodeKeyword KEY"
+    ) {
+      parsesTo[ast.Statements](ast.CreateNodeKeyConstraint(
+        varFor("node"),
+        labelName("Label"),
+        Seq(prop("node", "prop")),
+        None,
+        ast.IfExistsReplace,
+        ast.NoOptions
+      )(pos))
+    }
+
+    test(
+      s"CREATE CONSTRAINT IF NOT EXISTS FOR (node:Label) REQUIRE (node.prop) IS $nodeKeyword KEY"
+    ) {
+      parsesTo[ast.Statements](ast.CreateNodeKeyConstraint(
+        varFor("node"),
+        labelName("Label"),
+        Seq(prop("node", "prop")),
+        None,
+        ast.IfExistsDoNothing,
+        ast.NoOptions
+      )(pos))
+    }
+
+    test(
+      s"CREATE CONSTRAINT FOR (node:Label) REQUIRE (node.prop1,node.prop2) IS $nodeKeyword KEY"
+    ) {
+      parsesTo[ast.Statements](ast.CreateNodeKeyConstraint(
+        varFor("node"),
+        labelName("Label"),
+        Seq(prop("node", "prop1"), prop("node", "prop2")),
+        None,
+        ast.IfExistsThrowError,
+        ast.NoOptions
+      )(pos))
+    }
+
+    test(
+      s"CREATE OR REPLACE CONSTRAINT IF NOT EXISTS FOR (node:Label) REQUIRE (node.prop1,node.prop2) IS $nodeKeyword KEY"
+    ) {
+      parsesTo[ast.Statements](ast.CreateNodeKeyConstraint(
+        varFor("node"),
+        labelName("Label"),
+        Seq(prop("node", "prop1"), prop("node", "prop2")),
+        None,
+        ast.IfExistsInvalidSyntax,
+        ast.NoOptions
+      )(pos))
+    }
+
+    test(
+      s"CREATE CONSTRAINT FOR (node:Label) REQUIRE (node.prop) IS $nodeKeyword KEY OPTIONS {indexProvider : 'range-1.0'}"
+    ) {
+      parsesTo[ast.Statements](ast.CreateNodeKeyConstraint(
+        varFor("node"),
+        labelName("Label"),
+        Seq(prop("node", "prop")),
+        None,
+        ast.IfExistsThrowError,
+        ast.OptionsMap(Map("indexProvider" -> literalString("range-1.0")))
+      )(pos))
+    }
+
+    test(
+      s"CREATE CONSTRAINT FOR (node:Label) REQUIRE (node.prop) IS $nodeKeyword KEY OPTIONS {indexProvider : 'native-btree-1.0', indexConfig : {`spatial.cartesian.max`: [100.0,100.0], `spatial.cartesian.min`: [-100.0,-100.0] }}"
+    ) {
+      // will fail in options converter
+      parsesTo[ast.Statements](ast.CreateNodeKeyConstraint(
+        varFor("node"),
+        labelName("Label"),
+        Seq(prop("node", "prop")),
+        None,
+        ast.IfExistsThrowError,
+        ast.OptionsMap(Map(
+          "indexProvider" -> literalString("native-btree-1.0"),
+          "indexConfig" -> mapOf(
+            "spatial.cartesian.max" -> listOf(literalFloat(100.0), literalFloat(100.0)),
+            "spatial.cartesian.min" -> listOf(literalFloat(-100.0), literalFloat(-100.0))
+          )
+        ))
+      )(pos))
+    }
+
+    test(
+      s"CREATE CONSTRAINT FOR (node:Label) REQUIRE (node.prop) IS $nodeKeyword KEY OPTIONS {indexConfig : {someConfig: 'toShowItCanBeParsed' }}"
+    ) {
+      parsesTo[ast.Statements](ast.CreateNodeKeyConstraint(
+        varFor("node"),
+        labelName("Label"),
+        Seq(prop("node", "prop")),
+        None,
+        ast.IfExistsThrowError,
+        ast.OptionsMap(Map("indexConfig" -> mapOf("someConfig" -> literalString("toShowItCanBeParsed"))))
+      )(pos))
+    }
+
+    test(
+      s"CREATE CONSTRAINT FOR (node:Label) REQUIRE (node.prop) IS $nodeKeyword KEY OPTIONS {nonValidOption : 42}"
+    ) {
+      parsesTo[ast.Statements](ast.CreateNodeKeyConstraint(
+        varFor("node"),
+        labelName("Label"),
+        Seq(prop("node", "prop")),
+        None,
+        ast.IfExistsThrowError,
+        ast.OptionsMap(Map("nonValidOption" -> literalInt(42)))
+      )(pos))
+    }
+
+    test(
+      s"CREATE CONSTRAINT FOR (node:Label) REQUIRE (node.prop) IS $nodeKeyword KEY OPTIONS {}"
+    ) {
+      parsesTo[ast.Statements](ast.CreateNodeKeyConstraint(
+        varFor("node"),
+        labelName("Label"),
+        Seq(prop("node", "prop")),
+        None,
+        ast.IfExistsThrowError,
+        ast.OptionsMap(Map.empty)
+      )(pos))
+    }
+
+    test(
+      s"CREATE CONSTRAINT FOR (node:Label) REQUIRE (node.prop) IS $nodeKeyword KEY OPTIONS $$param"
+    ) {
+      parsesTo[ast.Statements](ast.CreateNodeKeyConstraint(
+        varFor("node"),
+        labelName("Label"),
+        Seq(prop("node", "prop")),
+        None,
+        ast.IfExistsThrowError,
+        ast.OptionsParam(parameter("param", CTMap))
+      )(pos))
+    }
+
+    test(
+      s"USE neo4j CREATE CONSTRAINT my_constraint FOR (node:Label) REQUIRE (node.prop) IS $nodeKeyword KEY"
+    ) {
+      parsesTo[ast.Statements](ast.CreateNodeKeyConstraint(
+        varFor("node"),
+        labelName("Label"),
+        Seq(prop("node", "prop")),
+        Some("my_constraint"),
+        ast.IfExistsThrowError,
+        ast.NoOptions,
+        Some(use(List("neo4j")))
+      )(pos))
+    }
+
+    test(
+      s"USE neo4j CREATE OR REPLACE CONSTRAINT my_constraint IF NOT EXISTS FOR (node:Label) REQUIRE (node.prop) IS $nodeKeyword KEY"
+    ) {
+      parsesTo[ast.Statements](ast.CreateNodeKeyConstraint(
+        varFor("node"),
+        labelName("Label"),
+        Seq(prop("node", "prop")),
+        Some("my_constraint"),
+        ast.IfExistsInvalidSyntax,
+        ast.NoOptions,
+        Some(use(List("neo4j")))
+      )(pos))
+    }
+
+    test(
+      s"CREATE CONSTRAINT my_constraint FOR (node:Label) REQUIRE (node.prop1,node.prop2) IS $nodeKeyword KEY"
+    ) {
+      parsesTo[ast.Statements](ast.CreateNodeKeyConstraint(
+        varFor("node"),
+        labelName("Label"),
+        Seq(prop("node", "prop1"), prop("node", "prop2")),
+        Some("my_constraint"),
+        ast.IfExistsThrowError,
+        ast.NoOptions
+      )(pos))
+    }
+
+    test(
+      s"CREATE OR REPLACE CONSTRAINT my_constraint FOR (node:Label) REQUIRE (node.prop1,node.prop2) IS $nodeKeyword KEY"
+    ) {
+      parsesTo[ast.Statements](ast.CreateNodeKeyConstraint(
+        varFor("node"),
+        labelName("Label"),
+        Seq(prop("node", "prop1"), prop("node", "prop2")),
+        Some("my_constraint"),
+        ast.IfExistsReplace,
+        ast.NoOptions
+      )(pos))
+    }
+
+    test(
+      s"CREATE CONSTRAINT my_constraint IF NOT EXISTS FOR (node:Label) REQUIRE (node.prop1,node.prop2) IS $nodeKeyword KEY"
+    ) {
+      parsesTo[ast.Statements](ast.CreateNodeKeyConstraint(
+        varFor("node"),
+        labelName("Label"),
+        Seq(prop("node", "prop1"), prop("node", "prop2")),
+        Some("my_constraint"),
+        ast.IfExistsDoNothing,
+        ast.NoOptions
+      )(pos))
+    }
+
+    test(
+      s"CREATE CONSTRAINT my_constraint FOR (node:Label) REQUIRE (node.prop) IS $nodeKeyword KEY OPTIONS {indexProvider : 'native-btree-1.0', indexConfig : {`spatial.wgs-84.max`: [60.0,60.0], `spatial.wgs-84.min`: [-40.0,-40.0]}}"
+    ) {
+      // will fail in options converter
+      parsesTo[ast.Statements](ast.CreateNodeKeyConstraint(
+        varFor("node"),
+        labelName("Label"),
+        Seq(prop("node", "prop")),
+        Some("my_constraint"),
+        ast.IfExistsThrowError,
+        ast.OptionsMap(Map(
+          "indexProvider" -> literalString("native-btree-1.0"),
+          "indexConfig" -> mapOf(
+            "spatial.wgs-84.max" -> listOf(literalFloat(60.0), literalFloat(60.0)),
+            "spatial.wgs-84.min" -> listOf(literalFloat(-40.0), literalFloat(-40.0))
+          )
+        ))
+      )(pos))
+    }
+
+    // Node uniqueness
+
+    test(
+      s"CREATE CONSTRAINT FOR (node:Label) REQUIRE node.prop IS $nodeKeyword UNIQUE"
+    ) {
+      parsesTo[ast.Statements](ast.CreateNodePropertyUniquenessConstraint(
+        varFor("node"),
+        labelName("Label"),
+        Seq(prop("node", "prop")),
+        None,
+        ast.IfExistsThrowError,
+        ast.NoOptions
+      )(pos))
+    }
+
+    test(
+      s"CREATE OR REPLACE CONSTRAINT FOR (node:Label) REQUIRE node.prop IS $nodeKeyword UNIQUE"
+    ) {
+      parsesTo[ast.Statements](ast.CreateNodePropertyUniquenessConstraint(
+        varFor("node"),
+        labelName("Label"),
+        Seq(prop("node", "prop")),
+        None,
+        ast.IfExistsReplace,
+        ast.NoOptions
+      )(pos))
+    }
+
+    test(
+      s"CREATE CONSTRAINT IF NOT EXISTS FOR (node:Label) REQUIRE node.prop IS $nodeKeyword UNIQUE"
+    ) {
+      parsesTo[ast.Statements](ast.CreateNodePropertyUniquenessConstraint(
+        varFor("node"),
+        labelName("Label"),
+        Seq(prop("node", "prop")),
+        None,
+        ast.IfExistsDoNothing,
+        ast.NoOptions
+      )(pos))
+    }
+
+    test(
+      s"CREATE CONSTRAINT FOR (node:Label) REQUIRE (node.prop) IS $nodeKeyword UNIQUE"
+    ) {
+      parsesTo[ast.Statements](ast.CreateNodePropertyUniquenessConstraint(
+        varFor("node"),
+        labelName("Label"),
+        Seq(prop("node", "prop")),
+        None,
+        ast.IfExistsThrowError,
+        ast.NoOptions
+      )(pos))
+    }
+
+    test(
+      s"CREATE CONSTRAINT FOR (node:Label) REQUIRE (node.prop1,node.prop2) IS $nodeKeyword UNIQUE"
+    ) {
+      parsesTo[ast.Statements](ast.CreateNodePropertyUniquenessConstraint(
+        varFor("node"),
+        labelName("Label"),
+        Seq(prop("node", "prop1"), prop("node", "prop2")),
+        None,
+        ast.IfExistsThrowError,
+        ast.NoOptions
+      )(pos))
+    }
+
+    test(
+      s"CREATE OR REPLACE CONSTRAINT IF NOT EXISTS FOR (node:Label) REQUIRE (node.prop1,node.prop2) IS $nodeKeyword UNIQUE"
+    ) {
+      parsesTo[ast.Statements](ast.CreateNodePropertyUniquenessConstraint(
+        varFor("node"),
+        labelName("Label"),
+        Seq(prop("node", "prop1"), prop("node", "prop2")),
+        None,
+        ast.IfExistsInvalidSyntax,
+        ast.NoOptions
+      )(pos))
+    }
+
+    test(
+      s"CREATE CONSTRAINT FOR (node:Label) REQUIRE (node.prop) IS $nodeKeyword UNIQUE OPTIONS {indexConfig : {`spatial.wgs-84.max`: [60.0,60.0], `spatial.wgs-84.min`: [-40.0,-40.0]}, indexProvider : 'native-btree-1.0'}"
+    ) {
+      // will fail in options converter
+      parsesTo[ast.Statements](ast.CreateNodePropertyUniquenessConstraint(
+        varFor("node"),
+        labelName("Label"),
+        Seq(prop("node", "prop")),
+        None,
+        ast.IfExistsThrowError,
+        ast.OptionsMap(Map(
+          "indexProvider" -> literalString("native-btree-1.0"),
+          "indexConfig" -> mapOf(
+            "spatial.wgs-84.max" -> listOf(literalFloat(60.0), literalFloat(60.0)),
+            "spatial.wgs-84.min" -> listOf(literalFloat(-40.0), literalFloat(-40.0))
+          )
+        ))
+      )(pos))
+    }
+
+    test(
+      s"CREATE CONSTRAINT FOR (node:Label) REQUIRE (node.prop) IS $nodeKeyword UNIQUE OPTIONS $$options"
+    ) {
+      parsesTo[ast.Statements](ast.CreateNodePropertyUniquenessConstraint(
+        varFor("node"),
+        labelName("Label"),
+        Seq(prop("node", "prop")),
+        None,
+        ast.IfExistsThrowError,
+        ast.OptionsParam(parameter("options", CTMap))
+      )(pos))
+    }
+
+    test(
+      s"CREATE CONSTRAINT my_constraint FOR (node:Label) REQUIRE node.prop IS $nodeKeyword UNIQUE"
+    ) {
+      parsesTo[ast.Statements](ast.CreateNodePropertyUniquenessConstraint(
+        varFor("node"),
+        labelName("Label"),
+        Seq(prop("node", "prop")),
+        Some("my_constraint"),
+        ast.IfExistsThrowError,
+        ast.NoOptions
+      )(pos))
+    }
+
+    test(
+      s"CREATE CONSTRAINT my_constraint FOR (node:Label) REQUIRE (node.prop) IS $nodeKeyword UNIQUE"
+    ) {
+      parsesTo[ast.Statements](ast.CreateNodePropertyUniquenessConstraint(
+        varFor("node"),
+        labelName("Label"),
+        Seq(prop("node", "prop")),
+        Some("my_constraint"),
+        ast.IfExistsThrowError,
+        ast.NoOptions
+      )(pos))
+    }
+
+    test(
+      s"CREATE OR REPLACE CONSTRAINT my_constraint IF NOT EXISTS FOR (node:Label) REQUIRE (node.prop) IS $nodeKeyword UNIQUE"
+    ) {
+      parsesTo[ast.Statements](ast.CreateNodePropertyUniquenessConstraint(
+        varFor("node"),
+        labelName("Label"),
+        Seq(prop("node", "prop")),
+        Some("my_constraint"),
+        ast.IfExistsInvalidSyntax,
+        ast.NoOptions
+      )(pos))
+    }
+
+    test(
+      s"CREATE CONSTRAINT my_constraint FOR (node:Label) REQUIRE (node.prop1,node.prop2) IS $nodeKeyword UNIQUE"
+    ) {
+      parsesTo[ast.Statements](ast.CreateNodePropertyUniquenessConstraint(
+        varFor("node"),
+        labelName("Label"),
+        Seq(prop("node", "prop1"), prop("node", "prop2")),
+        Some("my_constraint"),
+        ast.IfExistsThrowError,
+        ast.NoOptions
+      )(pos))
+    }
+
+    test(
+      s"CREATE OR REPLACE CONSTRAINT my_constraint FOR (node:Label) REQUIRE (node.prop1,node.prop2) IS $nodeKeyword UNIQUE"
+    ) {
+      parsesTo[ast.Statements](ast.CreateNodePropertyUniquenessConstraint(
+        varFor("node"),
+        labelName("Label"),
+        Seq(prop("node", "prop1"), prop("node", "prop2")),
+        Some("my_constraint"),
+        ast.IfExistsReplace,
+        ast.NoOptions
+      )(pos))
+    }
+
+    test(
+      s"CREATE CONSTRAINT my_constraint IF NOT EXISTS FOR (node:Label) REQUIRE (node.prop1,node.prop2) IS $nodeKeyword UNIQUE"
+    ) {
+      parsesTo[ast.Statements](ast.CreateNodePropertyUniquenessConstraint(
+        varFor("node"),
+        labelName("Label"),
+        Seq(prop("node", "prop1"), prop("node", "prop2")),
+        Some("my_constraint"),
+        ast.IfExistsDoNothing,
+        ast.NoOptions
+      )(pos))
+    }
+
+    test(
+      s"CREATE CONSTRAINT my_constraint FOR (node:Label) REQUIRE (node.prop) IS $nodeKeyword UNIQUE OPTIONS {indexProvider : 'range-1.0'}"
+    ) {
+      parsesTo[ast.Statements](ast.CreateNodePropertyUniquenessConstraint(
+        varFor("node"),
+        labelName("Label"),
+        Seq(prop("node", "prop")),
+        Some("my_constraint"),
+        ast.IfExistsThrowError,
+        ast.OptionsMap(Map("indexProvider" -> literalString("range-1.0")))
+      )(pos))
+    }
+
+    test(
+      s"CREATE CONSTRAINT my_constraint FOR (node:Label) REQUIRE (node.prop) IS $nodeKeyword UNIQUE OPTIONS {indexProvider : 'native-btree-1.0', indexConfig : {`spatial.cartesian.max`: [100.0,100.0], `spatial.cartesian.min`: [-100.0,-100.0] }}"
+    ) {
+      // will fail in options converter
+      parsesTo[ast.Statements](ast.CreateNodePropertyUniquenessConstraint(
+        varFor("node"),
+        labelName("Label"),
+        Seq(prop("node", "prop")),
+        Some("my_constraint"),
+        ast.IfExistsThrowError,
+        ast.OptionsMap(Map(
+          "indexProvider" -> literalString("native-btree-1.0"),
+          "indexConfig" -> mapOf(
+            "spatial.cartesian.max" -> listOf(literalFloat(100.0), literalFloat(100.0)),
+            "spatial.cartesian.min" -> listOf(literalFloat(-100.0), literalFloat(-100.0))
+          )
+        ))
+      )(pos))
+    }
+
+    test(
+      s"CREATE CONSTRAINT my_constraint FOR (node:Label) REQUIRE (node.prop) IS $nodeKeyword UNIQUE OPTIONS {indexConfig : {someConfig: 'toShowItCanBeParsed' }}"
+    ) {
+      parsesTo[ast.Statements](ast.CreateNodePropertyUniquenessConstraint(
+        varFor("node"),
+        labelName("Label"),
+        Seq(prop("node", "prop")),
+        Some("my_constraint"),
+        ast.IfExistsThrowError,
+        ast.OptionsMap(Map("indexConfig" -> mapOf("someConfig" -> literalString("toShowItCanBeParsed"))))
+      )(pos))
+    }
+
+    test(
+      s"CREATE CONSTRAINT my_constraint FOR (node:Label) REQUIRE (node.prop) IS $nodeKeyword UNIQUE OPTIONS {nonValidOption : 42}"
+    ) {
+      parsesTo[ast.Statements](ast.CreateNodePropertyUniquenessConstraint(
+        varFor("node"),
+        labelName("Label"),
+        Seq(prop("node", "prop")),
+        Some("my_constraint"),
+        ast.IfExistsThrowError,
+        ast.OptionsMap(Map("nonValidOption" -> literalInt(42)))
+      )(pos))
+    }
+
+    test(
+      s"CREATE CONSTRAINT my_constraint FOR (node:Label) REQUIRE (node.prop1,node.prop2) IS $nodeKeyword UNIQUE OPTIONS {}"
+    ) {
+      parsesTo[ast.Statements](ast.CreateNodePropertyUniquenessConstraint(
+        varFor("node"),
+        labelName("Label"),
+        Seq(prop("node", "prop1"), prop("node", "prop2")),
+        Some("my_constraint"),
+        ast.IfExistsThrowError,
+        ast.OptionsMap(Map.empty)
+      )(pos))
+    }
+  })
+
+  test("CREATE CONSTRAINT $name FOR (n:L) REQUIRE n.prop IS NODE KEY") {
+    parsesTo[ast.Statements](ast.CreateNodeKeyConstraint(
+      varFor("n"),
+      labelName("L"),
+      Seq(prop("n", "prop")),
+      Some(Right(stringParam("name"))),
+      ast.IfExistsThrowError,
+      ast.NoOptions
+    )(pos))
+  }
+
+  test("CREATE CONSTRAINT $name FOR (n:L) REQUIRE n.prop IS UNIQUE") {
+    parsesTo[ast.Statements](ast.CreateNodePropertyUniquenessConstraint(
+      varFor("n"),
+      labelName("L"),
+      Seq(prop("n", "prop")),
+      Some(Right(stringParam("name"))),
+      ast.IfExistsThrowError,
+      ast.NoOptions
+    )(pos))
+  }
+
+  Seq("RELATIONSHIP", "REL", "").foreach(relKeyWord => {
+    // Relationship key
+
+    test(s"CREATE CONSTRAINT FOR ()-[r1:R]-() REQUIRE (r2.prop) IS $relKeyWord KEY") {
+      parsesTo[ast.Statements](ast.CreateRelationshipKeyConstraint(
+        varFor("r1"),
+        relTypeName("R"),
+        Seq(prop("r2", "prop")),
+        None,
+        ast.IfExistsThrowError,
+        ast.NoOptions
+      )(pos))
+    }
+
+    test(
+      s"CREATE CONSTRAINT FOR ()-[r1:R]->() REQUIRE (r2.prop1, r3.prop2) IS $relKeyWord KEY"
+    ) {
+      parsesTo[ast.Statements](ast.CreateRelationshipKeyConstraint(
+        varFor("r1"),
+        relTypeName("R"),
+        Seq(prop("r2", "prop1"), prop("r3", "prop2")),
+        None,
+        ast.IfExistsThrowError,
+        ast.NoOptions
+      )(pos))
+    }
+
+    test(
+      s"CREATE CONSTRAINT FOR ()<-[r1:R]-() REQUIRE (r2.prop) IS $relKeyWord KEY"
+    ) {
+      parsesTo[ast.Statements](ast.CreateRelationshipKeyConstraint(
+        varFor("r1"),
+        relTypeName("R"),
+        Seq(prop("r2", "prop")),
+        None,
+        ast.IfExistsThrowError,
+        ast.NoOptions
+      )(pos))
+    }
+
+    test(
+      s"CREATE CONSTRAINT FOR ()<-[r1:R]->() REQUIRE (r2.prop) IS $relKeyWord KEY"
+    ) {
+      parsesTo[ast.Statements](ast.CreateRelationshipKeyConstraint(
+        varFor("r1"),
+        relTypeName("R"),
+        Seq(prop("r2", "prop")),
+        None,
+        ast.IfExistsThrowError,
+        ast.NoOptions
+      )(pos))
+    }
+
+    test(
+      s"CREATE OR REPLACE CONSTRAINT FOR ()-[r1:R]-() REQUIRE (r2.prop) IS $relKeyWord KEY"
+    ) {
+      parsesTo[ast.Statements](ast.CreateRelationshipKeyConstraint(
+        varFor("r1"),
+        relTypeName("R"),
+        Seq(prop("r2", "prop")),
+        None,
+        ast.IfExistsReplace,
+        ast.NoOptions
+      )(pos))
+    }
+
+    test(
+      s"CREATE OR REPLACE CONSTRAINT IF NOT EXISTS FOR ()-[r1:R]-() REQUIRE (r2.prop) IS $relKeyWord KEY"
+    ) {
+      parsesTo[ast.Statements](ast.CreateRelationshipKeyConstraint(
+        varFor("r1"),
+        relTypeName("R"),
+        Seq(prop("r2", "prop")),
+        None,
+        ast.IfExistsInvalidSyntax,
+        ast.NoOptions
+      )(pos))
+    }
+
+    test(
+      s"CREATE CONSTRAINT IF NOT EXISTS FOR ()-[r1:R]-() REQUIRE (r2.prop) IS $relKeyWord KEY"
+    ) {
+      parsesTo[ast.Statements](ast.CreateRelationshipKeyConstraint(
+        varFor("r1"),
+        relTypeName("R"),
+        Seq(prop("r2", "prop")),
+        None,
+        ast.IfExistsDoNothing,
+        ast.NoOptions
+      )(pos))
+    }
+
+    test(
+      s"CREATE CONSTRAINT FOR ()-[r1:R]-() REQUIRE (r2.prop) IS $relKeyWord KEY OPTIONS {key: 'value'}"
+    ) {
+      parsesTo[ast.Statements](ast.CreateRelationshipKeyConstraint(
+        varFor("r1"),
+        relTypeName("R"),
+        Seq(prop("r2", "prop")),
+        None,
+        ast.IfExistsThrowError,
+        ast.OptionsMap(Map("key" -> literalString("value")))
+      )(pos))
+    }
+
+    test(
+      s"CREATE CONSTRAINT my_constraint FOR ()-[r1:R]-() REQUIRE (r2.prop) IS $relKeyWord KEY"
+    ) {
+      parsesTo[ast.Statements](ast.CreateRelationshipKeyConstraint(
+        varFor("r1"),
+        relTypeName("R"),
+        Seq(prop("r2", "prop")),
+        Some("my_constraint"),
+        ast.IfExistsThrowError,
+        ast.NoOptions
+      )(pos))
+    }
+
+    test(
+      s"CREATE CONSTRAINT my_constraint FOR ()-[r1:R]->() REQUIRE (r2.prop1, r3.prop2) IS $relKeyWord KEY"
+    ) {
+      parsesTo[ast.Statements](ast.CreateRelationshipKeyConstraint(
+        varFor("r1"),
+        relTypeName("R"),
+        Seq(prop("r2", "prop1"), prop("r3", "prop2")),
+        Some("my_constraint"),
+        ast.IfExistsThrowError,
+        ast.NoOptions
+      )(pos))
+    }
+
+    test(
+      s"CREATE CONSTRAINT my_constraint FOR ()<-[r1:R]-() REQUIRE (r2.prop) IS $relKeyWord KEY"
+    ) {
+      parsesTo[ast.Statements](ast.CreateRelationshipKeyConstraint(
+        varFor("r1"),
+        relTypeName("R"),
+        Seq(prop("r2", "prop")),
+        Some("my_constraint"),
+        ast.IfExistsThrowError,
+        ast.NoOptions
+      )(pos))
+    }
+
+    test(
+      s"CREATE CONSTRAINT my_constraint FOR ()<-[r1:R]->() REQUIRE (r2.prop) IS $relKeyWord KEY"
+    ) {
+      parsesTo[ast.Statements](ast.CreateRelationshipKeyConstraint(
+        varFor("r1"),
+        relTypeName("R"),
+        Seq(prop("r2", "prop")),
+        Some("my_constraint"),
+        ast.IfExistsThrowError,
+        ast.NoOptions
+      )(pos))
+    }
+
+    test(
+      s"CREATE OR REPLACE CONSTRAINT my_constraint FOR ()-[r1:R]-() REQUIRE (r2.prop) IS $relKeyWord KEY"
+    ) {
+      parsesTo[ast.Statements](ast.CreateRelationshipKeyConstraint(
+        varFor("r1"),
+        relTypeName("R"),
+        Seq(prop("r2", "prop")),
+        Some("my_constraint"),
+        ast.IfExistsReplace,
+        ast.NoOptions
+      )(pos))
+    }
+
+    test(
+      s"CREATE OR REPLACE CONSTRAINT my_constraint IF NOT EXISTS FOR ()-[r1:R]-() REQUIRE (r2.prop) IS $relKeyWord KEY"
+    ) {
+      parsesTo[ast.Statements](ast.CreateRelationshipKeyConstraint(
+        varFor("r1"),
+        relTypeName("R"),
+        Seq(prop("r2", "prop")),
+        Some("my_constraint"),
+        ast.IfExistsInvalidSyntax,
+        ast.NoOptions
+      )(pos))
+    }
+
+    test(
+      s"CREATE CONSTRAINT my_constraint IF NOT EXISTS FOR ()-[r1:R]-() REQUIRE (r2.prop) IS $relKeyWord KEY"
+    ) {
+      parsesTo[ast.Statements](ast.CreateRelationshipKeyConstraint(
+        varFor("r1"),
+        relTypeName("R"),
+        Seq(prop("r2", "prop")),
+        Some("my_constraint"),
+        ast.IfExistsDoNothing,
+        ast.NoOptions
+      )(pos))
+    }
+
+    test(
+      s"CREATE CONSTRAINT my_constraint FOR ()-[r1:R]-() REQUIRE (r2.prop) IS $relKeyWord KEY OPTIONS {key: 'value'}"
+    ) {
+      parsesTo[ast.Statements](ast.CreateRelationshipKeyConstraint(
+        varFor("r1"),
+        relTypeName("R"),
+        Seq(prop("r2", "prop")),
+        Some("my_constraint"),
+        ast.IfExistsThrowError,
+        ast.OptionsMap(Map("key" -> literalString("value")))
+      )(pos))
+    }
+
+    // Relationship uniqueness
+
+    test(
+      s"CREATE CONSTRAINT FOR ()-[r1:R]-() REQUIRE (r2.prop) IS $relKeyWord UNIQUE"
+    ) {
+      parsesTo[ast.Statements](ast.CreateRelationshipPropertyUniquenessConstraint(
+        varFor("r1"),
+        relTypeName("R"),
+        Seq(prop("r2", "prop")),
+        None,
+        ast.IfExistsThrowError,
+        ast.NoOptions
+      )(pos))
+    }
+
+    test(
+      s"CREATE CONSTRAINT FOR ()-[r1:R]->() REQUIRE (r2.prop1, r3.prop2) IS $relKeyWord UNIQUE"
+    ) {
+      parsesTo[ast.Statements](ast.CreateRelationshipPropertyUniquenessConstraint(
+        varFor("r1"),
+        relTypeName("R"),
+        Seq(prop("r2", "prop1"), prop("r3", "prop2")),
+        None,
+        ast.IfExistsThrowError,
+        ast.NoOptions
+      )(pos))
+    }
+
+    test(
+      s"CREATE CONSTRAINT FOR ()<-[r1:R]-() REQUIRE (r2.prop) IS $relKeyWord UNIQUE"
+    ) {
+      parsesTo[ast.Statements](ast.CreateRelationshipPropertyUniquenessConstraint(
+        varFor("r1"),
+        relTypeName("R"),
+        Seq(prop("r2", "prop")),
+        None,
+        ast.IfExistsThrowError,
+        ast.NoOptions
+      )(pos))
+    }
+
+    test(
+      s"CREATE CONSTRAINT FOR ()<-[r1:R]->() REQUIRE (r2.prop) IS $relKeyWord UNIQUE"
+    ) {
+      parsesTo[ast.Statements](ast.CreateRelationshipPropertyUniquenessConstraint(
+        varFor("r1"),
+        relTypeName("R"),
+        Seq(prop("r2", "prop")),
+        None,
+        ast.IfExistsThrowError,
+        ast.NoOptions
+      )(pos))
+    }
+
+    test(
+      s"CREATE OR REPLACE CONSTRAINT FOR ()-[r1:R]-() REQUIRE (r2.prop) IS $relKeyWord UNIQUE"
+    ) {
+      parsesTo[ast.Statements](ast.CreateRelationshipPropertyUniquenessConstraint(
+        varFor("r1"),
+        relTypeName("R"),
+        Seq(prop("r2", "prop")),
+        None,
+        ast.IfExistsReplace,
+        ast.NoOptions
+      )(pos))
+    }
+
+    test(
+      s"CREATE OR REPLACE CONSTRAINT IF NOT EXISTS FOR ()-[r1:R]-() REQUIRE (r2.prop) IS $relKeyWord UNIQUE"
+    ) {
+      parsesTo[ast.Statements](ast.CreateRelationshipPropertyUniquenessConstraint(
+        varFor("r1"),
+        relTypeName("R"),
+        Seq(prop("r2", "prop")),
+        None,
+        ast.IfExistsInvalidSyntax,
+        ast.NoOptions
+      )(pos))
+    }
+
+    test(
+      s"CREATE CONSTRAINT IF NOT EXISTS FOR ()-[r1:R]-() REQUIRE (r2.prop) IS $relKeyWord UNIQUE"
+    ) {
+      parsesTo[ast.Statements](ast.CreateRelationshipPropertyUniquenessConstraint(
+        varFor("r1"),
+        relTypeName("R"),
+        Seq(prop("r2", "prop")),
+        None,
+        ast.IfExistsDoNothing,
+        ast.NoOptions
+      )(pos))
+    }
+
+    test(
+      s"CREATE CONSTRAINT FOR ()-[r1:R]-() REQUIRE (r2.prop) IS $relKeyWord UNIQUE OPTIONS {key: 'value'}"
+    ) {
+      parsesTo[ast.Statements](ast.CreateRelationshipPropertyUniquenessConstraint(
+        varFor("r1"),
+        relTypeName("R"),
+        Seq(prop("r2", "prop")),
+        None,
+        ast.IfExistsThrowError,
+        ast.OptionsMap(Map("key" -> literalString("value")))
+      )(pos))
+    }
+
+    test(
+      s"CREATE CONSTRAINT my_constraint FOR ()-[r1:R]-() REQUIRE (r2.prop) IS $relKeyWord UNIQUE"
+    ) {
+      parsesTo[ast.Statements](ast.CreateRelationshipPropertyUniquenessConstraint(
+        varFor("r1"),
+        relTypeName("R"),
+        Seq(prop("r2", "prop")),
+        Some("my_constraint"),
+        ast.IfExistsThrowError,
+        ast.NoOptions
+      )(pos))
+    }
+
+    test(
+      s"CREATE CONSTRAINT my_constraint FOR ()-[r1:R]->() REQUIRE (r2.prop1, r3.prop2) IS $relKeyWord UNIQUE"
+    ) {
+      parsesTo[ast.Statements](ast.CreateRelationshipPropertyUniquenessConstraint(
+        varFor("r1"),
+        relTypeName("R"),
+        Seq(prop("r2", "prop1"), prop("r3", "prop2")),
+        Some("my_constraint"),
+        ast.IfExistsThrowError,
+        ast.NoOptions
+      )(pos))
+    }
+
+    test(
+      s"CREATE CONSTRAINT my_constraint FOR ()<-[r1:R]-() REQUIRE (r2.prop) IS $relKeyWord UNIQUE"
+    ) {
+      parsesTo[ast.Statements](ast.CreateRelationshipPropertyUniquenessConstraint(
+        varFor("r1"),
+        relTypeName("R"),
+        Seq(prop("r2", "prop")),
+        Some("my_constraint"),
+        ast.IfExistsThrowError,
+        ast.NoOptions
+      )(pos))
+    }
+
+    test(
+      s"CREATE CONSTRAINT my_constraint FOR ()<-[r1:R]->() REQUIRE (r2.prop) IS $relKeyWord UNIQUE"
+    ) {
+      parsesTo[ast.Statements](ast.CreateRelationshipPropertyUniquenessConstraint(
+        varFor("r1"),
+        relTypeName("R"),
+        Seq(prop("r2", "prop")),
+        Some("my_constraint"),
+        ast.IfExistsThrowError,
+        ast.NoOptions
+      )(pos))
+    }
+
+    test(
+      s"CREATE OR REPLACE CONSTRAINT my_constraint FOR ()-[r1:R]-() REQUIRE (r2.prop) IS $relKeyWord UNIQUE"
+    ) {
+      parsesTo[ast.Statements](ast.CreateRelationshipPropertyUniquenessConstraint(
+        varFor("r1"),
+        relTypeName("R"),
+        Seq(prop("r2", "prop")),
+        Some("my_constraint"),
+        ast.IfExistsReplace,
+        ast.NoOptions
+      )(pos))
+    }
+
+    test(
+      s"CREATE OR REPLACE CONSTRAINT my_constraint IF NOT EXISTS FOR ()-[r1:R]-() REQUIRE (r2.prop) IS $relKeyWord UNIQUE"
+    ) {
+      parsesTo[ast.Statements](ast.CreateRelationshipPropertyUniquenessConstraint(
+        varFor("r1"),
+        relTypeName("R"),
+        Seq(prop("r2", "prop")),
+        Some("my_constraint"),
+        ast.IfExistsInvalidSyntax,
+        ast.NoOptions
+      )(pos))
+    }
+
+    test(
+      s"CREATE CONSTRAINT my_constraint IF NOT EXISTS FOR ()-[r1:R]-() REQUIRE (r2.prop) IS $relKeyWord UNIQUE"
+    ) {
+      parsesTo[ast.Statements](ast.CreateRelationshipPropertyUniquenessConstraint(
+        varFor("r1"),
+        relTypeName("R"),
+        Seq(prop("r2", "prop")),
+        Some("my_constraint"),
+        ast.IfExistsDoNothing,
+        ast.NoOptions
+      )(pos))
+    }
+
+    test(
+      s"CREATE CONSTRAINT my_constraint FOR ()-[r1:R]-() REQUIRE (r2.prop) IS $relKeyWord UNIQUE OPTIONS {key: 'value'}"
+    ) {
+      parsesTo[ast.Statements](ast.CreateRelationshipPropertyUniquenessConstraint(
+        varFor("r1"),
+        relTypeName("R"),
+        Seq(prop("r2", "prop")),
+        Some("my_constraint"),
+        ast.IfExistsThrowError,
+        ast.OptionsMap(Map("key" -> literalString("value")))
+      )(pos))
+    }
+  })
+
+  test(
+    "CREATE CONSTRAINT $name FOR ()-[r:R]-() REQUIRE r.prop IS RELATIONSHIP KEY"
+  ) {
+    parsesTo[ast.Statements](ast.CreateRelationshipKeyConstraint(
+      varFor("r"),
+      relTypeName("R"),
+      Seq(prop("r", "prop")),
+      Some(Right(stringParam("name"))),
+      ast.IfExistsThrowError,
+      ast.NoOptions
+    )(pos))
+  }
+
+  test("CREATE CONSTRAINT $name FOR ()-[r:R]-() REQUIRE r.prop IS UNIQUE") {
+    parsesTo[ast.Statements](ast.CreateRelationshipPropertyUniquenessConstraint(
+      varFor("r"),
+      relTypeName("R"),
+      Seq(prop("r", "prop")),
+      Some(Right(stringParam("name"))),
+      ast.IfExistsThrowError,
+      ast.NoOptions
+    )(pos))
+  }
+
+  // Node property existence
+
+  test("CREATE CONSTRAINT FOR (node:Label) REQUIRE node.prop IS NOT NULL") {
+    parsesTo[ast.Statements](ast.CreateNodePropertyExistenceConstraint(
+      varFor("node"),
+      labelName("Label"),
+      prop("node", "prop"),
+      None,
+      ast.IfExistsThrowError,
+      ast.NoOptions
+    )(pos))
+  }
+
+  test("CREATE CONSTRAINT FOR (node:Label) REQUIRE (node.prop) IS NOT NULL") {
+    parsesTo[ast.Statements](ast.CreateNodePropertyExistenceConstraint(
+      varFor("node"),
+      labelName("Label"),
+      prop("node", "prop"),
+      None,
+      ast.IfExistsThrowError,
+      ast.NoOptions
+    )(pos))
+  }
+
+  test(
+    "CREATE OR REPLACE CONSTRAINT FOR (node:Label) REQUIRE node.prop IS NOT NULL"
+  ) {
+    parsesTo[ast.Statements](ast.CreateNodePropertyExistenceConstraint(
+      varFor("node"),
+      labelName("Label"),
+      prop("node", "prop"),
+      None,
+      ast.IfExistsReplace,
+      ast.NoOptions
+    )(pos))
+  }
+
+  test(
+    "CREATE OR REPLACE CONSTRAINT IF NOT EXISTS FOR (node:Label) REQUIRE node.prop IS NOT NULL"
+  ) {
+    parsesTo[ast.Statements](ast.CreateNodePropertyExistenceConstraint(
+      varFor("node"),
+      labelName("Label"),
+      prop("node", "prop"),
+      None,
+      ast.IfExistsInvalidSyntax,
+      ast.NoOptions
+    )(pos))
+  }
+
+  test(
+    "CREATE CONSTRAINT IF NOT EXISTS FOR (node:Label) REQUIRE (node.prop) IS NOT NULL"
+  ) {
+    parsesTo[ast.Statements](ast.CreateNodePropertyExistenceConstraint(
+      varFor("node"),
+      labelName("Label"),
+      prop("node", "prop"),
+      None,
+      ast.IfExistsDoNothing,
+      ast.NoOptions
+    )(pos))
+  }
+
+  test(
+    "CREATE CONSTRAINT my_constraint FOR (node:Label) REQUIRE (node.prop) IS NOT NULL"
+  ) {
+    parsesTo[ast.Statements](ast.CreateNodePropertyExistenceConstraint(
+      varFor("node"),
+      labelName("Label"),
+      prop("node", "prop"),
+      Some("my_constraint"),
+      ast.IfExistsThrowError,
+      ast.NoOptions
+    )(pos))
+  }
+
+  test(
+    "CREATE OR REPLACE CONSTRAINT my_constraint FOR (node:Label) REQUIRE node.prop IS NOT NULL"
+  ) {
+    parsesTo[ast.Statements](ast.CreateNodePropertyExistenceConstraint(
+      varFor("node"),
+      labelName("Label"),
+      prop("node", "prop"),
+      Some("my_constraint"),
+      ast.IfExistsReplace,
+      ast.NoOptions
+    )(pos))
+  }
+
+  test(
+    "CREATE OR REPLACE CONSTRAINT my_constraint IF NOT EXISTS FOR (node:Label) REQUIRE node.prop IS NOT NULL"
+  ) {
+    parsesTo[ast.Statements](ast.CreateNodePropertyExistenceConstraint(
+      varFor("node"),
+      labelName("Label"),
+      prop("node", "prop"),
+      Some("my_constraint"),
+      ast.IfExistsInvalidSyntax,
+      ast.NoOptions
+    )(pos))
+  }
+
+  test(
+    "CREATE CONSTRAINT my_constraint IF NOT EXISTS FOR (node:Label) REQUIRE node.prop IS NOT NULL"
+  ) {
+    parsesTo[ast.Statements](ast.CreateNodePropertyExistenceConstraint(
+      varFor("node"),
+      labelName("Label"),
+      prop("node", "prop"),
+      Some("my_constraint"),
+      ast.IfExistsDoNothing,
+      ast.NoOptions
+    )(pos))
+  }
+
+  test(
+    "CREATE CONSTRAINT my_constraint FOR (node:Label) REQUIRE node.prop IS NOT NULL OPTIONS {}"
+  ) {
+    parsesTo[ast.Statements](ast.CreateNodePropertyExistenceConstraint(
+      varFor("node"),
+      labelName("Label"),
+      prop("node", "prop"),
+      Some("my_constraint"),
+      ast.IfExistsThrowError,
+      ast.OptionsMap(Map.empty)
+    )(pos))
+  }
+
+  test(
+    "CREATE OR REPLACE CONSTRAINT my_constraint FOR (node:Label) REQUIRE (node.prop2, node.prop3) IS NOT NULL"
+  ) {
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc => _.throws[Neo4jASTConstructionException].withMessage(
+          ASTExceptionFactory.onlySinglePropertyAllowed(ConstraintType.NODE_IS_NOT_NULL)
+        )
+      case _ => _.withSyntaxErrorContaining(
+          ASTExceptionFactory.onlySinglePropertyAllowed(ConstraintType.NODE_IS_NOT_NULL)
+        )
+    }
+  }
+
+  test("CREATE CONSTRAINT $name FOR (n:L) REQUIRE n.prop IS NOT NULL") {
+    parsesTo[ast.Statements](ast.CreateNodePropertyExistenceConstraint(
+      varFor("n"),
+      labelName("L"),
+      prop("n", "prop"),
+      Some(Right(stringParam("name"))),
+      ast.IfExistsThrowError,
+      ast.NoOptions
+    )(pos))
+  }
+
+  // Relationship property existence
+
+  test("CREATE CONSTRAINT FOR ()-[r:R]-() REQUIRE r.prop IS NOT NULL") {
+    parsesTo[ast.Statements](ast.CreateRelationshipPropertyExistenceConstraint(
+      varFor("r"),
+      relTypeName("R"),
+      prop("r", "prop"),
+      None,
+      ast.IfExistsThrowError,
+      ast.NoOptions
+    )(pos))
+  }
+
+  test("CREATE CONSTRAINT FOR ()-[r:R]->() REQUIRE r.prop IS NOT NULL") {
+    parsesTo[ast.Statements](ast.CreateRelationshipPropertyExistenceConstraint(
+      varFor("r"),
+      relTypeName("R"),
+      prop("r", "prop"),
+      None,
+      ast.IfExistsThrowError,
+      ast.NoOptions
+    )(pos))
+  }
+
+  test("CREATE CONSTRAINT FOR ()<-[r:R]-() REQUIRE (r.prop) IS NOT NULL") {
+    parsesTo[ast.Statements](ast.CreateRelationshipPropertyExistenceConstraint(
+      varFor("r"),
+      relTypeName("R"),
+      prop("r", "prop"),
+      None,
+      ast.IfExistsThrowError,
+      ast.NoOptions
+    )(pos))
+  }
+
+  test("CREATE CONSTRAINT FOR ()<-[r:R]->() REQUIRE (r.prop) IS NOT NULL") {
+    parsesTo[ast.Statements](ast.CreateRelationshipPropertyExistenceConstraint(
+      varFor("r"),
+      relTypeName("R"),
+      prop("r", "prop"),
+      None,
+      ast.IfExistsThrowError,
+      ast.NoOptions
+    )(pos))
+  }
+
+  test("CREATE OR REPLACE CONSTRAINT FOR ()<-[r:R]-() REQUIRE r.prop IS NOT NULL") {
+    parsesTo[ast.Statements](ast.CreateRelationshipPropertyExistenceConstraint(
+      varFor("r"),
+      relTypeName("R"),
+      prop("r", "prop"),
+      None,
+      ast.IfExistsReplace,
+      ast.NoOptions
+    )(pos))
+  }
+
+  test(
+    "CREATE OR REPLACE CONSTRAINT IF NOT EXISTS FOR ()-[r:R]-() REQUIRE r.prop IS NOT NULL"
+  ) {
+    parsesTo[ast.Statements](ast.CreateRelationshipPropertyExistenceConstraint(
+      varFor("r"),
+      relTypeName("R"),
+      prop("r", "prop"),
+      None,
+      ast.IfExistsInvalidSyntax,
+      ast.NoOptions
+    )(pos))
+  }
+
+  test(
+    "CREATE CONSTRAINT IF NOT EXISTS FOR ()-[r:R]->() REQUIRE r.prop IS NOT NULL"
+  ) {
+    parsesTo[ast.Statements](ast.CreateRelationshipPropertyExistenceConstraint(
+      varFor("r"),
+      relTypeName("R"),
+      prop("r", "prop"),
+      None,
+      ast.IfExistsDoNothing,
+      ast.NoOptions
+    )(pos))
+  }
+
+  test("CREATE CONSTRAINT FOR ()-[r:R]-() REQUIRE (r.prop) IS NOT NULL OPTIONS {}") {
+    parsesTo[ast.Statements](ast.CreateRelationshipPropertyExistenceConstraint(
+      varFor("r"),
+      relTypeName("R"),
+      prop("r", "prop"),
+      None,
+      ast.IfExistsThrowError,
+      ast.OptionsMap(Map.empty)
+    )(pos))
+  }
+
+  test(
+    "CREATE CONSTRAINT `$my_constraint` FOR ()-[r:R]-() REQUIRE r.prop IS NOT NULL"
+  ) {
+    parsesTo[ast.Statements](ast.CreateRelationshipPropertyExistenceConstraint(
+      varFor("r"),
+      relTypeName("R"),
+      prop("r", "prop"),
+      Some("$my_constraint"),
+      ast.IfExistsThrowError,
+      ast.NoOptions
+    )(pos))
+  }
+
+  test(
+    "CREATE CONSTRAINT my_constraint FOR ()-[r:R]-() REQUIRE (r.prop) IS NOT NULL"
+  ) {
+    parsesTo[ast.Statements](ast.CreateRelationshipPropertyExistenceConstraint(
+      varFor("r"),
+      relTypeName("R"),
+      prop("r", "prop"),
+      Some("my_constraint"),
+      ast.IfExistsThrowError,
+      ast.NoOptions
+    )(pos))
+  }
+
+  test(
+    "CREATE OR REPLACE CONSTRAINT `$my_constraint` FOR ()-[r:R]-() REQUIRE r.prop IS NOT NULL"
+  ) {
+    parsesTo[ast.Statements](ast.CreateRelationshipPropertyExistenceConstraint(
+      varFor("r"),
+      relTypeName("R"),
+      prop("r", "prop"),
+      Some("$my_constraint"),
+      ast.IfExistsReplace,
+      ast.NoOptions
+    )(pos))
+  }
+
+  test(
+    "CREATE OR REPLACE CONSTRAINT `$my_constraint` IF NOT EXISTS FOR ()-[r:R]->() REQUIRE (r.prop) IS NOT NULL"
+  ) {
+    parsesTo[ast.Statements](ast.CreateRelationshipPropertyExistenceConstraint(
+      varFor("r"),
+      relTypeName("R"),
+      prop("r", "prop"),
+      Some("$my_constraint"),
+      ast.IfExistsInvalidSyntax,
+      ast.NoOptions
+    )(pos))
+  }
+
+  test(
+    "CREATE CONSTRAINT `$my_constraint` IF NOT EXISTS FOR ()<-[r:R]-() REQUIRE r.prop IS NOT NULL"
+  ) {
+    parsesTo[ast.Statements](ast.CreateRelationshipPropertyExistenceConstraint(
+      varFor("r"),
+      relTypeName("R"),
+      prop("r", "prop"),
+      Some("$my_constraint"),
+      ast.IfExistsDoNothing,
+      ast.NoOptions
+    )(pos))
+  }
+
+  test(
+    "CREATE OR REPLACE CONSTRAINT my_constraint FOR ()-[r1:REL]-() REQUIRE (r2.prop2, r3.prop3) IS NOT NULL"
+  ) {
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc => _.throws[Neo4jASTConstructionException].withMessage(
+          ASTExceptionFactory.onlySinglePropertyAllowed(ConstraintType.REL_IS_NOT_NULL)
+        )
+      case _ => _.withSyntaxErrorContaining(
+          ASTExceptionFactory.onlySinglePropertyAllowed(ConstraintType.REL_IS_NOT_NULL)
+        )
+    }
+  }
+
+  test("CREATE CONSTRAINT $name FOR ()-[r:R]-() REQUIRE r.prop IS NOT NULL") {
+    parsesTo[ast.Statements](ast.CreateRelationshipPropertyExistenceConstraint(
+      varFor("r"),
+      relTypeName("R"),
+      prop("r", "prop"),
+      Some(Right(stringParam("name"))),
+      ast.IfExistsThrowError,
+      ast.NoOptions
+    )(pos))
+  }
+
+  // Property type
+
+  Seq("IS TYPED", "IS ::", "::").foreach(typeKeyword => {
+    // Node property type
+
+    test(
+      s"CREATE CONSTRAINT FOR (node:Label) REQUIRE node.prop $typeKeyword BOOLEAN"
+    ) {
+      parsesTo[ast.Statements](ast.CreateNodePropertyTypeConstraint(
+        varFor("node"),
+        labelName("Label"),
+        prop("node", "prop"),
+        BooleanType(isNullable = true)(pos),
+        None,
+        ast.IfExistsThrowError,
+        ast.NoOptions
+      )(pos))
+    }
+
+    test(
+      s"CREATE CONSTRAINT FOR (node:Label) REQUIRE (node.prop) $typeKeyword BOOLEAN"
+    ) {
+      parsesTo[ast.Statements](ast.CreateNodePropertyTypeConstraint(
+        varFor("node"),
+        labelName("Label"),
+        prop("node", "prop"),
+        BooleanType(isNullable = true)(pos),
+        None,
+        ast.IfExistsThrowError,
+        ast.NoOptions
+      )(pos))
+    }
+
+    test(
+      s"CREATE OR REPLACE CONSTRAINT FOR (node:Label) REQUIRE node.prop $typeKeyword BOOLEAN"
+    ) {
+      parsesTo[ast.Statements](ast.CreateNodePropertyTypeConstraint(
+        varFor("node"),
+        labelName("Label"),
+        prop("node", "prop"),
+        BooleanType(isNullable = true)(pos),
+        None,
+        ast.IfExistsReplace,
+        ast.NoOptions
+      )(pos))
+    }
+
+    test(
+      s"CREATE OR REPLACE CONSTRAINT IF NOT EXISTS FOR (node:Label) REQUIRE node.prop $typeKeyword BOOLEAN"
+    ) {
+      parsesTo[ast.Statements](ast.CreateNodePropertyTypeConstraint(
+        varFor("node"),
+        labelName("Label"),
+        prop("node", "prop"),
+        BooleanType(isNullable = true)(pos),
+        None,
+        ast.IfExistsInvalidSyntax,
+        ast.NoOptions
+      )(pos))
+    }
+
+    test(
+      s"CREATE CONSTRAINT IF NOT EXISTS FOR (node:Label) REQUIRE (node.prop) $typeKeyword BOOLEAN"
+    ) {
+      parsesTo[ast.Statements](ast.CreateNodePropertyTypeConstraint(
+        varFor("node"),
+        labelName("Label"),
+        prop("node", "prop"),
+        BooleanType(isNullable = true)(pos),
+        None,
+        ast.IfExistsDoNothing,
+        ast.NoOptions
+      )(pos))
+    }
+
+    test(
+      s"CREATE CONSTRAINT my_constraint FOR (node:Label) REQUIRE (node.prop) $typeKeyword STRING"
+    ) {
+      parsesTo[ast.Statements](ast.CreateNodePropertyTypeConstraint(
+        varFor("node"),
+        labelName("Label"),
+        prop("node", "prop"),
+        StringType(isNullable = true)(pos),
+        Some("my_constraint"),
+        ast.IfExistsThrowError,
+        ast.NoOptions
+      )(pos))
+    }
+
+    test(
+      s"CREATE OR REPLACE CONSTRAINT my_constraint FOR (node:Label) REQUIRE node.prop $typeKeyword STRING"
+    ) {
+      parsesTo[ast.Statements](ast.CreateNodePropertyTypeConstraint(
+        varFor("node"),
+        labelName("Label"),
+        prop("node", "prop"),
+        StringType(isNullable = true)(pos),
+        Some("my_constraint"),
+        ast.IfExistsReplace,
+        ast.NoOptions
+      )(pos))
+    }
+
+    test(
+      s"CREATE OR REPLACE CONSTRAINT my_constraint IF NOT EXISTS FOR (node:Label) REQUIRE node.prop $typeKeyword STRING"
+    ) {
+      parsesTo[ast.Statements](ast.CreateNodePropertyTypeConstraint(
+        varFor("node"),
+        labelName("Label"),
+        prop("node", "prop"),
+        StringType(isNullable = true)(pos),
+        Some("my_constraint"),
+        ast.IfExistsInvalidSyntax,
+        ast.NoOptions
+      )(pos))
+    }
+
+    test(
+      s"CREATE CONSTRAINT my_constraint IF NOT EXISTS FOR (node:Label) REQUIRE node.prop $typeKeyword STRING"
+    ) {
+      parsesTo[ast.Statements](ast.CreateNodePropertyTypeConstraint(
+        varFor("node"),
+        labelName("Label"),
+        prop("node", "prop"),
+        StringType(isNullable = true)(pos),
+        Some("my_constraint"),
+        ast.IfExistsDoNothing,
+        ast.NoOptions
+      )(pos))
+    }
+
+    test(
+      s"CREATE CONSTRAINT my_constraint FOR (node:Label) REQUIRE node.prop $typeKeyword STRING OPTIONS {}"
+    ) {
+      parsesTo[ast.Statements](ast.CreateNodePropertyTypeConstraint(
+        varFor("node"),
+        labelName("Label"),
+        prop("node", "prop"),
+        StringType(isNullable = true)(pos),
+        Some("my_constraint"),
+        ast.IfExistsThrowError,
+        ast.OptionsMap(Map.empty)
+      )(pos))
+    }
+
+    test(
+      s"CREATE OR REPLACE CONSTRAINT my_constraint FOR (node:Label) REQUIRE (node.prop2, node.prop3) $typeKeyword STRING"
+    ) {
+      failsParsing[ast.Statements].in {
+        case Cypher5JavaCc => _.throws[Neo4jASTConstructionException].withMessage(
+            ASTExceptionFactory.onlySinglePropertyAllowed(ConstraintType.NODE_IS_TYPED)
+          )
+        case _ => _.withSyntaxErrorContaining(
+            ASTExceptionFactory.onlySinglePropertyAllowed(ConstraintType.NODE_IS_TYPED)
+          )
+      }
+    }
+
+    // Relationship property type
+
+    test(s"CREATE CONSTRAINT FOR ()-[r:R]-() REQUIRE r.prop $typeKeyword BOOLEAN") {
+      parsesTo[ast.Statements](ast.CreateRelationshipPropertyTypeConstraint(
+        varFor("r"),
+        relTypeName("R"),
+        prop("r", "prop"),
+        BooleanType(isNullable = true)(pos),
+        None,
+        ast.IfExistsThrowError,
+        ast.NoOptions
+      )(pos))
+    }
+
+    test(s"CREATE CONSTRAINT FOR ()-[r:R]->() REQUIRE r.prop $typeKeyword BOOLEAN") {
+      parsesTo[ast.Statements](ast.CreateRelationshipPropertyTypeConstraint(
+        varFor("r"),
+        relTypeName("R"),
+        prop("r", "prop"),
+        BooleanType(isNullable = true)(pos),
+        None,
+        ast.IfExistsThrowError,
+        ast.NoOptions
+      )(pos))
+    }
+
+    test(
+      s"CREATE CONSTRAINT FOR ()<-[r:R]-() REQUIRE (r.prop) $typeKeyword BOOLEAN"
+    ) {
+      parsesTo[ast.Statements](ast.CreateRelationshipPropertyTypeConstraint(
+        varFor("r"),
+        relTypeName("R"),
+        prop("r", "prop"),
+        BooleanType(isNullable = true)(pos),
+        None,
+        ast.IfExistsThrowError,
+        ast.NoOptions
+      )(pos))
+    }
+
+    test(
+      s"CREATE CONSTRAINT FOR ()<-[r:R]->() REQUIRE (r.prop) $typeKeyword BOOLEAN"
+    ) {
+      parsesTo[ast.Statements](ast.CreateRelationshipPropertyTypeConstraint(
+        varFor("r"),
+        relTypeName("R"),
+        prop("r", "prop"),
+        BooleanType(isNullable = true)(pos),
+        None,
+        ast.IfExistsThrowError,
+        ast.NoOptions
+      )(pos))
+    }
+
+    test(
+      s"CREATE OR REPLACE CONSTRAINT FOR ()<-[r:R]-() REQUIRE r.prop $typeKeyword BOOLEAN"
+    ) {
+      parsesTo[ast.Statements](ast.CreateRelationshipPropertyTypeConstraint(
+        varFor("r"),
+        relTypeName("R"),
+        prop("r", "prop"),
+        BooleanType(isNullable = true)(pos),
+        None,
+        ast.IfExistsReplace,
+        ast.NoOptions
+      )(pos))
+    }
+
+    test(
+      s"CREATE OR REPLACE CONSTRAINT IF NOT EXISTS FOR ()-[r:R]-() REQUIRE r.prop $typeKeyword BOOLEAN"
+    ) {
+      parsesTo[ast.Statements](ast.CreateRelationshipPropertyTypeConstraint(
+        varFor("r"),
+        relTypeName("R"),
+        prop("r", "prop"),
+        BooleanType(isNullable = true)(pos),
+        None,
+        ast.IfExistsInvalidSyntax,
+        ast.NoOptions
+      )(pos))
+    }
+
+    test(
+      s"CREATE CONSTRAINT IF NOT EXISTS FOR ()-[r:R]->() REQUIRE r.prop $typeKeyword BOOLEAN"
+    ) {
+      parsesTo[ast.Statements](ast.CreateRelationshipPropertyTypeConstraint(
+        varFor("r"),
+        relTypeName("R"),
+        prop("r", "prop"),
+        BooleanType(isNullable = true)(pos),
+        None,
+        ast.IfExistsDoNothing,
+        ast.NoOptions
+      )(pos))
+    }
+
+    test(
+      s"CREATE CONSTRAINT FOR ()-[r:R]-() REQUIRE (r.prop) $typeKeyword BOOLEAN OPTIONS {}"
+    ) {
+      parsesTo[ast.Statements](ast.CreateRelationshipPropertyTypeConstraint(
+        varFor("r"),
+        relTypeName("R"),
+        prop("r", "prop"),
+        BooleanType(isNullable = true)(pos),
+        None,
+        ast.IfExistsThrowError,
+        ast.OptionsMap(Map.empty)
+      )(pos))
+    }
+
+    test(
+      s"CREATE CONSTRAINT `$$my_constraint` FOR ()-[r:R]-() REQUIRE r.prop $typeKeyword STRING"
+    ) {
+      parsesTo[ast.Statements](ast.CreateRelationshipPropertyTypeConstraint(
+        varFor("r"),
+        relTypeName("R"),
+        prop("r", "prop"),
+        StringType(isNullable = true)(pos),
+        Some("$my_constraint"),
+        ast.IfExistsThrowError,
+        ast.NoOptions
+      )(pos))
+    }
+
+    test(
+      s"CREATE CONSTRAINT my_constraint FOR ()-[r:R]-() REQUIRE (r.prop) $typeKeyword STRING"
+    ) {
+      parsesTo[ast.Statements](ast.CreateRelationshipPropertyTypeConstraint(
+        varFor("r"),
+        relTypeName("R"),
+        prop("r", "prop"),
+        StringType(isNullable = true)(pos),
+        Some("my_constraint"),
+        ast.IfExistsThrowError,
+        ast.NoOptions
+      )(pos))
+    }
+
+    test(
+      s"CREATE OR REPLACE CONSTRAINT `$$my_constraint` FOR ()-[r:R]-() REQUIRE r.prop $typeKeyword STRING"
+    ) {
+      parsesTo[ast.Statements](ast.CreateRelationshipPropertyTypeConstraint(
+        varFor("r"),
+        relTypeName("R"),
+        prop("r", "prop"),
+        StringType(isNullable = true)(pos),
+        Some("$my_constraint"),
+        ast.IfExistsReplace,
+        ast.NoOptions
+      )(pos))
+    }
+
+    test(
+      s"CREATE OR REPLACE CONSTRAINT `$$my_constraint` IF NOT EXISTS FOR ()-[r:R]->() REQUIRE (r.prop) $typeKeyword STRING"
+    ) {
+      parsesTo[ast.Statements](ast.CreateRelationshipPropertyTypeConstraint(
+        varFor("r"),
+        relTypeName("R"),
+        prop("r", "prop"),
+        StringType(isNullable = true)(pos),
+        Some("$my_constraint"),
+        ast.IfExistsInvalidSyntax,
+        ast.NoOptions
+      )(pos))
+    }
+
+    test(
+      s"CREATE CONSTRAINT `$$my_constraint` IF NOT EXISTS FOR ()<-[r:R]-() REQUIRE r.prop $typeKeyword STRING"
+    ) {
+      parsesTo[ast.Statements](ast.CreateRelationshipPropertyTypeConstraint(
+        varFor("r"),
+        relTypeName("R"),
+        prop("r", "prop"),
+        StringType(isNullable = true)(pos),
+        Some("$my_constraint"),
+        ast.IfExistsDoNothing,
+        ast.NoOptions
+      )(pos))
+    }
+
+    test(
+      s"CREATE OR REPLACE CONSTRAINT my_constraint FOR ()-[r1:REL]-() REQUIRE (r2.prop2, r3.prop3) $typeKeyword STRING"
+    ) {
+      failsParsing[ast.Statements].in {
+        case Cypher5JavaCc => _.throws[Neo4jASTConstructionException].withMessage(
+            ASTExceptionFactory.onlySinglePropertyAllowed(ConstraintType.REL_IS_TYPED)
+          )
+        case _ => _.withSyntaxErrorContaining(
+            ASTExceptionFactory.onlySinglePropertyAllowed(ConstraintType.REL_IS_TYPED)
+          )
+      }
+    }
+  })
+
+  test("CREATE CONSTRAINT $name FOR (n:L) REQUIRE n.prop IS TYPED STRING") {
+    parsesTo[ast.Statements](ast.CreateNodePropertyTypeConstraint(
+      varFor("n"),
+      labelName("L"),
+      prop("n", "prop"),
+      StringType(isNullable = true)(pos),
+      Some(Right(stringParam("name"))),
+      ast.IfExistsThrowError,
+      ast.NoOptions
+    )(pos))
+  }
+
+  test("CREATE CONSTRAINT $name FOR ()-[r:R]-() REQUIRE r.prop IS TYPED STRING") {
+    parsesTo[ast.Statements](ast.CreateRelationshipPropertyTypeConstraint(
+      varFor("r"),
+      relTypeName("R"),
+      prop("r", "prop"),
+      StringType(isNullable = true)(pos),
+      Some(Right(stringParam("name"))),
+      ast.IfExistsThrowError,
+      ast.NoOptions
+    )(pos))
+  }
 
   // allowed single types
   private val allowedNonListSingleTypes = Seq(
@@ -2648,9 +2196,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
         typeExpr,
         None,
         ast.IfExistsThrowError,
-        ast.NoOptions,
-        containsOn = false,
-        ast.ConstraintVersion2
+        ast.NoOptions
       )(pos))
     }
 
@@ -2664,9 +2210,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
         typeExpr,
         Some("my_constraint"),
         ast.IfExistsThrowError,
-        ast.NoOptions,
-        containsOn = false,
-        ast.ConstraintVersion2
+        ast.NoOptions
       )(pos))
     }
 
@@ -2678,9 +2222,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
         typeExpr,
         None,
         ast.IfExistsThrowError,
-        ast.NoOptions,
-        containsOn = false,
-        ast.ConstraintVersion2
+        ast.NoOptions
       )(pos))
     }
 
@@ -2694,9 +2236,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
         typeExpr,
         Some("my_constraint"),
         ast.IfExistsThrowError,
-        ast.NoOptions,
-        containsOn = false,
-        ast.ConstraintVersion2
+        ast.NoOptions
       )(pos))
     }
   }
@@ -2712,9 +2252,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
         typeExpr,
         Some("my_constraint"),
         ast.IfExistsThrowError,
-        ast.NoOptions,
-        containsOn = false,
-        ast.ConstraintVersion2
+        ast.NoOptions
       )(pos))
     }
 
@@ -2728,9 +2266,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
         typeExpr,
         Some("my_constraint"),
         ast.IfExistsThrowError,
-        ast.NoOptions,
-        containsOn = false,
-        ast.ConstraintVersion2
+        ast.NoOptions
       )(pos))
     }
   }
@@ -2747,9 +2283,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
         listTypeExpr,
         Some("my_constraint"),
         ast.IfExistsThrowError,
-        ast.NoOptions,
-        containsOn = false,
-        ast.ConstraintVersion2
+        ast.NoOptions
       )(pos))))
     }
 
@@ -2763,9 +2297,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
         listTypeExpr,
         Some("my_constraint"),
         ast.IfExistsThrowError,
-        ast.NoOptions,
-        containsOn = false,
-        ast.ConstraintVersion2
+        ast.NoOptions
       )(pos))))
     }
   }
@@ -2781,9 +2313,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
         unionTypeExpr,
         Some("my_constraint"),
         ast.IfExistsThrowError,
-        ast.NoOptions,
-        containsOn = false,
-        ast.ConstraintVersion2
+        ast.NoOptions
       )(pos))))
     }
 
@@ -2797,11 +2327,254 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
         unionTypeExpr,
         Some("my_constraint"),
         ast.IfExistsThrowError,
-        ast.NoOptions,
-        containsOn = false,
-        ast.ConstraintVersion2
+        ast.NoOptions
       )(pos))))
     }
+  }
+
+  // Edge case tests
+
+  test(
+    "CREATE CONSTRAINT my_constraint FOR (n:Person) REQUIRE n.prop IS NOT NULL OPTIONS {indexProvider : 'range-1.0'};"
+  ) {
+    parsesTo[ast.Statements](ast.CreateNodePropertyExistenceConstraint(
+      varFor("n"),
+      labelName("Person"),
+      prop("n", "prop"),
+      Some("my_constraint"),
+      ast.IfExistsThrowError,
+      ast.OptionsMap(Map("indexProvider" -> literalString("range-1.0")))
+    )(pos))
+  }
+
+  test(
+    "CREATE CONSTRAINT FOR (n:Person) REQUIRE n.prop IS NOT NULL; CREATE CONSTRAINT FOR (n:User) REQUIRE n.prop IS UNIQUE"
+  ) {
+    // The test setup does 'fromParser(_.ast.Statements().get(0)', so only the first statement is yielded.
+    // The purpose of the test is to make sure the parser does not throw an error on the semicolon, which was an issue before.
+    // If we want to test that both statements are parsed, the test framework needs to be extended.
+    parses[ast.Statements].withAstLike { statements =>
+      statements.get(0) shouldBe ast.CreateNodePropertyExistenceConstraint(
+        varFor("n"),
+        labelName("Person"),
+        prop("n", "prop"),
+        None,
+        ast.IfExistsThrowError,
+        ast.NoOptions
+      )(pos)
+    }
+  }
+
+  test("CREATE CONSTRAINT FOR FOR (node:Label) REQUIRE (node.prop) IS NODE KEY") {
+    assertAst(ast.CreateNodeKeyConstraint(
+      varFor("node", (1, 28, 27)),
+      labelName("Label", (1, 33, 32)),
+      Seq(prop("node", "prop", (1, 49, 48))),
+      Some("FOR"),
+      ast.IfExistsThrowError,
+      ast.NoOptions
+    )(defaultPos))
+  }
+
+  test("CREATE CONSTRAINT FOR FOR (node:Label) REQUIRE (node.prop) IS UNIQUE") {
+    assertAst(ast.CreateNodePropertyUniquenessConstraint(
+      varFor("node", (1, 28, 27)),
+      labelName("Label", (1, 33, 32)),
+      Seq(prop("node", "prop", (1, 49, 48))),
+      Some("FOR"),
+      ast.IfExistsThrowError,
+      ast.NoOptions
+    )(defaultPos))
+  }
+
+  test("CREATE CONSTRAINT FOR FOR (node:Label) REQUIRE node.prop IS NOT NULL") {
+    assertAst(ast.CreateNodePropertyExistenceConstraint(
+      varFor("node", (1, 28, 27)),
+      labelName("Label", (1, 33, 32)),
+      prop("node", "prop", (1, 48, 47)),
+      Some("FOR"),
+      ast.IfExistsThrowError,
+      ast.NoOptions
+    )(defaultPos))
+  }
+
+  test("CREATE CONSTRAINT FOR FOR ()-[r:R]-() REQUIRE (r.prop) IS NOT NULL") {
+    assertAst(ast.CreateRelationshipPropertyExistenceConstraint(
+      varFor("r", (1, 31, 30)),
+      relTypeName("R", (1, 33, 32)),
+      prop("r", "prop", (1, 48, 47)),
+      Some("FOR"),
+      ast.IfExistsThrowError,
+      ast.NoOptions
+    )(defaultPos))
+  }
+
+  // Negative tests
+
+  test(
+    "CREATE CONSTRAINT FOR (node:Label) REQUIRE (node.prop) IS NODE KEY {indexProvider : 'range-1.0'}"
+  ) {
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc => _.withMessageStart("Invalid input '{': expected \"OPTIONS\" or <EOF>")
+      case _ =>
+        _.withSyntaxErrorContaining("Invalid input '{': expected 'OPTIONS' or <EOF>")
+    }
+  }
+
+  test(
+    "CREATE CONSTRAINT FOR (node:Label) REQUIRE (node.prop) IS NODE KEY OPTIONS"
+  ) {
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc => _.withMessageStart("Invalid input '': expected \"{\" or a parameter")
+      case _ =>
+        _.withSyntaxErrorContaining("Invalid input '': expected a parameter or '{'")
+
+    }
+  }
+
+  test("CREATE CONSTRAINT FOR (node:Label) REQUIRE node.prop.part IS UNIQUE") {
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc => _.withMessageStart("Invalid input '.': expected \"::\" or \"IS\"")
+      case _             => _.withSyntaxErrorContaining("Invalid input '.': expected '::' or 'IS'")
+    }
+  }
+
+  test("CREATE CONSTRAINT FOR (node:Label) REQUIRE (node.prop.part) IS UNIQUE") {
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc => _.withMessageStart("Invalid input '.': expected \")\" or \",\"")
+      case _             => _.withSyntaxErrorContaining("Invalid input '.': expected ')' or ','")
+    }
+  }
+
+  test(
+    "CREATE CONSTRAINT FOR (node:Label) REQUIRE (node.prop) IS UNIQUE {indexProvider : 'range-1.0'}"
+  ) {
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc =>
+        _.withMessageStart("Invalid input '{': expected \"OPTIONS\" or <EOF>")
+      case _ => _.withSyntaxErrorContaining(
+          "Invalid input '{': expected 'OPTIONS' or <EOF>"
+        )
+    }
+  }
+
+  test(
+    "CREATE CONSTRAINT FOR (node:Label) REQUIRE (node.prop1, node.prop2) IS UNIQUE OPTIONS"
+  ) {
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc => _.withMessageStart("Invalid input '': expected \"{\" or a parameter")
+      case _ => _.withSyntaxErrorContaining(
+          "Invalid input '': expected a parameter or '{'"
+        )
+    }
+  }
+
+  test(
+    "CREATE CONSTRAINT FOR (node:Label) REQUIRE (node.prop1, node.prop2) IS NOT NULL"
+  ) {
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc => _.withMessage("Constraint type 'IS NOT NULL' does not allow multiple properties")
+      case _ => _.withSyntaxErrorContaining(
+          "Constraint type 'IS NOT NULL' does not allow multiple properties"
+        )
+    }
+  }
+
+  test(
+    "CREATE CONSTRAINT FOR ()-[r:R]-() REQUIRE (r.prop1, r.prop2) IS NOT NULL"
+  ) {
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc => _.withMessage("Constraint type 'IS NOT NULL' does not allow multiple properties")
+      case _ => _.withSyntaxErrorContaining(
+          "Constraint type 'IS NOT NULL' does not allow multiple properties"
+        )
+    }
+  }
+
+  test("CREATE CONSTRAINT FOR ()-[r1:REL]-() REQUIRE (r2.prop) IS NODE KEY") {
+    failsParsing[ast.Statements]
+      .withMessageStart(ASTExceptionFactory.relationshipPatternNotAllowed(ConstraintType.NODE_KEY))
+      .in {
+        case Cypher5JavaCc => _.throws[OpenCypherExceptionFactory.SyntaxException]
+        case _             => _.throws[SyntaxException]
+      }
+  }
+
+  test("CREATE CONSTRAINT FOR ()-[r1:REL]-() REQUIRE (r2.prop) IS NODE UNIQUE") {
+    failsParsing[ast.Statements]
+      .withMessageStart(ASTExceptionFactory.relationshipPatternNotAllowed(ConstraintType.NODE_UNIQUE))
+      .in {
+        case Cypher5JavaCc => _.throws[OpenCypherExceptionFactory.SyntaxException]
+        case _             => _.throws[SyntaxException]
+      }
+  }
+
+  test("CREATE CONSTRAINT FOR (node:Label) REQUIRE (r.prop) IS RELATIONSHIP KEY") {
+    failsParsing[ast.Statements]
+      .withMessageStart(ASTExceptionFactory.nodePatternNotAllowed(ConstraintType.REL_KEY))
+      .in {
+        case Cypher5JavaCc => _.throws[OpenCypherExceptionFactory.SyntaxException]
+        case _             => _.throws[SyntaxException]
+      }
+  }
+
+  test("CREATE CONSTRAINT FOR (node:Label) REQUIRE (r.prop) IS REL KEY") {
+    failsParsing[ast.Statements]
+      .withMessageStart(ASTExceptionFactory.nodePatternNotAllowed(ConstraintType.REL_KEY))
+      .in {
+        case Cypher5JavaCc => _.throws[OpenCypherExceptionFactory.SyntaxException]
+        case _             => _.throws[SyntaxException]
+      }
+  }
+
+  test(
+    "CREATE CONSTRAINT FOR (node:Label) REQUIRE (r.prop) IS RELATIONSHIP UNIQUE"
+  ) {
+    failsParsing[ast.Statements]
+      .withMessageStart(ASTExceptionFactory.nodePatternNotAllowed(ConstraintType.REL_UNIQUE))
+      .in {
+        case Cypher5JavaCc => _.throws[OpenCypherExceptionFactory.SyntaxException]
+        case _             => _.throws[SyntaxException]
+      }
+  }
+
+  test("CREATE CONSTRAINT FOR (node:Label) REQUIRE (r.prop) IS REL UNIQUE") {
+    failsParsing[ast.Statements]
+      .withMessageStart(ASTExceptionFactory.nodePatternNotAllowed(ConstraintType.REL_UNIQUE))
+      .in {
+        case Cypher5JavaCc => _.throws[OpenCypherExceptionFactory.SyntaxException]
+        case _             => _.throws[SyntaxException]
+      }
+  }
+
+  test(
+    "CREATE CONSTRAINT FOR (node:Label) REQUIRE node.prop IS UNIQUENESS"
+  ) {
+    failsParsing[ast.Statements].withMessageStart("Invalid input 'UNIQUENESS'")
+  }
+
+  test(
+    "CREATE CONSTRAINT FOR (node:Label) REQUIRE node.prop IS NODE UNIQUENESS"
+  ) {
+    failsParsing[ast.Statements].withMessageStart("Invalid input 'UNIQUENESS'")
+  }
+
+  test(
+    "CREATE CONSTRAINT FOR ()-[r:R]-() REQUIRE r.prop IS UNIQUENESS"
+  ) {
+    failsParsing[ast.Statements].withMessageStart("Invalid input 'UNIQUENESS'")
+  }
+
+  test(
+    "CREATE CONSTRAINT FOR ()-[r:R]-() REQUIRE r.prop IS RELATIONSHIP UNIQUENESS"
+  ) {
+    failsParsing[ast.Statements].withMessageStart("Invalid input 'UNIQUENESS'")
+  }
+
+  test(
+    "CREATE CONSTRAINT FOR ()-[r:R]-() REQUIRE r.prop IS REL UNIQUENESS"
+  ) {
+    failsParsing[ast.Statements].withMessageStart("Invalid input 'UNIQUENESS'")
   }
 
   test("CREATE CONSTRAINT my_constraint FOR (n:L) REQUIRE n.p IS :: ANY<BOOLEAN | STRING> NOT NULL") {
@@ -2827,440 +2600,6 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
         )
     }
   }
-
-  // ASSERT EXISTS
-
-  test("CREATE CONSTRAINT ON (node:Label) ASSERT EXISTS (node.prop)") {
-    parsesTo[ast.Statements](ast.CreateNodePropertyExistenceConstraint(
-      varFor("node"),
-      labelName("Label"),
-      prop("node", "prop"),
-      None,
-      ast.IfExistsThrowError,
-      ast.NoOptions,
-      containsOn = true,
-      ast.ConstraintVersion0
-    )(pos))
-  }
-
-  test("CREATE CONSTRAINT ON (node1:Label) ASSERT EXISTS node2.prop") {
-    assertAst(ast.CreateNodePropertyExistenceConstraint(
-      varFor("node1", (1, 23, 22)),
-      labelName("Label", (1, 29, 28)),
-      Property(varFor("node2", (1, 50, 49)), PropertyKeyName("prop")((1, 56, 55)))((1, 50, 49)),
-      None,
-      ast.IfExistsThrowError,
-      ast.NoOptions,
-      containsOn = true,
-      ast.ConstraintVersion0,
-      None
-    )(defaultPos))
-  }
-
-  test("CREATE OR REPLACE CONSTRAINT ON (node:Label) ASSERT EXISTS (node.prop)") {
-    parsesTo[ast.Statements](ast.CreateNodePropertyExistenceConstraint(
-      varFor("node"),
-      labelName("Label"),
-      prop("node", "prop"),
-      None,
-      ast.IfExistsReplace,
-      ast.NoOptions,
-      containsOn = true,
-      ast.ConstraintVersion0
-    )(pos))
-  }
-
-  test("CREATE OR REPLACE CONSTRAINT IF NOT EXISTS ON (node:Label) ASSERT EXISTS (node.prop)") {
-    parsesTo[ast.Statements](ast.CreateNodePropertyExistenceConstraint(
-      varFor("node"),
-      labelName("Label"),
-      prop("node", "prop"),
-      None,
-      ast.IfExistsInvalidSyntax,
-      ast.NoOptions,
-      containsOn = true,
-      ast.ConstraintVersion0
-    )(pos))
-  }
-
-  test("CREATE CONSTRAINT IF NOT EXISTS ON (node:Label) ASSERT EXISTS (node.prop)") {
-    parsesTo[ast.Statements](ast.CreateNodePropertyExistenceConstraint(
-      varFor("node"),
-      labelName("Label"),
-      prop("node", "prop"),
-      None,
-      ast.IfExistsDoNothing,
-      ast.NoOptions,
-      containsOn = true,
-      ast.ConstraintVersion0
-    )(pos))
-  }
-
-  test("CREATE CONSTRAINT ON (node:Label) ASSERT EXISTS (node.prop) OPTIONS {}") {
-    parsesTo[ast.Statements](ast.CreateNodePropertyExistenceConstraint(
-      varFor("node"),
-      labelName("Label"),
-      prop("node", "prop"),
-      None,
-      ast.IfExistsThrowError,
-      ast.OptionsMap(Map.empty),
-      containsOn = true,
-      ast.ConstraintVersion0
-    )(pos))
-  }
-
-  test("CREATE CONSTRAINT ON (node1:Label) ASSERT EXISTS (node2.prop1, node3.prop2)") {
-    failsParsing[ast.Statements]
-      .withMessageStart(ASTExceptionFactory.onlySinglePropertyAllowed(ConstraintType.NODE_EXISTS))
-      .in {
-        case Cypher5JavaCc => _.throws[Neo4jASTConstructionException]
-        case _             => _.throws[SyntaxException]
-      }
-  }
-
-  test("CREATE CONSTRAINT ON ()-[r:R]-() ASSERT EXISTS (r.prop)") {
-    parsesTo[ast.Statements](ast.CreateRelationshipPropertyExistenceConstraint(
-      varFor("r"),
-      relTypeName("R"),
-      prop("r", "prop"),
-      None,
-      ast.IfExistsThrowError,
-      ast.NoOptions,
-      containsOn = true,
-      ast.ConstraintVersion0
-    )(pos))
-  }
-
-  test("CREATE CONSTRAINT ON ()-[r:R]->() ASSERT EXISTS (r.prop)") {
-    parsesTo[ast.Statements](ast.CreateRelationshipPropertyExistenceConstraint(
-      varFor("r"),
-      relTypeName("R"),
-      prop("r", "prop"),
-      None,
-      ast.IfExistsThrowError,
-      ast.NoOptions,
-      containsOn = true,
-      ast.ConstraintVersion0
-    )(pos))
-  }
-
-  test("CREATE CONSTRAINT ON ()<-[r:R]-() ASSERT EXISTS (r.prop)") {
-    parsesTo[ast.Statements](ast.CreateRelationshipPropertyExistenceConstraint(
-      varFor("r"),
-      relTypeName("R"),
-      prop("r", "prop"),
-      None,
-      ast.IfExistsThrowError,
-      ast.NoOptions,
-      containsOn = true,
-      ast.ConstraintVersion0
-    )(pos))
-  }
-
-  test("CREATE CONSTRAINT ON ()-[r1:R]-() ASSERT EXISTS r2.prop") {
-    assertAst(ast.CreateRelationshipPropertyExistenceConstraint(
-      varFor("r1", (1, 26, 25)),
-      relTypeName("R", (1, 29, 28)),
-      Property(varFor("r2", (1, 49, 48)), PropertyKeyName("prop")((1, 52, 51)))((1, 49, 48)),
-      None,
-      ast.IfExistsThrowError,
-      ast.NoOptions,
-      containsOn = true,
-      ast.ConstraintVersion0,
-      None
-    )(defaultPos))
-  }
-
-  test("CREATE OR REPLACE CONSTRAINT ON ()<-[r:R]-() ASSERT EXISTS (r.prop)") {
-    parsesTo[ast.Statements](ast.CreateRelationshipPropertyExistenceConstraint(
-      varFor("r"),
-      relTypeName("R"),
-      prop("r", "prop"),
-      None,
-      ast.IfExistsReplace,
-      ast.NoOptions,
-      containsOn = true,
-      ast.ConstraintVersion0
-    )(pos))
-  }
-
-  test("CREATE OR REPLACE CONSTRAINT IF NOT EXISTS ON ()-[r:R]-() ASSERT EXISTS (r.prop)") {
-    parsesTo[ast.Statements](ast.CreateRelationshipPropertyExistenceConstraint(
-      varFor("r"),
-      relTypeName("R"),
-      prop("r", "prop"),
-      None,
-      ast.IfExistsInvalidSyntax,
-      ast.NoOptions,
-      containsOn = true,
-      ast.ConstraintVersion0
-    )(pos))
-  }
-
-  test("CREATE CONSTRAINT IF NOT EXISTS ON ()-[r:R]->() ASSERT EXISTS (r.prop)") {
-    parsesTo[ast.Statements](ast.CreateRelationshipPropertyExistenceConstraint(
-      varFor("r"),
-      relTypeName("R"),
-      prop("r", "prop"),
-      None,
-      ast.IfExistsDoNothing,
-      ast.NoOptions,
-      containsOn = true,
-      ast.ConstraintVersion0
-    )(pos))
-  }
-
-  test("CREATE CONSTRAINT ON ()-[r1:REL]-() ASSERT EXISTS (r2.prop1, r3.prop2)") {
-    failsParsing[ast.Statements]
-      .withMessageStart(ASTExceptionFactory.onlySinglePropertyAllowed(ConstraintType.REL_EXISTS))
-      .in {
-        case Cypher5JavaCc => _.throws[Neo4jASTConstructionException]
-        case _             => _.throws[SyntaxException]
-      }
-  }
-
-  test("CREATE CONSTRAINT my_constraint ON (node:Label) ASSERT EXISTS (node.prop)") {
-    parsesTo[ast.Statements](ast.CreateNodePropertyExistenceConstraint(
-      varFor("node"),
-      labelName("Label"),
-      prop("node", "prop"),
-      Some("my_constraint"),
-      ast.IfExistsThrowError,
-      ast.NoOptions,
-      containsOn = true,
-      ast.ConstraintVersion0
-    )(pos))
-  }
-
-  test("CREATE OR REPLACE CONSTRAINT my_constraint ON (node:Label) ASSERT EXISTS (node.prop)") {
-    parsesTo[ast.Statements](ast.CreateNodePropertyExistenceConstraint(
-      varFor("node"),
-      labelName("Label"),
-      prop("node", "prop"),
-      Some("my_constraint"),
-      ast.IfExistsReplace,
-      ast.NoOptions,
-      containsOn = true,
-      ast.ConstraintVersion0
-    )(pos))
-  }
-
-  test("CREATE OR REPLACE CONSTRAINT my_constraint IF NOT EXISTS ON (node:Label) ASSERT EXISTS (node.prop)") {
-    parsesTo[ast.Statements](ast.CreateNodePropertyExistenceConstraint(
-      varFor("node"),
-      labelName("Label"),
-      prop("node", "prop"),
-      Some("my_constraint"),
-      ast.IfExistsInvalidSyntax,
-      ast.NoOptions,
-      containsOn = true,
-      ast.ConstraintVersion0
-    )(pos))
-  }
-
-  test("CREATE CONSTRAINT my_constraint IF NOT EXISTS ON (node:Label) ASSERT EXISTS (node.prop)") {
-    parsesTo[ast.Statements](ast.CreateNodePropertyExistenceConstraint(
-      varFor("node"),
-      labelName("Label"),
-      prop("node", "prop"),
-      Some("my_constraint"),
-      ast.IfExistsDoNothing,
-      ast.NoOptions,
-      containsOn = true,
-      ast.ConstraintVersion0
-    )(pos))
-  }
-
-  test("CREATE CONSTRAINT `$my_constraint` ON ()-[r:R]-() ASSERT EXISTS (r.prop)") {
-    parsesTo[ast.Statements](ast.CreateRelationshipPropertyExistenceConstraint(
-      varFor("r"),
-      relTypeName("R"),
-      prop("r", "prop"),
-      Some("$my_constraint"),
-      ast.IfExistsThrowError,
-      ast.NoOptions,
-      containsOn = true,
-      ast.ConstraintVersion0
-    )(pos))
-  }
-
-  test("CREATE CONSTRAINT my_constraint ON ()-[r:R]-() ASSERT EXISTS (r.prop) OPTIONS {}") {
-    parsesTo[ast.Statements](ast.CreateRelationshipPropertyExistenceConstraint(
-      varFor("r"),
-      relTypeName("R"),
-      prop("r", "prop"),
-      Some("my_constraint"),
-      ast.IfExistsThrowError,
-      ast.OptionsMap(Map.empty),
-      containsOn = true,
-      ast.ConstraintVersion0
-    )(pos))
-  }
-
-  test("CREATE OR REPLACE CONSTRAINT `$my_constraint` ON ()-[r:R]-() ASSERT EXISTS (r.prop)") {
-    parsesTo[ast.Statements](ast.CreateRelationshipPropertyExistenceConstraint(
-      varFor("r"),
-      relTypeName("R"),
-      prop("r", "prop"),
-      Some("$my_constraint"),
-      ast.IfExistsReplace,
-      ast.NoOptions,
-      containsOn = true,
-      ast.ConstraintVersion0
-    )(pos))
-  }
-
-  test("CREATE OR REPLACE CONSTRAINT `$my_constraint` IF NOT EXISTS ON ()-[r:R]->() ASSERT EXISTS (r.prop)") {
-    parsesTo[ast.Statements](ast.CreateRelationshipPropertyExistenceConstraint(
-      varFor("r"),
-      relTypeName("R"),
-      prop("r", "prop"),
-      Some("$my_constraint"),
-      ast.IfExistsInvalidSyntax,
-      ast.NoOptions,
-      containsOn = true,
-      ast.ConstraintVersion0
-    )(pos))
-  }
-
-  test("CREATE CONSTRAINT `$my_constraint` IF NOT EXISTS ON ()<-[r:R]-() ASSERT EXISTS (r.prop)") {
-    parsesTo[ast.Statements](ast.CreateRelationshipPropertyExistenceConstraint(
-      varFor("r"),
-      relTypeName("R"),
-      prop("r", "prop"),
-      Some("$my_constraint"),
-      ast.IfExistsDoNothing,
-      ast.NoOptions,
-      containsOn = true,
-      ast.ConstraintVersion0
-    )(pos))
-  }
-
-  test(
-    s"CREATE CONSTRAINT ON (node:Label) ASSERT EXISTS (node.prop1, node.prop2)"
-  ) {
-    failsParsing[ast.Statements]
-      .withMessageStart("Constraint type 'EXISTS' does not allow multiple properties")
-      .in {
-        case Cypher5JavaCc => _.throws[Neo4jASTConstructionException]
-        case _             => _.throws[SyntaxException]
-      }
-  }
-
-  test(
-    s"CREATE CONSTRAINT ON ()-[r:R]-() ASSERT EXISTS (r.prop1, r.prop2)"
-  ) {
-    failsParsing[ast.Statements]
-      .withMessageStart("Constraint type 'EXISTS' does not allow multiple properties")
-      .in {
-        case Cypher5JavaCc => _.throws[Neo4jASTConstructionException]
-        case _             => _.throws[SyntaxException]
-      }
-  }
-
-  test("CREATE CONSTRAINT $my_constraint ON ()-[r:R]-() ASSERT EXISTS (r.prop)") {
-    parsesTo[ast.Statements](ast.CreateRelationshipPropertyExistenceConstraint(
-      varFor("r"),
-      relTypeName("R"),
-      prop("r", "prop"),
-      Some(Right(stringParam("my_constraint"))),
-      ast.IfExistsThrowError,
-      ast.NoOptions,
-      containsOn = true,
-      ast.ConstraintVersion0
-    )(pos))
-  }
-
-  // Edge case tests
-
-  test(
-    "CREATE CONSTRAINT my_constraint FOR (n:Person) REQUIRE n.prop IS NOT NULL OPTIONS {indexProvider : 'range-1.0'};"
-  ) {
-    parsesTo[ast.Statements](ast.CreateNodePropertyExistenceConstraint(
-      varFor("n"),
-      labelName("Person"),
-      prop("n", "prop"),
-      Some("my_constraint"),
-      ast.IfExistsThrowError,
-      ast.OptionsMap(Map("indexProvider" -> literalString("range-1.0"))),
-      containsOn = false,
-      constraintVersion = ast.ConstraintVersion2
-    )(pos))
-  }
-
-  test(
-    "CREATE CONSTRAINT FOR (n:Person) REQUIRE n.prop IS NOT NULL; CREATE CONSTRAINT FOR (n:User) REQUIRE n.prop IS UNIQUE"
-  ) {
-    // The test setup does 'fromParser(_.ast.Statements().get(0)', so only the first statement is yielded.
-    // The purpose of the test is to make sure the parser does not throw an error on the semicolon, which was an issue before.
-    // If we want to test that both statements are parsed, the test framework needs to be extended.
-    parses[ast.Statements].withAstLike { statements =>
-      statements.get(0) shouldBe ast.CreateNodePropertyExistenceConstraint(
-        varFor("n"),
-        labelName("Person"),
-        prop("n", "prop"),
-        None,
-        ast.IfExistsThrowError,
-        ast.NoOptions,
-        containsOn = false,
-        constraintVersion = ast.ConstraintVersion2
-      )(pos)
-    }
-  }
-
-  test("CREATE CONSTRAINT FOR FOR (node:Label) REQUIRE (node.prop) IS NODE KEY") {
-    assertAst(ast.CreateNodeKeyConstraint(
-      varFor("node", (1, 28, 27)),
-      labelName("Label", (1, 33, 32)),
-      Seq(prop("node", "prop", (1, 49, 48))),
-      Some("FOR"),
-      ast.IfExistsThrowError,
-      ast.NoOptions,
-      containsOn = false,
-      ast.ConstraintVersion2
-    )(defaultPos))
-  }
-
-  test("CREATE CONSTRAINT FOR FOR (node:Label) REQUIRE (node.prop) IS UNIQUE") {
-    assertAst(ast.CreateNodePropertyUniquenessConstraint(
-      varFor("node", (1, 28, 27)),
-      labelName("Label", (1, 33, 32)),
-      Seq(prop("node", "prop", (1, 49, 48))),
-      Some("FOR"),
-      ast.IfExistsThrowError,
-      ast.NoOptions,
-      containsOn = false,
-      ast.ConstraintVersion2
-    )(defaultPos))
-  }
-
-  test("CREATE CONSTRAINT FOR FOR (node:Label) REQUIRE node.prop IS NOT NULL") {
-    assertAst(ast.CreateNodePropertyExistenceConstraint(
-      varFor("node", (1, 28, 27)),
-      labelName("Label", (1, 33, 32)),
-      prop("node", "prop", (1, 48, 47)),
-      Some("FOR"),
-      ast.IfExistsThrowError,
-      ast.NoOptions,
-      containsOn = false,
-      ast.ConstraintVersion2
-    )(defaultPos))
-  }
-
-  test("CREATE CONSTRAINT FOR FOR ()-[r:R]-() REQUIRE (r.prop) IS NOT NULL") {
-    assertAst(ast.CreateRelationshipPropertyExistenceConstraint(
-      varFor("r", (1, 31, 30)),
-      relTypeName("R", (1, 33, 32)),
-      prop("r", "prop", (1, 48, 47)),
-      Some("FOR"),
-      ast.IfExistsThrowError,
-      ast.NoOptions,
-      containsOn = false,
-      ast.ConstraintVersion2
-    )(defaultPos))
-  }
-
-  // Negative tests
 
   test("CREATE CONSTRAINT FOR (:A)-[n1:R]-() REQUIRE (n2.name) IS RELATIONSHIP KEY") {
     // label on node
@@ -3318,8 +2657,13 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     failsParsing[ast.Statements].in {
       case Cypher5JavaCc =>
         _.withMessageStart("""Invalid input '-': expected "ASSERT" or "REQUIRE"""")
-      case _ => _.withSyntaxError(
+      case Cypher5 => _.withSyntaxError(
           """Invalid input '-': expected 'ASSERT' or 'REQUIRE' (line 1, column 29 (offset: 28))
+            |"CREATE CONSTRAINT FOR (n2:A)-[n1:R]-() REQUIRE (n2.name) IS KEY"
+            |                             ^""".stripMargin
+        )
+      case _ => _.withSyntaxError(
+          """Invalid input '-': expected 'REQUIRE' (line 1, column 29 (offset: 28))
             |"CREATE CONSTRAINT FOR (n2:A)-[n1:R]-() REQUIRE (n2.name) IS KEY"
             |                             ^""".stripMargin
         )
@@ -3335,30 +2679,6 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
           """Invalid input 'n2': expected ')' (line 1, column 34 (offset: 33))
             |"CREATE CONSTRAINT FOR ()-[n1:R]-(n2:A) REQUIRE (n2.name) IS RELATIONSHIP UNIQUE"
             |                                  ^""".stripMargin
-        )
-    }
-  }
-
-  test("CREATE CONSTRAINT my_constraint ON (node:Label) ASSERT EXISTS (node.prop) IS NOT NULL") {
-    failsParsing[ast.Statements].in {
-      case Cypher5JavaCc =>
-        _.withMessageStart("""Invalid input 'IS': expected "OPTIONS" or <EOF> (line 1, column 75 (offset: 74))""")
-      case _ => _.withSyntaxError(
-          """Invalid input 'IS': expected 'OPTIONS' or <EOF> (line 1, column 75 (offset: 74))
-            |"CREATE CONSTRAINT my_constraint ON (node:Label) ASSERT EXISTS (node.prop) IS NOT NULL"
-            |                                                                           ^""".stripMargin
-        )
-    }
-  }
-
-  test("CREATE CONSTRAINT my_constraint ON ()-[r:R]-() ASSERT EXISTS (r.prop) IS NOT NULL") {
-    failsParsing[ast.Statements].in {
-      case Cypher5JavaCc =>
-        _.withMessageStart("Invalid input 'IS': expected \"OPTIONS\" or <EOF> (line 1, column 71 (offset: 70))")
-      case _ => _.withSyntaxError(
-          """Invalid input 'IS': expected 'OPTIONS' or <EOF> (line 1, column 71 (offset: 70))
-            |"CREATE CONSTRAINT my_constraint ON ()-[r:R]-() ASSERT EXISTS (r.prop) IS NOT NULL"
-            |                                                                       ^""".stripMargin
         )
     }
   }
@@ -3399,27 +2719,6 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     }
   }
 
-  test(s"CREATE CONSTRAINT my_constraint ON ()-[r:R]-() ASSERT r.prop IS NULL") {
-    failsParsing[ast.Statements].in {
-      case Cypher5JavaCc => _.withMessageStart(
-          """Invalid input 'NULL': expected
-            |  "::"
-            |  "KEY"
-            |  "NODE"
-            |  "NOT"
-            |  "REL"
-            |  "RELATIONSHIP"
-            |  "TYPED"
-            |  "UNIQUE" (line 1, column 65 (offset: 64))""".stripMargin
-        )
-      case _ => _.withSyntaxError(
-          """Invalid input 'NULL': expected '::', 'KEY', 'NODE', 'NOT NULL', 'REL', 'RELATIONSHIP', 'TYPED' or 'UNIQUE' (line 1, column 65 (offset: 64))
-            |"CREATE CONSTRAINT my_constraint ON ()-[r:R]-() ASSERT r.prop IS NULL"
-            |                                                                 ^""".stripMargin
-        )
-    }
-  }
-
   test(s"CREATE CONSTRAINT my_constraint FOR ()-[r:R]-() REQUIRE r.prop IS NULL") {
     failsParsing[ast.Statements].in {
       case Cypher5JavaCc => _.withMessageStart(
@@ -3437,27 +2736,6 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
           """Invalid input 'NULL': expected '::', 'KEY', 'NODE', 'NOT NULL', 'REL', 'RELATIONSHIP', 'TYPED' or 'UNIQUE' (line 1, column 67 (offset: 66))
             |"CREATE CONSTRAINT my_constraint FOR ()-[r:R]-() REQUIRE r.prop IS NULL"
             |                                                                   ^""".stripMargin
-        )
-    }
-  }
-
-  test(s"CREATE CONSTRAINT my_constraint ON (node:Label) ASSERT node.prop IS NULL") {
-    failsParsing[ast.Statements].in {
-      case Cypher5JavaCc => _.withMessageStart(
-          """Invalid input 'NULL': expected
-            |  "::"
-            |  "KEY"
-            |  "NODE"
-            |  "NOT"
-            |  "REL"
-            |  "RELATIONSHIP"
-            |  "TYPED"
-            |  "UNIQUE" (line 1, column 69 (offset: 68))""".stripMargin
-        )
-      case _ => _.withSyntaxError(
-          """Invalid input 'NULL': expected '::', 'KEY', 'NODE', 'NOT NULL', 'REL', 'RELATIONSHIP', 'TYPED' or 'UNIQUE' (line 1, column 69 (offset: 68))
-            |"CREATE CONSTRAINT my_constraint ON (node:Label) ASSERT node.prop IS NULL"
-            |                                                                     ^""".stripMargin
         )
     }
   }
@@ -3720,238 +2998,1405 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     }
   }
 
-  // Drop constraint by schema (throws either in parsing, ast generation or semantic checking)
+  // ON/ASSERT/EXISTS
 
-  //   Throws in semantic checking
+  // Error messages for mixing old and new constraint syntax
+  private val errorMessageOnRequire =
+    "Invalid constraint syntax, ON should not be used in combination with REQUIRE. Replace ON with FOR."
+
+  private val errorMessageForAssert =
+    "Invalid constraint syntax, FOR should not be used in combination with ASSERT. Replace ASSERT with REQUIRE."
+
+  private val errorMessageForAssertExists =
+    "Invalid constraint syntax, FOR should not be used in combination with ASSERT EXISTS. Replace ASSERT EXISTS with REQUIRE ... IS NOT NULL."
+
+  private val errorMessageOnAssert =
+    "Invalid constraint syntax, ON and ASSERT should not be used. Replace ON with FOR and ASSERT with REQUIRE."
+
+  private val errorMessageOnAssertExists =
+    "Invalid constraint syntax, ON and ASSERT EXISTS should not be used. Replace ON with FOR and ASSERT EXISTS with REQUIRE ... IS NOT NULL."
+
+  test(
+    "CREATE CONSTRAINT ON (node:Label) REQUIRE (node.prop) IS NODE KEY"
+  ) {
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc | Cypher5 =>
+        _.withSyntaxErrorContaining(s"$errorMessageOnRequire (line")
+      case _ =>
+        // parses ON as constraint name
+        _.withSyntaxError(
+          """Invalid input '(': expected 'IF NOT EXISTS' or 'FOR' (line 1, column 22 (offset: 21))
+            |"CREATE CONSTRAINT ON (node:Label) REQUIRE (node.prop) IS NODE KEY"
+            |                      ^""".stripMargin
+        )
+    }
+  }
+
+  test(
+    "CREATE CONSTRAINT FOR (node:Label) ASSERT (node.prop) IS KEY"
+  ) {
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc | Cypher5 =>
+        _.withSyntaxErrorContaining(s"$errorMessageForAssert (line")
+      case _ => _.withSyntaxError(
+          """Invalid input 'ASSERT': expected 'REQUIRE' (line 1, column 36 (offset: 35))
+            |"CREATE CONSTRAINT FOR (node:Label) ASSERT (node.prop) IS KEY"
+            |                                    ^""".stripMargin
+        )
+    }
+  }
+
+  test(
+    "CREATE CONSTRAINT ON (node:Label) ASSERT (node.prop) IS NODE KEY"
+  ) {
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc | Cypher5 =>
+        _.withSyntaxErrorContaining(s"$errorMessageOnAssert (line")
+      case _ =>
+        // parses ON as constraint name
+        _.withSyntaxError(
+          """Invalid input '(': expected 'IF NOT EXISTS' or 'FOR' (line 1, column 22 (offset: 21))
+            |"CREATE CONSTRAINT ON (node:Label) ASSERT (node.prop) IS NODE KEY"
+            |                      ^""".stripMargin
+        )
+    }
+  }
+
+  test(
+    "CREATE CONSTRAINT my_constraint ON (node:Label) REQUIRE (node.prop1,node.prop2) IS KEY"
+  ) {
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc | Cypher5 =>
+        _.withSyntaxErrorContaining(s"$errorMessageOnRequire (line")
+      case _ => _.withSyntaxError(
+          """Invalid input 'ON': expected 'IF NOT EXISTS' or 'FOR' (line 1, column 33 (offset: 32))
+            |"CREATE CONSTRAINT my_constraint ON (node:Label) REQUIRE (node.prop1,node.prop2) IS KEY"
+            |                                 ^""".stripMargin
+        )
+    }
+  }
+
+  test(
+    "CREATE CONSTRAINT my_constraint FOR (node:Label) ASSERT (node.prop1,node.prop2) IS NODE KEY"
+  ) {
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc | Cypher5 =>
+        _.withSyntaxErrorContaining(s"$errorMessageForAssert (line")
+      case _ => _.withSyntaxError(
+          """Invalid input 'ASSERT': expected 'REQUIRE' (line 1, column 50 (offset: 49))
+            |"CREATE CONSTRAINT my_constraint FOR (node:Label) ASSERT (node.prop1,node.prop2) IS NODE KEY"
+            |                                                  ^""".stripMargin
+        )
+    }
+  }
+
+  test(
+    "CREATE CONSTRAINT my_constraint ON (node:Label) ASSERT (node.prop1,node.prop2) IS KEY"
+  ) {
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc | Cypher5 =>
+        _.withSyntaxErrorContaining(s"$errorMessageOnAssert (line")
+      case _ => _.withSyntaxError(
+          """Invalid input 'ON': expected 'IF NOT EXISTS' or 'FOR' (line 1, column 33 (offset: 32))
+            |"CREATE CONSTRAINT my_constraint ON (node:Label) ASSERT (node.prop1,node.prop2) IS KEY"
+            |                                 ^""".stripMargin
+        )
+    }
+  }
+
+  test("CREATE CONSTRAINT ON ()-[r1:R]-() REQUIRE (r2.prop) IS KEY") {
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc | Cypher5 =>
+        _.withSyntaxErrorContaining(s"$errorMessageOnRequire (line")
+      case _ =>
+        // parses ON as constraint name
+        _.withSyntaxError(
+          """Invalid input '(': expected 'IF NOT EXISTS' or 'FOR' (line 1, column 22 (offset: 21))
+            |"CREATE CONSTRAINT ON ()-[r1:R]-() REQUIRE (r2.prop) IS KEY"
+            |                      ^""".stripMargin
+        )
+    }
+  }
+
+  test("CREATE CONSTRAINT FOR ()-[r1:R]-() ASSERT (r2.prop) IS REL KEY") {
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc | Cypher5 =>
+        _.withSyntaxErrorContaining(s"$errorMessageForAssert (line")
+      case _ => _.withSyntaxError(
+          """Invalid input 'ASSERT': expected 'REQUIRE' (line 1, column 36 (offset: 35))
+            |"CREATE CONSTRAINT FOR ()-[r1:R]-() ASSERT (r2.prop) IS REL KEY"
+            |                                    ^""".stripMargin
+        )
+    }
+  }
+
+  test("CREATE CONSTRAINT ON ()-[r1:R]-() ASSERT (r2.prop) IS RELATIONSHIP KEY") {
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc | Cypher5 =>
+        _.withSyntaxErrorContaining(s"$errorMessageOnAssert (line")
+      case _ =>
+        // parses ON as constraint name
+        _.withSyntaxError(
+          """Invalid input '(': expected 'IF NOT EXISTS' or 'FOR' (line 1, column 22 (offset: 21))
+            |"CREATE CONSTRAINT ON ()-[r1:R]-() ASSERT (r2.prop) IS RELATIONSHIP KEY"
+            |                      ^""".stripMargin
+        )
+    }
+  }
+
+  test(
+    "CREATE CONSTRAINT my_constraint ON ()<-[r1:R]-() REQUIRE (r2.prop) IS REL KEY"
+  ) {
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc | Cypher5 =>
+        _.withSyntaxErrorContaining(s"$errorMessageOnRequire (line")
+      case _ => _.withSyntaxError(
+          """Invalid input 'ON': expected 'IF NOT EXISTS' or 'FOR' (line 1, column 33 (offset: 32))
+            |"CREATE CONSTRAINT my_constraint ON ()<-[r1:R]-() REQUIRE (r2.prop) IS REL KEY"
+            |                                 ^""".stripMargin
+        )
+    }
+  }
+
+  test(
+    "CREATE CONSTRAINT my_constraint FOR ()<-[r1:R]-() ASSERT (r2.prop) IS RELATIONSHIP KEY"
+  ) {
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc | Cypher5 =>
+        _.withSyntaxErrorContaining(s"$errorMessageForAssert (line")
+      case _ => _.withSyntaxError(
+          """Invalid input 'ASSERT': expected 'REQUIRE' (line 1, column 51 (offset: 50))
+            |"CREATE CONSTRAINT my_constraint FOR ()<-[r1:R]-() ASSERT (r2.prop) IS RELATIONSHIP KEY"
+            |                                                   ^""".stripMargin
+        )
+    }
+  }
+
+  test(
+    "CREATE CONSTRAINT my_constraint ON ()<-[r1:R]-() ASSERT (r2.prop) IS KEY"
+  ) {
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc | Cypher5 =>
+        _.withSyntaxErrorContaining(s"$errorMessageOnAssert (line")
+      case _ => _.withSyntaxError(
+          """Invalid input 'ON': expected 'IF NOT EXISTS' or 'FOR' (line 1, column 33 (offset: 32))
+            |"CREATE CONSTRAINT my_constraint ON ()<-[r1:R]-() ASSERT (r2.prop) IS KEY"
+            |                                 ^""".stripMargin
+        )
+    }
+  }
+
+  test(
+    "CREATE CONSTRAINT ON (node:Label) REQUIRE node.prop IS NODE UNIQUE"
+  ) {
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc | Cypher5 =>
+        _.withSyntaxErrorContaining(s"$errorMessageOnRequire (line")
+      case _ =>
+        // parses ON as constraint name
+        _.withSyntaxError(
+          """Invalid input '(': expected 'IF NOT EXISTS' or 'FOR' (line 1, column 22 (offset: 21))
+            |"CREATE CONSTRAINT ON (node:Label) REQUIRE node.prop IS NODE UNIQUE"
+            |                      ^""".stripMargin
+        )
+    }
+  }
+
+  test(
+    "CREATE CONSTRAINT FOR (node:Label) ASSERT node.prop IS NODE UNIQUE"
+  ) {
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc | Cypher5 =>
+        _.withSyntaxErrorContaining(s"$errorMessageForAssert (line")
+      case _ => _.withSyntaxError(
+          """Invalid input 'ASSERT': expected 'REQUIRE' (line 1, column 36 (offset: 35))
+            |"CREATE CONSTRAINT FOR (node:Label) ASSERT node.prop IS NODE UNIQUE"
+            |                                    ^""".stripMargin
+        )
+    }
+  }
+
+  test(
+    "CREATE CONSTRAINT ON (node:Label) ASSERT node.prop IS UNIQUE"
+  ) {
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc | Cypher5 =>
+        _.withSyntaxErrorContaining(s"$errorMessageOnAssert (line")
+      case _ =>
+        // parses ON as constraint name
+        _.withSyntaxError(
+          """Invalid input '(': expected 'IF NOT EXISTS' or 'FOR' (line 1, column 22 (offset: 21))
+            |"CREATE CONSTRAINT ON (node:Label) ASSERT node.prop IS UNIQUE"
+            |                      ^""".stripMargin
+        )
+    }
+  }
+
+  test(
+    "CREATE CONSTRAINT my_constraint ON (node:Label) REQUIRE node.prop IS UNIQUE"
+  ) {
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc | Cypher5 =>
+        _.withSyntaxErrorContaining(s"$errorMessageOnRequire (line")
+      case _ => _.withSyntaxError(
+          """Invalid input 'ON': expected 'IF NOT EXISTS' or 'FOR' (line 1, column 33 (offset: 32))
+            |"CREATE CONSTRAINT my_constraint ON (node:Label) REQUIRE node.prop IS UNIQUE"
+            |                                 ^""".stripMargin
+        )
+    }
+  }
+
+  test(
+    "CREATE CONSTRAINT my_constraint FOR (node:Label) ASSERT node.prop IS NODE UNIQUE"
+  ) {
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc | Cypher5 =>
+        _.withSyntaxErrorContaining(s"$errorMessageForAssert (line")
+      case _ => _.withSyntaxError(
+          """Invalid input 'ASSERT': expected 'REQUIRE' (line 1, column 50 (offset: 49))
+            |"CREATE CONSTRAINT my_constraint FOR (node:Label) ASSERT node.prop IS NODE UNIQUE"
+            |                                                  ^""".stripMargin
+        )
+    }
+  }
+
+  test(
+    "CREATE CONSTRAINT my_constraint ON (node:Label) ASSERT node.prop IS NODE UNIQUE"
+  ) {
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc | Cypher5 =>
+        _.withSyntaxErrorContaining(s"$errorMessageOnAssert (line")
+      case _ => _.withSyntaxError(
+          """Invalid input 'ON': expected 'IF NOT EXISTS' or 'FOR' (line 1, column 33 (offset: 32))
+            |"CREATE CONSTRAINT my_constraint ON (node:Label) ASSERT node.prop IS NODE UNIQUE"
+            |                                 ^""".stripMargin
+        )
+    }
+  }
+
+  test(
+    "CREATE CONSTRAINT ON ()-[r1:R]->() REQUIRE (r2.prop1, r3.prop2) IS RELATIONSHIP UNIQUE"
+  ) {
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc | Cypher5 =>
+        _.withSyntaxErrorContaining(s"$errorMessageOnRequire (line")
+      case _ =>
+        // parses ON as constraint name
+        _.withSyntaxError(
+          """Invalid input '(': expected 'IF NOT EXISTS' or 'FOR' (line 1, column 22 (offset: 21))
+            |"CREATE CONSTRAINT ON ()-[r1:R]->() REQUIRE (r2.prop1, r3.prop2) IS RELATIONSHIP UNIQUE"
+            |                      ^""".stripMargin
+        )
+    }
+  }
+
+  test(
+    "CREATE CONSTRAINT FOR ()-[r1:R]->() ASSERT (r2.prop1, r3.prop2) IS REL UNIQUE"
+  ) {
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc | Cypher5 =>
+        _.withSyntaxErrorContaining(s"$errorMessageForAssert (line")
+      case _ => _.withSyntaxError(
+          """Invalid input 'ASSERT': expected 'REQUIRE' (line 1, column 37 (offset: 36))
+            |"CREATE CONSTRAINT FOR ()-[r1:R]->() ASSERT (r2.prop1, r3.prop2) IS REL UNIQUE"
+            |                                     ^""".stripMargin
+        )
+    }
+  }
+
+  test(
+    "CREATE CONSTRAINT ON ()-[r1:R]->() ASSERT (r2.prop1, r3.prop2) IS UNIQUE"
+  ) {
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc | Cypher5 =>
+        _.withSyntaxErrorContaining(s"$errorMessageOnAssert (line")
+      case _ =>
+        // parses ON as constraint name
+        _.withSyntaxError(
+          """Invalid input '(': expected 'IF NOT EXISTS' or 'FOR' (line 1, column 22 (offset: 21))
+            |"CREATE CONSTRAINT ON ()-[r1:R]->() ASSERT (r2.prop1, r3.prop2) IS UNIQUE"
+            |                      ^""".stripMargin
+        )
+    }
+  }
+
+  test(
+    "CREATE CONSTRAINT my_constraint IF NOT EXISTS ON ()-[r1:R]-() REQUIRE (r2.prop) IS REL UNIQUE"
+  ) {
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc | Cypher5 =>
+        _.withSyntaxErrorContaining(s"$errorMessageOnRequire (line")
+      case _ => _.withSyntaxError(
+          """Invalid input 'ON': expected 'FOR' (line 1, column 47 (offset: 46))
+            |"CREATE CONSTRAINT my_constraint IF NOT EXISTS ON ()-[r1:R]-() REQUIRE (r2.prop) IS REL UNIQUE"
+            |                                               ^""".stripMargin
+        )
+    }
+  }
+
+  test(
+    "CREATE CONSTRAINT my_constraint IF NOT EXISTS FOR ()-[r1:R]-() ASSERT (r2.prop) IS UNIQUE"
+  ) {
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc | Cypher5 =>
+        _.withSyntaxErrorContaining(s"$errorMessageForAssert (line")
+      case _ => _.withSyntaxError(
+          """Invalid input 'ASSERT': expected 'REQUIRE' (line 1, column 64 (offset: 63))
+            |"CREATE CONSTRAINT my_constraint IF NOT EXISTS FOR ()-[r1:R]-() ASSERT (r2.prop) IS UNIQUE"
+            |                                                                ^""".stripMargin
+        )
+    }
+  }
+
+  test(
+    "CREATE CONSTRAINT my_constraint IF NOT EXISTS ON ()-[r1:R]-() ASSERT (r2.prop) IS RELATIONSHIP UNIQUE"
+  ) {
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc | Cypher5 =>
+        _.withSyntaxErrorContaining(s"$errorMessageOnAssert (line")
+      case _ => _.withSyntaxError(
+          """Invalid input 'ON': expected 'FOR' (line 1, column 47 (offset: 46))
+            |"CREATE CONSTRAINT my_constraint IF NOT EXISTS ON ()-[r1:R]-() ASSERT (r2.prop) IS RELATIONSHIP UNIQUE"
+            |                                               ^""".stripMargin
+        )
+    }
+  }
+
+  test("CREATE CONSTRAINT ON (node:Label) REQUIRE node.prop IS NOT NULL") {
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc | Cypher5 =>
+        _.withSyntaxErrorContaining(s"$errorMessageOnRequire (line")
+      case _ =>
+        // parses ON as constraint name
+        _.withSyntaxError(
+          """Invalid input '(': expected 'IF NOT EXISTS' or 'FOR' (line 1, column 22 (offset: 21))
+            |"CREATE CONSTRAINT ON (node:Label) REQUIRE node.prop IS NOT NULL"
+            |                      ^""".stripMargin
+        )
+    }
+  }
+
+  test("CREATE CONSTRAINT FOR (node:Label) ASSERT node.prop IS NOT NULL") {
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc | Cypher5 =>
+        _.withSyntaxErrorContaining(s"$errorMessageForAssert (line")
+      case _ => _.withSyntaxError(
+          """Invalid input 'ASSERT': expected 'REQUIRE' (line 1, column 36 (offset: 35))
+            |"CREATE CONSTRAINT FOR (node:Label) ASSERT node.prop IS NOT NULL"
+            |                                    ^""".stripMargin
+        )
+    }
+  }
+
+  test("CREATE CONSTRAINT ON (node:Label) ASSERT node.prop IS NOT NULL") {
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc | Cypher5 =>
+        _.withSyntaxErrorContaining(s"$errorMessageOnAssert (line")
+      case _ =>
+        // parses ON as constraint name
+        _.withSyntaxError(
+          """Invalid input '(': expected 'IF NOT EXISTS' or 'FOR' (line 1, column 22 (offset: 21))
+            |"CREATE CONSTRAINT ON (node:Label) ASSERT node.prop IS NOT NULL"
+            |                      ^""".stripMargin
+        )
+    }
+  }
+
+  test(
+    "CREATE CONSTRAINT my_constraint ON (node:Label) REQUIRE (node.prop) IS NOT NULL"
+  ) {
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc | Cypher5 =>
+        _.withSyntaxErrorContaining(s"$errorMessageOnRequire (line")
+      case _ => _.withSyntaxError(
+          """Invalid input 'ON': expected 'IF NOT EXISTS' or 'FOR' (line 1, column 33 (offset: 32))
+            |"CREATE CONSTRAINT my_constraint ON (node:Label) REQUIRE (node.prop) IS NOT NULL"
+            |                                 ^""".stripMargin
+        )
+    }
+  }
+
+  test(
+    "CREATE CONSTRAINT my_constraint FOR (node:Label) ASSERT (node.prop) IS NOT NULL"
+  ) {
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc | Cypher5 =>
+        _.withSyntaxErrorContaining(s"$errorMessageForAssert (line")
+      case _ => _.withSyntaxError(
+          """Invalid input 'ASSERT': expected 'REQUIRE' (line 1, column 50 (offset: 49))
+            |"CREATE CONSTRAINT my_constraint FOR (node:Label) ASSERT (node.prop) IS NOT NULL"
+            |                                                  ^""".stripMargin
+        )
+    }
+  }
+
+  test(
+    "CREATE CONSTRAINT my_constraint ON (node:Label) ASSERT (node.prop) IS NOT NULL"
+  ) {
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc | Cypher5 =>
+        _.withSyntaxErrorContaining(s"$errorMessageOnAssert (line")
+      case _ => _.withSyntaxError(
+          """Invalid input 'ON': expected 'IF NOT EXISTS' or 'FOR' (line 1, column 33 (offset: 32))
+            |"CREATE CONSTRAINT my_constraint ON (node:Label) ASSERT (node.prop) IS NOT NULL"
+            |                                 ^""".stripMargin
+        )
+    }
+  }
+
+  test("CREATE CONSTRAINT ON ()-[r:R]-() REQUIRE r.prop IS NOT NULL") {
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc | Cypher5 =>
+        _.withSyntaxErrorContaining(s"$errorMessageOnRequire (line")
+      case _ =>
+        // parses ON as constraint name
+        _.withSyntaxError(
+          """Invalid input '(': expected 'IF NOT EXISTS' or 'FOR' (line 1, column 22 (offset: 21))
+            |"CREATE CONSTRAINT ON ()-[r:R]-() REQUIRE r.prop IS NOT NULL"
+            |                      ^""".stripMargin
+        )
+    }
+  }
+
+  test("CREATE CONSTRAINT FOR ()-[r:R]-() ASSERT r.prop IS NOT NULL") {
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc | Cypher5 =>
+        _.withSyntaxErrorContaining(s"$errorMessageForAssert (line")
+      case _ => _.withSyntaxError(
+          """Invalid input 'ASSERT': expected 'REQUIRE' (line 1, column 35 (offset: 34))
+            |"CREATE CONSTRAINT FOR ()-[r:R]-() ASSERT r.prop IS NOT NULL"
+            |                                   ^""".stripMargin
+        )
+    }
+  }
+
+  test("CREATE CONSTRAINT ON ()-[r:R]-() ASSERT r.prop IS NOT NULL") {
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc | Cypher5 =>
+        _.withSyntaxErrorContaining(s"$errorMessageOnAssert (line")
+      case _ =>
+        // parses ON as constraint name
+        _.withSyntaxError(
+          """Invalid input '(': expected 'IF NOT EXISTS' or 'FOR' (line 1, column 22 (offset: 21))
+            |"CREATE CONSTRAINT ON ()-[r:R]-() ASSERT r.prop IS NOT NULL"
+            |                      ^""".stripMargin
+        )
+    }
+  }
+
+  test(
+    "CREATE CONSTRAINT `$my_constraint` ON ()-[r:R]-() REQUIRE r.prop IS NOT NULL"
+  ) {
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc | Cypher5 =>
+        _.withSyntaxErrorContaining(s"$errorMessageOnRequire (line")
+      case _ => _.withSyntaxError(
+          """Invalid input 'ON': expected 'IF NOT EXISTS' or 'FOR' (line 1, column 36 (offset: 35))
+            |"CREATE CONSTRAINT `$my_constraint` ON ()-[r:R]-() REQUIRE r.prop IS NOT NULL"
+            |                                    ^""".stripMargin
+        )
+    }
+  }
+
+  test(
+    "CREATE CONSTRAINT `$my_constraint` FOR ()-[r:R]-() ASSERT r.prop IS NOT NULL"
+  ) {
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc | Cypher5 =>
+        _.withSyntaxErrorContaining(s"$errorMessageForAssert (line")
+      case _ => _.withSyntaxError(
+          """Invalid input 'ASSERT': expected 'REQUIRE' (line 1, column 52 (offset: 51))
+            |"CREATE CONSTRAINT `$my_constraint` FOR ()-[r:R]-() ASSERT r.prop IS NOT NULL"
+            |                                                    ^""".stripMargin
+        )
+    }
+  }
+
+  test(
+    "CREATE CONSTRAINT `$my_constraint` ON ()-[r:R]-() ASSERT r.prop IS NOT NULL"
+  ) {
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc | Cypher5 =>
+        _.withSyntaxErrorContaining(s"$errorMessageOnAssert (line")
+      case _ => _.withSyntaxError(
+          """Invalid input 'ON': expected 'IF NOT EXISTS' or 'FOR' (line 1, column 36 (offset: 35))
+            |"CREATE CONSTRAINT `$my_constraint` ON ()-[r:R]-() ASSERT r.prop IS NOT NULL"
+            |                                    ^""".stripMargin
+        )
+    }
+  }
+
+  test(
+    "CREATE CONSTRAINT ON (node:Label) REQUIRE node.prop :: BOOLEAN"
+  ) {
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc | Cypher5 =>
+        _.withSyntaxErrorContaining(s"$errorMessageOnRequire (line")
+      case _ =>
+        // parses ON as constraint name
+        _.withSyntaxError(
+          """Invalid input '(': expected 'IF NOT EXISTS' or 'FOR' (line 1, column 22 (offset: 21))
+            |"CREATE CONSTRAINT ON (node:Label) REQUIRE node.prop :: BOOLEAN"
+            |                      ^""".stripMargin
+        )
+    }
+  }
+
+  test(
+    "CREATE CONSTRAINT FOR (node:Label) ASSERT node.prop IS :: BOOLEAN"
+  ) {
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc | Cypher5 =>
+        _.withSyntaxErrorContaining(s"$errorMessageForAssert (line")
+      case _ => _.withSyntaxError(
+          """Invalid input 'ASSERT': expected 'REQUIRE' (line 1, column 36 (offset: 35))
+            |"CREATE CONSTRAINT FOR (node:Label) ASSERT node.prop IS :: BOOLEAN"
+            |                                    ^""".stripMargin
+        )
+    }
+  }
+
+  test(
+    "CREATE CONSTRAINT ON (node:Label) ASSERT node.prop IS TYPED BOOLEAN"
+  ) {
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc | Cypher5 =>
+        _.withSyntaxErrorContaining(s"$errorMessageOnAssert (line")
+      case _ =>
+        // parses ON as constraint name
+        _.withSyntaxError(
+          """Invalid input '(': expected 'IF NOT EXISTS' or 'FOR' (line 1, column 22 (offset: 21))
+            |"CREATE CONSTRAINT ON (node:Label) ASSERT node.prop IS TYPED BOOLEAN"
+            |                      ^""".stripMargin
+        )
+    }
+  }
+
+  test(
+    "CREATE CONSTRAINT my_constraint ON (node:Label) REQUIRE (node.prop) IS :: STRING"
+  ) {
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc | Cypher5 =>
+        _.withSyntaxErrorContaining(s"$errorMessageOnRequire (line")
+      case _ => _.withSyntaxError(
+          """Invalid input 'ON': expected 'IF NOT EXISTS' or 'FOR' (line 1, column 33 (offset: 32))
+            |"CREATE CONSTRAINT my_constraint ON (node:Label) REQUIRE (node.prop) IS :: STRING"
+            |                                 ^""".stripMargin
+        )
+    }
+  }
+
+  test(
+    "CREATE CONSTRAINT my_constraint FOR (node:Label) ASSERT (node.prop) IS TYPED STRING"
+  ) {
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc | Cypher5 =>
+        _.withSyntaxErrorContaining(s"$errorMessageForAssert (line")
+      case _ => _.withSyntaxError(
+          """Invalid input 'ASSERT': expected 'REQUIRE' (line 1, column 50 (offset: 49))
+            |"CREATE CONSTRAINT my_constraint FOR (node:Label) ASSERT (node.prop) IS TYPED STRING"
+            |                                                  ^""".stripMargin
+        )
+    }
+  }
+
+  test(
+    "CREATE CONSTRAINT my_constraint ON (node:Label) ASSERT (node.prop) :: STRING"
+  ) {
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc | Cypher5 =>
+        _.withSyntaxErrorContaining(s"$errorMessageOnAssert (line")
+      case _ => _.withSyntaxError(
+          """Invalid input 'ON': expected 'IF NOT EXISTS' or 'FOR' (line 1, column 33 (offset: 32))
+            |"CREATE CONSTRAINT my_constraint ON (node:Label) ASSERT (node.prop) :: STRING"
+            |                                 ^""".stripMargin
+        )
+    }
+  }
+
+  test("CREATE CONSTRAINT ON ()-[r:R]->() REQUIRE r.prop IS TYPED BOOLEAN") {
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc | Cypher5 =>
+        _.withSyntaxErrorContaining(s"$errorMessageOnRequire (line")
+      case _ =>
+        // parses ON as constraint name
+        _.withSyntaxError(
+          """Invalid input '(': expected 'IF NOT EXISTS' or 'FOR' (line 1, column 22 (offset: 21))
+            |"CREATE CONSTRAINT ON ()-[r:R]->() REQUIRE r.prop IS TYPED BOOLEAN"
+            |                      ^""".stripMargin
+        )
+    }
+  }
+
+  test("CREATE CONSTRAINT FOR ()-[r:R]->() ASSERT r.prop :: BOOLEAN") {
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc | Cypher5 =>
+        _.withSyntaxErrorContaining(s"$errorMessageForAssert (line")
+      case _ => _.withSyntaxError(
+          """Invalid input 'ASSERT': expected 'REQUIRE' (line 1, column 36 (offset: 35))
+            |"CREATE CONSTRAINT FOR ()-[r:R]->() ASSERT r.prop :: BOOLEAN"
+            |                                    ^""".stripMargin
+        )
+    }
+  }
+
+  test("CREATE CONSTRAINT ON ()-[r:R]->() ASSERT r.prop IS :: BOOLEAN") {
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc | Cypher5 =>
+        _.withSyntaxErrorContaining(s"$errorMessageOnAssert (line")
+      case _ =>
+        // parses ON as constraint name
+        _.withSyntaxError(
+          """Invalid input '(': expected 'IF NOT EXISTS' or 'FOR' (line 1, column 22 (offset: 21))
+            |"CREATE CONSTRAINT ON ()-[r:R]->() ASSERT r.prop IS :: BOOLEAN"
+            |                      ^""".stripMargin
+        )
+    }
+  }
+
+  test(
+    "CREATE CONSTRAINT my_constraint ON ()-[r:R]-() REQUIRE (r.prop) :: STRING"
+  ) {
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc | Cypher5 =>
+        _.withSyntaxErrorContaining(s"$errorMessageOnRequire (line")
+      case _ => _.withSyntaxError(
+          """Invalid input 'ON': expected 'IF NOT EXISTS' or 'FOR' (line 1, column 33 (offset: 32))
+            |"CREATE CONSTRAINT my_constraint ON ()-[r:R]-() REQUIRE (r.prop) :: STRING"
+            |                                 ^""".stripMargin
+        )
+    }
+  }
+
+  test(
+    "CREATE CONSTRAINT my_constraint FOR ()-[r:R]-() ASSERT (r.prop) IS TYPED STRING"
+  ) {
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc | Cypher5 =>
+        _.withSyntaxErrorContaining(s"$errorMessageForAssert (line")
+      case _ => _.withSyntaxError(
+          """Invalid input 'ASSERT': expected 'REQUIRE' (line 1, column 49 (offset: 48))
+            |"CREATE CONSTRAINT my_constraint FOR ()-[r:R]-() ASSERT (r.prop) IS TYPED STRING"
+            |                                                 ^""".stripMargin
+        )
+    }
+  }
+
+  test(
+    "CREATE CONSTRAINT my_constraint ON ()-[r:R]-() ASSERT (r.prop) IS :: STRING"
+  ) {
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc | Cypher5 =>
+        _.withSyntaxErrorContaining(s"$errorMessageOnAssert (line")
+      case _ => _.withSyntaxError(
+          """Invalid input 'ON': expected 'IF NOT EXISTS' or 'FOR' (line 1, column 33 (offset: 32))
+            |"CREATE CONSTRAINT my_constraint ON ()-[r:R]-() ASSERT (r.prop) IS :: STRING"
+            |                                 ^""".stripMargin
+        )
+    }
+  }
+
+  test("CREATE CONSTRAINT FOR (node:Label) ASSERT EXISTS (node.prop)") {
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc | Cypher5 =>
+        _.withSyntaxErrorContaining(s"$errorMessageForAssertExists (line")
+      case _ => _.withSyntaxError(
+          """Invalid input 'ASSERT': expected 'REQUIRE' (line 1, column 36 (offset: 35))
+            |"CREATE CONSTRAINT FOR (node:Label) ASSERT EXISTS (node.prop)"
+            |                                    ^""".stripMargin
+        )
+    }
+  }
+
+  test("CREATE CONSTRAINT my_constraint FOR (node:Label) ASSERT EXISTS (node.prop)") {
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc | Cypher5 =>
+        _.withSyntaxErrorContaining(s"$errorMessageForAssertExists (line")
+      case _ => _.withSyntaxError(
+          """Invalid input 'ASSERT': expected 'REQUIRE' (line 1, column 50 (offset: 49))
+            |"CREATE CONSTRAINT my_constraint FOR (node:Label) ASSERT EXISTS (node.prop)"
+            |                                                  ^""".stripMargin
+        )
+    }
+  }
+
+  test("CREATE CONSTRAINT FOR ()-[r:R]-() ASSERT EXISTS (r.prop)") {
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc | Cypher5 =>
+        _.withSyntaxErrorContaining(s"$errorMessageForAssertExists (line")
+      case _ => _.withSyntaxError(
+          """Invalid input 'ASSERT': expected 'REQUIRE' (line 1, column 35 (offset: 34))
+            |"CREATE CONSTRAINT FOR ()-[r:R]-() ASSERT EXISTS (r.prop)"
+            |                                   ^""".stripMargin
+        )
+    }
+  }
+
+  test("CREATE CONSTRAINT `$my_constraint` FOR ()-[r:R]-() ASSERT EXISTS (r.prop)") {
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc | Cypher5 =>
+        _.withSyntaxErrorContaining(s"$errorMessageForAssertExists (line")
+      case _ => _.withSyntaxError(
+          """Invalid input 'ASSERT': expected 'REQUIRE' (line 1, column 52 (offset: 51))
+            |"CREATE CONSTRAINT `$my_constraint` FOR ()-[r:R]-() ASSERT EXISTS (r.prop)"
+            |                                                    ^""".stripMargin
+        )
+    }
+  }
+
+  test("CREATE CONSTRAINT ON (node:Label) ASSERT EXISTS (node.prop)") {
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc | Cypher5 =>
+        _.withSyntaxErrorContaining(s"$errorMessageOnAssertExists (line")
+      case _ =>
+        // parses ON as constraint name
+        _.withSyntaxError(
+          """Invalid input '(': expected 'IF NOT EXISTS' or 'FOR' (line 1, column 22 (offset: 21))
+            |"CREATE CONSTRAINT ON (node:Label) ASSERT EXISTS (node.prop)"
+            |                      ^""".stripMargin
+        )
+    }
+  }
+
+  test("CREATE CONSTRAINT ON (node1:Label) ASSERT EXISTS node2.prop") {
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc | Cypher5 =>
+        _.withSyntaxErrorContaining(s"$errorMessageOnAssertExists (line")
+      case _ =>
+        // parses ON as constraint name
+        _.withSyntaxError(
+          """Invalid input '(': expected 'IF NOT EXISTS' or 'FOR' (line 1, column 22 (offset: 21))
+            |"CREATE CONSTRAINT ON (node1:Label) ASSERT EXISTS node2.prop"
+            |                      ^""".stripMargin
+        )
+    }
+  }
+
+  test("CREATE OR REPLACE CONSTRAINT ON (node:Label) ASSERT EXISTS (node.prop)") {
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc | Cypher5 =>
+        _.withSyntaxErrorContaining(s"$errorMessageOnAssertExists (line")
+      case _ =>
+        // parses ON as constraint name
+        _.withSyntaxError(
+          """Invalid input '(': expected 'IF NOT EXISTS' or 'FOR' (line 1, column 33 (offset: 32))
+            |"CREATE OR REPLACE CONSTRAINT ON (node:Label) ASSERT EXISTS (node.prop)"
+            |                                 ^""".stripMargin
+        )
+    }
+  }
+
+  test("CREATE OR REPLACE CONSTRAINT IF NOT EXISTS ON (node:Label) ASSERT EXISTS (node.prop)") {
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc | Cypher5 =>
+        _.withSyntaxErrorContaining(s"$errorMessageOnAssertExists (line")
+      case _ => _.withSyntaxError(
+          """Invalid input 'ON': expected 'FOR' (line 1, column 44 (offset: 43))
+            |"CREATE OR REPLACE CONSTRAINT IF NOT EXISTS ON (node:Label) ASSERT EXISTS (node.prop)"
+            |                                            ^""".stripMargin
+        )
+    }
+  }
+
+  test("CREATE CONSTRAINT IF NOT EXISTS ON (node:Label) ASSERT EXISTS (node.prop)") {
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc | Cypher5 =>
+        _.withSyntaxErrorContaining(s"$errorMessageOnAssertExists (line")
+      case _ => _.withSyntaxError(
+          """Invalid input 'ON': expected 'FOR' (line 1, column 33 (offset: 32))
+            |"CREATE CONSTRAINT IF NOT EXISTS ON (node:Label) ASSERT EXISTS (node.prop)"
+            |                                 ^""".stripMargin
+        )
+    }
+  }
+
+  test("CREATE CONSTRAINT ON (node:Label) ASSERT EXISTS (node.prop) OPTIONS {}") {
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc | Cypher5 =>
+        _.withSyntaxErrorContaining(s"$errorMessageOnAssertExists (line")
+      case _ =>
+        // parses ON as constraint name
+        _.withSyntaxError(
+          """Invalid input '(': expected 'IF NOT EXISTS' or 'FOR' (line 1, column 22 (offset: 21))
+            |"CREATE CONSTRAINT ON (node:Label) ASSERT EXISTS (node.prop) OPTIONS {}"
+            |                      ^""".stripMargin
+        )
+    }
+  }
+
+  test("CREATE CONSTRAINT ON (node1:Label) ASSERT EXISTS (node2.prop1, node3.prop2)") {
+    failsParsing[ast.Statements]
+      .in {
+        case Cypher5JavaCc | Cypher5 =>
+          _.withSyntaxErrorContaining(ASTExceptionFactory.onlySinglePropertyAllowed(ConstraintType.NODE_EXISTS))
+        case _ =>
+          // parses ON as constraint name
+          _.withSyntaxError(
+            """Invalid input '(': expected 'IF NOT EXISTS' or 'FOR' (line 1, column 22 (offset: 21))
+              |"CREATE CONSTRAINT ON (node1:Label) ASSERT EXISTS (node2.prop1, node3.prop2)"
+              |                      ^""".stripMargin
+          )
+      }
+  }
+
+  test("CREATE CONSTRAINT ON ()-[r:R]-() ASSERT EXISTS (r.prop)") {
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc | Cypher5 =>
+        _.withSyntaxErrorContaining(s"$errorMessageOnAssertExists (line")
+      case _ =>
+        // parses ON as constraint name
+        _.withSyntaxError(
+          """Invalid input '(': expected 'IF NOT EXISTS' or 'FOR' (line 1, column 22 (offset: 21))
+            |"CREATE CONSTRAINT ON ()-[r:R]-() ASSERT EXISTS (r.prop)"
+            |                      ^""".stripMargin
+        )
+    }
+  }
+
+  test("CREATE CONSTRAINT ON ()-[r:R]->() ASSERT EXISTS (r.prop)") {
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc | Cypher5 =>
+        _.withSyntaxErrorContaining(s"$errorMessageOnAssertExists (line")
+      case _ =>
+        // parses ON as constraint name
+        _.withSyntaxError(
+          """Invalid input '(': expected 'IF NOT EXISTS' or 'FOR' (line 1, column 22 (offset: 21))
+            |"CREATE CONSTRAINT ON ()-[r:R]->() ASSERT EXISTS (r.prop)"
+            |                      ^""".stripMargin
+        )
+    }
+  }
+
+  test("CREATE CONSTRAINT ON ()<-[r:R]-() ASSERT EXISTS (r.prop)") {
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc | Cypher5 =>
+        _.withSyntaxErrorContaining(s"$errorMessageOnAssertExists (line")
+      case _ =>
+        // parses ON as constraint name
+        _.withSyntaxError(
+          """Invalid input '(': expected 'IF NOT EXISTS' or 'FOR' (line 1, column 22 (offset: 21))
+            |"CREATE CONSTRAINT ON ()<-[r:R]-() ASSERT EXISTS (r.prop)"
+            |                      ^""".stripMargin
+        )
+    }
+  }
+
+  test("CREATE CONSTRAINT ON ()-[r1:R]-() ASSERT EXISTS r2.prop") {
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc | Cypher5 =>
+        _.withSyntaxErrorContaining(s"$errorMessageOnAssertExists (line")
+      case _ =>
+        // parses ON as constraint name
+        _.withSyntaxError(
+          """Invalid input '(': expected 'IF NOT EXISTS' or 'FOR' (line 1, column 22 (offset: 21))
+            |"CREATE CONSTRAINT ON ()-[r1:R]-() ASSERT EXISTS r2.prop"
+            |                      ^""".stripMargin
+        )
+    }
+  }
+
+  test("CREATE OR REPLACE CONSTRAINT ON ()<-[r:R]-() ASSERT EXISTS (r.prop)") {
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc | Cypher5 =>
+        _.withSyntaxErrorContaining(s"$errorMessageOnAssertExists (line")
+      case _ =>
+        // parses ON as constraint name
+        _.withSyntaxError(
+          """Invalid input '(': expected 'IF NOT EXISTS' or 'FOR' (line 1, column 33 (offset: 32))
+            |"CREATE OR REPLACE CONSTRAINT ON ()<-[r:R]-() ASSERT EXISTS (r.prop)"
+            |                                 ^""".stripMargin
+        )
+    }
+  }
+
+  test("CREATE OR REPLACE CONSTRAINT IF NOT EXISTS ON ()-[r:R]-() ASSERT EXISTS (r.prop)") {
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc | Cypher5 =>
+        _.withSyntaxErrorContaining(s"$errorMessageOnAssertExists (line")
+      case _ => _.withSyntaxError(
+          """Invalid input 'ON': expected 'FOR' (line 1, column 44 (offset: 43))
+            |"CREATE OR REPLACE CONSTRAINT IF NOT EXISTS ON ()-[r:R]-() ASSERT EXISTS (r.prop)"
+            |                                            ^""".stripMargin
+        )
+    }
+  }
+
+  test("CREATE CONSTRAINT IF NOT EXISTS ON ()-[r:R]->() ASSERT EXISTS (r.prop)") {
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc | Cypher5 =>
+        _.withSyntaxErrorContaining(s"$errorMessageOnAssertExists (line")
+      case _ => _.withSyntaxError(
+          """Invalid input 'ON': expected 'FOR' (line 1, column 33 (offset: 32))
+            |"CREATE CONSTRAINT IF NOT EXISTS ON ()-[r:R]->() ASSERT EXISTS (r.prop)"
+            |                                 ^""".stripMargin
+        )
+    }
+  }
+
+  test("CREATE CONSTRAINT ON ()-[r1:REL]-() ASSERT EXISTS (r2.prop1, r3.prop2)") {
+    failsParsing[ast.Statements]
+      .in {
+        case Cypher5JavaCc | Cypher5 =>
+          _.withSyntaxErrorContaining(ASTExceptionFactory.onlySinglePropertyAllowed(ConstraintType.REL_EXISTS))
+        case _ =>
+          // parses ON as constraint name
+          _.withSyntaxError(
+            """Invalid input '(': expected 'IF NOT EXISTS' or 'FOR' (line 1, column 22 (offset: 21))
+              |"CREATE CONSTRAINT ON ()-[r1:REL]-() ASSERT EXISTS (r2.prop1, r3.prop2)"
+              |                      ^""".stripMargin
+          )
+      }
+  }
+
+  test("CREATE CONSTRAINT my_constraint ON (node:Label) ASSERT EXISTS (node.prop)") {
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc | Cypher5 =>
+        _.withSyntaxErrorContaining(s"$errorMessageOnAssertExists (line")
+      case _ => _.withSyntaxError(
+          """Invalid input 'ON': expected 'IF NOT EXISTS' or 'FOR' (line 1, column 33 (offset: 32))
+            |"CREATE CONSTRAINT my_constraint ON (node:Label) ASSERT EXISTS (node.prop)"
+            |                                 ^""".stripMargin
+        )
+    }
+  }
+
+  test("CREATE OR REPLACE CONSTRAINT my_constraint ON (node:Label) ASSERT EXISTS (node.prop)") {
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc | Cypher5 =>
+        _.withSyntaxErrorContaining(s"$errorMessageOnAssertExists (line")
+      case _ => _.withSyntaxError(
+          """Invalid input 'ON': expected 'IF NOT EXISTS' or 'FOR' (line 1, column 44 (offset: 43))
+            |"CREATE OR REPLACE CONSTRAINT my_constraint ON (node:Label) ASSERT EXISTS (node.prop)"
+            |                                            ^""".stripMargin
+        )
+    }
+  }
+
+  test("CREATE OR REPLACE CONSTRAINT my_constraint IF NOT EXISTS ON (node:Label) ASSERT EXISTS (node.prop)") {
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc | Cypher5 =>
+        _.withSyntaxErrorContaining(s"$errorMessageOnAssertExists (line")
+      case _ => _.withSyntaxError(
+          """Invalid input 'ON': expected 'FOR' (line 1, column 58 (offset: 57))
+            |"CREATE OR REPLACE CONSTRAINT my_constraint IF NOT EXISTS ON (node:Label) ASSERT EXISTS (node.prop)"
+            |                                                          ^""".stripMargin
+        )
+    }
+  }
+
+  test("CREATE CONSTRAINT my_constraint IF NOT EXISTS ON (node:Label) ASSERT EXISTS (node.prop)") {
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc | Cypher5 =>
+        _.withSyntaxErrorContaining(s"$errorMessageOnAssertExists (line")
+      case _ => _.withSyntaxError(
+          """Invalid input 'ON': expected 'FOR' (line 1, column 47 (offset: 46))
+            |"CREATE CONSTRAINT my_constraint IF NOT EXISTS ON (node:Label) ASSERT EXISTS (node.prop)"
+            |                                               ^""".stripMargin
+        )
+    }
+  }
+
+  test("CREATE CONSTRAINT `$my_constraint` ON ()-[r:R]-() ASSERT EXISTS (r.prop)") {
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc | Cypher5 =>
+        _.withSyntaxErrorContaining(s"$errorMessageOnAssertExists (line")
+      case _ => _.withSyntaxError(
+          """Invalid input 'ON': expected 'IF NOT EXISTS' or 'FOR' (line 1, column 36 (offset: 35))
+            |"CREATE CONSTRAINT `$my_constraint` ON ()-[r:R]-() ASSERT EXISTS (r.prop)"
+            |                                    ^""".stripMargin
+        )
+    }
+  }
+
+  test("CREATE CONSTRAINT my_constraint ON ()-[r:R]-() ASSERT EXISTS (r.prop) OPTIONS {}") {
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc | Cypher5 =>
+        _.withSyntaxErrorContaining(s"$errorMessageOnAssertExists (line")
+      case _ => _.withSyntaxError(
+          """Invalid input 'ON': expected 'IF NOT EXISTS' or 'FOR' (line 1, column 33 (offset: 32))
+            |"CREATE CONSTRAINT my_constraint ON ()-[r:R]-() ASSERT EXISTS (r.prop) OPTIONS {}"
+            |                                 ^""".stripMargin
+        )
+    }
+  }
+
+  test("CREATE OR REPLACE CONSTRAINT `$my_constraint` ON ()-[r:R]-() ASSERT EXISTS (r.prop)") {
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc | Cypher5 =>
+        _.withSyntaxErrorContaining(s"$errorMessageOnAssertExists (line")
+      case _ => _.withSyntaxError(
+          """Invalid input 'ON': expected 'IF NOT EXISTS' or 'FOR' (line 1, column 47 (offset: 46))
+            |"CREATE OR REPLACE CONSTRAINT `$my_constraint` ON ()-[r:R]-() ASSERT EXISTS (r.prop)"
+            |                                               ^""".stripMargin
+        )
+    }
+  }
+
+  test("CREATE OR REPLACE CONSTRAINT `$my_constraint` IF NOT EXISTS ON ()-[r:R]->() ASSERT EXISTS (r.prop)") {
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc | Cypher5 =>
+        _.withSyntaxErrorContaining(s"$errorMessageOnAssertExists (line")
+      case _ => _.withSyntaxError(
+          """Invalid input 'ON': expected 'FOR' (line 1, column 61 (offset: 60))
+            |"CREATE OR REPLACE CONSTRAINT `$my_constraint` IF NOT EXISTS ON ()-[r:R]->() ASSERT EXISTS (r.prop)"
+            |                                                             ^""".stripMargin
+        )
+    }
+  }
+
+  test("CREATE CONSTRAINT `$my_constraint` IF NOT EXISTS ON ()<-[r:R]-() ASSERT EXISTS (r.prop)") {
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc | Cypher5 =>
+        _.withSyntaxErrorContaining(s"$errorMessageOnAssertExists (line")
+      case _ => _.withSyntaxError(
+          """Invalid input 'ON': expected 'FOR' (line 1, column 50 (offset: 49))
+            |"CREATE CONSTRAINT `$my_constraint` IF NOT EXISTS ON ()<-[r:R]-() ASSERT EXISTS (r.prop)"
+            |                                                  ^""".stripMargin
+        )
+    }
+  }
+
+  test(
+    "CREATE CONSTRAINT ON (node:Label) ASSERT EXISTS (node.prop1, node.prop2)"
+  ) {
+    failsParsing[ast.Statements]
+      .in {
+        case Cypher5JavaCc | Cypher5 =>
+          _.withSyntaxErrorContaining("Constraint type 'EXISTS' does not allow multiple properties (line")
+        case _ =>
+          // parses ON as constraint name
+          _.withSyntaxError(
+            """Invalid input '(': expected 'IF NOT EXISTS' or 'FOR' (line 1, column 22 (offset: 21))
+              |"CREATE CONSTRAINT ON (node:Label) ASSERT EXISTS (node.prop1, node.prop2)"
+              |                      ^""".stripMargin
+          )
+      }
+  }
+
+  test(
+    "CREATE CONSTRAINT ON ()-[r:R]-() ASSERT EXISTS (r.prop1, r.prop2)"
+  ) {
+    failsParsing[ast.Statements]
+      .in {
+        case Cypher5JavaCc | Cypher5 =>
+          _.withSyntaxErrorContaining("Constraint type 'EXISTS' does not allow multiple properties (line")
+        case _ =>
+          // parses ON as constraint name
+          _.withSyntaxError(
+            """Invalid input '(': expected 'IF NOT EXISTS' or 'FOR' (line 1, column 22 (offset: 21))
+              |"CREATE CONSTRAINT ON ()-[r:R]-() ASSERT EXISTS (r.prop1, r.prop2)"
+              |                      ^""".stripMargin
+          )
+      }
+  }
+
+  test(
+    "CREATE CONSTRAINT ON ()-[r:R]-() ASSERT EXISTS (r.prop1, r.prop2) IS NOT NULL"
+  ) {
+    failsParsing[ast.Statements]
+      .in {
+        case Cypher5JavaCc | Cypher5 =>
+          _.withSyntaxErrorContaining("Constraint type 'EXISTS' does not allow multiple properties (line")
+        case _ =>
+          // parses ON as constraint name
+          _.withSyntaxError(
+            """Invalid input '(': expected 'IF NOT EXISTS' or 'FOR' (line 1, column 22 (offset: 21))
+              |"CREATE CONSTRAINT ON ()-[r:R]-() ASSERT EXISTS (r.prop1, r.prop2) IS NOT NULL"
+              |                      ^""".stripMargin
+          )
+      }
+  }
+
+  test("CREATE CONSTRAINT $my_constraint ON ()-[r:R]-() ASSERT EXISTS (r.prop)") {
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc | Cypher5 =>
+        _.withSyntaxErrorContaining(s"$errorMessageOnAssertExists (line")
+      case _ => _.withSyntaxError(
+          """Invalid input 'ON': expected 'IF NOT EXISTS' or 'FOR' (line 1, column 34 (offset: 33))
+            |"CREATE CONSTRAINT $my_constraint ON ()-[r:R]-() ASSERT EXISTS (r.prop)"
+            |                                  ^""".stripMargin
+        )
+    }
+  }
+
+  test("CREATE CONSTRAINT my_constraint ON (node:Label) ASSERT EXISTS (node.prop) IS NOT NULL") {
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc | Cypher5 =>
+        _.withSyntaxErrorContaining(s"$errorMessageOnAssertExists (line")
+      case _ => _.withSyntaxError(
+          """Invalid input 'ON': expected 'IF NOT EXISTS' or 'FOR' (line 1, column 33 (offset: 32))
+            |"CREATE CONSTRAINT my_constraint ON (node:Label) ASSERT EXISTS (node.prop) IS NOT NULL"
+            |                                 ^""".stripMargin
+        )
+    }
+  }
+
+  test("CREATE CONSTRAINT my_constraint ON ()-[r:R]-() ASSERT EXISTS (r.prop) IS NOT NULL") {
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc | Cypher5 =>
+        _.withSyntaxErrorContaining(s"$errorMessageOnAssertExists (line")
+      case _ => _.withSyntaxError(
+          """Invalid input 'ON': expected 'IF NOT EXISTS' or 'FOR' (line 1, column 33 (offset: 32))
+            |"CREATE CONSTRAINT my_constraint ON ()-[r:R]-() ASSERT EXISTS (r.prop) IS NOT NULL"
+            |                                 ^""".stripMargin
+        )
+    }
+  }
+
+  test("CREATE CONSTRAINT my_constraint ON ()-[r:R]-() ASSERT r.prop IS NULL") {
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc => _.withMessageStart(
+          """Invalid input 'NULL': expected
+            |  "::"
+            |  "KEY"
+            |  "NODE"
+            |  "NOT"
+            |  "REL"
+            |  "RELATIONSHIP"
+            |  "TYPED"
+            |  "UNIQUE" (line 1, column 65 (offset: 64))""".stripMargin
+        )
+      case Cypher5 => _.withSyntaxError(
+          """Invalid input 'NULL': expected '::', 'KEY', 'NODE', 'NOT NULL', 'REL', 'RELATIONSHIP', 'TYPED' or 'UNIQUE' (line 1, column 65 (offset: 64))
+            |"CREATE CONSTRAINT my_constraint ON ()-[r:R]-() ASSERT r.prop IS NULL"
+            |                                                                 ^""".stripMargin
+        )
+      case _ => _.withSyntaxError(
+          """Invalid input 'ON': expected 'IF NOT EXISTS' or 'FOR' (line 1, column 33 (offset: 32))
+            |"CREATE CONSTRAINT my_constraint ON ()-[r:R]-() ASSERT r.prop IS NULL"
+            |                                 ^""".stripMargin
+        )
+    }
+  }
+
+  test("CREATE CONSTRAINT my_constraint ON (node:Label) ASSERT node.prop IS NULL") {
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc => _.withMessageStart(
+          """Invalid input 'NULL': expected
+            |  "::"
+            |  "KEY"
+            |  "NODE"
+            |  "NOT"
+            |  "REL"
+            |  "RELATIONSHIP"
+            |  "TYPED"
+            |  "UNIQUE" (line 1, column 69 (offset: 68))""".stripMargin
+        )
+      case Cypher5 => _.withSyntaxError(
+          """Invalid input 'NULL': expected '::', 'KEY', 'NODE', 'NOT NULL', 'REL', 'RELATIONSHIP', 'TYPED' or 'UNIQUE' (line 1, column 69 (offset: 68))
+            |"CREATE CONSTRAINT my_constraint ON (node:Label) ASSERT node.prop IS NULL"
+            |                                                                     ^""".stripMargin
+        )
+      case _ => _.withSyntaxError(
+          """Invalid input 'ON': expected 'IF NOT EXISTS' or 'FOR' (line 1, column 33 (offset: 32))
+            |"CREATE CONSTRAINT my_constraint ON (node:Label) ASSERT node.prop IS NULL"
+            |                                 ^""".stripMargin
+        )
+    }
+  }
+
+  // Drop constraint by schema (throws in parsing)
 
   test("DROP CONSTRAINT ON (node:Label) ASSERT (node.prop) IS NODE KEY") {
-    parsesTo[ast.Statements](
-      ast.DropNodeKeyConstraint(varFor("node"), labelName("Label"), Seq(prop("node", "prop")))(pos)
-    )
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc | Cypher5 =>
+        _.withSyntaxErrorContaining(ASTExceptionFactory.invalidDropConstraint(ConstraintType.NODE_KEY, false))
+      case _ => _.withSyntaxErrorContaining("Invalid input '(': expected 'IF EXISTS' or <EOF> (line")
+    }
   }
 
   test("DROP CONSTRAINT ON (node1:Label) ASSERT node2.prop IS NODE KEY") {
-    assertAst(
-      ast.DropNodeKeyConstraint(
-        varFor("node1", (1, 21, 20)),
-        labelName("Label", (1, 27, 26)),
-        Seq(Property(varFor("node2", (1, 41, 40)), PropertyKeyName("prop")((1, 47, 46)))((1, 42, 40))),
-        None
-      )(defaultPos)
-    )
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc | Cypher5 =>
+        _.withSyntaxErrorContaining(ASTExceptionFactory.invalidDropConstraint(ConstraintType.NODE_KEY, false))
+      case _ => _.withSyntaxErrorContaining("Invalid input '(': expected 'IF EXISTS' or <EOF> (line")
+    }
   }
 
   test("DROP CONSTRAINT ON (node:Label) ASSERT (node.prop1,node.prop2) IS NODE KEY") {
-    parsesTo[ast.Statements](ast.DropNodeKeyConstraint(
-      varFor("node"),
-      labelName("Label"),
-      Seq(prop("node", "prop1"), prop("node", "prop2"))
-    )(pos))
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc | Cypher5 =>
+        _.withSyntaxErrorContaining(ASTExceptionFactory.invalidDropConstraint(ConstraintType.NODE_KEY, false))
+      case _ => _.withSyntaxErrorContaining("Invalid input '(': expected 'IF EXISTS' or <EOF> (line")
+    }
   }
 
   test("DROP CONSTRAINT ON (node:Label) ASSERT node.prop IS UNIQUE") {
-    parsesTo[ast.Statements](ast.DropPropertyUniquenessConstraint(
-      varFor("node"),
-      labelName("Label"),
-      Seq(prop("node", "prop"))
-    )(pos))
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc | Cypher5 =>
+        _.withSyntaxErrorContaining(ASTExceptionFactory.invalidDropConstraint(ConstraintType.NODE_UNIQUE, false))
+      case _ => _.withSyntaxErrorContaining("Invalid input '(': expected 'IF EXISTS' or <EOF> (line")
+    }
   }
 
   test("DROP CONSTRAINT ON (node:Label) ASSERT (node.prop) IS UNIQUE") {
-    parsesTo[ast.Statements](ast.DropPropertyUniquenessConstraint(
-      varFor("node"),
-      labelName("Label"),
-      Seq(prop("node", "prop"))
-    )(pos))
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc | Cypher5 =>
+        _.withSyntaxErrorContaining(ASTExceptionFactory.invalidDropConstraint(ConstraintType.NODE_UNIQUE, false))
+      case _ => _.withSyntaxErrorContaining("Invalid input '(': expected 'IF EXISTS' or <EOF> (line")
+    }
   }
 
   test("DROP CONSTRAINT ON (node:Label) ASSERT (node.prop1,node.prop2) IS UNIQUE") {
-    parsesTo[ast.Statements](ast.DropPropertyUniquenessConstraint(
-      varFor("node"),
-      labelName("Label"),
-      Seq(prop("node", "prop1"), prop("node", "prop2"))
-    )(pos))
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc | Cypher5 =>
+        _.withSyntaxErrorContaining(ASTExceptionFactory.invalidDropConstraint(ConstraintType.NODE_UNIQUE, false))
+      case _ => _.withSyntaxErrorContaining("Invalid input '(': expected 'IF EXISTS' or <EOF> (line")
+    }
   }
 
   test("DROP CONSTRAINT ON (node:Label) ASSERT EXISTS (node.prop)") {
-    parsesTo[ast.Statements](ast.DropNodePropertyExistenceConstraint(
-      varFor("node"),
-      labelName("Label"),
-      prop("node", "prop")
-    )(pos))
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc | Cypher5 =>
+        _.withSyntaxErrorContaining(ASTExceptionFactory.invalidDropConstraint(ConstraintType.NODE_EXISTS, false))
+      case _ => _.withSyntaxErrorContaining("Invalid input '(': expected 'IF EXISTS' or <EOF> (line")
+    }
   }
 
   test("DROP CONSTRAINT ON (node1:Label) ASSERT EXISTS node2.prop") {
-    assertAst(
-      ast.DropNodePropertyExistenceConstraint(
-        varFor("node1", (1, 21, 20)),
-        labelName("Label", (1, 27, 26)),
-        Property(varFor("node2", (1, 48, 47)), PropertyKeyName("prop")((1, 54, 53)))((1, 48, 47)),
-        None
-      )(defaultPos)
-    )
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc | Cypher5 =>
+        _.withSyntaxErrorContaining(ASTExceptionFactory.invalidDropConstraint(ConstraintType.NODE_EXISTS, false))
+      case _ => _.withSyntaxErrorContaining("Invalid input '(': expected 'IF EXISTS' or <EOF> (line")
+    }
   }
 
   test("DROP CONSTRAINT ON ()-[r:R]-() ASSERT EXISTS (r.prop)") {
-    parsesTo[ast.Statements](ast.DropRelationshipPropertyExistenceConstraint(
-      varFor("r"),
-      relTypeName("R"),
-      prop("r", "prop")
-    )(pos))
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc | Cypher5 =>
+        _.withSyntaxErrorContaining(ASTExceptionFactory.invalidDropConstraint(ConstraintType.REL_EXISTS, false))
+      case _ => _.withSyntaxErrorContaining("Invalid input '(': expected 'IF EXISTS' or <EOF> (line")
+    }
   }
 
   test("DROP CONSTRAINT ON ()-[r:R]->() ASSERT EXISTS (r.prop)") {
-    parsesTo[ast.Statements](ast.DropRelationshipPropertyExistenceConstraint(
-      varFor("r"),
-      relTypeName("R"),
-      prop("r", "prop")
-    )(pos))
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc | Cypher5 =>
+        _.withSyntaxErrorContaining(ASTExceptionFactory.invalidDropConstraint(ConstraintType.REL_EXISTS, false))
+      case _ => _.withSyntaxErrorContaining("Invalid input '(': expected 'IF EXISTS' or <EOF> (line")
+    }
   }
 
   test("DROP CONSTRAINT ON ()<-[r:R]-() ASSERT EXISTS (r.prop)") {
-    parsesTo[ast.Statements](ast.DropRelationshipPropertyExistenceConstraint(
-      varFor("r"),
-      relTypeName("R"),
-      prop("r", "prop")
-    )(pos))
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc | Cypher5 =>
+        _.withSyntaxErrorContaining(ASTExceptionFactory.invalidDropConstraint(ConstraintType.REL_EXISTS, false))
+      case _ => _.withSyntaxErrorContaining("Invalid input '(': expected 'IF EXISTS' or <EOF> (line")
+    }
   }
 
   test("DROP CONSTRAINT ON ()-[r1:R]-() ASSERT EXISTS r2.prop") {
-    assertAst(
-      ast.DropRelationshipPropertyExistenceConstraint(
-        varFor("r1", (1, 24, 23)),
-        relTypeName("R", (1, 27, 26)),
-        Property(varFor("r2", (1, 47, 46)), PropertyKeyName("prop")((1, 50, 49)))((1, 47, 46)),
-        None
-      )(defaultPos)
-    )
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc | Cypher5 =>
+        _.withSyntaxErrorContaining(ASTExceptionFactory.invalidDropConstraint(ConstraintType.REL_EXISTS, false))
+      case _ => _.withSyntaxErrorContaining("Invalid input '(': expected 'IF EXISTS' or <EOF> (line")
+    }
   }
 
   test("DROP CONSTRAINT ON (node:Label) ASSERT (node.EXISTS) IS NODE KEY") {
-    parsesTo[ast.Statements](
-      ast.DropNodeKeyConstraint(varFor("node"), labelName("Label"), Seq(prop("node", "EXISTS")))(pos)
-    )
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc | Cypher5 =>
+        _.withSyntaxErrorContaining(ASTExceptionFactory.invalidDropConstraint(ConstraintType.NODE_KEY, false))
+      case _ => _.withSyntaxErrorContaining("Invalid input '(': expected 'IF EXISTS' or <EOF> (line")
+    }
   }
 
   test("DROP CONSTRAINT ON (node:Label) ASSERT (node.EXISTS) IS UNIQUE") {
-    parsesTo[ast.Statements](ast.DropPropertyUniquenessConstraint(
-      varFor("node"),
-      labelName("Label"),
-      Seq(prop("node", "EXISTS"))
-    )(pos))
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc | Cypher5 =>
+        _.withSyntaxErrorContaining(ASTExceptionFactory.invalidDropConstraint(ConstraintType.NODE_UNIQUE, false))
+      case _ => _.withSyntaxErrorContaining("Invalid input '(': expected 'IF EXISTS' or <EOF> (line")
+    }
   }
 
   test("DROP CONSTRAINT ON (node:Label) ASSERT EXISTS (node.EXISTS)") {
-    parsesTo[ast.Statements](ast.DropNodePropertyExistenceConstraint(
-      varFor("node"),
-      labelName("Label"),
-      prop("node", "EXISTS")
-    )(pos))
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc | Cypher5 =>
+        _.withSyntaxErrorContaining(ASTExceptionFactory.invalidDropConstraint(ConstraintType.NODE_EXISTS, false))
+      case _ => _.withSyntaxErrorContaining("Invalid input '(': expected 'IF EXISTS' or <EOF> (line")
+    }
   }
 
   test("DROP CONSTRAINT ON ()-[r:R]-() ASSERT EXISTS (r.EXISTS)") {
-    parsesTo[ast.Statements](ast.DropRelationshipPropertyExistenceConstraint(
-      varFor("r"),
-      relTypeName("R"),
-      prop("r", "EXISTS")
-    )(pos))
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc | Cypher5 =>
+        _.withSyntaxErrorContaining(ASTExceptionFactory.invalidDropConstraint(ConstraintType.REL_EXISTS, false))
+      case _ => _.withSyntaxErrorContaining("Invalid input '(': expected 'IF EXISTS' or <EOF> (line")
+    }
   }
 
-  //   Throws in ast generation/parsing
-
   test("DROP CONSTRAINT ON ()-[r1:R]-() ASSERT r2.prop IS NODE KEY") {
-    failsParsing[ast.Statements]
-      .withMessageStart(ASTExceptionFactory.relationshipPatternNotAllowed(ConstraintType.NODE_KEY))
-      .in {
-        case Cypher5JavaCc => _.throws[OpenCypherExceptionFactory.SyntaxException]
-        case _             => _.throws[SyntaxException]
-      }
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc | Cypher5 =>
+        _.withSyntaxErrorContaining(ASTExceptionFactory.relationshipPatternNotAllowed(ConstraintType.NODE_KEY))
+      case _ => _.withSyntaxErrorContaining("Invalid input '(': expected 'IF EXISTS' or <EOF> (line")
+    }
   }
 
   test("DROP CONSTRAINT ON ()-[r1:R]-() ASSERT r2.prop IS UNIQUE") {
-    failsParsing[ast.Statements]
-      .withMessageStart(ASTExceptionFactory.relationshipPatternNotAllowed(ConstraintType.NODE_UNIQUE))
-      .in {
-        case Cypher5JavaCc => _.throws[OpenCypherExceptionFactory.SyntaxException]
-        case _             => _.throws[SyntaxException]
-      }
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc | Cypher5 =>
+        _.withSyntaxErrorContaining(ASTExceptionFactory.relationshipPatternNotAllowed(ConstraintType.NODE_UNIQUE))
+      case _ => _.withSyntaxErrorContaining("Invalid input '(': expected 'IF EXISTS' or <EOF> (line")
+    }
   }
 
   test("DROP CONSTRAINT ON (n:L) ASSERT EXISTS (n.p1, n.p2)") {
-    failsParsing[ast.Statements]
-      .withMessageStart(ASTExceptionFactory.onlySinglePropertyAllowed(ConstraintType.NODE_EXISTS))
-      .in {
-        case Cypher5JavaCc => _.throws[Neo4jASTConstructionException]
-        case _             => _.throws[SyntaxException]
-      }
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc | Cypher5 =>
+        _.withSyntaxErrorContaining(ASTExceptionFactory.onlySinglePropertyAllowed(ConstraintType.NODE_EXISTS))
+      case _ => _.withSyntaxErrorContaining("Invalid input '(': expected 'IF EXISTS' or <EOF> (line")
+    }
   }
 
   test("DROP CONSTRAINT ON ()-[r:R]-() ASSERT EXISTS (r.p1, r.p2)") {
-    failsParsing[ast.Statements]
-      .withMessageStart(ASTExceptionFactory.onlySinglePropertyAllowed(ConstraintType.REL_EXISTS))
-      .in {
-        case Cypher5JavaCc => _.throws[Neo4jASTConstructionException]
-        case _             => _.throws[SyntaxException]
-      }
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc | Cypher5 =>
+        _.withSyntaxErrorContaining(ASTExceptionFactory.onlySinglePropertyAllowed(ConstraintType.REL_EXISTS))
+      case _ => _.withSyntaxErrorContaining("Invalid input '(': expected 'IF EXISTS' or <EOF> (line")
+    }
   }
 
   test("DROP CONSTRAINT ON (node:Label) ASSERT (node.prop) IS NOT NULL") {
-    failsParsing[ast.Statements]
-      .withMessageStart(ASTExceptionFactory.invalidDropCommand)
-      .in {
-        case Cypher5JavaCc => _.throws[Neo4jASTConstructionException]
-        case _             => _.throws[SyntaxException]
-      }
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc | Cypher5 => _.withSyntaxErrorContaining(ASTExceptionFactory.invalidDropCommand)
+      case _ => _.withSyntaxErrorContaining("Invalid input '(': expected 'IF EXISTS' or <EOF> (line")
+    }
   }
 
   test("DROP CONSTRAINT ON (node:Label) ASSERT node.prop IS NOT NULL") {
-    failsParsing[ast.Statements]
-      .withMessageStart(ASTExceptionFactory.invalidDropCommand)
-      .in {
-        case Cypher5JavaCc => _.throws[Neo4jASTConstructionException]
-        case _             => _.throws[SyntaxException]
-      }
-
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc | Cypher5 => _.withSyntaxErrorContaining(ASTExceptionFactory.invalidDropCommand)
+      case _ => _.withSyntaxErrorContaining("Invalid input '(': expected 'IF EXISTS' or <EOF> (line")
+    }
   }
 
   test("DROP CONSTRAINT ON ()-[r:R]-() ASSERT (r.prop) IS NOT NULL") {
-    failsParsing[ast.Statements]
-      .withMessageStart(ASTExceptionFactory.invalidDropCommand)
-      .in {
-        case Cypher5JavaCc => _.throws[Neo4jASTConstructionException]
-        case _             => _.throws[SyntaxException]
-      }
-
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc | Cypher5 => _.withSyntaxErrorContaining(ASTExceptionFactory.invalidDropCommand)
+      case _ => _.withSyntaxErrorContaining("Invalid input '(': expected 'IF EXISTS' or <EOF> (line")
+    }
   }
 
   test("DROP CONSTRAINT ON ()-[r:R]-() ASSERT r.prop IS NOT NULL") {
-    failsParsing[ast.Statements]
-      .withMessageStart(ASTExceptionFactory.invalidDropCommand)
-      .in {
-        case Cypher5JavaCc => _.throws[Neo4jASTConstructionException]
-        case _             => _.throws[SyntaxException]
-      }
-
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc | Cypher5 => _.withSyntaxErrorContaining(ASTExceptionFactory.invalidDropCommand)
+      case _ => _.withSyntaxErrorContaining("Invalid input '(': expected 'IF EXISTS' or <EOF> (line")
+    }
   }
 
   test("DROP CONSTRAINT ON (n:L) ASSERT (n.p1, n.p2) IS NOT NULL") {
-    failsParsing[ast.Statements]
-      .withMessageStart(ASTExceptionFactory.invalidDropCommand)
-      .in {
-        case Cypher5JavaCc => _.throws[Neo4jASTConstructionException]
-        case _             => _.throws[SyntaxException]
-      }
-
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc | Cypher5 => _.withSyntaxErrorContaining(ASTExceptionFactory.invalidDropCommand)
+      case _ => _.withSyntaxErrorContaining("Invalid input '(': expected 'IF EXISTS' or <EOF> (line")
+    }
   }
 
   test("DROP CONSTRAINT ON ()-[r:R]-() ASSERT (r.p1, r.p2) IS NOT NULL") {
-    failsParsing[ast.Statements]
-      .withMessageStart(ASTExceptionFactory.invalidDropCommand)
-      .in {
-        case Cypher5JavaCc => _.throws[Neo4jASTConstructionException]
-        case _             => _.throws[SyntaxException]
-      }
-
+    failsParsing[ast.Statements].in {
+      case Cypher5JavaCc | Cypher5 => _.withSyntaxErrorContaining(ASTExceptionFactory.invalidDropCommand)
+      case _ => _.withSyntaxErrorContaining("Invalid input '(': expected 'IF EXISTS' or <EOF> (line")
+    }
   }
 
   test("DROP CONSTRAINT FOR (n:L) REQUIRE n.p IS NODE KEY") {
@@ -3974,7 +4419,8 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
   test("DROP CONSTRAINT ON (n:L) REQUIRE n.p IS NODE KEY") {
     failsParsing[ast.Statements].in {
       case Cypher5JavaCc => _.withMessageStart("""Invalid input 'REQUIRE': expected "ASSERT" (line""")
-      case _             => _.withSyntaxErrorContaining("Invalid input 'REQUIRE': expected 'ASSERT' (line")
+      case Cypher5       => _.withSyntaxErrorContaining("Invalid input 'REQUIRE': expected 'ASSERT' (line")
+      case _             => _.withSyntaxErrorContaining("Invalid input '(': expected 'IF EXISTS' or <EOF> (line")
     }
   }
 
@@ -3997,7 +4443,8 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
   test("DROP CONSTRAINT ON (n:L) REQUIRE n.p IS UNIQUE") {
     failsParsing[ast.Statements].in {
       case Cypher5JavaCc => _.withMessageStart("""Invalid input 'REQUIRE': expected "ASSERT" (line""")
-      case _             => _.withSyntaxErrorContaining("Invalid input 'REQUIRE': expected 'ASSERT' (line")
+      case Cypher5       => _.withSyntaxErrorContaining("Invalid input 'REQUIRE': expected 'ASSERT' (line")
+      case _             => _.withSyntaxErrorContaining("Invalid input '(': expected 'IF EXISTS' or <EOF> (line")
     }
   }
 
@@ -4020,16 +4467,18 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
   test("DROP CONSTRAINT ON (n:L) REQUIRE EXISTS n.p") {
     failsParsing[ast.Statements].in {
       case Cypher5JavaCc => _.withMessageStart("""Invalid input 'REQUIRE': expected "ASSERT" (line""")
-      case _             => _.withSyntaxErrorContaining("Invalid input 'REQUIRE': expected 'ASSERT' (line")
+      case Cypher5       => _.withSyntaxErrorContaining("Invalid input 'REQUIRE': expected 'ASSERT' (line")
+      case _             => _.withSyntaxErrorContaining("Invalid input '(': expected 'IF EXISTS' or <EOF> (line")
     }
   }
 
   test("DROP CONSTRAINT ON (n:L) ASSERT n.p IS REL KEY") {
     failsParsing[ast.Statements].in {
       case Cypher5JavaCc => _.withMessageStart("""Invalid input 'REL': expected "NODE", "NOT" or "UNIQUE" (line""")
-      case _ => _.withSyntaxErrorContaining(
+      case Cypher5 => _.withSyntaxErrorContaining(
           "Invalid input 'REL': expected 'NODE KEY', 'NOT NULL' or 'UNIQUE' (line"
         )
+      case _ => _.withSyntaxErrorContaining("Invalid input '(': expected 'IF EXISTS' or <EOF> (line")
     }
   }
 
@@ -4037,18 +4486,20 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     failsParsing[ast.Statements].in {
       case Cypher5JavaCc =>
         _.withMessageStart("""Invalid input 'RELATIONSHIP': expected "NODE", "NOT" or "UNIQUE" (line""")
-      case _ => _.withSyntaxErrorContaining(
+      case Cypher5 => _.withSyntaxErrorContaining(
           "Invalid input 'RELATIONSHIP': expected 'NODE KEY', 'NOT NULL' or 'UNIQUE' (line"
         )
+      case _ => _.withSyntaxErrorContaining("Invalid input '(': expected 'IF EXISTS' or <EOF> (line")
     }
   }
 
   test("DROP CONSTRAINT ON (n:L) ASSERT n.p IS REL UNIQUE") {
     failsParsing[ast.Statements].in {
       case Cypher5JavaCc => _.withMessageStart("""Invalid input 'REL': expected "NODE", "NOT" or "UNIQUE" (line""")
-      case _ => _.withSyntaxErrorContaining(
+      case Cypher5 => _.withSyntaxErrorContaining(
           "Invalid input 'REL': expected 'NODE KEY', 'NOT NULL' or 'UNIQUE' (line"
         )
+      case _ => _.withSyntaxErrorContaining("Invalid input '(': expected 'IF EXISTS' or <EOF> (line")
     }
   }
 
@@ -4056,66 +4507,74 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     failsParsing[ast.Statements].in {
       case Cypher5JavaCc =>
         _.withMessageStart("""Invalid input 'RELATIONSHIP': expected "NODE", "NOT" or "UNIQUE" (line""")
-      case _ => _.withSyntaxErrorContaining(
+      case Cypher5 => _.withSyntaxErrorContaining(
           "Invalid input 'RELATIONSHIP': expected 'NODE KEY', 'NOT NULL' or 'UNIQUE' (line"
         )
+      case _ => _.withSyntaxErrorContaining("Invalid input '(': expected 'IF EXISTS' or <EOF> (line")
     }
   }
 
   test("DROP CONSTRAINT ON (n:L) ASSERT n.p IS NODE UNIQUE") {
     failsParsing[ast.Statements].in {
       case Cypher5JavaCc => _.withMessageStart("""Invalid input 'UNIQUE': expected "KEY" (line""")
-      case _             => _.withSyntaxErrorContaining("Invalid input 'UNIQUE': expected 'KEY' (line")
+      case Cypher5       => _.withSyntaxErrorContaining("Invalid input 'UNIQUE': expected 'KEY' (line")
+      case _             => _.withSyntaxErrorContaining("Invalid input '(': expected 'IF EXISTS' or <EOF> (line")
     }
   }
 
   test("DROP CONSTRAINT ON (n:L) ASSERT n.p IS TYPED INT") {
     failsParsing[ast.Statements].in {
       case Cypher5JavaCc => _.withMessageStart("""Invalid input 'TYPED': expected "NODE", "NOT" or "UNIQUE" (line""")
-      case _ => _.withSyntaxErrorContaining(
+      case Cypher5 => _.withSyntaxErrorContaining(
           "Invalid input 'TYPED': expected 'NODE KEY', 'NOT NULL' or 'UNIQUE' (line"
         )
+      case _ => _.withSyntaxErrorContaining("Invalid input '(': expected 'IF EXISTS' or <EOF> (line")
     }
   }
 
   test("DROP CONSTRAINT ON ()-[r:R]-() ASSERT r.p IS TYPED STRING") {
     failsParsing[ast.Statements].in {
       case Cypher5JavaCc => _.withMessageStart("""Invalid input 'TYPED': expected "NODE", "NOT" or "UNIQUE" (line""")
-      case _ => _.withSyntaxErrorContaining(
+      case Cypher5 => _.withSyntaxErrorContaining(
           "Invalid input 'TYPED': expected 'NODE KEY', 'NOT NULL' or 'UNIQUE' (line"
         )
+      case _ => _.withSyntaxErrorContaining("Invalid input '(': expected 'IF EXISTS' or <EOF> (line")
     }
   }
 
   test("DROP CONSTRAINT ON (n:L) ASSERT n.p IS :: LIST<FLOAT>") {
     failsParsing[ast.Statements].in {
       case Cypher5JavaCc => _.withMessageStart("""Invalid input '::': expected "NODE", "NOT" or "UNIQUE" (line""")
-      case _ => _.withSyntaxErrorContaining(
+      case Cypher5 => _.withSyntaxErrorContaining(
           "Invalid input '::': expected 'NODE KEY', 'NOT NULL' or 'UNIQUE' (line"
         )
+      case _ => _.withSyntaxErrorContaining("Invalid input '(': expected 'IF EXISTS' or <EOF> (line")
     }
   }
 
   test("DROP CONSTRAINT ON ()-[r:R]-() ASSERT r.p IS :: BOOLEAN") {
     failsParsing[ast.Statements].in {
       case Cypher5JavaCc => _.withMessageStart("""Invalid input '::': expected "NODE", "NOT" or "UNIQUE" (line""")
-      case _ => _.withSyntaxErrorContaining(
+      case Cypher5 => _.withSyntaxErrorContaining(
           "Invalid input '::': expected 'NODE KEY', 'NOT NULL' or 'UNIQUE' (line"
         )
+      case _ => _.withSyntaxErrorContaining("Invalid input '(': expected 'IF EXISTS' or <EOF> (line")
     }
   }
 
   test("DROP CONSTRAINT ON (n:L) ASSERT n.p :: ZONED DATETIME") {
     failsParsing[ast.Statements].in {
       case Cypher5JavaCc => _.withMessageStart("""Invalid input '::': expected "IS" (line""")
-      case _             => _.withSyntaxErrorContaining("Invalid input '::': expected 'IS' (line")
+      case Cypher5       => _.withSyntaxErrorContaining("Invalid input '::': expected 'IS' (line")
+      case _             => _.withSyntaxErrorContaining("Invalid input '(': expected 'IF EXISTS' or <EOF> (line")
     }
   }
 
   test("DROP CONSTRAINT ON ()-[r:R]-() ASSERT r.p :: LOCAL TIME") {
     failsParsing[ast.Statements].in {
       case Cypher5JavaCc => _.withMessageStart("""Invalid input '::': expected "IS" (line""")
-      case _             => _.withSyntaxErrorContaining("Invalid input '::': expected 'IS' (line")
+      case Cypher5       => _.withSyntaxErrorContaining("Invalid input '::': expected 'IS' (line")
+      case _             => _.withSyntaxErrorContaining("Invalid input '(': expected 'IF EXISTS' or <EOF> (line")
     }
   }
 

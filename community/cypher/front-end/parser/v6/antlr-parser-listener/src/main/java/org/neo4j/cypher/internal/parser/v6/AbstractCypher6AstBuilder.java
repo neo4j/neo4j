@@ -240,28 +240,18 @@ public abstract class AbstractCypher6AstBuilder implements Cypher6ParserListener
                     (Cypher6Parser.ComposableCommandClausesContext) ctx);
             case Cypher6Parser.RULE_composableShowCommandClauses -> exitComposableShowCommandClauses(
                     (Cypher6Parser.ComposableShowCommandClausesContext) ctx);
-            case Cypher6Parser.RULE_showBriefAndYield -> exitShowBriefAndYield(
-                    (Cypher6Parser.ShowBriefAndYieldContext) ctx);
             case Cypher6Parser.RULE_showIndexCommand -> exitShowIndexCommand(
                     (Cypher6Parser.ShowIndexCommandContext) ctx);
-            case Cypher6Parser.RULE_showIndexesAllowBrief -> exitShowIndexesAllowBrief(
-                    (Cypher6Parser.ShowIndexesAllowBriefContext) ctx);
-            case Cypher6Parser.RULE_showIndexesNoBrief -> exitShowIndexesNoBrief(
-                    (Cypher6Parser.ShowIndexesNoBriefContext) ctx);
+            case Cypher6Parser.RULE_showIndexType -> exitShowIndexType((Cypher6Parser.ShowIndexTypeContext) ctx);
+            case Cypher6Parser.RULE_showIndexesEnd -> exitShowIndexesEnd((Cypher6Parser.ShowIndexesEndContext) ctx);
             case Cypher6Parser.RULE_showConstraintCommand -> exitShowConstraintCommand(
                     (Cypher6Parser.ShowConstraintCommandContext) ctx);
-            case Cypher6Parser.RULE_constraintAllowYieldType -> exitConstraintAllowYieldType(
-                    (Cypher6Parser.ConstraintAllowYieldTypeContext) ctx);
+            case Cypher6Parser.RULE_showConstraintEntity -> exitShowConstraintEntity(
+                    (Cypher6Parser.ShowConstraintEntityContext) ctx);
             case Cypher6Parser.RULE_constraintExistType -> exitConstraintExistType(
                     (Cypher6Parser.ConstraintExistTypeContext) ctx);
-            case Cypher6Parser.RULE_constraintBriefAndYieldType -> exitConstraintBriefAndYieldType(
-                    (Cypher6Parser.ConstraintBriefAndYieldTypeContext) ctx);
-            case Cypher6Parser.RULE_showConstraintsAllowBriefAndYield -> exitShowConstraintsAllowBriefAndYield(
-                    (Cypher6Parser.ShowConstraintsAllowBriefAndYieldContext) ctx);
-            case Cypher6Parser.RULE_showConstraintsAllowBrief -> exitShowConstraintsAllowBrief(
-                    (Cypher6Parser.ShowConstraintsAllowBriefContext) ctx);
-            case Cypher6Parser.RULE_showConstraintsAllowYield -> exitShowConstraintsAllowYield(
-                    (Cypher6Parser.ShowConstraintsAllowYieldContext) ctx);
+            case Cypher6Parser.RULE_showConstraintsEnd -> exitShowConstraintsEnd(
+                    (Cypher6Parser.ShowConstraintsEndContext) ctx);
             case Cypher6Parser.RULE_showProcedures -> exitShowProcedures((Cypher6Parser.ShowProceduresContext) ctx);
             case Cypher6Parser.RULE_showFunctions -> exitShowFunctions((Cypher6Parser.ShowFunctionsContext) ctx);
             case Cypher6Parser.RULE_functionToken -> exitFunctionToken((Cypher6Parser.FunctionTokenContext) ctx);
@@ -286,7 +276,6 @@ public abstract class AbstractCypher6AstBuilder implements Cypher6ParserListener
             case Cypher6Parser.RULE_constraintType -> exitConstraintType((Cypher6Parser.ConstraintTypeContext) ctx);
             case Cypher6Parser.RULE_dropConstraint -> exitDropConstraint((Cypher6Parser.DropConstraintContext) ctx);
             case Cypher6Parser.RULE_createIndex -> exitCreateIndex((Cypher6Parser.CreateIndexContext) ctx);
-            case Cypher6Parser.RULE_oldCreateIndex -> exitOldCreateIndex((Cypher6Parser.OldCreateIndexContext) ctx);
             case Cypher6Parser.RULE_createIndex_ -> exitCreateIndex_((Cypher6Parser.CreateIndex_Context) ctx);
             case Cypher6Parser.RULE_createFulltextIndex -> exitCreateFulltextIndex(
                     (Cypher6Parser.CreateFulltextIndexContext) ctx);

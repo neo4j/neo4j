@@ -873,71 +873,46 @@ composableShowCommandClauses
    )
    ;
 
-showBriefAndYield
-   : (BRIEF | VERBOSE) OUTPUT?
-   | yieldClause returnClause?
-   | whereClause
-   ;
-
 showIndexCommand
-   : (
-      FULLTEXT
-      | LOOKUP
-      | POINT
-      | RANGE
-      | TEXT
-      | VECTOR
-   ) showIndexesNoBrief
-   | (ALL | BTREE)? showIndexesAllowBrief
+   : (showIndexType)? showIndexesEnd
    ;
 
-showIndexesAllowBrief
-   : indexToken showBriefAndYield? composableCommandClauses?
-   ;
+showIndexType
+    : ALL
+    | BTREE
+    | FULLTEXT
+    | LOOKUP
+    | POINT
+    | RANGE
+    | TEXT
+    | VECTOR
+    ;
 
-showIndexesNoBrief
+showIndexesEnd
    : indexToken showCommandYield? composableCommandClauses?
    ;
 
 showConstraintCommand
-   : (NODE | RELATIONSHIP | REL)? constraintAllowYieldType showConstraintsAllowYield # ShowConstraintMulti
-   | (NODE | RELATIONSHIP | REL) UNIQUE showConstraintsAllowYield                    # ShowConstraintUnique
-   | (RELATIONSHIP | REL)? KEY showConstraintsAllowYield                             # ShowConstraintKey
-   | REL EXIST showConstraintsAllowYield                                             # ShowConstraintRelExist
-   | (NODE | RELATIONSHIP)? EXISTS showConstraintsAllowBrief                         # ShowConstraintOldExists
-   | constraintBriefAndYieldType? showConstraintsAllowBriefAndYield                  # ShowConstraintBriefAndYield
+   : ALL? showConstraintsEnd                                            # ShowConstraintAll
+   | (showConstraintEntity)? constraintExistType showConstraintsEnd     # ShowConstraintExist
+   | (showConstraintEntity)? KEY showConstraintsEnd                     # ShowConstraintKey
+   | (showConstraintEntity)? PROPERTY TYPE showConstraintsEnd           # ShowConstraintPropType
+   | (showConstraintEntity)? (UNIQUE | UNIQUENESS) showConstraintsEnd   # ShowConstraintUnique
    ;
 
-constraintAllowYieldType
-   : UNIQUENESS
-   | constraintExistType
-   | PROPERTY TYPE
-   ;
+showConstraintEntity
+    : NODE                  # nodeEntity
+    | (RELATIONSHIP | REL)  # relEntity
+    ;
 
 constraintExistType
    : EXISTENCE
+   | EXIST
    | PROPERTY EXISTENCE
    | PROPERTY EXIST
    ;
 
-constraintBriefAndYieldType
-   : ALL
-   | UNIQUE
-   | EXIST
-   | NODE KEY
-   | NODE EXIST
-   | RELATIONSHIP EXIST
-   ;
-
-showConstraintsAllowBriefAndYield
-   : constraintToken showBriefAndYield? composableCommandClauses?
-   ;
-
-showConstraintsAllowBrief
-   : constraintToken ((BRIEF | VERBOSE) OUTPUT?)? composableCommandClauses?
-   ;
-
-showConstraintsAllowYield
+showConstraintsEnd
    : constraintToken showCommandYield? composableCommandClauses?
    ;
 
@@ -999,19 +974,18 @@ commandRelPattern
    ;
 
 createConstraint
-   : CONSTRAINT symbolicNameOrStringParameter? (IF NOT EXISTS)? (ON | FOR) (commandNodePattern | commandRelPattern) constraintType commandOptions?
+   : CONSTRAINT symbolicNameOrStringParameter? (IF NOT EXISTS)? FOR (commandNodePattern | commandRelPattern) constraintType commandOptions?
    ;
 
 constraintType
-   : ASSERT EXISTS propertyList                                                  # ConstraintExists
-   | (REQUIRE | ASSERT) propertyList (COLONCOLON | IS (TYPED | COLONCOLON)) type # ConstraintTyped
-   | (REQUIRE | ASSERT) propertyList IS (NODE | RELATIONSHIP | REL)? UNIQUE      # ConstraintIsUnique
-   | (REQUIRE | ASSERT) propertyList IS (NODE | RELATIONSHIP | REL)? KEY         # ConstraintKey
-   | (REQUIRE | ASSERT) propertyList IS NOT NULL                                 # ConstraintIsNotNull
+   : REQUIRE propertyList (COLONCOLON | IS (TYPED | COLONCOLON)) type # ConstraintTyped
+   | REQUIRE propertyList IS (NODE | RELATIONSHIP | REL)? UNIQUE      # ConstraintIsUnique
+   | REQUIRE propertyList IS (NODE | RELATIONSHIP | REL)? KEY         # ConstraintKey
+   | REQUIRE propertyList IS NOT NULL                                 # ConstraintIsNotNull
    ;
 
 dropConstraint
-   : CONSTRAINT (ON (commandNodePattern | commandRelPattern) ASSERT (EXISTS propertyList | propertyList IS (UNIQUE | NODE KEY | NOT NULL)) | symbolicNameOrStringParameter (IF EXISTS)?)
+   : CONSTRAINT symbolicNameOrStringParameter (IF EXISTS)?
    ;
 
 createIndex
@@ -1022,11 +996,7 @@ createIndex
    | VECTOR INDEX createIndex_
    | LOOKUP INDEX createLookupIndex
    | FULLTEXT INDEX createFulltextIndex
-   | INDEX (ON oldCreateIndex | createIndex_)
-   ;
-
-oldCreateIndex
-   : labelType LPAREN nonEmptyNameList RPAREN
+   | INDEX createIndex_
    ;
 
 createIndex_
@@ -1058,7 +1028,7 @@ lookupIndexRelPattern
    ;
 
 dropIndex
-   : INDEX (ON labelType LPAREN nonEmptyNameList RPAREN | symbolicNameOrStringParameter (IF EXISTS)?)
+   : INDEX symbolicNameOrStringParameter (IF EXISTS)?
    ;
 
 propertyList
@@ -1776,7 +1746,6 @@ unescapedLabelSymbolicNameString
    | AS
    | ASC
    | ASCENDING
-   | ASSERT
    | ASSIGN
    | AT
    | AUTH
@@ -1786,7 +1755,6 @@ unescapedLabelSymbolicNameString
    | BOOSTED
    | BOTH
    | BREAK
-   | BRIEF
    | BTREE
    | BUILT
    | BY
@@ -1910,7 +1878,6 @@ unescapedLabelSymbolicNameString
    | OPTION
    | OR
    | ORDER
-   | OUTPUT
    | PASSWORD
    | PASSWORDS
    | PATH
@@ -2003,7 +1970,6 @@ unescapedLabelSymbolicNameString
    | USING
    | VALUE
    | VECTOR
-   | VERBOSE
    | VERTEX
    | WAIT
    | WHEN

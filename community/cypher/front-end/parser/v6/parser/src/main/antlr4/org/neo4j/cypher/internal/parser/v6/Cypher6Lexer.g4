@@ -158,10 +158,6 @@ ASCENDING
    : A S C E N D I N G
    ;
 
-ASSERT
-   : A S S E R T
-   ;
-
 ASSIGN
    : A S S I G N
    ;
@@ -200,10 +196,6 @@ BOTH
 
 BREAK
    : B R E A K
-   ;
-
-BRIEF
-   : B R I E F
    ;
 
 BTREE
@@ -814,10 +806,6 @@ ORDER
    : O R D E R
    ;
 
-OUTPUT
-   : O U T P U T
-   ;
-
 PASSWORD
    : P A S S W O R D
    ;
@@ -1228,10 +1216,6 @@ VARCHAR
 
 VECTOR
    : V E C T O R
-   ;
-
-VERBOSE
-   : V E R B O S E
    ;
 
 VERTEX

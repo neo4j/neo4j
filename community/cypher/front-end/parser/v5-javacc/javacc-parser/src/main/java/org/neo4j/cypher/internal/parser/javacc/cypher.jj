@@ -4505,7 +4505,7 @@ STATEMENT ShowCommand( USE_CLAUSE useClause ) throws Exception:
         | showCommandType=<NODE> clauses=ShowNodeCommand( start )
         | showCommandType=<PROPERTY> clauses=ShowPropertyCommand( start, ShowCommandFilterTypes.EXIST )
         | showCommandType=<EXISTENCE> clauses=ShowConstraintsAllowYield( start, ShowCommandFilterTypes.EXIST )
-        | showCommandType=<EXISTS> clauses=ShowConstraintsAllowBrief( start, ShowCommandFilterTypes.OLD_EXISTS )
+        | showCommandType=<EXISTS> ShowConstraintsAllowBrief( start )
         | showCommandType=<EXIST> clauses=ShowConstraintsAllowBriefAndYield( start, ShowCommandFilterTypes.OLD_EXIST )
         | showCommandType=<RELATIONSHIP> clauses=ShowRelationshipCommand( start )
         | showCommandType=<REL> clauses=ShowRelCommand( start )
@@ -4606,7 +4606,7 @@ List<CLAUSE> ShowNodeCommand( Token start ) throws Exception:
         | <KEY> clauses=ShowConstraintsAllowBriefAndYield( start, ShowCommandFilterTypes.NODE_KEY )
         | <PROPERTY> clauses=ShowPropertyCommand( start, ShowCommandFilterTypes.NODE_EXIST )
         | <EXISTENCE> clauses=ShowConstraintsAllowYield( start, ShowCommandFilterTypes.NODE_EXIST )
-        | <EXISTS> clauses=ShowConstraintsAllowBrief( start, ShowCommandFilterTypes.NODE_OLD_EXISTS )
+        | <EXISTS> ShowConstraintsAllowBrief( start )
         | <EXIST> clauses=ShowConstraintsAllowBriefAndYield( start, ShowCommandFilterTypes.NODE_OLD_EXIST )
     )
     {
@@ -4624,7 +4624,7 @@ List<CLAUSE> ShowRelationshipCommand( Token start ) throws Exception:
         | <KEY> clauses=ShowConstraintsAllowYield( start, ShowCommandFilterTypes.RELATIONSHIP_KEY )
         | <PROPERTY> clauses=ShowPropertyCommand( start, ShowCommandFilterTypes.RELATIONSHIP_EXIST )
         | <EXISTENCE> clauses=ShowConstraintsAllowYield( start, ShowCommandFilterTypes.RELATIONSHIP_EXIST )
-        | <EXISTS> clauses=ShowConstraintsAllowBrief( start, ShowCommandFilterTypes.RELATIONSHIP_OLD_EXISTS )
+        | <EXISTS> ShowConstraintsAllowBrief( start )
         | <EXIST> clauses=ShowConstraintsAllowBriefAndYield( start, ShowCommandFilterTypes.RELATIONSHIP_OLD_EXIST )
     )
     {
@@ -4739,9 +4739,15 @@ List<CLAUSE> ShowIndexesAllowBrief( Token start, ShowCommandFilterTypes indexTyp
     )?
     ( tailClauses=composableCommandClauses() )?
     {
+        if (brief || verbose) {
+            throw exceptionFactory.syntaxException(
+                    new ParseException(ASTExceptionFactory.invalidBriefVerbose("SHOW INDEXES")),
+                    start.beginOffset, start.beginLine, start.beginColumn );
+        }
+
         if ( yieldClause != null )
         {
-            clauses.add( astFactory.showIndexClause( pos( start ), indexType, brief, verbose, where, yieldClause ) );
+            clauses.add( astFactory.showIndexClause( pos( start ), indexType, where, yieldClause ) );
             clauses.add( astFactory.turnYieldToWith( yieldClause ) );
             if ( returnClause != null )
             {
@@ -4750,7 +4756,7 @@ List<CLAUSE> ShowIndexesAllowBrief( Token start, ShowCommandFilterTypes indexTyp
         }
         else
         {
-            clauses.add( astFactory.showIndexClause( pos( start ), indexType, brief, verbose, where, null ) );
+            clauses.add( astFactory.showIndexClause( pos( start ), indexType, where, null ) );
         }
         if ( tailClauses != null ) {
             clauses.addAll( tailClauses );
@@ -4775,7 +4781,7 @@ List<CLAUSE> ShowIndexesNoBrief(Token start, ShowCommandFilterTypes indexType) t
     {
         if ( yieldClause != null )
         {
-            clauses.add( astFactory.showIndexClause( pos( start ), indexType, false, false, where, yieldClause ) );
+            clauses.add( astFactory.showIndexClause( pos( start ), indexType, where, yieldClause ) );
             clauses.add( astFactory.turnYieldToWith( yieldClause ) );
             if ( returnClause != null )
             {
@@ -4784,7 +4790,7 @@ List<CLAUSE> ShowIndexesNoBrief(Token start, ShowCommandFilterTypes indexType) t
         }
         else
         {
-            clauses.add( astFactory.showIndexClause( pos( start ), indexType, false, false, where, null ) );
+            clauses.add( astFactory.showIndexClause( pos( start ), indexType, where, null ) );
         }
         if ( tailClauses != null ) {
             clauses.addAll( tailClauses );
@@ -4813,9 +4819,15 @@ List<CLAUSE> ShowConstraintsAllowBriefAndYield( Token start, ShowCommandFilterTy
     )?
     ( tailClauses=composableCommandClauses() )?
     {
+        if (brief || verbose) {
+            throw exceptionFactory.syntaxException(
+                    new ParseException(ASTExceptionFactory.invalidBriefVerbose("SHOW CONSTRAINTS")),
+                    start.beginOffset, start.beginLine, start.beginColumn );
+        }
+
         if ( yieldClause != null )
         {
-            clauses.add( astFactory.showConstraintClause( pos( start ), constraintType, brief, verbose, where, yieldClause ) );
+            clauses.add( astFactory.showConstraintClause( pos( start ), constraintType, where, yieldClause ) );
             clauses.add( astFactory.turnYieldToWith( yieldClause ) );
             if ( returnClause != null )
             {
@@ -4824,7 +4836,7 @@ List<CLAUSE> ShowConstraintsAllowBriefAndYield( Token start, ShowCommandFilterTy
         }
         else
         {
-            clauses.add( astFactory.showConstraintClause( pos( start ), constraintType, brief, verbose, where, null ) );
+            clauses.add( astFactory.showConstraintClause( pos( start ), constraintType, where, null ) );
         }
         if ( tailClauses != null ) {
             clauses.addAll( tailClauses );
@@ -4833,24 +4845,18 @@ List<CLAUSE> ShowConstraintsAllowBriefAndYield( Token start, ShowCommandFilterTy
     }
 }
 
-List<CLAUSE> ShowConstraintsAllowBrief( Token start, ShowCommandFilterTypes constraintType ) throws Exception:
+void ShowConstraintsAllowBrief( Token start ) throws Exception:
 {
     // old removed existence constraints, parsing kept for nice error
-    List<CLAUSE> clauses = new ArrayList<>();
-    boolean brief = false;
-    boolean verbose = false;
-    List<CLAUSE> tailClauses = null;
 }
 {
     ( <CONSTRAINT> | <CONSTRAINTS> )
-    ( ( <BRIEF> { brief = true; } | <VERBOSE> { verbose = true; }) (<OUTPUT>)? )?
-    ( tailClauses=composableCommandClauses() )?
+    ( ( <BRIEF> | <VERBOSE>) (<OUTPUT>)? )?
+    ( composableCommandClauses() )?
     {
-        clauses.add( astFactory.showConstraintClause( pos( start ), constraintType, brief, verbose, null, null ) );
-        if ( tailClauses != null ) {
-            clauses.addAll( tailClauses );
-        }
-        return clauses;
+        throw exceptionFactory.syntaxException(
+                new ParseException(ASTExceptionFactory.invalidExistsForShowConstraints),
+                start.beginOffset, start.beginLine, start.beginColumn );
     }
 }
 
@@ -4874,7 +4880,7 @@ List<CLAUSE> ShowConstraintsAllowYield( Token start, ShowCommandFilterTypes cons
     {
         if ( yieldClause != null )
         {
-            clauses.add( astFactory.showConstraintClause( pos( start ), constraintType, false, false, where, yieldClause ) );
+            clauses.add( astFactory.showConstraintClause( pos( start ), constraintType, where, yieldClause ) );
             clauses.add( astFactory.turnYieldToWith( yieldClause ) );
             if ( returnClause != null )
             {
@@ -4883,7 +4889,7 @@ List<CLAUSE> ShowConstraintsAllowYield( Token start, ShowCommandFilterTypes cons
         }
         else
         {
-            clauses.add( astFactory.showConstraintClause( pos( start ), constraintType, false, false, where, null ) );
+            clauses.add( astFactory.showConstraintClause( pos( start ), constraintType, where, null ) );
         }
         if ( tailClauses != null ) {
             clauses.addAll( tailClauses );
@@ -5143,7 +5149,7 @@ List<CLAUSE> composableCommandClauses() throws Exception:
             | <BTREE> clauses=ShowIndexesAllowBrief(start, ShowCommandFilterTypes.BTREE)
             | <BUILT> <IN> clauses=ShowFunctions(start, ShowCommandFilterTypes.BUILT_IN)
             | <EXISTENCE> clauses=ShowConstraintsAllowYield(start, ShowCommandFilterTypes.EXIST)
-            | <EXISTS> clauses=ShowConstraintsAllowBrief(start, ShowCommandFilterTypes.OLD_EXISTS)
+            | <EXISTS> ShowConstraintsAllowBrief(start)
             | <EXIST> clauses=ShowConstraintsAllowBriefAndYield(start, ShowCommandFilterTypes.OLD_EXIST)
             | <FULLTEXT> clauses=ShowIndexesNoBrief(start, ShowCommandFilterTypes.FULLTEXT)
             | <KEY> clauses=ShowConstraintsAllowYield(start, ShowCommandFilterTypes.KEY)
@@ -5318,8 +5324,15 @@ SCHEMA_COMMAND CreateConstraint( Token start, boolean replace ) throws Exception
     )
     ( <OPTIONS> options=MapOrParameter() )?
     {
-        return astFactory.createConstraint( pos( start ), constraintType, replace, ifNotExists, name, variable,
-        new StringPos<POS>( label.image, pos( label ) ), properties, propertyType, options, containsOn, constraintVersion );
+        String error = ASTExceptionFactory.checkForInvalidCreateConstraint(constraintType, constraintVersion, containsOn, properties.size() > 1);
+        if (error != null) {
+            throw exceptionFactory.syntaxException(
+                new ParseException( error ),
+                start.beginOffset, start.beginLine, start.beginColumn );
+        } else {
+            return astFactory.createConstraint( pos( start ), constraintType, replace, ifNotExists, name, variable,
+            new StringPos<POS>( label.image, pos( label ) ), properties, propertyType, options );
+        }
     }
 }
 
@@ -5477,8 +5490,9 @@ SCHEMA_COMMAND DropConstraint( Token start ) throws Exception:
               )
         )
         {
-            return astFactory.dropConstraint( pos( start ), constraintType, variable, new StringPos<POS>( label.image, pos( label ) ),
-                properties );
+            throw exceptionFactory.syntaxException(
+                                              new ParseException( ASTExceptionFactory.invalidDropConstraint( constraintType, properties.size() > 1 ) ),
+                                              start.beginOffset, start.beginLine, start.beginColumn );
         }
     |   //DROP CONSTRAINT name IF EXISTS
         name=SymbolicNameOrStringParameter() ( <IF> <EXISTS> { ifExists = true; } )?
@@ -5504,7 +5518,7 @@ SCHEMA_COMMAND CreateIndex( Token start, boolean replace ) throws Exception:
         | <VECTOR> <INDEX> command=createIndex( start, replace, CreateIndexTypes.VECTOR )
         | <LOOKUP> <INDEX> command=createLookupIndex( start, replace )
         | <INDEX> (
-            LOOKAHEAD(<ON> <COLON>) <ON> command=oldCreateIndex( start, replace ) // old syntax: CREATE INDEX ON :nodeLabel(prop1, prop2)
+            LOOKAHEAD(<ON> <COLON>) <ON> oldCreateIndex( start, replace ) // old syntax: CREATE INDEX ON :nodeLabel(prop1, prop2)
             | command=createIndex( start, replace, CreateIndexTypes.DEFAULT )
         )
     )
@@ -5513,7 +5527,7 @@ SCHEMA_COMMAND CreateIndex( Token start, boolean replace ) throws Exception:
     }
 }
 
-SCHEMA_COMMAND oldCreateIndex(Token start, boolean replace ) throws Exception:
+void oldCreateIndex(Token start, boolean replace ) throws Exception:
 {
     Token nodeLabel;
     List<StringPos<POS>> properties;
@@ -5526,7 +5540,7 @@ SCHEMA_COMMAND oldCreateIndex(Token start, boolean replace ) throws Exception:
         if (replace) {
             throw exceptionFactory.syntaxException( new ParseException("'REPLACE' is not allowed for this index syntax"), start.beginOffset, start.beginLine, start.beginColumn );
         }
-        return astFactory.createIndexWithOldSyntax( pos(start), new StringPos<>(nodeLabel.image, pos(nodeLabel) ), properties );
+        throw exceptionFactory.syntaxException( new ParseException("Invalid create index syntax, use `CREATE INDEX FOR ...` instead."), start.beginOffset, start.beginLine, start.beginColumn );
     }
 }
 
@@ -5636,7 +5650,7 @@ SCHEMA_COMMAND createLookupIndex( Token start, boolean replace ) throws Exceptio
     }
 }
 
-SCHEMA_COMMAND DropIndex( Token start ):
+SCHEMA_COMMAND DropIndex( Token start ) throws Exception:
 {
     Token nodeLabel;
     List<StringPos<POS>> properties;
@@ -5646,7 +5660,7 @@ SCHEMA_COMMAND DropIndex( Token start ):
 {
     <INDEX>
     ( LOOKAHEAD(2) <ON> nodeLabel=LabelOrRelType() <LPAREN> properties=SymbolicNamePositions() <RPAREN>
-        { return astFactory.dropIndex( pos(start), new StringPos<>(nodeLabel.image, pos(nodeLabel) ), properties ); }
+        { throw exceptionFactory.syntaxException( new ParseException("Indexes cannot be dropped by schema, please drop by name instead: DROP INDEX index_name. The index name can be found using SHOW INDEXES."), start.beginOffset, start.beginLine, start.beginColumn ); }
     | name=SymbolicNameOrStringParameter() ( <IF> <EXISTS> { ifExists = true; } )?
         { return astFactory.dropIndex( pos(start), name, ifExists ); }
     )
