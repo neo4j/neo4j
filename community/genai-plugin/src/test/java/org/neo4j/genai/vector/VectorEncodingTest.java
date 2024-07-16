@@ -21,6 +21,7 @@ package org.neo4j.genai.vector;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.when;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 
 import java.util.List;
@@ -30,6 +31,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.Mockito;
 import org.neo4j.genai.util.ParametersTest;
 import org.neo4j.genai.vector.VectorEncoding.InternalBatchRow;
 import org.neo4j.genai.vector.VectorEncoding.Provider;
@@ -38,10 +40,16 @@ import org.neo4j.genai.vector.providers.Bedrock;
 import org.neo4j.genai.vector.providers.OpenAI;
 import org.neo4j.genai.vector.providers.TestProvider;
 import org.neo4j.genai.vector.providers.VertexAI;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.values.storable.Value;
 
 class VectorEncodingTest {
     private static final VectorEncoding VECTOR_ENCODING = new VectorEncoding();
+
+    static {
+        VECTOR_ENCODING.graphDatabaseService = Mockito.mock(GraphDatabaseService.class);
+        when(VECTOR_ENCODING.graphDatabaseService.databaseName()).thenReturn("someDatabase");
+    }
 
     @Nested
     class Providers {

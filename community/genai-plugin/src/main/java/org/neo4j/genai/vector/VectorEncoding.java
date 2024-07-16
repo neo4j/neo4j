@@ -30,6 +30,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalDouble;
 import java.util.OptionalLong;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -41,10 +42,18 @@ import org.eclipse.collections.api.list.ImmutableList;
 import org.eclipse.collections.api.map.MutableMap;
 import org.eclipse.collections.impl.collection.mutable.CollectionAdapter;
 import org.neo4j.annotations.service.Service;
+import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.genai.util.Parameters;
 import org.neo4j.genai.util.Parameters.Parameter;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.event.DatabaseEventContext;
+import org.neo4j.graphdb.event.DatabaseEventListenerAdapter;
+import org.neo4j.kernel.extension.ExtensionFactory;
+import org.neo4j.kernel.extension.context.ExtensionContext;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.kernel.monitoring.DatabaseEventListeners;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Description;
@@ -67,7 +76,8 @@ public class VectorEncoding {
             Comparator.comparing(Provider::name, CASE_INSENSITIVE_ORDER),
             CollectionAdapter.adapt(Services.loadAll(Provider.class)));
 
-    private static volatile VectorEncodingCallCountersMonitor MONITOR;
+    // To avoid creating a new Proxy on each method call in a database
+    private static final Map<String, VectorEncodingCallCountersMonitor> MONITORS = new ConcurrentHashMap<>();
 
     @Context
     public GraphDatabaseService graphDatabaseService;
@@ -197,18 +207,12 @@ public class VectorEncoding {
         return map;
     }
 
-    VectorEncodingCallCountersMonitor getMonitor() {
-        var theMonitor = MONITOR;
-        if (theMonitor == null) {
-            synchronized (VectorEncoding.class) {
-                theMonitor = MONITOR;
-                if (theMonitor == null) {
-                    MONITOR = getMonitor0();
-                    theMonitor = MONITOR;
-                }
-            }
-        }
-        return theMonitor;
+    private VectorEncodingCallCountersMonitor getMonitor() {
+        return MONITORS.computeIfAbsent(graphDatabaseService.databaseName(), key -> getMonitor0());
+    }
+
+    private static void removeMonitorFor(String databaseName) {
+        MONITORS.remove(databaseName);
     }
 
     private VectorEncodingCallCountersMonitor getMonitor0() {
@@ -270,6 +274,43 @@ public class VectorEncoding {
     public record InternalBatchRow(long index, String resource, Value vector) {
         InternalBatchRow(BatchRow row) {
             this(row.index(), row.resource(), Values.of(row.vector));
+        }
+    }
+
+    @ServiceProvider
+    public static class MonitorsCleaner extends ExtensionFactory<MonitorsCleaner.Dependencies> {
+
+        public MonitorsCleaner() {
+            super("vector-encoding-monitors-cleaner");
+        }
+
+        @Override
+        public Lifecycle newInstance(ExtensionContext context, MonitorsCleaner.Dependencies dependencies) {
+
+            return new LifecycleAdapter() {
+                @Override
+                public void start() {
+                    dependencies
+                            .databaseEventListeners()
+                            .registerDatabaseEventListener(new DatabaseEventListenerAdapter() {
+
+                                @Override
+                                public void databaseShutdown(DatabaseEventContext eventContext) {
+                                    removeMonitorFor(eventContext.getDatabaseName());
+                                }
+
+                                @Override
+                                public void databasePanic(DatabaseEventContext eventContext) {
+                                    removeMonitorFor(eventContext.getDatabaseName());
+                                }
+                            });
+                }
+            };
+        }
+
+        public interface Dependencies {
+
+            DatabaseEventListeners databaseEventListeners();
         }
     }
 }
