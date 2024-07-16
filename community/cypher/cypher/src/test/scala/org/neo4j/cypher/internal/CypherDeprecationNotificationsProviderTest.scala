@@ -31,14 +31,14 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 class CypherDeprecationNotificationsProviderTest extends CypherFunSuite {
 
   test("should filter out non-deprecation notifications") {
-    val provider = CypherDeprecationNotificationsProvider(
+    val provider = CypherDeprecationNotificationsProvider.fromIterables(
       queryOptionsOffset = InputPosition(1, 2, 3),
-      preParserNotifications = Set(
+      Set(
         DeprecatedFunctionNotification(InputPosition.NONE, "old", "new"),
         CartesianProductNotification(InputPosition.NONE, Set("x", "y")),
         DeprecatedRelTypeSeparatorNotification(InputPosition.NONE)
       ),
-      otherNotifications = Set(
+      Set(
         DeprecatedParameterSyntax(InputPosition.NONE),
         DeprecatedCreateIndexSyntax(InputPosition.NONE),
         MissingAliasNotification(InputPosition.NONE)

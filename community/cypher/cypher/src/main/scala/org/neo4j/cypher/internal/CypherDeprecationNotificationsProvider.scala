@@ -27,27 +27,31 @@ import org.neo4j.kernel.api.query.DeprecationNotificationsProvider
 
 import java.util.function.BiConsumer
 
-final case class CypherDeprecationNotificationsProvider(
-  queryOptionsOffset: InputPosition,
-  preParserNotifications: Set[InternalNotification],
-  otherNotifications: Set[InternalNotification]
-) extends DeprecationNotificationsProvider {
+abstract class CypherDeprecationNotificationsProvider(queryOptionsOffset: InputPosition)
+  extends DeprecationNotificationsProvider {
+
+  protected def notifications: Set[InternalNotification]
 
   override def forEachDeprecation(consumer: BiConsumer[String, Notification]): Unit = {
-    preParserNotifications.foreach { n =>
-      val notification = NotificationWrapping.asKernelNotification(None)(n)
-      if (notification.getStatus == Status.Statement.FeatureDeprecationWarning ||
-        notification.getStatus == Status.Statement.MissingAlias) {
-        consumer.accept(n.notificationName, notification)
-      }
-    }
-
-    otherNotifications.foreach { n =>
+    notifications.foreach { n =>
       val notification = NotificationWrapping.asKernelNotification(Some(queryOptionsOffset))(n)
       if (notification.getStatus == Status.Statement.FeatureDeprecationWarning ||
         notification.getStatus == Status.Statement.MissingAlias) {
         consumer.accept(n.notificationName, notification)
       }
+    }
+  }
+}
+
+object CypherDeprecationNotificationsProvider {
+
+  def fromIterables(
+    queryOptionsOffset: InputPosition,
+    notificationIterables: Iterable[InternalNotification]*
+  ): CypherDeprecationNotificationsProvider = {
+    new CypherDeprecationNotificationsProvider(queryOptionsOffset) {
+      override protected def notifications: Set[InternalNotification] =
+        notificationIterables.flatten.toSet
     }
   }
 }

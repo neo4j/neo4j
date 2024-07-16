@@ -457,10 +457,11 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
     }
 
     override def deprecationNotificationsProvider(queryOptionsOffset: InputPosition): DeprecationNotificationsProvider = {
-      CypherDeprecationNotificationsProvider(
+      CypherDeprecationNotificationsProvider.fromIterables(
         queryOptionsOffset = queryOptionsOffset,
-        preParserNotifications = preParsingNotifications,
-        otherNotifications = executionPlan.notifications ++ planningNotifications
+        preParsingNotifications,
+        executionPlan.notifications,
+        planningNotifications
       )
     }
   }
