@@ -32,7 +32,7 @@ import scala.jdk.CollectionConverters.SetHasAsScala
 
 final case class CypherDeprecationNotificationsProvider(
   queryOptionsOffset: InputPosition,
-  notifications: Set[InternalNotification]
+  notifications: Iterable[InternalNotification]
 ) extends DeprecationNotificationsProvider {
 
   override def forEachDeprecation(consumer: BiConsumer[String, Notification]): Unit = {

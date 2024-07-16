@@ -581,7 +581,7 @@ object CypherCurrentCompiler {
       : DeprecationNotificationsProvider = {
       CypherDeprecationNotificationsProvider(
         queryOptionsOffset = queryOptionsOffset,
-        notifications = executionPlan.notifications ++ planningNotifications
+        notifications = executionPlan.notifications.view ++ planningNotifications.view
       )
     }
   }
