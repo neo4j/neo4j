@@ -1005,4 +1005,93 @@ class ShowConstraintsCommandTest extends ShowCommandTestBase {
       ShowConstraintsClause.typeColumn -> Values.stringValue("UNIQUENESS")
     ))
   }
+
+  test("show graph dependent constraints") {
+    // Given
+    val nodePropTypeConstraintDescriptor =
+      ConstraintDescriptorFactory.typeForSchema(labelDescriptor, PropertyTypeSet.of(SchemaValueType.BOOLEAN), true)
+        .withName("constraint0")
+        .withId(0)
+    val relPropTypeConstraintDescriptor =
+      ConstraintDescriptorFactory.typeForSchema(relTypeDescriptor, PropertyTypeSet.of(SchemaValueType.STRING), true)
+        .withName("constraint1")
+        .withId(1)
+    val nodeExistConstraintDescriptor =
+      ConstraintDescriptorFactory.existsForSchema(labelDescriptor, true)
+        .withName("constraint2")
+        .withId(2)
+    val relExistConstraintDescriptor =
+      ConstraintDescriptorFactory.existsForSchema(relTypeDescriptor, true)
+        .withName("constraint3")
+        .withId(3)
+    when(ctx.getAllConstraints()).thenReturn(Map(
+      nodePropTypeConstraintDescriptor -> nodePropTypeConstraintInfo,
+      relPropTypeConstraintDescriptor -> relPropTypeConstraintInfo,
+      nodeExistConstraintDescriptor -> nodeExistConstraintInfo,
+      relExistConstraintDescriptor -> relExistConstraintInfo
+    ))
+
+    // When
+    val showConstraints = ShowConstraintsCommand(AllConstraints, allColumns, List.empty)
+    val result = showConstraints.originalNameRows(queryState, initialCypherRow).toList
+
+    // Then
+    result should have size 4
+    checkResult(
+      result.head,
+      name = "constraint0",
+      id = 0,
+      constraintType = "NODE_PROPERTY_TYPE",
+      entityType = "NODE",
+      labelsOrTypes = List(label),
+      properties = List(prop),
+      index = Some(null),
+      propType = "BOOLEAN",
+      options = Values.NO_VALUE,
+      createStatement =
+        s"CREATE CONSTRAINT `constraint0` FOR (n:`$label`) REQUIRE (n.`$prop`) IS :: BOOLEAN"
+    )
+    checkResult(
+      result(1),
+      name = "constraint1",
+      id = 1,
+      constraintType = "RELATIONSHIP_PROPERTY_TYPE",
+      entityType = "RELATIONSHIP",
+      labelsOrTypes = List(relType),
+      properties = List(prop),
+      index = Some(null),
+      propType = "STRING",
+      options = Values.NO_VALUE,
+      createStatement =
+        s"CREATE CONSTRAINT `constraint1` FOR ()-[r:`$relType`]-() REQUIRE (r.`$prop`) IS :: STRING"
+    )
+    checkResult(
+      result(2),
+      name = "constraint2",
+      id = 2,
+      constraintType = "NODE_PROPERTY_EXISTENCE",
+      entityType = "NODE",
+      labelsOrTypes = List(label),
+      properties = List(prop),
+      index = Some(null),
+      propType = Some(null),
+      options = Values.NO_VALUE,
+      createStatement =
+        s"CREATE CONSTRAINT `constraint2` FOR (n:`$label`) REQUIRE (n.`$prop`) IS NOT NULL"
+    )
+    checkResult(
+      result(3),
+      name = "constraint3",
+      id = 3,
+      constraintType = "RELATIONSHIP_PROPERTY_EXISTENCE",
+      entityType = "RELATIONSHIP",
+      labelsOrTypes = List(relType),
+      properties = List(prop),
+      index = Some(null),
+      propType = Some(null),
+      options = Values.NO_VALUE,
+      createStatement =
+        s"CREATE CONSTRAINT `constraint3` FOR ()-[r:`$relType`]-() REQUIRE (r.`$prop`) IS NOT NULL"
+    )
+  }
 }
