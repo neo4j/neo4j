@@ -132,10 +132,9 @@ public class TransactionLogsRecovery extends LifecycleAdapter {
 
         monitor.recoveryRequired(recoveryStartInformation);
 
-        LogPosition recoveryToPosition = recoveryStartPosition;
-        LogPosition lastTransactionPosition = recoveryStartPosition;
-        CommittedCommandBatch.BatchInformation lastHighestTransactionBatchInfo = null;
-        CommittedCommandBatch.BatchInformation lastBatchInfo = null;
+        var recoveryContextTracker =
+                new RecoveryContextTracker(recoveryStartPosition, recoveryStartInformation.checkpointInfo());
+
         RecoveryRollbackAppendIndexProvider appendIndexProvider = null;
         boolean incompleteBatchEncountered = false;
         try {
@@ -159,9 +158,10 @@ public class TransactionLogsRecovery extends LifecycleAdapter {
                         while (fullRecovery && transactionsToRecover.next()) {
                             var nextCommandBatch = transactionsToRecover.get();
                             if (!recoveryPredicate.test(nextCommandBatch)) {
-                                monitor.partialRecovery(recoveryPredicate, lastHighestTransactionBatchInfo);
+                                monitor.partialRecovery(
+                                        recoveryPredicate, recoveryContextTracker.getLastHighestTransactionBatchInfo());
                                 fullRecovery = false;
-                                if (lastHighestTransactionBatchInfo == null) {
+                                if (!recoveryContextTracker.hasRecoveredBatches()) {
                                     // First transaction after checkpoint failed predicate test
                                     // we can't always load transaction before checkpoint to check what values we had
                                     // there
@@ -190,8 +190,8 @@ public class TransactionLogsRecovery extends LifecycleAdapter {
                                                                 + "Observed transaction id: %d, recovery criteria: %s.",
                                                         candidate.txId(), recoveryPredicate.describe()));
                                             }
-                                            lastHighestTransactionBatchInfo = candidate.batchInformation();
-                                            lastTransactionPosition = beforeCheckpointCursor.position();
+                                            recoveryContextTracker.commitedBatch(
+                                                    candidate, beforeCheckpointCursor.position());
                                         } else {
                                             throw new RecoveryPredicateException(format(
                                                     "Partial recovery criteria can't be satisfied. No transaction after checkpoint matching "
@@ -220,33 +220,22 @@ public class TransactionLogsRecovery extends LifecycleAdapter {
                                     case INCOMPLETE -> {
                                         monitor.batchApplySkipped(nextCommandBatch);
                                         if (!rollbackIncompleteTransactions) {
-                                            if (lastHighestTransactionBatchInfo == null) {
-                                                var checkpointInfo = recoveryStartInformation.checkpointInfo();
-                                                var transactionId = checkpointInfo.transactionId();
-                                                lastBatchInfo = new CommittedCommandBatch.BatchInformation(
-                                                        transactionId, checkpointInfo.appendIndex());
-                                                lastHighestTransactionBatchInfo =
-                                                        new CommittedCommandBatch.BatchInformation(
-                                                                transactionId, transactionId.appendIndex());
-                                            }
                                             fullRecovery = false;
                                             incompleteBatchEncountered = true;
                                         }
                                     }
                                 }
                                 if (!incompleteBatchEncountered) {
-                                    if (lastHighestTransactionBatchInfo == null
-                                            || lastHighestTransactionBatchInfo.txId() < nextCommandBatch.txId()) {
-                                        lastHighestTransactionBatchInfo = nextCommandBatch.batchInformation();
-                                    }
-                                    lastBatchInfo = nextCommandBatch.batchInformation();
-                                    lastTransactionPosition = transactionsToRecover.position();
-                                    recoveryToPosition = lastTransactionPosition;
+                                    recoveryContextTracker.commitedBatch(
+                                            nextCommandBatch, transactionsToRecover.position());
                                 }
                                 reportProgress();
                             }
                         }
-                        recoveryToPosition = fullRecovery ? transactionsToRecover.position() : lastTransactionPosition;
+                        recoveryContextTracker.completeRecovery(
+                                fullRecovery
+                                        ? transactionsToRecover.position()
+                                        : recoveryContextTracker.getLastTransactionPosition());
                     }
                 } catch (Error
                         | ClosedByInterruptException
@@ -261,25 +250,29 @@ public class TransactionLogsRecovery extends LifecycleAdapter {
                     if (failOnCorruptedLogFiles) {
                         throwUnableToCleanRecover(t);
                     }
-                    if (lastHighestTransactionBatchInfo != null) {
+                    if (recoveryContextTracker.hasRecoveredBatches()) {
                         monitor.failToRecoverTransactionsAfterCommit(
-                                t, lastHighestTransactionBatchInfo, recoveryToPosition);
+                                t,
+                                recoveryContextTracker.getLastHighestTransactionBatchInfo(),
+                                recoveryContextTracker.getRecoveryToPosition());
                     } else {
                         monitor.failToRecoverTransactionsAfterPosition(t, recoveryStartPosition);
                     }
                 }
-                appendIndexProvider = new RecoveryRollbackAppendIndexProvider(lastBatchInfo);
+
+                appendIndexProvider =
+                        new RecoveryRollbackAppendIndexProvider(recoveryContextTracker.getLastBatchInfo());
                 if (rollbackIncompleteTransactions) {
-                    logsTruncator.truncate(recoveryToPosition, recoveryStartInformation.checkpointInfo());
+                    logsTruncator.truncate(
+                            recoveryContextTracker.getRecoveryToPosition(), recoveryStartInformation.checkpointInfo());
                     var rollbackTransactionInfo = rollbackTransactions(
-                            recoveryToPosition, transactionIdTracker, appendIndexProvider, monitor);
+                            recoveryContextTracker.getRecoveryToPosition(),
+                            transactionIdTracker,
+                            appendIndexProvider,
+                            monitor);
                     if (rollbackTransactionInfo != null) {
-                        if (lastHighestTransactionBatchInfo == null
-                                || lastHighestTransactionBatchInfo.txId()
-                                        < rollbackTransactionInfo.batchInfo().txId()) {
-                            lastHighestTransactionBatchInfo = rollbackTransactionInfo.batchInfo();
-                        }
-                        lastTransactionPosition = rollbackTransactionInfo.position();
+                        recoveryContextTracker.rollbackBatch(
+                                rollbackTransactionInfo, rollbackTransactionInfo.position());
                     }
                 }
             }
@@ -290,10 +283,10 @@ public class TransactionLogsRecovery extends LifecycleAdapter {
         try (var cursorContext = contextFactory.create(RECOVERY_COMPLETED_TAG)) {
             final boolean missingLogs = recoveryStartInformation.missingLogs();
             recoveryService.transactionsRecovered(
-                    lastHighestTransactionBatchInfo,
+                    recoveryContextTracker.getLastHighestTransactionBatchInfo(),
                     appendIndexProvider,
-                    lastTransactionPosition,
-                    recoveryToPosition,
+                    recoveryContextTracker.getLastTransactionPosition(),
+                    recoveryContextTracker.getRecoveryToPosition(),
                     recoveryStartInformation.getCheckpointPosition(),
                     missingLogs,
                     cursorContext);
@@ -444,8 +437,6 @@ public class TransactionLogsRecovery extends LifecycleAdapter {
     public void shutdown() throws Exception {
         schemaLife.shutdown();
     }
-
-    record RollbackTransactionInfo(CommittedCommandBatch.BatchInformation batchInfo, LogPosition position) {}
 
     private static class RecoveryRollbackAppendIndexProvider implements AppendIndexProvider {
         private final MutableLong rollbackIndex;
