@@ -82,8 +82,9 @@ class OnlineIndexSamplingJob implements IndexSamplingJob
                 {
                     IndexSample sample = sampler.sampleIndex( cursorContext, stopped );
 
+                    boolean wasInterrupted = stopped.get();
                     // check again if the index is online before saving the counts in the store
-                    if ( indexProxy.getState() == ONLINE )
+                    if ( indexProxy.getState() == ONLINE && !wasInterrupted )
                     {
                         indexStatisticsStore.replaceStats( indexId, sample );
                         durationLogger.markAsFinished();
@@ -95,7 +96,7 @@ class OnlineIndexSamplingJob implements IndexSamplingJob
                     }
                     else
                     {
-                        durationLogger.markAsAborted( "Index no longer ONLINE" );
+                        durationLogger.markAsAborted( wasInterrupted ? "Sampling job aborted" : "Index no longer ONLINE" );
                     }
                 }
             }

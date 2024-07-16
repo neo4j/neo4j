@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import java.time.Duration;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -108,6 +109,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
@@ -116,6 +118,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.RETURNS_MOCKS;
+import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
@@ -1304,6 +1307,39 @@ class IndexingServiceTest
         verify( accessor ).drop();
     }
 
+    @Test
+    void shouldStopBackgroundSampling()
+    {
+        assertTimeoutPreemptively( Duration.ofSeconds( 30 ), () ->
+        {
+            var localLife = new LifeSupport();
+            var indexingService = newIndexingServiceWithMockedDependencies(
+                    populator, accessor, withData(), IndexMonitor.NO_MONITOR, localLife );
+            localLife.start();
+            indexingService.createIndexes( AUTH_DISABLED, index );
+            waitForIndexesToComeOnline( indexingService, index );
+
+            IndexSampler neverEndingSampler = ( cursorContext, stopped ) ->
+            {
+                while ( !stopped.get() )
+                {
+                    Thread.yield();
+                }
+                return new IndexSample();
+            };
+            ValueIndexReader indexReader = mock( ValueIndexReader.class );
+            when( indexReader.createSampler() ).thenReturn( neverEndingSampler );
+            when( accessor.newValueReader() ).thenReturn( indexReader );
+
+            clearInvocations( indexStatisticsStore );
+            indexingService.triggerIndexSampling( backgroundRebuildAll() );
+            // shouldn't hang
+            localLife.stop();
+            // and the index statistics store should not have been updated
+            verify( indexStatisticsStore, never() ).replaceStats( anyLong(), any() );
+        });
+    }
+
     /*
      * This scenario is a semi-hypothetical scenario and yet believed to have been observed at least once in the wild:
      *
@@ -1504,6 +1540,12 @@ class IndexingServiceTest
     private IndexingService newIndexingServiceWithMockedDependencies(
             IndexPopulator populator, IndexAccessor accessor, DataUpdates data, IndexMonitor monitor, IndexDescriptor... rules ) throws IOException
     {
+        return newIndexingServiceWithMockedDependencies(populator, accessor, data, monitor, life, rules);
+    }
+    private IndexingService newIndexingServiceWithMockedDependencies(
+            IndexPopulator populator, IndexAccessor accessor, DataUpdates data, IndexMonitor monitor,
+            LifeSupport providedLife, IndexDescriptor... rules ) throws IOException
+    {
         when( indexProvider.getInitialState( any( IndexDescriptor.class ), any( CursorContext.class ) ) ).thenReturn( ONLINE );
         when( indexProvider.getProviderDescriptor() ).thenReturn( PROVIDER_DESCRIPTOR );
         when( indexProvider.getPopulator( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any(), any(), any( TokenNameLookup.class ) ) )
@@ -1517,9 +1559,9 @@ class IndexingServiceTest
         Config config = Config.newBuilder()
                 .set( default_schema_provider, PROVIDER_DESCRIPTOR.name() ).build();
 
-        MockIndexProviderMap providerMap = life.add( new MockIndexProviderMap( indexProvider ) );
-        return life.add( IndexingServiceFactory.createIndexingService( config,
-                        life.add( scheduler ), providerMap,
+        MockIndexProviderMap providerMap = providedLife.add( new MockIndexProviderMap( indexProvider ) );
+        return providedLife.add( IndexingServiceFactory.createIndexingService( config,
+                        providedLife.add( scheduler ), providerMap,
                         storeViewFactory,
                         nameLookup,
                         loop( iterator( rules ) ),
