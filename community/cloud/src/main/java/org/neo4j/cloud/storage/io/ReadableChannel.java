@@ -310,28 +310,28 @@ public abstract class ReadableChannel extends InputStream implements ReadableByt
         log.warn(
                 "Downloading %s of a file in chunks of %s - consider using a path based output stream",
                 bytesToString(actualSize), bytesToString(queueBufferSize));
-        try (var progress = progressListener(actualSize)) {
-            final var bytes = new byte[queueBufferSize];
-            try (var queue = newPushQueue(
-                    data -> {
-                        final var length = data.remaining();
-                        if (data.hasArray()) {
-                            out.write(data.array(), 0, length);
-                        } else {
-                            data.get(bytes, 0, length);
-                            out.write(bytes, 0, length);
-                        }
-
-                        progress.add(length);
-                        return length;
-                    },
-                    progress)) {
-                queue.run();
-            }
+        try (var progress = progressListener(actualSize);
+                var queue = newPushQueue(handlerForOutputStream(out), progress)) {
+            queue.run();
             return actualSize;
         } catch (UncheckedIOException ex) {
             throw ex.getCause();
         }
+    }
+
+    private ByteBufferHandler handlerForOutputStream(OutputStream out) {
+        final var bytes = new byte[queueBufferSize];
+        return data -> {
+            final var length = data.remaining();
+            if (data.hasArray()) {
+                out.write(data.array(), 0, length);
+            } else {
+                data.get(bytes, 0, length);
+                out.write(bytes, 0, length);
+            }
+
+            return length;
+        };
     }
 
     private ProgressListener progressListener(long totalCount) {

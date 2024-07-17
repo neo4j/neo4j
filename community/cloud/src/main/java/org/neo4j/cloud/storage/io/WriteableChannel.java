@@ -23,9 +23,16 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.channels.Channels;
 import java.nio.channels.ClosedChannelException;
+import java.nio.channels.FileChannel;
+import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.concurrent.atomic.AtomicReference;
+import org.neo4j.cloud.storage.StorageSystemProvider;
 import org.neo4j.io.memory.ByteBuffers;
 import org.neo4j.memory.MemoryTracker;
 
@@ -59,6 +66,30 @@ public abstract class WriteableChannel extends OutputStream implements WritableB
     public long size() throws IOException {
         ensureOpen();
         return internalGetSize();
+    }
+
+    public long transferFrom(Path path) throws IOException {
+        var transferred = 0L;
+        var read = 0;
+        try (var fileChannel = toChannel(path)) {
+            while ((read = fileChannel.read(buffer)) >= 0) {
+                checkBufferIsFull();
+                transferred += read;
+            }
+
+            // any remaining content in the buffer will be written in completeWriteProcess (via close)
+        }
+
+        return transferred;
+    }
+
+    private ReadableByteChannel toChannel(Path path) throws IOException {
+        if (path.getFileSystem().provider() instanceof StorageSystemProvider) {
+            // FileChannel.open is not supported so need to use intermediate byte buffer on input stream
+            return Channels.newChannel(Files.newInputStream(path));
+        } else {
+            return FileChannel.open(path, StandardOpenOption.READ);
+        }
     }
 
     @Override
