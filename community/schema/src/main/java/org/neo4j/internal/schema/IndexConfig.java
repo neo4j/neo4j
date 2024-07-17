@@ -26,9 +26,9 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.function.Supplier;
 import org.eclipse.collections.api.RichIterable;
-import org.eclipse.collections.api.map.ImmutableMap;
+import org.eclipse.collections.api.factory.SortedMaps;
+import org.eclipse.collections.api.map.sorted.ImmutableSortedMap;
 import org.eclipse.collections.api.tuple.Pair;
-import org.eclipse.collections.impl.factory.Maps;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueCategory;
 
@@ -39,11 +39,11 @@ import org.neo4j.values.storable.ValueCategory;
  * <em>not</em> supported.
  */
 public final class IndexConfig {
-    private static final IndexConfig EMPTY = new IndexConfig(Maps.immutable.empty());
+    private static final IndexConfig EMPTY = new IndexConfig(SortedMaps.immutable.empty());
 
-    private final ImmutableMap<String, Value> map;
+    private final ImmutableSortedMap<String, Value> map;
 
-    private IndexConfig(ImmutableMap<String, Value> map) {
+    private IndexConfig(ImmutableSortedMap<String, Value> map) {
         this.map = map;
     }
 
@@ -52,14 +52,17 @@ public final class IndexConfig {
     }
 
     public static IndexConfig with(String key, Value value) {
-        return new IndexConfig(Maps.immutable.with(key, value));
+        return new IndexConfig(SortedMaps.immutable.with(String.CASE_INSENSITIVE_ORDER, key, value));
     }
 
     public static IndexConfig with(Map<String, Value> map) {
         for (Value value : map.values()) {
             validate(value);
         }
-        return new IndexConfig(Maps.immutable.withAll(map));
+        return new IndexConfig(SortedMaps.mutable
+                .<String, Value>with(String.CASE_INSENSITIVE_ORDER)
+                .withMap(map)
+                .toImmutable());
     }
 
     private static void validate(Value value) {
@@ -113,7 +116,7 @@ public final class IndexConfig {
     }
 
     public Map<String, Value> asMap() {
-        return unmodifiableMap(map.toMap());
+        return unmodifiableMap(map.castToMap());
     }
 
     @Override
