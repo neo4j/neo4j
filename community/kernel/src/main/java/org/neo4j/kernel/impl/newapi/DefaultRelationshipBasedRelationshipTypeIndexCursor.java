@@ -174,4 +174,9 @@ public class DefaultRelationshipBasedRelationshipTypeIndexCursor
             throw new IllegalStateException("Relationship hasn't been read from store");
         }
     }
+
+    @Override
+    public RelationshipTypeIndexCursor getResource() {
+        return this;
+    }
 }

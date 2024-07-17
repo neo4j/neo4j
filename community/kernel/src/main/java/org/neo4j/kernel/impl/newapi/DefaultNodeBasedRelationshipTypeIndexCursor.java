@@ -272,6 +272,11 @@ public class DefaultNodeBasedRelationshipTypeIndexCursor
         }
     }
 
+    @Override
+    public RelationshipTypeIndexCursor getResource() {
+        return this;
+    }
+
     private enum ReadState {
         TXSTATE_READ,
         INDEX_READ,

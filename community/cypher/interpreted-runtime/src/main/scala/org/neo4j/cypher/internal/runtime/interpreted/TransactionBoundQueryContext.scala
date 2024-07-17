@@ -754,7 +754,7 @@ private[internal] class TransactionBoundReadQueryContext(
       new TokenPredicate(relType),
       transactionalContext.cursorContext
     )
-    resources.trace(typeCursor)
+    resources.trace(typeCursor.getResource)
     new RelationshipTypeCursorIterator(read, typeCursor)
   }
 
