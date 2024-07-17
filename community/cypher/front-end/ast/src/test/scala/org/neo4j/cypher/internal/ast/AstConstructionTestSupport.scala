@@ -156,6 +156,7 @@ import org.neo4j.cypher.internal.expressions.functions.CharacterLength
 import org.neo4j.cypher.internal.expressions.functions.Collect
 import org.neo4j.cypher.internal.expressions.functions.Count
 import org.neo4j.cypher.internal.expressions.functions.ElementId
+import org.neo4j.cypher.internal.expressions.functions.EndNode
 import org.neo4j.cypher.internal.expressions.functions.Exists
 import org.neo4j.cypher.internal.expressions.functions.Id
 import org.neo4j.cypher.internal.expressions.functions.Length
@@ -165,6 +166,7 @@ import org.neo4j.cypher.internal.expressions.functions.Nodes
 import org.neo4j.cypher.internal.expressions.functions.Percentiles
 import org.neo4j.cypher.internal.expressions.functions.Relationships
 import org.neo4j.cypher.internal.expressions.functions.Size
+import org.neo4j.cypher.internal.expressions.functions.StartNode
 import org.neo4j.cypher.internal.expressions.functions.Sum
 import org.neo4j.cypher.internal.label_expressions.LabelExpression
 import org.neo4j.cypher.internal.label_expressions.LabelExpression.Leaf
@@ -452,6 +454,10 @@ trait AstConstructionTestSupport {
 
   def length(expression: Expression): FunctionInvocation =
     FunctionInvocation(expression, FunctionName(Length.name)(pos))
+
+  def startNode(variableName: String): FunctionInvocation = StartNode(varFor(variableName))(pos)
+
+  def endNode(variableName: String): FunctionInvocation = EndNode(varFor(variableName))(pos)
 
   def percentiles(
     input: Expression,

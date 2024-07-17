@@ -509,6 +509,22 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     nodePredicates: Seq[Predicate] = Seq.empty,
     relationshipPredicates: Seq[Predicate] = Seq.empty
   ): IMPL = {
+    expandExpr(
+      pattern,
+      expandMode,
+      projectedDir,
+      nodePredicates.map(_.asVariablePredicate),
+      relationshipPredicates.map(_.asVariablePredicate)
+    )
+  }
+
+  def expandExpr(
+    pattern: String,
+    expandMode: ExpansionMode = ExpandAll,
+    projectedDir: SemanticDirection = OUTGOING,
+    nodePredicates: Seq[VariablePredicate] = Seq.empty,
+    relationshipPredicates: Seq[VariablePredicate] = Seq.empty
+  ): IMPL = {
     val p = patternParser.parse(pattern)
     newRelationship(varFor(p.relName))
     if (expandMode == ExpandAll) {
@@ -532,8 +548,8 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
             varFor(p.relName),
             varPatternLength,
             expandMode,
-            nodePredicates.map(_.asVariablePredicate),
-            relationshipPredicates.map(_.asVariablePredicate)
+            nodePredicates,
+            relationshipPredicates
           )(_)
         ))
     }

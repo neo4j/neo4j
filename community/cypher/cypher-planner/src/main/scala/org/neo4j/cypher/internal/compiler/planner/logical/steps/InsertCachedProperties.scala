@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.AndedPropertyInequalitiesRemoved
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.CardinalityRewriter
+import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.LogicalPlanRewritten
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.LogicalPlanContainsEagerIfNeeded
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.InsertCachedProperties.PropertyUsages
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.InsertCachedProperties.PropertyUsagesAndRenamings
@@ -467,6 +468,8 @@ case object InsertCachedProperties extends StepSequencer.Step with DefaultPostCo
   override def preConditions: Set[StepSequencer.Condition] = Set(
     // This rewriter operates on the LogicalPlan
     CompilationContains[LogicalPlan](),
+    // Ensure the logical plan is rewritten already. This is already being ensured by the condition AndedPropertyInequalitiesRemoved, however it is best to specify explicitly.
+    LogicalPlanRewritten,
     // AndedPropertyInequalities contain the same property twice, which would mess up our counts.
     AndedPropertyInequalitiesRemoved,
     // PushdownPropertyReads needs effectiveCardinalities

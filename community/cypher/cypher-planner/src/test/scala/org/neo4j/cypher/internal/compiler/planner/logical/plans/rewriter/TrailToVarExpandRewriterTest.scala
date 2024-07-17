@@ -215,6 +215,59 @@ class TrailToVarExpandRewriterTest extends CypherFunSuite with LogicalPlanningTe
     preserves(trail)
   }
 
+  test("Rewrites MATCH (a) ((n)<-[r]-(m) WHERE n.p = true)+ (b) RETURN 1 AS s in the INCOMING direction") {
+    val trail = subPlanBuilder
+      .projection("1 AS s")
+      .trail(`(a) ((n)-[r]-(m))+ (b)`.empty)
+      .|.filterExpressionOrString("n_i.p = true", isRepeatTrailUnique("r_i"))
+      .|.expand("(n_i)<-[r_i]-(m_i)")
+      .|.argument("n_i")
+      .allNodeScan("a")
+      .build()
+    val expand = subPlanBuilder
+      .projection("1 AS s")
+      .expand(
+        "(a)<-[r_i*1..]-(b)",
+        projectedDir = INCOMING,
+        relationshipPredicates = Seq(Predicate("r_i", "endNode(r_i).p = true"))
+      )
+      .allNodeScan("a")
+      .build()
+    rewrites(trail, expand)
+  }
+
+  test("Rewrites MATCH (a) ((n)-[r]->(m) WHERE n.p <> m.p)+ (b) RETURN 1 AS s") {
+    val trail = subPlanBuilder
+      .projection("1 AS s")
+      .trail(`(a) ((n)-[r]-(m))+ (b)`.empty)
+      .|.filterExpressionOrString("n_i.p <> m_i.p", isRepeatTrailUnique("r_i"))
+      .|.expand("(n_i)-[r_i]->(m_i)")
+      .|.argument("n_i")
+      .allNodeScan("a")
+      .build()
+    val expand = subPlanBuilder
+      .projection("1 AS s")
+      .expand(
+        "(a)-[r_i*1..]->(b)",
+        relationshipPredicates = Seq(Predicate("r_i", "startNode(r_i).p <> endNode(r_i).p"))
+      )
+      .allNodeScan("a")
+      .build()
+    rewrites(trail, expand)
+  }
+
+  test("Preserves bidirectional MATCH (a) ((n)-[r]-(m) WHERE n.p <> m.p)+ (b) RETURN 1 AS s") {
+    val trail = subPlanBuilder
+      .projection("1 AS s")
+      .trail(`(a) ((n)-[r]-(m))+ (b)`.empty)
+      .|.filterExpressionOrString("n_i.p <> m_i.p", isRepeatTrailUnique("r_i"))
+      .|.expand("(n_i)-[r_i]-(m_i)")
+      .|.argument("n_i")
+      .allNodeScan("a")
+      .build()
+    preserves(trail)
+  }
+
   // pre-filter predicate with dependency on variable from previous clause
   test("Rewrites MATCH (z) MATCH (a) ((n)-[r]->(m) WHERE r.p = z.p)+ (b) RETURN 1 AS s") {
     val trail = subPlanBuilder
@@ -709,6 +762,36 @@ class TrailToVarExpandRewriterTest extends CypherFunSuite with LogicalPlanningTe
       .projection("1 AS s")
       .expand("(b)<-[r_i:R*1..]-(a)")
       .expand("(b)-[rr_i:RR*1..]->(c)")
+      .allNodeScan("b")
+      .build()
+
+    rewrites(trail, expand)
+  }
+
+  test(
+    "Rewrites MATCH (a) ((n)-[r:R]->(m) WHERE n.prop <> m.prop)+ (b) ((x)-[rr:RR]->(y {name: 'foo'))+ (c) RETURN 1 AS s"
+  ) {
+
+    val trail = subPlanBuilder
+      .projection("1 AS s")
+      .trail(`(a) ((n)-[r]-(m))+ (b)`.empty.reverse)
+      .|.filterExpressionOrString("n_i.prop <> m_i.prop", isRepeatTrailUnique("r_i"))
+      .|.expand("(m_i)<-[r_i:R]-(n_i)")
+      .|.argument("m_i")
+      .trail(`(b) ((x)-[rr]-(y))+ (c)`.empty)
+      .|.filterExpressionOrString("y_i.name = 'foo'", isRepeatTrailUnique("rr_i"))
+      .|.expand("(x_i)-[rr_i:RR]->(y_i)")
+      .|.argument("x_i")
+      .allNodeScan("b")
+      .build()
+
+    val expand = subPlanBuilder
+      .projection("1 AS s")
+      .expand(
+        "(b)<-[r_i:R*1..]-(a)",
+        relationshipPredicates = Seq(Predicate("r_i", "startNode(r_i).prop <> endNode(r_i).prop"))
+      )
+      .expand("(b)-[rr_i:RR*1..]->(c)", relationshipPredicates = Seq(Predicate("rr_i", "endNode(rr_i).name = 'foo'")))
       .allNodeScan("b")
       .build()
 

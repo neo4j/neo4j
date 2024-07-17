@@ -19,6 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter
 
+import org.neo4j.cypher.internal.compiler.helpers.IterableHelper.RichIterableOnce
+import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.TrailToVarExpandRewriter.InlinableRelationshipPredicate
+import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.TrailToVarExpandRewriter.NodeToRelationshipRewritablePredicates
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.TrailToVarExpandRewriter.RewritableTrailQuantifier
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.TrailToVarExpandRewriter.RewritableTrailRhs
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.TrailToVarExpandRewriter.VariableGroupings
@@ -29,6 +32,9 @@ import org.neo4j.cypher.internal.expressions.IsRepeatTrailUnique
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.NoneOfRelationships
 import org.neo4j.cypher.internal.expressions.SemanticDirection
+import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
+import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
+import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.expressions.VariableGrouping
 import org.neo4j.cypher.internal.ir.VarPatternLength
 import org.neo4j.cypher.internal.logical.plans.Argument
@@ -67,7 +73,7 @@ import org.neo4j.cypher.internal.util.topDown
  * and VarExpand to be equivalent when the following conditions are met:
  *  - the Trail relationship pattern contains a single relationship
  *  - the Trail node group variables are not used by downstream logical plans and thus empty
- *  - the Trail inner node variables are not used during path expansion in any predicates
+ *  - the Trail inner node variables are only used during path expansion in predicates within the QPP, and the QPP is a single directional relationship, i.e., in case where it can be substituted with startNode/endNode of the relationship.
  *  - the Trail quantifier can be converted losslessly from Long to Int
  *
  * This rewriter should run after [[RemoveUnusedNamedGroupVariablesPhase]], so that unused group variables are pruned.
@@ -85,7 +91,7 @@ case class TrailToVarExpandRewriter(
         _,
         RewritableTrailRhs(
           expand,
-          relationshipPredicates
+          inlinablePredicates
         ),
         RewritableTrailQuantifier(quantifier),
         _,
@@ -100,7 +106,18 @@ case class TrailToVarExpandRewriter(
         _
       ) =>
       val varExpandRel = relationship.map(_.group).getOrElse(trail.innerRelationships.head)
-      val varExpand = createVarExpand(trail, expand, quantifier, relationshipPredicates, varExpandRel)
+
+      val rewrittenRelationshipPredicates = inlinablePredicates.collect {
+        case InlinableRelationshipPredicate(predicate, relationship) =>
+          VariablePredicate(relationship, predicate)
+        case NodeToRelationshipRewritablePredicates(predicate, startNode, endNode, relationship) =>
+          VariablePredicate(
+            relationship,
+            predicate.endoRewrite(NodeToRelationshipExpressionRewriter(startNode, endNode, relationship))
+          )
+      }
+
+      val varExpand = createVarExpand(trail, expand, quantifier, rewrittenRelationshipPredicates, varExpandRel)
       val expandWithUniqueRel = maybeAddRelUniquenessPredicates(trail, varExpandRel, varExpand)
       val expandWithUniqueGroupRel = maybeAddGroupRelUniquenessPredicates(trail, varExpandRel, expandWithUniqueRel)
       expandWithUniqueGroupRel
@@ -243,22 +260,50 @@ object TrailToVarExpandRewriter {
      * therefor guaranteed to be solved. Because this rewriter just swaps a Trail for a VarExpand without changing its
      * position in the overarching LogicalPlan, we do not need to worry about binding orders in our rewriter.
      */
-    def unapply(trailRhs: LogicalPlan): Option[(Expand, Seq[VariablePredicate])] = {
-      def relationshipVariablePredicate(
-        innerRel: LogicalVariable,
-        innerNodes: Set[LogicalVariable]
-      ): PartialFunction[Expression, VariablePredicate] = {
-        case p if p.dependencies(innerRel) && p.dependencies.intersect(innerNodes).isEmpty =>
-          VariablePredicate(innerRel, p)
+    def unapply(trailRhs: LogicalPlan): Option[(Expand, Seq[InlinablePredicate])] = {
+      def inlinablePredicate(
+        predicate: Expression,
+        expand: Expand
+      ): Option[InlinablePredicate] = {
+        if (isAPredicateOnRelationshipOnly(predicate, expand)) {
+          Some(InlinableRelationshipPredicate(predicate, expand.relName))
+        } else if (isAPredicateOnInnerNodesOnly(predicate, expand)) {
+          expand.dir match {
+            case OUTGOING => Some(NodeToRelationshipRewritablePredicates(
+                predicate = predicate,
+                startNode = expand.from,
+                endNode = expand.to,
+                relationship = expand.relName
+              ))
+            case INCOMING =>
+              Some(NodeToRelationshipRewritablePredicates(
+                predicate = predicate,
+                startNode = expand.to,
+                endNode = expand.from,
+                relationship = expand.relName
+              ))
+            case BOTH =>
+              None
+          }
+        } else {
+          None
+        }
       }
 
+      def isAPredicateOnRelationshipOnly(predicate: Expression, expand: Expand): Boolean =
+        predicate.dependencies.contains(expand.relName) && !predicate.dependencies.contains(
+          expand.from
+        ) && !predicate.dependencies.contains(expand.to)
+
+      def isAPredicateOnInnerNodesOnly(predicate: Expression, expand: Expand): Boolean =
+        predicate.dependencies.subsetOf(Set(expand.from, expand.to))
+
       trailRhs match {
-        case Selection(Ands(predicates), expand @ Expand(_: Argument, from, _, _, to, relationship, ExpandAll)) =>
-          val rewritableCandidates = predicates.filterNot(_.isInstanceOf[IsRepeatTrailUnique])
-          val rewritable =
-            rewritableCandidates.collect(relationshipVariablePredicate(relationship, Set(from, to)))
-          val allPredicatesAreRewritable = rewritableCandidates.size == rewritable.size
-          Option.when(allPredicatesAreRewritable)((expand, rewritable.toSeq))
+        case Selection(Ands(predicates), expand @ Expand(_: Argument, _, _, _, _, _, ExpandAll)) =>
+          predicates.view
+            .filterNot(_.isInstanceOf[IsRepeatTrailUnique])
+            .traverse(inlinablePredicate(_, expand))
+            .map(inlinablePredicates => (expand, inlinablePredicates.toSeq))
         case _ => None
       }
     }
@@ -273,4 +318,16 @@ object TrailToVarExpandRewriter {
       } yield VarPatternLength(min, max)
     }
   }
+
+  sealed trait InlinablePredicate
+
+  final case class InlinableRelationshipPredicate(predicate: Expression, relationship: LogicalVariable)
+      extends InlinablePredicate
+
+  final case class NodeToRelationshipRewritablePredicates(
+    predicate: Expression,
+    startNode: LogicalVariable,
+    endNode: LogicalVariable,
+    relationship: LogicalVariable
+  ) extends InlinablePredicate
 }

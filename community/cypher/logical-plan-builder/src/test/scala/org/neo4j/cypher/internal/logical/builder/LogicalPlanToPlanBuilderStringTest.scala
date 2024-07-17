@@ -57,6 +57,7 @@ import org.neo4j.cypher.internal.logical.plans.Descending
 import org.neo4j.cypher.internal.logical.plans.DoNotGetValue
 import org.neo4j.cypher.internal.logical.plans.Expand.ExpandAll
 import org.neo4j.cypher.internal.logical.plans.Expand.ExpandInto
+import org.neo4j.cypher.internal.logical.plans.Expand.VariablePredicate
 import org.neo4j.cypher.internal.logical.plans.FindShortestPaths.SkipSameNode
 import org.neo4j.cypher.internal.logical.plans.GetValue
 import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
@@ -436,6 +437,21 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName wi
         relationshipPredicates = Seq(Predicate("r", "id(r) <> 5"), Predicate("r2", "id(r2) > 5"))
       )
       .argument()
+      .build()
+  )
+
+  testPlan(
+    "expandExpr",
+    new TestPlanBuilder()
+      .produceResults("x")
+      .expandExpr(
+        "(start)-[r*0..]->(end)",
+        expandMode = ExpandAll,
+        projectedDir = OUTGOING,
+        nodePredicates = Seq(),
+        relationshipPredicates = Seq(VariablePredicate(varFor("r"), isNotNull(prop(endNode("r"), "foo"))))
+      )
+      .nodeByLabelScan("start", "A", IndexOrderNone)
       .build()
   )
 
