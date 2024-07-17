@@ -33,7 +33,7 @@ import scala.jdk.CollectionConverters.SetHasAsScala
 abstract class CypherDeprecationNotificationsProvider(queryOptionsOffset: InputPosition)
     extends DeprecationNotificationsProvider {
 
-  protected def notifications: Iterator[InternalNotification]
+  protected def notifications: Set[InternalNotification]
 
   override def forEachDeprecation(consumer: BiConsumer[String, Notification]): Unit = {
     notifications.foreach { n =>
@@ -53,8 +53,8 @@ object CypherDeprecationNotificationsProvider {
   ): CypherDeprecationNotificationsProvider = {
     val scalaNotifications = notifications.asScala.toSet
     new CypherDeprecationNotificationsProvider(queryOptionsOffset) {
-      override protected def notifications: Iterator[InternalNotification] =
-        scalaNotifications.iterator
+      override protected def notifications: Set[InternalNotification] =
+        scalaNotifications
     }
   }
 
@@ -63,8 +63,8 @@ object CypherDeprecationNotificationsProvider {
     notificationIterables: Iterable[InternalNotification]*
   ): CypherDeprecationNotificationsProvider = {
     new CypherDeprecationNotificationsProvider(queryOptionsOffset) {
-      override protected def notifications: Iterator[InternalNotification] =
-        notificationIterables.iterator.flatMap(_.iterator)
+      override protected def notifications: Set[InternalNotification] =
+        notificationIterables.flatten.toSet
     }
   }
 }
