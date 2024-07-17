@@ -2037,10 +2037,10 @@
   {
     "admin": true,
     "name": "dbms.cluster.uncordonServer",
-    "isDeprecated": false,
-    "deprecatedBy": null,
+    "isDeprecated": true,
+    "deprecatedBy": "ENABLE SERVER",
     "option": {
-      "deprecated": false
+      "deprecated": true
     },
     "signature": "dbms.cluster.uncordonServer(server :: STRING)",
     "rolesBoostedExecution": [
