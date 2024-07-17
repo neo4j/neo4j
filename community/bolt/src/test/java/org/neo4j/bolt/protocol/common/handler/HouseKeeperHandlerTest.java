@@ -32,7 +32,6 @@ import static org.neo4j.logging.LogAssertions.assertThat;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandler;
 import io.netty.channel.ChannelInitializer;
@@ -133,9 +132,10 @@ public class HouseKeeperHandlerTest {
         var bootstrap = newBootstrap(this.connection, this.handler);
 
         try (ServerSocket serverSocket = new ServerSocket(0)) {
-            var future =
-                    bootstrap.connect("localhost", serverSocket.getLocalPort()).sync();
-            var channel = future.channel();
+            var channel = bootstrap
+                    .connect("localhost", serverSocket.getLocalPort())
+                    .sync()
+                    .channel();
 
             // write some messages without flushing
             for (int i = 0; i < 100; i++) {
@@ -164,9 +164,10 @@ public class HouseKeeperHandlerTest {
         var error3 = new RuntimeException("error #3");
 
         try (ServerSocket serverSocket = new ServerSocket(0)) {
-            ChannelFuture future =
-                    bootstrap.connect("localhost", serverSocket.getLocalPort()).sync();
-            Channel channel = future.channel();
+            var channel = bootstrap
+                    .connect("localhost", serverSocket.getLocalPort())
+                    .sync()
+                    .channel();
 
             // fire multiple errors
             channel.pipeline().fireExceptionCaught(error1);

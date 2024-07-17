@@ -133,17 +133,7 @@ public class NetworkResponseHandler extends AbstractMetadataAwareResponseHandler
     @Override
     public void onIgnored() {
         try {
-            var f = this.connection.writeAndFlush(IgnoredMessage.INSTANCE).sync();
-
-            if (!f.isSuccess()) {
-                var cause = f.cause();
-                if (cause == null) {
-                    throw new IllegalStateException("Unknown error");
-                }
-
-                throw cause;
-            }
-
+            this.connection.writeAndFlush(IgnoredMessage.INSTANCE).sync();
             this.connection.notifyListenersSafely("requestResultIgnored", ConnectionListener::onResponseIgnored);
         } catch (Throwable ex) {
             throw new BoltStreamingWriteException("Failed to transmit operation result: Response write failure", ex);
@@ -167,16 +157,7 @@ public class NetworkResponseHandler extends AbstractMetadataAwareResponseHandler
         }
 
         try {
-            var f = this.connection.writeAndFlush(new SuccessMessage(metadata)).sync();
-
-            if (!f.isSuccess()) {
-                var cause = f.cause();
-                if (cause == null) {
-                    throw new IllegalStateException("Unknown error");
-                }
-
-                throw cause;
-            }
+            this.connection.writeAndFlush(new SuccessMessage(metadata)).sync();
 
             this.connection.notifyListenersSafely(
                     "requestResultSuccess", listener -> listener.onResponseSuccess(metadata));
