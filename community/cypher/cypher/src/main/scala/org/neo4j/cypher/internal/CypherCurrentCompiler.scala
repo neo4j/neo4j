@@ -579,9 +579,10 @@ object CypherCurrentCompiler {
 
     override def deprecationNotificationsProvider(queryOptionsOffset: InputPosition)
       : DeprecationNotificationsProvider = {
-      CypherDeprecationNotificationsProvider(
+      CypherDeprecationNotificationsProvider.fromIterables(
         queryOptionsOffset = queryOptionsOffset,
-        notifications = executionPlan.notifications.view ++ planningNotifications.view
+        executionPlan.notifications,
+        planningNotifications
       )
     }
   }

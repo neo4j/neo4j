@@ -46,9 +46,9 @@ case class FabricPlan(
     internalNotifications.toSeq.map(NotificationWrapping.asKernelNotification(Some(queryOptionsOffset)))
 
   def deprecationNotificationsProvider: CypherDeprecationNotificationsProvider = {
-    CypherDeprecationNotificationsProvider(
+    CypherDeprecationNotificationsProvider.fromIterables(
       queryOptionsOffset = queryOptionsOffset,
-      notifications = internalNotifications
+      internalNotifications
     )
   }
 }

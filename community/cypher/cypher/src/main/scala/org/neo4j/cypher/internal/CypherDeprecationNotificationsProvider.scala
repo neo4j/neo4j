@@ -30,10 +30,10 @@ import java.util.function.BiConsumer
 
 import scala.jdk.CollectionConverters.SetHasAsScala
 
-final case class CypherDeprecationNotificationsProvider(
-  queryOptionsOffset: InputPosition,
-  notifications: Iterable[InternalNotification]
-) extends DeprecationNotificationsProvider {
+abstract class CypherDeprecationNotificationsProvider(queryOptionsOffset: InputPosition)
+    extends DeprecationNotificationsProvider {
+
+  protected def notifications: Iterator[InternalNotification]
 
   override def forEachDeprecation(consumer: BiConsumer[String, Notification]): Unit = {
     notifications.foreach { n =>
@@ -51,9 +51,20 @@ object CypherDeprecationNotificationsProvider {
     queryOptionsOffset: InputPosition,
     notifications: java.util.Set[InternalNotification]
   ): CypherDeprecationNotificationsProvider = {
-    CypherDeprecationNotificationsProvider(
-      queryOptionsOffset = queryOptionsOffset,
-      notifications = notifications.asScala.toSet
-    )
+    val scalaNotifications = notifications.asScala.toSet
+    new CypherDeprecationNotificationsProvider(queryOptionsOffset) {
+      override protected def notifications: Iterator[InternalNotification] =
+        scalaNotifications.iterator
+    }
+  }
+
+  def fromIterables(
+    queryOptionsOffset: InputPosition,
+    notificationIterables: Iterable[InternalNotification]*
+  ): CypherDeprecationNotificationsProvider = {
+    new CypherDeprecationNotificationsProvider(queryOptionsOffset) {
+      override protected def notifications: Iterator[InternalNotification] =
+        notificationIterables.iterator.flatMap(_.iterator)
+    }
   }
 }
