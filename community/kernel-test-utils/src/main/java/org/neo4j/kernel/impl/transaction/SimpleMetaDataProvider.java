@@ -241,6 +241,11 @@ public class SimpleMetaDataProvider implements MetadataProvider {
     }
 
     @Override
+    public TransactionId getHighestEverClosedTransaction() {
+        return transactionIdStore.getHighestEverClosedTransaction();
+    }
+
+    @Override
     public Optional<UUID> getDatabaseIdUuid(CursorContext cursorContext) {
         throw new IllegalStateException("Not supported");
     }

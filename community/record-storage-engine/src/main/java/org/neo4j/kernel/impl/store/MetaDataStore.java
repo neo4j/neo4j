@@ -118,6 +118,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord, NoStoreHe
     private final Supplier<StoreId> storeIdFactory;
 
     private final HighestTransactionId highestCommittedTransaction;
+    private final HighestTransactionId highestClosedTransaction;
 
     private final OutOfOrderSequence lastClosedTx;
     private final OutOfOrderSequence lastClosedBatch;
@@ -163,6 +164,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord, NoStoreHe
         var lastCommittedTx = logTailMetadata.getLastCommittedTransaction();
         lastCommittingTx = new AtomicLong(lastCommittedTx.id());
         highestCommittedTransaction = new HighestTransactionId(lastCommittedTx);
+        highestClosedTransaction = new HighestTransactionId(lastCommittedTx);
         var logPosition = logTailMetadata.getLastTransactionLogPosition();
         lastBatch = logTailMetadata.lastBatch();
         appendIndex = new AtomicLong(lastBatch.appendIndex());
@@ -246,6 +248,8 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord, NoStoreHe
                 transactionAppendIndex);
         lastClosedBatch.set(appendIndex, meta);
         lastClosedTx.set(transactionId, meta);
+        highestClosedTransaction.set(
+                transactionId, transactionAppendIndex, kernelVersion, checksum, commitTimestamp, consensusIndex);
         highestCommittedTransaction.set(
                 transactionId, transactionAppendIndex, kernelVersion, checksum, commitTimestamp, consensusIndex);
         this.appendIndex.set(appendIndex);
@@ -375,6 +379,8 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord, NoStoreHe
                         commitTimestamp,
                         consensusIndex,
                         appendIndex));
+        highestClosedTransaction.offer(
+                transactionId, appendIndex, kernelVersion, checksum, commitTimestamp, consensusIndex);
     }
 
     @Override
@@ -451,6 +457,11 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord, NoStoreHe
     @Override
     public OpenTransactionMetadata getOldestOpenTransaction() {
         return chunkedTransactionRegistry.oldestOpenTransactionMetadata();
+    }
+
+    @Override
+    public TransactionId getHighestEverClosedTransaction() {
+        return highestClosedTransaction.get();
     }
 
     public void logRecords(final DiagnosticsLogger logger) {

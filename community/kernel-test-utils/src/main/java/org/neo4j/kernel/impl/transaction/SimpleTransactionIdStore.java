@@ -241,4 +241,9 @@ public class SimpleTransactionIdStore implements TransactionIdStore {
     public OpenTransactionMetadata getOldestOpenTransaction() {
         return null;
     }
+
+    @Override
+    public TransactionId getHighestEverClosedTransaction() {
+        return committedTransactionId.get();
+    }
 }

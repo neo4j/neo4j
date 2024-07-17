@@ -101,8 +101,8 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer {
 
     @Override
     public void start() {
-        var lastClosedTransaction = metadataProvider.getLastClosedTransaction();
-        threshold.initialize(metadataProvider.getLastAppendIndex(), lastClosedTransaction.logPosition());
+        var lastClosedBatch = metadataProvider.getLastClosedBatch();
+        threshold.initialize(lastClosedBatch.appendIndex(), lastClosedBatch.logPosition());
     }
 
     @Override
@@ -124,7 +124,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer {
             TransactionId transactionId, long appendIndex, LogPosition position, TriggerInfo triggerInfo)
             throws IOException {
         try (Resource lock = mutex.checkPoint()) {
-            return checkpointByExternalParams(transactionId, position, position, appendIndex, triggerInfo);
+            return checkpointByExternalParams(transactionId, appendIndex, position, position, appendIndex, triggerInfo);
         }
     }
 
@@ -150,7 +150,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer {
                 if (lock != null) {
                     var lastInfo = latestCheckPointInfo;
                     log.info(info.describe(lastInfo) + " Check pointing was already running, completed now");
-                    return lastInfo.checkpointedTransactionId().id();
+                    return lastInfo.highestObservedClosedTransactionId().id();
                 } else {
                     return NO_TRANSACTION_ID;
                 }
@@ -160,9 +160,8 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer {
 
     @Override
     public long checkPointIfNeeded(TriggerInfo info) throws IOException {
-        var lastClosedTransaction = metadataProvider.getLastClosedTransaction();
-        if (threshold.isCheckPointingNeeded(
-                lastClosedTransaction.transactionId().appendIndex(), lastClosedTransaction.logPosition(), info)) {
+        var lastClosedBatch = metadataProvider.getLastClosedBatch();
+        if (threshold.isCheckPointingNeeded(lastClosedBatch.appendIndex(), lastClosedBatch.logPosition(), info)) {
             try (Resource lock = mutex.checkPoint()) {
                 return checkpointByTrigger(info);
             }
@@ -175,13 +174,14 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer {
             logShutdownMessage(triggerInfo);
             return NO_TRANSACTION_ID;
         }
-        var lastClosedTransaction = metadataProvider.getLastClosedTransaction().transactionId();
+        var highestTransactionEver = metadataProvider.getHighestEverClosedTransaction();
         var lastClosedBatch = metadataProvider.getLastClosedBatch();
-        var oldestNotVisibleTransaction = evaluateOldestNotVisibleTransactionStartPosition(lastClosedBatch);
+        var oldestNotVisibleTransactionInfo = evaluateOldestNotVisibleTransactionInfo(lastClosedBatch);
 
         return checkpointByExternalParams(
-                lastClosedTransaction,
-                oldestNotVisibleTransaction,
+                highestTransactionEver,
+                oldestNotVisibleTransactionInfo.appendIndex(),
+                oldestNotVisibleTransactionInfo.logPosition(),
                 lastClosedBatch.logPosition(),
                 lastClosedBatch.appendIndex(),
                 triggerInfo);
@@ -189,6 +189,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer {
 
     private long checkpointByExternalParams(
             TransactionId transactionId,
+            long oldestNotVisibleAppendIndex,
             LogPosition oldestNotCompletedPosition,
             LogPosition checkpointedLogPosition,
             long appendIndex,
@@ -199,12 +200,18 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer {
             return NO_TRANSACTION_ID;
         }
         return doCheckpoint(
-                transactionId, appendIndex, oldestNotCompletedPosition, checkpointedLogPosition, triggerInfo);
+                transactionId,
+                appendIndex,
+                oldestNotVisibleAppendIndex,
+                oldestNotCompletedPosition,
+                checkpointedLogPosition,
+                triggerInfo);
     }
 
     private long doCheckpoint(
             TransactionId transactionId,
             long appendIndex,
+            long oldestNotVisibleAppendIndex,
             LogPosition oldestNotCompletedPosition,
             LogPosition checkpointedLogPosition,
             TriggerInfo triggerInfo)
@@ -215,7 +222,10 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer {
             long lastClosedTransactionId = transactionId.id();
             cursorContext.getVersionContext().initWrite(lastClosedTransactionId);
             KernelVersion kernelVersion = versionProvider.kernelVersion();
-            var ongoingCheckpoint = new LatestCheckpointInfo(transactionId, appendIndex);
+            // info about last checkpoint is used only be store copy and so far we do not want to update protocol
+            // to contain all the fields and state to make checkpoint identical after store copy.
+            // To make it still work we are using the oldest non-visible index instead of the last batch plus state
+            var ongoingCheckpoint = new LatestCheckpointInfo(transactionId, oldestNotVisibleAppendIndex);
             String checkpointReason = triggerInfo.describe(ongoingCheckpoint);
             /*
              * Check kernel health before going into waiting for transactions to be closed, to avoid
@@ -294,19 +304,20 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer {
                 + triggerInfo.describe(UNKNOWN_CHECKPOINT_INFO));
     }
 
-    private LogPosition evaluateOldestNotVisibleTransactionStartPosition(ClosedBatchMetadata lastClosedBatch) {
+    private NotCompletedTransactionInfo evaluateOldestNotVisibleTransactionInfo(ClosedBatchMetadata lastClosedBatch) {
         var openTransactionMetadata = metadataProvider.getOldestOpenTransaction();
         if (openTransactionMetadata == null) {
-            return lastClosedBatch.logPosition();
+            return new NotCompletedTransactionInfo(lastClosedBatch.appendIndex(), lastClosedBatch.logPosition());
         }
 
         long oldestBatchAppendIndex = openTransactionMetadata.appendIndex();
         // oldest not closed is after closed tx id so nothing to guard
         if (oldestBatchAppendIndex > lastClosedBatch.appendIndex()) {
-            return lastClosedBatch.logPosition();
+            return new NotCompletedTransactionInfo(lastClosedBatch.appendIndex(), lastClosedBatch.logPosition());
         }
 
-        return openTransactionMetadata.logPosition();
+        return new NotCompletedTransactionInfo(
+                openTransactionMetadata.appendIndex() - 1, openTransactionMetadata.logPosition());
     }
 
     @Override
@@ -320,4 +331,6 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer {
 
         void flushAndForce(DatabaseFlushEvent flushEvent, CursorContext cursorContext) throws IOException;
     }
+
+    private record NotCompletedTransactionInfo(long appendIndex, LogPosition logPosition) {}
 }

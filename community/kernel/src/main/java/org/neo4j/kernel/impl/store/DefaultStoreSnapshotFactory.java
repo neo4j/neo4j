@@ -62,7 +62,7 @@ public class DefaultStoreSnapshotFactory implements StoreSnapshot.Factory {
         Stream<StoreResource> unrecoverableFiles = null;
         try {
             var latestCheckpointInfo = checkPointer.latestCheckPointInfo();
-            var lastCommittedTransactionId = latestCheckpointInfo.checkpointedTransactionId();
+            var lastCommittedTransactionId = latestCheckpointInfo.highestObservedClosedTransactionId();
             long appendIndex = latestCheckpointInfo.appendIndex();
 
             unrecoverableFiles = unrecoverableFiles(database);

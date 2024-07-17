@@ -24,7 +24,7 @@ import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_TRANSACTION
 
 import org.neo4j.storageengine.api.TransactionId;
 
-public record LatestCheckpointInfo(TransactionId checkpointedTransactionId, long appendIndex) {
+public record LatestCheckpointInfo(TransactionId highestObservedClosedTransactionId, long appendIndex) {
     public static final LatestCheckpointInfo UNKNOWN_CHECKPOINT_INFO =
             new LatestCheckpointInfo(UNKNOWN_TRANSACTION_ID, UNKNOWN_APPEND_INDEX);
 }

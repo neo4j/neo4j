@@ -66,7 +66,6 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.Panic;
 import org.neo4j.storageengine.api.ClosedBatchMetadata;
-import org.neo4j.storageengine.api.ClosedTransactionMetadata;
 import org.neo4j.storageengine.api.MetadataProvider;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionId;
@@ -429,20 +428,17 @@ class CheckPointerImplTest {
     }
 
     private void mockTxIdStore() {
-        var initialCommitted = new ClosedTransactionMetadata(
-                new TransactionId(
-                        initialAppendIndex, initialAppendIndex, LATEST_KERNEL_VERSION, 4, 5, UNKNOWN_CONSENSUS_INDEX),
-                logPosition);
-        var otherCommitted = new ClosedTransactionMetadata(
-                new TransactionId(
-                        transactionId, TRANSACTION_APPEND_INDEX, LATEST_KERNEL_VERSION, 6, 7, UNKNOWN_CONSENSUS_INDEX),
-                logPosition);
-        when(metadataProvider.getLastClosedTransaction()).thenReturn(initialCommitted, otherCommitted);
+        var otherCommitted = new TransactionId(
+                transactionId, TRANSACTION_APPEND_INDEX, LATEST_KERNEL_VERSION, 6, 7, UNKNOWN_CONSENSUS_INDEX);
+        when(metadataProvider.getLastCommittedTransaction()).thenReturn(otherCommitted);
         when(metadataProvider.getLastClosedTransactionId())
                 .thenReturn(initialAppendIndex, transactionId, transactionId);
         when(metadataProvider.lastBatch()).thenReturn(new AppendBatchInfo(TRANSACTION_APPEND_INDEX, logPosition));
+        when(metadataProvider.getHighestEverClosedTransaction()).thenReturn(otherCommitted);
         when(metadataProvider.getLastClosedBatch())
-                .thenReturn(new ClosedBatchMetadata(8, LATEST_KERNEL_VERSION, logPosition));
+                .thenReturn(
+                        new ClosedBatchMetadata(initialAppendIndex, LATEST_KERNEL_VERSION, logPosition),
+                        new ClosedBatchMetadata(TRANSACTION_APPEND_INDEX, LATEST_KERNEL_VERSION, logPosition));
     }
 
     private class CheckpointCountingLock extends ReentrantLock {

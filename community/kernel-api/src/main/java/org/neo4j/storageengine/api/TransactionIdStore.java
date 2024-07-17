@@ -282,4 +282,9 @@ public interface TransactionIdStore {
      * Returns information about the oldest registered chunked open transaction.
      */
     OpenTransactionMetadata getOldestOpenTransaction();
+
+    /**
+     * Returns highest ever closed transaction info
+     */
+    TransactionId getHighestEverClosedTransaction();
 }
