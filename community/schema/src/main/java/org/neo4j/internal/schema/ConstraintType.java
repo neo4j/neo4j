@@ -19,6 +19,10 @@
  */
 package org.neo4j.internal.schema;
 
+import static org.neo4j.common.EntityType.NODE;
+
+import org.neo4j.common.EntityType;
+
 /**
  * The enum of all the types of constraints that we support.
  * This is the internal version of {@link org.neo4j.graphdb.schema.ConstraintType}.
@@ -52,5 +56,16 @@ public enum ConstraintType {
 
     public boolean enforcesPropertyType() {
         return isType;
+    }
+
+    public String userDescription(EntityType entityType) {
+        String name = entityType.name();
+        return switch (this) {
+            case EXISTS -> name + " PROPERTY EXISTENCE";
+            case UNIQUE -> entityType == NODE ? "UNIQUENESS" : name + " UNIQUENESS";
+            case UNIQUE_EXISTS -> name + " KEY";
+            case PROPERTY_TYPE -> name + " PROPERTY TYPE";
+            case ENDPOINT -> name + " ENDPOINT";
+        };
     }
 }

@@ -116,23 +116,13 @@ public final class SchemaUserDescription {
         StringJoiner joiner = new StringJoiner(", ", "Constraint( ", " )");
         maybeAddId(id, joiner);
         maybeAddName(name, joiner, mask);
-        addType(constraintType(type, schema.entityType()), joiner);
+        addType(type.userDescription(schema.entityType()), joiner);
         addSchema(tokenNameLookup, schema, joiner);
         if (ownedIndex != null) {
             joiner.add("ownedIndex=" + ownedIndex);
         }
         maybeAddAllowedPropertyTypes(propertyType, joiner);
         return joiner.toString();
-    }
-
-    private static String constraintType(ConstraintType type, EntityType entityType) {
-        return switch (type) {
-            case EXISTS -> entityType.name() + " PROPERTY EXISTENCE";
-            case UNIQUE -> entityType == NODE ? "UNIQUENESS" : entityType.name() + " UNIQUENESS";
-            case UNIQUE_EXISTS -> entityType.name() + " KEY";
-            case PROPERTY_TYPE -> entityType.name() + " PROPERTY TYPE";
-            case ENDPOINT -> entityType.name() + " ENDPOINT";
-        };
     }
 
     private static void maybeAddId(long id, StringJoiner joiner) {
