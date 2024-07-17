@@ -17,9 +17,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.queryapi;
+package org.neo4j.queryapi;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.queryapi.QueryApiTestUtil.setupLogging;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
@@ -52,6 +53,7 @@ class QueryResourceQueryStatsIT {
 
     @BeforeAll
     static void beforeAll() {
+        setupLogging();
         var builder = new TestDatabaseManagementServiceBuilder();
         dbms = builder.setConfig(HttpConnector.enabled, true)
                 .setConfig(HttpConnector.listen_address, new SocketAddress("localhost", 0))
@@ -63,7 +65,7 @@ class QueryResourceQueryStatsIT {
                 .setConfig(ServerSettings.http_enabled_modules, EnumSet.allOf(ConfigurableServerModules.class))
                 .impermanent()
                 .build();
-        var portRegister = QueryClientUtil.resolveDependency(dbms, ConnectorPortRegister.class);
+        var portRegister = QueryApiTestUtil.resolveDependency(dbms, ConnectorPortRegister.class);
         queryEndpoint = "http://" + portRegister.getLocalAddress(ConnectorType.HTTP) + "/db/{databaseName}/query/v2";
         client = HttpClient.newBuilder().build();
     }
@@ -75,7 +77,7 @@ class QueryResourceQueryStatsIT {
 
     @Test
     void shouldIncludeQueryStats() throws IOException, InterruptedException {
-        var httpRequest = QueryClientUtil.baseRequestBuilder(queryEndpoint, "neo4j")
+        var httpRequest = QueryApiTestUtil.baseRequestBuilder(queryEndpoint, "neo4j")
                 .POST(HttpRequest.BodyPublishers.ofString("{\"statement\": \"RETURN 1\", \"includeCounters\": true}"))
                 .build();
         var response = client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
@@ -104,7 +106,7 @@ class QueryResourceQueryStatsIT {
 
     @Test
     void shouldNotIncludeQueryStats() throws IOException, InterruptedException {
-        var httpRequest = QueryClientUtil.baseRequestBuilder(queryEndpoint, "neo4j")
+        var httpRequest = QueryApiTestUtil.baseRequestBuilder(queryEndpoint, "neo4j")
                 .POST(HttpRequest.BodyPublishers.ofString("{\"statement\": \"RETURN 1\", \"includeCounters\": false}"))
                 .build();
         var response = client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
@@ -118,7 +120,7 @@ class QueryResourceQueryStatsIT {
 
     @Test
     void shouldNotIncludeQueryStatsByDefault() throws IOException, InterruptedException {
-        var httpRequest = QueryClientUtil.baseRequestBuilder(queryEndpoint, "neo4j")
+        var httpRequest = QueryApiTestUtil.baseRequestBuilder(queryEndpoint, "neo4j")
                 .POST(HttpRequest.BodyPublishers.ofString("{\"statement\": \"RETURN 1\"}"))
                 .build();
         var response = client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
@@ -132,7 +134,7 @@ class QueryResourceQueryStatsIT {
 
     @Test
     void shouldErrorIfInvalidInput() throws IOException, InterruptedException {
-        var httpRequest = QueryClientUtil.baseRequestBuilder(queryEndpoint, "neo4j")
+        var httpRequest = QueryApiTestUtil.baseRequestBuilder(queryEndpoint, "neo4j")
                 .POST(HttpRequest.BodyPublishers.ofString(
                         "{\"statement\": \"RETURN 1\", " + "\"includeCounters\": \"banana\"}"))
                 .build();

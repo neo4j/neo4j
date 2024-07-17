@@ -17,11 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.queryapi;
+package org.neo4j.queryapi;
 
 import static com.fasterxml.jackson.databind.node.TextNode.valueOf;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.queryapi.QueryApiTestUtil.setupLogging;
 import static org.neo4j.server.queryapi.response.format.Fieldnames.DATA_KEY;
 import static org.neo4j.server.queryapi.response.format.Fieldnames.FIELDS_KEY;
 import static org.neo4j.server.queryapi.response.format.Fieldnames.VALUES_KEY;
@@ -56,6 +57,7 @@ class QueryResourcePlainJsonIT {
 
     @BeforeAll
     static void beforeAll() {
+        setupLogging();
         var builder = new TestDatabaseManagementServiceBuilder();
         dbms = builder.setConfig(HttpConnector.enabled, true)
                 .setConfig(HttpConnector.listen_address, new SocketAddress("localhost", 0))
@@ -67,7 +69,7 @@ class QueryResourcePlainJsonIT {
                 .setConfig(BoltConnectorInternalSettings.enable_local_connector, true)
                 .setConfig(ServerSettings.http_enabled_modules, EnumSet.allOf(ConfigurableServerModules.class))
                 .build();
-        var portRegister = QueryClientUtil.resolveDependency(dbms, ConnectorPortRegister.class);
+        var portRegister = QueryApiTestUtil.resolveDependency(dbms, ConnectorPortRegister.class);
         queryEndpoint = "http://" + portRegister.getLocalAddress(ConnectorType.HTTP) + "/db/{databaseName}/query/v2";
         client = HttpClient.newBuilder().build();
     }
@@ -79,7 +81,7 @@ class QueryResourcePlainJsonIT {
 
     @Test
     void basicTypes() throws IOException, InterruptedException {
-        var response = QueryClientUtil.simpleRequest(
+        var response = QueryApiTestUtil.simpleRequest(
                 client,
                 queryEndpoint,
                 "{\"statement\": \"RETURN true as bool, 1 as number, "
@@ -102,7 +104,7 @@ class QueryResourcePlainJsonIT {
 
     @Test
     void temporalTypes() throws IOException, InterruptedException {
-        var response = QueryClientUtil.simpleRequest(
+        var response = QueryApiTestUtil.simpleRequest(
                 client,
                 queryEndpoint,
                 "{\"statement\": \"RETURN datetime('2015-06-24T12:50:35.556+0100') AS theOffsetDateTime, "
@@ -137,7 +139,7 @@ class QueryResourcePlainJsonIT {
 
     @Test
     void duration() throws IOException, InterruptedException {
-        var response = QueryClientUtil.simpleRequest(
+        var response = QueryApiTestUtil.simpleRequest(
                 client, queryEndpoint, "{\"statement\": \"RETURN duration('P14DT16H12M') AS theDuration\"}");
 
         assertThat(response.statusCode()).isEqualTo(202);
@@ -156,7 +158,7 @@ class QueryResourcePlainJsonIT {
         }
 
         var response =
-                QueryClientUtil.simpleRequest(client, queryEndpoint, "{\"statement\": \"MATCH (n:FindMe) return n\"}");
+                QueryApiTestUtil.simpleRequest(client, queryEndpoint, "{\"statement\": \"MATCH (n:FindMe) return n\"}");
 
         assertThat(response.statusCode()).isEqualTo(202);
 
@@ -171,7 +173,7 @@ class QueryResourcePlainJsonIT {
 
     @Test
     void map() throws IOException, InterruptedException {
-        var response = QueryClientUtil.simpleRequest(
+        var response = QueryApiTestUtil.simpleRequest(
                 client,
                 queryEndpoint,
                 "{\"statement\": \"RETURN {key: 'Value', listKey: [{inner: 'Map1'}, {inner: 'Map2'}]} AS map\"}");
@@ -206,7 +208,7 @@ class QueryResourcePlainJsonIT {
 
     @Test
     void list() throws IOException, InterruptedException {
-        var response = QueryClientUtil.simpleRequest(
+        var response = QueryApiTestUtil.simpleRequest(
                 client, queryEndpoint, "{\"statement\": \"RETURN [1,true,'hello',date('+2015-W13-4')] as list\"}");
 
         assertThat(response.statusCode()).isEqualTo(202);
@@ -225,7 +227,7 @@ class QueryResourcePlainJsonIT {
 
     @Test
     void node() throws IOException, InterruptedException {
-        var response = QueryClientUtil.simpleRequest(
+        var response = QueryApiTestUtil.simpleRequest(
                 client, queryEndpoint, "{\"statement\": \"CREATE (n:MyLabel {aNumber: 1234}) RETURN n\"}");
 
         assertThat(response.statusCode()).isEqualTo(202);
@@ -241,7 +243,7 @@ class QueryResourcePlainJsonIT {
 
     @Test
     void relationship() throws IOException, InterruptedException {
-        var response = QueryClientUtil.simpleRequest(
+        var response = QueryApiTestUtil.simpleRequest(
                 client, queryEndpoint, "{\"statement\": \"CREATE (a)-[r:RELTYPE {onFire: true}]->(b) RETURN r\"}");
 
         assertThat(response.statusCode()).isEqualTo(202);
@@ -256,13 +258,13 @@ class QueryResourcePlainJsonIT {
 
     @Test
     void path() throws IOException, InterruptedException {
-        var createPathReq = QueryClientUtil.simpleRequest(
+        var createPathReq = QueryApiTestUtil.simpleRequest(
                 client,
                 queryEndpoint,
                 "{\"statement\": \"CREATE (a:LabelA)-[rel1:RELAB]->(b:LabelB)<-[rel2:RELCB]-(c:LabelC)\"}");
 
         assertThat(createPathReq.statusCode()).isEqualTo(202);
-        var response = QueryClientUtil.simpleRequest(
+        var response = QueryApiTestUtil.simpleRequest(
                 client,
                 queryEndpoint,
                 "{\"statement\": \"MATCH p=(a:LabelA)-[rel1:RELAB]->(b:LabelB)<-[rel2:RELCB]-(c:LabelC) RETURN p\"}");

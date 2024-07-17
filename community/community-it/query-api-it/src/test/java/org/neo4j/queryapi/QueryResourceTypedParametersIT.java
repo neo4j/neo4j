@@ -17,10 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.queryapi;
+package org.neo4j.queryapi;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.queryapi.QueryApiTestUtil.setupLogging;
 import static org.neo4j.server.queryapi.response.TypedJsonDriverResultWriter.TYPED_JSON_MIME_TYPE_VALUE;
 import static org.neo4j.server.queryapi.response.format.Fieldnames.CYPHER_TYPE;
 import static org.neo4j.server.queryapi.response.format.Fieldnames.CYPHER_VALUE;
@@ -65,6 +66,7 @@ class QueryResourceTypedParametersIT {
 
     @BeforeAll
     static void beforeAll() {
+        setupLogging();
         var builder = new TestDatabaseManagementServiceBuilder();
         dbms = builder.setConfig(HttpConnector.enabled, true)
                 .setConfig(HttpConnector.listen_address, new SocketAddress("localhost", 0))
@@ -75,7 +77,7 @@ class QueryResourceTypedParametersIT {
                 .setConfig(ServerSettings.http_enabled_modules, EnumSet.allOf(ConfigurableServerModules.class))
                 .impermanent()
                 .build();
-        var portRegister = QueryClientUtil.resolveDependency(dbms, ConnectorPortRegister.class);
+        var portRegister = QueryApiTestUtil.resolveDependency(dbms, ConnectorPortRegister.class);
         queryEndpoint = "http://" + portRegister.getLocalAddress(ConnectorType.HTTP) + "/db/{databaseName}/query/v2";
         client = HttpClient.newBuilder().build();
     }

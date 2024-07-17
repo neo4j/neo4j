@@ -17,11 +17,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.queryapi;
+package org.neo4j.queryapi;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.neo4j.server.queryapi.QueryClientUtil.baseRequestBuilder;
-import static org.neo4j.server.queryapi.QueryClientUtil.resolveDependency;
+import static org.neo4j.queryapi.QueryApiTestUtil.setupLogging;
 import static org.neo4j.server.queryapi.response.format.Fieldnames.DATA_KEY;
 import static org.neo4j.server.queryapi.response.format.Fieldnames.FIELDS_KEY;
 import static org.neo4j.server.queryapi.response.format.Fieldnames.VALUES_KEY;
@@ -61,6 +60,7 @@ class QueryResourceParametersIT {
 
     @BeforeAll
     static void beforeAll() {
+        setupLogging();
         var builder = new TestDatabaseManagementServiceBuilder();
         dbms = builder.setConfig(HttpConnector.enabled, true)
                 .setConfig(HttpConnector.listen_address, new SocketAddress("localhost", 0))
@@ -71,7 +71,7 @@ class QueryResourceParametersIT {
                 .setConfig(ServerSettings.http_enabled_modules, EnumSet.allOf(ConfigurableServerModules.class))
                 .impermanent()
                 .build();
-        var portRegister = resolveDependency(dbms, ConnectorPortRegister.class);
+        var portRegister = QueryApiTestUtil.resolveDependency(dbms, ConnectorPortRegister.class);
         queryEndpoint = "http://" + portRegister.getLocalAddress(ConnectorType.HTTP) + "/db/{databaseName}/query/v2";
         client = HttpClient.newBuilder().build();
     }
@@ -88,7 +88,7 @@ class QueryResourceParametersIT {
     @ParameterizedTest
     @MethodSource("paramTypes")
     void shouldHandleParameters(Object parameter) throws IOException, InterruptedException {
-        var httpRequest = baseRequestBuilder(queryEndpoint, "neo4j")
+        var httpRequest = QueryApiTestUtil.baseRequestBuilder(queryEndpoint, "neo4j")
                 .POST(HttpRequest.BodyPublishers.ofString("{\"statement\": \"RETURN $parameter\","
                         + "\"parameters\": {\"parameter\": " + parameter + "}}"))
                 .build();
@@ -103,7 +103,7 @@ class QueryResourceParametersIT {
 
     @Test
     void shouldHandleStringParam() throws IOException, InterruptedException {
-        var httpRequest = baseRequestBuilder(queryEndpoint, "neo4j")
+        var httpRequest = QueryApiTestUtil.baseRequestBuilder(queryEndpoint, "neo4j")
                 .POST(HttpRequest.BodyPublishers.ofString(
                         "{\"statement\": \"RETURN $parameter\"," + "\"parameters\": {\"parameter\": \"Hello\"}}"))
                 .build();
@@ -119,7 +119,7 @@ class QueryResourceParametersIT {
     @ParameterizedTest
     @MethodSource("paramTypes")
     void shouldHandleMapParameters(Object parameter) throws IOException, InterruptedException {
-        var httpRequest = baseRequestBuilder(queryEndpoint, "neo4j")
+        var httpRequest = QueryApiTestUtil.baseRequestBuilder(queryEndpoint, "neo4j")
                 .POST(HttpRequest.BodyPublishers.ofString("{\"statement\": \"RETURN $parameter\","
                         + "\"parameters\": {\"parameter\": {\"mappy\": " + parameter + "}}}"))
                 .build();
@@ -135,7 +135,7 @@ class QueryResourceParametersIT {
 
     @Test
     void shouldHandleNestedMaps() throws IOException, InterruptedException {
-        var httpRequest = baseRequestBuilder(queryEndpoint, "neo4j")
+        var httpRequest = QueryApiTestUtil.baseRequestBuilder(queryEndpoint, "neo4j")
                 .POST(HttpRequest.BodyPublishers.ofString("{\"statement\": \"RETURN $parameter\","
                         + "\"parameters\": {\"parameter\": {\"mappy\": {\"inception\": 123}}}}"))
                 .build();
@@ -158,7 +158,7 @@ class QueryResourceParametersIT {
     @ParameterizedTest
     @MethodSource("paramTypes")
     void shouldHandleListParameters(Object parameter) throws IOException, InterruptedException {
-        var httpRequest = baseRequestBuilder(queryEndpoint, "neo4j")
+        var httpRequest = QueryApiTestUtil.baseRequestBuilder(queryEndpoint, "neo4j")
                 .POST(HttpRequest.BodyPublishers.ofString("{\"statement\": \"RETURN $parameter\","
                         + "\"parameters\": {\"parameter\": [" + parameter + "]}}"))
                 .build();
@@ -174,7 +174,7 @@ class QueryResourceParametersIT {
 
     @Test
     void shouldHandleNestedLists() throws IOException, InterruptedException {
-        var httpRequest = baseRequestBuilder(queryEndpoint, "neo4j")
+        var httpRequest = QueryApiTestUtil.baseRequestBuilder(queryEndpoint, "neo4j")
                 .POST(HttpRequest.BodyPublishers.ofString(
                         "{\"statement\": \"RETURN $parameter\"," + "\"parameters\": {\"parameter\": [[123]]}}"))
                 .build();
@@ -190,7 +190,7 @@ class QueryResourceParametersIT {
 
     @Test
     void shouldReturnErrorIfParametersDoesNotContainMap() throws IOException, InterruptedException {
-        var httpRequest = baseRequestBuilder(queryEndpoint, "neo4j")
+        var httpRequest = QueryApiTestUtil.baseRequestBuilder(queryEndpoint, "neo4j")
                 .POST(HttpRequest.BodyPublishers.ofString(
                         "{\"statement\": \"RETURN $parameter\"," + "\"parameters\": 123}"))
                 .build();

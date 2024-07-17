@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.queryapi;
+package org.neo4j.queryapi;
 
 import static org.neo4j.server.queryapi.response.format.Fieldnames.CYPHER_TYPE;
 import static org.neo4j.server.queryapi.response.format.Fieldnames.CYPHER_VALUE;

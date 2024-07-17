@@ -17,33 +17,30 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.queryapi;
+package org.neo4j.queryapi;
+
+import static org.assertj.core.api.Fail.fail;
 
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.Base64;
+import java.util.List;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.server.queryapi.response.TypedJsonDriverResultWriter;
+import org.neo4j.logging.log4j.Log4jLogProvider;
 import org.neo4j.storageengine.api.TransactionIdStore;
 
-public final class QueryClientUtil {
+public final class QueryApiTestUtil {
 
     public static HttpRequest.Builder baseRequestBuilder(String endpoint, String databaseName) {
         return HttpRequest.newBuilder()
                 .uri(URI.create(endpoint.replace("{databaseName}", databaseName)))
                 .header("Content-Type", "application/json")
                 .header("Accept", "application/json");
-    }
-
-    public static HttpRequest.Builder baseTypedRequestBuilder(String endpoint, String databaseName) {
-        return HttpRequest.newBuilder()
-                .uri(URI.create(endpoint.replace("{databaseName}", databaseName)))
-                .header("Content-Type", TypedJsonDriverResultWriter.TYPED_JSON_MIME_TYPE_VALUE)
-                .header("Accept", TypedJsonDriverResultWriter.TYPED_JSON_MIME_TYPE_VALUE);
     }
 
     static HttpResponse<String> simpleRequest(HttpClient client, String endpoint, String database, String requestBody)
@@ -79,5 +76,16 @@ public final class QueryClientUtil {
     static String encodedCredentials(String username, String password) {
         String valueToEncode = username + ":" + password;
         return "Basic " + Base64.getEncoder().encodeToString(valueToEncode.getBytes());
+    }
+
+    public static void setupLogging() {
+        try {
+            Class<?> bridge = Class.forName("org.neo4j.server.logging.slf4j.SLF4JLogBridge");
+            var log4jLogProvider = new Log4jLogProvider(System.out);
+            Method setLogProvider = bridge.getMethod("setInstantiationContext", Log4jLogProvider.class, List.class);
+            setLogProvider.invoke(null, log4jLogProvider, List.of("org.eclipse.jetty"));
+        } catch (Exception e) {
+            fail(String.format("Failed to set up jetty logging bridge: %s", e));
+        }
     }
 }

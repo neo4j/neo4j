@@ -17,9 +17,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.queryapi;
+package org.neo4j.queryapi;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.queryapi.QueryApiTestUtil.setupLogging;
 import static org.neo4j.server.queryapi.response.TypedJsonDriverResultWriter.TYPED_JSON_MIME_TYPE_VALUE;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -54,6 +55,7 @@ class QueryResourceErrorIT {
 
     @BeforeAll
     static void beforeAll() {
+        setupLogging();
         var builder = new TestDatabaseManagementServiceBuilder();
         dbms = builder.setConfig(HttpConnector.enabled, true)
                 .setConfig(HttpConnector.listen_address, new SocketAddress("localhost", 0))
@@ -64,7 +66,7 @@ class QueryResourceErrorIT {
                 .setConfig(ServerSettings.http_enabled_modules, EnumSet.allOf(ConfigurableServerModules.class))
                 .impermanent()
                 .build();
-        var portRegister = QueryClientUtil.resolveDependency(dbms, ConnectorPortRegister.class);
+        var portRegister = QueryApiTestUtil.resolveDependency(dbms, ConnectorPortRegister.class);
         queryEndpoint = "http://" + portRegister.getLocalAddress(ConnectorType.HTTP) + "/db/{databaseName}/query/v2";
         client = HttpClient.newBuilder().build();
     }
@@ -76,7 +78,7 @@ class QueryResourceErrorIT {
 
     @Test
     void blankRequestReturnsBadRequest() throws IOException, InterruptedException {
-        var httpRequest = QueryClientUtil.baseRequestBuilder(queryEndpoint, "neo4j")
+        var httpRequest = QueryApiTestUtil.baseRequestBuilder(queryEndpoint, "neo4j")
                 .POST(HttpRequest.BodyPublishers.noBody())
                 .build();
         var response = client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
@@ -90,8 +92,9 @@ class QueryResourceErrorIT {
 
     @Test
     void invalidHTTPVerb() throws IOException, InterruptedException {
-        var httpRequest =
-                QueryClientUtil.baseRequestBuilder(queryEndpoint, "neo4j").GET().build();
+        var httpRequest = QueryApiTestUtil.baseRequestBuilder(queryEndpoint, "neo4j")
+                .GET()
+                .build();
         var response = client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
 
         assertThat(response.statusCode()).isEqualTo(405);
@@ -156,7 +159,7 @@ class QueryResourceErrorIT {
 
     @Test
     void contentTypeHeaderDoesNotMatchBody() throws IOException, InterruptedException {
-        var httpRequest = QueryClientUtil.baseRequestBuilder(queryEndpoint, "neo4j")
+        var httpRequest = QueryApiTestUtil.baseRequestBuilder(queryEndpoint, "neo4j")
                 .POST(HttpRequest.BodyPublishers.ofString("This is a random string!"))
                 .build();
         var response = client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
@@ -188,7 +191,7 @@ class QueryResourceErrorIT {
 
     @Test
     void unknownDatabase() throws IOException, InterruptedException {
-        var httpRequest = QueryClientUtil.baseRequestBuilder(queryEndpoint, "thisDbisALie")
+        var httpRequest = QueryApiTestUtil.baseRequestBuilder(queryEndpoint, "thisDbisALie")
                 .POST(HttpRequest.BodyPublishers.ofString("{\"statement\": \"RETURN 1\"}"))
                 .build();
         var response = client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
@@ -202,7 +205,7 @@ class QueryResourceErrorIT {
 
     @Test
     void invalidCypher() throws IOException, InterruptedException {
-        var response = QueryClientUtil.simpleRequest(client, queryEndpoint, "{\"statement\": \"MATCH (n)\"}");
+        var response = QueryApiTestUtil.simpleRequest(client, queryEndpoint, "{\"statement\": \"MATCH (n)\"}");
 
         assertThat(response.statusCode()).isEqualTo(400);
         assertThat(response.headers().allValues(HttpHeaders.CONTENT_TYPE)).contains(MediaType.APPLICATION_JSON);
@@ -231,7 +234,7 @@ class QueryResourceErrorIT {
 
     @Test
     void cypherButInAwayThatFieldsCanBeComputedButTheResultNot() throws IOException, InterruptedException {
-        var response = QueryClientUtil.simpleRequest(client, queryEndpoint, "{\"statement\": \"RETURN 1/0 AS f\"}");
+        var response = QueryApiTestUtil.simpleRequest(client, queryEndpoint, "{\"statement\": \"RETURN 1/0 AS f\"}");
 
         assertThat(response.statusCode()).isEqualTo(202);
         assertThat(response.body())
@@ -264,7 +267,8 @@ class QueryResourceErrorIT {
 
     @Test
     void systemCommandsDontWork() throws IOException, InterruptedException {
-        var response = QueryClientUtil.simpleRequest(client, queryEndpoint, "{\"statement\": \"CREATE DATABASE foo\"}");
+        var response =
+                QueryApiTestUtil.simpleRequest(client, queryEndpoint, "{\"statement\": \"CREATE DATABASE foo\"}");
 
         assertThat(response.statusCode()).isEqualTo(400);
         assertThat(response.headers().allValues(HttpHeaders.CONTENT_TYPE)).contains(MediaType.APPLICATION_JSON);
@@ -275,7 +279,7 @@ class QueryResourceErrorIT {
 
     @Test
     void errorDuringCypherExecution() throws IOException, InterruptedException {
-        var response = QueryClientUtil.simpleRequest(
+        var response = QueryApiTestUtil.simpleRequest(
                 client, queryEndpoint, "{\"statement\": \"UNWIND range(5, 0, -1) as N RETURN 3/N\"}");
 
         assertThat(response.statusCode()).isEqualTo(202);

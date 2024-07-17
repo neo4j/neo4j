@@ -17,9 +17,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.queryapi;
+package org.neo4j.queryapi;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.queryapi.QueryApiTestUtil.setupLogging;
 import static org.neo4j.server.queryapi.response.format.Fieldnames.BOOKMARKS_KEY;
 import static org.neo4j.server.queryapi.response.format.Fieldnames.DATA_KEY;
 import static org.neo4j.server.queryapi.response.format.Fieldnames.ERRORS_KEY;
@@ -62,6 +63,7 @@ class QueryResourceIT {
 
     @BeforeAll
     static void beforeAll() {
+        setupLogging();
         var builder = new TestDatabaseManagementServiceBuilder();
         dbms = builder.setConfig(HttpConnector.enabled, true)
                 .setConfig(HttpConnector.listen_address, new SocketAddress("localhost", 0))
@@ -71,7 +73,7 @@ class QueryResourceIT {
                 .setConfig(ServerSettings.http_enabled_modules, EnumSet.allOf(ConfigurableServerModules.class))
                 .impermanent()
                 .build();
-        var portRegister = QueryClientUtil.resolveDependency(dbms, ConnectorPortRegister.class);
+        var portRegister = QueryApiTestUtil.resolveDependency(dbms, ConnectorPortRegister.class);
         queryEndpoint = "http://" + portRegister.getLocalAddress(ConnectorType.HTTP) + "/db/{databaseName}/query/v2";
         client = HttpClient.newBuilder().build();
     }
@@ -83,7 +85,7 @@ class QueryResourceIT {
 
     @Test
     void shouldExecuteSimpleQuery() throws IOException, InterruptedException {
-        var httpRequest = QueryClientUtil.baseRequestBuilder(queryEndpoint, "neo4j")
+        var httpRequest = QueryApiTestUtil.baseRequestBuilder(queryEndpoint, "neo4j")
                 .POST(HttpRequest.BodyPublishers.ofString("{\"statement\": \"RETURN 1\"}"))
                 .build();
         var response = client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
@@ -97,7 +99,7 @@ class QueryResourceIT {
 
     @Test
     void shouldReturnBookmarks() throws IOException, InterruptedException {
-        var response = QueryClientUtil.simpleRequest(client, queryEndpoint);
+        var response = QueryApiTestUtil.simpleRequest(client, queryEndpoint);
 
         assertThat(response.statusCode()).isEqualTo(202);
         var parsedJson = MAPPER.readTree(response.body());
@@ -108,14 +110,14 @@ class QueryResourceIT {
 
     @Test
     void shouldReturnUpdatedBookmark() throws IOException, InterruptedException {
-        var responseA = QueryClientUtil.simpleRequest(client, queryEndpoint);
+        var responseA = QueryApiTestUtil.simpleRequest(client, queryEndpoint);
 
         assertThat(responseA.statusCode()).isEqualTo(202);
         var parsedJsonA = MAPPER.readTree(responseA.body());
 
         var initialBookmark = parsedJsonA.get(BOOKMARKS_KEY).get(0).asText();
 
-        var responseB = QueryClientUtil.simpleRequest(
+        var responseB = QueryApiTestUtil.simpleRequest(
                 client,
                 queryEndpoint,
                 "{\"statement\": \"CREATE (n)\", \"bookmarks\" : [\"" + initialBookmark + "\"]}");
@@ -129,7 +131,7 @@ class QueryResourceIT {
 
     @Test
     void shouldAcceptBookmarksAsInput() throws IOException, InterruptedException {
-        var responseA = QueryClientUtil.simpleRequest(client, queryEndpoint);
+        var responseA = QueryApiTestUtil.simpleRequest(client, queryEndpoint);
 
         assertThat(responseA.statusCode()).isEqualTo(202);
         var parsedJsonA = MAPPER.readTree(responseA.body());
@@ -137,7 +139,7 @@ class QueryResourceIT {
         assertThat(parsedJsonA.get(BOOKMARKS_KEY).size()).isEqualTo(1);
         assertThat(parsedJsonA.get(BOOKMARKS_KEY).get(0).asText()).isNotBlank();
 
-        var responseB = QueryClientUtil.simpleRequest(
+        var responseB = QueryApiTestUtil.simpleRequest(
                 client,
                 queryEndpoint,
                 "{\"statement\": \"RETURN 1\", \"bookmarks\" : [\""
@@ -152,10 +154,10 @@ class QueryResourceIT {
 
     @Test
     void shouldAcceptMultipleBookmarksAsInput() throws IOException, InterruptedException {
-        var responseA = QueryClientUtil.simpleRequest(client, queryEndpoint, "{\"statement\": \"CREATE (n)\"}");
+        var responseA = QueryApiTestUtil.simpleRequest(client, queryEndpoint, "{\"statement\": \"CREATE (n)\"}");
         assertThat(responseA.statusCode()).isEqualTo(202);
 
-        var responseB = QueryClientUtil.simpleRequest(client, queryEndpoint, "{\"statement\": \"CREATE (n)\"}");
+        var responseB = QueryApiTestUtil.simpleRequest(client, queryEndpoint, "{\"statement\": \"CREATE (n)\"}");
         assertThat(responseA.statusCode()).isEqualTo(202);
 
         var bookmarkA =
@@ -163,7 +165,7 @@ class QueryResourceIT {
         var bookmarkB =
                 MAPPER.readTree(responseB.body()).get(BOOKMARKS_KEY).get(0).asText();
 
-        var combinedBmResponse = QueryClientUtil.simpleRequest(
+        var combinedBmResponse = QueryApiTestUtil.simpleRequest(
                 client,
                 queryEndpoint,
                 "{\"statement\": \"CREATE (n)\", \"bookmarks\" : [\"" + bookmarkA + "\",\"" + bookmarkB + "\"]}");
@@ -182,14 +184,14 @@ class QueryResourceIT {
     void shouldTimeoutWaitingForUnreachableBookmark() throws IOException, InterruptedException {
         var expectedBookmark = BookmarkFormat.serialize(new QueryRouterBookmark(
                 List.of(new QueryRouterBookmark.InternalGraphState(
-                        QueryClientUtil.resolveDependency(dbms, Database.class)
+                        QueryApiTestUtil.resolveDependency(dbms, Database.class)
                                 .getNamedDatabaseId()
                                 .databaseId()
                                 .uuid(),
-                        QueryClientUtil.getLastClosedTransactionId(dbms) + 1)),
+                        QueryApiTestUtil.getLastClosedTransactionId(dbms) + 1)),
                 List.of()));
 
-        var response = QueryClientUtil.simpleRequest(
+        var response = QueryApiTestUtil.simpleRequest(
                 client,
                 queryEndpoint,
                 "{\"statement\": \"RETURN 1\",  \"bookmarks\" : [\"" + expectedBookmark + "\"]}");
@@ -203,18 +205,18 @@ class QueryResourceIT {
 
     @Test
     void shouldWaitForUpdatedBookmark() throws IOException, InterruptedException {
-        var lastTxId = QueryClientUtil.getLastClosedTransactionId(dbms);
+        var lastTxId = QueryApiTestUtil.getLastClosedTransactionId(dbms);
         var nextTxId = lastTxId + 1;
         var expectedBookmark = BookmarkFormat.serialize(new QueryRouterBookmark(
                 List.of(new QueryRouterBookmark.InternalGraphState(
-                        QueryClientUtil.resolveDependency(dbms, Database.class)
+                        QueryApiTestUtil.resolveDependency(dbms, Database.class)
                                 .getNamedDatabaseId()
                                 .databaseId()
                                 .uuid(),
                         nextTxId)),
                 List.of()));
 
-        var responseA = QueryClientUtil.simpleRequest(
+        var responseA = QueryApiTestUtil.simpleRequest(
                 client, queryEndpoint, "{\"statement\": \"RETURN 1\", \"bookmarks\" : [\"" + expectedBookmark + "\"]}");
 
         // initial request times out
@@ -225,10 +227,11 @@ class QueryResourceIT {
                         + "sage\":\"Database 'neo4j' not up to the requested version: " + nextTxId
                         + ". Latest database version is " + lastTxId + "\"}]}");
 
-        var createNodeRequest = QueryClientUtil.simpleRequest(client, queryEndpoint, "{\"statement\": \"CREATE (n)\"}");
+        var createNodeRequest =
+                QueryApiTestUtil.simpleRequest(client, queryEndpoint, "{\"statement\": \"CREATE (n)\"}");
         assertThat(createNodeRequest.statusCode()).isEqualTo(202);
 
-        var responseB = QueryClientUtil.simpleRequest(
+        var responseB = QueryApiTestUtil.simpleRequest(
                 client, queryEndpoint, "{\"statement\": \"RETURN 1\", \"bookmarks\" : [\"" + expectedBookmark + "\"]}");
         var parsedJson = MAPPER.readTree(responseB.body());
 
@@ -238,7 +241,7 @@ class QueryResourceIT {
 
     @Test
     void callInTransactions() throws Exception {
-        var httpRequest = QueryClientUtil.baseRequestBuilder(queryEndpoint, "neo4j")
+        var httpRequest = QueryApiTestUtil.baseRequestBuilder(queryEndpoint, "neo4j")
                 .POST(HttpRequest.BodyPublishers.ofString("{\"statement\": \"UNWIND [4, 2, 1, 0] AS i"
                         + " CALL { WITH i CREATE ()} IN TRANSACTIONS OF 2 ROWS RETURN i\"}"))
                 .build();

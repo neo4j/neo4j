@@ -29,6 +29,7 @@
         <module>security-it</module>
         <module>no-opens-it</module>
         <module>slf4j-logging-it</module>
+        <module>query-api-it</module>
     </modules>
 
     <profiles>

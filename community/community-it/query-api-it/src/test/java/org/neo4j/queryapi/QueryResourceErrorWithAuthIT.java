@@ -17,9 +17,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.queryapi;
+package org.neo4j.queryapi;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.queryapi.QueryApiTestUtil.setupLogging;
 
 import java.io.IOException;
 import java.net.URI;
@@ -52,6 +53,7 @@ class QueryResourceErrorWithAuthIT {
 
     @BeforeAll
     static void beforeAll() {
+        setupLogging();
         dbms = new TestDatabaseManagementServiceBuilder()
                 .setConfig(HttpConnector.enabled, true)
                 .setConfig(HttpConnector.listen_address, new SocketAddress("localhost", 0))
@@ -64,7 +66,7 @@ class QueryResourceErrorWithAuthIT {
                 .setConfig(GraphDatabaseSettings.auth_enabled, true)
                 .impermanent()
                 .build();
-        var portRegister = QueryClientUtil.resolveDependency(dbms, ConnectorPortRegister.class);
+        var portRegister = QueryApiTestUtil.resolveDependency(dbms, ConnectorPortRegister.class);
         queryEndpoint = "http://" + portRegister.getLocalAddress(ConnectorType.HTTP) + "/db/{databaseName}/query/v2";
         client = HttpClient.newBuilder().build();
     }

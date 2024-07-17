@@ -17,9 +17,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.queryapi;
+package org.neo4j.queryapi;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.queryapi.QueryApiTestUtil.setupLogging;
 import static org.neo4j.server.queryapi.response.format.Fieldnames.DATA_KEY;
 import static org.neo4j.server.queryapi.response.format.Fieldnames.ERRORS_KEY;
 import static org.neo4j.server.queryapi.response.format.Fieldnames.FIELDS_KEY;
@@ -60,6 +61,7 @@ class QueryResourceAuthenticationIT {
 
     @BeforeEach
     void beforeEach() {
+        setupLogging();
         var builder = new TestDatabaseManagementServiceBuilder();
         dbms = builder.setConfig(HttpConnector.enabled, true)
                 .setConfig(HttpConnector.listen_address, new SocketAddress("localhost", 0))
@@ -69,7 +71,7 @@ class QueryResourceAuthenticationIT {
                 .setConfig(ServerSettings.http_enabled_modules, EnumSet.allOf(ConfigurableServerModules.class))
                 .impermanent()
                 .build();
-        var portRegister = QueryClientUtil.resolveDependency(dbms, ConnectorPortRegister.class);
+        var portRegister = QueryApiTestUtil.resolveDependency(dbms, ConnectorPortRegister.class);
         queryEndpoint = "http://" + portRegister.getLocalAddress(ConnectorType.HTTP) + "/db/{databaseName}/query/v2";
         client = HttpClient.newBuilder().build();
     }
@@ -81,8 +83,8 @@ class QueryResourceAuthenticationIT {
 
     @Test
     void shouldRequireCredentialChange() throws IOException, InterruptedException {
-        var httpRequest = QueryClientUtil.baseRequestBuilder(queryEndpoint, "system")
-                .header("Authorization", QueryClientUtil.encodedCredentials("neo4j", "neo4j"))
+        var httpRequest = QueryApiTestUtil.baseRequestBuilder(queryEndpoint, "system")
+                .header("Authorization", QueryApiTestUtil.encodedCredentials("neo4j", "neo4j"))
                 .POST(HttpRequest.BodyPublishers.ofString("{\"statement\": \"SHOW USERS\"}"))
                 .build();
 
@@ -100,8 +102,8 @@ class QueryResourceAuthenticationIT {
     void shouldAllowAccessWhenPasswordChanged() throws IOException, InterruptedException {
         updateInitialPassword();
 
-        var accessRequest = QueryClientUtil.baseRequestBuilder(queryEndpoint, "neo4j")
-                .header("Authorization", QueryClientUtil.encodedCredentials("neo4j", "secretPassword"))
+        var accessRequest = QueryApiTestUtil.baseRequestBuilder(queryEndpoint, "neo4j")
+                .header("Authorization", QueryApiTestUtil.encodedCredentials("neo4j", "secretPassword"))
                 .POST(HttpRequest.BodyPublishers.ofString("{\"statement\": \"RETURN 1\"}"))
                 .build();
 
@@ -117,8 +119,8 @@ class QueryResourceAuthenticationIT {
 
     @Test
     void shouldReturnUnauthorizedWithWrongCredentials() throws IOException, InterruptedException {
-        var httpRequest = QueryClientUtil.baseRequestBuilder(queryEndpoint, "neo4j")
-                .header("Authorization", QueryClientUtil.encodedCredentials("neo4j", "I'm sneaky!"))
+        var httpRequest = QueryApiTestUtil.baseRequestBuilder(queryEndpoint, "neo4j")
+                .header("Authorization", QueryApiTestUtil.encodedCredentials("neo4j", "I'm sneaky!"))
                 .POST(HttpRequest.BodyPublishers.ofString("{\"statement\": \"RETURN 1\"}"))
                 .build();
 
@@ -133,7 +135,7 @@ class QueryResourceAuthenticationIT {
 
     @Test
     void shouldReturnUnauthorizedWithMissingAuthHeader() throws IOException, InterruptedException {
-        var httpRequest = QueryClientUtil.baseRequestBuilder(queryEndpoint, "neo4j")
+        var httpRequest = QueryApiTestUtil.baseRequestBuilder(queryEndpoint, "neo4j")
                 .POST(HttpRequest.BodyPublishers.ofString("{\"statement\": \"RETURN 1\"}"))
                 .build();
 
@@ -148,7 +150,7 @@ class QueryResourceAuthenticationIT {
 
     @Test
     void shouldReturnUnauthorizedWithInvalidAuthHeader() throws IOException, InterruptedException {
-        var httpRequest = QueryClientUtil.baseRequestBuilder(queryEndpoint, "neo4j")
+        var httpRequest = QueryApiTestUtil.baseRequestBuilder(queryEndpoint, "neo4j")
                 .header("Authorization", "Just let me in. Thanks!")
                 .POST(HttpRequest.BodyPublishers.ofString("{\"statement\": \"RETURN 1\"}"))
                 .build();
@@ -170,8 +172,8 @@ class QueryResourceAuthenticationIT {
         HttpResponse<?> response;
 
         do {
-            var req = QueryClientUtil.baseRequestBuilder(queryEndpoint, "neo4j")
-                    .header("Authorization", QueryClientUtil.encodedCredentials("neo4j", "WrongPasswordBud"))
+            var req = QueryApiTestUtil.baseRequestBuilder(queryEndpoint, "neo4j")
+                    .header("Authorization", QueryApiTestUtil.encodedCredentials("neo4j", "WrongPasswordBud"))
                     .POST(HttpRequest.BodyPublishers.ofString("shouldn't be parsing this"))
                     .build();
             response = client.send(req, HttpResponse.BodyHandlers.ofString());
@@ -182,8 +184,8 @@ class QueryResourceAuthenticationIT {
     }
 
     private static void updateInitialPassword() throws IOException, InterruptedException {
-        var updatePasswordReq = QueryClientUtil.baseRequestBuilder(queryEndpoint, "system")
-                .header("Authorization", QueryClientUtil.encodedCredentials("neo4j", "neo4j"))
+        var updatePasswordReq = QueryApiTestUtil.baseRequestBuilder(queryEndpoint, "system")
+                .header("Authorization", QueryApiTestUtil.encodedCredentials("neo4j", "neo4j"))
                 .POST(HttpRequest.BodyPublishers.ofString(
                         "{\"statement\": \"ALTER CURRENT USER SET PASSWORD FROM 'neo4j' TO 'secretPassword'\"}"))
                 .build();
