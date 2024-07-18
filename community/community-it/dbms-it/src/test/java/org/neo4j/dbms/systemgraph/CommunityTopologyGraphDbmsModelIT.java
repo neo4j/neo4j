@@ -54,6 +54,10 @@ public class CommunityTopologyGraphDbmsModelIT extends BaseTopologyGraphDbmsMode
         return new NormalizedDatabaseName(name);
     }
 
+    private static NormalizedDatabaseName name(NamedDatabaseId id) {
+        return new NormalizedDatabaseName(id.name());
+    }
+
     @Test
     void canReturnAllInternalDatabaseReferences() {
         // given
@@ -78,6 +82,16 @@ public class CommunityTopologyGraphDbmsModelIT extends BaseTopologyGraphDbmsMode
 
         // then
         assertThat(aliases).isEqualTo(expected);
+        assertThat(dbmsModel().getDatabaseRefByAlias(fooDb.name()))
+                .hasValue(new DatabaseReferenceImpl.Internal(name(fooDb), fooDb, true));
+        // since no reference was explicitly created this is empty - this in artefact of the test setup
+        assertThat(dbmsModel().getDatabaseRefByAlias(barDb.name())).isEmpty();
+        assertThat(dbmsModel().getDatabaseRefByAlias("fooAlias"))
+                .hasValue(new DatabaseReferenceImpl.Internal(name("fooAlias"), fooDb, false));
+        assertThat(dbmsModel().getDatabaseRefByAlias("fooOtherAlias"))
+                .hasValue(new DatabaseReferenceImpl.Internal(name("fooOtherAlias"), fooDb, false));
+        assertThat(dbmsModel().getDatabaseRefByAlias("barAlias"))
+                .hasValue(new DatabaseReferenceImpl.Internal(name("barAlias"), barDb, false));
     }
 
     @Test
@@ -102,6 +116,13 @@ public class CommunityTopologyGraphDbmsModelIT extends BaseTopologyGraphDbmsMode
 
         // then
         assertThat(aliases).isEqualTo(expected);
+        assertThat(dbmsModel().getDatabaseRefByAlias("fooAlias"))
+                .hasValue(new DatabaseReferenceImpl.External(name("foo"), name("fooAlias"), remoteNeo4j, fooId));
+        assertThat(dbmsModel().getDatabaseRefByAlias("fooOtherAlias"))
+                .hasValue(new DatabaseReferenceImpl.External(
+                        name("foo"), name("fooOtherAlias"), remoteNeo4j, fooOtherId));
+        assertThat(dbmsModel().getDatabaseRefByAlias("barAlias"))
+                .hasValue(new DatabaseReferenceImpl.External(name("bar"), name("barAlias"), remoteNeo4j, barId));
     }
 
     @Test
@@ -118,56 +139,55 @@ public class CommunityTopologyGraphDbmsModelIT extends BaseTopologyGraphDbmsMode
         createInternalReferenceForDatabase(tx, "locAlias", false, locDb);
         createExternalReferenceForDatabase(tx, "remAlias", "rem1", remoteNeo4j, remAliasId1);
         var compDb1 = newDatabase(b -> b.withDatabase("compDb1").asVirtual());
-        var compDb1Name = name(compDb1.name());
+        var compDb1Name = name(compDb1);
         createInternalReferenceForDatabase(tx, compDb1.name(), true, compDb1);
         createInternalReferenceForDatabase(tx, compDb1.name(), "locAlias", false, locDb);
         createExternalReferenceForDatabase(tx, compDb1.name(), "remAlias", "rem2", remoteNeo4j, remAliasId2);
         createExternalReferenceForDatabase(tx, compDb1.name(), "remAlias2", "rem3", remoteNeo4j, remAliasId3);
         var compDb2 = newDatabase(b -> b.withDatabase("compDb2").asVirtual());
-        var compDb2Name = name(compDb2.name());
+        var compDb2Name = name(compDb2);
         createInternalReferenceForDatabase(tx, compDb2.name(), true, compDb2);
         createInternalReferenceForDatabase(tx, compDb2.name(), "locAlias", false, locDb);
         createExternalReferenceForDatabase(tx, compDb2.name(), "remAlias", "rem4", remoteNeo4j, remAliasId4);
         createExternalReferenceForDatabase(tx, compDb2.name(), "remAlias3", "rem5", remoteNeo4j, remAliasId5);
 
         // then
-        assertThat(dbmsModel().getAllCompositeDatabaseReferences())
-                .isEqualTo(Set.of(
-                        new DatabaseReferenceImpl.Composite(
-                                compDb1Name,
-                                compDb1,
-                                Set.of(
-                                        new DatabaseReferenceImpl.Internal(name("locAlias"), compDb1Name, locDb, false),
-                                        new DatabaseReferenceImpl.External(
-                                                name("rem2"), name("remAlias"), compDb1Name, remoteNeo4j, remAliasId2),
-                                        new DatabaseReferenceImpl.External(
-                                                name("rem3"),
-                                                name("remAlias2"),
-                                                compDb1Name,
-                                                remoteNeo4j,
-                                                remAliasId3))),
-                        new DatabaseReferenceImpl.Composite(
-                                compDb2Name,
-                                compDb2,
-                                Set.of(
-                                        new DatabaseReferenceImpl.Internal(name("locAlias"), compDb2Name, locDb, false),
-                                        new DatabaseReferenceImpl.External(
-                                                name("rem4"), name("remAlias"), compDb2Name, remoteNeo4j, remAliasId4),
-                                        new DatabaseReferenceImpl.External(
-                                                name("rem5"),
-                                                name("remAlias3"),
-                                                compDb2Name,
-                                                remoteNeo4j,
-                                                remAliasId5)))));
+        var comp1Ref = new DatabaseReferenceImpl.Composite(
+                compDb1Name,
+                compDb1,
+                Set.of(
+                        new DatabaseReferenceImpl.Internal(name("locAlias"), compDb1Name, locDb, false),
+                        new DatabaseReferenceImpl.External(
+                                name("rem2"), name("remAlias"), compDb1Name, remoteNeo4j, remAliasId2),
+                        new DatabaseReferenceImpl.External(
+                                name("rem3"), name("remAlias2"), compDb1Name, remoteNeo4j, remAliasId3)));
+        var comp2Ref = new DatabaseReferenceImpl.Composite(
+                compDb2Name,
+                compDb2,
+                Set.of(
+                        new DatabaseReferenceImpl.Internal(name("locAlias"), compDb2Name, locDb, false),
+                        new DatabaseReferenceImpl.External(
+                                name("rem4"), name("remAlias"), compDb2Name, remoteNeo4j, remAliasId4),
+                        new DatabaseReferenceImpl.External(
+                                name("rem5"), name("remAlias3"), compDb2Name, remoteNeo4j, remAliasId5)));
 
+        assertThat(dbmsModel().getAllCompositeDatabaseReferences()).isEqualTo(Set.of(comp1Ref, comp2Ref));
         assertThat(dbmsModel().getAllInternalDatabaseReferences())
                 .isEqualTo(Set.of(
                         new DatabaseReferenceImpl.Internal(name("loc"), locDb, true),
                         new DatabaseReferenceImpl.Internal(name("locAlias"), locDb, false)));
-
         assertThat(dbmsModel().getAllExternalDatabaseReferences())
                 .isEqualTo(Set.of(
                         new DatabaseReferenceImpl.External(name("rem1"), name("remAlias"), remoteNeo4j, remAliasId1)));
+
+        assertThat(dbmsModel().getDatabaseRefByAlias(compDb1.name())).hasValue(comp1Ref);
+        assertThat(dbmsModel().getDatabaseRefByAlias(compDb2.name())).hasValue(comp2Ref);
+        // since no reference was explicitly created this is empty - this in artefact of the test setup
+        assertThat(dbmsModel().getDatabaseRefByAlias(locDb.name())).isEmpty();
+        assertThat(dbmsModel().getDatabaseRefByAlias("locAlias"))
+                .hasValue(new DatabaseReferenceImpl.Internal(name("locAlias"), locDb, false));
+        assertThat(dbmsModel().getDatabaseRefByAlias("remAlias"))
+                .hasValue(new DatabaseReferenceImpl.External(name("rem1"), name("remAlias"), remoteNeo4j, remAliasId1));
     }
 
     @Test
@@ -192,22 +212,36 @@ public class CommunityTopologyGraphDbmsModelIT extends BaseTopologyGraphDbmsMode
         createInternalReferenceForDatabase(tx, bar.name(), true, bar);
 
         // then
-        assertThat(dbmsModel().getAllShardedPropertyDatabaseReferences())
-                .isEqualTo(Set.of(
-                        new DatabaseReferenceImpl.SPD(
-                                new NormalizedDatabaseName(foo.name()),
-                                foo,
-                                Map.of(
-                                        0, shardReference(name(foo0.name()), foo0),
-                                        1, shardReference(name(foo1.name()), foo1))),
-                        new DatabaseReferenceImpl.SPD(
-                                new NormalizedDatabaseName(bar.name()),
-                                bar,
-                                Map.of(
-                                        0, shardReference(name(bar0.name()), bar0),
-                                        1, shardReference(name(bar1.name()), bar1),
-                                        2, shardReference(name(bar2.name()), bar2),
-                                        3, shardReference(name(bar3.name()), bar3)))));
+        var fooRef = new DatabaseReferenceImpl.SPD(
+                name(foo),
+                foo,
+                Map.of(
+                        0, new DatabaseReferenceImpl.SPDShard(name(foo0), foo0, true),
+                        1, new DatabaseReferenceImpl.SPDShard(name(foo1), foo1, true)));
+        var barRef = new DatabaseReferenceImpl.SPD(
+                name(bar),
+                bar,
+                Map.of(
+                        0, new DatabaseReferenceImpl.SPDShard(name(bar0), bar0, true),
+                        1, new DatabaseReferenceImpl.SPDShard(name(bar1), bar1, true),
+                        2, new DatabaseReferenceImpl.SPDShard(name(bar2), bar2, true),
+                        3, new DatabaseReferenceImpl.SPDShard(name(bar3), bar3, true)));
+
+        assertThat(dbmsModel().getAllShardedPropertyDatabaseReferences()).isEqualTo(Set.of(fooRef, barRef));
+        assertThat(dbmsModel().getDatabaseRefByAlias(foo.name())).hasValue(fooRef);
+        assertThat(dbmsModel().getDatabaseRefByAlias(bar.name())).hasValue(barRef);
+        assertThat(dbmsModel().getDatabaseRefByAlias(foo0.name()))
+                .hasValue(fooRef.entityDetailStores().get(0));
+        assertThat(dbmsModel().getDatabaseRefByAlias(foo1.name()))
+                .hasValue(fooRef.entityDetailStores().get(1));
+        assertThat(dbmsModel().getDatabaseRefByAlias(bar0.name()))
+                .hasValue(barRef.entityDetailStores().get(0));
+        assertThat(dbmsModel().getDatabaseRefByAlias(bar1.name()))
+                .hasValue(barRef.entityDetailStores().get(1));
+        assertThat(dbmsModel().getDatabaseRefByAlias(bar2.name()))
+                .hasValue(barRef.entityDetailStores().get(2));
+        assertThat(dbmsModel().getDatabaseRefByAlias(bar3.name()))
+                .hasValue(barRef.entityDetailStores().get(3));
     }
 
     @Test
@@ -221,7 +255,7 @@ public class CommunityTopologyGraphDbmsModelIT extends BaseTopologyGraphDbmsMode
         var barId2 = UUID.randomUUID();
         createExternalReferenceForDatabase(tx, "bar", "foo", remoteNeo4j, barId);
         var compDb1 = newDatabase(b -> b.withDatabase("compDb1").asVirtual());
-        var compDb1Name = name(compDb1.name());
+        var compDb1Name = name(compDb1);
         createInternalReferenceForDatabase(tx, compDb1.name(), true, compDb1);
         createInternalReferenceForDatabase(tx, compDb1.name(), "locAlias", false, fooDb);
         createExternalReferenceForDatabase(tx, compDb1.name(), "remAlias", "rem", remoteNeo4j, barId2);
@@ -231,7 +265,7 @@ public class CommunityTopologyGraphDbmsModelIT extends BaseTopologyGraphDbmsMode
                 new DatabaseReferenceImpl.Internal(name("foo"), fooDb, true),
                 new DatabaseReferenceImpl.Internal(name("fooAlias"), fooDb, false),
                 new DatabaseReferenceImpl.Composite(
-                        name(compDb1.name()),
+                        name(compDb1),
                         compDb1,
                         Set.of(
                                 new DatabaseReferenceImpl.Internal(name("locAlias"), compDb1Name, fooDb, false),
@@ -260,9 +294,9 @@ public class CommunityTopologyGraphDbmsModelIT extends BaseTopologyGraphDbmsMode
         assertThat(result).isEmpty();
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "{0}")
     @MethodSource("driverSettings")
-    void canReturnDriverSettingsForExternalDatabaseReference(DriverSettings driverSettings) {
+    void canReturnDriverSettingsForExternalDatabaseReference(String ignore, DriverSettings driverSettings) {
         // given
         var aliasName = "fooAlias";
         var remoteAddress = new SocketAddress("my.neo4j.com", 7687);
@@ -318,10 +352,5 @@ public class CommunityTopologyGraphDbmsModelIT extends BaseTopologyGraphDbmsMode
         // then
         assertThat(result).isPresent();
         assertThat(result.get()).isEqualTo(properties);
-    }
-
-    protected DatabaseReferenceImpl.Internal shardReference(
-            NormalizedDatabaseName alias, NamedDatabaseId namedDatabaseId) {
-        return new DatabaseReferenceImpl.SPDShard(alias, namedDatabaseId, true);
     }
 }

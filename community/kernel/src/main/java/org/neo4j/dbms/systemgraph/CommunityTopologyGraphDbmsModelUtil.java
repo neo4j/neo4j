@@ -57,10 +57,8 @@ public final class CommunityTopologyGraphDbmsModelUtil {
                 .map(node -> {
                     var databaseId = getDatabaseId(node);
                     var alias = new NormalizedDatabaseName(databaseId.name());
-                    if (node.getDegree(TopologyGraphDbmsModel.HAS_SHARD, Direction.INCOMING) > 0) {
-                        return new DatabaseReferenceImpl.SPDShard(alias, databaseId, true);
-                    }
-                    return new Internal(alias, databaseId, true);
+                    var ref = new Internal(alias, databaseId, true);
+                    return ref.maybeAsShard(node.getDegree(TopologyGraphDbmsModel.HAS_SHARD, Direction.INCOMING) > 0);
                 });
     }
 

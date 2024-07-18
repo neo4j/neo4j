@@ -241,6 +241,14 @@ public abstract class DatabaseReferenceImpl implements DatabaseReference {
                     + namedDatabaseId + ", primary="
                     + primary + '}';
         }
+
+        public DatabaseReferenceImpl.Internal maybeAsShard(boolean shard) {
+            return shard ? asShard() : this;
+        }
+
+        public DatabaseReferenceImpl.SPDShard asShard() {
+            return new SPDShard(alias, namedDatabaseId, primary);
+        }
     }
 
     public static final class Composite extends DatabaseReferenceImpl.Internal {

@@ -575,7 +575,9 @@ public abstract class BaseTopologyGraphDbmsModelIT {
                 .build();
 
         return Stream.of(
-                Arguments.of(completeSettings), Arguments.of(missingSettings), Arguments.of(missingOtherSettings));
+                Arguments.of("complete", completeSettings),
+                Arguments.of("missing", missingSettings),
+                Arguments.of("missingOther", missingOtherSettings));
     }
 
     protected void createVersionNode() {
