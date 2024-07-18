@@ -69,7 +69,10 @@ import org.neo4j.internal.helpers.NameUtil.escapeSingleQuotes
 import org.neo4j.internal.schema.ConstraintDescriptor
 import org.neo4j.internal.schema.IndexConfig
 import org.neo4j.internal.schema.IndexDescriptor
+import org.neo4j.internal.schema.IndexProviderDescriptor
 import org.neo4j.internal.schema.IndexType
+import org.neo4j.internal.schema.SettingsAccessor.IndexConfigAccessor
+import org.neo4j.kernel.api.impl.schema.vector.VectorIndexVersion
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.BooleanValue
 import org.neo4j.values.storable.IntegralValue
@@ -135,7 +138,7 @@ case class ShowIndexesCommand(
         val indexType = indexDescriptor.getIndexType
         val isLookupIndex = indexType.equals(IndexType.LOOKUP)
         val entityType = indexDescriptor.schema.entityType
-        val providerName = indexDescriptor.getIndexProvider.name
+        val provider = indexDescriptor.getIndexProvider
 
         val (lastRead, readCount, trackedSince) = getIndexStatistics(ctx, indexDescriptor, zoneId)
 
@@ -169,7 +172,7 @@ case class ShowIndexesCommand(
                 VirtualValues.fromList(indexInfo.properties.map(prop => Values.of(prop).asInstanceOf[AnyValue]).asJava)
             propertiesColumn -> propertiesValue
           // The index provider for this index, one of "fulltext-1.0", "range-1.0", "point-1.0", "text-1.0", "token-lookup-1.0"
-          case `indexProviderColumn` => indexProviderColumn -> Values.stringValue(providerName)
+          case `indexProviderColumn` => indexProviderColumn -> Values.stringValue(provider.name)
           // The name of the constraint associated to the index
           case `owningConstraintColumn` =>
             val maybeOwningConstraintId = indexDescriptor.getOwningConstraintId
@@ -188,7 +191,7 @@ case class ShowIndexesCommand(
           case `trackedSinceColumn` => trackedSinceColumn -> trackedSince
           // The options for this index, shows index provider and config
           case `optionsColumn` =>
-            optionsColumn -> extractOptionsMap(providerName, indexDescriptor.getIndexConfig)
+            optionsColumn -> extractOptionsMap(indexType, provider, indexDescriptor.getIndexConfig)
           // Message of failure should the index be in a failed state
           case `failureMessageColumn` =>
             failureMessageColumn -> Values.stringValue(indexInfo.indexStatus.failureMessage)
@@ -201,7 +204,7 @@ case class ShowIndexesCommand(
                 entityType,
                 indexInfo.labelsOrTypes,
                 indexInfo.properties,
-                providerName,
+                provider,
                 indexDescriptor.getIndexConfig,
                 indexInfo.indexStatus.maybeConstraint
               )
@@ -263,10 +266,11 @@ object ShowIndexesCommand {
     entityType: EntityType,
     labelsOrTypes: List[String],
     properties: List[String],
-    providerName: String,
+    provider: IndexProviderDescriptor,
     indexConfig: IndexConfig,
     maybeConstraint: Option[ConstraintDescriptor]
   ): String = {
+    val providerName = provider.name
 
     indexType match {
       case IndexType.RANGE =>
@@ -340,7 +344,9 @@ object ShowIndexesCommand {
           case _ => throw new IllegalArgumentException(s"Did not recognize entity type $entityType")
         }
       case IndexType.VECTOR =>
-        val vectorConfig = configAsString(indexConfig, value => vectorConfigValueAsString(value))
+        val settingsValidator = VectorIndexVersion.fromDescriptor(provider).indexSettingValidator
+        val vectorIndexConfig = settingsValidator.trustIsValidToVectorIndexConfig(new IndexConfigAccessor(indexConfig))
+        val vectorConfig = configAsString(vectorIndexConfig.config, value => vectorConfigValueAsString(value))
         val optionsString = optionsAsString(providerName, vectorConfig)
 
         entityType match {

@@ -20,6 +20,10 @@
 package org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands
 
 import org.neo4j.internal.schema.IndexConfig
+import org.neo4j.internal.schema.IndexProviderDescriptor
+import org.neo4j.internal.schema.IndexType
+import org.neo4j.internal.schema.SettingsAccessor.IndexConfigAccessor
+import org.neo4j.kernel.api.impl.schema.vector.VectorIndexVersion
 import org.neo4j.values.storable.DoubleArray
 import org.neo4j.values.storable.Value
 import org.neo4j.values.storable.Values
@@ -114,11 +118,18 @@ object ShowSchemaCommandHelper {
     s"CREATE CONSTRAINT $escapedName FOR $nodeOrRelPattern REQUIRE ($escapedProperties) $predicate"
   }
 
-  def extractOptionsMap(providerName: String, indexConfig: IndexConfig): MapValue = {
-    val (configKeys, configValues) = indexConfig.asMap().asScala.toSeq.unzip
+  def extractOptionsMap(indexType: IndexType, provider: IndexProviderDescriptor, indexConfig: IndexConfig): MapValue = {
+    val completedIndexConfig = indexType match {
+      case IndexType.VECTOR =>
+        val settingsValidator = VectorIndexVersion.fromDescriptor(provider).indexSettingValidator
+        settingsValidator.trustIsValidToVectorIndexConfig(new IndexConfigAccessor(indexConfig)).config
+      case _ => indexConfig
+    }
+
+    val (configKeys, configValues) = completedIndexConfig.asMap().asScala.toSeq.unzip
     val optionKeys = Array("indexConfig", "indexProvider")
     val optionValues =
-      Array(VirtualValues.map(configKeys.toArray, configValues.toArray), Values.stringValue(providerName))
+      Array(VirtualValues.map(configKeys.toArray, configValues.toArray), Values.stringValue(provider.name))
     VirtualValues.map(optionKeys, optionValues)
   }
 

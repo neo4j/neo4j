@@ -201,9 +201,7 @@ case class ShowConstraintsCommand(
           s"Expected to find an index for index backed constraint ${constraintDescriptor.getName}"
         )
       )
-      val providerName = index.getIndexProvider.name
-      val indexConfig = index.getIndexConfig
-      extractOptionsMap(providerName, indexConfig)
+      extractOptionsMap(index.getIndexType, index.getIndexProvider, index.getIndexConfig)
     } else Values.NO_VALUE
   }
 
