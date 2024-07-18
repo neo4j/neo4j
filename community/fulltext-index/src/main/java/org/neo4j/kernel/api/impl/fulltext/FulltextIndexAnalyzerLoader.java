@@ -31,14 +31,14 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.service.Services;
 import org.neo4j.values.storable.TextValue;
 
-final class FulltextIndexAnalyzerLoader {
+public final class FulltextIndexAnalyzerLoader {
     public static final FulltextIndexAnalyzerLoader INSTANCE = new FulltextIndexAnalyzerLoader();
 
     private final ConcurrentHashMap<String, AnalyzerProvider> analyzerProviders = new ConcurrentHashMap<>();
 
     private FulltextIndexAnalyzerLoader() {}
 
-    Analyzer createAnalyzer(IndexDescriptor descriptor, TokenNameLookup tokenNameLookup) {
+    public Analyzer createAnalyzer(IndexDescriptor descriptor, TokenNameLookup tokenNameLookup) {
         TextValue analyzerName = descriptor.getIndexConfig().get(ANALYZER);
         if (analyzerName == null) {
             throw new RuntimeException(
@@ -47,7 +47,7 @@ final class FulltextIndexAnalyzerLoader {
         return createAnalyzerFromString(analyzerName.stringValue());
     }
 
-    Analyzer createAnalyzerFromString(String analyzerName) {
+    public Analyzer createAnalyzerFromString(String analyzerName) {
         AnalyzerProvider provider = analyzerProviders.get(analyzerName);
         if (provider == null) {
             provider = loadAll(analyzerName);
