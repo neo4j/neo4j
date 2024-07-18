@@ -1,4 +1,4 @@
-FROM centos:7
+FROM fedora:33
 
 COPY ${RPMFILE} /tmp/
 
