@@ -36,6 +36,7 @@ Apache Software License, Version 2.0
   Apache Lucene (module: core)
   Apache Lucene (module: queryparser)
   AssertJ Core
+  Awaitility
   Byte Buddy (without dependencies)
   Byte Buddy agent
   Caffeine cache

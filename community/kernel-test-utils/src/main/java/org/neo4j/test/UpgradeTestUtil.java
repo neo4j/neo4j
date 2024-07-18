@@ -24,8 +24,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Comparator;
+import org.awaitility.Awaitility;
+import org.awaitility.Durations;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.api.DatabaseManagementService;
+import org.neo4j.dbms.database.SystemGraphComponent.Status;
 import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
@@ -70,11 +73,13 @@ public class UpgradeTestUtil {
     }
 
     public static void upgradeDbms(DatabaseManagementService dbms) {
-        GraphDatabaseAPI system = (GraphDatabaseAPI) dbms.database(GraphDatabaseSettings.SYSTEM_DATABASE_NAME);
-        try (var tx = system.beginTx()) {
-            tx.execute("CALL dbms.upgrade()").close();
-            tx.commit();
-        }
+        final var system = dbms.database(GraphDatabaseSettings.SYSTEM_DATABASE_NAME);
+        Awaitility.await()
+                .atMost(Durations.ONE_MINUTE)
+                .pollDelay(Durations.FIVE_SECONDS)
+                .untilAsserted(() -> assertThat(callUpgrade(system))
+                        .as("Unable to upgrade the system graph to the current version")
+                        .isEqualTo(Status.CURRENT.name()));
     }
 
     public static void assertUpgradeTransactionInOrder(
@@ -116,5 +121,18 @@ public class UpgradeTestUtil {
         for (StorageCommand command : commands) {
             assertThat(command).isInstanceOf(StorageCommand.VersionUpgradeCommand.class);
         }
+    }
+
+    private static String callUpgrade(GraphDatabaseService db) {
+        String status;
+        try (var tx = db.beginTx()) {
+            // whilst 'dbms.upgrade' returns a stream from BuiltInDbmsProcedures - it only ever contains one item
+            status = tx.execute("CALL dbms.upgrade()").stream()
+                    .map(row -> row.get("status").toString())
+                    .findFirst()
+                    .orElse(Status.UNINITIALIZED.name());
+            tx.commit();
+        }
+        return status;
     }
 }
