@@ -122,10 +122,10 @@ class CheckPointerImplTest {
         checkPointing.start();
 
         // When
-        long txId = checkPointing.checkPointIfNeeded(INFO);
+        long appendIndex = checkPointing.checkPointIfNeeded(INFO);
 
         // Then
-        assertEquals(transactionId, txId);
+        assertEquals(TRANSACTION_APPEND_INDEX, appendIndex);
         verify(forceOperation).flushAndForce(any(), any());
         verify(panic, times(2)).assertNoPanic(IOException.class);
         verify(appender)
@@ -157,10 +157,10 @@ class CheckPointerImplTest {
         checkPointing.start();
 
         // When
-        long txId = checkPointing.forceCheckPoint(INFO);
+        long appendIndex = checkPointing.forceCheckPoint(INFO);
 
         // Then
-        assertEquals(transactionId, txId);
+        assertEquals(TRANSACTION_APPEND_INDEX, appendIndex);
         verify(forceOperation).flushAndForce(any(), any());
         verify(panic, times(2)).assertNoPanic(IOException.class);
         verify(appender)
@@ -191,10 +191,10 @@ class CheckPointerImplTest {
         checkPointing.start();
 
         // When
-        long txId = checkPointing.tryCheckPoint(INFO);
+        long appendIndex = checkPointing.tryCheckPoint(INFO);
 
         // Then
-        assertEquals(transactionId, txId);
+        assertEquals(TRANSACTION_APPEND_INDEX, appendIndex);
         verify(forceOperation).flushAndForce(any(), any());
         verify(panic, times(2)).assertNoPanic(IOException.class);
         verify(appender)
@@ -225,10 +225,10 @@ class CheckPointerImplTest {
         checkPointing.start();
 
         // When
-        long txId = checkPointing.tryCheckPointNoWait(INFO);
+        long appendIndex = checkPointing.tryCheckPointNoWait(INFO);
 
         // Then
-        assertEquals(transactionId, txId);
+        assertEquals(TRANSACTION_APPEND_INDEX, appendIndex);
         verify(forceOperation).flushAndForce(any(), any());
         verify(panic, times(2)).assertNoPanic(IOException.class);
         verify(appender)
@@ -398,7 +398,7 @@ class CheckPointerImplTest {
         finishFlushAndForce.release(); // Let the flushAndForce complete.
         forceCheckPointThread.join();
 
-        assertThat(checkPointer.tryCheckPoint(INFO, predicate)).isEqualTo(this.transactionId);
+        assertThat(checkPointer.tryCheckPoint(INFO, predicate)).isEqualTo(TRANSACTION_APPEND_INDEX);
     }
 
     private CheckPointerImpl checkPointer(StoreCopyCheckPointMutex mutex) {

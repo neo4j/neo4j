@@ -48,7 +48,7 @@ import org.neo4j.time.Stopwatch;
 
 public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer {
     private static final String CHECKPOINT_TAG = "checkpoint";
-    private static final long NO_TRANSACTION_ID = -1;
+    private static final long NO_APPEND_INDEX = -1;
     private static final String IO_DETAILS_TEMPLATE =
             "Checkpoint flushed %d pages (%d%% of total available pages), in %d IOs. Checkpoint performed with IO limit: %s, paused in total %d times( %d millis).";
     private static final String UNLIMITED_IO_CONTROLLER_LIMIT = "unlimited";
@@ -150,9 +150,9 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer {
                 if (lock != null) {
                     var lastInfo = latestCheckPointInfo;
                     log.info(info.describe(lastInfo) + " Check pointing was already running, completed now");
-                    return lastInfo.highestObservedClosedTransactionId().id();
+                    return lastInfo.appendIndex();
                 } else {
-                    return NO_TRANSACTION_ID;
+                    return NO_APPEND_INDEX;
                 }
             }
         }
@@ -166,13 +166,13 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer {
                 return checkpointByTrigger(info);
             }
         }
-        return NO_TRANSACTION_ID;
+        return NO_APPEND_INDEX;
     }
 
     private long checkpointByTrigger(TriggerInfo triggerInfo) throws IOException {
         if (shutdown) {
             logShutdownMessage(triggerInfo);
-            return NO_TRANSACTION_ID;
+            return NO_APPEND_INDEX;
         }
         var highestTransactionEver = metadataProvider.getHighestEverClosedTransaction();
         var lastClosedBatch = metadataProvider.getLastClosedBatch();
@@ -197,7 +197,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer {
             throws IOException {
         if (shutdown) {
             logShutdownMessage(triggerInfo);
-            return NO_TRANSACTION_ID;
+            return NO_APPEND_INDEX;
         }
         return doCheckpoint(
                 transactionId,
@@ -271,7 +271,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer {
              */
             logPruning.pruneLogs(oldestNotCompletedPosition.getLogVersion());
             latestCheckPointInfo = ongoingCheckpoint;
-            return lastClosedTransactionId;
+            return latestCheckPointInfo.appendIndex();
         } catch (Throwable t) {
             // Why only log failure here? It's because check point can potentially be made from various
             // points of execution e.g. background thread triggering check point if needed and during

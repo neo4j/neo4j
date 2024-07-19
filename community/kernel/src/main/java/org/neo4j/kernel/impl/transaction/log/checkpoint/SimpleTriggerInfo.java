@@ -38,7 +38,8 @@ public class SimpleTriggerInfo implements TriggerInfo {
     public String describe(LatestCheckpointInfo checkpointInfo) {
         String info = description == null ? triggerName : triggerName + " for " + description;
         return "Checkpoint triggered by \"" + info + "\" @ txId: "
-                + checkpointInfo.highestObservedClosedTransactionId().id();
+                + checkpointInfo.highestObservedClosedTransactionId().id() + ", append index: "
+                + checkpointInfo.appendIndex();
     }
 
     @Override

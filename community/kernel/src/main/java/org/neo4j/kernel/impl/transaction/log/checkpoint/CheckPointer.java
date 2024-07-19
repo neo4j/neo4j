@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.util.function.BooleanSupplier;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.storageengine.api.TransactionId;
-import org.neo4j.storageengine.api.TransactionIdStore;
 
 /**
  * This interface represent a check pointer which is responsible to write check points in the transaction log.
@@ -37,7 +36,7 @@ public interface CheckPointer {
      *
      * @param triggerInfo the info describing why check pointing has been triggered
      * pending approval of the threshold check
-     * @return the transaction id used for the check pointing or -1 if check pointing wasn't needed
+     * @return the append index used for the check pointing or -1 if check pointing wasn't needed
      * @throws IOException if writing the check point fails
      */
     long checkPointIfNeeded(TriggerInfo triggerInfo) throws IOException;
@@ -47,7 +46,7 @@ public interface CheckPointer {
      * will check point otherwise it will wait for the running check pointing to complete.
      *
      * @param triggerInfo the info describing why check pointing has been triggered
-     * @return the transaction id used for the check pointing.
+     * @return the append index used for the check pointing or -1 if check pointing wasn't performed
      * @throws IOException if writing the check point fails
      */
     long tryCheckPoint(TriggerInfo triggerInfo) throws IOException;
@@ -60,7 +59,7 @@ public interface CheckPointer {
      *
      * @param triggerInfo the info describing why check pointing has been triggered
      * @param timeout a boolean supplier that, if it returns {@code true}, will signal that we should stop waiting for any on-going checkpoint to complete.
-     * @return the transaction id used for the check pointing, or -1 if we ended up waiting for an on-going checkpoint and the timeout returned {@code false}
+     * @return the append index used for the check pointing, or -1 if we ended up waiting for an on-going checkpoint and the timeout returned {@code false}
      * telling us to give up waiting.
      * @throws IOException if writing the check point fails
      */
@@ -71,7 +70,7 @@ public interface CheckPointer {
      * will check point otherwise it will return {@code -1}.
      *
      * @param triggerInfo the info describing why check pointing has been triggered
-     * @return the transaction id used for the check pointing or {@code -1} when the invocation did not trigger a check point.
+     * @return the append index used for the check pointing or {@code -1} when the invocation did not trigger a check point.
      * @throws IOException if writing the check point fails
      */
     long tryCheckPointNoWait(TriggerInfo triggerInfo) throws IOException;
@@ -82,7 +81,7 @@ public interface CheckPointer {
      * It is mostly used for testing purpose and to force a check point when shutting down the database.
      *
      * @param triggerInfo the info describing why check pointing has been triggered
-     * @return the transaction id used for the check pointing
+     * @return the append index used for the check pointing
      * @throws IOException if writing the check point fails
      */
     long forceCheckPoint(TriggerInfo triggerInfo) throws IOException;
@@ -96,7 +95,7 @@ public interface CheckPointer {
      * @param appendIndex append index to checkpoint
      * @param position position of provided transaction id to checkpoint.
      * @param triggerInfo the info describing why check pointing has been triggered.
-     * @return the transaction id used for the check pointing
+     * @return the append index used for the check pointing
      * @throws IOException if writing the check point fails
      */
     long forceCheckPoint(TransactionId transactionId, long appendIndex, LogPosition position, TriggerInfo triggerInfo)
@@ -104,7 +103,7 @@ public interface CheckPointer {
 
     /**
      * @return Info about latest checkpoint that was made. If there's no checkpoint then
-     * {@link TransactionIdStore#UNKNOWN_TRANSACTION_ID} is returned and null kernel version is provided
+     * unknown values are returned for all the fields
      */
     LatestCheckpointInfo latestCheckPointInfo();
 
