@@ -19,10 +19,13 @@
  */
 package org.neo4j.kernel.impl.util;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.neo4j.cloud.storage.SchemeFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -35,68 +38,90 @@ class ValidatorsTest {
     @Inject
     private TestDirectory directory;
 
+    @Inject
+    private FileSystemAbstraction filesystem;
+
     @Test
     void shouldFindLocalFilesByRegex() throws Exception {
         // GIVEN
-        existenceOfFile("abc");
-        existenceOfFile("bcd");
+        final var abc = existenceOfFile("abc");
+        final var bcd = existenceOfFile("bcd");
+        final var qwer0 = existenceOfFile("qwer.0");
+        final var qwer1 = existenceOfFile("qwer.1");
+        final var qwer2 = existenceOfFile("qwer.2");
+        final var qwer10 = existenceOfFile("qwer.10");
 
         // WHEN/THEN
-        assertValid("abc");
-        assertValid("bcd");
-        assertValid("ab.");
-        assertValid(".*bc");
+        assertValid("abc", abc);
+        assertValid("bcd", bcd);
+        assertValid("ab.", abc);
+        assertValid(".*bc", abc);
+        assertValid(".*bc.*", abc, bcd);
+        assertValid("qwer\\.\\d", qwer0, qwer1, qwer2);
+        assertValid("qwer\\.\\p{Digit}", qwer0, qwer1, qwer2);
+        assertValid("qwer\\.\\d+", qwer0, qwer1, qwer2, qwer10);
+        assertValid("qwer\\.\\d{1,2}", qwer0, qwer1, qwer2, qwer10);
+
         assertNotValid("abcd");
         assertNotValid(".*de.*");
+        assertNotValid("qwer\\.\\d{3,}");
     }
 
     @Test
     void shouldFindStoragePathsByRegex() throws Exception {
         // GIVEN
-        existenceOfFile("abc");
-        existenceOfFile("bcd");
+        final var abc = existenceOfFile("abc");
+        final var bcd = existenceOfFile("bcd");
+        final var qwer0 = existenceOfFile("qwer.0");
+        final var qwer1 = existenceOfFile("qwer.1");
+        final var qwer2 = existenceOfFile("qwer.2");
+        final var qwer10 = existenceOfFile("qwer.10");
 
         final var base = directory.homePath().toUri().toString();
-        assert base.endsWith("/");
+        assertThat(base).endsWith("/");
 
         // the file scheme resolver is always present so will be able to handle the file URIs below
-        final var fs = new SchemeFileSystemAbstraction(directory.getFileSystem());
+        final var schemeFilesystem = new SchemeFileSystemAbstraction(filesystem);
 
         // WHEN/THEN
-        assertValid(fs, base + "abc");
-        assertValid(fs, base + "bcd");
-        assertValid(fs, base + "ab.");
-        assertValid(fs, base + ".*bc");
-        assertNotValid(fs, base + "abcd");
-        assertNotValid(fs, base + ".*de.*");
+        assertValid(schemeFilesystem, base + "abc", abc);
+        assertValid(schemeFilesystem, base + "bcd", bcd);
+        assertValid(schemeFilesystem, base + "ab.", abc);
+        assertValid(schemeFilesystem, base + ".*bc", abc);
+        assertValid(schemeFilesystem, base + ".*bc.*", abc, bcd);
+        assertValid(schemeFilesystem, base + "qwer\\.\\d", qwer0, qwer1, qwer2);
+        assertValid(schemeFilesystem, base + "qwer\\.\\p{Digit}", qwer0, qwer1, qwer2);
+        assertValid(schemeFilesystem, base + "qwer\\.\\d+", qwer0, qwer1, qwer2, qwer10);
+        assertValid(schemeFilesystem, base + "qwer\\.\\d{1,2}", qwer0, qwer1, qwer2, qwer10);
+
+        assertNotValid(schemeFilesystem, base + "abcd");
+        assertNotValid(schemeFilesystem, base + ".*de.*");
+        assertNotValid(schemeFilesystem, base + "qwer\\.\\d{3,}");
+    }
+
+    private void assertValid(String fileByName, Path... expected) {
+        final var path = directory.homePath().resolve(fileByName);
+        assertValid(filesystem, path.toString(), expected);
+    }
+
+    private static void assertValid(FileSystemAbstraction fs, String fileByName, Path... expected) {
+        final var matching = validate(fs, fileByName);
+        assertThat(matching).containsExactlyInAnyOrder(expected);
     }
 
     private void assertNotValid(String string) {
-        assertThrows(IllegalArgumentException.class, () -> validate(string));
+        assertNotValid(filesystem, string);
     }
 
-    private void assertValid(String fileByName) {
-        validate(fileByName);
+    private static void assertNotValid(FileSystemAbstraction fs, String string) {
+        assertThatThrownBy(() -> validate(fs, string)).isInstanceOf(IllegalArgumentException.class);
     }
 
-    private void assertNotValid(FileSystemAbstraction fs, String string) {
-        assertThrows(IllegalArgumentException.class, () -> validate(fs, string));
+    private static List<Path> validate(FileSystemAbstraction fs, String fileByName) {
+        return Validators.matchingFiles(fs, fileByName);
     }
 
-    private void assertValid(FileSystemAbstraction fs, String fileByName) {
-        validate(fs, fileByName);
-    }
-
-    private void validate(String fileByName) {
-        final var home = directory.homePath();
-        validate(directory.getFileSystem(), home + home.getFileSystem().getSeparator() + fileByName);
-    }
-
-    private void validate(FileSystemAbstraction fs, String fileByName) {
-        Validators.matchingFiles(fs, fileByName);
-    }
-
-    private void existenceOfFile(String name) throws IOException {
-        Files.createFile(directory.file(name));
+    private Path existenceOfFile(String name) throws IOException {
+        return Files.createFile(directory.file(name));
     }
 }
