@@ -138,6 +138,33 @@ class QueryResourcePlainJsonIT {
     }
 
     @Test
+    void point() throws IOException, InterruptedException {
+        var response = QueryApiTestUtil.simpleRequest(
+                client,
+                queryEndpoint,
+                "{\"statement\": \"RETURN point({x: 2.3, y: 4.5})," + "point({x: 2.3, y: 4.5, z: 6.7}),"
+                        + "point({x:2.3, y:4.5, srid:4326}),"
+                        + "point({x: 2.3, y: 4.5, crs: 'WGS-84'}),"
+                        + "point({x:2.3, y:4.5, z:6.7, srid:4979}),"
+                        + "point({x: 2.3, y: 4.5, z: 6.7, crs: 'WGS-84-3D'}),"
+                        + "point({longitude: 56.7, latitude: 12.78}),"
+                        + "point({longitude: 56.7, latitude: 12.78, height: 8})\"}");
+
+        assertThat(response.statusCode()).isEqualTo(202);
+        var parsedJson = MAPPER.readTree(response.body());
+
+        var results = parsedJson.get(DATA_KEY).get(VALUES_KEY);
+        assertThat(results.get(0).asText()).isEqualTo("SRID=7203;POINT (2.3 4.5)");
+        assertThat(results.get(1).asText()).isEqualTo("SRID=9157;POINT Z (2.3 4.5 6.7)");
+        assertThat(results.get(2).asText()).isEqualTo("SRID=4326;POINT (2.3 4.5)");
+        assertThat(results.get(3).asText()).isEqualTo("SRID=4326;POINT (2.3 4.5)");
+        assertThat(results.get(4).asText()).isEqualTo("SRID=4979;POINT Z (2.3 4.5 6.7)");
+        assertThat(results.get(5).asText()).isEqualTo("SRID=4979;POINT Z (2.3 4.5 6.7)");
+        assertThat(results.get(6).asText()).isEqualTo("SRID=4326;POINT (56.7 12.78)");
+        assertThat(results.get(7).asText()).isEqualTo("SRID=4979;POINT Z (56.7 12.78 8.0)");
+    }
+
+    @Test
     void duration() throws IOException, InterruptedException {
         var response = QueryApiTestUtil.simpleRequest(
                 client, queryEndpoint, "{\"statement\": \"RETURN duration('P14DT16H12M') AS theDuration\"}");
