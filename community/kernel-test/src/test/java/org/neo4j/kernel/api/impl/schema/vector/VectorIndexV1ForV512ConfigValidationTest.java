@@ -42,6 +42,7 @@ import org.neo4j.internal.schema.IndexConfigValidationRecords.InvalidValue;
 import org.neo4j.internal.schema.IndexConfigValidationRecords.MissingSetting;
 import org.neo4j.internal.schema.IndexConfigValidationRecords.UnrecognizedSetting;
 import org.neo4j.internal.schema.SettingsAccessor;
+import org.neo4j.internal.schema.SettingsAccessor.IndexConfigAccessor;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.api.schema.vector.VectorTestUtils.VectorIndexSettings;
 import org.neo4j.kernel.api.vector.VectorQuantization;
@@ -51,9 +52,25 @@ import org.neo4j.values.storable.NumberValue;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Values;
 
-class VectorIndexV1ForV511ConfigValidationTest {
+class VectorIndexV1ForV512ConfigValidationTest {
     private static final VectorIndexVersion VERSION = VectorIndexVersion.V1_0;
-    private static final VectorIndexSettingsValidator VALIDATOR = VERSION.indexSettingValidator(KernelVersion.V5_11);
+    private static final VectorIndexSettingsValidator VALIDATOR = VERSION.indexSettingValidator(KernelVersion.V5_12);
+
+    @Test
+    void validV1ForV511IndexConfig() {
+        final var settings = VectorIndexSettings.create()
+                .withDimensions(VERSION.maxDimensions() + 1) // unfortunately valid
+                .withSimilarityFunction(VERSION.similarityFunction("COSINE"))
+                .toSettingsAccessor();
+
+        final var vectorIndexConfigAsIfCreatedOn511 =
+                VERSION.indexSettingValidator(KernelVersion.V5_11).validateToVectorIndexConfig(settings);
+
+        final var vectorIndexConfig = VALIDATOR.trustIsValidToVectorIndexConfig(
+                new IndexConfigAccessor(vectorIndexConfigAsIfCreatedOn511.config()));
+
+        assertThat(vectorIndexConfig).isEqualTo(vectorIndexConfigAsIfCreatedOn511);
+    }
 
     @Test
     void validIndexConfig() {
@@ -173,31 +190,24 @@ class VectorIndexV1ForV511ConfigValidationTest {
 
     @Test
     void aboveMaxDimensions() {
-        final var dimensions = VERSION.maxDimensions() + 1;
+        final int invalidDimensions = VERSION.maxDimensions() + 1;
         final var settings = VectorIndexSettings.create()
-                .withDimensions(dimensions)
+                .withDimensions(invalidDimensions)
                 .withSimilarityFunction(VERSION.similarityFunction("COSINE"))
                 .toSettingsAccessor();
 
-        final var validationRecords = VALIDATOR.validate(settings);
-        // no upper bound check to support vector-1.0 created on 5.11
-        // thus this is (unfortunately) acceptable
-        assertThat(validationRecords.valid()).isTrue();
+        assertInvalidDimensions(invalidDimensions, settings);
 
+        // however fine for reading no upper bound check to support vector-1.0 created on 5.11
+        // trust previously created index configs as being valid
         final var ref = new MutableObject<VectorIndexConfig>();
-        assertThatCode(() -> ref.setValue(VALIDATOR.validateToVectorIndexConfig(settings)))
+        assertThatCode(() -> ref.setValue(VALIDATOR.trustIsValidToVectorIndexConfig(settings)))
                 .doesNotThrowAnyException();
         final var vectorIndexConfig = ref.getValue();
 
         assertThat(vectorIndexConfig)
-                .extracting(
-                        VectorIndexConfig::dimensions,
-                        VectorIndexConfig::similarityFunction,
-                        VectorIndexConfig::quantization)
-                .containsExactly(dimensions, VERSION.similarityFunction("COSINE"), VectorQuantization.OFF);
-
-        assertThat(vectorIndexConfig.config().entries().collect(Pair::getOne))
-                .containsExactlyInAnyOrder(DIMENSIONS.getSettingName(), SIMILARITY_FUNCTION.getSettingName());
+                .extracting(VectorIndexConfig::dimensions, VectorIndexConfig::similarityFunction)
+                .containsExactly(invalidDimensions, VERSION.similarityFunction("COSINE"));
     }
 
     private void assertInvalidDimensions(int invalidDimensions, SettingsAccessor settings) {
@@ -213,7 +223,7 @@ class VectorIndexV1ForV511ConfigValidationTest {
         assertThatThrownBy(() -> VALIDATOR.validateToVectorIndexConfig(settings))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContainingAll(
-                        DIMENSIONS.getSettingName(), "must be between 1 and", String.valueOf(Integer.MAX_VALUE));
+                        DIMENSIONS.getSettingName(), "must be between 1 and", String.valueOf(VERSION.maxDimensions()));
     }
 
     @Test

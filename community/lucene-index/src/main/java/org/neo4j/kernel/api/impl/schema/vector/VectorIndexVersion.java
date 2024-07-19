@@ -77,13 +77,22 @@ public enum VectorIndexVersion {
 
         @Override
         protected RichIterable<Pair<KernelVersion, VectorIndexSettingsValidator>> configureValidators() {
-            return Lists.mutable.of(Tuples.pair(
-                    KernelVersion.VERSION_NODE_VECTOR_INDEX_INTRODUCED,
-                    new Validators(
-                            descriptor(),
-                            new DimensionsValidator(new Range<>(1, maxDimensions())),
-                            new SimilarityFunctionValidator(nameToSimilarityFunction()),
-                            new ReadDefaultOnly<>(IndexSetting.vector_Quantization(), VectorQuantization.OFF))));
+            return Lists.mutable.of(
+                    Tuples.pair(
+                            KernelVersion.VERSION_NODE_VECTOR_INDEX_INTRODUCED,
+                            new Validators(
+                                    descriptor(),
+                                    new DimensionsValidator(new Range<>(1, Integer.MAX_VALUE)), // this was a bug
+                                    new SimilarityFunctionValidator(nameToSimilarityFunction()),
+                                    new ReadDefaultOnly<>(IndexSetting.vector_Quantization(), VectorQuantization.OFF))),
+                    Tuples.pair(
+                            KernelVersion.V5_12,
+                            new Validators(
+                                    descriptor(),
+                                    new DimensionsValidator(new Range<>(1, maxDimensions())),
+                                    new SimilarityFunctionValidator(nameToSimilarityFunction()),
+                                    new ReadDefaultOnly<>(
+                                            IndexSetting.vector_Quantization(), VectorQuantization.OFF))));
         }
 
         @Override
