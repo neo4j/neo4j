@@ -1600,7 +1600,14 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
     private void assertNoInnerTransactions() throws TransactionFailureException {
         if (getInnerTransactionHandler().hasInnerTransaction()) {
+            var gql = ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_2DN01)
+                    .withClassification(ErrorClassification.CLIENT_ERROR)
+                    .withCause(ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_2DN07)
+                            .withClassification(ErrorClassification.CLIENT_ERROR)
+                            .build())
+                    .build();
             throw new TransactionFailureException(
+                    gql,
                     TransactionCommitFailed,
                     "The transaction cannot be committed when it has open inner transactions.");
         }
