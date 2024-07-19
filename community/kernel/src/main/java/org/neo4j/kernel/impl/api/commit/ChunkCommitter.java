@@ -173,7 +173,10 @@ public final class ChunkCommitter implements TransactionCommitter {
                     }
                     CommandChunk chunk = new CommandChunk(extractedCommands, chunkMetadata);
                     transactionPayload.init(chunk);
-                    commitProcess.commit(transactionPayload, transactionWriteEvent, mode);
+                    long transactionId = commitProcess.commit(transactionPayload, transactionWriteEvent, mode);
+
+                    // TODO:
+                    transactionPayload.updateClusteredTransactionId(transactionId);
 
                     validationLockDumper.dumpLocks(
                             transactionValidator, lockClient, chunkNumber, transactionPayload.transactionId());

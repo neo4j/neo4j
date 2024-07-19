@@ -174,4 +174,15 @@ public class ChunkedTransaction implements CommandBatchToApply {
         return "ChunkedTransaction{" + "transactionSequenceNumber=" + transactionSequenceNumber + ", transactionId="
                 + transactionId + '}';
     }
+
+    /**
+     * While we are talking how data about chunked transactions be transferred in clusters we at least need to make sure that tx ids are aligned,
+     * otherwise tx id sequences will go completely out of sync
+     */
+    public void updateClusteredTransactionId(long transactionId) {
+        if (!idGenerated) {
+            this.transactionId = transactionId;
+            idGenerated = true;
+        }
+    }
 }
