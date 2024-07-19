@@ -19,6 +19,6 @@
  */
 package org.neo4j.server.security.auth;
 
-public interface ExpiryCheck {
-    Boolean hasExpired();
+public interface ValidityCheck {
+    void validate();
 }

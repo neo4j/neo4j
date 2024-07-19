@@ -21,7 +21,7 @@ package org.neo4j.server.security.systemgraph.versions;
 
 import static org.neo4j.kernel.api.security.AuthManager.INITIAL_PASSWORD;
 import static org.neo4j.kernel.api.security.AuthManager.INITIAL_USER_NAME;
-import static org.neo4j.server.security.systemgraph.SystemGraphRealmHelper.NATIVE_AUTH;
+import static org.neo4j.server.security.systemgraph.SecurityGraphHelper.NATIVE_AUTH;
 
 import java.util.List;
 import java.util.UUID;
@@ -48,6 +48,8 @@ public abstract class KnownCommunitySecurityComponentVersion extends KnownSystem
     public static final String USER_ID = "id";
     public static final String USER_NAME = "name";
     public static final String USER_CREDENTIALS = "credentials";
+    public static final String USER_EXPIRED = "passwordChangeRequired";
+    public static final String USER_SUSPENDED = "suspended";
 
     public static final String AUTH_CONSTRAINT = "auth-constraint";
     public static final Label AUTH_LABEL = Label.label("Auth");
@@ -82,8 +84,8 @@ public abstract class KnownCommunitySecurityComponentVersion extends KnownSystem
         Node node = tx.createNode(USER_LABEL);
         node.setProperty(USER_NAME, username);
         node.setProperty(USER_CREDENTIALS, credentials.serialize());
-        node.setProperty("passwordChangeRequired", passwordChangeRequired);
-        node.setProperty("suspended", suspended);
+        node.setProperty(USER_EXPIRED, passwordChangeRequired);
+        node.setProperty(USER_SUSPENDED, suspended);
         node.setProperty(USER_ID, UUID.randomUUID().toString());
         if (version >= UserSecurityGraphComponentVersion.COMMUNITY_SECURITY_521.getVersion()) {
             addAuthObject(tx, node);
@@ -96,19 +98,20 @@ public abstract class KnownCommunitySecurityComponentVersion extends KnownSystem
         // The set-initial-password command should only take effect if the only existing user is the default user with
         // the default password.
         List<Node> users = Iterators.asList(tx.findNodes(USER_LABEL));
-        if (users.size() == 0) {
+        if (users.isEmpty()) {
             debugLog.warn(String.format(
                     "Unable to update missing initial user password from `auth.ini` file: %s", initialUser.name()));
         } else if (users.size() == 1) {
             Node user = users.get(0);
             if (user.getProperty(USER_NAME).equals(INITIAL_USER_NAME)) {
                 SystemGraphCredential currentCredentials = SystemGraphCredential.deserialize(
-                        user.getProperty("credentials").toString(), secureHasher);
+                        user.getProperty(USER_CREDENTIALS).toString(), secureHasher);
                 if (currentCredentials.matchesPassword(UTF8.encode(INITIAL_PASSWORD))) {
                     debugLog.info(String.format(
                             "Updating initial user password from `auth.ini` file: %s", initialUser.name()));
-                    user.setProperty("credentials", initialUser.credential().serialize());
-                    user.setProperty("passwordChangeRequired", initialUser.passwordChangeRequired());
+                    user.setProperty(
+                            USER_CREDENTIALS, initialUser.credential().value().serialize());
+                    user.setProperty(USER_EXPIRED, initialUser.passwordChangeRequired());
                 }
             }
         } else {

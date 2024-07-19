@@ -37,7 +37,7 @@ import static org.neo4j.dbms.database.SystemGraphComponent.Status.REQUIRES_UPGRA
 import static org.neo4j.graphdb.Direction.OUTGOING;
 import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.EMBEDDED_CONNECTION;
 import static org.neo4j.server.security.auth.SecurityTestUtils.credentialFor;
-import static org.neo4j.server.security.systemgraph.SystemGraphRealmHelper.NATIVE_AUTH;
+import static org.neo4j.server.security.systemgraph.SecurityGraphHelper.NATIVE_AUTH;
 import static org.neo4j.server.security.systemgraph.UserSecurityGraphComponentVersion.COMMUNITY_SECURITY_43D4;
 import static org.neo4j.server.security.systemgraph.UserSecurityGraphComponentVersion.COMMUNITY_SECURITY_50;
 import static org.neo4j.server.security.systemgraph.UserSecurityGraphComponentVersion.COMMUNITY_SECURITY_521;

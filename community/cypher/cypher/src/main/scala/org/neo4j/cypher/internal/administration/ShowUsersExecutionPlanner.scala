@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.ast.Yield
 import org.neo4j.cypher.internal.procs.ParameterTransformer
 import org.neo4j.cypher.internal.procs.SystemCommandExecutionPlan
 import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler
-import org.neo4j.server.security.systemgraph.SystemGraphRealmHelper.NATIVE_AUTH
+import org.neo4j.server.security.systemgraph.SecurityGraphHelper.NATIVE_AUTH
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.VirtualValues
 

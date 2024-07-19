@@ -24,7 +24,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
@@ -44,24 +43,24 @@ import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.internal.kernel.api.security.AuthenticationResult;
+import org.neo4j.internal.kernel.api.security.CommunitySecurityLog;
 import org.neo4j.internal.kernel.api.security.LoginContext;
-import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.api.security.AuthToken;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 import org.neo4j.kernel.impl.security.User;
 import org.neo4j.server.security.SecureHasher;
 import org.neo4j.server.security.systemgraph.BasicSystemGraphRealm;
-import org.neo4j.server.security.systemgraph.SystemGraphRealmHelper;
+import org.neo4j.server.security.systemgraph.SecurityGraphHelper;
 
 public class BasicSystemGraphRealmTest {
     private AuthenticationStrategy authStrategy;
-    private SystemGraphRealmHelper realmHelper;
+    private SecurityGraphHelper realmHelper;
     private BasicSystemGraphRealm realm;
 
     @BeforeEach
     void setUp() {
         authStrategy = mock(AuthenticationStrategy.class);
-        realmHelper = spy(new SystemGraphRealmHelper(null, new SecureHasher()));
+        realmHelper = spy(new SecurityGraphHelper(null, new SecureHasher(), CommunitySecurityLog.NULL_LOG));
         realm = new BasicSystemGraphRealm(realmHelper, authStrategy);
     }
 
@@ -69,7 +68,7 @@ public class BasicSystemGraphRealmTest {
     void shouldFindAndAuthenticateUserSuccessfully() throws Throwable {
         // Given
         User user = new User("jake", null, credentialFor("abc123"), false, false);
-        doReturn(user).when(realmHelper).getUser("jake");
+        doReturn(user).when(realmHelper).getUserByName("jake");
 
         // When
         setMockAuthenticationStrategyResult(user, "abc123", SUCCESS);
@@ -82,7 +81,7 @@ public class BasicSystemGraphRealmTest {
     void shouldFindAndAuthenticateUserAndReturnAuthStrategyResult() throws Throwable {
         // Given
         User user = new User("jake", null, credentialFor("abc123"), false, false);
-        doReturn(user).when(realmHelper).getUser("jake");
+        doReturn(user).when(realmHelper).getUserByName("jake");
 
         // When
         setMockAuthenticationStrategyResult(user, "abc123", TOO_MANY_ATTEMPTS);
@@ -95,7 +94,7 @@ public class BasicSystemGraphRealmTest {
     void shouldFindAndAuthenticateUserAndReturnPasswordChangeIfRequired() throws Throwable {
         // Given
         User user = new User("jake", null, credentialFor("abc123"), true, false);
-        doReturn(user).when(realmHelper).getUser("jake");
+        doReturn(user).when(realmHelper).getUserByName("jake");
 
         // When
         setMockAuthenticationStrategyResult(user, "abc123", SUCCESS);
@@ -107,9 +106,7 @@ public class BasicSystemGraphRealmTest {
     @Test
     void shouldFailAuthenticationIfUserIsNotFound() throws Throwable {
         // Given
-        doThrow(new InvalidArgumentsException("User 'unknown' does not exist."))
-                .when(realmHelper)
-                .getUser("unknown");
+        doReturn(null).when(realmHelper).getUserByName("unknown");
 
         // Then
         assertLoginGivesResult("unknown", "abc123", FAILURE);
@@ -121,7 +118,7 @@ public class BasicSystemGraphRealmTest {
         when(authStrategy.authenticate(any(), any())).thenReturn(AuthenticationResult.SUCCESS);
 
         User user = new User("jake", null, credentialFor("abc123"), true, false);
-        doReturn(user).when(realmHelper).getUser("jake");
+        doReturn(user).when(realmHelper).getUserByName("jake");
 
         byte[] password = password("abc123");
         Map<String, Object> authToken = AuthToken.newBasicAuthToken("jake", password);

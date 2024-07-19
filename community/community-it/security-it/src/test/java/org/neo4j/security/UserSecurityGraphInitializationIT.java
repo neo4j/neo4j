@@ -19,7 +19,7 @@
  */
 package org.neo4j.security;
 
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.kernel.api.security.AuthManager.INITIAL_PASSWORD;
 import static org.neo4j.kernel.api.security.AuthManager.INITIAL_USER_NAME;
 import static org.neo4j.security.BasicSystemGraphRealmTestHelper.assertAuthenticationFails;
@@ -37,12 +37,11 @@ import org.neo4j.dbms.database.DefaultSystemGraphInitializer;
 import org.neo4j.dbms.database.SystemGraphComponents;
 import org.neo4j.dbms.database.SystemGraphInitializer;
 import org.neo4j.internal.kernel.api.security.CommunitySecurityLog;
-import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.security.SecureHasher;
 import org.neo4j.server.security.auth.InMemoryUserRepository;
 import org.neo4j.server.security.auth.UserRepository;
-import org.neo4j.server.security.systemgraph.SystemGraphRealmHelper;
+import org.neo4j.server.security.systemgraph.SecurityGraphHelper;
 import org.neo4j.server.security.systemgraph.UserSecurityGraphComponent;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
@@ -54,7 +53,7 @@ import org.neo4j.test.utils.TestDirectory;
 @TestDirectoryExtension
 class UserSecurityGraphInitializationIT {
     private BasicSystemGraphRealmTestHelper.TestDatabaseContextProvider dbManager;
-    private SystemGraphRealmHelper realmHelper;
+    private SecurityGraphHelper realmHelper;
 
     @SuppressWarnings("unused")
     @Inject
@@ -67,7 +66,8 @@ class UserSecurityGraphInitializationIT {
     void setUp() {
         dbManager = new BasicSystemGraphRealmTestHelper.TestDatabaseContextProvider(testDirectory);
         SecureHasher secureHasher = new SecureHasher();
-        realmHelper = new SystemGraphRealmHelper(SystemGraphRealmHelper.makeSystemSupplier(dbManager), secureHasher);
+        realmHelper = new SecurityGraphHelper(
+                SecurityGraphHelper.makeSystemSupplier(dbManager), secureHasher, CommunitySecurityLog.NULL_LOG);
         initialPassword = new InMemoryUserRepository();
     }
 
@@ -154,9 +154,7 @@ class UserSecurityGraphInitializationIT {
         systemGraphInitializer.start();
 
         // Then
-        assertThatThrownBy(() -> realmHelper.getUser(INITIAL_USER_NAME))
-                .isInstanceOf(InvalidArgumentsException.class)
-                .hasMessage(String.format("User '%s' does not exist.", INITIAL_USER_NAME));
+        assertThat(realmHelper.getUserByName(INITIAL_USER_NAME)).isNull();
     }
 
     private void startSystemGraphRealm() throws Exception {
@@ -168,7 +166,7 @@ class UserSecurityGraphInitializationIT {
         systemGraphComponentsBuilder.register(new UserSecurityGraphComponent(
                 initialPassword, config, NullLogProvider.getInstance(), CommunitySecurityLog.NULL_LOG));
 
-        var systemGraphSupplier = SystemGraphRealmHelper.makeSystemSupplier(dbManager);
+        var systemGraphSupplier = SecurityGraphHelper.makeSystemSupplier(dbManager);
         systemGraphInitializer =
                 new DefaultSystemGraphInitializer(systemGraphSupplier, systemGraphComponentsBuilder.build());
         systemGraphInitializer.start();

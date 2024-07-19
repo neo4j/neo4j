@@ -26,12 +26,10 @@ import org.neo4j.exceptions.InvalidArgumentException;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.AuthenticationResult;
 import org.neo4j.internal.kernel.api.security.LoginContext;
-import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.api.security.AuthToken;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 import org.neo4j.kernel.impl.security.User;
-import org.neo4j.server.security.FormatException;
 import org.neo4j.server.security.auth.AuthenticationStrategy;
 import org.neo4j.server.security.auth.BasicLoginContext;
 
@@ -39,12 +37,12 @@ import org.neo4j.server.security.auth.BasicLoginContext;
  * Shiro realm using a Neo4j graph to store users
  */
 public class BasicSystemGraphRealm extends AuthManager {
-    private final SystemGraphRealmHelper systemGraphRealmHelper;
+    private final SecurityGraphHelper securityGraphHelper;
     private final AuthenticationStrategy authenticationStrategy;
 
     public BasicSystemGraphRealm(
-            SystemGraphRealmHelper systemGraphRealmHelper, AuthenticationStrategy authenticationStrategy) {
-        this.systemGraphRealmHelper = systemGraphRealmHelper;
+            SecurityGraphHelper securityGraphHelper, AuthenticationStrategy authenticationStrategy) {
+        this.securityGraphHelper = securityGraphHelper;
         this.authenticationStrategy = authenticationStrategy;
     }
 
@@ -57,16 +55,15 @@ public class BasicSystemGraphRealm extends AuthManager {
             String username = AuthToken.safeCast(AuthToken.PRINCIPAL, authToken);
             byte[] password = AuthToken.safeCastCredentials(AuthToken.CREDENTIALS, authToken);
 
-            try {
-                User user = systemGraphRealmHelper.getUser(username);
-                AuthenticationResult result = authenticationStrategy.authenticate(user, password);
-                if (result == AuthenticationResult.SUCCESS && user.passwordChangeRequired()) {
-                    result = AuthenticationResult.PASSWORD_CHANGE_REQUIRED;
-                }
-                return new BasicLoginContext(user, result, connectionInfo);
-            } catch (InvalidArgumentsException | FormatException e) {
+            User user = securityGraphHelper.getUserByName(username);
+            if (user == null) {
                 return new BasicLoginContext(null, AuthenticationResult.FAILURE, connectionInfo);
             }
+            AuthenticationResult result = authenticationStrategy.authenticate(user, password);
+            if (result == AuthenticationResult.SUCCESS && user.passwordChangeRequired()) {
+                result = AuthenticationResult.PASSWORD_CHANGE_REQUIRED;
+            }
+            return new BasicLoginContext(user, result, connectionInfo);
         } finally {
             AuthToken.clearCredentials(authToken);
         }

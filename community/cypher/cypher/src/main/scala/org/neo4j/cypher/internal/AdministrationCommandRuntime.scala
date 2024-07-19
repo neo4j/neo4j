@@ -74,7 +74,7 @@ import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationExcep
 import org.neo4j.kernel.database.NormalizedDatabaseName
 import org.neo4j.server.security.SecureHasher
 import org.neo4j.server.security.SystemGraphCredential
-import org.neo4j.server.security.systemgraph.SystemGraphRealmHelper.NATIVE_AUTH
+import org.neo4j.server.security.systemgraph.SecurityGraphHelper.NATIVE_AUTH
 import org.neo4j.server.security.systemgraph.UserSecurityGraphComponent
 import org.neo4j.server.security.systemgraph.versions.KnownCommunitySecurityComponentVersion.AUTH_CONSTRAINT
 import org.neo4j.string.UTF8

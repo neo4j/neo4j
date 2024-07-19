@@ -40,7 +40,7 @@ import org.neo4j.kernel.api.security.AuthManager
 import org.neo4j.server.security.SecureHasher
 import org.neo4j.server.security.SystemGraphCredential
 import org.neo4j.server.security.auth.SecurityTestUtils
-import org.neo4j.server.security.systemgraph.SystemGraphRealmHelper.NATIVE_AUTH
+import org.neo4j.server.security.systemgraph.SecurityGraphHelper.NATIVE_AUTH
 import org.scalatest.enablers.Messaging.messagingNatureOfThrowable
 
 import java.util

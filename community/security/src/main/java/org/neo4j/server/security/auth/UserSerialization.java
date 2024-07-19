@@ -40,7 +40,7 @@ public class UserSerialization extends FileRepositorySerializer<User> {
     @Override
     protected String serialize(User user) {
         var passwordChangeRequired = user.passwordChangeRequired() ? User.PASSWORD_CHANGE_REQUIRED : "";
-        return String.join(userSeparator, user.name(), user.credential().serialize(), passwordChangeRequired);
+        return String.join(userSeparator, user.name(), user.credential().value().serialize(), passwordChangeRequired);
     }
 
     @Override

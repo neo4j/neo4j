@@ -46,6 +46,7 @@ import org.neo4j.kernel.api.exceptions.Status.HasStatus
 import org.neo4j.server.security.SecureHasher
 import org.neo4j.server.security.SystemGraphCredential
 import org.neo4j.values.storable.ByteArray
+import org.neo4j.values.storable.NoValue
 import org.neo4j.values.storable.TextValue
 import org.neo4j.values.storable.Value
 import org.neo4j.values.storable.Values
@@ -96,6 +97,11 @@ case class SetOwnPasswordExecutionPlanner(
             new CypherExecutionException(s"User '${currentUser(p)}' failed to alter their own password.", error)
         }
         .handleResult((_, value, p) => {
+          if (value.isInstanceOf[NoValue]) {
+            ThrowException(new InvalidArgumentException(
+              s"User '${currentUser(p)}' failed to alter their own password: Invalid principal or credentials."
+            ))
+          }
           val oldCredentials =
             SystemGraphCredential.deserialize(value.asInstanceOf[TextValue].stringValue(), secureHasher)
           val newValue = p.get(newPw.bytesKey).asInstanceOf[ByteArray].asObject()

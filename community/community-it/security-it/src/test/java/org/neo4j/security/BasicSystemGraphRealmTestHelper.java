@@ -42,7 +42,7 @@ import org.neo4j.kernel.database.TestDatabaseIdRepository;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.security.User;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-import org.neo4j.server.security.systemgraph.SystemGraphRealmHelper;
+import org.neo4j.server.security.systemgraph.SecurityGraphHelper;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.utils.TestDirectory;
 
@@ -101,26 +101,23 @@ public class BasicSystemGraphRealmTestHelper {
         }
     }
 
-    public static void assertAuthenticationSucceeds(
-            SystemGraphRealmHelper realmHelper, String username, String password) throws Exception {
+    public static void assertAuthenticationSucceeds(SecurityGraphHelper realmHelper, String username, String password) {
         assertAuthenticationSucceeds(realmHelper, username, password, false);
     }
 
     public static void assertAuthenticationSucceeds(
-            SystemGraphRealmHelper realmHelper, String username, String password, boolean changeRequired)
-            throws Exception {
-        var user = realmHelper.getUser(username);
-        assertTrue(user.credential().matchesPassword(password(password)));
+            SecurityGraphHelper realmHelper, String username, String password, boolean changeRequired) {
+        var user = realmHelper.getUserByName(username);
+        assertTrue(user.credential().value().matchesPassword(password(password)));
         assertThat(user.passwordChangeRequired())
                 .withFailMessage(
                         "Expected change required to be %s, but was %s", changeRequired, user.passwordChangeRequired())
                 .isEqualTo(changeRequired);
     }
 
-    public static void assertAuthenticationFails(SystemGraphRealmHelper realmHelper, String username, String password)
-            throws Exception {
-        var user = realmHelper.getUser(username);
-        assertFalse(user.credential().matchesPassword(password(password)));
+    public static void assertAuthenticationFails(SecurityGraphHelper realmHelper, String username, String password) {
+        var user = realmHelper.getUserByName(username);
+        assertFalse(user.credential().value().matchesPassword(password(password)));
     }
 
     public static User createUser(String userName, String password, boolean pwdChangeRequired) {

@@ -119,25 +119,25 @@ class ShiroAuthenticationInfoTest {
     }
 
     @Test
-    void shouldMergeExpiryChecksIntoList() {
-        var expiryCheck1 = mock(ExpiryCheck.class);
-        var expiryCheck2 = mock(ExpiryCheck.class);
+    void shouldMergeValidityChecksIntoList() {
+        var validityCheck1 = mock(ValidityCheck.class);
+        var validityCheck2 = mock(ValidityCheck.class);
 
         ShiroAuthenticationInfo info = new ShiroAuthenticationInfo(principal, "realm", SUCCESS);
         ShiroAuthenticationInfo info2 = new ShiroAuthenticationInfo(principal, "realm", SUCCESS) {
             {
-                expiryChecks.add(expiryCheck1);
+                validityChecks.add(validityCheck1);
             }
         };
         ShiroAuthenticationInfo info3 = new ShiroAuthenticationInfo(principal, "realm", SUCCESS) {
             {
-                expiryChecks.add(expiryCheck2);
+                validityChecks.add(validityCheck2);
             }
         };
 
         info.merge(info2);
         info.merge(info3);
 
-        assertThat(info.expiryChecks, containsInAnyOrder(expiryCheck1, expiryCheck2));
+        assertThat(info.validityChecks, containsInAnyOrder(validityCheck1, validityCheck2));
     }
 }

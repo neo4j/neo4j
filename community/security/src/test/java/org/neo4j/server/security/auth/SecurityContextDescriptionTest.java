@@ -39,7 +39,7 @@ import org.neo4j.kernel.impl.api.security.RestrictedAccessMode;
 import org.neo4j.kernel.impl.security.User;
 import org.neo4j.server.security.SecureHasher;
 import org.neo4j.server.security.systemgraph.BasicSystemGraphRealm;
-import org.neo4j.server.security.systemgraph.SystemGraphRealmHelper;
+import org.neo4j.server.security.systemgraph.SecurityGraphHelper;
 import org.neo4j.time.Clocks;
 
 class SecurityContextDescriptionTest {
@@ -47,11 +47,12 @@ class SecurityContextDescriptionTest {
 
     @BeforeEach
     void setup() throws Throwable {
-        SystemGraphRealmHelper realmHelper = spy(new SystemGraphRealmHelper(null, new SecureHasher()));
+        SecurityGraphHelper realmHelper =
+                spy(new SecurityGraphHelper(null, new SecureHasher(), CommunitySecurityLog.NULL_LOG));
         BasicSystemGraphRealm realm = new BasicSystemGraphRealm(
                 realmHelper, new RateLimitedAuthenticationStrategy(Clocks.systemClock(), Config.defaults()));
         User user = new User("johan", "id", credentialFor("bar"), false, false);
-        doReturn(user).when(realmHelper).getUser("johan");
+        doReturn(user).when(realmHelper).getUserByName("johan");
         context = realm.login(authToken("johan", "bar"), EMBEDDED_CONNECTION)
                 .authorize(LoginContext.IdLookup.EMPTY, DEFAULT_DATABASE_NAME, CommunitySecurityLog.NULL_LOG);
     }

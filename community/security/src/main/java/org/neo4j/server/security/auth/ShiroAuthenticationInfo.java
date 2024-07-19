@@ -29,14 +29,15 @@ import java.util.List;
 import org.apache.shiro.authc.AuthenticationInfo;
 import org.apache.shiro.authc.SimpleAuthenticationInfo;
 import org.apache.shiro.lang.util.ByteSource;
-import org.eclipse.collections.api.factory.Lists;
-import org.eclipse.collections.api.list.MutableList;
 import org.neo4j.internal.kernel.api.security.AuthenticationResult;
 
 public class ShiroAuthenticationInfo extends SimpleAuthenticationInfo {
     protected AuthenticationResult authenticationResult;
     private List<Throwable> throwables;
-    protected MutableList<ExpiryCheck> expiryChecks = Lists.mutable.empty();
+    protected final List<ValidityCheck> validityChecks = new ArrayList<>();
+    private static final List<ValidityCheck> NO_VALIDITY_CHECKS = List.of();
+
+    // Only for failures
 
     public ShiroAuthenticationInfo() {
         super();
@@ -44,11 +45,24 @@ public class ShiroAuthenticationInfo extends SimpleAuthenticationInfo {
         this.throwables = new ArrayList<>(1);
     }
 
+    // With principal
+
     public ShiroAuthenticationInfo(
             Neo4jPrincipal principal, String realmName, AuthenticationResult authenticationResult) {
+        this(principal, realmName, authenticationResult, NO_VALIDITY_CHECKS);
+    }
+
+    public ShiroAuthenticationInfo(
+            Neo4jPrincipal principal,
+            String realmName,
+            AuthenticationResult authenticationResult,
+            List<ValidityCheck> validityChecks) {
         super(principal, null, realmName);
         this.authenticationResult = authenticationResult;
+        this.validityChecks.addAll(validityChecks);
     }
+
+    // With principal and hashed credentials
 
     public ShiroAuthenticationInfo(
             Neo4jPrincipal principal,
@@ -56,8 +70,19 @@ public class ShiroAuthenticationInfo extends SimpleAuthenticationInfo {
             ByteSource credentialsSalt,
             String realmName,
             AuthenticationResult authenticationResult) {
+        this(principal, hashedCredentials, credentialsSalt, realmName, authenticationResult, NO_VALIDITY_CHECKS);
+    }
+
+    public ShiroAuthenticationInfo(
+            Neo4jPrincipal principal,
+            Object hashedCredentials,
+            ByteSource credentialsSalt,
+            String realmName,
+            AuthenticationResult authenticationResult,
+            List<ValidityCheck> validityChecks) {
         super(principal, hashedCredentials, credentialsSalt, realmName);
         this.authenticationResult = authenticationResult;
+        this.validityChecks.addAll(validityChecks);
     }
 
     public AuthenticationResult getAuthenticationResult() {
@@ -76,8 +101,8 @@ public class ShiroAuthenticationInfo extends SimpleAuthenticationInfo {
         return throwables;
     }
 
-    public List<ExpiryCheck> getExpiryChecks() {
-        return expiryChecks;
+    public List<ValidityCheck> getValidityChecks() {
+        return validityChecks;
     }
 
     @Override
@@ -90,7 +115,7 @@ public class ShiroAuthenticationInfo extends SimpleAuthenticationInfo {
 
         if (info instanceof ShiroAuthenticationInfo shiroAi) {
             authenticationResult = mergeAuthenticationResult(authenticationResult, shiroAi.getAuthenticationResult());
-            expiryChecks.addAll(shiroAi.expiryChecks);
+            validityChecks.addAll(shiroAi.validityChecks);
         } else {
             // If we get here (which means no AuthenticationException or UnknownAccountException was thrown)
             // it means the realm that provided the info was able to authenticate the subject,

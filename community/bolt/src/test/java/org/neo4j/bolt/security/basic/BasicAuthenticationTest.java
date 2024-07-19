@@ -39,12 +39,13 @@ import org.neo4j.bolt.security.AuthenticationResult;
 import org.neo4j.bolt.security.error.AuthenticationException;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.internal.kernel.api.security.CommunitySecurityLog;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.security.User;
 import org.neo4j.server.security.SecureHasher;
 import org.neo4j.server.security.auth.RateLimitedAuthenticationStrategy;
 import org.neo4j.server.security.systemgraph.BasicSystemGraphRealm;
-import org.neo4j.server.security.systemgraph.SystemGraphRealmHelper;
+import org.neo4j.server.security.systemgraph.SecurityGraphHelper;
 import org.neo4j.time.Clocks;
 
 class BasicAuthenticationTest {
@@ -157,18 +158,19 @@ class BasicAuthenticationTest {
         authentication = createAuthentication(3);
     }
 
-    private static Authentication createAuthentication(int maxFailedAttempts) throws Exception {
+    private static Authentication createAuthentication(int maxFailedAttempts) {
         Config config = Config.defaults(GraphDatabaseSettings.auth_max_failed_attempts, maxFailedAttempts);
-        SystemGraphRealmHelper realmHelper = spy(new SystemGraphRealmHelper(null, new SecureHasher()));
+        SecurityGraphHelper realmHelper =
+                spy(new SecurityGraphHelper(null, new SecureHasher(), CommunitySecurityLog.NULL_LOG));
         BasicSystemGraphRealm realm = new BasicSystemGraphRealm(
                 realmHelper, new RateLimitedAuthenticationStrategy(Clocks.systemClock(), config));
         Authentication authentication = new BasicAuthentication(realm);
         doReturn(new User("bob", null, credentialFor("secret"), true, false))
                 .when(realmHelper)
-                .getUser("bob");
+                .getUserByName("bob");
         doReturn(new User("mike", null, credentialFor("secret2"), false, false))
                 .when(realmHelper)
-                .getUser("mike");
+                .getUserByName("mike");
 
         return authentication;
     }

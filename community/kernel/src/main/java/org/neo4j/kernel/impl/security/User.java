@@ -19,15 +19,32 @@
  */
 package org.neo4j.kernel.impl.security;
 
+import java.util.Set;
+
 /**
  * Controls authorization and authentication for an individual user.
- * NOTE: User ids were introduced in Neo4j 4.3-drop04.
- * The id is added when the user is added to the system database or on a system database upgrade from a previous version.
- * Thus, this method returning null indicates that
- * 1. the user was created before Neo4j 4.3-drop04 and has not been properly upgraded
- * or
- * 2. the user was created through a neo4j-admin command and has not yet been added to the system database.
+ * A user persisted in the system graph will always have an id.
  */
-public record User(String name, String id, Credential credential, boolean passwordChangeRequired, boolean suspended) {
+public record User(
+        String name,
+        String id,
+        SensitiveCredential credential,
+        boolean passwordChangeRequired,
+        boolean suspended,
+        Set<Auth> auth) {
     public static final String PASSWORD_CHANGE_REQUIRED = "password_change_required";
+    private static final Set<Auth> EMPTY_AUTH_SET = Set.of();
+
+    public User(String name, String id, Credential credential, boolean passwordChangeRequired, boolean suspended) {
+        this(name, id, new SensitiveCredential(credential), passwordChangeRequired, suspended, EMPTY_AUTH_SET);
+    }
+
+    public record SensitiveCredential(Credential value) {
+        @Override
+        public String toString() {
+            return (value != null) ? "*****" : "null";
+        }
+    }
+
+    public record Auth(String provider, String id) {}
 }

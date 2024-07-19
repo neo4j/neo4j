@@ -40,7 +40,7 @@ import org.neo4j.logging.internal.LogService;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.server.security.SecureHasher;
 import org.neo4j.server.security.systemgraph.BasicSystemGraphRealm;
-import org.neo4j.server.security.systemgraph.SystemGraphRealmHelper;
+import org.neo4j.server.security.systemgraph.SecurityGraphHelper;
 import org.neo4j.server.security.systemgraph.UserSecurityGraphComponent;
 import org.neo4j.time.Clocks;
 
@@ -48,12 +48,15 @@ public class CommunitySecurityModule extends SecurityModule {
     private final InternalLogProvider debugLogProvider;
     private final Config config;
     private final Dependencies globalDependencies;
+    private final AbstractSecurityLog securityLog;
     private BasicSystemGraphRealm authManager;
 
-    public CommunitySecurityModule(LogService logService, Config config, Dependencies globalDependencies) {
+    public CommunitySecurityModule(
+            LogService logService, Config config, Dependencies globalDependencies, AbstractSecurityLog securityLog) {
         this.debugLogProvider = logService.getInternalLogProvider();
         this.config = config;
         this.globalDependencies = globalDependencies;
+        this.securityLog = securityLog;
     }
 
     @Override
@@ -69,7 +72,8 @@ public class CommunitySecurityModule extends SecurityModule {
         });
 
         authManager = new BasicSystemGraphRealm(
-                new SystemGraphRealmHelper(systemSupplier, new SecureHasher()), createAuthenticationStrategy(config));
+                new SecurityGraphHelper(systemSupplier, new SecureHasher(), securityLog),
+                createAuthenticationStrategy(config));
 
         registerProcedure(
                 globalDependencies.resolveDependency(GlobalProcedures.class),

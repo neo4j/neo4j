@@ -369,7 +369,10 @@ public class CommunityEditionModule extends AbstractEditionModule implements Def
         globalModule.getGlobalDependencies().satisfyDependency(CommunitySecurityLog.NULL_LOG);
         if (globalModule.getGlobalConfig().get(GraphDatabaseSettings.auth_enabled)) {
             SecurityModule securityModule = new CommunitySecurityModule(
-                    globalModule.getLogService(), globalModule.getGlobalConfig(), globalModule.getGlobalDependencies());
+                    globalModule.getLogService(),
+                    globalModule.getGlobalConfig(),
+                    globalModule.getGlobalDependencies(),
+                    securityLog);
             securityModule.setup();
             return securityModule;
         }

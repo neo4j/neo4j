@@ -61,18 +61,18 @@ class UserSerializationTest {
             User actualUser = actual.get(i);
             User givenUser = users.get(i);
             assertThat(actualUser.name()).isEqualTo(givenUser.name());
-            assertThat(actualUser.credential().serialize())
-                    .isEqualTo(givenUser.credential().serialize());
+            assertThat(actualUser.credential().value().serialize())
+                    .isEqualTo(givenUser.credential().value().serialize());
         }
     }
 
     @Test
-    void shouldMaskAndUnmaskSerializedSystemGraphCredential() throws Exception {
+    void shouldMaskAndUnmaskSerializedSystemGraphCredential() {
         // Given
         List<User> users = users();
 
         for (User user : users) {
-            String serialized = user.credential().serialize();
+            String serialized = user.credential().value().serialize();
 
             // When
             String masked = SystemGraphCredential.maskSerialized(serialized);
@@ -83,12 +83,12 @@ class UserSerializationTest {
     }
 
     @Test
-    void shouldMaskAndUnmaskSerializedCredentialsMissingIterations() throws Exception {
+    void shouldMaskAndUnmaskSerializedCredentialsMissingIterations() {
         // Given
         List<User> users = legacyUsers();
 
         for (User user : users) {
-            String serialized = user.credential().serialize();
+            String serialized = user.credential().value().serialize();
             // Newer versions of the LegacyCredentials add the iteration count, but there might still exist old
             // serializations in the graph
             // that are missing this field, so we remove that field in this test to simulate that.
