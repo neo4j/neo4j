@@ -1032,7 +1032,7 @@ public class Database extends AbstractDatabase {
                 internalLogProvider,
                 spdKernelTransactionDecorator));
 
-        var transactionMonitor = buildTransactionMonitor(kernelTransactions, databaseConfig);
+        var transactionMonitor = buildTransactionMonitor(kernelTransactions, transactionIdStore, databaseConfig);
 
         KernelImpl kernel = new KernelImpl(
                 kernelTransactions,
@@ -1058,9 +1058,10 @@ public class Database extends AbstractDatabase {
                 transactionIdGenerator);
     }
 
-    private KernelTransactionMonitor buildTransactionMonitor(KernelTransactions kernelTransactions, Config config) {
+    private KernelTransactionMonitor buildTransactionMonitor(
+            KernelTransactions kernelTransactions, TransactionIdStore transactionIdStore, Config config) {
         var kernelTransactionMonitor =
-                new KernelTransactionMonitor(kernelTransactions, config, clock, databaseLogService);
+                new KernelTransactionMonitor(kernelTransactions, transactionIdStore, config, clock, databaseLogService);
         databaseDependencies.satisfyDependency(kernelTransactionMonitor);
         TransactionMonitorScheduler transactionMonitorScheduler = new TransactionMonitorScheduler(
                 kernelTransactionMonitor,

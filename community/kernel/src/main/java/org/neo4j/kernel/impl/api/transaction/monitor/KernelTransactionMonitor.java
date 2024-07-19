@@ -34,25 +34,40 @@ import org.neo4j.kernel.impl.api.KernelTransactions;
 import org.neo4j.kernel.impl.api.TransactionVisibilityProvider;
 import org.neo4j.kernel.impl.api.transaction.trace.TransactionInitializationTrace;
 import org.neo4j.logging.internal.LogService;
+import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.time.SystemNanoClock;
 
 public class KernelTransactionMonitor extends TransactionMonitor<KernelTransactionMonitor.MonitoredKernelTransaction>
         implements TransactionVisibilityProvider {
     private final KernelTransactions kernelTransactions;
+    private final TransactionIdStore transactionIdStore;
     private final AtomicLong oldestVisibilityBoundary = new AtomicLong(BASE_TX_ID);
     private final AtomicLong oldestVisibleClosedTransactionId = new AtomicLong(BASE_TX_ID);
 
     public KernelTransactionMonitor(
-            KernelTransactions kernelTransactions, Config config, SystemNanoClock clock, LogService logService) {
+            KernelTransactions kernelTransactions,
+            TransactionIdStore transactionIdStore,
+            Config config,
+            SystemNanoClock clock,
+            LogService logService) {
         super(config, clock, logService);
         this.kernelTransactions = kernelTransactions;
+        this.transactionIdStore = transactionIdStore;
+        oldestVisibleClosedTransactionId.setRelease(
+                transactionIdStore.getHighestEverClosedTransaction().id());
+        oldestVisibilityBoundary.setRelease(
+                transactionIdStore.getHighestEverClosedTransaction().id());
     }
 
     @Override
     protected void updateTransactionBoundaries() {
+        // we return gap free transaction that is already closed, and if we do not have any readers it should be safe to
+        // assume that no one will need
+        // data before that point of history
+        var oldestOpenTransactionId = transactionIdStore.getLastClosedTransactionId();
         var executingTransactions = kernelTransactions.executingTransactions();
-        long oldestTxId = Long.MAX_VALUE;
-        long oldestHorizon = Long.MAX_VALUE;
+        long oldestTxId = oldestOpenTransactionId;
+        long oldestHorizon = oldestOpenTransactionId;
 
         for (var txHandle : executingTransactions) {
             if (txHandle.terminationMark().isEmpty()) {
@@ -60,12 +75,8 @@ public class KernelTransactionMonitor extends TransactionMonitor<KernelTransacti
                 oldestHorizon = Math.min(oldestHorizon, txHandle.getTransactionHorizon());
             }
         }
-        if (oldestTxId != Long.MAX_VALUE) {
-            oldestVisibleClosedTransactionId.setRelease(oldestTxId);
-        }
-        if (oldestHorizon != Long.MAX_VALUE) {
-            oldestVisibilityBoundary.setRelease(oldestHorizon);
-        }
+        oldestVisibleClosedTransactionId.setRelease(oldestTxId);
+        oldestVisibilityBoundary.setRelease(oldestHorizon);
     }
 
     @Override

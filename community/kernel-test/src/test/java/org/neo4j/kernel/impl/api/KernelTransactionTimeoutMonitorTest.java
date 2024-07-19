@@ -57,15 +57,18 @@ import org.neo4j.kernel.impl.api.transaction.trace.TraceProvider;
 import org.neo4j.kernel.impl.api.transaction.trace.TraceProviderFactory;
 import org.neo4j.kernel.impl.api.transaction.trace.TransactionInitializationTrace;
 import org.neo4j.kernel.impl.context.TransactionVersionContext;
+import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.logging.internal.SimpleLogService;
+import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
 
 class KernelTransactionTimeoutMonitorTest {
     private static final long EXPECTED_USER_TRANSACTION_ID = 2;
     private KernelTransactions kernelTransactions;
+    private TransactionIdStore transactionIdStore;
     private FakeClock fakeClock;
     private AssertableLogProvider logProvider;
     private LogService logService;
@@ -73,6 +76,7 @@ class KernelTransactionTimeoutMonitorTest {
     @BeforeEach
     void setUp() {
         kernelTransactions = mock(KernelTransactions.class);
+        transactionIdStore = new SimpleTransactionIdStore();
         fakeClock = Clocks.fakeClock();
         logProvider = new AssertableLogProvider();
         logService = new SimpleLogService(logProvider);
@@ -245,7 +249,7 @@ class KernelTransactionTimeoutMonitorTest {
     }
 
     private KernelTransactionMonitor buildTransactionMonitor(Config config) {
-        return new KernelTransactionMonitor(kernelTransactions, config, fakeClock, logService);
+        return new KernelTransactionMonitor(kernelTransactions, transactionIdStore, config, fakeClock, logService);
     }
 
     private static KernelTransactionImplementation prepareTxMock(
