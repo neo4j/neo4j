@@ -3510,22 +3510,6 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    void manuallyRaisedBoundsFlagMustBeObservable() throws Exception {
-        configureStandardPageCache();
-        try (PagedFile pagedFile = map(file("a"), filePageSize);
-                PageCursor writer = pagedFile.io(0, PF_SHARED_WRITE_LOCK, NULL_CONTEXT);
-                PageCursor reader = pagedFile.io(0, PF_SHARED_READ_LOCK, NULL_CONTEXT)) {
-            assertTrue(writer.next());
-            writer.raiseOutOfBounds();
-            assertTrue(writer.checkAndClearBoundsFlag());
-
-            assertTrue(reader.next());
-            reader.raiseOutOfBounds();
-            assertTrue(reader.checkAndClearBoundsFlag());
-        }
-    }
-
-    @Test
     void pageFaultForWriteMustThrowIfOutOfStorageSpace() {
         assertTimeoutPreemptively(ofMillis(SHORT_TIMEOUT_MILLIS), () -> {
             final AtomicInteger writeCounter = new AtomicInteger();
@@ -5474,7 +5458,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                     PageCursor parent = pf.io(0, PF_SHARED_WRITE_LOCK, NULL_CONTEXT)) {
                 assertTrue(parent.next());
                 PageCursor linked = parent.openLinkedCursor(1);
-                linked.raiseOutOfBounds();
+                linked.getByte(-1); // Do an out of bounds get
                 assertTrue(parent.checkAndClearBoundsFlag());
                 assertFalse(linked.checkAndClearBoundsFlag());
             }
@@ -5495,7 +5479,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 assertTrue(linkedReader.next()); // linked reader now at page id 1
                 assertTrue(writer.next(1)); // invalidate linked readers lock
                 assertTrue(writer.next()); // move writer out of the way
-                reader.raiseOutOfBounds(); // raise bounds flag on parent reader
+                reader.getByte(-1); // raise bounds flag on parent reader
                 assertTrue(reader.shouldRetry()); // we must retry because linked reader was invalidated
                 assertFalse(reader.checkAndClearBoundsFlag()); // must return false because we are doing a retry
             }

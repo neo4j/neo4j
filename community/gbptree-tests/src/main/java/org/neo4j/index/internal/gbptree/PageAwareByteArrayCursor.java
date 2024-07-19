@@ -350,11 +350,6 @@ class PageAwareByteArrayCursor extends PageCursor {
     }
 
     @Override
-    public void raiseOutOfBounds() {
-        current.raiseOutOfBounds();
-    }
-
-    @Override
     public void setCursorException(String message) {
         current.setCursorException(message);
     }

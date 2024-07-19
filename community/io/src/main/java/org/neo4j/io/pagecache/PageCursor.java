@@ -365,7 +365,7 @@ public abstract class PageCursor implements AutoCloseable {
      * {@link #next(long)}, or since the last call to {@link #shouldRetry()} that returned {@code true}, or since the
      * last call to this method.
      *
-     * @return {@code true} if an access was out of bounds, or the {@link #raiseOutOfBounds()} method has been called.
+     * @return {@code true} if an access was out of bounds.
      */
     public abstract boolean checkAndClearBoundsFlag();
 
@@ -374,13 +374,6 @@ public abstract class PageCursor implements AutoCloseable {
      * and throw it as a {@link CursorException}.
      */
     public abstract void checkAndClearCursorException() throws CursorException;
-
-    /**
-     * Explicitly raise the out-of-bounds flag.
-     *
-     * @see #checkAndClearBoundsFlag()
-     */
-    public abstract void raiseOutOfBounds();
 
     /**
      * Set an error condition on the cursor with the given message.

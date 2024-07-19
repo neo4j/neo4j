@@ -681,14 +681,6 @@ public class CompositePageCursorTest {
     }
 
     @Test
-    void raisingOutOfBoundsFlagMustRaiseOutOfBoundsFlag() {
-        PageCursor pageCursor = CompositePageCursor.compose(first, PAYLOAD_SIZE, second, PAYLOAD_SIZE);
-        pageCursor.raiseOutOfBounds();
-        assertTrue(pageCursor.checkAndClearBoundsFlag());
-        assertFalse(pageCursor.checkAndClearBoundsFlag());
-    }
-
-    @Test
     void pageIdEqualFirstCursorPageIdBeforeFlip() {
         PageCursor pageCursor = CompositePageCursor.compose(first, PAYLOAD_SIZE, second, PAYLOAD_SIZE);
         assertEquals(first.getCurrentPageId(), pageCursor.getCurrentPageId());
@@ -757,9 +749,9 @@ public class CompositePageCursorTest {
     @Test
     void retryMustClearTheOutOfBoundsFlags() throws Exception {
         PageCursor pageCursor = CompositePageCursor.compose(first, PAYLOAD_SIZE, second, PAYLOAD_SIZE);
-        first.raiseOutOfBounds();
-        second.raiseOutOfBounds();
-        pageCursor.raiseOutOfBounds();
+        first.getByte(-1); // Do an out of bounds get
+        second.getByte(-1); // Do an out of bounds get
+        pageCursor.getByte(-1); // Do an out of bounds get
         first.setNeedsRetry(true);
         pageCursor.shouldRetry();
         assertFalse(first.checkAndClearBoundsFlag());
@@ -770,7 +762,7 @@ public class CompositePageCursorTest {
     @Test
     void checkAndClearCompositeBoundsFlagMustClearFirstBoundsFlag() {
         PageCursor pageCursor = CompositePageCursor.compose(first, PAYLOAD_SIZE, second, PAYLOAD_SIZE);
-        first.raiseOutOfBounds();
+        first.getByte(-1); // Do an out of bounds get
         assertTrue(pageCursor.checkAndClearBoundsFlag());
         assertFalse(pageCursor.checkAndClearBoundsFlag());
         assertFalse(first.checkAndClearBoundsFlag());
@@ -779,7 +771,7 @@ public class CompositePageCursorTest {
     @Test
     void checkAndClearCompositeBoundsFlagMustClearSecondBoundsFlag() {
         PageCursor pageCursor = CompositePageCursor.compose(first, PAYLOAD_SIZE, second, PAYLOAD_SIZE);
-        second.raiseOutOfBounds();
+        second.getByte(-1); // Do an out of bounds get
         assertTrue(pageCursor.checkAndClearBoundsFlag());
         assertFalse(pageCursor.checkAndClearBoundsFlag());
         assertFalse(second.checkAndClearBoundsFlag());

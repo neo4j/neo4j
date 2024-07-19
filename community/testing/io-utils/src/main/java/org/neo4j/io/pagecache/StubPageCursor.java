@@ -160,11 +160,6 @@ public class StubPageCursor extends PageCursor {
     }
 
     @Override
-    public void raiseOutOfBounds() {
-        observedOverflow = true;
-    }
-
-    @Override
     public void setCursorException(String message) {
         this.cursorErrorMessage = message;
     }

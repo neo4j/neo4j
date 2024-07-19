@@ -311,11 +311,6 @@ public class ByteArrayPageCursor extends PageCursor {
     }
 
     @Override
-    public void raiseOutOfBounds() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public void setCursorException(String message) {
         cursorException = Exceptions.chain(cursorException, new CursorException(message));
     }

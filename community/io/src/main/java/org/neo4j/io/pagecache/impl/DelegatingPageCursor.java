@@ -179,11 +179,6 @@ public class DelegatingPageCursor extends PageCursor {
     }
 
     @Override
-    public void raiseOutOfBounds() {
-        delegate.raiseOutOfBounds();
-    }
-
-    @Override
     public void setCursorException(String message) {
         delegate.setCursorException(message);
     }

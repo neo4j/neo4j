@@ -1041,11 +1041,6 @@ public abstract class MuninnPageCursor extends PageCursor {
     }
 
     @Override
-    public void raiseOutOfBounds() {
-        outOfBounds = true;
-    }
-
-    @Override
     public void setCursorException(String message) {
         Objects.requireNonNull(message);
         if (usePreciseCursorErrorStackTraces) {

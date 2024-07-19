@@ -440,11 +440,6 @@ public final class CompositePageCursor extends PageCursor {
     }
 
     @Override
-    public void raiseOutOfBounds() {
-        outOfBounds = true;
-    }
-
-    @Override
     public void setCursorException(String message) {
         cursor(0).setCursorException(message);
     }

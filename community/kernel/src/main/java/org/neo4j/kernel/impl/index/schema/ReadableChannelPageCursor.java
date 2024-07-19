@@ -272,11 +272,6 @@ class ReadableChannelPageCursor extends PageCursor {
     }
 
     @Override
-    public void raiseOutOfBounds() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public void setCursorException(String message) {
         this.cursorException = new CursorException(message);
     }
