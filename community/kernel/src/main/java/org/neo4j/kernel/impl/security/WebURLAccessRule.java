@@ -103,7 +103,7 @@ public class WebURLAccessRule implements AccessRule<URL> {
         // In the case of https DNS spoofing is not possible. Source here:
         // https://security.stackexchange.com/questions/94331/why-doesnt-dns-spoofing-work-against-https-sites
         URL result = url;
-        if (url.getProtocol().equals("http") || url.getProtocol().equals("ftp")) {
+        if (shouldPinIp(url)) {
             String ipAddress = inetAddress instanceof Inet6Address
                     ? "[" + inetAddress.getHostAddress() + "]"
                     : inetAddress.getHostAddress();
@@ -111,6 +111,10 @@ public class WebURLAccessRule implements AccessRule<URL> {
         }
 
         return result;
+    }
+
+    boolean shouldPinIp(URL url) {
+        return url.getProtocol().equals("http") || url.getProtocol().equals("ftp");
     }
 
     protected URL substituteHostByIP(URL u, String ip) throws MalformedURLException {
@@ -148,6 +152,9 @@ public class WebURLAccessRule implements AccessRule<URL> {
                 httpCon = (HttpURLConnection) urlCon;
                 httpCon.setRequestProperty(
                         "User-Agent", String.format("%s%s", LOAD_CSV_USER_AGENT_PREFIX, userAgent()));
+                if (shouldPinIp(url)) {
+                    httpCon.setRequestProperty("Host", url.getHost());
+                }
                 httpCon.setInstanceFollowRedirects(false);
                 httpCon.connect();
                 httpCon.getInputStream();
