@@ -121,12 +121,14 @@ class QueryResourceTypedParametersIT {
                         .get(DATA_KEY)
                         .get(VALUES_KEY)
                         .get(0)
+                        .get(0)
                         .get(CYPHER_VALUE)
                         .asText())
                 .isEqualTo(value.toString());
         assertThat(parsedJson
                         .get(DATA_KEY)
                         .get(VALUES_KEY)
+                        .get(0)
                         .get(0)
                         .get(CYPHER_TYPE)
                         .asText())
@@ -149,12 +151,14 @@ class QueryResourceTypedParametersIT {
                         .get(DATA_KEY)
                         .get(VALUES_KEY)
                         .get(0)
+                        .get(0)
                         .get(CYPHER_VALUE)
                         .asBoolean())
                 .isEqualTo(true);
         assertThat(parsedJson
                         .get(DATA_KEY)
                         .get(VALUES_KEY)
+                        .get(0)
                         .get(0)
                         .get(CYPHER_TYPE)
                         .asText())
@@ -177,12 +181,14 @@ class QueryResourceTypedParametersIT {
                         .get(DATA_KEY)
                         .get(VALUES_KEY)
                         .get(0)
+                        .get(0)
                         .get(CYPHER_VALUE)
                         .asText())
                 .isEqualTo("Hello");
         assertThat(parsedJson
                         .get(DATA_KEY)
                         .get(VALUES_KEY)
+                        .get(0)
                         .get(0)
                         .get(CYPHER_TYPE)
                         .asText())
@@ -205,11 +211,13 @@ class QueryResourceTypedParametersIT {
                 .get(DATA_KEY)
                 .get(VALUES_KEY)
                 .get(0)
+                .get(0)
                 .get(CYPHER_VALUE)
                 .isNull());
         assertThat(parsedJson
                         .get(DATA_KEY)
                         .get(VALUES_KEY)
+                        .get(0)
                         .get(0)
                         .get(CYPHER_TYPE)
                         .asText())
@@ -234,11 +242,12 @@ class QueryResourceTypedParametersIT {
                         .get(DATA_KEY)
                         .get(VALUES_KEY)
                         .get(0)
+                        .get(0)
                         .get(CYPHER_TYPE)
                         .textValue())
                 .isEqualTo("Map");
 
-        var insideParam = parsedJson.get(DATA_KEY).get(VALUES_KEY).get(0).get(CYPHER_VALUE);
+        var insideParam = parsedJson.get(DATA_KEY).get(VALUES_KEY).get(0).get(0).get(CYPHER_VALUE);
 
         assertThat(insideParam.get("mappy").get(CYPHER_TYPE).textValue()).isEqualTo(typeString);
         assertThat(insideParam.get("mappy").get(CYPHER_VALUE).textValue()).isEqualTo(value.toString());
@@ -262,11 +271,12 @@ class QueryResourceTypedParametersIT {
                         .get(DATA_KEY)
                         .get(VALUES_KEY)
                         .get(0)
+                        .get(0)
                         .get(CYPHER_TYPE)
                         .textValue())
                 .isEqualTo("Map");
 
-        var insideParam = parsedJson.get(DATA_KEY).get(VALUES_KEY).get(0).get(CYPHER_VALUE);
+        var insideParam = parsedJson.get(DATA_KEY).get(VALUES_KEY).get(0).get(0).get(CYPHER_VALUE);
 
         assertThat(insideParam.get("true").get(CYPHER_TYPE).textValue()).isEqualTo("Boolean");
         assertThat(insideParam.get("true").get(CYPHER_VALUE).booleanValue()).isEqualTo(true);
@@ -286,7 +296,7 @@ class QueryResourceTypedParametersIT {
 
         assertThat(response.statusCode()).isEqualTo(202);
         var parsedJson = MAPPER.readTree(response.body());
-        var result = parsedJson.get(DATA_KEY).get(VALUES_KEY).get(0);
+        var result = parsedJson.get(DATA_KEY).get(VALUES_KEY).get(0).get(0);
 
         assertThat(parsedJson.get(DATA_KEY).get(FIELDS_KEY).size()).isEqualTo(1);
         assertThat(result.get(CYPHER_TYPE).asText()).isEqualTo("Map");
@@ -326,12 +336,14 @@ class QueryResourceTypedParametersIT {
                         .get(DATA_KEY)
                         .get(VALUES_KEY)
                         .get(0)
+                        .get(0)
                         .get(CYPHER_TYPE)
                         .asText())
                 .isEqualTo("List");
         assertThat(parsedJson
                         .get(DATA_KEY)
                         .get(VALUES_KEY)
+                        .get(0)
                         .get(0)
                         .get(CYPHER_VALUE)
                         .get(0)
@@ -341,6 +353,7 @@ class QueryResourceTypedParametersIT {
         assertThat(parsedJson
                         .get(DATA_KEY)
                         .get(VALUES_KEY)
+                        .get(0)
                         .get(0)
                         .get(CYPHER_VALUE)
                         .get(0)
@@ -352,6 +365,7 @@ class QueryResourceTypedParametersIT {
         assertThat(parsedJson
                         .get(DATA_KEY)
                         .get(VALUES_KEY)
+                        .get(0)
                         .get(0)
                         .get(CYPHER_VALUE)
                         .get(0)
@@ -372,7 +386,7 @@ class QueryResourceTypedParametersIT {
 
         assertThat(response.statusCode()).isEqualTo(202);
         var parsedJson = MAPPER.readTree(response.body());
-        var result = parsedJson.get(DATA_KEY).get(VALUES_KEY).get(0);
+        var result = parsedJson.get(DATA_KEY).get(VALUES_KEY).get(0).get(0);
 
         assertThat(parsedJson.get(DATA_KEY).get(FIELDS_KEY).size()).isEqualTo(1);
         assertThat(result.get(CYPHER_TYPE).asText()).isEqualTo("Map");
@@ -397,6 +411,7 @@ class QueryResourceTypedParametersIT {
                         .get(DATA_KEY)
                         .get(VALUES_KEY)
                         .get(0)
+                        .get(0)
                         .get(CYPHER_TYPE)
                         .asText())
                 .isEqualTo("List");
@@ -404,6 +419,7 @@ class QueryResourceTypedParametersIT {
         var insideValue = parsedJson
                 .get(DATA_KEY)
                 .get(VALUES_KEY)
+                .get(0)
                 .get(0)
                 .get(CYPHER_VALUE)
                 .get(0);
@@ -421,7 +437,7 @@ class QueryResourceTypedParametersIT {
 
         assertThat(response.statusCode()).isEqualTo(202);
         var parsedJson = MAPPER.readTree(response.body());
-        var result = parsedJson.get(DATA_KEY).get(VALUES_KEY).get(0);
+        var result = parsedJson.get(DATA_KEY).get(VALUES_KEY).get(0).get(0);
 
         assertThat(result.get(CYPHER_TYPE).asText()).isEqualTo("List");
         assertThat(result.get(CYPHER_VALUE).size()).isEqualTo(0);
@@ -445,12 +461,14 @@ class QueryResourceTypedParametersIT {
                         .get(DATA_KEY)
                         .get(VALUES_KEY)
                         .get(0)
+                        .get(0)
                         .get(CYPHER_TYPE)
                         .asText())
                 .isEqualTo("List");
         assertThat(parsedJson
                         .get(DATA_KEY)
                         .get(VALUES_KEY)
+                        .get(0)
                         .get(0)
                         .get(CYPHER_VALUE)
                         .get(0)
@@ -460,6 +478,7 @@ class QueryResourceTypedParametersIT {
         assertThat(parsedJson
                         .get(DATA_KEY)
                         .get(VALUES_KEY)
+                        .get(0)
                         .get(0)
                         .get(CYPHER_VALUE)
                         .get(0)
@@ -471,6 +490,7 @@ class QueryResourceTypedParametersIT {
         assertThat(parsedJson
                         .get(DATA_KEY)
                         .get(VALUES_KEY)
+                        .get(0)
                         .get(0)
                         .get(CYPHER_VALUE)
                         .get(0)

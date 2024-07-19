@@ -98,7 +98,8 @@ class QueryResourceParametersIT {
         var parsedJson = MAPPER.readTree(response.body());
 
         assertThat(parsedJson.get(DATA_KEY).get(FIELDS_KEY).size()).isEqualTo(1);
-        assertThat(parsedJson.get(DATA_KEY).get(VALUES_KEY).get(0).toString()).isEqualTo(parameter.toString());
+        assertThat(parsedJson.get(DATA_KEY).get(VALUES_KEY).get(0).get(0).toString())
+                .isEqualTo(parameter.toString());
     }
 
     @Test
@@ -113,7 +114,8 @@ class QueryResourceParametersIT {
         var parsedJson = MAPPER.readTree(response.body());
 
         assertThat(parsedJson.get(DATA_KEY).get(FIELDS_KEY).size()).isEqualTo(1);
-        assertThat(parsedJson.get(DATA_KEY).get(VALUES_KEY).get(0).asText()).isEqualTo("Hello");
+        assertThat(parsedJson.get(DATA_KEY).get(VALUES_KEY).get(0).get(0).asText())
+                .isEqualTo("Hello");
     }
 
     @ParameterizedTest
@@ -129,7 +131,13 @@ class QueryResourceParametersIT {
         var parsedJson = MAPPER.readTree(response.body());
 
         assertThat(parsedJson.get(DATA_KEY).get(FIELDS_KEY).size()).isEqualTo(1);
-        assertThat(parsedJson.get(DATA_KEY).get(VALUES_KEY).get(0).get("mappy").asText())
+        assertThat(parsedJson
+                        .get(DATA_KEY)
+                        .get(VALUES_KEY)
+                        .get(0)
+                        .get(0)
+                        .get("mappy")
+                        .asText())
                 .isEqualTo(parameter.toString());
     }
 
@@ -148,6 +156,7 @@ class QueryResourceParametersIT {
         assertThat(parsedJson
                         .get(DATA_KEY)
                         .get(VALUES_KEY)
+                        .get(0)
                         .get(0)
                         .get("mappy")
                         .get("inception")
@@ -168,7 +177,7 @@ class QueryResourceParametersIT {
         var parsedJson = MAPPER.readTree(response.body());
 
         assertThat(parsedJson.get(DATA_KEY).get(FIELDS_KEY).size()).isEqualTo(1);
-        assertThat(parsedJson.get(DATA_KEY).get(VALUES_KEY).get(0).get(0).asText())
+        assertThat(parsedJson.get(DATA_KEY).get(VALUES_KEY).get(0).get(0).get(0).asText())
                 .isEqualTo(parameter.toString());
     }
 
@@ -184,7 +193,14 @@ class QueryResourceParametersIT {
         var parsedJson = MAPPER.readTree(response.body());
 
         assertThat(parsedJson.get(DATA_KEY).get(FIELDS_KEY).size()).isEqualTo(1);
-        assertThat(parsedJson.get(DATA_KEY).get(VALUES_KEY).get(0).get(0).get(0).asInt())
+        assertThat(parsedJson
+                        .get(DATA_KEY)
+                        .get(VALUES_KEY)
+                        .get(0)
+                        .get(0)
+                        .get(0)
+                        .get(0)
+                        .asInt())
                 .isEqualTo(123);
     }
 

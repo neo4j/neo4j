@@ -235,7 +235,8 @@ class QueryResourceConfigIT {
         assertThat(childProfile.get(0).get("identifiers").size()).isEqualTo(1);
         assertThat(childProfile.get(0).get("identifiers").get(0).asText()).isEqualTo("`1`");
 
-        assertThat(parsedJson.get(DATA_KEY).get(VALUES_KEY).get(0).asInt()).isEqualTo(1);
+        assertThat(parsedJson.get(DATA_KEY).get(VALUES_KEY).get(0).get(0).asInt())
+                .isEqualTo(1);
         assertThat(parsedJson.get(DATA_KEY).get(FIELDS_KEY).get(0).asText()).isEqualTo("1");
     }
 }

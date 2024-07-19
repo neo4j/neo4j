@@ -110,12 +110,14 @@ class QueryResourceTypedJsonIT {
                         .get(DATA_KEY)
                         .get(VALUES_KEY)
                         .get(0)
+                        .get(0)
                         .get(CYPHER_TYPE)
                         .asText())
                 .isEqualTo("Boolean");
         assertThat(parsedJson
                         .get(DATA_KEY)
                         .get(VALUES_KEY)
+                        .get(0)
                         .get(0)
                         .get(CYPHER_VALUE)
                         .asBoolean())
@@ -124,6 +126,7 @@ class QueryResourceTypedJsonIT {
         assertThat(parsedJson
                         .get(DATA_KEY)
                         .get(VALUES_KEY)
+                        .get(0)
                         .get(2)
                         .get(CYPHER_TYPE)
                         .asText())
@@ -131,6 +134,7 @@ class QueryResourceTypedJsonIT {
         assertThat(parsedJson
                         .get(DATA_KEY)
                         .get(VALUES_KEY)
+                        .get(0)
                         .get(2)
                         .get(CYPHER_VALUE)
                         .isNull())
@@ -164,7 +168,7 @@ class QueryResourceTypedJsonIT {
                         valueOf("theTime"),
                         valueOf("theLocalTime"));
 
-        var results = parsedJson.get(DATA_KEY).get(VALUES_KEY);
+        var results = parsedJson.get(DATA_KEY).get(VALUES_KEY).get(0);
         assertThat(results.size()).isEqualTo(6);
         QueryAssertions.assertThat(parsedJson).hasTypedResultAt(0, "OffsetDateTime", "2015-06-24T12:50:35.556+01:00");
         QueryAssertions.assertThat(parsedJson)
@@ -201,7 +205,7 @@ class QueryResourceTypedJsonIT {
         var parsedJson = MAPPER.readTree(response.body());
         var results = parsedJson.get(DATA_KEY).get(VALUES_KEY);
         QueryAssertions.assertThat(
-                        results.get(0).get(CYPHER_VALUE).get(_PROPERTIES).get("binaryGoodness"))
+                        results.get(0).get(0).get(CYPHER_VALUE).get(_PROPERTIES).get("binaryGoodness"))
                 .hasTypedResult("Base64", "AQIDBAU=");
     }
 
@@ -219,7 +223,7 @@ class QueryResourceTypedJsonIT {
         assertThat(parsedJson.get(DATA_KEY).get(FIELDS_KEY).size()).isEqualTo(1);
         assertThat(parsedJson.get(DATA_KEY).get(FIELDS_KEY).get(0).asText()).isEqualTo("map");
 
-        var map = parsedJson.get(DATA_KEY).get(VALUES_KEY).get(0);
+        var map = parsedJson.get(DATA_KEY).get(VALUES_KEY).get(0).get(0);
 
         assertThat(map.get(CYPHER_TYPE).asText()).isEqualTo("Map");
 
@@ -271,11 +275,12 @@ class QueryResourceTypedJsonIT {
                         .get(DATA_KEY)
                         .get(VALUES_KEY)
                         .get(0)
+                        .get(0)
                         .get(CYPHER_TYPE)
                         .asText())
                 .isEqualTo("List");
 
-        var resultArray = parsedJson.get(DATA_KEY).get(VALUES_KEY).get(0).get(CYPHER_VALUE);
+        var resultArray = parsedJson.get(DATA_KEY).get(VALUES_KEY).get(0).get(0).get(CYPHER_VALUE);
 
         assertThat(resultArray.size()).isEqualTo(5);
         QueryAssertions.assertThat(resultArray.get(0)).hasTypedResult("Integer", "1");
@@ -309,7 +314,7 @@ class QueryResourceTypedJsonIT {
 
         var parsedJson = MAPPER.readTree(response.body());
 
-        var node = parsedJson.get(DATA_KEY).get(VALUES_KEY).get(0);
+        var node = parsedJson.get(DATA_KEY).get(VALUES_KEY).get(0).get(0);
         assertThat(node.get(CYPHER_TYPE).asText()).isEqualTo("Node");
         assertThat(node.get(CYPHER_VALUE).get(Fieldnames._ELEMENT_ID).asText()).isNotBlank();
         assertThat(node.get(CYPHER_VALUE).get(_LABELS).size()).isEqualTo(1);
@@ -325,7 +330,7 @@ class QueryResourceTypedJsonIT {
 
         assertThat(response.statusCode()).isEqualTo(202);
         var parsedJson = MAPPER.readTree(response.body());
-        var rel = parsedJson.get(DATA_KEY).get(VALUES_KEY).get(0);
+        var rel = parsedJson.get(DATA_KEY).get(VALUES_KEY).get(0).get(0);
         assertThat(rel.get(CYPHER_TYPE).asText()).isEqualTo("Relationship");
         assertThat(rel.get(CYPHER_VALUE).get(_ELEMENT_ID).asText()).isNotBlank();
         assertThat(rel.get(CYPHER_VALUE).get(_START_NODE_ELEMENT_ID).asText()).isNotBlank();
@@ -351,11 +356,12 @@ class QueryResourceTypedJsonIT {
                         .get(DATA_KEY)
                         .get(VALUES_KEY)
                         .get(0)
+                        .get(0)
                         .get(CYPHER_TYPE)
                         .asText())
                 .isEqualTo("Path");
 
-        var path = parsedJson.get(DATA_KEY).get(VALUES_KEY).get(0).get(CYPHER_VALUE);
+        var path = parsedJson.get(DATA_KEY).get(VALUES_KEY).get(0).get(0).get(CYPHER_VALUE);
 
         assertThat(path.get(0).get(CYPHER_TYPE).asText()).isEqualTo("Node");
         assertThat(path.get(0).get(CYPHER_VALUE).get(_LABELS).get(0).asText()).isEqualTo("LabelA");
@@ -394,11 +400,12 @@ class QueryResourceTypedJsonIT {
                         .get(DATA_KEY)
                         .get(VALUES_KEY)
                         .get(0)
+                        .get(0)
                         .get(CYPHER_TYPE)
                         .asText())
                 .isEqualTo("Path");
 
-        var path = parsedJson.get(DATA_KEY).get(VALUES_KEY).get(0).get(CYPHER_VALUE);
+        var path = parsedJson.get(DATA_KEY).get(VALUES_KEY).get(0).get(0).get(CYPHER_VALUE);
 
         assertThat(path.get(0).get(CYPHER_TYPE).asText()).isEqualTo("Node");
         assertThat(path.get(0).get(CYPHER_VALUE).get(_LABELS).get(0).asText()).isEqualTo("LabelA");

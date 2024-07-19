@@ -113,7 +113,8 @@ class QueryResourceAuthenticationIT {
         assertThat(accessResponse.statusCode()).isEqualTo(202);
 
         assertThat(parsedJson.get(DATA_KEY).get(FIELDS_KEY).size()).isEqualTo(1);
-        assertThat(parsedJson.get(DATA_KEY).get(VALUES_KEY).get(0).asInt()).isEqualTo(1);
+        assertThat(parsedJson.get(DATA_KEY).get(VALUES_KEY).get(0).get(0).asInt())
+                .isEqualTo(1);
         assertThat(parsedJson.get(ERRORS_KEY)).isNull();
     }
 

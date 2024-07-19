@@ -44,12 +44,14 @@ final class QueryAssertions extends AbstractAssert<QueryAssertions, JsonNode> {
     QueryAssertions hasTypedResultAt(int index, String expectedType, String expectedValue) {
         Assertions.assertThat(jsonNode.get(DATA_KEY)
                         .get(VALUES_KEY)
+                        .get(0)
                         .get(index)
                         .get(CYPHER_TYPE)
                         .asText())
                 .isEqualTo(expectedType);
         Assertions.assertThat(jsonNode.get(DATA_KEY)
                         .get(VALUES_KEY)
+                        .get(0)
                         .get(index)
                         .get(CYPHER_VALUE)
                         .asText())

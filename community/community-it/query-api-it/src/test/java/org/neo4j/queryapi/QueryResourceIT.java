@@ -94,7 +94,46 @@ class QueryResourceIT {
         var parsedJson = MAPPER.readTree(response.body());
 
         assertThat(parsedJson.get(DATA_KEY).get(FIELDS_KEY).size()).isEqualTo(1);
-        assertThat(parsedJson.get(DATA_KEY).get(VALUES_KEY).get(0).asInt()).isEqualTo(1);
+        assertThat(parsedJson.get(DATA_KEY).get(VALUES_KEY).get(0).get(0).asInt())
+                .isEqualTo(1);
+    }
+
+    @Test
+    void shouldReturnMultipleRecords() throws IOException, InterruptedException {
+        var httpRequest = QueryApiTestUtil.baseRequestBuilder(queryEndpoint, "neo4j")
+                .POST(HttpRequest.BodyPublishers.ofString("{\"statement\": \"UNWIND [1,2] as i RETURN i\"}"))
+                .build();
+        var response = client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
+
+        assertThat(response.statusCode()).isEqualTo(202);
+        var parsedJson = MAPPER.readTree(response.body());
+
+        assertThat(parsedJson.get(DATA_KEY).get(FIELDS_KEY).size()).isEqualTo(1);
+        assertThat(parsedJson.get(DATA_KEY).get(VALUES_KEY).get(0).get(0).asInt())
+                .isEqualTo(1);
+        assertThat(parsedJson.get(DATA_KEY).get(VALUES_KEY).get(1).get(0).asInt())
+                .isEqualTo(2);
+    }
+
+    @Test
+    void shouldReturnMultipleRecordMultiFields() throws IOException, InterruptedException {
+        var httpRequest = QueryApiTestUtil.baseRequestBuilder(queryEndpoint, "neo4j")
+                .POST(HttpRequest.BodyPublishers.ofString("{\"statement\": \"UNWIND [1,2] as i RETURN i, 'bob'\"}"))
+                .build();
+        var response = client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
+
+        assertThat(response.statusCode()).isEqualTo(202);
+        var parsedJson = MAPPER.readTree(response.body());
+
+        assertThat(parsedJson.get(DATA_KEY).get(FIELDS_KEY).size()).isEqualTo(2);
+        assertThat(parsedJson.get(DATA_KEY).get(VALUES_KEY).get(0).get(0).asInt())
+                .isEqualTo(1);
+        assertThat(parsedJson.get(DATA_KEY).get(VALUES_KEY).get(0).get(1).asText())
+                .isEqualTo("bob");
+        assertThat(parsedJson.get(DATA_KEY).get(VALUES_KEY).get(1).get(0).asInt())
+                .isEqualTo(2);
+        assertThat(parsedJson.get(DATA_KEY).get(VALUES_KEY).get(1).get(1).asText())
+                .isEqualTo("bob");
     }
 
     @Test
@@ -251,6 +290,7 @@ class QueryResourceIT {
         var parsedJson = MAPPER.readTree(response.body());
 
         assertThat(parsedJson.get(DATA_KEY).get(FIELDS_KEY).size()).isEqualTo(1);
-        assertThat(parsedJson.get(DATA_KEY).get(VALUES_KEY).get(0).asInt()).isEqualTo(4);
+        assertThat(parsedJson.get(DATA_KEY).get(VALUES_KEY).get(0).get(0).asInt())
+                .isEqualTo(4);
     }
 }

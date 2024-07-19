@@ -95,11 +95,15 @@ class QueryResourcePlainJsonIT {
         assertThat(parsedJson.get(DATA_KEY).get(FIELDS_KEY))
                 .containsExactly(
                         valueOf("bool"), valueOf("number"), valueOf("aNull"), valueOf("float"), valueOf("string"));
-        assertThat(parsedJson.get(DATA_KEY).get(VALUES_KEY).get(0).asBoolean()).isEqualTo(true);
-        assertThat(parsedJson.get(DATA_KEY).get(VALUES_KEY).get(1).asInt()).isEqualTo(1);
-        assertTrue(parsedJson.get(DATA_KEY).get(VALUES_KEY).get(2).isNull());
-        assertThat(parsedJson.get(DATA_KEY).get(VALUES_KEY).get(3).asDouble()).isEqualTo(1.23);
-        assertThat(parsedJson.get(DATA_KEY).get(VALUES_KEY).get(4).asText()).isEqualTo("hello");
+        assertThat(parsedJson.get(DATA_KEY).get(VALUES_KEY).get(0).get(0).asBoolean())
+                .isEqualTo(true);
+        assertThat(parsedJson.get(DATA_KEY).get(VALUES_KEY).get(0).get(1).asInt())
+                .isEqualTo(1);
+        assertTrue(parsedJson.get(DATA_KEY).get(VALUES_KEY).get(0).get(2).isNull());
+        assertThat(parsedJson.get(DATA_KEY).get(VALUES_KEY).get(0).get(3).asDouble())
+                .isEqualTo(1.23);
+        assertThat(parsedJson.get(DATA_KEY).get(VALUES_KEY).get(0).get(4).asText())
+                .isEqualTo("hello");
     }
 
     @Test
@@ -127,7 +131,7 @@ class QueryResourcePlainJsonIT {
                         valueOf("theTime"),
                         valueOf("theLocalTime"));
 
-        var results = parsedJson.get(DATA_KEY).get(VALUES_KEY);
+        var results = parsedJson.get(DATA_KEY).get(VALUES_KEY).get(0);
         assertThat(results.size()).isEqualTo(6);
         assertThat(results.get(0).asText()).isEqualTo("2015-06-24T12:50:35.556+01:00");
         assertThat(results.get(1).asText()).isEqualTo("2015-11-21T21:40:32.142Z");
@@ -174,7 +178,7 @@ class QueryResourcePlainJsonIT {
         assertThat(parsedJson.get(DATA_KEY).get(FIELDS_KEY)).containsExactly(valueOf("theDuration"));
 
         var results = parsedJson.get(DATA_KEY).get(VALUES_KEY);
-        assertThat(results.get(0).asText()).isEqualTo("P14DT16H12M");
+        assertThat(results.get(0).get(0).asText()).isEqualTo("P14DT16H12M");
     }
 
     @Test
@@ -192,6 +196,7 @@ class QueryResourcePlainJsonIT {
         var parsedJson = MAPPER.readTree(response.body());
         var results = parsedJson.get(DATA_KEY).get(VALUES_KEY);
         assertThat(results.get(0)
+                        .get(0)
                         .get(Fieldnames.PROPERTIES)
                         .get("binaryGoodness")
                         .asText())
@@ -211,11 +216,18 @@ class QueryResourcePlainJsonIT {
 
         assertThat(parsedJson.get(DATA_KEY).get(FIELDS_KEY).size()).isEqualTo(1);
         assertThat(parsedJson.get(DATA_KEY).get(FIELDS_KEY).get(0).asText()).isEqualTo("map");
-        assertThat(parsedJson.get(DATA_KEY).get(VALUES_KEY).get(0).get("key").asText())
+        assertThat(parsedJson
+                        .get(DATA_KEY)
+                        .get(VALUES_KEY)
+                        .get(0)
+                        .get(0)
+                        .get("key")
+                        .asText())
                 .isEqualTo("Value");
         assertThat(parsedJson
                         .get(DATA_KEY)
                         .get(VALUES_KEY)
+                        .get(0)
                         .get(0)
                         .get("listKey")
                         .get(0)
@@ -225,6 +237,7 @@ class QueryResourcePlainJsonIT {
         assertThat(parsedJson
                         .get(DATA_KEY)
                         .get(VALUES_KEY)
+                        .get(0)
                         .get(0)
                         .get("listKey")
                         .get(1)
@@ -244,7 +257,7 @@ class QueryResourcePlainJsonIT {
 
         assertThat(parsedJson.get(DATA_KEY).get(FIELDS_KEY).size()).isEqualTo(1);
 
-        var resultArray = parsedJson.get(DATA_KEY).get(VALUES_KEY).get(0);
+        var resultArray = parsedJson.get(DATA_KEY).get(VALUES_KEY).get(0).get(0);
         assertThat(resultArray.size()).isEqualTo(4);
         assertThat(resultArray.get(0).asInt()).isEqualTo(1);
         assertThat(resultArray.get(1).asBoolean()).isEqualTo(true);
@@ -261,7 +274,7 @@ class QueryResourcePlainJsonIT {
 
         var parsedJson = MAPPER.readTree(response.body());
 
-        var node = parsedJson.get(DATA_KEY).get(VALUES_KEY).get(0);
+        var node = parsedJson.get(DATA_KEY).get(VALUES_KEY).get(0).get(0);
         assertThat(node.get("elementId").asText()).isNotBlank();
         assertThat(node.get("labels").size()).isEqualTo(1);
         assertThat(node.get("labels").get(0).asText()).isEqualTo("MyLabel");
@@ -275,7 +288,7 @@ class QueryResourcePlainJsonIT {
 
         assertThat(response.statusCode()).isEqualTo(202);
         var parsedJson = MAPPER.readTree(response.body());
-        var rel = parsedJson.get(DATA_KEY).get(VALUES_KEY).get(0);
+        var rel = parsedJson.get(DATA_KEY).get(VALUES_KEY).get(0).get(0);
         assertThat(rel.get("elementId").asText()).isNotBlank();
         assertThat(rel.get("startNodeElementId").asText()).isNotBlank();
         assertThat(rel.get("endNodeElementId").asText()).isNotBlank();
@@ -298,7 +311,7 @@ class QueryResourcePlainJsonIT {
 
         assertThat(response.statusCode()).isEqualTo(202);
         var parsedJson = MAPPER.readTree(response.body());
-        var path = parsedJson.get(DATA_KEY).get(VALUES_KEY).get(0);
+        var path = parsedJson.get(DATA_KEY).get(VALUES_KEY).get(0).get(0);
 
         assertThat(path.get(0).get("labels").get(0).asText()).isEqualTo("LabelA");
         assertThat(path.get(1).get("type").asText()).isEqualTo("RELAB");

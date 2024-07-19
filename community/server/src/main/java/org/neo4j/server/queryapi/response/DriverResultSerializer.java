@@ -64,7 +64,9 @@ public class DriverResultSerializer {
     }
 
     public void writeValue(Record record) throws IOException {
+        jsonGenerator.writeStartArray();
         jsonGenerator.writeObject(record);
+        jsonGenerator.writeEndArray();
     }
 
     public void writeError(Neo4jException neo4jException) throws IOException {
