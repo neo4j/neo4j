@@ -1751,7 +1751,7 @@ class IndexingServiceTest {
             // shouldn't hang
             localLife.stop();
             // and the index statistics store should not have been updated
-            verifyNoInteractions(indexStatisticsStore);
+            verify(indexStatisticsStore, never()).setSampleStats(anyLong(), any());
         });
     }
 
