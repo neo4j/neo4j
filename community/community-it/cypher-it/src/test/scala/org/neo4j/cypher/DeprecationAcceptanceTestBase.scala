@@ -108,7 +108,8 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
   test("functions with deprecated input fields") {
     val queries = Seq(
       "RETURN org.example.com.FuncWithDepInput(1)",
-      "MATCH (n) WHERE org.example.com.FuncWithDepInput(1) = 1 RETURN n"
+      "MATCH (n) WHERE org.example.com.FuncWithDepInput(1) = 1 RETURN n",
+      "MATCH (n) WHERE toString(org.example.com.FuncWithDepInput(1)) = 1 RETURN n"
     )
     val detail = NotificationDetail.deprecatedInputField("org.example.com.FuncWithDepInput", "value")
     assertNotification(
@@ -132,10 +133,31 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
     )
   }
 
+  test("procedures with deprecated input fields and deprecated function") {
+    val queries = Seq(
+      "CALL changedProc2(org.example.com.oldFuncNotReplaced())"
+    )
+    val detail1 = NotificationDetail.deprecatedInputField("changedProc2", "value")
+    assertNotification(
+      queries,
+      shouldContainNotification = true,
+      detail1,
+      (pos, detail) => deprecatedProcedureField(pos, detail, "changedProc2", "value")
+    )
+    val detail2 = NotificationDetail.deprecatedName("org.example.com.oldFuncNotReplaced")
+    assertNotification(
+      queries,
+      shouldContainNotification = true,
+      detail2,
+      (pos, detail) => deprecatedFunctionWithoutReplacement(pos, detail, "org.example.com.oldFuncNotReplaced")
+    )
+  }
+
   test("deprecated function calls without replacement") {
     val queries = Seq(
       "RETURN org.example.com.oldFuncNotReplaced()",
-      "MATCH (n) WHERE org.example.com.oldFuncNotReplaced() = 1 RETURN n"
+      "MATCH (n) WHERE org.example.com.oldFuncNotReplaced() = 1 RETURN n",
+      "MATCH (n) WHERE toString(org.example.com.oldFuncNotReplaced()) = 1 RETURN n"
     )
     val detail = NotificationDetail.deprecatedName("org.example.com.oldFuncNotReplaced")
     assertNotification(
@@ -149,7 +171,8 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
   test("deprecated function calls with replacement") {
     val queries = Seq(
       "RETURN org.example.com.oldFunc()",
-      "MATCH (n) WHERE org.example.com.oldFunc() = 1 RETURN n"
+      "MATCH (n) WHERE org.example.com.oldFunc() = 1 RETURN n",
+      "MATCH (n) WHERE toString(org.example.com.oldFunc()) = 1 RETURN n"
     )
     val detail = NotificationDetail.deprecatedName("org.example.com.oldFunc", "org.example.com.newFunc")
     assertNotification(
@@ -179,7 +202,8 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
   test("non-deprecated function calls") {
     val queries = Seq(
       "RETURN org.example.com.newFunc()",
-      "MATCH (n) WHERE org.example.com.newFunc() = 1 RETURN n"
+      "MATCH (n) WHERE org.example.com.newFunc() = 1 RETURN n",
+      "MATCH (n) WHERE toString(org.example.com.newFunc()) = 1 RETURN n"
     )
 
     assertNoDeprecations(queries)
