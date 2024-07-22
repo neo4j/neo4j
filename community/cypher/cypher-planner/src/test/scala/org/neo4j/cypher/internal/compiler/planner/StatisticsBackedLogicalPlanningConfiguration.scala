@@ -1416,6 +1416,7 @@ class StatisticsBackedLogicalPlanningConfiguration(
       executionModel = options.executionModel,
       eagerAnalyzer = plannerConfiguration.eagerAnalyzer(),
       statefulShortestPlanningMode = plannerConfiguration.statefulShortestPlanningMode(),
+      planVarExpandInto = plannerConfiguration.planVarExpandInto(),
       databaseReferenceRepository = options.databaseReferenceRepository,
       labelInferenceStrategy = labelInferenceStrategy
     )

@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.options.CypherInferSchemaPartsOption
 import org.neo4j.cypher.internal.options.CypherInterpretedPipesFallbackOption
 import org.neo4j.cypher.internal.options.CypherOperatorEngineOption
 import org.neo4j.cypher.internal.options.CypherParallelRuntimeSupportOption
+import org.neo4j.cypher.internal.options.CypherPlanVarExpandInto
 import org.neo4j.cypher.internal.options.CypherPlannerOption
 import org.neo4j.cypher.internal.options.CypherRuntimeOption
 import org.neo4j.cypher.internal.options.CypherStatefulShortestPlanningModeOption
@@ -98,6 +99,9 @@ class CypherConfiguration private (val config: Config) {
 
   val statefulShortestPlanningMode: CypherStatefulShortestPlanningModeOption =
     CypherStatefulShortestPlanningModeOption.fromConfig(config)
+
+  val planVarExpandInto: CypherPlanVarExpandInto =
+    CypherPlanVarExpandInto.fromConfig(config)
 
   val errorIfShortestPathFallbackUsedAtRuntime: Boolean =
     config.get(GraphDatabaseSettings.forbid_exhaustive_shortestpath)

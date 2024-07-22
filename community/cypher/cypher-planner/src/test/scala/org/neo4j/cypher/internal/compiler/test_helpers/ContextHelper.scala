@@ -35,6 +35,7 @@ import org.neo4j.cypher.internal.frontend.phases.InternalSyntaxUsageStats
 import org.neo4j.cypher.internal.frontend.phases.Monitors
 import org.neo4j.cypher.internal.options.CypherDebugOptions
 import org.neo4j.cypher.internal.options.CypherEagerAnalyzerOption
+import org.neo4j.cypher.internal.options.CypherPlanVarExpandInto
 import org.neo4j.cypher.internal.options.CypherStatefulShortestPlanningModeOption
 import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.util.CancellationChecker
@@ -78,6 +79,7 @@ object ContextHelper extends MockitoSugar {
     eagerAnalyzer: CypherEagerAnalyzerOption = CypherEagerAnalyzerOption.default,
     statefulShortestPlanningMode: CypherStatefulShortestPlanningModeOption =
       CypherStatefulShortestPlanningModeOption.default,
+    planVarExpandInto: CypherPlanVarExpandInto = CypherPlanVarExpandInto.default,
     databaseReferenceRepository: DatabaseReferenceRepository = mockDatabaseReferenceRepository,
     databaseId: NamedDatabaseId = mock[NamedDatabaseId],
     internalNotificationStats: InternalNotificationStats = new InternalNotificationStats(),
@@ -104,6 +106,7 @@ object ContextHelper extends MockitoSugar {
       materializedEntitiesMode,
       eagerAnalyzer,
       statefulShortestPlanningMode,
+      planVarExpandInto,
       databaseReferenceRepository,
       databaseId,
       NullLog.getInstance(),

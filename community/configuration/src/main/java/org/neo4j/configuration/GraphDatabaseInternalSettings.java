@@ -234,6 +234,26 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
                     StatefulShortestPlanningMode.CARDINALITY_HEURISTIC)
             .build();
 
+    public enum PlanVarExpandInto {
+        /**
+         * Plan expandInto using regular cost estimation
+         */
+        MINIMUM_COST,
+        /**
+         * Only consider planning an ExpandInto when the source plan has a cardinality estimate of at most 1.
+         * This is a heuristic to avoid planning an expensive Cartesian Product followed by an ExpandInto.
+         */
+        SINGLE_ROW
+    }
+
+    @Internal
+    @Description("Feature flag to decide when to plan an expandInto.")
+    public static final Setting<PlanVarExpandInto> plan_var_expand_into = newBuilder(
+                    "internal.cypher.plan_var_expand_into",
+                    ofEnum(PlanVarExpandInto.class),
+                    PlanVarExpandInto.SINGLE_ROW)
+            .build();
+
     @Internal
     @Description(
             "Feature flag to enable/disable the rewriting of GPM Shortest patterns into legacy findShortest where conversions are possible")

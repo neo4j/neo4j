@@ -49,7 +49,8 @@ case class CypherQueryOptions(
   parallelRuntimeSupportOption: CypherParallelRuntimeSupportOption,
   eagerAnalyzer: CypherEagerAnalyzerOption,
   inferSchemaParts: CypherInferSchemaPartsOption,
-  statefulShortestPlanningModeOption: CypherStatefulShortestPlanningModeOption
+  statefulShortestPlanningModeOption: CypherStatefulShortestPlanningModeOption,
+  planVarExpandInto: CypherPlanVarExpandInto
 ) {
 
   if (ILLEGAL_EXPRESSION_ENGINE_RUNTIME_COMBINATIONS((expressionEngine, runtime)))
@@ -575,6 +576,39 @@ case object CypherStatefulShortestPlanningModeOption
   implicit val logicalPlanCacheKey: OptionLogicalPlanCacheKey[CypherStatefulShortestPlanningModeOption] =
     OptionLogicalPlanCacheKey.create(_.logicalPlanCacheKey)
   implicit val reader: OptionReader[CypherStatefulShortestPlanningModeOption] = singleOptionReader()
+}
+
+sealed abstract class CypherPlanVarExpandInto(name: String) extends CypherKeyValueOption(name) {
+  override def companion: CypherPlanVarExpandInto.type = CypherPlanVarExpandInto
+  override def relevantForLogicalPlanCacheKey: Boolean = true
+}
+
+/**
+ * Ideally, we want to use 'minimum_cost' (and get rid of the 'planVarExpandInto Heuristic').
+ * However, cardinality estimation errors for variable length patterns sometimes lead to very expensive Cartesian Products followed by an ExpandInto.
+ * The 'single_row' tries to mitigate those situations by planning an ExpandAll when the source-plan has a cardinality estimate larger than 1.
+ */
+case object CypherPlanVarExpandInto
+    extends CypherOptionCompanion[CypherPlanVarExpandInto](
+      name = "planVarExpandInto",
+      setting = Some(GraphDatabaseInternalSettings.plan_var_expand_into),
+      cypherConfigField = Some(_.planVarExpandInto)
+    ) {
+  case object minimumCost extends CypherPlanVarExpandInto("minimum_cost")
+  case object singleRow extends CypherPlanVarExpandInto("single_row")
+
+  override def default: CypherPlanVarExpandInto = singleRow
+
+  override def values: Set[CypherPlanVarExpandInto] = Set(minimumCost, singleRow)
+
+  implicit val hasDefault: OptionDefault[CypherPlanVarExpandInto] = OptionDefault.create(default)
+  implicit val renderer: OptionRenderer[CypherPlanVarExpandInto] = OptionRenderer.create(_.render)
+  implicit val cacheKey: OptionCacheKey[CypherPlanVarExpandInto] = OptionCacheKey.create(_.cacheKey)
+
+  implicit val logicalPlanCacheKey: OptionLogicalPlanCacheKey[CypherPlanVarExpandInto] =
+    OptionLogicalPlanCacheKey.create(_.logicalPlanCacheKey)
+  implicit val reader: OptionReader[CypherPlanVarExpandInto] = singleOptionReader()
+
 }
 
 sealed abstract class CypherDebugOption(flag: String) extends CypherKeyValueOption(flag) {

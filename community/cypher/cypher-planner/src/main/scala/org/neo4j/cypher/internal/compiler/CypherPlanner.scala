@@ -39,6 +39,7 @@ import org.neo4j.cypher.internal.frontend.phases.InternalSyntaxUsageStats
 import org.neo4j.cypher.internal.frontend.phases.Monitors
 import org.neo4j.cypher.internal.macros.AssertMacros
 import org.neo4j.cypher.internal.options.CypherEagerAnalyzerOption
+import org.neo4j.cypher.internal.options.CypherPlanVarExpandInto
 import org.neo4j.cypher.internal.options.CypherStatefulShortestPlanningModeOption
 import org.neo4j.cypher.internal.options.CypherVersion
 import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
@@ -278,6 +279,13 @@ class CypherPlannerConfiguration(
       !GraphDatabaseInternalSettings.stateful_shortest_planning_mode.dynamic()
     )
     () => config.statefulShortestPlanningMode
+  }
+
+  val planVarExpandInto: () => CypherPlanVarExpandInto = {
+    AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+      !GraphDatabaseInternalSettings.plan_var_expand_into.dynamic()
+    )
+    () => config.planVarExpandInto
   }
 
   val gpmShortestToLegacyShortestEnabled: () => Boolean = {

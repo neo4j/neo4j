@@ -68,6 +68,21 @@ class CypherQueryCachesTest extends CypherFunSuite with GraphDatabaseTestSupport
     stats.executableQueryCacheEntries().shouldEqual(3)
   }
 
+  test("planVarExpandInto is honoured by all caches") {
+    val stats = eengine.queryCaches.statistics()
+
+    val q = "MATCH (a) RETURN a"
+    execute(q)
+    execute("CYPHER planVarExpandInto=minimum_cost " + q)
+    execute("CYPHER planVarExpandInto=single_row " + q)
+
+    stats.preParserCacheEntries().shouldEqual(3)
+    stats.astCacheEntries().shouldEqual(2)
+    stats.logicalPlanCacheEntries().shouldEqual(2)
+    stats.executionPlanCacheEntries().shouldEqual(2)
+    stats.executableQueryCacheEntries().shouldEqual(2)
+  }
+
   test("eagerAnalyzer is honoured by all caches") {
     val stats = eengine.queryCaches.statistics()
 

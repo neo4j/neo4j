@@ -61,6 +61,7 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NFA.PathLength
 import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath
 import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath.Mapping
+import org.neo4j.cypher.internal.options.CypherPlanVarExpandInto
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.InputPosition
@@ -708,16 +709,21 @@ object expandSolverStep {
     expansionMode: ExpansionMode,
     context: LogicalPlanningContext
   ): LogicalPlanWithIntoVsAllHeuristic = {
-    if (expansionMode == ExpandInto) {
-      val cardinalities = context.staticComponents.planningAttributes.cardinalities
-      val inCardinality = cardinalities.get(sourcePlan.id)
-      // + 0.1 to accommodate very leniently for rounding errors.
-      val single = inCardinality <= Cardinality.SINGLE + 0.1
-      LogicalPlanWithIntoVsAllHeuristic(
-        plan,
-        if (single) IntoVsAllHeuristic.Neutral else IntoVsAllHeuristic.Avoid
-      )
+    if (context.settings.planVarExpandInto == CypherPlanVarExpandInto.singleRow) {
+      if (expansionMode == ExpandInto) {
+        val cardinalities = context.staticComponents.planningAttributes.cardinalities
+        val inCardinality = cardinalities.get(sourcePlan.id)
+        // + 0.1 to accommodate very leniently for rounding errors.
+        val single = inCardinality <= Cardinality.SINGLE + 0.1
+        LogicalPlanWithIntoVsAllHeuristic(
+          plan,
+          if (single) IntoVsAllHeuristic.Neutral else IntoVsAllHeuristic.Avoid
+        )
+      } else {
+        LogicalPlanWithIntoVsAllHeuristic(plan, IntoVsAllHeuristic.Neutral)
+      }
     } else {
+      // context.settings.planVarExpandInto == CypherPlanVarExpandInto.minimum_cost
       LogicalPlanWithIntoVsAllHeuristic(plan, IntoVsAllHeuristic.Neutral)
     }
   }

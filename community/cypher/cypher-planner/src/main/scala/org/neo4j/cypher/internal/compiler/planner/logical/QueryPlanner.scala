@@ -107,7 +107,9 @@ case object QueryPlanner
       csvBufferSize = context.config.csvBufferSize(),
       planningIntersectionScansEnabled = context.config.planningIntersectionScansEnabled(),
       eagerAnalyzer = context.eagerAnalyzer,
-      statefulShortestPlanningRewriteQuantifiersAbove = context.config.statefulShortestPlanningRewriteQuantifiersAbove()
+      statefulShortestPlanningRewriteQuantifiersAbove =
+        context.config.statefulShortestPlanningRewriteQuantifiersAbove(),
+      planVarExpandInto = context.planVarExpandInto
     )
 
     LogicalPlanningContext(staticComponents, settings)

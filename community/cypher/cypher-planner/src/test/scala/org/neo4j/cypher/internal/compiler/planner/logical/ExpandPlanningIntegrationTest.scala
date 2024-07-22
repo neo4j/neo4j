@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.configuration.GraphDatabaseInternalSettings
+import org.neo4j.configuration.GraphDatabaseInternalSettings.PlanVarExpandInto
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
@@ -854,6 +855,39 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningI
         .produceResults("n1", "n2", "r")
         .filter("n2:A")
         .expand("(n1)-[r:R*1..]->(n2)", expandMode = ExpandAll, projectedDir = OUTGOING)
+        .nodeByLabelScan("n1", "A")
+        .build()
+    )
+  }
+
+  test(
+    "Should plan ExpandInto when total cost estimate is lowest when using planVarExpandInto=minimum_cost"
+  ) {
+    val nodes = 200
+    val relationships = 500
+    val a = 2
+    val r = 100
+    val builder = plannerBuilder()
+      .setAllNodesCardinality(nodes)
+      .setLabelCardinality("A", a)
+      .setAllRelationshipsCardinality(relationships)
+      .setRelationshipCardinality("()-[R]->()", r)
+      .setRelationshipCardinality("(:A)-[R]->()", r)
+      .setRelationshipCardinality("()-[R]->(:A)", r)
+      .setRelationshipCardinality("(:A)-[R]->(:A)", r)
+      .withSetting(GraphDatabaseInternalSettings.plan_var_expand_into, PlanVarExpandInto.MINIMUM_COST)
+      .build()
+
+    val query = "MATCH (n1:A)-[r:R*]->(n2:A) RETURN n1, n2, r"
+
+    val plan = builder.plan(query)
+
+    plan should equal(
+      builder.planBuilder()
+        .produceResults("n1", "n2", "r")
+        .expand("(n1)-[r:R*1..]->(n2)", expandMode = ExpandInto, projectedDir = OUTGOING)
+        .cartesianProduct()
+        .|.nodeByLabelScan("n2", "A")
         .nodeByLabelScan("n1", "A")
         .build()
     )

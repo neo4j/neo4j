@@ -403,6 +403,7 @@ case class CypherPlanner(
       options.queryOptions.eagerAnalyzer,
       options.queryOptions.inferSchemaParts,
       options.queryOptions.statefulShortestPlanningModeOption,
+      options.queryOptions.planVarExpandInto,
       databaseReferenceRepository,
       transactionalContextWrapper.databaseId,
       log,

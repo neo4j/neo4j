@@ -46,6 +46,7 @@ import org.neo4j.cypher.internal.logical.plans.ordering.ProvidedOrderFactory
 import org.neo4j.cypher.internal.macros.AssertMacros
 import org.neo4j.cypher.internal.options.CypherDebugOptions
 import org.neo4j.cypher.internal.options.CypherEagerAnalyzerOption
+import org.neo4j.cypher.internal.options.CypherPlanVarExpandInto
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes
@@ -134,7 +135,8 @@ object LogicalPlanningContext {
       GraphDatabaseInternalSettings.planning_subtraction_scans_enabled.defaultValue(),
     eagerAnalyzer: CypherEagerAnalyzerOption = CypherEagerAnalyzerOption.default,
     statefulShortestPlanningRewriteQuantifiersAbove: Int =
-      GraphDatabaseInternalSettings.stateful_shortest_planning_rewrite_quantifiers_above.defaultValue()
+      GraphDatabaseInternalSettings.stateful_shortest_planning_rewrite_quantifiers_above.defaultValue(),
+    planVarExpandInto: CypherPlanVarExpandInto = CypherPlanVarExpandInto.default
   ) {
 
     private def cacheKey(): Seq[Any] = this match {
@@ -153,7 +155,8 @@ object LogicalPlanningContext {
           planningIntersectionScansEnabled: Boolean,
           planningSubtractionScansEnabled: Boolean,
           eagerAnalyzer: CypherEagerAnalyzerOption,
-          statefulShortestPlanningRewriteQuantifiersAbove: Int
+          statefulShortestPlanningRewriteQuantifiersAbove: Int,
+          planVarExpandInto: CypherPlanVarExpandInto
         ) =>
         val builder = Seq.newBuilder[Any]
 
@@ -180,11 +183,17 @@ object LogicalPlanningContext {
         if (GraphDatabaseInternalSettings.planning_intersection_scans_enabled.dynamic())
           builder.addOne(planningIntersectionScansEnabled)
 
+        if (GraphDatabaseInternalSettings.planning_subtraction_scans_enabled.dynamic())
+          builder.addOne(planningSubtractionScansEnabled)
+
         if (GraphDatabaseInternalSettings.cypher_eager_analysis_implementation.dynamic())
           builder.addOne(eagerAnalyzer)
 
         if (GraphDatabaseInternalSettings.stateful_shortest_planning_rewrite_quantifiers_above.dynamic())
           builder.addOne(statefulShortestPlanningRewriteQuantifiersAbove)
+
+        if (GraphDatabaseInternalSettings.plan_var_expand_into.dynamic())
+          builder.addOne(planVarExpandInto)
 
         builder.result()
     }
