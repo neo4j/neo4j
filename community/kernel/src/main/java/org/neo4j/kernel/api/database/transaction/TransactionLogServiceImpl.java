@@ -146,7 +146,7 @@ public class TransactionLogServiceImpl implements TransactionLogService {
     }
 
     private AppendBatchInfo getLastAppendBatch() throws IOException {
-        var lastBatchInfo = metadataProvider.lastBatch();
+        var lastBatchInfo = metadataProvider.getLastCommittedBatch();
         if (!LogPosition.UNSPECIFIED.equals(lastBatchInfo.logPositionAfter())) {
             return lastBatchInfo;
         }

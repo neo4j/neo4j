@@ -231,7 +231,7 @@ public class SimpleMetaDataProvider implements MetadataProvider {
     }
 
     @Override
-    public AppendBatchInfo lastBatch() {
+    public AppendBatchInfo getLastCommittedBatch() {
         return appendBatchInfo;
     }
 

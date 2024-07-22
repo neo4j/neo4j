@@ -99,6 +99,7 @@ public class TransactionToApply implements CommandBatchToApply {
 
     @Override
     public void commit() {
+        commitment.publishAsCommitedLastBatch();
         commitment.publishAsCommitted(commandBatch.getTimeCommitted(), appendIndex);
     }
 

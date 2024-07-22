@@ -125,7 +125,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord, NoStoreHe
 
     private volatile boolean closed;
     private final AtomicLong appendIndex;
-    private volatile AppendBatchInfo lastBatch;
+    private volatile AppendBatchInfo lastCommittedBatch;
     private final ChunkedTransactionRegistry chunkedTransactionRegistry = new ChunkedTransactionRegistry();
 
     MetaDataStore(
@@ -166,8 +166,8 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord, NoStoreHe
         highestCommittedTransaction = new HighestTransactionId(lastCommittedTx);
         highestClosedTransaction = new HighestTransactionId(lastCommittedTx);
         var logPosition = logTailMetadata.getLastTransactionLogPosition();
-        lastBatch = logTailMetadata.lastBatch();
-        appendIndex = new AtomicLong(lastBatch.appendIndex());
+        lastCommittedBatch = logTailMetadata.lastBatch();
+        appendIndex = new AtomicLong(lastCommittedBatch.appendIndex());
         var initialMeta = new Meta(
                 logPosition.getLogVersion(),
                 logPosition.getByteOffset(),
@@ -177,7 +177,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord, NoStoreHe
                 lastCommittedTx.consensusIndex(),
                 lastCommittedTx.appendIndex());
         lastClosedTx = new ArrayQueueOutOfOrderSequence(lastCommittedTx.id(), 128, initialMeta);
-        lastClosedBatch = new ArrayQueueOutOfOrderSequence(lastBatch.appendIndex(), 128, initialMeta);
+        lastClosedBatch = new ArrayQueueOutOfOrderSequence(lastCommittedBatch.appendIndex(), 128, initialMeta);
     }
 
     private static ImmutableSet<OpenOption> buildOptions(ImmutableSet<OpenOption> openOptions) {
@@ -253,7 +253,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord, NoStoreHe
         highestCommittedTransaction.set(
                 transactionId, transactionAppendIndex, kernelVersion, checksum, commitTimestamp, consensusIndex);
         this.appendIndex.set(appendIndex);
-        this.lastBatch = new AppendBatchInfo(appendIndex, LogPosition.UNSPECIFIED);
+        this.lastCommittedBatch = new AppendBatchInfo(appendIndex, LogPosition.UNSPECIFIED);
     }
 
     @Override
@@ -438,7 +438,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord, NoStoreHe
             boolean lastBatch,
             LogPosition logPositionBefore,
             LogPosition logPositionAfter) {
-        this.lastBatch = new AppendBatchInfo(appendIndex, logPositionAfter);
+        this.lastCommittedBatch = new AppendBatchInfo(appendIndex, logPositionAfter);
 
         // this is the first and last batch, no need to register in progress transaction
         if (firstBatch && lastBatch) {
@@ -450,8 +450,8 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord, NoStoreHe
     }
 
     @Override
-    public AppendBatchInfo lastBatch() {
-        return lastBatch;
+    public AppendBatchInfo getLastCommittedBatch() {
+        return lastCommittedBatch;
     }
 
     @Override

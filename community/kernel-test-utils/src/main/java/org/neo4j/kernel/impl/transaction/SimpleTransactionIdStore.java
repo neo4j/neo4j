@@ -233,7 +233,7 @@ public class SimpleTransactionIdStore implements TransactionIdStore {
             LogPosition logPositionAfter) {}
 
     @Override
-    public AppendBatchInfo lastBatch() {
+    public AppendBatchInfo getLastCommittedBatch() {
         throw new UnsupportedOperationException();
     }
 

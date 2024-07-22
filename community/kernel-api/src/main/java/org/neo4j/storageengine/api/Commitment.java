@@ -44,6 +44,9 @@ public interface Commitment {
                 long consensusIndex) {}
 
         @Override
+        public void publishAsCommitedLastBatch() {}
+
+        @Override
         public void publishAsCommitted(long transactionCommitTimestamp, long firstAppendIndex) {}
 
         @Override
@@ -60,6 +63,11 @@ public interface Commitment {
             LogPosition logPositionAfterCommit,
             int checksum,
             long consensusIndex);
+
+    /**
+     * Commit the last appended transaction batch.
+     */
+    void publishAsCommitedLastBatch();
 
     /**
      * Marks the transaction as committed and makes this fact public.

@@ -276,7 +276,7 @@ public interface TransactionIdStore {
      * After database restart and before first applied transaction position after the batch will be UNSPECIFFIED and interested
      * parties should do lookup in their side.
      */
-    AppendBatchInfo lastBatch();
+    AppendBatchInfo getLastCommittedBatch();
 
     /**
      * Returns information about the oldest registered chunked open transaction.

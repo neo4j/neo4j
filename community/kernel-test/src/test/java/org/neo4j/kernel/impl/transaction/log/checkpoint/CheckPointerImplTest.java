@@ -433,7 +433,8 @@ class CheckPointerImplTest {
         when(metadataProvider.getLastCommittedTransaction()).thenReturn(otherCommitted);
         when(metadataProvider.getLastClosedTransactionId())
                 .thenReturn(initialAppendIndex, transactionId, transactionId);
-        when(metadataProvider.lastBatch()).thenReturn(new AppendBatchInfo(TRANSACTION_APPEND_INDEX, logPosition));
+        when(metadataProvider.getLastCommittedBatch())
+                .thenReturn(new AppendBatchInfo(TRANSACTION_APPEND_INDEX, logPosition));
         when(metadataProvider.getHighestEverClosedTransaction()).thenReturn(otherCommitted);
         when(metadataProvider.getLastClosedBatch())
                 .thenReturn(

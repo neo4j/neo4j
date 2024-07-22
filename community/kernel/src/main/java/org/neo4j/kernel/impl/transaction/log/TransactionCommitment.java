@@ -35,6 +35,7 @@ public class TransactionCommitment implements Commitment {
     private int checksum;
     private long consensusIndex;
     private KernelVersion kernelVersion;
+    private LogPosition logPositionBeforeCommit;
     private LogPosition logPositionAfterCommit;
     private long transactionCommitTimestamp;
 
@@ -59,14 +60,13 @@ public class TransactionCommitment implements Commitment {
             long consensusIndex) {
         this.transactionId = transactionId;
         this.kernelVersion = kernelVersion;
+        this.logPositionBeforeCommit = logPositionBeforeCommit;
         this.logPositionAfterCommit = logPositionAfterCommit;
         this.checksum = checksum;
         this.consensusIndex = consensusIndex;
         this.firstBatch = firstBatch;
         this.lastBatch = lastBatch;
         this.currentBatchAppendIndex = appendIndex;
-        transactionIdStore.appendBatch(
-                transactionId, appendIndex, firstBatch, lastBatch, logPositionBeforeCommit, logPositionAfterCommit);
     }
 
     @Override
@@ -76,6 +76,17 @@ public class TransactionCommitment implements Commitment {
         this.transactionCommitTimestamp = transactionCommitTimestamp;
         transactionIdStore.transactionCommitted(
                 transactionId, firstAppendIndex, kernelVersion, checksum, transactionCommitTimestamp, consensusIndex);
+    }
+
+    @Override
+    public void publishAsCommitedLastBatch() {
+        transactionIdStore.appendBatch(
+                transactionId,
+                currentBatchAppendIndex,
+                firstBatch,
+                lastBatch,
+                logPositionBeforeCommit,
+                logPositionAfterCommit);
     }
 
     @Override

@@ -148,7 +148,7 @@ public class ReadOnlyTransactionIdStore implements TransactionIdStore {
             LogPosition logPositionAfter) {}
 
     @Override
-    public AppendBatchInfo lastBatch() {
+    public AppendBatchInfo getLastCommittedBatch() {
         return lastBatch;
     }
 

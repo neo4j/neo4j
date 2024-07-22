@@ -107,7 +107,7 @@ public class LogTailAppendIndexIT {
             createNodesWithRelationship(db, marker);
         }
         var lastBatchBeforeRestart =
-                dependencyResolver.resolveDependency(TransactionIdStore.class).lastBatch();
+                dependencyResolver.resolveDependency(TransactionIdStore.class).getLastCommittedBatch();
 
         var layout = dependencyResolver.resolveDependency(DatabaseLayout.class);
         var originalLogFiles = dependencyResolver.resolveDependency(LogFiles.class);
@@ -137,7 +137,7 @@ public class LogTailAppendIndexIT {
         }
 
         var lastBatchBeforeRestart =
-                dependencyResolver.resolveDependency(TransactionIdStore.class).lastBatch();
+                dependencyResolver.resolveDependency(TransactionIdStore.class).getLastCommittedBatch();
         var layout = dependencyResolver.resolveDependency(DatabaseLayout.class);
         Path[] checkpointFiles = originalLogFiles.getCheckpointFile().getDetachedCheckpointFiles();
         dbms.shutdown();
@@ -162,7 +162,7 @@ public class LogTailAppendIndexIT {
         }
 
         var lastBatchBeforeRestart =
-                dependencyResolver.resolveDependency(TransactionIdStore.class).lastBatch();
+                dependencyResolver.resolveDependency(TransactionIdStore.class).getLastCommittedBatch();
         var layout = dependencyResolver.resolveDependency(DatabaseLayout.class);
         dbms.shutdown();
 
@@ -185,7 +185,7 @@ public class LogTailAppendIndexIT {
         }
 
         var lastBatchBeforeRestart =
-                dependencyResolver.resolveDependency(TransactionIdStore.class).lastBatch();
+                dependencyResolver.resolveDependency(TransactionIdStore.class).getLastCommittedBatch();
         var layout = dependencyResolver.resolveDependency(DatabaseLayout.class);
         dbms.shutdown();
 
@@ -211,7 +211,7 @@ public class LogTailAppendIndexIT {
         }
 
         var lastBatchBeforeRestart =
-                dependencyResolver.resolveDependency(TransactionIdStore.class).lastBatch();
+                dependencyResolver.resolveDependency(TransactionIdStore.class).getLastCommittedBatch();
         var layout = dependencyResolver.resolveDependency(DatabaseLayout.class);
         dbms.shutdown();
 
@@ -237,7 +237,7 @@ public class LogTailAppendIndexIT {
             if (j == 5) {
                 lastBatchBeforeRestart = dependencyResolver
                         .resolveDependency(TransactionIdStore.class)
-                        .lastBatch();
+                        .getLastCommittedBatch();
                 fileToManipulate = originalLogFiles
                         .getLogFile()
                         .getLogFileForVersion(

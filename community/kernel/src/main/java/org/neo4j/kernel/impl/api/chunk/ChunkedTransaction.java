@@ -126,6 +126,7 @@ public class ChunkedTransaction implements CommandBatchToApply {
 
     @Override
     public void commit() {
+        commitment.publishAsCommitedLastBatch();
         if (chunk.isLast()) {
             commitment.publishAsCommitted(chunk.chunkMetadata().chunkCommitTime(), firstAppendIndex);
         }

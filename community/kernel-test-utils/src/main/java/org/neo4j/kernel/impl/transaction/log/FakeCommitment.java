@@ -54,6 +54,9 @@ public class FakeCommitment implements Commitment {
             long consensusIndex) {}
 
     @Override
+    public void publishAsCommitedLastBatch() {}
+
+    @Override
     public void publishAsCommitted(long transactionCommitTimestamp, long appendIndex) {
         committed = true;
         transactionIdStore.transactionCommitted(
