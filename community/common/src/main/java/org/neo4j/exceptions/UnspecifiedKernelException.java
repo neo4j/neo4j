@@ -24,6 +24,7 @@ import org.neo4j.kernel.api.exceptions.Status;
 
 public class UnspecifiedKernelException extends KernelException {
 
+    @Deprecated
     public UnspecifiedKernelException(Status statusCode, Throwable cause) {
         super(statusCode, cause);
     }

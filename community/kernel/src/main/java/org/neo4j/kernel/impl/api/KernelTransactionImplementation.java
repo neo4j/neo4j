@@ -1241,7 +1241,10 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         } catch (KernelException | RuntimeException | Error e) {
             throw e;
         } catch (Throwable throwable) {
-            throw new UnspecifiedKernelException(Status.Transaction.TransactionRollbackFailed, throwable);
+            var gql = ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_40N01)
+                    .withClassification(ErrorClassification.DATABASE_ERROR)
+                    .build();
+            throw new UnspecifiedKernelException(gql, Status.Transaction.TransactionRollbackFailed, throwable);
         } finally {
             afterRollback();
         }
