@@ -48,6 +48,7 @@ public class SimpleTransactionIdStore implements TransactionIdStore {
     private final OutOfOrderSequence lastClosedBatch =
             new ArrayQueueOutOfOrderSequence(-1, 100, OutOfOrderSequence.EMPTY_META);
     private final AtomicReference<TransactionId> committedTransactionId = new AtomicReference<>(BASE_TRANSACTION_ID);
+    private volatile AppendBatchInfo appendBatchInfo;
 
     public SimpleTransactionIdStore() {
         this(
@@ -157,6 +158,7 @@ public class SimpleTransactionIdStore implements TransactionIdStore {
                 transactionAppendIndex);
         lastClosedBatch.set(appendIndex, meta);
         closedTransactionId.set(transactionId, meta);
+        appendBatchInfo = new AppendBatchInfo(transactionAppendIndex, LogPosition.UNSPECIFIED);
     }
 
     @Override
@@ -230,11 +232,13 @@ public class SimpleTransactionIdStore implements TransactionIdStore {
             boolean firstBatch,
             boolean lastBatch,
             LogPosition logPositionBefore,
-            LogPosition logPositionAfter) {}
+            LogPosition logPositionAfter) {
+        appendBatchInfo = new AppendBatchInfo(appendIndex, logPositionAfter);
+    }
 
     @Override
     public AppendBatchInfo getLastCommittedBatch() {
-        throw new UnsupportedOperationException();
+        return appendBatchInfo;
     }
 
     @Override
