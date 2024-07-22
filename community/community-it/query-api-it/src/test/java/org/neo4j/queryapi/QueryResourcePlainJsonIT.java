@@ -157,7 +157,7 @@ class QueryResourcePlainJsonIT {
         assertThat(response.statusCode()).isEqualTo(202);
         var parsedJson = MAPPER.readTree(response.body());
 
-        var results = parsedJson.get(DATA_KEY).get(VALUES_KEY);
+        var results = parsedJson.get(DATA_KEY).get(VALUES_KEY).get(0);
         assertThat(results.get(0).asText()).isEqualTo("SRID=7203;POINT (2.3 4.5)");
         assertThat(results.get(1).asText()).isEqualTo("SRID=9157;POINT Z (2.3 4.5 6.7)");
         assertThat(results.get(2).asText()).isEqualTo("SRID=4326;POINT (2.3 4.5)");
