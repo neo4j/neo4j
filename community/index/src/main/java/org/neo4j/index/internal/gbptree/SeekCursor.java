@@ -1037,22 +1037,35 @@ class SeekCursor<KEY, VALUE> implements Seeker<KEY, VALUE> {
         assert !seekForward; // only happens when we go backward
         assert !isInternal; // only happens when we go through leafs
 
-        // Read header but to local variables and not global once
-        byte nodeType;
-        boolean isLeaf;
-        int keyCount = -1;
         try (PageCursor scout = this.cursor.openLinkedCursor(GenerationSafePointerPair.pointer(pointerId))) {
             scout.next();
-            nodeType = TreeNodeUtil.nodeType(scout);
-            isLeaf = TreeNodeUtil.isLeaf(scout);
-            if (nodeType == TreeNodeUtil.NODE_TYPE_TREE_NODE && isLeaf) {
-                keyCount = TreeNodeUtil.keyCount(scout);
-                // if keyCount is 0 we observed intermediate state and caller will retry
-                if (keyCount <= maxKeyCount && keyCount > 0) {
-                    int firstPos = keyCount - 1;
-                    leafNode.keyAt(scout, expectedFirstAfterGoToNext, firstPos, cursorContext);
-                }
+
+            if (TreeNodeUtil.nodeType(scout) != TreeNodeUtil.NODE_TYPE_TREE_NODE) {
+                // If for any reason the node we're scouting is not a tree node anymore
+                // we return false to signal to the caller that it needs to restart the
+                // procedure to find the next sibling going backwards.
+                return false;
             }
+            if (!TreeNodeUtil.isLeaf(scout)) {
+                // If for any reason the node we're scouting is not a leaf node as it should,
+                // possibly because a race condition, we return false to signal to the caller
+                // that it needs to restart the procedure to find the next sibling going backwards.
+                return false;
+            }
+
+            int keyCount = TreeNodeUtil.keyCount(scout);
+            if (keyCount <= 0 || keyCount > maxKeyCount) {
+                // If the keyCount of the node we're scouting is 0 (so no keys there) or if there
+                // are more keys that what should be possible, then we're observing some
+                // intermediate state of computation or something else went wrong.
+                // We return false to signal to the caller that is should restart the procedure
+                // to find the next sibling going backwards.
+                return false;
+            }
+
+            // Our next entry going backwards is the last key on the previous leaf node.
+            int firstPosInBackwardsSibling = keyCount - 1;
+            leafNode.keyAt(scout, expectedFirstAfterGoToNext, firstPosInBackwardsSibling, cursorContext);
 
             if (this.cursor.shouldRetry()) {
                 // We scouted next sibling but either next sibling or current node has been changed
@@ -1064,7 +1077,10 @@ class SeekCursor<KEY, VALUE> implements Seeker<KEY, VALUE> {
             }
             checkOutOfBounds(this.cursor);
         }
-        return nodeType == TreeNodeUtil.NODE_TYPE_TREE_NODE && isLeaf && keyCount <= maxKeyCount && keyCount > 0;
+        // If we reached here, we passed all the checks while scouting the next node and we have saved
+        // what should be the key for the next entry in expectedFirstAfterGoToNext. We return true so the
+        // caller knows we're good to proceed in the backwards scan.
+        return true;
     }
 
     /**
