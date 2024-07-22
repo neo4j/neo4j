@@ -1039,11 +1039,13 @@ class SeekCursor<KEY, VALUE> implements Seeker<KEY, VALUE> {
 
         // Read header but to local variables and not global once
         byte nodeType;
+        boolean isLeaf;
         int keyCount = -1;
         try (PageCursor scout = this.cursor.openLinkedCursor(GenerationSafePointerPair.pointer(pointerId))) {
             scout.next();
             nodeType = TreeNodeUtil.nodeType(scout);
-            if (nodeType == TreeNodeUtil.NODE_TYPE_TREE_NODE) {
+            isLeaf = TreeNodeUtil.isLeaf(scout);
+            if (nodeType == TreeNodeUtil.NODE_TYPE_TREE_NODE && isLeaf) {
                 keyCount = TreeNodeUtil.keyCount(scout);
                 // if keyCount is 0 we observed intermediate state and caller will retry
                 if (keyCount <= maxKeyCount && keyCount > 0) {
@@ -1062,7 +1064,7 @@ class SeekCursor<KEY, VALUE> implements Seeker<KEY, VALUE> {
             }
             checkOutOfBounds(this.cursor);
         }
-        return nodeType == TreeNodeUtil.NODE_TYPE_TREE_NODE && keyCount <= maxKeyCount && keyCount > 0;
+        return nodeType == TreeNodeUtil.NODE_TYPE_TREE_NODE && isLeaf && keyCount <= maxKeyCount && keyCount > 0;
     }
 
     /**
