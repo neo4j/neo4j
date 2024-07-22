@@ -154,7 +154,13 @@ class IndexSettingValidators {
         private final MapIterable<String, VectorSimilarityFunction> similarityFunctions;
 
         SimilarityFunctionValidator(MapIterable<String, VectorSimilarityFunction> supportedSimilarityFunctions) {
-            super(IndexSetting.vector_Similarity_Function());
+            this(null, supportedSimilarityFunctions);
+        }
+
+        SimilarityFunctionValidator(
+                VectorSimilarityFunction defaultSimilarityFunction,
+                MapIterable<String, VectorSimilarityFunction> supportedSimilarityFunctions) {
+            super(IndexSetting.vector_Similarity_Function(), defaultSimilarityFunction);
             this.similarityFunctions = supportedSimilarityFunctions;
         }
 

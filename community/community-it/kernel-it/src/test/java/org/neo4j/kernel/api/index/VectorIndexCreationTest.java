@@ -22,7 +22,6 @@ package org.neo4j.kernel.api.index;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.assertj.core.api.Assumptions.assumeThat;
 import static org.neo4j.internal.helpers.MathUtil.ceil;
 
 import java.util.List;
@@ -87,19 +86,26 @@ public class VectorIndexCreationTest {
 
         @Nested
         class IndexProvider extends TestBase {
+            private final SetIterable<VectorIndexVersion> invalidVersions;
+
             IndexProvider() {
                 super(Entity.this.factory, inclusiveVersionRangeFrom(minimumVersionForEntity));
+                this.invalidVersions = VectorIndexVersion.KNOWN_VERSIONS.toSet().difference(validVersions());
             }
 
             @ParameterizedTest
-            @MethodSource
+            @MethodSource("invalidVersions")
+            @EnabledIf("hasInvalidVersions")
             void shouldRejectVectorIndexOnUnsupportedVersions(VectorIndexVersion version) {
-                assumeThat(version).as("skip if no unsupported versions").isNotEqualTo(VectorIndexVersion.UNKNOWN);
                 assertUnsupportedIndex(() -> createVectorIndex(version, defaultSettings(), propKeyIds[0]));
             }
 
-            Iterable<VectorIndexVersion> shouldRejectVectorIndexOnUnsupportedVersions() {
-                return Sets.mutable.with(VectorIndexVersion.values()).difference(validVersions());
+            SetIterable<VectorIndexVersion> invalidVersions() {
+                return invalidVersions;
+            }
+
+            boolean hasInvalidVersions() {
+                return invalidVersions.notEmpty();
             }
 
             private static void assertUnsupportedIndex(ThrowingCallable callable) {
@@ -244,6 +250,7 @@ public class VectorIndexCreationTest {
 
             @ParameterizedTest
             @MethodSource("validVersions")
+            @EnabledIf("hasValidVersions")
             void shouldRequireSetting(VectorIndexVersion version) {
                 final var settings = defaultSettings().unset(SETTING);
                 assertMissingExpectedSetting(SETTING, () -> createVectorIndex(version, settings, propKeyIds[0]));
@@ -320,6 +327,7 @@ public class VectorIndexCreationTest {
 
             @ParameterizedTest
             @MethodSource("validVersions")
+            @EnabledIf("hasValidVersions")
             void shouldRejectUnsupported(VectorIndexVersion version) {
                 final var similarityFunctionName = "ClearlyThisIsNotASimilarityFunction";
                 final var settings = defaultSettings().withSimilarityFunction(similarityFunctionName);
@@ -355,11 +363,13 @@ public class VectorIndexCreationTest {
             RequiredSimilarityFunction() {
                 super(
                         Entity.this.factory,
-                        inclusiveVersionRangeFrom(max(minimumVersionForEntity, VectorIndexVersion.V1_0)));
+                        inclusiveVersionRange(
+                                max(minimumVersionForEntity, VectorIndexVersion.V1_0), VectorIndexVersion.V1_0));
             }
 
             @ParameterizedTest
             @MethodSource("validVersions")
+            @EnabledIf("hasValidVersions")
             void shouldRequireSetting(VectorIndexVersion version) {
                 final var settings = defaultSettings().unset(SETTING);
                 assertMissingExpectedSetting(SETTING, () -> createVectorIndex(version, settings, propKeyIds[0]));
@@ -374,8 +384,52 @@ public class VectorIndexCreationTest {
         }
 
         @Nested
+        class DefaultedSimilarityFunction extends TestBase {
+            private static final IndexSetting SETTING = IndexSetting.vector_Similarity_Function();
+            private static final Value DEFAULT_VALUE = Values.stringValue("COSINE");
+
+            DefaultedSimilarityFunction() {
+                super(
+                        Entity.this.factory,
+                        inclusiveVersionRangeFrom(max(minimumVersionForEntity, VectorIndexVersion.V2_0)));
+            }
+
+            @ParameterizedTest
+            @MethodSource("validVersions")
+            @EnabledIf("hasValidVersions")
+            void shouldAcceptMissingSetting(VectorIndexVersion version) {
+                final var settings = defaultSettings().unset(SETTING);
+
+                final var ref = new MutableObject<IndexDescriptor>();
+                assertDoesNotThrow(() -> ref.setValue(createVectorIndex(version, settings, propKeyIds[0])));
+                final var index = ref.getValue();
+
+                // config committed in tx
+                assertSettingHasValue(SETTING, index.getIndexConfig(), DEFAULT_VALUE);
+                // config via schema store
+                assertSettingHasValue(SETTING, findIndex(index.getName()).getIndexConfig(), DEFAULT_VALUE);
+            }
+
+            @Test
+            @EnabledIf("latestIsValid")
+            void shouldAcceptMissingSettingCoreAPI() {
+                final var settings = defaultSettings().unset(SETTING);
+
+                final var ref = new MutableObject<IndexDescriptor>();
+                assertDoesNotThrow(() -> ref.setValue(createVectorIndex(settings, PROP_KEYS.get(1))));
+                final var index = ref.getValue();
+
+                // config committed in tx
+                assertSettingHasValue(SETTING, index.getIndexConfig(), DEFAULT_VALUE);
+                // config via schema store
+                assertSettingHasValue(SETTING, findIndex(index.getName()).getIndexConfig(), DEFAULT_VALUE);
+            }
+        }
+
+        @Nested
         class Quantization extends TestBase {
             private static final IndexSetting SETTING = IndexSetting.vector_Quantization();
+            private static final Value DEFAULT_VALUE = Values.stringValue(VectorQuantization.LUCENE.name());
 
             Quantization() {
                 super(
@@ -432,6 +486,7 @@ public class VectorIndexCreationTest {
 
             @ParameterizedTest
             @MethodSource("validVersions")
+            @EnabledIf("hasValidVersions")
             void shouldAcceptMissingSetting(VectorIndexVersion version) {
                 final var settings = defaultSettings().unset(SETTING);
 
@@ -440,13 +495,9 @@ public class VectorIndexCreationTest {
                 final var index = ref.getValue();
 
                 // config committed in tx
-                assertSettingHasValue(
-                        SETTING, index.getIndexConfig(), Values.stringValue(VectorQuantization.LUCENE.name()));
+                assertSettingHasValue(SETTING, index.getIndexConfig(), DEFAULT_VALUE);
                 // config via schema store
-                assertSettingHasValue(
-                        SETTING,
-                        findIndex(index.getName()).getIndexConfig(),
-                        Values.stringValue(VectorQuantization.LUCENE.name()));
+                assertSettingHasValue(SETTING, findIndex(index.getName()).getIndexConfig(), DEFAULT_VALUE);
             }
 
             @Test
@@ -459,17 +510,14 @@ public class VectorIndexCreationTest {
                 final var index = ref.getValue();
 
                 // config committed in tx
-                assertSettingHasValue(
-                        SETTING, index.getIndexConfig(), Values.stringValue(VectorQuantization.LUCENE.name()));
+                assertSettingHasValue(SETTING, index.getIndexConfig(), DEFAULT_VALUE);
                 // config via schema store
-                assertSettingHasValue(
-                        SETTING,
-                        findIndex(index.getName()).getIndexConfig(),
-                        Values.stringValue(VectorQuantization.LUCENE.name()));
+                assertSettingHasValue(SETTING, findIndex(index.getName()).getIndexConfig(), DEFAULT_VALUE);
             }
 
             @ParameterizedTest
             @MethodSource("validVersions")
+            @EnabledIf("hasValidVersions")
             void shouldRejectUnsupported(VectorIndexVersion version) {
                 final var quantizationName = "ClearlyThisIsNotAQuantization";
                 final var settings = defaultSettings().withQuantization(quantizationName);
@@ -694,6 +742,10 @@ public class VectorIndexCreationTest {
             assertThat(indexConfig.<Value>get(setting.getSettingName())).isEqualTo(value);
         }
 
+        private static void assertMissingSetting(IndexSetting setting, IndexConfig indexConfig) {
+            assertThat(indexConfig.asMap()).doesNotContainKey(setting.getSettingName());
+        }
+
         private static void assertMissingExpectedSetting(IndexSetting setting, ThrowingCallable callable) {
             assertThatThrownBy(callable)
                     .isInstanceOf(IllegalArgumentException.class)
@@ -755,6 +807,10 @@ public class VectorIndexCreationTest {
 
         protected SetIterable<VectorIndexVersion> validVersions() {
             return validVersions;
+        }
+
+        protected boolean hasValidVersions() {
+            return validVersions.notEmpty();
         }
 
         protected boolean latestIsValid() {

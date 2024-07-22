@@ -118,7 +118,6 @@ class VectorIndexV2ForV523ConfigValidationTest {
     void validIndexConfigWithDefaults() {
         final var settings = VectorIndexSettings.create()
                 .withDimensions(VERSION.maxDimensions())
-                .withSimilarityFunction(VERSION.similarityFunction("COSINE"))
                 .toSettingsAccessor();
 
         final var validationRecords = VALIDATOR.validate(settings);
@@ -265,26 +264,6 @@ class VectorIndexV2ForV523ConfigValidationTest {
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContainingAll(
                         DIMENSIONS.getSettingName(), "must be between 1 and", String.valueOf(VERSION.maxDimensions()));
-    }
-
-    @Test
-    void missingSimilarityFunction() {
-        final var settings = VectorIndexSettings.create()
-                .withDimensions(VERSION.maxDimensions())
-                .toSettingsAccessor();
-
-        final var validationRecords = VALIDATOR.validate(settings);
-        assertThat(validationRecords.invalid()).isTrue();
-        assertThat(validationRecords.get(MISSING_SETTING).castToSortedSet())
-                .hasSize(1)
-                .first()
-                .asInstanceOf(InstanceOfAssertFactories.type(MissingSetting.class))
-                .extracting(MissingSetting::setting)
-                .isEqualTo(SIMILARITY_FUNCTION);
-
-        assertThatThrownBy(() -> VALIDATOR.validateToVectorIndexConfig(settings))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContainingAll(SIMILARITY_FUNCTION.getSettingName(), "is expected to have been set");
     }
 
     @Test

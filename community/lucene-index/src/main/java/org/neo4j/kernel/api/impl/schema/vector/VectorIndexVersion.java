@@ -131,7 +131,8 @@ public enum VectorIndexVersion {
                             new Validators(
                                     descriptor(),
                                     new DimensionsValidator(new Range<>(1, maxDimensions())),
-                                    new SimilarityFunctionValidator(nameToSimilarityFunction()),
+                                    new SimilarityFunctionValidator(
+                                            VectorSimilarityFunctions.L2_NORM_COSINE, nameToSimilarityFunction()),
                                     new QuantizationValidator(
                                             VectorQuantization.OFF, VectorQuantization.LUCENE, nameToQuantization()),
                                     new IntegerWithDefaultSettingValidator(
