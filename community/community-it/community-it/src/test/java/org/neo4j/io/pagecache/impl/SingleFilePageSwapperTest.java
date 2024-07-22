@@ -644,13 +644,13 @@ public class SingleFilePageSwapperTest extends PageSwapperTest {
 
         try {
             for (int i = 0; i < 10_000; i++) {
-                adversary.setProbabilityFactor(0);
+                adversary.enableAdversary(false);
                 swapper.write(0, zeroPage);
                 putBytes(page, data, 0, 0, data.length);
-                adversary.setProbabilityFactor(1);
+                adversary.enableAdversary(true);
                 assertThat(swapper.write(0, page)).isEqualTo(bytesTotal + RESERVED_BYTES);
                 clear(page);
-                adversary.setProbabilityFactor(0);
+                adversary.enableAdversary(false);
                 swapper.read(0, page);
                 assertThat(array(page)).isEqualTo(data);
             }
@@ -735,14 +735,14 @@ public class SingleFilePageSwapperTest extends PageSwapperTest {
 
         try {
             for (int i = 0; i < 10_000; i++) {
-                adversary.setProbabilityFactor(0);
+                adversary.enableAdversary(false);
                 swapper.write(0, zeroPages, pageLengths, pageCount, pageCount);
-                adversary.setProbabilityFactor(1);
+                adversary.enableAdversary(true);
                 swapper.write(0, writePages, pageLengths, pageCount, pageCount);
                 for (long readPage : readPages) {
                     clear(readPage);
                 }
-                adversary.setProbabilityFactor(0);
+                adversary.enableAdversary(false);
                 assertThat(swapper.read(0, readPages, pageLengths, pageCount))
                         .isEqualTo(bytesTotal + pageCount * RESERVED_BYTES);
                 for (int j = 0; j < pageCount; j++) {

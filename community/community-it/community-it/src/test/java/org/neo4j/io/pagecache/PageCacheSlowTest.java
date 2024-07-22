@@ -468,7 +468,7 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
             // This is effectively a targeted robustness test.
 
             RandomAdversary adversary = new RandomAdversary(0.5, 0.2, 0.2);
-            adversary.setProbabilityFactor(0.0);
+            adversary.enableAdversary(false);
             FileSystemAbstraction fs = new AdversarialFileSystemAbstraction(adversary, this.fs);
             ThreadLocalRandom rng = ThreadLocalRandom.current();
 
@@ -481,7 +481,7 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
                             pageCache.map(existingFile("a"), filePageSize, DEFAULT_DATABASE_NAME, getOpenOptions());
                     PagedFile pfB = pageCache.map(
                             existingFile("b"), filePageSize / 2 + 1, DEFAULT_DATABASE_NAME, getOpenOptions())) {
-                adversary.setProbabilityFactor(1.0);
+                adversary.enableAdversary(true);
 
                 for (int i = 0; i < 1000; i++) {
                     PagedFile pagedFile = rng.nextBoolean() ? pfA : pfB;
@@ -499,7 +499,7 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
                         }
                     } catch (AssertionError error) {
                         // Capture any exception that might have hit the eviction thread.
-                        adversary.setProbabilityFactor(0.0);
+                        adversary.enableAdversary(false);
                         try (PageCursor cursor = pagedFile.io(0, PF_SHARED_WRITE_LOCK, NULL_CONTEXT)) {
                             for (int j = 0; j < 100; j++) {
                                 cursor.next(rng.nextLong(maxPageId + 1));
@@ -517,7 +517,7 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
 
                 // Unmapping will cause pages to be flushed.
                 // We don't want that to fail, since it will upset the test tear-down.
-                adversary.setProbabilityFactor(0.0);
+                adversary.enableAdversary(false);
                 try {
                     // Flushing all pages, if successful, should clear any internal
                     // exception.

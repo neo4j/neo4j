@@ -349,7 +349,7 @@ public class RandomPageCacheTestHarness implements Closeable {
         Path[] files = buildFileNames();
 
         RandomAdversary adversary = new RandomAdversary(mischiefRate, failureRate, errorRate);
-        adversary.setProbabilityFactor(0.0);
+        adversary.enableAdversary(false);
         if (useAdversarialIO) {
             adversary.setSeed(randomSeed);
             fs = new AdversarialFileSystemAbstraction(adversary, fs);
@@ -384,7 +384,7 @@ public class RandomPageCacheTestHarness implements Closeable {
             preparation.run(cache, this.fs, plan.getFilesTouched());
         }
 
-        adversary.setProbabilityFactor(1.0);
+        adversary.enableAdversary(true);
 
         plan.start();
 
@@ -398,11 +398,11 @@ public class RandomPageCacheTestHarness implements Closeable {
                 }
                 future.get(deadlineMillis - now, TimeUnit.MILLISECONDS);
             }
-            adversary.setProbabilityFactor(0.0);
+            adversary.enableAdversary(false);
             runVerificationPhase(cache);
         } finally {
             stopSignal.set(true);
-            adversary.setProbabilityFactor(0.0);
+            adversary.enableAdversary(false);
             try {
                 for (Future<Void> future : futures) {
                     future.get(10, TimeUnit.SECONDS);

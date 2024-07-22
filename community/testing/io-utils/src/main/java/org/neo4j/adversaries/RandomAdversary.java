@@ -23,12 +23,11 @@ package org.neo4j.adversaries;
  * An adversary that injects failures randomly, based on a configured probability.
  */
 @SuppressWarnings("unchecked")
-public class RandomAdversary extends AbstractAdversary {
-    private static final double STANDARD_PROBABILITY_FACTOR = 1.0;
+public final class RandomAdversary extends AbstractAdversary {
     private final double mischiefRate;
     private final double failureRate;
     private final double errorRate;
-    private volatile double probabilityFactor;
+    private volatile boolean enabled;
 
     public RandomAdversary(double mischiefRate, double failureRate, double errorRate) {
         assert 0 <= mischiefRate && mischiefRate < 1.0 : "Expected mischief rate in [0.0; 1.0[ but was " + mischiefRate;
@@ -41,7 +40,7 @@ public class RandomAdversary extends AbstractAdversary {
         this.mischiefRate = mischiefRate;
         this.failureRate = failureRate;
         this.errorRate = errorRate;
-        probabilityFactor = STANDARD_PROBABILITY_FACTOR;
+        enabled = true;
     }
 
     @Override
@@ -55,30 +54,20 @@ public class RandomAdversary extends AbstractAdversary {
     }
 
     private boolean maybeDoBadStuff(Class<? extends Throwable>[] failureTypes, boolean includingMischeif) {
-        double luckyDraw = rng.nextDouble();
-        double factor = probabilityFactor;
-        boolean resetUponFailure = false;
-        if (factor < 0) {
-            resetUponFailure = true;
-            factor = -factor;
+        if (!enabled) {
+            return false;
         }
 
-        if (luckyDraw <= errorRate * factor) {
-            if (resetUponFailure) {
-                probabilityFactor = STANDARD_PROBABILITY_FACTOR;
-            }
+        double luckyDraw = rng.nextDouble();
+        if (luckyDraw <= errorRate) {
             throwOneOf(OutOfMemoryError.class, NullPointerException.class);
-        }
-        if (failureTypes.length > 0 && luckyDraw <= (failureRate + errorRate) * factor) {
-            if (resetUponFailure) {
-                probabilityFactor = STANDARD_PROBABILITY_FACTOR;
-            }
+        } else if (failureTypes.length > 0 && luckyDraw <= (failureRate + errorRate)) {
             throwOneOf(failureTypes);
         }
-        return includingMischeif && luckyDraw <= (mischiefRate + failureRate + errorRate) * factor;
+        return includingMischeif && luckyDraw <= (mischiefRate + failureRate + errorRate);
     }
 
-    public void setProbabilityFactor(double factor) {
-        probabilityFactor = factor;
+    public void enableAdversary(boolean enabled) {
+        this.enabled = enabled;
     }
 }

@@ -2468,7 +2468,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     void pinEventShouldCompleteIfRepinFromShouldRetryThrows() throws IOException {
         DefaultPageCacheTracer tracer = new DefaultPageCacheTracer();
         RandomAdversary adversary = new RandomAdversary(0.0, 0.9, 0.0);
-        adversary.setProbabilityFactor(0.0);
+        adversary.enableAdversary(false);
         AdversarialFileSystemAbstraction afs = new AdversarialFileSystemAbstraction(adversary, fs);
         var contextFactory = new CursorContextFactory(tracer, EMPTY_CONTEXT_SUPPLIER);
         getPageCache(afs, maxPages, tracer);
@@ -2484,11 +2484,11 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                     assertThrows(IOException.class, () -> {
                         //noinspection InfiniteLoopStatement
                         for (; ; ) {
-                            adversary.setProbabilityFactor(1.0);
+                            adversary.enableAdversary(true);
                             try {
                                 reader.shouldRetry();
                             } finally {
-                                adversary.setProbabilityFactor(0.0);
+                                adversary.enableAdversary(false);
                             }
                             try (PageCursor writer = otherPagedFile.io(0, PF_SHARED_WRITE_LOCK, cursorContext)) {
                                 for (int i = 0; i < maxPages * 10; i++) {
