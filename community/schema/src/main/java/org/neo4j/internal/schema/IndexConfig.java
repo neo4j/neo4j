@@ -19,11 +19,10 @@
  */
 package org.neo4j.internal.schema;
 
-import static java.util.Collections.unmodifiableMap;
-
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.SortedMap;
 import java.util.function.Supplier;
 import org.eclipse.collections.api.RichIterable;
 import org.eclipse.collections.api.factory.SortedMaps;
@@ -115,8 +114,8 @@ public final class IndexConfig {
         return map.keyValuesView();
     }
 
-    public Map<String, Value> asMap() {
-        return unmodifiableMap(map.castToMap());
+    public SortedMap<String, Value> asMap() {
+        return map.castToMap();
     }
 
     @Override
