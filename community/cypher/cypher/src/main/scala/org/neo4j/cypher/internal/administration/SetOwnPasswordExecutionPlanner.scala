@@ -24,6 +24,9 @@ import org.neo4j.cypher.internal.AdministrationCommandRuntime.followerError
 import org.neo4j.cypher.internal.AdministrationCommandRuntime.getPasswordExpression
 import org.neo4j.cypher.internal.AdministrationCommandRuntime.getValidPasswordParameter
 import org.neo4j.cypher.internal.AdministrationCommandRuntime.internalKey
+import org.neo4j.cypher.internal.AdministrationCommandRuntime.userCredPropKey
+import org.neo4j.cypher.internal.AdministrationCommandRuntime.userLabel
+import org.neo4j.cypher.internal.AdministrationCommandRuntime.userPwChangeReqPropKey
 import org.neo4j.cypher.internal.AdministrationCommandRuntime.validateStringParameterType
 import org.neo4j.cypher.internal.ExecutionEngine
 import org.neo4j.cypher.internal.ExecutionPlan
@@ -70,10 +73,10 @@ case class SetOwnPasswordExecutionPlanner(
     val (currentKeyBytes, currentValueBytes, currentConverterBytes) = getPasswordFieldsCurrent(currentPassword)
     def currentUser(p: MapValue): String = p.get(usernameKey).asInstanceOf[TextValue].stringValue()
     val query =
-      s"""MATCH (user:User {name: $$`$usernameKey`})
-         |WITH user, user.credentials AS oldCredentials
-         |SET user.credentials = $$`${newPw.key}`
-         |SET user.passwordChangeRequired = false
+      s"""MATCH (user:$userLabel {name: $$`$usernameKey`})
+         |WITH user, user.$userCredPropKey AS oldCredentials
+         |SET user.$userCredPropKey = $$`${newPw.key}`
+         |SET user.$userPwChangeReqPropKey = false
          |RETURN oldCredentials""".stripMargin
 
     NonTransactionalUpdatingSystemCommandExecutionPlan(

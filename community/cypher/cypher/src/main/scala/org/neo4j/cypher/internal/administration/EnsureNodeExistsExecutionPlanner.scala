@@ -26,10 +26,15 @@ import org.neo4j.cypher.internal.AdministrationCommandRuntime.checkNamespaceExis
 import org.neo4j.cypher.internal.AdministrationCommandRuntime.followerError
 import org.neo4j.cypher.internal.AdministrationCommandRuntime.getDatabaseNameFields
 import org.neo4j.cypher.internal.AdministrationCommandRuntime.getNameFields
+import org.neo4j.cypher.internal.AdministrationCommandRuntime.userLabel
+import org.neo4j.cypher.internal.AdministrationCommandRuntime.userNamePropKey
 import org.neo4j.cypher.internal.ExecutionEngine
 import org.neo4j.cypher.internal.ExecutionPlan
 import org.neo4j.cypher.internal.ast.DatabaseName
 import org.neo4j.cypher.internal.expressions.Parameter
+import org.neo4j.cypher.internal.logical.plans.RBACEntity
+import org.neo4j.cypher.internal.logical.plans.RoleEntity
+import org.neo4j.cypher.internal.logical.plans.UserEntity
 import org.neo4j.cypher.internal.procs.ParameterTransformer
 import org.neo4j.cypher.internal.procs.QueryHandler
 import org.neo4j.cypher.internal.procs.ThrowException
@@ -49,7 +54,7 @@ case class EnsureNodeExistsExecutionPlanner(
 ) {
 
   def planEnsureNodeExists(
-    label: String,
+    entity: RBACEntity,
     name: Either[String, Parameter],
     valueMapper: String => String,
     extraFilter: String => String,
@@ -57,12 +62,16 @@ case class EnsureNodeExistsExecutionPlanner(
     action: String,
     sourcePlan: Option[ExecutionPlan]
   ): ExecutionPlan = {
+    val (label, namePropKey) = entity match {
+      case UserEntity => (userLabel, userNamePropKey)
+      case RoleEntity => ("Role", "name")
+    }
     val nameFields = getNameFields("name", name, valueMapper = valueMapper)
     UpdatingSystemCommandExecutionPlan(
       "EnsureNodeExists",
       normalExecutionEngine,
       securityAuthorizationHandler,
-      s"""MATCH (node:$label {name: $$`${nameFields.nameKey}`})
+      s"""MATCH (node:$label {$namePropKey: $$`${nameFields.nameKey}`})
          |${extraFilter("node")}
          |RETURN node""".stripMargin,
       VirtualValues.map(Array(nameFields.nameKey), Array(nameFields.nameValue)),

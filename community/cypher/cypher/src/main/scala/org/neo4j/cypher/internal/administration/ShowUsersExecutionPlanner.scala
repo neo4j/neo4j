@@ -19,7 +19,13 @@
  */
 package org.neo4j.cypher.internal.administration
 
+import org.neo4j.cypher.internal.AdministrationCommandRuntime.authIdPropKey
+import org.neo4j.cypher.internal.AdministrationCommandRuntime.authProviderPropKey
+import org.neo4j.cypher.internal.AdministrationCommandRuntime.authRelType
 import org.neo4j.cypher.internal.AdministrationCommandRuntime.internalKey
+import org.neo4j.cypher.internal.AdministrationCommandRuntime.userLabel
+import org.neo4j.cypher.internal.AdministrationCommandRuntime.userNamePropKey
+import org.neo4j.cypher.internal.AdministrationCommandRuntime.userPwChangeReqPropKey
 import org.neo4j.cypher.internal.AdministrationShowCommandUtils
 import org.neo4j.cypher.internal.ExecutionEngine
 import org.neo4j.cypher.internal.ExecutionPlan
@@ -54,9 +60,9 @@ case class ShowUsersExecutionPlanner(
       "ShowUsers",
       normalExecutionEngine,
       securityAuthorizationHandler,
-      s"""MATCH (u:User)
+      s"""MATCH (u:$userLabel)
          |$authMatch
-         |WITH u.name as user, null as roles, u.passwordChangeRequired AS passwordChangeRequired, null as suspended, null as home
+         |WITH u.$userNamePropKey as user, null as roles, u.$userPwChangeReqPropKey AS passwordChangeRequired, null as suspended, null as home
          |$authColumns
          |${AdministrationShowCommandUtils.generateReturnClause(symbols, yields, returns, Seq("user"))}
          |""".stripMargin,
@@ -71,8 +77,8 @@ case class ShowUsersExecutionPlanner(
       "ShowCurrentUser",
       normalExecutionEngine,
       securityAuthorizationHandler,
-      s"""MATCH (u:User)
-         |WITH u.name as user, null as roles, u.passwordChangeRequired AS passwordChangeRequired, null as suspended, null as home
+      s"""MATCH (u:$userLabel)
+         |WITH u.$userNamePropKey as user, null as roles, u.$userPwChangeReqPropKey AS passwordChangeRequired, null as suspended, null as home
          |WHERE user = $$`$currentUserKey`
          |${AdministrationShowCommandUtils.generateReturnClause(symbols, yields, returns, Seq("user"))}
          |""".stripMargin,
@@ -97,26 +103,26 @@ object ShowUsersExecutionPlanner {
   def getAuthCypher(userVariable: String): (String, String) = {
     val authProviderExpression =
       s"""CASE
-         | WHEN auth.provider IS NULL THEN
+         | WHEN auth.$authProviderPropKey IS NULL THEN
          |  CASE
-         |   WHEN $userVariable.passwordChangeRequired IS NULL THEN null
+         |   WHEN $userVariable.$userPwChangeReqPropKey IS NULL THEN null
          |   ELSE '$NATIVE_AUTH'
          |  END
-         | ELSE auth.provider
+         | ELSE auth.$authProviderPropKey
          |END""".stripMargin
     val authExpression =
       s"""CASE
-         | WHEN auth.provider IS NULL THEN
+         | WHEN auth.$authProviderPropKey IS NULL THEN
          |  CASE
-         |   WHEN $userVariable.passwordChangeRequired IS NULL THEN null
-         |   ELSE {password: '***', changeRequired: $userVariable.passwordChangeRequired}
+         |   WHEN $userVariable.$userPwChangeReqPropKey IS NULL THEN null
+         |   ELSE {password: '***', changeRequired: $userVariable.$userPwChangeReqPropKey}
          |  END
-         | WHEN auth.provider = '$NATIVE_AUTH' THEN {password: '***', changeRequired: $userVariable.passwordChangeRequired}
-         | ELSE {id: auth.id}
+         | WHEN auth.$authProviderPropKey = '$NATIVE_AUTH' THEN {password: '***', changeRequired: $userVariable.$userPwChangeReqPropKey}
+         | ELSE {id: auth.$authIdPropKey}
          |END""".stripMargin
 
     (
-      s"""OPTIONAL MATCH ($userVariable)-[:HAS_AUTH]->(auth)
+      s"""OPTIONAL MATCH ($userVariable)-[:$authRelType]->(auth)
          |WITH *, $authProviderExpression AS provider, $authExpression AS auth""".stripMargin,
       ", provider, auth"
     )

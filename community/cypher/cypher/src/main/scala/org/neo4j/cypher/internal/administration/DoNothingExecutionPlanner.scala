@@ -26,11 +26,16 @@ import org.neo4j.cypher.internal.AdministrationCommandRuntime.checkNamespaceExis
 import org.neo4j.cypher.internal.AdministrationCommandRuntime.followerError
 import org.neo4j.cypher.internal.AdministrationCommandRuntime.getDatabaseNameFields
 import org.neo4j.cypher.internal.AdministrationCommandRuntime.getNameFields
+import org.neo4j.cypher.internal.AdministrationCommandRuntime.userLabel
+import org.neo4j.cypher.internal.AdministrationCommandRuntime.userNamePropKey
 import org.neo4j.cypher.internal.ExecutionEngine
 import org.neo4j.cypher.internal.ExecutionPlan
 import org.neo4j.cypher.internal.ast.DatabaseName
 import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.logical.plans.DatabaseTypeFilter
+import org.neo4j.cypher.internal.logical.plans.RBACEntity
+import org.neo4j.cypher.internal.logical.plans.RoleEntity
+import org.neo4j.cypher.internal.logical.plans.UserEntity
 import org.neo4j.cypher.internal.procs.ParameterTransformer
 import org.neo4j.cypher.internal.procs.QueryHandler
 import org.neo4j.cypher.internal.procs.UpdatingSystemCommandExecutionPlan
@@ -56,15 +61,17 @@ case class DoNothingExecutionPlanner(
 ) {
 
   def planDoNothingIfNotExists(
-    label: String,
+    entity: RBACEntity,
     name: Either[String, Parameter],
     valueMapper: String => String,
     operation: String,
     sourcePlan: Option[ExecutionPlan]
-  ): ExecutionPlan =
+  ): ExecutionPlan = {
+    val (label, namePropKey) = getLabelAndNamePropKey(entity)
     planDoNothing(
       "DoNothingIfNotExists",
       label,
+      namePropKey,
       name,
       valueMapper,
       QueryHandler
@@ -72,16 +79,19 @@ case class DoNothingExecutionPlanner(
         .handleError(handleErrorFn(operation, label, name)),
       sourcePlan
     )
+  }
 
   def planDoNothingIfExists(
-    label: String,
+    entity: RBACEntity,
     name: Either[String, Parameter],
     valueMapper: String => String,
     sourcePlan: Option[ExecutionPlan]
-  ): ExecutionPlan =
+  ): ExecutionPlan = {
+    val (label, namePropKey) = getLabelAndNamePropKey(entity)
     planDoNothing(
       "DoNothingIfExists",
       label,
+      namePropKey,
       name,
       valueMapper,
       QueryHandler
@@ -89,6 +99,7 @@ case class DoNothingExecutionPlanner(
         .handleError(handleErrorFn("create", label, name)),
       sourcePlan
     )
+  }
 
   def planDoNothingIfDatabaseNotExists(
     name: DatabaseName,
@@ -125,6 +136,7 @@ case class DoNothingExecutionPlanner(
   private def planDoNothing(
     planName: String,
     label: String,
+    namePropKey: String,
     name: Either[String, Parameter],
     valueMapper: String => String,
     queryHandler: QueryHandler,
@@ -136,8 +148,8 @@ case class DoNothingExecutionPlanner(
       normalExecutionEngine,
       securityAuthorizationHandler,
       s"""
-         |MATCH (node:$label {$NAME_PROPERTY: $$`${nameFields.nameKey}`})
-         |RETURN node.$NAME_PROPERTY AS name
+         |MATCH (node:$label {$namePropKey: $$`${nameFields.nameKey}`})
+         |RETURN node.$namePropKey AS name
         """.stripMargin,
       VirtualValues.map(Array(nameFields.nameKey), Array(nameFields.nameValue)),
       queryHandler,
@@ -199,5 +211,10 @@ case class DoNothingExecutionPlanner(
     case DatabaseTypeFilter.DatabaseOrLocalAlias => s"""WHERE NOT dn:$REMOTE_DATABASE"""
     case DatabaseTypeFilter.CompositeDatabase    => s"""WHERE EXISTS { (dn)-[:$TARGETS]->(d:$COMPOSITE_DATABASE) }"""
     case DatabaseTypeFilter.Alias                => s"""WHERE NOT dn.$PRIMARY_PROPERTY"""
+  }
+
+  private def getLabelAndNamePropKey(entity: RBACEntity): (String, String) = entity match {
+    case UserEntity => (userLabel, userNamePropKey)
+    case RoleEntity => ("Role", NAME_PROPERTY)
   }
 }

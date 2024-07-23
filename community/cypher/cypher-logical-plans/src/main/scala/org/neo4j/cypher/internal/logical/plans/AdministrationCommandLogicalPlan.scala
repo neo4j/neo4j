@@ -422,9 +422,13 @@ case class ShowPrivilegeCommands(
 case class LogSystemCommand(source: AdministrationCommandLogicalPlan, command: String)(implicit idGen: IdGen)
     extends SecurityAdministrationLogicalPlan(Some(source))
 
+sealed trait RBACEntity
+case object UserEntity extends RBACEntity
+case object RoleEntity extends RBACEntity
+
 case class DoNothingIfNotExists(
   source: PrivilegePlan,
-  label: String,
+  entity: RBACEntity,
   name: Either[String, Parameter],
   operation: String,
   valueMapper: String => String = s => s
@@ -432,7 +436,7 @@ case class DoNothingIfNotExists(
 
 case class DoNothingIfExists(
   source: PrivilegePlan,
-  label: String,
+  entity: RBACEntity,
   name: Either[String, Parameter],
   valueMapper: String => String = s => s
 )(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
@@ -452,7 +456,7 @@ case class DoNothingIfDatabaseExists(
 
 case class EnsureNodeExists(
   source: PrivilegePlan,
-  label: String,
+  entity: RBACEntity,
   name: Either[String, Parameter],
   valueMapper: String => String = s => s,
   extraFilter: String => String = _ => "",

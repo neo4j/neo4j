@@ -212,7 +212,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
       case IfExistsReplace =>
         plans.DropRole(plans.AssertAllowedDbmsActions(None, Seq(DropRoleAction, CreateRoleAction)), roleName)
       case IfExistsDoNothing =>
-        plans.DoNothingIfExists(plans.AssertAllowedDbmsActions(CreateRoleAction), "Role", roleName)
+        plans.DoNothingIfExists(plans.AssertAllowedDbmsActions(CreateRoleAction), plans.RoleEntity, roleName)
       case _ => plans.AssertAllowedDbmsActions(CreateRoleAction)
     }
 
@@ -287,7 +287,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
               userName
             )
           case IfExistsDoNothing =>
-            plans.DoNothingIfExists(plans.AssertAllowedDbmsActions(CreateUserAction), "User", userName)
+            plans.DoNothingIfExists(plans.AssertAllowedDbmsActions(CreateUserAction), plans.UserEntity, userName)
           case _ => plans.AssertAllowedDbmsActions(CreateUserAction)
         }
         Some(plans.LogSystemCommand(
@@ -306,7 +306,8 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
       case c @ RenameUser(fromUserName, toUserName, ifExists) =>
         val assertAllowed = plans.AssertAllowedDbmsActions(RenameUserAction)
         val source =
-          if (ifExists) plans.DoNothingIfNotExists(assertAllowed, "User", fromUserName, "rename") else assertAllowed
+          if (ifExists) plans.DoNothingIfNotExists(assertAllowed, plans.UserEntity, fromUserName, "rename")
+          else assertAllowed
         Some(plans.LogSystemCommand(plans.RenameUser(source, fromUserName, toUserName), prettifier.asString(c)))
 
       // DROP USER foo [IF EXISTS]
@@ -318,8 +319,14 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
           "Deleting yourself is not allowed"
         )
         val source =
-          if (ifExists) plans.DoNothingIfNotExists(assertAllowed, "User", userName, "delete")
-          else plans.EnsureNodeExists(assertAllowed, "User", userName, labelDescription = "User", action = "delete")
+          if (ifExists) plans.DoNothingIfNotExists(assertAllowed, plans.UserEntity, userName, "delete")
+          else plans.EnsureNodeExists(
+            assertAllowed,
+            plans.UserEntity,
+            userName,
+            labelDescription = "User",
+            action = "delete"
+          )
         Some(plans.LogSystemCommand(plans.DropUser(source, userName), prettifier.asString(c)))
 
       // ALTER USER foo
@@ -344,7 +351,8 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
           )
           else assertAllowed
         val ifExistsSubPlan =
-          if (ifExists) plans.DoNothingIfNotExists(assertionSubPlan, "User", userName, "alter") else assertionSubPlan
+          if (ifExists) plans.DoNothingIfNotExists(assertionSubPlan, plans.UserEntity, userName, "alter")
+          else assertionSubPlan
         Some(plans.LogSystemCommand(
           plans.AlterUser(
             ifExistsSubPlan,
@@ -412,15 +420,22 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
       case c @ RenameRole(fromRoleName, toRoleName, ifExists) =>
         val assertAllowed = plans.AssertAllowedDbmsActions(RenameRoleAction)
         val source =
-          if (ifExists) plans.DoNothingIfNotExists(assertAllowed, "Role", fromRoleName, "rename") else assertAllowed
+          if (ifExists) plans.DoNothingIfNotExists(assertAllowed, plans.RoleEntity, fromRoleName, "rename")
+          else assertAllowed
         Some(plans.LogSystemCommand(plans.RenameRole(source, fromRoleName, toRoleName), prettifier.asString(c)))
 
       // DROP ROLE foo [IF EXISTS]
       case c @ DropRole(roleName, ifExists) =>
         val assertAllowed = plans.AssertAllowedDbmsActions(DropRoleAction)
         val source =
-          if (ifExists) plans.DoNothingIfNotExists(assertAllowed, "Role", roleName, "delete")
-          else plans.EnsureNodeExists(assertAllowed, "Role", roleName, labelDescription = "Role", action = "delete")
+          if (ifExists) plans.DoNothingIfNotExists(assertAllowed, plans.RoleEntity, roleName, "delete")
+          else plans.EnsureNodeExists(
+            assertAllowed,
+            plans.RoleEntity,
+            roleName,
+            labelDescription = "Role",
+            action = "delete"
+          )
         Some(plans.LogSystemCommand(plans.DropRole(source, roleName), prettifier.asString(c)))
 
       // GRANT roles TO users

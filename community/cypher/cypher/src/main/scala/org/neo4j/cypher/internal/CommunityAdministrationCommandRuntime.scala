@@ -25,6 +25,8 @@ import org.neo4j.cypher.internal.AdministrationCommandRuntime.followerError
 import org.neo4j.cypher.internal.AdministrationCommandRuntime.internalKey
 import org.neo4j.cypher.internal.AdministrationCommandRuntime.makeRenameExecutionPlan
 import org.neo4j.cypher.internal.AdministrationCommandRuntime.runtimeStringValue
+import org.neo4j.cypher.internal.AdministrationCommandRuntime.userLabel
+import org.neo4j.cypher.internal.AdministrationCommandRuntime.userNamePropKey
 import org.neo4j.cypher.internal.administration.AlterUserExecutionPlanner
 import org.neo4j.cypher.internal.administration.CreateUserExecutionPlanner
 import org.neo4j.cypher.internal.administration.DoNothingExecutionPlanner
@@ -284,7 +286,8 @@ case class CommunityAdministrationCommandRuntime(
         val sourcePlan: Option[ExecutionPlan] =
           Some(fullLogicalToExecutable.applyOrElse(source, throwCantCompile).apply(context))
         makeRenameExecutionPlan(
-          "User",
+          userLabel,
+          userNamePropKey,
           fromUserName,
           toUserName,
           params => {
@@ -335,22 +338,22 @@ case class CommunityAdministrationCommandRuntime(
         )
           .planShowDatabases(scope, verbose, symbols.map(_.name), yields, returns)
 
-    case DoNothingIfNotExists(source, label, name, operation, valueMapper) => context =>
+    case DoNothingIfNotExists(source, entity, name, operation, valueMapper) => context =>
         val sourcePlan: Option[ExecutionPlan] =
           Some(fullLogicalToExecutable.applyOrElse(source, throwCantCompile).apply(context))
         DoNothingExecutionPlanner(normalExecutionEngine, securityAuthorizationHandler).planDoNothingIfNotExists(
-          label,
+          entity,
           name,
           valueMapper,
           operation,
           sourcePlan
         )
 
-    case DoNothingIfExists(source, label, name, valueMapper) => context =>
+    case DoNothingIfExists(source, entity, name, valueMapper) => context =>
         val sourcePlan: Option[ExecutionPlan] =
           Some(fullLogicalToExecutable.applyOrElse(source, throwCantCompile).apply(context))
         DoNothingExecutionPlanner(normalExecutionEngine, securityAuthorizationHandler).planDoNothingIfExists(
-          label,
+          entity,
           name,
           valueMapper,
           sourcePlan
@@ -376,11 +379,11 @@ case class CommunityAdministrationCommandRuntime(
         )
 
     // Ensure that the role or user exists before being dropped
-    case EnsureNodeExists(source, label, name, valueMapper, extraFilter, labelDescription, action) => context =>
+    case EnsureNodeExists(source, entity, name, valueMapper, extraFilter, labelDescription, action) => context =>
         val sourcePlan: Option[ExecutionPlan] =
           Some(fullLogicalToExecutable.applyOrElse(source, throwCantCompile).apply(context))
         EnsureNodeExistsExecutionPlanner(normalExecutionEngine, securityAuthorizationHandler)
-          .planEnsureNodeExists(label, name, valueMapper, extraFilter, labelDescription, action, sourcePlan)
+          .planEnsureNodeExists(entity, name, valueMapper, extraFilter, labelDescription, action, sourcePlan)
 
     // SUPPORT PROCEDURES (need to be cleared before here)
     case SystemProcedureCall(_, call, returns, _, checkCredentialsExpired) => _ =>

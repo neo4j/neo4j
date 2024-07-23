@@ -50,6 +50,7 @@ public abstract class KnownCommunitySecurityComponentVersion extends KnownSystem
     public static final String USER_CREDENTIALS = "credentials";
     public static final String USER_EXPIRED = "passwordChangeRequired";
     public static final String USER_SUSPENDED = "suspended";
+    public static final String USER_HOME_DB = "homeDatabase";
 
     public static final String AUTH_CONSTRAINT = "auth-constraint";
     public static final Label AUTH_LABEL = Label.label("Auth");

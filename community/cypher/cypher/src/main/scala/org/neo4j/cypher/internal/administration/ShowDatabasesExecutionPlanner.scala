@@ -21,6 +21,9 @@ package org.neo4j.cypher.internal.administration
 
 import org.neo4j.common.DependencyResolver
 import org.neo4j.cypher.internal.AdministrationCommandRuntime.internalKey
+import org.neo4j.cypher.internal.AdministrationCommandRuntime.userHomeDbPropKey
+import org.neo4j.cypher.internal.AdministrationCommandRuntime.userLabel
+import org.neo4j.cypher.internal.AdministrationCommandRuntime.userNamePropKey
 import org.neo4j.cypher.internal.AdministrationShowCommandUtils
 import org.neo4j.cypher.internal.ExecutionEngine
 import org.neo4j.cypher.internal.ExecutionPlan
@@ -130,8 +133,8 @@ case class ShowDatabasesExecutionPlanner(
     val query = Predef.augmentString(
       s"""// First resolve which database is the home database
            |OPTIONAL MATCH (default:$DATABASE_LABEL {$DATABASE_DEFAULT_PROPERTY: true})
-           |OPTIONAL MATCH (user:User {$NAME_PROPERTY: $$`$usernameKey`})
-           |WITH coalesce(user.homeDatabase, default.$DATABASE_NAME_PROPERTY) as homeDbName
+           |OPTIONAL MATCH (user:$userLabel {$userNamePropKey: $$`$usernameKey`})
+           |WITH coalesce(user.$userHomeDbPropKey, default.$DATABASE_NAME_PROPERTY) as homeDbName
            |
            |UNWIND $$`$accessibleDbsKey` AS props
            |MATCH (d:$DATABASE)<-[:$TARGETS]-(dn:$DATABASE_NAME {$NAME_PROPERTY: props.name, $NAMESPACE_PROPERTY: '$DEFAULT_NAMESPACE'})

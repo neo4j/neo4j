@@ -19,9 +19,12 @@
  */
 package org.neo4j.cypher.internal.administration
 
+import org.neo4j.cypher.internal.AdministrationCommandRuntime.authRelType
 import org.neo4j.cypher.internal.AdministrationCommandRuntime.followerError
 import org.neo4j.cypher.internal.AdministrationCommandRuntime.getNameFields
 import org.neo4j.cypher.internal.AdministrationCommandRuntime.runtimeStringValue
+import org.neo4j.cypher.internal.AdministrationCommandRuntime.userLabel
+import org.neo4j.cypher.internal.AdministrationCommandRuntime.userNamePropKey
 import org.neo4j.cypher.internal.ExecutionEngine
 import org.neo4j.cypher.internal.ExecutionPlan
 import org.neo4j.cypher.internal.expressions.Parameter
@@ -46,10 +49,10 @@ case class DropUserExecutionPlanner(
       "DropUser",
       normalExecutionEngine,
       securityAuthorizationHandler,
-      s"""MATCH (user:User {name: $$`${userNameFields.nameKey}`})
+      s"""MATCH (user:$userLabel {$userNamePropKey: $$`${userNameFields.nameKey}`})
          |CALL {
          |  WITH user
-         |  OPTIONAL MATCH (user)-[:HAS_AUTH]->(auth)
+         |  OPTIONAL MATCH (user)-[:$authRelType]->(auth)
          |  DETACH DELETE auth
          |}
          |DETACH DELETE user

@@ -87,7 +87,7 @@ public class SecurityGraphHelper {
     public User getUserByName(String username) {
         securityLog.debug(String.format("Looking up user '%s'", username));
         try (var tx = systemSupplier.get().beginTx()) {
-            Node userNode = tx.findNode(USER_LABEL, "name", username);
+            Node userNode = tx.findNode(USER_LABEL, USER_NAME, username);
             if (userNode == null) {
                 securityLog.debug(String.format("User '%s' not found", username));
                 return null;

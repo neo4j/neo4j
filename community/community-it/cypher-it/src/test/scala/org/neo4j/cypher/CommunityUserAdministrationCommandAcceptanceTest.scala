@@ -27,9 +27,7 @@ import org.neo4j.exceptions.InvalidArgumentException
 import org.neo4j.exceptions.ParameterNotFoundException
 import org.neo4j.exceptions.ParameterWrongTypeException
 import org.neo4j.exceptions.SyntaxException
-import org.neo4j.graphdb.Label
 import org.neo4j.graphdb.QueryExecutionException
-import org.neo4j.graphdb.RelationshipType
 import org.neo4j.graphdb.Result
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.security.AuthorizationViolationException
@@ -41,6 +39,13 @@ import org.neo4j.server.security.SecureHasher
 import org.neo4j.server.security.SystemGraphCredential
 import org.neo4j.server.security.auth.SecurityTestUtils
 import org.neo4j.server.security.systemgraph.SecurityGraphHelper.NATIVE_AUTH
+import org.neo4j.server.security.systemgraph.versions.KnownCommunitySecurityComponentVersion.AUTH_ID
+import org.neo4j.server.security.systemgraph.versions.KnownCommunitySecurityComponentVersion.AUTH_PROVIDER
+import org.neo4j.server.security.systemgraph.versions.KnownCommunitySecurityComponentVersion.HAS_AUTH
+import org.neo4j.server.security.systemgraph.versions.KnownCommunitySecurityComponentVersion.USER_CREDENTIALS
+import org.neo4j.server.security.systemgraph.versions.KnownCommunitySecurityComponentVersion.USER_EXPIRED
+import org.neo4j.server.security.systemgraph.versions.KnownCommunitySecurityComponentVersion.USER_LABEL
+import org.neo4j.server.security.systemgraph.versions.KnownCommunitySecurityComponentVersion.USER_NAME
 import org.scalatest.enablers.Messaging.messagingNatureOfThrowable
 
 import java.util
@@ -378,16 +383,16 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
       keepNativeAuth: Boolean = true
     ): Unit = {
       Using.resource(graphOps.beginTx()) { tx =>
-        val userNode = tx.findNode(Label.label("User"), "name", user)
+        val userNode = tx.findNode(USER_LABEL, USER_NAME, user)
 
         if (!keepNativeAuth) {
           // remove native auth
-          userNode.removeProperty("credentials")
-          userNode.removeProperty("passwordChangeRequired")
+          userNode.removeProperty(USER_CREDENTIALS)
+          userNode.removeProperty(USER_EXPIRED)
 
-          userNode.getRelationships(RelationshipType.withName("HAS_AUTH"))
+          userNode.getRelationships(HAS_AUTH)
             .stream()
-            .filter(rel => rel.getOtherNode(userNode).getProperty("provider").equals(NATIVE_AUTH))
+            .filter(rel => rel.getOtherNode(userNode).getProperty(AUTH_PROVIDER).equals(NATIVE_AUTH))
             .forEach(rel => {
               val node = rel.getOtherNode(userNode)
               rel.delete()
@@ -397,9 +402,9 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
 
         externalAuths.foreach(auth => {
           val authNode = tx.createNode()
-          authNode.setProperty("provider", auth("provider"))
-          authNode.setProperty("id", auth("id"))
-          userNode.createRelationshipTo(authNode, RelationshipType.withName("HAS_AUTH"))
+          authNode.setProperty(AUTH_PROVIDER, auth("provider"))
+          authNode.setProperty(AUTH_ID, auth("id"))
+          userNode.createRelationshipTo(authNode, HAS_AUTH)
         })
 
         tx.commit()

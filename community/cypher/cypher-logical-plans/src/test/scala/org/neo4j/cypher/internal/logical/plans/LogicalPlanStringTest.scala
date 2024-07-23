@@ -246,7 +246,6 @@ object LogicalPlanStringTest {
       classOf[DoNothingIfDatabaseNotExists] -> "operation",
       classOf[DoNothingIfNotExists] -> "operation",
       classOf[AdministrationCommandLogicalPlan] -> "command",
-      classOf[SecurityAdministrationLogicalPlan] -> "label",
       classOf[SecurityAdministrationLogicalPlan] -> "valueMapper",
       classOf[AdministrationCommandLogicalPlan] -> "action",
       classOf[EnsureNodeExists] -> "extraFilter",
