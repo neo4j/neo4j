@@ -16,7 +16,6 @@
  */
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
-import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.AccessDatabaseAction
 import org.neo4j.cypher.internal.ast.ActionResource
 import org.neo4j.cypher.internal.ast.AdministrationAction
@@ -69,36 +68,24 @@ import org.neo4j.cypher.internal.ast.CompositeDatabaseManagementActions
 import org.neo4j.cypher.internal.ast.CountExpression
 import org.neo4j.cypher.internal.ast.Create
 import org.neo4j.cypher.internal.ast.CreateAliasAction
-import org.neo4j.cypher.internal.ast.CreateBtreeNodeIndex
-import org.neo4j.cypher.internal.ast.CreateBtreeRelationshipIndex
 import org.neo4j.cypher.internal.ast.CreateCompositeDatabase
 import org.neo4j.cypher.internal.ast.CreateCompositeDatabaseAction
+import org.neo4j.cypher.internal.ast.CreateConstraint
 import org.neo4j.cypher.internal.ast.CreateConstraintAction
 import org.neo4j.cypher.internal.ast.CreateDatabase
 import org.neo4j.cypher.internal.ast.CreateDatabaseAction
 import org.neo4j.cypher.internal.ast.CreateElementAction
-import org.neo4j.cypher.internal.ast.CreateFulltextNodeIndex
-import org.neo4j.cypher.internal.ast.CreateFulltextRelationshipIndex
 import org.neo4j.cypher.internal.ast.CreateIndex
 import org.neo4j.cypher.internal.ast.CreateIndexAction
 import org.neo4j.cypher.internal.ast.CreateLocalDatabaseAlias
-import org.neo4j.cypher.internal.ast.CreateLookupIndex
 import org.neo4j.cypher.internal.ast.CreateNodeLabelAction
-import org.neo4j.cypher.internal.ast.CreatePointNodeIndex
-import org.neo4j.cypher.internal.ast.CreatePointRelationshipIndex
 import org.neo4j.cypher.internal.ast.CreatePropertyKeyAction
-import org.neo4j.cypher.internal.ast.CreateRangeNodeIndex
-import org.neo4j.cypher.internal.ast.CreateRangeRelationshipIndex
 import org.neo4j.cypher.internal.ast.CreateRelationshipTypeAction
 import org.neo4j.cypher.internal.ast.CreateRemoteDatabaseAlias
 import org.neo4j.cypher.internal.ast.CreateRole
 import org.neo4j.cypher.internal.ast.CreateRoleAction
-import org.neo4j.cypher.internal.ast.CreateTextNodeIndex
-import org.neo4j.cypher.internal.ast.CreateTextRelationshipIndex
 import org.neo4j.cypher.internal.ast.CreateUser
 import org.neo4j.cypher.internal.ast.CreateUserAction
-import org.neo4j.cypher.internal.ast.CreateVectorNodeIndex
-import org.neo4j.cypher.internal.ast.CreateVectorRelationshipIndex
 import org.neo4j.cypher.internal.ast.CurrentUser
 import org.neo4j.cypher.internal.ast.DatabaseAction
 import org.neo4j.cypher.internal.ast.DatabaseName
@@ -332,6 +319,7 @@ import org.neo4j.cypher.internal.ast.UserAllQualifier
 import org.neo4j.cypher.internal.ast.UserDefinedFunctions
 import org.neo4j.cypher.internal.ast.UserOptions
 import org.neo4j.cypher.internal.ast.UserQualifier
+import org.neo4j.cypher.internal.ast.UsingIndexHint
 import org.neo4j.cypher.internal.ast.UsingIndexHint.SeekOnly
 import org.neo4j.cypher.internal.ast.UsingIndexHint.SeekOrScan
 import org.neo4j.cypher.internal.ast.UsingIndexHint.UsingAnyIndexType
@@ -740,7 +728,7 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
     seekOnly: Boolean,
     indexType: HintIndexType
   ): Hint =
-    ast.UsingIndexHint(
+    UsingIndexHint(
       v,
       LabelOrRelTypeName(labelOrRelType)(p),
       properties.asScala.toList.map(PropertyKeyName(_)(p)),
@@ -1800,11 +1788,12 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
     javaProperties: util.List[Property],
     javaPropertyType: ParserCypherTypeName,
     options: SimpleEither[util.Map[String, Expression], Parameter]
-  ): SchemaCommand = {
+  ): CreateConstraint = {
     val name = Option(constraintName).map(_.asScala.left.map(_.string))
     val properties = javaProperties.asScala.toSeq
     constraintType match {
-      case ConstraintType.NODE_UNIQUE => ast.CreateNodePropertyUniquenessConstraint(
+      case ConstraintType.NODE_UNIQUE =>
+        CreateConstraint.createNodePropertyUniquenessConstraint(
           variable,
           LabelName(label.string)(label.pos),
           properties,
@@ -1812,7 +1801,8 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
           ifExistsDo(replace, ifNotExists),
           asOptionsAst(options)
         )(p)
-      case ConstraintType.REL_UNIQUE => ast.CreateRelationshipPropertyUniquenessConstraint(
+      case ConstraintType.REL_UNIQUE =>
+        CreateConstraint.createRelationshipPropertyUniquenessConstraint(
           variable,
           RelTypeName(label.string)(label.pos),
           properties,
@@ -1820,7 +1810,8 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
           ifExistsDo(replace, ifNotExists),
           asOptionsAst(options)
         )(p)
-      case ConstraintType.NODE_KEY => ast.CreateNodeKeyConstraint(
+      case ConstraintType.NODE_KEY =>
+        CreateConstraint.createNodeKeyConstraint(
           variable,
           LabelName(label.string)(label.pos),
           properties,
@@ -1828,7 +1819,8 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
           ifExistsDo(replace, ifNotExists),
           asOptionsAst(options)
         )(p)
-      case ConstraintType.REL_KEY => ast.CreateRelationshipKeyConstraint(
+      case ConstraintType.REL_KEY =>
+        CreateConstraint.createRelationshipKeyConstraint(
           variable,
           RelTypeName(label.string)(label.pos),
           properties,
@@ -1840,7 +1832,7 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
         // Will only get here for IS NOT NULL as EXISTS throws before getting here,
         // but let's keep it to avoid scala warnings on not covering all parts of the enum in the match case
         validateSingleProperty(properties, constraintType)
-        ast.CreateNodePropertyExistenceConstraint(
+        CreateConstraint.createNodePropertyExistenceConstraint(
           variable,
           LabelName(label.string)(label.pos),
           properties.head,
@@ -1852,7 +1844,7 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
         // Will only get here for IS NOT NULL as EXISTS throws before getting here,
         // but let's keep it to avoid scala warnings on not covering all parts of the enum in the match case
         validateSingleProperty(properties, constraintType)
-        ast.CreateRelationshipPropertyExistenceConstraint(
+        CreateConstraint.createRelationshipPropertyExistenceConstraint(
           variable,
           RelTypeName(label.string)(label.pos),
           properties.head,
@@ -1863,7 +1855,7 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
       case ConstraintType.NODE_IS_TYPED =>
         validateSingleProperty(properties, constraintType)
         val scalaPropertyType = convertCypherType(javaPropertyType)
-        ast.CreateNodePropertyTypeConstraint(
+        CreateConstraint.createNodePropertyTypeConstraint(
           variable,
           LabelName(label.string)(label.pos),
           properties.head,
@@ -1875,7 +1867,7 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
       case ConstraintType.REL_IS_TYPED =>
         validateSingleProperty(properties, constraintType)
         val scalaPropertyTypes = convertCypherType(javaPropertyType)
-        ast.CreateRelationshipPropertyTypeConstraint(
+        CreateConstraint.createRelationshipPropertyTypeConstraint(
           variable,
           RelTypeName(label.string)(label.pos),
           properties.head,
@@ -2012,14 +2004,14 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
     functionName: StringPos[InputPosition],
     functionParameter: Variable,
     options: SimpleEither[util.Map[String, Expression], Parameter]
-  ): CreateLookupIndex = {
+  ): CreateIndex = {
     val function = FunctionInvocation(
       FunctionName(functionName.string)(functionName.pos),
       distinct = false,
       IndexedSeq(functionParameter)
     )(functionName.pos)
     val name = Option(indexName).map(_.asScala.left.map(_.string))
-    CreateLookupIndex(
+    CreateIndex.createLookupIndex(
       variable,
       isNode,
       function,
@@ -2045,7 +2037,7 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
     val name = Option(indexName).map(_.asScala.left.map(_.string))
     (indexType, isNode) match {
       case (CreateIndexTypes.DEFAULT, true) =>
-        CreateRangeNodeIndex(
+        CreateIndex.createRangeNodeIndex(
           variable,
           LabelName(label.string)(label.pos),
           properties,
@@ -2055,7 +2047,7 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
           fromDefault = true
         )(p)
       case (CreateIndexTypes.DEFAULT, false) =>
-        CreateRangeRelationshipIndex(
+        CreateIndex.createRangeRelationshipIndex(
           variable,
           RelTypeName(label.string)(label.pos),
           properties,
@@ -2065,7 +2057,7 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
           fromDefault = true
         )(p)
       case (CreateIndexTypes.RANGE, true) =>
-        CreateRangeNodeIndex(
+        CreateIndex.createRangeNodeIndex(
           variable,
           LabelName(label.string)(label.pos),
           properties,
@@ -2075,7 +2067,7 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
           fromDefault = false
         )(p)
       case (CreateIndexTypes.RANGE, false) =>
-        CreateRangeRelationshipIndex(
+        CreateIndex.createRangeRelationshipIndex(
           variable,
           RelTypeName(label.string)(label.pos),
           properties,
@@ -2085,7 +2077,7 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
           fromDefault = false
         )(p)
       case (CreateIndexTypes.BTREE, true) =>
-        CreateBtreeNodeIndex(
+        CreateIndex.createBtreeNodeIndex(
           variable,
           LabelName(label.string)(label.pos),
           properties,
@@ -2094,7 +2086,7 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
           asOptionsAst(options)
         )(p)
       case (CreateIndexTypes.BTREE, false) =>
-        CreateBtreeRelationshipIndex(
+        CreateIndex.createBtreeRelationshipIndex(
           variable,
           RelTypeName(label.string)(label.pos),
           properties,
@@ -2103,7 +2095,7 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
           asOptionsAst(options)
         )(p)
       case (CreateIndexTypes.TEXT, true) =>
-        CreateTextNodeIndex(
+        CreateIndex.createTextNodeIndex(
           variable,
           LabelName(label.string)(label.pos),
           properties,
@@ -2112,7 +2104,7 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
           asOptionsAst(options)
         )(p)
       case (CreateIndexTypes.TEXT, false) =>
-        CreateTextRelationshipIndex(
+        CreateIndex.createTextRelationshipIndex(
           variable,
           RelTypeName(label.string)(label.pos),
           properties,
@@ -2121,7 +2113,7 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
           asOptionsAst(options)
         )(p)
       case (CreateIndexTypes.POINT, true) =>
-        CreatePointNodeIndex(
+        CreateIndex.createPointNodeIndex(
           variable,
           LabelName(label.string)(label.pos),
           properties,
@@ -2130,7 +2122,7 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
           asOptionsAst(options)
         )(p)
       case (CreateIndexTypes.POINT, false) =>
-        CreatePointRelationshipIndex(
+        CreateIndex.createPointRelationshipIndex(
           variable,
           RelTypeName(label.string)(label.pos),
           properties,
@@ -2139,7 +2131,7 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
           asOptionsAst(options)
         )(p)
       case (CreateIndexTypes.VECTOR, true) =>
-        CreateVectorNodeIndex(
+        CreateIndex.createVectorNodeIndex(
           variable,
           LabelName(label.string)(label.pos),
           properties,
@@ -2148,7 +2140,7 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
           asOptionsAst(options)
         )(p)
       case (CreateIndexTypes.VECTOR, false) =>
-        CreateVectorRelationshipIndex(
+        CreateIndex.createVectorRelationshipIndex(
           variable,
           RelTypeName(label.string)(label.pos),
           properties,
@@ -2176,7 +2168,7 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
     val name = Option(indexName).map(_.asScala.left.map(_.string))
     if (isNode) {
       val labelNames = labels.asScala.toList.map(stringPos => LabelName(stringPos.string)(stringPos.pos))
-      CreateFulltextNodeIndex(
+      CreateIndex.createFulltextNodeIndex(
         variable,
         labelNames,
         properties,
@@ -2186,7 +2178,7 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
       )(p)
     } else {
       val relTypeNames = labels.asScala.toList.map(stringPos => RelTypeName(stringPos.string)(stringPos.pos))
-      CreateFulltextRelationshipIndex(
+      CreateIndex.createFulltextRelationshipIndex(
         variable,
         relTypeNames,
         properties,

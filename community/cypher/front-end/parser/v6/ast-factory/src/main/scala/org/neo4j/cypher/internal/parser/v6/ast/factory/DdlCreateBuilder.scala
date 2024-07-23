@@ -19,34 +19,14 @@ package org.neo4j.cypher.internal.parser.v6.ast.factory
 import org.neo4j.cypher.internal.ast.AdministrationCommand.NATIVE_AUTH
 import org.neo4j.cypher.internal.ast.Auth
 import org.neo4j.cypher.internal.ast.AuthAttribute
-import org.neo4j.cypher.internal.ast.CreateBtreeNodeIndex
-import org.neo4j.cypher.internal.ast.CreateBtreeRelationshipIndex
 import org.neo4j.cypher.internal.ast.CreateCompositeDatabase
+import org.neo4j.cypher.internal.ast.CreateConstraint
 import org.neo4j.cypher.internal.ast.CreateDatabase
-import org.neo4j.cypher.internal.ast.CreateFulltextNodeIndex
-import org.neo4j.cypher.internal.ast.CreateFulltextRelationshipIndex
 import org.neo4j.cypher.internal.ast.CreateIndex
 import org.neo4j.cypher.internal.ast.CreateLocalDatabaseAlias
-import org.neo4j.cypher.internal.ast.CreateLookupIndex
-import org.neo4j.cypher.internal.ast.CreateNodeKeyConstraint
-import org.neo4j.cypher.internal.ast.CreateNodePropertyExistenceConstraint
-import org.neo4j.cypher.internal.ast.CreateNodePropertyTypeConstraint
-import org.neo4j.cypher.internal.ast.CreateNodePropertyUniquenessConstraint
-import org.neo4j.cypher.internal.ast.CreatePointNodeIndex
-import org.neo4j.cypher.internal.ast.CreatePointRelationshipIndex
-import org.neo4j.cypher.internal.ast.CreateRangeNodeIndex
-import org.neo4j.cypher.internal.ast.CreateRangeRelationshipIndex
-import org.neo4j.cypher.internal.ast.CreateRelationshipKeyConstraint
-import org.neo4j.cypher.internal.ast.CreateRelationshipPropertyExistenceConstraint
-import org.neo4j.cypher.internal.ast.CreateRelationshipPropertyTypeConstraint
-import org.neo4j.cypher.internal.ast.CreateRelationshipPropertyUniquenessConstraint
 import org.neo4j.cypher.internal.ast.CreateRemoteDatabaseAlias
 import org.neo4j.cypher.internal.ast.CreateRole
-import org.neo4j.cypher.internal.ast.CreateTextNodeIndex
-import org.neo4j.cypher.internal.ast.CreateTextRelationshipIndex
 import org.neo4j.cypher.internal.ast.CreateUser
-import org.neo4j.cypher.internal.ast.CreateVectorNodeIndex
-import org.neo4j.cypher.internal.ast.CreateVectorRelationshipIndex
 import org.neo4j.cypher.internal.ast.DatabaseName
 import org.neo4j.cypher.internal.ast.HomeDatabaseAction
 import org.neo4j.cypher.internal.ast.NoOptions
@@ -114,7 +94,7 @@ trait DdlCreateBuilder extends Cypher6ParserListener {
       val (variable, label) = nodePattern.ast[(Variable, LabelName)]()
       cT match {
         case _: ConstraintIsNotNullContext =>
-          CreateNodePropertyExistenceConstraint(
+          CreateConstraint.createNodePropertyExistenceConstraint(
             variable,
             label,
             properties(0),
@@ -123,7 +103,7 @@ trait DdlCreateBuilder extends Cypher6ParserListener {
             options
           )(pos(parent))
         case _: ConstraintTypedContext =>
-          CreateNodePropertyTypeConstraint(
+          CreateConstraint.createNodePropertyTypeConstraint(
             variable,
             label,
             properties(0),
@@ -133,7 +113,7 @@ trait DdlCreateBuilder extends Cypher6ParserListener {
             options
           )(pos(parent))
         case _: ConstraintIsUniqueContext =>
-          CreateNodePropertyUniquenessConstraint(
+          CreateConstraint.createNodePropertyUniquenessConstraint(
             variable,
             label,
             properties,
@@ -142,7 +122,7 @@ trait DdlCreateBuilder extends Cypher6ParserListener {
             options
           )(pos(parent))
         case _: ConstraintKeyContext =>
-          CreateNodeKeyConstraint(
+          CreateConstraint.createNodeKeyConstraint(
             variable,
             label,
             properties,
@@ -156,7 +136,7 @@ trait DdlCreateBuilder extends Cypher6ParserListener {
       val (variable, relType) = ctx.commandRelPattern().ast[(Variable, RelTypeName)]()
       cT match {
         case _: ConstraintIsNotNullContext =>
-          CreateRelationshipPropertyExistenceConstraint(
+          CreateConstraint.createRelationshipPropertyExistenceConstraint(
             variable,
             relType,
             properties(0),
@@ -165,7 +145,7 @@ trait DdlCreateBuilder extends Cypher6ParserListener {
             options
           )(pos(parent))
         case _: ConstraintTypedContext =>
-          CreateRelationshipPropertyTypeConstraint(
+          CreateConstraint.createRelationshipPropertyTypeConstraint(
             variable,
             relType,
             properties(0),
@@ -175,7 +155,7 @@ trait DdlCreateBuilder extends Cypher6ParserListener {
             options
           )(pos(parent))
         case _: ConstraintIsUniqueContext =>
-          CreateRelationshipPropertyUniquenessConstraint(
+          CreateConstraint.createRelationshipPropertyUniquenessConstraint(
             variable,
             relType,
             properties,
@@ -184,7 +164,7 @@ trait DdlCreateBuilder extends Cypher6ParserListener {
             options
           )(pos(parent))
         case _: ConstraintKeyContext =>
-          CreateRelationshipKeyConstraint(
+          CreateConstraint.createRelationshipKeyConstraint(
             variable,
             relType,
             properties,
@@ -246,7 +226,7 @@ trait DdlCreateBuilder extends Cypher6ParserListener {
       case Cypher6Parser.BTREE =>
         if (isNode) {
           val label = labelOrRelType.asInstanceOf[LabelName]
-          CreateBtreeNodeIndex(
+          CreateIndex.createBtreeNodeIndex(
             variable,
             label,
             propertyList,
@@ -256,7 +236,7 @@ trait DdlCreateBuilder extends Cypher6ParserListener {
           )(pos(grandparent))
         } else {
           val relType = labelOrRelType.asInstanceOf[RelTypeName]
-          CreateBtreeRelationshipIndex(
+          CreateIndex.createBtreeRelationshipIndex(
             variable,
             relType,
             propertyList,
@@ -268,7 +248,7 @@ trait DdlCreateBuilder extends Cypher6ParserListener {
       case Cypher6Parser.RANGE | Cypher6Parser.INDEX =>
         if (isNode) {
           val label = labelOrRelType.asInstanceOf[LabelName]
-          CreateRangeNodeIndex(
+          CreateIndex.createRangeNodeIndex(
             variable,
             label,
             propertyList,
@@ -279,7 +259,7 @@ trait DdlCreateBuilder extends Cypher6ParserListener {
           )(pos(grandparent))
         } else {
           val relType = labelOrRelType.asInstanceOf[RelTypeName]
-          CreateRangeRelationshipIndex(
+          CreateIndex.createRangeRelationshipIndex(
             variable,
             relType,
             propertyList,
@@ -292,7 +272,7 @@ trait DdlCreateBuilder extends Cypher6ParserListener {
       case Cypher6Parser.TEXT =>
         if (isNode) {
           val label = labelOrRelType.asInstanceOf[LabelName]
-          CreateTextNodeIndex(
+          CreateIndex.createTextNodeIndex(
             variable,
             label,
             propertyList,
@@ -302,7 +282,7 @@ trait DdlCreateBuilder extends Cypher6ParserListener {
           )(pos(grandparent))
         } else {
           val relType = labelOrRelType.asInstanceOf[RelTypeName]
-          CreateTextRelationshipIndex(
+          CreateIndex.createTextRelationshipIndex(
             variable,
             relType,
             propertyList,
@@ -314,7 +294,7 @@ trait DdlCreateBuilder extends Cypher6ParserListener {
       case Cypher6Parser.POINT =>
         if (isNode) {
           val label = labelOrRelType.asInstanceOf[LabelName]
-          CreatePointNodeIndex(
+          CreateIndex.createPointNodeIndex(
             variable,
             label,
             propertyList,
@@ -324,7 +304,7 @@ trait DdlCreateBuilder extends Cypher6ParserListener {
           )(pos(grandparent))
         } else {
           val relType = labelOrRelType.asInstanceOf[RelTypeName]
-          CreatePointRelationshipIndex(
+          CreateIndex.createPointRelationshipIndex(
             variable,
             relType,
             propertyList,
@@ -336,7 +316,7 @@ trait DdlCreateBuilder extends Cypher6ParserListener {
       case Cypher6Parser.VECTOR =>
         if (isNode) {
           val label = labelOrRelType.asInstanceOf[LabelName]
-          CreateVectorNodeIndex(
+          CreateIndex.createVectorNodeIndex(
             variable,
             label,
             propertyList,
@@ -346,7 +326,7 @@ trait DdlCreateBuilder extends Cypher6ParserListener {
           )(pos(grandparent))
         } else {
           val relType = labelOrRelType.asInstanceOf[RelTypeName]
-          CreateVectorRelationshipIndex(
+          CreateIndex.createVectorRelationshipIndex(
             variable,
             relType,
             propertyList,
@@ -370,7 +350,7 @@ trait DdlCreateBuilder extends Cypher6ParserListener {
     val propertyList = ctx.enclosedPropertyList().ast[Seq[Property]]().toList
     ctx.ast = if (isNode) {
       val (variable, labels) = nodePattern.ast[(Variable, List[LabelName])]()
-      CreateFulltextNodeIndex(
+      CreateIndex.createFulltextNodeIndex(
         variable,
         labels,
         propertyList,
@@ -380,7 +360,7 @@ trait DdlCreateBuilder extends Cypher6ParserListener {
       )(pos(grandparent))
     } else {
       val (variable, relTypes) = ctx.fulltextRelPattern().ast[(Variable, List[RelTypeName])]()
-      CreateFulltextRelationshipIndex(
+      CreateIndex.createFulltextRelationshipIndex(
         variable,
         relTypes,
         propertyList,
@@ -432,7 +412,7 @@ trait DdlCreateBuilder extends Cypher6ParserListener {
     val variable =
       if (isNode) nodePattern.ast[Variable]()
       else ctx.lookupIndexRelPattern().ast[Variable]()
-    ctx.ast = CreateLookupIndex(
+    ctx.ast = CreateIndex.createLookupIndex(
       variable,
       isNode,
       function,

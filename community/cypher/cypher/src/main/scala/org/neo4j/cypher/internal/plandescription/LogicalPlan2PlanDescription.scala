@@ -22,11 +22,20 @@ package org.neo4j.cypher.internal.plandescription
 import org.neo4j.common.EntityType
 import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.ast.CommandResultItem
+import org.neo4j.cypher.internal.ast.CreateConstraintType
 import org.neo4j.cypher.internal.ast.ExecutableBy
 import org.neo4j.cypher.internal.ast.NoOptions
+import org.neo4j.cypher.internal.ast.NodeKey
+import org.neo4j.cypher.internal.ast.NodePropertyExistence
+import org.neo4j.cypher.internal.ast.NodePropertyType
+import org.neo4j.cypher.internal.ast.NodeUniqueness
 import org.neo4j.cypher.internal.ast.Options
 import org.neo4j.cypher.internal.ast.OptionsMap
 import org.neo4j.cypher.internal.ast.OptionsParam
+import org.neo4j.cypher.internal.ast.RelationshipKey
+import org.neo4j.cypher.internal.ast.RelationshipPropertyExistence
+import org.neo4j.cypher.internal.ast.RelationshipPropertyType
+import org.neo4j.cypher.internal.ast.RelationshipUniqueness
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorBreak
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorContinue
@@ -103,7 +112,6 @@ import org.neo4j.cypher.internal.logical.plans.CartesianProduct
 import org.neo4j.cypher.internal.logical.plans.ColumnOrder
 import org.neo4j.cypher.internal.logical.plans.CompositeQueryExpression
 import org.neo4j.cypher.internal.logical.plans.ConditionalApply
-import org.neo4j.cypher.internal.logical.plans.ConstraintType
 import org.neo4j.cypher.internal.logical.plans.Create
 import org.neo4j.cypher.internal.logical.plans.CreateConstraint
 import org.neo4j.cypher.internal.logical.plans.CreateFulltextIndex
@@ -172,11 +180,7 @@ import org.neo4j.cypher.internal.logical.plans.NodeIndexContainsScan
 import org.neo4j.cypher.internal.logical.plans.NodeIndexEndsWithScan
 import org.neo4j.cypher.internal.logical.plans.NodeIndexScan
 import org.neo4j.cypher.internal.logical.plans.NodeIndexSeek
-import org.neo4j.cypher.internal.logical.plans.NodeKey
-import org.neo4j.cypher.internal.logical.plans.NodePropertyExistence
-import org.neo4j.cypher.internal.logical.plans.NodePropertyType
 import org.neo4j.cypher.internal.logical.plans.NodeUniqueIndexSeek
-import org.neo4j.cypher.internal.logical.plans.NodeUniqueness
 import org.neo4j.cypher.internal.logical.plans.NullifyMetadata
 import org.neo4j.cypher.internal.logical.plans.Optional
 import org.neo4j.cypher.internal.logical.plans.OptionalExpand
@@ -221,10 +225,6 @@ import org.neo4j.cypher.internal.logical.plans.RangeGreaterThan
 import org.neo4j.cypher.internal.logical.plans.RangeLessThan
 import org.neo4j.cypher.internal.logical.plans.RangeQueryExpression
 import org.neo4j.cypher.internal.logical.plans.RelationshipCountFromCountStore
-import org.neo4j.cypher.internal.logical.plans.RelationshipKey
-import org.neo4j.cypher.internal.logical.plans.RelationshipPropertyExistence
-import org.neo4j.cypher.internal.logical.plans.RelationshipPropertyType
-import org.neo4j.cypher.internal.logical.plans.RelationshipUniqueness
 import org.neo4j.cypher.internal.logical.plans.RemoteBatchProperties
 import org.neo4j.cypher.internal.logical.plans.RemoveLabels
 import org.neo4j.cypher.internal.logical.plans.RepeatOptions
@@ -3637,7 +3637,7 @@ case class LogicalPlan2PlanDescription(
     entity: String,
     entityName: ElementTypeName,
     properties: Seq[Property],
-    constraintType: ConstraintType,
+    constraintType: CreateConstraintType,
     options: Options = NoOptions,
     useForAndRequire: Boolean = true
   ): PrettyString = {

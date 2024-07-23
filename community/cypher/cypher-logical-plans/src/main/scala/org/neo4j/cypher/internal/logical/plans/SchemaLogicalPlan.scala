@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.logical.plans
 
 import org.neo4j.common.EntityType
+import org.neo4j.cypher.internal.ast.CreateConstraintType
 import org.neo4j.cypher.internal.ast.Options
 import org.neo4j.cypher.internal.expressions.ElementTypeName
 import org.neo4j.cypher.internal.expressions.LabelName
@@ -29,7 +30,6 @@ import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.util.attribution.IdGen
-import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.graphdb.schema.IndexType
 
 abstract class SchemaLogicalPlan(idGen: IdGen) extends LogicalPlanExtension(idGen) {
@@ -42,7 +42,7 @@ abstract class SchemaLogicalPlan(idGen: IdGen) extends LogicalPlanExtension(idGe
 
 case class CreateConstraint(
   source: Option[DoNothingIfExistsForConstraint],
-  constraintType: ConstraintType,
+  constraintType: CreateConstraintType,
   entityName: ElementTypeName,
   props: Seq[Property],
   name: Option[Either[String, Parameter]],
@@ -116,17 +116,7 @@ case class DoNothingIfExistsForFulltextIndex(
 case class DoNothingIfExistsForConstraint(
   entityName: ElementTypeName,
   props: Seq[Property],
-  assertion: ConstraintType,
+  assertion: CreateConstraintType,
   name: Option[Either[String, Parameter]],
   options: Options
 )(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen)
-
-sealed trait ConstraintType
-case object NodeKey extends ConstraintType
-case object RelationshipKey extends ConstraintType
-case object NodeUniqueness extends ConstraintType
-case object RelationshipUniqueness extends ConstraintType
-case object NodePropertyExistence extends ConstraintType
-case object RelationshipPropertyExistence extends ConstraintType
-case class NodePropertyType(propType: CypherType) extends ConstraintType
-case class RelationshipPropertyType(propType: CypherType) extends ConstraintType

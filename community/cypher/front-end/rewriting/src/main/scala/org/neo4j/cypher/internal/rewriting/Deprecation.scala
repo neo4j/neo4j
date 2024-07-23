@@ -19,8 +19,7 @@ package org.neo4j.cypher.internal.rewriting
 import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.Create
 import org.neo4j.cypher.internal.ast.CreateDatabase
-import org.neo4j.cypher.internal.ast.CreateTextNodeIndex
-import org.neo4j.cypher.internal.ast.CreateTextRelationshipIndex
+import org.neo4j.cypher.internal.ast.CreateIndex
 import org.neo4j.cypher.internal.ast.Merge
 import org.neo4j.cypher.internal.ast.NamespacedName
 import org.neo4j.cypher.internal.ast.Options
@@ -30,6 +29,7 @@ import org.neo4j.cypher.internal.ast.SetExactPropertiesFromMapItem
 import org.neo4j.cypher.internal.ast.SetIncludingPropertiesFromMapItem
 import org.neo4j.cypher.internal.ast.SetProperty
 import org.neo4j.cypher.internal.ast.SingleQuery
+import org.neo4j.cypher.internal.ast.TextCreateIndex
 import org.neo4j.cypher.internal.ast.UnionAll
 import org.neo4j.cypher.internal.ast.UnionDistinct
 import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
@@ -136,12 +136,7 @@ object Deprecations {
           Some(DeprecatedDatabaseNameNotification(nn.toString, Some(c.position)))
         )
 
-      case c: CreateTextNodeIndex if hasOldTextIndexProvider(c.options) =>
-        Deprecation(
-          None,
-          Some(DeprecatedTextIndexProvider(c.position))
-        )
-      case c: CreateTextRelationshipIndex if hasOldTextIndexProvider(c.options) =>
+      case c: CreateIndex if c.indexType == TextCreateIndex && hasOldTextIndexProvider(c.options) =>
         Deprecation(
           None,
           Some(DeprecatedTextIndexProvider(c.position))

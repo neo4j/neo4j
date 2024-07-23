@@ -68,40 +68,22 @@ import org.neo4j.cypher.internal.ast.Create
 import org.neo4j.cypher.internal.ast.CreateAliasAction
 import org.neo4j.cypher.internal.ast.CreateCompositeDatabase
 import org.neo4j.cypher.internal.ast.CreateCompositeDatabaseAction
+import org.neo4j.cypher.internal.ast.CreateConstraint
 import org.neo4j.cypher.internal.ast.CreateConstraintAction
 import org.neo4j.cypher.internal.ast.CreateDatabase
 import org.neo4j.cypher.internal.ast.CreateDatabaseAction
 import org.neo4j.cypher.internal.ast.CreateElementAction
-import org.neo4j.cypher.internal.ast.CreateFulltextNodeIndex
-import org.neo4j.cypher.internal.ast.CreateFulltextRelationshipIndex
 import org.neo4j.cypher.internal.ast.CreateIndex
 import org.neo4j.cypher.internal.ast.CreateIndexAction
 import org.neo4j.cypher.internal.ast.CreateLocalDatabaseAlias
-import org.neo4j.cypher.internal.ast.CreateLookupIndex
-import org.neo4j.cypher.internal.ast.CreateNodeKeyConstraint
 import org.neo4j.cypher.internal.ast.CreateNodeLabelAction
-import org.neo4j.cypher.internal.ast.CreateNodePropertyExistenceConstraint
-import org.neo4j.cypher.internal.ast.CreateNodePropertyTypeConstraint
-import org.neo4j.cypher.internal.ast.CreateNodePropertyUniquenessConstraint
-import org.neo4j.cypher.internal.ast.CreatePointNodeIndex
-import org.neo4j.cypher.internal.ast.CreatePointRelationshipIndex
 import org.neo4j.cypher.internal.ast.CreatePropertyKeyAction
-import org.neo4j.cypher.internal.ast.CreateRangeNodeIndex
-import org.neo4j.cypher.internal.ast.CreateRangeRelationshipIndex
-import org.neo4j.cypher.internal.ast.CreateRelationshipKeyConstraint
-import org.neo4j.cypher.internal.ast.CreateRelationshipPropertyExistenceConstraint
-import org.neo4j.cypher.internal.ast.CreateRelationshipPropertyTypeConstraint
-import org.neo4j.cypher.internal.ast.CreateRelationshipPropertyUniquenessConstraint
 import org.neo4j.cypher.internal.ast.CreateRelationshipTypeAction
 import org.neo4j.cypher.internal.ast.CreateRemoteDatabaseAlias
 import org.neo4j.cypher.internal.ast.CreateRole
 import org.neo4j.cypher.internal.ast.CreateRoleAction
-import org.neo4j.cypher.internal.ast.CreateTextNodeIndex
-import org.neo4j.cypher.internal.ast.CreateTextRelationshipIndex
 import org.neo4j.cypher.internal.ast.CreateUser
 import org.neo4j.cypher.internal.ast.CreateUserAction
-import org.neo4j.cypher.internal.ast.CreateVectorNodeIndex
-import org.neo4j.cypher.internal.ast.CreateVectorRelationshipIndex
 import org.neo4j.cypher.internal.ast.CurrentUser
 import org.neo4j.cypher.internal.ast.DatabaseAction
 import org.neo4j.cypher.internal.ast.DatabaseName
@@ -2056,10 +2038,13 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     options <- _optionsMapAsEitherOrNone
     fromDefault <- boolean
     use <- option(_use)
-    rangeNodeIndex = CreateRangeNodeIndex(variable, labelName, props, name, ifExistsDo, options, fromDefault, use)(pos)
+    rangeNodeIndex =
+      CreateIndex.createRangeNodeIndex(variable, labelName, props, name, ifExistsDo, options, fromDefault, use)(pos)
     rangeRelIndex =
-      CreateRangeRelationshipIndex(variable, relType, props, name, ifExistsDo, options, fromDefault, use)(pos)
-    lookupNodeIndex = CreateLookupIndex(
+      CreateIndex.createRangeRelationshipIndex(variable, relType, props, name, ifExistsDo, options, fromDefault, use)(
+        pos
+      )
+    lookupNodeIndex = CreateIndex.createLookupIndex(
       variable,
       isNodeIndex = true,
       FunctionInvocation(FunctionName(Labels.name)(pos), distinct = false, IndexedSeq(variable))(pos),
@@ -2068,7 +2053,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
       options,
       use
     )(pos)
-    lookupRelIndex = CreateLookupIndex(
+    lookupRelIndex = CreateIndex.createLookupIndex(
       variable,
       isNodeIndex = false,
       FunctionInvocation(FunctionName(Type.name)(pos), distinct = false, IndexedSeq(variable))(pos),
@@ -2077,14 +2062,19 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
       options,
       use
     )(pos)
-    fulltextNodeIndex = CreateFulltextNodeIndex(variable, labels, props, name, ifExistsDo, options, use)(pos)
-    fulltextRelIndex = CreateFulltextRelationshipIndex(variable, types, props, name, ifExistsDo, options, use)(pos)
-    textNodeIndex = CreateTextNodeIndex(variable, labelName, props, name, ifExistsDo, options, use)(pos)
-    textRelIndex = CreateTextRelationshipIndex(variable, relType, props, name, ifExistsDo, options, use)(pos)
-    pointNodeIndex = CreatePointNodeIndex(variable, labelName, props, name, ifExistsDo, options, use)(pos)
-    pointRelIndex = CreatePointRelationshipIndex(variable, relType, props, name, ifExistsDo, options, use)(pos)
-    vectorNodeIndex = CreateVectorNodeIndex(variable, labelName, props, name, ifExistsDo, options, use)(pos)
-    vectorRelIndex = CreateVectorRelationshipIndex(variable, relType, props, name, ifExistsDo, options, use)(pos)
+    fulltextNodeIndex =
+      CreateIndex.createFulltextNodeIndex(variable, labels, props, name, ifExistsDo, options, use)(pos)
+    fulltextRelIndex =
+      CreateIndex.createFulltextRelationshipIndex(variable, types, props, name, ifExistsDo, options, use)(pos)
+    textNodeIndex = CreateIndex.createTextNodeIndex(variable, labelName, props, name, ifExistsDo, options, use)(pos)
+    textRelIndex =
+      CreateIndex.createTextRelationshipIndex(variable, relType, props, name, ifExistsDo, options, use)(pos)
+    pointNodeIndex = CreateIndex.createPointNodeIndex(variable, labelName, props, name, ifExistsDo, options, use)(pos)
+    pointRelIndex =
+      CreateIndex.createPointRelationshipIndex(variable, relType, props, name, ifExistsDo, options, use)(pos)
+    vectorNodeIndex = CreateIndex.createVectorNodeIndex(variable, labelName, props, name, ifExistsDo, options, use)(pos)
+    vectorRelIndex =
+      CreateIndex.createVectorRelationshipIndex(variable, relType, props, name, ifExistsDo, options, use)(pos)
     command <- oneOf(
       rangeNodeIndex,
       rangeRelIndex,
@@ -2107,7 +2097,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     use <- option(_use)
   } yield DropIndexOnName(name, ifExists, use)(pos)
 
-  def _createConstraint: Gen[SchemaCommand] = for {
+  def _createConstraint: Gen[CreateConstraint] = for {
     variable <- _variable
     labelName <- _labelName
     relTypeName <- _relTypeName
@@ -2118,7 +2108,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     ifExistsDo <- _ifExistsDo
     options <- _optionsMapAsEitherOrNone
     use <- option(_use)
-    nodeKey = CreateNodeKeyConstraint(
+    nodeKey = CreateConstraint.createNodeKeyConstraint(
       variable,
       labelName,
       props,
@@ -2127,7 +2117,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
       options,
       use
     )(pos)
-    relKey = CreateRelationshipKeyConstraint(
+    relKey = CreateConstraint.createRelationshipKeyConstraint(
       variable,
       relTypeName,
       props,
@@ -2136,7 +2126,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
       options,
       use
     )(pos)
-    nodeUniqueness = CreateNodePropertyUniquenessConstraint(
+    nodeUniqueness = CreateConstraint.createNodePropertyUniquenessConstraint(
       variable,
       labelName,
       Seq(prop),
@@ -2145,7 +2135,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
       options,
       use
     )(pos)
-    compositeUniqueness = CreateNodePropertyUniquenessConstraint(
+    compositeUniqueness = CreateConstraint.createNodePropertyUniquenessConstraint(
       variable,
       labelName,
       props,
@@ -2154,7 +2144,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
       options,
       use
     )(pos)
-    relUniqueness = CreateRelationshipPropertyUniquenessConstraint(
+    relUniqueness = CreateConstraint.createRelationshipPropertyUniquenessConstraint(
       variable,
       relTypeName,
       props,
@@ -2163,7 +2153,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
       options,
       use
     )(pos)
-    nodeExistence = CreateNodePropertyExistenceConstraint(
+    nodeExistence = CreateConstraint.createNodePropertyExistenceConstraint(
       variable,
       labelName,
       prop,
@@ -2172,7 +2162,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
       options,
       use
     )(pos)
-    relExistence = CreateRelationshipPropertyExistenceConstraint(
+    relExistence = CreateConstraint.createRelationshipPropertyExistenceConstraint(
       variable,
       relTypeName,
       prop,
@@ -2181,7 +2171,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
       options,
       use
     )(pos)
-    nodePropType = CreateNodePropertyTypeConstraint(
+    nodePropType = CreateConstraint.createNodePropertyTypeConstraint(
       variable,
       labelName,
       prop,
@@ -2191,7 +2181,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
       options,
       use
     )(pos)
-    relPropType = CreateRelationshipPropertyTypeConstraint(
+    relPropType = CreateConstraint.createRelationshipPropertyTypeConstraint(
       variable,
       relTypeName,
       prop,

@@ -38,30 +38,15 @@ import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.CommandResultItem
 import org.neo4j.cypher.internal.ast.Create
 import org.neo4j.cypher.internal.ast.CreateCompositeDatabase
+import org.neo4j.cypher.internal.ast.CreateConstraint
 import org.neo4j.cypher.internal.ast.CreateDatabase
-import org.neo4j.cypher.internal.ast.CreateFulltextNodeIndex
-import org.neo4j.cypher.internal.ast.CreateFulltextRelationshipIndex
+import org.neo4j.cypher.internal.ast.CreateFulltextIndex
 import org.neo4j.cypher.internal.ast.CreateLocalDatabaseAlias
 import org.neo4j.cypher.internal.ast.CreateLookupIndex
-import org.neo4j.cypher.internal.ast.CreateNodeKeyConstraint
-import org.neo4j.cypher.internal.ast.CreateNodePropertyExistenceConstraint
-import org.neo4j.cypher.internal.ast.CreateNodePropertyTypeConstraint
-import org.neo4j.cypher.internal.ast.CreateNodePropertyUniquenessConstraint
-import org.neo4j.cypher.internal.ast.CreatePointNodeIndex
-import org.neo4j.cypher.internal.ast.CreatePointRelationshipIndex
-import org.neo4j.cypher.internal.ast.CreateRangeNodeIndex
-import org.neo4j.cypher.internal.ast.CreateRangeRelationshipIndex
-import org.neo4j.cypher.internal.ast.CreateRelationshipKeyConstraint
-import org.neo4j.cypher.internal.ast.CreateRelationshipPropertyExistenceConstraint
-import org.neo4j.cypher.internal.ast.CreateRelationshipPropertyTypeConstraint
-import org.neo4j.cypher.internal.ast.CreateRelationshipPropertyUniquenessConstraint
 import org.neo4j.cypher.internal.ast.CreateRemoteDatabaseAlias
 import org.neo4j.cypher.internal.ast.CreateRole
-import org.neo4j.cypher.internal.ast.CreateTextNodeIndex
-import org.neo4j.cypher.internal.ast.CreateTextRelationshipIndex
+import org.neo4j.cypher.internal.ast.CreateSingleLabelPropertyIndex
 import org.neo4j.cypher.internal.ast.CreateUser
-import org.neo4j.cypher.internal.ast.CreateVectorNodeIndex
-import org.neo4j.cypher.internal.ast.CreateVectorRelationshipIndex
 import org.neo4j.cypher.internal.ast.CurrentUser
 import org.neo4j.cypher.internal.ast.DatabaseName
 import org.neo4j.cypher.internal.ast.DatabasePrivilege
@@ -349,8 +334,6 @@ case class Prettifier(
   def asString(command: SchemaCommand): String = {
     def propertiesToString(properties: Seq[Property]): String =
       properties.map(propertyToString).mkString("(", ", ", ")")
-    def fulltextPropertiesToString(properties: Seq[Property]): String =
-      properties.map(propertyToString).mkString("[", ", ", "]")
     def propertyToString(property: Property): String = s"${expr(property.map)}.${backtick(property.propertyKey.name)}"
 
     def getStartOfCommand(
@@ -370,207 +353,54 @@ case class Prettifier(
     val useString = asString(command.useGraph)
     val commandString = command match {
 
-      case CreateRangeNodeIndex(
+      case CreateSingleLabelPropertyIndex(
           Variable(variable),
-          LabelName(label),
+          entityName,
           properties,
           name,
+          indexType,
           ifExistsDo,
-          options,
-          fromDefault,
-          _
+          options
         ) =>
-        val schemaType = if (fromDefault) "INDEX" else "RANGE INDEX"
-        val startOfCommand = getStartOfCommand(name, ifExistsDo, schemaType)
-        s"${startOfCommand}FOR (${backtick(variable)}:${backtick(label)}) ON ${propertiesToString(properties)}${asString(options)}"
+        val startOfCommand = getStartOfCommand(name, ifExistsDo, indexType.command)
+        val pattern = entityName match {
+          case LabelName(label)     => s"(${backtick(variable)}:${backtick(label)})"
+          case RelTypeName(relType) => s"()-[${backtick(variable)}:${backtick(relType)}]-()"
+        }
+        s"${startOfCommand}FOR $pattern ON ${propertiesToString(properties)}${asString(options)}"
 
-      case CreateRangeRelationshipIndex(
-          Variable(variable),
-          RelTypeName(relType),
-          properties,
-          name,
-          ifExistsDo,
-          options,
-          fromDefault,
-          _
-        ) =>
-        val schemaType = if (fromDefault) "INDEX" else "RANGE INDEX"
-        val startOfCommand = getStartOfCommand(name, ifExistsDo, schemaType)
-        s"${startOfCommand}FOR ()-[${backtick(variable)}:${backtick(relType)}]-() ON ${propertiesToString(properties)}${asString(options)}"
-
-      case CreateLookupIndex(Variable(variable), isNodeIndex, function, name, ifExistsDo, options, _) =>
-        val startOfCommand = getStartOfCommand(name, ifExistsDo, "LOOKUP INDEX")
+      case CreateLookupIndex(Variable(variable), isNodeIndex, function, name, indexType, ifExistsDo, options) =>
+        val startOfCommand = getStartOfCommand(name, ifExistsDo, indexType.command)
         val pattern = if (isNodeIndex) s"(${backtick(variable)})" else s"()-[${backtick(variable)}]-()"
         // can't use `expr(functions)` since that might add extra () we can't parse: labels((n))
         val functionString =
           function.name + "(" + function.args.map(e => backtick(e.asCanonicalStringVal)).mkString(", ") + ")"
         s"${startOfCommand}FOR $pattern ON EACH $functionString${asString(options)}"
 
-      case CreateFulltextNodeIndex(Variable(variable), labels, properties, name, ifExistsDo, options, _) =>
-        val startOfCommand = getStartOfCommand(name, ifExistsDo, "FULLTEXT INDEX")
-        val pattern = labels.map(l => backtick(l.name)).mkString(":", "|", "")
-        s"${startOfCommand}FOR (${backtick(variable)}$pattern) ON EACH ${fulltextPropertiesToString(properties)}${asString(options)}"
-
-      case CreateFulltextRelationshipIndex(Variable(variable), relTypes, properties, name, ifExistsDo, options, _) =>
-        val startOfCommand = getStartOfCommand(name, ifExistsDo, "FULLTEXT INDEX")
-        val pattern = relTypes.map(r => backtick(r.name)).mkString(":", "|", "")
-        s"${startOfCommand}FOR ()-[${backtick(variable)}$pattern]-() ON EACH ${fulltextPropertiesToString(properties)}${asString(options)}"
-
-      case CreateTextNodeIndex(Variable(variable), LabelName(label), properties, name, ifExistsDo, options, _) =>
-        val startOfCommand = getStartOfCommand(name, ifExistsDo, "TEXT INDEX")
-        s"${startOfCommand}FOR (${backtick(variable)}:${backtick(label)}) ON ${propertiesToString(properties)}${asString(options)}"
-
-      case CreateTextRelationshipIndex(
-          Variable(variable),
-          RelTypeName(relType),
-          properties,
-          name,
-          ifExistsDo,
-          options,
-          _
-        ) =>
-        val startOfCommand = getStartOfCommand(name, ifExistsDo, "TEXT INDEX")
-        s"${startOfCommand}FOR ()-[${backtick(variable)}:${backtick(relType)}]-() ON ${propertiesToString(properties)}${asString(options)}"
-
-      case CreatePointNodeIndex(Variable(variable), LabelName(label), properties, name, ifExistsDo, options, _) =>
-        val startOfCommand = getStartOfCommand(name, ifExistsDo, "POINT INDEX")
-        s"${startOfCommand}FOR (${backtick(variable)}:${backtick(label)}) ON ${propertiesToString(properties)}${asString(options)}"
-
-      case CreatePointRelationshipIndex(
-          Variable(variable),
-          RelTypeName(relType),
-          properties,
-          name,
-          ifExistsDo,
-          options,
-          _
-        ) =>
-        val startOfCommand = getStartOfCommand(name, ifExistsDo, "POINT INDEX")
-        s"${startOfCommand}FOR ()-[${backtick(variable)}:${backtick(relType)}]-() ON ${propertiesToString(properties)}${asString(options)}"
-
-      case CreateVectorNodeIndex(Variable(variable), LabelName(label), properties, name, ifExistsDo, options, _) =>
-        val startOfCommand = getStartOfCommand(name, ifExistsDo, "VECTOR INDEX")
-        s"${startOfCommand}FOR (${backtick(variable)}:${backtick(label)}) ON ${propertiesToString(properties)}${asString(options)}"
-
-      case CreateVectorRelationshipIndex(
-          Variable(variable),
-          RelTypeName(relType),
-          properties,
-          name,
-          ifExistsDo,
-          options,
-          _
-        ) =>
-        val startOfCommand = getStartOfCommand(name, ifExistsDo, "VECTOR INDEX")
-        s"${startOfCommand}FOR ()-[${backtick(variable)}:${backtick(relType)}]-() ON ${propertiesToString(properties)}${asString(options)}"
+      case CreateFulltextIndex(Variable(variable), entityNames, properties, name, indexType, ifExistsDo, options) =>
+        val startOfCommand = getStartOfCommand(name, ifExistsDo, indexType.command)
+        val pattern = entityNames match {
+          case Left(labels) =>
+            val labelPattern = labels.map(l => backtick(l.name)).mkString(":", "|", "")
+            s"(${backtick(variable)}$labelPattern)"
+          case Right(relTypes) =>
+            val relTypePattern = relTypes.map(r => backtick(r.name)).mkString(":", "|", "")
+            s"()-[${backtick(variable)}$relTypePattern]-()"
+        }
+        val propertiesString = properties.map(propertyToString).mkString("[", ", ", "]")
+        s"${startOfCommand}FOR $pattern ON EACH $propertiesString${asString(options)}"
 
       case DropIndexOnName(name, ifExists, _) =>
         val ifExistsString = if (ifExists) " IF EXISTS" else ""
         s"DROP INDEX ${Prettifier.escapeName(name)}$ifExistsString"
 
-      case CreateNodeKeyConstraint(
-          Variable(variable),
-          LabelName(label),
-          properties,
-          name,
-          ifExistsDo,
-          options,
-          _
-        ) =>
+      case CreateConstraint(Variable(variable), entityName, properties, name, constraintType, ifExistsDo, options) =>
         val startOfCommand = getStartOfCommand(name, ifExistsDo, "CONSTRAINT")
-        s"${startOfCommand}FOR (${backtick(variable)}:${backtick(label)}) REQUIRE ${propertiesToString(properties)} IS NODE KEY${asString(options)}"
-
-      case CreateRelationshipKeyConstraint(
-          Variable(variable),
-          RelTypeName(relType),
-          properties,
-          name,
-          ifExistsDo,
-          options,
-          _
-        ) =>
-        val startOfCommand = getStartOfCommand(name, ifExistsDo, "CONSTRAINT")
-        s"${startOfCommand}FOR ()-[${backtick(variable)}:${backtick(relType)}]-() REQUIRE ${propertiesToString(properties)} IS RELATIONSHIP KEY${asString(options)}"
-
-      case CreateNodePropertyUniquenessConstraint(
-          Variable(variable),
-          LabelName(label),
-          properties,
-          name,
-          ifExistsDo,
-          options,
-          _
-        ) =>
-        val startOfCommand = getStartOfCommand(name, ifExistsDo, "CONSTRAINT")
-        s"${startOfCommand}FOR (${backtick(variable)}:${backtick(label)}) REQUIRE ${propertiesToString(properties)} IS UNIQUE${asString(options)}"
-
-      case CreateRelationshipPropertyUniquenessConstraint(
-          Variable(variable),
-          RelTypeName(relType),
-          properties,
-          name,
-          ifExistsDo,
-          options,
-          _
-        ) =>
-        val startOfCommand = getStartOfCommand(name, ifExistsDo, "CONSTRAINT")
-        s"${startOfCommand}FOR ()-[${backtick(variable)}:${backtick(relType)}]-() REQUIRE ${propertiesToString(properties)} IS UNIQUE${asString(options)}"
-
-      case CreateNodePropertyExistenceConstraint(
-          Variable(variable),
-          LabelName(label),
-          property,
-          name,
-          ifExistsDo,
-          options,
-          _
-        ) =>
-        val startOfCommand = getStartOfCommand(name, ifExistsDo, "CONSTRAINT")
-        val optionsString = asString(options)
-        s"${startOfCommand}FOR (${backtick(variable)}:${backtick(label)}) REQUIRE (${propertyToString(property)}) IS NOT NULL$optionsString"
-
-      case CreateRelationshipPropertyExistenceConstraint(
-          Variable(variable),
-          RelTypeName(relType),
-          property,
-          name,
-          ifExistsDo,
-          options,
-          _
-        ) =>
-        val startOfCommand = getStartOfCommand(name, ifExistsDo, "CONSTRAINT")
-        val optionsString = asString(options)
-        s"${startOfCommand}FOR ()-[${backtick(variable)}:${backtick(relType)}]-() REQUIRE (${propertyToString(property)}) IS NOT NULL$optionsString"
-
-      case c @ CreateNodePropertyTypeConstraint(
-          Variable(variable),
-          LabelName(label),
-          property,
-          _,
-          name,
-          ifExistsDo,
-          options,
-          _
-        ) =>
-        val startOfCommand = getStartOfCommand(name, ifExistsDo, "CONSTRAINT")
-        val propertyString = s"(${propertyToString(property)}) IS :: ${c.normalizedPropertyType.description}"
-        val optionsString = asString(options)
-        s"${startOfCommand}FOR (${backtick(variable)}:${backtick(label)}) REQUIRE $propertyString$optionsString"
-
-      case c @ CreateRelationshipPropertyTypeConstraint(
-          Variable(variable),
-          RelTypeName(relType),
-          property,
-          _,
-          name,
-          ifExistsDo,
-          options,
-          _
-        ) =>
-        val startOfCommand = getStartOfCommand(name, ifExistsDo, "CONSTRAINT")
-        val propertyString = s"(${propertyToString(property)}) IS :: ${c.normalizedPropertyType.description}"
-        val optionsString = asString(options)
-        s"${startOfCommand}FOR ()-[${backtick(variable)}:${backtick(relType)}]-() REQUIRE $propertyString$optionsString"
+        val pattern = entityName match {
+          case LabelName(label)     => s"(${backtick(variable)}:${backtick(label)})"
+          case RelTypeName(relType) => s"()-[${backtick(variable)}:${backtick(relType)}]-()"
+        }
+        s"${startOfCommand}FOR $pattern REQUIRE ${propertiesToString(properties)} ${constraintType.predicate}${asString(options)}"
 
       case DropConstraintOnName(name, ifExists, _) =>
         val ifExistsString = if (ifExists) " IF EXISTS" else ""

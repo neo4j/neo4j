@@ -24,7 +24,7 @@ import org.neo4j.configuration.GraphDatabaseInternalSettings.CypherParallelRunti
 import org.neo4j.cypher.internal.FullyParsedQuery
 import org.neo4j.cypher.internal.QueryOptions
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
-import org.neo4j.cypher.internal.ast.CreateRangeNodeIndex
+import org.neo4j.cypher.internal.ast.CreateIndex
 import org.neo4j.cypher.internal.ast.CreateRole
 import org.neo4j.cypher.internal.ast.CreateUser
 import org.neo4j.cypher.internal.ast.IfExistsThrowError
@@ -162,7 +162,7 @@ class FabricPlannerTest
 
       parse(remote.query)
         .shouldEqual(
-          CreateRangeNodeIndex(
+          CreateIndex.createRangeNodeIndex(
             varFor("n"),
             labelName("Label"),
             List(prop("n", "prop")),

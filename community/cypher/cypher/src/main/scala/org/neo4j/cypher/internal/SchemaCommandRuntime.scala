@@ -20,7 +20,16 @@
 package org.neo4j.cypher.internal
 
 import org.neo4j.common.EntityType
+import org.neo4j.cypher.internal.ast.CreateConstraintType
+import org.neo4j.cypher.internal.ast.NodeKey
+import org.neo4j.cypher.internal.ast.NodePropertyExistence
+import org.neo4j.cypher.internal.ast.NodePropertyType
+import org.neo4j.cypher.internal.ast.NodeUniqueness
 import org.neo4j.cypher.internal.ast.Options
+import org.neo4j.cypher.internal.ast.RelationshipKey
+import org.neo4j.cypher.internal.ast.RelationshipPropertyExistence
+import org.neo4j.cypher.internal.ast.RelationshipPropertyType
+import org.neo4j.cypher.internal.ast.RelationshipUniqueness
 import org.neo4j.cypher.internal.ast.prettifier.Prettifier
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.expressions.ElementTypeName
@@ -31,7 +40,6 @@ import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.functions.Labels
 import org.neo4j.cypher.internal.expressions.functions.Type
-import org.neo4j.cypher.internal.logical.plans.ConstraintType
 import org.neo4j.cypher.internal.logical.plans.CreateConstraint
 import org.neo4j.cypher.internal.logical.plans.CreateFulltextIndex
 import org.neo4j.cypher.internal.logical.plans.CreateIndex
@@ -43,14 +51,6 @@ import org.neo4j.cypher.internal.logical.plans.DoNothingIfExistsForLookupIndex
 import org.neo4j.cypher.internal.logical.plans.DropConstraintOnName
 import org.neo4j.cypher.internal.logical.plans.DropIndexOnName
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.logical.plans.NodeKey
-import org.neo4j.cypher.internal.logical.plans.NodePropertyExistence
-import org.neo4j.cypher.internal.logical.plans.NodePropertyType
-import org.neo4j.cypher.internal.logical.plans.NodeUniqueness
-import org.neo4j.cypher.internal.logical.plans.RelationshipKey
-import org.neo4j.cypher.internal.logical.plans.RelationshipPropertyExistence
-import org.neo4j.cypher.internal.logical.plans.RelationshipPropertyType
-import org.neo4j.cypher.internal.logical.plans.RelationshipUniqueness
 import org.neo4j.cypher.internal.options.CypherRuntimeOption
 import org.neo4j.cypher.internal.optionsmap.CreateFulltextIndexOptionsConverter
 import org.neo4j.cypher.internal.optionsmap.CreateIndexWithFullOptions
@@ -644,7 +644,8 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
   def isApplicable(logicalPlanState: LogicalPlanState): Boolean =
     logicalToExecutable.isDefinedAt(logicalPlanState.maybeLogicalPlan.get)
 
-  def convertConstraintTypeToConstraintMatcher(assertion: ConstraintType): ConstraintDescriptor => Boolean =
+  private def convertConstraintTypeToConstraintMatcher(assertion: CreateConstraintType)
+    : ConstraintDescriptor => Boolean =
     assertion match {
       case NodePropertyExistence         => c => c.isNodePropertyExistenceConstraint
       case RelationshipPropertyExistence => c => c.isRelationshipPropertyExistenceConstraint
@@ -755,7 +756,7 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
     nameOption: Option[String],
     entityName: ElementTypeName,
     properties: Seq[Property],
-    constraintType: ConstraintType,
+    constraintType: CreateConstraintType,
     options: Options
   ): String = {
     val name = getPrettyName(nameOption)

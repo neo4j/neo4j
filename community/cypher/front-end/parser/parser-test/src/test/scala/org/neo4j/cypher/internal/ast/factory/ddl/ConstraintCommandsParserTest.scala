@@ -59,7 +59,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     test(
       s"CREATE CONSTRAINT FOR (node:Label) REQUIRE (node.prop) IS $nodeKeyword KEY"
     ) {
-      parsesTo[ast.Statements](ast.CreateNodeKeyConstraint(
+      parsesTo[ast.Statements](ast.CreateConstraint.createNodeKeyConstraint(
         varFor("node"),
         labelName("Label"),
         Seq(prop("node", "prop")),
@@ -72,7 +72,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     test(
       s"CREATE CONSTRAINT FOR (node:Label) REQUIRE node.prop IS $nodeKeyword KEY"
     ) {
-      parsesTo[ast.Statements](ast.CreateNodeKeyConstraint(
+      parsesTo[ast.Statements](ast.CreateConstraint.createNodeKeyConstraint(
         varFor("node"),
         labelName("Label"),
         Seq(prop("node", "prop")),
@@ -85,7 +85,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     test(
       s"CREATE OR REPLACE CONSTRAINT FOR (node:Label) REQUIRE (node.prop) IS $nodeKeyword KEY"
     ) {
-      parsesTo[ast.Statements](ast.CreateNodeKeyConstraint(
+      parsesTo[ast.Statements](ast.CreateConstraint.createNodeKeyConstraint(
         varFor("node"),
         labelName("Label"),
         Seq(prop("node", "prop")),
@@ -98,7 +98,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     test(
       s"CREATE CONSTRAINT IF NOT EXISTS FOR (node:Label) REQUIRE (node.prop) IS $nodeKeyword KEY"
     ) {
-      parsesTo[ast.Statements](ast.CreateNodeKeyConstraint(
+      parsesTo[ast.Statements](ast.CreateConstraint.createNodeKeyConstraint(
         varFor("node"),
         labelName("Label"),
         Seq(prop("node", "prop")),
@@ -111,7 +111,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     test(
       s"CREATE CONSTRAINT FOR (node:Label) REQUIRE (node.prop1,node.prop2) IS $nodeKeyword KEY"
     ) {
-      parsesTo[ast.Statements](ast.CreateNodeKeyConstraint(
+      parsesTo[ast.Statements](ast.CreateConstraint.createNodeKeyConstraint(
         varFor("node"),
         labelName("Label"),
         Seq(prop("node", "prop1"), prop("node", "prop2")),
@@ -124,7 +124,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     test(
       s"CREATE OR REPLACE CONSTRAINT IF NOT EXISTS FOR (node:Label) REQUIRE (node.prop1,node.prop2) IS $nodeKeyword KEY"
     ) {
-      parsesTo[ast.Statements](ast.CreateNodeKeyConstraint(
+      parsesTo[ast.Statements](ast.CreateConstraint.createNodeKeyConstraint(
         varFor("node"),
         labelName("Label"),
         Seq(prop("node", "prop1"), prop("node", "prop2")),
@@ -137,7 +137,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     test(
       s"CREATE CONSTRAINT FOR (node:Label) REQUIRE (node.prop) IS $nodeKeyword KEY OPTIONS {indexProvider : 'range-1.0'}"
     ) {
-      parsesTo[ast.Statements](ast.CreateNodeKeyConstraint(
+      parsesTo[ast.Statements](ast.CreateConstraint.createNodeKeyConstraint(
         varFor("node"),
         labelName("Label"),
         Seq(prop("node", "prop")),
@@ -151,7 +151,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
       s"CREATE CONSTRAINT FOR (node:Label) REQUIRE (node.prop) IS $nodeKeyword KEY OPTIONS {indexProvider : 'native-btree-1.0', indexConfig : {`spatial.cartesian.max`: [100.0,100.0], `spatial.cartesian.min`: [-100.0,-100.0] }}"
     ) {
       // will fail in options converter
-      parsesTo[ast.Statements](ast.CreateNodeKeyConstraint(
+      parsesTo[ast.Statements](ast.CreateConstraint.createNodeKeyConstraint(
         varFor("node"),
         labelName("Label"),
         Seq(prop("node", "prop")),
@@ -170,7 +170,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     test(
       s"CREATE CONSTRAINT FOR (node:Label) REQUIRE (node.prop) IS $nodeKeyword KEY OPTIONS {indexConfig : {someConfig: 'toShowItCanBeParsed' }}"
     ) {
-      parsesTo[ast.Statements](ast.CreateNodeKeyConstraint(
+      parsesTo[ast.Statements](ast.CreateConstraint.createNodeKeyConstraint(
         varFor("node"),
         labelName("Label"),
         Seq(prop("node", "prop")),
@@ -183,7 +183,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     test(
       s"CREATE CONSTRAINT FOR (node:Label) REQUIRE (node.prop) IS $nodeKeyword KEY OPTIONS {nonValidOption : 42}"
     ) {
-      parsesTo[ast.Statements](ast.CreateNodeKeyConstraint(
+      parsesTo[ast.Statements](ast.CreateConstraint.createNodeKeyConstraint(
         varFor("node"),
         labelName("Label"),
         Seq(prop("node", "prop")),
@@ -196,7 +196,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     test(
       s"CREATE CONSTRAINT FOR (node:Label) REQUIRE (node.prop) IS $nodeKeyword KEY OPTIONS {}"
     ) {
-      parsesTo[ast.Statements](ast.CreateNodeKeyConstraint(
+      parsesTo[ast.Statements](ast.CreateConstraint.createNodeKeyConstraint(
         varFor("node"),
         labelName("Label"),
         Seq(prop("node", "prop")),
@@ -209,7 +209,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     test(
       s"CREATE CONSTRAINT FOR (node:Label) REQUIRE (node.prop) IS $nodeKeyword KEY OPTIONS $$param"
     ) {
-      parsesTo[ast.Statements](ast.CreateNodeKeyConstraint(
+      parsesTo[ast.Statements](ast.CreateConstraint.createNodeKeyConstraint(
         varFor("node"),
         labelName("Label"),
         Seq(prop("node", "prop")),
@@ -222,7 +222,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     test(
       s"USE neo4j CREATE CONSTRAINT my_constraint FOR (node:Label) REQUIRE (node.prop) IS $nodeKeyword KEY"
     ) {
-      parsesTo[ast.Statements](ast.CreateNodeKeyConstraint(
+      parsesTo[ast.Statements](ast.CreateConstraint.createNodeKeyConstraint(
         varFor("node"),
         labelName("Label"),
         Seq(prop("node", "prop")),
@@ -236,7 +236,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     test(
       s"USE neo4j CREATE OR REPLACE CONSTRAINT my_constraint IF NOT EXISTS FOR (node:Label) REQUIRE (node.prop) IS $nodeKeyword KEY"
     ) {
-      parsesTo[ast.Statements](ast.CreateNodeKeyConstraint(
+      parsesTo[ast.Statements](ast.CreateConstraint.createNodeKeyConstraint(
         varFor("node"),
         labelName("Label"),
         Seq(prop("node", "prop")),
@@ -250,7 +250,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     test(
       s"CREATE CONSTRAINT my_constraint FOR (node:Label) REQUIRE (node.prop1,node.prop2) IS $nodeKeyword KEY"
     ) {
-      parsesTo[ast.Statements](ast.CreateNodeKeyConstraint(
+      parsesTo[ast.Statements](ast.CreateConstraint.createNodeKeyConstraint(
         varFor("node"),
         labelName("Label"),
         Seq(prop("node", "prop1"), prop("node", "prop2")),
@@ -263,7 +263,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     test(
       s"CREATE OR REPLACE CONSTRAINT my_constraint FOR (node:Label) REQUIRE (node.prop1,node.prop2) IS $nodeKeyword KEY"
     ) {
-      parsesTo[ast.Statements](ast.CreateNodeKeyConstraint(
+      parsesTo[ast.Statements](ast.CreateConstraint.createNodeKeyConstraint(
         varFor("node"),
         labelName("Label"),
         Seq(prop("node", "prop1"), prop("node", "prop2")),
@@ -276,7 +276,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     test(
       s"CREATE CONSTRAINT my_constraint IF NOT EXISTS FOR (node:Label) REQUIRE (node.prop1,node.prop2) IS $nodeKeyword KEY"
     ) {
-      parsesTo[ast.Statements](ast.CreateNodeKeyConstraint(
+      parsesTo[ast.Statements](ast.CreateConstraint.createNodeKeyConstraint(
         varFor("node"),
         labelName("Label"),
         Seq(prop("node", "prop1"), prop("node", "prop2")),
@@ -290,7 +290,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
       s"CREATE CONSTRAINT my_constraint FOR (node:Label) REQUIRE (node.prop) IS $nodeKeyword KEY OPTIONS {indexProvider : 'native-btree-1.0', indexConfig : {`spatial.wgs-84.max`: [60.0,60.0], `spatial.wgs-84.min`: [-40.0,-40.0]}}"
     ) {
       // will fail in options converter
-      parsesTo[ast.Statements](ast.CreateNodeKeyConstraint(
+      parsesTo[ast.Statements](ast.CreateConstraint.createNodeKeyConstraint(
         varFor("node"),
         labelName("Label"),
         Seq(prop("node", "prop")),
@@ -311,7 +311,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     test(
       s"CREATE CONSTRAINT FOR (node:Label) REQUIRE node.prop IS $nodeKeyword UNIQUE"
     ) {
-      parsesTo[ast.Statements](ast.CreateNodePropertyUniquenessConstraint(
+      parsesTo[ast.Statements](ast.CreateConstraint.createNodePropertyUniquenessConstraint(
         varFor("node"),
         labelName("Label"),
         Seq(prop("node", "prop")),
@@ -324,7 +324,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     test(
       s"CREATE OR REPLACE CONSTRAINT FOR (node:Label) REQUIRE node.prop IS $nodeKeyword UNIQUE"
     ) {
-      parsesTo[ast.Statements](ast.CreateNodePropertyUniquenessConstraint(
+      parsesTo[ast.Statements](ast.CreateConstraint.createNodePropertyUniquenessConstraint(
         varFor("node"),
         labelName("Label"),
         Seq(prop("node", "prop")),
@@ -337,7 +337,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     test(
       s"CREATE CONSTRAINT IF NOT EXISTS FOR (node:Label) REQUIRE node.prop IS $nodeKeyword UNIQUE"
     ) {
-      parsesTo[ast.Statements](ast.CreateNodePropertyUniquenessConstraint(
+      parsesTo[ast.Statements](ast.CreateConstraint.createNodePropertyUniquenessConstraint(
         varFor("node"),
         labelName("Label"),
         Seq(prop("node", "prop")),
@@ -350,7 +350,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     test(
       s"CREATE CONSTRAINT FOR (node:Label) REQUIRE (node.prop) IS $nodeKeyword UNIQUE"
     ) {
-      parsesTo[ast.Statements](ast.CreateNodePropertyUniquenessConstraint(
+      parsesTo[ast.Statements](ast.CreateConstraint.createNodePropertyUniquenessConstraint(
         varFor("node"),
         labelName("Label"),
         Seq(prop("node", "prop")),
@@ -363,7 +363,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     test(
       s"CREATE CONSTRAINT FOR (node:Label) REQUIRE (node.prop1,node.prop2) IS $nodeKeyword UNIQUE"
     ) {
-      parsesTo[ast.Statements](ast.CreateNodePropertyUniquenessConstraint(
+      parsesTo[ast.Statements](ast.CreateConstraint.createNodePropertyUniquenessConstraint(
         varFor("node"),
         labelName("Label"),
         Seq(prop("node", "prop1"), prop("node", "prop2")),
@@ -376,7 +376,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     test(
       s"CREATE OR REPLACE CONSTRAINT IF NOT EXISTS FOR (node:Label) REQUIRE (node.prop1,node.prop2) IS $nodeKeyword UNIQUE"
     ) {
-      parsesTo[ast.Statements](ast.CreateNodePropertyUniquenessConstraint(
+      parsesTo[ast.Statements](ast.CreateConstraint.createNodePropertyUniquenessConstraint(
         varFor("node"),
         labelName("Label"),
         Seq(prop("node", "prop1"), prop("node", "prop2")),
@@ -390,7 +390,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
       s"CREATE CONSTRAINT FOR (node:Label) REQUIRE (node.prop) IS $nodeKeyword UNIQUE OPTIONS {indexConfig : {`spatial.wgs-84.max`: [60.0,60.0], `spatial.wgs-84.min`: [-40.0,-40.0]}, indexProvider : 'native-btree-1.0'}"
     ) {
       // will fail in options converter
-      parsesTo[ast.Statements](ast.CreateNodePropertyUniquenessConstraint(
+      parsesTo[ast.Statements](ast.CreateConstraint.createNodePropertyUniquenessConstraint(
         varFor("node"),
         labelName("Label"),
         Seq(prop("node", "prop")),
@@ -409,7 +409,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     test(
       s"CREATE CONSTRAINT FOR (node:Label) REQUIRE (node.prop) IS $nodeKeyword UNIQUE OPTIONS $$options"
     ) {
-      parsesTo[ast.Statements](ast.CreateNodePropertyUniquenessConstraint(
+      parsesTo[ast.Statements](ast.CreateConstraint.createNodePropertyUniquenessConstraint(
         varFor("node"),
         labelName("Label"),
         Seq(prop("node", "prop")),
@@ -422,7 +422,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     test(
       s"CREATE CONSTRAINT my_constraint FOR (node:Label) REQUIRE node.prop IS $nodeKeyword UNIQUE"
     ) {
-      parsesTo[ast.Statements](ast.CreateNodePropertyUniquenessConstraint(
+      parsesTo[ast.Statements](ast.CreateConstraint.createNodePropertyUniquenessConstraint(
         varFor("node"),
         labelName("Label"),
         Seq(prop("node", "prop")),
@@ -435,7 +435,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     test(
       s"CREATE CONSTRAINT my_constraint FOR (node:Label) REQUIRE (node.prop) IS $nodeKeyword UNIQUE"
     ) {
-      parsesTo[ast.Statements](ast.CreateNodePropertyUniquenessConstraint(
+      parsesTo[ast.Statements](ast.CreateConstraint.createNodePropertyUniquenessConstraint(
         varFor("node"),
         labelName("Label"),
         Seq(prop("node", "prop")),
@@ -448,7 +448,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     test(
       s"CREATE OR REPLACE CONSTRAINT my_constraint IF NOT EXISTS FOR (node:Label) REQUIRE (node.prop) IS $nodeKeyword UNIQUE"
     ) {
-      parsesTo[ast.Statements](ast.CreateNodePropertyUniquenessConstraint(
+      parsesTo[ast.Statements](ast.CreateConstraint.createNodePropertyUniquenessConstraint(
         varFor("node"),
         labelName("Label"),
         Seq(prop("node", "prop")),
@@ -461,7 +461,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     test(
       s"CREATE CONSTRAINT my_constraint FOR (node:Label) REQUIRE (node.prop1,node.prop2) IS $nodeKeyword UNIQUE"
     ) {
-      parsesTo[ast.Statements](ast.CreateNodePropertyUniquenessConstraint(
+      parsesTo[ast.Statements](ast.CreateConstraint.createNodePropertyUniquenessConstraint(
         varFor("node"),
         labelName("Label"),
         Seq(prop("node", "prop1"), prop("node", "prop2")),
@@ -474,7 +474,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     test(
       s"CREATE OR REPLACE CONSTRAINT my_constraint FOR (node:Label) REQUIRE (node.prop1,node.prop2) IS $nodeKeyword UNIQUE"
     ) {
-      parsesTo[ast.Statements](ast.CreateNodePropertyUniquenessConstraint(
+      parsesTo[ast.Statements](ast.CreateConstraint.createNodePropertyUniquenessConstraint(
         varFor("node"),
         labelName("Label"),
         Seq(prop("node", "prop1"), prop("node", "prop2")),
@@ -487,7 +487,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     test(
       s"CREATE CONSTRAINT my_constraint IF NOT EXISTS FOR (node:Label) REQUIRE (node.prop1,node.prop2) IS $nodeKeyword UNIQUE"
     ) {
-      parsesTo[ast.Statements](ast.CreateNodePropertyUniquenessConstraint(
+      parsesTo[ast.Statements](ast.CreateConstraint.createNodePropertyUniquenessConstraint(
         varFor("node"),
         labelName("Label"),
         Seq(prop("node", "prop1"), prop("node", "prop2")),
@@ -500,7 +500,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     test(
       s"CREATE CONSTRAINT my_constraint FOR (node:Label) REQUIRE (node.prop) IS $nodeKeyword UNIQUE OPTIONS {indexProvider : 'range-1.0'}"
     ) {
-      parsesTo[ast.Statements](ast.CreateNodePropertyUniquenessConstraint(
+      parsesTo[ast.Statements](ast.CreateConstraint.createNodePropertyUniquenessConstraint(
         varFor("node"),
         labelName("Label"),
         Seq(prop("node", "prop")),
@@ -514,7 +514,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
       s"CREATE CONSTRAINT my_constraint FOR (node:Label) REQUIRE (node.prop) IS $nodeKeyword UNIQUE OPTIONS {indexProvider : 'native-btree-1.0', indexConfig : {`spatial.cartesian.max`: [100.0,100.0], `spatial.cartesian.min`: [-100.0,-100.0] }}"
     ) {
       // will fail in options converter
-      parsesTo[ast.Statements](ast.CreateNodePropertyUniquenessConstraint(
+      parsesTo[ast.Statements](ast.CreateConstraint.createNodePropertyUniquenessConstraint(
         varFor("node"),
         labelName("Label"),
         Seq(prop("node", "prop")),
@@ -533,7 +533,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     test(
       s"CREATE CONSTRAINT my_constraint FOR (node:Label) REQUIRE (node.prop) IS $nodeKeyword UNIQUE OPTIONS {indexConfig : {someConfig: 'toShowItCanBeParsed' }}"
     ) {
-      parsesTo[ast.Statements](ast.CreateNodePropertyUniquenessConstraint(
+      parsesTo[ast.Statements](ast.CreateConstraint.createNodePropertyUniquenessConstraint(
         varFor("node"),
         labelName("Label"),
         Seq(prop("node", "prop")),
@@ -546,7 +546,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     test(
       s"CREATE CONSTRAINT my_constraint FOR (node:Label) REQUIRE (node.prop) IS $nodeKeyword UNIQUE OPTIONS {nonValidOption : 42}"
     ) {
-      parsesTo[ast.Statements](ast.CreateNodePropertyUniquenessConstraint(
+      parsesTo[ast.Statements](ast.CreateConstraint.createNodePropertyUniquenessConstraint(
         varFor("node"),
         labelName("Label"),
         Seq(prop("node", "prop")),
@@ -559,7 +559,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     test(
       s"CREATE CONSTRAINT my_constraint FOR (node:Label) REQUIRE (node.prop1,node.prop2) IS $nodeKeyword UNIQUE OPTIONS {}"
     ) {
-      parsesTo[ast.Statements](ast.CreateNodePropertyUniquenessConstraint(
+      parsesTo[ast.Statements](ast.CreateConstraint.createNodePropertyUniquenessConstraint(
         varFor("node"),
         labelName("Label"),
         Seq(prop("node", "prop1"), prop("node", "prop2")),
@@ -571,7 +571,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
   })
 
   test("CREATE CONSTRAINT $name FOR (n:L) REQUIRE n.prop IS NODE KEY") {
-    parsesTo[ast.Statements](ast.CreateNodeKeyConstraint(
+    parsesTo[ast.Statements](ast.CreateConstraint.createNodeKeyConstraint(
       varFor("n"),
       labelName("L"),
       Seq(prop("n", "prop")),
@@ -582,7 +582,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
   }
 
   test("CREATE CONSTRAINT $name FOR (n:L) REQUIRE n.prop IS UNIQUE") {
-    parsesTo[ast.Statements](ast.CreateNodePropertyUniquenessConstraint(
+    parsesTo[ast.Statements](ast.CreateConstraint.createNodePropertyUniquenessConstraint(
       varFor("n"),
       labelName("L"),
       Seq(prop("n", "prop")),
@@ -596,7 +596,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     // Relationship key
 
     test(s"CREATE CONSTRAINT FOR ()-[r1:R]-() REQUIRE (r2.prop) IS $relKeyWord KEY") {
-      parsesTo[ast.Statements](ast.CreateRelationshipKeyConstraint(
+      parsesTo[ast.Statements](ast.CreateConstraint.createRelationshipKeyConstraint(
         varFor("r1"),
         relTypeName("R"),
         Seq(prop("r2", "prop")),
@@ -609,7 +609,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     test(
       s"CREATE CONSTRAINT FOR ()-[r1:R]->() REQUIRE (r2.prop1, r3.prop2) IS $relKeyWord KEY"
     ) {
-      parsesTo[ast.Statements](ast.CreateRelationshipKeyConstraint(
+      parsesTo[ast.Statements](ast.CreateConstraint.createRelationshipKeyConstraint(
         varFor("r1"),
         relTypeName("R"),
         Seq(prop("r2", "prop1"), prop("r3", "prop2")),
@@ -622,7 +622,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     test(
       s"CREATE CONSTRAINT FOR ()<-[r1:R]-() REQUIRE (r2.prop) IS $relKeyWord KEY"
     ) {
-      parsesTo[ast.Statements](ast.CreateRelationshipKeyConstraint(
+      parsesTo[ast.Statements](ast.CreateConstraint.createRelationshipKeyConstraint(
         varFor("r1"),
         relTypeName("R"),
         Seq(prop("r2", "prop")),
@@ -635,7 +635,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     test(
       s"CREATE CONSTRAINT FOR ()<-[r1:R]->() REQUIRE (r2.prop) IS $relKeyWord KEY"
     ) {
-      parsesTo[ast.Statements](ast.CreateRelationshipKeyConstraint(
+      parsesTo[ast.Statements](ast.CreateConstraint.createRelationshipKeyConstraint(
         varFor("r1"),
         relTypeName("R"),
         Seq(prop("r2", "prop")),
@@ -648,7 +648,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     test(
       s"CREATE OR REPLACE CONSTRAINT FOR ()-[r1:R]-() REQUIRE (r2.prop) IS $relKeyWord KEY"
     ) {
-      parsesTo[ast.Statements](ast.CreateRelationshipKeyConstraint(
+      parsesTo[ast.Statements](ast.CreateConstraint.createRelationshipKeyConstraint(
         varFor("r1"),
         relTypeName("R"),
         Seq(prop("r2", "prop")),
@@ -661,7 +661,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     test(
       s"CREATE OR REPLACE CONSTRAINT IF NOT EXISTS FOR ()-[r1:R]-() REQUIRE (r2.prop) IS $relKeyWord KEY"
     ) {
-      parsesTo[ast.Statements](ast.CreateRelationshipKeyConstraint(
+      parsesTo[ast.Statements](ast.CreateConstraint.createRelationshipKeyConstraint(
         varFor("r1"),
         relTypeName("R"),
         Seq(prop("r2", "prop")),
@@ -674,7 +674,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     test(
       s"CREATE CONSTRAINT IF NOT EXISTS FOR ()-[r1:R]-() REQUIRE (r2.prop) IS $relKeyWord KEY"
     ) {
-      parsesTo[ast.Statements](ast.CreateRelationshipKeyConstraint(
+      parsesTo[ast.Statements](ast.CreateConstraint.createRelationshipKeyConstraint(
         varFor("r1"),
         relTypeName("R"),
         Seq(prop("r2", "prop")),
@@ -687,7 +687,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     test(
       s"CREATE CONSTRAINT FOR ()-[r1:R]-() REQUIRE (r2.prop) IS $relKeyWord KEY OPTIONS {key: 'value'}"
     ) {
-      parsesTo[ast.Statements](ast.CreateRelationshipKeyConstraint(
+      parsesTo[ast.Statements](ast.CreateConstraint.createRelationshipKeyConstraint(
         varFor("r1"),
         relTypeName("R"),
         Seq(prop("r2", "prop")),
@@ -700,7 +700,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     test(
       s"CREATE CONSTRAINT my_constraint FOR ()-[r1:R]-() REQUIRE (r2.prop) IS $relKeyWord KEY"
     ) {
-      parsesTo[ast.Statements](ast.CreateRelationshipKeyConstraint(
+      parsesTo[ast.Statements](ast.CreateConstraint.createRelationshipKeyConstraint(
         varFor("r1"),
         relTypeName("R"),
         Seq(prop("r2", "prop")),
@@ -713,7 +713,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     test(
       s"CREATE CONSTRAINT my_constraint FOR ()-[r1:R]->() REQUIRE (r2.prop1, r3.prop2) IS $relKeyWord KEY"
     ) {
-      parsesTo[ast.Statements](ast.CreateRelationshipKeyConstraint(
+      parsesTo[ast.Statements](ast.CreateConstraint.createRelationshipKeyConstraint(
         varFor("r1"),
         relTypeName("R"),
         Seq(prop("r2", "prop1"), prop("r3", "prop2")),
@@ -726,7 +726,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     test(
       s"CREATE CONSTRAINT my_constraint FOR ()<-[r1:R]-() REQUIRE (r2.prop) IS $relKeyWord KEY"
     ) {
-      parsesTo[ast.Statements](ast.CreateRelationshipKeyConstraint(
+      parsesTo[ast.Statements](ast.CreateConstraint.createRelationshipKeyConstraint(
         varFor("r1"),
         relTypeName("R"),
         Seq(prop("r2", "prop")),
@@ -739,7 +739,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     test(
       s"CREATE CONSTRAINT my_constraint FOR ()<-[r1:R]->() REQUIRE (r2.prop) IS $relKeyWord KEY"
     ) {
-      parsesTo[ast.Statements](ast.CreateRelationshipKeyConstraint(
+      parsesTo[ast.Statements](ast.CreateConstraint.createRelationshipKeyConstraint(
         varFor("r1"),
         relTypeName("R"),
         Seq(prop("r2", "prop")),
@@ -752,7 +752,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     test(
       s"CREATE OR REPLACE CONSTRAINT my_constraint FOR ()-[r1:R]-() REQUIRE (r2.prop) IS $relKeyWord KEY"
     ) {
-      parsesTo[ast.Statements](ast.CreateRelationshipKeyConstraint(
+      parsesTo[ast.Statements](ast.CreateConstraint.createRelationshipKeyConstraint(
         varFor("r1"),
         relTypeName("R"),
         Seq(prop("r2", "prop")),
@@ -765,7 +765,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     test(
       s"CREATE OR REPLACE CONSTRAINT my_constraint IF NOT EXISTS FOR ()-[r1:R]-() REQUIRE (r2.prop) IS $relKeyWord KEY"
     ) {
-      parsesTo[ast.Statements](ast.CreateRelationshipKeyConstraint(
+      parsesTo[ast.Statements](ast.CreateConstraint.createRelationshipKeyConstraint(
         varFor("r1"),
         relTypeName("R"),
         Seq(prop("r2", "prop")),
@@ -778,7 +778,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     test(
       s"CREATE CONSTRAINT my_constraint IF NOT EXISTS FOR ()-[r1:R]-() REQUIRE (r2.prop) IS $relKeyWord KEY"
     ) {
-      parsesTo[ast.Statements](ast.CreateRelationshipKeyConstraint(
+      parsesTo[ast.Statements](ast.CreateConstraint.createRelationshipKeyConstraint(
         varFor("r1"),
         relTypeName("R"),
         Seq(prop("r2", "prop")),
@@ -791,7 +791,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     test(
       s"CREATE CONSTRAINT my_constraint FOR ()-[r1:R]-() REQUIRE (r2.prop) IS $relKeyWord KEY OPTIONS {key: 'value'}"
     ) {
-      parsesTo[ast.Statements](ast.CreateRelationshipKeyConstraint(
+      parsesTo[ast.Statements](ast.CreateConstraint.createRelationshipKeyConstraint(
         varFor("r1"),
         relTypeName("R"),
         Seq(prop("r2", "prop")),
@@ -806,7 +806,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     test(
       s"CREATE CONSTRAINT FOR ()-[r1:R]-() REQUIRE (r2.prop) IS $relKeyWord UNIQUE"
     ) {
-      parsesTo[ast.Statements](ast.CreateRelationshipPropertyUniquenessConstraint(
+      parsesTo[ast.Statements](ast.CreateConstraint.createRelationshipPropertyUniquenessConstraint(
         varFor("r1"),
         relTypeName("R"),
         Seq(prop("r2", "prop")),
@@ -819,7 +819,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     test(
       s"CREATE CONSTRAINT FOR ()-[r1:R]->() REQUIRE (r2.prop1, r3.prop2) IS $relKeyWord UNIQUE"
     ) {
-      parsesTo[ast.Statements](ast.CreateRelationshipPropertyUniquenessConstraint(
+      parsesTo[ast.Statements](ast.CreateConstraint.createRelationshipPropertyUniquenessConstraint(
         varFor("r1"),
         relTypeName("R"),
         Seq(prop("r2", "prop1"), prop("r3", "prop2")),
@@ -832,7 +832,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     test(
       s"CREATE CONSTRAINT FOR ()<-[r1:R]-() REQUIRE (r2.prop) IS $relKeyWord UNIQUE"
     ) {
-      parsesTo[ast.Statements](ast.CreateRelationshipPropertyUniquenessConstraint(
+      parsesTo[ast.Statements](ast.CreateConstraint.createRelationshipPropertyUniquenessConstraint(
         varFor("r1"),
         relTypeName("R"),
         Seq(prop("r2", "prop")),
@@ -845,7 +845,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     test(
       s"CREATE CONSTRAINT FOR ()<-[r1:R]->() REQUIRE (r2.prop) IS $relKeyWord UNIQUE"
     ) {
-      parsesTo[ast.Statements](ast.CreateRelationshipPropertyUniquenessConstraint(
+      parsesTo[ast.Statements](ast.CreateConstraint.createRelationshipPropertyUniquenessConstraint(
         varFor("r1"),
         relTypeName("R"),
         Seq(prop("r2", "prop")),
@@ -858,7 +858,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     test(
       s"CREATE OR REPLACE CONSTRAINT FOR ()-[r1:R]-() REQUIRE (r2.prop) IS $relKeyWord UNIQUE"
     ) {
-      parsesTo[ast.Statements](ast.CreateRelationshipPropertyUniquenessConstraint(
+      parsesTo[ast.Statements](ast.CreateConstraint.createRelationshipPropertyUniquenessConstraint(
         varFor("r1"),
         relTypeName("R"),
         Seq(prop("r2", "prop")),
@@ -871,7 +871,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     test(
       s"CREATE OR REPLACE CONSTRAINT IF NOT EXISTS FOR ()-[r1:R]-() REQUIRE (r2.prop) IS $relKeyWord UNIQUE"
     ) {
-      parsesTo[ast.Statements](ast.CreateRelationshipPropertyUniquenessConstraint(
+      parsesTo[ast.Statements](ast.CreateConstraint.createRelationshipPropertyUniquenessConstraint(
         varFor("r1"),
         relTypeName("R"),
         Seq(prop("r2", "prop")),
@@ -884,7 +884,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     test(
       s"CREATE CONSTRAINT IF NOT EXISTS FOR ()-[r1:R]-() REQUIRE (r2.prop) IS $relKeyWord UNIQUE"
     ) {
-      parsesTo[ast.Statements](ast.CreateRelationshipPropertyUniquenessConstraint(
+      parsesTo[ast.Statements](ast.CreateConstraint.createRelationshipPropertyUniquenessConstraint(
         varFor("r1"),
         relTypeName("R"),
         Seq(prop("r2", "prop")),
@@ -897,7 +897,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     test(
       s"CREATE CONSTRAINT FOR ()-[r1:R]-() REQUIRE (r2.prop) IS $relKeyWord UNIQUE OPTIONS {key: 'value'}"
     ) {
-      parsesTo[ast.Statements](ast.CreateRelationshipPropertyUniquenessConstraint(
+      parsesTo[ast.Statements](ast.CreateConstraint.createRelationshipPropertyUniquenessConstraint(
         varFor("r1"),
         relTypeName("R"),
         Seq(prop("r2", "prop")),
@@ -910,7 +910,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     test(
       s"CREATE CONSTRAINT my_constraint FOR ()-[r1:R]-() REQUIRE (r2.prop) IS $relKeyWord UNIQUE"
     ) {
-      parsesTo[ast.Statements](ast.CreateRelationshipPropertyUniquenessConstraint(
+      parsesTo[ast.Statements](ast.CreateConstraint.createRelationshipPropertyUniquenessConstraint(
         varFor("r1"),
         relTypeName("R"),
         Seq(prop("r2", "prop")),
@@ -923,7 +923,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     test(
       s"CREATE CONSTRAINT my_constraint FOR ()-[r1:R]->() REQUIRE (r2.prop1, r3.prop2) IS $relKeyWord UNIQUE"
     ) {
-      parsesTo[ast.Statements](ast.CreateRelationshipPropertyUniquenessConstraint(
+      parsesTo[ast.Statements](ast.CreateConstraint.createRelationshipPropertyUniquenessConstraint(
         varFor("r1"),
         relTypeName("R"),
         Seq(prop("r2", "prop1"), prop("r3", "prop2")),
@@ -936,7 +936,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     test(
       s"CREATE CONSTRAINT my_constraint FOR ()<-[r1:R]-() REQUIRE (r2.prop) IS $relKeyWord UNIQUE"
     ) {
-      parsesTo[ast.Statements](ast.CreateRelationshipPropertyUniquenessConstraint(
+      parsesTo[ast.Statements](ast.CreateConstraint.createRelationshipPropertyUniquenessConstraint(
         varFor("r1"),
         relTypeName("R"),
         Seq(prop("r2", "prop")),
@@ -949,7 +949,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     test(
       s"CREATE CONSTRAINT my_constraint FOR ()<-[r1:R]->() REQUIRE (r2.prop) IS $relKeyWord UNIQUE"
     ) {
-      parsesTo[ast.Statements](ast.CreateRelationshipPropertyUniquenessConstraint(
+      parsesTo[ast.Statements](ast.CreateConstraint.createRelationshipPropertyUniquenessConstraint(
         varFor("r1"),
         relTypeName("R"),
         Seq(prop("r2", "prop")),
@@ -962,7 +962,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     test(
       s"CREATE OR REPLACE CONSTRAINT my_constraint FOR ()-[r1:R]-() REQUIRE (r2.prop) IS $relKeyWord UNIQUE"
     ) {
-      parsesTo[ast.Statements](ast.CreateRelationshipPropertyUniquenessConstraint(
+      parsesTo[ast.Statements](ast.CreateConstraint.createRelationshipPropertyUniquenessConstraint(
         varFor("r1"),
         relTypeName("R"),
         Seq(prop("r2", "prop")),
@@ -975,7 +975,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     test(
       s"CREATE OR REPLACE CONSTRAINT my_constraint IF NOT EXISTS FOR ()-[r1:R]-() REQUIRE (r2.prop) IS $relKeyWord UNIQUE"
     ) {
-      parsesTo[ast.Statements](ast.CreateRelationshipPropertyUniquenessConstraint(
+      parsesTo[ast.Statements](ast.CreateConstraint.createRelationshipPropertyUniquenessConstraint(
         varFor("r1"),
         relTypeName("R"),
         Seq(prop("r2", "prop")),
@@ -988,7 +988,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     test(
       s"CREATE CONSTRAINT my_constraint IF NOT EXISTS FOR ()-[r1:R]-() REQUIRE (r2.prop) IS $relKeyWord UNIQUE"
     ) {
-      parsesTo[ast.Statements](ast.CreateRelationshipPropertyUniquenessConstraint(
+      parsesTo[ast.Statements](ast.CreateConstraint.createRelationshipPropertyUniquenessConstraint(
         varFor("r1"),
         relTypeName("R"),
         Seq(prop("r2", "prop")),
@@ -1001,7 +1001,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     test(
       s"CREATE CONSTRAINT my_constraint FOR ()-[r1:R]-() REQUIRE (r2.prop) IS $relKeyWord UNIQUE OPTIONS {key: 'value'}"
     ) {
-      parsesTo[ast.Statements](ast.CreateRelationshipPropertyUniquenessConstraint(
+      parsesTo[ast.Statements](ast.CreateConstraint.createRelationshipPropertyUniquenessConstraint(
         varFor("r1"),
         relTypeName("R"),
         Seq(prop("r2", "prop")),
@@ -1015,7 +1015,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
   test(
     "CREATE CONSTRAINT $name FOR ()-[r:R]-() REQUIRE r.prop IS RELATIONSHIP KEY"
   ) {
-    parsesTo[ast.Statements](ast.CreateRelationshipKeyConstraint(
+    parsesTo[ast.Statements](ast.CreateConstraint.createRelationshipKeyConstraint(
       varFor("r"),
       relTypeName("R"),
       Seq(prop("r", "prop")),
@@ -1026,7 +1026,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
   }
 
   test("CREATE CONSTRAINT $name FOR ()-[r:R]-() REQUIRE r.prop IS UNIQUE") {
-    parsesTo[ast.Statements](ast.CreateRelationshipPropertyUniquenessConstraint(
+    parsesTo[ast.Statements](ast.CreateConstraint.createRelationshipPropertyUniquenessConstraint(
       varFor("r"),
       relTypeName("R"),
       Seq(prop("r", "prop")),
@@ -1039,7 +1039,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
   // Node property existence
 
   test("CREATE CONSTRAINT FOR (node:Label) REQUIRE node.prop IS NOT NULL") {
-    parsesTo[ast.Statements](ast.CreateNodePropertyExistenceConstraint(
+    parsesTo[ast.Statements](ast.CreateConstraint.createNodePropertyExistenceConstraint(
       varFor("node"),
       labelName("Label"),
       prop("node", "prop"),
@@ -1050,7 +1050,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
   }
 
   test("CREATE CONSTRAINT FOR (node:Label) REQUIRE (node.prop) IS NOT NULL") {
-    parsesTo[ast.Statements](ast.CreateNodePropertyExistenceConstraint(
+    parsesTo[ast.Statements](ast.CreateConstraint.createNodePropertyExistenceConstraint(
       varFor("node"),
       labelName("Label"),
       prop("node", "prop"),
@@ -1063,7 +1063,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
   test(
     "CREATE OR REPLACE CONSTRAINT FOR (node:Label) REQUIRE node.prop IS NOT NULL"
   ) {
-    parsesTo[ast.Statements](ast.CreateNodePropertyExistenceConstraint(
+    parsesTo[ast.Statements](ast.CreateConstraint.createNodePropertyExistenceConstraint(
       varFor("node"),
       labelName("Label"),
       prop("node", "prop"),
@@ -1076,7 +1076,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
   test(
     "CREATE OR REPLACE CONSTRAINT IF NOT EXISTS FOR (node:Label) REQUIRE node.prop IS NOT NULL"
   ) {
-    parsesTo[ast.Statements](ast.CreateNodePropertyExistenceConstraint(
+    parsesTo[ast.Statements](ast.CreateConstraint.createNodePropertyExistenceConstraint(
       varFor("node"),
       labelName("Label"),
       prop("node", "prop"),
@@ -1089,7 +1089,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
   test(
     "CREATE CONSTRAINT IF NOT EXISTS FOR (node:Label) REQUIRE (node.prop) IS NOT NULL"
   ) {
-    parsesTo[ast.Statements](ast.CreateNodePropertyExistenceConstraint(
+    parsesTo[ast.Statements](ast.CreateConstraint.createNodePropertyExistenceConstraint(
       varFor("node"),
       labelName("Label"),
       prop("node", "prop"),
@@ -1102,7 +1102,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
   test(
     "CREATE CONSTRAINT my_constraint FOR (node:Label) REQUIRE (node.prop) IS NOT NULL"
   ) {
-    parsesTo[ast.Statements](ast.CreateNodePropertyExistenceConstraint(
+    parsesTo[ast.Statements](ast.CreateConstraint.createNodePropertyExistenceConstraint(
       varFor("node"),
       labelName("Label"),
       prop("node", "prop"),
@@ -1115,7 +1115,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
   test(
     "CREATE OR REPLACE CONSTRAINT my_constraint FOR (node:Label) REQUIRE node.prop IS NOT NULL"
   ) {
-    parsesTo[ast.Statements](ast.CreateNodePropertyExistenceConstraint(
+    parsesTo[ast.Statements](ast.CreateConstraint.createNodePropertyExistenceConstraint(
       varFor("node"),
       labelName("Label"),
       prop("node", "prop"),
@@ -1128,7 +1128,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
   test(
     "CREATE OR REPLACE CONSTRAINT my_constraint IF NOT EXISTS FOR (node:Label) REQUIRE node.prop IS NOT NULL"
   ) {
-    parsesTo[ast.Statements](ast.CreateNodePropertyExistenceConstraint(
+    parsesTo[ast.Statements](ast.CreateConstraint.createNodePropertyExistenceConstraint(
       varFor("node"),
       labelName("Label"),
       prop("node", "prop"),
@@ -1141,7 +1141,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
   test(
     "CREATE CONSTRAINT my_constraint IF NOT EXISTS FOR (node:Label) REQUIRE node.prop IS NOT NULL"
   ) {
-    parsesTo[ast.Statements](ast.CreateNodePropertyExistenceConstraint(
+    parsesTo[ast.Statements](ast.CreateConstraint.createNodePropertyExistenceConstraint(
       varFor("node"),
       labelName("Label"),
       prop("node", "prop"),
@@ -1154,7 +1154,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
   test(
     "CREATE CONSTRAINT my_constraint FOR (node:Label) REQUIRE node.prop IS NOT NULL OPTIONS {}"
   ) {
-    parsesTo[ast.Statements](ast.CreateNodePropertyExistenceConstraint(
+    parsesTo[ast.Statements](ast.CreateConstraint.createNodePropertyExistenceConstraint(
       varFor("node"),
       labelName("Label"),
       prop("node", "prop"),
@@ -1178,7 +1178,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
   }
 
   test("CREATE CONSTRAINT $name FOR (n:L) REQUIRE n.prop IS NOT NULL") {
-    parsesTo[ast.Statements](ast.CreateNodePropertyExistenceConstraint(
+    parsesTo[ast.Statements](ast.CreateConstraint.createNodePropertyExistenceConstraint(
       varFor("n"),
       labelName("L"),
       prop("n", "prop"),
@@ -1191,7 +1191,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
   // Relationship property existence
 
   test("CREATE CONSTRAINT FOR ()-[r:R]-() REQUIRE r.prop IS NOT NULL") {
-    parsesTo[ast.Statements](ast.CreateRelationshipPropertyExistenceConstraint(
+    parsesTo[ast.Statements](ast.CreateConstraint.createRelationshipPropertyExistenceConstraint(
       varFor("r"),
       relTypeName("R"),
       prop("r", "prop"),
@@ -1202,7 +1202,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
   }
 
   test("CREATE CONSTRAINT FOR ()-[r:R]->() REQUIRE r.prop IS NOT NULL") {
-    parsesTo[ast.Statements](ast.CreateRelationshipPropertyExistenceConstraint(
+    parsesTo[ast.Statements](ast.CreateConstraint.createRelationshipPropertyExistenceConstraint(
       varFor("r"),
       relTypeName("R"),
       prop("r", "prop"),
@@ -1213,7 +1213,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
   }
 
   test("CREATE CONSTRAINT FOR ()<-[r:R]-() REQUIRE (r.prop) IS NOT NULL") {
-    parsesTo[ast.Statements](ast.CreateRelationshipPropertyExistenceConstraint(
+    parsesTo[ast.Statements](ast.CreateConstraint.createRelationshipPropertyExistenceConstraint(
       varFor("r"),
       relTypeName("R"),
       prop("r", "prop"),
@@ -1224,7 +1224,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
   }
 
   test("CREATE CONSTRAINT FOR ()<-[r:R]->() REQUIRE (r.prop) IS NOT NULL") {
-    parsesTo[ast.Statements](ast.CreateRelationshipPropertyExistenceConstraint(
+    parsesTo[ast.Statements](ast.CreateConstraint.createRelationshipPropertyExistenceConstraint(
       varFor("r"),
       relTypeName("R"),
       prop("r", "prop"),
@@ -1235,7 +1235,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
   }
 
   test("CREATE OR REPLACE CONSTRAINT FOR ()<-[r:R]-() REQUIRE r.prop IS NOT NULL") {
-    parsesTo[ast.Statements](ast.CreateRelationshipPropertyExistenceConstraint(
+    parsesTo[ast.Statements](ast.CreateConstraint.createRelationshipPropertyExistenceConstraint(
       varFor("r"),
       relTypeName("R"),
       prop("r", "prop"),
@@ -1248,7 +1248,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
   test(
     "CREATE OR REPLACE CONSTRAINT IF NOT EXISTS FOR ()-[r:R]-() REQUIRE r.prop IS NOT NULL"
   ) {
-    parsesTo[ast.Statements](ast.CreateRelationshipPropertyExistenceConstraint(
+    parsesTo[ast.Statements](ast.CreateConstraint.createRelationshipPropertyExistenceConstraint(
       varFor("r"),
       relTypeName("R"),
       prop("r", "prop"),
@@ -1261,7 +1261,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
   test(
     "CREATE CONSTRAINT IF NOT EXISTS FOR ()-[r:R]->() REQUIRE r.prop IS NOT NULL"
   ) {
-    parsesTo[ast.Statements](ast.CreateRelationshipPropertyExistenceConstraint(
+    parsesTo[ast.Statements](ast.CreateConstraint.createRelationshipPropertyExistenceConstraint(
       varFor("r"),
       relTypeName("R"),
       prop("r", "prop"),
@@ -1272,7 +1272,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
   }
 
   test("CREATE CONSTRAINT FOR ()-[r:R]-() REQUIRE (r.prop) IS NOT NULL OPTIONS {}") {
-    parsesTo[ast.Statements](ast.CreateRelationshipPropertyExistenceConstraint(
+    parsesTo[ast.Statements](ast.CreateConstraint.createRelationshipPropertyExistenceConstraint(
       varFor("r"),
       relTypeName("R"),
       prop("r", "prop"),
@@ -1285,7 +1285,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
   test(
     "CREATE CONSTRAINT `$my_constraint` FOR ()-[r:R]-() REQUIRE r.prop IS NOT NULL"
   ) {
-    parsesTo[ast.Statements](ast.CreateRelationshipPropertyExistenceConstraint(
+    parsesTo[ast.Statements](ast.CreateConstraint.createRelationshipPropertyExistenceConstraint(
       varFor("r"),
       relTypeName("R"),
       prop("r", "prop"),
@@ -1298,7 +1298,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
   test(
     "CREATE CONSTRAINT my_constraint FOR ()-[r:R]-() REQUIRE (r.prop) IS NOT NULL"
   ) {
-    parsesTo[ast.Statements](ast.CreateRelationshipPropertyExistenceConstraint(
+    parsesTo[ast.Statements](ast.CreateConstraint.createRelationshipPropertyExistenceConstraint(
       varFor("r"),
       relTypeName("R"),
       prop("r", "prop"),
@@ -1311,7 +1311,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
   test(
     "CREATE OR REPLACE CONSTRAINT `$my_constraint` FOR ()-[r:R]-() REQUIRE r.prop IS NOT NULL"
   ) {
-    parsesTo[ast.Statements](ast.CreateRelationshipPropertyExistenceConstraint(
+    parsesTo[ast.Statements](ast.CreateConstraint.createRelationshipPropertyExistenceConstraint(
       varFor("r"),
       relTypeName("R"),
       prop("r", "prop"),
@@ -1324,7 +1324,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
   test(
     "CREATE OR REPLACE CONSTRAINT `$my_constraint` IF NOT EXISTS FOR ()-[r:R]->() REQUIRE (r.prop) IS NOT NULL"
   ) {
-    parsesTo[ast.Statements](ast.CreateRelationshipPropertyExistenceConstraint(
+    parsesTo[ast.Statements](ast.CreateConstraint.createRelationshipPropertyExistenceConstraint(
       varFor("r"),
       relTypeName("R"),
       prop("r", "prop"),
@@ -1337,7 +1337,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
   test(
     "CREATE CONSTRAINT `$my_constraint` IF NOT EXISTS FOR ()<-[r:R]-() REQUIRE r.prop IS NOT NULL"
   ) {
-    parsesTo[ast.Statements](ast.CreateRelationshipPropertyExistenceConstraint(
+    parsesTo[ast.Statements](ast.CreateConstraint.createRelationshipPropertyExistenceConstraint(
       varFor("r"),
       relTypeName("R"),
       prop("r", "prop"),
@@ -1361,7 +1361,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
   }
 
   test("CREATE CONSTRAINT $name FOR ()-[r:R]-() REQUIRE r.prop IS NOT NULL") {
-    parsesTo[ast.Statements](ast.CreateRelationshipPropertyExistenceConstraint(
+    parsesTo[ast.Statements](ast.CreateConstraint.createRelationshipPropertyExistenceConstraint(
       varFor("r"),
       relTypeName("R"),
       prop("r", "prop"),
@@ -1379,7 +1379,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     test(
       s"CREATE CONSTRAINT FOR (node:Label) REQUIRE node.prop $typeKeyword BOOLEAN"
     ) {
-      parsesTo[ast.Statements](ast.CreateNodePropertyTypeConstraint(
+      parsesTo[ast.Statements](ast.CreateConstraint.createNodePropertyTypeConstraint(
         varFor("node"),
         labelName("Label"),
         prop("node", "prop"),
@@ -1393,7 +1393,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     test(
       s"CREATE CONSTRAINT FOR (node:Label) REQUIRE (node.prop) $typeKeyword BOOLEAN"
     ) {
-      parsesTo[ast.Statements](ast.CreateNodePropertyTypeConstraint(
+      parsesTo[ast.Statements](ast.CreateConstraint.createNodePropertyTypeConstraint(
         varFor("node"),
         labelName("Label"),
         prop("node", "prop"),
@@ -1407,7 +1407,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     test(
       s"CREATE OR REPLACE CONSTRAINT FOR (node:Label) REQUIRE node.prop $typeKeyword BOOLEAN"
     ) {
-      parsesTo[ast.Statements](ast.CreateNodePropertyTypeConstraint(
+      parsesTo[ast.Statements](ast.CreateConstraint.createNodePropertyTypeConstraint(
         varFor("node"),
         labelName("Label"),
         prop("node", "prop"),
@@ -1421,7 +1421,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     test(
       s"CREATE OR REPLACE CONSTRAINT IF NOT EXISTS FOR (node:Label) REQUIRE node.prop $typeKeyword BOOLEAN"
     ) {
-      parsesTo[ast.Statements](ast.CreateNodePropertyTypeConstraint(
+      parsesTo[ast.Statements](ast.CreateConstraint.createNodePropertyTypeConstraint(
         varFor("node"),
         labelName("Label"),
         prop("node", "prop"),
@@ -1435,7 +1435,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     test(
       s"CREATE CONSTRAINT IF NOT EXISTS FOR (node:Label) REQUIRE (node.prop) $typeKeyword BOOLEAN"
     ) {
-      parsesTo[ast.Statements](ast.CreateNodePropertyTypeConstraint(
+      parsesTo[ast.Statements](ast.CreateConstraint.createNodePropertyTypeConstraint(
         varFor("node"),
         labelName("Label"),
         prop("node", "prop"),
@@ -1449,7 +1449,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     test(
       s"CREATE CONSTRAINT my_constraint FOR (node:Label) REQUIRE (node.prop) $typeKeyword STRING"
     ) {
-      parsesTo[ast.Statements](ast.CreateNodePropertyTypeConstraint(
+      parsesTo[ast.Statements](ast.CreateConstraint.createNodePropertyTypeConstraint(
         varFor("node"),
         labelName("Label"),
         prop("node", "prop"),
@@ -1463,7 +1463,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     test(
       s"CREATE OR REPLACE CONSTRAINT my_constraint FOR (node:Label) REQUIRE node.prop $typeKeyword STRING"
     ) {
-      parsesTo[ast.Statements](ast.CreateNodePropertyTypeConstraint(
+      parsesTo[ast.Statements](ast.CreateConstraint.createNodePropertyTypeConstraint(
         varFor("node"),
         labelName("Label"),
         prop("node", "prop"),
@@ -1477,7 +1477,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     test(
       s"CREATE OR REPLACE CONSTRAINT my_constraint IF NOT EXISTS FOR (node:Label) REQUIRE node.prop $typeKeyword STRING"
     ) {
-      parsesTo[ast.Statements](ast.CreateNodePropertyTypeConstraint(
+      parsesTo[ast.Statements](ast.CreateConstraint.createNodePropertyTypeConstraint(
         varFor("node"),
         labelName("Label"),
         prop("node", "prop"),
@@ -1491,7 +1491,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     test(
       s"CREATE CONSTRAINT my_constraint IF NOT EXISTS FOR (node:Label) REQUIRE node.prop $typeKeyword STRING"
     ) {
-      parsesTo[ast.Statements](ast.CreateNodePropertyTypeConstraint(
+      parsesTo[ast.Statements](ast.CreateConstraint.createNodePropertyTypeConstraint(
         varFor("node"),
         labelName("Label"),
         prop("node", "prop"),
@@ -1505,7 +1505,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     test(
       s"CREATE CONSTRAINT my_constraint FOR (node:Label) REQUIRE node.prop $typeKeyword STRING OPTIONS {}"
     ) {
-      parsesTo[ast.Statements](ast.CreateNodePropertyTypeConstraint(
+      parsesTo[ast.Statements](ast.CreateConstraint.createNodePropertyTypeConstraint(
         varFor("node"),
         labelName("Label"),
         prop("node", "prop"),
@@ -1532,7 +1532,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     // Relationship property type
 
     test(s"CREATE CONSTRAINT FOR ()-[r:R]-() REQUIRE r.prop $typeKeyword BOOLEAN") {
-      parsesTo[ast.Statements](ast.CreateRelationshipPropertyTypeConstraint(
+      parsesTo[ast.Statements](ast.CreateConstraint.createRelationshipPropertyTypeConstraint(
         varFor("r"),
         relTypeName("R"),
         prop("r", "prop"),
@@ -1544,7 +1544,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     }
 
     test(s"CREATE CONSTRAINT FOR ()-[r:R]->() REQUIRE r.prop $typeKeyword BOOLEAN") {
-      parsesTo[ast.Statements](ast.CreateRelationshipPropertyTypeConstraint(
+      parsesTo[ast.Statements](ast.CreateConstraint.createRelationshipPropertyTypeConstraint(
         varFor("r"),
         relTypeName("R"),
         prop("r", "prop"),
@@ -1558,7 +1558,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     test(
       s"CREATE CONSTRAINT FOR ()<-[r:R]-() REQUIRE (r.prop) $typeKeyword BOOLEAN"
     ) {
-      parsesTo[ast.Statements](ast.CreateRelationshipPropertyTypeConstraint(
+      parsesTo[ast.Statements](ast.CreateConstraint.createRelationshipPropertyTypeConstraint(
         varFor("r"),
         relTypeName("R"),
         prop("r", "prop"),
@@ -1572,7 +1572,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     test(
       s"CREATE CONSTRAINT FOR ()<-[r:R]->() REQUIRE (r.prop) $typeKeyword BOOLEAN"
     ) {
-      parsesTo[ast.Statements](ast.CreateRelationshipPropertyTypeConstraint(
+      parsesTo[ast.Statements](ast.CreateConstraint.createRelationshipPropertyTypeConstraint(
         varFor("r"),
         relTypeName("R"),
         prop("r", "prop"),
@@ -1586,7 +1586,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     test(
       s"CREATE OR REPLACE CONSTRAINT FOR ()<-[r:R]-() REQUIRE r.prop $typeKeyword BOOLEAN"
     ) {
-      parsesTo[ast.Statements](ast.CreateRelationshipPropertyTypeConstraint(
+      parsesTo[ast.Statements](ast.CreateConstraint.createRelationshipPropertyTypeConstraint(
         varFor("r"),
         relTypeName("R"),
         prop("r", "prop"),
@@ -1600,7 +1600,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     test(
       s"CREATE OR REPLACE CONSTRAINT IF NOT EXISTS FOR ()-[r:R]-() REQUIRE r.prop $typeKeyword BOOLEAN"
     ) {
-      parsesTo[ast.Statements](ast.CreateRelationshipPropertyTypeConstraint(
+      parsesTo[ast.Statements](ast.CreateConstraint.createRelationshipPropertyTypeConstraint(
         varFor("r"),
         relTypeName("R"),
         prop("r", "prop"),
@@ -1614,7 +1614,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     test(
       s"CREATE CONSTRAINT IF NOT EXISTS FOR ()-[r:R]->() REQUIRE r.prop $typeKeyword BOOLEAN"
     ) {
-      parsesTo[ast.Statements](ast.CreateRelationshipPropertyTypeConstraint(
+      parsesTo[ast.Statements](ast.CreateConstraint.createRelationshipPropertyTypeConstraint(
         varFor("r"),
         relTypeName("R"),
         prop("r", "prop"),
@@ -1628,7 +1628,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     test(
       s"CREATE CONSTRAINT FOR ()-[r:R]-() REQUIRE (r.prop) $typeKeyword BOOLEAN OPTIONS {}"
     ) {
-      parsesTo[ast.Statements](ast.CreateRelationshipPropertyTypeConstraint(
+      parsesTo[ast.Statements](ast.CreateConstraint.createRelationshipPropertyTypeConstraint(
         varFor("r"),
         relTypeName("R"),
         prop("r", "prop"),
@@ -1642,7 +1642,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     test(
       s"CREATE CONSTRAINT `$$my_constraint` FOR ()-[r:R]-() REQUIRE r.prop $typeKeyword STRING"
     ) {
-      parsesTo[ast.Statements](ast.CreateRelationshipPropertyTypeConstraint(
+      parsesTo[ast.Statements](ast.CreateConstraint.createRelationshipPropertyTypeConstraint(
         varFor("r"),
         relTypeName("R"),
         prop("r", "prop"),
@@ -1656,7 +1656,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     test(
       s"CREATE CONSTRAINT my_constraint FOR ()-[r:R]-() REQUIRE (r.prop) $typeKeyword STRING"
     ) {
-      parsesTo[ast.Statements](ast.CreateRelationshipPropertyTypeConstraint(
+      parsesTo[ast.Statements](ast.CreateConstraint.createRelationshipPropertyTypeConstraint(
         varFor("r"),
         relTypeName("R"),
         prop("r", "prop"),
@@ -1670,7 +1670,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     test(
       s"CREATE OR REPLACE CONSTRAINT `$$my_constraint` FOR ()-[r:R]-() REQUIRE r.prop $typeKeyword STRING"
     ) {
-      parsesTo[ast.Statements](ast.CreateRelationshipPropertyTypeConstraint(
+      parsesTo[ast.Statements](ast.CreateConstraint.createRelationshipPropertyTypeConstraint(
         varFor("r"),
         relTypeName("R"),
         prop("r", "prop"),
@@ -1684,7 +1684,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     test(
       s"CREATE OR REPLACE CONSTRAINT `$$my_constraint` IF NOT EXISTS FOR ()-[r:R]->() REQUIRE (r.prop) $typeKeyword STRING"
     ) {
-      parsesTo[ast.Statements](ast.CreateRelationshipPropertyTypeConstraint(
+      parsesTo[ast.Statements](ast.CreateConstraint.createRelationshipPropertyTypeConstraint(
         varFor("r"),
         relTypeName("R"),
         prop("r", "prop"),
@@ -1698,7 +1698,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     test(
       s"CREATE CONSTRAINT `$$my_constraint` IF NOT EXISTS FOR ()<-[r:R]-() REQUIRE r.prop $typeKeyword STRING"
     ) {
-      parsesTo[ast.Statements](ast.CreateRelationshipPropertyTypeConstraint(
+      parsesTo[ast.Statements](ast.CreateConstraint.createRelationshipPropertyTypeConstraint(
         varFor("r"),
         relTypeName("R"),
         prop("r", "prop"),
@@ -1724,7 +1724,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
   })
 
   test("CREATE CONSTRAINT $name FOR (n:L) REQUIRE n.prop IS TYPED STRING") {
-    parsesTo[ast.Statements](ast.CreateNodePropertyTypeConstraint(
+    parsesTo[ast.Statements](ast.CreateConstraint.createNodePropertyTypeConstraint(
       varFor("n"),
       labelName("L"),
       prop("n", "prop"),
@@ -1736,7 +1736,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
   }
 
   test("CREATE CONSTRAINT $name FOR ()-[r:R]-() REQUIRE r.prop IS TYPED STRING") {
-    parsesTo[ast.Statements](ast.CreateRelationshipPropertyTypeConstraint(
+    parsesTo[ast.Statements](ast.CreateConstraint.createRelationshipPropertyTypeConstraint(
       varFor("r"),
       relTypeName("R"),
       prop("r", "prop"),
@@ -2189,7 +2189,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
 
   allowedNonListSingleTypes.foreach { case (typeString, typeExpr: CypherType) =>
     test(s"CREATE CONSTRAINT FOR (n:Label) REQUIRE r.prop IS TYPED $typeString") {
-      parsesTo[ast.Statements](ast.CreateNodePropertyTypeConstraint(
+      parsesTo[ast.Statements](ast.CreateConstraint.createNodePropertyTypeConstraint(
         varFor("n"),
         labelName("Label"),
         prop("r", "prop"),
@@ -2203,7 +2203,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     test(
       s"CREATE CONSTRAINT my_constraint FOR (n:Label) REQUIRE r.prop IS TYPED ${typeString.toLowerCase}"
     ) {
-      parsesTo[ast.Statements](ast.CreateNodePropertyTypeConstraint(
+      parsesTo[ast.Statements](ast.CreateConstraint.createNodePropertyTypeConstraint(
         varFor("n"),
         labelName("Label"),
         prop("r", "prop"),
@@ -2215,7 +2215,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     }
 
     test(s"CREATE CONSTRAINT FOR ()-[r:R]-() REQUIRE n.prop IS TYPED ${typeString.toLowerCase}") {
-      parsesTo[ast.Statements](ast.CreateRelationshipPropertyTypeConstraint(
+      parsesTo[ast.Statements](ast.CreateConstraint.createRelationshipPropertyTypeConstraint(
         varFor("r"),
         relTypeName("R"),
         prop("n", "prop"),
@@ -2229,7 +2229,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     test(
       s"CREATE CONSTRAINT my_constraint FOR ()-[r:R]-() REQUIRE n.prop IS TYPED $typeString"
     ) {
-      parsesTo[ast.Statements](ast.CreateRelationshipPropertyTypeConstraint(
+      parsesTo[ast.Statements](ast.CreateConstraint.createRelationshipPropertyTypeConstraint(
         varFor("r"),
         relTypeName("R"),
         prop("n", "prop"),
@@ -2245,7 +2245,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     test(
       s"CREATE CONSTRAINT my_constraint FOR (n:Label) REQUIRE r.prop IS TYPED ${typeString.toLowerCase}"
     ) {
-      parsesTo[ast.Statements](ast.CreateNodePropertyTypeConstraint(
+      parsesTo[ast.Statements](ast.CreateConstraint.createNodePropertyTypeConstraint(
         varFor("n"),
         labelName("Label"),
         prop("r", "prop"),
@@ -2259,7 +2259,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     test(
       s"CREATE CONSTRAINT my_constraint FOR ()-[r:R]-() REQUIRE n.prop IS TYPED $typeString"
     ) {
-      parsesTo[ast.Statements](ast.CreateRelationshipPropertyTypeConstraint(
+      parsesTo[ast.Statements](ast.CreateConstraint.createRelationshipPropertyTypeConstraint(
         varFor("r"),
         relTypeName("R"),
         prop("n", "prop"),
@@ -2276,7 +2276,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     test(
       s"CREATE CONSTRAINT my_constraint FOR (n:Label) REQUIRE r.prop IS TYPED ${listTypeString.toLowerCase}"
     ) {
-      parses[ast.Statements].toAstIgnorePos(ast.Statements(Seq(ast.CreateNodePropertyTypeConstraint(
+      parses[ast.Statements].toAstIgnorePos(ast.Statements(Seq(ast.CreateConstraint.createNodePropertyTypeConstraint(
         varFor("n"),
         labelName("Label"),
         prop("r", "prop"),
@@ -2290,15 +2290,17 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     test(
       s"CREATE CONSTRAINT my_constraint FOR ()-[r:R]-() REQUIRE n.prop IS TYPED $listTypeString"
     ) {
-      parses[ast.Statements].toAstIgnorePos(ast.Statements(Seq(ast.CreateRelationshipPropertyTypeConstraint(
-        varFor("r"),
-        relTypeName("R"),
-        prop("n", "prop"),
-        listTypeExpr,
-        Some("my_constraint"),
-        ast.IfExistsThrowError,
-        ast.NoOptions
-      )(pos))))
+      parses[ast.Statements].toAstIgnorePos(
+        ast.Statements(Seq(ast.CreateConstraint.createRelationshipPropertyTypeConstraint(
+          varFor("r"),
+          relTypeName("R"),
+          prop("n", "prop"),
+          listTypeExpr,
+          Some("my_constraint"),
+          ast.IfExistsThrowError,
+          ast.NoOptions
+        )(pos)))
+      )
     }
   }
 
@@ -2306,7 +2308,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     test(
       s"CREATE CONSTRAINT my_constraint FOR (n:Label) REQUIRE r.prop IS TYPED ${unionTypeString.toLowerCase}"
     ) {
-      parses[ast.Statements].toAstIgnorePos(ast.Statements(Seq(ast.CreateNodePropertyTypeConstraint(
+      parses[ast.Statements].toAstIgnorePos(ast.Statements(Seq(ast.CreateConstraint.createNodePropertyTypeConstraint(
         varFor("n"),
         labelName("Label"),
         prop("r", "prop"),
@@ -2320,15 +2322,17 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     test(
       s"CREATE CONSTRAINT my_constraint FOR ()-[r:R]-() REQUIRE n.prop IS TYPED $unionTypeString"
     ) {
-      parses[ast.Statements].toAstIgnorePos(ast.Statements(Seq(ast.CreateRelationshipPropertyTypeConstraint(
-        varFor("r"),
-        relTypeName("R"),
-        prop("n", "prop"),
-        unionTypeExpr,
-        Some("my_constraint"),
-        ast.IfExistsThrowError,
-        ast.NoOptions
-      )(pos))))
+      parses[ast.Statements].toAstIgnorePos(
+        ast.Statements(Seq(ast.CreateConstraint.createRelationshipPropertyTypeConstraint(
+          varFor("r"),
+          relTypeName("R"),
+          prop("n", "prop"),
+          unionTypeExpr,
+          Some("my_constraint"),
+          ast.IfExistsThrowError,
+          ast.NoOptions
+        )(pos)))
+      )
     }
   }
 
@@ -2337,7 +2341,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
   test(
     "CREATE CONSTRAINT my_constraint FOR (n:Person) REQUIRE n.prop IS NOT NULL OPTIONS {indexProvider : 'range-1.0'};"
   ) {
-    parsesTo[ast.Statements](ast.CreateNodePropertyExistenceConstraint(
+    parsesTo[ast.Statements](ast.CreateConstraint.createNodePropertyExistenceConstraint(
       varFor("n"),
       labelName("Person"),
       prop("n", "prop"),
@@ -2354,7 +2358,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     // The purpose of the test is to make sure the parser does not throw an error on the semicolon, which was an issue before.
     // If we want to test that both statements are parsed, the test framework needs to be extended.
     parses[ast.Statements].withAstLike { statements =>
-      statements.get(0) shouldBe ast.CreateNodePropertyExistenceConstraint(
+      statements.get(0) shouldBe ast.CreateConstraint.createNodePropertyExistenceConstraint(
         varFor("n"),
         labelName("Person"),
         prop("n", "prop"),
@@ -2366,7 +2370,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
   }
 
   test("CREATE CONSTRAINT FOR FOR (node:Label) REQUIRE (node.prop) IS NODE KEY") {
-    assertAst(ast.CreateNodeKeyConstraint(
+    assertAst(ast.CreateConstraint.createNodeKeyConstraint(
       varFor("node", (1, 28, 27)),
       labelName("Label", (1, 33, 32)),
       Seq(prop("node", "prop", (1, 49, 48))),
@@ -2377,7 +2381,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
   }
 
   test("CREATE CONSTRAINT FOR FOR (node:Label) REQUIRE (node.prop) IS UNIQUE") {
-    assertAst(ast.CreateNodePropertyUniquenessConstraint(
+    assertAst(ast.CreateConstraint.createNodePropertyUniquenessConstraint(
       varFor("node", (1, 28, 27)),
       labelName("Label", (1, 33, 32)),
       Seq(prop("node", "prop", (1, 49, 48))),
@@ -2388,7 +2392,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
   }
 
   test("CREATE CONSTRAINT FOR FOR (node:Label) REQUIRE node.prop IS NOT NULL") {
-    assertAst(ast.CreateNodePropertyExistenceConstraint(
+    assertAst(ast.CreateConstraint.createNodePropertyExistenceConstraint(
       varFor("node", (1, 28, 27)),
       labelName("Label", (1, 33, 32)),
       prop("node", "prop", (1, 48, 47)),
@@ -2399,7 +2403,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
   }
 
   test("CREATE CONSTRAINT FOR FOR ()-[r:R]-() REQUIRE (r.prop) IS NOT NULL") {
-    assertAst(ast.CreateRelationshipPropertyExistenceConstraint(
+    assertAst(ast.CreateConstraint.createRelationshipPropertyExistenceConstraint(
       varFor("r", (1, 31, 30)),
       relTypeName("R", (1, 33, 32)),
       prop("r", "prop", (1, 48, 47)),

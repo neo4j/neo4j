@@ -22,6 +22,7 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticCheck.when
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheckResult
 import org.neo4j.cypher.internal.ast.semantics.SemanticError
 import org.neo4j.cypher.internal.ast.semantics.SemanticExpressionCheck
+import org.neo4j.cypher.internal.expressions.ElementTypeName
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.FunctionName
 import org.neo4j.cypher.internal.expressions.LabelName
@@ -45,10 +46,8 @@ import org.neo4j.cypher.internal.util.symbols.IntegerType
 import org.neo4j.cypher.internal.util.symbols.ListType
 import org.neo4j.cypher.internal.util.symbols.LocalDateTimeType
 import org.neo4j.cypher.internal.util.symbols.LocalTimeType
-import org.neo4j.cypher.internal.util.symbols.NodeType
 import org.neo4j.cypher.internal.util.symbols.PointType
 import org.neo4j.cypher.internal.util.symbols.PropertyValueType
-import org.neo4j.cypher.internal.util.symbols.RelationshipType
 import org.neo4j.cypher.internal.util.symbols.StringType
 import org.neo4j.cypher.internal.util.symbols.ZonedDateTimeType
 import org.neo4j.cypher.internal.util.symbols.ZonedTimeType
@@ -82,17 +81,17 @@ sealed trait SchemaCommand extends StatementWithGraph with SemanticAnalysisTooli
 
 // Indexes
 
-abstract class CreateIndex(
-  variable: Variable,
-  properties: List[Property],
-  ifExistsDo: IfExistsDo,
-  isNodeIndex: Boolean
-)(val position: InputPosition)
-    extends SchemaCommand {
-
+sealed trait CreateIndex extends SchemaCommand {
   // To anonymize the name
   val name: Option[Either[String, Parameter]]
   def withName(name: Option[Either[String, Parameter]]): CreateIndex
+
+  def indexType: CreateIndexType
+  def variable: Variable
+  def isNodeIndex: Boolean
+  def properties: List[Property]
+  def ifExistsDo: IfExistsDo
+  def options: Options
 
   override def semanticCheck: SemanticCheck = ifExistsDo match {
     case IfExistsInvalidSyntax | IfExistsReplace =>
@@ -110,81 +109,406 @@ abstract class CreateIndex(
   }
 }
 
-case class CreateBtreeNodeIndex(
-  variable: Variable,
-  label: LabelName,
-  properties: List[Property],
-  override val name: Option[Either[String, Parameter]],
-  ifExistsDo: IfExistsDo,
-  options: Options,
-  useGraph: Option[GraphSelection] = None
-)(override val position: InputPosition)
-    extends CreateIndex(variable, properties, ifExistsDo, true)(position) {
-  override def withGraph(useGraph: Option[UseGraph]): SchemaCommand = copy(useGraph = useGraph)(position)
-  override def withName(name: Option[Either[String, Parameter]]): CreateBtreeNodeIndex = copy(name = name)(position)
+object CreateIndex {
 
-  override def semanticCheck: SemanticCheck =
-    error("Invalid index type b-tree, use range, point or text index instead.", position)
+  // Help methods for creating the different index types
+
+  def createBtreeNodeIndex(
+    variable: Variable,
+    label: LabelName,
+    properties: List[Property],
+    name: Option[Either[String, Parameter]],
+    ifExistsDo: IfExistsDo,
+    options: Options,
+    useGraph: Option[GraphSelection] = None
+  )(position: InputPosition): CreateIndex =
+    CreateSingleLabelPropertyIndexCommand(
+      variable,
+      entityName = label,
+      properties,
+      name,
+      indexType = BtreeCreateIndex,
+      ifExistsDo,
+      options,
+      useGraph
+    )(position)
+
+  def createBtreeRelationshipIndex(
+    variable: Variable,
+    relType: RelTypeName,
+    properties: List[Property],
+    name: Option[Either[String, Parameter]],
+    ifExistsDo: IfExistsDo,
+    options: Options,
+    useGraph: Option[GraphSelection] = None
+  )(position: InputPosition): CreateIndex =
+    CreateSingleLabelPropertyIndexCommand(
+      variable,
+      entityName = relType,
+      properties,
+      name,
+      indexType = BtreeCreateIndex,
+      ifExistsDo,
+      options,
+      useGraph
+    )(position)
+
+  def createFulltextNodeIndex(
+    variable: Variable,
+    labels: List[LabelName],
+    properties: List[Property],
+    name: Option[Either[String, Parameter]],
+    ifExistsDo: IfExistsDo,
+    options: Options,
+    useGraph: Option[GraphSelection] = None
+  )(position: InputPosition): CreateIndex =
+    CreateFulltextIndexCommand(
+      variable,
+      entityNames = Left(labels),
+      properties,
+      name,
+      ifExistsDo,
+      options,
+      useGraph
+    )(position)
+
+  def createFulltextRelationshipIndex(
+    variable: Variable,
+    relTypes: List[RelTypeName],
+    properties: List[Property],
+    name: Option[Either[String, Parameter]],
+    ifExistsDo: IfExistsDo,
+    options: Options,
+    useGraph: Option[GraphSelection] = None
+  )(position: InputPosition): CreateIndex =
+    CreateFulltextIndexCommand(
+      variable,
+      entityNames = Right(relTypes),
+      properties,
+      name,
+      ifExistsDo,
+      options,
+      useGraph
+    )(position)
+
+  def createLookupIndex(
+    variable: Variable,
+    isNodeIndex: Boolean,
+    function: FunctionInvocation,
+    name: Option[Either[String, Parameter]],
+    ifExistsDo: IfExistsDo,
+    options: Options,
+    useGraph: Option[GraphSelection] = None
+  )(position: InputPosition): CreateIndex =
+    CreateLookupIndexCommand(
+      variable,
+      isNodeIndex,
+      function,
+      name,
+      ifExistsDo,
+      options,
+      useGraph
+    )(position)
+
+  def createPointNodeIndex(
+    variable: Variable,
+    label: LabelName,
+    properties: List[Property],
+    name: Option[Either[String, Parameter]],
+    ifExistsDo: IfExistsDo,
+    options: Options,
+    useGraph: Option[GraphSelection] = None
+  )(position: InputPosition): CreateIndex =
+    CreateSingleLabelPropertyIndexCommand(
+      variable,
+      entityName = label,
+      properties,
+      name,
+      indexType = PointCreateIndex,
+      ifExistsDo,
+      options,
+      useGraph
+    )(position)
+
+  def createPointRelationshipIndex(
+    variable: Variable,
+    relType: RelTypeName,
+    properties: List[Property],
+    name: Option[Either[String, Parameter]],
+    ifExistsDo: IfExistsDo,
+    options: Options,
+    useGraph: Option[GraphSelection] = None
+  )(position: InputPosition): CreateIndex =
+    CreateSingleLabelPropertyIndexCommand(
+      variable,
+      entityName = relType,
+      properties,
+      name,
+      indexType = PointCreateIndex,
+      ifExistsDo,
+      options,
+      useGraph
+    )(position)
+
+  def createRangeNodeIndex(
+    variable: Variable,
+    label: LabelName,
+    properties: List[Property],
+    name: Option[Either[String, Parameter]],
+    ifExistsDo: IfExistsDo,
+    options: Options,
+    fromDefault: Boolean,
+    useGraph: Option[GraphSelection] = None
+  )(position: InputPosition): CreateIndex =
+    CreateSingleLabelPropertyIndexCommand(
+      variable,
+      entityName = label,
+      properties,
+      name,
+      indexType = RangeCreateIndex(fromDefault),
+      ifExistsDo,
+      options,
+      useGraph
+    )(position)
+
+  def createRangeRelationshipIndex(
+    variable: Variable,
+    relType: RelTypeName,
+    properties: List[Property],
+    name: Option[Either[String, Parameter]],
+    ifExistsDo: IfExistsDo,
+    options: Options,
+    fromDefault: Boolean,
+    useGraph: Option[GraphSelection] = None
+  )(position: InputPosition): CreateIndex =
+    CreateSingleLabelPropertyIndexCommand(
+      variable,
+      entityName = relType,
+      properties,
+      name,
+      indexType = RangeCreateIndex(fromDefault),
+      ifExistsDo,
+      options,
+      useGraph
+    )(position)
+
+  def createTextNodeIndex(
+    variable: Variable,
+    label: LabelName,
+    properties: List[Property],
+    name: Option[Either[String, Parameter]],
+    ifExistsDo: IfExistsDo,
+    options: Options,
+    useGraph: Option[GraphSelection] = None
+  )(position: InputPosition): CreateIndex =
+    CreateSingleLabelPropertyIndexCommand(
+      variable,
+      entityName = label,
+      properties,
+      name,
+      indexType = TextCreateIndex,
+      ifExistsDo,
+      options,
+      useGraph
+    )(position)
+
+  def createTextRelationshipIndex(
+    variable: Variable,
+    relType: RelTypeName,
+    properties: List[Property],
+    name: Option[Either[String, Parameter]],
+    ifExistsDo: IfExistsDo,
+    options: Options,
+    useGraph: Option[GraphSelection] = None
+  )(position: InputPosition): CreateIndex =
+    CreateSingleLabelPropertyIndexCommand(
+      variable,
+      entityName = relType,
+      properties,
+      name,
+      indexType = TextCreateIndex,
+      ifExistsDo,
+      options,
+      useGraph
+    )(position)
+
+  def createVectorNodeIndex(
+    variable: Variable,
+    label: LabelName,
+    properties: List[Property],
+    name: Option[Either[String, Parameter]],
+    ifExistsDo: IfExistsDo,
+    options: Options,
+    useGraph: Option[GraphSelection] = None
+  )(position: InputPosition): CreateIndex =
+    CreateSingleLabelPropertyIndexCommand(
+      variable,
+      entityName = label,
+      properties,
+      name,
+      indexType = VectorCreateIndex,
+      ifExistsDo,
+      options,
+      useGraph
+    )(position)
+
+  def createVectorRelationshipIndex(
+    variable: Variable,
+    relType: RelTypeName,
+    properties: List[Property],
+    name: Option[Either[String, Parameter]],
+    ifExistsDo: IfExistsDo,
+    options: Options,
+    useGraph: Option[GraphSelection] = None
+  )(position: InputPosition): CreateIndex =
+    CreateSingleLabelPropertyIndexCommand(
+      variable,
+      entityName = relType,
+      properties,
+      name,
+      indexType = VectorCreateIndex,
+      ifExistsDo,
+      options,
+      useGraph
+    )(position)
+
 }
 
-case class CreateBtreeRelationshipIndex(
+sealed trait CreateSingleLabelPropertyIndex extends CreateIndex {
+  def entityName: ElementTypeName
+
+  val (isNodeIndex: Boolean, entityIndexDescription: String) = entityName match {
+    case _: LabelName   => (true, indexType.nodeDescription)
+    case _: RelTypeName => (false, indexType.relDescription)
+  }
+
+  override def semanticCheck: SemanticCheck = {
+    if (indexType == BtreeCreateIndex)
+      error("Invalid index type b-tree, use range, point or text index instead.", position)
+    else {
+      checkOptionsMap(entityIndexDescription, options) chain
+        super.semanticCheck chain {
+          if (indexType.singlePropertyOnly) checkSingleProperty(indexType.allDescription, properties)
+          else SemanticCheck.success
+        }
+    }
+  }
+}
+
+object CreateSingleLabelPropertyIndex {
+
+  def unapply(c: CreateSingleLabelPropertyIndex): Some[(
+    Variable,
+    ElementTypeName,
+    List[Property],
+    Option[Either[String, Parameter]],
+    CreateIndexType,
+    IfExistsDo,
+    Options
+  )] =
+    Some((c.variable, c.entityName, c.properties, c.name, c.indexType, c.ifExistsDo, c.options))
+}
+
+sealed trait CreateFulltextIndex extends CreateIndex {
+  def entityNames: Either[List[LabelName], List[RelTypeName]]
+
+  override val indexType: CreateIndexType = FulltextCreateIndex
+
+  val (isNodeIndex: Boolean, entityIndexDescription: String) = entityNames match {
+    case Left(_)  => (true, indexType.nodeDescription)
+    case Right(_) => (false, indexType.relDescription)
+  }
+
+  override def semanticCheck: SemanticCheck =
+    checkOptionsMap(entityIndexDescription, options) chain super.semanticCheck
+}
+
+object CreateFulltextIndex {
+
+  def unapply(c: CreateFulltextIndex): Some[(
+    Variable,
+    Either[List[LabelName], List[RelTypeName]],
+    List[Property],
+    Option[Either[String, Parameter]],
+    CreateIndexType,
+    IfExistsDo,
+    Options
+  )] =
+    Some((c.variable, c.entityNames, c.properties, c.name, c.indexType, c.ifExistsDo, c.options))
+}
+
+sealed trait CreateLookupIndex extends CreateIndex {
+  def function: FunctionInvocation
+
+  override val indexType: CreateIndexType = LookupCreateIndex
+  override val properties: List[Property] = List.empty
+
+  private def allowedFunction(name: String): Boolean =
+    if (isNodeIndex) name.equalsIgnoreCase(Labels.name) else name.equalsIgnoreCase(Type.name)
+
+  override def semanticCheck: SemanticCheck = function match {
+    case FunctionInvocation(FunctionName(_, name), _, _, _, _) if !allowedFunction(name) =>
+      val (validFunction, entityIndexDescription) =
+        if (isNodeIndex) (Labels.name, indexType.nodeDescription)
+        else (Type.name, indexType.relDescription)
+
+      error(
+        s"Failed to create $entityIndexDescription: Function '$name' is not allowed, valid function is '$validFunction'.",
+        position
+      )
+    case _ =>
+      checkOptionsMap(indexType.allDescription, options) chain
+        super.semanticCheck chain
+        SemanticExpressionCheck.simple(function)
+  }
+}
+
+object CreateLookupIndex {
+
+  def unapply(c: CreateLookupIndex): Some[(
+    Variable,
+    Boolean,
+    FunctionInvocation,
+    Option[Either[String, Parameter]],
+    CreateIndexType,
+    IfExistsDo,
+    Options
+  )] =
+    Some((c.variable, c.isNodeIndex, c.function, c.name, c.indexType, c.ifExistsDo, c.options))
+}
+
+private case class CreateSingleLabelPropertyIndexCommand(
   variable: Variable,
-  relType: RelTypeName,
+  entityName: ElementTypeName,
   properties: List[Property],
   override val name: Option[Either[String, Parameter]],
+  indexType: CreateIndexType,
   ifExistsDo: IfExistsDo,
   options: Options,
   useGraph: Option[GraphSelection] = None
-)(override val position: InputPosition)
-    extends CreateIndex(variable, properties, ifExistsDo, false)(position) {
+)(val position: InputPosition) extends CreateSingleLabelPropertyIndex {
   override def withGraph(useGraph: Option[UseGraph]): SchemaCommand = copy(useGraph = useGraph)(position)
 
-  override def withName(name: Option[Either[String, Parameter]]): CreateBtreeRelationshipIndex =
+  override def withName(name: Option[Either[String, Parameter]]): CreateSingleLabelPropertyIndexCommand =
     copy(name = name)(position)
-
-  override def semanticCheck: SemanticCheck =
-    error("Invalid index type b-tree, use range, point or text index instead.", position)
 }
 
-case class CreateRangeNodeIndex(
+private case class CreateFulltextIndexCommand(
   variable: Variable,
-  label: LabelName,
+  entityNames: Either[List[LabelName], List[RelTypeName]],
   properties: List[Property],
   override val name: Option[Either[String, Parameter]],
   ifExistsDo: IfExistsDo,
   options: Options,
-  fromDefault: Boolean,
   useGraph: Option[GraphSelection] = None
-)(override val position: InputPosition)
-    extends CreateIndex(variable, properties, ifExistsDo, true)(position) {
-  override def withGraph(useGraph: Option[UseGraph]): SchemaCommand = copy(useGraph = useGraph)(position)
-  override def withName(name: Option[Either[String, Parameter]]): CreateRangeNodeIndex = copy(name = name)(position)
-
-  override def semanticCheck: SemanticCheck =
-    checkOptionsMap("range node property index", options) chain super.semanticCheck
-}
-
-case class CreateRangeRelationshipIndex(
-  variable: Variable,
-  relType: RelTypeName,
-  properties: List[Property],
-  override val name: Option[Either[String, Parameter]],
-  ifExistsDo: IfExistsDo,
-  options: Options,
-  fromDefault: Boolean,
-  useGraph: Option[GraphSelection] = None
-)(override val position: InputPosition)
-    extends CreateIndex(variable, properties, ifExistsDo, false)(position) {
+)(val position: InputPosition) extends CreateFulltextIndex {
   override def withGraph(useGraph: Option[UseGraph]): SchemaCommand = copy(useGraph = useGraph)(position)
 
-  override def withName(name: Option[Either[String, Parameter]]): CreateRangeRelationshipIndex =
+  override def withName(name: Option[Either[String, Parameter]]): CreateFulltextIndexCommand =
     copy(name = name)(position)
-
-  override def semanticCheck: SemanticCheck =
-    checkOptionsMap("range relationship property index", options) chain super.semanticCheck
 }
 
-case class CreateLookupIndex(
+private case class CreateLookupIndexCommand(
   variable: Variable,
   isNodeIndex: Boolean,
   function: FunctionInvocation,
@@ -192,184 +516,9 @@ case class CreateLookupIndex(
   ifExistsDo: IfExistsDo,
   options: Options,
   useGraph: Option[GraphSelection] = None
-)(override val position: InputPosition)
-    extends CreateIndex(variable, List.empty, ifExistsDo, isNodeIndex)(position) {
+)(val position: InputPosition) extends CreateLookupIndex {
   override def withGraph(useGraph: Option[UseGraph]): SchemaCommand = copy(useGraph = useGraph)(position)
-  override def withName(name: Option[Either[String, Parameter]]): CreateLookupIndex = copy(name = name)(position)
-
-  private def allowedFunction(name: String): Boolean =
-    if (isNodeIndex) name.equalsIgnoreCase(Labels.name) else name.equalsIgnoreCase(Type.name)
-
-  override def semanticCheck: SemanticCheck = function match {
-    case FunctionInvocation(FunctionName(_, name), _, _, _, _) if !allowedFunction(name) =>
-      if (isNodeIndex) error(
-        s"Failed to create node lookup index: Function '$name' is not allowed, valid function is '${Labels.name}'.",
-        position
-      )
-      else error(
-        s"Failed to create relationship lookup index: Function '$name' is not allowed, valid function is '${Type.name}'.",
-        position
-      )
-    case _ =>
-      checkOptionsMap("token lookup index", options) chain super.semanticCheck chain SemanticExpressionCheck.simple(
-        function
-      )
-  }
-}
-
-case class CreateFulltextNodeIndex(
-  variable: Variable,
-  label: List[LabelName],
-  properties: List[Property],
-  override val name: Option[Either[String, Parameter]],
-  ifExistsDo: IfExistsDo,
-  options: Options,
-  useGraph: Option[GraphSelection] = None
-)(override val position: InputPosition)
-    extends CreateIndex(variable, properties, ifExistsDo, true)(position) {
-  override def withGraph(useGraph: Option[UseGraph]): SchemaCommand = copy(useGraph = useGraph)(position)
-  override def withName(name: Option[Either[String, Parameter]]): CreateFulltextNodeIndex = copy(name = name)(position)
-
-  override def semanticCheck: SemanticCheck = checkOptionsMap("fulltext node index", options) chain super.semanticCheck
-}
-
-case class CreateFulltextRelationshipIndex(
-  variable: Variable,
-  relType: List[RelTypeName],
-  properties: List[Property],
-  override val name: Option[Either[String, Parameter]],
-  ifExistsDo: IfExistsDo,
-  options: Options,
-  useGraph: Option[GraphSelection] = None
-)(override val position: InputPosition)
-    extends CreateIndex(variable, properties, ifExistsDo, false)(position) {
-  override def withGraph(useGraph: Option[UseGraph]): SchemaCommand = copy(useGraph = useGraph)(position)
-
-  override def withName(name: Option[Either[String, Parameter]]): CreateFulltextRelationshipIndex =
-    copy(name = name)(position)
-
-  override def semanticCheck: SemanticCheck =
-    checkOptionsMap("fulltext relationship index", options) chain super.semanticCheck
-}
-
-case class CreateTextNodeIndex(
-  variable: Variable,
-  label: LabelName,
-  properties: List[Property],
-  override val name: Option[Either[String, Parameter]],
-  ifExistsDo: IfExistsDo,
-  options: Options,
-  useGraph: Option[GraphSelection] = None
-)(override val position: InputPosition)
-    extends CreateIndex(variable, properties, ifExistsDo, true)(position) {
-  override def withGraph(useGraph: Option[UseGraph]): SchemaCommand = copy(useGraph = useGraph)(position)
-  override def withName(name: Option[Either[String, Parameter]]): CreateTextNodeIndex = copy(name = name)(position)
-
-  override def semanticCheck: SemanticCheck =
-    checkOptionsMap("text node index", options) chain
-      super.semanticCheck chain
-      checkSingleProperty("text indexes", properties)
-}
-
-case class CreateTextRelationshipIndex(
-  variable: Variable,
-  relType: RelTypeName,
-  properties: List[Property],
-  override val name: Option[Either[String, Parameter]],
-  ifExistsDo: IfExistsDo,
-  options: Options,
-  useGraph: Option[GraphSelection] = None
-)(override val position: InputPosition)
-    extends CreateIndex(variable, properties, ifExistsDo, false)(position) {
-  override def withGraph(useGraph: Option[UseGraph]): SchemaCommand = copy(useGraph = useGraph)(position)
-
-  override def withName(name: Option[Either[String, Parameter]]): CreateTextRelationshipIndex =
-    copy(name = name)(position)
-
-  override def semanticCheck: SemanticCheck =
-    checkOptionsMap("text relationship index", options) chain
-      super.semanticCheck chain
-      checkSingleProperty("text indexes", properties)
-}
-
-case class CreatePointNodeIndex(
-  variable: Variable,
-  label: LabelName,
-  properties: List[Property],
-  override val name: Option[Either[String, Parameter]],
-  ifExistsDo: IfExistsDo,
-  options: Options,
-  useGraph: Option[GraphSelection] = None
-)(override val position: InputPosition)
-    extends CreateIndex(variable, properties, ifExistsDo, true)(position) {
-  override def withGraph(useGraph: Option[UseGraph]): SchemaCommand = copy(useGraph = useGraph)(position)
-  override def withName(name: Option[Either[String, Parameter]]): CreatePointNodeIndex = copy(name = name)(position)
-
-  override def semanticCheck: SemanticCheck =
-    checkOptionsMap("point node index", options) chain
-      super.semanticCheck chain
-      checkSingleProperty("point indexes", properties)
-}
-
-case class CreatePointRelationshipIndex(
-  variable: Variable,
-  relType: RelTypeName,
-  properties: List[Property],
-  override val name: Option[Either[String, Parameter]],
-  ifExistsDo: IfExistsDo,
-  options: Options,
-  useGraph: Option[GraphSelection] = None
-)(override val position: InputPosition)
-    extends CreateIndex(variable, properties, ifExistsDo, false)(position) {
-  override def withGraph(useGraph: Option[UseGraph]): SchemaCommand = copy(useGraph = useGraph)(position)
-
-  override def withName(name: Option[Either[String, Parameter]]): CreatePointRelationshipIndex =
-    copy(name = name)(position)
-
-  override def semanticCheck: SemanticCheck =
-    checkOptionsMap("point relationship index", options) chain
-      super.semanticCheck chain
-      checkSingleProperty("point indexes", properties)
-}
-
-case class CreateVectorNodeIndex(
-  variable: Variable,
-  label: LabelName,
-  properties: List[Property],
-  override val name: Option[Either[String, Parameter]],
-  ifExistsDo: IfExistsDo,
-  options: Options,
-  useGraph: Option[GraphSelection] = None
-)(override val position: InputPosition)
-    extends CreateIndex(variable, properties, ifExistsDo, true)(position) {
-  override def withGraph(useGraph: Option[UseGraph]): SchemaCommand = copy(useGraph = useGraph)(position)
-  override def withName(name: Option[Either[String, Parameter]]): CreateVectorNodeIndex = copy(name = name)(position)
-
-  override def semanticCheck: SemanticCheck =
-    checkOptionsMap("vector node index", options) chain
-      super.semanticCheck chain
-      checkSingleProperty("vector indexes", properties)
-}
-
-case class CreateVectorRelationshipIndex(
-  variable: Variable,
-  relType: RelTypeName,
-  properties: List[Property],
-  override val name: Option[Either[String, Parameter]],
-  ifExistsDo: IfExistsDo,
-  options: Options,
-  useGraph: Option[GraphSelection] = None
-)(override val position: InputPosition)
-    extends CreateIndex(variable, properties, ifExistsDo, false)(position) {
-  override def withGraph(useGraph: Option[UseGraph]): SchemaCommand = copy(useGraph = useGraph)(position)
-
-  override def withName(name: Option[Either[String, Parameter]]): CreateVectorRelationshipIndex =
-    copy(name = name)(position)
-
-  override def semanticCheck: SemanticCheck =
-    checkOptionsMap("vector relationship index", options) chain
-      super.semanticCheck chain
-      checkSingleProperty("vector indexes", properties)
+  override def withName(name: Option[Either[String, Parameter]]): CreateLookupIndexCommand = copy(name = name)(position)
 }
 
 case class DropIndexOnName(name: Either[String, Parameter], ifExists: Boolean, useGraph: Option[GraphSelection] = None)(
@@ -381,27 +530,18 @@ case class DropIndexOnName(name: Either[String, Parameter], ifExists: Boolean, u
 
 // Constraints
 
-sealed protected trait PropertyConstraintCommand extends SchemaCommand {
+sealed trait CreateConstraint extends SchemaCommand {
+  // To anonymize the name
+  val name: Option[Either[String, Parameter]]
+  def withName(name: Option[Either[String, Parameter]]): CreateConstraint
+
+  def constraintType: CreateConstraintType
   def variable: Variable
-
-  def property: Property
-
   def entityType: CypherType
-
-  override def semanticCheck: SemanticCheck =
-    declareVariable(variable, entityType) chain
-      SemanticExpressionCheck.simple(property) chain
-      when(!property.map.isInstanceOf[Variable]) {
-        error("Cannot index nested properties", property.position)
-      }
-}
-
-sealed protected trait CompositePropertyConstraintCommand extends SchemaCommand {
-  def variable: Variable
-
+  def entityName: ElementTypeName
   def properties: Seq[Property]
-
-  def entityType: CypherType
+  def ifExistsDo: IfExistsDo
+  def options: Options
 
   override def semanticCheck: SemanticCheck =
     declareVariable(variable, entityType) chain
@@ -412,53 +552,15 @@ sealed protected trait CompositePropertyConstraintCommand extends SchemaCommand 
             error("Cannot index nested properties", property.position)
           }
       }
-}
 
-sealed protected trait NodePropertyConstraintCommand extends PropertyConstraintCommand {
-
-  val entityType: NodeType = CTNode
-
-  def label: LabelName
-}
-
-sealed protected trait NodeCompositePropertyConstraintCommand extends CompositePropertyConstraintCommand {
-
-  val entityType: NodeType = CTNode
-
-  def label: LabelName
-}
-
-sealed protected trait RelationshipPropertyConstraintCommand extends PropertyConstraintCommand {
-
-  val entityType: RelationshipType = CTRelationship
-
-  def relType: RelTypeName
-}
-
-sealed protected trait RelationshipCompositePropertyConstraintCommand extends CompositePropertyConstraintCommand {
-
-  val entityType: RelationshipType = CTRelationship
-
-  def relType: RelTypeName
-}
-
-sealed trait CreateConstraint extends SchemaCommand {
-  // To anonymize the name
-  val name: Option[Either[String, Parameter]]
-  def withName(name: Option[Either[String, Parameter]]): CreateConstraint
-
-  protected def checkSemantics(
-    constraintTypeString: String,
-    ifExistsDo: IfExistsDo,
-    options: Options
-  ): SemanticCheck = ifExistsDo match {
+  protected def checkIfExistsDoAndOptions(): SemanticCheck = ifExistsDo match {
     case IfExistsInvalidSyntax | IfExistsReplace =>
       error(
-        s"Failed to create $constraintTypeString constraint: `OR REPLACE` cannot be used together with this command.",
+        s"Failed to create ${constraintType.description} constraint: `OR REPLACE` cannot be used together with this command.",
         position
       )
     case _ =>
-      checkOptionsMap(s"$constraintTypeString constraint", options)
+      checkOptionsMap(s"${constraintType.description} constraint", options)
   }
 
   private val allowedPropertyTypes = List(
@@ -487,7 +589,6 @@ sealed trait CreateConstraint extends SchemaCommand {
   )
 
   protected def checkPropertyTypes(
-    entityTypeString: String,
     originalPropertyType: CypherType,
     normalizedPropertyType: CypherType
   ): SemanticCheck = {
@@ -534,7 +635,7 @@ sealed trait CreateConstraint extends SchemaCommand {
           else (normalizedPropertyType.description, additionalErrorInfo(normalizedPropertyType))
 
         error(
-          s"Failed to create $entityTypeString property type constraint: " +
+          s"Failed to create ${constraintType.description} constraint: " +
             s"Invalid property type `$typeDescription`.$additionalError",
           originalPropertyType.position
         )
@@ -548,7 +649,7 @@ sealed trait CreateConstraint extends SchemaCommand {
       case SemanticCheckResult(state, _) => SemanticCheckResult(
           state,
           Seq(SemanticError(
-            s"Failed to create $entityTypeString property type constraint: " +
+            s"Failed to create ${constraintType.description} constraint: " +
               s"Invalid property type `${originalPropertyType.description}`.",
             originalPropertyType.position
           ))
@@ -557,155 +658,233 @@ sealed trait CreateConstraint extends SchemaCommand {
   }
 }
 
-case class CreateNodeKeyConstraint(
+object CreateConstraint {
+
+  def unapply(c: CreateConstraint): Some[(
+    Variable,
+    ElementTypeName,
+    Seq[Property],
+    Option[Either[String, Parameter]],
+    CreateConstraintType,
+    IfExistsDo,
+    Options
+  )] =
+    Some((c.variable, c.entityName, c.properties, c.name, c.constraintType, c.ifExistsDo, c.options))
+
+  // Help methods for creating the different constraint types
+
+  def createNodeKeyConstraint(
+    variable: Variable,
+    label: LabelName,
+    properties: Seq[Property],
+    name: Option[Either[String, Parameter]],
+    ifExistsDo: IfExistsDo,
+    options: Options,
+    useGraph: Option[GraphSelection] = None
+  )(position: InputPosition): CreateConstraint =
+    CreateConstraintCommand(
+      variable,
+      entityName = label,
+      properties,
+      name,
+      constraintType = NodeKey,
+      ifExistsDo,
+      options,
+      useGraph
+    )(position)
+
+  def createRelationshipKeyConstraint(
+    variable: Variable,
+    relType: RelTypeName,
+    properties: Seq[Property],
+    name: Option[Either[String, Parameter]],
+    ifExistsDo: IfExistsDo,
+    options: Options,
+    useGraph: Option[GraphSelection] = None
+  )(position: InputPosition): CreateConstraint =
+    CreateConstraintCommand(
+      variable,
+      entityName = relType,
+      properties,
+      name,
+      constraintType = RelationshipKey,
+      ifExistsDo,
+      options,
+      useGraph
+    )(position)
+
+  def createNodePropertyUniquenessConstraint(
+    variable: Variable,
+    label: LabelName,
+    properties: Seq[Property],
+    name: Option[Either[String, Parameter]],
+    ifExistsDo: IfExistsDo,
+    options: Options,
+    useGraph: Option[GraphSelection] = None
+  )(position: InputPosition): CreateConstraint =
+    CreateConstraintCommand(
+      variable,
+      entityName = label,
+      properties,
+      name,
+      constraintType = NodeUniqueness,
+      ifExistsDo,
+      options,
+      useGraph
+    )(position)
+
+  def createRelationshipPropertyUniquenessConstraint(
+    variable: Variable,
+    relType: RelTypeName,
+    properties: Seq[Property],
+    name: Option[Either[String, Parameter]],
+    ifExistsDo: IfExistsDo,
+    options: Options,
+    useGraph: Option[GraphSelection] = None
+  )(position: InputPosition): CreateConstraint =
+    CreateConstraintCommand(
+      variable,
+      entityName = relType,
+      properties,
+      name,
+      constraintType = RelationshipUniqueness,
+      ifExistsDo,
+      options,
+      useGraph
+    )(position)
+
+  def createNodePropertyExistenceConstraint(
+    variable: Variable,
+    label: LabelName,
+    property: Property,
+    name: Option[Either[String, Parameter]],
+    ifExistsDo: IfExistsDo,
+    options: Options,
+    useGraph: Option[GraphSelection] = None
+  )(position: InputPosition): CreateConstraint =
+    CreateConstraintCommand(
+      variable,
+      entityName = label,
+      Seq(property),
+      name,
+      constraintType = NodePropertyExistence,
+      ifExistsDo,
+      options,
+      useGraph
+    )(position)
+
+  def createRelationshipPropertyExistenceConstraint(
+    variable: Variable,
+    relType: RelTypeName,
+    property: Property,
+    name: Option[Either[String, Parameter]],
+    ifExistsDo: IfExistsDo,
+    options: Options,
+    useGraph: Option[GraphSelection] = None
+  )(position: InputPosition): CreateConstraint =
+    CreateConstraintCommand(
+      variable,
+      entityName = relType,
+      Seq(property),
+      name,
+      constraintType = RelationshipPropertyExistence,
+      ifExistsDo,
+      options,
+      useGraph
+    )(position)
+
+  def createNodePropertyTypeConstraint(
+    variable: Variable,
+    label: LabelName,
+    property: Property,
+    propertyType: CypherType,
+    name: Option[Either[String, Parameter]],
+    ifExistsDo: IfExistsDo,
+    options: Options,
+    useGraph: Option[GraphSelection] = None
+  )(position: InputPosition): CreateConstraint =
+    CreatePropertyTypeConstraint(
+      variable,
+      entityName = label,
+      property,
+      propertyType,
+      name,
+      ifExistsDo,
+      options,
+      useGraph
+    )(position)
+
+  def createRelationshipPropertyTypeConstraint(
+    variable: Variable,
+    relType: RelTypeName,
+    property: Property,
+    propertyType: CypherType,
+    name: Option[Either[String, Parameter]],
+    ifExistsDo: IfExistsDo,
+    options: Options,
+    useGraph: Option[GraphSelection] = None
+  )(position: InputPosition): CreateConstraint =
+    CreatePropertyTypeConstraint(
+      variable,
+      entityName = relType,
+      property,
+      propertyType,
+      name,
+      ifExistsDo,
+      options,
+      useGraph
+    )(position)
+}
+
+private case class CreateConstraintCommand(
   variable: Variable,
-  label: LabelName,
+  entityName: ElementTypeName,
   properties: Seq[Property],
   override val name: Option[Either[String, Parameter]],
+  constraintType: CreateConstraintType,
   ifExistsDo: IfExistsDo,
   options: Options,
   useGraph: Option[GraphSelection] = None
-)(val position: InputPosition) extends NodeCompositePropertyConstraintCommand with CreateConstraint {
+)(val position: InputPosition) extends CreateConstraint {
   override def withGraph(useGraph: Option[UseGraph]): SchemaCommand = copy(useGraph = useGraph)(position)
-  override def withName(name: Option[Either[String, Parameter]]): CreateNodeKeyConstraint = copy(name = name)(position)
+  override def withName(name: Option[Either[String, Parameter]]): CreateConstraintCommand = copy(name = name)(position)
 
-  override def semanticCheck: SemanticCheck =
-    checkSemantics("node key", ifExistsDo, options) chain super.semanticCheck
+  val entityType: CypherType = entityName match {
+    case _: LabelName   => CTNode
+    case _: RelTypeName => CTRelationship
+  }
+
+  override def semanticCheck: SemanticCheck = checkIfExistsDoAndOptions() chain super.semanticCheck
 }
 
-case class CreateRelationshipKeyConstraint(
+private case class CreatePropertyTypeConstraint(
   variable: Variable,
-  relType: RelTypeName,
-  properties: Seq[Property],
-  override val name: Option[Either[String, Parameter]],
-  ifExistsDo: IfExistsDo,
-  options: Options,
-  useGraph: Option[GraphSelection] = None
-)(val position: InputPosition) extends RelationshipCompositePropertyConstraintCommand with CreateConstraint {
-  override def withGraph(useGraph: Option[UseGraph]): SchemaCommand = copy(useGraph = useGraph)(position)
-
-  override def withName(name: Option[Either[String, Parameter]]): CreateRelationshipKeyConstraint =
-    copy(name = name)(position)
-
-  override def semanticCheck: SemanticCheck =
-    checkSemantics("relationship key", ifExistsDo, options) chain super.semanticCheck
-}
-
-case class CreateNodePropertyUniquenessConstraint(
-  variable: Variable,
-  label: LabelName,
-  properties: Seq[Property],
-  override val name: Option[Either[String, Parameter]],
-  ifExistsDo: IfExistsDo,
-  options: Options,
-  useGraph: Option[GraphSelection] = None
-)(val position: InputPosition) extends NodeCompositePropertyConstraintCommand with CreateConstraint {
-  override def withGraph(useGraph: Option[UseGraph]): SchemaCommand = copy(useGraph = useGraph)(position)
-
-  override def withName(name: Option[Either[String, Parameter]]): CreateNodePropertyUniquenessConstraint =
-    copy(name = name)(position)
-
-  override def semanticCheck: SemanticCheck =
-    checkSemantics("uniqueness", ifExistsDo, options) chain super.semanticCheck
-}
-
-case class CreateRelationshipPropertyUniquenessConstraint(
-  variable: Variable,
-  relType: RelTypeName,
-  properties: Seq[Property],
-  override val name: Option[Either[String, Parameter]],
-  ifExistsDo: IfExistsDo,
-  options: Options,
-  useGraph: Option[GraphSelection] = None
-)(val position: InputPosition) extends RelationshipCompositePropertyConstraintCommand with CreateConstraint {
-  override def withGraph(useGraph: Option[UseGraph]): SchemaCommand = copy(useGraph = useGraph)(position)
-
-  override def withName(name: Option[Either[String, Parameter]]): CreateRelationshipPropertyUniquenessConstraint =
-    copy(name = name)(position)
-
-  override def semanticCheck: SemanticCheck =
-    checkSemantics("relationship uniqueness", ifExistsDo, options) chain super.semanticCheck
-}
-
-case class CreateNodePropertyExistenceConstraint(
-  variable: Variable,
-  label: LabelName,
-  property: Property,
-  override val name: Option[Either[String, Parameter]],
-  ifExistsDo: IfExistsDo,
-  options: Options,
-  useGraph: Option[GraphSelection] = None
-)(val position: InputPosition) extends NodePropertyConstraintCommand with CreateConstraint {
-  override def withGraph(useGraph: Option[UseGraph]): SchemaCommand = copy(useGraph = useGraph)(position)
-
-  override def withName(name: Option[Either[String, Parameter]]): CreateNodePropertyExistenceConstraint =
-    copy(name = name)(position)
-
-  override def semanticCheck: SemanticCheck =
-    checkSemantics("node property existence", ifExistsDo, options) chain super.semanticCheck
-}
-
-case class CreateRelationshipPropertyExistenceConstraint(
-  variable: Variable,
-  relType: RelTypeName,
-  property: Property,
-  override val name: Option[Either[String, Parameter]],
-  ifExistsDo: IfExistsDo,
-  options: Options,
-  useGraph: Option[GraphSelection] = None
-)(val position: InputPosition) extends RelationshipPropertyConstraintCommand with CreateConstraint {
-  override def withGraph(useGraph: Option[UseGraph]): SchemaCommand = copy(useGraph = useGraph)(position)
-
-  override def withName(name: Option[Either[String, Parameter]]): CreateRelationshipPropertyExistenceConstraint =
-    copy(name = name)(position)
-
-  override def semanticCheck: SemanticCheck =
-    checkSemantics("relationship property existence", ifExistsDo, options) chain super.semanticCheck
-}
-
-case class CreateNodePropertyTypeConstraint(
-  variable: Variable,
-  label: LabelName,
+  entityName: ElementTypeName,
   property: Property,
   private val propertyType: CypherType,
   override val name: Option[Either[String, Parameter]],
   ifExistsDo: IfExistsDo,
   options: Options,
   useGraph: Option[GraphSelection] = None
-)(val position: InputPosition) extends NodePropertyConstraintCommand with CreateConstraint {
+)(val position: InputPosition) extends CreateConstraint {
   override def withGraph(useGraph: Option[UseGraph]): SchemaCommand = copy(useGraph = useGraph)(position)
 
-  override def withName(name: Option[Either[String, Parameter]]): CreateNodePropertyTypeConstraint =
+  override def withName(name: Option[Either[String, Parameter]]): CreatePropertyTypeConstraint =
     copy(name = name)(position)
 
-  val normalizedPropertyType: CypherType = CypherType.normalizeTypes(propertyType)
+  val properties: Seq[Property] = Seq(property)
+
+  // Accessed through the constraint type instead of directly
+  private val normalizedPropertyType: CypherType = CypherType.normalizeTypes(propertyType)
+
+  val (entityType: CypherType, constraintType: CreateConstraintType) = entityName match {
+    case _: LabelName   => (CTNode, NodePropertyType(normalizedPropertyType))
+    case _: RelTypeName => (CTRelationship, RelationshipPropertyType(normalizedPropertyType))
+  }
 
   override def semanticCheck: SemanticCheck =
-    checkSemantics("node property type", ifExistsDo, options) chain
-      checkPropertyTypes("node", propertyType, normalizedPropertyType) chain
-      super.semanticCheck
-}
-
-case class CreateRelationshipPropertyTypeConstraint(
-  variable: Variable,
-  relType: RelTypeName,
-  property: Property,
-  private val propertyType: CypherType,
-  override val name: Option[Either[String, Parameter]],
-  ifExistsDo: IfExistsDo,
-  options: Options,
-  useGraph: Option[GraphSelection] = None
-)(val position: InputPosition) extends RelationshipPropertyConstraintCommand with CreateConstraint {
-  override def withGraph(useGraph: Option[UseGraph]): SchemaCommand = copy(useGraph = useGraph)(position)
-
-  override def withName(name: Option[Either[String, Parameter]]): CreateRelationshipPropertyTypeConstraint =
-    copy(name = name)(position)
-
-  val normalizedPropertyType: CypherType = CypherType.normalizeTypes(propertyType)
-
-  override def semanticCheck: SemanticCheck =
-    checkSemantics("relationship property type", ifExistsDo, options) chain
-      checkPropertyTypes("relationship", propertyType, normalizedPropertyType) chain
+    checkIfExistsDoAndOptions() chain
+      checkPropertyTypes(propertyType, normalizedPropertyType) chain
       super.semanticCheck
 }
 

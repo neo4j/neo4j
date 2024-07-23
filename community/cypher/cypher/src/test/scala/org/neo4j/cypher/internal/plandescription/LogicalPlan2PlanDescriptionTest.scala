@@ -61,9 +61,13 @@ import org.neo4j.cypher.internal.ast.NativeAuth
 import org.neo4j.cypher.internal.ast.NoOptions
 import org.neo4j.cypher.internal.ast.NoResource
 import org.neo4j.cypher.internal.ast.NodeExistsConstraints
+import org.neo4j.cypher.internal.ast.NodeKey
 import org.neo4j.cypher.internal.ast.NodeKeyConstraints
 import org.neo4j.cypher.internal.ast.NodePropTypeConstraints
+import org.neo4j.cypher.internal.ast.NodePropertyExistence
+import org.neo4j.cypher.internal.ast.NodePropertyType
 import org.neo4j.cypher.internal.ast.NodeUniqueConstraints
+import org.neo4j.cypher.internal.ast.NodeUniqueness
 import org.neo4j.cypher.internal.ast.OptionsMap
 import org.neo4j.cypher.internal.ast.OptionsParam
 import org.neo4j.cypher.internal.ast.Password
@@ -82,6 +86,10 @@ import org.neo4j.cypher.internal.ast.RelExistsConstraints
 import org.neo4j.cypher.internal.ast.RelKeyConstraints
 import org.neo4j.cypher.internal.ast.RelPropTypeConstraints
 import org.neo4j.cypher.internal.ast.RelUniqueConstraints
+import org.neo4j.cypher.internal.ast.RelationshipKey
+import org.neo4j.cypher.internal.ast.RelationshipPropertyExistence
+import org.neo4j.cypher.internal.ast.RelationshipPropertyType
+import org.neo4j.cypher.internal.ast.RelationshipUniqueness
 import org.neo4j.cypher.internal.ast.RemoveAuth
 import org.neo4j.cypher.internal.ast.ShowColumn
 import org.neo4j.cypher.internal.ast.ShowProceduresClause
@@ -289,11 +297,7 @@ import org.neo4j.cypher.internal.logical.plans.NodeCountFromCountStore
 import org.neo4j.cypher.internal.logical.plans.NodeHashJoin
 import org.neo4j.cypher.internal.logical.plans.NodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.NodeIndexSeekLeafPlan
-import org.neo4j.cypher.internal.logical.plans.NodeKey
-import org.neo4j.cypher.internal.logical.plans.NodePropertyExistence
-import org.neo4j.cypher.internal.logical.plans.NodePropertyType
 import org.neo4j.cypher.internal.logical.plans.NodeUniqueIndexSeek
-import org.neo4j.cypher.internal.logical.plans.NodeUniqueness
 import org.neo4j.cypher.internal.logical.plans.NonFuseable
 import org.neo4j.cypher.internal.logical.plans.Optional
 import org.neo4j.cypher.internal.logical.plans.OptionalExpand
@@ -323,10 +327,6 @@ import org.neo4j.cypher.internal.logical.plans.Projection
 import org.neo4j.cypher.internal.logical.plans.PruningVarExpand
 import org.neo4j.cypher.internal.logical.plans.RangeQueryExpression
 import org.neo4j.cypher.internal.logical.plans.RelationshipCountFromCountStore
-import org.neo4j.cypher.internal.logical.plans.RelationshipKey
-import org.neo4j.cypher.internal.logical.plans.RelationshipPropertyExistence
-import org.neo4j.cypher.internal.logical.plans.RelationshipPropertyType
-import org.neo4j.cypher.internal.logical.plans.RelationshipUniqueness
 import org.neo4j.cypher.internal.logical.plans.RemoveLabels
 import org.neo4j.cypher.internal.logical.plans.RenameRole
 import org.neo4j.cypher.internal.logical.plans.RenameServer

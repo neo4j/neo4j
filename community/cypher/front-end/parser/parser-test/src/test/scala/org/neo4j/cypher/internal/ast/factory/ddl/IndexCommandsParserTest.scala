@@ -2223,7 +2223,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   }
 
   test("CREATE LOOKUP INDEX FOR (x1) ON EACH labels(x2)") {
-    parsesTo[ast.Statements](ast.CreateLookupIndex(
+    parsesTo[ast.Statements](ast.CreateIndex.createLookupIndex(
       varFor("x1"),
       isNodeIndex = true,
       function(Labels.name, varFor("x2")),
@@ -2234,7 +2234,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   }
 
   test("CREATE LOOKUP INDEX FOR ()-[x1]-() ON EACH type(x2)") {
-    parsesTo[ast.Statements](ast.CreateLookupIndex(
+    parsesTo[ast.Statements](ast.CreateIndex.createLookupIndex(
       varFor("x1"),
       isNodeIndex = false,
       function(Type.name, varFor("x2")),
@@ -2245,7 +2245,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   }
 
   test("CREATE LOOKUP INDEX FOR (n1) ON EACH count(n2)") {
-    parsesTo[ast.Statements](ast.CreateLookupIndex(
+    parsesTo[ast.Statements](ast.CreateIndex.createLookupIndex(
       varFor("n1"),
       isNodeIndex = true,
       function(Count.name, varFor("n2")),
@@ -2256,7 +2256,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   }
 
   test("CREATE LOOKUP INDEX FOR (n1) ON EACH type(n2)") {
-    parsesTo[ast.Statements](ast.CreateLookupIndex(
+    parsesTo[ast.Statements](ast.CreateIndex.createLookupIndex(
       varFor("n1"),
       isNodeIndex = true,
       function(Type.name, varFor("n2")),
@@ -2267,7 +2267,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   }
 
   test("CREATE LOOKUP INDEX FOR (n) ON EACH labels(x)") {
-    parsesTo[ast.Statements](ast.CreateLookupIndex(
+    parsesTo[ast.Statements](ast.CreateIndex.createLookupIndex(
       varFor("n"),
       isNodeIndex = true,
       function(Labels.name, varFor("x")),
@@ -2278,7 +2278,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   }
 
   test("CREATE LOOKUP INDEX FOR ()-[r1]-() ON EACH count(r2)") {
-    parsesTo[ast.Statements](ast.CreateLookupIndex(
+    parsesTo[ast.Statements](ast.CreateIndex.createLookupIndex(
       varFor("r1"),
       isNodeIndex = false,
       function(Count.name, varFor("r2")),
@@ -2289,7 +2289,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   }
 
   test("CREATE LOOKUP INDEX FOR ()-[r1]-() ON EACH labels(r2)") {
-    parsesTo[ast.Statements](ast.CreateLookupIndex(
+    parsesTo[ast.Statements](ast.CreateIndex.createLookupIndex(
       varFor("r1"),
       isNodeIndex = false,
       function(Labels.name, varFor("r2")),
@@ -2300,7 +2300,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   }
 
   test("CREATE LOOKUP INDEX FOR ()-[r]-() ON EACH type(x)") {
-    parsesTo[ast.Statements](ast.CreateLookupIndex(
+    parsesTo[ast.Statements](ast.CreateIndex.createLookupIndex(
       varFor("r"),
       isNodeIndex = false,
       function(Type.name, varFor("x")),
@@ -2311,7 +2311,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   }
 
   test("CREATE LOOKUP INDEX FOR ()-[r1]-() ON type(r2)") {
-    parsesTo[ast.Statements](ast.CreateLookupIndex(
+    parsesTo[ast.Statements](ast.CreateIndex.createLookupIndex(
       varFor("r1"),
       isNodeIndex = false,
       function(Type.name, varFor("r2")),
@@ -2322,7 +2322,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   }
 
   test("CREATE LOOKUP INDEX FOR (x) ON EACH EACH(x)") {
-    parsesTo[ast.Statements](ast.CreateLookupIndex(
+    parsesTo[ast.Statements](ast.CreateIndex.createLookupIndex(
       varFor("x"),
       isNodeIndex = true,
       function("EACH", varFor("x")),
@@ -2333,7 +2333,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   }
 
   test("CREATE LOOKUP INDEX FOR ()-[x]-() ON EACH EACH(x)") {
-    parsesTo[ast.Statements](ast.CreateLookupIndex(
+    parsesTo[ast.Statements](ast.CreateIndex.createLookupIndex(
       varFor("x"),
       isNodeIndex = false,
       function("EACH", varFor("x")),
@@ -3613,7 +3613,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
     ifExistsDo: ast.IfExistsDo,
     options: ast.Options
   ): InputPosition => ast.CreateIndex =
-    ast.CreateBtreeNodeIndex(
+    ast.CreateIndex.createBtreeNodeIndex(
       Variable("n1")(varPos),
       LabelName("Person")(increasePos(varPos, 3)),
       props,
@@ -3629,7 +3629,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
     ifExistsDo: ast.IfExistsDo,
     options: ast.Options
   ): InputPosition => ast.CreateIndex =
-    ast.CreateBtreeRelationshipIndex(
+    ast.CreateIndex.createBtreeRelationshipIndex(
       Variable("n1")(varPos),
       RelTypeName("R")(increasePos(varPos, 3)),
       props,
@@ -3655,7 +3655,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
     options: ast.Options,
     fromDefault: Boolean
   ): InputPosition => ast.CreateIndex =
-    ast.CreateRangeNodeIndex(
+    ast.CreateIndex.createRangeNodeIndex(
       Variable("n1")(varPos),
       LabelName("Person")(increasePos(varPos, 3)),
       props,
@@ -3673,7 +3673,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
     options: ast.Options,
     fromDefault: Boolean
   ): InputPosition => ast.CreateIndex =
-    ast.CreateRangeRelationshipIndex(
+    ast.CreateIndex.createRangeRelationshipIndex(
       Variable("n1")(varPos),
       RelTypeName("R")(increasePos(varPos, 3)),
       props,
@@ -3692,7 +3692,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
     ifExistsDo: ast.IfExistsDo,
     options: ast.Options
   ): InputPosition => ast.CreateIndex =
-    ast.CreateLookupIndex(
+    ast.CreateIndex.createLookupIndex(
       Variable("n1")(varPos),
       isNodeIndex = true,
       function(Labels.name, varFor("n2")),
@@ -3707,7 +3707,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
     ifExistsDo: ast.IfExistsDo,
     options: ast.Options
   ): InputPosition => ast.CreateIndex =
-    ast.CreateLookupIndex(
+    ast.CreateIndex.createLookupIndex(
       Variable("r1")(varPos),
       isNodeIndex = false,
       function(Type.name, varFor("r2")),
@@ -3724,13 +3724,12 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
     varPos: InputPosition,
     ifExistsDo: ast.IfExistsDo,
     options: ast.Options
-  ): InputPosition => ast.CreateIndex = {
+  ): InputPosition => ast.CreateIndex =
     if (isNodeIndex) {
       fulltextNodeIndex(props, labelOrTypes, name, varPos, ifExistsDo, options)
     } else {
       fulltextRelIndex(props, labelOrTypes, name, varPos, ifExistsDo, options)
     }
-  }
 
   private def fulltextNodeIndex(
     props: List[Property],
@@ -3740,7 +3739,14 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
     ifExistsDo: ast.IfExistsDo,
     options: ast.Options
   ): InputPosition => ast.CreateIndex =
-    ast.CreateFulltextNodeIndex(Variable("n1")(varPos), labels.map(labelName(_)), props, name, ifExistsDo, options)
+    ast.CreateIndex.createFulltextNodeIndex(
+      Variable("n1")(varPos),
+      labels.map(labelName(_)),
+      props,
+      name,
+      ifExistsDo,
+      options
+    )
 
   private def fulltextRelIndex(
     props: List[Property],
@@ -3750,7 +3756,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
     ifExistsDo: ast.IfExistsDo,
     options: ast.Options
   ): InputPosition => ast.CreateIndex =
-    ast.CreateFulltextRelationshipIndex(
+    ast.CreateIndex.createFulltextRelationshipIndex(
       Variable("n1")(varPos),
       types.map(relTypeName(_)),
       props,
@@ -3766,7 +3772,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
     ifExistsDo: ast.IfExistsDo,
     options: ast.Options
   ): InputPosition => ast.CreateIndex =
-    ast.CreateTextNodeIndex(
+    ast.CreateIndex.createTextNodeIndex(
       Variable("n1")(varPos),
       LabelName("Person")(increasePos(varPos, 3)),
       props,
@@ -3782,7 +3788,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
     ifExistsDo: ast.IfExistsDo,
     options: ast.Options
   ): InputPosition => ast.CreateIndex =
-    ast.CreateTextRelationshipIndex(
+    ast.CreateIndex.createTextRelationshipIndex(
       Variable("n1")(varPos),
       RelTypeName("R")(increasePos(varPos, 3)),
       props,
@@ -3798,7 +3804,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
     ifExistsDo: ast.IfExistsDo,
     options: ast.Options
   ): InputPosition => ast.CreateIndex =
-    ast.CreatePointNodeIndex(
+    ast.CreateIndex.createPointNodeIndex(
       Variable("n1")(varPos),
       LabelName("Person")(increasePos(varPos, 3)),
       props,
@@ -3813,8 +3819,8 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
     varPos: InputPosition,
     ifExistsDo: ast.IfExistsDo,
     options: ast.Options
-  ): InputPosition => ast.CreateIndex = {
-    ast.CreatePointRelationshipIndex(
+  ): InputPosition => ast.CreateIndex =
+    ast.CreateIndex.createPointRelationshipIndex(
       Variable("n1")(varPos),
       RelTypeName("R")(increasePos(varPos, 3)),
       props,
@@ -3822,7 +3828,6 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       ifExistsDo,
       options
     )
-  }
 
   private def vectorNodeIndex(
     props: List[Property],
@@ -3831,7 +3836,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
     ifExistsDo: ast.IfExistsDo,
     options: ast.Options
   ): InputPosition => ast.CreateIndex =
-    ast.CreateVectorNodeIndex(
+    ast.CreateIndex.createVectorNodeIndex(
       Variable("n1")(varPos),
       LabelName("Person")(increasePos(varPos, 3)),
       props,
@@ -3846,8 +3851,8 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
     varPos: InputPosition,
     ifExistsDo: ast.IfExistsDo,
     options: ast.Options
-  ): InputPosition => ast.CreateIndex = {
-    ast.CreateVectorRelationshipIndex(
+  ): InputPosition => ast.CreateIndex =
+    ast.CreateIndex.createVectorRelationshipIndex(
       Variable("n1")(varPos),
       RelTypeName("R")(increasePos(varPos, 3)),
       props,
@@ -3855,7 +3860,6 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       ifExistsDo,
       options
     )
-  }
 
   private def pos(offset: Int): InputPosition = (1, offset + 1, offset)
   private def posN1(query: String): InputPosition = pos(query.indexOf("n1"))
