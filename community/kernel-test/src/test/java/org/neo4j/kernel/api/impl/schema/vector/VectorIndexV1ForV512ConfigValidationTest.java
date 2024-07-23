@@ -47,6 +47,7 @@ import org.neo4j.internal.schema.IndexConfigValidationRecords.UnrecognizedSettin
 import org.neo4j.internal.schema.SettingsAccessor;
 import org.neo4j.internal.schema.SettingsAccessor.IndexConfigAccessor;
 import org.neo4j.kernel.KernelVersion;
+import org.neo4j.kernel.api.impl.schema.vector.VectorIndexConfig.HnswConfig;
 import org.neo4j.kernel.api.schema.vector.VectorTestUtils.VectorIndexSettings;
 import org.neo4j.kernel.api.vector.VectorQuantization;
 import org.neo4j.kernel.api.vector.VectorSimilarityFunction;
@@ -94,11 +95,13 @@ class VectorIndexV1ForV512ConfigValidationTest {
                 .extracting(
                         VectorIndexConfig::dimensions,
                         VectorIndexConfig::similarityFunction,
-                        VectorIndexConfig::quantization)
+                        VectorIndexConfig::quantization,
+                        VectorIndexConfig::hnsw)
                 .containsExactly(
                         OptionalInt.of(VERSION.maxDimensions()),
                         VERSION.similarityFunction("COSINE"),
-                        VectorQuantization.OFF);
+                        VectorQuantization.OFF,
+                        new HnswConfig(16, 100));
 
         assertThat(vectorIndexConfig.config().entries().collect(Pair::getOne))
                 .containsExactlyInAnyOrder(DIMENSIONS.getSettingName(), SIMILARITY_FUNCTION.getSettingName());

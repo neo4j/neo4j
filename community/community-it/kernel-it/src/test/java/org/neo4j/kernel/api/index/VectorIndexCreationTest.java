@@ -592,6 +592,7 @@ public class VectorIndexCreationTest {
         @Nested
         class HnswM extends TestBase {
             private static final IndexSetting SETTING = IndexSetting.vector_Hnsw_M();
+            private static final Value DEFAULT_VALUE = Values.intValue(16);
 
             HnswM() {
                 super(
@@ -643,6 +644,37 @@ public class VectorIndexCreationTest {
             }
 
             @ParameterizedTest
+            @MethodSource("validVersions")
+            @EnabledIf("hasValidVersions")
+            void shouldAcceptMissingSetting(VectorIndexVersion version) {
+                final var settings = defaultSettings().unset(SETTING);
+
+                final var ref = new MutableObject<IndexDescriptor>();
+                assertDoesNotThrow(() -> ref.setValue(createVectorIndex(version, settings, propKeyIds[0])));
+                final var index = ref.getValue();
+
+                // config committed in tx
+                assertSettingHasValue(SETTING, index.getIndexConfig(), DEFAULT_VALUE);
+                // config via schema store
+                assertSettingHasValue(SETTING, findIndex(index.getName()).getIndexConfig(), DEFAULT_VALUE);
+            }
+
+            @Test
+            @EnabledIf("latestIsValid")
+            void shouldAcceptMissingSettingCoreAPI() {
+                final var settings = defaultSettings().unset(SETTING);
+
+                final var ref = new MutableObject<IndexDescriptor>();
+                assertDoesNotThrow(() -> ref.setValue(createVectorIndex(settings, PROP_KEYS.get(1))));
+                final var index = ref.getValue();
+
+                // config committed in tx
+                assertSettingHasValue(SETTING, index.getIndexConfig(), DEFAULT_VALUE);
+                // config via schema store
+                assertSettingHasValue(SETTING, findIndex(index.getName()).getIndexConfig(), DEFAULT_VALUE);
+            }
+
+            @ParameterizedTest
             @MethodSource
             void shouldRejectUnsupported(VectorIndexVersion version, int M) {
                 final var settings = defaultSettings().withHnswM(M);
@@ -685,6 +717,7 @@ public class VectorIndexCreationTest {
         @Nested
         class HnswEfConstruction extends TestBase {
             private static final IndexSetting SETTING = IndexSetting.vector_Hnsw_Ef_Construction();
+            private static final Value DEFAULT_VALUE = Values.intValue(100);
 
             HnswEfConstruction() {
                 super(
@@ -735,6 +768,37 @@ public class VectorIndexCreationTest {
 
             static RichIterable<Integer> supported(int min, int max) {
                 return Lists.immutable.of(min, ceil(max - min, 2), max);
+            }
+
+            @ParameterizedTest
+            @MethodSource("validVersions")
+            @EnabledIf("hasValidVersions")
+            void shouldAcceptMissingSetting(VectorIndexVersion version) {
+                final var settings = defaultSettings().unset(SETTING);
+
+                final var ref = new MutableObject<IndexDescriptor>();
+                assertDoesNotThrow(() -> ref.setValue(createVectorIndex(version, settings, propKeyIds[0])));
+                final var index = ref.getValue();
+
+                // config committed in tx
+                assertSettingHasValue(SETTING, index.getIndexConfig(), DEFAULT_VALUE);
+                // config via schema store
+                assertSettingHasValue(SETTING, findIndex(index.getName()).getIndexConfig(), DEFAULT_VALUE);
+            }
+
+            @Test
+            @EnabledIf("latestIsValid")
+            void shouldAcceptMissingSettingCoreAPI() {
+                final var settings = defaultSettings().unset(SETTING);
+
+                final var ref = new MutableObject<IndexDescriptor>();
+                assertDoesNotThrow(() -> ref.setValue(createVectorIndex(settings, PROP_KEYS.get(1))));
+                final var index = ref.getValue();
+
+                // config committed in tx
+                assertSettingHasValue(SETTING, index.getIndexConfig(), DEFAULT_VALUE);
+                // config via schema store
+                assertSettingHasValue(SETTING, findIndex(index.getName()).getIndexConfig(), DEFAULT_VALUE);
             }
 
             @ParameterizedTest
