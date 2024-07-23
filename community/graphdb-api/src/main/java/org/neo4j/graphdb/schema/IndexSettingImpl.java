@@ -33,6 +33,8 @@ public enum IndexSettingImpl implements IndexSetting {
     VECTOR_DIMENSIONS("vector.dimensions", Integer.class),
     VECTOR_SIMILARITY_FUNCTION("vector.similarity_function", String.class),
     VECTOR_QUANTIZATION("vector.quantization", String.class),
+    VECTOR_HNSW_M("vector.hnsw.m", Integer.class),
+    VECTOR_HNSW_EF_CONSTRUCTION("vector.hnsw.ef_construction", Integer.class),
     ;
 
     private final String settingName;

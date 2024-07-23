@@ -179,4 +179,22 @@ public interface IndexSetting {
     static IndexSetting vector_Quantization() {
         return IndexSettingImpl.VECTOR_QUANTIZATION;
     }
+
+    /**
+     * Configure the M parameter of the HNSW algorithm for the vector indexes; indexes of type
+     * {@link IndexType#VECTOR}.
+     * This setting is given as an {@link Integer}.
+     */
+    static IndexSetting vector_Hnsw_M() {
+        return IndexSettingImpl.VECTOR_HNSW_M;
+    }
+
+    /**
+     * Configure the ef construction parameter of the HNSW algorithm for the vector indexes; indexes of type
+     * {@link IndexType#VECTOR}.
+     * This setting is given as an {@link Integer}.
+     */
+    static IndexSetting vector_Hnsw_Ef_Construction() {
+        return IndexSettingImpl.VECTOR_HNSW_EF_CONSTRUCTION;
+    }
 }

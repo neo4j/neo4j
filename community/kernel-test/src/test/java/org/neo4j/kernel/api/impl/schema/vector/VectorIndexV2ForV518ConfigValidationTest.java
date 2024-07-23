@@ -27,6 +27,8 @@ import static org.neo4j.internal.schema.IndexConfigValidationRecords.State.INVAL
 import static org.neo4j.internal.schema.IndexConfigValidationRecords.State.MISSING_SETTING;
 import static org.neo4j.internal.schema.IndexConfigValidationRecords.State.UNRECOGNIZED_SETTING;
 import static org.neo4j.kernel.api.impl.schema.vector.VectorIndexConfigUtils.DIMENSIONS;
+import static org.neo4j.kernel.api.impl.schema.vector.VectorIndexConfigUtils.HNSW_EF_CONSTRUCTION;
+import static org.neo4j.kernel.api.impl.schema.vector.VectorIndexConfigUtils.HNSW_M;
 import static org.neo4j.kernel.api.impl.schema.vector.VectorIndexConfigUtils.QUANTIZATION;
 import static org.neo4j.kernel.api.impl.schema.vector.VectorIndexConfigUtils.SIMILARITY_FUNCTION;
 
@@ -43,6 +45,7 @@ import org.neo4j.internal.schema.IndexConfigValidationRecords.MissingSetting;
 import org.neo4j.internal.schema.IndexConfigValidationRecords.UnrecognizedSetting;
 import org.neo4j.internal.schema.SettingsAccessor;
 import org.neo4j.kernel.KernelVersion;
+import org.neo4j.kernel.api.impl.schema.vector.VectorIndexConfig.HnswConfig;
 import org.neo4j.kernel.api.schema.vector.VectorTestUtils.VectorIndexSettings;
 import org.neo4j.kernel.api.vector.VectorQuantization;
 import org.neo4j.kernel.api.vector.VectorSimilarityFunction;
@@ -74,8 +77,13 @@ class VectorIndexV2ForV518ConfigValidationTest {
                 .extracting(
                         VectorIndexConfig::dimensions,
                         VectorIndexConfig::similarityFunction,
-                        VectorIndexConfig::quantization)
-                .containsExactly(VERSION.maxDimensions(), VERSION.similarityFunction("COSINE"), VectorQuantization.OFF);
+                        VectorIndexConfig::quantization,
+                        VectorIndexConfig::hnsw)
+                .containsExactly(
+                        VERSION.maxDimensions(),
+                        VERSION.similarityFunction("COSINE"),
+                        VectorQuantization.OFF,
+                        new HnswConfig(16, 100));
 
         assertThat(vectorIndexConfig.config().entries().collect(Pair::getOne))
                 .containsExactlyInAnyOrder(DIMENSIONS.getSettingName(), SIMILARITY_FUNCTION.getSettingName());
@@ -297,5 +305,41 @@ class VectorIndexV2ForV518ConfigValidationTest {
                 .asInstanceOf(InstanceOfAssertFactories.type(UnrecognizedSetting.class))
                 .extracting(UnrecognizedSetting::settingName)
                 .isEqualTo(QUANTIZATION.getSettingName());
+    }
+
+    @Test
+    void cannotSetHnswM() {
+        final var settings = VectorIndexSettings.create()
+                .withDimensions(VERSION.maxDimensions())
+                .withSimilarityFunction(VERSION.similarityFunction("COSINE"))
+                .withHnswM(16)
+                .toSettingsAccessor();
+
+        final var validationRecords = VALIDATOR.validate(settings);
+        assertThat(validationRecords.invalid()).isTrue();
+        assertThat(validationRecords.get(UNRECOGNIZED_SETTING).castToSortedSet())
+                .hasSize(1)
+                .first()
+                .asInstanceOf(InstanceOfAssertFactories.type(UnrecognizedSetting.class))
+                .extracting(UnrecognizedSetting::settingName)
+                .isEqualTo(HNSW_M.getSettingName());
+    }
+
+    @Test
+    void cannotSetHnswEfConstruction() {
+        final var settings = VectorIndexSettings.create()
+                .withDimensions(VERSION.maxDimensions())
+                .withSimilarityFunction(VERSION.similarityFunction("COSINE"))
+                .withHnswEfConstruction(100)
+                .toSettingsAccessor();
+
+        final var validationRecords = VALIDATOR.validate(settings);
+        assertThat(validationRecords.invalid()).isTrue();
+        assertThat(validationRecords.get(UNRECOGNIZED_SETTING).castToSortedSet())
+                .hasSize(1)
+                .first()
+                .asInstanceOf(InstanceOfAssertFactories.type(UnrecognizedSetting.class))
+                .extracting(UnrecognizedSetting::settingName)
+                .isEqualTo(HNSW_EF_CONSTRUCTION.getSettingName());
     }
 }

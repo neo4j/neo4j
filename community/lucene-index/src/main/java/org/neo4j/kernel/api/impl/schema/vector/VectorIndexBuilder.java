@@ -53,7 +53,7 @@ class VectorIndexBuilder extends AbstractLuceneIndexBuilder<VectorIndexBuilder> 
         this.documentStructure = documentStructure;
         this.config = config;
 
-        final var codec = new VectorCodecV2(vectorIndexConfig.dimensions(), vectorIndexConfig.quantization());
+        final var codec = new VectorCodecV2(vectorIndexConfig);
         final var writerConfigBuilder = new IndexWriterConfigBuilder(VectorModes.STANDARD, config).withCodec(codec);
         this.writerConfigFactory = writerConfigBuilder::build;
     }

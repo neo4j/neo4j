@@ -20,6 +20,8 @@
 package org.neo4j.kernel.api.impl.schema.vector;
 
 import static org.neo4j.kernel.api.impl.schema.vector.VectorIndexConfigUtils.DIMENSIONS;
+import static org.neo4j.kernel.api.impl.schema.vector.VectorIndexConfigUtils.HNSW_EF_CONSTRUCTION;
+import static org.neo4j.kernel.api.impl.schema.vector.VectorIndexConfigUtils.HNSW_M;
 import static org.neo4j.kernel.api.impl.schema.vector.VectorIndexConfigUtils.QUANTIZATION;
 import static org.neo4j.kernel.api.impl.schema.vector.VectorIndexConfigUtils.SIMILARITY_FUNCTION;
 
@@ -37,6 +39,7 @@ public class VectorIndexConfig extends IndexConfigValidationWrapper {
     private final int dimensions;
     private final VectorSimilarityFunction similarityFunction;
     private final VectorQuantization quantization;
+    private final HnswConfig hnswConfig;
 
     VectorIndexConfig(
             IndexProviderDescriptor descriptor,
@@ -48,6 +51,7 @@ public class VectorIndexConfig extends IndexConfigValidationWrapper {
         this.dimensions = get(DIMENSIONS);
         this.similarityFunction = get(SIMILARITY_FUNCTION);
         this.quantization = get(QUANTIZATION);
+        this.hnswConfig = new HnswConfig(get(HNSW_M), get(HNSW_EF_CONSTRUCTION));
     }
 
     public int dimensions() {
@@ -62,9 +66,13 @@ public class VectorIndexConfig extends IndexConfigValidationWrapper {
         return quantization;
     }
 
+    public HnswConfig hnsw() {
+        return hnswConfig;
+    }
+
     @Override
     public int hashCode() {
-        return Objects.hash(dimensions, similarityFunction, quantization);
+        return Objects.hash(dimensions, similarityFunction, quantization, hnswConfig);
     }
 
     @Override
@@ -77,6 +85,11 @@ public class VectorIndexConfig extends IndexConfigValidationWrapper {
         }
         return dimensions == that.dimensions
                 && Objects.equals(similarityFunction, that.similarityFunction)
-                && quantization == that.quantization;
+                && quantization == that.quantization
+                && Objects.equals(hnswConfig, that.hnswConfig);
+    }
+
+    public record HnswConfig(int M, int efConstruction) {
+        public static final HnswConfig DUMMY = new HnswConfig(16, 100);
     }
 }

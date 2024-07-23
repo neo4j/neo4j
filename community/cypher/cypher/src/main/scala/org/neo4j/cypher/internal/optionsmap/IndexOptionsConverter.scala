@@ -34,6 +34,8 @@ import org.neo4j.graphdb.schema.IndexSettingImpl.SPATIAL_WGS84_3D_MIN
 import org.neo4j.graphdb.schema.IndexSettingImpl.SPATIAL_WGS84_MAX
 import org.neo4j.graphdb.schema.IndexSettingImpl.SPATIAL_WGS84_MIN
 import org.neo4j.graphdb.schema.IndexSettingImpl.VECTOR_DIMENSIONS
+import org.neo4j.graphdb.schema.IndexSettingImpl.VECTOR_HNSW_EF_CONSTRUCTION
+import org.neo4j.graphdb.schema.IndexSettingImpl.VECTOR_HNSW_M
 import org.neo4j.graphdb.schema.IndexSettingImpl.VECTOR_QUANTIZATION
 import org.neo4j.graphdb.schema.IndexSettingImpl.VECTOR_SIMILARITY_FUNCTION
 import org.neo4j.graphdb.schema.IndexSettingUtil
@@ -137,7 +139,13 @@ trait IndexOptionsConverter[T] extends OptionsConverter[T] {
   }
 
   private val validVectorConfigSettingNames: SortedSet[String] =
-    indexSettingsToCaseInsensitiveNames(VECTOR_DIMENSIONS, VECTOR_SIMILARITY_FUNCTION, VECTOR_QUANTIZATION)
+    indexSettingsToCaseInsensitiveNames(
+      VECTOR_DIMENSIONS,
+      VECTOR_SIMILARITY_FUNCTION,
+      VECTOR_QUANTIZATION,
+      VECTOR_HNSW_M,
+      VECTOR_HNSW_EF_CONSTRUCTION
+    )
 
   protected def checkForVectorConfigValues(pp: PrettyPrinter, itemsMap: MapValue, schemaType: String): Unit =
     if (itemsMap.exists { case (p, _) => validVectorConfigSettingNames.contains(p) }) {

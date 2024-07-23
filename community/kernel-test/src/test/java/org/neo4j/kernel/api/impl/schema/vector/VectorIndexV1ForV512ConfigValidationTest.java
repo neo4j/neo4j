@@ -27,6 +27,8 @@ import static org.neo4j.internal.schema.IndexConfigValidationRecords.State.INVAL
 import static org.neo4j.internal.schema.IndexConfigValidationRecords.State.MISSING_SETTING;
 import static org.neo4j.internal.schema.IndexConfigValidationRecords.State.UNRECOGNIZED_SETTING;
 import static org.neo4j.kernel.api.impl.schema.vector.VectorIndexConfigUtils.DIMENSIONS;
+import static org.neo4j.kernel.api.impl.schema.vector.VectorIndexConfigUtils.HNSW_EF_CONSTRUCTION;
+import static org.neo4j.kernel.api.impl.schema.vector.VectorIndexConfigUtils.HNSW_M;
 import static org.neo4j.kernel.api.impl.schema.vector.VectorIndexConfigUtils.QUANTIZATION;
 import static org.neo4j.kernel.api.impl.schema.vector.VectorIndexConfigUtils.SIMILARITY_FUNCTION;
 
@@ -325,5 +327,41 @@ class VectorIndexV1ForV512ConfigValidationTest {
                 .asInstanceOf(InstanceOfAssertFactories.type(UnrecognizedSetting.class))
                 .extracting(UnrecognizedSetting::settingName)
                 .isEqualTo(QUANTIZATION.getSettingName());
+    }
+
+    @Test
+    void cannotSetHnswM() {
+        final var settings = VectorIndexSettings.create()
+                .withDimensions(VERSION.maxDimensions())
+                .withSimilarityFunction(VERSION.similarityFunction("COSINE"))
+                .withHnswM(16)
+                .toSettingsAccessor();
+
+        final var validationRecords = VALIDATOR.validate(settings);
+        assertThat(validationRecords.invalid()).isTrue();
+        assertThat(validationRecords.get(UNRECOGNIZED_SETTING).castToSortedSet())
+                .hasSize(1)
+                .first()
+                .asInstanceOf(InstanceOfAssertFactories.type(UnrecognizedSetting.class))
+                .extracting(UnrecognizedSetting::settingName)
+                .isEqualTo(HNSW_M.getSettingName());
+    }
+
+    @Test
+    void cannotSetHnswEfConstruction() {
+        final var settings = VectorIndexSettings.create()
+                .withDimensions(VERSION.maxDimensions())
+                .withSimilarityFunction(VERSION.similarityFunction("COSINE"))
+                .withHnswEfConstruction(100)
+                .toSettingsAccessor();
+
+        final var validationRecords = VALIDATOR.validate(settings);
+        assertThat(validationRecords.invalid()).isTrue();
+        assertThat(validationRecords.get(UNRECOGNIZED_SETTING).castToSortedSet())
+                .hasSize(1)
+                .first()
+                .asInstanceOf(InstanceOfAssertFactories.type(UnrecognizedSetting.class))
+                .extracting(UnrecognizedSetting::settingName)
+                .isEqualTo(HNSW_EF_CONSTRUCTION.getSettingName());
     }
 }

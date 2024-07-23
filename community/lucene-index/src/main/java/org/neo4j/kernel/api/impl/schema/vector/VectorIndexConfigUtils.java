@@ -30,7 +30,8 @@ import org.eclipse.collections.api.RichIterable;
 import org.eclipse.collections.api.block.predicate.Predicate;
 import org.eclipse.collections.api.map.sorted.ImmutableSortedMap;
 import org.eclipse.collections.impl.block.factory.Predicates;
-import org.eclipse.collections.impl.factory.SortedMaps;
+import org.eclipse.collections.impl.map.sorted.mutable.TreeSortedMap;
+import org.eclipse.collections.impl.tuple.Tuples;
 import org.neo4j.graphdb.schema.IndexSetting;
 import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexConfigValidationRecords;
@@ -52,17 +53,18 @@ public class VectorIndexConfigUtils {
     static final IndexSetting DIMENSIONS = IndexSetting.vector_Dimensions();
     static final IndexSetting SIMILARITY_FUNCTION = IndexSetting.vector_Similarity_Function();
     static final IndexSetting QUANTIZATION = IndexSetting.vector_Quantization();
+    static final IndexSetting HNSW_M = IndexSetting.vector_Hnsw_M();
+    static final IndexSetting HNSW_EF_CONSTRUCTION = IndexSetting.vector_Hnsw_Ef_Construction();
 
     public static final ImmutableSortedMap<IndexSetting, KernelVersion> INDEX_SETTING_INTRODUCED_VERSIONS =
-            SortedMaps.mutable
-                    .of(
+            TreeSortedMap.<IndexSetting, KernelVersion>newMapWith(
                             INDEX_SETTING_COMPARATOR,
-                            DIMENSIONS,
-                            KernelVersion.VERSION_NODE_VECTOR_INDEX_INTRODUCED,
-                            SIMILARITY_FUNCTION,
-                            KernelVersion.VERSION_NODE_VECTOR_INDEX_INTRODUCED,
-                            QUANTIZATION,
-                            KernelVersion.VERSION_VECTOR_QUANTIZATION)
+                            Tuples.pair(DIMENSIONS, KernelVersion.VERSION_NODE_VECTOR_INDEX_INTRODUCED),
+                            Tuples.pair(SIMILARITY_FUNCTION, KernelVersion.VERSION_NODE_VECTOR_INDEX_INTRODUCED),
+                            Tuples.pair(QUANTIZATION, KernelVersion.VERSION_VECTOR_QUANTIZATION_AND_HYPER_PARAMS),
+                            Tuples.pair(HNSW_M, KernelVersion.VERSION_VECTOR_QUANTIZATION_AND_HYPER_PARAMS),
+                            Tuples.pair(
+                                    HNSW_EF_CONSTRUCTION, KernelVersion.VERSION_VECTOR_QUANTIZATION_AND_HYPER_PARAMS))
                     .toImmutable();
 
     public record Range<T extends Comparable<T>>(T min, T max) {

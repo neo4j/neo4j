@@ -36,6 +36,7 @@ import org.neo4j.graphdb.schema.IndexSetting;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.api.impl.schema.vector.IndexSettingValidators.DimensionsValidator;
+import org.neo4j.kernel.api.impl.schema.vector.IndexSettingValidators.IntegerWithDefaultSettingValidator;
 import org.neo4j.kernel.api.impl.schema.vector.IndexSettingValidators.QuantizationValidator;
 import org.neo4j.kernel.api.impl.schema.vector.IndexSettingValidators.ReadDefaultOnly;
 import org.neo4j.kernel.api.impl.schema.vector.IndexSettingValidators.SimilarityFunctionValidator;
@@ -51,7 +52,7 @@ import org.neo4j.values.storable.NumberArray;
 import org.neo4j.values.storable.Value;
 
 public enum VectorIndexVersion {
-    UNKNOWN(null, KernelVersion.EARLIEST, 0, Sets.immutable.empty(), Sets.immutable.empty()) {
+    UNKNOWN(null, KernelVersion.EARLIEST, 0, 0, 0, Sets.immutable.empty(), Sets.immutable.empty()) {
         @Override
         protected RichIterable<Pair<KernelVersion, VectorIndexSettingsValidator>> configureValidators() {
             return Lists.mutable.of(Tuples.pair(
@@ -72,9 +73,10 @@ public enum VectorIndexVersion {
             "1.0",
             KernelVersion.VERSION_NODE_VECTOR_INDEX_INTRODUCED,
             2048,
+            512,
+            3200,
             Sets.mutable.of(VectorSimilarityFunctions.EUCLIDEAN, VectorSimilarityFunctions.SIMPLE_COSINE),
             Sets.immutable.empty()) {
-
         @Override
         protected RichIterable<Pair<KernelVersion, VectorIndexSettingsValidator>> configureValidators() {
             return Lists.mutable.of(
@@ -84,15 +86,18 @@ public enum VectorIndexVersion {
                                     descriptor(),
                                     new DimensionsValidator(new Range<>(1, Integer.MAX_VALUE)), // this was a bug
                                     new SimilarityFunctionValidator(nameToSimilarityFunction()),
-                                    new ReadDefaultOnly<>(IndexSetting.vector_Quantization(), VectorQuantization.OFF))),
+                                    new ReadDefaultOnly<>(IndexSetting.vector_Quantization(), VectorQuantization.OFF),
+                                    new ReadDefaultOnly<>(IndexSetting.vector_Hnsw_M(), 16),
+                                    new ReadDefaultOnly<>(IndexSetting.vector_Hnsw_Ef_Construction(), 100))),
                     Tuples.pair(
                             KernelVersion.V5_12,
                             new Validators(
                                     descriptor(),
                                     new DimensionsValidator(new Range<>(1, maxDimensions())),
                                     new SimilarityFunctionValidator(nameToSimilarityFunction()),
-                                    new ReadDefaultOnly<>(
-                                            IndexSetting.vector_Quantization(), VectorQuantization.OFF))));
+                                    new ReadDefaultOnly<>(IndexSetting.vector_Quantization(), VectorQuantization.OFF),
+                                    new ReadDefaultOnly<>(IndexSetting.vector_Hnsw_M(), 16),
+                                    new ReadDefaultOnly<>(IndexSetting.vector_Hnsw_Ef_Construction(), 100))));
         }
 
         @Override
@@ -105,9 +110,10 @@ public enum VectorIndexVersion {
             "2.0",
             KernelVersion.VERSION_VECTOR_2_INTRODUCED,
             4096,
+            512,
+            3200,
             Sets.mutable.of(VectorSimilarityFunctions.EUCLIDEAN, VectorSimilarityFunctions.L2_NORM_COSINE),
             Sets.mutable.of(VectorQuantization.OFF, VectorQuantization.LUCENE)) {
-
         @Override
         protected RichIterable<Pair<KernelVersion, VectorIndexSettingsValidator>> configureValidators() {
             return Lists.mutable.of(
@@ -117,15 +123,23 @@ public enum VectorIndexVersion {
                                     descriptor(),
                                     new DimensionsValidator(new Range<>(1, maxDimensions())),
                                     new SimilarityFunctionValidator(nameToSimilarityFunction()),
-                                    new ReadDefaultOnly<>(IndexSetting.vector_Quantization(), VectorQuantization.OFF))),
+                                    new ReadDefaultOnly<>(IndexSetting.vector_Quantization(), VectorQuantization.OFF),
+                                    new ReadDefaultOnly<>(IndexSetting.vector_Hnsw_M(), 16),
+                                    new ReadDefaultOnly<>(IndexSetting.vector_Hnsw_Ef_Construction(), 100))),
                     Tuples.pair(
-                            KernelVersion.VERSION_VECTOR_QUANTIZATION,
+                            KernelVersion.VERSION_VECTOR_QUANTIZATION_AND_HYPER_PARAMS,
                             new Validators(
                                     descriptor(),
                                     new DimensionsValidator(new Range<>(1, maxDimensions())),
                                     new SimilarityFunctionValidator(nameToSimilarityFunction()),
                                     new QuantizationValidator(
-                                            VectorQuantization.OFF, VectorQuantization.LUCENE, nameToQuantization()))));
+                                            VectorQuantization.OFF, VectorQuantization.LUCENE, nameToQuantization()),
+                                    new IntegerWithDefaultSettingValidator(
+                                            IndexSetting.vector_Hnsw_M(), new Range<>(1, maxHnswM()), 16),
+                                    new IntegerWithDefaultSettingValidator(
+                                            IndexSetting.vector_Hnsw_Ef_Construction(),
+                                            new Range<>(1, maxHnswEfConstruction()),
+                                            100))));
         }
 
         @Override
@@ -162,6 +176,8 @@ public enum VectorIndexVersion {
     private final int maxDimensions;
     private final ImmutableMap<String, VectorSimilarityFunction> similarityFunctions;
     private final ImmutableMap<String, VectorQuantization> quantizations;
+    private final int maxHnswM;
+    private final int maxHnswEfConstruction;
     private final ImmutableSortedMap<KernelVersion, VectorIndexSettingsValidator> validators;
     private final VectorIndexSettingsValidator latestIndexSettingValidator;
 
@@ -169,6 +185,8 @@ public enum VectorIndexVersion {
             String version,
             KernelVersion minimumRequiredKernelVersion,
             int maxDimensions,
+            int maxHnswM,
+            int maxHnswEfConstruction,
             SetIterable<VectorSimilarityFunction> supportedSimilarityFunctions,
             SetIterable<VectorQuantization> supportedQuantizations) {
         this.minimumRequiredKernelVersion = minimumRequiredKernelVersion;
@@ -182,6 +200,8 @@ public enum VectorIndexVersion {
                 similarityFunction -> similarityFunction);
         this.quantizations = supportedQuantizations.toImmutableMap(
                 quantization -> quantization.name().toUpperCase(Locale.ROOT), quantization -> quantization);
+        this.maxHnswM = maxHnswM;
+        this.maxHnswEfConstruction = maxHnswEfConstruction;
 
         this.validators = SortedMaps.mutable
                 .<KernelVersion, VectorIndexSettingsValidator>of(Comparator.reverseOrder())
@@ -198,8 +218,19 @@ public enum VectorIndexVersion {
         return descriptor;
     }
 
+    @VisibleForTesting
     public int maxDimensions() {
         return maxDimensions;
+    }
+
+    @VisibleForTesting
+    public int maxHnswM() {
+        return maxHnswM;
+    }
+
+    @VisibleForTesting
+    public int maxHnswEfConstruction() {
+        return maxHnswEfConstruction;
     }
 
     protected abstract RichIterable<Pair<KernelVersion, VectorIndexSettingsValidator>> configureValidators();

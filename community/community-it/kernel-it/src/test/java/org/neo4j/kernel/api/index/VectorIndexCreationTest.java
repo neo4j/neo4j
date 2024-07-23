@@ -498,6 +498,194 @@ public class VectorIndexCreationTest {
             }
         }
 
+        @Nested
+        class HnswM extends TestBase {
+            private static final IndexSetting SETTING = IndexSetting.vector_Hnsw_M();
+
+            HnswM() {
+                super(
+                        Entity.this.factory,
+                        inclusiveVersionRangeFrom(max(minimumVersionForEntity, VectorIndexVersion.V2_0)));
+            }
+
+            @ParameterizedTest
+            @MethodSource
+            void shouldAcceptSupported(VectorIndexVersion version, int M) {
+                final var settings = defaultSettings().withHnswM(M);
+                final var ref = new MutableObject<IndexDescriptor>();
+                assertDoesNotThrow(() -> ref.setValue(createVectorIndex(version, settings, propKeyIds[0])));
+                final var index = ref.getValue();
+
+                // config committed in tx
+                assertSettingHasValue(SETTING, index.getIndexConfig(), Values.intValue(M));
+                // config via schema store
+                assertSettingHasValue(SETTING, findIndex(index.getName()).getIndexConfig(), Values.intValue(M));
+            }
+
+            Iterable<Arguments> shouldAcceptSupported() {
+                return validVersions().asLazy().flatCollect(version -> supported(1, version.maxHnswM())
+                        .asLazy()
+                        .collect(M -> Arguments.of(version, M)));
+            }
+
+            @ParameterizedTest
+            @MethodSource
+            @EnabledIf("latestIsValid")
+            void shouldAcceptSupportedCoreAPI(int M) {
+                final var settings = defaultSettings().withHnswM(M);
+                final var ref = new MutableObject<IndexDescriptor>();
+                assertDoesNotThrow(() -> ref.setValue(createVectorIndex(settings, PROP_KEYS.get(1))));
+                final var index = ref.getValue();
+
+                // config committed in tx
+                assertSettingHasValue(SETTING, index.getIndexConfig(), Values.intValue(M));
+                // config via schema store
+                assertSettingHasValue(SETTING, findIndex(index.getName()).getIndexConfig(), Values.intValue(M));
+            }
+
+            static Iterable<Integer> shouldAcceptSupportedCoreAPI() {
+                return supported(1, LATEST.maxHnswM());
+            }
+
+            static RichIterable<Integer> supported(int min, int max) {
+                return Lists.immutable.of(min, ceil(max - min, 2), max);
+            }
+
+            @ParameterizedTest
+            @MethodSource
+            void shouldRejectUnsupported(VectorIndexVersion version, int M) {
+                final var settings = defaultSettings().withHnswM(M);
+                assertUnsupported(version, () -> createVectorIndex(version, settings, propKeyIds[0]));
+            }
+
+            Iterable<Arguments> shouldRejectUnsupported() {
+                return validVersions()
+                        .asLazy()
+                        .flatCollect(version -> unsupportedM(version).asLazy().collect(M -> Arguments.of(version, M)));
+            }
+
+            @ParameterizedTest
+            @MethodSource
+            @EnabledIf("latestIsValid")
+            void shouldRejectUnsupportedCoreAPI(int M) {
+                final var settings = defaultSettings().withHnswM(M);
+                assertUnsupported(LATEST, () -> createVectorIndex(settings, PROP_KEYS.get(1)));
+            }
+
+            Iterable<Integer> shouldRejectUnsupportedCoreAPI() {
+                return unsupportedM(LATEST);
+            }
+
+            static RichIterable<Integer> unsupportedM(VectorIndexVersion version) {
+                return Lists.immutable.of(-1, 0, version.maxHnswM() + 1);
+            }
+
+            private static void assertUnsupported(VectorIndexVersion version, ThrowingCallable callable) {
+                assertThatThrownBy(callable)
+                        .isInstanceOf(IllegalArgumentException.class)
+                        .hasMessageContainingAll(
+                                IndexSetting.vector_Hnsw_M().getSettingName(),
+                                "must be between 1 and",
+                                String.valueOf(version.maxHnswM()),
+                                "inclusively");
+            }
+        }
+
+        @Nested
+        class HnswEfConstruction extends TestBase {
+            private static final IndexSetting SETTING = IndexSetting.vector_Hnsw_Ef_Construction();
+
+            HnswEfConstruction() {
+                super(
+                        Entity.this.factory,
+                        inclusiveVersionRangeFrom(max(minimumVersionForEntity, VectorIndexVersion.V2_0)));
+            }
+
+            @ParameterizedTest
+            @MethodSource
+            void shouldAcceptSupported(VectorIndexVersion version, int efConstruction) {
+                final var settings = defaultSettings().withHnswEfConstruction(efConstruction);
+                final var ref = new MutableObject<IndexDescriptor>();
+                assertDoesNotThrow(() -> ref.setValue(createVectorIndex(version, settings, propKeyIds[0])));
+                final var index = ref.getValue();
+
+                // config committed in tx
+                assertSettingHasValue(SETTING, index.getIndexConfig(), Values.intValue(efConstruction));
+                // config via schema store
+                assertSettingHasValue(
+                        SETTING, findIndex(index.getName()).getIndexConfig(), Values.intValue(efConstruction));
+            }
+
+            Iterable<Arguments> shouldAcceptSupported() {
+                return validVersions().asLazy().flatCollect(version -> supported(1, version.maxHnswEfConstruction())
+                        .asLazy()
+                        .collect(efConstruction -> Arguments.of(version, efConstruction)));
+            }
+
+            @ParameterizedTest
+            @MethodSource
+            @EnabledIf("latestIsValid")
+            void shouldAcceptSupportedCoreAPI(int efConstruction) {
+                final var settings = defaultSettings().withHnswEfConstruction(efConstruction);
+                final var ref = new MutableObject<IndexDescriptor>();
+                assertDoesNotThrow(() -> ref.setValue(createVectorIndex(settings, PROP_KEYS.get(1))));
+                final var index = ref.getValue();
+
+                // config committed in tx
+                assertSettingHasValue(SETTING, index.getIndexConfig(), Values.intValue(efConstruction));
+                // config via schema store
+                assertSettingHasValue(
+                        SETTING, findIndex(index.getName()).getIndexConfig(), Values.intValue(efConstruction));
+            }
+
+            static Iterable<Integer> shouldAcceptSupportedCoreAPI() {
+                return supported(1, LATEST.maxHnswEfConstruction());
+            }
+
+            static RichIterable<Integer> supported(int min, int max) {
+                return Lists.immutable.of(min, ceil(max - min, 2), max);
+            }
+
+            @ParameterizedTest
+            @MethodSource
+            void shouldRejectUnsupported(VectorIndexVersion version, int efConstruction) {
+                final var settings = defaultSettings().withHnswEfConstruction(efConstruction);
+                assertUnsupported(version, () -> createVectorIndex(version, settings, propKeyIds[0]));
+            }
+
+            Iterable<Arguments> shouldRejectUnsupported() {
+                return validVersions().asLazy().flatCollect(version -> unsupportedEfConstruction(version)
+                        .asLazy()
+                        .collect(M -> Arguments.of(version, M)));
+            }
+
+            @ParameterizedTest
+            @MethodSource
+            @EnabledIf("latestIsValid")
+            void shouldRejectUnsupportedCoreAPI(int efConstruction) {
+                final var settings = defaultSettings().withHnswEfConstruction(efConstruction);
+                assertUnsupported(LATEST, () -> createVectorIndex(settings, PROP_KEYS.get(1)));
+            }
+
+            Iterable<Integer> shouldRejectUnsupportedCoreAPI() {
+                return unsupportedEfConstruction(LATEST);
+            }
+
+            static RichIterable<Integer> unsupportedEfConstruction(VectorIndexVersion version) {
+                return Lists.immutable.of(-1, 0, version.maxHnswEfConstruction() + 1);
+            }
+
+            private static void assertUnsupported(VectorIndexVersion version, ThrowingCallable callable) {
+                assertThatThrownBy(callable)
+                        .isInstanceOf(IllegalArgumentException.class)
+                        .hasMessageContainingAll(
+                                IndexSetting.vector_Hnsw_Ef_Construction().getSettingName(),
+                                "must be between 1 and",
+                                String.valueOf(version.maxHnswEfConstruction()),
+                                "inclusively");
+            }
+        }
+
         private static void assertDoesNotThrow(ThrowingCallable callable) {
             assertThatCode(callable).doesNotThrowAnyException();
         }

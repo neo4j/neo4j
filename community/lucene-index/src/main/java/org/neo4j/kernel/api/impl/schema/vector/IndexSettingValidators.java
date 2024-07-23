@@ -224,4 +224,40 @@ class IndexSettingValidators {
                     : new Valid(setting, quantization, map(quantization));
         }
     }
+
+    static final class IntegerWithDefaultSettingValidator extends IndexSettingValidator<IntegralValue, Integer> {
+        private final Range<Integer> supportedRange;
+
+        IntegerWithDefaultSettingValidator(IndexSetting setting, Range<Integer> supportedRange, Integer defaultValue) {
+            super(setting, defaultValue);
+            this.supportedRange = supportedRange;
+        }
+
+        @Override
+        Integer map(IntegralValue value) {
+            return (int) value.longValue();
+        }
+
+        @Override
+        Value map(Integer value) {
+            return Values.intValue(value);
+        }
+
+        @Override
+        IndexConfigValidationRecord validate(SettingsAccessor accessor) {
+            final var record = extractOrDefault(accessor);
+            if (!(record instanceof final Pending pending)) {
+                return record;
+            }
+
+            if (!(pending.rawValue() instanceof final IntegralValue integralValue)) {
+                return new IncorrectType(pending, IntegralValue.class);
+            }
+
+            final var value = map(integralValue);
+            return supportedRange.contains(value)
+                    ? new Valid(setting, value, map(value))
+                    : new InvalidValue(pending, value, supportedRange);
+        }
+    }
 }

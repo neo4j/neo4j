@@ -676,6 +676,14 @@ public class VectorTestUtils {
             return set(IndexSetting.vector_Quantization(), quantization);
         }
 
+        public VectorIndexSettings withHnswM(int M) {
+            return set(IndexSetting.vector_Hnsw_M(), M);
+        }
+
+        public VectorIndexSettings withHnswEfConstruction(int efConstruction) {
+            return set(IndexSetting.vector_Hnsw_Ef_Construction(), efConstruction);
+        }
+
         public IndexConfig toIndexConfig() {
             return IndexSettingUtil.toIndexConfigFromIndexSettingObjectMap(settings);
         }
