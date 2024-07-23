@@ -81,7 +81,12 @@ public class DefaultIdContextFactory implements IdContextFactory {
         var idGeneratorFactory = idGeneratorFactoryProvider.apply(namedDatabaseId, allocationInitiallyEnabled);
         var bufferingIdGeneratorFactory = wrapWithBufferingFactory(idGeneratorFactory, databaseConfig);
         var bufferingController = createBufferedIdController(
-                bufferingIdGeneratorFactory, jobScheduler, contextFactory, namedDatabaseId.name(), logService);
+                bufferingIdGeneratorFactory,
+                jobScheduler,
+                contextFactory,
+                namedDatabaseId.name(),
+                logService,
+                databaseConfig);
         return createIdContext(bufferingIdGeneratorFactory, bufferingController);
     }
 
@@ -94,8 +99,10 @@ public class DefaultIdContextFactory implements IdContextFactory {
             JobScheduler scheduler,
             CursorContextFactory contextFactory,
             String databaseName,
-            LogService logService) {
-        return new BufferedIdController(idGeneratorFactory, scheduler, contextFactory, databaseName, logService);
+            LogService logService,
+            DatabaseConfig databaseConfig) {
+        return new BufferedIdController(
+                idGeneratorFactory, scheduler, contextFactory, databaseConfig, databaseName, logService);
     }
 
     protected static boolean isMultiVersion(Config databaseConfig) {

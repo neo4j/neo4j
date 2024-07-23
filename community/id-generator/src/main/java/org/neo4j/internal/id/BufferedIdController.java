@@ -27,6 +27,8 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.DatabaseConfig;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
@@ -49,6 +51,7 @@ public class BufferedIdController extends LifecycleAdapter implements IdControll
     private final AbstractBufferingIdGeneratorFactory bufferingIdGeneratorFactory;
     private final JobScheduler scheduler;
     private final CursorContextFactory contextFactory;
+    private final DatabaseConfig databaseConfig;
     private final String databaseName;
     private final InternalLog log;
     private JobHandle<?> jobHandle;
@@ -60,11 +63,13 @@ public class BufferedIdController extends LifecycleAdapter implements IdControll
             AbstractBufferingIdGeneratorFactory bufferingIdGeneratorFactory,
             JobScheduler scheduler,
             CursorContextFactory contextFactory,
+            DatabaseConfig databaseConfig,
             String databaseName,
             LogService logService) {
         this.bufferingIdGeneratorFactory = bufferingIdGeneratorFactory;
         this.scheduler = scheduler;
         this.contextFactory = contextFactory;
+        this.databaseConfig = databaseConfig;
         this.databaseName = databaseName;
         this.log = logService.getInternalLog(BufferedIdController.class);
     }
@@ -79,8 +84,11 @@ public class BufferedIdController extends LifecycleAdapter implements IdControll
         bufferingIdGeneratorFactory.start();
         running = true;
         var monitoringParams = JobMonitoringParams.systemJob(databaseName, "ID generator maintenance");
-        jobHandle =
-                scheduler.scheduleRecurring(Group.STORAGE_MAINTENANCE, monitoringParams, this::maintenance, 1, SECONDS);
+        long maintenanceIntervalInSeconds = databaseConfig
+                .get(GraphDatabaseInternalSettings.id_controller_maintenance_interval)
+                .toSeconds();
+        jobHandle = scheduler.scheduleRecurring(
+                Group.STORAGE_MAINTENANCE, monitoringParams, this::maintenance, maintenanceIntervalInSeconds, SECONDS);
     }
 
     @Override

@@ -19,6 +19,8 @@
  */
 package org.neo4j.configuration;
 
+import static java.util.Collections.emptyMap;
+
 import java.util.Map;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -27,6 +29,10 @@ public class DatabaseConfig extends LocalConfig implements Lifecycle {
     private final Map<Setting<?>, Object> databaseSpecificSettings;
     private final Config globalConfig;
     private final Map<Setting<?>, Object> overriddenSettings;
+
+    public DatabaseConfig(Config globalConfig) {
+        this(emptyMap(), globalConfig);
+    }
 
     public DatabaseConfig(Map<Setting<?>, Object> databaseSpecificSettings, Config globalConfig) {
         super(globalConfig);

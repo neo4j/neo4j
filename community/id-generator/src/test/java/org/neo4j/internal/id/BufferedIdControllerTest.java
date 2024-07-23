@@ -37,6 +37,7 @@ import org.neo4j.adversaries.CountingAdversary;
 import org.neo4j.adversaries.MethodGuardedAdversary;
 import org.neo4j.adversaries.fs.AdversarialFileSystemAbstraction;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.DatabaseConfig;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.ReadAheadChannel;
 import org.neo4j.io.pagecache.PageCache;
@@ -74,16 +75,18 @@ class BufferedIdControllerTest {
     void setUp(CursorContextFactory contextFactory, FileSystemAbstraction filesystem) throws IOException {
         idGeneratorFactory = new BufferingIdGeneratorFactory(
                 new DefaultIdGeneratorFactory(filesystem, immediate(), PageCacheTracer.NULL, DEFAULT_DATABASE_NAME));
+        Config globalConfig = Config.defaults();
         controller = new BufferedIdController(
                 idGeneratorFactory,
                 new OnDemandJobScheduler(),
                 contextFactory,
+                new DatabaseConfig(globalConfig),
                 "test db",
                 NullLogService.getInstance());
         controller.initialize(
                 filesystem,
                 testDirectory.file("buffer"),
-                Config.defaults(),
+                globalConfig,
                 () -> new IdController.TransactionSnapshot(10, 0, 0),
                 s -> true,
                 EmptyMemoryTracker.INSTANCE,

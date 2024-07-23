@@ -23,20 +23,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.initial_default_database;
-import static org.neo4j.kernel.database.DatabaseIdFactory.from;
 
-import java.util.Collections;
-import java.util.Map;
-import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.DatabaseConfig;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.SettingChangeListener;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.test.Race;
 
@@ -44,8 +38,7 @@ class DatabaseConfigTest {
     @Test
     void shouldHandleRegisterDynamicUpdateListenersConcurrently() throws Throwable {
         // given
-        NamedDatabaseId namedDatabaseId = from(DEFAULT_DATABASE_NAME, UUID.randomUUID());
-        DatabaseConfig dbConfig = new DatabaseConfig(Collections.emptyMap(), Config.defaults());
+        DatabaseConfig dbConfig = new DatabaseConfig(Config.defaults());
         Setting<GraphDatabaseSettings.TransactionTracingLevel> setting =
                 GraphDatabaseSettings.transaction_tracing_level;
         int threads =
@@ -77,7 +70,7 @@ class DatabaseConfigTest {
     void shouldBeAbleToBuildConfigFromDatabaseConfig() {
         // Given
         Config globalConfig = Config.defaults(initial_default_database, "foo");
-        Config dbConfig = new DatabaseConfig(Map.of(), globalConfig);
+        Config dbConfig = new DatabaseConfig(globalConfig);
         // When
         Config newConfig = Config.newBuilder().fromConfig(dbConfig).build();
         // Then
@@ -89,7 +82,7 @@ class DatabaseConfigTest {
         // given
         Config globalConfig = mock(Config.class);
         LifeSupport life = new LifeSupport();
-        DatabaseConfig databaseConfig = life.add(new DatabaseConfig(Map.of(), globalConfig));
+        DatabaseConfig databaseConfig = life.add(new DatabaseConfig(globalConfig));
         life.init();
         SettingChangeListener<Boolean> listener = mock(SettingChangeListener.class);
         databaseConfig.addListener(GraphDatabaseSettings.read_only_database_default, listener);

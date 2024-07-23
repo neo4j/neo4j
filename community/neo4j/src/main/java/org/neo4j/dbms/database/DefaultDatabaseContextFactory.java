@@ -19,7 +19,6 @@
  */
 package org.neo4j.dbms.database;
 
-import java.util.Map;
 import java.util.Optional;
 import org.neo4j.configuration.DatabaseConfig;
 import org.neo4j.cypher.internal.javacompat.CommunityCypherEngineProvider;
@@ -86,7 +85,7 @@ public class DefaultDatabaseContextFactory
         private final StandaloneDatabaseContext context;
 
         private Creator(NamedDatabaseId namedDatabaseId) {
-            var databaseConfig = new DatabaseConfig(Map.of(), globalModule.getGlobalConfig());
+            var databaseConfig = new DatabaseConfig(globalModule.getGlobalConfig());
             var contextFactory = createContextFactory(databaseConfig, namedDatabaseId);
             var creationContext = new ModularDatabaseCreationContext(
                     HostedOnMode.SINGLE,

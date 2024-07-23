@@ -1457,4 +1457,10 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
     public static final Setting<Boolean> udc_network_enabled = newBuilder(
                     "internal.dbms.usage_report.udc_network_enabled", BOOL, true)
             .build();
+
+    @Internal
+    @Description("Id controller maintenance interval")
+    public static final Setting<Duration> id_controller_maintenance_interval = newBuilder(
+                    "internal.db.idcontroller.maintenance_interval", DURATION, ofSeconds(1))
+            .build();
 }

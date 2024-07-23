@@ -34,7 +34,6 @@ import static org.neo4j.kernel.database.DatabaseIdFactory.from;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.Map;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.function.LongSupplier;
@@ -98,7 +97,7 @@ class IdContextFactoryBuilderTest {
                 .withIdGenerationFactoryProvider((i1, i2) -> idGeneratorFactory)
                 .build();
         DatabaseIdContext idContext = contextFactory.createIdContext(
-                from("database", UUID.randomUUID()), CONTEXT_FACTORY, new DatabaseConfig(Map.of(), config), true);
+                from("database", UUID.randomUUID()), CONTEXT_FACTORY, new DatabaseConfig(config), true);
 
         IdGeneratorFactory bufferedGeneratorFactory = idContext.getIdGeneratorFactory();
         assertThat(idContext.getIdController()).isInstanceOf(BufferedIdController.class);
@@ -154,7 +153,7 @@ class IdContextFactoryBuilderTest {
                 .build();
 
         DatabaseIdContext idContext = contextFactory.createIdContext(
-                from("database", UUID.randomUUID()), CONTEXT_FACTORY, new DatabaseConfig(Map.of(), defaults()), true);
+                from("database", UUID.randomUUID()), CONTEXT_FACTORY, new DatabaseConfig(defaults()), true);
 
         assertSame(idGeneratorFactory, idContext.getIdGeneratorFactory());
     }
@@ -167,7 +166,7 @@ class IdContextFactoryBuilderTest {
         var idContextFactory = IdContextFactoryBuilder.of(fs, jobScheduler, config, cacheTracer)
                 .build();
         var idContext = idContextFactory.createIdContext(
-                from("test", UUID.randomUUID()), contextFactory, new DatabaseConfig(Map.of(), config), true);
+                from("test", UUID.randomUUID()), contextFactory, new DatabaseConfig(config), true);
         var idGeneratorFactory = idContext.getIdGeneratorFactory();
         var idController = idContext.getIdController();
         idController.initialize(
