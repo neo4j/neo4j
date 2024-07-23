@@ -115,16 +115,58 @@ class IndexSettingValidators {
         }
     }
 
-    static final class DimensionsValidator extends IndexSettingValidator<IntegralValue, OptionalInt> {
+    static final class IntegerValidator extends IndexSettingValidator<IntegralValue, Integer> {
         private final Range<Integer> supportedRange;
 
-        DimensionsValidator(Range<Integer> supportedRange) {
-            this(null, supportedRange);
+        IntegerValidator(IndexSetting setting, Range<Integer> supportedRange) {
+            this(setting, null, supportedRange);
         }
 
-        DimensionsValidator(OptionalInt defaultValue, Range<Integer> supportedRange) {
-            super(IndexSetting.vector_Dimensions(), defaultValue);
+        IntegerValidator(IndexSetting setting, Integer defaultValue, Range<Integer> supportedRange) {
+            super(setting, defaultValue);
             this.supportedRange = supportedRange;
+            assert defaultValue == null || supportedRange.contains(defaultValue);
+        }
+
+        @Override
+        Integer map(IntegralValue value) {
+            return (int) value.longValue();
+        }
+
+        @Override
+        Value map(Integer value) {
+            return Values.intValue(value);
+        }
+
+        @Override
+        IndexConfigValidationRecord validate(SettingsAccessor accessor) {
+            final var record = extractOrDefault(accessor);
+            if (!(record instanceof final Pending pending)) {
+                return record;
+            }
+
+            if (!(pending.rawValue() instanceof final IntegralValue integralValue)) {
+                return new IncorrectType(pending, IntegralValue.class);
+            }
+
+            final var value = map(integralValue);
+            return supportedRange.contains(value)
+                    ? new Valid(setting, value, map(value))
+                    : new InvalidValue(pending, value, supportedRange);
+        }
+    }
+
+    static final class OptionalIntSettingValidator extends IndexSettingValidator<IntegralValue, OptionalInt> {
+        private final Range<Integer> supportedRange;
+
+        OptionalIntSettingValidator(IndexSetting setting, Range<Integer> supportedRange) {
+            this(setting, supportedRange, null);
+        }
+
+        OptionalIntSettingValidator(IndexSetting setting, Range<Integer> supportedRange, OptionalInt defaultValue) {
+            super(setting, defaultValue);
+            this.supportedRange = supportedRange;
+            assert defaultValue == null || defaultValue.isEmpty() || supportedRange.contains(defaultValue.getAsInt());
         }
 
         @Override
@@ -160,14 +202,16 @@ class IndexSettingValidators {
         private final MapIterable<String, VectorSimilarityFunction> similarityFunctions;
 
         SimilarityFunctionValidator(MapIterable<String, VectorSimilarityFunction> supportedSimilarityFunctions) {
-            this(null, supportedSimilarityFunctions);
+            this(supportedSimilarityFunctions, null);
         }
 
         SimilarityFunctionValidator(
-                VectorSimilarityFunction defaultSimilarityFunction,
-                MapIterable<String, VectorSimilarityFunction> supportedSimilarityFunctions) {
+                MapIterable<String, VectorSimilarityFunction> supportedSimilarityFunctions,
+                VectorSimilarityFunction defaultSimilarityFunction) {
             super(IndexSetting.vector_Similarity_Function(), defaultSimilarityFunction);
             this.similarityFunctions = supportedSimilarityFunctions;
+            assert defaultSimilarityFunction == null
+                    || supportedSimilarityFunctions.containsValue(defaultSimilarityFunction);
         }
 
         @Override
@@ -202,11 +246,14 @@ class IndexSettingValidators {
         private final MapIterable<String, VectorQuantization> quantizations;
 
         QuantizationValidator(
+                MapIterable<String, VectorQuantization> supportedQuantizations,
                 VectorQuantization readDefaultQuantization,
-                VectorQuantization writeDefaultQuantization,
-                MapIterable<String, VectorQuantization> supportedQuantizations) {
+                VectorQuantization writeDefaultQuantization) {
             super(IndexSetting.vector_Quantization(), readDefaultQuantization, writeDefaultQuantization);
             this.quantizations = supportedQuantizations;
+            assert supportedQuantizations == null
+                    || supportedQuantizations.containsValue(readDefaultQuantization)
+                            && supportedQuantizations.containsValue(writeDefaultQuantization);
         }
 
         @Override
@@ -234,42 +281,6 @@ class IndexSettingValidators {
             return quantization == null
                     ? new InvalidValue(pending, quantizations.keysView())
                     : new Valid(setting, quantization, map(quantization));
-        }
-    }
-
-    static final class IntegerWithDefaultSettingValidator extends IndexSettingValidator<IntegralValue, Integer> {
-        private final Range<Integer> supportedRange;
-
-        IntegerWithDefaultSettingValidator(IndexSetting setting, Range<Integer> supportedRange, Integer defaultValue) {
-            super(setting, defaultValue);
-            this.supportedRange = supportedRange;
-        }
-
-        @Override
-        Integer map(IntegralValue value) {
-            return (int) value.longValue();
-        }
-
-        @Override
-        Value map(Integer value) {
-            return Values.intValue(value);
-        }
-
-        @Override
-        IndexConfigValidationRecord validate(SettingsAccessor accessor) {
-            final var record = extractOrDefault(accessor);
-            if (!(record instanceof final Pending pending)) {
-                return record;
-            }
-
-            if (!(pending.rawValue() instanceof final IntegralValue integralValue)) {
-                return new IncorrectType(pending, IntegralValue.class);
-            }
-
-            final var value = map(integralValue);
-            return supportedRange.contains(value)
-                    ? new Valid(setting, value, map(value))
-                    : new InvalidValue(pending, value, supportedRange);
         }
     }
 }
