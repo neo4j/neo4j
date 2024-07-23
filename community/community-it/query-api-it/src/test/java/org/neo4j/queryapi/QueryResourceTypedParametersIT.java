@@ -100,7 +100,11 @@ class QueryResourceTypedParametersIT {
                 Arguments.of("Date", "2015-03-26"),
                 Arguments.of("Time", "12:50:35.556+01:00"),
                 Arguments.of("LocalTime", "12:50:35.556"),
-                Arguments.of("Duration", "P14DT16H12M"));
+                Arguments.of("Duration", "P14DT16H12M"),
+                Arguments.of("Point", "SRID=7203;POINT (2.3 4.5)"),
+                Arguments.of("Point", "SRID=9157;POINT Z (2.3 4.5 6.7)"),
+                Arguments.of("Point", "SRID=4326;POINT (2.3 4.5)"),
+                Arguments.of("Point", "SRID=4979;POINT Z (2.3 4.5 6.7)"));
     }
 
     @ParameterizedTest

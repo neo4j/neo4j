@@ -92,7 +92,7 @@ public enum CypherTypes {
             CypherTypes::parseDuration,
             v -> DurationValue.parse(v.asIsoDuration().toString()).toString()),
 
-    Point(CypherTypes::parsePoint, null),
+    Point(CypherTypes::parsePoint, v -> serializePoint(v.asPoint())),
 
     Node,
 
@@ -139,7 +139,7 @@ public enum CypherTypes {
     }
 
     private static final Pattern WKT_PATTERN =
-            Pattern.compile("SRID=(\\d+);\\s*POINT\\(\\s*(\\S+)\\s+(\\S+)\\s*(\\S?)\\)");
+            Pattern.compile("SRID=(\\d+);\\s*POINT\\s*Z?\\s*\\(\\s*(\\S+)\\s+(\\S+)\\s*(\\S+)?\\)");
 
     /**
      * Pragmatic parsing of the Neo4j Java Driver's {@link org.neo4j.driver.types.Point} class
@@ -171,5 +171,13 @@ public enum CypherTypes {
         return new InternalIsoDuration(
                 d.get(ChronoUnit.MONTHS), d.get(ChronoUnit.DAYS), d.get(ChronoUnit.SECONDS), (int)
                         d.get(ChronoUnit.NANOS));
+    }
+
+    private static String serializePoint(Point point) {
+        var is3d = !Double.isNaN(point.z());
+        return "SRID=" + point.srid()
+                + ";POINT"
+                + (is3d ? " Z " : " ")
+                + "(" + point.x() + " " + point.y() + (is3d ? " " + point.z() + ")" : ")");
     }
 }

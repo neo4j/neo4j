@@ -50,7 +50,6 @@ import org.neo4j.driver.summary.SummaryCounters;
 import org.neo4j.driver.types.Entity;
 import org.neo4j.driver.types.Node;
 import org.neo4j.driver.types.Path;
-import org.neo4j.driver.types.Point;
 import org.neo4j.driver.types.Relationship;
 import org.neo4j.driver.types.Type;
 import org.neo4j.driver.types.TypeSystem;
@@ -276,6 +275,7 @@ public final class DefaultResponseModule extends SimpleModule {
             typeToNames.put(typeSystem.DATE_TIME(), CypherTypes.DateTime);
             typeToNames.put(typeSystem.LOCAL_DATE_TIME(), CypherTypes.LocalDateTime);
             typeToNames.put(typeSystem.DURATION(), CypherTypes.Duration);
+            typeToNames.put(typeSystem.POINT(), CypherTypes.Point);
         }
 
         @Override
@@ -458,7 +458,7 @@ public final class DefaultResponseModule extends SimpleModule {
                 writeNode(path.end(), json, serializers, View.PLAIN_JSON);
                 json.writeEndArray();
             } else if (value.hasType(typeSystem.POINT())) {
-                json.writeString(renderWKT(value.asPoint()));
+                json.writeString(CypherTypes.Point.getWriter().apply(value));
             } else {
                 throw new UnsupportedOperationException(
                         "Type " + value.type().name() + " is not supported as a column value");
@@ -528,13 +528,5 @@ public final class DefaultResponseModule extends SimpleModule {
                 json.writeEndObject();
             }
         }
-    }
-
-    private static String renderWKT(Point point) {
-        var is3d = !Double.isNaN(point.z());
-        return "SRID=" + point.srid()
-                + ";POINT"
-                + (is3d ? " Z " : " ")
-                + "(" + point.x() + " " + point.y() + (is3d ? " " + point.z() + ")" : ")");
     }
 }
