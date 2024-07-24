@@ -54,6 +54,7 @@ import org.neo4j.kernel.ZippedStoreCommunity;
 import org.neo4j.kernel.api.impl.schema.vector.VectorIndexConfigUtils;
 import org.neo4j.kernel.api.impl.schema.vector.VectorIndexVersion;
 import org.neo4j.kernel.api.schema.vector.VectorTestUtils.VectorIndexSettings;
+import org.neo4j.kernel.api.vector.VectorQuantization;
 import org.neo4j.kernel.impl.coreapi.TransactionImpl;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.LatestVersions;
@@ -223,7 +224,10 @@ class VectorIndexOnDatabaseUpgradeTransactionIT {
     }
 
     private static Stream<Arguments> introducedSettings() {
-        return Stream.of(Tuples.pair(IndexSetting.vector_Quantization(), "LUCENE"))
+        return Stream.of(
+                        Tuples.pair(IndexSetting.vector_Quantization(), VectorQuantization.LUCENE.name()),
+                        Tuples.pair(IndexSetting.vector_Hnsw_M(), 32),
+                        Tuples.pair(IndexSetting.vector_Hnsw_M(), 256))
                 .flatMap(pair -> Arrays.stream(EntityType.values())
                         .map(entityType -> Arguments.of(entityType, pair.getOne(), pair.getTwo())));
     }
