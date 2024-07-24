@@ -26,6 +26,7 @@ import static org.neo4j.internal.schema.IndexConfigValidationWrapper.unrecognize
 
 import java.util.Comparator;
 import java.util.Objects;
+import org.eclipse.collections.api.PrimitiveIterable;
 import org.eclipse.collections.api.RichIterable;
 import org.eclipse.collections.api.block.predicate.Predicate;
 import org.eclipse.collections.api.map.sorted.ImmutableSortedMap;
@@ -52,7 +53,7 @@ public class VectorIndexConfigUtils {
 
     static final IndexSetting DIMENSIONS = IndexSetting.vector_Dimensions();
     static final IndexSetting SIMILARITY_FUNCTION = IndexSetting.vector_Similarity_Function();
-    static final IndexSetting QUANTIZATION = IndexSetting.vector_Quantization();
+    static final IndexSetting QUANTIZATION_ENABLED = IndexSetting.vector_Quantization_Enabled();
     static final IndexSetting HNSW_M = IndexSetting.vector_Hnsw_M();
     static final IndexSetting HNSW_EF_CONSTRUCTION = IndexSetting.vector_Hnsw_Ef_Construction();
 
@@ -61,7 +62,8 @@ public class VectorIndexConfigUtils {
                             INDEX_SETTING_COMPARATOR,
                             Tuples.pair(DIMENSIONS, KernelVersion.VERSION_NODE_VECTOR_INDEX_INTRODUCED),
                             Tuples.pair(SIMILARITY_FUNCTION, KernelVersion.VERSION_NODE_VECTOR_INDEX_INTRODUCED),
-                            Tuples.pair(QUANTIZATION, KernelVersion.VERSION_VECTOR_QUANTIZATION_AND_HYPER_PARAMS),
+                            Tuples.pair(
+                                    QUANTIZATION_ENABLED, KernelVersion.VERSION_VECTOR_QUANTIZATION_AND_HYPER_PARAMS),
                             Tuples.pair(HNSW_M, KernelVersion.VERSION_VECTOR_QUANTIZATION_AND_HYPER_PARAMS),
                             Tuples.pair(
                                     HNSW_EF_CONSTRUCTION, KernelVersion.VERSION_VECTOR_QUANTIZATION_AND_HYPER_PARAMS))
@@ -158,11 +160,11 @@ public class VectorIndexConfigUtils {
                 if (valid instanceof final Range<?> range) {
                     yield new IllegalArgumentException("'%s' must be between %s and %s inclusively"
                             .formatted(settingName, range.min(), range.max()));
-                } else if (valid instanceof final Iterable<?> iterable) {
+                } else if (valid instanceof Iterable<?> || valid instanceof PrimitiveIterable) {
                     final var pp = new PrettyPrinter();
                     invalidValue.rawValue().writeTo(pp);
                     yield new IllegalArgumentException(
-                            "'%s' is an unsupported '%s'. Supported: %s".formatted(pp.value(), settingName, iterable));
+                            "'%s' is an unsupported '%s'. Supported: %s".formatted(pp.value(), settingName, valid));
                 }
 
                 // this is an implementation mistake

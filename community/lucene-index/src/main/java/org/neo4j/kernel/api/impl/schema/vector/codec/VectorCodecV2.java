@@ -22,7 +22,6 @@ package org.neo4j.kernel.api.impl.schema.vector.codec;
 import org.apache.lucene.codecs.KnnVectorsFormat;
 import org.apache.lucene.codecs.lucene99.Lucene99Codec;
 import org.neo4j.kernel.api.impl.schema.vector.VectorIndexConfig;
-import org.neo4j.kernel.api.vector.VectorQuantization;
 
 public class VectorCodecV2 extends Lucene99Codec {
     private final KnnVectorsFormat vectorFormat;
@@ -31,7 +30,7 @@ public class VectorCodecV2 extends Lucene99Codec {
         super();
         final var dimensions =
                 config.dimensions().orElseGet(() -> config.version().maxDimensions());
-        if (config.quantization() == VectorQuantization.LUCENE) {
+        if (config.quantizationEnabled()) {
             this.vectorFormat = new LuceneKnnScalarQuantizedVectorFormatV2(dimensions, config.hnsw());
         } else {
             this.vectorFormat = new LuceneKnnVectorFormatV2(dimensions, config.hnsw());

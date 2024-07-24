@@ -59,7 +59,6 @@ import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.impl.schema.vector.VectorIndexVersion;
 import org.neo4j.kernel.api.schema.vector.VectorTestUtils.VectorIndexSettings;
-import org.neo4j.kernel.api.vector.VectorQuantization;
 import org.neo4j.kernel.api.vector.VectorSimilarityFunction;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
@@ -68,6 +67,7 @@ import org.neo4j.test.LatestVersions;
 import org.neo4j.test.Tokens;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
+import org.neo4j.values.storable.BooleanValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -471,8 +471,8 @@ public class VectorIndexCreationTest {
 
         @Nested
         class Quantization extends TestBase {
-            private static final IndexSetting SETTING = IndexSetting.vector_Quantization();
-            private static final Value DEFAULT_VALUE = Values.stringValue(VectorQuantization.LUCENE.name());
+            private static final IndexSetting SETTING = IndexSetting.vector_Quantization_Enabled();
+            private static final Value DEFAULT_VALUE = BooleanValue.TRUE;
 
             Quantization() {
                 super(
@@ -482,18 +482,18 @@ public class VectorIndexCreationTest {
 
             @ParameterizedTest
             @MethodSource
-            void shouldAcceptSupported(VectorIndexVersion version, VectorQuantization quantization) {
-                final var settings = defaultSettings().withQuantization(quantization);
+            void shouldAcceptSupported(VectorIndexVersion version, boolean quantizationEnabled) {
+                final var settings = defaultSettings().withQuantizationEnabled(quantizationEnabled);
 
                 final var ref = new MutableObject<IndexDescriptor>();
                 assertDoesNotThrow(() -> ref.setValue(createVectorIndex(version, settings, propKeyIds[0])));
                 final var index = ref.getValue();
 
                 // config committed in tx
-                assertSettingHasValue(SETTING, index.getIndexConfig(), Values.stringValue(quantization.name()));
+                assertSettingHasValue(SETTING, index.getIndexConfig(), Values.booleanValue(quantizationEnabled));
                 // config via schema store
                 assertSettingHasValue(
-                        SETTING, findIndex(index.getName()).getIndexConfig(), Values.stringValue(quantization.name()));
+                        SETTING, findIndex(index.getName()).getIndexConfig(), Values.booleanValue(quantizationEnabled));
             }
 
             Iterable<Arguments> shouldAcceptSupported() {
@@ -505,26 +505,26 @@ public class VectorIndexCreationTest {
             @ParameterizedTest
             @MethodSource
             @EnabledIf("latestIsValid")
-            void shouldAcceptSupportedCoreAPI(VectorQuantization quantization) {
-                final var settings = defaultSettings().withQuantization(quantization);
+            void shouldAcceptSupportedCoreAPI(boolean quantizationEnabled) {
+                final var settings = defaultSettings().withQuantizationEnabled(quantizationEnabled);
 
                 final var ref = new MutableObject<IndexDescriptor>();
                 assertDoesNotThrow(() -> ref.setValue(createVectorIndex(settings, PROP_KEYS.get(1))));
                 final var index = ref.getValue();
 
                 // config committed in tx
-                assertSettingHasValue(SETTING, index.getIndexConfig(), Values.stringValue(quantization.name()));
+                assertSettingHasValue(SETTING, index.getIndexConfig(), Values.booleanValue(quantizationEnabled));
                 // config via schema store
                 assertSettingHasValue(
-                        SETTING, findIndex(index.getName()).getIndexConfig(), Values.stringValue(quantization.name()));
+                        SETTING, findIndex(index.getName()).getIndexConfig(), Values.booleanValue(quantizationEnabled));
             }
 
-            Iterable<VectorQuantization> shouldAcceptSupportedCoreAPI() {
+            Iterable<Boolean> shouldAcceptSupportedCoreAPI() {
                 return supported(LATEST);
             }
 
-            RichIterable<VectorQuantization> supported(VectorIndexVersion version) {
-                return version.supportedQuantizations();
+            RichIterable<Boolean> supported(VectorIndexVersion version) {
+                return version.supportedQuantizationBooleans().asLazy().collect(b -> b);
             }
 
             @ParameterizedTest
@@ -556,36 +556,6 @@ public class VectorIndexCreationTest {
                 assertSettingHasValue(SETTING, index.getIndexConfig(), DEFAULT_VALUE);
                 // config via schema store
                 assertSettingHasValue(SETTING, findIndex(index.getName()).getIndexConfig(), DEFAULT_VALUE);
-            }
-
-            @ParameterizedTest
-            @MethodSource("validVersions")
-            @EnabledIf("hasValidVersions")
-            void shouldRejectUnsupported(VectorIndexVersion version) {
-                final var quantizationName = "ClearlyThisIsNotAQuantization";
-                final var settings = defaultSettings().withQuantization(quantizationName);
-                assertUnsupported(version, () -> createVectorIndex(version, settings, propKeyIds[0]));
-            }
-
-            @Test
-            @EnabledIf("latestIsValid")
-            void shouldRejectUnsupportedCoreAPI() {
-                final var quantizationName = "ClearlyThisIsNotAQuantization";
-                final var settings = defaultSettings().withQuantization(quantizationName);
-                assertUnsupported(LATEST, () -> createVectorIndex(settings, PROP_KEYS.get(1)));
-            }
-
-            private static void assertUnsupported(VectorIndexVersion version, ThrowingCallable callable) {
-                assertThatThrownBy(callable)
-                        .isInstanceOf(IllegalArgumentException.class)
-                        .hasMessageContainingAll(
-                                "is an unsupported",
-                                IndexSetting.vector_Quantization().getSettingName(),
-                                "Supported",
-                                version.supportedQuantizations()
-                                        .asLazy()
-                                        .collect(VectorQuantization::name)
-                                        .toString());
             }
         }
 

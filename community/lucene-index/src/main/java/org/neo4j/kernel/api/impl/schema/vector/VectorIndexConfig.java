@@ -22,7 +22,7 @@ package org.neo4j.kernel.api.impl.schema.vector;
 import static org.neo4j.kernel.api.impl.schema.vector.VectorIndexConfigUtils.DIMENSIONS;
 import static org.neo4j.kernel.api.impl.schema.vector.VectorIndexConfigUtils.HNSW_EF_CONSTRUCTION;
 import static org.neo4j.kernel.api.impl.schema.vector.VectorIndexConfigUtils.HNSW_M;
-import static org.neo4j.kernel.api.impl.schema.vector.VectorIndexConfigUtils.QUANTIZATION;
+import static org.neo4j.kernel.api.impl.schema.vector.VectorIndexConfigUtils.QUANTIZATION_ENABLED;
 import static org.neo4j.kernel.api.impl.schema.vector.VectorIndexConfigUtils.SIMILARITY_FUNCTION;
 
 import java.util.Objects;
@@ -32,14 +32,13 @@ import org.eclipse.collections.api.set.sorted.ImmutableSortedSet;
 import org.neo4j.graphdb.schema.IndexSetting;
 import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexConfigValidationWrapper;
-import org.neo4j.kernel.api.vector.VectorQuantization;
 import org.neo4j.kernel.api.vector.VectorSimilarityFunction;
 
 public class VectorIndexConfig extends IndexConfigValidationWrapper {
     private final VectorIndexVersion version;
     private final OptionalInt dimensions;
     private final VectorSimilarityFunction similarityFunction;
-    private final VectorQuantization quantization;
+    private final boolean quantizationEnabled;
     private final HnswConfig hnswConfig;
 
     VectorIndexConfig(
@@ -52,7 +51,7 @@ public class VectorIndexConfig extends IndexConfigValidationWrapper {
         this.version = version;
         this.dimensions = get(DIMENSIONS);
         this.similarityFunction = get(SIMILARITY_FUNCTION);
-        this.quantization = get(QUANTIZATION);
+        this.quantizationEnabled = get(QUANTIZATION_ENABLED);
         this.hnswConfig = new HnswConfig(get(HNSW_M), get(HNSW_EF_CONSTRUCTION));
     }
 
@@ -68,8 +67,8 @@ public class VectorIndexConfig extends IndexConfigValidationWrapper {
         return similarityFunction;
     }
 
-    public VectorQuantization quantization() {
-        return quantization;
+    public boolean quantizationEnabled() {
+        return quantizationEnabled;
     }
 
     public HnswConfig hnsw() {
@@ -78,7 +77,7 @@ public class VectorIndexConfig extends IndexConfigValidationWrapper {
 
     @Override
     public int hashCode() {
-        return Objects.hash(dimensions, similarityFunction, quantization, hnswConfig);
+        return Objects.hash(dimensions, similarityFunction, quantizationEnabled, hnswConfig);
     }
 
     @Override
@@ -91,7 +90,7 @@ public class VectorIndexConfig extends IndexConfigValidationWrapper {
         }
         return Objects.equals(this.dimensions, that.dimensions)
                 && Objects.equals(this.similarityFunction, that.similarityFunction)
-                && this.quantization == that.quantization
+                && this.quantizationEnabled == that.quantizationEnabled
                 && Objects.equals(this.hnswConfig, that.hnswConfig);
     }
 

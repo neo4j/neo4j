@@ -91,7 +91,7 @@ class VectorIndexProviderTest {
                     //   unrecognised vector settings for version
                     validPrototype()
                             .withIndexConfig(
-                                    validSettings().withQuantization("OFF").toIndexConfig())
+                                    validSettings().withQuantizationDisabled().toIndexConfig())
                             .withName("unsupported"),
                     validPrototype()
                             .withIndexConfig(validSettings().withHnswM(32).toIndexConfig())

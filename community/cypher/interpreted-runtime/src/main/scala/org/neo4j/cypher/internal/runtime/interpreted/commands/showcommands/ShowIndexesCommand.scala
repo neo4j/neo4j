@@ -61,11 +61,9 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowS
 import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowSchemaCommandHelper.createRelIndexCommand
 import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowSchemaCommandHelper.extractOptionsMap
 import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowSchemaCommandHelper.optionsAsString
-import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowSchemaCommandHelper.pointConfigValueAsString
 import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowSchemaCommandHelper.propStringJoiner
 import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowSchemaCommandHelper.relPropStringJoiner
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
-import org.neo4j.internal.helpers.NameUtil.escapeSingleQuotes
 import org.neo4j.internal.schema.ConstraintDescriptor
 import org.neo4j.internal.schema.IndexConfig
 import org.neo4j.internal.schema.IndexDescriptor
@@ -74,10 +72,6 @@ import org.neo4j.internal.schema.IndexType
 import org.neo4j.internal.schema.SettingsAccessor.IndexConfigAccessor
 import org.neo4j.kernel.api.impl.schema.vector.VectorIndexVersion
 import org.neo4j.values.AnyValue
-import org.neo4j.values.storable.BooleanValue
-import org.neo4j.values.storable.IntegralValue
-import org.neo4j.values.storable.TextValue
-import org.neo4j.values.storable.Value
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.VirtualValues
 
@@ -298,7 +292,7 @@ object ShowIndexesCommand {
         }
       case IndexType.FULLTEXT =>
         val labelsOrTypesWithBars = asEscapedString(labelsOrTypes, barStringJoiner)
-        val fulltextConfig = configAsString(indexConfig, value => fullTextConfigValueAsString(value))
+        val fulltextConfig = configAsString(indexConfig)
         val optionsString = optionsAsString(providerName, fulltextConfig)
 
         entityType match {
@@ -333,7 +327,7 @@ object ShowIndexesCommand {
           case _ => throw new IllegalArgumentException(s"Did not recognize entity type $entityType")
         }
       case IndexType.POINT =>
-        val pointConfig = configAsString(indexConfig, value => pointConfigValueAsString(value))
+        val pointConfig = configAsString(indexConfig)
         val optionsString = optionsAsString(providerName, pointConfig)
 
         entityType match {
@@ -346,7 +340,7 @@ object ShowIndexesCommand {
       case IndexType.VECTOR =>
         val settingsValidator = VectorIndexVersion.fromDescriptor(provider).indexSettingValidator
         val vectorIndexConfig = settingsValidator.trustIsValidToVectorIndexConfig(new IndexConfigAccessor(indexConfig))
-        val vectorConfig = configAsString(vectorIndexConfig.config, value => vectorConfigValueAsString(value))
+        val vectorConfig = configAsString(vectorIndexConfig.config)
         val optionsString = optionsAsString(providerName, vectorConfig)
 
         entityType match {
@@ -365,22 +359,6 @@ object ShowIndexesCommand {
           case _ => throw new IllegalArgumentException(s"Did not recognize entity type $entityType")
         }
       case _ => throw new IllegalArgumentException(s"Did not recognize index type $indexType")
-    }
-  }
-
-  private def fullTextConfigValueAsString(configValue: Value): String = {
-    configValue match {
-      case booleanValue: BooleanValue => booleanValue.booleanValue().toString
-      case textValue: TextValue       => "'" + escapeSingleQuotes(textValue.stringValue()) + "'"
-      case _ => throw new IllegalArgumentException(s"Could not convert config value '$configValue' to config string.")
-    }
-  }
-
-  private def vectorConfigValueAsString(configValue: Value): String = {
-    configValue match {
-      case integralValue: IntegralValue => integralValue.longValue().asInstanceOf[Int].toString
-      case textValue: TextValue         => "'" + escapeSingleQuotes(textValue.stringValue()) + "'"
-      case _ => throw new IllegalArgumentException(s"Could not convert config value '$configValue' to config string.")
     }
   }
 }

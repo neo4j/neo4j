@@ -176,8 +176,8 @@ public interface IndexSetting {
         return IndexSettingImpl.VECTOR_SIMILARITY_FUNCTION;
     }
 
-    static IndexSetting vector_Quantization() {
-        return IndexSettingImpl.VECTOR_QUANTIZATION;
+    static IndexSetting vector_Quantization_Enabled() {
+        return IndexSettingImpl.VECTOR_QUANTIZATION_ENABLED;
     }
 
     /**

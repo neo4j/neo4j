@@ -28,7 +28,7 @@ import static org.neo4j.internal.schema.IndexConfigValidationRecords.State.UNREC
 import static org.neo4j.kernel.api.impl.schema.vector.VectorIndexConfigUtils.DIMENSIONS;
 import static org.neo4j.kernel.api.impl.schema.vector.VectorIndexConfigUtils.HNSW_EF_CONSTRUCTION;
 import static org.neo4j.kernel.api.impl.schema.vector.VectorIndexConfigUtils.HNSW_M;
-import static org.neo4j.kernel.api.impl.schema.vector.VectorIndexConfigUtils.QUANTIZATION;
+import static org.neo4j.kernel.api.impl.schema.vector.VectorIndexConfigUtils.QUANTIZATION_ENABLED;
 import static org.neo4j.kernel.api.impl.schema.vector.VectorIndexConfigUtils.SIMILARITY_FUNCTION;
 
 import java.util.OptionalInt;
@@ -47,8 +47,8 @@ import org.neo4j.internal.schema.SettingsAccessor.IndexConfigAccessor;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.api.impl.schema.vector.VectorIndexConfig.HnswConfig;
 import org.neo4j.kernel.api.schema.vector.VectorTestUtils.VectorIndexSettings;
-import org.neo4j.kernel.api.vector.VectorQuantization;
 import org.neo4j.kernel.api.vector.VectorSimilarityFunction;
+import org.neo4j.values.storable.BooleanValue;
 import org.neo4j.values.storable.IntegralValue;
 import org.neo4j.values.storable.NumberValue;
 import org.neo4j.values.storable.TextValue;
@@ -80,7 +80,7 @@ class VectorIndexV2ForV523ConfigValidationTest {
                 .withDimensions(VERSION.maxDimensions())
                 .withHnswM(16)
                 .withHnswEfConstruction(100)
-                .withQuantization(VERSION.quantization("OFF"))
+                .withQuantizationDisabled()
                 .withSimilarityFunction(VERSION.similarityFunction("COSINE"))
                 .toSettingsAccessor();
 
@@ -96,19 +96,19 @@ class VectorIndexV2ForV523ConfigValidationTest {
                 .extracting(
                         VectorIndexConfig::dimensions,
                         VectorIndexConfig::similarityFunction,
-                        VectorIndexConfig::quantization,
+                        VectorIndexConfig::quantizationEnabled,
                         VectorIndexConfig::hnsw)
                 .containsExactly(
                         OptionalInt.of(VERSION.maxDimensions()),
                         VERSION.similarityFunction("COSINE"),
-                        VectorQuantization.OFF,
+                        false,
                         new HnswConfig(16, 100));
 
         assertThat(vectorIndexConfig.config().entries().collect(Pair::getOne))
                 .containsExactlyInAnyOrder(
                         DIMENSIONS.getSettingName(),
                         SIMILARITY_FUNCTION.getSettingName(),
-                        QUANTIZATION.getSettingName(),
+                        QUANTIZATION_ENABLED.getSettingName(),
                         HNSW_M.getSettingName(),
                         HNSW_EF_CONSTRUCTION.getSettingName());
     }
@@ -129,18 +129,15 @@ class VectorIndexV2ForV523ConfigValidationTest {
                 .extracting(
                         VectorIndexConfig::dimensions,
                         VectorIndexConfig::similarityFunction,
-                        VectorIndexConfig::quantization,
+                        VectorIndexConfig::quantizationEnabled,
                         VectorIndexConfig::hnsw)
                 .containsExactly(
-                        OptionalInt.empty(),
-                        VERSION.similarityFunction("COSINE"),
-                        VectorQuantization.LUCENE,
-                        new HnswConfig(16, 100));
+                        OptionalInt.empty(), VERSION.similarityFunction("COSINE"), true, new HnswConfig(16, 100));
 
         assertThat(vectorIndexConfig.config().entries().collect(Pair::getOne))
                 .containsExactlyInAnyOrder(
                         SIMILARITY_FUNCTION.getSettingName(),
-                        QUANTIZATION.getSettingName(),
+                        QUANTIZATION_ENABLED.getSettingName(),
                         HNSW_M.getSettingName(),
                         HNSW_EF_CONSTRUCTION.getSettingName());
     }
@@ -306,12 +303,12 @@ class VectorIndexV2ForV523ConfigValidationTest {
     }
 
     @Test
-    void incorrectTypeForQuantization() {
-        final var incorrectQuantization = 123L;
+    void incorrectTypeForQuantizationEnabled() {
+        final var incorrectQuantizationEnabled = 123L;
         final var settings = VectorIndexSettings.create()
                 .withDimensions(VERSION.maxDimensions())
                 .withSimilarityFunction(VERSION.similarityFunction("COSINE"))
-                .set(QUANTIZATION, incorrectQuantization)
+                .set(QUANTIZATION_ENABLED, incorrectQuantizationEnabled)
                 .toSettingsAccessor();
 
         final var validationRecords = VALIDATOR.validate(settings);
@@ -323,7 +320,7 @@ class VectorIndexV2ForV523ConfigValidationTest {
                 .asInstanceOf(InstanceOfAssertFactories.type(IncorrectType.class));
         incorrectTypeAssert
                 .extracting(IncorrectType::setting, IncorrectType::rawValue)
-                .containsExactly(QUANTIZATION, Values.longValue(incorrectQuantization));
+                .containsExactly(QUANTIZATION_ENABLED, Values.longValue(incorrectQuantizationEnabled));
         incorrectTypeAssert
                 .extracting(IncorrectType::providedType)
                 .asInstanceOf(InstanceOfAssertFactories.CLASS)
@@ -331,41 +328,14 @@ class VectorIndexV2ForV523ConfigValidationTest {
         incorrectTypeAssert
                 .extracting(IncorrectType::targetType)
                 .asInstanceOf(InstanceOfAssertFactories.CLASS)
-                .isAssignableTo(TextValue.class);
+                .isAssignableTo(BooleanValue.class);
 
         assertThatThrownBy(() -> VALIDATOR.validateToVectorIndexConfig(settings))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContainingAll(
-                        QUANTIZATION.getSettingName(), "is expected to have been", TextValue.class.getSimpleName());
-    }
-
-    @Test
-    void invalidQuantization() {
-        final var invalidQuantization = "ClearlyThisIsNotAQuantization";
-        final var settings = VectorIndexSettings.create()
-                .withDimensions(VERSION.maxDimensions())
-                .withSimilarityFunction(VERSION.similarityFunction("COSINE"))
-                .set(QUANTIZATION, invalidQuantization)
-                .toSettingsAccessor();
-
-        final var validationRecords = VALIDATOR.validate(settings);
-        assertThat(validationRecords.invalid()).isTrue();
-        assertThat(validationRecords.get(INVALID_VALUE).castToSortedSet())
-                .hasSize(1)
-                .first()
-                .asInstanceOf(InstanceOfAssertFactories.type(InvalidValue.class))
-                .extracting(InvalidValue::setting, InvalidValue::rawValue)
-                .containsExactly(QUANTIZATION, Values.stringValue(invalidQuantization));
-
-        assertThatThrownBy(() -> VALIDATOR.validateToVectorIndexConfig(settings))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContainingAll(
-                        invalidQuantization,
-                        "is an unsupported",
-                        QUANTIZATION.getSettingName(),
-                        VERSION.supportedQuantizations()
-                                .collect(VectorQuantization::name)
-                                .toString());
+                        QUANTIZATION_ENABLED.getSettingName(),
+                        "is expected to have been",
+                        BooleanValue.class.getSimpleName());
     }
 
     @Test

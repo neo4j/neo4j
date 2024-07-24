@@ -24,6 +24,7 @@ import static org.neo4j.kernel.api.impl.schema.vector.VectorIndexConfigUtils.mis
 import java.util.Locale;
 import java.util.OptionalInt;
 import org.eclipse.collections.api.map.MapIterable;
+import org.eclipse.collections.api.set.primitive.BooleanSet;
 import org.neo4j.graphdb.schema.IndexSetting;
 import org.neo4j.internal.schema.IndexConfigValidationRecords.IncorrectType;
 import org.neo4j.internal.schema.IndexConfigValidationRecords.IndexConfigValidationRecord;
@@ -34,8 +35,8 @@ import org.neo4j.internal.schema.IndexConfigValidationRecords.UnrecognizedSettin
 import org.neo4j.internal.schema.IndexConfigValidationRecords.Valid;
 import org.neo4j.internal.schema.SettingsAccessor;
 import org.neo4j.kernel.api.impl.schema.vector.VectorIndexConfigUtils.Range;
-import org.neo4j.kernel.api.vector.VectorQuantization;
 import org.neo4j.kernel.api.vector.VectorSimilarityFunction;
+import org.neo4j.values.storable.BooleanValue;
 import org.neo4j.values.storable.IntegralValue;
 import org.neo4j.values.storable.NoValue;
 import org.neo4j.values.storable.TextValue;
@@ -242,28 +243,30 @@ class IndexSettingValidators {
         }
     }
 
-    static final class QuantizationValidator extends IndexSettingValidator<TextValue, VectorQuantization> {
-        private final MapIterable<String, VectorQuantization> quantizations;
+    static final class QuantizationEnabledValidator extends IndexSettingValidator<BooleanValue, Boolean> {
+        private final BooleanSet quantizationBooleans;
 
-        QuantizationValidator(
-                MapIterable<String, VectorQuantization> supportedQuantizations,
-                VectorQuantization readDefaultQuantization,
-                VectorQuantization writeDefaultQuantization) {
-            super(IndexSetting.vector_Quantization(), readDefaultQuantization, writeDefaultQuantization);
-            this.quantizations = supportedQuantizations;
-            assert supportedQuantizations == null
-                    || supportedQuantizations.containsValue(readDefaultQuantization)
-                            && supportedQuantizations.containsValue(writeDefaultQuantization);
+        QuantizationEnabledValidator(
+                BooleanSet supportedQuantizationBooleans,
+                boolean readDefaultQuantizationEnabled,
+                boolean writeDefaultQuantizationEnabled) {
+            super(
+                    IndexSetting.vector_Quantization_Enabled(),
+                    readDefaultQuantizationEnabled,
+                    writeDefaultQuantizationEnabled);
+            this.quantizationBooleans = supportedQuantizationBooleans;
+            assert supportedQuantizationBooleans.containsAll(
+                    readDefaultQuantizationEnabled, writeDefaultQuantizationEnabled);
         }
 
         @Override
-        VectorQuantization map(TextValue textValue) {
-            return quantizations.get(textValue.stringValue().toUpperCase(Locale.ROOT));
+        Boolean map(BooleanValue value) {
+            return value.booleanValue();
         }
 
         @Override
-        Value map(VectorQuantization quantization) {
-            return Values.stringValue(quantization.name());
+        Value map(Boolean value) {
+            return Values.booleanValue(value);
         }
 
         @Override
@@ -273,13 +276,13 @@ class IndexSettingValidators {
                 return record;
             }
 
-            if (!(pending.rawValue() instanceof final TextValue textValue)) {
-                return new IncorrectType(pending, TextValue.class);
+            if (!(pending.rawValue() instanceof final BooleanValue booleanValue)) {
+                return new IncorrectType(pending, BooleanValue.class);
             }
 
-            final var quantization = map(textValue);
+            final var quantization = map(booleanValue);
             return quantization == null
-                    ? new InvalidValue(pending, quantizations.keysView())
+                    ? new InvalidValue(pending, quantizationBooleans)
                     : new Valid(setting, quantization, map(quantization));
         }
     }

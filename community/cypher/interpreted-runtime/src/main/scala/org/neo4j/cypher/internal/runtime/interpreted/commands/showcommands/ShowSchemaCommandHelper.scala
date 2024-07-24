@@ -19,14 +19,17 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands
 
+import org.neo4j.internal.helpers.NameUtil
 import org.neo4j.internal.schema.IndexConfig
 import org.neo4j.internal.schema.IndexProviderDescriptor
 import org.neo4j.internal.schema.IndexType
 import org.neo4j.internal.schema.SettingsAccessor.IndexConfigAccessor
 import org.neo4j.kernel.api.impl.schema.vector.VectorIndexVersion
-import org.neo4j.values.storable.DoubleArray
+import org.neo4j.values.AnyValueWriter.EntityMode
+import org.neo4j.values.storable.TextValue
 import org.neo4j.values.storable.Value
 import org.neo4j.values.storable.Values
+import org.neo4j.values.utils.PrettyPrinter
 import org.neo4j.values.virtual.MapValue
 import org.neo4j.values.virtual.VirtualValues
 
@@ -144,7 +147,7 @@ object ShowSchemaCommandHelper {
     stringJoiner.toString
   }
 
-  def configAsString(indexConfig: IndexConfig, configValueAsString: Value => String): String = {
+  def configAsString(indexConfig: IndexConfig): String = {
     val configString: StringJoiner = configStringJoiner
     val sortedIndexConfig = ListMap(indexConfig.asMap().asScala.toSeq.sortBy(_._1): _*)
 
@@ -155,11 +158,13 @@ object ShowSchemaCommandHelper {
     configString.toString
   }
 
-  def pointConfigValueAsString(configValue: Value): String = {
-    configValue match {
-      case doubleArray: DoubleArray => java.util.Arrays.toString(doubleArray.asObjectCopy)
-      case _ => throw new IllegalArgumentException(s"Could not convert config value '$configValue' to config string.")
-    }
+  private def configValueAsString(value: Value): String = {
+    val pp = new PrettyPrinter("'", EntityMode.FULL)
+    (value match {
+      case textValue: TextValue => Values.stringValue(NameUtil.escapeSingleQuotes(textValue.stringValue()))
+      case _                    => value
+    }).writeTo(pp)
+    pp.value
   }
 
   private def colonStringJoiner = new StringJoiner(":", ":", "")

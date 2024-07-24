@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.optionsmap
 
+import org.eclipse.collections.api.PrimitiveIterable
 import org.neo4j.configuration.Config
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.internal.schema.IndexConfig
@@ -129,12 +130,17 @@ case class CreateVectorIndexOptionsConverter(context: QueryContext)
     def assertValidConfigValues(pp: PrettyPrinter, validationRecords: IndexConfigValidationRecords): Unit = {
       validationRecords.get(INVALID_VALUE).asScala.map(_.asInstanceOf[InvalidValue]).foreach {
         invalidValue =>
-          invalidValue.valid match {
+          val valid = invalidValue.valid
+          valid match {
             case range: VectorIndexConfigUtils.Range[_] => throw new IllegalArgumentException(
                 s"'${invalidValue.settingName}' must be between ${range.min} and ${range.max} inclusively"
               )
-            case iterable: lang.Iterable[_] =>
-              val supported = iterable.asScala.mkString("[", ", ", "]")
+            case _: lang.Iterable[_] | _: PrimitiveIterable =>
+              val supported = valid match {
+                case iterable: lang.Iterable[_]           => iterable.asScala.mkString("[", ", ", "]")
+                case primitiveIterable: PrimitiveIterable => primitiveIterable.makeString("[", ", ", "]")
+                case _                                    => // by construction, this pattern match is exhaustive
+              }
               invalidValue.rawValue().writeTo(pp)
               throw new IllegalArgumentException(
                 s"'${pp.value()}' is an unsupported '${invalidValue.settingName}'. Supported: $supported"
