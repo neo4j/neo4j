@@ -101,7 +101,6 @@ public class TransactionLogServiceImpl implements TransactionLogService {
                     minimalVersion,
                     lastAppendBatch.appendIndex(),
                     lastAppendBatch.logPositionAfter());
-            log.info("Log channels to stream " + channels);
             return new TransactionLogChannels(channels);
         } finally {
             pruneLock.unlock();

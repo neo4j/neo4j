@@ -326,7 +326,6 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile {
 
             var logPositionBefore = transactionLogWriter.getCurrentPosition();
             long totalAppended = transactionLogWriter.append(byteBuffer);
-            logger.info("Appended a total of " + totalAppended + " bytes to the tx log.");
             logAppendEvent.appendedBytes(totalAppended);
             return logPositionBefore;
         }
