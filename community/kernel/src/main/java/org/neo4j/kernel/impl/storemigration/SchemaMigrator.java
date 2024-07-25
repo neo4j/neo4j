@@ -31,6 +31,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
 import org.neo4j.batchimport.api.ReadBehaviour;
+import org.neo4j.batchimport.api.ReadBehaviour.PropertyInclusion;
 import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
 import org.neo4j.exceptions.KernelException;
@@ -261,7 +262,8 @@ public class SchemaMigrator {
                     case NODE -> {
                         for (int propertyTokenId : schemaDescriptor.getPropertyIds()) {
                             var propertyKeyName = tokenHolders.propertyKeyGetName(propertyTokenId);
-                            if (!readBehaviour.shouldIncludeNodeProperty(propertyKeyName, entityTokenNames, true)) {
+                            if (readBehaviour.shouldIncludeNodeProperty(propertyKeyName, entityTokenNames, true)
+                                    == PropertyInclusion.EXCLUDE) {
                                 return true;
                             }
                         }
@@ -273,8 +275,8 @@ public class SchemaMigrator {
                         for (String entityTokenName : entityTokenNames) {
                             for (int propertyTokenId : schemaDescriptor.getPropertyIds()) {
                                 var propertyKeyName = tokenHolders.propertyKeyGetName(propertyTokenId);
-                                if (!readBehaviour.shouldIncludeRelationshipProperty(
-                                        propertyKeyName, entityTokenName)) {
+                                if (readBehaviour.shouldIncludeRelationshipProperty(propertyKeyName, entityTokenName)
+                                        == PropertyInclusion.EXCLUDE) {
                                     return true;
                                 }
                             }
@@ -288,7 +290,8 @@ public class SchemaMigrator {
                         for (int propertyTokenId : schemaDescriptor.getPropertyIds()) {
                             var propertyKeyName = tokenHolders.propertyKeyGetName(propertyTokenId);
                             // Something should be included, do not skip!
-                            if (readBehaviour.shouldIncludeNodeProperty(propertyKeyName, entityTokenNames, false)) {
+                            if (readBehaviour.shouldIncludeNodeProperty(propertyKeyName, entityTokenNames, false)
+                                    == PropertyInclusion.INCLUDE) {
                                 return false;
                             }
                         }
@@ -303,7 +306,8 @@ public class SchemaMigrator {
                         for (String entityTokenName : entityTokenNames) {
                             for (int propertyTokenId : schemaDescriptor.getPropertyIds()) {
                                 var propertyKeyName = tokenHolders.propertyKeyGetName(propertyTokenId);
-                                if (readBehaviour.shouldIncludeRelationshipProperty(propertyKeyName, entityTokenName)) {
+                                if (readBehaviour.shouldIncludeRelationshipProperty(propertyKeyName, entityTokenName)
+                                        == PropertyInclusion.INCLUDE) {
                                     return false;
                                 }
                             }

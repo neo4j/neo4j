@@ -61,9 +61,9 @@ public interface ReadBehaviour {
 
     String[] filterLabels(String[] labels);
 
-    boolean shouldIncludeNodeProperty(String propertyKey, String[] labels, boolean completeMatch);
+    PropertyInclusion shouldIncludeNodeProperty(String propertyKey, String[] labels, boolean completeMatch);
 
-    boolean shouldIncludeRelationshipProperty(String propertyKey, String relationshipType);
+    PropertyInclusion shouldIncludeRelationshipProperty(String propertyKey, String relationshipType);
 
     // statistics
 
@@ -76,6 +76,21 @@ public interface ReadBehaviour {
     void error(Throwable e, String format, Object... parameters);
 
     TokenHolders decorateTokenHolders(TokenHolders actual);
+
+    enum PropertyInclusion {
+        /**
+         * Indicates that the property and it's values should both be included once read
+         */
+        INCLUDE,
+        /**
+         * Indicates that neither the property nor it's values should be included
+         */
+        EXCLUDE,
+        /**
+         * Indicates that the only property key should be included once read
+         */
+        KEY_ONLY
+    }
 
     class Adapter implements ReadBehaviour {
         @Override
@@ -95,13 +110,13 @@ public interface ReadBehaviour {
         }
 
         @Override
-        public boolean shouldIncludeNodeProperty(String propertyKey, String[] labels, boolean completeMatch) {
-            return true;
+        public PropertyInclusion shouldIncludeNodeProperty(String propertyKey, String[] labels, boolean completeMatch) {
+            return PropertyInclusion.INCLUDE;
         }
 
         @Override
-        public boolean shouldIncludeRelationshipProperty(String propertyKey, String relationshipType) {
-            return true;
+        public PropertyInclusion shouldIncludeRelationshipProperty(String propertyKey, String relationshipType) {
+            return PropertyInclusion.INCLUDE;
         }
 
         @Override

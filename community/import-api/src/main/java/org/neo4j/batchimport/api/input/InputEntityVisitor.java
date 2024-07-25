@@ -61,6 +61,8 @@ public interface InputEntityVisitor extends Closeable {
 
     boolean type(String type);
 
+    boolean property(String property);
+
     void endOfEntity() throws IOException;
 
     void reset();
@@ -83,6 +85,11 @@ public interface InputEntityVisitor extends Closeable {
 
         @Override
         public boolean propertyId(long nextProp) {
+            return true;
+        }
+
+        @Override
+        public boolean property(String property) {
             return true;
         }
 
@@ -179,6 +186,11 @@ public interface InputEntityVisitor extends Closeable {
         }
 
         @Override
+        public boolean property(String property) {
+            return actual.property(property);
+        }
+
+        @Override
         public boolean id(long id) {
             return actual.id(id);
         }
@@ -249,6 +261,5 @@ public interface InputEntityVisitor extends Closeable {
         }
     }
 
-    InputEntityVisitor NULL = new Adapter() { // empty
-            };
+    InputEntityVisitor NULL = new Adapter();
 }

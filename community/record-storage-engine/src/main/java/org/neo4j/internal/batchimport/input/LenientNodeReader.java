@@ -24,6 +24,7 @@ import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 
 import java.io.IOException;
 import org.neo4j.batchimport.api.ReadBehaviour;
+import org.neo4j.batchimport.api.ReadBehaviour.PropertyInclusion;
 import org.neo4j.batchimport.api.input.Group;
 import org.neo4j.batchimport.api.input.InputEntityVisitor;
 import org.neo4j.common.EntityType;
@@ -104,6 +105,6 @@ class LenientNodeReader extends LenientStoreInputChunk {
 
     @Override
     boolean shouldIncludeProperty(ReadBehaviour readBehaviour, String key, String[] owningEntityTokens) {
-        return readBehaviour.shouldIncludeNodeProperty(key, owningEntityTokens, true);
+        return readBehaviour.shouldIncludeNodeProperty(key, owningEntityTokens, true) == PropertyInclusion.INCLUDE;
     }
 }
