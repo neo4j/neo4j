@@ -46,6 +46,11 @@ abstract class WrappedAccessMode implements AccessMode {
     }
 
     @Override
+    public PermissionState allowExecuteAdminProcedures() {
+        return original.allowExecuteAdminProcedures();
+    }
+
+    @Override
     public PermissionState shouldBoostProcedure(int procedureId) {
         return original.shouldBoostProcedure(procedureId);
     }

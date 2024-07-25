@@ -248,6 +248,11 @@ public interface AccessMode {
         }
 
         @Override
+        public PermissionState allowExecuteAdminProcedures() {
+            return PermissionState.EXPLICIT_GRANT;
+        }
+
+        @Override
         public PermissionState shouldBoostProcedure(int procedureId) {
             return PermissionState.fromAllowList(procedureBoost);
         }
@@ -508,6 +513,13 @@ public interface AccessMode {
      * @return true if the procedure with this id is allowed to be executed
      */
     PermissionState allowsExecuteProcedure(int procedureId);
+
+    /**
+     * Check if the 'execute admin procedures' privilege is granted.
+     *
+     * @return true if admin procedures are allowed to be executed.
+     */
+    PermissionState allowExecuteAdminProcedures();
 
     /**
      * Check if execution of a procedure should be done with boosted privileges.

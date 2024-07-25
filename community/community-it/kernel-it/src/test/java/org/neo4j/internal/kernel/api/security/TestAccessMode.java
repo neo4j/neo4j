@@ -208,6 +208,11 @@ public class TestAccessMode implements AccessMode {
     }
 
     @Override
+    public PermissionState allowExecuteAdminProcedures() {
+        return PermissionState.EXPLICIT_GRANT;
+    }
+
+    @Override
     public PermissionState shouldBoostProcedure(int procedureId) {
         return PermissionState.EXPLICIT_GRANT;
     }

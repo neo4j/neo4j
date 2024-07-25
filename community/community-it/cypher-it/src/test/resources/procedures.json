@@ -1789,7 +1789,7 @@
     "enterpriseOnly": true
   },
   {
-    "admin": true,
+    "admin": false,
     "name": "dbms.cluster.cordonServer",
     "isDeprecated": false,
     "deprecatedBy": null,
@@ -1804,6 +1804,7 @@
     "returnDescription": [],
     "description": "Mark a server in the topology as not suitable for new allocations. It will not force current allocations off the server. This is useful when deallocating databases when you have multiple unavailable servers.",
     "rolesExecution": [
+      "PUBLIC",
       "admin"
     ],
     "argumentDescription": [
@@ -2006,7 +2007,7 @@
     "enterpriseOnly": true
   },
   {
-    "admin": true,
+    "admin": false,
     "name": "dbms.cluster.setAutomaticallyEnableFreeServers",
     "isDeprecated": false,
     "deprecatedBy": null,
@@ -2021,6 +2022,7 @@
     "returnDescription": [],
     "description": "With this method you can set whether free servers are automatically enabled.",
     "rolesExecution": [
+      "PUBLIC",
       "admin"
     ],
     "argumentDescription": [
@@ -2035,7 +2037,7 @@
     "enterpriseOnly": true
   },
   {
-    "admin": true,
+    "admin": false,
     "name": "dbms.cluster.uncordonServer",
     "isDeprecated": true,
     "deprecatedBy": "ENABLE SERVER",
@@ -2050,6 +2052,7 @@
     "returnDescription": [],
     "description": "Remove the cordon on a server, returning it to 'enabled'.",
     "rolesExecution": [
+      "PUBLIC",
       "admin"
     ],
     "argumentDescription": [
