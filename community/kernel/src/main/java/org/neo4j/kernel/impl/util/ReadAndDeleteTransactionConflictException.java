@@ -38,6 +38,7 @@ public class ReadAndDeleteTransactionConflictException extends RuntimeException
     private final ErrorGqlStatusObject gqlStatusObject;
     private final String oldMessage;
 
+    @Deprecated
     public ReadAndDeleteTransactionConflictException(boolean deletedInThisTransaction) {
         super(getMessageHelper(deletedInThisTransaction));
         this.deletedInThisTransaction = deletedInThisTransaction;
@@ -55,6 +56,7 @@ public class ReadAndDeleteTransactionConflictException extends RuntimeException
         this.oldMessage = getMessageHelper(deletedInThisTransaction);
     }
 
+    @Deprecated
     public ReadAndDeleteTransactionConflictException(boolean deletedInThisTransaction, Throwable cause) {
         super(getMessageHelper(deletedInThisTransaction), cause);
         this.deletedInThisTransaction = deletedInThisTransaction;

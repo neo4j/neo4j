@@ -24,6 +24,9 @@ import static org.neo4j.values.storable.Values.EMPTY_TEXT_ARRAY;
 import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 
 import org.eclipse.collections.api.set.primitive.IntSet;
+import org.neo4j.gqlstatus.ErrorClassification;
+import org.neo4j.gqlstatus.ErrorGqlStatusObjectImplementation;
+import org.neo4j.gqlstatus.GqlStatusInfoCodes;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
@@ -232,7 +235,10 @@ public final class ValuePopulation {
 
         if (!nodeCursor.next()) {
             if (!dbAccess.nodeDeletedInThisTransaction(id)) {
-                throw new ReadAndDeleteTransactionConflictException(false);
+                var gql = ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_25N11)
+                        .withClassification(ErrorClassification.TRANSIENT_ERROR)
+                        .build();
+                throw new ReadAndDeleteTransactionConflictException(gql, false);
             } else {
                 return VirtualValues.nodeValue(id, elementId, EMPTY_TEXT_ARRAY, EMPTY_MAP, true);
             }
@@ -282,7 +288,10 @@ public final class ValuePopulation {
 
         if (!relCursor.next()) {
             if (!dbAccess.relationshipDeletedInThisTransaction(id)) {
-                throw new ReadAndDeleteTransactionConflictException(false);
+                var gql = ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_25N11)
+                        .withClassification(ErrorClassification.TRANSIENT_ERROR)
+                        .build();
+                throw new ReadAndDeleteTransactionConflictException(gql, false);
             } else {
                 return VirtualValues.relationshipValue(
                         id, elementId, MISSING_NODE, MISSING_NODE, EMPTY_STRING, EMPTY_MAP, true);

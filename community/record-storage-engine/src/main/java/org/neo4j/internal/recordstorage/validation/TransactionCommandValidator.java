@@ -36,6 +36,9 @@ import java.util.Map;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.neo4j.configuration.Config;
+import org.neo4j.gqlstatus.ErrorClassification;
+import org.neo4j.gqlstatus.ErrorGqlStatusObjectImplementation;
+import org.neo4j.gqlstatus.GqlStatusInfoCodes;
 import org.neo4j.internal.recordstorage.Command;
 import org.neo4j.internal.recordstorage.CommandVisitor;
 import org.neo4j.io.pagecache.PageCursor;
@@ -99,7 +102,10 @@ public class TransactionCommandValidator implements CommandVisitor, TransactionV
         } catch (TransactionConflictException tce) {
             throw tce;
         } catch (Exception e) {
-            throw new TransactionConflictException(e);
+            var gql = ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_25N11)
+                    .withClassification(ErrorClassification.TRANSIENT_ERROR)
+                    .build();
+            throw new TransactionConflictException(gql, e);
         } finally {
             closeCursors();
         }
@@ -250,7 +256,10 @@ public class TransactionCommandValidator implements CommandVisitor, TransactionV
         long resourceId = pageId | ((long) position << PAGE_ID_BITS);
         if (failFast) {
             if (!validationLockClient.tryExclusiveLock(PAGE, resourceId)) {
-                throw new TransactionConflictException(storeType.getDatabaseFile(), pageId);
+                var gql = ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_25N11)
+                        .withClassification(ErrorClassification.TRANSIENT_ERROR)
+                        .build();
+                throw new TransactionConflictException(gql, storeType.getDatabaseFile(), pageId);
             }
         } else {
             validationLockClient.acquireExclusive(lockTracer, PAGE, resourceId);
@@ -258,7 +267,10 @@ public class TransactionCommandValidator implements CommandVisitor, TransactionV
         if (pageCursor.next(pageId)) {
             if (versionContext.invisibleHeadObserved()) {
                 transactionMonitor.transactionValidationFailure(storeType.getDatabaseFile());
-                throw new TransactionConflictException(storeType.getDatabaseFile(), versionContext, pageId);
+                var gql = ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_25N11)
+                        .withClassification(ErrorClassification.TRANSIENT_ERROR)
+                        .build();
+                throw new TransactionConflictException(gql, storeType.getDatabaseFile(), versionContext, pageId);
             }
         }
         checkedStorePages.add(pageId);

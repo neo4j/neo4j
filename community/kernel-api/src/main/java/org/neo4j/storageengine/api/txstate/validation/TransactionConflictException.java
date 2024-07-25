@@ -34,6 +34,7 @@ public class TransactionConflictException extends TransientFailureException {
     private long observedVersion;
     private long highestClosed;
 
+    @Deprecated
     public TransactionConflictException(DatabaseFile databaseFile, VersionContext versionContext, long pageId) {
         super(createMessage(databaseFile.getName(), pageId, versionContext));
         this.databaseFile = databaseFile;
@@ -53,6 +54,7 @@ public class TransactionConflictException extends TransientFailureException {
         this.highestClosed = versionContext.highestClosed();
     }
 
+    @Deprecated
     public TransactionConflictException(String message, Exception cause) {
         super(message, cause);
     }
@@ -61,6 +63,7 @@ public class TransactionConflictException extends TransientFailureException {
         super(gqlStatusObject, message, cause);
     }
 
+    @Deprecated
     public TransactionConflictException(Exception cause) {
         this(GENERIC_MESSAGE, cause);
     }
@@ -69,6 +72,7 @@ public class TransactionConflictException extends TransientFailureException {
         this(gqlStatusObject, GENERIC_MESSAGE, cause);
     }
 
+    @Deprecated
     public TransactionConflictException(RecordDatabaseFile databaseFile, long pageId) {
         super(createPageIdPagedMessage(databaseFile.getName(), pageId));
         this.databaseFile = databaseFile;

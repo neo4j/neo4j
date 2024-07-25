@@ -23,6 +23,7 @@ import org.neo4j.gqlstatus.ErrorGqlStatusObject;
 import org.neo4j.kernel.api.exceptions.Status;
 
 public class EntityNotFoundException extends Neo4jException {
+    @Deprecated
     public EntityNotFoundException(String message) {
         super(message);
     }
