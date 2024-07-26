@@ -55,6 +55,7 @@ class StatefulShortestToFindShortestIntegrationTest extends CypherFunSuite with 
     .setLabelCardinality("User", 4)
     .addNodeIndex("User", Seq("prop"), 1.0, 0.25)
     .setRelationshipCardinality("()-[:R]->()", 10)
+    .setRelationshipCardinality("()-[:RR]->()", 10)
     .setRelationshipCardinality("()-[]->(:User)", 10)
     .setRelationshipCardinality("(:User)-[]->(:User)", 10)
     .setRelationshipCardinality("(:User)-[]->()", 10)
@@ -273,9 +274,9 @@ class StatefulShortestToFindShortestIntegrationTest extends CypherFunSuite with 
     plan should equal(planner.subPlanBuilder()
       .shortestPath(
         "(a)-[r:R*0..]->(b)",
-        pathName = Some("anon_0"),
+        pathName = Some("anon_1"),
         nodePredicates = Seq(),
-        relationshipPredicates = Seq(Predicate("x", "x.prop > 5")),
+        relationshipPredicates = Seq(Predicate("anon_0", "anon_0.prop > 5")),
         sameNodeMode = AllowSameNode
       )
       .cartesianProduct()
@@ -309,7 +310,7 @@ class StatefulShortestToFindShortestIntegrationTest extends CypherFunSuite with 
   }
 
   test(
-    "Shortest should NOT be rewritten to legacy shortest for QPP Kleene star if none of the juxtaposed nodes does not cover the quantified nodes predicates"
+    "Shortest should NOT be rewritten to legacy shortest for QPP Kleene star if none of the juxtaposed nodes cover the quantified nodes predicates"
   ) {
     val query =
       s"""
@@ -794,22 +795,186 @@ class StatefulShortestToFindShortestIntegrationTest extends CypherFunSuite with 
       .build())(SymmetricalLogicalPlanEquality)
   }
 
-  // TODO: This currently does not get rewritten due to the quantified nodes being named. And solveds contains the original predicate a.prop <> b.prop and not
-  //  all(r in relationships(p) WHERE startNode(r).prop <> endNode(r).prop), the later being inlineable in a legacy shortest with no reference to quantified nodes.
-  ignore(
-    "Shortest QPP with no references to the quantified nodes outside of the Shortest should be rewritten if able"
+  test(
+    "Should not rewrite shortest with more than one relationship"
   ) {
     val query =
       s"""
          |MATCH (s), (t)
          |WITH * SKIP 1
-         |MATCH ANY SHORTEST (s)((a)-[r:User]->(b) WHERE a.prop <> b.prop)+(t)
+         |MATCH ANY SHORTEST (s)((a)-[r:R]->(b)<-[rr:RR]-(c) WHERE a.prop <> b.prop AND c.name ='foo')+(t)
+         |RETURN r
+         |""".stripMargin
+    val plan = planner.plan(query).stripProduceResults
+
+    val nfa = new TestNFABuilder(0, "s")
+      .addTransition(0, 1, "(s) (a)")
+      .addTransition(1, 2, "(a)-[r:R WHERE NOT startNode(r).prop = endNode(r).prop]->(b)")
+      .addTransition(2, 3, "(b)<-[rr:RR]-(c WHERE c.name = 'foo')")
+      .addTransition(3, 1, "(c) (a)")
+      .addTransition(3, 4, "(c) (t)")
+      .setFinalState(4)
+      .build()
+    plan should equal(
+      planner.subPlanBuilder()
+        .statefulShortestPath(
+          "s",
+          "t",
+          "SHORTEST 1 (s) ((`a`)-[`r`]->(`b`)<-[`rr`]-(`c`)){1, } (t)",
+          None,
+          Set(),
+          Set(("r", "r")),
+          Set(),
+          Set(),
+          StatefulShortestPath.Selector.Shortest(1),
+          nfa,
+          ExpandInto,
+          false,
+          2,
+          None
+        )
+        .filter("t.name = 'foo'")
+        .skip(1)
+        .cartesianProduct()
+        .|.allNodeScan("t")
+        .allNodeScan("s")
+        .build()
+    )(SymmetricalLogicalPlanEquality)
+  }
+
+  test(
+    "Shortest QPP with predicates on both inner nodes but none of the quantified nodes outside of the Shortest should be rewritten"
+  ) {
+    val query =
+      s"""
+         |MATCH (s), (t)
+         |WITH * SKIP 1
+         |MATCH ANY SHORTEST (s)((a)-[r:R]->(b) WHERE a.prop <> b.prop)+(t)
+         |RETURN r
+         |""".stripMargin
+    val plan = planner.plan(query).stripProduceResults
+
+    plan should equal(
+      planner.subPlanBuilder()
+        .shortestPath(
+          "(s)-[r:R*1..]->(t)",
+          pathName = Some("anon_1"),
+          relationshipPredicates = Seq(Predicate("anon_0", "NOT startNode(anon_0).prop = endNode(anon_0).prop")),
+          sameNodeMode = AllowSameNode
+        )
+        .skip(1)
+        .cartesianProduct()
+        .|.allNodeScan("t")
+        .allNodeScan("s")
+        .build()
+    )(SymmetricalLogicalPlanEquality)
+  }
+
+  test(
+    "Shortest QPP with predicates on only one side of the relationship should get rewritten as relationship predicates"
+  ) {
+    val query =
+      s"""
+         |MATCH (s), (t)
+         |WITH * SKIP 1
+         |MATCH ANY SHORTEST (s)((a)-[r:R]->(b) WHERE a.name <> "foo")+(t)
+         |RETURN r
+         |""".stripMargin
+    val plan = planner.plan(query).stripProduceResults
+
+    plan should equal(
+      planner.subPlanBuilder()
+        .shortestPath(
+          "(s)-[r:R*1..]->(t)",
+          pathName = Some("anon_1"),
+          nodePredicates = Seq(),
+          relationshipPredicates = Seq(Predicate("anon_0", "NOT startNode(anon_0).name = 'foo'")),
+          sameNodeMode = AllowSameNode
+        )
+        .filter("NOT cacheN[s.name] = 'foo'")
+        .skip(1)
+        .cartesianProduct()
+        .|.allNodeScan("t")
+        .cacheProperties("cacheNFromStore[s.name]")
+        .allNodeScan("s")
+        .build()
+    )(SymmetricalLogicalPlanEquality)
+  }
+
+  test(
+    "Shortest QPP with predicates a mixture of predicates comparing both nodes and also comparing for values on both nodes should be rewritten"
+  ) {
+    val query =
+      s"""
+         |MATCH (s), (t)
+         |WITH * SKIP 1
+         |MATCH ANY SHORTEST (s)((a)-[r:R]->(b) WHERE a.prop <> b.prop AND a.name <> "foo" AND b.name <> "foo")+(t)
+         |RETURN r
+         |""".stripMargin
+    val plan = planner.plan(query).stripProduceResults
+
+    plan should equal(
+      planner.subPlanBuilder()
+        .shortestPath(
+          "(s)-[r:R*1..]->(t)",
+          pathName = Some("anon_2"),
+          nodePredicates = Seq(Predicate("anon_0", "NOT anon_0.name = 'foo'")),
+          relationshipPredicates = Seq(Predicate("anon_1", "NOT startNode(anon_1).prop = endNode(anon_1).prop")),
+          sameNodeMode = AllowSameNode
+        )
+        .filter("NOT cacheN[s.name] = 'foo'", "NOT t.name = 'foo'")
+        .skip(1)
+        .cartesianProduct()
+        .|.allNodeScan("t")
+        .cacheProperties("cacheNFromStore[s.name]")
+        .allNodeScan("s")
+        .build()
+    )(SymmetricalLogicalPlanEquality)
+  }
+
+  test(
+    "Shortest QPP with no references to the quantified nodes outside of the Shortest should be rewritten in the correct direction"
+  ) {
+    val query =
+      s"""
+         |MATCH (s), (t)
+         |WITH * SKIP 1
+         |MATCH ANY SHORTEST (s)((a)<-[r:R]-(b) WHERE a.prop < b.prop)+(t)
+         |RETURN r
+         |""".stripMargin
+    val plan = planner.plan(query).stripProduceResults
+
+    plan should equal(
+      planner.subPlanBuilder()
+        .shortestPath(
+          "(s)<-[r:R*1..]-(t)",
+          pathName = Some("anon_1"),
+          relationshipPredicates = Seq(Predicate("anon_0", "endNode(anon_0).prop < startNode(anon_0).prop")),
+          sameNodeMode = AllowSameNode
+        )
+        .skip(1)
+        .cartesianProduct()
+        .|.allNodeScan("t")
+        .allNodeScan("s")
+        .build()
+    )(SymmetricalLogicalPlanEquality)
+  }
+
+  test(
+    "Shortest should NOT be rewritten to legacy shortest for QPP Kleene star with predicates on inner nodes only"
+  ) {
+    val query =
+      s"""
+         |MATCH (s), (t)
+         |WITH * SKIP 1
+         |MATCH ANY SHORTEST (s)((a)-[r:R]->(b) WHERE a.prop <> b.prop)*(t)
          |RETURN r
          |""".stripMargin
     val plan = planner.plan(query).stripProduceResults
     val nfa = new TestNFABuilder(0, "s")
       .addTransition(0, 1, "(s) (a)")
-      .addTransition(1, 2, "(a)-[anon_0:User WHERE NOT startNode(anon_0).prop = endNode(anon_0).prop]->(b)")
+      .addTransition(0, 3, "(s) (t)")
+      .addTransition(1, 2, "(a)-[r:R WHERE NOT startNode(r).prop = endNode(r).prop]->(b)")
       .addTransition(2, 1, "(b) (a)")
       .addTransition(2, 3, "(b) (t)")
       .setFinalState(3)
@@ -820,15 +985,18 @@ class StatefulShortestToFindShortestIntegrationTest extends CypherFunSuite with 
         .statefulShortestPath(
           "s",
           "t",
-          "SHORTEST 1 ((s) ((a)-[anon_0:User]->(b) WHERE NOT `a`.prop = `b`.prop){1, } (t) WHERE unique(`anon_5`))",
+          "SHORTEST 1 (s) ((`a`)-[`r`]->(`b`)){0, } (t)",
           None,
-          Set(("a", "a"), ("b", "b")),
           Set(),
+          Set(("r", "r")),
           Set(),
           Set(),
           StatefulShortestPath.Selector.Shortest(1),
           nfa,
-          ExpandInto
+          ExpandInto,
+          false,
+          0,
+          None
         )
         .skip(1)
         .cartesianProduct()

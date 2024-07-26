@@ -38,6 +38,7 @@ import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.Trai
 import org.neo4j.cypher.internal.logical.plans.Expand.ExpandAll
 import org.neo4j.cypher.internal.logical.plans.Expand.ExpandInto
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.UpperBound
 import org.neo4j.cypher.internal.util.UpperBound.Limited
 import org.neo4j.cypher.internal.util.UpperBound.Unlimited
@@ -196,7 +197,7 @@ class TrailToVarExpandRewriterTest extends CypherFunSuite with LogicalPlanningTe
       .build()
     val expand = subPlanBuilder
       .projection("1 AS s")
-      .expand("(a)-[r_i*1..]->(b)", relationshipPredicates = Seq(Predicate("r_i", "r_i.p = true")))
+      .expand("(a)-[r_i*1..]->(b)", relationshipPredicates = Seq(Predicate("  UNNAMED1", "`  UNNAMED1`.p = true")))
       .allNodeScan("a")
       .build()
     rewrites(trail, expand)
@@ -231,7 +232,7 @@ class TrailToVarExpandRewriterTest extends CypherFunSuite with LogicalPlanningTe
       .expand(
         "(a)<-[r_i*1..]-(b)",
         projectedDir = INCOMING,
-        relationshipPredicates = Seq(Predicate("r_i", "endNode(r_i).p = true"))
+        relationshipPredicates = Seq(Predicate("  UNNAMED1", "endNode(`  UNNAMED1`).p = true"))
       )
       .allNodeScan("a")
       .build()
@@ -251,7 +252,7 @@ class TrailToVarExpandRewriterTest extends CypherFunSuite with LogicalPlanningTe
       .projection("1 AS s")
       .expand(
         "(a)-[r_i*1..]->(b)",
-        relationshipPredicates = Seq(Predicate("r_i", "startNode(r_i).p <> endNode(r_i).p"))
+        relationshipPredicates = Seq(Predicate("  UNNAMED1", "startNode(`  UNNAMED1`).p <> endNode(`  UNNAMED1`).p"))
       )
       .allNodeScan("a")
       .build()
@@ -286,7 +287,10 @@ class TrailToVarExpandRewriterTest extends CypherFunSuite with LogicalPlanningTe
     val expand = subPlanBuilder
       .projection("1 AS s")
       .apply()
-      .|.expand("(a)-[r_i*1..]->(b)", relationshipPredicates = Seq(Predicate("r_i", "r_i.p = cacheN[z.p]")))
+      .|.expand(
+        "(a)-[r_i*1..]->(b)",
+        relationshipPredicates = Seq(Predicate("  UNNAMED1", "`  UNNAMED1`.p = cacheN[z.p]"))
+      )
       .|.allNodeScan("a", "z")
       .cacheProperties("cacheNFromStore[z.p]")
       .allNodeScan("z")
@@ -320,7 +324,7 @@ class TrailToVarExpandRewriterTest extends CypherFunSuite with LogicalPlanningTe
       .allNodeScan("a")
       .build()
     val expand = subPlanBuilder
-      .expand("(a)-[r_i*1..]->(b)", relationshipPredicates = Seq(Predicate("r_i", "r_i.p = 0")))
+      .expand("(a)-[r_i*1..]->(b)", relationshipPredicates = Seq(Predicate("  UNNAMED1", "`  UNNAMED1`.p = 0")))
       .allNodeScan("a")
       .build()
     rewrites(trail, expand)
@@ -791,9 +795,13 @@ class TrailToVarExpandRewriterTest extends CypherFunSuite with LogicalPlanningTe
       .projection("1 AS s")
       .expand(
         "(b)<-[r_i:R*1..]-(a)",
-        relationshipPredicates = Seq(Predicate("r_i", "startNode(r_i).prop <> endNode(r_i).prop"))
+        relationshipPredicates =
+          Seq(Predicate("  UNNAMED1", "startNode(`  UNNAMED1`).prop <> endNode(`  UNNAMED1`).prop"))
       )
-      .expand("(b)-[rr_i:RR*1..]->(c)", relationshipPredicates = Seq(Predicate("rr_i", "endNode(rr_i).name = 'foo'")))
+      .expand(
+        "(b)-[rr_i:RR*1..]->(c)",
+        relationshipPredicates = Seq(Predicate("  UNNAMED3", "endNode(`  UNNAMED3`).name = 'foo'"))
+      )
       .allNodeScan("b")
       .build()
 
@@ -1168,7 +1176,12 @@ object TrailToVarExpandRewriterTest
   }
 
   private def rewrite(p: LogicalPlan): LogicalPlan =
-    p.endoRewrite(TrailToVarExpandRewriter(new StubLabelAndRelTypeInfos, Attributes(idGen)))
+    p.endoRewrite(TrailToVarExpandRewriter(
+      new StubSolveds,
+      new StubLabelAndRelTypeInfos,
+      Attributes(idGen, new StubSolveds),
+      new AnonymousVariableNameGenerator
+    ))
 
   private def subPlanBuilder = new LogicalPlanBuilder(wholePlan = false)
 }

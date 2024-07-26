@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
-import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.NodeToRelationshipExpressionRewriter
+import org.neo4j.cypher.internal.expressions.AndedPropertyInequalities
 import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LogicalVariable
@@ -29,6 +29,8 @@ import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.UnPositionedVariable.varFor
 import org.neo4j.cypher.internal.expressions.VarLengthLowerBound
 import org.neo4j.cypher.internal.expressions.VarLengthUpperBound
+import org.neo4j.cypher.internal.expressions.functions.EndNode
+import org.neo4j.cypher.internal.expressions.functions.StartNode
 import org.neo4j.cypher.internal.frontend.phases.Namespacer
 import org.neo4j.cypher.internal.ir.ExhaustiveNodeConnection
 import org.neo4j.cypher.internal.ir.PatternRelationship
@@ -43,9 +45,12 @@ import org.neo4j.cypher.internal.logical.plans.NFA
 import org.neo4j.cypher.internal.logical.plans.NFA.State
 import org.neo4j.cypher.internal.logical.plans.NFABuilder
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
+import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.NonEmptyList
+import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.UpperBound
 import org.neo4j.cypher.internal.util.collection.immutable.ListSet
+import org.neo4j.cypher.internal.util.topDown
 import org.neo4j.exceptions.InternalException
 
 object ConvertToNFA {
@@ -180,8 +185,12 @@ object ConvertToNFA {
         case (SemanticDirection.INCOMING, false) => (sourceVariable, targetVariable)
       }
 
-      def rewrite(expression: Expression): Expression =
-        expression.endoRewrite(NodeToRelationshipExpressionRewriter(startNode, endNode, relationshipVariable))
+      def rewrite(expression: Expression): Expression = expression.endoRewrite(topDown(Rewriter.lift {
+        case `startNode` => StartNode(relationshipVariable)(InputPosition.NONE)
+        case `endNode`   => EndNode(relationshipVariable)(InputPosition.NONE)
+        case AndedPropertyInequalities(v, _, inequalities) if v == startNode || v == endNode =>
+          Ands.create(inequalities.map(rewrite).toListSet)
+      }))
 
       val allPredicatesGiven = getTopLevelPredicates(Set(
         sourceVariable,

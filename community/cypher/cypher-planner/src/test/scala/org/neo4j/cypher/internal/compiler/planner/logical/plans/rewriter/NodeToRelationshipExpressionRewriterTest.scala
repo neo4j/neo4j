@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.compiler.planner.logical.NodeToRelationshipExpressionRewriter
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -44,10 +45,6 @@ class NodeToRelationshipExpressionRewriterTest extends CypherFunSuite with AstCo
     expr.endoRewrite(rewriterUnderTest) should equal(expr)
   }
 
-  def throws(expr: Expression) = {
-    assertThrows[IllegalStateException](expr.endoRewrite(rewriterUnderTest))
-  }
-
   test("should rewrite start.prop <> end.prop") {
     val input = not(equals(prop(start, "prop"), prop(end, "prop")))
     val expectedWrittenOutput =
@@ -55,14 +52,22 @@ class NodeToRelationshipExpressionRewriterTest extends CypherFunSuite with AstCo
     rewrites(input, expectedWrittenOutput)
   }
 
-  test("should throw on cacheNFromStore[start.prop] == cacheNFromStore[end.prop]") {
+  test("should preserve on cacheNFromStore[start.prop] == cacheNFromStore[end.prop]") {
     val input = equals(cachedNodePropFromStore(start, "prop"), cachedNodePropFromStore(end, "prop"))
-    throws(input)
+    preserves(input)
   }
 
-  test("should throw on cacheNHasProperty[start.prop]") {
+  test("should preserve on cacheNHasProperty[start.prop]") {
     val input = cachedNodeHasProp(start, "prop")
-    throws(input)
+    preserves(input)
+  }
+
+  test("should preserve Expressions with computed dependencies") {
+    preserves(patternExpression(varFor(start), varFor(end)))
+    preserves(patternComprehension(
+      relationshipChain(nodePat(Some(start)), relPat(), nodePat(), relPat(), nodePat(Some(end))),
+      varFor(end)
+    ))
   }
 
   test("should rewrite anded property inequalities") {

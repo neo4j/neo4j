@@ -19,8 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter
 
+import org.neo4j.cypher.internal.compiler.planner.logical.SkipRewriteOnZeroRepetitions
+import org.neo4j.cypher.internal.compiler.planner.logical.convertToInlinedPredicates
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.extractPredicates
-import org.neo4j.cypher.internal.compiler.planner.logical.idp.extractPredicates.NodePredicates
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.extractPredicates.RelationshipPredicates
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.extractQPPPredicates
 import org.neo4j.cypher.internal.expressions.Expression
@@ -45,7 +46,6 @@ import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.ir.VarPatternLength
 import org.neo4j.cypher.internal.ir.ast.ForAllRepetitions
 import org.neo4j.cypher.internal.label_expressions.LabelExpression.disjoinRelTypesToLabelExpression
-import org.neo4j.cypher.internal.logical.plans.Expand.VariablePredicate
 import org.neo4j.cypher.internal.logical.plans.FindShortestPaths
 import org.neo4j.cypher.internal.logical.plans.FindShortestPaths.AllowSameNode
 import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath
@@ -54,7 +54,6 @@ import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.Rewriter.TopDownMergeableRewriter
-import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.internal.util.attribution.SameId
 import org.neo4j.cypher.internal.util.topDown
 
@@ -239,40 +238,44 @@ case class StatefulShortestToFindShortestRewriter(
     spp: SelectivePathPattern,
     qpp: QuantifiedPathPattern
   ): Option[FindShortestPaths] = {
-    val newVariable = varFor(anonymousVariableNameGenerator.nextName)
-    val (inlinedNodePredicates, pathBasedNodePredicates, relationshipPredicates) =
-      varLengthInlinablePredicatesFromQpp(statefulShortestPath, spp, qpp, newVariable)
-
+    val (nodePredicates, relationshipPredicates) = extractedPredicatesFromQpp(statefulShortestPath, spp, qpp)
     if (
-      // 3.0 predicates needs to be inlineable in a legacy find shortest plan
-      (inlinedNodePredicates ++ pathBasedNodePredicates ++ relationshipPredicates).size == withoutUniqueness(
+      nodePredicates.size + relationshipPredicates.size == withoutUniqueness(
         spp.selections.flatPredicates
-      ).size &&
-      // Here we check that the same amount of inner node predicates exists on both nodes
-      inlinedNodePredicates.distinct.size * 2 == inlinedNodePredicates.size &&
-      // For Kleene star all node predicates inside the QPP needs to exist on at least one of the outer juxtaposed nodes,
-      // otherwise the 0 case would have a misrepresented predicate
-      ((qpp.repetition.min != 0L) ||
-        juxtaposedNodesCoversInnerNodesPredicates(
-          statefulShortestPath.source.id,
-          qpp,
-          newVariable,
-          inlinedNodePredicates.map(_.predicate),
-          pathBasedNodePredicates.map(_.predicate).toSeq
-        ))
+      ).size && qpp.relationshipVariableGroupings.size == 1
     ) {
-      Some(FindShortestPaths(
-        statefulShortestPath.source,
-        shortestRelationshipPattern(statefulShortestPath, qpp),
-        inlinedNodePredicates.distinct ++ pathBasedNodePredicates,
-        relationshipPredicates.toSeq,
-        Seq.empty,
-        withFallBack = false,
-        AllowSameNode
-      )(SameId(statefulShortestPath.id)))
+      val innerRelationshipVariable = qpp.relationshipVariableGroupings.head.singleton
+      convertToInlinedPredicates(
+        outerStartNode = qpp.leftBinding.outer,
+        innerStartNode = qpp.leftBinding.inner,
+        innerEndNode = qpp.rightBinding.inner,
+        outerEndNode = qpp.rightBinding.outer,
+        innerRelationship = innerRelationshipVariable,
+        predicatesToInline = nodePredicates ++ relationshipPredicates.map(rel =>
+          rel.predicate.replaceAllOccurrencesBy(rel.variable, innerRelationshipVariable)
+        ),
+        predicatesOutsideRepetition =
+          solveds.get(statefulShortestPath.source.id).asSinglePlannerQuery.queryGraph.selections.flatPredicates,
+        pathDirection = qpp.patternRelationships.head.dir,
+        pathRepetition = qpp.repetition,
+        anonymousVariableNameGenerator = anonymousVariableNameGenerator,
+        nodeToRelationshipRewriteOption = SkipRewriteOnZeroRepetitions
+      )
+        .flatMap(inlinedPredicates =>
+          Some(FindShortestPaths(
+            statefulShortestPath.source,
+            shortestRelationshipPattern(statefulShortestPath, qpp),
+            inlinedPredicates.nodePredicates,
+            inlinedPredicates.relationshipPredicates,
+            Seq.empty,
+            withFallBack = false,
+            AllowSameNode
+          )(SameId(statefulShortestPath.id)))
+        )
     } else {
       None
     }
+
   }
 
   /**
@@ -281,12 +284,11 @@ case class StatefulShortestToFindShortestRewriter(
    * - Node predicates referencing the nodes in the Stateful Shortest Pattern
    * - Relationship predicates
    */
-  private def varLengthInlinablePredicatesFromQpp(
+  private def extractedPredicatesFromQpp(
     statefulShortestPath: StatefulShortestPath,
     spp: SelectivePathPattern,
-    qpp: QuantifiedPathPattern,
-    newVariable: LogicalVariable
-  ): (Seq[VariablePredicate], NodePredicates, RelationshipPredicates) = {
+    qpp: QuantifiedPathPattern
+  ): (Seq[Expression], RelationshipPredicates) = {
     val (innerFrom, innerTo) = (qpp.leftBinding.inner, qpp.rightBinding.inner)
     val extractedPredicates = extractQPPPredicates(
       spp.selections.flatPredicates,
@@ -297,13 +299,10 @@ case class StatefulShortestToFindShortestRewriter(
       statefulShortestPath.source.availableSymbols + innerFrom + innerTo ++ qpp.relationshipVariableGroupings.headOption
         .map(_.singleton)
 
-    val inlinedNodePredicates = extractedPredicates
+    val nodePredicates = extractedPredicates
       .map(_.extracted)
       .filter(_.dependencies.forall(symbols.contains))
       .filter(_.dependencies.exists(Set(innerFrom, innerTo).contains))
-      .map(_.replaceAllOccurrencesBy(innerFrom, newVariable))
-      .map(_.replaceAllOccurrencesBy(innerTo, newVariable))
-      .map(VariablePredicate(newVariable, _))
 
     val (pathBasedNodePredicates, relationshipPredicates, _) = extractPredicates(
       extractedPredicates.map(_.original),
@@ -314,26 +313,7 @@ case class StatefulShortestToFindShortestRewriter(
       VarPatternLength(qpp.repetition.min.toInt, qpp.repetition.max.limit.map(_.toInt))
     )
 
-    (inlinedNodePredicates, pathBasedNodePredicates, relationshipPredicates)
-  }
-
-  /**
-   * This method finds all node predicates inside the QPP exist on at least one of the outer juxtaposed nodes
-   */
-  private def juxtaposedNodesCoversInnerNodesPredicates(
-    sourceId: Id,
-    qpp: QuantifiedPathPattern,
-    variableToUpdateTo: LogicalVariable,
-    inlinedNodePredicates: Seq[Expression],
-    pathBasedNodePredicates: Seq[Expression]
-  ): Boolean = {
-    val predicatesOnJuxtaposedNodes =
-      solveds.get(sourceId).asSinglePlannerQuery.queryGraph.selections.flatPredicates
-        .map(_.replaceAllOccurrencesBy(qpp.leftBinding.outer, variableToUpdateTo))
-        .map(_.replaceAllOccurrencesBy(qpp.rightBinding.outer, variableToUpdateTo))
-    val predicatesOnQuantifiedNodes = inlinedNodePredicates.distinct ++ pathBasedNodePredicates
-
-    predicatesOnQuantifiedNodes.forall(predicatesOnJuxtaposedNodes.contains)
+    (nodePredicates ++ pathBasedNodePredicates.map(_.predicate), relationshipPredicates)
   }
 
   /**

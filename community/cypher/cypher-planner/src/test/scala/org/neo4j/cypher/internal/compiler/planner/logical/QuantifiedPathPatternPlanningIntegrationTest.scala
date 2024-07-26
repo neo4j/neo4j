@@ -1232,7 +1232,7 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
     val plan = planner.plan(query).stripProduceResults
 
     plan shouldBe planner.subPlanBuilder()
-      .expand("(n)-[r:R*2..5]->(m)", relationshipPredicates = Seq(Predicate("r", "r.prop > 123")))
+      .expand("(n)-[r:R*2..5]->(m)", relationshipPredicates = Seq(Predicate("anon_0", "anon_0.prop > 123")))
       .allNodeScan("n")
       .build()
   }
@@ -1531,7 +1531,8 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
     // This ideally should not produce an eager since only a node with no labels is created.
     val query = "MATCH (start:A)((a)-[r]->(b:B))*(end) CREATE (x)"
     val plan = planner.plan(query).stripProduceResults
-    val expectedRelPredicate = VariablePredicate(v"r", HasLabels(EndNode(v"r")(pos), Seq(LabelName("B")(pos)))(pos))
+    val expectedRelPredicate =
+      VariablePredicate(v"anon_0", HasLabels(EndNode(v"anon_0")(pos), Seq(LabelName("B")(pos)))(pos))
 
     val expected = planner.subPlanBuilder()
       .emptyResult()
@@ -1931,7 +1932,7 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
     val plan = planner.plan(query).stripProduceResults
 
     plan shouldEqual planner.subPlanBuilder()
-      .expand("(a)-[r*1..]->(b)", relationshipPredicates = Seq(Predicate("r", "r.p = 1")))
+      .expand("(a)-[r*1..]->(b)", relationshipPredicates = Seq(Predicate("anon_0", "anon_0.p = 1")))
       .allNodeScan("a")
       .build()
   }
@@ -1943,7 +1944,7 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
     planner.plan(query) should equal(
       planner.planBuilder()
         .produceResults("r")
-        .expand("(a)-[r*1..]->(b)", relationshipPredicates = Seq(Predicate("r", "r.p = a.p")))
+        .expand("(a)-[r*1..]->(b)", relationshipPredicates = Seq(Predicate("anon_0", "anon_0.p = a.p")))
         .allNodeScan("a")
         .build()
     )
@@ -1956,7 +1957,7 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
     val plan = planner.plan(query).stripProduceResults
 
     plan shouldEqual planner.subPlanBuilder()
-      .expand("(a)-[r*1..]->(b)", relationshipPredicates = Seq(Predicate("r", "r.p = cacheN[z.p]")))
+      .expand("(a)-[r*1..]->(b)", relationshipPredicates = Seq(Predicate("anon_0", "anon_0.p = cacheN[z.p]")))
       .apply()
       .|.allNodeScan("a", "z")
       .cacheProperties("cacheNFromStore[z.p]")
@@ -1976,20 +1977,38 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
     RelationshipPredicate(":%", ""),
     RelationshipPredicate(":%|R", ""),
     RelationshipPredicate(":R|T", ":R|T"),
-    RelationshipPredicate("{p: 0}", "", Predicate("r", "r.p = 0")),
-    RelationshipPredicate("WHERE r.p = 0", "", Predicate("r", "r.p = 0")),
-    RelationshipPredicate("WHERE r.p <> 0", "", Predicate("r", "NOT r.p = 0")),
-    RelationshipPredicate("WHERE r.p <= 0", "", Predicate("r", "r.p <= 0")),
-    RelationshipPredicate("WHERE NOT r.p = 0", "", Predicate("r", "NOT r.p = 0")),
-    RelationshipPredicate("WHERE r.p IN [0, 1, 2]", "", Predicate("r", "r.p IN [0, 1, 2]")),
-    RelationshipPredicate("WHERE r.p IS NULL", "", Predicate("r", "r.p IS NULL")),
-    RelationshipPredicate("WHERE r.p IS NOT NULL", "", Predicate("r", "r.p IS NOT NULL")),
-    RelationshipPredicate("WHERE r.p = 0 OR r.pp IS NOT NULL", "", Predicate("r", "r.p = 0 OR r.pp IS NOT NULL")),
-    RelationshipPredicate("WHERE r.p = 0 OR NOT r.pp = 0", "", Predicate("r", "r.p = 0 OR NOT r.pp = 0")),
-    RelationshipPredicate("WHERE r.p = 0 AND r.pp = 0", "", Predicate("r", "r.p = 0"), Predicate("r", "r.pp = 0")),
-    RelationshipPredicate("WHERE r = 0", "", Predicate("r", "r = 0")),
-    RelationshipPredicate("WHERE r IS NOT NULL", "", Predicate("r", "r IS NOT NULL")),
-    RelationshipPredicate("WHERE r.p = 0 AND r IS NULL", "", Predicate("r", "r.p = 0"), Predicate("r", "r IS NULL"))
+    RelationshipPredicate("{p: 0}", "", Predicate("anon_0", "anon_0.p = 0")),
+    RelationshipPredicate("WHERE r.p = 0", "", Predicate("anon_0", "anon_0.p = 0")),
+    RelationshipPredicate("WHERE r.p <> 0", "", Predicate("anon_0", "NOT anon_0.p = 0")),
+    RelationshipPredicate("WHERE r.p <= 0", "", Predicate("anon_0", "anon_0.p <= 0")),
+    RelationshipPredicate("WHERE NOT r.p = 0", "", Predicate("anon_0", "NOT anon_0.p = 0")),
+    RelationshipPredicate("WHERE r.p IN [0, 1, 2]", "", Predicate("anon_0", "anon_0.p IN [0, 1, 2]")),
+    RelationshipPredicate("WHERE r.p IS NULL", "", Predicate("anon_0", "anon_0.p IS NULL")),
+    RelationshipPredicate("WHERE r.p IS NOT NULL", "", Predicate("anon_0", "anon_0.p IS NOT NULL")),
+    RelationshipPredicate(
+      "WHERE r.p = 0 OR r.pp IS NOT NULL",
+      "",
+      Predicate("anon_0", "anon_0.p = 0 OR anon_0.pp IS NOT NULL")
+    ),
+    RelationshipPredicate(
+      "WHERE r.p = 0 OR NOT r.pp = 0",
+      "",
+      Predicate("anon_0", "anon_0.p = 0 OR NOT anon_0.pp = 0")
+    ),
+    RelationshipPredicate(
+      "WHERE r.p = 0 AND r.pp = 0",
+      "",
+      Predicate("anon_0", "anon_0.p = 0"),
+      Predicate("anon_0", "anon_0.pp = 0")
+    ),
+    RelationshipPredicate("WHERE r = 0", "", Predicate("anon_0", "anon_0 = 0")),
+    RelationshipPredicate("WHERE r IS NOT NULL", "", Predicate("anon_0", "anon_0 IS NOT NULL")),
+    RelationshipPredicate(
+      "WHERE r.p = 0 AND r IS NULL",
+      "",
+      Predicate("anon_0", "anon_0.p = 0"),
+      Predicate("anon_0", "anon_0 IS NULL")
+    )
   ).foreach { case RelationshipPredicate(queryPredicate, plannedType, plannedPredicates @ _*) =>
     test(
       s"Should plan VarExpand instead of Trail on quantified path pattern with relationship type predicate ${queryPredicate}"
@@ -2018,7 +2037,7 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
   test("Should plan VarExpand instead of Trail on quantified path pattern with post-filter relationship predicate") {
     val query = "MATCH (a) ((n)-[r]->(m))+ (b) WHERE all(x IN r WHERE x.p = 0 AND x IS NOT NULL) RETURN r"
     val plan = planner.plan(query).stripProduceResults
-    val predicates = Seq(Predicate("r", "r.p = 0"), Predicate("r", "r IS NOT NULL"))
+    val predicates = Seq(Predicate("anon_0", "anon_0.p = 0"), Predicate("anon_0", "anon_0 IS NOT NULL"))
 
     plan shouldEqual planner.subPlanBuilder()
       .expand("(a)-[r*1..]->(b)", relationshipPredicates = predicates)
@@ -2360,23 +2379,18 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
         .filter(
           "NOT t IN r",
           "NOT u IN r",
-          "none(anon_1 IN r WHERE anon_1 IN s)",
+          "none(anon_2 IN r WHERE anon_2 IN s)",
           "all(anon_0 IN range(0, size(s) - 1) WHERE (s[anon_0]).prop = a.prop)"
         )
         .expand(
           "(d)-[r*1..]-(a)",
-          expandMode = ExpandAll,
           projectedDir = INCOMING,
-          nodePredicates = Seq(),
-          relationshipPredicates = Seq(Predicate("r", "i.prop = r.prop"))
+          relationshipPredicates = Seq(Predicate("anon_1", "i.prop = anon_1.prop"))
         )
         .filter("NOT t IN s", "NOT u IN s")
         .expand(
           "(d)-[s*1..]-(i)",
-          expandMode = ExpandAll,
-          projectedDir = OUTGOING,
-          nodePredicates = Seq(),
-          relationshipPredicates = Seq()
+          projectedDir = OUTGOING
         )
         .filter("NOT t = u")
         .expandAll("(d)-[t]-(e)")
@@ -2447,11 +2461,14 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
         .produceResults("`count(*)`")
         .aggregation(Seq(), Seq("count(*) AS `count(*)`"))
         .filter(
-          "none(anon_4 IN r WHERE anon_4 IN anon_1)",
-          "none(anon_5 IN r WHERE anon_5 IN s)",
+          "none(anon_5 IN r WHERE anon_5 IN anon_1)",
+          "none(anon_6 IN r WHERE anon_6 IN s)",
           "all(anon_2 IN range(0, size(r) - 1) WHERE (r[anon_2]).prop = z.prop)"
         )
-        .expand("(a)-[r*1..]-(z)", projectedDir = INCOMING)
+        .expand(
+          "(a)-[r*1..]-(z)",
+          projectedDir = INCOMING
+        )
         .filter(
           "cacheN[d.prop] = cacheNFromStore[a.prop]",
           "cacheNFromStore[a.prop] = cacheNFromStore[d.prop]",
@@ -2477,7 +2494,7 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
         .expand(
           "(e)-[s*1..]-(d)",
           projectedDir = INCOMING,
-          relationshipPredicates = Seq(Predicate("s", "s.prop = e.prop"))
+          relationshipPredicates = Seq(Predicate("anon_4", "anon_4.prop = e.prop"))
         )
         .allNodeScan("e")
         .build()
@@ -2691,6 +2708,40 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
     plan shouldEqual expected
   }
 
+  test("should rewrite single directed relationships that depend on the outer node to varexpand") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setLabelCardinality("A", 10)
+      .setLabelCardinality("B", 10)
+      .setRelationshipCardinality("(:A)-[:R]->(:A)", 10)
+      .setRelationshipCardinality("()-[:R]->()", 10)
+      .setRelationshipCardinality("(:A)-[:R]->()", 10)
+      .setRelationshipCardinality("()-[:R]->(:A)", 10)
+      .build()
+
+    val query =
+      """
+        |MATCH (a:A {name: "Foo"}) (()-[:R]->(next) WHERE next.name <> a.name)* (e)
+        |RETURN DISTINCT e
+        |""".stripMargin
+
+    val plan = planner.plan(query).stripProduceResults
+
+    val expected = planner.subPlanBuilder()
+      .distinct("e AS e")
+      .bfsPruningVarExpand(
+        "(a)-[:R*0..]->(e)",
+        nodePredicates = Seq(),
+        relationshipPredicates = Seq(Predicate("anon_0", "NOT endNode(anon_0).name = cacheN[a.name]")),
+        mode = ExpandAll
+      )
+      .filter("cacheNFromStore[a.name] = 'Foo'")
+      .nodeByLabelScan("a", "A", IndexOrderNone)
+      .build()
+
+    plan shouldEqual expected
+  }
+
   test("should rewrite single directed relationships with predicates on both inner nodes to varExpand") {
     val planner = plannerBuilder()
       .setAllNodesCardinality(100)
@@ -2768,6 +2819,83 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       .|.argument("anon_0")
       .filter("a.name = 'Foo'")
       .nodeByLabelScan("a", "A", IndexOrderNone)
+      .build()
+
+    plan shouldEqual expected
+  }
+
+  test(
+    "should rewrite simple queries to bidirectional queries to inlinable NODE predicates if the predicates overlaps with the outernodes"
+  ) {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setLabelCardinality("A", 10)
+      .setLabelCardinality("B", 10)
+      .setRelationshipCardinality("(:A)-[:R]->(:A)", 10)
+      .setRelationshipCardinality("()-[:R]->()", 10)
+      .setRelationshipCardinality("(:A)-[:R]->()", 10)
+      .setRelationshipCardinality("()-[:R]->(:A)", 10)
+      .build()
+
+    val query =
+      """
+        |MATCH p = (:A {prop: "bar"})
+        |          (()-[:R]-({prop: "bar"}))* (e)
+        |RETURN DISTINCT e
+        """.stripMargin
+
+    val plan = planner.plan(query).stripProduceResults
+
+    val expected = planner.subPlanBuilder()
+      .distinct("e AS e")
+      .bfsPruningVarExpand(
+        "(anon_0)-[:R*0..]-(e)",
+        nodePredicates = Seq(Predicate("anon_1", "anon_1.prop = 'bar'")),
+        relationshipPredicates = Seq(),
+        mode = ExpandAll
+      )
+      .filter("anon_0.prop = 'bar'")
+      .nodeByLabelScan("anon_0", "A", IndexOrderNone)
+      .build()
+
+    plan shouldEqual expected
+  }
+
+  // the test below fails because we do not rewrite trails of the form trail.filter.expand.filter.argument
+  // since pre-filtering helps with caching.
+  ignore(
+    "should rewrite simple queries to bidirectional queries to inlinable NODE predicates if there is at least 1 repetition and all inner nodes have the same predicate"
+  ) {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setLabelCardinality("A", 10)
+      .setLabelCardinality("B", 10)
+      .setRelationshipCardinality("(:A)-[:R]->(:A)", 10)
+      .setRelationshipCardinality("()-[:R]->()", 10)
+      .setRelationshipCardinality("(:A)-[:R]->()", 10)
+      .setRelationshipCardinality("()-[:R]->(:A)", 10)
+      .build()
+
+    val query =
+      """
+        |MATCH p = (:A)
+        |          (({prop: "bar"})-[:R]-({prop: "bar"}))+ (e)
+        |RETURN DISTINCT e
+        """.stripMargin
+
+    val plan = planner.plan(query).stripProduceResults
+
+    val expected = planner.subPlanBuilder()
+      .distinct("e AS e")
+      .filter("e.prop = 'bar'")
+      .bfsPruningVarExpand(
+        "(anon_0)-[:R*1..]-(e)",
+        nodePredicates = Seq(Predicate("anon_1", "anon_1.prop = 'bar'")),
+        relationshipPredicates = Seq(),
+        mode = ExpandAll
+      )
+      .filter("anon_0.prop = 'bar'")
+      .nodeByLabelScan("anon_0", "A", IndexOrderNone)
       .build()
 
     plan shouldEqual expected
