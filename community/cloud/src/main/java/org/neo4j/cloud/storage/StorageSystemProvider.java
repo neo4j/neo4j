@@ -20,6 +20,8 @@
 package org.neo4j.cloud.storage;
 
 import static java.nio.file.LinkOption.NOFOLLOW_LINKS;
+import static java.nio.file.StandardOpenOption.CREATE;
+import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING;
 import static java.nio.file.StandardOpenOption.WRITE;
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.cloud.storage.StorageUtils.normalizeForRead;
@@ -40,6 +42,7 @@ import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileAttribute;
 import java.nio.file.spi.FileSystemProvider;
+import java.util.EnumSet;
 import java.util.Map;
 import java.util.Set;
 import org.eclipse.collections.api.factory.Maps;
@@ -126,7 +129,7 @@ public abstract class StorageSystemProvider extends FileSystemProvider implement
      * @return the resource's storage system
      */
     public StorageSystem getStorageSystem(URI uri) {
-        return internalCreateFileSystem(resolve(checkScheme(uri)).systemUri);
+        return internalCreateFileSystem(resolve(checkScheme(uri)).baseURI);
     }
 
     /**
@@ -136,7 +139,8 @@ public abstract class StorageSystemProvider extends FileSystemProvider implement
      * @throws IOException if unable to create the channel
      */
     public SeekableByteChannel newByteChannel(StoragePath path, Set<? extends OpenOption> options) throws IOException {
-        return openAsByteChannel(ensureNotDirectory(path), options);
+        final var normalized = options.contains(WRITE) ? normalizeForWrite(options) : normalizeForRead(options);
+        return openAsByteChannel(ensureNotDirectory(path), normalized);
     }
 
     @Override
@@ -146,7 +150,7 @@ public abstract class StorageSystemProvider extends FileSystemProvider implement
 
     @Override
     public FileSystem newFileSystem(URI uri, Map<String, ?> env) {
-        final var systemUri = resolve(checkScheme(uri)).systemUri;
+        final var systemUri = resolve(checkScheme(uri)).baseURI;
         if (systems.containsKey(systemUri)) {
             throw new FileSystemAlreadyExistsException(
                     "Storage system already exists for the system URI : " + systemUri);
@@ -157,19 +161,22 @@ public abstract class StorageSystemProvider extends FileSystemProvider implement
 
     @Override
     public StorageSystem getFileSystem(URI uri) {
-        return internalGetFileSystem(resolve(checkScheme(uri)).systemUri);
+        return internalGetFileSystem(resolve(checkScheme(uri)).baseURI);
     }
 
     @Override
     public OutputStream newOutputStream(Path path, OpenOption... options) throws IOException {
-        return openAsOutputStream(ensureNotDirectory(path), normalizeForWrite(options));
+        var normalizedOptions = options.length != 0
+                ? normalizeForWrite(options)
+                : normalizeForWrite(EnumSet.of(CREATE, TRUNCATE_EXISTING, WRITE));
+        return openAsOutputStream(ensureNotDirectory(path), normalizedOptions);
     }
 
     @Override
     public Path getPath(URI uri) {
         final var resolved = resolve(checkScheme(uri));
         //noinspection resource
-        return internalGetFileSystem(resolved.systemUri).getPath(resolved.resourcePath);
+        return internalGetFileSystem(resolved.baseURI).getPath(resolved.resourcePath);
     }
 
     @Override
@@ -270,8 +277,8 @@ public abstract class StorageSystemProvider extends FileSystemProvider implement
     /**
      * Represents a handle to a remote resource described by its {@link URI} and the relative resource path on that
      * system
-     * @param systemUri the storage system's {@link URI}
+     * @param baseURI the storage system's {@link URI}
      * @param resourcePath the relative resource path on its storage system
      */
-    public record StorageLocation(URI systemUri, String resourcePath) {}
+    public record StorageLocation(URI baseURI, String resourcePath) {}
 }
