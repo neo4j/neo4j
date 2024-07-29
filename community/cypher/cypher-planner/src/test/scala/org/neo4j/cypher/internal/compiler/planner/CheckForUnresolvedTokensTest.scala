@@ -306,7 +306,7 @@ class CheckForUnresolvedTokensTest extends CypherFunSuite with AstConstructionTe
 
     // Quick and dirty hack to try to make sure we have sufficient coverage of all cypher versions.
     // Feel free to improve ¯\_(ツ)_/¯.
-    CypherVersion.All.foreach { version =>
+    CypherVersion.values().foreach { version =>
       if (version != CypherVersion.Default) {
         withClue(s"Parser $version") {
           statement shouldBe parse(version, query)

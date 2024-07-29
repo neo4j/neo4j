@@ -180,7 +180,7 @@ class ExpressionStringifierIT extends CypherFunSuite {
 
         // Quick and dirty hack to try to make sure we have sufficient coverage of all cypher versions.
         // Feel free to improve ¯\_(ツ)_/¯.
-        CypherVersion.All.toSeq.foreach { version =>
+        CypherVersion.values().toSeq.foreach { version =>
           withClue(s"Parser $version") {
             val expression = parseAntlr(version, inputString)
             expression shouldBe expressionJavaCc

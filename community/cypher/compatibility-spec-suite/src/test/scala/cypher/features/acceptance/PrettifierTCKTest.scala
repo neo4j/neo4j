@@ -51,7 +51,7 @@ class PrettifierTCKTest extends PrettifierTCKTestBase {
   @Test
   def allVersionsHaveCoverage(): Unit = {
     // If this starts to fail you need to add a new prettifyer test for the new version and adapt this test.
-    assertEquals(Set(CypherVersion.Cypher5, CypherVersion.Cypher6), CypherVersion.All)
+    assertEquals(Set(CypherVersion.Cypher5, CypherVersion.Cypher6), CypherVersion.values().toSet)
   }
 }
 

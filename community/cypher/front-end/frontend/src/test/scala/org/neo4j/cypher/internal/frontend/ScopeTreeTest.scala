@@ -327,7 +327,7 @@ class ScopeTreeTest extends CypherFunSuite {
 
     // Quick and dirty hack to try to make sure we have sufficient coverage of all cypher versions.
     // Feel free to improve ¯\_(ツ)_/¯.
-    CypherVersion.All.foreach { version =>
+    CypherVersion.values().foreach { version =>
       if (version != CypherVersion.Default) {
         Try(parse(version, query)) match {
           case Success(otherStatement) if otherStatement == defaultStatement =>

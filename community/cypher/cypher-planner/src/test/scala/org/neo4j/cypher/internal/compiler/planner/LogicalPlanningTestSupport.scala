@@ -137,7 +137,7 @@ trait LogicalPlanningTestSupport extends AstConstructionTestSupport with Logical
 
     // Quick and dirty hack to try to make sure we have sufficient coverage of all cypher versions.
     // Feel free to improve ¯\_(ツ)_/¯.
-    CypherVersion.All.foreach { version =>
+    CypherVersion.values().foreach { version =>
       if (version != CypherVersion.Default) {
         val otherStatement = Try(parse(version, query, exceptionFactory))
         if (otherStatement != Success(defaultStatement)) {

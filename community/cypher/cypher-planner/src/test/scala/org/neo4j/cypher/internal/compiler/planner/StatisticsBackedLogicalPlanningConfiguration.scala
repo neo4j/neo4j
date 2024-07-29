@@ -1429,7 +1429,7 @@ class StatisticsBackedLogicalPlanningConfiguration(
     LogicalPlanningTestSupport2
       .pipeLine(
         parsingConfig = parsingConfig,
-        compatibleVersions = explicitVersion.map(v => Seq(v)).getOrElse(CypherVersion.All),
+        compatibleVersions = explicitVersion.map(v => Seq(v)).getOrElse(CypherVersion.values()),
         deduplicateNames = options.deduplicateNames
       )
       .transform(state, context)

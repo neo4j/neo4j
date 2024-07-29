@@ -25,8 +25,8 @@ class CypherVersionTest extends CypherFunSuite {
 
   test("in sync with org.neo4j.cypher.internal.CypherVersion") {
     CypherVersion.values.foreach { version =>
-      version.name shouldBe version.actualVersion.name
-      version.render shouldBe version.actualVersion.name
+      version.name shouldBe version.actualVersion.versionName
+      version.render shouldBe version.actualVersion.versionName
     }
     CypherVersion.default.actualVersion shouldBe org.neo4j.cypher.internal.CypherVersion.Default
     CypherVersion.default.render shouldBe ""

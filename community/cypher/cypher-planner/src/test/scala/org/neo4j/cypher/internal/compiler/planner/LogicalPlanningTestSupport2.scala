@@ -276,7 +276,7 @@ trait LogicalPlanningTestSupport2 extends AstConstructionTestSupport with Logica
     val parsingConfig = explicitVersion.foldLeft(defaultParsingConfig)((c, v) => c.copy(cypherVersion = v))
     LogicalPlanningTestSupport2.pipeLine(
       parsingConfig = parsingConfig,
-      compatibleVersions = explicitVersion.map(v => Seq(v)).getOrElse(CypherVersion.All),
+      compatibleVersions = explicitVersion.map(v => Seq(v)).getOrElse(CypherVersion.values()),
       pushdownPropertyReads = pushdownPropertyReads,
       deduplicateNames = deduplicateNames
     )

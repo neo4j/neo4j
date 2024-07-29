@@ -14,28 +14,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.cypher.internal
+package org.neo4j.cypher.internal;
 
-/**
- * Cypher version.
- * Related to org.neo4j.kernel.api.CypherScope and org.neo4j.cypher.internal.options.CypherVersion.
- */
-sealed trait CypherVersion {
-  def name: String
-  def experimental: Boolean
-}
+public enum CypherVersion {
+    Cypher5("5", false),
+    Cypher6("6", true);
 
-object CypherVersion {
+    public static final CypherVersion Default = Cypher5;
 
-  case object Cypher5 extends CypherVersion {
-    override def name: String = "5"
-    override def experimental: Boolean = false
-  }
+    public final String versionName;
+    public final boolean experimental;
 
-  case object Cypher6 extends CypherVersion {
-    override def name: String = "6"
-    override def experimental: Boolean = true
-  }
-  val Default: CypherVersion = Cypher5
-  val All: Set[CypherVersion] = Set(Cypher5, Cypher6)
+    CypherVersion(String versionName, boolean experimantal) {
+        this.versionName = versionName;
+        this.experimental = experimantal;
+    }
+
+    @Override
+    public String toString() {
+        return versionName;
+    }
 }

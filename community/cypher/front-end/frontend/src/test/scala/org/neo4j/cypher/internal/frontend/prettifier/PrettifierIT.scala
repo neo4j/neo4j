@@ -2884,7 +2884,7 @@ class PrettifierIT extends CypherFunSuite {
         val statementJavaCc = JavaCCParser.parse(inputString, OpenCypherExceptionFactory(None))
         prettifier.asString(statementJavaCc) should equal(expected)
 
-        CypherVersion.All.foreach { version =>
+        CypherVersion.values().foreach { version =>
           val statement = parseAntlr(version, inputString)
           statement shouldBe statementJavaCc
           prettifier.asString(statement) should equal(expected)

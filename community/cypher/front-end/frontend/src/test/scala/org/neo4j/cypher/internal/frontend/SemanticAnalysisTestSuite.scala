@@ -65,9 +65,9 @@ trait SemanticAnalysisTestSuite extends CypherFunSuite {
     createInitialState: () => BaseState,
     isComposite: Boolean = false,
     sessionDatabase: String = defaultDatabaseName,
-    versions: Set[CypherVersion] = CypherVersion.All
+    versions: Seq[CypherVersion] = CypherVersion.values()
   ): SemanticAnalysisResult = {
-    val result = versions.toSeq.map { version =>
+    val result = versions.map { version =>
       version -> runSemanticAnalysisWithPipelineAndState(
         version,
         pipeline,

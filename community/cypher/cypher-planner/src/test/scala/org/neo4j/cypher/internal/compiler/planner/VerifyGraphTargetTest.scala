@@ -280,7 +280,7 @@ class VerifyGraphTargetTest extends CypherFunSuite {
 
   private def parse(query: String): Query = {
     val defaultStatement = parse(CypherVersion.Default, query)
-    CypherVersion.All.foreach { version =>
+    CypherVersion.values().foreach { version =>
       if (version != CypherVersion.Default) {
         Try(parse(version, query)) match {
           case Success(otherStatement) if otherStatement == defaultStatement =>

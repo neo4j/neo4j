@@ -134,7 +134,7 @@ trait PrettifierTestUtils extends Matchers {
 
   private def parse(original: String): Seq[Statement] = {
     val javaCcStatement = JavaCCParser.parse(original, OpenCypherExceptionFactory(None))
-    val statements = CypherVersion.All.toSeq
+    val statements = CypherVersion.values()
       .map(v => AstParserFactory(v)(original, OpenCypherExceptionFactory(None), None).singleStatement())
     statements :+ javaCcStatement
   }

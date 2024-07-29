@@ -142,7 +142,7 @@ trait RewritePhaseTest {
     // Quick and dirty hack to try to make sure we have sufficient coverage of all cypher versions.
     // Feel free to improve ¯\_(ツ)_/¯.
     val defaultResult = parseAndRewrite(CypherVersion.Default, query, features: _*)
-    CypherVersion.All.foreach { version =>
+    CypherVersion.values().foreach { version =>
       if (version != CypherVersion.Default) {
         withClue(s"Parser $version") {
           parseAndRewrite(version, query, features: _*) shouldBe defaultResult

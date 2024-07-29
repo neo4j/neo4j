@@ -336,7 +336,7 @@ object LogicalPlan2PlanDescription {
       runtimeOperatorMetadata
     )
       .create(input)
-      .addArgument(Version(cypherVersion.name))
+      .addArgument(Version(cypherVersion.versionName))
       .addArgument(RuntimeVersion.currentVersion)
       .addArgument(Planner(plannerName.toTextOutput))
       .addArgument(PlannerImpl(plannerName.name))

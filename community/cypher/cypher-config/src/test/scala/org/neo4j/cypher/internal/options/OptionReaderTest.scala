@@ -186,20 +186,20 @@ class OptionReaderTest extends CypherFunSuite {
   }
 
   test("Cypher version can be read") {
-    org.neo4j.cypher.internal.CypherVersion.All.foreach {
+    org.neo4j.cypher.internal.CypherVersion.values().foreach {
       case experimentalVersion if experimentalVersion.experimental =>
-        intercept[InvalidCypherOption](defaultOptions("cypher version" -> experimentalVersion.name)) should
+        intercept[InvalidCypherOption](defaultOptions("cypher version" -> experimentalVersion.versionName)) should
           have message "6 is not a valid option for cypher version. Valid options are: 5"
       case version =>
-        defaultOptions("cypher version" -> version.name).cypherVersion.actualVersion shouldBe version
+        defaultOptions("cypher version" -> version.versionName).cypherVersion.actualVersion shouldBe version
     }
   }
 
   test("Cypher version can be read with experimental versions") {
-    org.neo4j.cypher.internal.CypherVersion.All.foreach { version =>
+    org.neo4j.cypher.internal.CypherVersion.values().foreach { version =>
       options(
         Map(GraphDatabaseInternalSettings.enable_experimental_cypher_versions -> java.lang.Boolean.TRUE),
-        "cypher version" -> version.name
+        "cypher version" -> version.versionName
       ).cypherVersion.actualVersion shouldBe version
     }
   }

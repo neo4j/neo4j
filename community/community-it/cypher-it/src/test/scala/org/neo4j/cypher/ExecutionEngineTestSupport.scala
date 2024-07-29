@@ -236,8 +236,9 @@ trait ExecutionEngineHelper {
     }
   }
 
-  def executeOfficial(tx: InternalTransaction, q: String, params: (String, Any)*): Result =
+  def executeOfficial(tx: InternalTransaction, q: String, params: (String, Any)*): Result = {
     tx.execute(q, javaConverter.asDeepJavaMap(params.toMap).asInstanceOf[util.Map[String, AnyRef]])
+  }
 
   def executeScalar[T](q: String, params: (String, Any)*): T = {
     ExecutionEngineHelper.scalar[T](execute(q, params: _*).toList)

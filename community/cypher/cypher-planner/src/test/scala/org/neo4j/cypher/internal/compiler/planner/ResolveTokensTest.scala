@@ -228,7 +228,7 @@ class ResolveTokensTest extends CypherFunSuite {
     }
   }
 
-  def parseTest(queryText: String, versions: Set[CypherVersion] = CypherVersion.All)(f: Query => Unit): Unit =
+  def parseTest(queryText: String, versions: Seq[CypherVersion] = CypherVersion.values())(f: Query => Unit): Unit =
     test(queryText) {
       versions.foreach { version =>
         val parsed = AstParserFactory(version)(queryText, Neo4jCypherExceptionFactory(queryText, None), None)
