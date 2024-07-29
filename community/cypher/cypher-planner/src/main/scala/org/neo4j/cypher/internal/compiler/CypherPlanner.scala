@@ -85,7 +85,6 @@ case class CypherPlanner[Context <: PlannerContext](
     val features: Seq[SemanticFeature] = CypherParsingConfig.getEnabledFeatures(
       parsingConfig.semanticFeatures,
       Some(context.config.targetsComposite),
-      parsingConfig.queryRouterEnabled,
       parsingConfig.queryRouterForCompositeEnabled
     )
     val pipeLine =

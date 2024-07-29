@@ -82,8 +82,7 @@ public abstract class FabricServicesBootstrap extends CommonQueryRouterBootstrap
             LogService logService,
             AbstractSecurityLog securityLog,
             DatabaseContextProvider<? extends DatabaseContext> databaseProvider,
-            DatabaseReferenceRepository databaseReferenceRepo,
-            boolean isFallback) {
+            DatabaseReferenceRepository databaseReferenceRepo) {
         super(lifeSupport, dependencies, databaseProvider);
 
         this.logService = logService;
@@ -94,7 +93,7 @@ public abstract class FabricServicesBootstrap extends CommonQueryRouterBootstrap
         config = dependencies.resolveDependency(Config.class);
         availabilityGuard = dependencies.resolveDependency(AvailabilityGuard.class);
 
-        fabricConfig = bootstrapFabricConfig(isFallback);
+        fabricConfig = bootstrapFabricConfig();
     }
 
     public BoltGraphDatabaseManagementServiceSPI bootstrapServices(
@@ -198,7 +197,7 @@ public abstract class FabricServicesBootstrap extends CommonQueryRouterBootstrap
 
     protected abstract FabricRemoteExecutor bootstrapRemoteStack();
 
-    protected abstract FabricConfig bootstrapFabricConfig(boolean isFallback);
+    protected abstract FabricConfig bootstrapFabricConfig();
 
     public static class Community extends FabricServicesBootstrap {
         public Community(
@@ -213,8 +212,7 @@ public abstract class FabricServicesBootstrap extends CommonQueryRouterBootstrap
                     logService,
                     CommunitySecurityLog.NULL_LOG,
                     databaseProvider,
-                    databaseReferenceRepo,
-                    false);
+                    databaseReferenceRepo);
         }
 
         @Override
@@ -241,7 +239,7 @@ public abstract class FabricServicesBootstrap extends CommonQueryRouterBootstrap
         }
 
         @Override
-        protected FabricConfig bootstrapFabricConfig(boolean isFallback) {
+        protected FabricConfig bootstrapFabricConfig() {
             var config = resolve(Config.class);
             return FabricConfig.from(config);
         }

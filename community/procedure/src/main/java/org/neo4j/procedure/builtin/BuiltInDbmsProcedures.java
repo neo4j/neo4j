@@ -50,7 +50,6 @@ import org.neo4j.capabilities.CapabilitiesService;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.common.Edition;
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.SettingImpl;
 import org.neo4j.dbms.api.DatabaseManagementService;
@@ -61,7 +60,6 @@ import org.neo4j.dbms.database.SystemGraphComponent.Status;
 import org.neo4j.dbms.database.SystemGraphComponents;
 import org.neo4j.dbms.database.SystemGraphComponents.UpgradeChecker;
 import org.neo4j.fabric.executor.FabricExecutor;
-import org.neo4j.fabric.transaction.TransactionManager;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
@@ -199,17 +197,10 @@ public class BuiltInDbmsProcedures {
         InternalTransaction internalTransaction = (InternalTransaction) this.transaction;
 
         Config config = graph.getDependencyResolver().resolveDependency(Config.class);
-        if (config.get(GraphDatabaseInternalSettings.query_router_new_stack)) {
-            graph.getDependencyResolver()
-                    .resolveDependency(TransactionLookup.class)
-                    .findTransactionContaining(internalTransaction)
-                    .ifPresentOrElse(parent -> parent.setMetaData(data), () -> internalTransaction.setMetaData(data));
-        } else {
-            graph.getDependencyResolver()
-                    .resolveDependency(TransactionManager.class)
-                    .findTransactionContaining(internalTransaction)
-                    .ifPresentOrElse(parent -> parent.setMetaData(data), () -> internalTransaction.setMetaData(data));
-        }
+        graph.getDependencyResolver()
+                .resolveDependency(TransactionLookup.class)
+                .findTransactionContaining(internalTransaction)
+                .ifPresentOrElse(parent -> parent.setMetaData(data), () -> internalTransaction.setMetaData(data));
     }
 
     @SystemProcedure

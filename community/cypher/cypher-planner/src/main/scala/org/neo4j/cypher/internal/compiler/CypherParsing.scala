@@ -81,7 +81,6 @@ class CypherParsing(
     val features = CypherParsingConfig.getEnabledFeatures(
       config.semanticFeatures,
       if (sessionDatabase == null) None else Some(sessionDatabase.isComposite),
-      config.queryRouterEnabled,
       config.queryRouterForCompositeEnabled
     )
     CompilationPhases.parsing(
@@ -104,7 +103,6 @@ case class CypherParsingConfig(
   semanticFeatures: Seq[SemanticFeature] = defaultSemanticFeatures,
   obfuscateLiterals: () => Boolean = () => false,
   cypherParserAntlrEnabled: () => Boolean = () => false,
-  queryRouterEnabled: Boolean = true,
   queryRouterForCompositeEnabled: Boolean = false
 )
 
@@ -148,8 +146,6 @@ object CypherParsingConfig {
       cypherConfiguration.cypherParserAntlrEnabled
     }
 
-    val queryRouterEnabled: Boolean = cypherConfiguration.useQueryRouterForRegularQueries
-
     val queryRouterForCompositeQueriesEnabled: Boolean = cypherConfiguration.allowCompositeQueries
 
     CypherParsingConfig(
@@ -158,7 +154,6 @@ object CypherParsingConfig {
       enabledSemanticFeatures,
       () => obfuscateLiterals(),
       () => cypherParserAntlrEnabled(),
-      queryRouterEnabled,
       queryRouterForCompositeQueriesEnabled
     )
   }
@@ -166,14 +161,11 @@ object CypherParsingConfig {
   def getEnabledFeatures(
     semanticFeatures: Seq[SemanticFeature],
     targetsCompositeInQueryRouter: Option[Boolean],
-    queryRouterEnabled: Boolean,
     queryRouterForCompositeEnabled: Boolean
   ): Seq[SemanticFeature] = {
-    if (queryRouterEnabled && queryRouterForCompositeEnabled && targetsCompositeInQueryRouter.getOrElse(false))
+    if (queryRouterForCompositeEnabled && targetsCompositeInQueryRouter.getOrElse(false))
       semanticFeatures ++ Seq(SemanticFeature.UseAsMultipleGraphsSelector, SemanticFeature.MultipleGraphs)
-    else if (queryRouterEnabled)
-      semanticFeatures ++ Seq(SemanticFeature.UseAsSingleGraphSelector)
     else
-      semanticFeatures
+      semanticFeatures ++ Seq(SemanticFeature.UseAsSingleGraphSelector)
   }
 }
