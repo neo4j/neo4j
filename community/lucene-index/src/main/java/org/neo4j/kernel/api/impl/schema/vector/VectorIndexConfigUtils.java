@@ -43,7 +43,6 @@ import org.neo4j.internal.schema.IndexConfigValidationRecords.Valid;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.util.Preconditions;
-import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.Values;
 import org.neo4j.values.utils.PrettyPrinter;
 
@@ -90,10 +89,6 @@ public class VectorIndexConfigUtils {
             Objects.requireNonNull(value);
             return value.compareTo(min) < 0;
         }
-    }
-
-    static boolean missing(AnyValue value) {
-        return value == null || value == Values.NO_VALUE;
     }
 
     static ImmutableSortedMap<IndexSetting, Object> toValidSettings(RichIterable<Valid> validRecords) {
@@ -152,7 +147,10 @@ public class VectorIndexConfigUtils {
             case INCORRECT_TYPE -> {
                 final var incorrectType = (IncorrectType) invalidRecord;
                 yield new IllegalArgumentException("'%s' is expected to have been '%s', but was '%s'"
-                        .formatted(settingName, incorrectType.targetType(), incorrectType.providedType()));
+                        .formatted(
+                                settingName,
+                                incorrectType.targetType().getSimpleName(),
+                                incorrectType.providedType().getSimpleName()));
             }
             case INVALID_VALUE -> {
                 final var invalidValue = (InvalidValue) invalidRecord;

@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.api.impl.schema.vector;
 
-import static org.neo4j.kernel.api.impl.schema.vector.VectorIndexConfigUtils.missing;
-
 import java.util.Locale;
 import java.util.OptionalInt;
 import org.eclipse.collections.api.map.MapIterable;
@@ -70,9 +68,8 @@ class IndexSettingValidators {
         abstract IndexConfigValidationRecord validate(SettingsAccessor accessor);
 
         protected IndexConfigValidationRecord extractOrDefault(SettingsAccessor accessor) {
-            final var rawValue = accessor.get(setting);
-            if (!missing(rawValue)) {
-                return new Pending(setting, rawValue);
+            if (accessor.containsSetting(setting)) {
+                return new Pending(setting, accessor.get(setting));
             }
             if (createDefault == null) {
                 return new MissingSetting(setting);
@@ -81,8 +78,7 @@ class IndexSettingValidators {
         }
 
         protected Valid trustIsValid(SettingsAccessor accessor) {
-            final VALUE rawValue = accessor.get(setting);
-            final var value = missing(rawValue) ? readDefault : map(rawValue);
+            final var value = accessor.containsSetting(setting) ? map((VALUE) accessor.get(setting)) : readDefault;
             return new Valid(setting, value, map(value));
         }
 
@@ -108,8 +104,7 @@ class IndexSettingValidators {
 
         @Override
         IndexConfigValidationRecord validate(SettingsAccessor accessor) {
-            final var rawValue = accessor.get(setting);
-            if (!missing(rawValue)) {
+            if (accessor.containsSetting(setting)) {
                 return new UnrecognizedSetting(setting.getSettingName());
             }
             return new Valid(setting, readDefault, map(readDefault));
@@ -146,7 +141,11 @@ class IndexSettingValidators {
                 return record;
             }
 
-            if (!(pending.rawValue() instanceof final IntegralValue integralValue)) {
+            final var rawValue = pending.rawValue();
+            if (rawValue == Values.NO_VALUE) {
+                return new InvalidValue(pending, null, supportedRange);
+            }
+            if (!(rawValue instanceof final IntegralValue integralValue)) {
                 return new IncorrectType(pending, IntegralValue.class);
             }
 
@@ -187,7 +186,11 @@ class IndexSettingValidators {
                 return record;
             }
 
-            if (!(pending.rawValue() instanceof final IntegralValue integralValue)) {
+            final var rawValue = pending.rawValue();
+            if (rawValue == Values.NO_VALUE) {
+                return new InvalidValue(pending, null, supportedRange);
+            }
+            if (!(rawValue instanceof final IntegralValue integralValue)) {
                 return new IncorrectType(pending, IntegralValue.class);
             }
 
@@ -232,7 +235,11 @@ class IndexSettingValidators {
                 return record;
             }
 
-            if (!(pending.rawValue() instanceof final TextValue textValue)) {
+            final var rawValue = pending.rawValue();
+            if (rawValue == Values.NO_VALUE) {
+                return new InvalidValue(pending, null, similarityFunctions.keysView());
+            }
+            if (!(rawValue instanceof final TextValue textValue)) {
                 return new IncorrectType(pending, TextValue.class);
             }
 
@@ -276,7 +283,11 @@ class IndexSettingValidators {
                 return record;
             }
 
-            if (!(pending.rawValue() instanceof final BooleanValue booleanValue)) {
+            final var rawValue = pending.rawValue();
+            if (rawValue == Values.NO_VALUE) {
+                return new InvalidValue(pending, null, quantizationBooleans);
+            }
+            if (!(rawValue instanceof final BooleanValue booleanValue)) {
                 return new IncorrectType(pending, BooleanValue.class);
             }
 

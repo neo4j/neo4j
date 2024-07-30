@@ -134,11 +134,11 @@ class VectorIndexV1ForV512ConfigValidationTest {
 
     @Test
     void missingDimensions() {
-        final var config = VectorIndexSettings.create()
+        final var settings = VectorIndexSettings.create()
                 .withSimilarityFunction(VERSION.similarityFunction("COSINE"))
                 .toSettingsAccessor();
 
-        final var validationRecords = VALIDATOR.validate(config);
+        final var validationRecords = VALIDATOR.validate(settings);
         assertThat(validationRecords.invalid()).isTrue();
         assertThat(validationRecords.get(MISSING_SETTING).castToSortedSet())
                 .hasSize(1)
@@ -147,20 +147,42 @@ class VectorIndexV1ForV512ConfigValidationTest {
                 .extracting(MissingSetting::setting)
                 .isEqualTo(DIMENSIONS);
 
-        assertThatThrownBy(() -> VALIDATOR.validateToVectorIndexConfig(config))
+        assertThatThrownBy(() -> VALIDATOR.validateToVectorIndexConfig(settings))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContainingAll(DIMENSIONS.getSettingName(), "is expected to have been set");
     }
 
     @Test
+    void nullDimensions() {
+        final var settings = VectorIndexSettings.create()
+                .set(DIMENSIONS, null)
+                .withSimilarityFunction(VERSION.similarityFunction("COSINE"))
+                .toSettingsAccessor();
+
+        final var validationRecords = VALIDATOR.validate(settings);
+        assertThat(validationRecords.invalid()).isTrue();
+        assertThat(validationRecords.get(INVALID_VALUE).castToSortedSet())
+                .hasSize(1)
+                .first()
+                .asInstanceOf(InstanceOfAssertFactories.type(InvalidValue.class))
+                .extracting(InvalidValue::setting, InvalidValue::value)
+                .containsExactly(DIMENSIONS, null);
+
+        assertThatThrownBy(() -> VALIDATOR.validateToVectorIndexConfig(settings))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContainingAll(
+                        DIMENSIONS.getSettingName(), "must be between 1 and", String.valueOf(VERSION.maxDimensions()));
+    }
+
+    @Test
     void incorrectTypeForDimensions() {
         final var incorrectDimensions = String.valueOf(VERSION.maxDimensions());
-        final var config = VectorIndexSettings.create()
+        final var settings = VectorIndexSettings.create()
                 .set(DIMENSIONS, incorrectDimensions)
                 .withSimilarityFunction(VERSION.similarityFunction("COSINE"))
                 .toSettingsAccessor();
 
-        final var validationRecords = VALIDATOR.validate(config);
+        final var validationRecords = VALIDATOR.validate(settings);
         assertThat(validationRecords.invalid()).isTrue();
         final var incorrectTypeAssert = assertThat(
                         validationRecords.get(INCORRECT_TYPE).castToSortedSet())
@@ -179,7 +201,7 @@ class VectorIndexV1ForV512ConfigValidationTest {
                 .asInstanceOf(InstanceOfAssertFactories.CLASS)
                 .isAssignableTo(IntegralValue.class);
 
-        assertThatThrownBy(() -> VALIDATOR.validateToVectorIndexConfig(config))
+        assertThatThrownBy(() -> VALIDATOR.validateToVectorIndexConfig(settings))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContainingAll(
                         DIMENSIONS.getSettingName(), "is expected to have been", IntegralValue.class.getSimpleName());
@@ -252,6 +274,33 @@ class VectorIndexV1ForV512ConfigValidationTest {
         assertThatThrownBy(() -> VALIDATOR.validateToVectorIndexConfig(settings))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContainingAll(SIMILARITY_FUNCTION.getSettingName(), "is expected to have been set");
+    }
+
+    @Test
+    void nullSimilarityFunction() {
+        final var settings = VectorIndexSettings.create()
+                .withDimensions(VERSION.maxDimensions())
+                .set(SIMILARITY_FUNCTION, null)
+                .toSettingsAccessor();
+
+        final var validationRecords = VALIDATOR.validate(settings);
+        assertThat(validationRecords.invalid()).isTrue();
+        assertThat(validationRecords.get(INVALID_VALUE).castToSortedSet())
+                .hasSize(1)
+                .first()
+                .asInstanceOf(InstanceOfAssertFactories.type(InvalidValue.class))
+                .extracting(InvalidValue::setting, InvalidValue::value)
+                .containsExactly(SIMILARITY_FUNCTION, null);
+
+        assertThatThrownBy(() -> VALIDATOR.validateToVectorIndexConfig(settings))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContainingAll(
+                        "null",
+                        "is an unsupported",
+                        SIMILARITY_FUNCTION.getSettingName(),
+                        VERSION.supportedSimilarityFunctions()
+                                .collect(VectorSimilarityFunction::name)
+                                .toString());
     }
 
     @Test

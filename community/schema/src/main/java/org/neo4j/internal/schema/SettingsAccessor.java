@@ -34,7 +34,9 @@ import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.MapValue;
 
 public interface SettingsAccessor {
-    <T extends AnyValue> T get(IndexSetting setting);
+    boolean containsSetting(IndexSetting setting);
+
+    AnyValue get(IndexSetting setting);
 
     ImmutableSet<String> settingNames();
 
@@ -50,8 +52,13 @@ public interface SettingsAccessor {
         }
 
         @Override
-        public <T extends AnyValue> T get(IndexSetting setting) {
-            return (T) Values.of(settings.get(setting));
+        public boolean containsSetting(IndexSetting setting) {
+            return settings.containsKey(setting);
+        }
+
+        @Override
+        public AnyValue get(IndexSetting setting) {
+            return Values.of(settings.get(setting));
         }
 
         @Override
@@ -71,8 +78,13 @@ public interface SettingsAccessor {
         }
 
         @Override
-        public <T extends AnyValue> T get(IndexSetting setting) {
-            return (T) config.get(setting.getSettingName());
+        public boolean containsSetting(IndexSetting setting) {
+            return config.asMap().containsKey(setting.getSettingName());
+        }
+
+        @Override
+        public AnyValue get(IndexSetting setting) {
+            return config.getOrDefault(setting.getSettingName(), Values.NO_VALUE);
         }
 
         @Override
@@ -89,8 +101,13 @@ public interface SettingsAccessor {
         }
 
         @Override
-        public <T extends AnyValue> T get(IndexSetting setting) {
-            return (T) map.get(setting.getSettingName());
+        public boolean containsSetting(IndexSetting setting) {
+            return map.containsKey(setting.getSettingName());
+        }
+
+        @Override
+        public AnyValue get(IndexSetting setting) {
+            return map.get(setting.getSettingName());
         }
 
         @Override

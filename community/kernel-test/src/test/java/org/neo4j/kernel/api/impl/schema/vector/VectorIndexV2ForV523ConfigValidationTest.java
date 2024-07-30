@@ -145,11 +145,8 @@ class VectorIndexV2ForV523ConfigValidationTest {
     @Test
     void unrecognisedSetting() {
         final var unrecognisedSetting = IndexSetting.fulltext_Analyzer();
-        final var settings = VectorIndexSettings.create()
-                .withDimensions(VERSION.maxDimensions())
-                .withSimilarityFunction(VERSION.similarityFunction("COSINE"))
-                .set(unrecognisedSetting, "swedish")
-                .toSettingsAccessor();
+        final var settings =
+                VectorIndexSettings.create().set(unrecognisedSetting, "swedish").toSettingsAccessor();
 
         final var validationRecords = VALIDATOR.validate(settings);
         assertThat(validationRecords.invalid()).isTrue();
@@ -169,11 +166,29 @@ class VectorIndexV2ForV523ConfigValidationTest {
     }
 
     @Test
+    void nullDimensions() {
+        final var settings = VectorIndexSettings.create().set(DIMENSIONS, null).toSettingsAccessor();
+
+        final var validationRecords = VALIDATOR.validate(settings);
+        assertThat(validationRecords.invalid()).isTrue();
+        assertThat(validationRecords.get(INVALID_VALUE).castToSortedSet())
+                .hasSize(1)
+                .first()
+                .asInstanceOf(InstanceOfAssertFactories.type(InvalidValue.class))
+                .extracting(InvalidValue::setting, InvalidValue::value)
+                .containsExactly(DIMENSIONS, null);
+
+        assertThatThrownBy(() -> VALIDATOR.validateToVectorIndexConfig(settings))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContainingAll(
+                        DIMENSIONS.getSettingName(), "must be between 1 and", String.valueOf(VERSION.maxDimensions()));
+    }
+
+    @Test
     void incorrectTypeForDimensions() {
         final var incorrectDimensions = String.valueOf(VERSION.maxDimensions());
         final var settings = VectorIndexSettings.create()
                 .set(DIMENSIONS, incorrectDimensions)
-                .withSimilarityFunction(VERSION.similarityFunction("COSINE"))
                 .toSettingsAccessor();
 
         final var validationRecords = VALIDATOR.validate(settings);
@@ -204,10 +219,8 @@ class VectorIndexV2ForV523ConfigValidationTest {
     @ParameterizedTest
     @ValueSource(ints = {-1, 0})
     void nonPositiveDimensions(int invalidDimensions) {
-        final var settings = VectorIndexSettings.create()
-                .withDimensions(invalidDimensions)
-                .withSimilarityFunction(VERSION.similarityFunction("COSINE"))
-                .toSettingsAccessor();
+        final var settings =
+                VectorIndexSettings.create().withDimensions(invalidDimensions).toSettingsAccessor();
 
         assertInvalidDimensions(invalidDimensions, settings);
     }
@@ -215,10 +228,8 @@ class VectorIndexV2ForV523ConfigValidationTest {
     @Test
     void aboveMaxDimensions() {
         final int invalidDimensions = VERSION.maxDimensions() + 1;
-        final var settings = VectorIndexSettings.create()
-                .withDimensions(invalidDimensions)
-                .withSimilarityFunction(VERSION.similarityFunction("COSINE"))
-                .toSettingsAccessor();
+        final var settings =
+                VectorIndexSettings.create().withDimensions(invalidDimensions).toSettingsAccessor();
 
         assertInvalidDimensions(invalidDimensions, settings);
     }
@@ -240,10 +251,34 @@ class VectorIndexV2ForV523ConfigValidationTest {
     }
 
     @Test
+    void nullSimilarityFunction() {
+        final var settings =
+                VectorIndexSettings.create().set(SIMILARITY_FUNCTION, null).toSettingsAccessor();
+
+        final var validationRecords = VALIDATOR.validate(settings);
+        assertThat(validationRecords.invalid()).isTrue();
+        assertThat(validationRecords.get(INVALID_VALUE).castToSortedSet())
+                .hasSize(1)
+                .first()
+                .asInstanceOf(InstanceOfAssertFactories.type(InvalidValue.class))
+                .extracting(InvalidValue::setting, InvalidValue::value)
+                .containsExactly(SIMILARITY_FUNCTION, null);
+
+        assertThatThrownBy(() -> VALIDATOR.validateToVectorIndexConfig(settings))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContainingAll(
+                        "null",
+                        "is an unsupported",
+                        SIMILARITY_FUNCTION.getSettingName(),
+                        VERSION.supportedSimilarityFunctions()
+                                .collect(VectorSimilarityFunction::name)
+                                .toString());
+    }
+
+    @Test
     void incorrectTypeForSimilarityFunction() {
         final var incorrectSimilarityFunction = 123L;
         final var settings = VectorIndexSettings.create()
-                .withDimensions(VERSION.maxDimensions())
                 .set(SIMILARITY_FUNCTION, incorrectSimilarityFunction)
                 .toSettingsAccessor();
 
@@ -278,7 +313,6 @@ class VectorIndexV2ForV523ConfigValidationTest {
     void invalidSimilarityFunction() {
         final var invalidSimilarityFunction = "ClearlyThisIsNotASimilarityFunction";
         final var settings = VectorIndexSettings.create()
-                .withDimensions(VERSION.maxDimensions())
                 .set(IndexSetting.vector_Similarity_Function(), invalidSimilarityFunction)
                 .toSettingsAccessor();
 
@@ -306,8 +340,6 @@ class VectorIndexV2ForV523ConfigValidationTest {
     void incorrectTypeForQuantizationEnabled() {
         final var incorrectQuantizationEnabled = 123L;
         final var settings = VectorIndexSettings.create()
-                .withDimensions(VERSION.maxDimensions())
-                .withSimilarityFunction(VERSION.similarityFunction("COSINE"))
                 .set(QUANTIZATION_ENABLED, incorrectQuantizationEnabled)
                 .toSettingsAccessor();
 
@@ -339,66 +371,9 @@ class VectorIndexV2ForV523ConfigValidationTest {
     }
 
     @Test
-    void incorrectTypeForHnswEfConstruction() {
-        final var incorrectHnswEfConstruction = "Here is a String";
-        final var settings = VectorIndexSettings.create()
-                .withDimensions(VERSION.maxDimensions())
-                .withSimilarityFunction(VERSION.similarityFunction("COSINE"))
-                .set(HNSW_EF_CONSTRUCTION, incorrectHnswEfConstruction)
-                .toSettingsAccessor();
+    void nullHnswM() {
+        final var settings = VectorIndexSettings.create().set(HNSW_M, null).toSettingsAccessor();
 
-        final var validationRecords = VALIDATOR.validate(settings);
-        assertThat(validationRecords.invalid()).isTrue();
-        final var incorrectTypeAssert = assertThat(
-                        validationRecords.get(INCORRECT_TYPE).castToSortedSet())
-                .hasSize(1)
-                .first()
-                .asInstanceOf(InstanceOfAssertFactories.type(IncorrectType.class));
-        incorrectTypeAssert
-                .extracting(IncorrectType::setting, IncorrectType::rawValue)
-                .containsExactly(HNSW_EF_CONSTRUCTION, Values.stringValue(incorrectHnswEfConstruction));
-        incorrectTypeAssert
-                .extracting(IncorrectType::providedType)
-                .asInstanceOf(InstanceOfAssertFactories.CLASS)
-                .isAssignableTo(TextValue.class);
-        incorrectTypeAssert
-                .extracting(IncorrectType::targetType)
-                .asInstanceOf(InstanceOfAssertFactories.CLASS)
-                .isAssignableTo(IntegralValue.class);
-
-        assertThatThrownBy(() -> VALIDATOR.validateToVectorIndexConfig(settings))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContainingAll(
-                        HNSW_EF_CONSTRUCTION.getSettingName(),
-                        "is expected to have been",
-                        IntegralValue.class.getSimpleName());
-    }
-
-    @ParameterizedTest
-    @ValueSource(ints = {-1, 0})
-    void nonPositiveHnswEfConstruction(int invalidEfConstruction) {
-        final var settings = VectorIndexSettings.create()
-                .withDimensions(VERSION.maxDimensions())
-                .withSimilarityFunction(VERSION.similarityFunction("COSINE"))
-                .withHnswEfConstruction(invalidEfConstruction)
-                .toSettingsAccessor();
-
-        assertInvalidEfConstruction(invalidEfConstruction, settings);
-    }
-
-    @Test
-    void aboveMaxHnswEfConstruction() {
-        final int invalidHnswEfConstruction = VERSION.maxHnswEfConstruction() + 1;
-        final var settings = VectorIndexSettings.create()
-                .withDimensions(VERSION.maxDimensions())
-                .withSimilarityFunction(VERSION.similarityFunction("COSINE"))
-                .withHnswEfConstruction(invalidHnswEfConstruction)
-                .toSettingsAccessor();
-
-        assertInvalidEfConstruction(invalidHnswEfConstruction, settings);
-    }
-
-    private void assertInvalidEfConstruction(int invalidHnswEfConstruction, SettingsAccessor settings) {
         final var validationRecords = VALIDATOR.validate(settings);
         assertThat(validationRecords.invalid()).isTrue();
         assertThat(validationRecords.get(INVALID_VALUE).castToSortedSet())
@@ -406,24 +381,19 @@ class VectorIndexV2ForV523ConfigValidationTest {
                 .first()
                 .asInstanceOf(InstanceOfAssertFactories.type(InvalidValue.class))
                 .extracting(InvalidValue::setting, InvalidValue::value)
-                .containsExactly(HNSW_EF_CONSTRUCTION, invalidHnswEfConstruction);
+                .containsExactly(HNSW_M, null);
 
         assertThatThrownBy(() -> VALIDATOR.validateToVectorIndexConfig(settings))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContainingAll(
-                        HNSW_EF_CONSTRUCTION.getSettingName(),
-                        "must be between 1 and",
-                        String.valueOf(VERSION.maxHnswEfConstruction()));
+                        HNSW_M.getSettingName(), "must be between 1 and", String.valueOf(VERSION.maxHnswM()));
     }
 
     @Test
     void incorrectTypeForHnswM() {
         final var incorrectHnswM = "Here is a String";
-        final var settings = VectorIndexSettings.create()
-                .withDimensions(VERSION.maxDimensions())
-                .withSimilarityFunction(VERSION.similarityFunction("COSINE"))
-                .set(HNSW_M, incorrectHnswM)
-                .toSettingsAccessor();
+        final var settings =
+                VectorIndexSettings.create().set(HNSW_M, incorrectHnswM).toSettingsAccessor();
 
         final var validationRecords = VALIDATOR.validate(settings);
         assertThat(validationRecords.invalid()).isTrue();
@@ -488,5 +458,99 @@ class VectorIndexV2ForV523ConfigValidationTest {
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContainingAll(
                         HNSW_M.getSettingName(), "must be between 1 and", String.valueOf(VERSION.maxHnswM()));
+    }
+
+    @Test
+    void nullHnswEfConstruction() {
+        final var settings =
+                VectorIndexSettings.create().set(HNSW_EF_CONSTRUCTION, null).toSettingsAccessor();
+
+        final var validationRecords = VALIDATOR.validate(settings);
+        assertThat(validationRecords.invalid()).isTrue();
+        assertThat(validationRecords.get(INVALID_VALUE).castToSortedSet())
+                .hasSize(1)
+                .first()
+                .asInstanceOf(InstanceOfAssertFactories.type(InvalidValue.class))
+                .extracting(InvalidValue::setting, InvalidValue::value)
+                .containsExactly(HNSW_EF_CONSTRUCTION, null);
+
+        assertThatThrownBy(() -> VALIDATOR.validateToVectorIndexConfig(settings))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContainingAll(
+                        HNSW_EF_CONSTRUCTION.getSettingName(),
+                        "must be between 1 and",
+                        String.valueOf(VERSION.maxHnswEfConstruction()));
+    }
+
+    @Test
+    void incorrectTypeForHnswEfConstruction() {
+        final var incorrectHnswEfConstruction = "Here is a String";
+        final var settings = VectorIndexSettings.create()
+                .set(HNSW_EF_CONSTRUCTION, incorrectHnswEfConstruction)
+                .toSettingsAccessor();
+
+        final var validationRecords = VALIDATOR.validate(settings);
+        assertThat(validationRecords.invalid()).isTrue();
+        final var incorrectTypeAssert = assertThat(
+                        validationRecords.get(INCORRECT_TYPE).castToSortedSet())
+                .hasSize(1)
+                .first()
+                .asInstanceOf(InstanceOfAssertFactories.type(IncorrectType.class));
+        incorrectTypeAssert
+                .extracting(IncorrectType::setting, IncorrectType::rawValue)
+                .containsExactly(HNSW_EF_CONSTRUCTION, Values.stringValue(incorrectHnswEfConstruction));
+        incorrectTypeAssert
+                .extracting(IncorrectType::providedType)
+                .asInstanceOf(InstanceOfAssertFactories.CLASS)
+                .isAssignableTo(TextValue.class);
+        incorrectTypeAssert
+                .extracting(IncorrectType::targetType)
+                .asInstanceOf(InstanceOfAssertFactories.CLASS)
+                .isAssignableTo(IntegralValue.class);
+
+        assertThatThrownBy(() -> VALIDATOR.validateToVectorIndexConfig(settings))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContainingAll(
+                        HNSW_EF_CONSTRUCTION.getSettingName(),
+                        "is expected to have been",
+                        IntegralValue.class.getSimpleName());
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {-1, 0})
+    void nonPositiveHnswEfConstruction(int invalidEfConstruction) {
+        final var settings = VectorIndexSettings.create()
+                .withHnswEfConstruction(invalidEfConstruction)
+                .toSettingsAccessor();
+
+        assertInvalidEfConstruction(invalidEfConstruction, settings);
+    }
+
+    @Test
+    void aboveMaxHnswEfConstruction() {
+        final int invalidHnswEfConstruction = VERSION.maxHnswEfConstruction() + 1;
+        final var settings = VectorIndexSettings.create()
+                .withHnswEfConstruction(invalidHnswEfConstruction)
+                .toSettingsAccessor();
+
+        assertInvalidEfConstruction(invalidHnswEfConstruction, settings);
+    }
+
+    private void assertInvalidEfConstruction(int invalidHnswEfConstruction, SettingsAccessor settings) {
+        final var validationRecords = VALIDATOR.validate(settings);
+        assertThat(validationRecords.invalid()).isTrue();
+        assertThat(validationRecords.get(INVALID_VALUE).castToSortedSet())
+                .hasSize(1)
+                .first()
+                .asInstanceOf(InstanceOfAssertFactories.type(InvalidValue.class))
+                .extracting(InvalidValue::setting, InvalidValue::value)
+                .containsExactly(HNSW_EF_CONSTRUCTION, invalidHnswEfConstruction);
+
+        assertThatThrownBy(() -> VALIDATOR.validateToVectorIndexConfig(settings))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContainingAll(
+                        HNSW_EF_CONSTRUCTION.getSettingName(),
+                        "must be between 1 and",
+                        String.valueOf(VERSION.maxHnswEfConstruction()));
     }
 }
