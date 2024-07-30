@@ -29,7 +29,6 @@ import static org.neo4j.internal.schema.SchemaPatternMatchingType.SINGLE_ENTITY_
 import static org.neo4j.internal.schema.SchemaUserDescription.TOKEN_ID_NAME_LOOKUP;
 
 import java.util.Arrays;
-import java.util.Objects;
 import org.apache.commons.lang3.ArrayUtils;
 import org.neo4j.common.EntityType;
 import org.neo4j.common.TokenNameLookup;
@@ -273,7 +272,8 @@ public final class SchemaDescriptorImplementation
 
     @Override
     public int hashCode() {
-        int result = Objects.hash(entityType, schemaPatternMatchingType);
+        int result = entityType.hashCode();
+        result = 31 * result + schemaPatternMatchingType.hashCode();
         result = 31 * result + Arrays.hashCode(entityTokens);
         result = 31 * result + Arrays.hashCode(propertyKeyIds);
         return result;
