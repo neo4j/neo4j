@@ -45,7 +45,8 @@ object CypherRuntimeConfiguration {
       compiledExpressionMethodLimit = config.compiledExpressionMethodLimit,
       operatorFusingMethodLimit = config.operatorFusingMethodLimit,
       freeMemoryOfUnusedColumns = config.freeMemoryOfUnusedColumns,
-      expressionEngineOption = config.expressionEngineOption
+      expressionEngineOption = config.expressionEngineOption,
+      spdBatchSize = config.shardedPropertyBatchSize
     )
   }
 
@@ -68,7 +69,8 @@ case class CypherRuntimeConfiguration(
   compiledExpressionMethodLimit: Int,
   operatorFusingMethodLimit: Int,
   freeMemoryOfUnusedColumns: Boolean,
-  expressionEngineOption: CypherExpressionEngineOption
+  expressionEngineOption: CypherExpressionEngineOption,
+  spdBatchSize: Int
 ) {
 
   Preconditions.checkArgument(

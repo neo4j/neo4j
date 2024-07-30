@@ -175,6 +175,8 @@ class CypherConfiguration private (val config: Config) {
   val statefulShortestPlanningRewriteQuantifiersAbove: Int =
     config.get(GraphDatabaseInternalSettings.stateful_shortest_planning_rewrite_quantifiers_above)
 
+  val shardedPropertyBatchSize: Int = config.get(GraphDatabaseInternalSettings.sharded_property_database_batch_size)
+
   val cachePropertiesForEntities: Boolean =
     config.get(GraphDatabaseInternalSettings.planning_cache_properties_for_entities_enabled)
 

@@ -1299,6 +1299,12 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
             newBuilder("internal.dbms.query_router.new_stack", BOOL, true).build();
 
     @Internal
+    @Description("The size of remote read batches for SPD")
+    public static final Setting<Integer> sharded_property_database_batch_size = newBuilder(
+                    "internal.dbms.sharded_property_database.batch_size", INT, 8192)
+            .build();
+
+    @Internal
     @Description("A feature toggle behind which CALL IN TRANSACTIONS for composite databases is developed")
     public static final Setting<Boolean> composite_call_in_transactions = newBuilder(
                     "internal.dbms.composite.call_in_transactions", BOOL, true)

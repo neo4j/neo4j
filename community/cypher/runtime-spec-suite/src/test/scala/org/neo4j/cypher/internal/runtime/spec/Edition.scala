@@ -81,6 +81,12 @@ class Edition[CONTEXT <: RuntimeContext](
     new Edition(graphBuilderFactory, newRuntimeContextManagerFactory, runtimeTestUtils, newConfigs.toSeq: _*)
   }
 
+  def copyWith(
+    newGraphBuilderFactory: () => TestDatabaseManagementServiceBuilder
+  ): Edition[CONTEXT] = {
+    new Edition(newGraphBuilderFactory, runtimeContextManagerFactory, runtimeTestUtils, configs: _*)
+  }
+
   def getSetting[T](setting: Setting[T]): Option[T] = {
     configs.collectFirst { case (key, value) if key == setting => value.asInstanceOf[T] }
   }
