@@ -86,11 +86,13 @@ public interface TxStateVisitor extends AutoCloseable {
         public void visitDeletedNode(long id) {}
 
         @Override
-        public void visitRelationshipModifications(RelationshipModifications modifications) {}
+        public void visitRelationshipModifications(RelationshipModifications modifications)
+                throws ConstraintValidationException {}
 
         @Override
         public void visitNodePropertyChanges(
-                long id, Iterable<StorageProperty> added, Iterable<StorageProperty> changed, IntIterable removed) {}
+                long id, Iterable<StorageProperty> added, Iterable<StorageProperty> changed, IntIterable removed)
+                throws ConstraintValidationException {}
 
         @Override
         public void visitRelPropertyChanges(
@@ -100,10 +102,12 @@ public interface TxStateVisitor extends AutoCloseable {
                 long endNode,
                 Iterable<StorageProperty> added,
                 Iterable<StorageProperty> changed,
-                IntIterable removed) {}
+                IntIterable removed)
+                throws ConstraintValidationException {}
 
         @Override
-        public void visitNodeLabelChanges(long id, LongSet added, LongSet removed) {}
+        public void visitNodeLabelChanges(long id, LongSet added, LongSet removed)
+                throws ConstraintValidationException {}
 
         @Override
         public void visitAddedIndex(IndexDescriptor index) throws KernelException {}
