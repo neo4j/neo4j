@@ -498,7 +498,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.accessCapability = accessCapabilityFactory.newAccessCapability(readOnlyDatabaseChecker);
         this.kernelTransactionMonitor = KernelTransaction.NO_MONITOR;
         this.type = type;
-        this.transactionSequenceNumber = transactionSequenceNumber;
         this.leaseClient = leaseService.newClient();
         this.lockClient.initialize(leaseClient, transactionSequenceNumber, memoryTracker, config);
         this.terminationMark = null;
@@ -528,9 +527,11 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.innerTransactionHandler = new InnerTransactionHandlerImpl(kernelTransactions);
         this.procedureView = procedureView;
         this.procedures.initialize(procedureView);
+        this.needsHighIdTracking = false;
+        // keep these three at the bottom to have happens-before relationship with above volatile writes
+        this.transactionSequenceNumber = transactionSequenceNumber;
         this.closing = false;
         this.closed = false;
-        this.needsHighIdTracking = false;
         return this;
     }
 
