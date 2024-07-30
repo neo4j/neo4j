@@ -93,27 +93,13 @@ public class TokenScanValueIndexProgressor implements IndexProgressor, Resource 
     public boolean next() {
         for (; ; ) {
             while (bits != 0) {
-                long idForClient;
-                if (indexOrder != IndexOrder.DESCENDING) {
-                    // The next idForClient can be found at the next 1-bit from the right.
-                    int delta = Long.numberOfTrailingZeros(bits);
-
-                    // We switch that bit to zero, so that we don't find it again the next time.
-                    // First, create a mask where that bit is zero (easiest by subtracting 1) and then &
-                    // it with bits.
-                    bits &= bits - 1;
-                    idForClient = baseEntityId + delta;
-                } else {
-                    // The next idForClient can be found at the next 1-bit from the left.
-                    int delta = Long.numberOfLeadingZeros(bits);
-
-                    // We switch that bit to zero, so that we don't find it again the next time.
-                    // First, create a mask where only set bit is set (easiest by bitshifting the number one),
-                    // and then invert the mask and then & it with bits.
-                    long bitToZero = 1L << (RANGE_SIZE - delta - 1);
-                    bits &= ~bitToZero;
-                    idForClient = (baseEntityId + RANGE_SIZE) - delta - 1;
-                }
+                long idForClient =
+                        switch (indexOrder) {
+                                // When descending, the next idForClient can be found at the next 1-bit from the left.
+                            case DESCENDING -> extractNextId(RANGE_SIZE - Long.numberOfLeadingZeros(bits) - 1);
+                                // When ascending, the next idForClient can be found at the next 1-bit from the right.
+                            case ASCENDING, NONE -> extractNextId(Long.numberOfTrailingZeros(bits));
+                        };
 
                 if (isInRange(idForClient) && client.acceptEntity(idForClient, tokenId)) {
                     return true;
@@ -126,6 +112,13 @@ public class TokenScanValueIndexProgressor implements IndexProgressor, Resource 
             //noinspection AssertWithSideEffects
             assert keysInOrder(cursor.key(), indexOrder);
         }
+    }
+
+    private long extractNextId(int relevantBitPos) {
+        long bitToFlip = 1L << relevantBitPos;
+        assert (bits & bitToFlip) != 0; // We always expect that bit to be in bits, if not it was a mistake.
+        bits -= bitToFlip;
+        return baseEntityId + relevantBitPos;
     }
 
     private boolean nextRange() {
@@ -141,7 +134,7 @@ public class TokenScanValueIndexProgressor implements IndexProgressor, Resource 
         var key = cursor.key();
         baseEntityId = idLayout.firstIdOfRange(key.idRange);
         bits = cursor.value().bits;
-        assert cursor.key().tokenId == tokenId;
+        assert key.tokenId == tokenId;
 
         return true;
     }
