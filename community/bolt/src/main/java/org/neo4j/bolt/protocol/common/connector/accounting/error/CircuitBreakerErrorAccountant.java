@@ -27,8 +27,8 @@ import org.neo4j.logging.internal.LogService;
 public final class CircuitBreakerErrorAccountant implements ErrorAccountant {
 
     /**
-     * Defines the amount of time which has to pass before a circuit breaker log line is repeated
-     * to indicate continuation of a condition.
+     * Defines the amount of time which has to pass before a circuit breaker log line is repeated to
+     * indicate continuation of a condition.
      */
     private static final long REPEAT_LOG_LINE_MILLIS = 5 * 60 * 1000;
 
@@ -55,30 +55,52 @@ public final class CircuitBreakerErrorAccountant implements ErrorAccountant {
             long threadStarvationResetDurationMillis,
             Clock clock,
             LogService logging) {
-        this.networkAbortCircuitBreaker = new CircuitBreaker(
-                networkAbortThreshold,
-                networkAbortSampleDurationMillis,
-                networkAbortResetDurationMillis,
-                new NetworkAbortCircuitBreakerListener(networkAbortThreshold, networkAbortSampleDurationMillis),
-                clock);
-        this.threadStarvationCircuitBreaker = new CircuitBreaker(
-                threadStarvationThreshold,
-                threadStarvationSampleDurationMillis,
-                threadStarvationResetDurationMillis,
-                new ThreadStarvationCircuitBreakerListener(
-                        threadStarvationThreshold, threadStarvationSampleDurationMillis),
-                clock);
+        if (networkAbortThreshold > 0) {
+            this.networkAbortCircuitBreaker = new CircuitBreaker(
+                    networkAbortThreshold,
+                    networkAbortSampleDurationMillis,
+                    networkAbortResetDurationMillis,
+                    new NetworkAbortCircuitBreakerListener(networkAbortThreshold, networkAbortSampleDurationMillis),
+                    clock);
+        } else {
+            this.networkAbortCircuitBreaker = null;
+        }
+
+        if (threadStarvationThreshold > 0) {
+            this.threadStarvationCircuitBreaker = new CircuitBreaker(
+                    threadStarvationThreshold,
+                    threadStarvationSampleDurationMillis,
+                    threadStarvationResetDurationMillis,
+                    new ThreadStarvationCircuitBreakerListener(
+                            threadStarvationThreshold, threadStarvationSampleDurationMillis),
+                    clock);
+        } else {
+            this.threadStarvationCircuitBreaker = null;
+        }
 
         this.userLog = logging.getUserLog(ErrorAccountant.class);
     }
 
     public void notifyNetworkAbort(Connection connection, Throwable cause) {
+        if (this.networkAbortCircuitBreaker == null) {
+            this.userLog.warn("[" + connection.id() + "] Terminating connection due to network error", cause);
+            return;
+        }
+
         this.userLog.debug("[" + connection.id() + "] Terminating connection due to network error", cause);
 
         this.networkAbortCircuitBreaker.increment();
     }
 
     public void notifyThreadStarvation(Connection connection, Throwable cause) {
+        if (this.threadStarvationCircuitBreaker == null) {
+            this.userLog.error(
+                    "[%s] Unable to schedule for execution since there are no available threads to serve it at the "
+                            + "moment.",
+                    connection.id());
+            return;
+        }
+
         this.userLog.debug(
                 "[%s] Unable to schedule for execution since there are no available threads to serve it at the "
                         + "moment.",
@@ -88,6 +110,7 @@ public final class CircuitBreakerErrorAccountant implements ErrorAccountant {
     }
 
     private abstract class ContinuallyLoggingCircuitBreakerListener implements CircuitBreaker.Listener {
+
         private volatile long lastLogLine;
 
         @Override
@@ -110,6 +133,7 @@ public final class CircuitBreakerErrorAccountant implements ErrorAccountant {
     }
 
     private class NetworkAbortCircuitBreakerListener extends ContinuallyLoggingCircuitBreakerListener {
+
         private final long threshold;
         private final long window;
 
@@ -141,6 +165,7 @@ public final class CircuitBreakerErrorAccountant implements ErrorAccountant {
     }
 
     private class ThreadStarvationCircuitBreakerListener extends ContinuallyLoggingCircuitBreakerListener {
+
         private final long threshold;
         private final long window;
 

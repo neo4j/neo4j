@@ -137,7 +137,7 @@ public final class BoltConnector implements SettingsDeclaration {
             "The maximum number of network-related connection aborts allowed within a specified time window before emitting log messages. A value of zero reverts to legacy warning behavior.")
     public static final Setting<Long> network_abort_warn_threshold = newBuilder(
                     "server.bolt.network_abort_warn_threshold", LONG, 2L)
-            .addConstraint(min(1L))
+            .addConstraint(min(0L))
             .build();
 
     @Description("The duration of the window in which network-related connection aborts are sampled.")
@@ -154,10 +154,10 @@ public final class BoltConnector implements SettingsDeclaration {
             .build();
 
     @Description(
-            "The maximum number of unscheduled requests allowed during thread starvation events within a specified time window before emitting log messages.")
+            "The maximum number of unscheduled requests allowed during thread starvation events within a specified time window before emitting log messages. A value of zero reverts to legacy error behavior.")
     public static final Setting<Long> thread_starvation_warn_threshold = newBuilder(
                     "server.bolt.thread_starvation_warn_threshold", LONG, 2L)
-            .addConstraint(min(1L))
+            .addConstraint(min(0L))
             .build();
 
     @Description("The duration of the window in which unscheduled requests are sampled.")

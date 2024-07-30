@@ -38,13 +38,17 @@ class CircuitBreakerErrorAccountantTest {
     @BeforeEach
     void prepare() {
         this.logProvider = new AssertableLogProvider();
+    }
 
+    private void prepareAccountant() {
         this.accountant = new CircuitBreakerErrorAccountant(
                 8, 100, 200, 2, 100, 200, Clock.systemUTC(), new SimpleLogService(this.logProvider));
     }
 
     @Test
     void shouldLogNetworkAborts() {
+        this.prepareAccountant();
+
         var connection = ConnectionMockFactory.newInstance("bolt-123");
         var ex = new IOException("Connection reset by test");
 
@@ -56,7 +60,32 @@ class CircuitBreakerErrorAccountantTest {
     }
 
     @Test
+    void shouldLogNetworkAbortsWhenLegacyBehaviorIsConfigured() {
+        this.accountant = new CircuitBreakerErrorAccountant(
+                0, 100, 200, 2, 100, 200, Clock.systemUTC(), new SimpleLogService(this.logProvider));
+
+        var connection = ConnectionMockFactory.newInstance("bolt-123");
+        var ex = new IOException("Connection reset by test");
+
+        this.accountant.notifyNetworkAbort(connection, ex);
+
+        LogAssertions.assertThat(this.logProvider)
+                .forLevel(Level.WARN)
+                .containsMessageWithException("[bolt-123] Terminating connection due to network error", ex);
+
+        this.accountant.notifyThreadStarvation(connection, ex);
+
+        LogAssertions.assertThat(this.logProvider)
+                .forLevel(Level.DEBUG)
+                .containsMessageWithArguments(
+                        "Unable to schedule for execution since there are no available threads to serve it at the moment.",
+                        "bolt-123");
+    }
+
+    @Test
     void shouldLogThreadStarvation() {
+        this.prepareAccountant();
+
         var connection = ConnectionMockFactory.newInstance("bolt-123");
         var ex = new IOException("Connection reset by test");
 
@@ -67,5 +96,28 @@ class CircuitBreakerErrorAccountantTest {
                 .containsMessageWithArguments(
                         "Unable to schedule for execution since there are no available threads to serve it at the moment.",
                         "bolt-123");
+    }
+
+    @Test
+    void shouldLogThreadStarvationWhenLegacyBehaviorIsConfigured() {
+        this.accountant = new CircuitBreakerErrorAccountant(
+                8, 100, 200, 0, 100, 200, Clock.systemUTC(), new SimpleLogService(this.logProvider));
+
+        var connection = ConnectionMockFactory.newInstance("bolt-123");
+        var ex = new IOException("Connection reset by test");
+
+        this.accountant.notifyThreadStarvation(connection, ex);
+
+        LogAssertions.assertThat(this.logProvider)
+                .forLevel(Level.ERROR)
+                .containsMessageWithArguments(
+                        "Unable to schedule for execution since there are no available threads to serve it at the moment.",
+                        "bolt-123");
+
+        this.accountant.notifyNetworkAbort(connection, ex);
+
+        LogAssertions.assertThat(this.logProvider)
+                .forLevel(Level.DEBUG)
+                .containsMessageWithException("[bolt-123] Terminating connection due to network error", ex);
     }
 }
