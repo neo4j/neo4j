@@ -75,10 +75,14 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
   private val propRegexMatchJohnny = regex(prop("n", "prop"), literalString("Johnny"))
   private val propContainsApa = contains(prop("n", "prop"), litApa)
   private val propContainsDependencyProp = contains(prop("n", "prop"), dependencyProp)
+  private val propContainsUnknownDependencyProp = contains(prop("n", "prop"), prop("k", "prop"))
+  private val propEndsWithUnknownDependencyProp = endsWith(prop("n", "prop"), prop("k", "prop"))
   private val propContainsBepa = contains(prop("n", "prop"), litBepa)
   private val propEndsWithApa = endsWith(prop("n", "prop"), litApa)
   private val propEndsWithDependencyProp = endsWith(prop("n", "prop"), dependencyProp)
   private val propEndsWithBepa = endsWith(prop("n", "prop"), litBepa)
+  private val propContainsItself = contains(prop("n", "prop"), prop("n", "prop"))
+  private val propEndsWithItself = endsWith(prop("n", "prop"), prop("n", "prop"))
 
   private val fooIsNotNull = isNotNull(prop("n", "foo"))
   private val fooContainsApa = contains(prop("n", "foo"), litApa)
@@ -180,6 +184,80 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
           )
           .build()
       ))
+    }
+  }
+
+  test(
+    "no index contains scan when there is an text index on the property but CONTAINS predicate depends on the variable itself."
+  ) {
+    new givenConfig {
+      qg = queryGraph(propContainsItself, hasLabelAwesome)
+      textIndexOn("Awesome", "prop")
+    }.withLogicalPlanningContext { (cfg, ctx) =>
+      // when
+      val resultPlans =
+        nodeIndexSearchStringScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(
+          cfg.qg,
+          InterestingOrderConfig.empty,
+          ctx
+        )
+      // then
+      resultPlans shouldBe empty
+    }
+  }
+
+  test("no index contains scan when there is an index on the property but the predicate uses an unknown dependency") {
+    new givenConfig {
+      qg = queryGraph(propEndsWithUnknownDependencyProp, hasLabelAwesome)
+      textIndexOn("Awesome", "prop")
+    }.withLogicalPlanningContext { (cfg, ctx) =>
+      // when
+      val resultPlans =
+        nodeIndexSearchStringScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(
+          cfg.qg,
+          InterestingOrderConfig.empty,
+          ctx
+        )
+
+      // then
+      resultPlans shouldBe empty
+    }
+  }
+
+  test(
+    "no index ends with scan when there is an text index on the property but ENDS WITH predicate depends on the variable itself."
+  ) {
+    new givenConfig {
+      qg = queryGraph(propEndsWithItself, hasLabelAwesome)
+      textIndexOn("Awesome", "prop")
+    }.withLogicalPlanningContext { (cfg, ctx) =>
+      // when
+      val resultPlans =
+        nodeIndexSearchStringScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(
+          cfg.qg,
+          InterestingOrderConfig.empty,
+          ctx
+        )
+      // then
+      resultPlans shouldBe empty
+    }
+  }
+
+  test("no index ends with scan when there is an index on the property but the predicate uses an unknown dependency") {
+    new givenConfig {
+      qg = queryGraph(propContainsUnknownDependencyProp, hasLabelAwesome)
+      textIndexOn("Awesome", "prop")
+    }.withLogicalPlanningContext { (cfg, ctx) =>
+      // when
+      val resultPlans =
+        nodeIndexSearchStringScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(
+          cfg.qg,
+          InterestingOrderConfig.empty,
+          ctx
+        )
+
+      // then
+      resultPlans shouldBe empty
     }
   }
 

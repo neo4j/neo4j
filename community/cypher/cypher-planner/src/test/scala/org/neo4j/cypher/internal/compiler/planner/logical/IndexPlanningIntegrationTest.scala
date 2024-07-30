@@ -36,6 +36,7 @@ import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.colu
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNodeWithProperties
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createRelationship
+import org.neo4j.cypher.internal.logical.plans.DoNotGetValue
 import org.neo4j.cypher.internal.logical.plans.GetValue
 import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderDescending
@@ -1190,6 +1191,50 @@ class IndexPlanningIntegrationTest
       .setLabelCardinality("A", 500)
       .addNodeIndex("A", Seq("prop"), existsSelectivity = 0.5, uniqueSelectivity = 0.1, indexType = IndexType.TEXT)
       .build()
+
+  test("should plan node exists instead of NodeIndexContainsScan for a.prop CONTAINS a.prop (issue-13489)") {
+    // we need to use selectivity of 0 to force the planner to select NodeIndexContainsScan.
+    // in general the planner will choose the NodeIndexScan since it is has a lower heuristic cost.
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setLabelCardinality("A", 500)
+      .addNodeIndex("A", Seq("prop"), existsSelectivity = 0, uniqueSelectivity = 0, indexType = IndexType.TEXT)
+      .build()
+
+    val plan = planner.plan("MATCH (a:A) WHERE a.prop CONTAINS a.prop RETURN a.prop").stripProduceResults
+    plan shouldEqual planner.subPlanBuilder()
+      .projection("cacheN[a.prop] AS `a.prop`")
+      .filter("cacheNFromStore[a.prop] CONTAINS cacheNFromStore[a.prop]")
+      .nodeIndexOperator(
+        "a:A(prop)",
+        getValue = Map("prop" -> DoNotGetValue),
+        indexType = IndexType.TEXT,
+        supportPartitionedScan = false
+      )
+      .build()
+  }
+
+  test("should plan node exists instead of NodeIndexEndsWithScan for a.prop ENDS WITH a.prop (issue-13489)") {
+    // we need to use selectivity of 0 to force the planner to select NodeIndexEndsWithScan.
+    // in general the planner will choose the NodeIndexScan since it is has a lower heuristic cost.
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setLabelCardinality("A", 500)
+      .addNodeIndex("A", Seq("prop"), existsSelectivity = 0, uniqueSelectivity = 0, indexType = IndexType.TEXT)
+      .build()
+
+    val plan = planner.plan("MATCH (a:A) WHERE a.prop ENDS WITH a.prop RETURN a.prop").stripProduceResults
+    plan shouldEqual planner.subPlanBuilder()
+      .projection("cacheN[a.prop] AS `a.prop`")
+      .filter("cacheNFromStore[a.prop] ENDS WITH cacheNFromStore[a.prop]")
+      .nodeIndexOperator(
+        "a:A(prop)",
+        getValue = Map("prop" -> DoNotGetValue),
+        indexType = IndexType.TEXT,
+        supportPartitionedScan = false
+      )
+      .build()
+  }
 
   test("should not plan node text index usage with IS NOT NULL predicate") {
     val planner = plannerConfigForNodeTextIndex

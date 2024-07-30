@@ -22,12 +22,13 @@ package org.neo4j.cypher.internal.compiler.planner.logical.steps.index
 import org.neo4j.cypher.internal.ast.Hint
 import org.neo4j.cypher.internal.compiler.planner.logical.LeafPlanRestrictions
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.EntityIndexLeafPlanner.IndexCompatiblePredicate
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.NodeIndexLeafPlanner.NodeIndexMatch
 import org.neo4j.cypher.internal.expressions.Contains
 import org.neo4j.cypher.internal.expressions.EndsWith
+import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
-import org.neo4j.exceptions.InternalException
 
 object nodeIndexStringSearchScanPlanProvider extends NodeIndexPlanProvider {
 
@@ -54,23 +55,25 @@ object nodeIndexStringSearchScanPlanProvider extends NodeIndexPlanProvider {
     argumentIds: Set[LogicalVariable],
     context: LogicalPlanningContext
   ): Set[LogicalPlan] = {
-    indexMatch.propertyPredicates.flatMap { indexPredicate =>
+    def indexableExprWithSearchMode(indexPredicate: IndexCompatiblePredicate): Option[(Expression, StringSearchMode)] =
       indexPredicate.predicate match {
-        case predicate @ (_: Contains | _: EndsWith) =>
-          val (valueExpr, stringSearchMode) = predicate match {
-            case contains: Contains =>
-              (contains.rhs, ContainsSearchMode)
-            case endsWith: EndsWith =>
-              (endsWith.rhs, EndsWithSearchMode)
-            case x => throw new InternalException(s"Expected Contains or EndsWith but was ${x.getClass}")
-          }
+        case Contains(_, valueExpr) if valueExpr.dependencies.subsetOf(argumentIds) =>
+          Some((valueExpr, ContainsSearchMode))
+        case EndsWith(_, valueExpr) if valueExpr.dependencies.subsetOf(argumentIds) =>
+          Some((valueExpr, EndsWithSearchMode))
+        case _ => None
+      }
+
+    indexMatch.propertyPredicates.flatMap { indexPredicate =>
+      indexableExprWithSearchMode(indexPredicate).map {
+        case (valueExpr: Expression, stringSearchMode: StringSearchMode) =>
           val singlePredicateSet = indexMatch.predicateSet(Seq(indexPredicate), exactPredicatesCanGetValue = false)
 
           val hint = singlePredicateSet
             .fulfilledHints(hints, indexMatch.indexDescriptor.indexType, planIsScan = true)
             .headOption
 
-          val plan = context.staticComponents.logicalPlanProducer.planNodeIndexStringSearchScan(
+          context.staticComponents.logicalPlanProducer.planNodeIndexStringSearchScan(
             variable = indexMatch.variable,
             label = indexMatch.labelToken,
             properties = singlePredicateSet.indexedProperties(context),
@@ -84,10 +87,6 @@ object nodeIndexStringSearchScanPlanProvider extends NodeIndexPlanProvider {
             context = context,
             indexType = indexMatch.indexDescriptor.indexType
           )
-          Some(plan)
-
-        case _ =>
-          None
       }
     }.toSet
   }
