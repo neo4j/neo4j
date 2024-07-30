@@ -21,9 +21,9 @@ package org.neo4j.dbms.database;
 
 import java.util.Optional;
 import org.neo4j.kernel.database.DatabaseId;
-import org.neo4j.storageengine.AppendIndexProvider;
 import org.neo4j.storageengine.StoreFileClosedException;
 import org.neo4j.storageengine.api.ExternalStoreId;
+import org.neo4j.storageengine.api.MetadataProvider;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.StoreIdProvider;
 import org.neo4j.storageengine.api.TransactionIdStore;
@@ -62,9 +62,10 @@ public class DefaultDatabaseDetailsExtrasProvider {
 
     private static Optional<Long> fetchLastAppendIndex(Optional<? extends DatabaseContext> context) {
         return context.map(DatabaseContext::dependencies)
-                .filter(dependencies -> dependencies.containsDependency(AppendIndexProvider.class))
-                .map(dependencies -> dependencies.resolveDependency(AppendIndexProvider.class))
-                .flatMap(applyIndexProvider -> Optional.of(applyIndexProvider.getLastAppendIndex()));
+                .filter(dependencies -> dependencies.containsDependency(MetadataProvider.class))
+                .map(dependencies -> dependencies.resolveDependency(MetadataProvider.class))
+                .flatMap(applyIndexProvider ->
+                        Optional.of(applyIndexProvider.getLastCommittedBatch().appendIndex()));
     }
 
     private static Optional<Long> fetchLastCommittedTxId(Optional<? extends DatabaseContext> context) {

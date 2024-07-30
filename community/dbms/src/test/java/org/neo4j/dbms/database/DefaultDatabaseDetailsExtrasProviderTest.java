@@ -24,22 +24,22 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
+import static org.neo4j.collection.Dependencies.dependenciesOf;
 import static org.neo4j.dbms.database.DatabaseDetailsExtras.EMPTY;
 
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.neo4j.collection.Dependencies;
 import org.neo4j.dbms.database.TopologyInfoService.RequestedExtras;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.database.DatabaseIdFactory;
-import org.neo4j.storageengine.AppendIndexProvider;
+import org.neo4j.kernel.impl.transaction.log.AppendBatchInfo;
+import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.storageengine.api.ExternalStoreId;
+import org.neo4j.storageengine.api.MetadataProvider;
 import org.neo4j.storageengine.api.StoreId;
-import org.neo4j.storageengine.api.StoreIdProvider;
-import org.neo4j.storageengine.api.TransactionIdStore;
 
 class DefaultDatabaseDetailsExtrasProviderTest {
     private final DatabaseId databaseId = DatabaseIdFactory.from(UUID.randomUUID());
@@ -56,17 +56,13 @@ class DefaultDatabaseDetailsExtrasProviderTest {
         databaseContextProvider = mock(DatabaseContextProvider.class);
         provider = new DefaultDatabaseDetailsExtrasProvider(databaseContextProvider);
 
-        var storeIdProvider = mock(StoreIdProvider.class);
-        when(storeIdProvider.getExternalStoreId()).thenReturn(externalStoreId);
-        var transactionIdStore = mock(TransactionIdStore.class);
-        when(transactionIdStore.getLastCommittedTransactionId()).thenReturn(lastCommittedTxId);
-        var appendIndexProvider = mock(AppendIndexProvider.class);
-        when(appendIndexProvider.getLastAppendIndex()).thenReturn(lastAppendIndex);
+        var metadataProvider = mock(MetadataProvider.class);
+        when(metadataProvider.getExternalStoreId()).thenReturn(externalStoreId);
+        when(metadataProvider.getLastCommittedTransactionId()).thenReturn(lastCommittedTxId);
+        when(metadataProvider.getLastCommittedBatch())
+                .thenReturn(new AppendBatchInfo(lastAppendIndex, new LogPosition(5, 512)));
 
-        var dependencies = new Dependencies();
-        dependencies.satisfyDependency(storeIdProvider);
-        dependencies.satisfyDependency(transactionIdStore);
-        dependencies.satisfyDependency(appendIndexProvider);
+        var dependencies = dependenciesOf(metadataProvider);
         var database = mock(Database.class);
         when(database.getStoreId()).thenReturn(storeId);
         when(database.isStarted()).thenReturn(true);
