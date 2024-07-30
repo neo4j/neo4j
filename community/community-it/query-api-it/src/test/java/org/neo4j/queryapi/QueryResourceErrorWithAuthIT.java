@@ -99,6 +99,6 @@ class QueryResourceErrorWithAuthIT {
         assertThat(response.body())
                 .contains(
                         """
-                        {"errors":[{"error":"Neo.ClientError.Statement.ArgumentError","message":"Impersonation is not supported in community edition."}]}""");
+                        {"errors":[{"code":"Neo.ClientError.Statement.ArgumentError","message":"Impersonation is not supported in community edition."}]}""");
     }
 }

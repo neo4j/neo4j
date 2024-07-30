@@ -24,7 +24,6 @@ import static org.neo4j.queryapi.QueryApiTestUtil.setupLogging;
 import static org.neo4j.server.queryapi.response.format.Fieldnames.BOOKMARKS_KEY;
 import static org.neo4j.server.queryapi.response.format.Fieldnames.DATA_KEY;
 import static org.neo4j.server.queryapi.response.format.Fieldnames.ERRORS_KEY;
-import static org.neo4j.server.queryapi.response.format.Fieldnames.ERROR_KEY;
 import static org.neo4j.server.queryapi.response.format.Fieldnames.FIELDS_KEY;
 import static org.neo4j.server.queryapi.response.format.Fieldnames.VALUES_KEY;
 
@@ -238,7 +237,7 @@ class QueryResourceIT {
 
         assertThat(response.statusCode()).isEqualTo(400);
 
-        assertThat(parsedJson.get(ERRORS_KEY).get(0).get(ERROR_KEY).asText())
+        assertThat(parsedJson.get(ERRORS_KEY).get(0).get("code").asText())
                 .isEqualTo("Neo.TransientError.Transaction.BookmarkTimeout");
     }
 
@@ -261,7 +260,7 @@ class QueryResourceIT {
         // initial request times out
         assertThat(responseA.statusCode()).isEqualTo(400);
         assertThat(responseA.body())
-                .isEqualTo("{\"errors\":[{\"error\":\"Neo.TransientError.Transaction.BookmarkTimeout\","
+                .isEqualTo("{\"errors\":[{\"code\":\"Neo.TransientError.Transaction.BookmarkTimeout\","
                         + "\"mes"
                         + "sage\":\"Database 'neo4j' not up to the requested version: " + nextTxId
                         + ". Latest database version is " + lastTxId + "\"}]}");

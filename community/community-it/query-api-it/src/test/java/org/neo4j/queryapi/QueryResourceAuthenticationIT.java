@@ -94,7 +94,7 @@ class QueryResourceAuthenticationIT {
         var parsedResponse = MAPPER.readTree(response.body());
 
         assertThat(parsedResponse.get("errors").size()).isEqualTo(1);
-        assertThat(parsedResponse.get("errors").get(0).get("error").asText())
+        assertThat(parsedResponse.get("errors").get(0).get("code").asText())
                 .isEqualTo(Status.Security.CredentialsExpired.code().serialize());
     }
 

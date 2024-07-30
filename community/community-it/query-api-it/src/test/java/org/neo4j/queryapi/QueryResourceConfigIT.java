@@ -145,7 +145,7 @@ class QueryResourceConfigIT {
 
         assertThat(response.statusCode()).isEqualTo(400);
         assertThat(response.body())
-                .isEqualTo("{\"errors\":[{\"error\":\"Neo.ClientError.Statement.AccessMode\","
+                .isEqualTo("{\"errors\":[{\"code\":\"Neo.ClientError.Statement.AccessMode\","
                         + "\"message\":\"Writing in read access mode not allowed. Attempted write to neo4j\"}]}");
     }
 
@@ -159,7 +159,7 @@ class QueryResourceConfigIT {
 
         assertThat(response.statusCode()).isEqualTo(400);
         assertThat(response.body())
-                .isEqualTo("{\"errors\":[{\"error\":\"Neo.ClientError.Request.Invalid\","
+                .isEqualTo("{\"errors\":[{\"code\":\"Neo.ClientError.Request.Invalid\","
                         + "\"message\":\"Bad Request\"}]}");
     }
 

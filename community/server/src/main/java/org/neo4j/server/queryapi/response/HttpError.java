@@ -19,4 +19,4 @@
  */
 package org.neo4j.server.queryapi.response;
 
-public record HttpError(String error, String message) {}
+public record HttpError(String code, String message) {}

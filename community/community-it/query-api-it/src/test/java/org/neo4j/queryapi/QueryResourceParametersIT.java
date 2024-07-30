@@ -215,7 +215,7 @@ class QueryResourceParametersIT {
         assertThat(response.statusCode()).isEqualTo(400);
 
         assertThat(response.body())
-                .isEqualTo("{\"errors\":[{\"error\":\"Neo.ClientError.Request.Invalid\","
+                .isEqualTo("{\"errors\":[{\"code\":\"Neo.ClientError.Request.Invalid\","
                         + "\"message\":\"Bad Request\"}]}");
     }
 

@@ -86,7 +86,7 @@ class QueryResourceErrorIT {
         assertThat(response.statusCode()).isEqualTo(400);
         assertThat(response.headers().allValues(HttpHeaders.CONTENT_TYPE)).contains(MediaType.APPLICATION_JSON);
         assertThat(response.body())
-                .isEqualTo("{\"errors\":[{\"error\":\"Neo.ClientError.Request.Invalid\","
+                .isEqualTo("{\"errors\":[{\"code\":\"Neo.ClientError.Request.Invalid\","
                         + "\"message\":\"Bad Request\"}]}");
     }
 
@@ -100,7 +100,7 @@ class QueryResourceErrorIT {
         assertThat(response.statusCode()).isEqualTo(405);
         assertThat(response.headers().allValues(HttpHeaders.CONTENT_TYPE)).contains(MediaType.APPLICATION_JSON);
         assertThat(response.body())
-                .isEqualTo("{\"errors\":[{\"error\":\"Neo.ClientError.Request.Invalid\","
+                .isEqualTo("{\"errors\":[{\"code\":\"Neo.ClientError.Request.Invalid\","
                         + "\"message\":\"Method Not Allowed\"}]}");
     }
 
@@ -118,7 +118,7 @@ class QueryResourceErrorIT {
         assertThat(response.statusCode()).isEqualTo(415);
         assertThat(response.headers().allValues(HttpHeaders.CONTENT_TYPE)).contains(MediaType.APPLICATION_JSON);
         assertThat(response.body())
-                .isEqualTo("{\"errors\":[{\"error\":\"Neo.ClientError.Request.Invalid\","
+                .isEqualTo("{\"errors\":[{\"code\":\"Neo.ClientError.Request.Invalid\","
                         + "\"message\":\"Unsupported Media Type\"}]}");
     }
 
@@ -136,7 +136,7 @@ class QueryResourceErrorIT {
         assertThat(response.statusCode()).isEqualTo(415);
         assertThat(response.headers().allValues(HttpHeaders.CONTENT_TYPE)).contains(MediaType.APPLICATION_JSON);
         assertThat(response.body())
-                .isEqualTo("{\"errors\":[{\"error\":\"Neo.ClientError.Request.Invalid\","
+                .isEqualTo("{\"errors\":[{\"code\":\"Neo.ClientError.Request.Invalid\","
                         + "\"message\":\"Unsupported Media Type\"}]}");
     }
 
@@ -153,7 +153,7 @@ class QueryResourceErrorIT {
         assertThat(response.statusCode()).isEqualTo(415);
         assertThat(response.headers().allValues(HttpHeaders.CONTENT_TYPE)).contains(MediaType.APPLICATION_JSON);
         assertThat(response.body())
-                .isEqualTo("{\"errors\":[{\"error\":\"Neo.ClientError.Request.Invalid\","
+                .isEqualTo("{\"errors\":[{\"code\":\"Neo.ClientError.Request.Invalid\","
                         + "\"message\":\"Unsupported Media Type\"}]}");
     }
 
@@ -167,7 +167,7 @@ class QueryResourceErrorIT {
         assertThat(response.statusCode()).isEqualTo(400);
         assertThat(response.headers().allValues(HttpHeaders.CONTENT_TYPE)).contains(MediaType.APPLICATION_JSON);
         assertThat(response.body())
-                .isEqualTo("{\"errors\":[{\"error\":\"Neo.ClientError.Request.Invalid\","
+                .isEqualTo("{\"errors\":[{\"code\":\"Neo.ClientError.Request.Invalid\","
                         + "\"message\":\"Bad Request\"}]}");
     }
 
@@ -186,7 +186,7 @@ class QueryResourceErrorIT {
         assertThat(response.headers().allValues(HttpHeaders.CONTENT_TYPE)).contains(MediaType.APPLICATION_JSON);
         assertThat(response.body())
                 .isEqualTo(
-                        "{\"errors\":[{\"error\":\"Neo.ClientError.Request.Invalid\",\"message\":\"Not Acceptable\"}]}");
+                        "{\"errors\":[{\"code\":\"Neo.ClientError.Request.Invalid\",\"message\":\"Not Acceptable\"}]}");
     }
 
     @Test
@@ -199,7 +199,7 @@ class QueryResourceErrorIT {
         assertThat(response.statusCode()).isEqualTo(404);
         assertThat(response.headers().allValues(HttpHeaders.CONTENT_TYPE)).contains(MediaType.APPLICATION_JSON);
         assertThat(response.body())
-                .isEqualTo("{\"errors\":[{\"error\":\"Neo.ClientError.Database.DatabaseNotFound\","
+                .isEqualTo("{\"errors\":[{\"code\":\"Neo.ClientError.Database.DatabaseNotFound\","
                         + "\"message\":\"Graph not found: thisdbisalie\"}]}");
     }
 
@@ -210,7 +210,7 @@ class QueryResourceErrorIT {
         assertThat(response.statusCode()).isEqualTo(400);
         assertThat(response.headers().allValues(HttpHeaders.CONTENT_TYPE)).contains(MediaType.APPLICATION_JSON);
         assertThat(response.body())
-                .startsWith("{\"errors\":[{\"error\":\"Neo.ClientError.Statement.SyntaxError\","
+                .startsWith("{\"errors\":[{\"code\":\"Neo.ClientError.Statement.SyntaxError\","
                         + "\"message\":\"Query cannot conclude with MATCH");
     }
 
@@ -228,7 +228,7 @@ class QueryResourceErrorIT {
         assertThat(response.statusCode()).isEqualTo(400);
         assertThat(response.headers().allValues(HttpHeaders.CONTENT_TYPE)).contains(TYPED_JSON_MIME_TYPE_VALUE);
         assertThat(response.body())
-                .startsWith("{\"errors\":[{\"error\":\"Neo.ClientError.Statement.SyntaxError\","
+                .startsWith("{\"errors\":[{\"code\":\"Neo.ClientError.Statement.SyntaxError\","
                         + "\"message\":\"Query cannot conclude with MATCH");
     }
 
@@ -262,7 +262,7 @@ class QueryResourceErrorIT {
         assertThat(response.body())
                 .contains(
                         """
-                        {"errors":[{"error":"Neo.ClientError.Statement.ArgumentError","message":"Impersonation is not supported with auth disabled."}]}""");
+                        {"errors":[{"code":"Neo.ClientError.Statement.ArgumentError","message":"Impersonation is not supported with auth disabled."}]}""");
     }
 
     @Test
@@ -273,7 +273,7 @@ class QueryResourceErrorIT {
         assertThat(response.statusCode()).isEqualTo(400);
         assertThat(response.headers().allValues(HttpHeaders.CONTENT_TYPE)).contains(MediaType.APPLICATION_JSON);
         assertThat(response.body())
-                .isEqualTo("{\"errors\":[{\"error\":\"Neo.ClientError.Statement.UnsupportedAdministrationCommand\","
+                .isEqualTo("{\"errors\":[{\"code\":\"Neo.ClientError.Statement.UnsupportedAdministrationCommand\","
                         + "\"message\":\"Unsupported administration command: CREATE DATABASE foo\"}]}");
     }
 
