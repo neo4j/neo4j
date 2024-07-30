@@ -36,6 +36,7 @@ public class AuthorizationViolationException extends RuntimeException implements
     private final ErrorGqlStatusObject gqlStatusObject;
     private final String oldMessage;
 
+    @Deprecated
     public AuthorizationViolationException(String message, Status statusCode) {
         super(message);
         this.statusCode = statusCode;
@@ -52,6 +53,7 @@ public class AuthorizationViolationException extends RuntimeException implements
         this.oldMessage = message;
     }
 
+    @Deprecated
     public AuthorizationViolationException(String message) {
         super(message);
         statusCode = Status.Security.Forbidden;
