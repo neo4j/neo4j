@@ -163,19 +163,14 @@ public final class ChunkCommitter implements TransactionCommitter {
                             leaseClient.leaseId(),
                             kernelVersion,
                             ktx.securityContext().subject().userSubject());
-                    if (transactionPayload == null) {
-                        transactionPayload = new ChunkedTransaction(
-                                cursorContext,
-                                ktx.getTransactionSequenceNumber(),
-                                transactionalCursors,
-                                commitmentFactory.newCommitment(),
-                                transactionIdGenerator);
-                    }
-                    CommandChunk chunk = new CommandChunk(extractedCommands, chunkMetadata);
-                    transactionPayload.init(chunk);
-                    long transactionId = commitProcess.commit(transactionPayload, transactionWriteEvent, mode);
+                    var transaction = getTransaction(cursorContext);
 
-                    // TODO:
+                    CommandChunk chunk = new CommandChunk(extractedCommands, chunkMetadata);
+                    transaction.init(chunk);
+                    long transactionId = commitProcess.commit(transaction, transactionWriteEvent, mode);
+
+                    // transaction chunk commit completed
+                    transactionPayload = transaction;
                     transactionPayload.updateClusteredTransactionId(transactionId);
 
                     validationLockDumper.dumpLocks(
@@ -210,6 +205,17 @@ public final class ChunkCommitter implements TransactionCommitter {
                 throw new TransactionRollbackException("Transaction rollback failed", e);
             }
         }
+    }
+
+    private ChunkedTransaction getTransaction(CursorContext cursorContext) {
+        return transactionPayload != null
+                ? transactionPayload
+                : new ChunkedTransaction(
+                        cursorContext,
+                        ktx.getTransactionSequenceNumber(),
+                        transactionalCursors,
+                        commitmentFactory.newCommitment(),
+                        transactionIdGenerator);
     }
 
     private void writeRollbackEntry(TransactionRollbackEvent transactionRollbackEvent)
