@@ -36,9 +36,19 @@ public final class NotificationsConfigMetadataReader {
 
     private static final String MINIMUM_SEVERITY_KEY = "notifications_minimum_severity";
     private static final String DISABLED_CATEGORIES_KEY = "notifications_disabled_categories";
+    private static final String DISABLED_CLASSIFICATION_KEY = "notifications_disabled_classifications";
     private static final String DISABLE_ALL_NOTIFICATIONS = "OFF";
 
     public static NotificationsConfig readFromMapValue(MapValue meta) throws IllegalStructArgumentException {
+        return readFromMapValue(meta, DISABLED_CLASSIFICATION_KEY);
+    }
+
+    public static NotificationsConfig readLegacyFromMapValue(MapValue meta) throws IllegalStructArgumentException {
+        return readFromMapValue(meta, DISABLED_CATEGORIES_KEY);
+    }
+
+    private static NotificationsConfig readFromMapValue(MapValue meta, String disabledClassificationKey)
+            throws IllegalStructArgumentException {
         String minimumSeverity = null;
         ArrayList<String> categoriesToIgnore = null;
 
@@ -50,27 +60,37 @@ public final class NotificationsConfigMetadataReader {
             }
         }
 
-        if (meta.containsKey(DISABLED_CATEGORIES_KEY)) {
-            if (meta.get(DISABLED_CATEGORIES_KEY) instanceof ListValue listValue) {
+        if (meta.containsKey(disabledClassificationKey)) {
+            if (meta.get(disabledClassificationKey) instanceof ListValue listValue) {
                 categoriesToIgnore = new ArrayList<>();
                 for (var x : listValue) {
                     if (x instanceof StringValue stringValue) {
                         categoriesToIgnore.add(stringValue.stringValue());
                     } else {
                         throw new IllegalStructArgumentException(
-                                DISABLED_CATEGORIES_KEY, "Required to be a List::String");
+                                disabledClassificationKey, "Required to be a List::String");
                     }
                 }
             } else {
-                throw new IllegalStructArgumentException(DISABLED_CATEGORIES_KEY, "Required to be a List::String");
+                throw new IllegalStructArgumentException(disabledClassificationKey, "Required to be a List::String");
             }
         }
 
         return getNotificationsConfig(minimumSeverity, categoriesToIgnore);
     }
 
-    @SuppressWarnings("rawtypes")
     public static NotificationsConfig readFromMap(Map<String, Object> meta) throws IllegalStructArgumentException {
+        return readFromMap(meta, DISABLED_CLASSIFICATION_KEY);
+    }
+
+    public static NotificationsConfig readLegacyFromMap(Map<String, Object> meta)
+            throws IllegalStructArgumentException {
+        return readFromMap(meta, DISABLED_CATEGORIES_KEY);
+    }
+
+    @SuppressWarnings("rawtypes")
+    private static NotificationsConfig readFromMap(Map<String, Object> meta, String disabledClassificationKey)
+            throws IllegalStructArgumentException {
         String minimumSeverity = null;
         ArrayList<String> categoriesToIgnore = null;
 
@@ -82,19 +102,19 @@ public final class NotificationsConfigMetadataReader {
             }
         }
 
-        if (meta.containsKey(DISABLED_CATEGORIES_KEY)) {
-            if (meta.get(DISABLED_CATEGORIES_KEY) instanceof List listValue) {
+        if (meta.containsKey(disabledClassificationKey)) {
+            if (meta.get(disabledClassificationKey) instanceof List listValue) {
                 categoriesToIgnore = new ArrayList<>();
                 for (var x : listValue) {
                     if (x instanceof String stringValue) {
                         categoriesToIgnore.add(stringValue);
                     } else {
                         throw new IllegalStructArgumentException(
-                                DISABLED_CATEGORIES_KEY, "Required to be a List::String");
+                                disabledClassificationKey, "Required to be a List::String");
                     }
                 }
             } else {
-                throw new IllegalStructArgumentException(DISABLED_CATEGORIES_KEY, "Required to be a List::String");
+                throw new IllegalStructArgumentException(disabledClassificationKey, "Required to be a List::String");
             }
         }
 

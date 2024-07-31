@@ -27,6 +27,10 @@ import org.neo4j.bolt.protocol.v54.BoltProtocolV54;
 import org.neo4j.bolt.testing.messages.factory.TelemetryMessageBuilder;
 
 public class BoltV54Wire extends BoltV53Wire {
+    public BoltV54Wire(ProtocolVersion version) {
+        super(version);
+    }
+
     public BoltV54Wire() {
         super(BoltProtocolV54.VERSION);
     }

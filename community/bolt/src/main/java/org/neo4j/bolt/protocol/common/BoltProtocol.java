@@ -52,6 +52,7 @@ import org.neo4j.bolt.protocol.v51.BoltProtocolV51;
 import org.neo4j.bolt.protocol.v52.BoltProtocolV52;
 import org.neo4j.bolt.protocol.v53.BoltProtocolV53;
 import org.neo4j.bolt.protocol.v54.BoltProtocolV54;
+import org.neo4j.bolt.protocol.v56.BoltProtocolV56;
 import org.neo4j.packstream.signal.FrameSignal;
 import org.neo4j.packstream.struct.StructRegistry;
 import org.neo4j.values.storable.Value;
@@ -69,7 +70,8 @@ public interface BoltProtocol {
                 BoltProtocolV51.getInstance(),
                 BoltProtocolV52.getInstance(),
                 BoltProtocolV53.getInstance(),
-                BoltProtocolV54.getInstance());
+                BoltProtocolV54.getInstance(),
+                BoltProtocolV56.getInstance());
     }
 
     /**

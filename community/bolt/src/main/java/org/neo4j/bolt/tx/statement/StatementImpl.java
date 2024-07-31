@@ -38,6 +38,7 @@ import org.neo4j.bolt.tx.TransactionType;
 import org.neo4j.bolt.tx.error.statement.StatementException;
 import org.neo4j.bolt.tx.error.statement.StatementStreamingException;
 import org.neo4j.graphdb.ExecutionPlanDescription;
+import org.neo4j.graphdb.GqlStatusObject;
 import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.QueryExecutionType;
 import org.neo4j.graphdb.QueryExecutionType.QueryType;
@@ -245,7 +246,8 @@ public class StatementImpl implements Statement {
                 execution.executionType(),
                 this.database,
                 this.statistics,
-                execution.getNotifications());
+                execution.getNotifications(),
+                execution.getGqlStatusObjects());
 
         var executionType = execution.executionType();
 
@@ -381,8 +383,10 @@ public class StatementImpl implements Statement {
                 QueryExecutionType executionType,
                 DatabaseReference database,
                 QueryStatistics statistics,
-                Iterable<Notification> notifications) {
-            this.delegate.onStreamingMetadata(timeSpentStreaming, executionType, database, statistics, notifications);
+                Iterable<Notification> notifications,
+                Iterable<GqlStatusObject> statuses) {
+            this.delegate.onStreamingMetadata(
+                    timeSpentStreaming, executionType, database, statistics, notifications, statuses);
         }
 
         @Override

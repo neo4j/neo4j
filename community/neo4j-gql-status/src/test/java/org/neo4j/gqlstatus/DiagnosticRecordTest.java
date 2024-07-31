@@ -47,7 +47,7 @@ class DiagnosticRecordTest {
         Map<String, Object> diagnosticRecordMap = new DiagnosticRecord("", "", 0, 0, 0, Map.of()).asMap();
         assertEquals("/", diagnosticRecordMap.get("CURRENT_SCHEMA"));
         assertEquals("", diagnosticRecordMap.get("OPERATION"));
-        assertEquals(0, diagnosticRecordMap.get("OPERATION_CODE"));
+        assertEquals("0", diagnosticRecordMap.get("OPERATION_CODE"));
     }
 
     @Test

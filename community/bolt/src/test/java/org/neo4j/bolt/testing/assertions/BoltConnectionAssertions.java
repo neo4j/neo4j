@@ -32,6 +32,8 @@ import org.assertj.core.api.Assertions;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.assertj.core.api.InstanceOfAssertFactory;
 import org.neo4j.bolt.testing.client.TransportConnection;
+import org.neo4j.gqlstatus.Condition;
+import org.neo4j.gqlstatus.GqlStatusInfoCodes;
 import org.neo4j.graphdb.NotificationCategory;
 import org.neo4j.graphdb.SeverityLevel;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -197,6 +199,77 @@ public final class BoltConnectionAssertions
                         .containsEntry("offset", (long) offset)
                         .containsEntry("line", (long) line)
                         .containsEntry("column", (long) column))));
+    }
+
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    public BoltConnectionAssertions receivesSuccessWithStatuses(Consumer<List<Map<String, Object>>> assertions) {
+        return this.receivesSuccess(meta -> {
+            Assertions.assertThat(meta).as("contains matching statuses").hasEntrySatisfying("statuses", statuses -> {
+                Assertions.assertThat(statuses)
+                        .asInstanceOf(InstanceOfAssertFactories.list(Map.class))
+                        .satisfies((Consumer) assertions);
+            });
+        });
+    }
+
+    public BoltConnectionAssertions receivesSuccessWithStatus(Consumer<Map<String, Object>> assertions) {
+        return receivesSuccessWithStatuses(
+                status -> Assertions.assertThat(status).anySatisfy(assertions));
+    }
+
+    public BoltConnectionAssertions receivesSuccessWithStatus(GqlStatusInfoCodes gqlStatus) {
+        return receivesSuccessWithStatus(status -> assertSoftly(soft -> soft.assertThat(status)
+                .as("contains status")
+                .containsExactly(
+                        Map.entry("gql_status", gqlStatus.getStatusString()),
+                        Map.entry(
+                                "status_description",
+                                Condition.createStandardDescription(
+                                        gqlStatus.getCondition(), gqlStatus.getSubCondition())))));
+    }
+
+    public BoltConnectionAssertions receivesSuccessWithStatus(
+            GqlStatusInfoCodes gqlStatus,
+            String statusMessage,
+            String description,
+            String title,
+            String neo4jCode,
+            Consumer<Map<String, Object>> diagnosticRecordAssertions) {
+        return receivesSuccessWithStatus(status -> assertSoftly(soft -> soft.assertThat(status)
+                .as("contains status")
+                .containsOnlyKeys(
+                        "gql_status", "status_description", "description", "title", "neo4j_code", "diagnostic_record")
+                .containsEntry("gql_status", gqlStatus.getStatusString())
+                .containsEntry(
+                        "status_description",
+                        Condition.createStandardDescription(gqlStatus.getCondition(), gqlStatus.getSubCondition())
+                                .concat(". ")
+                                .concat(statusMessage))
+                .containsEntry("title", title)
+                .containsEntry("description", description)
+                .containsEntry("neo4j_code", neo4jCode)
+                .hasEntrySatisfying("diagnostic_record", diagnosticRecord -> {
+                    Assertions.assertThat(diagnosticRecord)
+                            .asInstanceOf(InstanceOfAssertFactories.map(String.class, Object.class))
+                            .satisfies(diagnosticRecordAssertions);
+                })));
+    }
+
+    public static Consumer<Map<String, Object>> assertDiagnosticRecord(
+            SeverityLevel severityLevel,
+            NotificationCategory classification,
+            Map<String, Object> statusParameters,
+            Map<String, Long> position) {
+        return diagnosticRecord -> Assertions.assertThat(diagnosticRecord)
+                .containsOnlyKeys("_severity", "_classification", "_status_parameters", "_position")
+                .containsEntry("_severity", severityLevel.name())
+                .containsEntry("_classification", classification.name())
+                .containsEntry("_status_parameters", statusParameters)
+                .containsEntry("_position", position);
+    }
+
+    public static Map<String, Long> diagnosticRecordPosition(long column, long line, long offset) {
+        return Map.of("column", column, "line", line, "offset", offset);
     }
 
     public BoltConnectionAssertions receivesIgnored() {

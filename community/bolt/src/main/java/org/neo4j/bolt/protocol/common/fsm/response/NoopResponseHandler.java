@@ -23,6 +23,7 @@ import java.util.List;
 import org.neo4j.bolt.protocol.common.message.Error;
 import org.neo4j.bolt.tx.TransactionType;
 import org.neo4j.graphdb.ExecutionPlanDescription;
+import org.neo4j.graphdb.GqlStatusObject;
 import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.QueryExecutionType;
 import org.neo4j.graphdb.QueryStatistics;
@@ -60,7 +61,8 @@ public final class NoopResponseHandler implements ResponseHandler {
             QueryExecutionType executionType,
             DatabaseReference database,
             QueryStatistics statistics,
-            Iterable<Notification> notifications) {}
+            Iterable<Notification> notifications,
+            Iterable<GqlStatusObject> statuses) {}
 
     @Override
     public void onStreamingExecutionPlan(ExecutionPlanDescription plan) {}

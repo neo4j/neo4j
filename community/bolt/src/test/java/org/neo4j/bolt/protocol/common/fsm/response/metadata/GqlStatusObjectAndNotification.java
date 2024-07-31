@@ -19,31 +19,51 @@
  */
 package org.neo4j.bolt.protocol.common.fsm.response.metadata;
 
-import org.neo4j.bolt.testing.assertions.MapValueAssertions;
-import org.neo4j.values.virtual.MapValue;
+import java.util.Map;
+import org.neo4j.graphdb.GqlStatusObject;
+import org.neo4j.graphdb.InputPosition;
+import org.neo4j.graphdb.Notification;
+import org.neo4j.graphdb.SeverityLevel;
 
-public class LegacyMetadataHandlerTest extends AbstractMetadataHandlerTest {
+public interface GqlStatusObjectAndNotification extends Notification, GqlStatusObject {
 
     @Override
-    protected MetadataHandler createMetadataHandler() {
-        return LegacyMetadataHandler.getInstance();
+    default String getCode() {
+        return null;
     }
 
     @Override
-    protected void verifyApplyUpdateQueryStatisticsResult(MapValue value) {
-        super.verifyApplyUpdateQueryStatisticsResult(value);
-
-        MapValueAssertions.assertThat(value)
-                // system updates and regular updates don't mix
-                .hasSize(11);
+    default String getTitle() {
+        return null;
     }
 
     @Override
-    protected void verifyApplySystemQueryStatisticsResult(MapValue value) {
-        super.verifyApplySystemQueryStatisticsResult(value);
+    default String getDescription() {
+        return null;
+    }
 
-        MapValueAssertions.assertThat(value)
-                // system updates and regular updates don't mix
-                .hasSize(1);
+    @Override
+    default SeverityLevel getSeverity() {
+        return null;
+    }
+
+    @Override
+    default InputPosition getPosition() {
+        return null;
+    }
+
+    @Override
+    default String gqlStatus() {
+        return null;
+    }
+
+    @Override
+    default String statusDescription() {
+        return null;
+    }
+
+    @Override
+    default Map<String, Object> diagnosticRecord() {
+        return null;
     }
 }

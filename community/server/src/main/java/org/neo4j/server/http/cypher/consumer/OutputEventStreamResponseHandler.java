@@ -24,10 +24,11 @@ import java.util.List;
 import java.util.Map;
 import org.neo4j.bolt.protocol.common.fsm.response.AbstractMetadataAwareResponseHandler;
 import org.neo4j.bolt.protocol.common.fsm.response.RecordHandler;
-import org.neo4j.bolt.protocol.common.fsm.response.metadata.DefaultMetadataHandler;
 import org.neo4j.bolt.protocol.common.message.Error;
+import org.neo4j.bolt.protocol.v44.fsm.response.metadata.MetadataHandlerV44;
 import org.neo4j.bolt.tx.TransactionType;
 import org.neo4j.graphdb.ExecutionPlanDescription;
+import org.neo4j.graphdb.GqlStatusObject;
 import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.QueryExecutionType;
 import org.neo4j.graphdb.QueryStatistics;
@@ -57,7 +58,7 @@ public class OutputEventStreamResponseHandler extends AbstractMetadataAwareRespo
             Statement statement,
             TransactionIndependentValueMapper valueMapper,
             TransactionHandle transactionHandle) {
-        super(DefaultMetadataHandler.getInstance());
+        super(MetadataHandlerV44.getInstance());
         this.outputEventStream = outputEventStream;
         this.statement = statement;
         this.valueMapper = valueMapper;
@@ -88,7 +89,8 @@ public class OutputEventStreamResponseHandler extends AbstractMetadataAwareRespo
             QueryExecutionType executionType,
             DatabaseReference database,
             QueryStatistics statistics,
-            Iterable<Notification> notifications) {
+            Iterable<Notification> notifications,
+            Iterable<GqlStatusObject> statuses) {
         this.executionType = executionType;
         this.queryStatistics = statistics;
         this.notifications = notifications;

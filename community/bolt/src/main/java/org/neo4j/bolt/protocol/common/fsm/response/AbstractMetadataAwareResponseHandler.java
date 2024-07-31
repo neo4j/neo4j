@@ -23,6 +23,7 @@ import java.util.List;
 import org.neo4j.bolt.protocol.common.fsm.response.metadata.MetadataHandler;
 import org.neo4j.bolt.tx.TransactionType;
 import org.neo4j.graphdb.ExecutionPlanDescription;
+import org.neo4j.graphdb.GqlStatusObject;
 import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.QueryExecutionType;
 import org.neo4j.graphdb.QueryStatistics;
@@ -58,13 +59,14 @@ public abstract class AbstractMetadataAwareResponseHandler implements ResponseHa
             QueryExecutionType executionType,
             DatabaseReference database,
             QueryStatistics statistics,
-            Iterable<Notification> notifications) {
+            Iterable<Notification> notifications,
+            Iterable<GqlStatusObject> statuses) {
         this.metadataHandler.onTimeSpentStreaming(this, timeSpentStreaming);
 
         this.metadataHandler.onExecutionType(this, executionType);
         this.metadataHandler.onDatabase(this, database);
         this.metadataHandler.onQueryStatistics(this, statistics);
-        this.metadataHandler.onNotifications(this, notifications);
+        this.metadataHandler.onNotifications(this, notifications, statuses);
     }
 
     @Override

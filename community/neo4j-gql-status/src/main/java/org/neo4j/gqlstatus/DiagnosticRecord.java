@@ -25,7 +25,7 @@ import java.util.Map;
 public class DiagnosticRecord {
     private static final String CURRENT_SCHEMA_DEFAULT = "/";
     private static final String OPERATION_DEFAULT = "";
-    private static final int OPERATION_CODE_DEFAULT = 0;
+    private static final String OPERATION_CODE_DEFAULT = "0";
 
     private final Map<String, Object> innerDiagnosticRecord;
 

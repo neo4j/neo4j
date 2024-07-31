@@ -24,11 +24,11 @@ import java.util.Set;
 import org.neo4j.bolt.negotiation.ProtocolVersion;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.protocol.common.connector.connection.Feature;
-import org.neo4j.bolt.protocol.common.fsm.response.metadata.DefaultMetadataHandler;
 import org.neo4j.bolt.protocol.common.fsm.response.metadata.MetadataHandler;
 import org.neo4j.bolt.protocol.common.message.decoder.connection.DefaultRouteMessageDecoder;
 import org.neo4j.bolt.protocol.common.message.request.RequestMessage;
 import org.neo4j.bolt.protocol.v43.BoltProtocolV43;
+import org.neo4j.bolt.protocol.v44.fsm.response.metadata.MetadataHandlerV44;
 import org.neo4j.bolt.protocol.v44.message.decoder.transaction.BeginMessageDecoderV44;
 import org.neo4j.bolt.protocol.v44.message.decoder.transaction.RunMessageDecoderV44;
 import org.neo4j.packstream.struct.StructRegistry;
@@ -66,6 +66,6 @@ public final class BoltProtocolV44 extends BoltProtocolV43 {
 
     @Override
     public MetadataHandler metadataHandler() {
-        return DefaultMetadataHandler.getInstance();
+        return MetadataHandlerV44.getInstance();
     }
 }

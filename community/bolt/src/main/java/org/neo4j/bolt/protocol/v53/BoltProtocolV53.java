@@ -24,8 +24,13 @@ import org.neo4j.bolt.negotiation.ProtocolVersion;
 import org.neo4j.bolt.protocol.AbstractBoltProtocol;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.protocol.common.connector.connection.Feature;
+import org.neo4j.bolt.protocol.common.fsm.response.metadata.MetadataHandler;
 import org.neo4j.bolt.protocol.common.message.decoder.generic.TelemetryMessageDecoder;
 import org.neo4j.bolt.protocol.common.message.request.RequestMessage;
+import org.neo4j.bolt.protocol.v44.fsm.response.metadata.MetadataHandlerV44;
+import org.neo4j.bolt.protocol.v52.message.decoder.transaction.BeginMessageDecoderV52;
+import org.neo4j.bolt.protocol.v52.message.decoder.transaction.RunMessageDecoderV52;
+import org.neo4j.bolt.protocol.v53.message.decoder.authentication.HelloMessageDecoderV53;
 import org.neo4j.packstream.struct.StructRegistry;
 
 public class BoltProtocolV53 extends AbstractBoltProtocol {
@@ -52,7 +57,17 @@ public class BoltProtocolV53 extends AbstractBoltProtocol {
     @Override
     protected StructRegistry.Builder<Connection, RequestMessage> createRequestMessageRegistry() {
         return super.createRequestMessageRegistry()
+                // Authentication
+                .register(HelloMessageDecoderV53.getInstance())
+                // Transaction
+                .register(BeginMessageDecoderV52.getInstance())
+                .register(RunMessageDecoderV52.getInstance())
                 // Generic
                 .unregister(TelemetryMessageDecoder.getInstance());
+    }
+
+    @Override
+    public MetadataHandler metadataHandler() {
+        return MetadataHandlerV44.getInstance();
     }
 }

@@ -47,7 +47,6 @@ public class DefaultHelloMessageDecoder implements MessageDecoder<HelloMessage> 
     protected static final String FIELD_ROUTING = "routing";
     protected static final String FILED_NOTIFICATIONS_MIN_SEVERITY = "notifications_minimum_severity";
     protected static final String FILED_NOTIFICATIONS_DISABLED_CATEGORIES = "notifications_disabled_categories";
-
     private static final DefaultHelloMessageDecoder INSTANCE = new DefaultHelloMessageDecoder();
 
     protected DefaultHelloMessageDecoder() {}

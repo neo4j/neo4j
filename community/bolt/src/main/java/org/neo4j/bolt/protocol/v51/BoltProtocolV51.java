@@ -22,8 +22,10 @@ package org.neo4j.bolt.protocol.v51;
 import org.neo4j.bolt.negotiation.ProtocolVersion;
 import org.neo4j.bolt.protocol.AbstractBoltProtocol;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
+import org.neo4j.bolt.protocol.common.fsm.response.metadata.MetadataHandler;
 import org.neo4j.bolt.protocol.common.message.decoder.generic.TelemetryMessageDecoder;
 import org.neo4j.bolt.protocol.common.message.request.RequestMessage;
+import org.neo4j.bolt.protocol.v44.fsm.response.metadata.MetadataHandlerV44;
 import org.neo4j.bolt.protocol.v44.message.decoder.transaction.RunMessageDecoderV44;
 import org.neo4j.bolt.protocol.v50.message.decoder.transaction.BeginMessageDecoderV50;
 import org.neo4j.bolt.protocol.v51.message.decoder.authentication.HelloMessageDecoderV51;
@@ -54,5 +56,10 @@ public final class BoltProtocolV51 extends AbstractBoltProtocol {
                 .register(RunMessageDecoderV44.getInstance())
                 // Generic
                 .unregister(TelemetryMessageDecoder.getInstance());
+    }
+
+    @Override
+    public MetadataHandler metadataHandler() {
+        return MetadataHandlerV44.getInstance();
     }
 }

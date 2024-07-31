@@ -137,11 +137,11 @@ class QueryResourceNotificationsIT {
         var notificationsJson = parsedJson.get(NOTIFICATIONS_KEY);
 
         assertThat(notificationsJson.get(0).get("code").asText())
-                .isEqualTo(Status.Statement.CartesianProduct.code().serialize());
+                .isEqualTo(Status.Statement.UnknownLabelWarning.code().serialize());
         assertThat(notificationsJson.get(1).get("code").asText())
                 .isEqualTo(Status.Statement.UnknownLabelWarning.code().serialize());
         assertThat(notificationsJson.get(2).get("code").asText())
-                .isEqualTo(Status.Statement.UnknownLabelWarning.code().serialize());
+                .isEqualTo(Status.Statement.CartesianProduct.code().serialize());
     }
 
     @Test

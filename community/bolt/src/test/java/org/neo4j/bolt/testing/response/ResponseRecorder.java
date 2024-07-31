@@ -28,12 +28,12 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import org.neo4j.bolt.protocol.common.fsm.response.AbstractMetadataAwareResponseHandler;
 import org.neo4j.bolt.protocol.common.fsm.response.RecordHandler;
-import org.neo4j.bolt.protocol.common.fsm.response.metadata.DefaultMetadataHandler;
 import org.neo4j.bolt.protocol.common.fsm.response.metadata.MetadataHandler;
 import org.neo4j.bolt.protocol.common.message.Error;
 import org.neo4j.bolt.protocol.common.message.response.FailureMessage;
 import org.neo4j.bolt.protocol.common.message.response.IgnoredMessage;
 import org.neo4j.bolt.protocol.common.message.response.SuccessMessage;
+import org.neo4j.bolt.protocol.v44.fsm.response.metadata.MetadataHandlerV44;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.virtual.MapValueBuilder;
 
@@ -50,7 +50,7 @@ public class ResponseRecorder extends AbstractMetadataAwareResponseHandler {
     }
 
     public ResponseRecorder() {
-        this(DefaultMetadataHandler.getInstance());
+        this(MetadataHandlerV44.getInstance());
     }
 
     public void reset() {

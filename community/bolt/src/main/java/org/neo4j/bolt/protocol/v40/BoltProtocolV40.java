@@ -28,7 +28,6 @@ import org.neo4j.bolt.protocol.AbstractBoltProtocol;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.protocol.common.connector.connection.Feature;
 import org.neo4j.bolt.protocol.common.fsm.States;
-import org.neo4j.bolt.protocol.common.fsm.response.metadata.LegacyMetadataHandler;
 import org.neo4j.bolt.protocol.common.fsm.response.metadata.MetadataHandler;
 import org.neo4j.bolt.protocol.common.fsm.transition.authentication.AuthenticationStateTransition;
 import org.neo4j.bolt.protocol.common.fsm.transition.negotiation.HelloStateTransition;
@@ -52,6 +51,7 @@ import org.neo4j.bolt.protocol.io.reader.TimeReader;
 import org.neo4j.bolt.protocol.io.reader.legacy.LegacyDateTimeReader;
 import org.neo4j.bolt.protocol.io.reader.legacy.LegacyDateTimeZoneIdReader;
 import org.neo4j.bolt.protocol.io.writer.LegacyStructWriter;
+import org.neo4j.bolt.protocol.v40.fsm.response.metadata.MetadataHandlerV40;
 import org.neo4j.bolt.protocol.v40.message.decoder.authentication.HelloMessageDecoderV40;
 import org.neo4j.bolt.protocol.v40.message.decoder.transaction.BeginMessageDecoderV40;
 import org.neo4j.bolt.protocol.v40.message.decoder.transaction.RunMessageDecoderV40;
@@ -144,6 +144,6 @@ public class BoltProtocolV40 extends AbstractBoltProtocol {
 
     @Override
     public MetadataHandler metadataHandler() {
-        return LegacyMetadataHandler.getInstance();
+        return MetadataHandlerV40.getInstance();
     }
 }

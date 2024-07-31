@@ -17,18 +17,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.protocol.common.fsm.response.metadata;
+package org.neo4j.bolt.protocol.v56;
 
-/**
- * Facilitates the generation of metadata entries for legacy versions (currently versions 4.3 and
- * older).
- */
-public final class LegacyMetadataHandler extends AbstractMetadataHandler {
-    private static final LegacyMetadataHandler INSTANCE = new LegacyMetadataHandler();
+import org.neo4j.bolt.negotiation.ProtocolVersion;
+import org.neo4j.bolt.protocol.AbstractBoltProtocol;
 
-    private LegacyMetadataHandler() {}
+public final class BoltProtocolV56 extends AbstractBoltProtocol {
+    public static final ProtocolVersion VERSION = new ProtocolVersion(5, 6);
 
-    public static LegacyMetadataHandler getInstance() {
+    private static final BoltProtocolV56 INSTANCE = new BoltProtocolV56();
+
+    private BoltProtocolV56() {}
+
+    public static BoltProtocolV56 getInstance() {
         return INSTANCE;
+    }
+
+    @Override
+    public ProtocolVersion version() {
+        return VERSION;
     }
 }

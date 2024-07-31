@@ -23,6 +23,7 @@ import java.util.List;
 import org.neo4j.bolt.protocol.common.message.Error;
 import org.neo4j.bolt.tx.TransactionType;
 import org.neo4j.graphdb.ExecutionPlanDescription;
+import org.neo4j.graphdb.GqlStatusObject;
 import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.QueryExecutionType;
 import org.neo4j.graphdb.QueryStatistics;
@@ -61,17 +62,19 @@ public interface ResponseHandler extends MetadataConsumer {
      *
      * @param timeSpentStreaming time spent streaming (in milliseconds; including time spent in
      *                           callbacks).
-     * @param executionType execution type of the completed statement.
-     * @param database database on which the statement was executed.
-     * @param statistics number of operations carried out within the statement grouped by operation type.
-     * @param notifications notifications generated during statement execution.
+     * @param executionType      execution type of the completed statement.
+     * @param database           database on which the statement was executed.
+     * @param statistics         number of operations carried out within the statement grouped by operation type.
+     * @param notifications      notifications generated during statement execution.
+     * @param statuses           gql statuses generated during statement execution.
      */
     void onStreamingMetadata(
             long timeSpentStreaming,
             QueryExecutionType executionType,
             DatabaseReference database,
             QueryStatistics statistics,
-            Iterable<Notification> notifications);
+            Iterable<Notification> notifications,
+            Iterable<GqlStatusObject> statuses);
 
     /**
      * Handles the execution plan generated as a result of an {@code EXPLAIN} statement.

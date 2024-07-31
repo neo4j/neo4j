@@ -74,7 +74,7 @@ public class DefaultBeginMessageDecoderTest extends AbstractBeginMessageDecoderT
         var list = ListValueBuilder.newListBuilder(1);
         list.add(Values.stringValue("HINT"));
         meta.add("notifications_minimum_severity", Values.stringValue("WARNING"));
-        meta.add("notifications_disabled_categories", list.build());
+        meta.add("notifications_disabled_classifications", list.build());
 
         Mockito.doReturn(meta.build()).when(reader).readMap();
 

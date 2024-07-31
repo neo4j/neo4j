@@ -21,18 +21,25 @@ package org.neo4j.bolt;
 
 import static org.assertj.core.api.InstanceOfAssertFactories.list;
 import static org.neo4j.bolt.testing.assertions.BoltConnectionAssertions.assertThat;
+import static org.neo4j.bolt.testing.assertions.BoltConnectionAssertions.diagnosticRecordPosition;
 import static org.neo4j.values.storable.Values.longValue;
 import static org.neo4j.values.storable.Values.stringValue;
 
 import java.io.IOException;
+import java.util.Map;
 import org.assertj.core.api.Assertions;
 import org.neo4j.bolt.test.annotation.BoltTestExtension;
 import org.neo4j.bolt.test.annotation.connection.initializer.Authenticated;
 import org.neo4j.bolt.test.annotation.test.ProtocolTest;
+import org.neo4j.bolt.test.annotation.wire.selector.ExcludeWire;
+import org.neo4j.bolt.test.annotation.wire.selector.IncludeWire;
+import org.neo4j.bolt.testing.annotation.Version;
 import org.neo4j.bolt.testing.assertions.BoltConnectionAssertions;
 import org.neo4j.bolt.testing.client.TransportConnection;
 import org.neo4j.bolt.testing.messages.BoltWire;
 import org.neo4j.bolt.transport.Neo4jWithSocketExtension;
+import org.neo4j.gqlstatus.GqlStatusInfoCodes;
+import org.neo4j.graphdb.NotificationCategory;
 import org.neo4j.graphdb.SeverityLevel;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.packstream.io.Type;
@@ -265,6 +272,7 @@ public class BasicOperationIT {
     }
 
     @ProtocolTest
+    @IncludeWire({@Version(major = 5, minor = 4, range = 4), @Version(major = 4)})
     void shouldSendNotifications(BoltWire wire, @Authenticated TransportConnection connection) throws IOException {
         // When
         connection
@@ -285,6 +293,33 @@ public class BasicOperationIT {
                         17,
                         1,
                         18);
+    }
+
+    @ProtocolTest
+    @ExcludeWire({@Version(major = 5, minor = 4, range = 4), @Version(major = 4)})
+    void shouldSendGqlStatus(BoltWire wire, @Authenticated TransportConnection connection) throws IOException {
+        // When
+        connection
+                .send(wire.run("EXPLAIN MATCH (a:THIS_IS_NOT_A_LABEL) RETURN count(*)"))
+                .send(wire.pull());
+
+        // Then
+        assertThat(connection)
+                .receivesSuccess()
+                .receivesSuccessWithStatus(
+                        GqlStatusInfoCodes.STATUS_01N50,
+                        "The label `THIS_IS_NOT_A_LABEL` does not exist. Verify that the spelling is correct.",
+                        "One of the labels in your query is not available in the database, "
+                                + "make sure you didn't misspell it or that the label is available when "
+                                + "you run this statement in your application (the missing label name is: "
+                                + "THIS_IS_NOT_A_LABEL)",
+                        "The provided label is not in the database.",
+                        "Neo.ClientNotification.Statement.UnknownLabelWarning",
+                        BoltConnectionAssertions.assertDiagnosticRecord(
+                                SeverityLevel.WARNING,
+                                NotificationCategory.UNRECOGNIZED,
+                                Map.of("label", "THIS_IS_NOT_A_LABEL"),
+                                diagnosticRecordPosition(18L, 1L, 17L)));
     }
 
     @ProtocolTest

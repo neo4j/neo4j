@@ -21,6 +21,7 @@ package org.neo4j.bolt.testing.messages.factory;
 
 import java.util.Collection;
 import org.neo4j.bolt.protocol.v52.BoltProtocolV52;
+import org.neo4j.bolt.protocol.v56.BoltProtocolV56;
 import org.neo4j.kernel.impl.query.NotificationConfiguration;
 
 @SuppressWarnings("unchecked")
@@ -49,7 +50,12 @@ public interface NotificationsMessageBuilder<T extends NotificationsMessageBuild
     }
 
     default T withUnknownDisabledCategories(Collection<String> categories) {
-        if (getProtocolVersion().compareTo(BoltProtocolV52.VERSION) >= 0) {
+        if (getProtocolVersion().compareTo(BoltProtocolV56.VERSION) >= 0) {
+            getMeta()
+                    .put(
+                            "notifications_disabled_classifications",
+                            categories.stream().toList());
+        } else if (getProtocolVersion().compareTo(BoltProtocolV52.VERSION) >= 0) {
             getMeta()
                     .put(
                             "notifications_disabled_categories",

@@ -24,6 +24,7 @@ import org.neo4j.bolt.negotiation.ProtocolVersion;
 import org.neo4j.bolt.protocol.AbstractBoltProtocol;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.protocol.common.fsm.States;
+import org.neo4j.bolt.protocol.common.fsm.response.metadata.MetadataHandler;
 import org.neo4j.bolt.protocol.common.fsm.transition.authentication.AuthenticationStateTransition;
 import org.neo4j.bolt.protocol.common.fsm.transition.negotiation.HelloStateTransition;
 import org.neo4j.bolt.protocol.common.message.decoder.authentication.DefaultLogoffMessageDecoder;
@@ -33,6 +34,7 @@ import org.neo4j.bolt.protocol.common.message.request.RequestMessage;
 import org.neo4j.bolt.protocol.io.pipeline.WriterPipeline;
 import org.neo4j.bolt.protocol.io.writer.DefaultStructWriter;
 import org.neo4j.bolt.protocol.v41.message.decoder.authentication.HelloMessageDecoderV41;
+import org.neo4j.bolt.protocol.v44.fsm.response.metadata.MetadataHandlerV44;
 import org.neo4j.bolt.protocol.v44.message.decoder.transaction.RunMessageDecoderV44;
 import org.neo4j.bolt.protocol.v50.message.decoder.transaction.BeginMessageDecoderV50;
 import org.neo4j.packstream.struct.StructRegistry;
@@ -77,5 +79,10 @@ public final class BoltProtocolV50 extends AbstractBoltProtocol {
                 .register(RunMessageDecoderV44.getInstance())
                 // Generic
                 .unregister(TelemetryMessageDecoder.getInstance());
+    }
+
+    @Override
+    public MetadataHandler metadataHandler() {
+        return MetadataHandlerV44.getInstance();
     }
 }
