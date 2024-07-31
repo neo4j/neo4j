@@ -115,11 +115,8 @@ import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.ListValueBuilder;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.MapValueBuilder;
-import org.neo4j.values.virtual.NodeIdReference;
 import org.neo4j.values.virtual.NodeValue;
-import org.neo4j.values.virtual.PathReference;
 import org.neo4j.values.virtual.PathValue;
-import org.neo4j.values.virtual.RelationshipReference;
 import org.neo4j.values.virtual.RelationshipValue;
 import org.neo4j.values.virtual.RelationshipVisitor;
 import org.neo4j.values.virtual.VirtualNodeValue;
@@ -1888,13 +1885,13 @@ public final class CypherFunctions {
         } else if (typeName.hasValueRepresentation()) {
             result = possibleValueRepresentations(typeName).contains(item.valueRepresentation());
         } else if (typeName instanceof NodeType) {
-            result = item instanceof NodeIdReference;
+            result = item instanceof VirtualNodeValue;
         } else if (typeName instanceof RelationshipType) {
-            result = item instanceof RelationshipReference;
+            result = item instanceof VirtualRelationshipValue;
         } else if (typeName instanceof MapType) {
             result = item instanceof MapValue;
         } else if (typeName instanceof PathType) {
-            result = item instanceof PathReference;
+            result = item instanceof VirtualPathValue;
         } else if (typeName instanceof PropertyValueType) {
             result = hasPropertyValueRepresentation(item.valueRepresentation())
                     || (item instanceof ListValue listValue
