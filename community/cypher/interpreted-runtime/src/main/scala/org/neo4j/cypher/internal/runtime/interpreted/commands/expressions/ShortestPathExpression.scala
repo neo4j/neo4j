@@ -54,7 +54,7 @@ case class ShortestPathExpression(
   }
 
   def apply(row: ReadableRow, state: QueryState, memoryTracker: MemoryTracker): AnyValue = {
-    if (anyStartpointsContainNull(row)) {
+    if (anyStartpointsContainNull(row, state)) {
       Values.NO_VALUE
     } else {
       val sourceNodeId = getEndPointId(row, state, shortestPathPattern.left)
@@ -114,9 +114,9 @@ case class ShortestPathExpression(
 
   private def getEndPointId(ctx: ReadableRow, state: QueryState, start: SingleNode): Long = {
     try {
-      ctx.getByName(start.name) match {
-        case node: VirtualNodeValue => node.id()
-        case _                      => throw new CypherTypeException(s"${start.name} is not a node")
+      start.value.map(_(ctx, state)) match {
+        case Some(node: VirtualNodeValue) => node.id()
+        case _                            => throw new CypherTypeException(s"${start.name} is not a node")
       }
     } catch {
       case _: NotFoundException =>
@@ -126,9 +126,9 @@ case class ShortestPathExpression(
     }
   }
 
-  private def anyStartpointsContainNull(ctx: ReadableRow): Boolean =
-    (ctx.getByName(shortestPathPattern.left.name) eq Values.NO_VALUE) ||
-      (ctx.getByName(shortestPathPattern.right.name) eq Values.NO_VALUE)
+  private def anyStartpointsContainNull(ctx: ReadableRow, state: QueryState): Boolean =
+    shortestPathPattern.left.value.map(_(ctx, state)).contains(Values.NO_VALUE) ||
+      shortestPathPattern.right.value.map(_(ctx, state)).contains(Values.NO_VALUE)
 
   override def children: Seq[AstNode[_]] = Seq(shortestPathPattern)
 

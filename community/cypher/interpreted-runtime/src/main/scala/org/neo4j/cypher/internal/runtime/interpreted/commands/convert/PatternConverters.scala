@@ -90,7 +90,8 @@ object PatternConverters {
     ): SingleNode = {
       val labelTokens: Seq[KeyToken] = labels.map(x => commands.values.UnresolvedLabel(x.name))
       val properties: Map[String, commands.expressions.Expression] = node.legacyProperties(id, converter)
-      commands.SingleNode(node.legacyName(anonymousVariableNameGenerator), labelTokens, properties = properties)
+      val value = node.variable.map(converter.toCommandExpression(id, _))
+      commands.SingleNode(node.legacyName(anonymousVariableNameGenerator), value, labelTokens, properties = properties)
     }
 
     def legacyName(anonymousVariableNameGenerator: AnonymousVariableNameGenerator): String =

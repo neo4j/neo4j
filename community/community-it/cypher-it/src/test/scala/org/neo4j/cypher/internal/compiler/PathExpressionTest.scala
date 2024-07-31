@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.QueryStateTestSupport
 import org.neo4j.cypher.internal.runtime.interpreted.commands.ShortestPath
 import org.neo4j.cypher.internal.runtime.interpreted.commands.SingleNode
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ShortestPathExpression
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Variable
 import org.neo4j.values.virtual.VirtualPathValue
 
 class PathExpressionTest extends GraphDatabaseFunSuite with QueryStateTestSupport {
@@ -41,8 +42,8 @@ class PathExpressionTest extends GraphDatabaseFunSuite with QueryStateTestSuppor
 
     val pattern = ShortestPath(
       pathName = "p",
-      left = SingleNode("a"),
-      right = SingleNode("c"),
+      left = SingleNode("a", Some(Variable("a"))),
+      right = SingleNode("c", Some(Variable("c"))),
       relTypes = Seq(),
       dir = SemanticDirection.OUTGOING,
       allowZeroLength = false,

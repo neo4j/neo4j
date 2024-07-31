@@ -24,16 +24,12 @@ import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.runtime.interpreted.GraphElementPropertyFunctions
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
-import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.True
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.KeyToken
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
-import org.neo4j.cypher.internal.util.symbols.CTNode
-import org.neo4j.cypher.internal.util.symbols.CypherType
 
 import scala.collection.Map
 
 trait Pattern extends AstNode[Pattern] {
-  def possibleStartPoints: Seq[(String, CypherType)]
   def relTypes: Seq[String]
 
   protected def leftArrow(dir: SemanticDirection): String = if (dir == INCOMING) "<-" else "-"
@@ -42,12 +38,6 @@ trait Pattern extends AstNode[Pattern] {
   def rewrite(f: Expression => Expression): Pattern
 
   def rels: Seq[String]
-
-  def variables: Seq[String] = possibleStartPoints.map(_._1)
-}
-
-object Pattern {
-  def variables(patterns: Seq[Pattern]): Set[String] = patterns.flatMap(_.variables).toSet
 }
 
 object RelationshipPattern {
@@ -64,18 +54,19 @@ trait RelationshipPattern {
   def changeEnds(left: SingleNode = this.left, right: SingleNode = this.right): Pattern
 }
 
-case class SingleNode(name: String, labels: Seq[KeyToken] = Seq.empty, properties: Map[String, Expression] = Map.empty)
-    extends Pattern with GraphElementPropertyFunctions {
-  override def possibleStartPoints: Seq[(String, CypherType)] = Seq(name -> CTNode)
-
-  def predicate = True()
+case class SingleNode(
+  name: String,
+  value: Option[Expression],
+  labels: Seq[KeyToken] = Seq.empty,
+  properties: Map[String, Expression] = Map.empty
+) extends Pattern with GraphElementPropertyFunctions {
 
   override def rels: Seq[String] = Seq.empty
 
   override def relTypes: Seq[String] = Seq.empty
 
   override def rewrite(f: Expression => Expression) =
-    SingleNode(name, labels.map(_.typedRewrite[KeyToken](f)), properties.rewrite(f))
+    SingleNode(name, value.map(_.rewrite(f)), labels.map(_.typedRewrite[KeyToken](f)), properties.rewrite(f))
 
   override def children: Seq[AstNode[_]] = labels ++ properties.values
 
@@ -123,9 +114,6 @@ case class ShortestPath(
     if (maxDepth.nonEmpty) info += maxDepth.get
     info + "]"
   }
-
-  override lazy val possibleStartPoints: Seq[(String, CypherType)] =
-    left.possibleStartPoints ++ right.possibleStartPoints
 
   override def rewrite(f: Expression => Expression) =
     ShortestPath(
