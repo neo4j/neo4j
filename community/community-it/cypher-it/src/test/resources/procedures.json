@@ -2067,6 +2067,395 @@
     "enterpriseOnly": true
   },
   {
+    "admin": false,
+    "name": "dbms.cluster.deallocateDatabaseFromServer",
+    "isDeprecated": false,
+    "deprecatedBy": null,
+    "option": {
+      "deprecated": false
+    },
+    "signature": "dbms.cluster.deallocateDatabaseFromServer(server :: STRING, database :: STRING, dryrun = false :: BOOLEAN) :: (database :: STRING, fromServerName :: STRING, fromServerId :: STRING, toServerName :: STRING, toServerId :: STRING, mode :: STRING)",
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "worksOnSystem": true,
+    "returnDescription": [
+      {
+        "name": "database",
+        "description": "database :: STRING",
+        "type": "STRING",
+        "isDeprecated": false
+      },
+      {
+        "name": "fromServerName",
+        "description": "fromServerName :: STRING",
+        "type": "STRING",
+        "isDeprecated": false
+      },
+      {
+        "name": "fromServerId",
+        "description": "fromServerId :: STRING",
+        "type": "STRING",
+        "isDeprecated": false
+      },
+      {
+        "name": "toServerName",
+        "description": "toServerName :: STRING",
+        "type": "STRING",
+        "isDeprecated": false
+      },
+      {
+        "name": "toServerId",
+        "description": "toServerId :: STRING",
+        "type": "STRING",
+        "isDeprecated": false
+      },
+      {
+        "name": "mode",
+        "description": "mode :: STRING",
+        "type": "STRING",
+        "isDeprecated": false
+      }
+    ],
+    "description": "Deallocate a specific user database from a specific server.",
+    "rolesExecution": [
+      "PUBLIC",
+      "admin"
+    ],
+    "argumentDescription": [
+      {
+        "name": "server",
+        "description": "server :: STRING",
+        "type": "STRING",
+        "isDeprecated": false
+      },
+      {
+        "name": "database",
+        "description": "database :: STRING",
+        "type": "STRING",
+        "isDeprecated": false
+      },
+      {
+        "default": "DefaultParameterValue{value=false, type=BOOLEAN}",
+        "name": "dryrun",
+        "description": "dryrun = false :: BOOLEAN",
+        "type": "BOOLEAN",
+        "isDeprecated": false
+      }
+    ],
+    "mode": "WRITE",
+    "enterpriseOnly": true
+  },
+  {
+    "admin": false,
+    "name": "dbms.cluster.deallocateDatabaseFromServers",
+    "isDeprecated": false,
+    "deprecatedBy": null,
+    "option": {
+      "deprecated": false
+    },
+    "signature": "dbms.cluster.deallocateDatabaseFromServers(servers :: LIST<STRING>, database :: STRING, dryrun = false :: BOOLEAN) :: (database :: STRING, fromServerName :: STRING, fromServerId :: STRING, toServerName :: STRING, toServerId :: STRING, mode :: STRING)",
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "worksOnSystem": true,
+    "returnDescription": [
+      {
+        "name": "database",
+        "description": "database :: STRING",
+        "type": "STRING",
+        "isDeprecated": false
+      },
+      {
+        "name": "fromServerName",
+        "description": "fromServerName :: STRING",
+        "type": "STRING",
+        "isDeprecated": false
+      },
+      {
+        "name": "fromServerId",
+        "description": "fromServerId :: STRING",
+        "type": "STRING",
+        "isDeprecated": false
+      },
+      {
+        "name": "toServerName",
+        "description": "toServerName :: STRING",
+        "type": "STRING",
+        "isDeprecated": false
+      },
+      {
+        "name": "toServerId",
+        "description": "toServerId :: STRING",
+        "type": "STRING",
+        "isDeprecated": false
+      },
+      {
+        "name": "mode",
+        "description": "mode :: STRING",
+        "type": "STRING",
+        "isDeprecated": false
+      }
+    ],
+    "description": "Deallocate a specific user database from a list of servers.",
+    "rolesExecution": [
+      "PUBLIC",
+      "admin"
+    ],
+    "argumentDescription": [
+      {
+        "name": "servers",
+        "description": "servers :: LIST<STRING>",
+        "type": "LIST<STRING>",
+        "isDeprecated": false
+      },
+      {
+        "name": "database",
+        "description": "database :: STRING",
+        "type": "STRING",
+        "isDeprecated": false
+      },
+      {
+        "default": "DefaultParameterValue{value=false, type=BOOLEAN}",
+        "name": "dryrun",
+        "description": "dryrun = false :: BOOLEAN",
+        "type": "BOOLEAN",
+        "isDeprecated": false
+      }
+    ],
+    "mode": "WRITE",
+    "enterpriseOnly": true
+  },
+
+  {
+    "admin": false,
+    "name": "dbms.cluster.deallocateNumberOfDatabases",
+    "isDeprecated": false,
+    "deprecatedBy": null,
+    "option": {
+      "deprecated": false
+    },
+    "signature": "dbms.cluster.deallocateNumberOfDatabases(server :: STRING, number :: INTEGER, dryrun = false :: BOOLEAN) :: (database :: STRING, fromServerName :: STRING, fromServerId :: STRING, toServerName :: STRING, toServerId :: STRING, mode :: STRING)",
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "worksOnSystem": true,
+    "returnDescription": [
+      {
+        "name": "database",
+        "description": "database :: STRING",
+        "type": "STRING",
+        "isDeprecated": false
+      },
+      {
+        "name": "fromServerName",
+        "description": "fromServerName :: STRING",
+        "type": "STRING",
+        "isDeprecated": false
+      },
+      {
+        "name": "fromServerId",
+        "description": "fromServerId :: STRING",
+        "type": "STRING",
+        "isDeprecated": false
+      },
+      {
+        "name": "toServerName",
+        "description": "toServerName :: STRING",
+        "type": "STRING",
+        "isDeprecated": false
+      },
+      {
+        "name": "toServerId",
+        "description": "toServerId :: STRING",
+        "type": "STRING",
+        "isDeprecated": false
+      },
+      {
+        "name": "mode",
+        "description": "mode :: STRING",
+        "type": "STRING",
+        "isDeprecated": false
+      }
+    ],
+    "description": "Deallocate a number of user databases from a specific server.",
+    "rolesExecution": [
+      "PUBLIC",
+      "admin"
+    ],
+    "argumentDescription": [
+      {
+        "name": "server",
+        "description": "server :: STRING",
+        "type": "STRING",
+        "isDeprecated": false
+      },
+      {
+        "name": "number",
+        "description": "number :: INTEGER",
+        "type": "INTEGER",
+        "isDeprecated": false
+      },
+      {
+        "default": "DefaultParameterValue{value=false, type=BOOLEAN}",
+        "name": "dryrun",
+        "description": "dryrun = false :: BOOLEAN",
+        "type": "BOOLEAN",
+        "isDeprecated": false
+      }
+    ],
+    "mode": "WRITE",
+    "enterpriseOnly": true
+  },
+  {
+    "admin": false,
+    "name": "dbms.cluster.reallocateDatabase",
+    "isDeprecated": false,
+    "deprecatedBy": null,
+    "option": {
+      "deprecated": false
+    },
+    "signature": "dbms.cluster.reallocateDatabase(database :: STRING, dryrun = false :: BOOLEAN) :: (database :: STRING, fromServerName :: STRING, fromServerId :: STRING, toServerName :: STRING, toServerId :: STRING, mode :: STRING)",
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "worksOnSystem": true,
+    "returnDescription": [
+      {
+        "name": "database",
+        "description": "database :: STRING",
+        "type": "STRING",
+        "isDeprecated": false
+      },
+      {
+        "name": "fromServerName",
+        "description": "fromServerName :: STRING",
+        "type": "STRING",
+        "isDeprecated": false
+      },
+      {
+        "name": "fromServerId",
+        "description": "fromServerId :: STRING",
+        "type": "STRING",
+        "isDeprecated": false
+      },
+      {
+        "name": "toServerName",
+        "description": "toServerName :: STRING",
+        "type": "STRING",
+        "isDeprecated": false
+      },
+      {
+        "name": "toServerId",
+        "description": "toServerId :: STRING",
+        "type": "STRING",
+        "isDeprecated": false
+      },
+      {
+        "name": "mode",
+        "description": "mode :: STRING",
+        "type": "STRING",
+        "isDeprecated": false
+      }
+    ],
+    "description": "Reallocate a specific database.",
+    "rolesExecution": [
+      "PUBLIC",
+      "admin"
+    ],
+    "argumentDescription": [
+      {
+        "name": "database",
+        "description": "database :: STRING",
+        "type": "STRING",
+        "isDeprecated": false
+      },
+      {
+        "default": "DefaultParameterValue{value=false, type=BOOLEAN}",
+        "name": "dryrun",
+        "description": "dryrun = false :: BOOLEAN",
+        "type": "BOOLEAN",
+        "isDeprecated": false
+      }
+    ],
+    "mode": "WRITE",
+    "enterpriseOnly": true
+  },
+  {
+    "admin": false,
+    "name": "dbms.cluster.reallocateNumberOfDatabases",
+    "isDeprecated": false,
+    "deprecatedBy": null,
+    "option": {
+      "deprecated": false
+    },
+    "signature": "dbms.cluster.reallocateNumberOfDatabases(number :: INTEGER, dryrun = false :: BOOLEAN) :: (database :: STRING, fromServerName :: STRING, fromServerId :: STRING, toServerName :: STRING, toServerId :: STRING, mode :: STRING)",
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "worksOnSystem": true,
+    "returnDescription": [
+      {
+        "name": "database",
+        "description": "database :: STRING",
+        "type": "STRING",
+        "isDeprecated": false
+      },
+      {
+        "name": "fromServerName",
+        "description": "fromServerName :: STRING",
+        "type": "STRING",
+        "isDeprecated": false
+      },
+      {
+        "name": "fromServerId",
+        "description": "fromServerId :: STRING",
+        "type": "STRING",
+        "isDeprecated": false
+      },
+      {
+        "name": "toServerName",
+        "description": "toServerName :: STRING",
+        "type": "STRING",
+        "isDeprecated": false
+      },
+      {
+        "name": "toServerId",
+        "description": "toServerId :: STRING",
+        "type": "STRING",
+        "isDeprecated": false
+      },
+      {
+        "name": "mode",
+        "description": "mode :: STRING",
+        "type": "STRING",
+        "isDeprecated": false
+      }
+    ],
+    "description": "Reallocate a specified number of user databases.",
+    "rolesExecution": [
+      "PUBLIC",
+      "admin"
+    ],
+    "argumentDescription": [
+      {
+        "name": "number",
+        "description": "number :: INTEGER",
+        "type": "INTEGER",
+        "isDeprecated": false
+      },
+      {
+        "default": "DefaultParameterValue{value=false, type=BOOLEAN}",
+        "name": "dryrun",
+        "description": "dryrun = false :: BOOLEAN",
+        "type": "BOOLEAN",
+        "isDeprecated": false
+      }
+    ],
+    "mode": "WRITE",
+    "enterpriseOnly": true
+  },
+  {
     "name": "dbms.components",
     "description": "List DBMS components and their versions.",
     "mode": "DBMS",
