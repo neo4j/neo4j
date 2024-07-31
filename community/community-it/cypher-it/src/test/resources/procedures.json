@@ -3591,6 +3591,43 @@
     "enterpriseOnly": true
   },
   {
+    "admin": false,
+    "name": "dbms.cluster.recreateDatabase",
+    "isDeprecated": false,
+    "deprecatedBy": null,
+    "option": {
+      "deprecated": false
+    },
+    "signature": "dbms.cluster.recreateDatabase(database :: STRING, options = {} :: MAP)",
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "worksOnSystem": true,
+    "returnDescription": [],
+    "description": "Recreates a database while keeping all RBAC settings. The procedure initiates a process, which when complete, will have synchronized and started all database instances within the cluster.",
+    "rolesExecution": [
+      "PUBLIC",
+      "admin"
+    ],
+    "argumentDescription": [
+      {
+        "name": "database",
+        "description": "database :: STRING",
+        "type": "STRING",
+        "isDeprecated": false
+      },
+      {
+        "name": "options",
+        "description": "options = {} :: MAP",
+        "type": "MAP",
+        "isDeprecated": false,
+        "default": "DefaultParameterValue{value={}, type=MAP}"
+      }
+    ],
+    "mode": "WRITE",
+    "enterpriseOnly": true
+  },
+  {
     "name": "dbms.showCurrentUser",
     "description": "Show the current user.",
     "mode": "DBMS",
