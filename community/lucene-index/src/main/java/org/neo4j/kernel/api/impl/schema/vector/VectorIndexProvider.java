@@ -188,7 +188,8 @@ public class VectorIndexProvider extends AbstractLuceneIndexProvider {
             final var candidate = VectorCandidate.maybeFrom(value);
             return candidate == null
                     || dimensions.isPresent() && candidate.dimensions() != dimensions.getAsInt()
-                    || dimensions.isEmpty() && candidate.dimensions() < version.maxDimensions();
+                    || dimensions.isEmpty()
+                            && (candidate.dimensions() < 1 || candidate.dimensions() > version.maxDimensions());
         }
     }
 
