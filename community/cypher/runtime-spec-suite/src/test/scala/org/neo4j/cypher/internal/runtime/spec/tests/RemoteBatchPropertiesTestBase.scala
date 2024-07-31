@@ -62,15 +62,15 @@ abstract class RemoteBatchPropertiesTestBase[CONTEXT <: RuntimeContext](
         restartWithSizes(morselSize, spdBatchSize)
 
         givenGraph {
-          tx.createNode().setProperty("prop", 10)
-          tx.createNode().setProperty("prop", 20)
+          tx.createNode(Label.label("L")).setProperty("prop", 10)
+          tx.createNode(Label.label("L")).setProperty("prop", 20)
         }
 
         val query = new LogicalQueryBuilder(this)
           .produceResults("prop")
           .projection("cache[x.prop] as prop")
           .remoteBatchProperties("cache[x.prop]")
-          .allNodeScan("x")
+          .nodeByLabelScan("x", "L")
           .build()
 
         val result = execute(query, runtime)

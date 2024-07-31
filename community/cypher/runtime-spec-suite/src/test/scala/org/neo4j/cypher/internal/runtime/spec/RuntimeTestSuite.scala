@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.spec
 
+import org.awaitility.Awaitility.await
 import org.neo4j.configuration.Config
 import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME
@@ -50,6 +51,7 @@ import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.dbms.api.DatabaseManagementService
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.QueryStatistics
+import org.neo4j.graphdb.Result
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction
 import org.neo4j.kernel.api.Kernel
@@ -86,6 +88,10 @@ import java.time.chrono.ChronoZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.util
 import java.util.Locale
+import java.util.concurrent.Callable
+import java.util.concurrent.TimeUnit.MILLISECONDS
+import java.util.concurrent.TimeUnit.SECONDS
+import java.util.function.Predicate
 
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 import scala.util.Random
@@ -179,11 +185,51 @@ abstract class BaseRuntimeTestSuite[CONTEXT <: RuntimeContext](
   protected def restartDB(): Unit = {
     logProvider = new AssertableLogProvider()
     val dbms = edition.newGraphManagementService(logProvider)
+
+    if (edition.isSpd) {
+      setupSpd(dbms)
+    }
+
     managementService = dbms.dbms
     dbmsFileSystem = dbms.filesystem
     graphDb = managementService.database(DEFAULT_DATABASE_NAME)
     systemDb = managementService.database(SYSTEM_DATABASE_NAME)
     kernel = graphDb.asInstanceOf[GraphDatabaseFacade].getDependencyResolver.resolveDependency(classOf[Kernel])
+  }
+
+  private def setupSpd(dbms: Edition.Dbms): Unit = {
+    // First let's wait until the SPD is actually available
+    val callable: Callable[String] = () => {
+      dbms.dbms.database(SYSTEM_DATABASE_NAME).executeTransactionally(
+        "CALL internal.dbms.spd.available",
+        java.util.Map.of[String, Object],
+        (result: Result) => result.next.get("detail").asInstanceOf[String]
+      )
+    }
+
+    val predicate: Predicate[String] = (status: String) => status == "All started"
+    await().atMost(30, SECONDS).pollDelay(500, MILLISECONDS).pollInSameThread.until(callable, predicate)
+
+    // Let's create the default indexes that could not be created when the database was created
+    val dbs =
+      dbms.dbms.listDatabases().stream().filter(dbName => !dbName.equals(SYSTEM_DATABASE_NAME)).filter(dbName =>
+        !dbName.contains("shard")
+      ).map(dbName =>
+        dbms.dbms.database(dbName)
+      ).toList
+    dbs.forEach(db => {
+      db.executeTransactionally("CREATE LOOKUP INDEX node_label_lookup_index FOR (n) ON EACH labels(n)")
+      db.executeTransactionally("CREATE LOOKUP INDEX rel_type_lookup_index FOR ()-[r]-() ON EACH type(r)")
+    })
+
+    dbs.forEach(db => {
+      val tx = db.beginTx()
+      try {
+        tx.schema().awaitIndexesOnline(60, SECONDS)
+      } finally {
+        tx.close()
+      }
+    })
   }
 
   protected def createRuntimeTestSupport(): Unit = {

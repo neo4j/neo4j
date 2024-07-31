@@ -53,6 +53,7 @@ class Edition[CONTEXT <: RuntimeContext](
   graphBuilderFactory: () => TestDatabaseManagementServiceBuilder,
   runtimeContextManagerFactory: RuntimeContextManagerFactory[CONTEXT],
   val runtimeTestUtils: RuntimeTestUtils,
+  val isSpd: Boolean,
   val configs: (Setting[_], Object)*
 ) {
 
@@ -68,9 +69,13 @@ class Edition[CONTEXT <: RuntimeContext](
     Dbms(graphBuilder.build(), fileSystem)
   }
 
+  def copyWithSpdEnabled(): Edition[CONTEXT] = {
+    new Edition(graphBuilderFactory, runtimeContextManagerFactory, runtimeTestUtils, isSpd = true, configs: _*)
+  }
+
   def copyWith(additionalConfigs: (Setting[_], Object)*): Edition[CONTEXT] = {
     val newConfigs = (configs ++ additionalConfigs).toMap
-    new Edition(graphBuilderFactory, runtimeContextManagerFactory, runtimeTestUtils, newConfigs.toSeq: _*)
+    new Edition(graphBuilderFactory, runtimeContextManagerFactory, runtimeTestUtils, isSpd, newConfigs.toSeq: _*)
   }
 
   def copyWith(
@@ -78,13 +83,13 @@ class Edition[CONTEXT <: RuntimeContext](
     additionalConfigs: (Setting[_], Object)*
   ): Edition[CONTEXT] = {
     val newConfigs = (configs ++ additionalConfigs).toMap
-    new Edition(graphBuilderFactory, newRuntimeContextManagerFactory, runtimeTestUtils, newConfigs.toSeq: _*)
+    new Edition(graphBuilderFactory, newRuntimeContextManagerFactory, runtimeTestUtils, isSpd, newConfigs.toSeq: _*)
   }
 
   def copyWith(
     newGraphBuilderFactory: () => TestDatabaseManagementServiceBuilder
   ): Edition[CONTEXT] = {
-    new Edition(newGraphBuilderFactory, runtimeContextManagerFactory, runtimeTestUtils, configs: _*)
+    new Edition(newGraphBuilderFactory, runtimeContextManagerFactory, runtimeTestUtils, isSpd, configs: _*)
   }
 
   def getSetting[T](setting: Setting[T]): Option[T] = {
@@ -118,6 +123,7 @@ object COMMUNITY {
     () => new TestDatabaseManagementServiceBuilder,
     (runtimeConfig, _, _, logProvider) => CommunityRuntimeContextManager(logProvider.getLog("test"), runtimeConfig),
     CommunityRuntimeTestUtils,
+    isSpd = false,
     GraphDatabaseSettings.cypher_hints_error -> TRUE
   )
 }
