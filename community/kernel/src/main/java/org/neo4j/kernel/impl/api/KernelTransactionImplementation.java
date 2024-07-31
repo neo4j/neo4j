@@ -351,6 +351,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             boolean multiVersioned) {
         this.logProvider = logProvider;
         this.closed = true;
+        this.timeout = TransactionTimeout.NO_TIMEOUT;
         this.config = new LocalConfig(externalConfig);
         this.accessCapabilityFactory = accessCapabilityFactory;
         this.contextFactory = contextFactory;
@@ -1360,6 +1361,9 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             } catch (RuntimeException | Error e) {
                 error = Exceptions.chain(error, e);
             }
+            timeout = TransactionTimeout.NO_TIMEOUT;
+            startTimeMillis = Long.MAX_VALUE;
+            startTimeNanos = Long.MAX_VALUE;
             serialExecutionGuard.release();
             transactionEventListeners.reset();
             terminationMark = null;

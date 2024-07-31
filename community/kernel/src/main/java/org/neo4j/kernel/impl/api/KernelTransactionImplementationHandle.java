@@ -25,6 +25,7 @@ import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
+import org.apache.commons.lang3.StringUtils;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -59,7 +60,6 @@ class KernelTransactionImplementationHandle implements KernelTransactionHandle {
     private final Optional<ExecutingQuery> executingQuery;
     private final Map<String, Object> metaData;
     private final String statusDetails;
-    private final long transactionSequenceNumber;
     private final TransactionInitializationTrace initializationTrace;
     private final KernelTransactionStamp transactionStamp;
     private final String databaseName;
@@ -77,7 +77,6 @@ class KernelTransactionImplementationHandle implements KernelTransactionHandle {
         this.executingQuery = tx.executingQuery();
         this.metaData = tx.getMetaData();
         this.statusDetails = tx.statusDetails();
-        this.transactionSequenceNumber = tx.getTransactionSequenceNumber();
         this.initializationTrace = tx.getInitializationTrace();
         this.clientInfo = tx.clientInfo();
         this.databaseName = tx.getDatabaseName();
@@ -90,17 +89,17 @@ class KernelTransactionImplementationHandle implements KernelTransactionHandle {
 
     @Override
     public long startTime() {
-        return startTime;
+        return startTime == 0L ? Long.MAX_VALUE : startTime;
     }
 
     @Override
     public long startTimeNanos() {
-        return startTimeNanos;
+        return startTimeNanos == 0L ? Long.MAX_VALUE : startTimeNanos;
     }
 
     @Override
     public TransactionTimeout timeout() {
-        return timeout;
+        return timeout == null ? TransactionTimeout.NO_TIMEOUT : timeout;
     }
 
     @Override
@@ -125,17 +124,17 @@ class KernelTransactionImplementationHandle implements KernelTransactionHandle {
 
     @Override
     public AuthSubject subject() {
-        return subject;
+        return subject == null ? AuthSubject.ANONYMOUS : subject;
     }
 
     @Override
     public Map<String, Object> getMetaData() {
-        return metaData;
+        return metaData == null ? Map.of() : metaData;
     }
 
     @Override
     public String getStatusDetails() {
-        return statusDetails;
+        return statusDetails == null ? StringUtils.EMPTY : statusDetails;
     }
 
     @Override
@@ -150,12 +149,16 @@ class KernelTransactionImplementationHandle implements KernelTransactionHandle {
 
     @Override
     public long getTransactionSequenceNumber() {
-        return transactionSequenceNumber;
+        return transactionStamp.getTransactionSequenceNumber();
     }
 
     @Override
     public String getUserTransactionName() {
-        return databaseName + USER_TRANSACTION_NAME_SEPARATOR + getTransactionSequenceNumber();
+        return getDatabaseName() + USER_TRANSACTION_NAME_SEPARATOR + getTransactionSequenceNumber();
+    }
+
+    private String getDatabaseName() {
+        return databaseName == null ? StringUtils.EMPTY : databaseName;
     }
 
     @Override
@@ -172,14 +175,13 @@ class KernelTransactionImplementationHandle implements KernelTransactionHandle {
     public TransactionExecutionStatistic transactionStatistic() {
         if (transactionStamp.isNotExpired()) {
             return new TransactionExecutionStatistic(tx, clock, startTime);
-        } else {
-            return TransactionExecutionStatistic.NOT_AVAILABLE;
         }
+        return TransactionExecutionStatistic.NOT_AVAILABLE;
     }
 
     @Override
     public TransactionInitializationTrace transactionInitialisationTrace() {
-        return initializationTrace;
+        return initializationTrace == null ? TransactionInitializationTrace.NONE : initializationTrace;
     }
 
     @Override

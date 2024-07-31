@@ -259,6 +259,7 @@ class KernelTransactionTimeoutMonitorTest {
                 .thenReturn(new CursorContextFactory(PageCacheTracer.NULL, new TestVersionContextSupplier())
                         .create("test"));
         when(transaction.startTime()).thenReturn(startMillis);
+        when(transaction.startTimeNanos()).thenReturn(TimeUnit.MILLISECONDS.toNanos(startMillis));
         when(transaction.getTransactionSequenceNumber()).thenReturn(userTxId);
         when(transaction.getTransactionSequenceNumber()).thenReturn(EXPECTED_USER_TRANSACTION_ID);
         when(transaction.timeout()).thenReturn(new TransactionTimeout(Duration.ofMillis(timeoutMillis), timoutStatus));
