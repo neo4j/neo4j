@@ -30,6 +30,7 @@ import org.neo4j.configuration.SettingValueParsers;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.internal.diagnostics.DiagnosticsLogger;
 import org.neo4j.internal.diagnostics.NamedDiagnosticsProvider;
+import org.neo4j.io.fs.FileSystemAbstraction;
 
 public class ConfigDiagnostics extends NamedDiagnosticsProvider {
     private final Config config;
@@ -67,10 +68,17 @@ public class ConfigDiagnostics extends NamedDiagnosticsProvider {
     private static boolean isImmutablePathSetting(Setting<Object> setting, Object value) {
         SettingImpl<Object> settingImpl = (SettingImpl<Object>) setting;
         if (SettingValueParsers.PATH.getType().equals(settingImpl.parser().getType()) && value instanceof Path path) {
-            // Poor man's check for directory, but good enough for debug.log
-            boolean isDirectory = !path.getFileName().toString().contains(".");
-            return isDirectory && !settingImpl.internal() && !settingImpl.dynamic();
+            return isDirectory(path) && !settingImpl.internal() && !settingImpl.dynamic();
         }
         return false;
+    }
+
+    /**
+     * Poor man's check for directory, but good enough for debug.log.
+     * Cannot use {@link FileSystemAbstraction#isDirectory(Path)} because path might not exist yet.
+     */
+    private static boolean isDirectory(Path path) {
+        var fileName = path.getFileName();
+        return fileName == null || !fileName.toString().contains(".");
     }
 }

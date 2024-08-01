@@ -24,6 +24,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.logs_directory;
 import static org.neo4j.configuration.GraphDatabaseSettings.max_concurrent_transactions;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 import static org.neo4j.configuration.GraphDatabaseSettings.plugin_dir;
+import static org.neo4j.configuration.GraphDatabaseSettings.script_root_path;
 import static org.neo4j.configuration.GraphDatabaseSettings.server_logging_config_path;
 import static org.neo4j.logging.LogAssertions.assertThat;
 
@@ -64,6 +65,7 @@ class ConfigDiagnosticsTest {
         Config config = Config.newBuilder()
                 .set(HttpConnector.enabled, true)
                 .set(plugin_dir, Path.of("bar"))
+                .set(script_root_path, Path.of("/"))
                 .set(sslPolicy.enabled, true)
                 .build();
 
@@ -76,7 +78,8 @@ class ConfigDiagnosticsTest {
                         "Directories in use:",
                         sslPolicy.base_directory.name(),
                         logs_directory.name(),
-                        plugin_dir.name() + "=" + config.get(neo4j_home).resolve("bar"))
+                        plugin_dir.name() + "=" + config.get(neo4j_home).resolve("bar"),
+                        script_root_path.name() + "=/")
                 .doesNotContainMessage(server_logging_config_path.name());
     }
 
