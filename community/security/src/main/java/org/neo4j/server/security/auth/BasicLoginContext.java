@@ -24,6 +24,9 @@ import static org.neo4j.internal.kernel.api.security.AuthenticationResult.FAILUR
 import static org.neo4j.internal.kernel.api.security.AuthenticationResult.PASSWORD_CHANGE_REQUIRED;
 import static org.neo4j.internal.kernel.api.security.AuthenticationResult.TOO_MANY_ATTEMPTS;
 
+import org.neo4j.gqlstatus.ErrorClassification;
+import org.neo4j.gqlstatus.ErrorGqlStatusObjectImplementation;
+import org.neo4j.gqlstatus.GqlStatusInfoCodes;
 import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.AbstractSecurityLog;
@@ -99,7 +102,13 @@ public class BasicLoginContext extends LoginContext {
             String message = SecurityAuthorizationHandler.generateCredentialsExpiredMessage(
                     String.format("ACCESS on database '%s' is not allowed.", dbName));
             securityLog.error(securityContext, message);
-            throw new AuthorizationViolationException(message, Status.Security.CredentialsExpired);
+            var gql = ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_42NFF)
+                    .withClassification(ErrorClassification.CLIENT_ERROR)
+                    .withCause(ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_42NFD)
+                            .withClassification(ErrorClassification.CLIENT_ERROR)
+                            .build())
+                    .build();
+            throw new AuthorizationViolationException(gql, message, Status.Security.CredentialsExpired);
         }
         return securityContext;
     }

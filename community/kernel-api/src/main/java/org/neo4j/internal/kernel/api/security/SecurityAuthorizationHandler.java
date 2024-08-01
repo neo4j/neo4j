@@ -27,6 +27,7 @@ import java.util.Arrays;
 import java.util.function.IntFunction;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import org.neo4j.gqlstatus.ErrorGqlStatusObject;
 import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.internal.kernel.api.TokenSet;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -254,9 +255,9 @@ public class SecurityAuthorizationHandler {
     }
 
     public AuthorizationViolationException logAndGetAuthorizationException(
-            SecurityContext securityContext, String message, Status status) {
+            ErrorGqlStatusObject gql, SecurityContext securityContext, String message, Status status) {
         securityLog.error(securityContext, message);
-        return new AuthorizationViolationException(message, status);
+        return new AuthorizationViolationException(gql, message, status);
     }
 
     public static String generateCredentialsExpiredMessage(String message) {
