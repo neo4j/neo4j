@@ -20,15 +20,19 @@
 package org.neo4j.collection.trackable;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
+import java.util.stream.Stream;
 import org.eclipse.collections.impl.list.Interval;
 import org.eclipse.collections.impl.parallel.ParallelIterate;
 import org.eclipse.collections.impl.tuple.ImmutableEntry;
@@ -38,6 +42,7 @@ import org.neo4j.memory.EmptyMemoryTracker;
 
 @SuppressWarnings({"SameParameterValue", "resource"})
 public class HeapTrackingConcurrentHashMapTest {
+
     public volatile long volatileLong = 0L;
 
     @Test
@@ -288,6 +293,43 @@ public class HeapTrackingConcurrentHashMapTest {
         assertThat(map.size()).isEqualTo(1);
         assertThat(hasBeenCalledMultipleTimes.get()).isFalse();
         assertThat(getFailed.get()).isFalse();
+    }
+
+    @Test
+    void concurrentComputeIfAbsent() throws InterruptedException {
+        final var seed = new Random().nextLong();
+        final var rand = new Random(seed);
+
+        final var initialKeys = Stream.generate(rand::nextInt)
+                .limit(rand.nextInt(500))
+                .distinct()
+                .toList();
+        final var newKeys =
+                Stream.generate(rand::nextInt).limit(rand.nextInt(500)).toList();
+        final var map = HeapTrackingConcurrentHashMap.<Integer, String>newMap(EmptyMemoryTracker.INSTANCE);
+        for (final var key : initialKeys) map.put(key, "occupied1");
+
+        final var executor = executor();
+        try {
+            for (final var key : newKeys) {
+                executor.submit(() -> map.computeIfAbsent(key, k -> "occupied2"));
+                executor.submit(() -> map.computeIfAbsent(key, k -> "occupied2"));
+                executor.submit(() -> map.computeIfAbsent(key, k -> "occupied2"));
+                executor.submit(() -> map.computeIfAbsent(key, k -> "occupied2"));
+            }
+        } finally {
+            executor.shutdown();
+            assertTrue(executor.awaitTermination(10, TimeUnit.MINUTES));
+        }
+
+        final var expected = new HashMap<Integer, String>();
+        for (final var key : initialKeys) expected.put(key, "occupied1");
+        for (final var key : newKeys) expected.put(key, "occupied2");
+        assertThat(map)
+                .describedAs("seed=%s", seed)
+                .hasSize(expected.size())
+                .containsOnlyKeys(expected.keySet())
+                .containsExactlyInAnyOrderEntriesOf(expected);
     }
 
     private record GetContestant(
