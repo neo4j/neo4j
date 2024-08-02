@@ -191,7 +191,7 @@ public enum NotificationCodeWithDescription {
             "Did not supply query with enough parameters. The produced query plan will not be cached and is not executable without EXPLAIN. (%s)"),
     CODE_GENERATION_FAILED(
             Status.Statement.CodeGenerationFailed,
-            GqlStatusInfoCodes.STATUS_01N40,
+            GqlStatusInfoCodes.STATUS_03N96,
             "The database was unable to generate code for the query. A stacktrace can be found in the debug.log. (%s)"),
 
     SUBQUERY_VARIABLE_SHADOWING(
@@ -523,7 +523,22 @@ public enum NotificationCodeWithDescription {
     public static NotificationImplementation codeGenerationFailed(
             InputPosition position, String failingRuntimeConf, String fallbackRuntimeConf, String cause) {
         final var oldDetails = new String[] {cause};
-        final var params = new String[] {failingRuntimeConf, fallbackRuntimeConf, cause};
+        final String failingEngine;
+        if (failingRuntimeConf.contains("operatorEngine=compiled")
+                && fallbackRuntimeConf.contains("operatorEngine=interpreted")
+                && failingRuntimeConf.contains("expressionEngine=compiled")
+                && fallbackRuntimeConf.contains("expressionEngine=interpreted")) {
+            failingEngine = "operator and expression";
+        } else if (failingRuntimeConf.contains("operatorEngine=compiled")
+                && fallbackRuntimeConf.contains("operatorEngine=interpreted")) {
+            failingEngine = "operator";
+        } else if (failingRuntimeConf.contains("expressionEngine=compiled")
+                && fallbackRuntimeConf.contains("expressionEngine=interpreted")) {
+            failingEngine = "expression";
+        } else {
+            failingEngine = ""; // should not happen
+        }
+        final Object[] params = {failingEngine, cause};
         return CODE_GENERATION_FAILED.notificationWithParameters(position, oldDetails, params);
     }
 

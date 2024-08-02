@@ -183,6 +183,13 @@ public enum GqlStatusInfoCodes implements GqlStatusInfo {
             new String[] {"preparser_input1", "preparser_input2", "msg"},
             Condition.WARNING,
             "unsupported runtime"),
+    STATUS_03N96(
+            new GqlStatus("03N96"),
+            """
+            Failed to generate code, falling back to interpreted %s engine. A stacktrace can be found in the debug.log. Cause: %s.""",
+            new String[] {"enginetype", "msg"},
+            Condition.INFORMATIONAL,
+            "failed code generation"),
     STATUS_01N42(
             new GqlStatus("01N42"),
             """

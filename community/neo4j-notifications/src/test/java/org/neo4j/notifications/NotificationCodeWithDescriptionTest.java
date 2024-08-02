@@ -783,9 +783,10 @@ class NotificationCodeWithDescriptionTest {
     }
 
     @Test
-    void shouldConstructNotificationsFor_CODE_GENERATION_FAILED() {
+    void shouldConstructNotificationsFor_CODE_GENERATION_FAILED_expressionEngine() {
         String preparserOptions1 = "runtime=pipelined operatorEngine=compiled expressionEngine=compiled";
-        String preparserOptions2 = "runtime=pipelined operatorEngine=interpreted expressionEngine=compiled";
+        String preparserOptions2 = "runtime=pipelined operatorEngine=compiled expressionEngine=interpreted";
+        String failingEnginetype = "expression";
         String cause = "method too big";
         NotificationImplementation notification =
                 codeGenerationFailed(InputPosition.empty, preparserOptions1, preparserOptions2, cause);
@@ -798,24 +799,39 @@ class NotificationCodeWithDescriptionTest {
                 "The database was unable to generate code for the query. A stacktrace can be found in the debug.log. (method too big)",
                 NotificationCategory.PERFORMANCE,
                 NotificationClassification.PERFORMANCE,
-                "01N40",
+                "03N96",
                 new DiagnosticRecord(
-                                info,
-                                performance,
-                                -1,
-                                -1,
-                                -1,
-                                Map.of(
-                                        "preparser_input1",
-                                        preparserOptions1,
-                                        "preparser_input2",
-                                        preparserOptions2,
-                                        "msg",
-                                        cause))
+                                info, performance, -1, -1, -1, Map.of("enginetype", failingEnginetype, "msg", cause))
                         .asMap(),
                 String.format(
-                        "warn: unsupported runtime. The query cannot be executed with `%s`, `%s` is used. Cause: `%s`.",
-                        preparserOptions1, preparserOptions2, cause));
+                        "info: failed code generation. Failed to generate code, falling back to interpreted %s engine. A stacktrace can be found in the debug.log. Cause: %s.",
+                        failingEnginetype, cause));
+    }
+
+    @Test
+    void shouldConstructNotificationsFor_CODE_GENERATION_FAILED_operatorEngine() {
+        String preparserOptions1 = "runtime=pipelined operatorEngine=compiled expressionEngine=compiled";
+        String preparserOptions2 = "runtime=pipelined operatorEngine=interpreted expressionEngine=compiled";
+        String failingEnginetype = "operator";
+        String cause = "method too big";
+        NotificationImplementation notification =
+                codeGenerationFailed(InputPosition.empty, preparserOptions1, preparserOptions2, cause);
+
+        verifyNotification(
+                notification,
+                "The database was unable to generate code for the query. A stacktrace can be found in the debug.log.",
+                SeverityLevel.INFORMATION,
+                "Neo.ClientNotification.Statement.CodeGenerationFailed",
+                "The database was unable to generate code for the query. A stacktrace can be found in the debug.log. (method too big)",
+                NotificationCategory.PERFORMANCE,
+                NotificationClassification.PERFORMANCE,
+                "03N96",
+                new DiagnosticRecord(
+                                info, performance, -1, -1, -1, Map.of("enginetype", failingEnginetype, "msg", cause))
+                        .asMap(),
+                String.format(
+                        "info: failed code generation. Failed to generate code, falling back to interpreted %s engine. A stacktrace can be found in the debug.log. Cause: %s.",
+                        failingEnginetype, cause));
     }
 
     @Test
@@ -1491,8 +1507,8 @@ class NotificationCodeWithDescriptionTest {
         byte[] notificationHash = DigestUtils.sha256(notificationBuilder.toString());
 
         byte[] expectedHash = new byte[] {
-            102, -22, -83, -7, 41, -14, 54, -57, 32, 118, 81, -126, 39, -10, 49, 27, -127, 25, 22, -64, -56, -126, -97,
-            77, 117, -38, 15, -31, -13, 71, 62, -48
+            74, 10, 55, 40, 125, 124, 26, 81, -104, 5, 92, -55, 64, 60, 39, -75, 52, 33, -39, -14, -78, 24, 85, -110,
+            -116, 44, 96, 15, -77, 66, -86, -76
         };
 
         if (!Arrays.equals(notificationHash, expectedHash)) {
