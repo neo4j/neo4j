@@ -80,7 +80,6 @@ import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.REMOVED_INSTANCE
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.SUPPORTED_COMPONENT_VERSIONS_LABEL;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.TARGETS_RELATIONSHIP;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.TARGET_NAME_PROPERTY;
-import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.TOPOLOGY_GRAPH_CONFIG_ALLOCATOR_PROPERTY;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.TOPOLOGY_GRAPH_CONFIG_AUTO_ENABLE_FREE_SERVERS_FLAG;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.TOPOLOGY_GRAPH_CONFIG_DEFAULT_DATABASE_PROPERTY;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.TOPOLOGY_GRAPH_CONFIG_DEFAULT_NUMBER_OF_PRIMARIES_PROPERTY;
@@ -585,7 +584,6 @@ public abstract class BaseTopologyGraphDbmsModelIT {
             var versionNode = tx.createNode(VERSION_LABEL);
             versionNode.setProperty(DBMS_RUNTIME_COMPONENT.name(), DbmsRuntimeVersion.GLORIOUS_FUTURE.getVersion());
             var configNode = tx.createNode(TOPOLOGY_GRAPH_CONFIG_LABEL);
-            configNode.setProperty(TOPOLOGY_GRAPH_CONFIG_ALLOCATOR_PROPERTY, "foo");
             configNode.setProperty(TOPOLOGY_GRAPH_CONFIG_DEFAULT_NUMBER_OF_PRIMARIES_PROPERTY, 9L);
             configNode.setProperty(TOPOLOGY_GRAPH_CONFIG_DEFAULT_NUMBER_OF_SECONDARIES_PROPERTY, 10L);
             configNode.setProperty(TOPOLOGY_GRAPH_CONFIG_DEFAULT_DATABASE_PROPERTY, "bar");

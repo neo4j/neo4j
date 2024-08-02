@@ -242,7 +242,10 @@ public interface TopologyGraphDbmsModel {
     String WAS_HOSTED_ON_REMOVED_AT_PROPERTY = "removed_at";
     String WAS_HOSTED_ON_BOOTSTRAPPER_PROPERTY = "was_bootstrapper";
     Label TOPOLOGY_GRAPH_CONFIG_LABEL = Label.label("TopologyGraphSettings");
+
+    @Deprecated
     String TOPOLOGY_GRAPH_CONFIG_ALLOCATOR_PROPERTY = "allocator";
+
     String TOPOLOGY_GRAPH_CONFIG_DEFAULT_NUMBER_OF_PRIMARIES_PROPERTY = "default_number_of_primaries";
     String TOPOLOGY_GRAPH_CONFIG_DEFAULT_NUMBER_OF_SECONDARIES_PROPERTY = "default_number_of_secondaries";
     String TOPOLOGY_GRAPH_CONFIG_DEFAULT_DATABASE_PROPERTY = "default_database";

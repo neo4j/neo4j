@@ -3384,10 +3384,10 @@
   {
     "admin": true,
     "name": "dbms.setDatabaseAllocator",
-    "isDeprecated": false,
-    "deprecatedBy": null,
+    "isDeprecated": true,
+    "deprecatedBy": "Functionality is removed",
     "option": {
-      "deprecated": false
+      "deprecated": true
     },
     "signature": "dbms.setDatabaseAllocator(allocator :: STRING)",
     "rolesBoostedExecution": [
