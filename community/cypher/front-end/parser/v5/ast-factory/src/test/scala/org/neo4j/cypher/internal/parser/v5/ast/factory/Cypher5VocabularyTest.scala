@@ -364,6 +364,7 @@ class Cypher5VocabularyTest extends CypherFunSuite {
     Cypher5Parser.WRITE -> "'WRITE'",
     Cypher5Parser.XOR -> "'XOR'",
     Cypher5Parser.YIELD -> "'YIELD'",
+    Cypher5Parser.ZONE -> "'ZONE'",
     Cypher5Parser.ZONED -> "'ZONED'",
     Cypher5Parser.IDENTIFIER -> "an identifier",
     Cypher5Parser.ARROW_LINE -> "'-'",

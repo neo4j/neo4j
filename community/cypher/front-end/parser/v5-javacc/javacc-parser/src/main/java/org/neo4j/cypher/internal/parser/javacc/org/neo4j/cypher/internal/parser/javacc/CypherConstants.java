@@ -643,21 +643,23 @@ public interface CypherConstants {
   /** RegularExpression Id. */
   int YIELD = 361;
   /** RegularExpression Id. */
-  int ZONED = 362;
+  int ZONE = 362;
   /** RegularExpression Id. */
-  int IDENTIFIER = 363;
+  int ZONED = 363;
   /** RegularExpression Id. */
-  int LETTER = 364;
+  int IDENTIFIER = 364;
   /** RegularExpression Id. */
-  int PART_LETTER = 365;
+  int LETTER = 365;
   /** RegularExpression Id. */
-  int ARROW_LINE = 366;
+  int PART_LETTER = 366;
   /** RegularExpression Id. */
-  int ARROW_LEFT_HEAD = 367;
+  int ARROW_LINE = 367;
   /** RegularExpression Id. */
-  int ARROW_RIGHT_HEAD = 368;
+  int ARROW_LEFT_HEAD = 368;
   /** RegularExpression Id. */
-  int UNKNOWN = 369;
+  int ARROW_RIGHT_HEAD = 369;
+  /** RegularExpression Id. */
+  int UNKNOWN = 370;
 
   /** Lexical state. */
   int DEFAULT = 0;
@@ -1038,6 +1040,7 @@ public interface CypherConstants {
     "\"WRITE\"",
     "\"XOR\"",
     "\"YIELD\"",
+    "\"ZONE\"",
     "\"ZONED\"",
     "<IDENTIFIER>",
     "<LETTER>",

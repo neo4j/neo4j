@@ -923,6 +923,26 @@ trait ExpressionBuilder extends Cypher6ParserListener {
             }
           case _ => throw new IllegalStateException(s"Unexpected context $ctx (first token type $firstToken)")
         }
+      case 4 => firstToken match {
+          case Cypher6Parser.TIME => nodeChild(ctx, 1).getSymbol.getType match {
+              case Cypher6Parser.WITH    => ZonedTimeType(true)(p)
+              case Cypher6Parser.WITHOUT => LocalTimeType(true)(p)
+              case _ => throw new IllegalStateException(s"Unexpected context $ctx (first token type $firstToken)")
+            }
+          case Cypher6Parser.TIMESTAMP => nodeChild(ctx, 1).getSymbol.getType match {
+              case Cypher6Parser.WITH    => ZonedDateTimeType(true)(p)
+              case Cypher6Parser.WITHOUT => LocalDateTimeType(true)(p)
+              case _ => throw new IllegalStateException(s"Unexpected context $ctx (first token type $firstToken)")
+            }
+          case Cypher6Parser.LIST | Cypher6Parser.ARRAY => ListType(ctx.`type`().ast(), true)(p)
+          case Cypher6Parser.ANY =>
+            AssertMacros.checkOnlyWhenAssertionsAreEnabled(ctx.LT() != null && ctx.GT() != null)
+            ctx.`type`().ast[CypherType]() match {
+              case du: ClosedDynamicUnionType => du
+              case other                      => ClosedDynamicUnionType(Set(other))(other.position)
+            }
+          case _ => throw new IllegalStateException(s"Unexpected context $ctx (first token type $firstToken)")
+        }
       case _ => firstToken match {
           case Cypher6Parser.LIST | Cypher6Parser.ARRAY => ListType(ctx.`type`().ast(), true)(p)
           case Cypher6Parser.ANY =>

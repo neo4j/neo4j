@@ -711,6 +711,7 @@ TOKEN [IGNORE_CASE] :
     | < WRITE: "WRITE" >
     | < XOR: "XOR" >
     | < YIELD: "YIELD" >
+    | < ZONE: "ZONE" >
     | < ZONED: "ZONED" >
 }
 
@@ -5397,12 +5398,12 @@ ParserCypherTypeName cypherTypeNamePart() throws Exception:
                 | <DATETIME> { typeName = ParserCypherTypeName.ZONED_DATETIME; }
             )
             | <TIME> (
-                <WITHOUT> <TIMEZONE> { typeName = ParserCypherTypeName.LOCAL_TIME; }
-                | <WITH> <TIMEZONE> { typeName = ParserCypherTypeName.ZONED_TIME; }
+                <WITHOUT> (<TIMEZONE> | <TIME> <ZONE>) { typeName = ParserCypherTypeName.LOCAL_TIME; }
+                | <WITH> (<TIMEZONE> | <TIME> <ZONE>) { typeName = ParserCypherTypeName.ZONED_TIME; }
             )
             | <TIMESTAMP> (
-                <WITHOUT> <TIMEZONE> { typeName = ParserCypherTypeName.LOCAL_DATETIME; }
-                | <WITH> <TIMEZONE> { typeName = ParserCypherTypeName.ZONED_DATETIME; }
+                <WITHOUT> (<TIMEZONE> | <TIME> <ZONE>) { typeName = ParserCypherTypeName.LOCAL_DATETIME; }
+                | <WITH> (<TIMEZONE> | <TIME> <ZONE>) { typeName = ParserCypherTypeName.ZONED_DATETIME; }
             )
             | <DURATION> { typeName = ParserCypherTypeName.DURATION; }
             | <POINT> { typeName = ParserCypherTypeName.POINT; }
@@ -7782,6 +7783,7 @@ Token UnescapedLabelSymbolicNameString() :
         | t=<WRITE>
         | t=<XOR>
         | t=<YIELD>
+        | t=<ZONE>
         | t=<ZONED>
     )
     {

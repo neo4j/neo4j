@@ -1254,6 +1254,10 @@ YIELD
    : Y I E L D
    ;
 
+ZONE
+   : Z O N E
+   ;
+
 ZONED
    : Z O N E D
    ;

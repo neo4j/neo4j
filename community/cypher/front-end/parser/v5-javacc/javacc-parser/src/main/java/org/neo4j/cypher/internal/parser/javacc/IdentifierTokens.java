@@ -278,6 +278,7 @@ import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.WITHOUT;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.WRITE;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.XOR;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.YIELD;
+import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.ZONE;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.ZONED;
 
 import java.util.Arrays;
@@ -549,6 +550,7 @@ public class IdentifierTokens {
             WRITE,
             XOR,
             YIELD,
+            ZONE,
             ZONED));
 
     public static Set<Integer> getIdentifierTokens() {
