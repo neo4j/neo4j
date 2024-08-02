@@ -24,7 +24,6 @@ import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.ConcurrentModificationException;
-import java.util.Iterator;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReferenceArray;
@@ -93,13 +92,14 @@ public final class HeapTrackingConcurrentHashSet<E> extends HeapTrackingConcurre
 
     @Override
     public Object[] toArray() {
-        ArrayList<E> arrayList = new ArrayList<>(this);
+        final var arrayList = new ArrayList<>(size());
+        for (final var e : this) arrayList.add(e);
         return arrayList.toArray();
     }
 
     @Override
     public <T> T[] toArray(T[] a) {
-        ArrayList<T> arrayList = new ArrayList<>();
+        ArrayList<T> arrayList = new ArrayList<>(size());
         for (E e : this) {
             arrayList.add((T) e);
         }
@@ -204,28 +204,15 @@ public final class HeapTrackingConcurrentHashSet<E> extends HeapTrackingConcurre
     @Override
     public boolean retainAll(Collection<?> c) {
         Objects.requireNonNull(c);
-        boolean modified = false;
-        Iterator<E> it = iterator();
-        while (it.hasNext()) {
-            if (!c.contains(it.next())) {
-                it.remove();
-                modified = true;
-            }
-        }
+        var modified = false;
+        for (final var e : this) if (!c.contains(e) && remove(e)) modified = true;
         return modified;
     }
 
     @Override
     public boolean removeAll(Collection<?> c) {
-        Objects.requireNonNull(c);
-        boolean modified = false;
-        Iterator<?> it = iterator();
-        while (it.hasNext()) {
-            if (c.contains(it.next())) {
-                it.remove();
-                modified = true;
-            }
-        }
+        var modified = false;
+        for (final var e : c) if (remove(e)) modified = true;
         return modified;
     }
 
