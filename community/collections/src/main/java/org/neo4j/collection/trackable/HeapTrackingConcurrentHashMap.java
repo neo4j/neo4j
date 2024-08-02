@@ -164,7 +164,20 @@ public final class HeapTrackingConcurrentHashMap<K, V> extends AbstractHeapTrack
                     e = e.getNext();
                 }
                 if (currentArray.compareAndSet(index, o, RESERVED)) {
-                    V newValue = mappingFunction.apply(key);
+                    final V newValue;
+                    try {
+                        newValue = mappingFunction.apply(key);
+                    } catch (Exception exception) {
+                        // From spec: If the mapping function throws an exception, the exception is rethrown,
+                        // and no mapping is recorded.
+                        currentArray.compareAndSet(index, RESERVED, o);
+                        throw exception;
+                    }
+                    if (newValue == null) {
+                        // From spec: If the mapping function returns null, no mapping is recorded.
+                        currentArray.compareAndSet(index, RESERVED, o);
+                        return null;
+                    }
                     Entry<K, V> newEntry = new Entry<>(key, newValue, (Entry<K, V>) o);
                     currentArray.set(index, newEntry);
                     this.incrementSizeAndPossiblyResize(currentArray, length, o);
@@ -423,6 +436,7 @@ public final class HeapTrackingConcurrentHashMap<K, V> extends AbstractHeapTrack
 
     @Override
     public void putAll(Map<? extends K, ? extends V> map) {
+        Objects.requireNonNull(map);
         MapIterate.forEachKeyValue(map, this::put);
     }
 
