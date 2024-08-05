@@ -546,10 +546,8 @@ class CliArgHelperTest extends LocaleDependentTestBase {
             System.setOut(defaultOut);
         }
 
-        assertThat(helpText)
-                .describedAs("\n⚠️️️️⚠️⚠️ Help has changed. Remember to update docs!! ⚠️⚠️⚠️\n")
-                .isEqualTo(
-                        """
+        var expectedHelpText =
+                """
                                 usage: cypher-shell [-h] [-a ADDRESS] [-u USERNAME] [--impersonate IMPERSONATE] [-p PASSWORD]
                                                     [--encryption {true,false,default}] [-d DATABASE] [--access-mode {read,write}]
                                                     [--format {auto,verbose,plain}] [-P PARAM] [--non-interactive]
@@ -632,6 +630,14 @@ class CliArgHelperTest extends LocaleDependentTestBase {
                                                          variable NEO4J_DATABASE.
                                   --access-mode {read,write}
                                                          Access mode. Defaults to WRITE. (default: write)
-                                """);
+                                """;
+
+        assertThat(windowsSafe(helpText))
+                .describedAs("\n⚠️️️️⚠️⚠️ Help has changed. Remember to update docs!! ⚠️⚠️⚠️\n")
+                .isEqualTo(windowsSafe(expectedHelpText));
+    }
+
+    private String windowsSafe(String s) {
+        return s.replace("\r\n", "\n");
     }
 }
