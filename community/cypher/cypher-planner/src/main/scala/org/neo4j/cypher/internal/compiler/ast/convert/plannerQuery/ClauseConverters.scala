@@ -150,7 +150,6 @@ import org.neo4j.cypher.internal.util.symbols.CTRelationship
 import org.neo4j.exceptions.InternalException
 import org.neo4j.exceptions.SyntaxException
 
-import scala.collection.immutable.Seq
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
@@ -173,7 +172,7 @@ object ClauseConverters {
     cancellationChecker: CancellationChecker,
     position: QueryProjection.Position
   ): PlannerQueryBuilder = clause match {
-    case c: Finish          => acc
+    case _: Finish          => acc
     case c: Return          => addReturnToLogicalPlanInput(acc, c, position)
     case c: Match           => addMatchToLogicalPlanInput(acc, c, anonymousVariableNameGenerator)
     case c: With            => addWithToLogicalPlanInput(acc, c, nextClause)
@@ -584,14 +583,27 @@ object ClauseConverters {
       allNodeConnections.size >= 4 && allNodeConnectionsOverlappingOnlyOnRelationship.size >= 2
     }
 
-    val accWithMaybeHorizon =
-      if (hasPatternOverlapOnInteriorVars || isPotentiallyUnsolvable) {
-        acc
-          .withHorizon(PassthroughAllHorizon())
-          .withTail(RegularSinglePlannerQuery(QueryGraph()))
-      } else acc
+    def addHorizon(acc: PlannerQueryBuilder): PlannerQueryBuilder =
+      acc
+        .withHorizon(PassthroughAllHorizon())
+        .withTail(RegularSinglePlannerQuery(QueryGraph()))
 
     val selections = asSelections(clause.where)
+
+    val (accWithMaybeHorizon, remainingSelections) =
+      if (hasPatternOverlapOnInteriorVars && !clause.optional) {
+        val boundPatternNodes = acc.currentQueryGraph.patternNodes
+        // These are the selections we can safely solve before a horizon
+        val (selectionsSolvableBeforeHorizon, otherSelections) =
+          selections.partition(_.dependencies.subsetOf(boundPatternNodes))
+        val accWithSelectionsSolvable =
+          acc.amendQueryGraph(_.addSelections(selectionsSolvableBeforeHorizon))
+        (addHorizon(accWithSelectionsSolvable), otherSelections)
+      } else if (hasPatternOverlapOnInteriorVars || isPotentiallyUnsolvable) {
+        (addHorizon(acc), selections)
+      } else {
+        (acc, selections)
+      }
 
     if (clause.optional) {
       accWithMaybeHorizon.amendQueryGraph { qg =>
@@ -599,7 +611,7 @@ object ClauseConverters {
           // When adding QueryGraphs for optional matches, we always start with a new one.
           // It's either all or nothing per match clause.
           QueryGraph(
-            selections = selections,
+            selections = remainingSelections,
             hints = clause.hints.toSet
           ).addPathPatterns(pathPatterns)
         )
@@ -608,7 +620,7 @@ object ClauseConverters {
       accWithMaybeHorizon.amendQueryGraph {
         qg =>
           qg
-            .addSelections(selections)
+            .addSelections(remainingSelections)
             .addHints(clause.hints)
             .addPathPatterns(pathPatterns)
       }

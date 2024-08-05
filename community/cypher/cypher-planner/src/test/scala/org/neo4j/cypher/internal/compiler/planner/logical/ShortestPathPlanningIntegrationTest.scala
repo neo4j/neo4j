@@ -508,11 +508,9 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
           nfa,
           ExpandAll
         )
-        .filter("cacheN[d.prop] = 5")
         .apply()
         .|.nodeByLabelScan("a", "N", "d")
-        .cacheProperties("cacheNFromStore[d.prop]")
-        .nodeByLabelScan("d", "User")
+        .nodeIndexOperator("d:User(prop = 5)", getValue = _ => GetValue)
         .build()
     )
   }
@@ -599,6 +597,259 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
           reverseGroupVariableProjections = true
         )
         .nodeIndexOperator("d:User(prop = 5)", _ => GetValue)
+        .build()
+    )
+  }
+
+  test(
+    "should plan a predicate as index operator before SPP, if that predicate has only dependencies on entities already bound - exterior also"
+  ) {
+    val planner = plannerBase
+      .withSetting(GraphDatabaseInternalSettings.stateful_shortest_planning_mode, ALL_IF_POSSIBLE)
+      .enableDeduplicateNames(false)
+      .build()
+
+    for (Seq(internalNode, externalNode) <- Seq("d", "d WHERE d.prop = 5").permutations) {
+      val query =
+        s"""MATCH (d:User)
+           |MATCH ANY SHORTEST (a) ((b)-[r]->(c))* ($internalNode) ((e)-[s]->(f))* ($externalNode)
+           |RETURN *""".stripMargin
+
+      withClue(query) {
+        val nfa =
+          new TestNFABuilder(0, "d")
+            .addTransition(0, 1, "(d) (`  f@9`)")
+            .addTransition(0, 3, "(d) (`  d@14` WHERE `  d@14` = d)")
+            .addTransition(1, 2, "(`  f@9`)<-[`  s@8`]-(`  e@7`)")
+            .addTransition(2, 1, "(`  e@7`) (`  f@9`)")
+            .addTransition(2, 3, "(`  e@7`) (`  d@14` WHERE `  d@14` = d)")
+            .addTransition(3, 4, "(`  d@14`) (`  c@3`)")
+            .addTransition(3, 6, "(`  d@14`) (`  a@13`)")
+            .addTransition(4, 5, "(`  c@3`)<-[`  r@2`]-(`  b@1`)")
+            .addTransition(5, 4, "(`  b@1`) (`  c@3`)")
+            .addTransition(5, 6, "(`  b@1`) (`  a@13`)")
+            .setFinalState(6)
+            .build()
+
+        val plan = planner.plan(query).stripProduceResults
+        plan should equal(
+          planner.subPlanBuilder()
+            .statefulShortestPath(
+              "d",
+              "a",
+              "SHORTEST 1 (a) ((`  b@1`)-[`  r@2`]->(`  c@3`)){0, } (`  d@0`) ((`  e@7`)-[`  s@8`]->(`  f@9`)){0, } (d)",
+              None,
+              Set(("  b@1", "  b@4"), ("  c@3", "  c@6"), ("  e@7", "  e@10"), ("  f@9", "  f@12")),
+              Set(("  r@2", "  r@5"), ("  s@8", "  s@11")),
+              Set(("  a@13", "a"), ("  d@14", "  d@0")),
+              Set.empty,
+              StatefulShortestPath.Selector.Shortest(1),
+              nfa,
+              ExpandAll,
+              reverseGroupVariableProjections = true
+            )
+            .nodeIndexOperator("d:User(prop = 5)", _ => GetValue)
+            .build()
+        )
+      }
+    }
+  }
+
+  test(
+    "should plan a predicate as index operator before SPP, if that predicate has only dependencies on entities already bound - exterior only"
+  ) {
+    val planner = plannerBase
+      .withSetting(GraphDatabaseInternalSettings.stateful_shortest_planning_mode, ALL_IF_POSSIBLE)
+      .enableDeduplicateNames(false)
+      .build()
+
+    val query =
+      s"""MATCH (d:User)
+         |MATCH ANY SHORTEST (a) ((b)-[r]->(c))* (d {prop : 5})
+         |RETURN *""".stripMargin
+
+    val nfa =
+      new TestNFABuilder(0, "d")
+        .addTransition(0, 1, "(d) (`  c@2`)")
+        .addTransition(0, 3, "(d) (`  a@6`)")
+        .addTransition(1, 2, "(`  c@2`)<-[`  r@1`]-(`  b@0`)")
+        .addTransition(2, 1, "(`  b@0`) (`  c@2`)")
+        .addTransition(2, 3, "(`  b@0`) (`  a@6`)")
+        .setFinalState(3)
+        .build()
+
+    val plan = planner.plan(query).stripProduceResults
+    plan should equal(
+      planner.subPlanBuilder()
+        .statefulShortestPath(
+          "d",
+          "a",
+          "SHORTEST 1 (a) ((`  b@0`)-[`  r@1`]->(`  c@2`)){0, } (d)",
+          None,
+          Set(("  b@0", "  b@3"), ("  c@2", "  c@5")),
+          Set(("  r@1", "  r@4")),
+          Set(("  a@6", "a")),
+          Set.empty,
+          StatefulShortestPath.Selector.Shortest(1),
+          nfa,
+          ExpandAll,
+          reverseGroupVariableProjections = true
+        )
+        .nodeIndexOperator("d:User(prop = 5)", _ => GetValue)
+        .build()
+    )
+  }
+
+  test(
+    "should plan a predicate as index operator before SPP, if that predicate has only dependencies on entities already bound - strictly interior"
+  ) {
+    val planner = plannerBase
+      .withSetting(GraphDatabaseInternalSettings.stateful_shortest_planning_mode, ALL_IF_POSSIBLE)
+      .enableDeduplicateNames(false)
+      .build()
+
+    val query =
+      // d.prop = 5 can be pulled into this MATCH clause.
+      """MATCH (d:User)
+        |MATCH ANY SHORTEST (a:N) ((b)-[r]->(c))* (d WHERE d.prop = 5) ((e)-[s]->(f))* (g)
+        |RETURN *""".stripMargin
+
+    val nfa =
+      new TestNFABuilder(0, "a")
+        .addTransition(0, 1, "(a) (`  b@1`)")
+        .addTransition(0, 3, "(a) (`  d@13` WHERE `  d@13` = d)")
+        .addTransition(1, 2, "(`  b@1`)-[`  r@2`]->(`  c@3`)")
+        .addTransition(2, 1, "(`  c@3`) (`  b@1`)")
+        .addTransition(2, 3, "(`  c@3`) (`  d@13` WHERE `  d@13` = d)")
+        .addTransition(3, 4, "(`  d@13`) (`  e@7`)")
+        .addTransition(3, 6, "(`  d@13`) (`  g@14`)")
+        .addTransition(4, 5, "(`  e@7`)-[`  s@8`]->(`  f@9`)")
+        .addTransition(5, 4, "(`  f@9`) (`  e@7`)")
+        .addTransition(5, 6, "(`  f@9`) (`  g@14`)")
+        .setFinalState(6)
+        .build()
+
+    val plan = planner.plan(query).stripProduceResults
+    plan should equal(
+      planner.subPlanBuilder()
+        .statefulShortestPath(
+          "a",
+          "g",
+          "SHORTEST 1 (a) ((`  b@1`)-[`  r@2`]->(`  c@3`)){0, } (`  d@0`) ((`  e@7`)-[`  s@8`]->(`  f@9`)){0, } (g)",
+          None,
+          Set(("  b@1", "  b@4"), ("  c@3", "  c@6"), ("  e@7", "  e@10"), ("  f@9", "  f@12")),
+          Set(("  r@2", "  r@5"), ("  s@8", "  s@11")),
+          Set(("  d@13", "  d@0"), ("  g@14", "g")),
+          Set.empty,
+          StatefulShortestPath.Selector.Shortest(1),
+          nfa,
+          ExpandAll
+        )
+        .apply()
+        .|.nodeByLabelScan("a", "N", "d")
+        .nodeIndexOperator("d:User(prop = 5)", _ => GetValue)
+        .build()
+    )
+  }
+
+  test("should plan a predicate before SPP, if that predicate has only dependencies on entities already bound") {
+    val planner = plannerBase
+      .enableDeduplicateNames(false)
+      .build()
+
+    val query = {
+      // d.prop = q.prop can be pulled into this MATCH clause.
+      """MATCH (d:User)-[t]->(q)
+        |MATCH ANY SHORTEST (a:N) ((b)-[r]->(c))* (d WHERE d.prop = q.prop) ((e)-[s]->(f))* (g)
+        |RETURN *""".stripMargin
+    }
+
+    val nfa =
+      new TestNFABuilder(0, "a")
+        .addTransition(0, 1, "(a) (`  b@1`)")
+        .addTransition(0, 3, "(a) (`  d@13` WHERE `  d@13` = d)")
+        .addTransition(1, 2, "(`  b@1`)-[`  r@2`]->(`  c@3`)")
+        .addTransition(2, 1, "(`  c@3`) (`  b@1`)")
+        .addTransition(2, 3, "(`  c@3`) (`  d@13` WHERE `  d@13` = d)")
+        .addTransition(3, 4, "(`  d@13`) (`  e@7`)")
+        .addTransition(3, 6, "(`  d@13`) (`  g@14`)")
+        .addTransition(4, 5, "(`  e@7`)-[`  s@8`]->(`  f@9`)")
+        .addTransition(5, 4, "(`  f@9`) (`  e@7`)")
+        .addTransition(5, 6, "(`  f@9`) (`  g@14`)")
+        .setFinalState(6)
+        .build()
+
+    val plan = planner.plan(query).stripProduceResults
+    plan should equal(
+      planner.subPlanBuilder()
+        .statefulShortestPath(
+          "a",
+          "g",
+          "SHORTEST 1 (a) ((`  b@1`)-[`  r@2`]->(`  c@3`)){0, } (`  d@0`) ((`  e@7`)-[`  s@8`]->(`  f@9`)){0, } (g)",
+          None,
+          Set(("  b@1", "  b@4"), ("  c@3", "  c@6"), ("  e@7", "  e@10"), ("  f@9", "  f@12")),
+          Set(("  r@2", "  r@5"), ("  s@8", "  s@11")),
+          Set(("  d@13", "  d@0"), ("  g@14", "g")),
+          Set.empty,
+          StatefulShortestPath.Selector.Shortest(1),
+          nfa,
+          ExpandAll
+        )
+        .apply()
+        .|.nodeByLabelScan("a", "N", "d", "t", "q")
+        .filter("cacheN[d.prop] = q.prop")
+        .expandAll("(d)-[t]->(q)")
+        .nodeIndexOperator("d:User(prop)", getValue = _ => GetValue)
+        .build()
+    )
+  }
+
+  test("should not plan a predicate before SPP, if that predicate has unsolved dependencies on nodes in SPP") {
+    val planner = plannerBase
+      .enableDeduplicateNames(false)
+      .build()
+
+    val query =
+      """MATCH (d:User)
+        |MATCH ANY SHORTEST (a:N) ((b)-[r]->(c))* (d WHERE d.prop = size(r)) ((e)-[s]->(f))* (g)
+        |RETURN *""".stripMargin
+
+    val nfa =
+      new TestNFABuilder(0, "a")
+        .addTransition(0, 1, "(a) (`  b@1`)")
+        .addTransition(0, 3, "(a) (`  d@13` WHERE `  d@13` = d)")
+        .addTransition(1, 2, "(`  b@1`)-[`  r@2`]->(`  c@3`)")
+        .addTransition(2, 1, "(`  c@3`) (`  b@1`)")
+        .addTransition(2, 3, "(`  c@3`) (`  d@13` WHERE `  d@13` = d)")
+        .addTransition(3, 4, "(`  d@13`) (`  e@7`)")
+        .addTransition(3, 6, "(`  d@13`) (`  g@14`)")
+        .addTransition(4, 5, "(`  e@7`)-[`  s@8`]->(`  f@9`)")
+        .addTransition(5, 4, "(`  f@9`) (`  e@7`)")
+        .addTransition(5, 6, "(`  f@9`) (`  g@14`)")
+        .setFinalState(6)
+        .build()
+
+    val plan = planner.plan(query).stripProduceResults
+    plan should equal(
+      planner.subPlanBuilder()
+        .statefulShortestPath(
+          "a",
+          "g",
+          "SHORTEST 1 (a) ((`  b@1`)-[`  r@2`]->(`  c@3`)){0, } (`  d@0`) ((`  e@7`)-[`  s@8`]->(`  f@9`)){0, } (g)",
+          // this predicate can only be answered after `r` has been bound and can therefore not be planned before the SPP.
+          Some("cacheN[d.prop] = size(`  r@5`)"),
+          Set(("  b@1", "  b@4"), ("  c@3", "  c@6"), ("  e@7", "  e@10"), ("  f@9", "  f@12")),
+          Set(("  r@2", "  r@5"), ("  s@8", "  s@11")),
+          Set(("  d@13", "  d@0"), ("  g@14", "g")),
+          Set.empty,
+          StatefulShortestPath.Selector.Shortest(1),
+          nfa,
+          ExpandAll
+        )
+        .apply()
+        .|.nodeByLabelScan("a", "N", "d")
+        .cacheProperties("cacheNFromStore[d.prop]")
+        .nodeByLabelScan("d", "User")
         .build()
     )
   }

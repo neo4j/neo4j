@@ -68,6 +68,11 @@ case class Selections private (predicates: Set[Predicate]) {
   def filter(filterExpression: Predicate => Boolean): Selections =
     new Selections(predicates.filter(filterExpression))
 
+  def partition(expression: Predicate => Boolean): (Selections, Selections) = {
+    val (truePartition, falsePartition) = predicates.partition(expression)
+    (new Selections(truePartition), new Selections(falsePartition))
+  }
+
   /**
    * The top level label predicates for each variable.
    * That means if "a" -> hasLabels("a", "A") is returned, we can safely assume that a has the label A.
