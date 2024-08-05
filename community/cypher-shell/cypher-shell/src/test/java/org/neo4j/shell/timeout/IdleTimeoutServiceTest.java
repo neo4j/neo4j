@@ -32,17 +32,22 @@ import org.neo4j.time.FakeClock;
 
 class IdleTimeoutServiceTest {
 
-    private final Duration delay = Duration.ofMillis(50);
-    private final Duration timeout = Duration.ofHours(3);
+    private static final Duration DEFAULT_DELAY = Duration.ofMillis(50);
+    private static final Duration DEFAULT_TIMEOUT = Duration.ofHours(3);
     private RecordingTimeout timeoutAction;
     private FakeTicker ticker;
     private IdleTimeoutService service;
 
     @BeforeEach
-    void setUp() {
+    void setUp() throws Exception {
+        startService(DEFAULT_TIMEOUT, DEFAULT_DELAY);
+    }
+
+    void startService(Duration timeout, Duration delay) throws Exception {
+        if (service != null) service.close();
         ticker = new FakeTicker();
         timeoutAction = new RecordingTimeout();
-        service = new IdleTimeoutServiceImpl(ticker, timeout, Duration.ofMillis(0), delay, timeoutAction);
+        service = new IdleTimeoutServiceImpl(ticker, timeout, Duration.ZERO, delay, timeoutAction);
         service.resume();
     }
 
@@ -54,45 +59,55 @@ class IdleTimeoutServiceTest {
     @Test
     void timeout() {
         assertThat(timeoutAction.timedOut.get()).isEqualTo(false);
-        ticker.forward(timeout.plusMillis(1));
+        ticker.forward(DEFAULT_TIMEOUT.plusMillis(1));
         assertTimedOut();
     }
 
     @Test
     void doNotTimeout() {
-        ticker.forward(timeout);
+        ticker.forward(DEFAULT_TIMEOUT);
         assertNotTimedOut();
     }
 
     @Test
     void doNotTimeoutIfPaused() {
-        ticker.forward(timeout);
+        ticker.forward(DEFAULT_TIMEOUT);
         service.pause();
-        ticker.forward(timeout);
+        ticker.forward(DEFAULT_TIMEOUT);
         assertNotTimedOut();
     }
 
     @Test
     void timeoutAfterResume() {
         for (int i = 0; i < 100; ++i) {
-            ticker.forward(timeout);
+            ticker.forward(DEFAULT_TIMEOUT);
             service.pause();
             ticker.forward(i, TimeUnit.HOURS);
             service.resume();
         }
         assertNotTimedOut();
-        ticker.forward(timeout.plusMillis(1));
+        ticker.forward(DEFAULT_TIMEOUT.plusMillis(1));
         assertTimedOut();
     }
 
     @Test
     void timeoutAfterAwake() {
         for (int i = 0; i < 100; ++i) {
-            ticker.forward(timeout);
+            ticker.forward(DEFAULT_TIMEOUT);
             service.imAwake();
         }
         assertNotTimedOut();
-        ticker.forward(timeout.plusMillis(1));
+        ticker.forward(DEFAULT_TIMEOUT.plusMillis(1));
+        assertTimedOut();
+    }
+
+    @Test
+    void smallTimeout() throws Exception {
+        final var smallTimeout = Duration.ofSeconds(5);
+        startService(smallTimeout, Duration.ofMinutes(10));
+        ticker.forward(smallTimeout);
+        assertNotTimedOut();
+        ticker.forward(Duration.ofMillis(1));
         assertTimedOut();
     }
 
@@ -101,7 +116,7 @@ class IdleTimeoutServiceTest {
     }
 
     private void assertNotTimedOut() {
-        await().pollDelay(delay.multipliedBy(20)) // Give it some time before asserting
+        await().pollDelay(DEFAULT_DELAY.multipliedBy(20)) // Give it some time before asserting
                 .timeout(Duration.ofSeconds(20))
                 .untilFalse(timeoutAction.timedOut);
     }

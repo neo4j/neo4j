@@ -499,7 +499,7 @@ class CliArgHelperTest extends LocaleDependentTestBase {
     @Test
     void idleTimeout() {
         final var defaultTimeout = Duration.ofSeconds(-1);
-        final var defaultDelay = Duration.ofMinutes(5);
+        final var defaultDelay = Duration.ofMinutes(2);
         assertTimeout(defaultTimeout, defaultDelay);
         assertTimeout(defaultTimeout, defaultDelay, "--idle-timeout", "disable");
         assertTimeout(Duration.ofSeconds(1), defaultDelay, "--idle-timeout", "1s");

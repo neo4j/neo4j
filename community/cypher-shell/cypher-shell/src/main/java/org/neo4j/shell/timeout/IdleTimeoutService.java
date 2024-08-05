@@ -84,6 +84,7 @@ class IdleTimeoutServiceImpl implements IdleTimeoutService {
     @VisibleForTesting
     IdleTimeoutServiceImpl(
             Ticker ticker, Duration timeout, Duration initialDelay, Duration delay, Runnable timeoutAction) {
+        final var actualDelayMs = calculateDelayMs(timeout.toMillis(), delay.toMillis());
         this.ticker = ticker;
         this.timeoutNs = timeout.toNanos();
         this.timeoutAction = timeoutAction;
@@ -93,7 +94,18 @@ class IdleTimeoutServiceImpl implements IdleTimeoutService {
                 timeoutNs > (10 * DEFAULT_SIGNIFICANT_DURATION_NS) ? DEFAULT_SIGNIFICANT_DURATION_NS : 0;
         timeoutExecutor = Executors.newSingleThreadScheduledExecutor();
         timeoutExecutor.scheduleWithFixedDelay(
-                this::exitOnIdleTimeout, initialDelay.toMillis(), delay.toMillis(), TimeUnit.MILLISECONDS);
+                this::exitOnIdleTimeout, initialDelay.toMillis(), actualDelayMs, TimeUnit.MILLISECONDS);
+    }
+
+    // To not confuse users who just want to try out the feature with very low timeouts we adapt the delay here
+    private static long calculateDelayMs(long timeoutMs, long delayMs) {
+        final var timeoutDividedByFour = timeoutMs / 4;
+        if (delayMs <= timeoutDividedByFour) {
+            return delayMs;
+        } else {
+            final var minDelayMs = 1000;
+            return Math.max(minDelayMs, timeoutDividedByFour);
+        }
     }
 
     @Override

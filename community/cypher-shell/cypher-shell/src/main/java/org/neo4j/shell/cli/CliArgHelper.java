@@ -74,7 +74,7 @@ public class CliArgHelper {
     private static final String DEFAULT_ADDRESS = format("%s://%s:%d", DEFAULT_SCHEME, DEFAULT_HOST, DEFAULT_PORT);
     private static final AccessMode DEFAULT_ACCESS_MODE = AccessMode.WRITE;
     public static final Duration DEFAULT_IDLE_TIMEOUT = Duration.ofSeconds(-1);
-    public static final Duration DEFAULT_IDLE_TIMEOUT_DELAY = Duration.ofMinutes(5);
+    public static final Duration DEFAULT_IDLE_TIMEOUT_DELAY = Duration.ofMinutes(2);
 
     private final Environment environment;
 
