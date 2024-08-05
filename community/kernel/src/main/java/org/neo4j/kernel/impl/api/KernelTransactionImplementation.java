@@ -58,6 +58,9 @@ import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.dbms.identity.ServerIdentity;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.exceptions.UnspecifiedKernelException;
+import org.neo4j.gqlstatus.ErrorClassification;
+import org.neo4j.gqlstatus.ErrorGqlStatusObjectImplementation;
+import org.neo4j.gqlstatus.GqlStatusInfoCodes;
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.internal.helpers.Exceptions;
@@ -1026,7 +1029,10 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
         Exceptions.throwIfInstanceOf(exception, TransactionFailureException.class);
         Exceptions.throwIfUnchecked(exception);
-        throw new TransactionFailureException(Status.General.UnknownError, exception);
+        var gql = ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_50N42)
+                .withClassification(ErrorClassification.DATABASE_ERROR)
+                .build();
+        throw new TransactionFailureException(gql, Status.General.UnknownError, exception);
     }
 
     private void closed() {
@@ -1139,7 +1145,10 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         }
         Exceptions.throwIfInstanceOf(exception, TransactionFailureException.class);
         Exceptions.throwIfUnchecked(exception);
-        throw new TransactionFailureException(Status.General.UnknownError, exception);
+        var gql = ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_50N42)
+                .withClassification(ErrorClassification.DATABASE_ERROR)
+                .build();
+        throw new TransactionFailureException(gql, Status.General.UnknownError, exception);
     }
 
     private TransactionApplicationMode transactionApplicationMode() {
