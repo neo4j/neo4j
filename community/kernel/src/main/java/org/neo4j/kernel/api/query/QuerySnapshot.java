@@ -24,9 +24,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalLong;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.neo4j.graphdb.ExecutionPlanDescription;
+import org.neo4j.graphdb.InputPosition;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.lock.ActiveLock;
@@ -47,6 +49,7 @@ public class QuerySnapshot {
     private final long pageHits;
     private final long pageFaults;
     private final Optional<String> obfuscatedQueryText;
+    private final Optional<Function<InputPosition, InputPosition>> obfuscatePosition;
     private final Optional<MapValue> obfuscatedQueryParameters;
     private final long transactionId;
     private final long parentTransactionId;
@@ -69,6 +72,7 @@ public class QuerySnapshot {
             long activeLockCount,
             long allocatedBytes,
             Optional<String> obfuscatedQueryText,
+            Optional<Function<InputPosition, InputPosition>> obfuscatePosition,
             Optional<MapValue> obfuscatedQueryParameters,
             long outerTransactionId,
             String parentDbName,
@@ -89,6 +93,7 @@ public class QuerySnapshot {
         this.activeLockCount = activeLockCount;
         this.allocatedBytes = allocatedBytes;
         this.obfuscatedQueryText = obfuscatedQueryText;
+        this.obfuscatePosition = obfuscatePosition;
         this.obfuscatedQueryParameters = obfuscatedQueryParameters;
         this.transactionId = outerTransactionId;
         this.parentDbName = parentDbName;
@@ -111,6 +116,10 @@ public class QuerySnapshot {
 
     public Optional<String> obfuscatedQueryText() {
         return obfuscatedQueryText;
+    }
+
+    public Optional<Function<InputPosition, InputPosition>> obfuscatePosition() {
+        return obfuscatePosition;
     }
 
     public MapValue rawQueryParameters() {

@@ -138,7 +138,8 @@ case class FabricPlanner(
         cypherConfig.useParameterSizeHint
       )
       plan.copy(
-        executionType = frontend.preParsing.executionType(query.options, plan.inCompositeContext)
+        executionType = frontend.preParsing.executionType(query.options, plan.inCompositeContext),
+        queryOptionsOffset = query.options.offset
       )
     }
 

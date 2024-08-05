@@ -19,10 +19,14 @@
  */
 package org.neo4j.kernel.api.query;
 
+import java.util.function.Function;
+import org.neo4j.graphdb.InputPosition;
 import org.neo4j.values.virtual.MapValue;
 
 public interface QueryObfuscator {
     String obfuscateText(String rawQueryText, int preparserOffset);
+
+    Function<InputPosition, InputPosition> obfuscatePosition(String rawQueryText, int preparserOffset);
 
     MapValue obfuscateParameters(MapValue rawQueryParameters);
 
@@ -31,6 +35,11 @@ public interface QueryObfuscator {
         @Override
         public String obfuscateText(String rawQueryText, int preparserOffset) {
             return rawQueryText;
+        }
+
+        @Override
+        public Function<InputPosition, InputPosition> obfuscatePosition(String rawQueryText, int preparserOffset) {
+            return Function.identity();
         }
 
         @Override

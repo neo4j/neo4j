@@ -33,9 +33,10 @@ sealed trait InputPosition {
    */
   def withOffset(pos: Option[InputPosition]): InputPosition = pos match {
     case Some(p) if p.offset != 0 =>
-      val newColumn = if (line == p.line) column + p.column - 1 else column
+      val newColumn = if (line == 1) column + p.column - 1 else column
       InputPosition(offset + p.offset, line + p.line - 1, newColumn)
-    case _ => this
+    case _ =>
+      this
   }
 
   def withInputLength(length: Int): InputPosition.Range = {

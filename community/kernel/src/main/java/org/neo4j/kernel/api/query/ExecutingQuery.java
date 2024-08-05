@@ -29,10 +29,12 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
+import java.util.function.Function;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.neo4j.graphdb.ExecutionPlanDescription;
+import org.neo4j.graphdb.InputPosition;
 import org.neo4j.internal.kernel.api.ExecutionStatistics;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.kernel.database.NamedDatabaseId;
@@ -76,8 +78,9 @@ public class ExecutingQuery implements QueryTransactionStatisticsAggregator {
     private CompilerInfo compilerInfo;
 
     private long compilationCompletedNanos;
-    private String obfuscatedQueryText;
-    private MapValue obfuscatedQueryParameters;
+
+    private ObfuscatedQueryData obfuscatedQueryData;
+
     private Supplier<ExecutionPlanDescription> planDescriptionSupplier;
     private DeprecationNotificationsProvider deprecationNotificationsProvider;
     private DeprecationNotificationsProvider fabricDeprecationNotificationsProvider;
@@ -288,11 +291,12 @@ public class ExecutingQuery implements QueryTransactionStatisticsAggregator {
         }
 
         try {
-            obfuscatedQueryText = queryObfuscator.obfuscateText(rawQueryText, preparserOffset);
-            obfuscatedQueryParameters = queryObfuscator.obfuscateParameters(rawQueryParameters);
+            obfuscatedQueryData = new ObfuscatedQueryData(
+                    queryObfuscator.obfuscateText(rawQueryText, preparserOffset),
+                    queryObfuscator.obfuscatePosition(rawQueryText, preparserOffset),
+                    queryObfuscator.obfuscateParameters(rawQueryParameters));
         } catch (Exception ignore) {
-            obfuscatedQueryText = null;
-            obfuscatedQueryParameters = null;
+            obfuscatedQueryData = new ObfuscatedQueryData(null, null, null);
         }
 
         this.status = SimpleState.planning();
@@ -332,8 +336,7 @@ public class ExecutingQuery implements QueryTransactionStatisticsAggregator {
         this.deprecationNotificationsProvider = null;
         this.fabricDeprecationNotificationsProvider = null;
         this.memoryTracker = HeapHighWaterMarkTracker.NONE;
-        this.obfuscatedQueryParameters = null;
-        this.obfuscatedQueryText = null;
+        this.obfuscatedQueryData = new ObfuscatedQueryData(null, null, null);
         this.status = SimpleState.parsing();
     }
 
@@ -360,14 +363,16 @@ public class ExecutingQuery implements QueryTransactionStatisticsAggregator {
         long currentTimeNanos;
         long cpuTimeNanos;
         String queryText;
+        Function<InputPosition, InputPosition> queryPostions;
         MapValue queryParameters;
         do {
             status = this.status; // read barrier, must be first
             waitTimeNanos = this.waitTimeNanos; // the reason for the retry loop: don't count the wait time twice
             cpuTimeNanos = cpuClock.cpuTimeNanos(threadExecutingTheQueryId);
             currentTimeNanos = clock.nanos(); // capture the time as close to the snapshot as possible
-            queryText = this.obfuscatedQueryText;
-            queryParameters = this.obfuscatedQueryParameters;
+            queryText = obfuscatedQueryData != null ? obfuscatedQueryData.obfuscatedQueryText : null;
+            queryPostions = obfuscatedQueryData != null ? obfuscatedQueryData.obfuscatePosition : null;
+            queryParameters = obfuscatedQueryData != null ? obfuscatedQueryData.obfuscatedQueryParameters : null;
         } while (this.status != status);
         // guarded by barrier - unused if status is planning, stable otherwise
         long compilationCompletedNanos = this.compilationCompletedNanos;
@@ -407,6 +412,7 @@ public class ExecutingQuery implements QueryTransactionStatisticsAggregator {
                 activeLocks,
                 memoryTracker.heapHighWaterMark(),
                 Optional.ofNullable(queryText),
+                Optional.ofNullable(queryPostions),
                 Optional.ofNullable(queryParameters),
                 outerTransactionId,
                 parentDbName,
@@ -602,4 +608,9 @@ public class ExecutingQuery implements QueryTransactionStatisticsAggregator {
             aggregatedStatistics = new QueryTransactionStatisticsAggregator.ConcurrentImpl(current);
         }
     }
+
+    private record ObfuscatedQueryData(
+            String obfuscatedQueryText,
+            Function<InputPosition, InputPosition> obfuscatePosition,
+            MapValue obfuscatedQueryParameters) {}
 }

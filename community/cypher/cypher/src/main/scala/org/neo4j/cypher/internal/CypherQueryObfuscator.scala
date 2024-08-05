@@ -20,9 +20,12 @@
 package org.neo4j.cypher.internal
 
 import org.neo4j.cypher.internal.util.ObfuscationMetadata
+import org.neo4j.graphdb
 import org.neo4j.kernel.api.query.QueryObfuscator
 import org.neo4j.values.storable.Values.utf8Value
 import org.neo4j.values.virtual.MapValue
+
+import java.util.function
 
 import scala.collection.mutable
 
@@ -79,6 +82,35 @@ class CypherQueryObfuscator(state: ObfuscationMetadata) extends QueryObfuscator 
       // this shouldn't happen but let's err on the side of caution and obfuscate the rest of the query
       rawQueryText.length - fromIndex
     }
+  }
+
+  override def obfuscatePosition(
+    rawQueryText: String,
+    preparserOffset: Int
+  ): function.Function[graphdb.InputPosition, graphdb.InputPosition] = {
+    if (state.sensitiveLiteralOffsets.isEmpty) function.Function.identity()
+    else in => {
+      var obfuscatedOffset = in.getOffset
+      var obfuscatedColumn = in.getColumn
+      val obfuscatedLength = CypherQueryObfuscator.OBFUSCATED_LITERAL.length
+      val lineOffset = findLine(rawQueryText, preparserOffset)
+      for (literalOffset <- state.sensitiveLiteralOffsets) {
+        val start = literalOffset.start(preparserOffset)
+        if (start < in.getOffset) {
+          val length = literalOffset.length.getOrElse(literalStringLength(rawQueryText, start))
+          obfuscatedOffset += obfuscatedLength - length
+          if (literalOffset.line(lineOffset) == in.getLine) {
+            obfuscatedColumn += obfuscatedLength - length
+          }
+        }
+      }
+      new graphdb.InputPosition(obfuscatedOffset, in.getLine, obfuscatedColumn)
+    }
+  }
+
+  private def findLine(rawQueryText: String, offset: Int): Int = {
+    if (offset == 0) 0
+    else rawQueryText.take(offset + 1).lines().count().toInt - 1
   }
 
 }

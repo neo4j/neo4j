@@ -60,18 +60,22 @@ case object ObfuscationMetadataCollection extends Phase[BaseContext, BaseState, 
     val partial: PartialFunction[Any, Vector[LiteralOffset] => FoldingBehavior[Vector[LiteralOffset]]] = {
       case literal: SensitiveLiteral =>
         (acc: Vector[LiteralOffset]) =>
-          SkipChildren(acc :+ LiteralOffset(literal.position.offset, Some(literal.literalLength)))
+          SkipChildren(acc :+ LiteralOffset(
+            literal.position.offset,
+            literal.position.line,
+            Some(literal.literalLength)
+          ))
       case p: AutoExtractedParameter with SensitiveAutoParameter =>
         (acc: Vector[LiteralOffset]) =>
           extractedParameters.get(p) match {
             case Some(originalExp) =>
               val literalOffsets = originalExp.folder.findAllByClass[Literal]
                 .map(_.asSensitiveLiteral)
-                .map(l => LiteralOffset(l.position.offset, Some(l.literalLength)))
+                .map(l => LiteralOffset(l.position.offset, l.position.line, Some(l.literalLength)))
               SkipChildren(acc ++ literalOffsets)
             case None =>
               // Note, this can lead to query obfuscator failing and the query not being logged
-              SkipChildren(acc :+ LiteralOffset(p.position.offset, None))
+              SkipChildren(acc :+ LiteralOffset(p.position.offset, p.position.line, None))
           }
     }
 
