@@ -24,42 +24,53 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import org.neo4j.dbms.archive.ArchiveFormat;
 
-public class BackupTarFormatV1 implements BackupCompressionFormat {
-    static final String MAGIC_HEADER = ArchiveFormat.BACKUP_PREFIX + "TV1";
+public class BackupTarFormatV2 implements BackupCompressionFormat {
+    static final String MAGIC_HEADER = ArchiveFormat.BACKUP_PREFIX + "TV2";
 
-    private BackupMetadataV1 metadata;
+    private BackupMetadataV2 metadata;
 
     @Override
     public void setMetadata(BackupDescription description) {
-        this.metadata = new BackupMetadataV1(description);
+        this.metadata = BackupMetadataV2.from(description);
     }
 
     @Override
     public OutputStream compress(OutputStream stream) throws IOException {
         stream.write(MAGIC_HEADER.getBytes());
-        metadata.writeToStreamV1(stream);
+        writeDescriptionToStream(stream);
         return stream;
     }
 
     @Override
     public InputStream decompress(InputStream stream) throws IOException {
-        BackupMetadataV1.readFromStream(stream);
+        readMetadataFromStream(stream);
         return stream;
     }
 
     @Override
     public StreamWithDescription decompressAndDescribe(InputStream stream) throws IOException {
-        var description = BackupMetadataV1.readFromStream(stream).toBackupDescription();
+        var description = readMetadataFromStream(stream).toBackupDescription();
         return new StreamWithDescription(stream, description);
     }
 
     @Override
     public BackupDescription readMetadata(InputStream inputStream) throws IOException {
-        return BackupMetadataV1.readFromStream(inputStream).toBackupDescription();
+        return readMetadataFromStream(inputStream).toBackupDescription();
     }
 
-    @Override
-    public String toString() {
-        return "BackupTarFormatV1{metadata=" + metadata + '}';
+    private void writeDescriptionToStream(OutputStream outputStream) throws IOException {
+        // Always write the newest version of BackupMetadata
+        var metadataVersion = BackupMetadataV2.VERSION;
+        outputStream.write(metadataVersion);
+        metadata.writeToStreamV2(outputStream);
+    }
+
+    private static BackupMetadataV2 readMetadataFromStream(InputStream inputStream) throws IOException {
+        var metadataVersion = inputStream.read();
+        return switch (metadataVersion) {
+            case BackupMetadataV2.VERSION -> BackupMetadataV2.readFromStream(inputStream);
+            default -> throw new IOException(
+                    String.format("Unsupported metadata version %d found in backup", metadataVersion));
+        };
     }
 }

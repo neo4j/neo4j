@@ -36,6 +36,7 @@ public class BackupDescription {
     private final boolean full;
     private final long lowestAppendIndex;
     private final long highestAppendIndex;
+    private final String metadataScript;
 
     public BackupDescription(
             String databaseName,
@@ -56,6 +57,44 @@ public class BackupDescription {
         this.full = full;
         this.lowestAppendIndex = lowestAppendIndex;
         this.highestAppendIndex = highestAppendIndex;
+        this.metadataScript = null;
+    }
+
+    private BackupDescription(
+            String databaseName,
+            StoreId storeId,
+            DatabaseId databaseId,
+            LocalDateTime backupTime,
+            boolean recovered,
+            boolean compressed,
+            boolean full,
+            long lowestAppendIndex,
+            long highestAppendIndex,
+            String metadataScript) {
+        this.databaseName = new NormalizedDatabaseName(databaseName).name();
+        this.storeId = storeId;
+        this.databaseId = databaseId;
+        this.backupTime = backupTime.truncatedTo(ChronoUnit.SECONDS);
+        this.recovered = recovered;
+        this.compressed = compressed;
+        this.full = full;
+        this.lowestAppendIndex = lowestAppendIndex;
+        this.highestAppendIndex = highestAppendIndex;
+        this.metadataScript = metadataScript;
+    }
+
+    public BackupDescription withMetadataScript(String metadataScript) {
+        return new BackupDescription(
+                databaseName,
+                storeId,
+                databaseId,
+                backupTime,
+                recovered,
+                compressed,
+                full,
+                lowestAppendIndex,
+                highestAppendIndex,
+                metadataScript);
     }
 
     public String getDatabaseName() {
@@ -94,6 +133,10 @@ public class BackupDescription {
         return highestAppendIndex;
     }
 
+    public String getMetadataScript() {
+        return metadataScript;
+    }
+
     public boolean isEmpty() {
         return lowestAppendIndex == 0 && highestAppendIndex == 0;
     }
@@ -115,7 +158,8 @@ public class BackupDescription {
                 && Objects.equals(databaseName, that.databaseName)
                 && Objects.equals(storeId, that.storeId)
                 && Objects.equals(databaseId, that.databaseId)
-                && Objects.equals(backupTime, that.backupTime);
+                && Objects.equals(backupTime, that.backupTime)
+                && Objects.equals(metadataScript, that.metadataScript);
     }
 
     @Override
@@ -129,7 +173,8 @@ public class BackupDescription {
                 compressed,
                 full,
                 lowestAppendIndex,
-                highestAppendIndex);
+                highestAppendIndex,
+                metadataScript);
     }
 
     @Override
@@ -143,6 +188,7 @@ public class BackupDescription {
                 + compressed + ", full="
                 + full + ", lowestAppendIndex="
                 + lowestAppendIndex + ", highestAppendIndex="
-                + highestAppendIndex + '}';
+                + highestAppendIndex + ", metadataScript='"
+                + metadataScript + '\'' + '}';
     }
 }

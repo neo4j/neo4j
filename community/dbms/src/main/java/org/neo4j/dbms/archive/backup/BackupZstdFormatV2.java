@@ -25,14 +25,14 @@ import java.io.OutputStream;
 import org.neo4j.dbms.archive.ArchiveFormat;
 import org.neo4j.dbms.archive.StandardCompressionFormat;
 
-public class BackupZstdFormatV1 implements BackupCompressionFormat {
-    static final String MAGIC_HEADER = ArchiveFormat.BACKUP_PREFIX + "ZV1";
+public class BackupZstdFormatV2 implements BackupCompressionFormat {
+    static final String MAGIC_HEADER = ArchiveFormat.BACKUP_PREFIX + "ZV2";
 
-    private BackupMetadataV1 metadata;
+    private BackupMetadataV2 metadata;
 
     @Override
     public void setMetadata(BackupDescription description) {
-        this.metadata = new BackupMetadataV1(description);
+        this.metadata = BackupMetadataV2.from(description);
     }
 
     @Override
@@ -40,7 +40,7 @@ public class BackupZstdFormatV1 implements BackupCompressionFormat {
         stream.write(MAGIC_HEADER.getBytes());
         OutputStream compressionStream = StandardCompressionFormat.ZSTD.compress(stream);
         try {
-            metadata.writeToStreamV1(compressionStream);
+            writeDescriptionToStream(compressionStream);
             return compressionStream;
         } catch (IOException e) {
             compressionStream.close();
@@ -79,12 +79,19 @@ public class BackupZstdFormatV1 implements BackupCompressionFormat {
         }
     }
 
-    private static BackupMetadataV1 readMetadataFromZstdStream(InputStream inputStream) throws IOException {
-        return BackupMetadataV1.readFromStream(inputStream);
+    private void writeDescriptionToStream(OutputStream outputStream) throws IOException {
+        // Always write the newest version of BackupMetadata
+        var metadataVersion = BackupMetadataV2.VERSION;
+        outputStream.write(metadataVersion);
+        metadata.writeToStreamV2(outputStream);
     }
 
-    @Override
-    public String toString() {
-        return "BackupZstdFormatV1{metadata=" + metadata + '}';
+    private static BackupMetadataV2 readMetadataFromZstdStream(InputStream inputStream) throws IOException {
+        var metadataVersion = inputStream.read();
+        return switch (metadataVersion) {
+            case BackupMetadataV2.VERSION -> BackupMetadataV2.readFromStream(inputStream);
+            default -> throw new IOException(
+                    String.format("Unsupported metadata version %d found in backup", metadataVersion));
+        };
     }
 }
