@@ -66,6 +66,9 @@ sealed trait Query extends Statement with SemanticCheckable with SemanticAnalysi
    * variables from the `outer` scope
    */
   def semanticCheckInSubqueryContext(outer: SemanticState): SemanticCheck
+  def semanticCheckImportingWithSubQueryContext(outer: SemanticState): SemanticCheck
+
+  def returnVariableCheck(outer: SemanticState): SemanticCheck
 
   /**
    * True if this query part starts with an importing WITH (has incoming arguments)
@@ -81,6 +84,7 @@ sealed trait Query extends Statement with SemanticCheckable with SemanticAnalysi
    * True iff this query part ends with a finish clause.
    */
   def endsWithFinish: Boolean
+  def importColumns: Seq[String]
 
   /**
    * Exists and Count can omit the Return Statement
@@ -133,7 +137,7 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
     case _         => false
   }
 
-  def importColumns: Seq[String] = partitionedClauses.importingWith match {
+  override def importColumns: Seq[String] = partitionedClauses.importingWith match {
     case Some(w) => w.returnItems.items.map(_.name)
     case _       => Seq.empty
   }
@@ -146,6 +150,20 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
         case Some(nonImportingWith: With) => Some(nonImportingWith)
         case _                            => None
       }
+
+  private def semanticCheckAbstractInScopeSubquery(
+    clauses: Seq[Clause],
+    clauseCheck: Seq[Clause] => SemanticCheck,
+    canOmitReturnClause: Boolean = false
+  ): SemanticCheck =
+    checkStandaloneCall(clauses) chain
+      withScopedState(clauseCheck(clauses)) chain
+      checkComposableNonTransactionCommandsAllowed(clauses) chain
+      checkOrder(clauses, canOmitReturnClause) chain
+      checkNoCallInTransactionsAfterWriteClause(clauses) chain
+      checkInputDataStream(clauses) chain
+      checkUsePositionInScopeSubquery() chain
+      recordCurrentScope(this)
 
   private def semanticCheckAbstract(
     clauses: Seq[Clause],
@@ -173,7 +191,7 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
 
   override def checkImportingWith: SemanticCheck = partitionedClauses.importingWith.foldSemanticCheck(_.semanticCheck)
 
-  override def semanticCheckInSubqueryContext(outer: SemanticState): SemanticCheck = {
+  override def semanticCheckImportingWithSubQueryContext(outer: SemanticState): SemanticCheck = {
     def importVariables: SemanticCheck =
       partitionedClauses.importingWith.foldSemanticCheck(wth =>
         wth.semanticCheckContinuation(outer.currentScope.scope) chain
@@ -188,7 +206,28 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
         partitionedClauses.clausesExceptImportingWithAndInitialGraphSelection,
         importVariables chain checkClauses(_, Some(outer.currentScope.scope))
       ) chain
-      checkShadowedVariables(outer) chain
+      warnOnPotentiallyShadowVariables(outer) chain
+      SemanticCheck.fromState(state =>
+        SemanticCheck.setState(state.recordWorkingGraph(workingGraph))
+      ) // resetWorkingGraph
+  }
+
+  override def returnVariableCheck(outer: SemanticState): SemanticCheck = {
+    semanticCheckAbstractInScopeSubquery(
+      partitionedClauses.clausesExceptInitialGraphSelection,
+      checkClauses(_, Some(outer.currentScope.scope))
+    )
+  }
+
+  override def semanticCheckInSubqueryContext(outer: SemanticState): SemanticCheck = {
+    val workingGraph = outer.workingGraph
+
+    checkInitialGraphSelection(outer) chain
+      semanticCheckAbstractInScopeSubquery(
+        partitionedClauses.clausesExceptInitialGraphSelection,
+        checkClauses(_, Some(outer.currentScope.scope))
+      ) chain
+      errorOnShadowedImportVariables(outer) chain
       SemanticCheck.fromState(state =>
         SemanticCheck.setState(state.recordWorkingGraph(workingGraph))
       ) // resetWorkingGraph
@@ -456,17 +495,38 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
     }
   }
 
-  private def checkUsePosition(): SemanticCheck =
-    partitionedClauses.clausesExceptImportingWithAndLeadingGraphSelection.collect {
+  private def checkUsePositionInScopeSubquery(): SemanticCheck = {
+    val clauses = partitionedClauses.clausesExceptInitialGraphSelection
+
+    val message = "USE clause must be the first clause in a (sub-)query."
+
+    clauses.collect {
       case useGraph: UseGraph => useGraph
     }.foldSemanticCheck { clause =>
       error(
-        "USE clause must be either the first clause in a (sub-)query or preceded by an importing WITH clause in a sub-query.",
+        message,
         clause.position
       )
     }
+  }
 
-  private def checkShadowedVariables(outer: SemanticState): SemanticCheck = { (inner: SemanticState) =>
+  private def checkUsePosition(): SemanticCheck = {
+    val clauses = partitionedClauses.clausesExceptImportingWithAndLeadingGraphSelection
+
+    val message =
+      "USE clause must be either the first clause in a (sub-)query or preceded by an importing WITH clause in a sub-query."
+
+    clauses.collect {
+      case useGraph: UseGraph => useGraph
+    }.foldSemanticCheck { clause =>
+      error(
+        message,
+        clause.position
+      )
+    }
+  }
+
+  private def warnOnPotentiallyShadowVariables(outer: SemanticState): SemanticCheck = { (inner: SemanticState) =>
     val outerScopeSymbols: Map[String, Symbol] = outer.currentScope.scope.symbolTable
     val innerScopeSymbols: Map[String, Set[Symbol]] = inner.currentScope.scope.allSymbols
 
@@ -484,6 +544,43 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
     }
 
     SemanticCheckResult.success(stateWithNotifications)
+  }
+
+  private def errorOnShadowedImportVariables(outer: SemanticState): SemanticCheck = { (inner: SemanticState) =>
+    val outerScopeSymbols: Map[String, Symbol] = outer.currentScope.scope.symbolTable
+
+    // Finds symbols of children of innerScope
+    val childrenTables = inner.currentScope.scope.children.map(_.symbolTable)
+    val innerScopeSymbols: Map[String, Set[Symbol]] =
+      childrenTables.foldLeft(Map.empty[String, Set[Symbol]]) {
+        case (acc0, table) =>
+          table.foldLeft(acc0) {
+            case (acc, (str, symbol)) if acc.contains(str) =>
+              acc.updated(str, acc(str) + symbol)
+            case (acc, (str, symbol)) =>
+              acc.updated(str, Set(symbol))
+          }
+      }
+
+    def isShadowed(s: Symbol): Boolean = {
+      innerScopeSymbols.contains(s.name) &&
+      !innerScopeSymbols(s.name).map(_.definition).forall(_ == s.definition)
+    }
+
+    val shadowedSymbols = outerScopeSymbols.collect {
+      case (name, symbol) if isShadowed(symbol) =>
+        name -> innerScopeSymbols(name).find(_.definition != symbol.definition).get.definition.asVariable.position
+    }
+
+    val shadowingErrors = shadowedSymbols.map {
+      case (varName, pos) =>
+        SemanticError(
+          s"The variable `$varName` is shadowing an imported variable with the same name and needs to be renamed",
+          pos
+        )
+    }.toSeq
+
+    SemanticCheckResult(inner, shadowingErrors)
   }
 
   override def finalScope(scope: Scope): Scope =
@@ -512,6 +609,9 @@ object SingleQuery {
 
     lazy val clausesExceptImportingWithAndInitialGraphSelection: Seq[Clause] =
       subsequentGraphSelection.toSeq ++ clausesExceptImportingWithAndLeadingGraphSelection
+
+    lazy val clausesExceptInitialGraphSelection: Seq[Clause] =
+      importingWith.toSeq ++ subsequentGraphSelection ++ clausesExceptImportingWithAndLeadingGraphSelection
   }
 
   private def partitionClauses(clauses: Seq[Clause]): PartitionedClauses =
@@ -575,6 +675,8 @@ sealed trait Union extends Query {
     unionMappings.map(_.unionVariable)
   )
 
+  override def importColumns: Seq[String] = lhs.importColumns ++ rhs.importColumns
+
   def containsUpdates: Boolean = lhs.containsUpdates || rhs.containsUpdates
 
   private def checkRecursively(semanticCheck: Query => SemanticCheck): SemanticCheck = {
@@ -624,8 +726,14 @@ sealed trait Union extends Query {
   def semanticCheckInSubqueryContext(outer: SemanticState): SemanticCheck =
     checkRecursively(_.semanticCheckInSubqueryContext(outer))
 
+  override def returnVariableCheck(outer: SemanticState): SemanticCheck =
+    checkRecursively(_.returnVariableCheck(outer))
+
+  def semanticCheckImportingWithSubQueryContext(outer: SemanticState): SemanticCheck =
+    checkRecursively(_.semanticCheckImportingWithSubQueryContext(outer))
+
   private def defineUnionVariables: SemanticCheck = (state: SemanticState) => {
-    var result = SemanticCheckResult.success(state)
+    var result = SemanticCheckResult.success(state.newChildScope)
     val scopeFromLhs = lhs.finalScope(state.scope(lhs).get)
     val scopeFromRhs = rhs.finalScope(state.scope(rhs).get)
 
@@ -673,12 +781,13 @@ sealed trait Union extends Query {
         case Right(nextState) => SemanticCheckResult(nextState, result.errors)
       }
     }
-    result
+
+    SemanticCheckResult(result.state.popScope, result.errors)
   }
 
   override def finalScope(scope: Scope): Scope =
     // Union defines all return variables in its own scope using defineUnionVariables
-    scope
+    scope.children.last
 
   // Check that columns names agree between both parts of the union
   def checkColumnNamesAgree: SemanticCheck

@@ -98,16 +98,19 @@ class ScopeTreeTest extends CypherFunSuite {
     val scopeTree = ast.scope
     val aAt = ast.varAt("a") _
 
-    scopeTree should equal(scope(nodeSymbol("a", aAt(30), unionVariable = true))(
+    scopeTree should equal(
       scope()(
-        scope(nodeSymbol("a", aAt(7), aAt(23)))(),
-        scope(nodeSymbol("a", aAt(7), aAt(23), aAt(28)))()
-      ),
-      scope()(
-        scope(nodeSymbol("a", aAt(43), aAt(60)))(),
-        scope(nodeSymbol("a", aAt(43), aAt(60), aAt(65)))()
+        scope()(
+          scope(nodeSymbol("a", aAt(7), aAt(23)))(),
+          scope(nodeSymbol("a", aAt(7), aAt(23), aAt(28)))()
+        ),
+        scope()(
+          scope(nodeSymbol("a", aAt(43), aAt(60)))(),
+          scope(nodeSymbol("a", aAt(43), aAt(60), aAt(65)))()
+        ),
+        scope(nodeSymbol("a", aAt(30), unionVariable = true))()
       )
-    ))
+    )
   }
 
   test(

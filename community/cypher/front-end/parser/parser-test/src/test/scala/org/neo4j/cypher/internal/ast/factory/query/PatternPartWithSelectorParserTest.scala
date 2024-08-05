@@ -19,9 +19,9 @@ package org.neo4j.cypher.internal.ast.factory.query
 import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.CountExpression
 import org.neo4j.cypher.internal.ast.ExistsExpression
+import org.neo4j.cypher.internal.ast.ImportingWithSubqueryCall
 import org.neo4j.cypher.internal.ast.Match
 import org.neo4j.cypher.internal.ast.Statements
-import org.neo4j.cypher.internal.ast.SubqueryCall
 import org.neo4j.cypher.internal.ast.test.util.AstParsing.Cypher5JavaCc
 import org.neo4j.cypher.internal.ast.test.util.AstParsingTestBase
 import org.neo4j.cypher.internal.expressions.MatchMode
@@ -241,7 +241,7 @@ class PatternPartWithSelectorParserTest extends AstParsingTestBase {
     selectors.foreach { case selector -> astNode =>
       withClue(s"selector = $selector") {
         s"CALL { MATCH $selector (a)-[r]->(b) }" should parseTo[Clause] {
-          SubqueryCall(
+          ImportingWithSubqueryCall(
             singleQuery(
               Match(
                 optional = false,

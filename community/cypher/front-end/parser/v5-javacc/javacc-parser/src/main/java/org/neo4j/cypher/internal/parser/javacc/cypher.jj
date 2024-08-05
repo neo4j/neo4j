@@ -2268,7 +2268,7 @@ CLAUSE LoadCSVClause() throws Exception:
 CLAUSE ForeachClause() throws Exception:
 {
     Token t;
-    VARIABLE v;
+    VARIABLE v = null;
     EXPRESSION list;
     CLAUSE c;
     List<CLAUSE> clauses = new ArrayList<>();
@@ -2287,15 +2287,23 @@ CLAUSE SubqueryClause() throws Exception :
     Token t;
     QUERY q;
     SUBQUERY_IN_TRANSACTIONS_PARAMETERS inTransactionsParams = null;
+    boolean isImportingAll = false;
+    boolean hasScope = false;
+    VARIABLE v;
+    List<VARIABLE> variables = new ArrayList<>();
 }
 {
     t=<CALL>
+    ( <LPAREN> { hasScope = true; }
+    ( <TIMES> { isImportingAll = true; } |
+    ( v=Variable() { variables.add(v); } ( <COMMA> v=Variable() { variables.add(v); } )* )? )
+    <RPAREN> )?
     <LCURLY>
     q=RegularQuery()
     <RCURLY>
     ( inTransactionsParams = SubqueryInTransactionsParameters() )?
     {
-        return astFactory.subqueryClause( pos( t ), q, inTransactionsParams );
+        return astFactory.subqueryClause( pos( t ), q, inTransactionsParams, isImportingAll, hasScope, variables );
     }
 }
 

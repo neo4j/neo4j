@@ -77,6 +77,7 @@ public abstract class AbstractCypher5AstBuilder implements Cypher5ParserListener
             case Cypher5Parser.RULE_loadCSVClause -> exitLoadCSVClause((Cypher5Parser.LoadCSVClauseContext) ctx);
             case Cypher5Parser.RULE_foreachClause -> exitForeachClause((Cypher5Parser.ForeachClauseContext) ctx);
             case Cypher5Parser.RULE_subqueryClause -> exitSubqueryClause((Cypher5Parser.SubqueryClauseContext) ctx);
+            case Cypher5Parser.RULE_subqueryScope -> exitSubqueryScope((Cypher5Parser.SubqueryScopeContext) ctx);
             case Cypher5Parser.RULE_subqueryInTransactionsParameters -> exitSubqueryInTransactionsParameters(
                     (Cypher5Parser.SubqueryInTransactionsParametersContext) ctx);
             case Cypher5Parser.RULE_subqueryInTransactionsBatchParameters -> exitSubqueryInTransactionsBatchParameters(

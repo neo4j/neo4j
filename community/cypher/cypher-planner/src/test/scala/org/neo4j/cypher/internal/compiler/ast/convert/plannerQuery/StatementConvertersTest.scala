@@ -2330,7 +2330,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
       (for (i <- 1 to 10) yield merge(nodePat(Some(s"n$i")))) :+
         null // should cancel before processing this bad clause
 
-    val query = singleQuery(subqueryCall(clauses: _*))
+    val query = singleQuery(importingWithSubqueryCall(clauses: _*))
     val queryASTSize = query.folder.fold(0) {
       case _ => _ + 1
     }
@@ -2351,7 +2351,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
       (for (i <- 1 to 10) yield merge(nodePat(Some(s"n$i")))) :+
         null // should cancel before processing this bad clause
 
-    val single = singleQuery(subqueryCall(clauses: _*))
+    val single = singleQuery(importingWithSubqueryCall(clauses: _*))
     val unionQuery = ProjectingUnionAll(single, single, List.empty)(pos)
     val queryASTSize = unionQuery.folder.fold(0) {
       case _ => _ + 1

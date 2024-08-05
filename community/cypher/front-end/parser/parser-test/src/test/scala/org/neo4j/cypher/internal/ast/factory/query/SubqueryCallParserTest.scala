@@ -17,24 +17,27 @@
 package org.neo4j.cypher.internal.ast.factory.query
 
 import org.neo4j.cypher.internal.ast.Statements
+import org.neo4j.cypher.internal.ast.SubqueryCall
 import org.neo4j.cypher.internal.ast.test.util.AstParsing.Cypher5JavaCc
 import org.neo4j.cypher.internal.ast.test.util.AstParsingTestBase
 
 class SubqueryCallParserTest extends AstParsingTestBase {
 
   test("CALL { RETURN 1 }") {
-    parsesTo(subqueryCall(return_(literalInt(1).unaliased)))
+    parsesTo[SubqueryCall](importingWithSubqueryCall(return_(literalInt(1).unaliased)))
   }
 
   test("CALL { CALL { RETURN 1 as a } }") {
-    parsesTo(subqueryCall(subqueryCall(return_(literalInt(1).as("a")))))
+    parsesTo[SubqueryCall](importingWithSubqueryCall(importingWithSubqueryCall(return_(literalInt(1).as("a")))))
   }
 
   test("CALL { RETURN 1 AS a UNION RETURN 2 AS a }") {
-    parsesTo(subqueryCall(unionDistinct(
-      singleQuery(return_(literalInt(1).as("a"))),
-      singleQuery(return_(literalInt(2).as("a")))
-    )))
+    parsesTo[SubqueryCall](importingWithSubqueryCall(
+      unionDistinct(
+        singleQuery(return_(literalInt(1).as("a"))),
+        singleQuery(return_(literalInt(2).as("a")))
+      )
+    ))
   }
 
   test("CALL { }") {
@@ -49,6 +52,70 @@ class SubqueryCallParserTest extends AstParsingTestBase {
   }
 
   test("CALL { CREATE (n:N) }") {
-    parsesTo(subqueryCall(create(nodePat(Some("n"), Some(labelLeaf("N"))))))
+    parsesTo[SubqueryCall](importingWithSubqueryCall(create(nodePat(Some("n"), Some(labelLeaf("N"))))))
+  }
+
+  // Subquery call with importing variable scope
+
+  test("CALL () { CREATE (n:N) }") {
+    parsesTo[SubqueryCall](scopeClauseSubqueryCall(false, Seq.empty, create(nodePat(Some("n"), Some(labelLeaf("N"))))))
+  }
+
+  test("CALL (*) { CREATE (n:N) }") {
+    parsesTo[SubqueryCall](scopeClauseSubqueryCall(true, Seq.empty, create(nodePat(Some("n"), Some(labelLeaf("N"))))))
+  }
+
+  test("CALL (*, a) { CREATE (n:N) }") {
+    failsParsing[Statements].in {
+      case Cypher5JavaCc => _.withMessage("Invalid input ',': expected \")\" (line 1, column 8 (offset: 7))")
+      case _ => _.withMessage(
+          """Invalid input ',': expected ')' (line 1, column 8 (offset: 7))
+            |"CALL (*, a) { CREATE (n:N) }"
+            |        ^""".stripMargin
+        )
+    }
+  }
+
+  test("CALL (a, *) { CREATE (n:N) }") {
+    failsParsing[Statements].in {
+      case Cypher5JavaCc => _.withMessage("Invalid input '*': expected an identifier (line 1, column 10 (offset: 9))")
+      case _ => _.withMessage(
+          """Invalid input '*': expected an identifier (line 1, column 10 (offset: 9))
+            |"CALL (a, *) { CREATE (n:N) }"
+            |          ^""".stripMargin
+        )
+    }
+  }
+
+  test("CALL (a) { CREATE (n:N) }") {
+    parsesTo[SubqueryCall](scopeClauseSubqueryCall(
+      false,
+      Seq(varFor("a")),
+      create(nodePat(Some("n"), Some(labelLeaf("N"))))
+    ))
+  }
+
+  test("CALL (a, b) { CREATE (n:N) }") {
+    parsesTo[SubqueryCall](scopeClauseSubqueryCall(
+      false,
+      Seq(varFor("a"), varFor("b")),
+      create(nodePat(Some("n"), Some(labelLeaf("N"))))
+    ))
+  }
+
+  test("CALL (a, b, c) { CREATE (n:N) }") {
+    parsesTo[SubqueryCall](scopeClauseSubqueryCall(
+      false,
+      Seq(varFor("a"), varFor("b"), varFor("c")),
+      create(nodePat(Some("n"), Some(labelLeaf("N"))))
+    ))
+  }
+
+  test("CALL() { CALL() { RETURN 1 as a } }") {
+    parsesTo[SubqueryCall](scopeClauseSubqueryCall(
+      false,
+      Seq.empty,
+      scopeClauseSubqueryCall(false, Seq.empty, return_(literalInt(1).as("a")))
+    ))
   }
 }

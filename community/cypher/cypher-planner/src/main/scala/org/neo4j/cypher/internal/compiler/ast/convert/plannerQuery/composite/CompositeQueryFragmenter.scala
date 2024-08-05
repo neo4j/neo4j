@@ -20,6 +20,9 @@
 package org.neo4j.cypher.internal.compiler.ast.convert.plannerQuery.composite
 
 import org.neo4j.cypher.internal.ast
+import org.neo4j.cypher.internal.ast.ReturnItems
+import org.neo4j.cypher.internal.ast.ScopeClauseSubqueryCall
+import org.neo4j.cypher.internal.ast.SubqueryCall
 import org.neo4j.cypher.internal.compiler.helpers.SeqSupport.RichSeq
 import org.neo4j.cypher.internal.expressions.ExplicitParameter
 import org.neo4j.cypher.internal.expressions.LogicalVariable
@@ -42,14 +45,15 @@ object CompositeQueryFragmenter {
     // We must ensure that the parameters we generate do not clash with existing ones.
     // Lazily computed once to avoid duplicated effort.
     lazy val existingParameterNames = query.folder(cancellationChecker).findAllByClass[Parameter].map(_.name).toSet
-    fragmentQuery(cancellationChecker, nameGenerator, existingParameterNames, query)
+    fragmentQuery(cancellationChecker, nameGenerator, existingParameterNames, query, Seq.empty)
   }
 
   private def fragmentQuery(
     cancellationChecker: CancellationChecker,
     nameGenerator: AnonymousVariableNameGenerator,
     existingParameterNames: => Set[String],
-    query: ast.Query
+    query: ast.Query,
+    scopeImports: Seq[LogicalVariable]
   ): CompositeQuery = {
     // This function gets called recursively to fragment the left-hand side of unions as well as sub-queries.
     // We probe the cancellation checker to interrupt the fragmentation process if the query has been cancelled.
@@ -57,19 +61,19 @@ object CompositeQueryFragmenter {
 
     query match {
       case singleQuery: ast.SingleQuery =>
-        fragmentSingleQuery(cancellationChecker, nameGenerator, existingParameterNames, singleQuery)
+        fragmentSingleQuery(cancellationChecker, nameGenerator, existingParameterNames, singleQuery, scopeImports)
       case ast.ProjectingUnionAll(lhs, rhs, mappings) =>
         CompositeQuery.Union(
           unionType = CompositeQuery.Union.Type.All,
-          lhs = fragmentQuery(cancellationChecker, nameGenerator, existingParameterNames, lhs),
-          rhs = fragmentSingleQuery(cancellationChecker, nameGenerator, existingParameterNames, rhs),
+          lhs = fragmentQuery(cancellationChecker, nameGenerator, existingParameterNames, lhs, scopeImports),
+          rhs = fragmentSingleQuery(cancellationChecker, nameGenerator, existingParameterNames, rhs, scopeImports),
           unionMappings = mappings
         )
       case ast.ProjectingUnionDistinct(lhs, rhs, mappings) =>
         CompositeQuery.Union(
           unionType = CompositeQuery.Union.Type.Distinct,
-          lhs = fragmentQuery(cancellationChecker, nameGenerator, existingParameterNames, lhs),
-          rhs = fragmentSingleQuery(cancellationChecker, nameGenerator, existingParameterNames, rhs),
+          lhs = fragmentQuery(cancellationChecker, nameGenerator, existingParameterNames, lhs, scopeImports),
+          rhs = fragmentSingleQuery(cancellationChecker, nameGenerator, existingParameterNames, rhs, scopeImports),
           unionMappings = mappings
         )
       case _: ast.UnmappedUnion =>
@@ -83,7 +87,8 @@ object CompositeQueryFragmenter {
     cancellationChecker: CancellationChecker,
     nameGenerator: AnonymousVariableNameGenerator,
     existingParameterNames: => Set[String],
-    singleQuery: ast.SingleQuery
+    singleQuery: ast.SingleQuery,
+    scopeImports: Seq[LogicalVariable]
   ): CompositeQuery.Single =
     extractForeignClauses(singleQuery) match {
       case Some(foreignClauses) =>
@@ -97,9 +102,12 @@ object CompositeQueryFragmenter {
             .toSet
 
         // If the clauses start with an import WITH clause, replace its import items with parameters.
-        val rewrittenImportWith = foreignClauses.importingWith.map { importWith =>
-          parameteriseImportItems(nameGenerator, existingParameterNames, importWith)
-        }
+        val rewrittenImportWith = if (scopeImports.nonEmpty)
+          Some(parameteriseScopeImportItems(nameGenerator, existingParameterNames, scopeImports))
+        else
+          foreignClauses.importingWith.map { importWith =>
+            parameteriseImportItems(nameGenerator, existingParameterNames, importWith)
+          }
 
         CompositeQuery.Single.Foreign(
           graphReference = foreignClauses.graphSelection.graphReference,
@@ -116,13 +124,19 @@ object CompositeQueryFragmenter {
         val arguments = extractArguments(singleQuery)
         val fragments = new FragmentsBuilder(arguments)
         singleQuery.clauses.foreach {
-          case call @ ast.SubqueryCall(innerQuery, None) =>
-            val subQuery = fragmentQuery(cancellationChecker, nameGenerator, existingParameterNames, innerQuery)
+          case call: SubqueryCall if call.inTransactionsParameters.isEmpty =>
+            val importVariables = call match {
+              case c: ScopeClauseSubqueryCall => c.importedVariables
+              case _                          => Seq.empty
+            }
+            val innerQuery = call.innerQuery
+            val subQuery =
+              fragmentQuery(cancellationChecker, nameGenerator, existingParameterNames, innerQuery, importVariables)
             fragments.addSubQuery(
               subQuery,
-              innerQuery.isCorrelated,
+              call.isCorrelated,
               innerQuery.isReturning,
-              call.inTransactionsParameters
+              None
             )
           case standardClause =>
             fragments.addStandardClause(standardClause)
@@ -197,6 +211,36 @@ object CompositeQueryFragmenter {
     }.unzip
     // For convenience, return both a map of the new parameters and the rewritten WITH clause.
     ParameterisedWithClause(parameters.toMap, importWith.withReturnItems(rewrittenItems))
+  }
+
+  /**
+   * Creates a new importing WITH from Scope Clause imports with parameters.
+   * The name of the parameter will be based on the item's alias, unless it clashes with an existing parameter, in which case it will get a new name.
+   *
+   * @param nameGenerator generator used to mint new parameter names in case of conflict with an existing parameter
+   * @param existingParameterNames all the existing parameters in the query
+   * @param scopeImports variables imported using scope clause
+   * @return the newly introduced parameters and the rewritten with clause
+   */
+  private def parameteriseScopeImportItems(
+    nameGenerator: AnonymousVariableNameGenerator,
+    existingParameterNames: => Set[String],
+    scopeImports: Seq[LogicalVariable]
+  ): ParameterisedWithClause = {
+    val (parameters, rewrittenItems) = scopeImports.map { importVariable =>
+      val parameterName =
+        // If there is an existing parameter with the same name as the alias,
+        if (existingParameterNames.contains(importVariable.name))
+          nameGenerator.nextName // then generate a parameter with a brand new name,
+        else
+          importVariable.name // otherwise name the parameter after the alias.
+      val parameter = ExplicitParameter(parameterName, CTAny)(importVariable.position)
+      (parameter -> importVariable, ast.AliasedReturnItem(parameter, importVariable)(importVariable.position))
+    }.unzip
+    val position = scopeImports.head.position
+    val returnItems = ReturnItems(false, rewrittenItems)(position)
+    // For convenience, return both a map of the new parameters and the rewritten WITH clause.
+    ParameterisedWithClause(parameters.toMap, ast.With(returnItems)(position))
   }
 
   /**

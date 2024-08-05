@@ -46,6 +46,27 @@ Feature: CallInTransactions
      |                   |
      | ON ERROR FAIL     |
 
+  Scenario Outline: Create in transactions of default size <onErrorBehaviour> with Scope Clause
+    Given an empty graph
+    When executing query:
+      """
+      UNWIND range(1, 10) AS i
+      CALL (i) {
+        UNWIND [1, 2] AS j
+        CREATE (n:N {i: i, j: j})
+      } IN TRANSACTIONS
+        <onErrorBehaviour>
+      """
+    Then the result should be empty
+    And the side effects should be:
+      | +nodes      | 20 |
+      | +properties | 40 |
+      | +labels     |  1 |
+    Examples:
+      | onErrorBehaviour  |
+      |                   |
+      | ON ERROR FAIL     |
+
   Scenario Outline: Create in transactions of <rows> rows <onErrorBehaviour>
     Given an empty graph
     When executing query:
@@ -53,6 +74,36 @@ Feature: CallInTransactions
       UNWIND range(1, 10) AS i
       CALL {
         WITH i
+        UNWIND [1, 2] AS j
+        CREATE (n:N {i: i, j: j})
+      } IN TRANSACTIONS
+        OF <rows> ROWS
+        <onErrorBehaviour>
+      """
+    Then the result should be empty
+    And the side effects should be:
+      | +nodes      | 20 |
+      | +properties | 40 |
+      | +labels     |  1 |
+    Examples:
+      | rows | onErrorBehaviour  |
+      |    1 |                   |
+      |    1 | ON ERROR FAIL     |
+      |    3 |                   |
+      |    3 | ON ERROR FAIL     |
+      |    5 |                   |
+      |    5 | ON ERROR FAIL     |
+      |   10 |                   |
+      |   10 | ON ERROR FAIL     |
+      |   77 |                   |
+      |   77 | ON ERROR FAIL     |
+
+  Scenario Outline: Create in transactions of <rows> rows <onErrorBehaviour> with Scope Clause
+    Given an empty graph
+    When executing query:
+      """
+      UNWIND range(1, 10) AS i
+      CALL (i) {
         UNWIND [1, 2] AS j
         CREATE (n:N {i: i, j: j})
       } IN TRANSACTIONS

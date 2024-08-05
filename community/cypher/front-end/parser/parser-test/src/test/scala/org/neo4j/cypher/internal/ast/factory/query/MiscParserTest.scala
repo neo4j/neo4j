@@ -707,7 +707,7 @@ class MiscParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport
         |""".stripMargin
     query should parseTo[Statements](singleQuery(
       withAll(aliasedReturnItem(literal("a test"), "this")),
-      subqueryCall(singleQuery(
+      importingWithSubqueryCall(singleQuery(
         with_(returnItem(v"this", "this")),
         withAll(aliasedReturnItem(literal("\""), "DQe")),
         withAll(aliasedReturnItem(literal("'"), "SQe")),

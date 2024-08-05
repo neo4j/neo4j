@@ -46,6 +46,27 @@ Feature: CallInTransactionsErrorHandling
      | ON ERROR CONTINUE |
      | ON ERROR BREAK    |
 
+  Scenario Outline: Create in transactions of default size <onErrorBehaviour> with Scope Clause
+    Given an empty graph
+    When executing query:
+      """
+      UNWIND range(1, 10) AS i
+      CALL (i) {
+        UNWIND [1, 2] AS j
+        CREATE (n:N {i: i, j: j})
+      } IN TRANSACTIONS
+        <onErrorBehaviour>
+      """
+    Then the result should be empty
+    And the side effects should be:
+      | +nodes      | 20 |
+      | +properties | 40 |
+      | +labels     |  1 |
+    Examples:
+      | onErrorBehaviour  |
+      | ON ERROR CONTINUE |
+      | ON ERROR BREAK    |
+
   Scenario Outline: Create in transactions of <rows> rows <onErrorBehaviour>
     Given an empty graph
     When executing query:
@@ -53,6 +74,36 @@ Feature: CallInTransactionsErrorHandling
       UNWIND range(1, 10) AS i
       CALL {
         WITH i
+        UNWIND [1, 2] AS j
+        CREATE (n:N {i: i, j: j})
+      } IN TRANSACTIONS
+        OF <rows> ROWS
+        <onErrorBehaviour>
+      """
+    Then the result should be empty
+    And the side effects should be:
+      | +nodes      | 20 |
+      | +properties | 40 |
+      | +labels     |  1 |
+    Examples:
+      | rows | onErrorBehaviour  |
+      |    1 | ON ERROR CONTINUE |
+      |    1 | ON ERROR BREAK    |
+      |    3 | ON ERROR CONTINUE |
+      |    3 | ON ERROR BREAK    |
+      |    5 | ON ERROR CONTINUE |
+      |    5 | ON ERROR BREAK    |
+      |   10 | ON ERROR CONTINUE |
+      |   10 | ON ERROR BREAK    |
+      |   77 | ON ERROR CONTINUE |
+      |   77 | ON ERROR BREAK    |
+
+  Scenario Outline: Create in transactions of <rows> rows <onErrorBehaviour> with Scope Clause
+    Given an empty graph
+    When executing query:
+      """
+      UNWIND range(1, 10) AS i
+      CALL (i) {
         UNWIND [1, 2] AS j
         CREATE (n:N {i: i, j: j})
       } IN TRANSACTIONS
@@ -264,6 +315,37 @@ Feature: CallInTransactionsErrorHandling
       UNWIND [1, 2, 3, 0, 4] AS i
       CALL {
         WITH i
+        UNWIND [1, 0] AS j
+        CREATE (n:N {p: 1/(i + j)})
+      } IN TRANSACTIONS
+        OF 2 ROWS
+        ON ERROR BREAK
+        REPORT STATUS AS status
+      RETURN
+        i,
+        status.transactionId IS NOT NULL AS hasTxId,
+        status.started AS started,
+        status.committed AS committed,
+        status.errorMessage IS NOT NULL AS hasErrorMessage
+      """
+    Then the result should be, in order:
+      | i | hasTxId | started | committed | hasErrorMessage |
+      | 1 | true    | true    | true      | false           |
+      | 2 | true    | true    | true      | false           |
+      | 3 | true    | true    | false     | true            |
+      | 0 | true    | true    | false     | true            |
+      | 4 | false   | false   | false     | false           |
+    And the side effects should be:
+      | +nodes      | 4 |
+      | +properties | 4 |
+      | +labels     | 1 |
+
+  Scenario: Create and report status with rollback in transactions ON ERROR BREAK with Scope Clause
+    Given an empty graph
+    When executing query:
+      """
+      UNWIND [1, 2, 3, 0, 4] AS i
+      CALL (i) {
         UNWIND [1, 0] AS j
         CREATE (n:N {p: 1/(i + j)})
       } IN TRANSACTIONS

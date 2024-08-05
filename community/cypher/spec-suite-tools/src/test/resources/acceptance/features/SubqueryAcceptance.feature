@@ -1312,3 +1312,429 @@ Feature: SubqueryAcceptance
     And the side effects should be:
       | -properties | 1 |
       | +properties | 1 |
+
+  # Subquery call with importing variable scope
+  # Positive Tests
+
+  Scenario: Empty importing clause
+    When executing query:
+      """
+      WITH 1 AS a
+      CALL () {
+        RETURN 1 AS res
+      }
+      RETURN res
+      """
+    Then the result should be, in any order:
+      | res |
+      | 1   |
+    And no side effects
+
+  Scenario: Single reference in importing clause
+    When executing query:
+      """
+      WITH 1 AS a
+      CALL (a) {
+        RETURN a AS res
+      }
+      RETURN res
+      """
+    Then the result should be, in any order:
+      | res |
+      | 1   |
+    And no side effects
+
+  Scenario: Multiple references in importing clause
+    When executing query:
+      """
+      WITH 1 AS a, 1 AS b
+      CALL (a, b) {
+        RETURN a + b AS res
+      }
+      RETURN res
+      """
+    Then the result should be, in any order:
+      | res |
+      | 2   |
+    And no side effects
+
+  Scenario: Wildcard in importing clause
+    When executing query:
+      """
+      WITH 1 AS a
+      CALL (*) {
+        RETURN a AS res
+      }
+      RETURN res
+      """
+    Then the result should be, in any order:
+      | res |
+      | 1   |
+    And no side effects
+
+
+  Scenario: Not possible to delist imported variable
+    When executing query:
+      """
+      WITH 1 AS a
+      CALL (a) {
+        WITH a
+        WITH 1 AS b
+        RETURN a + b AS c
+      }
+      RETURN a, c
+      """
+    Then the result should be, in any order:
+      | a | c |
+      | 1 | 2 |
+    And no side effects
+
+  Scenario: Nested subquery calls with importing clauses
+    When executing query:
+      """
+      WITH 1 AS a
+      CALL (a) {
+        WITH 2 AS b
+        CALL (a, b) {
+          WITH 3 AS c
+          CALL (a, b, c) {
+            WITH 4 AS d
+            RETURN a + b + c + d AS e
+          }
+          RETURN e
+        }
+        RETURN e
+      }
+      RETURN a, e
+      """
+    Then the result should be, in any order:
+      | a | e |
+      | 1 | 10 |
+    And no side effects
+
+  Scenario: Scope clause: UNION subquery using scope clause
+    When executing query:
+      """
+      WITH 1 AS a
+      CALL (a) {
+        RETURN a AS ignored
+        UNION
+        RETURN a AS ignored
+      }
+      RETURN a
+      """
+    Then the result should be, in any order:
+      | a |
+      | 1 |
+    And no side effects
+
+  Scenario: Scope clause with multiple UNIONs in subquery
+    When executing query:
+      """
+      WITH 1 AS a
+      CALL (a) {
+        RETURN a AS b
+        UNION ALL
+        RETURN a + 1 AS b
+        UNION ALL
+        RETURN a + 2 AS b
+        UNION ALL
+        RETURN a + 2 AS b
+      }
+      RETURN a, b
+      """
+    Then the result should be, in any order:
+      | a | b |
+      | 1 | 1 |
+      | 1 | 2 |
+      | 1 | 3 |
+      | 1 | 3 |
+    And no side effects
+
+  Scenario: Scope clause importing all with multiple UNIONs in subquery
+    When executing query:
+      """
+      WITH 1 AS a
+      CALL (*) {
+        RETURN a AS b
+        UNION ALL
+        RETURN a + 1 AS b
+        UNION ALL
+        RETURN a + 2 AS b
+        UNION ALL
+        RETURN a + 2 AS b
+      }
+      RETURN a, b
+      """
+    Then the result should be, in any order:
+      | a | b |
+      | 1 | 1 |
+      | 1 | 2 |
+      | 1 | 3 |
+      | 1 | 3 |
+    And no side effects
+
+  Scenario: Scope clause able to redefine non imported variables
+    When executing query:
+      """
+      WITH 1 AS a
+      CALL () {
+        WITH 2 AS a
+        RETURN a AS b
+      }
+      RETURN a, b
+      """
+    Then the result should be, in any order:
+      | a | b |
+      | 1 | 2 |
+    And no side effects
+
+  Scenario: Aggregation on imported variables
+    When executing query:
+      """
+      UNWIND [0, 1, 2] AS x
+      CALL(x) {
+        RETURN max(x) AS xMax
+      }
+      RETURN x, xMax
+      """
+    Then the result should be, in any order:
+      | x | xMax |
+      | 0 | 0    |
+      | 1 | 1    |
+      | 2 | 2    |
+    And no side effects
+
+  # Negative tests
+
+  Scenario: Scope clause disables IMPORTING WITH
+    When executing query:
+      """
+      WITH 1 AS a, 2 AS b
+      CALL (a) {
+        WITH b
+        RETURN a + b AS c
+      }
+      RETURN c
+      """
+    Then a SyntaxError should be raised at compile time: UndefinedVariable
+
+  Scenario: Scope clause contains illegal variable reference (not in scope)
+    When executing query:
+      """
+      CALL (a) {
+        RETURN 1 AS res
+      }
+      RETURN res
+      """
+    Then a SyntaxError should be raised at compile time: UndefinedVariable
+
+  Scenario: Scope clause: unimported outer-scope variable cannot be referenced in the subquery
+    When executing query:
+      """
+      WITH 1 AS a
+      CALL () {
+        RETURN a AS ignored
+      }
+      RETURN a
+      """
+    Then a SyntaxError should be raised at compile time: UndefinedVariable
+
+  Scenario: Side effects in uncorrelated subquery with FINISH and Scope Clause
+    And having executed:
+      """
+      CREATE (:Label), (:Label), (:Label)
+      """
+    When executing query:
+      """
+      MATCH (x)
+      CALL () {
+        CREATE (y:Label)
+        FINISH
+      }
+      RETURN count(*) AS count
+      """
+    Then the result should be, in order:
+      | count |
+      | 3     |
+    And the side effects should be:
+      | +nodes  | 3 |
+
+  Scenario: Side effects in order dependant subquery with FINISH and Scope Clause
+    And having executed:
+      """
+      CREATE ({value: 3})
+      """
+    When executing query:
+      """
+      UNWIND [1, 2, 3] AS i
+      WITH i ORDER BY i DESC
+      CALL (i) {
+        MATCH (n {value: i})
+        CREATE (m {value: i - 1})
+        FINISH
+      }
+      RETURN count(*) as count
+      """
+    Then the result should be, in order:
+      | count |
+      | 3     |
+    And the side effects should be:
+      | +nodes       | 3 |
+      | +properties  | 3 |
+
+  Scenario: Correlated unit subquery with FINISH and Scope Clause
+    And having executed:
+      """
+      CREATE (:Label), (:Label), (:Label)
+      """
+    When executing query:
+      """
+      MATCH (x)
+      CALL (x) {
+        SET x.prop = 1
+        FINISH
+      }
+      RETURN count(*) AS count
+      """
+    Then the result should be, in order:
+      | count |
+      | 3     |
+    And the side effects should be:
+      | +properties    | 3 |
+
+  Scenario: Embedded nested unit subquery call with FINISH with Scope Clause
+    And having executed:
+      """
+      CREATE (:Label), (:Label), (:Label)
+      """
+    When executing query:
+      """
+      MATCH (n)
+      CALL () {
+        CALL () {
+          CREATE (x: Foo)
+          FINISH
+        }
+      }
+      RETURN count(*) AS count
+      """
+    Then the result should be, in order:
+      | count |
+      | 3     |
+    And the side effects should be:
+      | +nodes  | 3 |
+      | +labels | 1 |
+
+  Scenario: A correlated subquery with FINISH does not change the cardinality of the outer query with cardinality equal 0
+    When executing query:
+      """
+      WITH toInteger(rand()*101) AS n
+      UNWIND [] AS x
+      CALL (n) {
+        WITH toInteger(n * (rand() + rand())) AS nInner
+        UNWIND [0] + range(1, nInner) AS y
+        FINISH
+      }
+      RETURN x AS invariant
+      """
+    Then the result should be, in order:
+      | invariant |
+    And no side effects
+
+  Scenario: A correlated subquery with FINISH does not change the cardinality of the outer query with cardinality greater 0
+    When executing query:
+      """
+      WITH toInteger(rand()*101) AS n
+      UNWIND [0] + range(1, n) AS x
+      CALL (n) {
+        WITH toInteger(n * (rand() + rand())) AS nInner
+        UNWIND range(1, nInner) AS y
+        FINISH
+      }
+      WITH n + 1 AS n, COUNT(*) AS card
+      RETURN n = card AS invariant
+      """
+    Then the result should be, in order:
+      | invariant |
+      | true      |
+    And no side effects
+
+  Scenario: Should allow importing variables into a subquery with Scope Clause
+    And having executed:
+    """
+    CREATE (:Person {age: 20, name: 'Alice'}),
+           (:Person {age: 27, name: 'Bob'}),
+           (:Person {age: 65, name: 'Charlie'}),
+           (:Person {age: 30, name: 'Dora'})
+    """
+    When executing query:
+      """
+      MATCH (p:Person)
+      CALL (p) {
+        RETURN p.name AS innerName
+      }
+      RETURN innerName
+      """
+    Then the result should be, in any order:
+      | innerName |
+      | 'Alice'   |
+      | 'Bob'     |
+      | 'Charlie' |
+      | 'Dora'    |
+    And no side effects
+
+  Scenario: Grouping and aggregating within correlated subquery with Scope Clause
+    And having executed:
+    """
+    CREATE (:Config {threshold: 2})
+    WITH *
+    UNWIND range(1, 10) as p
+    CREATE (:Node {prop: p, category: p % 2})
+    """
+    When executing query:
+      """
+      MATCH (c:Config)
+      CALL (c) {
+          MATCH (x:Node)
+          WHERE x.prop > c.threshold
+          WITH x.prop AS metric, x.category AS cat
+          ORDER BY metric LIMIT 3
+          RETURN cat, sum(metric) AS y
+        UNION
+          MATCH (x:Node)
+          WHERE x.prop > c.threshold
+          WITH x.prop AS metric, x.category AS cat
+          ORDER BY metric DESC LIMIT 3
+          RETURN cat, sum(metric) AS y
+      }
+      RETURN cat, sum(y) AS sum
+      """
+    Then the result should be, in any order:
+      | cat | sum |
+      | 0   | 22  |
+      | 1   | 17  |
+    And no side effects
+
+  Scenario: Referenced variables are the same
+    And having executed:
+      """
+      CREATE (n1 {node: 1}), (n2 {node: 2}), (n3 {node: 3}), (n4 {node: 4})
+      CREATE (n1)-[:X {rel: 1}]->(n2),
+             (n3)-[:X {rel: 2}]->(n4)
+      """
+    When executing query:
+      """
+      MATCH (n)
+      CALL (n) {
+        MATCH (n)-[r]->(m)
+        RETURN m AS w
+      }
+      MATCH (n)-[r]->(m)
+      RETURN m, w
+      """
+    Then the result should be, in any order:
+      | m           | w           |
+      | ({node: 2}) | ({node: 2}) |
+      | ({node: 4}) | ({node: 4}) |
+    And no side effects

@@ -48,8 +48,8 @@ import org.neo4j.cypher.internal.parser.common.deprecation.DeprecatedChars;
 
 /** Token Manager. */
 @SuppressWarnings ("unused")
-public class CypherTokenManager implements org.neo4j.cypher.internal.parser.javacc.CypherConstants {
-    public void CommonTokenAction( org.neo4j.cypher.internal.parser.javacc.Token t )
+public class CypherTokenManager implements CypherConstants {
+    public void CommonTokenAction( Token t )
     {
         CypherCharStream ccStream = (CypherCharStream) input_stream;
         t.beginOffset = ccStream.getBeginOffset();

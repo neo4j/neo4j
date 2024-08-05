@@ -45,7 +45,7 @@ class SubqueryCallTest extends CypherFunSuite with AstConstructionTestSupport {
     // RETURN a, b, c
     singleQuery(
       with_(literal(1).as("a")),
-      subqueryCall(
+      importingWithSubqueryCall(
         with_(literal(1).as("b")),
         return_(varFor("b").as("b"), literal(1).as("c"))
       ),
@@ -68,7 +68,7 @@ class SubqueryCallTest extends CypherFunSuite with AstConstructionTestSupport {
     // RETURN a
     singleQuery(
       with_(literal(1).as("a")),
-      subqueryCall(
+      importingWithSubqueryCall(
         return_(varFor("a").as("b"))
       ),
       return_(varFor("a").as("a"))
@@ -86,7 +86,7 @@ class SubqueryCallTest extends CypherFunSuite with AstConstructionTestSupport {
     // RETURN a, b, b AS c ORDER BY a, b, c
     singleQuery(
       with_(literal(1).as("a")),
-      subqueryCall(
+      importingWithSubqueryCall(
         with_(literal(1).as("b")),
         return_(
           orderBy(varFor("b").asc, varFor("c").asc),
@@ -114,7 +114,7 @@ class SubqueryCallTest extends CypherFunSuite with AstConstructionTestSupport {
     val varPos = InputPosition(1, 2, 3)
     val error = singleQuery(
       with_(literal(1).as("x")),
-      subqueryCall(
+      importingWithSubqueryCall(
         return_(AliasedReturnItem(literal(2), Variable("x")(varPos))(pos))
       ),
       return_(literal(1).as("y"))
@@ -136,7 +136,7 @@ class SubqueryCallTest extends CypherFunSuite with AstConstructionTestSupport {
     val itemsPos = InputPosition(1, 2, 3)
     val error = singleQuery(
       with_(literal(1).as("x")),
-      subqueryCall(
+      importingWithSubqueryCall(
         with_(literal(1).as("x")),
         Return(ReturnItems(includeExisting = true, Seq())(itemsPos))(pos)
       ),
@@ -163,7 +163,7 @@ class SubqueryCallTest extends CypherFunSuite with AstConstructionTestSupport {
     val itemsPos2 = InputPosition(4, 5, 6)
     singleQuery(
       with_(literal(1).as("x")),
-      subqueryCall(union(
+      importingWithSubqueryCall(union(
         singleQuery(
           with_(literal(2).as("x")),
           Return(ReturnItems(includeExisting = true, Seq())(itemsPos1))(pos)
@@ -189,7 +189,7 @@ class SubqueryCallTest extends CypherFunSuite with AstConstructionTestSupport {
     // }
     // RETURN a
     singleQuery(
-      subqueryCall(
+      importingWithSubqueryCall(
         create(NodePattern(Some(varFor("a")), None, None, None)(pos))
       ),
       return_(varFor("a").as("a"))
@@ -208,7 +208,7 @@ class SubqueryCallTest extends CypherFunSuite with AstConstructionTestSupport {
     // }
     // RETURN a
     singleQuery(
-      subqueryCall(
+      importingWithSubqueryCall(
         union(
           singleQuery(create(NodePattern(Some(varFor("a")), None, None, None)(pos))),
           singleQuery(create(NodePattern(Some(varFor("a")), None, None, None)(pos)))
@@ -229,7 +229,7 @@ class SubqueryCallTest extends CypherFunSuite with AstConstructionTestSupport {
     // }
     // RETURN x
     singleQuery(
-      subqueryCall(
+      importingWithSubqueryCall(
         union(
           singleQuery(return_(literal(2).as("x"))),
           singleQuery(return_(literal(2).as("x")))
@@ -249,7 +249,7 @@ class SubqueryCallTest extends CypherFunSuite with AstConstructionTestSupport {
     // }
     // RETURN x, y
     singleQuery(
-      subqueryCall(
+      importingWithSubqueryCall(
         union(
           singleQuery(return_(literal(2).as("x"), literal(2).as("y"))),
           singleQuery(return_(literal(2).as("y"), literal(2).as("x")))
@@ -269,7 +269,7 @@ class SubqueryCallTest extends CypherFunSuite with AstConstructionTestSupport {
     // }
     // RETURN count(*) AS count
     singleQuery(
-      subqueryCall(
+      importingWithSubqueryCall(
         union(
           singleQuery(create(NodePattern(Some(varFor("a")), None, None, None)(pos))),
           singleQuery(create(NodePattern(Some(varFor("a")), None, None, None)(pos)))
@@ -289,7 +289,7 @@ class SubqueryCallTest extends CypherFunSuite with AstConstructionTestSupport {
     // }
     // RETURN count(*) AS count
     singleQuery(
-      subqueryCall(
+      importingWithSubqueryCall(
         union(
           singleQuery(create(NodePattern(Some(varFor("a")), None, None, None)(pos)), return_(varFor("a").as("a"))),
           singleQuery(create(NodePattern(Some(varFor("a")), None, None, None)(pos)), return_(varFor("a").as("a")))
@@ -307,7 +307,7 @@ class SubqueryCallTest extends CypherFunSuite with AstConstructionTestSupport {
     // }
     // RETURN count(*) AS count
     singleQuery(
-      subqueryCall(
+      importingWithSubqueryCall(
         singleQuery(merge(nodePat(Some("a"))))
       ),
       return_(countStar().as("count"))
@@ -323,7 +323,7 @@ class SubqueryCallTest extends CypherFunSuite with AstConstructionTestSupport {
     // }
     singleQuery(
       with_(literalInt(1).as("x")),
-      subqueryCall(
+      importingWithSubqueryCall(
         singleQuery(merge(nodePat(Some("a"))))
       )
     )
@@ -340,8 +340,8 @@ class SubqueryCallTest extends CypherFunSuite with AstConstructionTestSupport {
     // }
     singleQuery(
       with_(literalInt(1).as("x")),
-      subqueryCall(
-        singleQuery(subqueryCall(
+      importingWithSubqueryCall(
+        singleQuery(importingWithSubqueryCall(
           singleQuery(merge(nodePat(Some("a"))))
         ))
       )
@@ -361,8 +361,8 @@ class SubqueryCallTest extends CypherFunSuite with AstConstructionTestSupport {
     // }
     singleQuery(
       with_(literalInt(1).as("x")),
-      subqueryCall(
-        singleQuery(subqueryCall(
+      importingWithSubqueryCall(
+        singleQuery(importingWithSubqueryCall(
           union(
             singleQuery(merge(nodePat(Some("a")))),
             singleQuery(merge(nodePat(Some("a"))))
@@ -383,7 +383,7 @@ class SubqueryCallTest extends CypherFunSuite with AstConstructionTestSupport {
     // RETURN count(*) AS count
     val unwindPos = InputPosition(1, 2, 3)
     val error = singleQuery(
-      subqueryCall(
+      importingWithSubqueryCall(
         singleQuery(
           merge(
             nodePat(Some("a"))
@@ -407,7 +407,7 @@ class SubqueryCallTest extends CypherFunSuite with AstConstructionTestSupport {
     // }
     // RETURN count(*) AS count
     singleQuery(
-      subqueryCall(
+      importingWithSubqueryCall(
         singleQuery(merge(nodePat(Some("a"))), return_(varFor("a").as("a")))
       ),
       return_(countStar().as("count"))
@@ -424,7 +424,7 @@ class SubqueryCallTest extends CypherFunSuite with AstConstructionTestSupport {
     // }
     // RETURN x, y
     singleQuery(
-      subqueryCall(
+      importingWithSubqueryCall(
         union(
           singleQuery(return_(literal(2).as("x"), literal(2).as("y"), literal(2).as("z"))),
           singleQuery(return_(literal(2).as("y"), literal(2).as("x")))
@@ -446,7 +446,7 @@ class SubqueryCallTest extends CypherFunSuite with AstConstructionTestSupport {
     // RETURN x, y
     singleQuery(
       with_(literal(1).as("x")),
-      subqueryCall(
+      importingWithSubqueryCall(
         with_(varFor("x").aliased),
         return_(varFor("x").as("y"))
       ),
@@ -465,7 +465,7 @@ class SubqueryCallTest extends CypherFunSuite with AstConstructionTestSupport {
     // RETURN x
     singleQuery(
       with_(literal(1).as("x"), literal(1).as("y")),
-      subqueryCall(
+      importingWithSubqueryCall(
         with_(varFor("x").aliased),
         return_(varFor("y").as("z"))
       ),
@@ -488,7 +488,7 @@ class SubqueryCallTest extends CypherFunSuite with AstConstructionTestSupport {
     // RETURN a, b
     singleQuery(
       with_(literal(1).as("a")),
-      subqueryCall(unionDistinct(
+      importingWithSubqueryCall(unionDistinct(
         singleQuery(
           with_(varFor("a").aliased),
           return_(varFor("a").as("b"))
@@ -519,7 +519,7 @@ class SubqueryCallTest extends CypherFunSuite with AstConstructionTestSupport {
     // RETURN a, b, c, x
     singleQuery(
       with_(literal(1).as("a"), literal(1).as("b"), literal(1).as("c")),
-      subqueryCall(unionDistinct(
+      importingWithSubqueryCall(unionDistinct(
         singleQuery(
           with_(varFor("a").aliased),
           return_(varFor("a").as("x"))
@@ -576,7 +576,7 @@ class SubqueryCallTest extends CypherFunSuite with AstConstructionTestSupport {
     // RETURN x, y
     singleQuery(
       with_(literal(1).as("x")),
-      subqueryCall(
+      importingWithSubqueryCall(
         unwind(listOf(literal(1)), varFor("a")),
         with_(varFor("x").aliased),
         return_(varFor("x").as("y"))
@@ -598,7 +598,7 @@ class SubqueryCallTest extends CypherFunSuite with AstConstructionTestSupport {
     // RETURN x, y
     singleQuery(
       with_(literal(1).as("x")),
-      subqueryCall(
+      importingWithSubqueryCall(
         use(List("g")),
         with_(varFor("x").aliased),
         return_(varFor("x").as("y"))
@@ -618,7 +618,7 @@ class SubqueryCallTest extends CypherFunSuite with AstConstructionTestSupport {
     // RETURN x, z
     val errors = singleQuery(
       with_(literal(1).as("x")),
-      subqueryCall(
+      importingWithSubqueryCall(
         with_(varFor("x").aliased, literal(2).as("y")),
         return_(varFor("x").as("z"))
       ),
@@ -644,7 +644,7 @@ class SubqueryCallTest extends CypherFunSuite with AstConstructionTestSupport {
     // RETURN x, y
     singleQuery(
       with_(literal(1).as("x")),
-      subqueryCall(
+      importingWithSubqueryCall(
         with_(varFor("x").aliased),
         with_(varFor("x").aliased, literal(2).as("y")),
         return_(varFor("x").as("z"), varFor("y").aliased)
@@ -665,7 +665,7 @@ class SubqueryCallTest extends CypherFunSuite with AstConstructionTestSupport {
     // RETURN x, y
     singleQuery(
       with_(literal(1).as("x"), literal(2).as("y")),
-      subqueryCall(
+      importingWithSubqueryCall(
         use(function("graph.byName", varFor("x"), varFor("y"))),
         with_(varFor("x").aliased),
         return_(literal(1).as("z"))
@@ -686,7 +686,7 @@ class SubqueryCallTest extends CypherFunSuite with AstConstructionTestSupport {
     // RETURN x, y
     singleQuery(
       with_(literal(1).as("x"), literal(2).as("y")),
-      subqueryCall(
+      importingWithSubqueryCall(
         with_(varFor("x").aliased),
         use(function("graph.byName", varFor("x"), varFor("y"))),
         return_(literal(3).as("z"))
@@ -711,9 +711,9 @@ class SubqueryCallTest extends CypherFunSuite with AstConstructionTestSupport {
     // RETURN x, y, z
     singleQuery(
       with_(literal(1).as("x")),
-      subqueryCall(
+      importingWithSubqueryCall(
         with_(literal(1).as("y")),
-        subqueryCall(
+        importingWithSubqueryCall(
           with_(literal(1).as("z")),
           return_(varFor("z").aliased)
         ),
@@ -739,9 +739,9 @@ class SubqueryCallTest extends CypherFunSuite with AstConstructionTestSupport {
     // RETURN x, y, z
     val errors = singleQuery(
       with_(literal(1).as("x")),
-      subqueryCall(
+      importingWithSubqueryCall(
         with_(literal(1).as("y")),
-        subqueryCall(
+        importingWithSubqueryCall(
           with_(literal(1).as("z")),
           with_(varFor("x").as("a"), varFor("y").as("b"), varFor("z").aliased),
           return_(varFor("z").aliased)
@@ -772,10 +772,10 @@ class SubqueryCallTest extends CypherFunSuite with AstConstructionTestSupport {
     // RETURN x, y, z
     singleQuery(
       with_(literal(1).as("x")),
-      subqueryCall(
+      importingWithSubqueryCall(
         with_(varFor("x").aliased),
         with_(varFor("x").as("y")),
-        subqueryCall(
+        importingWithSubqueryCall(
           with_(varFor("y").aliased),
           with_(varFor("y").as("z")),
           return_(varFor("z").aliased)
@@ -802,9 +802,9 @@ class SubqueryCallTest extends CypherFunSuite with AstConstructionTestSupport {
     // RETURN x, y, z
     singleQuery(
       with_(literal(1).as("x"), literal(2).as("y")),
-      subqueryCall(
+      importingWithSubqueryCall(
         with_(varFor("x").aliased),
-        subqueryCall(
+        importingWithSubqueryCall(
           with_(varFor("y").aliased),
           return_(literal(3).as("z"))
         ),
@@ -858,7 +858,7 @@ class SubqueryCallTest extends CypherFunSuite with AstConstructionTestSupport {
     // }
     // RETURN 1 AS x
     singleQuery(
-      subqueryCall(
+      importingWithSubqueryCall(
         with_(mapOfInt("title" -> 1).as("m")),
         return_(UnaliasedReturnItem(prop(varFor("m"), "title"), "m.title")(pos))
       ),
@@ -881,7 +881,7 @@ class SubqueryCallTest extends CypherFunSuite with AstConstructionTestSupport {
 
     val x = singleQuery(
       match_(nodePat(Some("x"))),
-      subqueryCall(
+      importingWithSubqueryCall(
         with_(varFor("x").aliased),
         create(nodePat()),
         with_(varFor("x").aliased),

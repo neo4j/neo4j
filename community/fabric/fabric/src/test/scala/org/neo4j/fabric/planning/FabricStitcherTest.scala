@@ -111,7 +111,7 @@ class FabricStitcherTest
           .exec(
             singleQuery(
               with_(literal(1).as("a")),
-              subqueryCall(return_(literal(2).as("b"))),
+              scopeClauseSubqueryCall(false, Seq.empty, return_(literal(2).as("b"))),
               return_(literal(3).as("c"))
             ),
             Seq("c")
@@ -138,9 +138,11 @@ class FabricStitcherTest
           .exec(
             singleQuery(
               with_(literal(1).as("a")),
-              subqueryCall(
+              scopeClauseSubqueryCall(
+                false,
+                Seq.empty,
                 with_(literal(2).as("b")),
-                subqueryCall(return_(literal(3).as("c"))),
+                scopeClauseSubqueryCall(false, Seq.empty, return_(literal(3).as("c"))),
                 return_(literal(4).as("d"))
               ),
               return_(literal(5).as("e"))
@@ -168,8 +170,8 @@ class FabricStitcherTest
           .exec(
             singleQuery(
               with_(literal(1).as("a")),
-              subqueryCall(return_(literal(2).as("b"))),
-              subqueryCall(return_(literal(3).as("c"))),
+              scopeClauseSubqueryCall(false, Seq.empty, return_(literal(2).as("b"))),
+              scopeClauseSubqueryCall(false, Seq.empty, return_(literal(3).as("c"))),
               return_(literal(4).as("d"))
             ),
             Seq("d")
@@ -190,7 +192,7 @@ class FabricStitcherTest
         init(Declared(use("foo")))
           .exec(
             singleQuery(
-              subqueryCall(return_(literal(2).as("b"))),
+              scopeClauseSubqueryCall(false, Seq.empty, return_(literal(2).as("b"))),
               return_(literal(3).as("c"))
             ),
             Seq("c")
@@ -238,10 +240,14 @@ class FabricStitcherTest
           .exec(
             singleQuery(
               with_(literal(1).as("x"), literal(2).as("y"), literal(3).as("z")),
-              subqueryCall(union(
-                singleQuery(with_(varFor("y").as("y")), return_(varFor("y").as("a"))),
-                singleQuery(with_(varFor("z").as("z")), return_(varFor("z").as("a")))
-              )),
+              scopeClauseSubqueryCall(
+                false,
+                Seq(varFor("y"), varFor("z")),
+                union(
+                  singleQuery(with_(varFor("y").as("y")), return_(varFor("y").as("a"))),
+                  singleQuery(with_(varFor("z").as("z")), return_(varFor("z").as("a")))
+                )
+              ),
               return_(literal(4).as("c"))
             ),
             Seq("c")
@@ -385,7 +391,12 @@ class FabricStitcherTest
                       varFor(Apply.CALL_IN_TX_ROW)
                     ),
                     with_(prop(Apply.CALL_IN_TX_ROW, Apply.CALL_IN_TX_ROW_ID).as(Apply.CALL_IN_TX_ROW_ID)),
-                    subqueryCallInTransactions(return_(literal(1).as("a"))),
+                    scopeClauseSubqueryCallInTransactions(
+                      false,
+                      Seq.empty,
+                      InTransactionsParameters(None, None, None, None)(pos),
+                      return_(literal(1).as("a"))
+                    ),
                     return_(varFor("a").as("a"), varFor(Apply.CALL_IN_TX_ROW_ID).as(Apply.CALL_IN_TX_ROW_ID))
                   ),
                   Seq("a", Apply.CALL_IN_TX_ROW_ID)
@@ -459,7 +470,10 @@ class FabricStitcherTest
                       prop(Apply.CALL_IN_TX_ROW, "b").as("b"),
                       prop(Apply.CALL_IN_TX_ROW, Apply.CALL_IN_TX_ROW_ID).as(Apply.CALL_IN_TX_ROW_ID)
                     ),
-                    subqueryCallInTransactions(
+                    scopeClauseSubqueryCallInTransactions(
+                      false,
+                      Seq(varFor("b")),
+                      InTransactionsParameters(None, None, None, None)(pos),
                       with_(varFor("b").as("b")),
                       return_(varFor("b").as("c"))
                     ),
@@ -539,7 +553,35 @@ class FabricStitcherTest
         val e = the[SyntaxException].thrownBy(
           stitching(
             init(defaultUse)
-              .leaf(Seq(with_(literal(1).as("a")), subqueryCallInTransactions(create(nodePat(Some("n"))))), Seq("a")),
+              .leaf(
+                Seq(with_(literal(1).as("a")), importingWithSubqueryCallInTransactions(create(nodePat(Some("n"))))),
+                Seq("a")
+              ),
+            callInTransactionsEnabled = false
+          )
+        )
+
+        e.getMessage.should(
+          include("Transactional subquery is not allowed here. This feature is not supported on composite databases.")
+        )
+      }
+
+      "disallows scoped call in transactions as subquery call" in {
+        val e = the[SyntaxException].thrownBy(
+          stitching(
+            init(defaultUse)
+              .leaf(
+                Seq(
+                  with_(literal(1).as("a")),
+                  scopeClauseSubqueryCallInTransactions(
+                    false,
+                    Seq.empty,
+                    inTransactionsParameters(None, None, None, None),
+                    create(nodePat(Some("n")))
+                  )
+                ),
+                Seq("a")
+              ),
             callInTransactionsEnabled = false
           )
         )

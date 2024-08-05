@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.ast.Delete
 import org.neo4j.cypher.internal.ast.DescSortItem
 import org.neo4j.cypher.internal.ast.Finish
 import org.neo4j.cypher.internal.ast.Foreach
+import org.neo4j.cypher.internal.ast.ImportingWithSubqueryCall
 import org.neo4j.cypher.internal.ast.InputDataStream
 import org.neo4j.cypher.internal.ast.LoadCSV
 import org.neo4j.cypher.internal.ast.Match
@@ -41,6 +42,7 @@ import org.neo4j.cypher.internal.ast.RemoveLabelItem
 import org.neo4j.cypher.internal.ast.RemovePropertyItem
 import org.neo4j.cypher.internal.ast.Return
 import org.neo4j.cypher.internal.ast.ReturnItems
+import org.neo4j.cypher.internal.ast.ScopeClauseSubqueryCall
 import org.neo4j.cypher.internal.ast.SetClause
 import org.neo4j.cypher.internal.ast.SetDynamicPropertyItem
 import org.neo4j.cypher.internal.ast.SetExactPropertiesFromMapItem
@@ -620,15 +622,26 @@ object ClauseConverters {
     cancellationChecker: CancellationChecker
   ): PlannerQueryBuilder = {
     val subquery = clause.innerQuery
-    val callSubquery =
-      StatementConverters.convertToNestedPlannerQuery(
-        subquery,
-        acc.semanticTable,
-        anonymousVariableNameGenerator,
-        cancellationChecker,
-        position = QueryProjection.Position.Intermediate
-      )
-    acc.withCallSubquery(callSubquery, subquery.isCorrelated, subquery.isReturning, clause.inTransactionsParameters)
+    val callSubquery = clause match {
+      case c: ScopeClauseSubqueryCall =>
+        StatementConverters.convertToNestedPlannerQuery(
+          subquery,
+          acc.semanticTable,
+          anonymousVariableNameGenerator,
+          cancellationChecker,
+          position = QueryProjection.Position.Intermediate,
+          importedVariables = c.importedVariables.toSet
+        )
+      case _: ImportingWithSubqueryCall =>
+        StatementConverters.convertToNestedPlannerQuery(
+          subquery,
+          acc.semanticTable,
+          anonymousVariableNameGenerator,
+          cancellationChecker,
+          position = QueryProjection.Position.Intermediate
+        )
+    }
+    acc.withCallSubquery(callSubquery, clause.isCorrelated, subquery.isReturning, clause.inTransactionsParameters)
   }
 
   private def addCommandClauseToLogicalPlanInput(

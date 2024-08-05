@@ -92,6 +92,7 @@ import org.neo4j.cypher.internal.ast.IfExistsDoNothing
 import org.neo4j.cypher.internal.ast.IfExistsInvalidSyntax
 import org.neo4j.cypher.internal.ast.IfExistsReplace
 import org.neo4j.cypher.internal.ast.IfExistsThrowError
+import org.neo4j.cypher.internal.ast.ImportingWithSubqueryCall
 import org.neo4j.cypher.internal.ast.Insert
 import org.neo4j.cypher.internal.ast.LabelAllQualifier
 import org.neo4j.cypher.internal.ast.LabelQualifier
@@ -149,6 +150,7 @@ import org.neo4j.cypher.internal.ast.ReturnItems
 import org.neo4j.cypher.internal.ast.RevokePrivilege
 import org.neo4j.cypher.internal.ast.RevokeRolesFromUsers
 import org.neo4j.cypher.internal.ast.SchemaCommand
+import org.neo4j.cypher.internal.ast.ScopeClauseSubqueryCall
 import org.neo4j.cypher.internal.ast.SetClause
 import org.neo4j.cypher.internal.ast.SetDynamicPropertyItem
 import org.neo4j.cypher.internal.ast.SetExactPropertiesFromMapItem
@@ -188,7 +190,6 @@ import org.neo4j.cypher.internal.ast.Skip
 import org.neo4j.cypher.internal.ast.StartDatabase
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.StopDatabase
-import org.neo4j.cypher.internal.ast.SubqueryCall
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsConcurrencyParameters
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorBreak
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorContinue
@@ -913,7 +914,8 @@ case class Prettifier(
       case e: Return                      => asString(e)
       case f: Finish                      => asString(f)
       case m: Match                       => asString(m)
-      case c: SubqueryCall                => asString(c)
+      case c: ImportingWithSubqueryCall   => asString(c)
+      case c: ScopeClauseSubqueryCall     => asString(c)
       case w: With                        => asString(w)
       case y: Yield                       => asString(y)
       case c: Create                      => asString(c)
@@ -959,9 +961,16 @@ case class Prettifier(
       s"$INDENT${o}MATCH $mm$p$h$w"
     }
 
-    def asString(c: SubqueryCall): String = {
+    def asString(c: ImportingWithSubqueryCall): String = {
       val inTxParams = c.inTransactionsParameters.map(asString).getOrElse("")
       s"""${INDENT}CALL {
+         |${indented().query(c.innerQuery)}
+         |$INDENT}$inTxParams""".stripMargin
+    }
+
+    def asString(c: ScopeClauseSubqueryCall): String = {
+      val inTxParams = c.inTransactionsParameters.map(asString).getOrElse("")
+      s"""${INDENT}CALL (${if (c.isImportingAll) "*" else c.importedVariables.map(expr(_)).mkString("", ",", "")}) {
          |${indented().query(c.innerQuery)}
          |$INDENT}$inTxParams""".stripMargin
     }

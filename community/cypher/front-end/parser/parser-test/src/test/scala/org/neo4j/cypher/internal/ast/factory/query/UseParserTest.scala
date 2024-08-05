@@ -50,7 +50,7 @@ class UseParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport 
   test("CALL { USE neo4j RETURN 1 AS y } RETURN y") {
     parsesTo[Statements] {
       singleQuery(
-        subqueryCall(
+        importingWithSubqueryCall(
           use(List("neo4j")),
           returnLit(1 -> "y")
         ),
@@ -63,7 +63,7 @@ class UseParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport 
     parsesTo[Statements] {
       singleQuery(
         with_(literal(1) as "x"),
-        subqueryCall(
+        importingWithSubqueryCall(
           with_(variableReturnItem("x")),
           use(List("neo4j")),
           return_(varFor("x") as "y")

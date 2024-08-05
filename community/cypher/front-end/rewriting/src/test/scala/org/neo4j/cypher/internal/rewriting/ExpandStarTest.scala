@@ -101,6 +101,48 @@ class ExpandStarTest extends CypherFunSuite with AstRewritingTestSupport {
 
   }
 
+  test("rewrites * in subquery") {
+    assertRewrite(
+      "match (n) call (*) { return n as res} return res",
+      "match (n) call (n) { return n as res} return res"
+    )
+
+    assertRewrite(
+      "match (n)-[r]-(m) call (*) { return n as res} return res",
+      "match (n)-[r]-(m) call (n, m, r) { return n as res} return res"
+    )
+
+    assertRewrite(
+      "match (n)-[r]-(m) call (n) { match (a) call (*) { return n as res} return res } return res",
+      "match (n)-[r]-(m) call (n) { match (a) call (a, n) { return n as res} return res } return res"
+    )
+
+    assertRewrite(
+      "match (n)-[r]-(m) call (n) { with 1 AS a call (*) { return n as res} return res } return res",
+      "match (n)-[r]-(m) call (n) { with 1 AS a call (a, n) { return n as res} return res } return res"
+    )
+
+    assertRewrite(
+      "match (n)-[r]-(m) call () { match (a) call (*) { return n as res} return res } return res",
+      "match (n)-[r]-(m) call () { match (a) call (a) { return n as res} return res } return res"
+    )
+
+    assertRewrite(
+      "match (n)-[r]-(m) call (*) { match (a) call (*) { return n as res} return res } return res",
+      "match (n)-[r]-(m) call (n, m, r) { match (a) call (r, n, m, a) { return n as res} return res } return res"
+    )
+
+    assertRewrite(
+      "with 1 as a, 2 as b, 3 as c match(n) with n as m, a, c call(*){return 1 as d} return a, c, d, m",
+      "with 1 as a, 2 as b, 3 as c match(n) with n as m, a, c call(a, m, c){return 1 as d} return a, c, d, m"
+    )
+
+    assertRewrite(
+      "with 1 as a, 2 as b, 3 as c match(n) with n as m, a, c call(*){with 7 as b call(*){return 'hello' as res} return 1 as d} return a, c, d, m",
+      "with 1 as a, 2 as b, 3 as c match(n) with n as m, a, c call(a, m, c){with 7 as b call(b, c, m, a){return 'hello' as res} return 1 as d} return a, c, d, m"
+    )
+  }
+
   test("rewrites * in with") {
     assertRewrite(
       "match (n) with * return n",

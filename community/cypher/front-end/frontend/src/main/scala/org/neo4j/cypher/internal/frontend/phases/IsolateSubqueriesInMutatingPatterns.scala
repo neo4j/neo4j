@@ -20,12 +20,13 @@ import org.neo4j.cypher.internal.ast.AliasedReturnItem
 import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.CreateOrInsert
 import org.neo4j.cypher.internal.ast.Foreach
+import org.neo4j.cypher.internal.ast.ImportingWithSubqueryCall
 import org.neo4j.cypher.internal.ast.Merge
 import org.neo4j.cypher.internal.ast.ReturnItems
+import org.neo4j.cypher.internal.ast.ScopeClauseSubqueryCall
 import org.neo4j.cypher.internal.ast.SetClause
 import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.Statement
-import org.neo4j.cypher.internal.ast.SubqueryCall
 import org.neo4j.cypher.internal.ast.Unwind
 import org.neo4j.cypher.internal.ast.UpdateClause
 import org.neo4j.cypher.internal.ast.With
@@ -178,7 +179,10 @@ case object IsolateSubqueriesInMutatingPatterns extends StatementRewriter
 
     topDown(Rewriter.lift {
       // Using top-down we will rewrite the subquery call before the inner query
-      case call: SubqueryCall =>
+      case call: ImportingWithSubqueryCall =>
+        val rewrittenQuery = call.innerQuery.mapEachSingleQuery(rewrite(_, inSubqueryContext = true))
+        call.copy(innerQuery = rewrittenQuery)(call.position)
+      case call: ScopeClauseSubqueryCall =>
         val rewrittenQuery = call.innerQuery.mapEachSingleQuery(rewrite(_, inSubqueryContext = true))
         call.copy(innerQuery = rewrittenQuery)(call.position)
       case sq: SingleQuery => rewrite(sq, inSubqueryContext = false)

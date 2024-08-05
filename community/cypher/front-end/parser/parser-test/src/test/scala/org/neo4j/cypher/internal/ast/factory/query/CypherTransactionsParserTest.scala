@@ -16,6 +16,7 @@
  */
 package org.neo4j.cypher.internal.ast.factory.query
 
+import org.neo4j.cypher.internal.ast.ImportingWithSubqueryCall
 import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.SubqueryCall
@@ -39,7 +40,7 @@ class CypherTransactionsParserTest extends AstParsingTestBase with LegacyAstPars
 
   test("CALL { CREATE (n) } IN TRANSACTIONS") {
     parses[SubqueryCall].toAstPositioned {
-      SubqueryCall(
+      ImportingWithSubqueryCall(
         SingleQuery(
           Seq(create(
             nodePat(Some("n"), namePos = (1, 16, 15), position = (1, 15, 14)),
@@ -53,7 +54,7 @@ class CypherTransactionsParserTest extends AstParsingTestBase with LegacyAstPars
 
   test("CALL { CREATE (n) } IN TRANSACTIONS OF 1 ROW") {
     parses[SubqueryCall].toAst {
-      subqueryCallInTransactions(
+      importingWithSubqueryCallInTransactions(
         inTransactionsParameters(
           Some(InTransactionsBatchParameters(literalInt(1))(pos)),
           None,
@@ -67,7 +68,7 @@ class CypherTransactionsParserTest extends AstParsingTestBase with LegacyAstPars
 
   test("CALL { CREATE (n) } IN TRANSACTIONS OF 1 ROWS") {
     parses[SubqueryCall].toAst {
-      subqueryCallInTransactions(
+      importingWithSubqueryCallInTransactions(
         inTransactionsParameters(
           Some(InTransactionsBatchParameters(literalInt(1))(pos)),
           None,
@@ -81,7 +82,7 @@ class CypherTransactionsParserTest extends AstParsingTestBase with LegacyAstPars
 
   test("CALL { CREATE (n) } IN TRANSACTIONS OF 42 ROW") {
     parses[SubqueryCall].toAst {
-      subqueryCallInTransactions(
+      importingWithSubqueryCallInTransactions(
         inTransactionsParameters(
           Some(InTransactionsBatchParameters(literalInt(42))(pos)),
           None,
@@ -95,7 +96,7 @@ class CypherTransactionsParserTest extends AstParsingTestBase with LegacyAstPars
 
   test("CALL { CREATE (n) } IN TRANSACTIONS OF 42 ROWS") {
     parses[SubqueryCall].toAst {
-      subqueryCallInTransactions(
+      importingWithSubqueryCallInTransactions(
         inTransactionsParameters(
           Some(InTransactionsBatchParameters(literalInt(42))(pos)),
           None,
@@ -109,7 +110,7 @@ class CypherTransactionsParserTest extends AstParsingTestBase with LegacyAstPars
 
   test("CALL { CREATE (n) } IN TRANSACTIONS OF $param ROWS") {
     parses[SubqueryCall].toAst {
-      subqueryCallInTransactions(
+      importingWithSubqueryCallInTransactions(
         inTransactionsParameters(
           Some(InTransactionsBatchParameters(parameter("param", CTAny))(pos)),
           None,
@@ -123,7 +124,7 @@ class CypherTransactionsParserTest extends AstParsingTestBase with LegacyAstPars
 
   test("CALL { CREATE (n) } IN TRANSACTIONS OF NULL ROWS") {
     parses[SubqueryCall].toAst {
-      subqueryCallInTransactions(
+      importingWithSubqueryCallInTransactions(
         inTransactionsParameters(
           Some(InTransactionsBatchParameters(nullLiteral)(pos)),
           None,
@@ -137,7 +138,7 @@ class CypherTransactionsParserTest extends AstParsingTestBase with LegacyAstPars
 
   test("CALL { CREATE (n) } IN CONCURRENT TRANSACTIONS OF 13 ROWS") {
     val expected =
-      subqueryCallInTransactions(
+      importingWithSubqueryCallInTransactions(
         inTransactionsParameters(
           Some(InTransactionsBatchParameters(literalInt(13))(pos)),
           Some(InTransactionsConcurrencyParameters(None)(pos)),
@@ -150,7 +151,7 @@ class CypherTransactionsParserTest extends AstParsingTestBase with LegacyAstPars
   }
 
   test("CALL { CREATE (n) } IN 1 CONCURRENT TRANSACTIONS") {
-    val expected = subqueryCallInTransactions(
+    val expected = importingWithSubqueryCallInTransactions(
       inTransactionsParameters(
         None,
         Some(InTransactionsConcurrencyParameters(Some(literalInt(1)))(pos)),
@@ -164,7 +165,7 @@ class CypherTransactionsParserTest extends AstParsingTestBase with LegacyAstPars
 
   test("CALL { CREATE (n) } IN 19 CONCURRENT TRANSACTIONS") {
     val expected =
-      subqueryCallInTransactions(
+      importingWithSubqueryCallInTransactions(
         inTransactionsParameters(
           None,
           Some(InTransactionsConcurrencyParameters(Some(literalInt(19)))(pos)),
@@ -178,7 +179,7 @@ class CypherTransactionsParserTest extends AstParsingTestBase with LegacyAstPars
 
   test("CALL { CREATE (n) } IN 19 CONCURRENT TRANSACTIONS OF 13 ROWS") {
     val expected =
-      subqueryCallInTransactions(
+      importingWithSubqueryCallInTransactions(
         inTransactionsParameters(
           Some(InTransactionsBatchParameters(literalInt(13))(pos)),
           Some(InTransactionsConcurrencyParameters(Some(literalInt(19)))(pos)),
@@ -192,7 +193,7 @@ class CypherTransactionsParserTest extends AstParsingTestBase with LegacyAstPars
 
   test("CALL { CREATE (n) } IN TRANSACTIONS REPORT STATUS AS status") {
     val expected =
-      subqueryCallInTransactions(
+      importingWithSubqueryCallInTransactions(
         inTransactionsParameters(
           None,
           None,
@@ -206,7 +207,7 @@ class CypherTransactionsParserTest extends AstParsingTestBase with LegacyAstPars
 
   test("CALL { CREATE (n) } IN TRANSACTIONS OF 50 ROWS REPORT STATUS AS status") {
     val expected =
-      subqueryCallInTransactions(
+      importingWithSubqueryCallInTransactions(
         inTransactionsParameters(
           Some(InTransactionsBatchParameters(literalInt(50))(pos)),
           None,
@@ -220,7 +221,7 @@ class CypherTransactionsParserTest extends AstParsingTestBase with LegacyAstPars
 
   test("CALL { CREATE (n) } IN TRANSACTIONS REPORT STATUS AS status OF 50 ROWS") {
     val expected =
-      subqueryCallInTransactions(
+      importingWithSubqueryCallInTransactions(
         inTransactionsParameters(
           Some(InTransactionsBatchParameters(literalInt(50))(pos)),
           None,
@@ -256,7 +257,7 @@ class CypherTransactionsParserTest extends AstParsingTestBase with LegacyAstPars
 
       test(s"CALL { CREATE (n) } IN TRANSACTIONS $errorString") {
         val expected =
-          subqueryCallInTransactions(
+          importingWithSubqueryCallInTransactions(
             inTransactionsParameters(
               None,
               None,
@@ -271,7 +272,7 @@ class CypherTransactionsParserTest extends AstParsingTestBase with LegacyAstPars
       errorRowPermutations.foreach(permutation => {
         test(s"CALL { CREATE (n) } IN TRANSACTIONS ${permutation.head} ${permutation(1)}") {
           val expected =
-            subqueryCallInTransactions(
+            importingWithSubqueryCallInTransactions(
               inTransactionsParameters(
                 expectedBatchParams,
                 None,
@@ -284,7 +285,7 @@ class CypherTransactionsParserTest extends AstParsingTestBase with LegacyAstPars
         }
         test(s"CALL { CREATE (n) } IN $concurrencyString TRANSACTIONS ${permutation.head} ${permutation(1)}") {
           val expected =
-            subqueryCallInTransactions(
+            importingWithSubqueryCallInTransactions(
               inTransactionsParameters(
                 expectedBatchParams,
                 expectedConcurrencyParams,
@@ -300,7 +301,7 @@ class CypherTransactionsParserTest extends AstParsingTestBase with LegacyAstPars
       errorStatusPermutations.foreach(permutation => {
         test(s"CALL { CREATE (n) } IN TRANSACTIONS ${permutation.head} ${permutation(1)}") {
           val expected =
-            subqueryCallInTransactions(
+            importingWithSubqueryCallInTransactions(
               inTransactionsParameters(
                 None,
                 None,
@@ -313,7 +314,7 @@ class CypherTransactionsParserTest extends AstParsingTestBase with LegacyAstPars
         }
         test(s"CALL { CREATE (n) } IN $concurrencyString TRANSACTIONS ${permutation.head} ${permutation(1)}") {
           val expected =
-            subqueryCallInTransactions(
+            importingWithSubqueryCallInTransactions(
               inTransactionsParameters(
                 None,
                 expectedConcurrencyParams,
@@ -329,7 +330,7 @@ class CypherTransactionsParserTest extends AstParsingTestBase with LegacyAstPars
       errorRowStatusPermutations.foreach(permutation => {
         test(s"CALL { CREATE (n) } IN TRANSACTIONS ${permutation.head} ${permutation(1)} ${permutation(2)}") {
           val expected =
-            subqueryCallInTransactions(
+            importingWithSubqueryCallInTransactions(
               inTransactionsParameters(
                 expectedBatchParams,
                 None,
@@ -344,7 +345,7 @@ class CypherTransactionsParserTest extends AstParsingTestBase with LegacyAstPars
           s"CALL { CREATE (n) } IN $concurrencyString TRANSACTIONS ${permutation.head} ${permutation(1)} ${permutation(2)}"
         ) {
           val expected =
-            subqueryCallInTransactions(
+            importingWithSubqueryCallInTransactions(
               inTransactionsParameters(
                 expectedBatchParams,
                 expectedConcurrencyParams,

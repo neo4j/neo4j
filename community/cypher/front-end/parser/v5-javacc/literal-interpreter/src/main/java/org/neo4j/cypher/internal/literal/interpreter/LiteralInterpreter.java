@@ -475,7 +475,8 @@ public class LiteralInterpreter
     }
 
     @Override
-    public NULL subqueryClause(NULL p, NULL subquery, NULL inTransactions) {
+    public NULL subqueryClause(
+            NULL p, NULL subquery, NULL inTransactions, boolean scopeAll, boolean hasScope, List<Object> variables) {
         throw new UnsupportedOperationException("subqueryClause is not a literal");
     }
 

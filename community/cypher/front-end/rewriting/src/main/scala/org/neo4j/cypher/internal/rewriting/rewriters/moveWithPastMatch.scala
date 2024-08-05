@@ -18,7 +18,9 @@ package org.neo4j.cypher.internal.rewriting.rewriters
 
 import org.neo4j.cypher.internal.ast.AliasedReturnItem
 import org.neo4j.cypher.internal.ast.Clause
+import org.neo4j.cypher.internal.ast.ImportingWithSubqueryCall
 import org.neo4j.cypher.internal.ast.Match
+import org.neo4j.cypher.internal.ast.ScopeClauseSubqueryCall
 import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.SubqueryCall
 import org.neo4j.cypher.internal.ast.With
@@ -67,7 +69,9 @@ case object moveWithPastMatch extends StepSequencer.Step with DefaultPostConditi
 case class moveWithPastMatch(cancellationChecker: CancellationChecker) {
 
   private val subqueryRewriter: Rewriter = topDown(Rewriter.lift {
-    case s: SubqueryCall =>
+    case s: ImportingWithSubqueryCall =>
+      s.copy(innerQuery = s.innerQuery.endoRewrite(innerRewriter(insideSubquery = true)))(s.position)
+    case s: ScopeClauseSubqueryCall =>
       s.copy(innerQuery = s.innerQuery.endoRewrite(innerRewriter(insideSubquery = true)))(s.position)
   })
 

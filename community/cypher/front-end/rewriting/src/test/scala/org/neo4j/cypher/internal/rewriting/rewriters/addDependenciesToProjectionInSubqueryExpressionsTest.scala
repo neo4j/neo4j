@@ -477,6 +477,50 @@ class addDependenciesToProjectionInSubqueryExpressionsTest
     )
   }
 
+  test("should rewrite innerquery of SubqueryCall into single WITH") {
+    assertRewrite(
+      """WITH 1 AS a
+        |CALL(a) {
+        |WITH 2 AS b
+        |WITH 3 AS c
+        |RETURN a + c AS res
+        |}
+        |RETURN res
+        |""".stripMargin,
+      """WITH 1 AS a
+        |CALL(a) {
+        |WITH 2 AS b, a AS a
+        |WITH 3 AS c, a AS a
+        |RETURN a + c AS res
+        |}
+        |RETURN res AS res
+        |""".stripMargin
+    )
+  }
+
+  test("should rewrite innerquery of SubqueryCall and return not split") {
+    assertRewrite(
+      """WITH 1 AS a
+        |CALL(a) {
+        |WITH 2 AS b
+        |WITH 3 AS c
+        |WITH a + c AS res
+        |RETURN res LIMIT 1
+        |}
+        |RETURN res LIMIT 1
+        |""".stripMargin,
+      """WITH 1 AS a
+        |CALL(a) {
+        |WITH 2 AS b, a AS a
+        |WITH 3 AS c, a AS a
+        |WITH a + c AS res, a AS a
+        |RETURN res AS res LIMIT 1
+        |}
+        |RETURN res AS res LIMIT 1
+        |""".stripMargin
+    )
+  }
+
   private def assertIsNotRewritten(query: String): Unit = {
     assertRewrite(query, query)
   }

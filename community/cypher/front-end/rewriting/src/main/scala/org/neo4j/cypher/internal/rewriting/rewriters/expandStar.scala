@@ -21,6 +21,8 @@ import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.Return
 import org.neo4j.cypher.internal.ast.ReturnItem
 import org.neo4j.cypher.internal.ast.ReturnItems
+import org.neo4j.cypher.internal.ast.ScopeClauseSubqueryCall
+import org.neo4j.cypher.internal.ast.SubqueryCall
 import org.neo4j.cypher.internal.ast.With
 import org.neo4j.cypher.internal.ast.Yield
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
@@ -40,7 +42,9 @@ case object ProjectionClausesHaveSemanticInfo extends Condition
 
 case class expandStar(state: SemanticState) extends Rewriter {
 
-  override def apply(that: AnyRef): AnyRef = instance(that)
+  override def apply(that: AnyRef): AnyRef = {
+    instance(that)
+  }
 
   private val rewriter = Rewriter.lift {
     case clause @ With(_, values, _, _, _, _, _) if values.includeExisting =>
@@ -58,6 +62,10 @@ case class expandStar(state: SemanticState) extends Rewriter {
       val newReturnItems =
         if (values.includeExisting) returnItems(clause, values.items, values.defaultOrderOnColumns) else values
       clause.copy(returnItems = newReturnItems)(clause.position)
+
+    case clause @ ScopeClauseSubqueryCall(_, true, _, _) =>
+      val expandedItems = importVariables(clause)
+      clause.copy(isImportingAll = false, importedVariables = expandedItems)(clause.position)
 
     case expandedAstNode =>
       expandedAstNode
@@ -92,6 +100,31 @@ case class expandStar(state: SemanticState) extends Rewriter {
 
     val newItems = expandedItems ++ listedItems
     ReturnItems(includeExisting = false, newItems)(clausePos)
+  }
+
+  private def importVariables(
+    call: SubqueryCall
+  ): Seq[Variable] = {
+    val scope = state.scope(call).getOrElse {
+      throw new IllegalStateException(s"${call.name} should note its Scope in the SemanticState")
+    }
+
+    // Checks if there are imported variables in outer state of the subquery that should be included.
+    val outerScopeSymbols = state.recordedScopes.getOrElse(
+      call,
+      throw new IllegalStateException(s"${call.name} should note its Scope in the SemanticState")
+    ).parent.get.scope.symbolNames
+
+    val clausePos = call.position
+    val returnVariables = call.innerQuery.returnVariables.explicitVariables.map(_.name)
+    val reportVariable = for {
+      tps <- call.inTransactionsParameters
+      report <- tps.reportParams
+    } yield report.reportAs.name
+    val symbolNames = scope.symbolNames ++ outerScopeSymbols -- returnVariables -- reportVariable
+    symbolNames.map { id =>
+      Variable(id)(clausePos)
+    }.toSeq
   }
 }
 

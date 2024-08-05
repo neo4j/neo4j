@@ -210,7 +210,11 @@ foreachClause
    ;
 
 subqueryClause
-   : CALL LCURLY regularQuery RCURLY subqueryInTransactionsParameters?
+   : CALL subqueryScope? LCURLY regularQuery RCURLY subqueryInTransactionsParameters?
+   ;
+
+subqueryScope
+   : LPAREN (TIMES | variable (COMMA variable)*)? RPAREN
    ;
 
 subqueryInTransactionsParameters

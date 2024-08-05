@@ -141,6 +141,7 @@ import org.neo4j.cypher.internal.ast.IfExistsInvalidSyntax
 import org.neo4j.cypher.internal.ast.IfExistsReplace
 import org.neo4j.cypher.internal.ast.IfExistsThrowError
 import org.neo4j.cypher.internal.ast.ImpersonateUserAction
+import org.neo4j.cypher.internal.ast.ImportingWithSubqueryCall
 import org.neo4j.cypher.internal.ast.IndefiniteWait
 import org.neo4j.cypher.internal.ast.Insert
 import org.neo4j.cypher.internal.ast.IsNormalized
@@ -232,6 +233,7 @@ import org.neo4j.cypher.internal.ast.RevokePrivilege
 import org.neo4j.cypher.internal.ast.RevokeRolesFromUsers
 import org.neo4j.cypher.internal.ast.RevokeType
 import org.neo4j.cypher.internal.ast.SchemaCommand
+import org.neo4j.cypher.internal.ast.ScopeClauseSubqueryCall
 import org.neo4j.cypher.internal.ast.ServerManagementAction
 import org.neo4j.cypher.internal.ast.SetAuthAction
 import org.neo4j.cypher.internal.ast.SetClause
@@ -288,7 +290,6 @@ import org.neo4j.cypher.internal.ast.StartDatabaseAction
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.StopDatabase
 import org.neo4j.cypher.internal.ast.StopDatabaseAction
-import org.neo4j.cypher.internal.ast.SubqueryCall
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsBatchParameters
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsConcurrencyParameters
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsErrorParameters
@@ -1482,10 +1483,17 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     )
   } yield UseGraph(graphRef)(pos)
 
-  def _subqueryCall: Gen[SubqueryCall] = for {
+  def _importingWithSubqueryCall: Gen[ImportingWithSubqueryCall] = for {
     innerQuery <- _query
     params <- option(_inTransactionsParameters)
-  } yield SubqueryCall(innerQuery, params)(pos)
+  } yield ImportingWithSubqueryCall(innerQuery, params)(pos)
+
+  def _scopeClauseSubqueryCall: Gen[ScopeClauseSubqueryCall] = for {
+    innerQuery <- _query
+    _importVariables <- listOfN(1, _variable)
+    (isImportingAll, importVariables) <- oneOf((true, Seq.empty), (false, _importVariables))
+    params <- option(_inTransactionsParameters)
+  } yield ScopeClauseSubqueryCall(innerQuery, isImportingAll, importVariables, params)(pos)
 
   def _inTransactionsParameters: Gen[InTransactionsParameters] =
     for {
@@ -1515,7 +1523,8 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     lzy(_call),
     lzy(_foreach),
     lzy(_loadCsv),
-    lzy(_subqueryCall)
+    lzy(_importingWithSubqueryCall),
+    lzy(_scopeClauseSubqueryCall)
   )
 
   def _singleQuery: Gen[SingleQuery] = for {

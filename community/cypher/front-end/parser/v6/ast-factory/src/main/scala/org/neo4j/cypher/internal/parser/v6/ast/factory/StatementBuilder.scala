@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.ast.Finish
 import org.neo4j.cypher.internal.ast.Foreach
 import org.neo4j.cypher.internal.ast.GraphDirectReference
 import org.neo4j.cypher.internal.ast.GraphFunctionReference
+import org.neo4j.cypher.internal.ast.ImportingWithSubqueryCall
 import org.neo4j.cypher.internal.ast.Insert
 import org.neo4j.cypher.internal.ast.Limit
 import org.neo4j.cypher.internal.ast.LoadCSV
@@ -44,6 +45,7 @@ import org.neo4j.cypher.internal.ast.RemoveLabelItem
 import org.neo4j.cypher.internal.ast.RemovePropertyItem
 import org.neo4j.cypher.internal.ast.Return
 import org.neo4j.cypher.internal.ast.ReturnItems
+import org.neo4j.cypher.internal.ast.ScopeClauseSubqueryCall
 import org.neo4j.cypher.internal.ast.SetClause
 import org.neo4j.cypher.internal.ast.SetDynamicPropertyItem
 import org.neo4j.cypher.internal.ast.SetExactPropertiesFromMapItem
@@ -476,7 +478,26 @@ trait StatementBuilder extends Cypher6ParserListener {
   final override def exitSubqueryClause(
     ctx: Cypher6Parser.SubqueryClauseContext
   ): Unit = {
-    ctx.ast = SubqueryCall(ctxChild(ctx, 2).ast(), astOpt(ctx.subqueryInTransactionsParameters()))(pos(ctx))
+    val scope = ctx.subqueryScope()
+
+    ctx.ast = if (scope != null) {
+      val (isImportingAll, importedVariables) = scope.ast[(Boolean, Seq[Variable])]()
+      ScopeClauseSubqueryCall(
+        ctx.regularQuery().ast(),
+        isImportingAll,
+        importedVariables,
+        astOpt(ctx.subqueryInTransactionsParameters())
+      )(pos(ctx))
+    } else {
+      ImportingWithSubqueryCall(
+        ctx.regularQuery().ast(),
+        astOpt(ctx.subqueryInTransactionsParameters())
+      )(pos(ctx))
+    }
+  }
+
+  override def exitSubqueryScope(ctx: Cypher6Parser.SubqueryScopeContext): Unit = {
+    ctx.ast = (ctx.TIMES() != null, astSeq[Variable](ctx.variable()))
   }
 
   final override def exitSubqueryInTransactionsParameters(

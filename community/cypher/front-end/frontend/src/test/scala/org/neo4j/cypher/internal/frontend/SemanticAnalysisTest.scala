@@ -423,6 +423,11 @@ class SemanticAnalysisTest extends SemanticAnalysisTestSuite {
     expectNoErrorsFrom(query, pipelineWithUseAsMultipleGraphsSelector, isComposite = true, "comp")
   }
 
+  test("redundant composite use clause should not be considered as nested use clause and scope clause") {
+    val query = "USE comp CALL () { USE comp.c1 RETURN 1 as n } RETURN n"
+    expectNoErrorsFrom(query, pipelineWithUseAsMultipleGraphsSelector, isComposite = true, "comp")
+  }
+
   test("redundant composite use clause should not be considered as nested use clause (case insensitive)") {
     val query = "USE comp CALL { USE COMP.c1 RETURN 1 as n } RETURN n"
     expectNoErrorsFrom(query, pipelineWithUseAsMultipleGraphsSelector, isComposite = true, "comp")
@@ -456,6 +461,13 @@ class SemanticAnalysisTest extends SemanticAnalysisTestSuite {
 
   test("redundant composite use clause should not be considered as nested use clause with graph function") {
     val query = "USE comp CALL { USE graph.byName('c1') RETURN 1 as n } return n"
+    expectNoErrorsFrom(query, pipelineWithUseAsMultipleGraphsSelector, isComposite = true, "comp")
+  }
+
+  test(
+    "redundant composite use clause should not be considered as nested use clause with graph function, scope clause"
+  ) {
+    val query = "USE comp CALL () { USE graph.byName('c1') RETURN 1 as n } return n"
     expectNoErrorsFrom(query, pipelineWithUseAsMultipleGraphsSelector, isComposite = true, "comp")
   }
 
@@ -522,6 +534,33 @@ class SemanticAnalysisTest extends SemanticAnalysisTestSuite {
         SemanticError(
           "Nested subqueries must use the same graph as their parent query",
           InputPosition(145, 8, 16)
+        )
+      ),
+      pipelineWithUseAsMultipleGraphsSelector,
+      isComposite = true,
+      "comp"
+    )
+  }
+
+  test("throw nested use clause exception with nested proper dynamic use clauses with scope clause") {
+    val query = """WITH "local" AS i
+                  | CALL (i) {
+                  |      USE graph.byName("comp." + i)
+                  |      WITH "neo4j" AS j
+                  |      CALL (j) {
+                  |           USE graph.byName("comp." + j)
+                  |           MATCH (n)
+                  |           RETURN n.prop as prop
+                  |      }
+                  |      RETURN prop
+                  |}
+                  |RETURN prop""".stripMargin
+    expectErrorsFrom(
+      query,
+      Set(
+        SemanticError(
+          "Nested subqueries must use the same graph as their parent query",
+          InputPosition(122, 6, 16)
         )
       ),
       pipelineWithUseAsMultipleGraphsSelector,

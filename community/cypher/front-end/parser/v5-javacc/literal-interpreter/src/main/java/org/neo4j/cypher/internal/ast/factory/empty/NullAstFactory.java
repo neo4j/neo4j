@@ -864,7 +864,8 @@ public class NullAstFactory
     }
 
     @Override
-    public NULL subqueryClause(NULL p, NULL subquery, NULL inTransactions) {
+    public NULL subqueryClause(
+            NULL p, NULL subquery, NULL inTransactions, boolean scopeAll, boolean hasScope, List<NULL> variables) {
         return null;
     }
 

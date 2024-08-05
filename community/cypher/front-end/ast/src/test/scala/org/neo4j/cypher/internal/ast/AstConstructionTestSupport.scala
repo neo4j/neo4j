@@ -849,22 +849,46 @@ trait AstConstructionTestSupport {
   def unionDistinct(qs: SingleQuery*): Query =
     qs.reduceLeft[Query](UnionDistinct(_, _)(pos))
 
-  def subqueryCall(cs: Clause*): SubqueryCall =
-    SubqueryCall(SingleQuery(cs)(pos), None)(pos)
+  def importingWithSubqueryCall(cs: Clause*): ImportingWithSubqueryCall =
+    ImportingWithSubqueryCall(SingleQuery(cs)(pos), None)(pos)
 
-  def subqueryCall(innerQuery: Query): SubqueryCall =
-    SubqueryCall(innerQuery, None)(pos)
+  def importingWithSubqueryCall(innerQuery: Query): ImportingWithSubqueryCall =
+    ImportingWithSubqueryCall(innerQuery, None)(pos)
 
-  def subqueryCallInTransactions(cs: Clause*): SubqueryCall = {
-    val call = subqueryCall(cs: _*)
+  def scopeClauseSubqueryCall(
+    isImportingAll: Boolean,
+    importedVariables: Seq[Variable],
+    cs: Clause*
+  ): ScopeClauseSubqueryCall =
+    ScopeClauseSubqueryCall(SingleQuery(cs)(pos), isImportingAll, importedVariables, None)(pos)
+
+  def scopeClauseSubqueryCall(
+    isImportingAll: Boolean,
+    importedVariables: Seq[Variable],
+    innerQuery: Query
+  ): ScopeClauseSubqueryCall =
+    ScopeClauseSubqueryCall(innerQuery, isImportingAll, importedVariables, None)(pos)
+
+  def importingWithSubqueryCallInTransactions(cs: Clause*): SubqueryCall = {
+    val call = importingWithSubqueryCall(cs: _*)
     call.copy(inTransactionsParameters = Some(inTransactionsParameters(None, None, None, None)))(pos)
   }
 
-  def subqueryCallInTransactions(
+  def importingWithSubqueryCallInTransactions(
     inTransactionParameters: SubqueryCall.InTransactionsParameters,
     cs: Clause*
   ): SubqueryCall = {
-    val call = subqueryCall(cs: _*)
+    val call = importingWithSubqueryCall(cs: _*)
+    call.copy(inTransactionsParameters = Some(inTransactionParameters))(pos)
+  }
+
+  def scopeClauseSubqueryCallInTransactions(
+    isImportingAll: Boolean,
+    importedVariables: Seq[Variable],
+    inTransactionParameters: SubqueryCall.InTransactionsParameters,
+    cs: Clause*
+  ): SubqueryCall = {
+    val call = scopeClauseSubqueryCall(isImportingAll, importedVariables, cs: _*)
     call.copy(inTransactionsParameters = Some(inTransactionParameters))(pos)
   }
 

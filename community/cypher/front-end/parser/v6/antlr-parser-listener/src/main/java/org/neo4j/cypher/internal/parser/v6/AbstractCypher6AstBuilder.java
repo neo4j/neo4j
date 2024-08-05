@@ -75,6 +75,7 @@ public abstract class AbstractCypher6AstBuilder implements Cypher6ParserListener
             case Cypher6Parser.RULE_loadCSVClause -> exitLoadCSVClause((Cypher6Parser.LoadCSVClauseContext) ctx);
             case Cypher6Parser.RULE_foreachClause -> exitForeachClause((Cypher6Parser.ForeachClauseContext) ctx);
             case Cypher6Parser.RULE_subqueryClause -> exitSubqueryClause((Cypher6Parser.SubqueryClauseContext) ctx);
+            case Cypher6Parser.RULE_subqueryScope -> exitSubqueryScope((Cypher6Parser.SubqueryScopeContext) ctx);
             case Cypher6Parser.RULE_subqueryInTransactionsParameters -> exitSubqueryInTransactionsParameters(
                     (Cypher6Parser.SubqueryInTransactionsParametersContext) ctx);
             case Cypher6Parser.RULE_subqueryInTransactionsBatchParameters -> exitSubqueryInTransactionsBatchParameters(

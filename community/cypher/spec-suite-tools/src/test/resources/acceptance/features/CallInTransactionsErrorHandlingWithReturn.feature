@@ -59,6 +59,40 @@ Feature: CallInTransactionsErrorHandlingWithReturn
      | ON ERROR CONTINUE |
      | ON ERROR BREAK    |
 
+  Scenario Outline: Create in transactions of default size <onErrorBehaviour> with Scope Clause
+    Given an empty graph
+    When executing query:
+      """
+      UNWIND range(1, 5) AS i
+      CALL (i) {
+        UNWIND [1, 2] AS j
+        CREATE (n:N {i: i, j: j})
+        RETURN j
+      } IN TRANSACTIONS
+        <onErrorBehaviour>
+      RETURN i, j
+      """
+    Then the result should be, in order:
+      | i | j |
+      | 1 | 1 |
+      | 1 | 2 |
+      | 2 | 1 |
+      | 2 | 2 |
+      | 3 | 1 |
+      | 3 | 2 |
+      | 4 | 1 |
+      | 4 | 2 |
+      | 5 | 1 |
+      | 5 | 2 |
+    And the side effects should be:
+      | +nodes      | 10 |
+      | +properties | 20 |
+      | +labels     |  1 |
+    Examples:
+      | onErrorBehaviour  |
+      | ON ERROR CONTINUE |
+      | ON ERROR BREAK    |
+
   Scenario Outline: Create in transactions of <rows> rows <onErrorBehaviour>
     Given an empty graph
     When executing query:
@@ -362,6 +396,42 @@ Feature: CallInTransactionsErrorHandlingWithReturn
       UNWIND [1, 2, 3, 0, 4] AS i
       CALL {
         WITH i
+        UNWIND [1, 0] AS j
+        CREATE (n:N {p: 1/(i + j)})
+        RETURN j
+      } IN TRANSACTIONS
+        OF 2 ROWS
+        ON ERROR CONTINUE
+        REPORT STATUS AS status
+      RETURN
+        i,
+        j,
+        status.transactionId IS NOT NULL AS hasTxId,
+        status.started AS started,
+        status.committed AS committed,
+        status.errorMessage IS NOT NULL AS hasErrorMessage
+      """
+    Then the result should be, in order:
+      | i |    j | hasTxId | started | committed | hasErrorMessage |
+      | 1 |    1 | true    | true    | true      | false           |
+      | 1 |    0 | true    | true    | true      | false           |
+      | 2 |    1 | true    | true    | true      | false           |
+      | 2 |    0 | true    | true    | true      | false           |
+      | 3 | null | true    | true    | false     | true            |
+      | 0 | null | true    | true    | false     | true            |
+      | 4 |    1 | true    | true    | true      | false           |
+      | 4 |    0 | true    | true    | true      | false           |
+    And the side effects should be:
+      | +nodes      | 6 |
+      | +properties | 6 |
+      | +labels     | 1 |
+
+  Scenario: Create and report status with rollback in transactions ON ERROR CONTINUE with Scope Clause
+    Given an empty graph
+    When executing query:
+      """
+      UNWIND [1, 2, 3, 0, 4] AS i
+      CALL (i) {
         UNWIND [1, 0] AS j
         CREATE (n:N {p: 1/(i + j)})
         RETURN j

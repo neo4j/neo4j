@@ -21,6 +21,7 @@ import org.neo4j.cypher.internal.ast.FullSubqueryExpression
 import org.neo4j.cypher.internal.ast.ProjectingUnion
 import org.neo4j.cypher.internal.ast.Query
 import org.neo4j.cypher.internal.ast.Return
+import org.neo4j.cypher.internal.ast.ScopeClauseSubqueryCall
 import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.UnionAll
 import org.neo4j.cypher.internal.ast.UnionDistinct
@@ -64,33 +65,40 @@ case object addDependenciesToProjectionsInSubqueryExpressions extends StepSequen
     with ASTRewriterFactory {
 
   val instance: Rewriter = bottomUp(Rewriter.lift {
+    case s: ScopeClauseSubqueryCall =>
+      val newQuery = rewriteQuery(s.innerQuery, s.importedVariables.toSet, shouldSplitReturn = false)
+      s.copy(innerQuery = newQuery)(s.position)
     case e: FullSubqueryExpression =>
       val scopeDependencies = e.scopeDependencies
-      val newQuery = rewriteQuery(e.query, scopeDependencies)
+      val newQuery = rewriteQuery(e.query, scopeDependencies, shouldSplitReturn = true)
       e.withQuery(newQuery)
   })
 
-  private def rewriteQuery(query: Query, scopeDependencies: Set[LogicalVariable]): Query =
+  private def rewriteQuery(query: Query, scopeDependencies: Set[LogicalVariable], shouldSplitReturn: Boolean): Query =
     query match {
-      case sq: SingleQuery => rewriteSingleQuery(sq, scopeDependencies)
+      case sq: SingleQuery => rewriteSingleQuery(sq, scopeDependencies, shouldSplitReturn)
       case union @ UnionAll(lhs, rhs) =>
         union.copy(
-          lhs = rewriteQuery(lhs, scopeDependencies),
-          rhs = rewriteSingleQuery(rhs, scopeDependencies)
+          lhs = rewriteQuery(lhs, scopeDependencies, shouldSplitReturn),
+          rhs = rewriteSingleQuery(rhs, scopeDependencies, shouldSplitReturn)
         )(union.position)
       case union @ UnionDistinct(lhs, rhs) =>
         union.copy(
-          lhs = rewriteQuery(lhs, scopeDependencies),
-          rhs = rewriteSingleQuery(rhs, scopeDependencies)
+          lhs = rewriteQuery(lhs, scopeDependencies, shouldSplitReturn),
+          rhs = rewriteSingleQuery(rhs, scopeDependencies, shouldSplitReturn)
         )(union.position)
       case _: ProjectingUnion =>
         throw new IllegalStateException("Didn't expect ProjectingUnion, only SingleQuery, UnionAll, or UnionDistinct.")
     }
 
-  def rewriteSingleQuery(query: SingleQuery, scopeDependencies: Set[LogicalVariable]): SingleQuery = {
+  def rewriteSingleQuery(
+    query: SingleQuery,
+    scopeDependencies: Set[LogicalVariable],
+    shouldSplitReturn: Boolean
+  ): SingleQuery = {
     val newClauses = query.clauses.flatMap {
       case w: With => Seq(addDependenciesToWithClause(w, scopeDependencies))
-      case ret: Return if ret.orderBy.nonEmpty =>
+      case ret: Return if ret.orderBy.nonEmpty && shouldSplitReturn =>
         val (newWith, newReturn) = splitReturnClause(ret)
         Seq(addDependenciesToWithClause(newWith, scopeDependencies), newReturn)
       case x => Seq(x)

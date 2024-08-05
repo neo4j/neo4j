@@ -76,7 +76,7 @@ class SyntaxErrorParserTest extends AstParsingTestBase {
   test("remove") { invalid("", "an expression", 6) }
   test("with") { invalid("", "an expression, '*' or 'DISTINCT'", 4) }
   test("unwind") { invalid("", "an expression", 6) }
-  test("call") { invalid("", "an identifier or '{'", 4) }
+  test("call") { invalid("", "an identifier, '(' or '{'", 4) }
   test("load csv") { invalid("", "'FROM' or 'WITH HEADERS'", 8) }
   test("match (a)-[r]>(b) return *") { invalid(">", "'-'", 13) }
   test("match (a)-[:]->(b) return *") { invalid("]", "a node label/relationship type name, '%' or '('", 12) }
@@ -184,7 +184,7 @@ class SyntaxErrorParserTest extends AstParsingTestBase {
   test("return 1 order by x,*") { invalid("*", "an expression", 20) }
   test("call hej() yield x as 1y") { invalid("1y", "an identifier", 22) }
   test("call hej() yield 1x as y") { invalid("1x", "an identifier or '*'", 17) }
-  test("call 1hej()") { invalid("1hej", "an identifier or '{'", 5) }
+  test("call 1hej()") { invalid("1hej", "an identifier, '(' or '{'", 5) }
   test("show procedures yield") { invalid("", "a variable name or '*'", 21) }
   test("create database 1a") { invalid("1a", "a database name, a graph pattern or a parameter", 16) }
   test("with 1 as 1p return *") { invalid("1p", "an identifier", 10) }

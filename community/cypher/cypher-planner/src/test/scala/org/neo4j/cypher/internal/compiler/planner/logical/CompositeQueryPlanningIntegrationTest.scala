@@ -238,6 +238,65 @@ class CompositeQueryPlanningIntegrationTest extends CypherFunSuite with LogicalP
       .build()
   }
 
+  test("should plan a composite query containing scoped sub-queries") {
+    val query =
+      """UNWIND [1,2,3] AS i
+        |CALL (i) {
+        |  USE db.products
+        |  MATCH (product:Product {version: i})
+        |  RETURN product
+        |}
+        |WITH * ORDER BY product.name
+        |WITH product, product.id AS pId
+        |CALL (pId) {
+        |  USE db.customers
+        |  MATCH (customer:Customer)-[:BOUGHT]->(:Product {id: pId})
+        |  RETURN customer
+        |}
+        |RETURN product, customer
+        |""".stripMargin
+
+    val plan = planner.plan(query)
+
+    plan shouldEqual planner
+      .planBuilder()
+      .produceResults("product", "customer")
+      .apply()
+      .|.runQueryAt(
+        query = List(
+          "WITH $`pId` AS `pId`",
+          "MATCH (`customer`)-[`anon_0`:`BOUGHT`]->(`anon_1`)",
+          "  WHERE ((`customer`):`Customer`) AND (((`anon_1`).`id`) IN ([`pId`])) AND ((`anon_1`):`Product`)",
+          "RETURN `customer` AS `customer`"
+        ).mkString(NL),
+        graphReference = "db.customers",
+        parameters = Set.empty,
+        importsAsParameters = Map("$pId" -> "pId"),
+        columns = Set("customer")
+      )
+      .|.argument("pId")
+      .projection("product.id AS pId")
+      .sort("`product.name` ASC")
+      .projection("product.name AS `product.name`")
+      .apply()
+      .|.runQueryAt(
+        query = List(
+          "WITH $`i` AS `i`",
+          "MATCH (`product`)",
+          "  WHERE (((`product`).`version`) IN ([`i`])) AND ((`product`):`Product`)",
+          "RETURN `product` AS `product`"
+        ).mkString(NL),
+        graphReference = "db.products",
+        parameters = Set.empty,
+        importsAsParameters = Map("$i" -> "i"),
+        columns = Set("product")
+      )
+      .|.argument("i")
+      .unwind("[1, 2, 3] AS i")
+      .argument()
+      .build()
+  }
+
   test("should plan a composite query containing union sub-queries") {
     val query =
       """UNWIND [1,2,3] AS i
@@ -293,6 +352,97 @@ class CompositeQueryPlanningIntegrationTest extends CypherFunSuite with LogicalP
       .|.union()
       .|.|.projection("customer AS customer")
       .|.|.projection("{id: i} AS customer")
+      .|.|.unwind("[1, 2, 3] AS i")
+      .|.|.argument()
+      .|.projection("customer AS customer")
+      .|.runQueryAt(
+        query = List(
+          "WITH $`pId` AS `pId`",
+          "MATCH (`customer`)-[`anon_0`:`BOUGHT`]->(`anon_1`)",
+          "  WHERE ((`customer`):`Customer`) AND (((`anon_1`).`id`) IN ([`pId`])) AND ((`anon_1`):`Product`)",
+          "RETURN `customer` AS `customer`"
+        ).mkString(NL),
+        graphReference = "db.customerAME",
+        parameters = Set.empty,
+        importsAsParameters = Map("$pId" -> "pId"),
+        columns = Set("customer")
+      )
+      .|.argument("pId")
+      .projection("product.id AS pId")
+      .sort("`product.name` ASC")
+      .projection("product.name AS `product.name`")
+      .apply()
+      .|.runQueryAt(
+        query = List(
+          "WITH $`i` AS `i`",
+          "MATCH (`product`)",
+          "  WHERE (((`product`).`version`) IN ([`i`])) AND ((`product`):`Product`)",
+          "RETURN `product` AS `product`"
+        ).mkString(NL),
+        graphReference = "db.products",
+        parameters = Set.empty,
+        importsAsParameters = Map("$i" -> "i"),
+        columns = Set("product")
+      )
+      .|.argument("i")
+      .unwind("[1, 2, 3] AS i")
+      .argument()
+      .build()
+  }
+
+  test("should plan a composite query containing union scoped sub-queries") {
+    val query =
+      """UNWIND [1,2,3] AS i
+        |CALL {
+        |  WITH i
+        |  USE db.products
+        |  MATCH (product:Product {version: i})
+        |  RETURN product
+        |}
+        |WITH * ORDER BY product.name
+        |WITH product, product.id AS pId
+        |CALL (pId) {
+        |    USE db.customerAME
+        |    MATCH (customer:Customer)-[:BOUGHT]->(:Product {id: pId})
+        |    RETURN customer
+        |  UNION
+        |    UNWIND [1,2,3] AS i
+        |    WITH {id: i} AS customer
+        |    RETURN customer
+        |  UNION
+        |    USE db.customerEU
+        |    MATCH (customer:Customer)-[:BOUGHT]->(:Product {id: pId})
+        |    RETURN customer
+        |}
+        |RETURN product, customer
+        |""".stripMargin
+
+    val plan = planner.plan(query)
+
+    plan shouldEqual planner
+      .planBuilder()
+      .produceResults("product", "customer")
+      .apply()
+      .|.distinct("pId AS pId", "customer AS customer")
+      .|.union()
+      .|.|.projection("customer AS customer")
+      .|.|.runQueryAt(
+        query = List(
+          "WITH $`pId` AS `pId`",
+          "MATCH (`customer`)-[`anon_2`:`BOUGHT`]->(`anon_3`)",
+          "  WHERE ((`customer`):`Customer`) AND (((`anon_3`).`id`) IN ([`pId`])) AND ((`anon_3`):`Product`)",
+          "RETURN `customer` AS `customer`"
+        ).mkString(NL),
+        graphReference = "db.customerEU",
+        parameters = Set.empty,
+        importsAsParameters = Map("$pId" -> "pId"),
+        columns = Set("customer")
+      )
+      .|.|.argument("pId")
+      .|.projection("customer AS customer")
+      .|.union()
+      .|.|.projection("customer AS customer")
+      .|.|.projection("{id: i} AS customer", "pId AS pId")
       .|.|.unwind("[1, 2, 3] AS i")
       .|.|.argument()
       .|.projection("customer AS customer")

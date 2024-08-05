@@ -24,10 +24,12 @@ import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.AliasedReturnItem
 import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.GraphSelection
+import org.neo4j.cypher.internal.ast.ImportingWithSubqueryCall
 import org.neo4j.cypher.internal.ast.InputDataStream
 import org.neo4j.cypher.internal.ast.Query
 import org.neo4j.cypher.internal.ast.Return
 import org.neo4j.cypher.internal.ast.ReturnItems
+import org.neo4j.cypher.internal.ast.ScopeClauseSubqueryCall
 import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.SubqueryCall
@@ -136,7 +138,13 @@ case class FabricStitcher(
     )(pos))(pos)
 
     val adjustedParameters = adjustInTransactionsParameters(inTransactionsParameters)
-    val call = SubqueryCall(SingleQuery(clausesWithoutInsertedWith)(pos), Some(adjustedParameters))(pos)
+    val call =
+      ScopeClauseSubqueryCall(
+        SingleQuery(clausesWithoutInsertedWith)(pos),
+        isImportingAll = false,
+        originalExec.importColumns.map(x => Variable(x)(pos)),
+        Some(adjustedParameters)
+      )(pos)
     val outputColumns = callInTxOutputColumns(originalExec, adjustedParameters)
     val returnClause = aliasedReturn(outputColumns, pos)
 
@@ -416,8 +424,16 @@ case class FabricStitcher(
         case apply: Fragment.Apply =>
           val before = stitchChain(apply.input, outermost, outerUse)
           val inner = stitch(apply.inner, outermost = false, Some(before.lastUse))
+          val innerImports = inner.query.importColumns
+          val scopeImports = apply.inner.importColumns
+          val imports = (innerImports ++ scopeImports).distinct.map(Variable(_)(apply.pos))
           before.copy(
-            clauses = before.clauses :+ SubqueryCall(inner.query, apply.inTransactionsParameters)(apply.pos),
+            clauses = before.clauses :+ ScopeClauseSubqueryCall(
+              inner.query,
+              isImportingAll = false,
+              imports,
+              apply.inTransactionsParameters
+            )(apply.pos),
             useAppearances = before.useAppearances ++ inner.useAppearances
           )
 

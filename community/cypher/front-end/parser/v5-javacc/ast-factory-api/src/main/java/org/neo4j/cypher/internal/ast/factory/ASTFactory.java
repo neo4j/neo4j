@@ -328,7 +328,13 @@ public interface ASTFactory<
 
     CLAUSE foreachClause(POS p, VARIABLE v, EXPRESSION list, List<CLAUSE> clauses);
 
-    CLAUSE subqueryClause(POS p, QUERY subquery, SUBQUERY_IN_TRANSACTIONS_PARAMETERS inTransactions);
+    CLAUSE subqueryClause(
+            POS p,
+            QUERY subquery,
+            SUBQUERY_IN_TRANSACTIONS_PARAMETERS inTransactions,
+            boolean scopeAll,
+            boolean hasScope,
+            List<VARIABLE> variables);
 
     SUBQUERY_IN_TRANSACTIONS_PARAMETERS subqueryInTransactionsParams(
             POS p,

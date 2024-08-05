@@ -149,6 +149,7 @@ import org.neo4j.cypher.internal.ast.IfExistsInvalidSyntax
 import org.neo4j.cypher.internal.ast.IfExistsReplace
 import org.neo4j.cypher.internal.ast.IfExistsThrowError
 import org.neo4j.cypher.internal.ast.ImpersonateUserAction
+import org.neo4j.cypher.internal.ast.ImportingWithSubqueryCall
 import org.neo4j.cypher.internal.ast.IndefiniteWait
 import org.neo4j.cypher.internal.ast.Insert
 import org.neo4j.cypher.internal.ast.IsNormalized
@@ -238,6 +239,7 @@ import org.neo4j.cypher.internal.ast.RevokeGrantType
 import org.neo4j.cypher.internal.ast.RevokePrivilege
 import org.neo4j.cypher.internal.ast.RevokeRolesFromUsers
 import org.neo4j.cypher.internal.ast.SchemaCommand
+import org.neo4j.cypher.internal.ast.ScopeClauseSubqueryCall
 import org.neo4j.cypher.internal.ast.ServerManagementAction
 import org.neo4j.cypher.internal.ast.SetAuthAction
 import org.neo4j.cypher.internal.ast.SetClause
@@ -936,9 +938,25 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
   override def subqueryClause(
     p: InputPosition,
     subquery: Query,
-    inTransactions: SubqueryCall.InTransactionsParameters
-  ): Clause =
-    SubqueryCall(subquery, Option(inTransactions))(p)
+    inTransactions: SubqueryCall.InTransactionsParameters,
+    scopeAll: Boolean,
+    hasScope: Boolean,
+    variables: util.List[Variable]
+  ): Clause = {
+    if (hasScope) {
+      ScopeClauseSubqueryCall(
+        subquery,
+        scopeAll,
+        variables.asScala.toSeq,
+        Option(inTransactions)
+      )(p)
+    } else {
+      ImportingWithSubqueryCall(
+        subquery,
+        Option(inTransactions)
+      )(p)
+    }
+  }
 
   // PATTERNS
 
