@@ -521,10 +521,6 @@ trait StatementBuilder extends Cypher6ParserListener {
     ctx.ast = SubqueryCall.InTransactionsReportParameters(ctxChild(ctx, 3).ast())(pos(ctx))
   }
 
-  final override def exitPeriodicCommitQueryHintFailure(
-    ctx: Cypher6Parser.PeriodicCommitQueryHintFailureContext
-  ): Unit = {}
-
   final override def exitPatternList(ctx: Cypher6Parser.PatternListContext): Unit = {
     ctx.ast = astSeq[PatternPart](ctx.pattern())
   }

@@ -23,11 +23,7 @@ statements
    ;
 
 statement
-   : periodicCommitQueryHintFailure? (command | regularQuery)
-   ;
-
-periodicCommitQueryHintFailure
-   : USING PERIODIC COMMIT UNSIGNED_DECIMAL_INTEGER?
+   : command | regularQuery
    ;
 
 regularQuery
@@ -1765,7 +1761,6 @@ unescapedLabelSymbolicNameString
    | COLLECT
    | COMMAND
    | COMMANDS
-   | COMMIT
    | COMPOSITE
    | CONCURRENT
    | CONSTRAINT
@@ -1882,7 +1877,6 @@ unescapedLabelSymbolicNameString
    | PASSWORDS
    | PATH
    | PATHS
-   | PERIODIC
    | PLAINTEXT
    | POINT
    | POPULATED

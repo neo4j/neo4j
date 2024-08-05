@@ -35,8 +35,6 @@ public abstract class AbstractCypher6AstBuilder implements Cypher6ParserListener
         switch (ctx.getRuleIndex()) {
             case Cypher6Parser.RULE_statements -> exitStatements((Cypher6Parser.StatementsContext) ctx);
             case Cypher6Parser.RULE_statement -> exitStatement((Cypher6Parser.StatementContext) ctx);
-            case Cypher6Parser.RULE_periodicCommitQueryHintFailure -> exitPeriodicCommitQueryHintFailure(
-                    (Cypher6Parser.PeriodicCommitQueryHintFailureContext) ctx);
             case Cypher6Parser.RULE_regularQuery -> exitRegularQuery((Cypher6Parser.RegularQueryContext) ctx);
             case Cypher6Parser.RULE_singleQuery -> exitSingleQuery((Cypher6Parser.SingleQueryContext) ctx);
             case Cypher6Parser.RULE_clause -> exitClause((Cypher6Parser.ClauseContext) ctx);

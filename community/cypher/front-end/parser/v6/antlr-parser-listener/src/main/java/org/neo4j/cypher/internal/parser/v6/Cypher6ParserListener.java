@@ -27,8 +27,6 @@ public interface Cypher6ParserListener extends ParseTreeListener {
 
     void exitStatement(Cypher6Parser.StatementContext ctx);
 
-    void exitPeriodicCommitQueryHintFailure(Cypher6Parser.PeriodicCommitQueryHintFailureContext ctx);
-
     void exitRegularQuery(Cypher6Parser.RegularQueryContext ctx);
 
     void exitSingleQuery(Cypher6Parser.SingleQueryContext ctx);

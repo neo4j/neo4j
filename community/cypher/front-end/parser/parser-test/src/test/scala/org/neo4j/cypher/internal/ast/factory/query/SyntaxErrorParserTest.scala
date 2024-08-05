@@ -16,9 +16,12 @@
  */
 package org.neo4j.cypher.internal.ast.factory.query
 
+import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.factory.query.SyntaxErrorParserTest.clauseExpected
+import org.neo4j.cypher.internal.ast.test.util.AstParsing.Cypher5
 import org.neo4j.cypher.internal.ast.test.util.AstParsing.Cypher5JavaCc
+import org.neo4j.cypher.internal.ast.test.util.AstParsing.Cypher6
 import org.neo4j.cypher.internal.ast.test.util.AstParsingTestBase
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
@@ -27,14 +30,23 @@ import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
 class SyntaxErrorParserTest extends AstParsingTestBase {
 
   private def invalid(input: String, expected: String, offset: Int): Unit = {
+    invalid(input, expected, expected, offset)
+  }
+
+  private def invalid(input: String, expected5: String, expected6: String, offset: Int): Unit = {
     val pos = InputPosition(offset, 1, offset + 1)
-    val expectedMessage =
-      s"""Invalid input '$input': expected $expected ($pos)
+    val expectedMessageCypher5 =
+      s"""Invalid input '$input': expected $expected5 ($pos)
+         |"$testName"
+         | ${" ".repeat(pos.offset)}^""".stripMargin
+    val expectedMessageCypher6 =
+      s"""Invalid input '$input': expected $expected6 ($pos)
          |"$testName"
          | ${" ".repeat(pos.offset)}^""".stripMargin
     failsParsing[Statements].in {
       case Cypher5JavaCc => _.throws[OpenCypherExceptionFactory.SyntaxException]
-      case _             => _.withSyntaxError(expectedMessage)
+      case Cypher5       => _.withSyntaxError(expectedMessageCypher5)
+      case Cypher6       => _.withSyntaxError(expectedMessageCypher6)
     }
   }
 
@@ -45,6 +57,7 @@ class SyntaxErrorParserTest extends AstParsingTestBase {
     invalid(
       "for",
       "'FOREACH', 'ALTER', 'CALL', 'USING PERIODIC COMMIT', 'CREATE', 'LOAD CSV', 'START DATABASE', 'STOP DATABASE', 'DEALLOCATE', 'DELETE', 'DENY', 'DETACH', 'DROP', 'DRYRUN', 'FINISH', 'GRANT', 'INSERT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REALLOCATE', 'REMOVE', 'RENAME', 'RETURN', 'REVOKE', 'ENABLE SERVER', 'SET', 'SHOW', 'TERMINATE', 'UNWIND', 'USE' or 'WITH'",
+      "'FOREACH', 'ALTER', 'CALL', 'CREATE', 'LOAD CSV', 'START DATABASE', 'STOP DATABASE', 'DEALLOCATE', 'DELETE', 'DENY', 'DETACH', 'DROP', 'DRYRUN', 'FINISH', 'GRANT', 'INSERT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REALLOCATE', 'REMOVE', 'RENAME', 'RETURN', 'REVOKE', 'ENABLE SERVER', 'SET', 'SHOW', 'TERMINATE', 'UNWIND', 'USE' or 'WITH'",
       0
     )
   }
@@ -77,7 +90,10 @@ class SyntaxErrorParserTest extends AstParsingTestBase {
     invalid("1bcd", "a graph pattern, a parameter, a variable name, ')', ':', 'IS', 'WHERE' or '{'", 7)
   }
   test("match (`a`b`) return *") { invalid("b", "a graph pattern, a parameter, ')', ':', 'IS', 'WHERE' or '{'", 10) }
-  test("atch (n) return *") { invalid("atch", clauseExpected, 0) }
+
+  test("atch (n) return *") {
+    invalid("atch", clauseExpected(CypherVersion.Cypher5), clauseExpected(CypherVersion.Cypher6), 0)
+  }
   test("match (n:*) return *") { invalid("*", "a node label/relationship type name, '%' or '('", 9) }
   test("match (n:Label|) return *") { invalid("|", "a parameter, '&', ')', ':', 'WHERE', '{' or '|'", 14) }
   test("match (n:Label:) return *") { invalid(":", "a parameter, '&', ')', ':', 'WHERE', '{' or '|'", 14) }
@@ -99,7 +115,10 @@ class SyntaxErrorParserTest extends AstParsingTestBase {
     invalid("1bcd", "a graph pattern, a parameter, a variable name, ')', ':', 'IS', 'WHERE' or '{'", 8)
   }
   test("create (`a`b`) return *") { invalid("b", "a graph pattern, a parameter, ')', ':', 'IS', 'WHERE' or '{'", 11) }
-  test("reate (n) return *") { invalid("reate", clauseExpected, 0) }
+
+  test("reate (n) return *") {
+    invalid("reate", clauseExpected(CypherVersion.Cypher5), clauseExpected(CypherVersion.Cypher6), 0)
+  }
   test("create (n:*) return *") { invalid("*", "a node label/relationship type name, '%' or '('", 10) }
   test("create (n:Label|) return *") { invalid("|", "a parameter, '&', ')', ':', 'WHERE', '{' or '|'", 15) }
   test("create (n:Label:) return *") { invalid(":", "a parameter, '&', ')', ':', 'WHERE', '{' or '|'", 15) }
@@ -120,7 +139,10 @@ class SyntaxErrorParserTest extends AstParsingTestBase {
     invalid("1bcd", "a graph pattern, a parameter, a variable name, ')', ':', 'IS', 'WHERE' or '{'", 7)
   }
   test("merge (`a`b`) return *") { invalid("b", "a graph pattern, a parameter, ')', ':', 'IS', 'WHERE' or '{'", 10) }
-  test("erge (n) return *") { invalid("erge", clauseExpected, 0) }
+
+  test("erge (n) return *") {
+    invalid("erge", clauseExpected(CypherVersion.Cypher5), clauseExpected(CypherVersion.Cypher6), 0)
+  }
   test("merge (n:*) return *") { invalid("*", "a node label/relationship type name, '%' or '('", 9) }
   test("merge (n:Label|) return *") { invalid("|", "a parameter, '&', ')', ':', 'WHERE', '{' or '|'", 14) }
   test("merge (n:Label:) return *") { invalid(":", "a parameter, '&', ')', ':', 'WHERE', '{' or '|'", 14) }
@@ -151,7 +173,7 @@ class SyntaxErrorParserTest extends AstParsingTestBase {
     )
   }
   test("return {") { invalid("", "an identifier or '}'", 8) }
-  test("eturn 1") { invalid("eturn", clauseExpected, 0) }
+  test("eturn 1") { invalid("eturn", clauseExpected(CypherVersion.Cypher5), clauseExpected(CypherVersion.Cypher6), 0) }
   test("return 1 skip") { invalid("", "an expression", 13) }
   test("return 1 skip *") { invalid("*", "an expression", 14) }
   test("return 1 limit") { invalid("", "an expression", 14) }
@@ -224,8 +246,10 @@ class SyntaxErrorParserTest extends AstParsingTestBase {
 
 object SyntaxErrorParserTest {
 
-  val clauseExpected: String = {
-    val tokens = Seq(
+  val clausesNotInCypher6: Seq[String] = Seq("USING PERIODIC COMMIT")
+
+  def clauseExpected(cypherVersion: CypherVersion): String = {
+    var tokens = Seq(
       "FOREACH",
       "ALTER",
       "CALL",
@@ -260,6 +284,9 @@ object SyntaxErrorParserTest {
       "USE",
       "WITH"
     )
+    if (cypherVersion == CypherVersion.Cypher6) {
+      tokens = tokens.filter(token => !clausesNotInCypher6.contains(token))
+    }
     tokens.dropRight(1).map(s => s"'$s'").mkString(", ") + " or '" + tokens.last + "'"
   }
 }

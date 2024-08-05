@@ -250,10 +250,6 @@ COMMANDS
    : C O M M A N D S
    ;
 
-COMMIT
-   : C O M M I T
-   ;
-
 COMPOSITE
    : C O M P O S I T E
    ;
@@ -820,10 +816,6 @@ PATH
 
 PATHS
    : P A T H S
-   ;
-
-PERIODIC
-   : P E R I O D I C
    ;
 
 PLAINTEXT

@@ -64,7 +64,6 @@ final class Cypher6SyntaxChecker(exceptionFactory: CypherExceptionFactory) exten
     // Note, this has been shown to be significantly faster than using the generated listener.
     // Compiles into a lookupswitch (or possibly tableswitch)
     ctx.getRuleIndex match {
-      case Cypher6Parser.RULE_periodicCommitQueryHintFailure   => checkPeriodicCommitQueryHintFailure(cast(ctx))
       case Cypher6Parser.RULE_subqueryInTransactionsParameters => checkSubqueryInTransactionsParameters(cast(ctx))
       case Cypher6Parser.RULE_createConstraint                 => checkCreateConstraint(cast(ctx))
       case Cypher6Parser.RULE_enclosedPropertyList             => checkEnclosedPropertyList(cast(ctx))
@@ -427,15 +426,6 @@ final class Cypher6SyntaxChecker(exceptionFactory: CypherExceptionFactory) exten
   private def checkAlterDatabaseTopology(ctx: Cypher6Parser.AlterDatabaseTopologyContext): Unit = {
     errorOnDuplicateRule[Cypher6Parser.PrimaryTopologyContext](ctx.primaryTopology(), "PRIMARY")
     errorOnDuplicateRule[Cypher6Parser.SecondaryTopologyContext](ctx.secondaryTopology(), "SECONDARY")
-  }
-
-  private def checkPeriodicCommitQueryHintFailure(ctx: Cypher6Parser.PeriodicCommitQueryHintFailureContext): Unit = {
-    val periodic = ctx.PERIODIC().getSymbol
-
-    _errors :+= exceptionFactory.syntaxException(
-      "The PERIODIC COMMIT query hint is no longer supported. Please use CALL { ... } IN TRANSACTIONS instead.",
-      inputPosition(periodic)
-    )
   }
 
   private def checkCreateLookupIndex(ctx: Cypher6Parser.CreateLookupIndexContext): Unit = {
