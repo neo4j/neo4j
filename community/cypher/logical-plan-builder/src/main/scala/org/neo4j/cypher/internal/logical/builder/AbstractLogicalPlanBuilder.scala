@@ -1107,6 +1107,12 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     ))
   }
 
+  def setDynamicLabelsWithExpression(nodeVariable: String, labelsExpressions: Set[Expression]): IMPL = {
+    appendAtCurrentIndent(UnaryOperator(lp =>
+      SetLabels(lp, varFor(nodeVariable), Set.empty, labelsExpressions)(_)
+    ))
+  }
+
   def removeLabels(nodeVariable: String, labels: String*): IMPL = {
     val labelNames = labels.map(l => LabelName(l)(InputPosition.NONE)).toSet
     appendAtCurrentIndent(UnaryOperator(lp => RemoveLabels(lp, varFor(nodeVariable), labelNames, Set.empty)(_)))
@@ -1126,6 +1132,12 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
   def removeDynamicLabels(nodeVariable: String, labels: String*): IMPL = {
     appendAtCurrentIndent(UnaryOperator(lp =>
       RemoveLabels(lp, varFor(nodeVariable), Set.empty, labels.map(l => Parser.parseExpression(l)).toSet)(_)
+    ))
+  }
+
+  def removeDynamicLabelsWithExpressions(nodeVariable: String, labelsExpressions: Set[Expression]): IMPL = {
+    appendAtCurrentIndent(UnaryOperator(lp =>
+      RemoveLabels(lp, varFor(nodeVariable), Set.empty, labelsExpressions)(_)
     ))
   }
 

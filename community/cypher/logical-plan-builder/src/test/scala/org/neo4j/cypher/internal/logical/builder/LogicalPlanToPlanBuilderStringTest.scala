@@ -2530,6 +2530,15 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName wi
   )
 
   testPlan(
+    "removeDynamicLabelsWithExpressions",
+    new TestPlanBuilder()
+      .produceResults("n")
+      .removeDynamicLabelsWithExpressions("n", Set(literalString("OtherLabel")))
+      .argument("n")
+      .build()
+  )
+
+  testPlan(
     "removeLabels dynamic and static",
     new TestPlanBuilder()
       .produceResults("n")
@@ -2561,6 +2570,15 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName wi
     new TestPlanBuilder()
       .produceResults("n")
       .setLabels("n", Seq("Label"), Seq("'OtherLabel'"))
+      .argument("n")
+      .build()
+  )
+
+  testPlan(
+    "setDynamicLabelsWithExpression",
+    new TestPlanBuilder()
+      .produceResults("n")
+      .setDynamicLabelsWithExpression("n", Set(literalString("OtherLabel")))
       .argument("n")
       .build()
   )

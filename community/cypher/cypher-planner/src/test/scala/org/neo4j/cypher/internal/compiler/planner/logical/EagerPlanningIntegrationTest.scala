@@ -49,6 +49,7 @@ import org.neo4j.cypher.internal.logical.builder.TestNFABuilder
 import org.neo4j.cypher.internal.logical.plans.Expand.ExpandAll
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.NFA
+import org.neo4j.cypher.internal.logical.plans.NestedPlanCollectExpression
 import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.attribution.Id
@@ -1726,6 +1727,88 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
         .create(createNodeWithProperties("n", Seq(), "{name: line.Name}"))
         .loadCSV("'file:///artists-with-headers.csv'", "line", HasHeaders, None)
         .argument()
+        .build()
+    )
+  }
+
+  test("Should eagerize nested COLLECT with dynamic labels - SET") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setLabelCardinality("Person", 50)
+      .addSemanticFeature(SemanticFeature.DynamicProperties)
+      .build()
+
+    val query = """MATCH (p), (n:Person)
+                  |SET p:$(COLLECT { UNWIND ["Person", "READ_ONLY"] AS strings RETURN strings})
+                  |RETURN p""".stripMargin
+
+    val plan = planner.plan(query)
+
+    val solvedExpr =
+      """COLLECT { UNWIND ["Person", "READ_ONLY"] AS strings
+        |RETURN strings AS strings }""".stripMargin
+
+    val nestedPlan = planner.subPlanBuilder()
+      .unwind("['Person', 'READ_ONLY'] AS strings")
+      .argument()
+      .build()
+
+    val collectExpr = NestedPlanCollectExpression(
+      plan = nestedPlan,
+      projection = v"strings",
+      solvedExpressionAsString = solvedExpr
+    )(pos)
+
+    plan should equal(
+      planner.planBuilder()
+        .produceResults("p")
+        .lpEager(ListSet(UnknownLabelReadSetConflict.withConflict(Conflict(Id(2), Id(0)))))
+        .setDynamicLabelsWithExpression("p", Set(collectExpr))
+        .lpEager(ListSet(UnknownLabelReadSetConflict.withConflict(Conflict(Id(2), Id(7)))))
+        .cartesianProduct()
+        .|.nodeByLabelScan("n", "Person", IndexOrderNone)
+        .allNodeScan("p")
+        .build()
+    )
+  }
+
+  test("Should eagerize nested COLLECT with dynamic labels - REMOVE") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setLabelCardinality("Person", 50)
+      .addSemanticFeature(SemanticFeature.DynamicProperties)
+      .build()
+
+    val query = """MATCH (p), (n:Person)
+                  |REMOVE p:$(COLLECT { UNWIND ["Person", "READ_ONLY"] AS strings RETURN strings})
+                  |RETURN p""".stripMargin
+
+    val plan = planner.plan(query)
+
+    val solvedExpr =
+      """COLLECT { UNWIND ["Person", "READ_ONLY"] AS strings
+        |RETURN strings AS strings }""".stripMargin
+
+    val nestedPlan = planner.subPlanBuilder()
+      .unwind("['Person', 'READ_ONLY'] AS strings")
+      .argument()
+      .build()
+
+    val collectExpr = NestedPlanCollectExpression(
+      plan = nestedPlan,
+      projection = v"strings",
+      solvedExpressionAsString = solvedExpr
+    )(pos)
+
+    plan should equal(
+      planner.planBuilder()
+        .produceResults("p")
+        .lpEager(ListSet(UnknownLabelReadRemoveConflict.withConflict(Conflict(Id(2), Id(0)))))
+        .removeDynamicLabelsWithExpressions("p", Set(collectExpr))
+        .lpEager(ListSet(UnknownLabelReadRemoveConflict.withConflict(Conflict(Id(2), Id(7)))))
+        .cartesianProduct()
+        .|.nodeByLabelScan("n", "Person", IndexOrderNone)
+        .allNodeScan("p")
         .build()
     )
   }

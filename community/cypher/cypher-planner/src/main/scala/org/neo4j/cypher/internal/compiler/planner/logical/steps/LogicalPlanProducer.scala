@@ -2966,7 +2966,8 @@ case class LogicalPlanProducer(
   def planSetLabel(inner: LogicalPlan, pattern: SetLabelPattern, context: LogicalPlanningContext): LogicalPlan = {
     val solved =
       solveds.get(inner.id).asSinglePlannerQuery.updateTailOrSelf(_.amendQueryGraph(_.addMutatingPatterns(pattern)))
-    val plan = SetLabels(inner, pattern.variable, pattern.labels.toSet, pattern.dynamicLabels.toSet)
+    val rewrittenDynamicLabels = pattern.dynamicLabels.toSet.endoRewrite(irExpressionRewriter(inner, context))
+    val plan = SetLabels(inner, pattern.variable, pattern.labels.toSet, rewrittenDynamicLabels)
     val providedOrder =
       providedOrderOfUpdate(plan, inner, context.settings.executionModel, context.providedOrderFactory)
     annotate(plan, solved, providedOrder, context)
@@ -3196,7 +3197,8 @@ case class LogicalPlanProducer(
   def planRemoveLabel(inner: LogicalPlan, pattern: RemoveLabelPattern, context: LogicalPlanningContext): LogicalPlan = {
     val solved =
       solveds.get(inner.id).asSinglePlannerQuery.updateTailOrSelf(_.amendQueryGraph(_.addMutatingPatterns(pattern)))
-    val plan = RemoveLabels(inner, pattern.variable, pattern.labels.toSet, pattern.dynamicLabels.toSet)
+    val rewrittenDynamicLabels = pattern.dynamicLabels.toSet.endoRewrite(irExpressionRewriter(inner, context))
+    val plan = RemoveLabels(inner, pattern.variable, pattern.labels.toSet, rewrittenDynamicLabels)
     val providedOrder =
       providedOrderOfUpdate(plan, inner, context.settings.executionModel, context.providedOrderFactory)
     annotate(plan, solved, providedOrder, context)
