@@ -543,7 +543,7 @@ public interface KernelTransaction extends AssertOpen, AutoCloseable {
         }
     }
 
-    default boolean isVirtualTransaction() {
+    default boolean isSPDTransaction() {
         return false;
     }
 }

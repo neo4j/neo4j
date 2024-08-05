@@ -30,6 +30,7 @@ import java.util.Set;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.kernel.api.CypherScope;
 import org.neo4j.procedure.Mode;
+import org.neo4j.procedure.UnsupportedDatabaseTypes;
 
 /**
  * This describes the signature of a procedure, made up of its namespace, name, and input/output description. Procedure uniqueness is currently *only* on the
@@ -45,6 +46,7 @@ public class ProcedureSignature {
     private final List<FieldSignature> outputSignature;
     private final Mode mode;
     private final boolean admin;
+    private final UnsupportedDatabaseTypes.DatabaseType[] unsupportedDbTypes;
     private final boolean isDeprecated;
     private final String deprecated;
     private final String description;
@@ -182,11 +184,50 @@ public class ProcedureSignature {
             boolean allowExpiredCredentials,
             boolean threadSafe,
             Set<CypherScope> supportedCypherScopes) {
+        this(
+                name,
+                inputSignature,
+                outputSignature,
+                mode,
+                admin,
+                isDeprecated,
+                deprecatedBy,
+                description,
+                warning,
+                eager,
+                caseInsensitive,
+                systemProcedure,
+                internal,
+                allowExpiredCredentials,
+                threadSafe,
+                supportedCypherScopes,
+                new UnsupportedDatabaseTypes.DatabaseType[0]);
+    }
+
+    public ProcedureSignature(
+            QualifiedName name,
+            List<FieldSignature> inputSignature,
+            List<FieldSignature> outputSignature,
+            Mode mode,
+            boolean admin,
+            boolean isDeprecated,
+            String deprecatedBy,
+            String description,
+            String warning,
+            boolean eager,
+            boolean caseInsensitive,
+            boolean systemProcedure,
+            boolean internal,
+            boolean allowExpiredCredentials,
+            boolean threadSafe,
+            Set<CypherScope> supportedCypherScopes,
+            UnsupportedDatabaseTypes.DatabaseType[] unsupportedDbTypes) {
         this.name = name;
         this.inputSignature = unmodifiableList(inputSignature);
         this.outputSignature = outputSignature == VOID ? outputSignature : unmodifiableList(outputSignature);
         this.mode = mode;
         this.admin = admin;
+        this.unsupportedDbTypes = unsupportedDbTypes;
         this.isDeprecated = isDeprecated || (deprecatedBy != null && !deprecatedBy.isEmpty());
         this.deprecated = deprecatedBy;
         this.description = description;
@@ -254,6 +295,10 @@ public class ProcedureSignature {
 
     public boolean internal() {
         return internal;
+    }
+
+    public UnsupportedDatabaseTypes.DatabaseType[] unsupportedDbTypes() {
+        return unsupportedDbTypes;
     }
 
     public boolean allowedExpiredCredentials() {

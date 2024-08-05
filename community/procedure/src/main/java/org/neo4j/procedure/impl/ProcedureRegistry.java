@@ -21,6 +21,7 @@ package org.neo4j.procedure.impl;
 
 import static java.lang.String.format;
 
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -47,6 +48,7 @@ import org.neo4j.kernel.api.procedure.CallableProcedure;
 import org.neo4j.kernel.api.procedure.CallableUserAggregationFunction;
 import org.neo4j.kernel.api.procedure.CallableUserFunction;
 import org.neo4j.kernel.api.procedure.Context;
+import org.neo4j.procedure.UnsupportedDatabaseTypes;
 import org.neo4j.util.VisibleForTesting;
 import org.neo4j.values.AnyValue;
 
@@ -218,10 +220,21 @@ public class ProcedureRegistry {
                         .error(ctx.securityContext(), message);
                 throw new AuthorizationViolationException(message);
             }
+            verifyDBType(ctx, proc);
         } catch (IndexOutOfBoundsException e) {
             throw noSuchProcedure(id);
         }
         return proc.apply(ctx, input, resourceMonitor);
+    }
+
+    private void verifyDBType(Context ctx, CallableProcedure proc) throws ProcedureException {
+        if (Arrays.stream(proc.signature().unsupportedDbTypes())
+                        .anyMatch(t -> t.equals(UnsupportedDatabaseTypes.DatabaseType.SPD))
+                && ctx.kernelTransaction().isSPDTransaction()) {
+            throw new ProcedureException(
+                    Status.Statement.SyntaxError,
+                    "Procedure '" + proc.signature().name() + "' is not supported in SPD.");
+        }
     }
 
     public AnyValue callFunction(Context ctx, int functionId, AnyValue[] input) throws ProcedureException {

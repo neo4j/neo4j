@@ -58,6 +58,7 @@ import org.neo4j.procedure.Mode;
 import org.neo4j.procedure.NotThreadSafe;
 import org.neo4j.procedure.Procedure;
 import org.neo4j.procedure.ThreadSafe;
+import org.neo4j.procedure.UnsupportedDatabaseTypes;
 import org.neo4j.procedure.UserAggregationFunction;
 import org.neo4j.procedure.UserAggregationResult;
 import org.neo4j.procedure.UserAggregationUpdate;
@@ -279,6 +280,9 @@ class ProcedureCompiler {
         boolean allowExpiredCredentials =
                 systemProcedure && method.getAnnotation(SystemProcedure.class).allowExpiredCredentials();
         boolean internal = method.isAnnotationPresent(Internal.class);
+        var unsupportedDbTypes = method.isAnnotationPresent(UnsupportedDatabaseTypes.class)
+                ? method.getAnnotation(UnsupportedDatabaseTypes.class).value()
+                : new UnsupportedDatabaseTypes.DatabaseType[0];
         boolean threadSafe = !method.isAnnotationPresent(NotThreadSafe.class);
         boolean isDeprecated = method.isAnnotationPresent(Deprecated.class);
         String deprecated = deprecated(
@@ -307,7 +311,8 @@ class ProcedureCompiler {
                         internal,
                         allowExpiredCredentials,
                         threadSafe,
-                        getSupportedCypherVersions(method));
+                        getSupportedCypherVersions(method),
+                        unsupportedDbTypes);
                 return new FailedLoadProcedure(signature);
             }
         }
@@ -328,7 +333,8 @@ class ProcedureCompiler {
                 internal,
                 allowExpiredCredentials,
                 threadSafe,
-                getSupportedCypherVersions(method));
+                getSupportedCypherVersions(method),
+                unsupportedDbTypes);
 
         return ProcedureCompilation.compileProcedure(signature, setters, method, parentClassLoader);
     }
