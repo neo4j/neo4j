@@ -139,7 +139,6 @@ import org.neo4j.cypher.internal.parser.v6.Cypher6Parser
 import org.neo4j.cypher.internal.parser.v6.Cypher6ParserListener
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.DeprecatedIdentifierUnicode
-import org.neo4j.cypher.internal.util.DeprecatedIdentifierWhitespaceUnicode
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.InternalNotificationLogger
 import org.neo4j.cypher.internal.util.symbols.AnyType
@@ -984,8 +983,7 @@ trait ExpressionBuilder extends Cypher6ParserListener {
       logger <- notificationLogger
       deprecatedChar <- DeprecatedChars.deprecatedChars(text).asScala
     } {
-      if (deprecatedChar == '\u0085') logger.log(DeprecatedIdentifierWhitespaceUnicode(p, deprecatedChar, text))
-      else logger.log(DeprecatedIdentifierUnicode(p, deprecatedChar, text))
+      logger.log(DeprecatedIdentifierUnicode(p, deprecatedChar, text))
     }
   }
 

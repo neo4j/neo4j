@@ -16,11 +16,25 @@
  */
 package org.neo4j.cypher.internal.util
 
+import org.neo4j.cypher.internal.CypherVersion
+
 object UnicodeHelper {
 
-  def isIdentifierStart(p: Integer): Boolean = isAllowedUnicode(p, identifierStartUnicodes)
+  def isIdentifierStart(p: Integer, cypherVersion: CypherVersion): Boolean =
+    isAllowedUnicode(p, identifierStartUnicodesPerCypherVersion(cypherVersion))
 
-  def isIdentifierPart(p: Integer): Boolean = isAllowedUnicode(p, identifierPartUnicodes)
+  def isIdentifierPart(p: Integer, cypherVersion: CypherVersion): Boolean =
+    isAllowedUnicode(p, identifierPartUnicodesPerCypherVersion(cypherVersion))
+
+  def identifierPartUnicodesPerCypherVersion(cypherVersion: CypherVersion): Seq[String] = cypherVersion match {
+    case CypherVersion.Cypher6 => identifierPartUnicodesCypher6
+    case _                     => deprecatedIdentifierPartUnicodes ++ identifierPartUnicodesCypher6
+  }
+
+  def identifierStartUnicodesPerCypherVersion(cypherVersion: CypherVersion): Seq[String] = cypherVersion match {
+    case CypherVersion.Cypher6 => identifierStartUnicodesCypher6
+    case _                     => deprecatedIdentifierStartUnicodes ++ identifierStartUnicodesCypher6
+  }
 
   private def isAllowedUnicode(p: Int, unicodes: Seq[String]): Boolean = unicodes.exists(unicodeRange => {
     if (unicodeRange.contains("-")) {
@@ -33,8 +47,10 @@ object UnicodeHelper {
     }
   })
 
+  private val deprecatedIdentifierStartUnicodes = Seq()
+
   // all chars for which Character.isJavaIdentifierStart(c) && Character.getType(c) != Character.CURRENCY_SYMBOL is true (in Java 17)
-  private val identifierStartUnicodes = Seq(
+  private val identifierStartUnicodesCypher6 = Seq(
     "\u0041-\u005a",
     "\u005f",
     "\u0061-\u007a",
@@ -424,8 +440,10 @@ object UnicodeHelper {
     "\uffda-\uffdc"
   )
 
+  val deprecatedIdentifierPartUnicodes = Seq("\u0085")
+
   // all chars for which Character.isIdentifierPart is true (in Java 17)
-  val identifierPartUnicodes = Seq(
+  val identifierPartUnicodesCypher6 = Seq(
     "\u0000-\u0008",
     "\u000e-\u001b",
     "\u0024",
@@ -433,7 +451,8 @@ object UnicodeHelper {
     "\u0041-\u005a",
     "\u005f",
     "\u0061-\u007a",
-    "\u007f-\u009f",
+    "\u007f-\u0084",
+    "\u0086-\u009f",
     "\u00a2-\u00a5",
     "\u00aa",
     "\u00ad",

@@ -16,8 +16,9 @@
  */
 package org.neo4j.cypher.internal.ast.factory.query
 
-import org.neo4j.cypher.internal.ast.Statement
+import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.ast.Statements
+import org.neo4j.cypher.internal.ast.test.util.AstParsing.Cypher6
 import org.neo4j.cypher.internal.ast.test.util.AstParsingTestBase
 import org.neo4j.cypher.internal.util.UnicodeHelper
 import org.neo4j.cypher.internal.util.symbols.CTAny
@@ -26,25 +27,36 @@ class ParameterIdentifiersParserTest extends AstParsingTestBase {
 
   test("Identifier Start characters are allowed in first position") {
     for (c <- Character.MIN_VALUE to Character.MAX_VALUE) {
-      val paramWithCharName = f"paramWithChar_${Integer.valueOf(c)}%04X"
-      if (
-        (UnicodeHelper.isIdentifierStart(c) && Character.getType(c) != Character.CURRENCY_SYMBOL) ||
-        (c >= 0x31 && c <= 0x39) // Start with a a digit 1-9
-      ) {
-        s"RETURN $$${c}abc AS `$paramWithCharName`" should parse[Statement].toAstPositioned(
-          singleQuery(
-            return_(aliasedReturnItem(parameter(s"${c}abc", CTAny), paramWithCharName))
-          )
-        )
-      } else if (Character.isWhitespace(c) || Character.isSpaceChar(c)) {
-        // Whitespace gets ignored
-        s"RETURN $$${c}abc AS `$paramWithCharName`" should parse[Statement].toAstPositioned(
-          singleQuery(
-            return_(aliasedReturnItem(parameter(s"abc", CTAny), paramWithCharName))
-          )
-        )
-      } else if (Character.getType(c) != Character.SURROGATE) { // Surrogate characters fail completely so can't test
-        s"RETURN $$${c}abc AS `$paramWithCharName`" should notParse[Statements]
+      if (Character.getType(c) != Character.SURROGATE) {
+        val paramWithCharName = f"paramWithChar_${Integer.valueOf(c)}%04X"
+
+        s"RETURN $$${c}abc AS `$paramWithCharName`" should parseIn[Statements] {
+          case Cypher6 if UnicodeHelper.isIdentifierStart(c, CypherVersion.Cypher6) || (c >= 0x31 && c <= 0x39) =>
+            _.toAstPositioned(
+              singleQuery(
+                return_(aliasedReturnItem(parameter(s"${c}abc", CTAny), paramWithCharName))
+              )
+            )
+          case _ if UnicodeHelper.isIdentifierStart(c, CypherVersion.Cypher5) || (c >= 0x31 && c <= 0x39) =>
+            _.toAstPositioned(
+              singleQuery(
+                return_(aliasedReturnItem(parameter(s"${c}abc", CTAny), paramWithCharName))
+              )
+            )
+          case Cypher6 if c == '\u0085' =>
+            _.toAstPositioned(
+              singleQuery(
+                return_(aliasedReturnItem(parameter(s"abc", CTAny), paramWithCharName))
+              )
+            )
+          case _ if Character.isWhitespace(c) || Character.isSpaceChar(c) =>
+            _.toAstPositioned(
+              singleQuery(
+                return_(aliasedReturnItem(parameter(s"abc", CTAny), paramWithCharName))
+              )
+            )
+          case _ => _.withAnyFailure
+        }
       }
     }
   }
@@ -52,20 +64,28 @@ class ParameterIdentifiersParserTest extends AstParsingTestBase {
   test("Extended Identifier characters should be allowed in second position") {
     for (c <- Character.MIN_VALUE to Character.MAX_VALUE) {
       val paramWithCharName = f"paramWithChar_${Integer.valueOf(c)}%04X"
-      if (UnicodeHelper.isIdentifierPart(c)) {
-        s"RETURN $$a${c}abc AS `$paramWithCharName`" should parse[Statement].toAstPositioned(
-          singleQuery(
-            return_(aliasedReturnItem(parameter(s"a${c}abc", CTAny), paramWithCharName))
-          )
-        )
-      } else if (
-        Character.isWhitespace(c) ||
-        Character.isSpaceChar(c) ||
+      if (
         Character.getType(c) != Character.SURROGATE &&
         !List('"', '\'', '/', '*', '%', '+', '-', ',', '.', ':', '<', '>', '=', '^', '`').contains(c)
       ) {
-        s"RETURN $$a${c}abc AS `$paramWithCharName`" should notParse[Statements]
+        s"RETURN $$a${c}abc AS `$paramWithCharName`" should parseIn[Statements] {
+          case Cypher6 if UnicodeHelper.isIdentifierPart(c, CypherVersion.Cypher6) =>
+            _.toAstPositioned(
+              singleQuery(
+                return_(aliasedReturnItem(parameter(s"a${c}abc", CTAny), paramWithCharName))
+              )
+            )
+          case Cypher6 => _.withAnyFailure
+          case _ if UnicodeHelper.isIdentifierPart(c, CypherVersion.Cypher5) =>
+            _.toAstPositioned(
+              singleQuery(
+                return_(aliasedReturnItem(parameter(s"a${c}abc", CTAny), paramWithCharName))
+              )
+            )
+          case _ => _.withAnyFailure
+        }
       }
     }
+
   }
 }

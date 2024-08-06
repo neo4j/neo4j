@@ -21,6 +21,7 @@ package org.neo4j.cypher
 
 import org.neo4j.cypher.internal.javacompat.NotificationTestSupport.TestFunctions
 import org.neo4j.cypher.internal.javacompat.NotificationTestSupport.TestProcedures
+import org.neo4j.cypher.internal.options.CypherVersion
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.kernel.api.impl.schema.TextIndexProvider
 import org.neo4j.kernel.api.impl.schema.trigram.TrigramIndexProvider
@@ -498,7 +499,8 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
       deprecated,
       shouldContainNotification = true,
       "a",
-      deprecatedPropertyReferenceInCreate
+      deprecatedPropertyReferenceInCreate,
+      cypherVersions = CypherVersion.values
     )
 
     assertNoDeprecations(notDeprecated)
@@ -524,7 +526,8 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
       deprecated,
       shouldContainNotification = true,
       "a",
-      deprecatedPropertyReferenceInMerge
+      deprecatedPropertyReferenceInMerge,
+      cypherVersions = CypherVersion.values
     )
 
     assertNoDeprecations(notDeprecated)
@@ -546,7 +549,8 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
     assertNotification(
       deprecated,
       shouldContainNotification = true,
-      deprecatedIdentifierWhitespaceUnicode(_, '\u0085', "f\u0085oo")
+      deprecatedIdentifierWhitespaceUnicode(_, '\u0085', "f\u0085oo"),
+      Set(CypherVersion.cypher5)
     )
 
     assertNoDeprecations(notDeprecated)

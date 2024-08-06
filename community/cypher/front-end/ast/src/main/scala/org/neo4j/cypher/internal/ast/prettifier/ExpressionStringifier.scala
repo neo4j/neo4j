@@ -16,6 +16,7 @@
  */
 package org.neo4j.cypher.internal.ast.prettifier
 
+import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.ast.CollectExpression
 import org.neo4j.cypher.internal.ast.CountExpression
 import org.neo4j.cypher.internal.ast.ExistsExpression
@@ -704,9 +705,11 @@ object ExpressionStringifier {
     else {
       val isJavaIdentifier =
         Strings.codePoints(txt).limit(1).allMatch(p =>
-          UnicodeHelper.isIdentifierStart(p) || orGlobbedCharacter(p)
+          UnicodeHelper.isIdentifierStart(p, CypherVersion.Cypher6) || orGlobbedCharacter(p)
         ) &&
-          Strings.codePoints(txt).skip(1).allMatch(p => UnicodeHelper.isIdentifierPart(p) || orGlobbedCharacter(p))
+          Strings.codePoints(txt).skip(1).allMatch(p =>
+            UnicodeHelper.isIdentifierPart(p, CypherVersion.Cypher6) || orGlobbedCharacter(p)
+          )
       if (!isJavaIdentifier)
         s"`$escaped`"
       else

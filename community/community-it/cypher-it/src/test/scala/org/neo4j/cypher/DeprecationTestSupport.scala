@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher
 
+import org.neo4j.cypher.internal.options.CypherVersion
 import org.neo4j.cypher.testing.impl.FeatureDatabaseManagementService
 import org.neo4j.graphdb.InputPosition
 import org.neo4j.graphdb.Notification
@@ -33,26 +34,29 @@ trait DeprecationTestSupport extends Suite with Matchers {
     queries: Seq[String],
     shouldContainNotification: Boolean,
     details: String,
-    createNotification: (InputPosition, String) => Notification
+    createNotification: (InputPosition, String) => Notification,
+    cypherVersions: Set[CypherVersion] = CypherVersion.values
   ): Unit = {
-    queries.foreach(query => {
-      withClue(s"Failed for query '$query' \n") {
-        val transaction = dbms.begin()
-        try {
-          val result = transaction.execute(s"EXPLAIN $query")
-          val notifications: Iterable[Notification] = result.getNotifications()
-          val hasNotification =
-            notifications.exists(notification =>
-              matchesCode(notification, details, createNotification)
-            )
-          withClue(notifications) {
-            hasNotification should be(shouldContainNotification)
+    cypherVersions.foreach { version =>
+      queries.foreach(query => {
+        withClue(s"Failed in Cypher version ${version.version} for query '$query' \n") {
+          val transaction = dbms.begin()
+          try {
+            val result = transaction.execute(s"EXPLAIN CYPHER ${version.version} $query")
+            val notifications: Iterable[Notification] = result.getNotifications()
+            val hasNotification =
+              notifications.exists(notification =>
+                matchesCode(notification, details, createNotification)
+              )
+            withClue(notifications) {
+              hasNotification should be(shouldContainNotification)
+            }
+          } finally {
+            transaction.rollback()
           }
-        } finally {
-          transaction.rollback()
         }
-      }
-    })
+      })
+    }
   }
 
   def assertNotification(
@@ -60,7 +64,28 @@ trait DeprecationTestSupport extends Suite with Matchers {
     shouldContainNotification: Boolean,
     createNotification: InputPosition => Notification
   ): Unit = {
-    assertNotification(queries, shouldContainNotification, "", (pos, _) => createNotification(pos))
+    assertNotification(
+      queries,
+      shouldContainNotification,
+      "",
+      (pos, _) => createNotification(pos),
+      CypherVersion.values
+    )
+  }
+
+  def assertNotification(
+    queries: Seq[String],
+    shouldContainNotification: Boolean,
+    createNotification: InputPosition => Notification,
+    cypherVersions: Set[CypherVersion]
+  ): Unit = {
+    assertNotification(
+      queries,
+      shouldContainNotification,
+      "",
+      (pos, _) => createNotification(pos),
+      cypherVersions
+    )
   }
 
   // this is hacky but we have no other way to probe the notification's status (`Status.Statement.FeatureDeprecationWarning`)
@@ -68,26 +93,29 @@ trait DeprecationTestSupport extends Suite with Matchers {
     notification.getTitle == "This feature is deprecated and will be removed in future versions."
 
   def assertNoDeprecations(
-    queries: Seq[String]
+    queries: Seq[String],
+    cypherVersions: Set[CypherVersion] = CypherVersion.values
   ): Unit = {
-    queries.foreach(query =>
-      withClue(s"Failed for query '$query'\n") {
-        val transaction = dbms.begin()
-        try {
-          val result = transaction.execute(s"EXPLAIN $query")
-          val deprecations = result.getNotifications().filter(isDeprecation)
-          withClue(
-            s"""Expected no notifications to be found but was:
-               |${deprecations.map(_.getDescription).mkString("'", "', '", "'")}
-               |""".stripMargin
-          ) {
-            deprecations shouldBe empty
+    cypherVersions.foreach { version =>
+      queries.foreach(query =>
+        withClue(s"Failed in Cypher version ${version.version} for query '$query' \n") {
+          val transaction = dbms.begin()
+          try {
+            val result = transaction.execute(s"EXPLAIN CYPHER ${version.version} $query")
+            val deprecations = result.getNotifications().filter(isDeprecation)
+            withClue(
+              s"""Expected no notifications to be found but was:
+                 |${deprecations.map(_.getDescription).mkString("'", "', '", "'")}
+                 |""".stripMargin
+            ) {
+              deprecations shouldBe empty
+            }
+          } finally {
+            transaction.rollback()
           }
-        } finally {
-          transaction.rollback()
         }
-      }
-    )
+      )
+    }
   }
 
   private def matchesCode(
