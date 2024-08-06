@@ -247,9 +247,12 @@ object SortPlanner {
     def okToSortNow = !isPushDownSort || deterministicSortedOrderOnly
 
     if (sortSymbolsAvailable && okToSortNow) {
-      // Parallel runtime does currently not support PartialSort
-      if (satisfiedPrefix.isEmpty || !context.settings.executionModel.providedOrderPreserving) {
-        // Full sort required
+      val providedOrderAfterProjections = context.staticComponents.planningAttributes.providedOrders.get(projected2.id)
+      val fullSortRequired =
+        satisfiedPrefix.isEmpty ||
+          providedOrderAfterProjections.isEmpty || // order was invalidated, likely by a subquery expression
+          !context.settings.executionModel.providedOrderPreserving // Parallel runtime does currently not support PartialSort
+      if (fullSortRequired) {
         Some(context.staticComponents.logicalPlanProducer.planSort(
           projected2,
           sortColumns,

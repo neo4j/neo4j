@@ -2966,4 +2966,84 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
       .nodeByLabelScan("a", "A")
       .build()
   }
+
+  test("should plan partial sort after ordering by subquery expression that preserves provided order") {
+    val query =
+      """MATCH (a:A)
+        |WITH a ORDER BY a.prop
+        |RETURN a.name AS result
+        |ORDER BY a.prop, COUNT {
+        |  (a)-[r:REL]->(b) WHERE a <> b
+        |}
+        |""".stripMargin
+
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setLabelCardinality("A", 100)
+      .setAllRelationshipsCardinality(1000)
+      .setRelationshipCardinality("()-[:REL]->()", 200)
+      .setRelationshipCardinality("(:A)-[:REL]->()", 150)
+      .build()
+
+    val plan = planner.plan(query).stripProduceResults
+    plan shouldEqual planner.subPlanBuilder()
+      .projection("a.name AS result")
+      .partialSort(Seq("`a.prop` ASC"), Seq("anon_0 ASC"))
+      .projection("cacheN[a.prop] AS `a.prop`")
+      .apply()
+      .|.aggregation(Seq(), Seq("count(*) AS anon_0"))
+      .|.filter("NOT a = b")
+      .|.expandAll("(a)-[r:REL]->(b)")
+      .|.argument("a")
+      .sort("`a.prop` ASC")
+      .projection("cacheNFromStore[a.prop] AS `a.prop`")
+      .nodeByLabelScan("a", "A")
+      .build()
+  }
+
+  test(
+    "should plan full sort after ordering by subquery expression that invalidates provided order (Pipelined runtime)"
+  ) {
+    val query =
+      """MATCH (a:A)
+        |WITH a ORDER BY a.prop
+        |RETURN a.name AS result
+        |ORDER BY a.prop, COUNT {
+        |  MATCH (a)-[r:REL]->(b) RETURN b
+        |  UNION // invalidates provided order in Pipelined
+        |  MATCH (a)-[r:OTHER_REL]->(b) RETURN b
+        |}
+        |""".stripMargin
+
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setLabelCardinality("A", 100)
+      .setAllRelationshipsCardinality(1000)
+      .setRelationshipCardinality("()-[:REL]->()", 200)
+      .setRelationshipCardinality("()-[:OTHER_REL]->()", 500)
+      .setRelationshipCardinality("(:A)-[:REL]->()", 150)
+      .setRelationshipCardinality("(:A)-[:OTHER_REL]->()", 400)
+      .setExecutionModel(ExecutionModel.BatchedSingleThreaded(1, 2))
+      .build()
+
+    val plan = planner.plan(query).stripProduceResults
+    plan shouldEqual planner.subPlanBuilder()
+      .projection("a.name AS result")
+      .sort("`a.prop` ASC", "anon_0 ASC")
+      .projection("cacheN[a.prop] AS `a.prop`")
+      .apply()
+      .|.aggregation(Seq(), Seq("count(*) AS anon_0"))
+      .|.distinct("b AS b", "a AS a")
+      .|.union()
+      .|.|.projection("b AS b")
+      .|.|.expandAll("(a)-[r:OTHER_REL]->(b)")
+      .|.|.argument("a")
+      .|.projection("b AS b")
+      .|.expandAll("(a)-[r:REL]->(b)")
+      .|.argument("a")
+      .sort("`a.prop` ASC")
+      .projection("cacheNFromStore[a.prop] AS `a.prop`")
+      .nodeByLabelScan("a", "A")
+      .build()
+  }
 }
