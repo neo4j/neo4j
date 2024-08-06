@@ -155,6 +155,8 @@ public class DatabaseManagementServiceFactory {
 
         var databaseContextProvider = edition.createDatabaseContextProvider(globalModule);
         var systemDatabaseProvider = new ContextBasedSystemDatabaseProvider(databaseContextProvider);
+        edition.createGlobalReadOnlyChecker(
+                systemDatabaseProvider, databaseContextProvider.databaseIdRepository(), globalModule);
         var managementService = createManagementService(globalModule, globalLife, internalLog, databaseContextProvider);
         globalDependencies.satisfyDependencies(managementService);
         globalDependencies.satisfyDependency(new DatabaseSizeServiceImpl(databaseContextProvider));

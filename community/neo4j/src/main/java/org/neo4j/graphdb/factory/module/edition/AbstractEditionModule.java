@@ -29,6 +29,8 @@ import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
+import org.neo4j.configuration.database.readonly.ConfigBasedLookupFactory;
+import org.neo4j.configuration.database.readonly.ConfigReadOnlyDatabaseListener;
 import org.neo4j.dbms.DbmsRuntimeVersionProvider;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.database.DatabaseContext;
@@ -37,6 +39,10 @@ import org.neo4j.dbms.database.DbmsRuntimeSystemGraphComponent;
 import org.neo4j.dbms.database.StandaloneDbmsRuntimeVersionProvider;
 import org.neo4j.dbms.database.SystemGraphComponents;
 import org.neo4j.dbms.database.TopologyInfoService;
+import org.neo4j.dbms.database.readonly.DefaultReadOnlyDatabases;
+import org.neo4j.dbms.database.readonly.ReadOnlyChangeListener;
+import org.neo4j.dbms.database.readonly.ReadOnlyDatabases;
+import org.neo4j.dbms.database.readonly.SystemGraphReadOnlyDatabaseLookupFactory;
 import org.neo4j.dbms.routing.ClientRoutingDomainChecker;
 import org.neo4j.dbms.routing.RoutingOption;
 import org.neo4j.dbms.routing.RoutingService;
@@ -56,6 +62,7 @@ import org.neo4j.kernel.api.net.NetworkConnectionTracker;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.api.security.provider.SecurityProvider;
+import org.neo4j.kernel.database.DatabaseIdRepository;
 import org.neo4j.kernel.database.DatabaseReferenceRepository;
 import org.neo4j.kernel.database.DefaultDatabaseResolver;
 import org.neo4j.kernel.impl.factory.DbmsInfo;
@@ -82,6 +89,7 @@ public abstract class AbstractEditionModule {
     protected NetworkConnectionTracker connectionTracker;
     protected SecurityProvider securityProvider;
     protected DefaultDatabaseResolver defaultDatabaseResolver;
+    protected ReadOnlyDatabases globalReadOnlyChecker;
 
     public void registerProcedures(
             GlobalProcedures globalProcedures,
@@ -134,6 +142,28 @@ public abstract class AbstractEditionModule {
     public abstract void createSecurityModule(GlobalModule globalModule);
 
     public abstract DatabaseReferenceRepository getDatabaseReferenceRepo();
+
+    public abstract void createGlobalReadOnlyChecker(
+            SystemDatabaseProvider systemDatabaseProvider,
+            DatabaseIdRepository databaseIdRepository,
+            GlobalModule globalModule);
+
+    protected static ReadOnlyDatabases createGlobalReadOnlyChecker(
+            SystemDatabaseProvider systemDatabaseProvider,
+            DatabaseIdRepository databaseIdRepository,
+            ReadOnlyChangeListener listener,
+            GlobalModule globalModule) {
+        var globalConfig = globalModule.getGlobalConfig();
+        var logProvider = globalModule.getLogService().getInternalLogProvider();
+        var systemGraphReadOnlyLookup =
+                new SystemGraphReadOnlyDatabaseLookupFactory(systemDatabaseProvider, logProvider);
+        var configReadOnlyLookup = new ConfigBasedLookupFactory(globalConfig, databaseIdRepository);
+        var globalReadOnlyChecker =
+                new DefaultReadOnlyDatabases(listener, systemGraphReadOnlyLookup, configReadOnlyLookup);
+        var configListener = new ConfigReadOnlyDatabaseListener(globalReadOnlyChecker, globalConfig);
+        globalModule.getGlobalLife().add(configListener);
+        return globalReadOnlyChecker;
+    }
 
     protected static NetworkConnectionTracker createConnectionTracker() {
         return new DefaultNetworkConnectionTracker();

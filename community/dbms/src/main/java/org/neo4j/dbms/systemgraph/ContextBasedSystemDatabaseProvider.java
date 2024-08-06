@@ -40,11 +40,7 @@ public class ContextBasedSystemDatabaseProvider implements SystemDatabaseProvide
 
     @Override
     public <T> Optional<T> dependency(Class<T> type) throws SystemDatabaseUnavailableException {
-        var dependencies = databaseContext().dependencies();
-        if (dependencies.containsDependency(type)) {
-            return Optional.of(dependencies.resolveDependency(type));
-        }
-        return Optional.empty();
+        return SystemDatabaseProvider.dependency(databaseContext().dependencies(), type);
     }
 
     private DatabaseContext databaseContext() {

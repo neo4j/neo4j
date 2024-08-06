@@ -22,6 +22,7 @@ package org.neo4j.dbms.systemgraph;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import org.neo4j.common.DependencyResolver;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.monitoring.DatabaseHealth;
@@ -46,29 +47,44 @@ public interface SystemDatabaseProvider {
     }
 
     default <T> T query(Function<Transaction, T> function) throws SystemDatabaseUnavailableException {
-        var facade = database();
-        if (!facade.isAvailable(1000)) {
-            var hasNotPanicked = dependency(DatabaseHealth.class)
-                    .map(DatabaseHealth::hasNoPanic)
-                    .orElse(true);
-            if (hasNotPanicked) {
-                throw new SystemDatabaseUnavailableException();
-            } else {
-                throw new SystemDatabasePanickedException();
-            }
-        }
-        try (var tx = facade.beginTx()) {
-            var result = function.apply(tx);
-            tx.commit();
-            return result;
-        }
+        return query(database(), function, true).orElseThrow();
+    }
+
+    default <T> Optional<T> queryIfAvailable(Function<Transaction, T> function) {
+        return query(database(), function, false);
     }
 
     default <T> Optional<T> dependency(Class<T> type) throws SystemDatabaseUnavailableException {
-        var dependencies = database().getDependencyResolver();
+        return dependency(database().getDependencyResolver(), type);
+    }
+
+    static <T> Optional<T> dependency(DependencyResolver dependencies, Class<T> type)
+            throws SystemDatabaseUnavailableException {
         if (dependencies.containsDependency(type)) {
             return Optional.of(dependencies.resolveDependency(type));
         }
         return Optional.empty();
+    }
+
+    private static <T> Optional<T> query(
+            GraphDatabaseAPI facade, Function<Transaction, T> function, boolean waitForAvailablity)
+            throws SystemDatabaseUnavailableException {
+        if (waitForAvailablity) {
+            if (!facade.isAvailable(1000)) {
+                if (dependency(facade.getDependencyResolver(), DatabaseHealth.class)
+                        .map(DatabaseHealth::hasNoPanic)
+                        .orElse(true)) {
+                    throw new SystemDatabaseUnavailableException();
+                }
+                throw new SystemDatabasePanickedException();
+            }
+        } else if (!facade.isAvailable()) {
+            return Optional.empty();
+        }
+        try (var tx = facade.beginTx()) {
+            var result = function.apply(tx);
+            tx.commit();
+            return Optional.of(result);
+        }
     }
 }

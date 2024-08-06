@@ -29,8 +29,6 @@ import org.neo4j.bolt.tx.TransactionManager;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.configuration.database.readonly.ConfigBasedLookupFactory;
-import org.neo4j.configuration.database.readonly.ConfigReadOnlyDatabaseListener;
 import org.neo4j.dbms.CommunityDatabaseStateService;
 import org.neo4j.dbms.CommunityKernelPanicListener;
 import org.neo4j.dbms.DatabaseStateService;
@@ -52,9 +50,8 @@ import org.neo4j.dbms.database.StandaloneDatabaseContext;
 import org.neo4j.dbms.database.SystemGraphComponents;
 import org.neo4j.dbms.database.SystemGraphInitializer;
 import org.neo4j.dbms.database.TopologyInfoService;
-import org.neo4j.dbms.database.readonly.DefaultReadOnlyDatabases;
+import org.neo4j.dbms.database.readonly.ReadOnlyChangeListener;
 import org.neo4j.dbms.database.readonly.ReadOnlyDatabases;
-import org.neo4j.dbms.database.readonly.SystemGraphReadOnlyDatabaseLookupFactory;
 import org.neo4j.dbms.database.readonly.SystemGraphReadOnlyListener;
 import org.neo4j.dbms.identity.DefaultIdentityModule;
 import org.neo4j.dbms.identity.ServerIdentity;
@@ -86,8 +83,6 @@ import org.neo4j.kernel.impl.factory.CommunityCommitProcessFactory;
 import org.neo4j.kernel.impl.factory.DbmsInfo;
 import org.neo4j.kernel.impl.pagecache.CommunityIOControllerService;
 import org.neo4j.kernel.impl.security.URIAccessRules;
-import org.neo4j.kernel.internal.event.GlobalTransactionEventListeners;
-import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.InternalLogProvider;
@@ -115,7 +110,6 @@ public class CommunityEditionModule extends AbstractEditionModule implements Def
     private final CommunitySecurityLog securityLog;
 
     protected DatabaseStateService databaseStateService;
-    protected ReadOnlyDatabases globalReadOnlyChecker;
     private Lifecycle defaultDatabaseInitializer = new LifecycleAdapter();
     private SystemGraphComponents systemGraphComponents;
 
@@ -196,14 +190,6 @@ public class CommunityEditionModule extends AbstractEditionModule implements Def
         globalModule.getGlobalDependencies().satisfyDependency(delegate(databaseRepository));
         globalModule.getGlobalDependencies().satisfyDependency(databaseStateService);
 
-        globalReadOnlyChecker = createGlobalReadOnlyChecker(
-                databaseRepository,
-                globalModule.getGlobalConfig(),
-                globalModule.getTransactionEventListeners(),
-                globalModule.getGlobalLife(),
-                globalModule.getLogService().getInternalLogProvider());
-        globalModule.getGlobalDependencies().satisfyDependency(globalReadOnlyChecker);
-
         globalModule
                 .getTransactionEventListeners()
                 .registerTransactionEventListener(SYSTEM_DATABASE_NAME, databaseIdCacheCleaner);
@@ -215,24 +201,6 @@ public class CommunityEditionModule extends AbstractEditionModule implements Def
                 .satisfyDependency(SystemGraphComponents.UpgradeChecker.UPGRADE_ALWAYS_ALLOWED);
 
         return databaseRepository;
-    }
-
-    private static ReadOnlyDatabases createGlobalReadOnlyChecker(
-            DatabaseContextProvider<?> databaseContextProvider,
-            Config globalConfig,
-            GlobalTransactionEventListeners txListeners,
-            LifeSupport globalLife,
-            InternalLogProvider logProvider) {
-        var systemGraphReadOnlyLookup =
-                new SystemGraphReadOnlyDatabaseLookupFactory(databaseContextProvider, logProvider);
-        var configReadOnlyLookup =
-                new ConfigBasedLookupFactory(globalConfig, databaseContextProvider.databaseIdRepository());
-        var globalChecker = new DefaultReadOnlyDatabases(systemGraphReadOnlyLookup, configReadOnlyLookup);
-        var configListener = new ConfigReadOnlyDatabaseListener(globalChecker, globalConfig);
-        var systemGraphListener = new SystemGraphReadOnlyListener(txListeners, globalChecker);
-        globalLife.add(configListener);
-        globalLife.add(systemGraphListener);
-        return globalChecker;
     }
 
     @Override
@@ -386,6 +354,20 @@ public class CommunityEditionModule extends AbstractEditionModule implements Def
                 .getTransactionEventListeners()
                 .registerTransactionEventListener(SYSTEM_DATABASE_NAME, defaultDatabaseResolver);
         this.defaultDatabaseResolver = defaultDatabaseResolver;
+    }
+
+    @Override
+    public void createGlobalReadOnlyChecker(
+            SystemDatabaseProvider systemDatabaseProvider,
+            DatabaseIdRepository databaseIdRepository,
+            GlobalModule globalModule) {
+        globalReadOnlyChecker = createGlobalReadOnlyChecker(
+                systemDatabaseProvider, databaseIdRepository, ReadOnlyChangeListener.NO_OP, globalModule);
+        globalModule
+                .getGlobalLife()
+                .add(new SystemGraphReadOnlyListener(
+                        globalModule.getTransactionEventListeners(), globalReadOnlyChecker));
+        globalModule.getGlobalDependencies().satisfyDependency(globalReadOnlyChecker);
     }
 
     @Override

@@ -100,6 +100,8 @@ public class SystemDbUpgrader {
 
         var databaseContextProvider = edition.createDatabaseContextProvider(globalModule);
         var systemDatabaseProvider = new ContextBasedSystemDatabaseProvider(databaseContextProvider);
+        edition.createGlobalReadOnlyChecker(
+                systemDatabaseProvider, databaseContextProvider.databaseIdRepository(), globalModule);
         edition.bootstrapQueryRouterServices(null);
         edition.registerDatabaseInitializers(globalModule, systemDatabaseProvider);
 
