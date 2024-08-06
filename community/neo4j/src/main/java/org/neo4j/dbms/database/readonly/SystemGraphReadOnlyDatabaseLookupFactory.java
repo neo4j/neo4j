@@ -21,6 +21,7 @@ package org.neo4j.dbms.database.readonly;
 
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.neo4j.dbms.systemgraph.CommunityTopologyGraphDbmsModel;
 import org.neo4j.dbms.systemgraph.SystemDatabaseProvider;
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel;
@@ -30,16 +31,28 @@ import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
 
 public final class SystemGraphReadOnlyDatabaseLookupFactory implements ReadOnlyDatabases.LookupFactory {
+    public interface ReadonlyDatabasesProvider {
+        Stream<DatabaseId> getDatabaseIds(CommunityTopologyGraphDbmsModel model);
+    }
+
+    public static ReadonlyDatabasesProvider DEFAULT_PROVIDER = model -> model.getAllDatabaseAccess().entrySet().stream()
+            .filter(e -> e.getValue() == TopologyGraphDbmsModel.DatabaseAccess.READ_ONLY)
+            .map(e -> e.getKey().databaseId());
+
     private final SystemDatabaseProvider systemDatabaseProvider;
     private final InternalLog log;
+    private final Set<ReadonlyDatabasesProvider> providers;
 
     private volatile SystemGraphLookup previousLookup;
 
     public SystemGraphReadOnlyDatabaseLookupFactory(
-            SystemDatabaseProvider systemDatabaseProvider, InternalLogProvider logProvider) {
+            SystemDatabaseProvider systemDatabaseProvider,
+            InternalLogProvider logProvider,
+            Set<ReadonlyDatabasesProvider> providers) {
         this.systemDatabaseProvider = systemDatabaseProvider;
         this.previousLookup = SystemGraphLookup.ALWAYS_READONLY;
         this.log = logProvider.getLog(getClass());
+        this.providers = providers;
     }
 
     @Override
@@ -65,10 +78,8 @@ public final class SystemGraphReadOnlyDatabaseLookupFactory implements ReadOnlyD
 
     private Set<DatabaseId> lookupReadOnlyDatabases(Transaction tx) {
         var model = new CommunityTopologyGraphDbmsModel(tx);
-        var databaseAccess = model.getAllDatabaseAccess();
-        return databaseAccess.entrySet().stream()
-                .filter(e -> e.getValue() == TopologyGraphDbmsModel.DatabaseAccess.READ_ONLY)
-                .map(e -> e.getKey().databaseId())
+        return providers.stream()
+                .flatMap(provider -> provider.getDatabaseIds(model))
                 .collect(Collectors.toUnmodifiableSet());
     }
 

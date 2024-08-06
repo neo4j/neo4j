@@ -24,6 +24,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.initial_default_data
 import static org.neo4j.dbms.database.DatabaseContextProviderDelegate.delegate;
 import static org.neo4j.dbms.routing.RoutingTableTTLProvider.ttlFromConfig;
 
+import java.util.Set;
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
 import org.neo4j.bolt.tx.TransactionManager;
 import org.neo4j.collection.Dependencies;
@@ -52,6 +53,7 @@ import org.neo4j.dbms.database.SystemGraphInitializer;
 import org.neo4j.dbms.database.TopologyInfoService;
 import org.neo4j.dbms.database.readonly.ReadOnlyChangeListener;
 import org.neo4j.dbms.database.readonly.ReadOnlyDatabases;
+import org.neo4j.dbms.database.readonly.SystemGraphReadOnlyDatabaseLookupFactory;
 import org.neo4j.dbms.database.readonly.SystemGraphReadOnlyListener;
 import org.neo4j.dbms.identity.DefaultIdentityModule;
 import org.neo4j.dbms.identity.ServerIdentity;
@@ -362,7 +364,11 @@ public class CommunityEditionModule extends AbstractEditionModule implements Def
             DatabaseIdRepository databaseIdRepository,
             GlobalModule globalModule) {
         globalReadOnlyChecker = createGlobalReadOnlyChecker(
-                systemDatabaseProvider, databaseIdRepository, ReadOnlyChangeListener.NO_OP, globalModule);
+                Set.of(SystemGraphReadOnlyDatabaseLookupFactory.DEFAULT_PROVIDER),
+                systemDatabaseProvider,
+                databaseIdRepository,
+                ReadOnlyChangeListener.NO_OP,
+                globalModule);
         globalModule
                 .getGlobalLife()
                 .add(new SystemGraphReadOnlyListener(

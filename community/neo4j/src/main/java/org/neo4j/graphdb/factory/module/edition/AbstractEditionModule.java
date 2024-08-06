@@ -22,6 +22,7 @@ package org.neo4j.graphdb.factory.module.edition;
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 import static org.neo4j.procedure.impl.temporal.TemporalFunction.registerTemporalFunctions;
 
+import java.util.Set;
 import java.util.function.Supplier;
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
 import org.neo4j.bolt.tx.TransactionManager;
@@ -149,14 +150,15 @@ public abstract class AbstractEditionModule {
             GlobalModule globalModule);
 
     protected static ReadOnlyDatabases createGlobalReadOnlyChecker(
+            Set<SystemGraphReadOnlyDatabaseLookupFactory.ReadonlyDatabasesProvider> readOnlyDatabaseProviders,
             SystemDatabaseProvider systemDatabaseProvider,
             DatabaseIdRepository databaseIdRepository,
             ReadOnlyChangeListener listener,
             GlobalModule globalModule) {
         var globalConfig = globalModule.getGlobalConfig();
         var logProvider = globalModule.getLogService().getInternalLogProvider();
-        var systemGraphReadOnlyLookup =
-                new SystemGraphReadOnlyDatabaseLookupFactory(systemDatabaseProvider, logProvider);
+        var systemGraphReadOnlyLookup = new SystemGraphReadOnlyDatabaseLookupFactory(
+                systemDatabaseProvider, logProvider, readOnlyDatabaseProviders);
         var configReadOnlyLookup = new ConfigBasedLookupFactory(globalConfig, databaseIdRepository);
         var globalReadOnlyChecker =
                 new DefaultReadOnlyDatabases(listener, systemGraphReadOnlyLookup, configReadOnlyLookup);
