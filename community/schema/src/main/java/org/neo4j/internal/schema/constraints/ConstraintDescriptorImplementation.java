@@ -267,7 +267,7 @@ public class ConstraintDescriptorImplementation
 
     @Override
     public boolean isRelationshipEndpointConstraint() {
-        return true;
+        return false;
     }
 
     @Override

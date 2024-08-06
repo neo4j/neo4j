@@ -96,7 +96,7 @@ final class RelationshipEndpointConstraintDescriptorImplementation implements Re
 
     @Override
     public boolean isRelationshipEndpointConstraint() {
-        return false;
+        return true;
     }
 
     @Override
