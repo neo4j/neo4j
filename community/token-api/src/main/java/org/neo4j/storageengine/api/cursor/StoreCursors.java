@@ -31,23 +31,7 @@ import org.neo4j.io.pagecache.context.CursorContext;
  * Write cursors still should be closed when they acquired.
  */
 public interface StoreCursors extends AutoCloseable {
-    StoreCursors NULL = new StoreCursors() {
-        @Override
-        public void close() {}
-
-        @Override
-        public void reset(CursorContext cursorContext) {}
-
-        @Override
-        public PageCursor readCursor(CursorType type) {
-            return null;
-        }
-
-        @Override
-        public PageCursor writeCursor(CursorType type) {
-            return null;
-        }
-    };
+    StoreCursors NULL = new StoreCursorsAdapter();
 
     void reset(CursorContext cursorContext);
 

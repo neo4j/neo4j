@@ -90,32 +90,30 @@ class RelationshipTypeTokenStoreTest extends TokenStoreTestTemplate<Relationship
 
         @Override
         public PageCursor readCursor(CursorType type) {
-            switch ((RecordCursorTypes) type) {
-                case REL_TYPE_TOKEN_CURSOR:
+            return switch ((RecordCursorTypes) type) {
+                case REL_TYPE_TOKEN_CURSOR -> {
                     if (storeCursor == null) {
                         storeCursor = store.openPageCursorForReading(0, CursorContext.NULL_CONTEXT);
                     }
-                    return storeCursor;
-                case DYNAMIC_REL_TYPE_TOKEN_CURSOR:
+                    yield storeCursor;
+                }
+                case DYNAMIC_REL_TYPE_TOKEN_CURSOR -> {
                     if (dynamicCursor == null) {
                         dynamicCursor = nameStore.openPageCursorForReading(0, CursorContext.NULL_CONTEXT);
                     }
-                    return dynamicCursor;
-                default:
-                    return super.readCursor(type);
-            }
+                    yield dynamicCursor;
+                }
+                default -> super.readCursor(type);
+            };
         }
 
         @Override
         public PageCursor writeCursor(CursorType type) {
-            switch ((RecordCursorTypes) type) {
-                case REL_TYPE_TOKEN_CURSOR:
-                    return store.openPageCursorForWriting(0, CursorContext.NULL_CONTEXT);
-                case DYNAMIC_REL_TYPE_TOKEN_CURSOR:
-                    return nameStore.openPageCursorForWriting(0, CursorContext.NULL_CONTEXT);
-                default:
-                    return super.writeCursor(type);
-            }
+            return switch ((RecordCursorTypes) type) {
+                case REL_TYPE_TOKEN_CURSOR -> store.openPageCursorForWriting(0, CursorContext.NULL_CONTEXT);
+                case DYNAMIC_REL_TYPE_TOKEN_CURSOR -> nameStore.openPageCursorForWriting(0, CursorContext.NULL_CONTEXT);
+                default -> super.writeCursor(type);
+            };
         }
 
         @Override

@@ -90,32 +90,30 @@ class LabelTokenStoreTest extends TokenStoreTestTemplate<LabelTokenRecord> {
 
         @Override
         public PageCursor readCursor(CursorType type) {
-            switch ((RecordCursorTypes) type) {
-                case LABEL_TOKEN_CURSOR:
+            return switch ((RecordCursorTypes) type) {
+                case LABEL_TOKEN_CURSOR -> {
                     if (storeCursor == null) {
                         storeCursor = store.openPageCursorForReading(0, CursorContext.NULL_CONTEXT);
                     }
-                    return storeCursor;
-                case DYNAMIC_LABEL_TOKEN_CURSOR:
+                    yield storeCursor;
+                }
+                case DYNAMIC_LABEL_TOKEN_CURSOR -> {
                     if (dynamicCursor == null) {
                         dynamicCursor = nameStore.openPageCursorForReading(0, CursorContext.NULL_CONTEXT);
                     }
-                    return dynamicCursor;
-                default:
-                    return super.readCursor(type);
-            }
+                    yield dynamicCursor;
+                }
+                default -> super.readCursor(type);
+            };
         }
 
         @Override
         public PageCursor writeCursor(CursorType type) {
-            switch ((RecordCursorTypes) type) {
-                case LABEL_TOKEN_CURSOR:
-                    return store.openPageCursorForWriting(0, CursorContext.NULL_CONTEXT);
-                case DYNAMIC_LABEL_TOKEN_CURSOR:
-                    return nameStore.openPageCursorForWriting(0, CursorContext.NULL_CONTEXT);
-                default:
-                    return super.readCursor(type);
-            }
+            return switch ((RecordCursorTypes) type) {
+                case LABEL_TOKEN_CURSOR -> store.openPageCursorForWriting(0, CursorContext.NULL_CONTEXT);
+                case DYNAMIC_LABEL_TOKEN_CURSOR -> nameStore.openPageCursorForWriting(0, CursorContext.NULL_CONTEXT);
+                default -> super.readCursor(type);
+            };
         }
 
         @Override
