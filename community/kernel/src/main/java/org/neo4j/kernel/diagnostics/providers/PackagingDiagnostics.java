@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.diagnostics.providers;
 
+import static java.lang.Boolean.getBoolean;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 
 import java.nio.file.Files;
@@ -26,9 +27,12 @@ import java.nio.file.Path;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.diagnostics.DiagnosticsLogger;
 import org.neo4j.internal.diagnostics.NamedDiagnosticsProvider;
+import org.neo4j.internal.helpers.Exceptions;
 
 public class PackagingDiagnostics extends NamedDiagnosticsProvider {
     public static final String PACKAGING_INFO_FILENAME = "packaging_info";
+    private static final boolean PRINT_PACKAGING_INFO_ERROR =
+            getBoolean(PackagingDiagnostics.class.getName() + ".printException");
     private final Path home;
 
     PackagingDiagnostics(Config config) {
@@ -48,7 +52,11 @@ public class PackagingDiagnostics extends NamedDiagnosticsProvider {
                 logger.log(line);
             }
         } catch (Exception e) {
-            logger.log("Could not read packaging info: %s".formatted(e));
+            logger.log(PACKAGING_INFO_FILENAME + " is not available.");
+            if (PRINT_PACKAGING_INFO_ERROR) {
+                logger.log("Exception occurred while reading " + PACKAGING_INFO_FILENAME + " file:"
+                        + Exceptions.stringify(e));
+            }
         }
     }
 }
