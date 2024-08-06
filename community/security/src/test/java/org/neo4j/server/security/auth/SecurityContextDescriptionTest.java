@@ -34,6 +34,8 @@ import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.kernel.api.security.CommunitySecurityLog;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
+import org.neo4j.kernel.database.PrivilegeDatabaseReference;
+import org.neo4j.kernel.database.PrivilegeDatabaseReferenceImpl;
 import org.neo4j.kernel.impl.api.security.OverriddenAccessMode;
 import org.neo4j.kernel.impl.api.security.RestrictedAccessMode;
 import org.neo4j.kernel.impl.security.User;
@@ -53,8 +55,9 @@ class SecurityContextDescriptionTest {
                 realmHelper, new RateLimitedAuthenticationStrategy(Clocks.systemClock(), Config.defaults()));
         User user = new User("johan", "id", credentialFor("bar"), false, false);
         doReturn(user).when(realmHelper).getUserByName("johan");
+        PrivilegeDatabaseReference sessionDatabase = new PrivilegeDatabaseReferenceImpl(DEFAULT_DATABASE_NAME);
         context = realm.login(authToken("johan", "bar"), EMBEDDED_CONNECTION)
-                .authorize(LoginContext.IdLookup.EMPTY, DEFAULT_DATABASE_NAME, CommunitySecurityLog.NULL_LOG);
+                .authorize(LoginContext.IdLookup.EMPTY, sessionDatabase, CommunitySecurityLog.NULL_LOG);
     }
 
     @Test

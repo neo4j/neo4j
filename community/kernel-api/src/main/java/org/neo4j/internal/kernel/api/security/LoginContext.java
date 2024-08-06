@@ -24,6 +24,7 @@ import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.
 
 import java.util.Objects;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
+import org.neo4j.kernel.database.PrivilegeDatabaseReference;
 import org.neo4j.token.api.TokenConstants;
 
 /**
@@ -63,11 +64,12 @@ public abstract class LoginContext {
      * Authorize the user and return a SecurityContext.
      *
      * @param idLookup token lookup, used to compile fine grained security verification
-     * @param dbName the name of the database the user should be authorized against
+     * @param dbReference a reference to the database the user should be authorized against
      * @param securityLog where to log security related messages
      * @return the security context
      */
-    public abstract SecurityContext authorize(IdLookup idLookup, String dbName, AbstractSecurityLog securityLog);
+    public abstract SecurityContext authorize(
+            IdLookup idLookup, PrivilegeDatabaseReference dbReference, AbstractSecurityLog securityLog);
 
     /**
      * Get a login context with full privileges.
@@ -77,8 +79,9 @@ public abstract class LoginContext {
     public static LoginContext fullAccess(ClientConnectionInfo connectionInfo) {
         return new LoginContext(AuthSubject.AUTH_DISABLED, connectionInfo) {
             @Override
-            public SecurityContext authorize(IdLookup idLookup, String dbName, AbstractSecurityLog securityLog) {
-                return SecurityContext.authDisabled(AccessMode.Static.FULL, connectionInfo(), dbName);
+            public SecurityContext authorize(
+                    IdLookup idLookup, PrivilegeDatabaseReference dbReference, AbstractSecurityLog securityLog) {
+                return SecurityContext.authDisabled(AccessMode.Static.FULL, connectionInfo(), dbReference.name());
             }
         };
     }

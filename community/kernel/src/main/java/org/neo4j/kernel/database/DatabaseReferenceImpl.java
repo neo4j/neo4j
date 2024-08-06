@@ -133,6 +133,11 @@ public abstract class DatabaseReferenceImpl implements DatabaseReference {
         }
 
         @Override
+        public String owningDatabaseName() {
+            return fullName().name();
+        }
+
+        @Override
         public boolean equals(Object o) {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
@@ -218,6 +223,11 @@ public abstract class DatabaseReferenceImpl implements DatabaseReference {
         }
 
         @Override
+        public String owningDatabaseName() {
+            return namedDatabaseId.name();
+        }
+
+        @Override
         public boolean equals(Object o) {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
@@ -242,12 +252,8 @@ public abstract class DatabaseReferenceImpl implements DatabaseReference {
                     + primary + '}';
         }
 
-        public DatabaseReferenceImpl.Internal maybeAsShard(boolean shard) {
-            return shard ? asShard() : this;
-        }
-
-        public DatabaseReferenceImpl.SPDShard asShard() {
-            return new SPDShard(alias, namedDatabaseId, primary);
+        public DatabaseReferenceImpl.SPDShard asShard(String ownerDatabase) {
+            return new SPDShard(alias, namedDatabaseId, primary, ownerDatabase);
         }
     }
 
@@ -373,8 +379,21 @@ public abstract class DatabaseReferenceImpl implements DatabaseReference {
     }
 
     public static final class SPDShard extends DatabaseReferenceImpl.Internal {
-        public SPDShard(NormalizedDatabaseName alias, NamedDatabaseId namedDatabaseId, boolean primary) {
+
+        private final String owningDatabaseName;
+
+        public SPDShard(
+                NormalizedDatabaseName alias,
+                NamedDatabaseId namedDatabaseId,
+                boolean primary,
+                String owningDatabaseName) {
             super(alias, namedDatabaseId, primary);
+            this.owningDatabaseName = owningDatabaseName;
+        }
+
+        @Override
+        public String owningDatabaseName() {
+            return owningDatabaseName;
         }
 
         @Override

@@ -93,13 +93,8 @@ public class TransactionManager extends LifecycleAdapter {
         }
 
         var sessionDb = transactionInfo.getSessionDatabaseReference();
-        var databaseNameToAuthorizeFor = sessionDb instanceof DatabaseReferenceImpl.Internal
-                ? ((DatabaseReferenceImpl.Internal) sessionDb).databaseId().name()
-                : sessionDb.alias().name();
 
-        transactionInfo
-                .getLoginContext()
-                .authorize(LoginContext.IdLookup.EMPTY, databaseNameToAuthorizeFor, securityLog);
+        transactionInfo.getLoginContext().authorize(LoginContext.IdLookup.EMPTY, sessionDb, securityLog);
 
         var procedures = new FabricProcedures(globalProcedures.getCurrentView());
 

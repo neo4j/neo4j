@@ -184,9 +184,13 @@ public class CommunityTopologyGraphDbmsModel implements TopologyGraphDbmsModel {
         return getAliasNodesInNamespace(DATABASE_NAME_LABEL, DEFAULT_NAMESPACE, databaseName)
                 .flatMap(alias -> CommunityTopologyGraphDbmsModelUtil.getTargetedDatabaseNode(alias)
                         .filter(db -> db.getDegree(HAS_SHARD, Direction.INCOMING) > 0)
-                        .flatMap(db -> CommunityTopologyGraphDbmsModelUtil.createInternalReference(
-                                        alias, CommunityTopologyGraphDbmsModelUtil.getDatabaseId(db))
-                                .map(DatabaseReferenceImpl.Internal::asShard))
+                        .flatMap(db -> {
+                            Optional<DatabaseReferenceImpl.Internal> internalReference =
+                                    CommunityTopologyGraphDbmsModelUtil.createInternalReference(
+                                            alias, CommunityTopologyGraphDbmsModelUtil.getDatabaseId(db));
+                            return internalReference.map(
+                                    internal -> internal.asShard(TopologyGraphDbmsModel.readOwningDatabase(db)));
+                        })
                         .stream())
                 .findFirst();
     }

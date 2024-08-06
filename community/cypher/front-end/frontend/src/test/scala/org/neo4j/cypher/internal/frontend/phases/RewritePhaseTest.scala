@@ -179,6 +179,8 @@ trait RewritePhaseTest {
       override def isComposite: Boolean = targetsComposite
 
       override def compareTo(o: DatabaseReference): Int = ???
+
+      override def owningDatabaseName: String = ???
     }
 
     val fromInState = {

@@ -27,7 +27,10 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Stream;
+import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.kernel.database.DatabaseReference;
 import org.neo4j.kernel.database.DatabaseReferenceImpl;
@@ -333,4 +336,15 @@ public interface TopologyGraphDbmsModel {
      */
     Optional<ExternalDatabaseCredentials> getExternalDatabaseCredentials(
             DatabaseReferenceImpl.External databaseReference);
+
+    static String readOwningDatabase(Node aliasNode) {
+        var relationships = aliasNode.getRelationships(Direction.INCOMING, TopologyGraphDbmsModel.HAS_SHARD).stream()
+                .map(Relationship::getStartNode)
+                .toList(); // exhaust cursor
+        if (relationships.isEmpty()) {
+            return aliasNode.getProperty(DATABASE_NAME_PROPERTY).toString();
+        } else {
+            return relationships.get(0).getProperty(DATABASE_NAME_PROPERTY).toString();
+        }
+    }
 }

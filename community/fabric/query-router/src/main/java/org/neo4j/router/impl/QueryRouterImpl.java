@@ -207,11 +207,7 @@ public class QueryRouterImpl implements QueryRouter {
     }
 
     private void authorize(DatabaseReference sessionDb, LoginContext loginContext) {
-        var databaseNameToAuthorizeFor = sessionDb instanceof DatabaseReferenceImpl.Internal
-                ? ((DatabaseReferenceImpl.Internal) sessionDb).databaseId().name()
-                : sessionDb.alias().name();
-
-        loginContext.authorize(LoginContext.IdLookup.EMPTY, databaseNameToAuthorizeFor, securityLog);
+        loginContext.authorize(LoginContext.IdLookup.EMPTY, sessionDb, securityLog);
     }
 
     private boolean isRpcCall(DatabaseReference databaseReference) {

@@ -28,6 +28,7 @@ import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
+import org.neo4j.kernel.database.PrivilegeDatabaseReference;
 import org.neo4j.server.rest.web.HttpConnectionInfoFactory;
 
 public class AuthorizedRequestWrapper extends HttpServletRequestWrapper {
@@ -46,8 +47,9 @@ public class AuthorizedRequestWrapper extends HttpServletRequestWrapper {
         // throw new IllegalArgumentException( "Tried to get access mode on illegal user principal" );
         return new LoginContext(AuthSubject.ANONYMOUS, connectionInfo) {
             @Override
-            public SecurityContext authorize(IdLookup idLookup, String dbName, AbstractSecurityLog securityLog) {
-                return new SecurityContext(subject(), AccessMode.Static.ACCESS, connectionInfo(), dbName);
+            public SecurityContext authorize(
+                    IdLookup idLookup, PrivilegeDatabaseReference dbReference, AbstractSecurityLog securityLog) {
+                return new SecurityContext(subject(), AccessMode.Static.ACCESS, connectionInfo(), dbReference.name());
             }
         };
     }

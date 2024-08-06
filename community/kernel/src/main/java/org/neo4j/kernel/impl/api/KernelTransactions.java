@@ -46,6 +46,7 @@ import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.internal.id.IdController;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.AbstractSecurityLog;
+import org.neo4j.internal.kernel.api.security.DatabaseAccessMode;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.internal.schema.SchemaState;
@@ -59,8 +60,13 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.api.procedure.ProcedureView;
 import org.neo4j.kernel.availability.AvailabilityGuard;
+import org.neo4j.kernel.database.DatabaseReferenceImpl;
+import org.neo4j.kernel.database.DatabaseReferenceRepository;
 import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.database.NamedDatabaseId;
+import org.neo4j.kernel.database.NormalizedDatabaseName;
+import org.neo4j.kernel.database.PrivilegeDatabaseReference;
+import org.neo4j.kernel.database.PrivilegeDatabaseReferenceImpl;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
@@ -270,11 +276,26 @@ public class KernelTransactions extends LifecycleAdapter
             ClientConnectionInfo clientInfo,
             TransactionTimeout timeout) {
         assertCurrentThreadIsNotBlockingNewTransactions();
-
+        PrivilegeDatabaseReference sessionDatabase;
+        if (namedDatabaseId.isSystemDatabase()) {
+            // avoid recursive update to databaseReferenceRepository
+            sessionDatabase = new DatabaseReferenceImpl.Internal(
+                    new NormalizedDatabaseName(namedDatabaseId.name()), namedDatabaseId, true);
+        } else if (loginContext.equals(LoginContext.AUTH_DISABLED)
+                || (loginContext instanceof SecurityContext
+                        && ((SecurityContext) loginContext).databaseAccessMode().equals(DatabaseAccessMode.FULL))) {
+            // the repository does not contain databases until after they are stared.
+            sessionDatabase = new PrivilegeDatabaseReferenceImpl(namedDatabaseId.name(), null);
+        } else {
+            sessionDatabase = databaseDependencies
+                    .resolveDependency(DatabaseReferenceRepository.class)
+                    .getByAlias(namedDatabaseId.name())
+                    .get();
+        }
         ProcedureView procedureView = globalProcedures.getCurrentView();
         BooleanSupplier isStale = () -> !globalProcedures.getCurrentView().equals(procedureView);
         SecurityContext securityContext = loginContext.authorize(
-                new TokenHoldersIdLookup(tokenHolders, procedureView, isStale), namedDatabaseId.name(), securityLog);
+                new TokenHoldersIdLookup(tokenHolders, procedureView, isStale), sessionDatabase, securityLog);
         var tx = newKernelTransaction(type, clientInfo, timeout, securityContext, procedureView);
         databaseSerialGuard.acquireSerialLock(tx);
         return tx;

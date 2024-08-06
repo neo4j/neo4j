@@ -57,6 +57,7 @@ import static org.neo4j.util.concurrent.Futures.combine;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -72,6 +73,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mockito;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -96,6 +98,8 @@ import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.kernel.availability.CompositeDatabaseAvailabilityGuard;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
+import org.neo4j.kernel.database.DatabaseReferenceImpl;
+import org.neo4j.kernel.database.DatabaseReferenceRepository;
 import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -854,7 +858,16 @@ class KernelTransactionsTest {
         final var enrichmentStrategy = mock(ApplyEnrichmentStrategy.class);
         when(enrichmentStrategy.check()).thenReturn(EnrichmentMode.OFF);
 
-        return dependenciesOf(enrichmentStrategy, mock(GraphDatabaseFacade.class), CommunitySecurityLog.NULL_LOG);
+        final var databaseReferenceRepository = Mockito.mock(DatabaseReferenceRepository.class);
+        final var databaseReference = Mockito.mock(DatabaseReferenceImpl.Internal.class);
+        Mockito.when(databaseReferenceRepository.getByAlias(DEFAULT_DATABASE_NAME))
+                .thenReturn(Optional.of(databaseReference));
+
+        return dependenciesOf(
+                enrichmentStrategy,
+                mock(GraphDatabaseFacade.class),
+                CommunitySecurityLog.NULL_LOG,
+                databaseReferenceRepository);
     }
 
     private Future<?> unblockTxsInSeparateThread(final KernelTransactions kernelTransactions) {

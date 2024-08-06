@@ -20,6 +20,7 @@
 package org.neo4j.dbms.systemgraph;
 
 import static org.neo4j.dbms.systemgraph.DriverSettings.Keys.CONNECTION_POOL_ACQUISITION_TIMEOUT;
+import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_NAME_PROPERTY;
 
 import java.net.URI;
 import java.util.List;
@@ -58,7 +59,11 @@ public final class CommunityTopologyGraphDbmsModelUtil {
                     var databaseId = getDatabaseId(node);
                     var alias = new NormalizedDatabaseName(databaseId.name());
                     var ref = new Internal(alias, databaseId, true);
-                    return ref.maybeAsShard(node.getDegree(TopologyGraphDbmsModel.HAS_SHARD, Direction.INCOMING) > 0);
+                    if (node.getDegree(TopologyGraphDbmsModel.HAS_SHARD, Direction.INCOMING) > 0) {
+                        return ref.asShard(TopologyGraphDbmsModel.readOwningDatabase(node));
+                    } else {
+                        return ref;
+                    }
                 });
     }
 
@@ -258,10 +263,7 @@ public final class CommunityTopologyGraphDbmsModelUtil {
             }
 
             var databaseName = getPropertyOnNode(
-                    TopologyGraphDbmsModel.DATABASE_LABEL.name(),
-                    node,
-                    TopologyGraphDbmsModel.DATABASE_NAME_PROPERTY,
-                    String.class);
+                    TopologyGraphDbmsModel.DATABASE_LABEL.name(), node, DATABASE_NAME_PROPERTY, String.class);
             var databaseUuid = getPropertyOnNode(
                     TopologyGraphDbmsModel.DATABASE_LABEL.name(),
                     node,
@@ -306,7 +308,7 @@ public final class CommunityTopologyGraphDbmsModelUtil {
     }
 
     static NamedDatabaseId getDatabaseId(Node databaseNode) {
-        var name = (String) databaseNode.getProperty(TopologyGraphDbmsModel.DATABASE_NAME_PROPERTY);
+        var name = (String) databaseNode.getProperty(DATABASE_NAME_PROPERTY);
         var uuid = UUID.fromString((String) databaseNode.getProperty(TopologyGraphDbmsModel.DATABASE_UUID_PROPERTY));
         return DatabaseIdFactory.from(name, uuid);
     }

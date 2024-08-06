@@ -216,16 +216,16 @@ public class CommunityTopologyGraphDbmsModelIT extends BaseTopologyGraphDbmsMode
                 name(foo),
                 foo,
                 Map.of(
-                        0, new DatabaseReferenceImpl.SPDShard(name(foo0), foo0, true),
-                        1, new DatabaseReferenceImpl.SPDShard(name(foo1), foo1, true)));
+                        0, new DatabaseReferenceImpl.SPDShard(name(foo0), foo0, true, foo.name()),
+                        1, new DatabaseReferenceImpl.SPDShard(name(foo1), foo1, true, foo.name())));
         var barRef = new DatabaseReferenceImpl.SPD(
                 name(bar),
                 bar,
                 Map.of(
-                        0, new DatabaseReferenceImpl.SPDShard(name(bar0), bar0, true),
-                        1, new DatabaseReferenceImpl.SPDShard(name(bar1), bar1, true),
-                        2, new DatabaseReferenceImpl.SPDShard(name(bar2), bar2, true),
-                        3, new DatabaseReferenceImpl.SPDShard(name(bar3), bar3, true)));
+                        0, new DatabaseReferenceImpl.SPDShard(name(bar0), bar0, true, bar.name()),
+                        1, new DatabaseReferenceImpl.SPDShard(name(bar1), bar1, true, bar.name()),
+                        2, new DatabaseReferenceImpl.SPDShard(name(bar2), bar2, true, bar.name()),
+                        3, new DatabaseReferenceImpl.SPDShard(name(bar3), bar3, true, bar.name())));
 
         assertThat(dbmsModel().getAllShardedPropertyDatabaseReferences()).isEqualTo(Set.of(fooRef, barRef));
         assertThat(dbmsModel().getDatabaseRefByAlias(foo.name())).hasValue(fooRef);

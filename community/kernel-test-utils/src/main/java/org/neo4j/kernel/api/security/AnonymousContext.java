@@ -26,6 +26,7 @@ import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
+import org.neo4j.kernel.database.PrivilegeDatabaseReference;
 
 /** Controls the capabilities of a KernelTransaction. */
 public class AnonymousContext extends LoginContext {
@@ -61,7 +62,8 @@ public class AnonymousContext extends LoginContext {
     }
 
     @Override
-    public SecurityContext authorize(IdLookup idLookup, String dbName, AbstractSecurityLog securityLog) {
-        return new SecurityContext(subject(), accessMode, connectionInfo(), dbName);
+    public SecurityContext authorize(
+            IdLookup idLookup, PrivilegeDatabaseReference dbReference, AbstractSecurityLog securityLog) {
+        return new SecurityContext(subject(), accessMode, connectionInfo(), dbReference.name());
     }
 }

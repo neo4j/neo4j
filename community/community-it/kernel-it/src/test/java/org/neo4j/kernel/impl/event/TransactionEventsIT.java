@@ -63,6 +63,7 @@ import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.security.AnonymousContext;
+import org.neo4j.kernel.database.PrivilegeDatabaseReference;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
@@ -202,8 +203,9 @@ class TransactionEventsIT {
         when(subject.executingUser()).thenReturn("Christof");
         LoginContext loginContext = new LoginContext(subject, EMBEDDED_CONNECTION) {
             @Override
-            public SecurityContext authorize(IdLookup idLookup, String dbName, AbstractSecurityLog securityLog) {
-                return new SecurityContext(subject, AccessMode.Static.WRITE, EMBEDDED_CONNECTION, dbName);
+            public SecurityContext authorize(
+                    IdLookup idLookup, PrivilegeDatabaseReference dbName, AbstractSecurityLog securityLog) {
+                return new SecurityContext(subject, AccessMode.Static.WRITE, EMBEDDED_CONNECTION, dbName.name());
             }
         };
         Map<String, Object> metadata = genericMap("username", "joe");

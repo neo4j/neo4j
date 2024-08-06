@@ -51,6 +51,7 @@ import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.api.txstate.TransactionState;
+import org.neo4j.kernel.database.PrivilegeDatabaseReferenceImpl;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.core.NodeEntity;
@@ -282,9 +283,12 @@ class TxStateTransactionDataViewTest {
 
     @Test
     void shouldGetEmptyUsernameForAnonymousContext() {
-        when(transaction.securityContext())
-                .thenReturn(AnonymousContext.read()
-                        .authorize(LoginContext.IdLookup.EMPTY, DEFAULT_DATABASE_NAME, CommunitySecurityLog.NULL_LOG));
+        SecurityContext securityContext = AnonymousContext.read()
+                .authorize(
+                        LoginContext.IdLookup.EMPTY,
+                        new PrivilegeDatabaseReferenceImpl(DEFAULT_DATABASE_NAME),
+                        CommunitySecurityLog.NULL_LOG);
+        when(transaction.securityContext()).thenReturn(securityContext);
 
         TxStateTransactionDataSnapshot transactionDataSnapshot = snapshot();
         assertEquals("", transactionDataSnapshot.username());

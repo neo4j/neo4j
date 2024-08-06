@@ -71,6 +71,8 @@ class ErrorCollectingContext(val isComposite: Boolean = false, databaseName: Str
       override def compareTo(o: DatabaseReference): Int = 0
 
       override def isComposite: Boolean = outerComposite
+
+      override def owningDatabaseName: String = ???
     }
   }
 }

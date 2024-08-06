@@ -396,6 +396,12 @@ abstract class ExecutionEngine(
             override def isComposite: Boolean = context.databaseMode().equals(DatabaseMode.COMPOSITE)
 
             override def compareTo(o: DatabaseReference): Int = throw new NotImplementedError()
+
+            /**
+             * @return the owning database of this reference. This is used for authorization on property shards which inherit
+             *         their permissions from the "owning" graph shard.
+             */
+            override def owningDatabaseName: String = fullName().name();
           }
         )
 

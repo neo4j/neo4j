@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher
 
+import org.assertj.core.api.Condition
 import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME
@@ -59,6 +60,7 @@ import org.neo4j.logging.InternalLogProvider
 import org.neo4j.logging.NullLogProvider
 import org.neo4j.monitoring.Monitors
 import org.neo4j.test.TestDatabaseManagementServiceBuilder
+import org.neo4j.test.assertion.Assert.assertEventually
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.matchers.MatchResult
 import org.scalatest.matchers.Matcher
@@ -66,6 +68,7 @@ import org.scalatest.matchers.Matcher
 import java.nio.file.Path
 import java.time.Duration
 import java.util.UUID
+import java.util.concurrent.TimeUnit
 
 import scala.collection.mutable.ArrayBuffer
 import scala.jdk.CollectionConverters.IterableHasAsScala
@@ -88,6 +91,8 @@ trait GraphDatabaseTestSupport
     super.beforeEach()
     startGraphDatabase()
   }
+
+  def awaitDefaultDatabase: Boolean = false
 
   def databaseConfig(): Map[Setting[_], Object] = Map(
     GraphDatabaseSettings.transaction_timeout -> Duration.ofMinutes(15),
@@ -124,7 +129,23 @@ trait GraphDatabaseTestSupport
 
     managementService =
       updatedDatabaseFactory.setConfig(config.asJava).setInternalLogProvider(logProvider).build()
+    if (awaitDefaultDatabase) {
+      assertEventually(
+        () => managementService.listDatabases().contains(dbName),
+        new Condition[Boolean]((value: Boolean) => value, "Should be true."),
+        30L,
+        TimeUnit.SECONDS
+      )
+    }
     graphOps = managementService.database(dbName)
+    if (awaitDefaultDatabase) {
+      assertEventually(
+        () => graphOps.isAvailable(1000),
+        new Condition[Boolean]((value: Boolean) => value, "Should be true."),
+        30L,
+        TimeUnit.SECONDS
+      )
+    }
 
     graph = new GraphDatabaseCypherService(graphOps)
     onNewGraphDatabase()

@@ -37,6 +37,7 @@ import static org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier.O
 
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
+import org.mockito.Mockito;
 import org.neo4j.collection.pool.Pool;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.DbmsRuntimeVersionProvider;
@@ -49,7 +50,9 @@ import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.api.procedure.ProcedureView;
+import org.neo4j.kernel.database.DatabaseReference;
 import org.neo4j.kernel.database.DatabaseTracers;
+import org.neo4j.kernel.database.NormalizedDatabaseName;
 import org.neo4j.kernel.impl.api.InternalTransactionCommitProcess;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.KernelTransactions;
@@ -149,11 +152,12 @@ public final class KernelTransactionFactory {
                 EMPTY_GUARD,
                 storageEngine.getOpenOptions().contains(MULTI_VERSIONED));
 
+        DatabaseReference defaultSessionDb = Mockito.mock(DatabaseReference.class);
+        Mockito.when(defaultSessionDb.fullName()).thenReturn(new NormalizedDatabaseName(DEFAULT_DATABASE_NAME));
         transaction.initialize(
                 0,
                 KernelTransaction.Type.IMPLICIT,
-                loginContext.authorize(
-                        LoginContext.IdLookup.EMPTY, DEFAULT_DATABASE_NAME, CommunitySecurityLog.NULL_LOG),
+                loginContext.authorize(LoginContext.IdLookup.EMPTY, defaultSessionDb, CommunitySecurityLog.NULL_LOG),
                 NO_TIMEOUT,
                 1L,
                 EMBEDDED_CONNECTION,

@@ -27,7 +27,7 @@ import java.util.UUID;
  * A database may have multiple references, each with a different alias.
  * The reference whose {@link #alias()} corresponds to the database's original name is known as the primary reference.
  */
-public interface DatabaseReference extends Comparable<DatabaseReference> {
+public interface DatabaseReference extends Comparable<DatabaseReference>, PrivilegeDatabaseReference {
     NormalizedDatabaseName alias();
 
     /**
@@ -54,6 +54,17 @@ public interface DatabaseReference extends Comparable<DatabaseReference> {
      * @return the full normalized name of the dataspace, including the namespace.
      */
     NormalizedDatabaseName fullName();
+
+    @Override
+    default String name() {
+        return fullName().name();
+    }
+
+    /**
+     * @return the owning database of this reference. This is used for authorization on property shards which inherit
+     * their permissions from the "owning" graph shard.
+     */
+    String owningDatabaseName();
 
     /**
      * @return true if this reference points to a Composite database, otherwise false

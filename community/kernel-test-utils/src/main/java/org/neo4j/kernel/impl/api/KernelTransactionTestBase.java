@@ -73,6 +73,7 @@ import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.kernel.database.DatabaseIdRepository;
 import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.database.NamedDatabaseId;
+import org.neo4j.kernel.database.PrivilegeDatabaseReferenceImpl;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.api.tracer.DefaultTracer;
@@ -134,6 +135,9 @@ class KernelTransactionTestBase {
     protected CollectionsFactory collectionsFactory;
     protected AssertionRunnerTxExecutionMonitor transactionExecutionMonitor = new AssertionRunnerTxExecutionMonitor();
 
+    protected PrivilegeDatabaseReferenceImpl sessionDatabase =
+            new PrivilegeDatabaseReferenceImpl(DEFAULT_DATABASE_NAME);
+
     private final ProcedureView procedureView = mock(ProcedureView.class);
 
     protected final Config config = Config.defaults();
@@ -192,8 +196,8 @@ class KernelTransactionTestBase {
             TransactionTimeout transactionTimeout,
             long userTransactionId,
             KernelTransactionImplementation tx) {
-        SecurityContext securityContext = loginContext.authorize(
-                LoginContext.IdLookup.EMPTY, DEFAULT_DATABASE_NAME, CommunitySecurityLog.NULL_LOG);
+        SecurityContext securityContext =
+                loginContext.authorize(LoginContext.IdLookup.EMPTY, sessionDatabase, CommunitySecurityLog.NULL_LOG);
         tx.initialize(
                 lastTransactionIdWhenStarted,
                 KernelTransaction.Type.EXPLICIT,

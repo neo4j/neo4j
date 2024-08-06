@@ -26,6 +26,7 @@ import java.util.Collections;
 import java.util.Set;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.database.PrivilegeDatabaseReference;
 import org.neo4j.messages.MessageUtil;
 
 /**
@@ -79,7 +80,8 @@ public class SecurityContext extends LoginContext {
     }
 
     @Override
-    public SecurityContext authorize(IdLookup idLookup, String dbName, AbstractSecurityLog securityLog) {
+    public SecurityContext authorize(
+            IdLookup idLookup, PrivilegeDatabaseReference dbReference, AbstractSecurityLog securityLog) {
         return this;
     }
 
