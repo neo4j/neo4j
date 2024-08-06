@@ -20,6 +20,7 @@ import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.Create
 import org.neo4j.cypher.internal.ast.CreateDatabase
 import org.neo4j.cypher.internal.ast.CreateIndex
+import org.neo4j.cypher.internal.ast.ImportingWithSubqueryCall
 import org.neo4j.cypher.internal.ast.Merge
 import org.neo4j.cypher.internal.ast.NamespacedName
 import org.neo4j.cypher.internal.ast.Options
@@ -53,6 +54,7 @@ import org.neo4j.cypher.internal.label_expressions.LabelExpression.ColonDisjunct
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.DeprecatedDatabaseNameNotification
+import org.neo4j.cypher.internal.util.DeprecatedImportingWithInSubqueryCall
 import org.neo4j.cypher.internal.util.DeprecatedNodesOrRelationshipsInSetClauseNotification
 import org.neo4j.cypher.internal.util.DeprecatedPropertyReferenceInCreate
 import org.neo4j.cypher.internal.util.DeprecatedPropertyReferenceInMerge
@@ -216,6 +218,13 @@ object Deprecations {
             s"SET ${lhs.name} += ${rhs.name}",
             s"SET ${lhs.name} += properties(${rhs.name})"
           ))
+        ))
+
+      case c @ ImportingWithSubqueryCall(innerQuery, _) =>
+        val importing = if (innerQuery.isCorrelated) "a" else ""
+        Some(Deprecation(
+          None,
+          Some(DeprecatedImportingWithInSubqueryCall(c.position, importing))
         ))
 
       case Create(pattern) =>

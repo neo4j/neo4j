@@ -38,6 +38,7 @@ object InternalNotification {
     "DeprecatedPropertyReferenceInCreate",
     "DeprecatedPropertyReferenceInMerge",
     "SubqueryVariableShadowing",
+    "DeprecatedImportingWithInSubqueryCall",
     "UnionReturnItemsInDifferentOrder",
     "HomeDatabaseNotPresent",
     "FixedLengthRelationshipInShortestPath",
@@ -112,6 +113,8 @@ case class DeprecatedPropertyReferenceInCreate(position: InputPosition, varName:
 case class DeprecatedPropertyReferenceInMerge(position: InputPosition, varName: String) extends InternalNotification
 
 case class SubqueryVariableShadowing(position: InputPosition, varName: String) extends InternalNotification
+
+case class DeprecatedImportingWithInSubqueryCall(position: InputPosition, variable: String) extends InternalNotification
 
 case class UnionReturnItemsInDifferentOrder(position: InputPosition) extends InternalNotification
 

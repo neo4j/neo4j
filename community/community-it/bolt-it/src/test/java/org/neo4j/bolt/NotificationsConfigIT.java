@@ -224,14 +224,14 @@ public class NotificationsConfigIT {
         connection.send(wire.hello());
         connection.send(wire.logon());
         connection
-                .send(wire.run("MATCH (a:Person) CALL { MATCH (a:Label) RETURN a AS aLabel } RETURN a"))
+                .send(wire.run("MATCH (a:Person) CALL () { MATCH (a:Label) RETURN a AS aLabel } RETURN a"))
                 .send(wire.pull());
 
         BoltConnectionAssertions.assertThat(connection).receivesSuccess(3);
 
         assertThat(connection).receivesSuccess(x -> {
             Assertions.assertThat(x).containsKey("statuses");
-            Assertions.assertThat((ArrayList<?>) x.get("statuses")).hasSize(4);
+            Assertions.assertThat((ArrayList<?>) x.get("statuses")).hasSize(3);
         });
     }
 
@@ -435,7 +435,7 @@ public class NotificationsConfigIT {
                 List.of(NotificationConfiguration.Category.GENERIC, NotificationConfiguration.Category.UNRECOGNIZED))));
         connection.send(wire.logon());
         connection
-                .send(wire.run("MATCH (a:Person) CALL { MATCH (a:Label) RETURN a AS aLabel } RETURN a"))
+                .send(wire.run("MATCH (a:Person) CALL () { MATCH (a:Label) RETURN a AS aLabel } RETURN a"))
                 .send(wire.pull());
 
         BoltConnectionAssertions.assertThat(connection).receivesSuccess(3);

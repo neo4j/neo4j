@@ -37,6 +37,7 @@ import static org.neo4j.notifications.NotificationCodeWithDescription.deprecated
 import static org.neo4j.notifications.NotificationCodeWithDescription.deprecatedFunctionWithoutReplacement;
 import static org.neo4j.notifications.NotificationCodeWithDescription.deprecatedIdentifierUnicode;
 import static org.neo4j.notifications.NotificationCodeWithDescription.deprecatedIdentifierWhitespaceUnicode;
+import static org.neo4j.notifications.NotificationCodeWithDescription.deprecatedImportingWithInSubqueryCall;
 import static org.neo4j.notifications.NotificationCodeWithDescription.deprecatedNodeOrRelationshipOnRhsSetClause;
 import static org.neo4j.notifications.NotificationCodeWithDescription.deprecatedProcedureReturnField;
 import static org.neo4j.notifications.NotificationCodeWithDescription.deprecatedProcedureWithReplacement;
@@ -855,6 +856,24 @@ class NotificationCodeWithDescriptionTest {
     }
 
     @Test
+    void shouldConstructNotificationsFor_DEPRECATED_IMPORTING_WITH_IN_SUBQUERY_CALL() {
+        NotificationImplementation notification = deprecatedImportingWithInSubqueryCall(InputPosition.empty, "a");
+
+        String message = "CALL subquery without a variable scope clause is now deprecated. Use CALL (a) { ... }";
+        verifyNotification(
+                notification,
+                "This feature is deprecated and will be removed in future versions.",
+                SeverityLevel.WARNING,
+                "Neo.ClientNotification.Statement.FeatureDeprecationWarning",
+                message,
+                NotificationCategory.DEPRECATION,
+                NotificationClassification.DEPRECATION,
+                "01N00",
+                new DiagnosticRecord(warning, deprecation, -1, -1, -1, Map.of("msg", message)).asMap(),
+                String.format("warn: feature deprecated. %s", message));
+    }
+
+    @Test
     void shouldConstructNotificationsFor_HOME_DATABASE_NOT_PRESENT() {
         NotificationImplementation notification = homeDatabaseNotPresent(InputPosition.empty, "db", "db");
 
@@ -1507,8 +1526,8 @@ class NotificationCodeWithDescriptionTest {
         byte[] notificationHash = DigestUtils.sha256(notificationBuilder.toString());
 
         byte[] expectedHash = new byte[] {
-            74, 10, 55, 40, 125, 124, 26, 81, -104, 5, 92, -55, 64, 60, 39, -75, 52, 33, -39, -14, -78, 24, 85, -110,
-            -116, 44, 96, 15, -77, 66, -86, -76
+            -119, -8, -35, -2, -83, 70, -32, -127, 50, 33, 31, -72, 22, 80, 35, -72, 16, -22, -32, -48, -13, 87, -60,
+            -36, 126, 79, -42, -97, 25, -95, -11, -27
         };
 
         if (!Arrays.equals(notificationHash, expectedHash)) {

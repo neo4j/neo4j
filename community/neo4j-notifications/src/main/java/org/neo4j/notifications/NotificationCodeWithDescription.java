@@ -199,6 +199,10 @@ public enum NotificationCodeWithDescription {
             GqlStatusInfoCodes.STATUS_03N60,
             "Variable in subquery is shadowing a variable with the same name from the outer scope. "
                     + "If you want to use that variable instead, it must be imported into the subquery using importing WITH clause. (%s)"),
+    DEPRECATED_IMPORTING_WITH_IN_SUBQUERY_CALL(
+            Status.Statement.FeatureDeprecationWarning,
+            GqlStatusInfoCodes.STATUS_01N00,
+            "CALL subquery without a variable scope clause is now deprecated. " + "Use CALL (%s) { ... }"),
     UNION_RETURN_ORDER(
             Status.Statement.FeatureDeprecationWarning,
             GqlStatusInfoCodes.STATUS_01N00,
@@ -546,6 +550,16 @@ public enum NotificationCodeWithDescription {
             InputPosition position, String oldDetail, String variable) {
         return SUBQUERY_VARIABLE_SHADOWING.notificationWithParameters(
                 position, new String[] {oldDetail}, new String[] {variable, variable});
+    }
+
+    public static NotificationImplementation deprecatedImportingWithInSubqueryCall(
+            InputPosition position, String variable) {
+        return DEPRECATED_IMPORTING_WITH_IN_SUBQUERY_CALL.notificationWithParameters(
+                position, new String[] {variable}, new String[] {
+                    String.format(
+                            "CALL subquery without a variable scope clause is now deprecated. Use CALL (%s) { ... }",
+                            variable)
+                });
     }
 
     public static NotificationImplementation unionReturnOrder(InputPosition position) {

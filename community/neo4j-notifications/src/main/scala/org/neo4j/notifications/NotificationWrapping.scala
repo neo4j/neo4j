@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.util.DeprecatedDatabaseNameNotification
 import org.neo4j.cypher.internal.util.DeprecatedFunctionNotification
 import org.neo4j.cypher.internal.util.DeprecatedIdentifierUnicode
 import org.neo4j.cypher.internal.util.DeprecatedIdentifierWhitespaceUnicode
+import org.neo4j.cypher.internal.util.DeprecatedImportingWithInSubqueryCall
 import org.neo4j.cypher.internal.util.DeprecatedNodesOrRelationshipsInSetClauseNotification
 import org.neo4j.cypher.internal.util.DeprecatedPropertyReferenceInCreate
 import org.neo4j.cypher.internal.util.DeprecatedPropertyReferenceInMerge
@@ -241,6 +242,11 @@ object NotificationWrapping {
       NotificationCodeWithDescription.subqueryVariableShadowing(
         pos.withOffset(offset).asInputPosition,
         NotificationDetail.shadowingVariable(varName),
+        varName
+      )
+    case DeprecatedImportingWithInSubqueryCall(pos, varName) =>
+      NotificationCodeWithDescription.deprecatedImportingWithInSubqueryCall(
+        pos.withOffset(offset).asInputPosition,
         varName
       )
     case UnionReturnItemsInDifferentOrder(pos) =>

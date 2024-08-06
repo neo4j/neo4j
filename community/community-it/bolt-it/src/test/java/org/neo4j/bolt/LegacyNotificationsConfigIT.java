@@ -171,14 +171,14 @@ public class LegacyNotificationsConfigIT {
         connection.send(wire.hello());
         connection.send(wire.logon());
         connection
-                .send(wire.run("MATCH (a:Person) CALL { MATCH (a:Label) RETURN a AS aLabel } RETURN a"))
+                .send(wire.run("MATCH (a:Person) CALL () { MATCH (a:Label) RETURN a AS aLabel } RETURN a"))
                 .send(wire.pull());
 
         BoltConnectionAssertions.assertThat(connection).receivesSuccess(3);
 
         assertThat(connection).receivesSuccess(x -> {
             Assertions.assertThat(x).containsKey("notifications");
-            Assertions.assertThat((ArrayList<?>) x.get("notifications")).hasSize(3);
+            Assertions.assertThat((ArrayList<?>) x.get("notifications")).hasSize(2);
         });
     }
 
@@ -365,7 +365,7 @@ public class LegacyNotificationsConfigIT {
                 List.of(NotificationConfiguration.Category.GENERIC, NotificationConfiguration.Category.UNRECOGNIZED))));
         connection.send(wire.logon());
         connection
-                .send(wire.run("MATCH (a:Person) CALL { MATCH (a:Label) RETURN a AS aLabel } RETURN a"))
+                .send(wire.run("MATCH (a:Person) CALL () { MATCH (a:Label) RETURN a AS aLabel } RETURN a"))
                 .send(wire.pull());
 
         BoltConnectionAssertions.assertThat(connection).receivesSuccess(3);
@@ -380,7 +380,7 @@ public class LegacyNotificationsConfigIT {
         connection.send(wire.hello(x -> x.withSeverity(NotificationConfiguration.Severity.WARNING)));
         connection.send(wire.logon());
         connection
-                .send(wire.run("MATCH (a:Person) CALL { MATCH (a:Label) RETURN a AS aLabel } RETURN a"))
+                .send(wire.run("MATCH (a:Person) CALL () { MATCH (a:Label) RETURN a AS aLabel } RETURN a"))
                 .send(wire.pull());
 
         BoltConnectionAssertions.assertThat(connection).receivesSuccess(3);

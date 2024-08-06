@@ -31,6 +31,7 @@ import org.neo4j.notifications.NotificationCodeWithDescription.deprecatedFunctio
 import org.neo4j.notifications.NotificationCodeWithDescription.deprecatedFunctionWithoutReplacement
 import org.neo4j.notifications.NotificationCodeWithDescription.deprecatedIdentifierUnicode
 import org.neo4j.notifications.NotificationCodeWithDescription.deprecatedIdentifierWhitespaceUnicode
+import org.neo4j.notifications.NotificationCodeWithDescription.deprecatedImportingWithInSubqueryCall
 import org.neo4j.notifications.NotificationCodeWithDescription.deprecatedNodeOrRelationshipOnRhsSetClause
 import org.neo4j.notifications.NotificationCodeWithDescription.deprecatedProcedureField
 import org.neo4j.notifications.NotificationCodeWithDescription.deprecatedProcedureReturnField
@@ -370,7 +371,7 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
       "MATCH ()-[r*]->() RETURN r",
       "MATCH ()-[r*]->() WITH r as s MATCH ()-[r*]->() RETURN r, s",
       """MATCH ()-[r*]->()
-        |CALL {
+        |CALL () {
         | MATCH (a)-[r*]->()
         | RETURN a AS a
         |}
@@ -655,6 +656,30 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
       queriesWithDeprecatedStartChar,
       shouldContainNotification = true,
       deprecatedIdentifierUnicode(_, deprecatedStartUnicodeChar, s"${deprecatedStartUnicodeChar}bc")
+    )
+  }
+
+  test("deprecated subquerycall without variable clause non-importing") {
+    val queries = Seq(
+      "CALL{RETURN 1 AS b} RETURN b"
+    )
+    assertNotification(
+      queries,
+      shouldContainNotification = true,
+      "",
+      (pos, detail) => deprecatedImportingWithInSubqueryCall(pos, detail)
+    )
+  }
+
+  test("deprecated subquerycall without variable clause importing") {
+    val queries = Seq(
+      "WITH 1 AS a CALL{WITH a RETURN 1 AS b} RETURN b"
+    )
+    assertNotification(
+      queries,
+      shouldContainNotification = true,
+      "a",
+      (pos, detail) => deprecatedImportingWithInSubqueryCall(pos, detail)
     )
   }
 }
