@@ -19,7 +19,6 @@
  */
 package org.neo4j.dbms.database.readonly;
 
-import java.util.Set;
 import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.database.NamedDatabaseId;
 
@@ -29,12 +28,20 @@ import org.neo4j.kernel.database.NamedDatabaseId;
 public interface ReadOnlyDatabases {
 
     /**
-     * Checks whether the database with the given {@code namedDatabaseId} is configured to be read-only.
+     * Checks whether the database with the given {@code databaseId} is configured to be read-only.
      *
      * @param databaseId the identity of the database to check.
      * @return {@code true} if the database is read-only, otherwise {@code false}.
      */
     boolean isReadOnly(DatabaseId databaseId);
+
+    /**
+     * Checks whether the database with the given {@code databaseId} is configured to be read-only locally on this server.
+     *
+     * @param databaseId the identity of the database to check.
+     * @return {@code true} if the database is read-only on this server, otherwise {@code false}.
+     */
+    boolean isReadOnlyLocally(DatabaseId databaseId);
 
     /**
      * Instantiates and returns a {@link DatabaseReadOnlyChecker} which is primed to check read-only state of the database with
@@ -55,12 +62,6 @@ public interface ReadOnlyDatabases {
      * @return a numeric value which increases monotonically with each call to {@link #refresh()}. Used by {@link DatabaseReadOnlyChecker} for caching.
      */
     long updateId();
-
-    /**
-     * @return all readonly sources for requested databaseId.
-     * If the result is empty this means that the requested database doesn't exist or it is not in read-only mode.
-     */
-    Set<Lookup.Source> readonlySources(DatabaseId databaseId);
 
     /**
      * Objects implementing this interface create {@link Lookup}s: immutable snapshots of the logical set of read only databases

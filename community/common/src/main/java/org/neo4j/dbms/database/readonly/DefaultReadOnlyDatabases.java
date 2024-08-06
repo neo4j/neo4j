@@ -55,27 +55,25 @@ public class DefaultReadOnlyDatabases implements ReadOnlyDatabases {
         return readOnlyDatabases.stream().anyMatch(l -> l.databaseIsReadOnly(databaseId));
     }
 
+    @Override
+    public boolean isReadOnlyLocally(DatabaseId databaseId) {
+        Objects.requireNonNull(databaseId);
+
+        // System database can't be read only
+        if (databaseId.isSystemDatabase()) {
+            return false;
+        }
+
+        return readOnlyDatabases.stream()
+                .anyMatch(l -> l.databaseIsReadOnly(databaseId) && l.source() == Lookup.Source.CONFIG);
+    }
+
     /**
      * @return a numeric value which increases monotonically with each call to {@link #refresh()}. Used by {@link DatabaseReadOnlyChecker} for caching.
      */
     @Override
     public long updateId() {
         return updateId;
-    }
-
-    @Override
-    public Set<Lookup.Source> readonlySources(DatabaseId databaseId) {
-        Objects.requireNonNull(databaseId);
-
-        // System database can't be read only
-        if (databaseId.isSystemDatabase()) {
-            return Set.of();
-        }
-
-        return readOnlyDatabases.stream()
-                .filter(l -> l.databaseIsReadOnly(databaseId))
-                .map(Lookup::source)
-                .collect(Collectors.toSet());
     }
 
     @Override
