@@ -119,7 +119,7 @@ class StatisticsBackedCardinalityModel(
           cardinalityModel,
           plannerQuery.queryGraph.argumentIds
         )
-        afterHorizon.withFusedLabelInfo(plannerQuery.firstLabelInfo)
+        afterHorizon.withFusedLabelInfo(plannerQuery.addHeadQueryLabelInfo(afterHorizon.labelInfo))
     }
     output.cardinality
   }

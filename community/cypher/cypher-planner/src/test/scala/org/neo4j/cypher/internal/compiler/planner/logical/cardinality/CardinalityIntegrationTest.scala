@@ -1815,6 +1815,20 @@ class CardinalityIntegrationTest extends CypherFunSuite with CardinalityIntegrat
     )
   }
 
+  test("Pass label info through horizons") {
+    val builder = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setLabelCardinality("A", 30)
+      .setLabelCardinality("B", 70)
+      .setRelationshipCardinality("()-[]->()", 1000)
+      .setRelationshipCardinality("()-[:R]->()", 800)
+      .setRelationshipCardinality("(:A)-[:R]->()", 500)
+      .build()
+
+    val query = "MATCH (a:A) WITH a as b WITH b as c MATCH (c)-[:R]->(d)"
+    queryShouldHaveCardinality(builder, query, 500)
+  }
+
   private def uniquenessSelectivityForNRels(n: Int): Double = {
     RepetitionCardinalityModel.relationshipUniquenessSelectivity(
       differentRelationships = 0,

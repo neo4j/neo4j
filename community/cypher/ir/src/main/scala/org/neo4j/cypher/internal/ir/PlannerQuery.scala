@@ -334,12 +334,13 @@ sealed trait SinglePlannerQuery extends PlannerQuery {
     buffer
   }
 
-  lazy val firstLabelInfo: Map[LogicalVariable, Set[LabelName]] =
-    extractLabelInfo(this)
+  def addHeadQueryLabelInfo(previousLabelInfo: Map[LogicalVariable, Set[LabelName]])
+    : Map[LogicalVariable, Set[LabelName]] =
+    extractLabelInfo(this, previousLabelInfo)
 
   lazy val allLabelInfo: Map[LogicalVariable, Set[LabelName]] =
     fold(Map.empty[LogicalVariable, Set[LabelName]]) {
-      case (labelInfo, singlePlannerQuery) => labelInfo.fuse(singlePlannerQuery.firstLabelInfo)(_ ++ _)
+      case (previousLabelInfo, singlePlannerQuery) => singlePlannerQuery.addHeadQueryLabelInfo(previousLabelInfo)
     }
 
   override def returns: Set[LogicalVariable] = {
@@ -403,8 +404,11 @@ object SinglePlannerQuery {
     }
   }
 
-  def extractLabelInfo(q: SinglePlannerQuery): Map[LogicalVariable, Set[LabelName]] = {
-    val labelInfo = q.queryGraph.selections.labelInfo
+  def extractLabelInfo(
+    q: SinglePlannerQuery,
+    previousLabelInfo: Map[LogicalVariable, Set[LabelName]]
+  ): Map[LogicalVariable, Set[LabelName]] = {
+    val labelInfo = previousLabelInfo.fuse(q.queryGraph.selections.labelInfo)(_ ++ _)
     val projectedLabelInfo = q.horizon match {
       case projection: QueryProjection =>
         projection.projections.collect {

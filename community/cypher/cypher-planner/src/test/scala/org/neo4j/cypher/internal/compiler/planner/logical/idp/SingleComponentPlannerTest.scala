@@ -504,6 +504,19 @@ class SingleComponentPlannerTest extends CypherFunSuite with LogicalPlanningTest
     )
   }
 
+  test("Pass label info through horizons") {
+    val query = buildSinglePlannerQuery("MATCH (a:A) WITH a AS b WITH b AS c RETURN c")
+    val labelInfo = query.allLabelInfo
+    val labels = labelInfo.map {
+      case (k, v) => (k, v.map(_.name))
+    }
+    labels shouldBe Map(
+      v"a" -> Set("A"),
+      v"b" -> Set("A"),
+      v"c" -> Set("A")
+    )
+  }
+
   private def assertPlanSolvesHints(plans: Iterable[LogicalPlan], solveds: Solveds, hints: Hint*): Unit = {
     plans should not be empty
     for (

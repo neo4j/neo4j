@@ -1252,6 +1252,98 @@ class ABCDECardinalityDataCardinalityIntegrationTest extends CypherFunSuite with
     )
   }
 
+  test("MATCH (a:A) WITH a AS b MATCH (b)-[:T1]->(c:C)") {
+    expectCardinality(A_T1_C)
+  }
+
+  test("MATCH (a:A) WITH a AS a WITH a AS a WITH a AS a MATCH (a)-[:T1]->(b:C)") {
+    expectCardinality(A_T1_C)
+  }
+
+  test("MATCH (a:A) WITH * MATCH (a)-[:T1]->(b:C)") {
+    expectCardinality(A_T1_C)
+  }
+
+  test("MATCH (a) WHERE a:A WITH a AS b MATCH (b)-[:T1]->(d:C)") {
+    expectCardinality(A_T1_C)
+  }
+
+  test("MATCH (a:A) WITH a AS b WITH b AS c MATCH (c)-[:T1]->(d:C)") {
+    expectCardinality(A_T1_C)
+  }
+
+  test("MATCH (a:A) WITH a AS b WITH b AS c WITH c AS d MATCH (d)-[:T1]->(e:C)") {
+    expectCardinality(A_T1_C)
+  }
+
+  test("MATCH (a) WHERE a:A WITH a AS b WITH b AS c WITH c AS d MATCH (d)-[:T1]->(e:C)") {
+    expectCardinality(A_T1_C)
+  }
+
+  test("MATCH (a) WITH a AS b WHERE b:A WITH b AS c WITH c AS d MATCH (d)-[:T1]->(e:C)") {
+    expectCardinality(A_T1_C)
+  }
+
+  test("MATCH (a) WITH a AS b WITH b AS c WHERE c:A WITH c AS d MATCH (d)-[:T1]->(e:C)") {
+    expectCardinality(A_T1_C)
+  }
+
+  test("MATCH (a) WITH a AS b WITH b AS c WITH c AS d WHERE d:A MATCH (d)-[:T1]->(e:C)") {
+    expectCardinality(A_T1_C)
+  }
+
+  test("MATCH (a) WITH a AS b WITH b AS c WITH c AS d MATCH (d)-[:T1]->(e:C) WHERE d:A") {
+    expectCardinality(A_T1_C)
+  }
+
+  test("MATCH (a:A) WITH a AS b WITH b AS c WITH c AS d MATCH (d)") {
+    expectCardinality(A)
+  }
+
+  test("MATCH (a) WITH a AS b WITH b AS c MATCH (c:A)-[:T1]->(d:C)") {
+    expectCardinality(A_T1_C)
+  }
+
+  test("MATCH (a:A) WITH a AS b WITH b AS c MATCH (c:B)") {
+    expectCardinality(N * Asel * Bsel)
+  }
+
+  test("MATCH (a) WITH a AS b MATCH (b:A) WITH b AS c MATCH (c)-[:T1]->(d:C)") {
+    expectCardinality(A_T1_C)
+  }
+
+  test("MATCH (a) WITH a AS b MATCH (b) WITH b AS c MATCH (c)-[:T1]->(d:C)") {
+    expectCardinality(ANY_T1_C)
+  }
+
+  test("MATCH (a) WITH a AS b MATCH (b) WHERE b:A WITH b AS c MATCH (c)-[:T1]->(d:C)") {
+    expectCardinality(A_T1_C)
+  }
+
+  test("MATCH (a:A) WITH a AS b MATCH (b:B) WHERE b:C WITH b AS c MATCH (c:D)") {
+    expectCardinality(A * Bsel * Csel * Dsel)
+  }
+
+  test("MATCH (a:A&B&C&D)") {
+    expectCardinality(A * Bsel * Csel * Dsel)
+  }
+
+  test(
+    "MATCH (a:A)-[t:T1]->(b:B) WITH t as tt, a AS aa, b AS bb WITH tt as ttt, aa AS aaa, bb AS bbb MATCH (aaa)-[ttt]->(bbb)"
+  ) {
+    expectCardinality(A_T1_B)
+  }
+
+  test("MATCH (a:A)-[t:T1]->(b:B) WITH a AS aa, t AS tt, b AS bb MATCH (aa)-[tt]->(bb:B)") {
+    expectCardinality(A_T1_B)
+  }
+
+  test(
+    "MATCH (a:A)-[t:T1]->(b:B) WITH a AS aa, t AS tt, b AS bb SKIP 0 WITH aa AS aaa, tt as ttt, bb AS bbb SKIP 0 MATCH (aaa)-[ttt]->(bbb:B)"
+  ) {
+    expectCardinality(A_T1_B)
+  }
+
   private def subquerySelectivity(cardinality: Double): Double = {
     subqueryCardinalityToExistsSelectivity(cardinality).factor
   }
