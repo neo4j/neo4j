@@ -47,6 +47,7 @@ import org.neo4j.values.virtual.VirtualNodeValue
 import org.neo4j.values.virtual.VirtualRelationshipValue
 
 import scala.collection.mutable.ArrayBuffer
+import scala.jdk.CollectionConverters.CollectionHasAsScala
 
 trait SetOperation extends SideEffect {
 
@@ -617,8 +618,8 @@ case class SetLabelsOperation(nodeName: String, labels: Seq[LazyLabel], dynamicL
     val value: AnyValue = executionContext.getByName(nodeName)
     if (!(value eq Values.NO_VALUE)) {
       val nodeId = CastSupport.castOrFail[VirtualNodeValue](value).id()
-      val labelIds = labels.map(_.getOrCreateId(state.query)) ++ dynamicLabels.map(e => {
-        state.query.getOrCreateLabelId(CypherFunctions.asString(e(executionContext, state)))
+      val labelIds = labels.map(_.getOrCreateId(state.query)) ++ dynamicLabels.flatMap(e => {
+        CypherFunctions.asStringList(e(executionContext, state)).asScala.map(l => state.query.getOrCreateLabelId(l))
       })
       state.query.setLabelsOnNode(nodeId, labelIds.iterator).toLong
     } else {

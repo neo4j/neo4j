@@ -29,6 +29,8 @@ import org.neo4j.cypher.operations.CypherFunctions
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.VirtualNodeValue
 
+import scala.jdk.CollectionConverters.CollectionHasAsScala
+
 case class RemoveLabelsPipe(src: Pipe, variable: String, labels: Seq[LazyLabel], dynamicLabels: Seq[Expression])(
   val id: Id = Id.INVALID_ID
 ) extends PipeWithSource(src) with GraphElementPropertyFunctions {
@@ -45,9 +47,11 @@ case class RemoveLabelsPipe(src: Pipe, variable: String, labels: Seq[LazyLabel],
   }
 
   private def removeLabels(row: CypherRow, state: QueryState, nodeId: Long): Int = {
-    val labelIds = (labels.map(_.getId(state.query)) ++ dynamicLabels.map(l =>
-      state.query.getOptLabelId(CypherFunctions.asString(l(row, state))).getOrElse(LazyLabel.UNKNOWN)
-    )).filter(_ != LazyLabel.UNKNOWN)
+    val labelIds = labels.map(_.getId(state.query)) ++ dynamicLabels.flatMap(l =>
+      CypherFunctions.asStringList(l(row, state)).asScala.map(l =>
+        state.query.getOrCreateLabelId(l)
+      )
+    ).filter(_ != LazyLabel.UNKNOWN)
     state.query.removeLabelsFromNode(nodeId, labelIds.iterator)
   }
 }

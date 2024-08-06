@@ -29,6 +29,7 @@ import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.exceptions.Neo4jException
 import org.neo4j.exceptions.ParameterWrongTypeException
 import org.neo4j.internal.helpers.collection.Iterables
+import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException
 
 import java.util
 
@@ -77,6 +78,44 @@ abstract class SetDynamicLabelsTestBase[CONTEXT <: RuntimeContext](
       .produceResults("l")
       .projection("labels(n) AS l")
       .setDynamicLabels("n", "NULL")
+      .allNodeScan("n")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    a[CypherTypeException] shouldBe thrownBy(consume(runtimeResult))
+  }
+
+  test("should fail if label on a node evaluates to an empty string") {
+    // given a single node
+    givenGraph {
+      nodeGraph(1)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("l")
+      .projection("labels(n) AS l")
+      .setDynamicLabels("n", "''")
+      .allNodeScan("n")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    an[IllegalTokenNameException] shouldBe thrownBy(consume(runtimeResult))
+  }
+
+  test("should fail if label on a node evaluates to an invalid type") {
+    // given a single node
+    givenGraph {
+      nodeGraph(1)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("l")
+      .projection("labels(n) AS l")
+      .setDynamicLabels("n", "1 + 2")
       .allNodeScan("n")
       .build(readOnly = false)
 
@@ -461,5 +500,129 @@ abstract class SetDynamicLabelsTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("n")
       .withRows(singleColumn(nodes.flatMap(n => Seq.fill(10)(n))))
       .withStatistics(labelsAdded = sizeHint)
+  }
+
+  test("should set multiple dynamic labels from single list expression") {
+    // given a single node
+    givenGraph {
+      nodeGraph(1)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("l")
+      .projection("labels(n) AS l")
+      .setDynamicLabels("n", "['L1', 'L2', 'L3']")
+      .allNodeScan("n")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+    val labels = tx.getAllLabels.asScala.toSeq
+    val labelsInUse = tx.getAllLabelsInUse.asScala.toSeq
+
+    runtimeResult should beColumns("l").withSingleRow(util.Arrays.asList("L1", "L2", "L3")).withStatistics(labelsAdded =
+      3
+    )
+    labels.map(_.name()) should equal(List("L1", "L2", "L3"))
+    labelsInUse.map(_.name()) should equal(List("L1", "L2", "L3"))
+  }
+
+  test("should do nothing for an empty list") {
+    // given a single node
+    givenGraph {
+      nodeGraph(1)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("l")
+      .projection("labels(n) AS l")
+      .setDynamicLabels("n", "[]")
+      .allNodeScan("n")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+    val labels = tx.getAllLabels.asScala.toSeq
+    val labelsInUse = tx.getAllLabelsInUse.asScala.toSeq
+
+    runtimeResult should beColumns("l").withSingleRow(util.Collections.emptyList()).withStatistics(labelsAdded = 0)
+    labels shouldBe empty
+    labelsInUse shouldBe empty
+  }
+
+  test("should fail if dynamic label expression contains a null") {
+    // given a single node
+    givenGraph {
+      nodeGraph(1)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("l")
+      .projection("labels(n) AS l")
+      .setDynamicLabels("n", "['L1', NULL, 'L3']")
+      .allNodeScan("n")
+      .build(readOnly = false)
+
+    // then
+    a[CypherTypeException] shouldBe thrownBy(consume(execute(logicalQuery, runtime)))
+  }
+
+  test("should combine multiple dynamic label expressions") {
+    // given a single node
+    givenGraph {
+      nodeGraph(1)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("l")
+      .projection("labels(n) AS l")
+      .setDynamicLabels("n", "['L1', 'L2']", "'L3'", "['L4']")
+      .allNodeScan("n")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+    val labels = tx.getAllLabels.asScala.toSeq
+    val labelsInUse = tx.getAllLabelsInUse.asScala.toSeq
+
+    runtimeResult should beColumns("l").withSingleRow(util.Arrays.asList("L1", "L2", "L3", "L4")).withStatistics(
+      labelsAdded = 4
+    )
+    labels.map(_.name()) should equal(List("L1", "L2", "L3", "L4"))
+    labelsInUse.map(_.name()) should equal(List("L1", "L2", "L3", "L4"))
+  }
+
+  test("should combine multiple dynamic label expressions with static labels") {
+    // given a single node
+    givenGraph {
+      nodeGraph(1)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("l")
+      .projection("labels(n) AS l")
+      .setLabels("n", Seq("L1", "L2"), Seq("['L3', 'L4']", "'L5'"))
+      .allNodeScan("n")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+    val labels = tx.getAllLabels.asScala.toSeq
+    val labelsInUse = tx.getAllLabelsInUse.asScala.toSeq
+
+    runtimeResult should beColumns("l").withSingleRow(util.Arrays.asList("L1", "L2", "L3", "L4", "L5")).withStatistics(
+      labelsAdded = 5
+    )
+    labels.map(_.name()) should equal(List("L1", "L2", "L3", "L4", "L5"))
+    labelsInUse.map(_.name()) should equal(List("L1", "L2", "L3", "L4", "L5"))
   }
 }

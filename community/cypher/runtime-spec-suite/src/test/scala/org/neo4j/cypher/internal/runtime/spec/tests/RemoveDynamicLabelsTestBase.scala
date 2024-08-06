@@ -23,13 +23,16 @@ import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
+import org.neo4j.cypher.internal.runtime.spec.RecordingRuntimeResult
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.graphdb.Label
 import org.neo4j.internal.helpers.collection.Iterators
+import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException
 
 import java.util
 
+import scala.jdk.CollectionConverters.IterableHasAsScala
 import scala.jdk.CollectionConverters.IteratorHasAsScala
 
 abstract class RemoveDynamicLabelsTestBase[CONTEXT <: RuntimeContext](
@@ -150,7 +153,7 @@ abstract class RemoveDynamicLabelsTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should fail if label to remove is null") {
-    val nodes = givenGraph {
+    givenGraph {
       nodeGraph(sizeHint, "Label")
     }
 
@@ -166,6 +169,163 @@ abstract class RemoveDynamicLabelsTestBase[CONTEXT <: RuntimeContext](
     // then
     val runtimeResult = execute(logicalQuery, runtime)
     a[CypherTypeException] shouldBe thrownBy(consume(runtimeResult))
+  }
+
+  test("should fail if label on a node evaluates to an empty string") {
+    // given a single node
+    givenGraph {
+      nodeGraph(sizeHint, "Label")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("l")
+      .projection("labels(n) AS l")
+      .removeDynamicLabels("n", "''")
+      .allNodeScan("n")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    an[IllegalTokenNameException] shouldBe thrownBy(consume(runtimeResult))
+  }
+
+  test("should fail if label on a node evaluates to an invalid type") {
+    // given a single node
+    givenGraph {
+      nodeGraph(sizeHint, "Label")
+    }
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("l")
+      .projection("labels(n) AS l")
+      .removeDynamicLabels("n", "1 + 2")
+      .allNodeScan("n")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    a[CypherTypeException] shouldBe thrownBy(consume(runtimeResult))
+  }
+
+  test("should remove multiple dynamic labels from single list expression") {
+    // given a single node
+    givenGraph {
+      nodeGraph(1, "L1", "L2", "L3", "L4")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("l")
+      .projection("labels(n) AS l")
+      .removeDynamicLabels("n", "['L1', 'L2', 'L3']")
+      .allNodeScan("n")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+    val labels = tx.getAllLabels.asScala.toSeq
+    val labelsInUse = tx.getAllLabelsInUse.asScala.toSeq
+
+    runtimeResult should beColumns("l").withSingleRow(util.Arrays.asList("L4")).withStatistics(labelsRemoved = 3)
+    labels.map(_.name()) should equal(List("L1", "L2", "L3", "L4"))
+    labelsInUse.map(_.name()) should equal(List("L4"))
+  }
+
+  test("should do nothing for an empty list") {
+    // given a single node
+    givenGraph {
+      nodeGraph(1, "L1", "L2", "L3", "L4")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("l")
+      .projection("labels(n) AS l")
+      .removeDynamicLabels("n", "[]")
+      .allNodeScan("n")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+    val labels = tx.getAllLabels.asScala.toSeq
+    val labelsInUse = tx.getAllLabelsInUse.asScala.toSeq
+
+    runtimeResult should beColumns("l").withSingleRow(util.List.of("L1", "L2", "L3", "L4")).withStatistics(
+      labelsRemoved = 0
+    )
+    labels.map(_.name()) should equal(List("L1", "L2", "L3", "L4"))
+    labelsInUse.map(_.name()) should equal(List("L1", "L2", "L3", "L4"))
+  }
+
+  test("should fail if dynamic label expression contains a null") {
+    // given a single node
+    givenGraph {
+      nodeGraph(1)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("l")
+      .projection("labels(n) AS l")
+      .removeDynamicLabels("n", "['L1', NULL, 'L3']")
+      .allNodeScan("n")
+      .build(readOnly = false)
+
+    // then
+    a[CypherTypeException] shouldBe thrownBy(consume(execute(logicalQuery, runtime)))
+  }
+
+  test("should combine multiple dynamic label expressions") {
+    // given a single node
+    givenGraph {
+      nodeGraph(1, "L1", "L2", "L3", "L4")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("l")
+      .projection("labels(n) AS l")
+      .removeDynamicLabels("n", "['L1', 'L2']", "'L3'", "['L4']")
+      .allNodeScan("n")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+    val labels = tx.getAllLabels.asScala.toSeq
+    val labelsInUse = tx.getAllLabelsInUse.asScala.toSeq
+
+    runtimeResult should beColumns("l").withSingleRow(util.Collections.emptyList()).withStatistics(labelsRemoved = 4)
+    labels.map(_.name()) shouldBe List("L1", "L2", "L3", "L4")
+    labelsInUse shouldBe empty
+  }
+
+  test("should combine multiple dynamic label expressions with static labels") {
+    // given a single node
+    givenGraph {
+      nodeGraph(1, "L1", "L2", "L3", "L4", "L5")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("l")
+      .projection("labels(n) AS l")
+      .removeLabels("n", Seq("L1", "L2"), Seq("['L3', 'L4']", "'L5'"))
+      .allNodeScan("n")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+    val labels = tx.getAllLabels.asScala.toSeq
+    val labelsInUse = tx.getAllLabelsInUse.asScala.toSeq
+
+    runtimeResult should beColumns("l").withSingleRow(util.Collections.emptyList()).withStatistics(labelsRemoved = 5)
+    labels.map(_.name()) shouldBe List("L1", "L2", "L3", "L4", "L5")
+    labelsInUse shouldBe empty
   }
 
   private def removeLabelsTest(removeLabels: Seq[String], expectedLabelsRemoved: Int): Unit = {

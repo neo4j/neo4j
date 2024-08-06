@@ -39,6 +39,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.text.Normalizer;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
@@ -1782,6 +1783,20 @@ public final class CypherFunctions {
 
     public static String asString(AnyValue value) {
         return asTextValue(value).stringValue();
+    }
+
+    public static List<String> asStringList(AnyValue value) {
+        if (value instanceof TextValue text) {
+            return Collections.singletonList(text.stringValue());
+        } else if (value instanceof SequenceValue sequenceValue) {
+            List<String> result = new ArrayList<>();
+            sequenceValue.forEach(t -> result.add(asTextValue(t).stringValue()));
+            return result;
+        } else {
+            throw new CypherTypeException(String.format(
+                    "Expected %s to be a %s or a %s, but it was a %s",
+                    value, TextValue.class.getName(), SequenceValue.class.getName(), value.getTypeName()));
+        }
     }
 
     private static String asString(AnyValue value, Supplier<String> contextForErrorMessage) {

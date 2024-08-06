@@ -43,6 +43,8 @@ import org.neo4j.kernel.api.StatementConstants
 import org.neo4j.values.virtual.VirtualNodeValue
 import org.neo4j.values.virtual.VirtualRelationshipValue
 
+import scala.jdk.CollectionConverters.CollectionHasAsScala
+
 case class SlottedSetLabelsOperation(nodeSlot: Slot, labels: Seq[LazyLabel], dynamicLabels: Seq[Expression])
     extends SetOperation {
   private val getFromNodeFunction = makeGetPrimitiveNodeFromSlotFunctionFor(nodeSlot)
@@ -50,8 +52,8 @@ case class SlottedSetLabelsOperation(nodeSlot: Slot, labels: Seq[LazyLabel], dyn
   override def set(executionContext: CypherRow, state: QueryState): Long = {
     val node = getFromNodeFunction.applyAsLong(executionContext)
     if (node != StatementConstants.NO_SUCH_NODE) {
-      val labelIds = labels.map(_.getOrCreateId(state.query)) ++ dynamicLabels.map(e => {
-        state.query.getOrCreateLabelId(CypherFunctions.asString(e(executionContext, state)))
+      val labelIds = labels.map(_.getOrCreateId(state.query)) ++ dynamicLabels.flatMap(e => {
+        CypherFunctions.asStringList(e(executionContext, state)).asScala.map(l => state.query.getOrCreateLabelId(l))
       })
       state.query.setLabelsOnNode(node, labelIds.iterator).toLong
     } else {

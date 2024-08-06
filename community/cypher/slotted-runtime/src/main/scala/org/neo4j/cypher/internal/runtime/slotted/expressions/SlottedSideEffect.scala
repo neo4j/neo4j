@@ -43,6 +43,8 @@ import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.FloatingPointValue
 import org.neo4j.values.storable.Values
 
+import scala.jdk.CollectionConverters.CollectionHasAsScala
+
 trait SlottedSideEffect extends SideEffect
 
 case class CreateSlottedNode(command: CreateNodeSlottedCommand, allowNullOrNaNProperty: Boolean)
@@ -125,8 +127,8 @@ case class SlottedRemoveLabelsOperation(nodeSlot: Slot, labels: Seq[LazyLabel], 
   override def execute(executionContext: CypherRow, state: QueryState): Unit = {
     val node = getFromNodeFunction.applyAsLong(executionContext)
     if (node != StatementConstants.NO_SUCH_NODE) {
-      val labelIds = labels.map(_.getOrCreateId(state.query)) ++ dynamicLabels.map(e => {
-        state.query.getOrCreateLabelId(CypherFunctions.asString(e(executionContext, state)))
+      val labelIds = labels.map(_.getOrCreateId(state.query)) ++ dynamicLabels.flatMap(e => {
+        CypherFunctions.asStringList(e(executionContext, state)).asScala.map(l => state.query.getOrCreateLabelId(l))
       })
       state.query.removeLabelsFromNode(node, labelIds.iterator)
     }
