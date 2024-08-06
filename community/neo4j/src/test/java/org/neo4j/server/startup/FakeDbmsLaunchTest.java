@@ -624,6 +624,7 @@ class FakeDbmsLaunchTest {
                     + jvmSetting + "=--add-opens=java.base/java.nio=ALL-UNNAMED" + lineSeparator()
                     + jvmSetting + "=--add-opens=java.base/java.io=ALL-UNNAMED" + lineSeparator()
                     + jvmSetting + "=--add-opens=java.base/sun.nio.ch=ALL-UNNAMED" + lineSeparator()
+                    + jvmSetting + "=--enable-native-access=ALL-UNNAMED" + lineSeparator()
                     + jvmSetting + "=-Dlog4j2.disable.jmx=true";
             assertThat(Files.readString(confFile)).isEqualToIgnoringNewLines(expected);
         }

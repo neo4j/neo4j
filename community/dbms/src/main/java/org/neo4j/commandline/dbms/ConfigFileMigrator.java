@@ -399,6 +399,7 @@ public class ConfigFileMigrator {
                 new JvmArg("--add-opens=java.base/java.nio=ALL-UNNAMED", true),
                 new JvmArg("--add-opens=java.base/java.io=ALL-UNNAMED", true),
                 new JvmArg("--add-opens=java.base/sun.nio.ch=ALL-UNNAMED", true),
+                new JvmArg("--enable-native-access=ALL-UNNAMED", true),
                 new JvmArg("-Dlog4j2.disable.jmx=true", false));
     }
 
