@@ -252,9 +252,6 @@ Feature: DynamicLabelsAcceptance
       | (:A:B)        | "A" AS a, "B" as b | n IS $(a), n IS $(b) | []     | 2                    |
       | (:A)          | "B" as b           | n:$(b)               | ['A']  | 0                    |
 
-  # The actual assertions according to the CIP-162 expect this query to work correctly.
-  # We cannot add this to the denylist since it is throwing an exception in the runtime phase.
-  # This assertion should be fixed as a part of https://trello.com/c/sdUu3jNi
   Scenario: Set a list of labels
     Given an empty graph
     And having executed:
@@ -268,7 +265,11 @@ Feature: DynamicLabelsAcceptance
       SET p:$(labels)
       RETURN p;
       """
-    Then a TypeError should be raised at runtime: *
+    Then the result should be, in any order:
+              | p                      |
+              | (:Person:READ_ONLY{name:'Dave'}) |
+            And the side effects should be:
+              | +labels | 2 |
 
   Scenario: Remove a list of labels
     Given an empty graph
@@ -284,7 +285,12 @@ Feature: DynamicLabelsAcceptance
       REMOVE p:$(labels)
       RETURN p;
       """
-    Then a TypeError should be raised at runtime: *
+    Then the result should be, in any order:
+          | p                      |
+          | (:Person{name:'Dave'}) |
+          | (:Person{name:'John'}) |
+        And the side effects should be:
+          | -labels | 3 |
 
   Scenario: Update labels
     Given an empty graph
