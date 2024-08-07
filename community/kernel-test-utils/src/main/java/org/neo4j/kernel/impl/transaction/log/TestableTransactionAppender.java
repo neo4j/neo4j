@@ -21,13 +21,13 @@ package org.neo4j.kernel.impl.transaction.log;
 
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-import org.neo4j.storageengine.api.CommandBatchToApply;
+import org.neo4j.storageengine.api.StorageEngineTransaction;
 import org.neo4j.storageengine.api.TransactionIdStore;
 
 public class TestableTransactionAppender extends LifecycleAdapter implements TransactionAppender {
 
     @Override
-    public long append(CommandBatchToApply batch, LogAppendEvent logAppendEvent) {
+    public long append(StorageEngineTransaction batch, LogAppendEvent logAppendEvent) {
         long txId = TransactionIdStore.BASE_TX_ID;
         while (batch != null) {
             txId = batch.transactionId();

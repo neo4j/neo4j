@@ -32,9 +32,9 @@ import org.neo4j.kernel.impl.api.txid.TransactionIdGenerator;
 import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.storageengine.api.CommandBatch;
-import org.neo4j.storageengine.api.CommandBatchToApply;
 import org.neo4j.storageengine.api.Commitment;
 import org.neo4j.storageengine.api.StorageCommand;
+import org.neo4j.storageengine.api.StorageEngineTransaction;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 /**
@@ -45,7 +45,7 @@ import org.neo4j.storageengine.api.cursor.StoreCursors;
  * This is an internal class so even if it mixes arguments with results it's easier to work with,
  * requires less code... and less objects.
  */
-public class TransactionToApply implements CommandBatchToApply {
+public class CompleteTransaction implements StorageEngineTransaction {
     public static final long TRANSACTION_ID_NOT_SPECIFIED = 0;
     public static final int NOT_SPECIFIED_CHUNK_ID = 0;
 
@@ -56,19 +56,19 @@ public class TransactionToApply implements CommandBatchToApply {
     private final CursorContext cursorContext;
     private final StoreCursors storeCursors;
     private final TransactionIdGenerator transactionIdGenerator;
-    private CommandBatchToApply next;
+    private StorageEngineTransaction next;
 
     // These fields are provided by commit process, storage engine, or recovery process
     private final Commitment commitment;
     private LongConsumer closedCallback;
     private long appendIndex;
 
-    public TransactionToApply(
+    public CompleteTransaction(
             CommittedCommandBatch committedCommandBatch, CursorContext cursorContext, StoreCursors storeCursors) {
         this(committedCommandBatch, cursorContext, storeCursors, Commitment.NO_COMMITMENT, EXTERNAL_ID);
     }
 
-    public TransactionToApply(
+    public CompleteTransaction(
             CommittedCommandBatch committedCommandBatch,
             CursorContext cursorContext,
             StoreCursors storeCursors,
@@ -78,7 +78,7 @@ public class TransactionToApply implements CommandBatchToApply {
         this.transactionId = committedCommandBatch.txId();
     }
 
-    public TransactionToApply(
+    public CompleteTransaction(
             CommandBatch commandBatch,
             CursorContext cursorContext,
             StoreCursors storeCursors,
@@ -93,7 +93,7 @@ public class TransactionToApply implements CommandBatchToApply {
 
     // These methods are called by the user when building a batch
     @Override
-    public void next(CommandBatchToApply next) {
+    public void next(StorageEngineTransaction next) {
         this.next = next;
     }
 
@@ -165,7 +165,7 @@ public class TransactionToApply implements CommandBatchToApply {
     }
 
     @Override
-    public CommandBatchToApply next() {
+    public StorageEngineTransaction next() {
         return next;
     }
 

@@ -96,10 +96,10 @@ import org.neo4j.memory.MemoryTracker;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.resources.CpuClock;
 import org.neo4j.storageengine.api.CommandBatch;
-import org.neo4j.storageengine.api.CommandBatchToApply;
 import org.neo4j.storageengine.api.CommandCreationContext;
 import org.neo4j.storageengine.api.MetadataProvider;
 import org.neo4j.storageengine.api.StorageEngine;
+import org.neo4j.storageengine.api.StorageEngineTransaction;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.storageengine.api.TransactionIdStore;
@@ -291,7 +291,7 @@ class KernelTransactionTestBase {
 
         @Override
         public long commit(
-                CommandBatchToApply batch,
+                StorageEngineTransaction batch,
                 TransactionWriteEvent transactionWriteEvent,
                 TransactionApplicationMode mode) {
             transactions.add(batch.commandBatch());

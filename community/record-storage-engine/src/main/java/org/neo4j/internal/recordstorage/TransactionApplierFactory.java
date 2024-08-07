@@ -20,7 +20,7 @@
 package org.neo4j.internal.recordstorage;
 
 import java.io.IOException;
-import org.neo4j.storageengine.api.CommandBatchToApply;
+import org.neo4j.storageengine.api.StorageEngineTransaction;
 
 /**
  * Responsible for dealing with batches of transactions. See also {@link TransactionApplier}
@@ -73,5 +73,5 @@ public interface TransactionApplierFactory {
      * @return a {@link TransactionApplier} which can apply this transaction and other commands to the store.
      * @throws IOException on error.
      */
-    TransactionApplier startTx(CommandBatchToApply transaction, BatchContext batchContext) throws IOException;
+    TransactionApplier startTx(StorageEngineTransaction transaction, BatchContext batchContext) throws IOException;
 }

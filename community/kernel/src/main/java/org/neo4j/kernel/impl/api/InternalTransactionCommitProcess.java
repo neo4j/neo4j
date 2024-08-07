@@ -29,8 +29,8 @@ import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.impl.transaction.tracing.StoreApplyEvent;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionWriteEvent;
-import org.neo4j.storageengine.api.CommandBatchToApply;
 import org.neo4j.storageengine.api.StorageEngine;
+import org.neo4j.storageengine.api.StorageEngineTransaction;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 
 public class InternalTransactionCommitProcess implements TransactionCommitProcess {
@@ -52,7 +52,9 @@ public class InternalTransactionCommitProcess implements TransactionCommitProces
 
     @Override
     public long commit(
-            CommandBatchToApply batch, TransactionWriteEvent transactionWriteEvent, TransactionApplicationMode mode)
+            StorageEngineTransaction batch,
+            TransactionWriteEvent transactionWriteEvent,
+            TransactionApplicationMode mode)
             throws TransactionFailureException {
         try {
             if (preAllocateSpaceInStores) {
@@ -74,7 +76,7 @@ public class InternalTransactionCommitProcess implements TransactionCommitProces
         }
     }
 
-    private long appendToLog(CommandBatchToApply batch, TransactionWriteEvent transactionWriteEvent)
+    private long appendToLog(StorageEngineTransaction batch, TransactionWriteEvent transactionWriteEvent)
             throws TransactionFailureException {
         try (LogAppendEvent logAppendEvent = transactionWriteEvent.beginLogAppend()) {
             return appender.append(batch, logAppendEvent);
@@ -85,7 +87,9 @@ public class InternalTransactionCommitProcess implements TransactionCommitProces
     }
 
     protected void applyToStore(
-            CommandBatchToApply batch, TransactionWriteEvent transactionWriteEvent, TransactionApplicationMode mode)
+            StorageEngineTransaction batch,
+            TransactionWriteEvent transactionWriteEvent,
+            TransactionApplicationMode mode)
             throws TransactionFailureException {
         try (StoreApplyEvent storeApplyEvent = transactionWriteEvent.beginStoreApply()) {
             storageEngine.apply(batch, mode);
@@ -98,7 +102,9 @@ public class InternalTransactionCommitProcess implements TransactionCommitProces
     }
 
     private void preAllocateSpaceInStores(
-            CommandBatchToApply batch, TransactionWriteEvent transactionWriteEvent, TransactionApplicationMode mode)
+            StorageEngineTransaction batch,
+            TransactionWriteEvent transactionWriteEvent,
+            TransactionApplicationMode mode)
             throws TransactionFailureException {
         // FIXME ODP - add function to commitEvent to be able to trace?
         try {
@@ -115,7 +121,7 @@ public class InternalTransactionCommitProcess implements TransactionCommitProces
         }
     }
 
-    private static void close(CommandBatchToApply batch) {
+    private static void close(StorageEngineTransaction batch) {
         while (batch != null) {
             batch.close();
             batch = batch.next();

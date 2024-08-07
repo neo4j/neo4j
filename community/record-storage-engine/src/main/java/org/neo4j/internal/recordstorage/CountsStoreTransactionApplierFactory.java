@@ -21,7 +21,7 @@ package org.neo4j.internal.recordstorage;
 
 import org.neo4j.counts.CountsStore;
 import org.neo4j.internal.counts.RelationshipGroupDegreesStore;
-import org.neo4j.storageengine.api.CommandBatchToApply;
+import org.neo4j.storageengine.api.StorageEngineTransaction;
 
 class CountsStoreTransactionApplierFactory implements TransactionApplierFactory {
     private final CountsStore countsStore;
@@ -33,7 +33,7 @@ class CountsStoreTransactionApplierFactory implements TransactionApplierFactory 
     }
 
     @Override
-    public TransactionApplier startTx(CommandBatchToApply transaction, BatchContext batchContext) {
+    public TransactionApplier startTx(StorageEngineTransaction transaction, BatchContext batchContext) {
         return new CountsStoreTransactionApplier(countsStore, groupDegreesStore, transaction);
     }
 }

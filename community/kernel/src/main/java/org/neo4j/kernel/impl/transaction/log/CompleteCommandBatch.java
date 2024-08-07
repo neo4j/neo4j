@@ -30,7 +30,7 @@ import org.neo4j.kernel.KernelVersion;
 import org.neo4j.storageengine.api.CommandBatch;
 import org.neo4j.storageengine.api.StorageCommand;
 
-public class CompleteTransaction implements CommandBatch {
+public class CompleteCommandBatch implements CommandBatch {
     private final List<StorageCommand> commands;
     private final long timeStarted;
     private final long latestCommittedTxWhenStarted;
@@ -45,7 +45,7 @@ public class CompleteTransaction implements CommandBatch {
 
     private long consensusIndex;
 
-    public CompleteTransaction(
+    public CompleteCommandBatch(
             List<StorageCommand> commands,
             long consensusIndex,
             long timeStarted,
@@ -123,7 +123,7 @@ public class CompleteTransaction implements CommandBatch {
             return false;
         }
 
-        CompleteTransaction that = (CompleteTransaction) o;
+        CompleteCommandBatch that = (CompleteCommandBatch) o;
         return latestCommittedTxWhenStarted == that.latestCommittedTxWhenStarted
                 && timeStarted == that.timeStarted
                 && consensusIndex == that.consensusIndex

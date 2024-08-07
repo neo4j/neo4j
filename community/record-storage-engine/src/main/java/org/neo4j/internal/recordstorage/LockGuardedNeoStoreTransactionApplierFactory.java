@@ -21,8 +21,8 @@ package org.neo4j.internal.recordstorage;
 
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.lock.LockService;
-import org.neo4j.storageengine.api.CommandBatchToApply;
 import org.neo4j.storageengine.api.CommandVersion;
+import org.neo4j.storageengine.api.StorageEngineTransaction;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 
 /**
@@ -52,7 +52,7 @@ public class LockGuardedNeoStoreTransactionApplierFactory implements Transaction
     }
 
     @Override
-    public TransactionApplier startTx(CommandBatchToApply transaction, BatchContext batchContext) {
+    public TransactionApplier startTx(StorageEngineTransaction transaction, BatchContext batchContext) {
         return new LockGuardedNeoStoreTransactionApplier(
                 mode,
                 version,

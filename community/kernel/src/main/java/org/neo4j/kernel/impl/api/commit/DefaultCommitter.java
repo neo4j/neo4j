@@ -26,12 +26,12 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.impl.api.CompleteTransaction;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.LeaseClient;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
-import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.txid.TransactionIdGenerator;
-import org.neo4j.kernel.impl.transaction.log.CompleteTransaction;
+import org.neo4j.kernel.impl.transaction.log.CompleteCommandBatch;
 import org.neo4j.kernel.impl.transaction.log.TransactionCommitmentFactory;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionRollbackEvent;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionWriteEvent;
@@ -93,7 +93,7 @@ public final class DefaultCommitter implements TransactionCommitter {
         if (!extractedCommands.isEmpty()) {
             // Finish up the whole transaction representation
 
-            CompleteTransaction transactionRepresentation = new CompleteTransaction(
+            CompleteCommandBatch transactionRepresentation = new CompleteCommandBatch(
                     extractedCommands,
                     UNKNOWN_CONSENSUS_INDEX,
                     startTimeMillis,
@@ -104,7 +104,7 @@ public final class DefaultCommitter implements TransactionCommitter {
                     ktx.securityContext().subject().userSubject());
 
             // Commit the transaction
-            TransactionToApply batch = new TransactionToApply(
+            CompleteTransaction batch = new CompleteTransaction(
                     transactionRepresentation,
                     cursorContext,
                     transactionalCursors,

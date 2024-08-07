@@ -83,13 +83,13 @@ import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.database.MetadataCache;
+import org.neo4j.kernel.impl.api.CompleteTransaction;
 import org.neo4j.kernel.impl.api.DatabaseSchemaState;
-import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.api.txid.IdStoreTransactionIdGenerator;
 import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
-import org.neo4j.kernel.impl.transaction.log.CompleteTransaction;
+import org.neo4j.kernel.impl.transaction.log.CompleteCommandBatch;
 import org.neo4j.kernel.impl.transaction.log.EmptyLogTailMetadata;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogTailLogVersionsMetadata;
@@ -576,7 +576,7 @@ class NeoStoresTest {
                     cursorContext,
                     storeCursors,
                     INSTANCE);
-            CompleteTransaction tx = new CompleteTransaction(
+            CompleteCommandBatch tx = new CompleteCommandBatch(
                     commands,
                     UNKNOWN_CONSENSUS_INDEX,
                     -1,
@@ -586,7 +586,7 @@ class NeoStoresTest {
                     LatestVersions.LATEST_KERNEL_VERSION,
                     AUTH_DISABLED);
             storageEngine.apply(
-                    new TransactionToApply(tx, cursorContext, storeCursors, NO_COMMITMENT, transactionIdGenerator),
+                    new CompleteTransaction(tx, cursorContext, storeCursors, NO_COMMITMENT, transactionIdGenerator),
                     INTERNAL);
         }
     }

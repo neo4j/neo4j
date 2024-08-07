@@ -53,8 +53,8 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.lock.LockTracer;
-import org.neo4j.storageengine.api.CommandBatchToApply;
 import org.neo4j.storageengine.api.StorageCommand;
+import org.neo4j.storageengine.api.StorageEngineTransaction;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.LatestVersions;
 
@@ -82,14 +82,14 @@ class WriteTransactionCommandOrderingTest {
         TransactionRecordState tx = injectAllPossibleCommands();
 
         // When
-        CommandBatchToApply commands = transactionRepresentationOf(tx);
+        StorageEngineTransaction commands = transactionRepresentationOf(tx);
 
         // Then
         final OrderVerifyingCommandHandler orderVerifyingCommandHandler = new OrderVerifyingCommandHandler();
         commands.accept(element -> ((Command) element).handle(orderVerifyingCommandHandler));
     }
 
-    private static CommandBatchToApply transactionRepresentationOf(TransactionRecordState tx)
+    private static StorageEngineTransaction transactionRepresentationOf(TransactionRecordState tx)
             throws TransactionFailureException {
         List<StorageCommand> commands = new ArrayList<>();
         tx.extractCommands(commands, INSTANCE);

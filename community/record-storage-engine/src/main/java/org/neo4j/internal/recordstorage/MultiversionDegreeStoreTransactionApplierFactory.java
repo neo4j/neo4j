@@ -20,7 +20,7 @@
 package org.neo4j.internal.recordstorage;
 
 import org.neo4j.internal.counts.RelationshipGroupDegreesStore;
-import org.neo4j.storageengine.api.CommandBatchToApply;
+import org.neo4j.storageengine.api.StorageEngineTransaction;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 
 class MultiversionDegreeStoreTransactionApplierFactory implements TransactionApplierFactory {
@@ -34,7 +34,7 @@ class MultiversionDegreeStoreTransactionApplierFactory implements TransactionApp
     }
 
     @Override
-    public TransactionApplier startTx(CommandBatchToApply transaction, BatchContext batchContext) {
+    public TransactionApplier startTx(StorageEngineTransaction transaction, BatchContext batchContext) {
         return switch (mode) {
             case REVERSE_RECOVERY -> new SimpleDegreeStoreTransactionApplier(() ->
                     groupDegreesStore.reverseRecoveryUpdater(transaction.transactionId(), transaction.cursorContext()));

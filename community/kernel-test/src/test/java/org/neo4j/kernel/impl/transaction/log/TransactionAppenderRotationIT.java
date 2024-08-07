@@ -38,9 +38,9 @@ import org.neo4j.configuration.Config;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.kernel.impl.api.CompleteTransaction;
 import org.neo4j.kernel.impl.api.TestCommand;
 import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
-import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.txid.IdStoreTransactionIdGenerator;
 import org.neo4j.kernel.impl.transaction.SimpleAppendIndexProvider;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
@@ -116,8 +116,8 @@ class TransactionAppenderRotationIT {
 
         LogAppendEvent logAppendEvent =
                 new RotationLogAppendEvent(logFiles.getLogFile().getLogRotation());
-        TransactionToApply transactionToApply = prepareTransaction();
-        transactionAppender.append(transactionToApply, logAppendEvent);
+        CompleteTransaction completeTransaction = prepareTransaction();
+        transactionAppender.append(completeTransaction, logAppendEvent);
 
         LogFile logFile = logFiles.getLogFile();
         assertEquals(1, logFile.getHighestLogVersion());
@@ -143,12 +143,12 @@ class TransactionAppenderRotationIT {
                 new TransactionMetadataCache());
     }
 
-    private TransactionToApply prepareTransaction() {
+    private CompleteTransaction prepareTransaction() {
         List<StorageCommand> commands = createCommands();
-        CompleteTransaction transactionRepresentation = new CompleteTransaction(
+        CompleteCommandBatch transactionRepresentation = new CompleteCommandBatch(
                 commands, UNKNOWN_CONSENSUS_INDEX, 0, 0, 0, 0, LatestVersions.LATEST_KERNEL_VERSION, ANONYMOUS);
         var transactionCommitment = new TransactionCommitment(transactionIdStore);
-        return new TransactionToApply(
+        return new CompleteTransaction(
                 transactionRepresentation,
                 NULL_CONTEXT,
                 StoreCursors.NULL,

@@ -61,9 +61,9 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.BinarySupportedKernelVersions;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.KernelVersionProvider;
+import org.neo4j.kernel.impl.api.CompleteTransaction;
 import org.neo4j.kernel.impl.api.TestCommand;
 import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
-import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.transaction.SimpleAppendIndexProvider;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
@@ -143,7 +143,7 @@ class TransactionLogAppendAndRotateIT {
                     try {
                         setup.appender()
                                 .append(
-                                        new TransactionToApply(
+                                        new CompleteTransaction(
                                                 sillyTransaction(1_000),
                                                 NULL_CONTEXT,
                                                 StoreCursors.NULL,
@@ -173,7 +173,7 @@ class TransactionLogAppendAndRotateIT {
         Setup setup = setupLogAppender(startVersionProvider, useQueueAppender);
 
         setup.appender.append(
-                new TransactionToApply(
+                new CompleteTransaction(
                         txWithVersion(V5_11), NULL_CONTEXT, StoreCursors.NULL, Commitment.NO_COMMITMENT, EMPTY),
                 LogAppendEvent.NULL);
 
@@ -181,7 +181,7 @@ class TransactionLogAppendAndRotateIT {
 
         for (int i = 0; i < 3; i++) {
             setup.appender.append(
-                    new TransactionToApply(
+                    new CompleteTransaction(
                             txWithVersion(V5_12), NULL_CONTEXT, StoreCursors.NULL, Commitment.NO_COMMITMENT, EMPTY),
                     LogAppendEvent.NULL);
         }
@@ -190,7 +190,7 @@ class TransactionLogAppendAndRotateIT {
 
         for (int i = 0; i < 3; i++) {
             setup.appender.append(
-                    new TransactionToApply(
+                    new CompleteTransaction(
                             txWithVersion(V5_13), NULL_CONTEXT, StoreCursors.NULL, Commitment.NO_COMMITMENT, EMPTY),
                     LogAppendEvent.NULL);
         }
@@ -214,7 +214,7 @@ class TransactionLogAppendAndRotateIT {
         Setup setup = setupLogAppender(startVersionProvider, useQueueAppender);
 
         setup.appender.append(
-                new TransactionToApply(
+                new CompleteTransaction(
                         txWithVersion(V5_12), NULL_CONTEXT, StoreCursors.NULL, Commitment.NO_COMMITMENT, EMPTY),
                 LogAppendEvent.NULL);
 
@@ -235,7 +235,7 @@ class TransactionLogAppendAndRotateIT {
         Setup setup = setupLogAppender(startVersionProvider, useQueueAppender);
 
         setup.appender.append(
-                new TransactionToApply(
+                new CompleteTransaction(
                         txWithVersion(V5_11), NULL_CONTEXT, StoreCursors.NULL, Commitment.NO_COMMITMENT, EMPTY),
                 LogAppendEvent.NULL);
 
@@ -247,7 +247,7 @@ class TransactionLogAppendAndRotateIT {
         assertEquals(LogFormat.BIGGEST_HEADER, noRotationStartPosition1.getByteOffset());
 
         setup.appender.append(
-                new TransactionToApply(
+                new CompleteTransaction(
                         txWithVersion(V5_11), NULL_CONTEXT, StoreCursors.NULL, Commitment.NO_COMMITMENT, EMPTY),
                 LogAppendEvent.NULL);
 
@@ -262,7 +262,7 @@ class TransactionLogAppendAndRotateIT {
         assertThat(setup.monitoring.numberOfRotations()).isEqualTo(0);
 
         setup.appender.append(
-                new TransactionToApply(
+                new CompleteTransaction(
                         txWithVersion(V5_12), NULL_CONTEXT, StoreCursors.NULL, Commitment.NO_COMMITMENT, EMPTY),
                 LogAppendEvent.NULL);
 
@@ -285,7 +285,7 @@ class TransactionLogAppendAndRotateIT {
         Setup setup = setupLogAppender(() -> V5_11, useQueueAppender);
 
         setup.appender.append(
-                new TransactionToApply(
+                new CompleteTransaction(
                         txWithVersion(GLORIOUS_FUTURE),
                         NULL_CONTEXT,
                         StoreCursors.NULL,
@@ -305,15 +305,15 @@ class TransactionLogAppendAndRotateIT {
     void rotationShouldHappenOnNewVersionEvenInBatch(boolean useQueueAppender) throws Throwable {
         Setup setup = setupLogAppender(() -> V5_11, useQueueAppender);
 
-        TransactionToApply batch = new TransactionToApply(
+        CompleteTransaction batch = new CompleteTransaction(
                 txWithVersion(V5_11), NULL_CONTEXT, StoreCursors.NULL, Commitment.NO_COMMITMENT, EMPTY);
-        TransactionToApply two = new TransactionToApply(
+        CompleteTransaction two = new CompleteTransaction(
                 txWithVersion(V5_11), NULL_CONTEXT, StoreCursors.NULL, Commitment.NO_COMMITMENT, EMPTY);
         batch.next(two);
-        TransactionToApply three = new TransactionToApply(
+        CompleteTransaction three = new CompleteTransaction(
                 txWithVersion(GLORIOUS_FUTURE), NULL_CONTEXT, StoreCursors.NULL, Commitment.NO_COMMITMENT, EMPTY);
         two.next(three);
-        three.next(new TransactionToApply(
+        three.next(new CompleteTransaction(
                 txWithVersion(GLORIOUS_FUTURE), NULL_CONTEXT, StoreCursors.NULL, Commitment.NO_COMMITMENT, EMPTY));
         setup.appender.append(batch, LogAppendEvent.NULL);
 
@@ -472,14 +472,14 @@ class TransactionLogAppendAndRotateIT {
             commands.add(new TestCommand(30));
             commands.add(new TestCommand(60));
         }
-        return new CompleteTransaction(
+        return new CompleteCommandBatch(
                 commands, UNKNOWN_CONSENSUS_INDEX, 0, 0, 0, 0, LatestVersions.LATEST_KERNEL_VERSION, ANONYMOUS);
     }
 
     private static CommandBatch txWithVersion(KernelVersion version) {
         List<StorageCommand> commands = new ArrayList<>(1);
         commands.add(new TestCommand(50, version));
-        return new CompleteTransaction(commands, UNKNOWN_CONSENSUS_INDEX, 0, 0, 0, 0, version, ANONYMOUS);
+        return new CompleteCommandBatch(commands, UNKNOWN_CONSENSUS_INDEX, 0, 0, 0, 0, version, ANONYMOUS);
     }
 
     private static class TestLogFileMonitor extends LogRotationMonitorAdapter {

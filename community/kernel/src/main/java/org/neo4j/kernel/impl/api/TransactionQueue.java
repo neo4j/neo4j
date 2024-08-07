@@ -20,20 +20,20 @@
 package org.neo4j.kernel.impl.api;
 
 /**
- * Serves as a reusable utility for building a chain of {@link TransactionToApply} instances,
+ * Serves as a reusable utility for building a chain of {@link CompleteTransaction} instances,
  * where the instances themselves form the linked list. This utility is just for easily being able
  * to append to the end and then at regular intervals batch through the whole queue.
  */
 public class TransactionQueue {
     @FunctionalInterface
     public interface Applier {
-        void apply(TransactionToApply tx) throws Exception;
+        void apply(CompleteTransaction tx) throws Exception;
     }
 
     private final int maxSize;
     private final Applier applier;
-    private TransactionToApply tail;
-    private TransactionToApply head;
+    private CompleteTransaction tail;
+    private CompleteTransaction head;
     private int size;
 
     public TransactionQueue(int maxSize, Applier applier) {
@@ -41,7 +41,7 @@ public class TransactionQueue {
         this.applier = applier;
     }
 
-    public void queue(TransactionToApply transaction) throws Exception {
+    public void queue(CompleteTransaction transaction) throws Exception {
         if (isNotEmpty()) {
             tail.next(transaction);
         } else {

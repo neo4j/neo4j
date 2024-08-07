@@ -23,7 +23,7 @@ import static org.neo4j.storageengine.api.CommandVersion.AFTER;
 import static org.neo4j.storageengine.api.CommandVersion.BEFORE;
 
 /**
- * Mode of {@link StorageEngine#apply(CommandBatchToApply, TransactionApplicationMode) applying transactions}.
+ * Mode of {@link StorageEngine#apply(StorageEngineTransaction, TransactionApplicationMode) applying transactions}.
  * Depending on how transaction state have been built, additional work may need to be performed during
  * application of it.
  */

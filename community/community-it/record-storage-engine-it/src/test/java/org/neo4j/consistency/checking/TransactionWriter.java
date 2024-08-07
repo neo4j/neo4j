@@ -44,7 +44,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.kernel.impl.store.record.TokenRecord;
-import org.neo4j.kernel.impl.transaction.log.CompleteTransaction;
+import org.neo4j.kernel.impl.transaction.log.CompleteCommandBatch;
 import org.neo4j.storageengine.api.CommandBatch;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.test.LatestVersions;
@@ -65,7 +65,7 @@ public class TransactionWriter {
 
     public CommandBatch representation(long consensusIndex, long startTime, long lastCommittedTx, long committedTime) {
         prepareForCommit();
-        return new CompleteTransaction(
+        return new CompleteCommandBatch(
                 allCommands(),
                 consensusIndex,
                 startTime,

@@ -83,9 +83,9 @@ import org.neo4j.kernel.BinarySupportedKernelVersions;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.impl.api.CommandCommitListeners;
+import org.neo4j.kernel.impl.api.CompleteTransaction;
 import org.neo4j.kernel.impl.api.InternalTransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TestCommand;
-import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.txid.IdStoreTransactionIdGenerator;
 import org.neo4j.kernel.impl.api.txid.TransactionIdGenerator;
 import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
@@ -169,13 +169,13 @@ class BatchingTransactionAppenderTest {
                             UNKNOWN_CONSENSUS_INDEX));
             TransactionAppender appender = life.add(createTransactionAppender());
             CommandBatch transaction =
-                    new CompleteTransaction(singleTestCommand(), 5, 12345, 7896, 123456, -1, null, ANONYMOUS);
+                    new CompleteCommandBatch(singleTestCommand(), 5, 12345, 7896, 123456, -1, null, ANONYMOUS);
 
             // Looked up to figure out previous version on creation of writer
             assertEquals(1, versionProvider.getVersionLookedUp());
 
             appender.append(
-                    new TransactionToApply(
+                    new CompleteTransaction(
                             transaction, NULL_CONTEXT, StoreCursors.NULL, NO_COMMITMENT, TransactionIdGenerator.EMPTY),
                     LogAppendEvent.NULL);
 
@@ -219,7 +219,7 @@ class BatchingTransactionAppenderTest {
             CommandBatch batch1 = transaction(singleTestCommand(), 0, 0, 1, 0, LATEST_KERNEL_VERSION);
             CommandBatch batch2 = transaction(singleTestCommand(), 0, 0, 1, 0, LATEST_KERNEL_VERSION);
             CommandBatch batch3 = transaction(singleTestCommand(), 0, 0, 1, 0, LATEST_KERNEL_VERSION);
-            TransactionToApply batch = batchOf(batch1, batch2, batch3);
+            CompleteTransaction batch = batchOf(batch1, batch2, batch3);
             appender.append(batch, LogAppendEvent.NULL);
 
             verify(logWriterSpy)
@@ -270,7 +270,7 @@ class BatchingTransactionAppenderTest {
                     logFiles, transactionIdStore, databasePanic, new SimpleAppendIndexProvider(), positionCache));
 
             appender.append(
-                    new TransactionToApply(
+                    new CompleteTransaction(
                             transaction,
                             NULL_CONTEXT,
                             StoreCursors.NULL,
@@ -325,7 +325,7 @@ class BatchingTransactionAppenderTest {
         var e = assertThrows(
                 Exception.class,
                 () -> appender.append(
-                        new TransactionToApply(
+                        new CompleteTransaction(
                                 transaction,
                                 NULL_CONTEXT,
                                 StoreCursors.NULL,
@@ -374,7 +374,7 @@ class BatchingTransactionAppenderTest {
         var e = assertThrows(
                 IOException.class,
                 () -> appender.append(
-                        new TransactionToApply(
+                        new CompleteTransaction(
                                 transaction,
                                 NULL_CONTEXT,
                                 StoreCursors.NULL,
@@ -440,7 +440,7 @@ class BatchingTransactionAppenderTest {
         var e = assertThrows(
                 IOException.class,
                 () -> appender.append(
-                        new TransactionToApply(
+                        new CompleteTransaction(
                                 commandBatch,
                                 NULL_CONTEXT,
                                 StoreCursors.NULL,
@@ -474,7 +474,7 @@ class BatchingTransactionAppenderTest {
                 newStartEntry(LATEST_KERNEL_VERSION, 1, 2, 3, 4, EMPTY_BYTE_ARRAY, LogPosition.UNSPECIFIED),
                 singleTestCommand(),
                 newCommitEntry(LATEST_KERNEL_VERSION, 11, 1L, BASE_TX_CHECKSUM));
-        TransactionToApply batch = new TransactionToApply(
+        CompleteTransaction batch = new CompleteTransaction(
                 transaction, NULL_CONTEXT, StoreCursors.NULL, transactionCommitment, transactionIdGenerator);
         assertThrows(
                 TransactionFailureException.class,
@@ -509,7 +509,7 @@ class BatchingTransactionAppenderTest {
             TransactionAppender appender = life.add(createTransactionAppender());
 
             appender.append(
-                    new TransactionToApply(
+                    new CompleteTransaction(
                             transaction, NULL_CONTEXT, StoreCursors.NULL, NO_COMMITMENT, TransactionIdGenerator.EMPTY),
                     logAppendEvent);
         }
@@ -549,7 +549,7 @@ class BatchingTransactionAppenderTest {
             long latestCommittedTxWhenStarted,
             long timeCommitted,
             KernelVersion kernelVersion) {
-        return new CompleteTransaction(
+        return new CompleteCommandBatch(
                 commands,
                 consensusIndex,
                 timeStarted,
@@ -568,12 +568,12 @@ class BatchingTransactionAppenderTest {
         return Collections.singletonList(new TestCommand(kernelVersion));
     }
 
-    private TransactionToApply batchOf(CommandBatch... transactions) {
-        TransactionToApply first = null;
-        TransactionToApply last = null;
+    private CompleteTransaction batchOf(CommandBatch... transactions) {
+        CompleteTransaction first = null;
+        CompleteTransaction last = null;
         var transactionCommitment = new TransactionCommitment(transactionIdStore);
         for (CommandBatch transaction : transactions) {
-            TransactionToApply tx = new TransactionToApply(
+            CompleteTransaction tx = new CompleteTransaction(
                     transaction, NULL_CONTEXT, StoreCursors.NULL, transactionCommitment, transactionIdGenerator);
             if (first == null) {
                 first = last = tx;

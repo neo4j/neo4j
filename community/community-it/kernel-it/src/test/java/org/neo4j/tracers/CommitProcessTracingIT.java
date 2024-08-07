@@ -44,12 +44,12 @@ import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.KernelVersionProvider;
+import org.neo4j.kernel.impl.api.CompleteTransaction;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
-import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.api.txid.TransactionIdGenerator;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
-import org.neo4j.kernel.impl.transaction.log.CompleteTransaction;
+import org.neo4j.kernel.impl.transaction.log.CompleteCommandBatch;
 import org.neo4j.kernel.impl.transaction.log.TransactionCommitmentFactory;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.lock.LockTracer;
@@ -129,7 +129,7 @@ public class CommitProcessTracingIT {
 
     @Test
     void tracePageCacheAccessOnTransactionApply() throws TransactionFailureException {
-        var transaction = new CompleteTransaction(
+        var transaction = new CompleteCommandBatch(
                 List.of(new Command.NodeCountsCommand(
                         RecordStorageCommandReaderFactory.INSTANCE.get(LatestVersions.LATEST_KERNEL_VERSION), 1, 2)),
                 UNKNOWN_CONSENSUS_INDEX,
@@ -145,7 +145,7 @@ public class CommitProcessTracingIT {
             assertZeroCursor(cursorContext);
 
             commitProcess.commit(
-                    new TransactionToApply(
+                    new CompleteTransaction(
                             transaction,
                             cursorContext,
                             StoreCursors.NULL,

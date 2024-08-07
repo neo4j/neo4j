@@ -40,8 +40,8 @@ import org.neo4j.kernel.impl.api.LeaseClient;
 import org.neo4j.kernel.impl.api.TransactionClockContext;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.chunk.ChunkMetadata;
+import org.neo4j.kernel.impl.api.chunk.ChunkedCommandBatch;
 import org.neo4j.kernel.impl.api.chunk.ChunkedTransaction;
-import org.neo4j.kernel.impl.api.chunk.CommandChunk;
 import org.neo4j.kernel.impl.api.transaction.serial.SerialExecutionGuard;
 import org.neo4j.kernel.impl.api.txid.TransactionIdGenerator;
 import org.neo4j.kernel.impl.locking.LockManager;
@@ -165,7 +165,7 @@ public final class ChunkCommitter implements TransactionCommitter {
                             ktx.securityContext().subject().userSubject());
                     var transaction = getTransaction(cursorContext);
 
-                    CommandChunk chunk = new CommandChunk(extractedCommands, chunkMetadata);
+                    ChunkedCommandBatch chunk = new ChunkedCommandBatch(extractedCommands, chunkMetadata);
                     transaction.init(chunk);
                     long transactionId = commitProcess.commit(transaction, transactionWriteEvent, mode);
 
@@ -233,7 +233,7 @@ public final class ChunkCommitter implements TransactionCommitter {
                 leaseClient.leaseId(),
                 kernelVersion,
                 ktx.securityContext().subject().userSubject());
-        CommandChunk chunk = new CommandChunk(emptyList(), chunkMetadata);
+        ChunkedCommandBatch chunk = new ChunkedCommandBatch(emptyList(), chunkMetadata);
         transactionPayload.init(chunk);
         try (var writeEvent = transactionRollbackEvent.beginRollbackWriteEvent()) {
             commitProcess.commit(transactionPayload, writeEvent, INTERNAL);
@@ -267,7 +267,7 @@ public final class ChunkCommitter implements TransactionCommitter {
                                 "Transaction rollback failed. Batch with transaction id %d encountered, while it was expected to belong to transaction id %d. Batch id: %s.",
                                 commandBatch.txId(), transactionIdToRollback, chunkId(commandBatch)));
                     }
-                    transactionPayload.init((CommandChunk) commandBatch.commandBatch());
+                    transactionPayload.init((ChunkedCommandBatch) commandBatch.commandBatch());
                     storageEngine.apply(transactionPayload, TransactionApplicationMode.MVCC_ROLLBACK);
                     rolledbackBatches++;
                     logPosition = commandBatch.previousBatchLogPosition();
@@ -283,7 +283,7 @@ public final class ChunkCommitter implements TransactionCommitter {
     }
 
     private String chunkId(CommittedCommandBatch commandBatch) {
-        return commandBatch.commandBatch() instanceof CommandChunk cc
+        return commandBatch.commandBatch() instanceof ChunkedCommandBatch cc
                 ? String.valueOf(cc.chunkMetadata().chunkId())
                 : "N/A";
     }

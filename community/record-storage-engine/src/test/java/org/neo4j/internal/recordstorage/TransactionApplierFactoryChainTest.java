@@ -28,7 +28,7 @@ import static org.mockito.Mockito.when;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
-import org.neo4j.storageengine.api.CommandBatchToApply;
+import org.neo4j.storageengine.api.StorageEngineTransaction;
 import org.neo4j.storageengine.util.IdGeneratorUpdatesWorkSync;
 
 class TransactionApplierFactoryChainTest {
@@ -44,17 +44,17 @@ class TransactionApplierFactoryChainTest {
     void setUp() throws Exception {
         txApplier1 = mock(TransactionApplier.class);
         applier1 = mock(TransactionApplierFactory.class);
-        when(applier1.startTx(any(CommandBatchToApply.class), any(BatchContext.class)))
+        when(applier1.startTx(any(StorageEngineTransaction.class), any(BatchContext.class)))
                 .thenReturn(txApplier1);
 
         txApplier2 = mock(TransactionApplier.class);
         applier2 = mock(TransactionApplierFactory.class);
-        when(applier2.startTx(any(CommandBatchToApply.class), any(BatchContext.class)))
+        when(applier2.startTx(any(StorageEngineTransaction.class), any(BatchContext.class)))
                 .thenReturn(txApplier2);
 
         txApplier3 = mock(TransactionApplier.class);
         applier3 = mock(TransactionApplierFactory.class);
-        when(applier3.startTx(any(CommandBatchToApply.class), any(BatchContext.class)))
+        when(applier3.startTx(any(StorageEngineTransaction.class), any(BatchContext.class)))
                 .thenReturn(txApplier3);
 
         facade = new TransactionApplierFactoryChain(IdGeneratorUpdatesWorkSync::newBatch, applier1, applier2, applier3);
@@ -63,7 +63,7 @@ class TransactionApplierFactoryChainTest {
     @Test
     void testStartTxCorrectOrder() throws Exception {
         // GIVEN
-        var tx = mock(CommandBatchToApply.class);
+        var tx = mock(StorageEngineTransaction.class);
         var batchContext = mock(BatchContext.class);
 
         // WHEN
@@ -85,7 +85,7 @@ class TransactionApplierFactoryChainTest {
     @Test
     void testStartTxCorrectOrderWithLockGroup() throws Exception {
         // GIVEN
-        CommandBatchToApply tx = mock(CommandBatchToApply.class);
+        StorageEngineTransaction tx = mock(StorageEngineTransaction.class);
         var batchContext = mock(BatchContext.class);
 
         // WHEN

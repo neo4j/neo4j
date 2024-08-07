@@ -26,7 +26,7 @@ import java.io.IOException;
 import java.util.List;
 import org.neo4j.io.fs.WritableChannel;
 import org.neo4j.kernel.KernelVersion;
-import org.neo4j.kernel.impl.transaction.log.CompleteTransaction;
+import org.neo4j.kernel.impl.transaction.log.CompleteCommandBatch;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
@@ -49,7 +49,7 @@ public record CommittedTransactionRepresentation(
             LogEntryStart startEntry, List<StorageCommand> commands, LogEntryCommit commitEntry) {
         this(
                 startEntry,
-                new CompleteTransaction(
+                new CompleteCommandBatch(
                         commands,
                         decodeLogIndex(startEntry.getAdditionalHeader()),
                         startEntry.getTimeWritten(),

@@ -31,7 +31,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
-import org.neo4j.kernel.impl.api.TransactionToApply;
+import org.neo4j.kernel.impl.api.CompleteTransaction;
 import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
 import org.neo4j.lock.LockGroup;
 import org.neo4j.lock.LockService;
@@ -126,7 +126,7 @@ final class ParallelRecoveryVisitor implements RecoveryApplier {
     private void apply(CommittedCommandBatch transaction) throws Exception {
         try (CursorContext cursorContext = contextFactory.create(tracerTag);
                 var storeCursors = storageEngine.createStorageCursors(cursorContext)) {
-            var tx = new TransactionToApply(transaction, cursorContext, storeCursors);
+            var tx = new CompleteTransaction(transaction, cursorContext, storeCursors);
             storageEngine.apply(tx, mode);
         }
     }

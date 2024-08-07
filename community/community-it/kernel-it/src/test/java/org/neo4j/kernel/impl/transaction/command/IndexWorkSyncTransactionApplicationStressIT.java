@@ -54,24 +54,24 @@ import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.txstate.TransactionState;
+import org.neo4j.kernel.impl.api.CompleteTransaction;
 import org.neo4j.kernel.impl.api.TransactionQueue;
-import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.api.txid.IdStoreTransactionIdGenerator;
 import org.neo4j.kernel.impl.api.txid.TransactionIdGenerator;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
-import org.neo4j.kernel.impl.transaction.log.CompleteTransaction;
+import org.neo4j.kernel.impl.transaction.log.CompleteCommandBatch;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.TransactionCommitmentFactory;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceLocker;
-import org.neo4j.storageengine.api.CommandBatchToApply;
 import org.neo4j.storageengine.api.CommandCreationContext;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.IndexUpdateListener;
 import org.neo4j.storageengine.api.StorageCommand;
+import org.neo4j.storageengine.api.StorageEngineTransaction;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.UpdateMode;
 import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
@@ -154,14 +154,14 @@ class IndexWorkSyncTransactionApplicationStressIT {
         return Values.of(id + "_" + progress);
     }
 
-    private static TransactionToApply tx(
+    private static CompleteTransaction tx(
             List<StorageCommand> commands,
             StoreCursors storeCursors,
             TransactionCommitmentFactory commitmentFactory,
             TransactionIdGenerator transactionIdGenerator) {
-        CompleteTransaction txRepresentation = new CompleteTransaction(
+        CompleteCommandBatch txRepresentation = new CompleteCommandBatch(
                 commands, UNKNOWN_CONSENSUS_INDEX, -1, -1, -1, -1, LatestVersions.LATEST_KERNEL_VERSION, ANONYMOUS);
-        TransactionToApply tx = new TransactionToApply(
+        CompleteTransaction tx = new CompleteTransaction(
                 txRepresentation,
                 NULL_CONTEXT,
                 storeCursors,
@@ -232,7 +232,7 @@ class IndexWorkSyncTransactionApplicationStressIT {
             }
         }
 
-        private TransactionToApply createNodeAndProperty(
+        private CompleteTransaction createNodeAndProperty(
                 int progress,
                 StorageReader reader,
                 CommandCreationContext creationContext,
@@ -257,7 +257,7 @@ class IndexWorkSyncTransactionApplicationStressIT {
             return tx(commands, storeCursors, commitmentFactory, transactionIdGenerator);
         }
 
-        private void verifyIndex(CommandBatchToApply tx) throws Exception {
+        private void verifyIndex(StorageEngineTransaction tx) throws Exception {
             NodeVisitor visitor = new NodeVisitor();
             for (int i = 0; tx != null; i++) {
                 tx.commandBatch().accept(visitor.clear());

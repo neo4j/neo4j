@@ -76,7 +76,7 @@ public interface StorageEngine extends ReadableStorageEngine, Lifecycle {
 
     /**
      * Adds an {@link IndexUpdateListener} which will receive streams of index updates from changes that gets
-     * {@link #apply(CommandBatchToApply, TransactionApplicationMode) applied} to this storage engine.
+     * {@link #apply(StorageEngineTransaction, TransactionApplicationMode) applied} to this storage engine.
      * @param indexUpdateListener {@link IndexUpdateListener} to add.
      */
     void addIndexUpdateListener(IndexUpdateListener indexUpdateListener);
@@ -84,8 +84,8 @@ public interface StorageEngine extends ReadableStorageEngine, Lifecycle {
     /**
      * Generates a list of {@link StorageCommand commands} representing the changes in the given transaction state
      * ({@code state}.
-     * The returned commands can be used to form {@link CommandBatchToApply} batches, which can be applied to this
-     * storage using {@link #apply(CommandBatchToApply, TransactionApplicationMode)}.
+     * The returned commands can be used to form {@link StorageEngineTransaction} batches, which can be applied to this
+     * storage using {@link #apply(StorageEngineTransaction, TransactionApplicationMode)}.
      * The reason this is separated like this is that the generated commands can be used for other things
      * than applying to storage, f.ex replicating to another storage engine.
      * @param state {@link ReadableTransactionState} representing logical store changes to generate commands for.
@@ -137,7 +137,7 @@ public interface StorageEngine extends ReadableStorageEngine, Lifecycle {
      * @param mode {@link TransactionApplicationMode} when applying.
      * @throws Exception if an error occurs during application.
      */
-    void apply(CommandBatchToApply batch, TransactionApplicationMode mode) throws Exception;
+    void apply(StorageEngineTransaction batch, TransactionApplicationMode mode) throws Exception;
 
     /**
      * Called for a transaction to release any storage engine resources on close
@@ -225,7 +225,7 @@ public interface StorageEngine extends ReadableStorageEngine, Lifecycle {
      * @throws OutOfDiskSpaceException if preallocation failed due to lack of disk space.
      * @throws IOException if preallocation failed for a different reason.
      */
-    void preAllocateStoreFilesForCommands(CommandBatchToApply batch, TransactionApplicationMode mode)
+    void preAllocateStoreFilesForCommands(StorageEngineTransaction batch, TransactionApplicationMode mode)
             throws OutOfDiskSpaceException, IOException;
 
     /**

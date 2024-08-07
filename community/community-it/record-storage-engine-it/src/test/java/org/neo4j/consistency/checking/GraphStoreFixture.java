@@ -59,8 +59,8 @@ import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.kernel.impl.api.CommandCommitListeners;
+import org.neo4j.kernel.impl.api.CompleteTransaction;
 import org.neo4j.kernel.impl.api.InternalTransactionCommitProcess;
-import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -190,7 +190,7 @@ public abstract class GraphStoreFixture implements AutoCloseable {
         var transactionIdGenerator = new IdStoreTransactionIdGenerator(transactionIdStore);
         try (var storeCursors = storageEngine.createStorageCursors(NULL_CONTEXT)) {
             commitProcess.commit(
-                    new TransactionToApply(
+                    new CompleteTransaction(
                             representation,
                             NULL_CONTEXT,
                             storeCursors,

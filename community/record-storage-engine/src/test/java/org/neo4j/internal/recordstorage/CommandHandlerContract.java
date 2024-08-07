@@ -24,14 +24,14 @@ import static org.mockito.Mockito.when;
 
 import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.lock.LockGroup;
-import org.neo4j.storageengine.api.CommandBatchToApply;
 import org.neo4j.storageengine.api.CommandStream;
 import org.neo4j.storageengine.api.IndexUpdateListener;
+import org.neo4j.storageengine.api.StorageEngineTransaction;
 import org.neo4j.storageengine.util.IdUpdateListener;
 
 /**
  * Serves as executor of transactions, i.e. the visit... methods and will invoke the other lifecycle methods like {@link
- * TransactionApplierFactory#startTx(CommandBatchToApply, BatchContext)}, {@link TransactionApplier#close()} ()} a.s.o
+ * TransactionApplierFactory#startTx(StorageEngineTransaction, BatchContext)}, {@link TransactionApplier#close()} ()} a.s.o
  * correctly.
  */
 public class CommandHandlerContract {
@@ -44,18 +44,19 @@ public class CommandHandlerContract {
 
     /**
      * Simply calls through to the {@link CommandStream#accept(Visitor)} method for each {@link
-     * CommandBatchToApply} given. This assumes that the {@link TransactionApplierFactory} will return {@link
+     * StorageEngineTransaction} given. This assumes that the {@link TransactionApplierFactory} will return {@link
      * TransactionApplier}s which actually do the work and that the transaction has all the relevant data.
      *
      * @param applier to use
      * @param transactions to apply
      */
-    public static void apply(TransactionApplierFactory applier, CommandBatchToApply... transactions) throws Exception {
+    public static void apply(TransactionApplierFactory applier, StorageEngineTransaction... transactions)
+            throws Exception {
         var batchContext = mock(BatchContext.class);
         when(batchContext.getLockGroup()).thenReturn(new LockGroup());
         when(batchContext.getIdUpdateListener()).thenReturn(IdUpdateListener.IGNORE);
         when(batchContext.getIndexActivator()).thenReturn(mock(IndexActivator.class));
-        for (CommandBatchToApply tx : transactions) {
+        for (StorageEngineTransaction tx : transactions) {
             try (TransactionApplier txApplier = applier.startTx(tx, batchContext)) {
                 tx.accept(txApplier);
             }
@@ -73,7 +74,7 @@ public class CommandHandlerContract {
      * @return the boolean-and result of all function operations.
      */
     public static boolean apply(
-            TransactionApplierFactory applier, ApplyFunction function, CommandBatchToApply... transactions)
+            TransactionApplierFactory applier, ApplyFunction function, StorageEngineTransaction... transactions)
             throws Exception {
         BatchContext batchContext = mock(BatchContext.class);
         when(batchContext.getLockGroup()).thenReturn(new LockGroup());
@@ -97,10 +98,10 @@ public class CommandHandlerContract {
             TransactionApplierFactory applier,
             ApplyFunction function,
             BatchContext batchContext,
-            CommandBatchToApply... transactions)
+            StorageEngineTransaction... transactions)
             throws Exception {
         boolean result = true;
-        for (CommandBatchToApply tx : transactions) {
+        for (StorageEngineTransaction tx : transactions) {
             try (TransactionApplier txApplier = applier.startTx(tx, batchContext)) {
                 result &= function.apply(txApplier);
             }

@@ -52,11 +52,11 @@ import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.impl.muninn.VersionStorage;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.KernelVersionRepository;
-import org.neo4j.kernel.impl.api.TransactionToApply;
+import org.neo4j.kernel.impl.api.CompleteTransaction;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.log.CompleteTransaction;
+import org.neo4j.kernel.impl.transaction.log.CompleteCommandBatch;
 import org.neo4j.kernel.impl.transaction.log.EmptyLogTailMetadata;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
@@ -134,7 +134,7 @@ class PreAllocationOfStoreFilesTest {
 
     @Test
     void shouldReserveSpaceOnPreallocation() throws IOException {
-        CompleteTransaction storageCommands = new CompleteTransaction(
+        CompleteCommandBatch storageCommands = new CompleteCommandBatch(
                 List.of(
                         new NodeCommand(
                                 LATEST_LOG_SERIALIZATION,
@@ -162,9 +162,9 @@ class PreAllocationOfStoreFilesTest {
                 ANONYMOUS);
         CommittedTransactionRepresentation transaction = new CommittedTransactionRepresentation(
                 mock(LogEntryStart.class), storageCommands, mock(LogEntryCommit.class));
-        TransactionToApply transactionToApply = new TransactionToApply(transaction, NULL_CONTEXT, StoreCursors.NULL);
+        CompleteTransaction completeTransaction = new CompleteTransaction(transaction, NULL_CONTEXT, StoreCursors.NULL);
 
-        recordStorageEngine.preAllocateStoreFilesForCommands(transactionToApply, TransactionApplicationMode.INTERNAL);
+        recordStorageEngine.preAllocateStoreFilesForCommands(completeTransaction, TransactionApplicationMode.INTERNAL);
 
         // The stores should have been preallocated once for each affected store with the highest pageId needed
         Mockito.verify(fakeNodeStore).pageReservedBytes();

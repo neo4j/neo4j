@@ -26,8 +26,8 @@ import org.neo4j.common.Subject;
 import org.neo4j.internal.recordstorage.Command.PropertyCommand;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaRule;
-import org.neo4j.storageengine.api.CommandBatchToApply;
 import org.neo4j.storageengine.api.IndexUpdateListener;
+import org.neo4j.storageengine.api.StorageEngineTransaction;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 
 /**
@@ -44,7 +44,7 @@ public class IndexTransactionApplierFactory implements TransactionApplierFactory
     }
 
     @Override
-    public TransactionApplier startTx(CommandBatchToApply commands, BatchContext batchContext) {
+    public TransactionApplier startTx(StorageEngineTransaction commands, BatchContext batchContext) {
         return new SingleTransactionApplier(
                 commands, batchContext, mode.isReverseStep() ? CommandSelector.REVERSE : CommandSelector.NORMAL);
     }
@@ -63,7 +63,7 @@ public class IndexTransactionApplierFactory implements TransactionApplierFactory
         private final CommandSelector commandSelector;
 
         SingleTransactionApplier(
-                CommandBatchToApply commands, BatchContext batchContext, CommandSelector commandSelector) {
+                StorageEngineTransaction commands, BatchContext batchContext, CommandSelector commandSelector) {
             this.subject = commands.subject();
             this.indexActivator = batchContext.getIndexActivator();
             this.batchContext = batchContext;

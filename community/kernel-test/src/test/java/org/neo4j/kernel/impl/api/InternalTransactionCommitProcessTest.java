@@ -46,7 +46,7 @@ import org.neo4j.io.pagecache.OutOfDiskSpaceException;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.api.txid.IdStoreTransactionIdGenerator;
-import org.neo4j.kernel.impl.transaction.log.CompleteTransaction;
+import org.neo4j.kernel.impl.transaction.log.CompleteCommandBatch;
 import org.neo4j.kernel.impl.transaction.log.FakeCommitment;
 import org.neo4j.kernel.impl.transaction.log.TestableTransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
@@ -70,7 +70,7 @@ class InternalTransactionCommitProcessTest {
         IOException rootCause = new IOException("Mock exception");
         doThrow(new IOException(rootCause))
                 .when(appender)
-                .append(any(TransactionToApply.class), any(LogAppendEvent.class));
+                .append(any(CompleteTransaction.class), any(LogAppendEvent.class));
         StorageEngine storageEngine = mock(StorageEngine.class);
         var commandCommitListeners = mock(CommandCommitListeners.class);
         TransactionCommitProcess commitProcess =
@@ -98,11 +98,11 @@ class InternalTransactionCommitProcessTest {
         StorageEngine storageEngine = mock(StorageEngine.class);
         doThrow(new IOException(rootCause))
                 .when(storageEngine)
-                .apply(any(TransactionToApply.class), any(TransactionApplicationMode.class));
+                .apply(any(CompleteTransaction.class), any(TransactionApplicationMode.class));
         var commandCommitListeners = mock(CommandCommitListeners.class);
         TransactionCommitProcess commitProcess =
                 new InternalTransactionCommitProcess(appender, storageEngine, false, commandCommitListeners);
-        TransactionToApply transaction = mockedTransaction(transactionIdStore);
+        CompleteTransaction transaction = mockedTransaction(transactionIdStore);
 
         // WHEN
         TransactionFailureException exception = assertThrows(
@@ -142,7 +142,7 @@ class InternalTransactionCommitProcessTest {
         var commandCommitListeners = mock(CommandCommitListeners.class);
         TransactionCommitProcess commitProcess =
                 new InternalTransactionCommitProcess(appender, storageEngine, false, commandCommitListeners);
-        CompleteTransaction noCommandTx = new CompleteTransaction(
+        CompleteCommandBatch noCommandTx = new CompleteCommandBatch(
                 Collections.emptyList(),
                 UNKNOWN_CONSENSUS_INDEX,
                 -1,
@@ -154,7 +154,7 @@ class InternalTransactionCommitProcessTest {
 
         // WHEN
 
-        var transactionToApply = new TransactionToApply(
+        var transactionToApply = new CompleteTransaction(
                 noCommandTx,
                 NULL_CONTEXT,
                 StoreCursors.NULL,
@@ -229,13 +229,13 @@ class InternalTransactionCommitProcessTest {
         verify(storageEngine, never()).preAllocateStoreFilesForCommands(any(), any());
     }
 
-    private TransactionToApply mockedTransaction(TransactionIdStore transactionIdStore) {
+    private CompleteTransaction mockedTransaction(TransactionIdStore transactionIdStore) {
         CommandBatch batch = mock(CommandBatch.class);
         when(batch.consensusIndex()).thenReturn(UNKNOWN_CONSENSUS_INDEX);
         when(batch.kernelVersion()).thenReturn(LatestVersions.LATEST_KERNEL_VERSION);
         var commitmentFactory = new TransactionCommitmentFactory(transactionIdStore);
         var transactionCommitment = commitmentFactory.newCommitment();
-        return new TransactionToApply(
+        return new CompleteTransaction(
                 batch,
                 NULL_CONTEXT,
                 StoreCursors.NULL,

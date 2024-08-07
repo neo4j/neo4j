@@ -60,9 +60,9 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemLifecycleAdapter;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.kernel.impl.api.CompleteTransaction;
 import org.neo4j.kernel.impl.api.TestCommand;
 import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
-import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.transaction.SimpleAppendIndexProvider;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
@@ -272,8 +272,8 @@ public class TransactionAppenderConcurrencyTest {
         }
     }
 
-    protected static TransactionToApply tx() {
-        CompleteTransaction tx = new CompleteTransaction(
+    protected static CompleteTransaction tx() {
+        CompleteCommandBatch tx = new CompleteCommandBatch(
                 singletonList(new TestCommand()),
                 UNKNOWN_CONSENSUS_INDEX,
                 0,
@@ -282,7 +282,7 @@ public class TransactionAppenderConcurrencyTest {
                 0,
                 LatestVersions.LATEST_KERNEL_VERSION,
                 ANONYMOUS);
-        return new TransactionToApply(tx, NULL_CONTEXT, StoreCursors.NULL, NO_COMMITMENT, EMPTY);
+        return new CompleteTransaction(tx, NULL_CONTEXT, StoreCursors.NULL, NO_COMMITMENT, EMPTY);
     }
 
     private static Predicate<StackFrame> failMethod(final Class<?> klass, final String methodName) {

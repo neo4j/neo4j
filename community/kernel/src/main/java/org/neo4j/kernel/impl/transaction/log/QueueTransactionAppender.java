@@ -23,7 +23,7 @@ import java.io.IOException;
 import java.util.concurrent.ExecutionException;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-import org.neo4j.storageengine.api.CommandBatchToApply;
+import org.neo4j.storageengine.api.StorageEngineTransaction;
 
 class QueueTransactionAppender extends LifecycleAdapter implements TransactionAppender {
     private final TransactionLogQueue transactionLogQueue;
@@ -43,14 +43,14 @@ class QueueTransactionAppender extends LifecycleAdapter implements TransactionAp
     }
 
     @Override
-    public long append(CommandBatchToApply batch, LogAppendEvent logAppendEvent)
+    public long append(StorageEngineTransaction batch, LogAppendEvent logAppendEvent)
             throws IOException, ExecutionException, InterruptedException {
         long committedTxId = transactionLogQueue.submit(batch, logAppendEvent).getCommittedTxId();
         publishAsCommitted(batch);
         return committedTxId;
     }
 
-    private static void publishAsCommitted(CommandBatchToApply batch) {
+    private static void publishAsCommitted(StorageEngineTransaction batch) {
         while (batch != null) {
             batch.commit();
             batch = batch.next();

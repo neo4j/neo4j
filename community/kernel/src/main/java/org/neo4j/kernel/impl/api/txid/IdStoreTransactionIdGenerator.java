@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.api.txid;
 
 import static java.util.Objects.requireNonNull;
-import static org.neo4j.kernel.impl.api.TransactionToApply.TRANSACTION_ID_NOT_SPECIFIED;
+import static org.neo4j.kernel.impl.api.CompleteTransaction.TRANSACTION_ID_NOT_SPECIFIED;
 
 import org.neo4j.storageengine.api.TransactionIdStore;
 

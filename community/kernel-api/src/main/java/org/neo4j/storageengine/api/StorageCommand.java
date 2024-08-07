@@ -34,7 +34,7 @@ import org.neo4j.string.Mask;
  * A command representing one unit of change to a {@link StorageEngine}. Commands are created by
  * {@link StorageEngine#createCommands(ReadableTransactionState, StorageReader, CommandCreationContext, LockTracer, TxStateVisitor.Decorator, CursorContext, StoreCursors, MemoryTracker)}
  * and once created can be serialized onto a {@link WritableChannel} and/or passed back to
- * {@link StorageEngine#apply(CommandBatchToApply, TransactionApplicationMode)} for application where the
+ * {@link StorageEngine#apply(StorageEngineTransaction, TransactionApplicationMode)} for application where the
  * changes represented by the command are actually applied onto storage.
  */
 public interface StorageCommand extends KernelVersionProvider, Mask.Maskable {

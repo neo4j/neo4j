@@ -30,7 +30,7 @@ import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.kernel.impl.store.record.Record;
-import org.neo4j.storageengine.api.CommandBatchToApply;
+import org.neo4j.storageengine.api.StorageEngineTransaction;
 
 /**
  * Performs record-local consistency checking when applying commands. For simplicity the checking is done after records have been applied,
@@ -46,7 +46,7 @@ class ConsistencyCheckingApplierFactory implements TransactionApplierFactory {
     }
 
     @Override
-    public TransactionApplier startTx(CommandBatchToApply transaction, BatchContext batchContext) {
+    public TransactionApplier startTx(StorageEngineTransaction transaction, BatchContext batchContext) {
         return new ConsistencyCheckingApplier(neoStores, transaction.cursorContext());
     }
 

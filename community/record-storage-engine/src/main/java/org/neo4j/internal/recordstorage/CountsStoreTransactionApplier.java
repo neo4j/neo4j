@@ -24,12 +24,12 @@ import org.neo4j.counts.CountsUpdater;
 import org.neo4j.internal.counts.DegreeUpdater;
 import org.neo4j.internal.counts.RelationshipGroupDegreesStore;
 import org.neo4j.internal.recordstorage.Command.SchemaRuleCommand;
-import org.neo4j.storageengine.api.CommandBatchToApply;
+import org.neo4j.storageengine.api.StorageEngineTransaction;
 
 class CountsStoreTransactionApplier extends TransactionApplier.Adapter {
     private final CountsStore countsStore;
     private final RelationshipGroupDegreesStore groupDegreesStore;
-    private final CommandBatchToApply commandsBatch;
+    private final StorageEngineTransaction commandsBatch;
     private CountsUpdater countsUpdater;
     private DegreeUpdater degreesUpdater;
     private boolean haveUpdates;
@@ -39,7 +39,7 @@ class CountsStoreTransactionApplier extends TransactionApplier.Adapter {
     CountsStoreTransactionApplier(
             CountsStore countsStore,
             RelationshipGroupDegreesStore groupDegreesStore,
-            CommandBatchToApply commandsBatch) {
+            StorageEngineTransaction commandsBatch) {
         this.countsStore = countsStore;
         this.groupDegreesStore = groupDegreesStore;
         this.commandsBatch = commandsBatch;

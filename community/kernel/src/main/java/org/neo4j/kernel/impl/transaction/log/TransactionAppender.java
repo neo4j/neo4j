@@ -24,7 +24,7 @@ import java.util.concurrent.ExecutionException;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.monitoring.DatabaseHealth;
-import org.neo4j.storageengine.api.CommandBatchToApply;
+import org.neo4j.storageengine.api.StorageEngineTransaction;
 import org.neo4j.storageengine.api.TransactionIdStore;
 
 /**
@@ -47,6 +47,6 @@ public interface TransactionAppender extends Lifecycle {
      * @throws IOException if there was a problem appending the transaction. See method javadoc body for
      * how to handle exceptions in general thrown from this method.
      */
-    long append(CommandBatchToApply batch, LogAppendEvent logAppendEvent)
+    long append(StorageEngineTransaction batch, LogAppendEvent logAppendEvent)
             throws IOException, ExecutionException, InterruptedException;
 }

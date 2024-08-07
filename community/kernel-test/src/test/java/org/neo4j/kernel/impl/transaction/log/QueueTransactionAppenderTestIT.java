@@ -41,9 +41,9 @@ import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.kernel.impl.api.CompleteTransaction;
 import org.neo4j.kernel.impl.api.TestCommand;
 import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
-import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.txid.IdStoreTransactionIdGenerator;
 import org.neo4j.kernel.impl.transaction.SimpleAppendIndexProvider;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
@@ -116,8 +116,8 @@ class QueueTransactionAppenderTestIT {
 
         long txId = transactionIdStore.getLastCommittedTransactionId();
         for (int i = 0; i < 10; i++) {
-            TransactionToApply transactionToApply = createTransaction();
-            assertEquals(++txId, transactionAppender.append(transactionToApply, LogAppendEvent.NULL));
+            CompleteTransaction completeTransaction = createTransaction();
+            assertEquals(++txId, transactionAppender.append(completeTransaction, LogAppendEvent.NULL));
         }
     }
 
@@ -129,12 +129,12 @@ class QueueTransactionAppenderTestIT {
         QueueTransactionAppender transactionAppender = createAppender(logFiles);
         life.add(transactionAppender);
 
-        TransactionToApply transactionToApply = createTransaction();
-        assertDoesNotThrow(() -> transactionAppender.append(transactionToApply, LogAppendEvent.NULL));
+        CompleteTransaction completeTransaction = createTransaction();
+        assertDoesNotThrow(() -> transactionAppender.append(completeTransaction, LogAppendEvent.NULL));
 
         life.shutdown();
 
-        assertThatThrownBy(() -> transactionAppender.append(transactionToApply, LogAppendEvent.NULL))
+        assertThatThrownBy(() -> transactionAppender.append(completeTransaction, LogAppendEvent.NULL))
                 .isInstanceOf(DatabaseShutdownException.class);
     }
 
@@ -145,8 +145,8 @@ class QueueTransactionAppenderTestIT {
 
         QueueTransactionAppender transactionAppender = createAppender(logFiles);
 
-        TransactionToApply transactionToApply = createTransaction();
-        assertThatThrownBy(() -> transactionAppender.append(transactionToApply, LogAppendEvent.NULL))
+        CompleteTransaction completeTransaction = createTransaction();
+        assertThatThrownBy(() -> transactionAppender.append(completeTransaction, LogAppendEvent.NULL))
                 .isInstanceOf(DatabaseShutdownException.class);
     }
 
@@ -162,8 +162,8 @@ class QueueTransactionAppenderTestIT {
         long initialLastClosedTxId = transactionIdStore.getLastClosedTransactionId();
         int numberOfTransactions = 10;
         for (int i = 0; i < numberOfTransactions; i++) {
-            TransactionToApply transactionToApply = createTransaction();
-            transactionAppender.append(transactionToApply, LogAppendEvent.NULL);
+            CompleteTransaction completeTransaction = createTransaction();
+            transactionAppender.append(completeTransaction, LogAppendEvent.NULL);
         }
 
         assertEquals(
@@ -182,8 +182,8 @@ class QueueTransactionAppenderTestIT {
         RuntimeException panicException = new RuntimeException("Don't panic, the answer is known!");
         databaseHealth.panic(panicException);
 
-        TransactionToApply transactionToApply = createTransaction();
-        assertThatThrownBy(() -> transactionAppender.append(transactionToApply, LogAppendEvent.NULL))
+        CompleteTransaction completeTransaction = createTransaction();
+        assertThatThrownBy(() -> transactionAppender.append(completeTransaction, LogAppendEvent.NULL))
                 .hasRootCause(panicException);
     }
 
@@ -195,9 +195,9 @@ class QueueTransactionAppenderTestIT {
         QueueTransactionAppender transactionAppender = createAppender(logFiles);
         life.add(transactionAppender);
 
-        TransactionToApply transactionToApply = createTransaction();
+        CompleteTransaction completeTransaction = createTransaction();
         RecordingLogAppendEvent logAppendEvent = new RecordingLogAppendEvent();
-        transactionAppender.append(transactionToApply, logAppendEvent);
+        transactionAppender.append(completeTransaction, logAppendEvent);
         assertThat(logAppendEvent.getEvents())
                 .containsExactly(
                         EventType.BEGIN_APPEND,
@@ -216,8 +216,8 @@ class QueueTransactionAppenderTestIT {
         life.add(transactionAppender);
 
         RuntimeException criticalException = new RuntimeException("The greatest teacher, failure is.");
-        TransactionToApply transactionToApply = createTransaction();
-        assertThatThrownBy(() -> transactionAppender.append(transactionToApply, new LogAppendEvent.Empty() {
+        CompleteTransaction completeTransaction = createTransaction();
+        assertThatThrownBy(() -> transactionAppender.append(completeTransaction, new LogAppendEvent.Empty() {
                     @Override
                     public LogForceEvent beginLogForce() {
                         throw criticalException;
@@ -229,7 +229,7 @@ class QueueTransactionAppenderTestIT {
         assertFalse(databaseHealth.hasNoPanic());
         assertThat(databaseHealth.causeOfPanic()).isSameAs(criticalException);
 
-        assertThatThrownBy(() -> transactionAppender.append(transactionToApply, LogAppendEvent.NULL))
+        assertThatThrownBy(() -> transactionAppender.append(completeTransaction, LogAppendEvent.NULL))
                 .rootCause()
                 .hasMessageContaining("failure is.");
     }
@@ -246,8 +246,8 @@ class QueueTransactionAppenderTestIT {
         return new QueueTransactionAppender(logQueue);
     }
 
-    private TransactionToApply createTransaction() {
-        CompleteTransaction tx = new CompleteTransaction(
+    private CompleteTransaction createTransaction() {
+        CompleteCommandBatch tx = new CompleteCommandBatch(
                 List.of(new TestCommand()),
                 UNKNOWN_CONSENSUS_INDEX,
                 1,
@@ -257,7 +257,7 @@ class QueueTransactionAppenderTestIT {
                 LatestVersions.LATEST_KERNEL_VERSION,
                 ANONYMOUS);
         var transactionCommitment = new TransactionCommitment(transactionIdStore);
-        return new TransactionToApply(
+        return new CompleteTransaction(
                 tx,
                 CursorContext.NULL_CONTEXT,
                 StoreCursors.NULL,

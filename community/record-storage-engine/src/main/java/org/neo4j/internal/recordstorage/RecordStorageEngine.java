@@ -104,7 +104,6 @@ import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.monitoring.DatabaseHealth;
-import org.neo4j.storageengine.api.CommandBatchToApply;
 import org.neo4j.storageengine.api.CommandCreationContext;
 import org.neo4j.storageengine.api.CommandStream;
 import org.neo4j.storageengine.api.ConstraintRuleAccessor;
@@ -112,6 +111,7 @@ import org.neo4j.storageengine.api.IndexUpdateListener;
 import org.neo4j.storageengine.api.InternalErrorTracer;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageEngine;
+import org.neo4j.storageengine.api.StorageEngineTransaction;
 import org.neo4j.storageengine.api.StorageLocks;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.StoreFileMetadata;
@@ -506,9 +506,9 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
     }
 
     @Override
-    public void apply(CommandBatchToApply batch, TransactionApplicationMode mode) throws Exception {
+    public void apply(StorageEngineTransaction batch, TransactionApplicationMode mode) throws Exception {
         TransactionApplierFactoryChain batchApplier = applierChain(mode);
-        CommandBatchToApply initialBatch = batch;
+        StorageEngineTransaction initialBatch = batch;
         try (BatchContext context = createBatchContext(batchApplier, batch)) {
             while (batch != null) {
                 try (TransactionApplier txApplier = batchApplier.startTx(batch, context)) {
@@ -559,7 +559,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
     }
 
     private BatchContext createBatchContext(
-            TransactionApplierFactoryChain batchApplier, CommandBatchToApply initialBatch) {
+            TransactionApplierFactoryChain batchApplier, StorageEngineTransaction initialBatch) {
         return new BatchContextImpl(
                 indexUpdateListener,
                 indexUpdatesSync,
@@ -738,7 +738,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
     }
 
     @Override
-    public void preAllocateStoreFilesForCommands(CommandBatchToApply batch, TransactionApplicationMode mode)
+    public void preAllocateStoreFilesForCommands(StorageEngineTransaction batch, TransactionApplicationMode mode)
             throws IOException {
         if (!mode.isReverseStep() && batch != null) {
             try (PreAllocationTransactionApplier txApplier = new PreAllocationTransactionApplier(neoStores)) {

@@ -59,8 +59,8 @@ import org.neo4j.lock.Lock;
 import org.neo4j.lock.LockService;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.storageengine.api.CommandBatch;
-import org.neo4j.storageengine.api.CommandBatchToApply;
 import org.neo4j.storageengine.api.StorageCommand;
+import org.neo4j.storageengine.api.StorageEngineTransaction;
 import org.neo4j.storageengine.api.StoreFileMetadata;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
@@ -112,9 +112,9 @@ class RecordStorageEngineTest {
                 .databaseHealth(databaseHealth)
                 .transactionApplierTransformer(facade -> transactionApplierFacadeTransformer(facade, failure))
                 .build();
-        CommandBatchToApply commandBatchToApply = mock(CommandBatchToApply.class);
+        StorageEngineTransaction storageEngineTransaction = mock(StorageEngineTransaction.class);
 
-        assertThatThrownBy(() -> engine.apply(commandBatchToApply, TransactionApplicationMode.INTERNAL))
+        assertThatThrownBy(() -> engine.apply(storageEngineTransaction, TransactionApplicationMode.INTERNAL))
                 .rootCause()
                 .isEqualTo(failure);
 
@@ -180,11 +180,11 @@ class RecordStorageEngineTest {
                 .transactionApplierTransformer(applier::wrapAroundActualApplier)
                 .build();
         try (StoreCursors storageCursors = engine.createStorageCursors(NULL_CONTEXT)) {
-            CommandBatchToApply commandBatchToApply = mock(CommandBatchToApply.class);
-            when(commandBatchToApply.cursorContext()).thenReturn(NULL_CONTEXT);
-            when(commandBatchToApply.storeCursors()).thenReturn(storageCursors);
-            when(commandBatchToApply.commandBatch()).thenReturn(mock(CommandBatch.class));
-            when(commandBatchToApply.accept(any())).thenAnswer(invocationOnMock -> {
+            StorageEngineTransaction storageEngineTransaction = mock(StorageEngineTransaction.class);
+            when(storageEngineTransaction.cursorContext()).thenReturn(NULL_CONTEXT);
+            when(storageEngineTransaction.storeCursors()).thenReturn(storageCursors);
+            when(storageEngineTransaction.commandBatch()).thenReturn(mock(CommandBatch.class));
+            when(storageEngineTransaction.accept(any())).thenAnswer(invocationOnMock -> {
                 // Visit one node command
                 Visitor<StorageCommand, IOException> visitor = invocationOnMock.getArgument(0);
                 NodeRecord after = new NodeRecord(nodeId);
@@ -196,7 +196,7 @@ class RecordStorageEngineTest {
                 return null;
             });
             // when
-            engine.apply(commandBatchToApply, TransactionApplicationMode.INTERNAL);
+            engine.apply(storageEngineTransaction, TransactionApplicationMode.INTERNAL);
 
             // then
             InOrder inOrder = inOrder(lockService, applierCloseCall, nodeLock);
@@ -217,15 +217,15 @@ class RecordStorageEngineTest {
 
     private static Exception executeFailingTransaction(RecordStorageEngine engine) throws IOException {
         Exception applicationError = new UnderlyingStorageException("No space left on device");
-        CommandBatchToApply txToApply = newTransactionThatFailsWith(applicationError);
+        StorageEngineTransaction txToApply = newTransactionThatFailsWith(applicationError);
         assertThatThrownBy(() -> engine.apply(txToApply, TransactionApplicationMode.INTERNAL))
                 .rootCause()
                 .isSameAs(applicationError);
         return applicationError;
     }
 
-    private static CommandBatchToApply newTransactionThatFailsWith(Exception error) throws IOException {
-        CommandBatchToApply transaction = mock(CommandBatchToApply.class);
+    private static StorageEngineTransaction newTransactionThatFailsWith(Exception error) throws IOException {
+        StorageEngineTransaction transaction = mock(StorageEngineTransaction.class);
         doThrow(error).when(transaction).accept(any());
         long txId = ThreadLocalRandom.current().nextLong(0, 1000);
         when(transaction.transactionId()).thenReturn(txId);
@@ -247,7 +247,7 @@ class RecordStorageEngineTest {
         }
 
         @Override
-        public TransactionApplier startTx(CommandBatchToApply transaction, BatchContext batchContext)
+        public TransactionApplier startTx(StorageEngineTransaction transaction, BatchContext batchContext)
                 throws IOException {
             final TransactionApplier transactionApplier = actual.startTx(transaction, batchContext);
             return new TransactionApplier() {

@@ -29,7 +29,7 @@ import org.neo4j.common.Subject;
 import org.neo4j.io.fs.WritableChannel;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.api.chunk.ChunkMetadata;
-import org.neo4j.kernel.impl.api.chunk.CommandChunk;
+import org.neo4j.kernel.impl.api.chunk.ChunkedCommandBatch;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
@@ -63,7 +63,7 @@ public record CommittedChunkRepresentation(
                 logEntryChunkStart.kernelVersion(),
                 Subject.AUTH_DISABLED);
         return new CommittedChunkRepresentation(
-                logEntryChunkStart, new CommandChunk(commands, chunkMetadata), logEntryChunkEnd);
+                logEntryChunkStart, new ChunkedCommandBatch(commands, chunkMetadata), logEntryChunkEnd);
     }
 
     @Override

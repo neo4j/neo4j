@@ -49,7 +49,7 @@ import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.store.stats.StoreEntityCounters;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.log.CompleteTransaction;
+import org.neo4j.kernel.impl.transaction.log.CompleteCommandBatch;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -62,7 +62,6 @@ import org.neo4j.lock.ResourceLocker;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.CommandBatch;
-import org.neo4j.storageengine.api.CommandBatchToApply;
 import org.neo4j.storageengine.api.CommandCreationContext;
 import org.neo4j.storageengine.api.CommandStream;
 import org.neo4j.storageengine.api.IndexUpdateListener;
@@ -70,6 +69,7 @@ import org.neo4j.storageengine.api.InternalErrorTracer;
 import org.neo4j.storageengine.api.MetadataProvider;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageEngine;
+import org.neo4j.storageengine.api.StorageEngineTransaction;
 import org.neo4j.storageengine.api.StorageLocks;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.StoreFileMetadata;
@@ -92,7 +92,7 @@ class ParallelRecoveryVisitorTest {
         Barrier.Control barrier = new Barrier.Control();
         RecoveryControllableStorageEngine storageEngine = new RecoveryControllableStorageEngine() {
             @Override
-            public void apply(CommandBatchToApply batch, TransactionApplicationMode mode) throws Exception {
+            public void apply(StorageEngineTransaction batch, TransactionApplicationMode mode) throws Exception {
                 long txId = idOf(batch);
                 if (txId == 2) {
                     barrier.reached();
@@ -123,7 +123,7 @@ class ParallelRecoveryVisitorTest {
         // given
         RecoveryControllableStorageEngine storageEngine = new RecoveryControllableStorageEngine() {
             @Override
-            public void apply(CommandBatchToApply batch, TransactionApplicationMode mode) throws Exception {
+            public void apply(StorageEngineTransaction batch, TransactionApplicationMode mode) throws Exception {
                 if (idOf(batch) == 2) {
                     // Just make it very likely that, if the locking wouldn't work as expected, then the test will fail,
                     // but the test will not be flaky if the visitor works as expected.
@@ -163,7 +163,7 @@ class ParallelRecoveryVisitorTest {
             }
 
             @Override
-            public void apply(CommandBatchToApply batch, TransactionApplicationMode mode) throws Exception {
+            public void apply(StorageEngineTransaction batch, TransactionApplicationMode mode) throws Exception {
                 long txId = idOf(batch);
                 if (txId > 2) {
                     barrier.awaitUninterruptibly();
@@ -197,7 +197,7 @@ class ParallelRecoveryVisitorTest {
         String failure = "Deliberate failure applying transaction";
         RecoveryControllableStorageEngine storageEngine = new RecoveryControllableStorageEngine() {
             @Override
-            public void apply(CommandBatchToApply batch, TransactionApplicationMode mode) throws Exception {
+            public void apply(StorageEngineTransaction batch, TransactionApplicationMode mode) throws Exception {
                 super.apply(batch, mode);
                 throw new Exception(failure);
             }
@@ -225,7 +225,7 @@ class ParallelRecoveryVisitorTest {
         String failure = "Deliberate failure applying transaction";
         RecoveryControllableStorageEngine storageEngine = new RecoveryControllableStorageEngine() {
             @Override
-            public void apply(CommandBatchToApply batch, TransactionApplicationMode mode) throws Exception {
+            public void apply(StorageEngineTransaction batch, TransactionApplicationMode mode) throws Exception {
                 super.apply(batch, mode);
                 throw new Exception(failure);
             }
@@ -241,7 +241,7 @@ class ParallelRecoveryVisitorTest {
     private CommittedTransactionRepresentation tx(long txId, List<StorageCommand> commands) {
         commands.forEach(cmd -> ((RecoveryTestBaseCommand) cmd).txId = txId);
         LogEntryStart startEntry = newStartEntry(LATEST_KERNEL_VERSION, 0, 0, 0, 0, EMPTY_BYTE_ARRAY, UNSPECIFIED);
-        CommandBatch txRepresentation = new CompleteTransaction(
+        CommandBatch txRepresentation = new CompleteCommandBatch(
                 commands, UNKNOWN_CONSENSUS_INDEX, 0, 0, 0, 0, LATEST_KERNEL_VERSION, AUTH_DISABLED);
         LogEntryCommit commitEntry = newCommitEntry(LATEST_KERNEL_VERSION, txId, 0, 0);
         return new CommittedTransactionRepresentation(startEntry, txRepresentation, commitEntry);
@@ -301,7 +301,7 @@ class ParallelRecoveryVisitorTest {
         }
 
         @Override
-        public void apply(CommandBatchToApply batch, TransactionApplicationMode mode) throws Exception {
+        public void apply(StorageEngineTransaction batch, TransactionApplicationMode mode) throws Exception {
             applyOrder[applyOrderCursor.getAndIncrement()] = idOf(batch);
         }
 
@@ -433,7 +433,7 @@ class ParallelRecoveryVisitorTest {
         }
 
         @Override
-        public void preAllocateStoreFilesForCommands(CommandBatchToApply batch, TransactionApplicationMode mode) {}
+        public void preAllocateStoreFilesForCommands(StorageEngineTransaction batch, TransactionApplicationMode mode) {}
 
         @Override
         public void shutdown() {}

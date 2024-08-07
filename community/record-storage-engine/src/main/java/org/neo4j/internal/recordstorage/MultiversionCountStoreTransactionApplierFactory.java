@@ -20,7 +20,7 @@
 package org.neo4j.internal.recordstorage;
 
 import org.neo4j.counts.CountsStore;
-import org.neo4j.storageengine.api.CommandBatchToApply;
+import org.neo4j.storageengine.api.StorageEngineTransaction;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 
 class MultiversionCountStoreTransactionApplierFactory implements TransactionApplierFactory {
@@ -33,7 +33,7 @@ class MultiversionCountStoreTransactionApplierFactory implements TransactionAppl
     }
 
     @Override
-    public TransactionApplier startTx(CommandBatchToApply transaction, BatchContext batchContext) {
+    public TransactionApplier startTx(StorageEngineTransaction transaction, BatchContext batchContext) {
         return switch (mode) {
             case REVERSE_RECOVERY -> new TransactionApplier.Adapter();
             case MVCC_ROLLBACK -> new MultiVersionCountsStoreTransactionApplier(

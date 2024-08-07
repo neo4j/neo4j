@@ -82,9 +82,9 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.lock.LockService;
-import org.neo4j.storageengine.api.CommandBatchToApply;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.IndexUpdateListener;
+import org.neo4j.storageengine.api.StorageEngineTransaction;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.util.IdGeneratorUpdatesWorkSync;
 import org.neo4j.storageengine.util.IdUpdateListener;
@@ -123,7 +123,7 @@ class LockGuardedNeoStoreTransactionApplierTest {
     private final DynamicRecord two = new DynamicRecord(2).initialize(true, true, Record.NO_NEXT_BLOCK.intValue(), -1);
     private final DynamicRecord three =
             new DynamicRecord(3).initialize(true, true, Record.NO_NEXT_BLOCK.intValue(), -1);
-    private final CommandBatchToApply transactionToApply = mock(CommandBatchToApply.class);
+    private final StorageEngineTransaction transactionToApply = mock(StorageEngineTransaction.class);
     private final IndexUpdatesWorkSync indexUpdatesSync = new IndexUpdatesWorkSync(indexUpdateListener, false);
     private final IndexActivator indexActivator = new IndexActivator(indexingService);
 
@@ -981,7 +981,7 @@ class LockGuardedNeoStoreTransactionApplierTest {
     }
 
     private boolean apply(
-            TransactionApplierFactory applier, ApplyFunction function, CommandBatchToApply transactionToApply)
+            TransactionApplierFactory applier, ApplyFunction function, StorageEngineTransaction transactionToApply)
             throws Exception {
         try {
             return CommandHandlerContract.apply(applier, function, transactionToApply);
@@ -994,7 +994,7 @@ class LockGuardedNeoStoreTransactionApplierTest {
             TransactionApplierFactory applier,
             ApplyFunction function,
             BatchContext context,
-            CommandBatchToApply transactionToApply)
+            StorageEngineTransaction transactionToApply)
             throws Exception {
         try (context) {
             return CommandHandlerContract.apply(applier, function, context, transactionToApply);

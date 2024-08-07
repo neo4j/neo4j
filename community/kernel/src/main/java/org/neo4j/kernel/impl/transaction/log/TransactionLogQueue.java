@@ -42,7 +42,7 @@ import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.AppendIndexProvider;
 import org.neo4j.storageengine.api.CommandBatch;
-import org.neo4j.storageengine.api.CommandBatchToApply;
+import org.neo4j.storageengine.api.StorageEngineTransaction;
 import org.neo4j.storageengine.api.TransactionIdStore;
 
 public class TransactionLogQueue extends LifecycleAdapter {
@@ -83,7 +83,7 @@ public class TransactionLogQueue extends LifecycleAdapter {
         this.log = logProvider.getLog(getClass());
     }
 
-    public TxQueueElement submit(CommandBatchToApply batch, LogAppendEvent logAppendEvent) throws IOException {
+    public TxQueueElement submit(StorageEngineTransaction batch, LogAppendEvent logAppendEvent) throws IOException {
         if (stopped) {
             throw new DatabaseShutdownException();
         }
@@ -130,7 +130,7 @@ public class TransactionLogQueue extends LifecycleAdapter {
     static class TxQueueElement {
         private static final long PARK_TIME = MILLISECONDS.toNanos(100);
 
-        private final CommandBatchToApply batch;
+        private final StorageEngineTransaction batch;
         private final LogAppendEvent logAppendEvent;
         private final Thread executor;
         private Throwable throwable;
@@ -138,7 +138,7 @@ public class TransactionLogQueue extends LifecycleAdapter {
         private volatile long[] txIds;
         private volatile long txId;
 
-        TxQueueElement(CommandBatchToApply batch, LogAppendEvent logAppendEvent) {
+        TxQueueElement(StorageEngineTransaction batch, LogAppendEvent logAppendEvent) {
             this.batch = batch;
             this.logAppendEvent = logAppendEvent;
             this.executor = Thread.currentThread();
@@ -284,7 +284,7 @@ public class TransactionLogQueue extends LifecycleAdapter {
                     LogAppendEvent logAppendEvent = txQueueElement.logAppendEvent;
                     long lastTransactionId = TransactionIdStore.BASE_TX_ID;
                     try (var appendEvent = logAppendEvent.beginAppendTransaction(drainedElements)) {
-                        CommandBatchToApply commands = txQueueElement.batch;
+                        StorageEngineTransaction commands = txQueueElement.batch;
                         while (commands != null) {
                             long transactionId = commands.transactionId();
                             appendToLog(commands, transactionId, logAppendEvent);
@@ -300,25 +300,27 @@ public class TransactionLogQueue extends LifecycleAdapter {
             }
 
             private void appendToLog(
-                    CommandBatchToApply commandBatchToApply, long transactionId, LogAppendEvent logAppendEvent)
+                    StorageEngineTransaction storageEngineTransaction,
+                    long transactionId,
+                    LogAppendEvent logAppendEvent)
                     throws IOException {
 
                 transactionLogWriter.resetAppendedBytesCounter();
-                CommandBatch commandBatch = commandBatchToApply.commandBatch();
+                CommandBatch commandBatch = storageEngineTransaction.commandBatch();
                 long appendIndex = appendIndexProvider.nextAppendIndex();
                 this.checksum = transactionLogWriter.append(
                         commandBatch,
                         transactionId,
-                        commandBatchToApply.chunkId(),
+                        storageEngineTransaction.chunkId(),
                         appendIndex,
                         checksum,
-                        commandBatchToApply.previousBatchLogPosition(),
+                        storageEngineTransaction.previousBatchLogPosition(),
                         logAppendEvent);
                 var logPositionBeforeCommit = transactionLogWriter.beforeAppendPosition();
                 metadataCache.cacheTransactionMetadata(appendIndex, logPositionBeforeCommit);
                 var logPositionAfterCommit = transactionLogWriter.getCurrentPosition();
                 logAppendEvent.appendedBytes(transactionLogWriter.getAppendedBytes());
-                commandBatchToApply.batchAppended(
+                storageEngineTransaction.batchAppended(
                         appendIndex, logPositionBeforeCommit, logPositionAfterCommit, checksum);
             }
 

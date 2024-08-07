@@ -20,8 +20,8 @@
 package org.neo4j.kernel.impl.transaction.log.files;
 
 import static org.neo4j.common.Subject.ANONYMOUS;
+import static org.neo4j.kernel.impl.api.CompleteTransaction.NOT_SPECIFIED_CHUNK_ID;
 import static org.neo4j.kernel.impl.api.LeaseService.NO_LEASE;
-import static org.neo4j.kernel.impl.api.TransactionToApply.NOT_SPECIFIED_CHUNK_ID;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_INDEX;
 
@@ -34,7 +34,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.database.MetadataCache;
-import org.neo4j.kernel.impl.transaction.log.CompleteTransaction;
+import org.neo4j.kernel.impl.transaction.log.CompleteCommandBatch;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.TransactionLogWriter;
 import org.neo4j.kernel.impl.transaction.log.files.checkpoint.CheckpointFile;
@@ -174,7 +174,7 @@ public class TransactionLogInitializer {
         KernelVersion kernelVersion = metadataCache.kernelVersion();
         LogFile logFile = logFiles.getLogFile();
         TransactionLogWriter transactionLogWriter = logFile.getTransactionLogWriter();
-        CompleteTransaction emptyTx = emptyTransaction(timestamp, upgradeTransactionId, kernelVersion, consensusIndex);
+        CompleteCommandBatch emptyTx = emptyTransaction(timestamp, upgradeTransactionId, kernelVersion, consensusIndex);
         int checksum = transactionLogWriter.append(
                 emptyTx,
                 upgradeTransactionId,
@@ -198,9 +198,9 @@ public class TransactionLogInitializer {
         return upgradeTransactionId;
     }
 
-    private static CompleteTransaction emptyTransaction(
+    private static CompleteCommandBatch emptyTransaction(
             long timestamp, long txId, KernelVersion kernelVersion, long consensusIndex) {
-        return new CompleteTransaction(
+        return new CompleteCommandBatch(
                 Collections.emptyList(),
                 consensusIndex,
                 timestamp,

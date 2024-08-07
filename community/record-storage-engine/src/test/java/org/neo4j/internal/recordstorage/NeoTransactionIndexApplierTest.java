@@ -34,8 +34,8 @@ import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
-import org.neo4j.storageengine.api.CommandBatchToApply;
 import org.neo4j.storageengine.api.IndexUpdateListener;
+import org.neo4j.storageengine.api.StorageEngineTransaction;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.LatestVersions;
@@ -43,7 +43,7 @@ import org.neo4j.test.LatestVersions;
 class NeoTransactionIndexApplierTest {
     private final IndexUpdateListener indexingService = mock(IndexUpdateListener.class);
     private final List<DynamicRecord> emptyDynamicRecords = Collections.emptyList();
-    private final CommandBatchToApply transactionToApply = new GroupOfCommands(1L, StoreCursors.NULL);
+    private final StorageEngineTransaction transactionToApply = new GroupOfCommands(1L, StoreCursors.NULL);
     private final BatchContext batchContext = mock(BatchContext.class, RETURNS_MOCKS);
     private static final LogCommandSerialization LATEST_LOG_SERIALIZATION =
             RecordStorageCommandReaderFactory.INSTANCE.get(LatestVersions.LATEST_KERNEL_VERSION);

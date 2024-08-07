@@ -27,10 +27,10 @@ import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_I
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
+import org.neo4j.kernel.impl.api.CompleteTransaction;
 import org.neo4j.kernel.impl.api.TestCommand;
-import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.txid.TransactionIdGenerator;
-import org.neo4j.kernel.impl.transaction.log.CompleteTransaction;
+import org.neo4j.kernel.impl.transaction.log.CompleteCommandBatch;
 import org.neo4j.storageengine.api.Commitment;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
@@ -39,8 +39,8 @@ import org.neo4j.test.LatestVersions;
 class TransactionRepresentationFactory {
     private final CommandGenerator commandGenerator = new CommandGenerator();
 
-    TransactionToApply nextTransaction(long txId) {
-        CompleteTransaction representation = new CompleteTransaction(
+    CompleteTransaction nextTransaction(long txId) {
+        CompleteCommandBatch representation = new CompleteCommandBatch(
                 createRandomCommands(),
                 UNKNOWN_CONSENSUS_INDEX,
                 currentTimeMillis(),
@@ -49,7 +49,7 @@ class TransactionRepresentationFactory {
                 42,
                 LatestVersions.LATEST_KERNEL_VERSION,
                 ANONYMOUS);
-        return new TransactionToApply(
+        return new CompleteTransaction(
                 representation,
                 NULL_CONTEXT,
                 StoreCursors.NULL,

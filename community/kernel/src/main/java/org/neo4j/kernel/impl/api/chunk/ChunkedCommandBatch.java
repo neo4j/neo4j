@@ -28,7 +28,7 @@ import org.neo4j.kernel.KernelVersion;
 import org.neo4j.storageengine.api.CommandBatch;
 import org.neo4j.storageengine.api.StorageCommand;
 
-public record CommandChunk(List<StorageCommand> commands, ChunkMetadata chunkMetadata) implements CommandBatch {
+public record ChunkedCommandBatch(List<StorageCommand> commands, ChunkMetadata chunkMetadata) implements CommandBatch {
 
     @Override
     public long consensusIndex() {

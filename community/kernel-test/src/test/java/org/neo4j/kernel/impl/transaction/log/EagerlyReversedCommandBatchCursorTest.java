@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.transaction.log;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.common.Subject.ANONYMOUS;
-import static org.neo4j.kernel.impl.api.TransactionToApply.NOT_SPECIFIED_CHUNK_ID;
+import static org.neo4j.kernel.impl.api.CompleteTransaction.NOT_SPECIFIED_CHUNK_ID;
 import static org.neo4j.kernel.impl.transaction.log.GivenCommandBatchCursor.exhaust;
 import static org.neo4j.kernel.impl.transaction.log.GivenCommandBatchCursor.given;
 import static org.neo4j.kernel.impl.transaction.log.TestLogEntryReader.logEntryReader;
@@ -184,7 +184,7 @@ class EagerlyReversedCommandBatchCursorTest {
         for (int i = 0; i < size; i++) {
             commands.add(new TestCommand());
         }
-        return new CompleteTransaction(
+        return new CompleteCommandBatch(
                 commands, UNKNOWN_CONSENSUS_INDEX, 0, 0, 0, 0, LatestVersions.LATEST_KERNEL_VERSION, ANONYMOUS);
     }
 }

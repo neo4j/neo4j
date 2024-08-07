@@ -30,7 +30,7 @@ import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.monitoring.Panic;
 import org.neo4j.storageengine.AppendIndexProvider;
-import org.neo4j.storageengine.api.CommandBatchToApply;
+import org.neo4j.storageengine.api.StorageEngineTransaction;
 import org.neo4j.storageengine.api.TransactionIdStore;
 
 /**
@@ -67,7 +67,7 @@ class BatchingTransactionAppender extends LifecycleAdapter implements Transactio
     }
 
     @Override
-    public long append(CommandBatchToApply batch, LogAppendEvent logAppendEvent) throws IOException {
+    public long append(StorageEngineTransaction batch, LogAppendEvent logAppendEvent) throws IOException {
         // Assigned base tx id just to make compiler happy
         long lastTransactionId = TransactionIdStore.BASE_TX_ID;
         // Synchronized with logFile to get absolute control over concurrent rotations happening
@@ -76,7 +76,7 @@ class BatchingTransactionAppender extends LifecycleAdapter implements Transactio
             databasePanic.assertNoPanic(IOException.class);
             try (AppendTransactionEvent appendEvent = logAppendEvent.beginAppendTransaction(1)) {
                 // Append all transactions in this batch to the log under the same logFile monitor
-                CommandBatchToApply commands = batch;
+                StorageEngineTransaction commands = batch;
                 while (commands != null) {
                     long transactionId = commands.transactionId();
                     appendToLog(commands, transactionId, logAppendEvent);
@@ -104,20 +104,20 @@ class BatchingTransactionAppender extends LifecycleAdapter implements Transactio
         return lastTransactionId;
     }
 
-    private static boolean checkIfRotationCheckIsRequired(CommandBatchToApply batch) {
+    private static boolean checkIfRotationCheckIsRequired(StorageEngineTransaction batch) {
         // for envelopes, rotation happens within the channel during appends so rotating post-append isn't required
         return batch != null
                 && batch.commandBatch().kernelVersion().isLessThan(VERSION_ENVELOPED_TRANSACTION_LOGS_INTRODUCED);
     }
 
-    private static void publishAsCommitted(CommandBatchToApply batch) {
+    private static void publishAsCommitted(StorageEngineTransaction batch) {
         while (batch != null) {
             batch.commit();
             batch = batch.next();
         }
     }
 
-    private void appendToLog(CommandBatchToApply commands, long transactionId, LogAppendEvent logAppendEvent)
+    private void appendToLog(StorageEngineTransaction commands, long transactionId, LogAppendEvent logAppendEvent)
             throws IOException {
         // The outcome of this try block is either of:
         // a) transaction successfully appended, at which point we return a Commitment to be used after force

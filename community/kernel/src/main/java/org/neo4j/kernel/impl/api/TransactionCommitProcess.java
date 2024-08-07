@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.api;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionWriteEvent;
 import org.neo4j.storageengine.api.CommandBatch;
-import org.neo4j.storageengine.api.CommandBatchToApply;
+import org.neo4j.storageengine.api.StorageEngineTransaction;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 
 /**
@@ -45,6 +45,9 @@ public interface TransactionCommitProcess {
      * @return transaction id of the last committed transaction in this batch.
      * @throws TransactionFailureException If the commit process fails.
      */
-    long commit(CommandBatchToApply batch, TransactionWriteEvent transactionWriteEvent, TransactionApplicationMode mode)
+    long commit(
+            StorageEngineTransaction batch,
+            TransactionWriteEvent transactionWriteEvent,
+            TransactionApplicationMode mode)
             throws TransactionFailureException;
 }

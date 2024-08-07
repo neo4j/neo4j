@@ -44,19 +44,19 @@ class TransactionQueueTest {
 
         // WHEN
         for (int i = 0; i < 9; i++) {
-            queue.queue(mock(TransactionToApply.class));
+            queue.queue(mock(CompleteTransaction.class));
             verifyNoMoreInteractions(applier);
         }
-        queue.queue(mock(TransactionToApply.class));
+        queue.queue(mock(CompleteTransaction.class));
         verify(applier).apply(any());
         reset(applier);
 
         // THEN
-        queue.queue(mock(TransactionToApply.class));
+        queue.queue(mock(CompleteTransaction.class));
 
         // and WHEN emptying in the end
         for (int i = 0; i < 2; i++) {
-            queue.queue(mock(TransactionToApply.class));
+            queue.queue(mock(CompleteTransaction.class));
             verifyNoMoreInteractions(applier);
         }
         queue.applyTransactions();
@@ -71,10 +71,10 @@ class TransactionQueueTest {
         TransactionQueue queue = new TransactionQueue(batchSize, applier);
 
         // WHEN
-        TransactionToApply[] txs = new TransactionToApply[batchSize];
+        CompleteTransaction[] txs = new CompleteTransaction[batchSize];
         for (int i = 0; i < batchSize; i++) {
             queue.queue(
-                    txs[i] = new TransactionToApply(
+                    txs[i] = new CompleteTransaction(
                             mock(CommandBatch.class),
                             NULL_CONTEXT,
                             StoreCursors.NULL,

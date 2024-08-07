@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.chunk;
 
-import static org.neo4j.kernel.impl.api.TransactionToApply.TRANSACTION_ID_NOT_SPECIFIED;
+import static org.neo4j.kernel.impl.api.CompleteTransaction.TRANSACTION_ID_NOT_SPECIFIED;
 
 import java.io.IOException;
 import java.util.Iterator;
@@ -30,14 +30,14 @@ import org.neo4j.kernel.impl.api.txid.TransactionIdGenerator;
 import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.storageengine.api.CommandBatch;
-import org.neo4j.storageengine.api.CommandBatchToApply;
 import org.neo4j.storageengine.api.Commitment;
 import org.neo4j.storageengine.api.StorageCommand;
+import org.neo4j.storageengine.api.StorageEngineTransaction;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
-public class ChunkedTransaction implements CommandBatchToApply {
+public class ChunkedTransaction implements StorageEngineTransaction {
 
-    private CommandChunk chunk;
+    private ChunkedCommandBatch chunk;
     // to sure for what reason we need those now here?
     private final CursorContext cursorContext;
     private final long transactionSequenceNumber;
@@ -47,7 +47,7 @@ public class ChunkedTransaction implements CommandBatchToApply {
     private boolean idGenerated;
     private LogPosition lastBatchLogPosition = LogPosition.UNSPECIFIED;
     private long transactionId = TRANSACTION_ID_NOT_SPECIFIED;
-    private CommandBatchToApply next;
+    private StorageEngineTransaction next;
     private long firstAppendIndex;
 
     public ChunkedTransaction(
@@ -67,10 +67,10 @@ public class ChunkedTransaction implements CommandBatchToApply {
             CommittedCommandBatch committedCommandBatch, CursorContext cursorContext, StoreCursors storeCursors) {
         this(cursorContext, -1, storeCursors, Commitment.NO_COMMITMENT, TransactionIdGenerator.EXTERNAL_ID);
         this.transactionId = committedCommandBatch.txId();
-        init((CommandChunk) committedCommandBatch.commandBatch());
+        init((ChunkedCommandBatch) committedCommandBatch.commandBatch());
     }
 
-    public void init(CommandChunk chunk) {
+    public void init(ChunkedCommandBatch chunk) {
         this.chunk = chunk;
     }
 
@@ -115,12 +115,12 @@ public class ChunkedTransaction implements CommandBatchToApply {
     }
 
     @Override
-    public CommandBatchToApply next() {
+    public StorageEngineTransaction next() {
         return next;
     }
 
     @Override
-    public void next(CommandBatchToApply next) {
+    public void next(StorageEngineTransaction next) {
         this.next = next;
     }
 

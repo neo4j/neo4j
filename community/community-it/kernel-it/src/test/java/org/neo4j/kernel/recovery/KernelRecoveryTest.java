@@ -36,8 +36,8 @@ import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.UncloseableDelegatingFileSystemAbstraction;
+import org.neo4j.kernel.impl.api.CompleteTransaction;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
-import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.txid.TransactionIdGenerator;
 import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
 import org.neo4j.kernel.impl.transaction.log.CommandBatchCursor;
@@ -110,7 +110,7 @@ class KernelRecoveryTest {
         try (var storeCursors = storageEngine.createStorageCursors(NULL_CONTEXT)) {
             for (CommittedCommandBatch transaction : transactions) {
                 commitProcess.commit(
-                        new TransactionToApply(
+                        new CompleteTransaction(
                                 transaction,
                                 NULL_CONTEXT,
                                 storeCursors,

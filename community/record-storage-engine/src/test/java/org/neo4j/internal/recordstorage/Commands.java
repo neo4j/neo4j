@@ -52,7 +52,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.kernel.impl.store.record.TokenRecord;
-import org.neo4j.storageengine.api.CommandBatchToApply;
+import org.neo4j.storageengine.api.StorageEngineTransaction;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.LatestVersions;
 import org.neo4j.values.storable.Values;
@@ -166,7 +166,7 @@ public class Commands {
         return new PropertyCommand(LATEST_LOG_SERIALIZATION, new PropertyRecord(id), record);
     }
 
-    public static CommandBatchToApply transaction(Command... commands) {
+    public static StorageEngineTransaction transaction(Command... commands) {
         return new GroupOfCommands(StoreCursors.NULL, commands);
     }
 }

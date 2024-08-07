@@ -30,16 +30,16 @@ import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.storageengine.api.CommandBatch;
-import org.neo4j.storageengine.api.CommandBatchToApply;
 import org.neo4j.storageengine.api.StorageCommand;
+import org.neo4j.storageengine.api.StorageEngineTransaction;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
-public class GroupOfCommands implements CommandBatchToApply {
+public class GroupOfCommands implements StorageEngineTransaction {
     private final long transactionId;
     private final StoreCursors storeCursors;
     private final StorageCommand[] commands;
-    CommandBatchToApply next;
+    StorageEngineTransaction next;
 
     public GroupOfCommands(StoreCursors storeCursors, StorageCommand... commands) {
         this(TransactionIdStore.BASE_TX_ID, storeCursors, commands);
@@ -82,12 +82,12 @@ public class GroupOfCommands implements CommandBatchToApply {
     }
 
     @Override
-    public CommandBatchToApply next() {
+    public StorageEngineTransaction next() {
         return next;
     }
 
     @Override
-    public void next(CommandBatchToApply next) {}
+    public void next(StorageEngineTransaction next) {}
 
     @Override
     public void commit() {}

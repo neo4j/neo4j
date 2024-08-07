@@ -49,9 +49,9 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
+import org.neo4j.kernel.impl.api.CompleteTransaction;
 import org.neo4j.kernel.impl.api.TestCommand;
 import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
-import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.txid.IdStoreTransactionIdGenerator;
 import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
 import org.neo4j.kernel.impl.transaction.SimpleAppendIndexProvider;
@@ -367,7 +367,7 @@ class PhysicalLogicalTransactionStoreTest {
             throws Exception {
         TransactionAppender appender = life.add(createTransactionAppender(
                 transactionIdStore, logFiles, Config.defaults(), jobScheduler, positionCache));
-        CompleteTransaction transaction = new CompleteTransaction(
+        CompleteCommandBatch transaction = new CompleteCommandBatch(
                 singleTestCommand(),
                 consensusIndex,
                 timeStarted,
@@ -378,7 +378,7 @@ class PhysicalLogicalTransactionStoreTest {
                 ANONYMOUS);
         var transactionCommitment = new TransactionCommitment(transactionIdStore);
         appender.append(
-                new TransactionToApply(
+                new CompleteTransaction(
                         transaction,
                         NULL_CONTEXT,
                         StoreCursors.NULL,

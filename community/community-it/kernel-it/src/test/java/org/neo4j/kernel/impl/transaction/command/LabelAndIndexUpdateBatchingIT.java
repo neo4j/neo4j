@@ -33,8 +33,8 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.impl.api.CompleteTransaction;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
-import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.txid.TransactionIdGenerator;
 import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
 import org.neo4j.kernel.impl.transaction.log.CommandBatchCursor;
@@ -147,15 +147,15 @@ class LabelAndIndexUpdateBatchingIT {
         throw new AssertionError("Couldn't find the transaction which would be the cut-off point");
     }
 
-    private static TransactionToApply toApply(Collection<CommittedCommandBatch> transactions, GraphDatabaseAPI db) {
+    private static CompleteTransaction toApply(Collection<CommittedCommandBatch> transactions, GraphDatabaseAPI db) {
         StorageEngine storageEngine = db.getDependencyResolver().resolveDependency(StorageEngine.class);
         var commitmentFactory = db.getDependencyResolver().resolveDependency(TransactionCommitmentFactory.class);
         var transactionIdGenerator = db.getDependencyResolver().resolveDependency(TransactionIdGenerator.class);
-        TransactionToApply first = null;
-        TransactionToApply last = null;
+        CompleteTransaction first = null;
+        CompleteTransaction last = null;
         try (var storeCursors = storageEngine.createStorageCursors(NULL_CONTEXT)) {
             for (var tx : transactions) {
-                var transaction = new TransactionToApply(
+                var transaction = new CompleteTransaction(
                         tx, NULL_CONTEXT, storeCursors, commitmentFactory.newCommitment(), transactionIdGenerator);
                 if (first == null) {
                     first = last = transaction;

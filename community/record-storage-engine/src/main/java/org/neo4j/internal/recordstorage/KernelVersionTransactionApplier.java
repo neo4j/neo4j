@@ -24,7 +24,7 @@ import org.neo4j.internal.helpers.Numbers;
 import org.neo4j.internal.recordstorage.Command.MetaDataCommand;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.KernelVersionRepository;
-import org.neo4j.storageengine.api.CommandBatchToApply;
+import org.neo4j.storageengine.api.StorageEngineTransaction;
 
 public class KernelVersionTransactionApplier extends TransactionApplier.Adapter {
     private final KernelVersionRepository kernelVersionRepository;
@@ -49,7 +49,7 @@ public class KernelVersionTransactionApplier extends TransactionApplier.Adapter 
         }
 
         @Override
-        public TransactionApplier startTx(CommandBatchToApply transaction, BatchContext batchContext)
+        public TransactionApplier startTx(StorageEngineTransaction transaction, BatchContext batchContext)
                 throws IOException {
             return new KernelVersionTransactionApplier(kernelVersionRepository);
         }

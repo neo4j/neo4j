@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.transaction.log.stresstest.workload;
 
 import java.util.function.BooleanSupplier;
-import org.neo4j.kernel.impl.api.TransactionToApply;
+import org.neo4j.kernel.impl.api.CompleteTransaction;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.storageengine.api.TransactionIdStore;
@@ -43,7 +43,7 @@ class Worker implements Runnable {
     public void run() {
         long latestTxId = TransactionIdStore.BASE_TX_ID;
         while (condition.getAsBoolean()) {
-            TransactionToApply transaction = factory.nextTransaction(latestTxId);
+            CompleteTransaction transaction = factory.nextTransaction(latestTxId);
             try {
                 latestTxId = transactionAppender.append(transaction, LogAppendEvent.NULL);
             } catch (Exception e) {

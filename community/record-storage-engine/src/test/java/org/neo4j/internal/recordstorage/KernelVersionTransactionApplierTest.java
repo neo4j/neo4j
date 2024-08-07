@@ -29,7 +29,7 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.KernelVersionRepository;
 import org.neo4j.kernel.impl.store.record.MetaDataRecord;
-import org.neo4j.storageengine.api.CommandBatchToApply;
+import org.neo4j.storageengine.api.StorageEngineTransaction;
 import org.neo4j.test.LatestVersions;
 
 public class KernelVersionTransactionApplierTest {
@@ -46,7 +46,7 @@ public class KernelVersionTransactionApplierTest {
         // given  a command to update the kernel version
         final var applier = new KernelVersionTransactionApplier.Factory(kernelVersionRepository);
         final var command = createMetaDataCommand(from, to);
-        final var txToApply = mock(CommandBatchToApply.class);
+        final var txToApply = mock(StorageEngineTransaction.class);
 
         // when   command applied
         final var result = CommandHandlerContract.apply(applier, command::handle, txToApply);
