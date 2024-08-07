@@ -44,6 +44,7 @@ import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.internal.helpers.collection.Iterables;
+import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.impl.locking.forseti.ForsetiClient;
@@ -182,7 +183,11 @@ class UpgradeToFutureVersionIT {
                 .withEndCondition(() -> KernelVersion.GLORIOUS_FUTURE.equals(kernelVersion()));
         race.addContestant(() -> systemDb.executeTransactionally("CALL dbms.upgrade()"), 1);
         race.addContestants(max(Runtime.getRuntime().availableProcessors() - 1, 2), Race.throwing(() -> {
-            createWriteTransaction();
+            try {
+                createWriteTransaction();
+            } catch (DeadlockDetectedException e) {
+                // Sometimes the upgrade transaction throws (probably false-positive) deadlock
+            }
             Thread.sleep(ThreadLocalRandom.current().nextInt(0, 2));
         }));
         race.go(1, TimeUnit.MINUTES);
