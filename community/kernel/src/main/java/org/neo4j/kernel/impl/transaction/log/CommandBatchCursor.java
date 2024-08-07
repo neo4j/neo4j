@@ -20,12 +20,12 @@
 package org.neo4j.kernel.impl.transaction.log;
 
 import org.neo4j.cursor.IOCursor;
-import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
+import org.neo4j.kernel.impl.transaction.CommittedCommandBatchRepresentation;
 
 /**
- * {@link IOCursor} over {@link CommittedCommandBatch} i.e. already committed command batches.
+ * {@link IOCursor} over {@link CommittedCommandBatchRepresentation} i.e. already committed command batches.
  */
-public interface CommandBatchCursor extends IOCursor<CommittedCommandBatch> {
+public interface CommandBatchCursor extends IOCursor<CommittedCommandBatchRepresentation> {
 
     /**
      * @return {@link LogPosition} representing position after most recent command batch, i.e. after

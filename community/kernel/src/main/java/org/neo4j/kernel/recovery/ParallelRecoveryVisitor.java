@@ -32,7 +32,7 @@ import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.impl.api.CompleteTransaction;
-import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
+import org.neo4j.kernel.impl.transaction.CommittedCommandBatchRepresentation;
 import org.neo4j.lock.LockGroup;
 import org.neo4j.lock.LockService;
 import org.neo4j.lock.ReentrantLockService;
@@ -84,7 +84,7 @@ final class ParallelRecoveryVisitor implements RecoveryApplier {
     }
 
     @Override
-    public boolean visit(CommittedCommandBatch commandBatch) throws Exception {
+    public boolean visit(CommittedCommandBatchRepresentation commandBatch) throws Exception {
         checkFailure();
 
         // We need to know the starting point for the "is it my turn yet?" check below that each thread needs to do
@@ -123,7 +123,7 @@ final class ParallelRecoveryVisitor implements RecoveryApplier {
         }
     }
 
-    private void apply(CommittedCommandBatch transaction) throws Exception {
+    private void apply(CommittedCommandBatchRepresentation transaction) throws Exception {
         try (CursorContext cursorContext = contextFactory.create(tracerTag);
                 var storeCursors = storageEngine.createStorageCursors(cursorContext)) {
             var tx = new CompleteTransaction(transaction, cursorContext, storeCursors);

@@ -24,7 +24,7 @@ import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHA
 import java.io.IOException;
 import java.nio.file.NoSuchFileException;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
+import org.neo4j.kernel.impl.transaction.CommittedCommandBatchRepresentation;
 import org.neo4j.kernel.impl.transaction.log.CommandBatchCursor;
 import org.neo4j.kernel.impl.transaction.log.CommittedCommandBatchCursor;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
@@ -128,7 +128,7 @@ public final class ForwardCommandBatchCursor implements CommandBatchCursor {
     }
 
     @Override
-    public CommittedCommandBatch get() {
+    public CommittedCommandBatchRepresentation get() {
         return currentLogCommandBatchCursor.get();
     }
 }

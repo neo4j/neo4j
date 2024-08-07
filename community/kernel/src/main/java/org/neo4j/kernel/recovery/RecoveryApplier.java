@@ -20,9 +20,9 @@
 package org.neo4j.kernel.recovery;
 
 import org.neo4j.internal.helpers.collection.Visitor;
-import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
+import org.neo4j.kernel.impl.transaction.CommittedCommandBatchRepresentation;
 
 /**
  * Recovery transaction applier that will apply all recovered transaction to underlying store.
  */
-public interface RecoveryApplier extends Visitor<CommittedCommandBatch, Exception>, AutoCloseable {}
+public interface RecoveryApplier extends Visitor<CommittedCommandBatchRepresentation, Exception>, AutoCloseable {}

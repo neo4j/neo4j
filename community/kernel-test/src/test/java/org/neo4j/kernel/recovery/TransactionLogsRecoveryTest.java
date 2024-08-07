@@ -73,8 +73,8 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.database.DatabaseStartupController;
 import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
-import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
-import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.CommittedCommandBatchRepresentation;
+import org.neo4j.kernel.impl.transaction.CompleteBatchRepresentation;
 import org.neo4j.kernel.impl.transaction.SimpleAppendIndexProvider;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
@@ -259,9 +259,10 @@ class TransactionLogsRecoveryTest {
                                 }
 
                                 @Override
-                                public boolean visit(CommittedCommandBatch commandBatch) throws Exception {
+                                public boolean visit(CommittedCommandBatchRepresentation commandBatch)
+                                        throws Exception {
                                     actual.visit(commandBatch);
-                                    if (commandBatch instanceof CommittedTransactionRepresentation tx) {
+                                    if (commandBatch instanceof CompleteBatchRepresentation tx) {
                                         switch (nr++) {
                                             case 0 -> {
                                                 assertEquals(lastCommittedTxStartEntry, tx.startEntry());
@@ -740,7 +741,7 @@ class TransactionLogsRecoveryTest {
         private boolean recoveryRequired;
 
         @Override
-        public void batchRecovered(CommittedCommandBatch committedBatch) {
+        public void batchRecovered(CommittedCommandBatchRepresentation committedBatch) {
             batchCounter++;
         }
 

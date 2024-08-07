@@ -45,7 +45,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.api.TestCommand;
 import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
-import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
+import org.neo4j.kernel.impl.transaction.CommittedCommandBatchRepresentation;
 import org.neo4j.kernel.impl.transaction.SimpleAppendIndexProvider;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
@@ -198,25 +198,26 @@ class ReversedMultiFileCommandBatchCursorTest {
         assertThat(readTransactions).isEmpty();
     }
 
-    private CommittedCommandBatch[] readTransactions(LogPosition position, boolean presketch) throws IOException {
+    private CommittedCommandBatchRepresentation[] readTransactions(LogPosition position, boolean presketch)
+            throws IOException {
         try (CommandBatchCursor cursor = txCursor(position, presketch)) {
             return exhaust(cursor);
         }
     }
 
-    private CommittedCommandBatch[] readTransactions(boolean presketch) throws IOException {
+    private CommittedCommandBatchRepresentation[] readTransactions(boolean presketch) throws IOException {
         return readTransactions(new LogPosition(0, LATEST_LOG_FORMAT.getHeaderSize()), presketch);
     }
 
     private void assertRecovery(
-            boolean presketch, CommittedCommandBatch[] readTransactions, long highTxId, long lowTxId) {
+            boolean presketch, CommittedCommandBatchRepresentation[] readTransactions, long highTxId, long lowTxId) {
         if (presketch) {
             verify(monitor).presketchingTransactionLogs();
         } else {
             verify(monitor, never()).presketchingTransactionLogs();
         }
         long expectedTxId = highTxId;
-        for (CommittedCommandBatch tx : readTransactions) {
+        for (CommittedCommandBatchRepresentation tx : readTransactions) {
             assertEquals(expectedTxId, tx.txId());
             expectedTxId--;
         }

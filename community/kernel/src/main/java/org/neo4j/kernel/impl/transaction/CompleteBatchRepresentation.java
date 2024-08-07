@@ -41,11 +41,11 @@ import org.neo4j.storageengine.api.StorageCommand;
  * itself, a Start and Commit entry. This is the thing that {@link LogicalTransactionStore} returns when
  * asked for a transaction via a cursor.
  */
-public record CommittedTransactionRepresentation(
+public record CompleteBatchRepresentation(
         LogEntryStart startEntry, CommandBatch commandBatch, LogEntryCommit commitEntry)
-        implements CommittedCommandBatch {
+        implements CommittedCommandBatchRepresentation {
 
-    public CommittedTransactionRepresentation(
+    public CompleteBatchRepresentation(
             LogEntryStart startEntry, List<StorageCommand> commands, LogEntryCommit commitEntry) {
         this(
                 startEntry,

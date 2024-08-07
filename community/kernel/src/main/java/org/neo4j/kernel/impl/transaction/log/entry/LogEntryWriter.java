@@ -35,7 +35,7 @@ import java.io.IOException;
 import org.neo4j.io.fs.WritableChannel;
 import org.neo4j.kernel.BinarySupportedKernelVersions;
 import org.neo4j.kernel.KernelVersion;
-import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
+import org.neo4j.kernel.impl.transaction.CommittedCommandBatchRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.entry.v57.LogEntryChunkEnd;
 import org.neo4j.storageengine.api.CommandBatch;
@@ -122,7 +122,7 @@ public class LogEntryWriter<T extends WritableChannel> {
         serialize(batch, batch.kernelVersion());
     }
 
-    public void serialize(CommittedCommandBatch commandBatch) throws IOException {
+    public void serialize(CommittedCommandBatchRepresentation commandBatch) throws IOException {
         commandBatch.serialize(this);
     }
 

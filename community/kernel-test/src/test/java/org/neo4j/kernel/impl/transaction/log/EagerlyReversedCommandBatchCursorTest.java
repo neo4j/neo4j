@@ -41,7 +41,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.api.TestCommand;
 import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
-import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
+import org.neo4j.kernel.impl.transaction.CommittedCommandBatchRepresentation;
 import org.neo4j.kernel.impl.transaction.SimpleAppendIndexProvider;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
@@ -112,7 +112,7 @@ class EagerlyReversedCommandBatchCursorTest {
 
             long currentTxId = txId;
             while (cursor.next()) {
-                CommittedCommandBatch commandBatch = cursor.get();
+                CommittedCommandBatchRepresentation commandBatch = cursor.get();
                 assertEquals(currentTxId--, commandBatch.txId());
                 observedTransaction++;
             }
@@ -135,7 +135,7 @@ class EagerlyReversedCommandBatchCursorTest {
 
             long currentTxId = txId;
             while (cursor.next()) {
-                CommittedCommandBatch commandBatch = cursor.get();
+                CommittedCommandBatchRepresentation commandBatch = cursor.get();
                 assertEquals(currentTxId--, commandBatch.txId());
                 assertEquals(startPositions.get(transaction++), cursor.position());
                 observedTransaction++;
@@ -151,7 +151,7 @@ class EagerlyReversedCommandBatchCursorTest {
         CommandBatchCursor cursor = eagerlyReverse(source);
 
         // WHEN
-        CommittedCommandBatch[] reversed = exhaust(cursor);
+        CommittedCommandBatchRepresentation[] reversed = exhaust(cursor);
 
         // THEN
         assertEquals(0, reversed.length);

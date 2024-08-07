@@ -50,7 +50,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.entry.v57.LogEntryChunkEnd;
 import org.neo4j.kernel.impl.transaction.log.entry.v57.LogEntryChunkStart;
 
-class CommittedCommandBatchCursorTest {
+class CommittedCommandBatchRepresentationCursorTest {
     private final ReadableLogChannel channel = mock(ReadableLogChannel.class, RETURNS_MOCKS);
     private final LogEntryReader entryReader = mock(LogEntryReader.class);
 
@@ -75,9 +75,9 @@ class CommittedCommandBatchCursorTest {
         when(entryReader.readLogEntry(channel)).thenReturn(START_ENTRY, CHUNK_END, CHUNK_START, COMMIT_ENTRY, null);
 
         assertTrue(cursor.next());
-        assertThat(cursor.get()).isInstanceOf(CommittedChunkRepresentation.class);
+        assertThat(cursor.get()).isInstanceOf(ChunkedBatchRepresentation.class);
         assertTrue(cursor.next());
-        assertThat(cursor.get()).isInstanceOf(CommittedChunkRepresentation.class);
+        assertThat(cursor.get()).isInstanceOf(ChunkedBatchRepresentation.class);
 
         assertFalse(cursor.next());
     }
@@ -127,8 +127,7 @@ class CommittedCommandBatchCursorTest {
 
         // then
         assertEquals(
-                new CommittedTransactionRepresentation(
-                        START_ENTRY, singletonList(COMMAND_ENTRY.getCommand()), COMMIT_ENTRY),
+                new CompleteBatchRepresentation(START_ENTRY, singletonList(COMMAND_ENTRY.getCommand()), COMMIT_ENTRY),
                 cursor.get());
     }
 }

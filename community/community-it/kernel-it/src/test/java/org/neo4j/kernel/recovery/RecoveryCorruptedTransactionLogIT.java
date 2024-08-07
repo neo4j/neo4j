@@ -79,7 +79,7 @@ import org.neo4j.io.memory.ByteBuffers;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
-import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
+import org.neo4j.kernel.impl.transaction.CommittedCommandBatchRepresentation;
 import org.neo4j.kernel.impl.transaction.SimpleAppendIndexProvider;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
@@ -1597,7 +1597,7 @@ class RecoveryCorruptedTransactionLogIT {
         }
 
         @Override
-        public void batchRecovered(CommittedCommandBatch committedBatch) {
+        public void batchRecovered(CommittedCommandBatchRepresentation committedBatch) {
             recoveredBatches.add(committedBatch.txId());
             if (committedBatch.commandBatch().isLast()) {
                 numberOfRecoveredTransactions++;

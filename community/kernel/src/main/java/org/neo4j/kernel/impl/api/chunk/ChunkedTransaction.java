@@ -27,7 +27,7 @@ import org.neo4j.common.Subject;
 import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.api.txid.TransactionIdGenerator;
-import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
+import org.neo4j.kernel.impl.transaction.CommittedCommandBatchRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.storageengine.api.CommandBatch;
 import org.neo4j.storageengine.api.Commitment;
@@ -64,10 +64,12 @@ public class ChunkedTransaction implements StorageEngineTransaction {
     }
 
     public ChunkedTransaction(
-            CommittedCommandBatch committedCommandBatch, CursorContext cursorContext, StoreCursors storeCursors) {
+            CommittedCommandBatchRepresentation committedCommandBatchRepresentation,
+            CursorContext cursorContext,
+            StoreCursors storeCursors) {
         this(cursorContext, -1, storeCursors, Commitment.NO_COMMITMENT, TransactionIdGenerator.EXTERNAL_ID);
-        this.transactionId = committedCommandBatch.txId();
-        init((ChunkedCommandBatch) committedCommandBatch.commandBatch());
+        this.transactionId = committedCommandBatchRepresentation.txId();
+        init((ChunkedCommandBatch) committedCommandBatchRepresentation.commandBatch());
     }
 
     public void init(ChunkedCommandBatch chunk) {

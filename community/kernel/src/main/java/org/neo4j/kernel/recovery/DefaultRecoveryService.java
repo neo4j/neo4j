@@ -32,7 +32,7 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.context.TransactionIdSnapshot;
 import org.neo4j.kernel.KernelVersionProvider;
-import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
+import org.neo4j.kernel.impl.transaction.CommittedCommandBatchRepresentation;
 import org.neo4j.kernel.impl.transaction.log.CommandBatchCursor;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
@@ -111,7 +111,7 @@ public class DefaultRecoveryService implements RecoveryService {
 
     @Override
     public void transactionsRecovered(
-            CommittedCommandBatch.BatchInformation highestTransactionRecoveredBatch,
+            CommittedCommandBatchRepresentation.BatchInformation highestTransactionRecoveredBatch,
             AppendIndexProvider recoverAppendIndexProvider,
             LogPosition lastRecoveredTransactionPosition,
             LogPosition positionAfterLastRecoveredTransaction,

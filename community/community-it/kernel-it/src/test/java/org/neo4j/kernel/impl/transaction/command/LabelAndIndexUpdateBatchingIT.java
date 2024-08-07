@@ -36,7 +36,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.impl.api.CompleteTransaction;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.txid.TransactionIdGenerator;
-import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
+import org.neo4j.kernel.impl.transaction.CommittedCommandBatchRepresentation;
 import org.neo4j.kernel.impl.transaction.log.CommandBatchCursor;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionCommitmentFactory;
@@ -66,7 +66,7 @@ class LabelAndIndexUpdateBatchingIT {
         // perform the transactions from db-level and extract the transactions as commands
         // so that they can be applied batch-wise they way we'd like to later.
 
-        List<CommittedCommandBatch> transactions;
+        List<CommittedCommandBatchRepresentation> transactions;
         DatabaseManagementService managementService =
                 new TestDatabaseManagementServiceBuilder().impermanent().build();
         GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database(DEFAULT_DATABASE_NAME);
@@ -136,7 +136,7 @@ class LabelAndIndexUpdateBatchingIT {
         }
     }
 
-    private static int findCutoffIndex(Collection<CommittedCommandBatch> transactions, long txId) {
+    private static int findCutoffIndex(Collection<CommittedCommandBatchRepresentation> transactions, long txId) {
         var iterator = transactions.iterator();
         for (int i = 0; iterator.hasNext(); i++) {
             var tx = iterator.next();
@@ -147,7 +147,8 @@ class LabelAndIndexUpdateBatchingIT {
         throw new AssertionError("Couldn't find the transaction which would be the cut-off point");
     }
 
-    private static CompleteTransaction toApply(Collection<CommittedCommandBatch> transactions, GraphDatabaseAPI db) {
+    private static CompleteTransaction toApply(
+            Collection<CommittedCommandBatchRepresentation> transactions, GraphDatabaseAPI db) {
         StorageEngine storageEngine = db.getDependencyResolver().resolveDependency(StorageEngine.class);
         var commitmentFactory = db.getDependencyResolver().resolveDependency(TransactionCommitmentFactory.class);
         var transactionIdGenerator = db.getDependencyResolver().resolveDependency(TransactionIdGenerator.class);
@@ -168,10 +169,10 @@ class LabelAndIndexUpdateBatchingIT {
         return first;
     }
 
-    private static List<CommittedCommandBatch> extractTransactions(GraphDatabaseAPI db, long txIdToStartOn)
-            throws IOException {
+    private static List<CommittedCommandBatchRepresentation> extractTransactions(
+            GraphDatabaseAPI db, long txIdToStartOn) throws IOException {
         LogicalTransactionStore txStore = db.getDependencyResolver().resolveDependency(LogicalTransactionStore.class);
-        List<CommittedCommandBatch> transactions = new ArrayList<>();
+        List<CommittedCommandBatchRepresentation> transactions = new ArrayList<>();
         try (CommandBatchCursor cursor = txStore.getCommandBatches(txIdToStartOn)) {
             cursor.forAll(transactions::add);
         }

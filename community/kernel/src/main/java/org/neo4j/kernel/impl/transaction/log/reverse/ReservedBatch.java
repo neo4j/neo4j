@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.log.reverse;
 
-import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
+import org.neo4j.kernel.impl.transaction.CommittedCommandBatchRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 
-record ReservedBatch(CommittedCommandBatch commitedBatch, LogPosition batchStartPosition) {}
+record ReservedBatch(CommittedCommandBatchRepresentation commitedBatch, LogPosition batchStartPosition) {}

@@ -53,7 +53,7 @@ import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.extension.ExtensionFactory;
-import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
+import org.neo4j.kernel.impl.transaction.CommittedCommandBatchRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LoggingLogFileMonitor;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
@@ -267,7 +267,7 @@ class ForwardRecoveryIT {
         }
 
         @Override
-        public void batchRecovered(CommittedCommandBatch committedBatch) {
+        public void batchRecovered(CommittedCommandBatchRepresentation committedBatch) {
             batchesCounter.incrementAndGet();
             if (batchesCounter.get() == 21) {
                 afterTwentyBatchesMessage =

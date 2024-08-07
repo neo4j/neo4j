@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.recovery;
 
-import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
+import org.neo4j.kernel.impl.transaction.CommittedCommandBatchRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 
-record RollbackTransactionInfo(CommittedCommandBatch.BatchInformation batchInfo, LogPosition position) {}
+record RollbackTransactionInfo(CommittedCommandBatchRepresentation.BatchInformation batchInfo, LogPosition position) {}

@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.recovery;
 
-import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
-import org.neo4j.kernel.impl.transaction.CommittedCommandBatch.BatchInformation;
+import org.neo4j.kernel.impl.transaction.CommittedCommandBatchRepresentation;
+import org.neo4j.kernel.impl.transaction.CommittedCommandBatchRepresentation.BatchInformation;
 import org.neo4j.kernel.impl.transaction.log.CheckpointInfo;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 
@@ -48,7 +48,7 @@ class RecoveryContextTracker {
         lastHighestTransactionBatchInfo = checkpointBatchInfo;
     }
 
-    void commitedBatch(CommittedCommandBatch nextCommandBatch, LogPosition position) {
+    void commitedBatch(CommittedCommandBatchRepresentation nextCommandBatch, LogPosition position) {
         BatchInformation batchInfo = nextCommandBatch.batchInformation();
         if (updateHighestBatchInfo(nextCommandBatch.txId())) {
             lastHighestTransactionBatchInfo = batchInfo;

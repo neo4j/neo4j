@@ -53,7 +53,7 @@ import org.neo4j.kernel.impl.api.CompleteTransaction;
 import org.neo4j.kernel.impl.api.TestCommand;
 import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
 import org.neo4j.kernel.impl.api.txid.IdStoreTransactionIdGenerator;
-import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
+import org.neo4j.kernel.impl.transaction.CommittedCommandBatchRepresentation;
 import org.neo4j.kernel.impl.transaction.SimpleAppendIndexProvider;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
@@ -403,7 +403,7 @@ class PhysicalLogicalTransactionStoreTest {
         try (CommandBatchCursor cursor = store.getCommandBatches(initialAppendIndex + 1)) {
             boolean hasNext = cursor.next();
             assertTrue(hasNext);
-            CommittedCommandBatch commandBatch = cursor.get();
+            CommittedCommandBatchRepresentation commandBatch = cursor.get();
             CommandBatch transaction = commandBatch.commandBatch();
             assertEquals(consensusIndex, transaction.consensusIndex());
             assertEquals(timeStarted, transaction.getTimeStarted());
@@ -447,7 +447,7 @@ class PhysicalLogicalTransactionStoreTest {
         }
 
         @Override
-        public boolean visit(CommittedCommandBatch batch) {
+        public boolean visit(CommittedCommandBatchRepresentation batch) {
             CommandBatch transaction = batch.commandBatch();
             assertEquals(consensusIndex, transaction.consensusIndex());
             assertEquals(timeStarted, transaction.getTimeStarted());
@@ -511,7 +511,7 @@ class PhysicalLogicalTransactionStoreTest {
 
         @Override
         public void transactionsRecovered(
-                CommittedCommandBatch.BatchInformation highestTransactionHeadCommandBatch,
+                CommittedCommandBatchRepresentation.BatchInformation highestTransactionHeadCommandBatch,
                 AppendIndexProvider appendIndexProvider,
                 LogPosition lastTransactionPosition,
                 LogPosition positionAfterLastRecoveredTransaction,

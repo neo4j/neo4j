@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.transaction.log.reverse;
 
 import java.io.IOException;
-import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
+import org.neo4j.kernel.impl.transaction.CommittedCommandBatchRepresentation;
 import org.neo4j.kernel.impl.transaction.log.CommandBatchCursor;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 
@@ -39,7 +39,7 @@ public class NullCommandBatchCursor implements CommandBatchCursor {
     }
 
     @Override
-    public CommittedCommandBatch get() {
+    public CommittedCommandBatchRepresentation get() {
         throw new UnsupportedOperationException("unsupported");
     }
 }

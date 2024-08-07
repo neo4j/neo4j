@@ -28,7 +28,7 @@ import static org.neo4j.kernel.recovery.TransactionStatus.RECOVERABLE;
 import static org.neo4j.kernel.recovery.TransactionStatus.ROLLED_BACK;
 
 import org.junit.jupiter.api.Test;
-import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
+import org.neo4j.kernel.impl.transaction.CommittedCommandBatchRepresentation;
 import org.neo4j.storageengine.api.CommandBatch;
 
 class TransactionIdTrackerTest {
@@ -225,8 +225,9 @@ class TransactionIdTrackerTest {
         assertThat(transactionIdTracker.notCompletedTransactions()).containsExactly(2, 5);
     }
 
-    private static CommittedCommandBatch createCommandBatch(long id, boolean first, boolean last, boolean rollback) {
-        var committedCommandBatch = mock(CommittedCommandBatch.class);
+    private static CommittedCommandBatchRepresentation createCommandBatch(
+            long id, boolean first, boolean last, boolean rollback) {
+        var committedCommandBatch = mock(CommittedCommandBatchRepresentation.class);
         var commandBatch = mock(CommandBatch.class);
         when(commandBatch.isFirst()).thenReturn(first);
         when(commandBatch.isLast()).thenReturn(last);

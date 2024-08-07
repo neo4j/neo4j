@@ -45,7 +45,7 @@ import org.neo4j.kernel.impl.api.chunk.ChunkedTransaction;
 import org.neo4j.kernel.impl.api.transaction.serial.SerialExecutionGuard;
 import org.neo4j.kernel.impl.api.txid.TransactionIdGenerator;
 import org.neo4j.kernel.impl.locking.LockManager;
-import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
+import org.neo4j.kernel.impl.transaction.CommittedCommandBatchRepresentation;
 import org.neo4j.kernel.impl.transaction.log.CommandBatchCursor;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
@@ -261,7 +261,7 @@ public final class ChunkCommitter implements TransactionCommitter {
                                 "Transaction rollback failed. Expected to rollback %d batches, but was able to undo only %d for transaction with id %d.",
                                 chunksToRollback, rolledbackBatches, transactionIdToRollback));
                     }
-                    CommittedCommandBatch commandBatch = commandBatches.get();
+                    CommittedCommandBatchRepresentation commandBatch = commandBatches.get();
                     if (commandBatch.txId() != transactionIdToRollback) {
                         throw new TransactionRollbackException(String.format(
                                 "Transaction rollback failed. Batch with transaction id %d encountered, while it was expected to belong to transaction id %d. Batch id: %s.",
@@ -282,7 +282,7 @@ public final class ChunkCommitter implements TransactionCommitter {
         }
     }
 
-    private String chunkId(CommittedCommandBatch commandBatch) {
+    private String chunkId(CommittedCommandBatchRepresentation commandBatch) {
         return commandBatch.commandBatch() instanceof ChunkedCommandBatch cc
                 ? String.valueOf(cc.chunkMetadata().chunkId())
                 : "N/A";

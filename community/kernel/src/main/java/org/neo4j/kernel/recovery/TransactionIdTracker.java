@@ -25,7 +25,7 @@ import static org.neo4j.kernel.recovery.TransactionStatus.ROLLED_BACK;
 
 import org.eclipse.collections.api.factory.primitive.LongSets;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
-import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
+import org.neo4j.kernel.impl.transaction.CommittedCommandBatchRepresentation;
 import org.neo4j.storageengine.api.CommandBatch;
 
 public class TransactionIdTracker {
@@ -48,7 +48,7 @@ public class TransactionIdTracker {
         return notCompletedTransactions.toSortedArray();
     }
 
-    public void trackBatch(CommittedCommandBatch committedBatch) {
+    public void trackBatch(CommittedCommandBatchRepresentation committedBatch) {
         CommandBatch commandBatch = committedBatch.commandBatch();
         if (commandBatch.isFirst() && commandBatch.isLast()) {
             return;

@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.transaction.log.reverse;
 
 import java.io.IOException;
-import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
+import org.neo4j.kernel.impl.transaction.CommittedCommandBatchRepresentation;
 import org.neo4j.kernel.impl.transaction.log.CommandBatchCursor;
 import org.neo4j.kernel.impl.transaction.log.CommittedCommandBatchCursor;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
@@ -77,7 +77,7 @@ public class ReversedMultiFileCommandBatchCursor implements CommandBatchCursor {
     }
 
     @Override
-    public CommittedCommandBatch get() {
+    public CommittedCommandBatchRepresentation get() {
         return currentLogCommandBatchCursor.get();
     }
 

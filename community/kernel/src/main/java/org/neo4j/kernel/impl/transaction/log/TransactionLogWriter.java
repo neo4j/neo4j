@@ -28,7 +28,7 @@ import java.util.OptionalLong;
 import org.neo4j.kernel.BinarySupportedKernelVersions;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.KernelVersionProvider;
-import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
+import org.neo4j.kernel.impl.transaction.CommittedCommandBatchRepresentation;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
@@ -133,7 +133,7 @@ public class TransactionLogWriter {
         }
     }
 
-    public int append(CommittedCommandBatch commandBatch) throws IOException {
+    public int append(CommittedCommandBatchRepresentation commandBatch) throws IOException {
         return commandBatch.serialize(writer);
     }
 

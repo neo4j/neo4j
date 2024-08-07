@@ -22,9 +22,9 @@ package org.neo4j.kernel.recovery;
 import java.time.Instant;
 import java.util.function.Predicate;
 import org.neo4j.internal.helpers.Format;
-import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
+import org.neo4j.kernel.impl.transaction.CommittedCommandBatchRepresentation;
 
-public interface RecoveryPredicate extends Predicate<CommittedCommandBatch> {
+public interface RecoveryPredicate extends Predicate<CommittedCommandBatchRepresentation> {
     RecoveryPredicate ALL = new AllTransactionsPredicate();
 
     static RecoveryPredicate untilTransactionId(long txId) {
@@ -46,7 +46,7 @@ public interface RecoveryPredicate extends Predicate<CommittedCommandBatch> {
         }
 
         @Override
-        public boolean test(CommittedCommandBatch commandBatch) {
+        public boolean test(CommittedCommandBatchRepresentation commandBatch) {
             return true;
         }
     }
@@ -59,7 +59,7 @@ public interface RecoveryPredicate extends Predicate<CommittedCommandBatch> {
         }
 
         @Override
-        public boolean test(CommittedCommandBatch commandBatch) {
+        public boolean test(CommittedCommandBatchRepresentation commandBatch) {
             return commandBatch.txId() < txId;
         }
 
@@ -77,7 +77,7 @@ public interface RecoveryPredicate extends Predicate<CommittedCommandBatch> {
         }
 
         @Override
-        public boolean test(CommittedCommandBatch commandBatch) {
+        public boolean test(CommittedCommandBatchRepresentation commandBatch) {
             return commandBatch.timeWritten() < instant.toEpochMilli();
         }
 

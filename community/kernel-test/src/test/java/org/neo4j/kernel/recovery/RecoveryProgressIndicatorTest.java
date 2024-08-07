@@ -41,7 +41,7 @@ import org.neo4j.internal.helpers.progress.Indicator;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
-import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.CompleteBatchRepresentation;
 import org.neo4j.kernel.impl.transaction.log.CommandBatchCursor;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
@@ -62,7 +62,7 @@ class RecoveryProgressIndicatorTest {
         int transactionsToRecover = 5;
         int expectedMax = transactionsToRecover * 2;
         int appendIndexAndTxId = 14;
-        CommittedTransactionRepresentation transactionRepresentation = new CommittedTransactionRepresentation(
+        CompleteBatchRepresentation transactionRepresentation = new CompleteBatchRepresentation(
                 newStartEntry(
                         LATEST_KERNEL_VERSION, 1, 2, appendIndexAndTxId, 4, EMPTY_BYTE_ARRAY, LogPosition.UNSPECIFIED),
                 emptyList(),

@@ -34,8 +34,8 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.KernelVersionProvider;
-import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
-import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.CommittedCommandBatchRepresentation;
+import org.neo4j.kernel.impl.transaction.CompleteBatchRepresentation;
 import org.neo4j.kernel.impl.transaction.log.CommandBatchCursor;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -95,11 +95,10 @@ public class UpgradeTestUtil {
             ThrowingSupplier<CommandBatchCursor, IOException> commandBatchCursorSupplier)
             throws Exception {
         ArrayList<KernelVersion> transactionVersions = new ArrayList<>();
-        ArrayList<CommittedCommandBatch> transactions = new ArrayList<>();
+        ArrayList<CommittedCommandBatchRepresentation> transactions = new ArrayList<>();
         try (CommandBatchCursor commandBatchCursor = commandBatchCursorSupplier.get()) {
             while (commandBatchCursor.next()) {
-                CommittedTransactionRepresentation representation =
-                        (CommittedTransactionRepresentation) commandBatchCursor.get();
+                CompleteBatchRepresentation representation = (CompleteBatchRepresentation) commandBatchCursor.get();
                 if (representation.txId() > fromTxId) {
                     transactions.add(representation);
                     transactionVersions.add(representation.startEntry().kernelVersion());
@@ -116,7 +115,7 @@ public class UpgradeTestUtil {
 
         int indexFirstOnNew = transactionVersions.indexOf(to);
         // Upgrade should be last on old version
-        CommittedCommandBatch upgradeTransaction = transactions.get(indexFirstOnNew - 1);
+        CommittedCommandBatchRepresentation upgradeTransaction = transactions.get(indexFirstOnNew - 1);
         var commands = upgradeTransaction.commandBatch();
         for (StorageCommand command : commands) {
             assertThat(command).isInstanceOf(StorageCommand.VersionUpgradeCommand.class);

@@ -88,8 +88,8 @@ import org.neo4j.kernel.impl.api.InternalTransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TestCommand;
 import org.neo4j.kernel.impl.api.txid.IdStoreTransactionIdGenerator;
 import org.neo4j.kernel.impl.api.txid.TransactionIdGenerator;
-import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
-import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.CommittedCommandBatchRepresentation;
+import org.neo4j.kernel.impl.transaction.CompleteBatchRepresentation;
 import org.neo4j.kernel.impl.transaction.SimpleAppendIndexProvider;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
@@ -185,7 +185,7 @@ class BatchingTransactionAppenderTest {
         try (var readChannel = getReadChannel(fs, path, LATEST_KERNEL_VERSION);
                 var reader = new CommittedCommandBatchCursor(readChannel, logEntryReader)) {
             reader.next();
-            CommittedCommandBatch commandBatch = reader.get();
+            CommittedCommandBatchRepresentation commandBatch = reader.get();
             assertEquals(LATEST_KERNEL_VERSION, commandBatch.commandBatch().kernelVersion());
         }
     }
@@ -247,8 +247,7 @@ class BatchingTransactionAppenderTest {
                 additionalHeader,
                 LogPosition.UNSPECIFIED);
         LogEntryCommit commit = newCommitEntry(LATEST_KERNEL_VERSION, nextTxId, timeCommitted, BASE_TX_CHECKSUM);
-        CommittedTransactionRepresentation transaction =
-                new CommittedTransactionRepresentation(start, singleTestCommand(), commit);
+        CompleteBatchRepresentation transaction = new CompleteBatchRepresentation(start, singleTestCommand(), commit);
 
         try (var writeChannel = getWriteChannel(fs, path, LATEST_KERNEL_VERSION)) {
             doReturn(new TransactionLogWriter(
@@ -283,7 +282,7 @@ class BatchingTransactionAppenderTest {
         try (var readChannel = getReadChannel(fs, path, LATEST_KERNEL_VERSION);
                 CommittedCommandBatchCursor reader = new CommittedCommandBatchCursor(readChannel, logEntryReader)) {
             reader.next();
-            CommittedCommandBatch commandBatch = reader.get();
+            CommittedCommandBatchRepresentation commandBatch = reader.get();
             CommandBatch result = commandBatch.commandBatch();
             assertEquals(5, result.consensusIndex());
             assertEquals(timeStarted, result.getTimeStarted());
@@ -319,8 +318,7 @@ class BatchingTransactionAppenderTest {
                 LogPosition.UNSPECIFIED);
         LogEntryCommit commit = newCommitEntry(
                 LATEST_KERNEL_VERSION, latestCommittedTxWhenStarted + 2, timeCommitted, BASE_TX_CHECKSUM);
-        CommittedTransactionRepresentation transaction =
-                new CommittedTransactionRepresentation(start, singleTestCommand(), commit);
+        CompleteBatchRepresentation transaction = new CompleteBatchRepresentation(start, singleTestCommand(), commit);
 
         var e = assertThrows(
                 Exception.class,
@@ -470,7 +468,7 @@ class BatchingTransactionAppenderTest {
         when(transactionIdStore.nextCommittingTransactionId()).thenReturn(42L);
         var transactionCommitment = new TransactionCommitment(transactionIdStore);
         var transactionIdGenerator = new IdStoreTransactionIdGenerator(transactionIdStore);
-        var transaction = new CommittedTransactionRepresentation(
+        var transaction = new CompleteBatchRepresentation(
                 newStartEntry(LATEST_KERNEL_VERSION, 1, 2, 3, 4, EMPTY_BYTE_ARRAY, LogPosition.UNSPECIFIED),
                 singleTestCommand(),
                 newCommitEntry(LATEST_KERNEL_VERSION, 11, 1L, BASE_TX_CHECKSUM));
@@ -518,7 +516,7 @@ class BatchingTransactionAppenderTest {
         try (var readChannel = getReadChannel(fs, path, kernelVersion);
                 CommittedCommandBatchCursor reader = new CommittedCommandBatchCursor(readChannel, logEntryReader)) {
             reader.next();
-            CommittedCommandBatch commandBatch = reader.get();
+            CommittedCommandBatchRepresentation commandBatch = reader.get();
             CommandBatch tx = commandBatch.commandBatch();
             assertEquals(transaction.consensusIndex(), tx.consensusIndex());
             assertEquals(transaction.getTimeStarted(), tx.getTimeStarted());

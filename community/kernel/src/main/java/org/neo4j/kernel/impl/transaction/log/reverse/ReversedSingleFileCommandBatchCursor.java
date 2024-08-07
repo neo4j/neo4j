@@ -24,7 +24,7 @@ import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.Deque;
 import org.neo4j.io.fs.ReadAheadChannel;
-import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
+import org.neo4j.kernel.impl.transaction.CommittedCommandBatchRepresentation;
 import org.neo4j.kernel.impl.transaction.log.CommandBatchCursor;
 import org.neo4j.kernel.impl.transaction.log.CommittedCommandBatchCursor;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
@@ -73,7 +73,7 @@ public class ReversedSingleFileCommandBatchCursor implements CommandBatchCursor 
     private final Deque<ReservedBatch> chunkBatches = new ArrayDeque<>(20);
     private final SketchingCommandBatchCursor sketchingCursor;
 
-    private CommittedCommandBatch currentCommandBatch;
+    private CommittedCommandBatchRepresentation currentCommandBatch;
     private LogPosition currentBatchStartPosition;
 
     // May be longer than required, offsetLength holds the actual length.
@@ -193,7 +193,7 @@ public class ReversedSingleFileCommandBatchCursor implements CommandBatchCursor 
     }
 
     @Override
-    public CommittedCommandBatch get() {
+    public CommittedCommandBatchRepresentation get() {
         return currentCommandBatch;
     }
 

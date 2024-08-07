@@ -48,7 +48,7 @@ import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.store.stats.StoreEntityCounters;
-import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.CompleteBatchRepresentation;
 import org.neo4j.kernel.impl.transaction.log.CompleteCommandBatch;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
@@ -238,13 +238,13 @@ class ParallelRecoveryVisitorTest {
         assertThatThrownBy(visitor::close).getCause().hasMessageContaining(failure);
     }
 
-    private CommittedTransactionRepresentation tx(long txId, List<StorageCommand> commands) {
+    private CompleteBatchRepresentation tx(long txId, List<StorageCommand> commands) {
         commands.forEach(cmd -> ((RecoveryTestBaseCommand) cmd).txId = txId);
         LogEntryStart startEntry = newStartEntry(LATEST_KERNEL_VERSION, 0, 0, 0, 0, EMPTY_BYTE_ARRAY, UNSPECIFIED);
         CommandBatch txRepresentation = new CompleteCommandBatch(
                 commands, UNKNOWN_CONSENSUS_INDEX, 0, 0, 0, 0, LATEST_KERNEL_VERSION, AUTH_DISABLED);
         LogEntryCommit commitEntry = newCommitEntry(LATEST_KERNEL_VERSION, txId, 0, 0);
-        return new CommittedTransactionRepresentation(startEntry, txRepresentation, commitEntry);
+        return new CompleteBatchRepresentation(startEntry, txRepresentation, commitEntry);
     }
 
     private List<StorageCommand> commandsRelatedToNode(long nodeId) {

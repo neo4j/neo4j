@@ -22,10 +22,10 @@ package org.neo4j.kernel.impl.transaction.log;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import org.neo4j.kernel.impl.transaction.CommittedChunkRepresentation;
-import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
-import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.RollbackChunkRepresentation;
+import org.neo4j.kernel.impl.transaction.ChunkedBatchRepresentation;
+import org.neo4j.kernel.impl.transaction.ChunkedRollbackBatchRepresentation;
+import org.neo4j.kernel.impl.transaction.CommittedCommandBatchRepresentation;
+import org.neo4j.kernel.impl.transaction.CompleteBatchRepresentation;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommand;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
@@ -41,7 +41,7 @@ public class CommittedCommandBatchCursor implements CommandBatchCursor {
     private final LogEntryCursor logEntryCursor;
     private final LogPositionMarker lastGoodPositionMarker = new LogPositionMarker();
 
-    private CommittedCommandBatch current;
+    private CommittedCommandBatchRepresentation current;
 
     public CommittedCommandBatchCursor(ReadableLogPositionAwareChannel channel, LogEntryReader entryReader)
             throws IOException {
@@ -51,7 +51,7 @@ public class CommittedCommandBatchCursor implements CommandBatchCursor {
     }
 
     @Override
-    public CommittedCommandBatch get() {
+    public CommittedCommandBatchRepresentation get() {
         return current;
     }
 
@@ -66,7 +66,7 @@ public class CommittedCommandBatchCursor implements CommandBatchCursor {
         LogEntry entry = logEntryCursor.get();
         List<StorageCommand> entries = new ArrayList<>();
         if (entry instanceof LogEntryRollback rollback) {
-            current = new RollbackChunkRepresentation(
+            current = new ChunkedRollbackBatchRepresentation(
                     rollback.kernelVersion(),
                     rollback.getTransactionId(),
                     rollback.getAppendIndex(),
@@ -90,9 +90,9 @@ public class CommittedCommandBatchCursor implements CommandBatchCursor {
                 entries.add(command.getCommand());
             }
             if (startEntry instanceof LogEntryStart entryStart && endEntry instanceof LogEntryCommit commitEntry) {
-                current = new CommittedTransactionRepresentation(entryStart, entries, commitEntry);
+                current = new CompleteBatchRepresentation(entryStart, entries, commitEntry);
             } else {
-                current = CommittedChunkRepresentation.createChunkRepresentation(startEntry, entries, endEntry);
+                current = ChunkedBatchRepresentation.createChunkRepresentation(startEntry, entries, endEntry);
             }
         } else {
             throw new IllegalStateException("Was expecting transaction or chunk start but got: " + entry);

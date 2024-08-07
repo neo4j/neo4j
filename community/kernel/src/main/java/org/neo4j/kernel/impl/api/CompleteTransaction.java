@@ -29,7 +29,7 @@ import org.neo4j.common.Subject;
 import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.api.txid.TransactionIdGenerator;
-import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
+import org.neo4j.kernel.impl.transaction.CommittedCommandBatchRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.storageengine.api.CommandBatch;
 import org.neo4j.storageengine.api.Commitment;
@@ -64,18 +64,25 @@ public class CompleteTransaction implements StorageEngineTransaction {
     private long appendIndex;
 
     public CompleteTransaction(
-            CommittedCommandBatch committedCommandBatch, CursorContext cursorContext, StoreCursors storeCursors) {
-        this(committedCommandBatch, cursorContext, storeCursors, Commitment.NO_COMMITMENT, EXTERNAL_ID);
+            CommittedCommandBatchRepresentation committedCommandBatchRepresentation,
+            CursorContext cursorContext,
+            StoreCursors storeCursors) {
+        this(committedCommandBatchRepresentation, cursorContext, storeCursors, Commitment.NO_COMMITMENT, EXTERNAL_ID);
     }
 
     public CompleteTransaction(
-            CommittedCommandBatch committedCommandBatch,
+            CommittedCommandBatchRepresentation committedCommandBatchRepresentation,
             CursorContext cursorContext,
             StoreCursors storeCursors,
             Commitment commitment,
             TransactionIdGenerator transactionIdGenerator) {
-        this(committedCommandBatch.commandBatch(), cursorContext, storeCursors, commitment, transactionIdGenerator);
-        this.transactionId = committedCommandBatch.txId();
+        this(
+                committedCommandBatchRepresentation.commandBatch(),
+                cursorContext,
+                storeCursors,
+                commitment,
+                transactionIdGenerator);
+        this.transactionId = committedCommandBatchRepresentation.txId();
     }
 
     public CompleteTransaction(

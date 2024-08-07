@@ -25,7 +25,7 @@ import static org.neo4j.internal.helpers.Format.date;
 import static org.neo4j.internal.helpers.Format.duration;
 
 import java.nio.file.Path;
-import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
+import org.neo4j.kernel.impl.transaction.CommittedCommandBatchRepresentation;
 import org.neo4j.kernel.impl.transaction.log.rotation.monitor.LogRotationMonitor;
 import org.neo4j.kernel.recovery.RecoveryMode;
 import org.neo4j.kernel.recovery.RecoveryMonitor;
@@ -69,7 +69,9 @@ public class LoggingLogFileMonitor
 
     @Override
     public void failToRecoverTransactionsAfterCommit(
-            Throwable t, CommittedCommandBatch.BatchInformation commandBatch, LogPosition recoveryToPosition) {
+            Throwable t,
+            CommittedCommandBatchRepresentation.BatchInformation commandBatch,
+            LogPosition recoveryToPosition) {
         log.warn(
                 format(
                         "Fail to recover database. Highest recovered transaction id:%d, committed "
@@ -80,7 +82,7 @@ public class LoggingLogFileMonitor
 
     @Override
     public void partialRecovery(
-            RecoveryPredicate recoveryPredicate, CommittedCommandBatch.BatchInformation commandBatch) {
+            RecoveryPredicate recoveryPredicate, CommittedCommandBatchRepresentation.BatchInformation commandBatch) {
         log.info("Partial database recovery based on provided criteria: " + recoveryPredicate.describe()
                 + ". Last replayed transaction: " + describeBatch(commandBatch) + ".");
     }
@@ -100,7 +102,7 @@ public class LoggingLogFileMonitor
     }
 
     @Override
-    public void batchRecovered(CommittedCommandBatch committedBatch) {
+    public void batchRecovered(CommittedCommandBatchRepresentation committedBatch) {
         trackTxId(committedBatch.txId());
         if (committedBatch.commandBatch().isLast()) {
             numberOfRecoveredTransactions++;
@@ -108,7 +110,7 @@ public class LoggingLogFileMonitor
     }
 
     @Override
-    public void batchApplySkipped(CommittedCommandBatch committedBatch) {
+    public void batchApplySkipped(CommittedCommandBatchRepresentation committedBatch) {
         trackTxId(committedBatch.txId());
         if (committedBatch.commandBatch().isFirst()) {
             skippedFirstBatches++;
@@ -176,7 +178,7 @@ public class LoggingLogFileMonitor
         return value == unknownValue ? "None" : String.valueOf(value);
     }
 
-    private static String describeBatch(CommittedCommandBatch.BatchInformation commandBatch) {
+    private static String describeBatch(CommittedCommandBatchRepresentation.BatchInformation commandBatch) {
         if (commandBatch == null) {
             return "Not found.";
         }

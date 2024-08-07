@@ -19,27 +19,29 @@
  */
 package org.neo4j.kernel.recovery;
 
-import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
+import org.neo4j.kernel.impl.transaction.CommittedCommandBatchRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 
 public interface RecoveryMonitor {
     default void recoveryRequired(RecoveryStartInformation recoveryStartInfo) {}
 
-    default void batchRecovered(CommittedCommandBatch committedBatch) {}
+    default void batchRecovered(CommittedCommandBatchRepresentation committedBatch) {}
 
     default void recoveryCompleted(long recoveryTimeInMilliseconds, RecoveryMode mode) {}
 
     default void reverseStoreRecoveryCompleted(long lowestRecoveredAppendIndex) {}
 
     default void failToRecoverTransactionsAfterCommit(
-            Throwable t, CommittedCommandBatch.BatchInformation commandBatch, LogPosition recoveryToPosition) {}
+            Throwable t,
+            CommittedCommandBatchRepresentation.BatchInformation commandBatch,
+            LogPosition recoveryToPosition) {}
 
     default void failToRecoverTransactionsAfterPosition(Throwable t, LogPosition recoveryFromPosition) {}
 
     default void partialRecovery(
-            RecoveryPredicate recoveryPredicate, CommittedCommandBatch.BatchInformation commandBatch) {}
+            RecoveryPredicate recoveryPredicate, CommittedCommandBatchRepresentation.BatchInformation commandBatch) {}
 
-    default void batchApplySkipped(CommittedCommandBatch committedBatch) {}
+    default void batchApplySkipped(CommittedCommandBatchRepresentation committedBatch) {}
 
     default void rollbackTransaction(long transactionId, long appendIndex) {}
 }

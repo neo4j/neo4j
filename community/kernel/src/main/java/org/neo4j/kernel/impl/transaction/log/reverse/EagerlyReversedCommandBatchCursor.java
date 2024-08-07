@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.transaction.log.reverse;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
+import org.neo4j.kernel.impl.transaction.CommittedCommandBatchRepresentation;
 import org.neo4j.kernel.impl.transaction.log.CommandBatchCursor;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 
@@ -66,7 +66,7 @@ public class EagerlyReversedCommandBatchCursor implements CommandBatchCursor {
     }
 
     @Override
-    public CommittedCommandBatch get() {
+    public CommittedCommandBatchRepresentation get() {
         return batches.get(indexToReturn).commitedBatch();
     }
 

@@ -46,7 +46,7 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.api.TestCommand;
 import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
-import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
+import org.neo4j.kernel.impl.transaction.CommittedCommandBatchRepresentation;
 import org.neo4j.kernel.impl.transaction.SimpleAppendIndexProvider;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
@@ -138,7 +138,7 @@ class ReversedSingleFileCommandBatchCursorTest {
         writeTransactions(10, 1, 1);
 
         // when
-        CommittedCommandBatch[] readTransactions = readAllFromReversedCursor();
+        CommittedCommandBatchRepresentation[] readTransactions = readAllFromReversedCursor();
 
         // then
         assertTransactionRange(readTransactions, txId, TransactionIdStore.BASE_TX_ID);
@@ -150,7 +150,7 @@ class ReversedSingleFileCommandBatchCursorTest {
         writeTransactions(20_000, 1, 1);
 
         // when
-        CommittedCommandBatch[] readTransactions = readAllFromReversedCursor();
+        CommittedCommandBatchRepresentation[] readTransactions = readAllFromReversedCursor();
 
         // then
         assertTransactionRange(readTransactions, txId, TransactionIdStore.BASE_TX_ID);
@@ -162,7 +162,7 @@ class ReversedSingleFileCommandBatchCursorTest {
         writeTransactions(10, 1000, 1000);
 
         // when
-        CommittedCommandBatch[] readTransactions = readAllFromReversedCursor();
+        CommittedCommandBatchRepresentation[] readTransactions = readAllFromReversedCursor();
 
         // then
         assertTransactionRange(readTransactions, txId, TransactionIdStore.BASE_TX_ID);
@@ -173,7 +173,7 @@ class ReversedSingleFileCommandBatchCursorTest {
         // given
 
         // when
-        CommittedCommandBatch[] readTransactions = readAllFromReversedCursor();
+        CommittedCommandBatchRepresentation[] readTransactions = readAllFromReversedCursor();
 
         // then
         assertEquals(0, readTransactions.length);
@@ -202,7 +202,7 @@ class ReversedSingleFileCommandBatchCursorTest {
         writeTransactions(readableTransactions, 1, 1);
         appendCorruptedTransaction();
         writeTransactions(readableTransactions, 1, 1);
-        CommittedCommandBatch[] committedTransactionRepresentations = readAllFromReversedCursor();
+        CommittedCommandBatchRepresentation[] committedTransactionRepresentations = readAllFromReversedCursor();
         assertTransactionRange(
                 committedTransactionRepresentations,
                 readableTransactions + TransactionIdStore.BASE_TX_ID,
@@ -219,21 +219,22 @@ class ReversedSingleFileCommandBatchCursorTest {
         assertThrows(IllegalStateException.class, this::readAllFromReversedCursorFailOnCorrupted);
     }
 
-    private CommittedCommandBatch[] readAllFromReversedCursor() throws IOException {
+    private CommittedCommandBatchRepresentation[] readAllFromReversedCursor() throws IOException {
         try (ReversedSingleFileCommandBatchCursor cursor = txCursor(false)) {
             return exhaust(cursor);
         }
     }
 
-    private CommittedCommandBatch[] readAllFromReversedCursorFailOnCorrupted() throws IOException {
+    private CommittedCommandBatchRepresentation[] readAllFromReversedCursorFailOnCorrupted() throws IOException {
         try (ReversedSingleFileCommandBatchCursor cursor = txCursor(true)) {
             return exhaust(cursor);
         }
     }
 
-    private static void assertTransactionRange(CommittedCommandBatch[] readTransactions, long highTxId, long lowTxId) {
+    private static void assertTransactionRange(
+            CommittedCommandBatchRepresentation[] readTransactions, long highTxId, long lowTxId) {
         long expectedTxId = highTxId;
-        for (CommittedCommandBatch commandBatch : readTransactions) {
+        for (CommittedCommandBatchRepresentation commandBatch : readTransactions) {
             assertEquals(expectedTxId, commandBatch.txId());
             expectedTxId--;
         }

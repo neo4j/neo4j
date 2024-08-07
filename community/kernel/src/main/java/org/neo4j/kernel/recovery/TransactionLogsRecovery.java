@@ -41,7 +41,7 @@ import org.neo4j.kernel.BinarySupportedKernelVersions;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.database.Database;
-import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
+import org.neo4j.kernel.impl.transaction.CommittedCommandBatchRepresentation;
 import org.neo4j.kernel.impl.transaction.log.CommandBatchCursor;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.PhysicalFlushableLogPositionAwareChannel;
@@ -182,7 +182,8 @@ public class TransactionLogsRecovery extends LifecycleAdapter {
                                     try (var beforeCheckpointCursor =
                                             recoveryService.getCommandBatches(beforeCheckpointAppendIndex)) {
                                         if (beforeCheckpointCursor.next()) {
-                                            CommittedCommandBatch candidate = beforeCheckpointCursor.get();
+                                            CommittedCommandBatchRepresentation candidate =
+                                                    beforeCheckpointCursor.get();
                                             if (!recoveryPredicate.test(candidate)) {
                                                 throw new RecoveryPredicateException(format(
                                                         "Partial recovery criteria can't be satisfied. "
@@ -314,14 +315,14 @@ public class TransactionLogsRecovery extends LifecycleAdapter {
                 new PhysicalFlushableLogPositionAwareChannel(channel, logHeader, EmptyMemoryTracker.INSTANCE)) {
             var entryWriter = new LogEntryWriter<>(writerChannel, binarySupportedKernelVersions);
             long time = clock.millis();
-            CommittedCommandBatch.BatchInformation lastBatchInfo = null;
+            CommittedCommandBatchRepresentation.BatchInformation lastBatchInfo = null;
             for (int i = 0; i < notCompletedTransactions.length; i++) {
                 long notCompletedTransaction = notCompletedTransactions[i];
                 long appendIndex = appendIndexProvider.nextAppendIndex();
                 int checksum =
                         entryWriter.writeRollbackEntry(kernelVersion, notCompletedTransaction, appendIndex, time);
                 if (i == (notCompletedTransactions.length - 1)) {
-                    lastBatchInfo = new CommittedCommandBatch.BatchInformation(
+                    lastBatchInfo = new CommittedCommandBatchRepresentation.BatchInformation(
                             notCompletedTransaction,
                             kernelVersion,
                             checksum,
@@ -345,7 +346,7 @@ public class TransactionLogsRecovery extends LifecycleAdapter {
             initProgressReporter(recoveryStartInformation, recoveryStartInformation.transactionLogPosition());
             return;
         }
-        CommittedCommandBatch lastReversedCommandBatch = null;
+        CommittedCommandBatchRepresentation lastReversedCommandBatch = null;
 
         var oldestNotVisibleTransactionLogPosition = recoveryStartInformation.oldestNotVisibleTransactionLogPosition();
         var checkpointedLogPosition = recoveryStartInformation.transactionLogPosition();
@@ -357,7 +358,7 @@ public class TransactionLogsRecovery extends LifecycleAdapter {
                         recoveryService.getRecoveryApplier(REVERSE_RECOVERY, contextFactory, REVERSE_RECOVERY_TAG)) {
             while (transactionsToRecover.next()) {
                 recoveryStartupChecker.checkIfCanceled();
-                CommittedCommandBatch commandBatch = transactionsToRecover.get();
+                CommittedCommandBatchRepresentation commandBatch = transactionsToRecover.get();
                 if (lastReversedCommandBatch == null) {
                     lastReversedCommandBatch = commandBatch;
                     initProgressReporter(recoveryStartInformation, lastReversedCommandBatch, mode);
@@ -379,7 +380,7 @@ public class TransactionLogsRecovery extends LifecycleAdapter {
             TransactionIdTracker transactionIdTracker,
             CommandBatchCursor transactionsToRecover,
             LogPosition checkpointedLogPosition,
-            CommittedCommandBatch commandBatch) {
+            CommittedCommandBatchRepresentation commandBatch) {
         return transactionsToRecover.position().compareTo(checkpointedLogPosition) >= 0
                 || (RECOVERABLE != transactionIdTracker.transactionStatus(commandBatch.txId()));
     }
@@ -388,7 +389,7 @@ public class TransactionLogsRecovery extends LifecycleAdapter {
             RecoveryStartInformation recoveryStartInformation, LogPosition recoveryStartPosition) throws IOException {
         try (var transactionsToRecover = recoveryService.getCommandBatchesInReverseOrder(recoveryStartPosition)) {
             if (transactionsToRecover.next()) {
-                CommittedCommandBatch commandBatch = transactionsToRecover.get();
+                CommittedCommandBatchRepresentation commandBatch = transactionsToRecover.get();
                 initProgressReporter(recoveryStartInformation, commandBatch, mode);
             }
         }
@@ -396,7 +397,7 @@ public class TransactionLogsRecovery extends LifecycleAdapter {
 
     private void initProgressReporter(
             RecoveryStartInformation recoveryStartInformation,
-            CommittedCommandBatch lastReversedBatch,
+            CommittedCommandBatchRepresentation lastReversedBatch,
             RecoveryMode mode) {
         long numberOfBatchesToRecover = estimateNumberOfBatchesToRecover(recoveryStartInformation, lastReversedBatch);
         // In full mode we will process each transaction twice (doing reverse and direct detour) we need to
@@ -417,7 +418,8 @@ public class TransactionLogsRecovery extends LifecycleAdapter {
     }
 
     private static long estimateNumberOfBatchesToRecover(
-            RecoveryStartInformation recoveryStartInformation, CommittedCommandBatch lastReversedCommandBatch) {
+            RecoveryStartInformation recoveryStartInformation,
+            CommittedCommandBatchRepresentation lastReversedCommandBatch) {
         return lastReversedCommandBatch.appendIndex()
                 - recoveryStartInformation.firstAppendIndexAfterLastCheckPoint()
                 + 1;
@@ -441,7 +443,7 @@ public class TransactionLogsRecovery extends LifecycleAdapter {
     private static class RecoveryRollbackAppendIndexProvider implements AppendIndexProvider {
         private final MutableLong rollbackIndex;
 
-        public RecoveryRollbackAppendIndexProvider(CommittedCommandBatch.BatchInformation lastBatchInfo) {
+        public RecoveryRollbackAppendIndexProvider(CommittedCommandBatchRepresentation.BatchInformation lastBatchInfo) {
             this.rollbackIndex = lastBatchInfo == null
                     ? new MutableLong(BASE_APPEND_INDEX)
                     : new MutableLong(lastBatchInfo.appendIndex());

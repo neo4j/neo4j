@@ -22,18 +22,18 @@ package org.neo4j.kernel.impl.transaction.log;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
+import org.neo4j.kernel.impl.transaction.CommittedCommandBatchRepresentation;
 
 public class GivenCommandBatchCursor implements CommandBatchCursor {
     private int index = -1;
-    private final CommittedCommandBatch[] commandBatches;
+    private final CommittedCommandBatchRepresentation[] commandBatches;
 
-    private GivenCommandBatchCursor(CommittedCommandBatch... commandBatches) {
+    private GivenCommandBatchCursor(CommittedCommandBatchRepresentation... commandBatches) {
         this.commandBatches = commandBatches;
     }
 
     @Override
-    public CommittedCommandBatch get() {
+    public CommittedCommandBatchRepresentation get() {
         return commandBatches[index];
     }
 
@@ -54,15 +54,15 @@ public class GivenCommandBatchCursor implements CommandBatchCursor {
         return null;
     }
 
-    public static CommandBatchCursor given(CommittedCommandBatch... commandBatches) {
+    public static CommandBatchCursor given(CommittedCommandBatchRepresentation... commandBatches) {
         return new GivenCommandBatchCursor(commandBatches);
     }
 
-    public static CommittedCommandBatch[] exhaust(CommandBatchCursor cursor) throws IOException {
-        List<CommittedCommandBatch> list = new ArrayList<>();
+    public static CommittedCommandBatchRepresentation[] exhaust(CommandBatchCursor cursor) throws IOException {
+        List<CommittedCommandBatchRepresentation> list = new ArrayList<>();
         while (cursor.next()) {
             list.add(cursor.get());
         }
-        return list.toArray(new CommittedCommandBatch[0]);
+        return list.toArray(new CommittedCommandBatchRepresentation[0]);
     }
 }

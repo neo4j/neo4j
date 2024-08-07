@@ -55,7 +55,7 @@ import org.neo4j.kernel.KernelVersionRepository;
 import org.neo4j.kernel.impl.api.CompleteTransaction;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
-import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.CompleteBatchRepresentation;
 import org.neo4j.kernel.impl.transaction.log.CompleteCommandBatch;
 import org.neo4j.kernel.impl.transaction.log.EmptyLogTailMetadata;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
@@ -160,8 +160,8 @@ class PreAllocationOfStoreFilesTest {
                 5,
                 LatestVersions.LATEST_KERNEL_VERSION,
                 ANONYMOUS);
-        CommittedTransactionRepresentation transaction = new CommittedTransactionRepresentation(
-                mock(LogEntryStart.class), storageCommands, mock(LogEntryCommit.class));
+        CompleteBatchRepresentation transaction =
+                new CompleteBatchRepresentation(mock(LogEntryStart.class), storageCommands, mock(LogEntryCommit.class));
         CompleteTransaction completeTransaction = new CompleteTransaction(transaction, NULL_CONTEXT, StoreCursors.NULL);
 
         recordStorageEngine.preAllocateStoreFilesForCommands(completeTransaction, TransactionApplicationMode.INTERNAL);

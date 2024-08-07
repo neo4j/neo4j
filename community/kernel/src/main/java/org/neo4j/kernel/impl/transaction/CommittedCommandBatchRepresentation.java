@@ -27,7 +27,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 import org.neo4j.storageengine.api.CommandBatch;
 import org.neo4j.storageengine.api.TransactionId;
 
-public interface CommittedCommandBatch {
+public interface CommittedCommandBatchRepresentation {
 
     CommandBatch commandBatch();
 
