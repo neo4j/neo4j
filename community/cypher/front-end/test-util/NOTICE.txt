@@ -19,7 +19,6 @@ Third-party licenses
 --------------------
 
 Apache Software License, Version 2.0
-  Apache Commons Lang
   Byte Buddy (without dependencies)
   Byte Buddy agent
   mockito-4.6

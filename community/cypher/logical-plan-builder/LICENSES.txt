@@ -21,12 +21,7 @@ Apache Software License, Version 2.0
   Scala Compiler
   Scala Reflect
   scala-collection-contrib
-  scala-xml
-  scalacheck-1.16
-  scalactic
   Scalap
-  scalatest-compatible
-  scalatest-core
 ------------------------------------------------------------------------------
 
                                  Apache License
@@ -280,8 +275,6 @@ SUCH DAMAGE.
 BSD License
   ANTLR 4 Runtime
   JLine Bundle
-  scalacheck
-  test-interface
 ------------------------------------------------------------------------------
 
 Copyright (c) <year>, <copyright holder>

@@ -68,6 +68,12 @@
       <scope>compile</scope>
     </dependency>
 
+    <dependency>
+      <groupId>org.scalacheck</groupId>
+      <scope>compile</scope>
+      <artifactId>scalacheck_${scala.binary.version}</artifactId>
+    </dependency>
+
     <!-- neo4j -->
     <dependency>
       <groupId>org.neo4j</groupId>

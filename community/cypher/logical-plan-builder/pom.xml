@@ -46,14 +46,6 @@
       <artifactId>scalap</artifactId>
     </dependency>
 
-    <!-- scala test dependencies -->
-
-    <dependency>
-      <groupId>org.scalatestplus</groupId>
-      <artifactId>scalacheck-1-16_${scala.binary.version}</artifactId>
-      <scope>compile</scope>
-    </dependency>
-
     <!-- neo4j -->
     <dependency>
       <groupId>org.neo4j</groupId>

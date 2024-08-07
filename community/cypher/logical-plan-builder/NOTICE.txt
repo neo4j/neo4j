@@ -43,12 +43,7 @@ Apache Software License, Version 2.0
   Scala Compiler
   Scala Reflect
   scala-collection-contrib
-  scala-xml
-  scalacheck-1.16
-  scalactic
   Scalap
-  scalatest-compatible
-  scalatest-core
 
 BSD - Scala License
   Scala Library
@@ -56,8 +51,6 @@ BSD - Scala License
 BSD License
   ANTLR 4 Runtime
   JLine Bundle
-  scalacheck
-  test-interface
 
 Eclipse Distribution License - v 1.0
   Eclipse Collections API
