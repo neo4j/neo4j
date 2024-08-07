@@ -20,13 +20,16 @@
 package org.neo4j.cypher.internal
 
 import org.neo4j.cypher.internal.util.ObfuscationMetadata
+import org.neo4j.graphdb
 import org.neo4j.kernel.api.query.QueryObfuscator
 import org.neo4j.values.storable.Values.utf8Value
 import org.neo4j.values.virtual.MapValue
 
+import java.util.function
+
 class CypherQueryObfuscator(state: ObfuscationMetadata) extends QueryObfuscator {
 
-  override def obfuscateText(rawQueryText: String): String =
+  override def obfuscateText(rawQueryText: String, preParserOffset: Int): String =
     if (state.sensitiveLiteralOffsets.isEmpty)
       rawQueryText
     else {
@@ -34,7 +37,7 @@ class CypherQueryObfuscator(state: ObfuscationMetadata) extends QueryObfuscator 
       var i = 0
       val adjacentCharacters = rawQueryText.sliding(2).toVector
       for (literalOffset <- state.sensitiveLiteralOffsets) {
-        val start = literalOffset.start
+        val start = literalOffset.start(preParserOffset)
         if (start >= rawQueryText.length || start < i)
           throw new IllegalStateException(s"Literal offset out of bounds: $literalOffset.")
 
@@ -58,8 +61,8 @@ class CypherQueryObfuscator(state: ObfuscationMetadata) extends QueryObfuscator 
       params
     }
 
-  //We don't know the length of strings ahead of time since the amount of characters they use in the raw query text
-  //depends on if we use single quotes or double quotes.
+  // We don't know the length of strings ahead of time since the amount of characters they use in the raw query text
+  // depends on if we use single quotes or double quotes.
   private def literalStringLength(adjacentCharacters: Seq[String], rawQueryText: String, fromIndex: Int): Int = {
     val openingQuote = rawQueryText(fromIndex)
     if (openingQuote != '"' && openingQuote != '\'')
@@ -70,6 +73,36 @@ class CypherQueryObfuscator(state: ObfuscationMetadata) extends QueryObfuscator 
       throw new IllegalStateException("Expected to find closing quote.")
 
     lastCharacterIndex - fromIndex + 2 // + 2 to account for quotes
+  }
+
+  override def obfuscatePosition(
+    rawQueryText: String,
+    preparserOffset: Int
+  ): function.Function[graphdb.InputPosition, graphdb.InputPosition] = {
+    if (state.sensitiveLiteralOffsets.isEmpty) function.Function.identity()
+    else in => {
+      val adjacentCharacters = rawQueryText.sliding(2).toVector
+      var obfuscatedOffset = in.getOffset
+      var obfuscatedColumn = in.getColumn
+      val obfuscatedLength = CypherQueryObfuscator.OBFUSCATED_LITERAL.length
+      val lineOffset = findLine(rawQueryText, preparserOffset)
+      for (literalOffset <- state.sensitiveLiteralOffsets) {
+        val start = literalOffset.start(preparserOffset)
+        if (start < in.getOffset) {
+          val length = literalOffset.length.getOrElse(literalStringLength(adjacentCharacters, rawQueryText, start))
+          obfuscatedOffset += obfuscatedLength - length
+          if (literalOffset.line(lineOffset) == in.getLine) {
+            obfuscatedColumn += obfuscatedLength - length
+          }
+        }
+      }
+      new graphdb.InputPosition(obfuscatedOffset, in.getLine, obfuscatedColumn)
+    }
+  }
+
+  private def findLine(rawQueryText: String, offset: Int): Int = {
+    if (offset == 0) 0
+    else rawQueryText.take(offset + 1).lines().count().toInt - 1
   }
 }
 

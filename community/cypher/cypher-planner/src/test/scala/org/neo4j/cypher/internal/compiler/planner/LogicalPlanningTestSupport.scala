@@ -382,7 +382,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
     val procs: QualifiedName => ProcedureSignature = procLookup.getOrElse(_ => signature)
     val funcs: QualifiedName => Option[UserFunctionSignature] = fcnLookup.getOrElse(_ => None)
     val planContext = new TestSignatureResolvingPlanContext(procs, funcs)
-    val state = LogicalPlanState(query, None, CostBasedPlannerName.default, PlanningAttributes.newAttributes, new AnonymousVariableNameGenerator())
+    val state = LogicalPlanState(query, CostBasedPlannerName.default, PlanningAttributes.newAttributes, new AnonymousVariableNameGenerator())
     val context = ContextHelper.create(cypherExceptionFactory = exceptionFactory, planContext = planContext, logicalPlanIdGen = idGen)
     val output = pipeLine.transform(state, context)
 

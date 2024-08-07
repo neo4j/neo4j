@@ -19,11 +19,11 @@
  */
 package org.neo4j.fabric.planning
 
-import org.neo4j.cypher.internal.config.CypherConfiguration
 import org.neo4j.cypher.internal.FullyParsedQuery
 import org.neo4j.cypher.internal.PreParsedQuery
 import org.neo4j.cypher.internal.QueryOptions
 import org.neo4j.cypher.internal.cache.CaffeineCacheFactory
+import org.neo4j.cypher.internal.config.CypherConfiguration
 import org.neo4j.cypher.internal.options.CypherExpressionEngineOption
 import org.neo4j.cypher.internal.options.CypherRuntimeOption
 import org.neo4j.cypher.internal.planner.spi.ProcedureSignatureResolver
@@ -39,11 +39,11 @@ import org.neo4j.monitoring.Monitors
 import org.neo4j.values.virtual.MapValue
 
 case class FabricPlanner(
-                          config: FabricConfig,
-                          cypherConfig: CypherConfiguration,
-                          monitors: Monitors,
-                          cacheFactory: CaffeineCacheFactory,
-                          signatures: ProcedureSignatureResolver
+  config: FabricConfig,
+  cypherConfig: CypherConfiguration,
+  monitors: Monitors,
+  cacheFactory: CaffeineCacheFactory,
+  signatures: ProcedureSignatureResolver
 ) {
 
   private[planning] val queryCache = new FabricQueryCache(cacheFactory, cypherConfig.queryCacheSize)
@@ -68,25 +68,30 @@ case class FabricPlanner(
     query: PreParsedQuery,
     queryParams: MapValue,
     defaultContextName: String,
-    fabricContextName: Option[String],
+    fabricContextName: Option[String]
   ) {
 
-    lazy private val pipeline = frontend.Pipeline(query, queryParams)
+    private lazy val pipeline = frontend.Pipeline(query, queryParams)
 
     lazy val plan: FabricPlan = {
       val plan = queryCache.computeIfAbsent(
-        query.cacheKey, queryParams, defaultContextName,
+        query.cacheKey,
+        queryParams,
+        defaultContextName,
         () => computePlan(),
         shouldCache
       )
       plan.copy(
-        executionType = frontend.preParsing.executionType(query.options, plan.inFabricContext))
+        executionType = frontend.preParsing.executionType(query.options, plan.inFabricContext),
+        queryOptionsOffset = query.options.offset
+      )
     }
 
     private def computePlan(): FabricPlan = trace {
       val prepared = pipeline.parseAndPrepare.process()
 
-      val fragmenter = new FabricFragmenter(defaultContextName, query.statement, prepared.statement(), prepared.semantics())
+      val fragmenter =
+        new FabricFragmenter(defaultContextName, query.statement, prepared.statement(), prepared.semantics())
       val fragments = fragmenter.fragment
       val periodicCommitHint = fragmenter.periodicCommitHint
 
@@ -116,9 +121,9 @@ case class FabricPlanner(
         QueryOptions.default.copy(
           queryOptions = QueryOptions.default.queryOptions.copy(
             runtime = CypherRuntimeOption.slotted,
-            expressionEngine = CypherExpressionEngineOption.interpreted,
+            expressionEngine = CypherExpressionEngineOption.interpreted
           ),
-          materializedEntitiesMode = true,
+          materializedEntitiesMode = true
         )
       else
         query.options
@@ -131,13 +136,13 @@ case class FabricPlanner(
 
     def asLocal(fragment: Fragment.Exec): LocalQuery = LocalQuery(
       FullyParsedQuery(fragment.localQuery, optionsFor(fragment)),
-      fragment.queryType,
+      fragment.queryType
     )
 
     def asRemote(fragment: Fragment.Exec): RemoteQuery = RemoteQuery(
       QueryRenderer.addOptions(fragment.remoteQuery.query, optionsFor(fragment)),
       fragment.queryType,
-      fragment.remoteQuery.extractedLiterals,
+      fragment.remoteQuery.extractedLiterals
     )
 
     private def inFabricContext(fragment: Fragment): Boolean = {
@@ -153,8 +158,8 @@ case class FabricPlanner(
           .exists(cn => cn.parts == fabricContextName.toList)
 
       def check(frag: Fragment): Boolean = frag match {
-        case chain: Fragment.Chain => isFabricUse(chain.use)
-        case union: Fragment.Union => check(union.lhs) && check(union.rhs)
+        case chain: Fragment.Chain     => isFabricUse(chain.use)
+        case union: Fragment.Union     => check(union.lhs) && check(union.rhs)
         case command: Fragment.Command => isFabricUse(command.use)
       }
 

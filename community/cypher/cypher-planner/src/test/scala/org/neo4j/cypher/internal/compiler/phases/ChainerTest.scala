@@ -48,7 +48,7 @@ class ChainerTest extends CypherFunSuite {
 
   test("legal chain") {
     val init = InitialState(
-      "Q", None, IDPPlannerName, new AnonymousVariableNameGenerator
+      "Q", IDPPlannerName, new AnonymousVariableNameGenerator
     )
     val r = Chainer
       .chainTransformers(Seq(BB, BL, LL))
@@ -59,7 +59,7 @@ class ChainerTest extends CypherFunSuite {
 
   test("illegal chain") {
     val init = InitialState(
-      "Q", None, IDPPlannerName, new AnonymousVariableNameGenerator
+      "Q", IDPPlannerName, new AnonymousVariableNameGenerator
     )
     a[ClassCastException] should be thrownBy {
       Chainer

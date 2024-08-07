@@ -123,7 +123,7 @@ public class FabricExecutor
             var plan = plannerInstance.plan();
             var query = plan.query();
 
-            lifecycle.doneFabricProcessing( plan );
+            lifecycle.doneFabricProcessing( plan, plannerInstance.query().options().offset().offset() );
 
             var accessMode = fabricTransaction.getTransactionInfo().getAccessMode();
             var routingContext = fabricTransaction.getTransactionInfo().getRoutingContext();

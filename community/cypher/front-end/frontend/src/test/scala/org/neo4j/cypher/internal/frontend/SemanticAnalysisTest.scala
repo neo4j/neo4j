@@ -63,7 +63,7 @@ class SemanticAnalysisTest extends CypherFunSuite {
   }
 
   def initialStateWithQuery(query: String): InitialState =
-    InitialState(query, None, NoPlannerName, new AnonymousVariableNameGenerator)
+    InitialState(query, NoPlannerName, new AnonymousVariableNameGenerator)
 
   def expectErrorsFrom(
                         query: String,
@@ -1112,7 +1112,7 @@ class SemanticAnalysisTest extends CypherFunSuite {
   }
 
   private def initStartState(query: String) =
-    InitialState(query, None, NoPlannerName, new AnonymousVariableNameGenerator)
+    InitialState(query, NoPlannerName, new AnonymousVariableNameGenerator)
 
   final case object ProjectNamedPathsPhase extends Phase[BaseContext, BaseState, BaseState] {
     override def phase: CompilationPhaseTracer.CompilationPhase = AST_REWRITE

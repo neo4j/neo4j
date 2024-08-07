@@ -27,7 +27,7 @@ case object Parsing extends Phase[BaseContext, BaseState, BaseState] {
   private val parser = new CypherParser
 
   override def process(in: BaseState, context: BaseContext): BaseState =
-    in.withStatement(parser.parse(in.queryText, context.cypherExceptionFactory, in.startPosition))
+    in.withStatement(parser.parse(in.queryText, context.cypherExceptionFactory))
 
   override val phase = PARSING
 

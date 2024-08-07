@@ -45,7 +45,7 @@ class CypherQueryObfuscatorFactory {
 
   def obfuscatorForQuery(query: String): QueryObfuscator = {
     val preParsedQuery = preParser.preParseQuery(query)
-    val state = InitialState(preParsedQuery.statement, Some(preParsedQuery.options.offset), null, new AnonymousVariableNameGenerator())
+    val state = InitialState(preParsedQuery.statement, null, new AnonymousVariableNameGenerator())
     val res = pipeline.transform(state, plannerContext(query))
     CypherQueryObfuscator(res.obfuscationMetadata())
   }

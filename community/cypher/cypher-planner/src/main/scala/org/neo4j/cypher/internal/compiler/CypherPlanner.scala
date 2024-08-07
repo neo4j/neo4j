@@ -81,7 +81,7 @@ case class CypherPlanner[Context <: PlannerContext](monitors: Monitors,
                  cancellationChecker: CancellationChecker): BaseState = {
 
     val plannerName = PlannerNameFor(plannerNameText)
-    val startState = InitialState(queryText, offset, plannerName, new AnonymousVariableNameGenerator)
+    val startState = InitialState(queryText, plannerName, new AnonymousVariableNameGenerator)
     val context = BaseContextImpl(tracer,
                                  notificationLogger,
                                  rawQueryText,

@@ -183,7 +183,7 @@ class CNFNormalizerTest extends CypherFunSuite with PredicateTestSupport {
     when(monitors.newMonitor[AstRewritingMonitor]()).thenReturn(astRewritingMonitor)
     rewriter = {
       case e: Expression =>
-        val initialState = InitialState("", None, NoPlannerName, new AnonymousVariableNameGenerator()).withStatement(TestStatement(e))
+        val initialState = InitialState("", NoPlannerName, new AnonymousVariableNameGenerator()).withStatement(TestStatement(e))
         val finalState = CNFNormalizerTest.getTransformer.transform(initialState, new TestContext(monitors))
         val TestStatement(expression) = finalState.statement()
         expression

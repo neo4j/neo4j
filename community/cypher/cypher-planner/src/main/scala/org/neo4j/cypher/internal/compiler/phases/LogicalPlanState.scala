@@ -42,7 +42,6 @@ Normally, it is created with only the first three params as given, and the rest 
 the pipe line
  */
 case class LogicalPlanState(queryText: String,
-                            startPosition: Option[InputPosition],
                             plannerName: PlannerName,
                             planningAttributes: PlanningAttributes,
                             anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
@@ -92,7 +91,6 @@ case class LogicalPlanState(queryText: String,
 object LogicalPlanState {
   def apply(state: BaseState): LogicalPlanState =
     LogicalPlanState(queryText = state.queryText,
-                     startPosition = state.startPosition,
                      plannerName = state.plannerName,
                      planningAttributes = PlanningAttributes.newAttributes,
                      maybeStatement = state.maybeStatement,

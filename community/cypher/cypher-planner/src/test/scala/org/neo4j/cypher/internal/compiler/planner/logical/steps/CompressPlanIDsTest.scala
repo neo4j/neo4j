@@ -84,7 +84,7 @@ class CompressPlanIDsTest extends CypherFunSuite with AstConstructionTestSupport
   }
 
   private def logicalPlanStateWithAttrributes(plan: LogicalPlan): LogicalPlanState = {
-    val state = LogicalPlanState(InitialState("", None, IDPPlannerName, new AnonymousVariableNameGenerator))
+    val state = LogicalPlanState(InitialState("", IDPPlannerName, new AnonymousVariableNameGenerator))
       .withMaybeLogicalPlan(Some(plan))
     allPlans(plan).foreach { p =>
 

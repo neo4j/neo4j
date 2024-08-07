@@ -50,7 +50,7 @@ object Neo4jJavaCCParserWithFallback {
       // Neo4jCypherExceptionFactory error messages includes the original query, but removes some things like comments, so verifying if we should fallback is
       // "secured" against eventual comments that include any fallback triggers.
       case e: SyntaxException if shouldFallback(e.getMessage) =>
-        oldParser.parse(queryText, exceptionFactory, offset)
+        oldParser.parse(queryText, exceptionFactory)
     }
   }
 

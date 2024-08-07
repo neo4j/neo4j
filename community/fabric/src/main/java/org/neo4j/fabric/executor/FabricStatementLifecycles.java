@@ -111,9 +111,9 @@ public class FabricStatementLifecycles
             getQueryExecutionMonitor().startProcessing( executingQuery );
         }
 
-        void doneFabricProcessing( FabricPlan plan )
+        void doneFabricProcessing( FabricPlan plan, int preParserOffset )
         {
-            executingQuery.onObfuscatorReady( CypherQueryObfuscator.apply( plan.obfuscationMetadata() ) );
+            executingQuery.onObfuscatorReady( CypherQueryObfuscator.apply( plan.obfuscationMetadata() ), preParserOffset );
             executingQuery.onFabricDeprecationNotificationsProviderReady( plan.deprecationNotificationsProvider() );
 
             if ( plan.inFabricContext() )

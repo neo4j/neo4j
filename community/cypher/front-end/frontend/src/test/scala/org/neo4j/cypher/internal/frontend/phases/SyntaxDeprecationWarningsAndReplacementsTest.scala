@@ -116,7 +116,7 @@ class SyntaxDeprecationWarningsAndReplacementsTest extends CypherFunSuite {
   private def check(query: String) = {
     val logger = new RecordingNotificationLogger()
     val statement = parse(query)
-    val initialState = InitialState(query, None, plannerName, new AnonymousVariableNameGenerator, maybeStatement = Some(statement))
+    val initialState = InitialState(query, plannerName, new AnonymousVariableNameGenerator, maybeStatement = Some(statement))
 
     val pipeline =
       SyntaxDeprecationWarningsAndReplacements(syntacticallyDeprecatedFeaturesIn4_X) andThen

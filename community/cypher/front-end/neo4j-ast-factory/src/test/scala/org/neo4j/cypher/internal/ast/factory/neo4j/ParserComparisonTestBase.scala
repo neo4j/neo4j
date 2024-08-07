@@ -115,7 +115,7 @@ abstract class ParserComparisonTestBase() extends Assertions with Matchers {
   protected def assertSameASTForQueries(query: String, parBoiledQuery: String, comparePosition: Boolean = true): Unit = {
     withClue(query+System.lineSeparator()) {
       val parboiledParser = new org.neo4j.cypher.internal.parser.CypherParser()
-      val parboiledAST = Try(parboiledParser.parse(parBoiledQuery, exceptionFactory, None))
+      val parboiledAST = Try(parboiledParser.parse(parBoiledQuery, exceptionFactory))
 
       val javaccAST = Try(JavaCCParser.parse(query, exceptionFactory, new AnonymousVariableNameGenerator()))
 

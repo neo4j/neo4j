@@ -29,7 +29,6 @@ import org.neo4j.cypher.internal.ReusabilityState
 import org.neo4j.cypher.internal.cache.CaffeineCacheFactory
 import org.neo4j.cypher.internal.compiler.StatsDivergenceCalculator
 import org.neo4j.cypher.internal.compiler.phases.CachableLogicalPlanState
-import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.logging.Log
 

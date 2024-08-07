@@ -766,7 +766,7 @@ class SemanticAnalysisErrorMessagesTest extends CypherFunSuite {
   }
 
   private def initStartState(query: String) =
-    InitialState(query, None, NoPlannerName, new AnonymousVariableNameGenerator)
+    InitialState(query, NoPlannerName, new AnonymousVariableNameGenerator)
 
   private def expectErrorMessagesFrom(query: String, expectedErrors: Seq[String]): Unit = {
     val startState = initStartState(query)

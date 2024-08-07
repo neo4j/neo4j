@@ -135,7 +135,7 @@ case class FabricFrontEnd(
         CompilationPhases.fabricParsing(parsingConfig, signatures)
 
       def process(): BaseState =
-        transformer.transform(InitialState(query.statement, Some(query.options.offset), null, anonymousVariableNameGenerator), context)
+        transformer.transform(InitialState(query.statement, null, anonymousVariableNameGenerator), context)
     }
 
     object checkAndFinalize {
@@ -145,7 +145,7 @@ case class FabricFrontEnd(
       def process(statement: Statement): BaseState = {
         val localQueryString = QueryRenderer.render(statement)
         val plannerName = PlannerNameFor(query.options.queryOptions.planner.name)
-        val state = InitialState(localQueryString, None, plannerName, anonymousVariableNameGenerator = anonymousVariableNameGenerator)
+        val state = InitialState(localQueryString, plannerName, anonymousVariableNameGenerator = anonymousVariableNameGenerator)
           .withStatement(statement)
         transformer.transform(state, context)
       }

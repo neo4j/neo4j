@@ -28,10 +28,12 @@ import java.util.Optional;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
+import java.util.function.Function;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
 import org.neo4j.graphdb.ExecutionPlanDescription;
+import org.neo4j.graphdb.InputPosition;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.lock.ActiveLock;
@@ -75,6 +77,7 @@ public class ExecutingQuery
     private CompilerInfo compilerInfo;
     private long compilationCompletedNanos;
     private String obfuscatedQueryText;
+    private Function<InputPosition, InputPosition> obfuscatePostion;
     private MapValue obfuscatedQueryParameters;
     private Supplier<ExecutionPlanDescription> planDescriptionSupplier;
     private DeprecationNotificationsProvider deprecationNotificationsProvider;
@@ -237,6 +240,11 @@ public class ExecutingQuery
 
     public void onObfuscatorReady( QueryObfuscator queryObfuscator )
     {
+        onObfuscatorReady( queryObfuscator, 0 );
+    }
+
+    public void onObfuscatorReady( QueryObfuscator queryObfuscator, int preparserOffset )
+    {
         if ( status != SimpleState.parsing() ) // might get called multiple times due to caching and/or internal queries
         {
             return;
@@ -244,12 +252,14 @@ public class ExecutingQuery
 
         try
         {
-            obfuscatedQueryText = queryObfuscator.obfuscateText( rawQueryText );
+            obfuscatedQueryText = queryObfuscator.obfuscateText( rawQueryText, preparserOffset );
+            obfuscatePostion = queryObfuscator.obfuscatePosition(rawQueryText, preparserOffset);
             obfuscatedQueryParameters = queryObfuscator.obfuscateParameters( rawQueryParameters );
         }
         catch ( Exception ignore )
         {
             obfuscatedQueryText = null;
+            obfuscatePostion = null;
             obfuscatedQueryParameters = null;
         }
 
@@ -293,6 +303,7 @@ public class ExecutingQuery
         this.fabricDeprecationNotificationsProvider = null;
         this.memoryTracker = HeapHighWaterMarkTracker.NONE;
         this.obfuscatedQueryParameters = null;
+        this.obfuscatePostion = null;
         this.obfuscatedQueryText = null;
         this.status = SimpleState.parsing();
     }
@@ -312,6 +323,7 @@ public class ExecutingQuery
         long currentTimeNanos;
         long cpuTimeNanos;
         String queryText;
+        Function<InputPosition, InputPosition> queryPostions;
         MapValue queryParameters;
         do
         {
@@ -320,6 +332,7 @@ public class ExecutingQuery
             cpuTimeNanos = cpuClock.cpuTimeNanos( threadExecutingTheQueryId );
             currentTimeNanos = clock.nanos(); // capture the time as close to the snapshot as possible
             queryText = this.obfuscatedQueryText;
+            queryPostions = this.obfuscatePostion;
             queryParameters = this.obfuscatedQueryParameters;
         }
         while ( this.status != status );
@@ -362,6 +375,7 @@ public class ExecutingQuery
                 activeLocks,
                 memoryTracker.heapHighWaterMark(),
                 Optional.ofNullable( queryText ),
+                Optional.ofNullable(queryPostions),
                 Optional.ofNullable( queryParameters ),
                 outerTransactionId
         );

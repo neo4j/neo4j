@@ -24,10 +24,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalLong;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import org.neo4j.graphdb.ExecutionPlanDescription;
+import org.neo4j.graphdb.InputPosition;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.lock.ActiveLock;
@@ -49,13 +51,15 @@ public class QuerySnapshot
     private final long pageHits;
     private final long pageFaults;
     private final Optional<String> obfuscatedQueryText;
+    private final Optional<Function<InputPosition, InputPosition>> obfuscatedPosition;
     private final Optional<MapValue> obfuscatedQueryParameters;
     private final long transactionId;
 
     QuerySnapshot( ExecutingQuery query, CompilerInfo compilerInfo, long pageHits, long pageFaults, long compilationTimeMicros,
                    long elapsedTimeMicros, long cpuTimeMicros, long waitTimeMicros, String status,
                    Map<String,Object> resourceInfo, List<ActiveLock> waitingLocks, long activeLockCount, long allocatedBytes,
-                   Optional<String> obfuscatedQueryText, Optional<MapValue> obfuscatedQueryParameters, long transactionId )
+                   Optional<String> obfuscatedQueryText, Optional<Function<InputPosition, InputPosition>> obfuscatedPosition,
+                   Optional<MapValue> obfuscatedQueryParameters, long transactionId )
     {
         this.query = query;
         this.compilerInfo = compilerInfo;
@@ -71,6 +75,7 @@ public class QuerySnapshot
         this.activeLockCount = activeLockCount;
         this.allocatedBytes = allocatedBytes;
         this.obfuscatedQueryText = obfuscatedQueryText;
+        this.obfuscatedPosition = obfuscatedPosition;
         this.obfuscatedQueryParameters = obfuscatedQueryParameters;
         this.transactionId = transactionId;
     }
@@ -95,6 +100,10 @@ public class QuerySnapshot
         return obfuscatedQueryText;
     }
 
+    public Optional<Function<InputPosition, InputPosition>> obfuscatedPosition()
+    {
+        return obfuscatedPosition;
+    };
     public MapValue rawQueryParameters()
     {
         return query.rawQueryParameters();

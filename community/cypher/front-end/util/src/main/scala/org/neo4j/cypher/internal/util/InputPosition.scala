@@ -23,9 +23,7 @@ package org.neo4j.cypher.internal.util
  * @param line   the line in the query string
  * @param column the column in the query string
  */
-case class InputPosition(offset: Int,
-                         line: Int,
-                         column: Int) {
+case class InputPosition(offset: Int, line: Int, column: Int) {
 
   override def toString = s"line $line, column $column (offset: $offset)"
 
@@ -33,10 +31,11 @@ case class InputPosition(offset: Int,
    * Offset this position by a number of characters and return the new position.
    */
   def withOffset(pos: Option[InputPosition]): InputPosition = pos match {
-    case Some(p) =>
-      val newColumn = if (line == p.line) column + p.column - 1 else column
+    case Some(p) if p.offset != 0 =>
+      val newColumn = if (line == 1) column + p.column - 1 else column
       InputPosition(offset + p.offset, line + p.line - 1, newColumn)
-    case None => this
+    case _ =>
+      this
   }
 }
 

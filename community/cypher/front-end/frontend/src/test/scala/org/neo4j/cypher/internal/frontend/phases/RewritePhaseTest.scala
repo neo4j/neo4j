@@ -102,7 +102,7 @@ trait RewritePhaseTest {
 
  def prepareFrom(from: String, transformer: Transformer[BaseContext, BaseState, BaseState], features: SemanticFeature*): BaseState = {
    val fromAst = parseAndRewrite(from, features: _*)
-   val initialState = InitialState(from, None, plannerName, new AnonymousVariableNameGenerator, maybeStatement = Some(fromAst))
+   val initialState = InitialState(from, plannerName, new AnonymousVariableNameGenerator, maybeStatement = Some(fromAst))
    val fromInState = if (astRewriteAndAnalyze) {
      SemanticAnalysis(warn = false, features: _*).process(initialState, TestContext())
    } else {

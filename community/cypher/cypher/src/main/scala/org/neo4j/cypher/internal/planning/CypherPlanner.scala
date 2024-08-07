@@ -353,7 +353,7 @@ case class CypherPlanner(config: CypherPlannerConfiguration,
 
     // Get obfuscator out ASAP to make query text available for `dbms.listQueries`, etc
     val obfuscator = CypherQueryObfuscator(preparedQuery.obfuscationMetadata())
-    transactionalContextWrapper.kernelTransactionalContext.executingQuery.onObfuscatorReady(obfuscator)
+    transactionalContextWrapper.kernelTransactionalContext.executingQuery.onObfuscatorReady(obfuscator, options.offset.offset)
 
     checkForSchemaChanges(transactionalContextWrapper)
 
@@ -401,7 +401,7 @@ case class CypherPlanner(config: CypherPlannerConfiguration,
       autoExtractParams,
       cacheableLogicalPlan.reusability,
       plannerContext,
-      cacheableLogicalPlan.notifications,
+      (notificationLogger.notifications ++ cacheableLogicalPlan.notifications).toIndexedSeq,
       cacheableLogicalPlan.shouldBeCached,
       obfuscator)
   }

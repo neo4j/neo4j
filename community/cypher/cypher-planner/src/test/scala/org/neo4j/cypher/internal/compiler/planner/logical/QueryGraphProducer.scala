@@ -91,7 +91,7 @@ trait QueryGraphProducer extends MockitoSugar {
     val anonymousVariableNameGenerator = new AnonymousVariableNameGenerator()
     // if you ever want to have parameters in here, fix the map
     val firstRewriteStep = ASTRewriter.rewrite(cleanedStatement, semanticState, Map.empty, exceptionFactory, anonymousVariableNameGenerator)
-    val state = LogicalPlanState(query, None, IDPPlannerName, newStubbedPlanningAttributes, anonymousVariableNameGenerator, Some(firstRewriteStep), Some(semanticState))
+    val state = LogicalPlanState(query, IDPPlannerName, newStubbedPlanningAttributes, anonymousVariableNameGenerator, Some(firstRewriteStep), Some(semanticState))
     val context = ContextHelper.create(logicalPlanIdGen = idGen, planContext = new TestSignatureResolvingPlanContext(procLookup, fcnLookup))
     val output = (
       RewriteProcedureCalls andThen

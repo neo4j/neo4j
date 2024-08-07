@@ -149,7 +149,7 @@ trait Base extends Parser {
     zeroOrMore(GlobbedSymbolicNameString ~ ".") ~~>> (expressions.Namespace(_))
   }
 
-  def parseOrThrow[T](input: String, cypherExceptionFactory: CypherExceptionFactory, initialOffset: Option[InputPosition], rule: Rule1[Seq[T]]): T = {
+  def parseOrThrow[T](input: String, cypherExceptionFactory: CypherExceptionFactory, rule: Rule1[Seq[T]]): T = {
     val parsingResults = ReportingParseRunner(rule).run(input)
     parsingResults.result match {
       case Some(statements) =>

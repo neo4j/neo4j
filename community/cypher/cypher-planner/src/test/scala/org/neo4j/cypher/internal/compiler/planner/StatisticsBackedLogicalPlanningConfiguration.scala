@@ -723,7 +723,7 @@ class StatisticsBackedLogicalPlanningConfiguration(
       debugOptions = options.debug,
       executionModel = options.executionModel
     )
-    val state = InitialState(queryString, None, IDPPlannerName, new AnonymousVariableNameGenerator)
+    val state = InitialState(queryString, IDPPlannerName, new AnonymousVariableNameGenerator)
     val parsingConfig = {
       val cypherCompilerConfig = LogicalPlanningTestSupport2.defaultCypherCompilerConfig
       val cfg = LogicalPlanningTestSupport2.defaultParsingConfig(cypherCompilerConfig)

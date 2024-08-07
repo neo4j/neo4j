@@ -19,21 +19,36 @@
  */
 package org.neo4j.kernel.api.query;
 
+import org.neo4j.graphdb.InputPosition;
 import org.neo4j.values.virtual.MapValue;
+
+import java.util.function.Function;
 
 public interface QueryObfuscator
 {
-    String obfuscateText( String rawQueryText );
+    default String obfuscateText( String rawQueryText )
+    {
+        return obfuscateText( rawQueryText, 0 );
+    }
+
+    String obfuscateText( String rawQueryText, int preparserOffset );
+
+    Function<InputPosition, InputPosition> obfuscatePosition( String rawQueryText, int preparserOffset );
     MapValue obfuscateParameters( MapValue rawQueryParameters );
 
     QueryObfuscator PASSTHROUGH = new QueryObfuscator()
     {
         @Override
-        public String obfuscateText( String rawQueryText )
+        public String obfuscateText( String rawQueryText, int preparserOffset )
         {
             return rawQueryText;
         }
 
+        @Override
+        public Function<InputPosition, InputPosition> obfuscatePosition( String rawQueryText, int preparserOffset )
+        {
+            return Function.identity();
+        }
         @Override
         public MapValue obfuscateParameters( MapValue rawQueryParameters )
         {

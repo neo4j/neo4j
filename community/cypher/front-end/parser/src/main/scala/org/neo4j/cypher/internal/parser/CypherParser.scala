@@ -19,7 +19,6 @@ package org.neo4j.cypher.internal.parser
 import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.util.CypherException
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
-import org.neo4j.cypher.internal.util.InputPosition
 import org.parboiled.scala.EOI
 import org.parboiled.scala.Parser
 import org.parboiled.scala.Rule1
@@ -32,8 +31,8 @@ class CypherParser extends Parser
   with Expressions {
 
   @throws(classOf[CypherException])
-  def parse(queryText: String, cypherExceptionFactory: CypherExceptionFactory, offset: Option[InputPosition] = None): ast.Statement =
-    parseOrThrow(queryText, cypherExceptionFactory, offset, CypherParser.Statements)
+  def parse(queryText: String, cypherExceptionFactory: CypherExceptionFactory): ast.Statement =
+    parseOrThrow(queryText, cypherExceptionFactory, CypherParser.Statements)
 }
 
 object CypherParser extends Parser with Statement with Expressions {

@@ -164,7 +164,7 @@ class CypherQueryObfuscatorTest extends CypherFunSuite {
     val ob =
       CypherQueryObfuscator(
         ObfuscationMetadata(
-          Vector(offsetOf(originalText, "'here'"), LiteralOffset(999, Some(10))),
+          Vector(offsetOf(originalText, "'here'"), LiteralOffset(999, 0, Some(10))),
           Set.empty))
 
     an[IllegalStateException] should be thrownBy ob.obfuscateText(originalText)
@@ -175,7 +175,7 @@ class CypherQueryObfuscatorTest extends CypherFunSuite {
   }
 
   private def offsetOf(originalText: String, word: String) : LiteralOffset = {
-    LiteralOffset(originalText.indexOf(word), None)
+    LiteralOffset(originalText.indexOf(word), 0, None)
   }
 
 }

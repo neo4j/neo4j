@@ -20,10 +20,8 @@
 package org.neo4j.cypher.internal
 
 import org.neo4j.configuration.GraphDatabaseInternalSettings.CypherReplanAlgorithm
-import org.neo4j.cypher.internal.NotificationWrapping.asKernelNotification
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.util.RecordingNotificationLogger
-import org.neo4j.graphdb.Notification
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.values.virtual.MapValue
 

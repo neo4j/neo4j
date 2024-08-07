@@ -104,7 +104,6 @@ class FabricParsingPropertyTest extends CypherFunSuite
       withClue(s"Original queryString: $queryString\n") {
         val state = InitialState(
           queryString,
-          None,
           IDPPlannerName,
           new AnonymousVariableNameGenerator)
 

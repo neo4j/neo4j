@@ -16,8 +16,21 @@
  */
 package org.neo4j.cypher.internal.util
 
-final case class ObfuscationMetadata(sensitiveLiteralOffsets: Vector[LiteralOffset], sensitiveParameterNames: Set[String]) {
+final case class ObfuscationMetadata(
+  sensitiveLiteralOffsets: Vector[LiteralOffset],
+  sensitiveParameterNames: Set[String]
+) {
   def isEmpty: Boolean = sensitiveLiteralOffsets.isEmpty && sensitiveParameterNames.isEmpty
 }
 
-case class LiteralOffset(start: Int, length: Option[Int])
+/**
+ * Position and length of obfuscated literals.
+ *
+ * @param start offset of the literal relative to the query string without preparser options
+ * @line line number of the literal relative to the query string without preparser options
+ * @param length length of literal in query string
+ */
+case class LiteralOffset(private val start: Int, private val line: Int, length: Option[Int]) {
+  def start(preParserOffset: Int): Int = start + preParserOffset
+  def line(preParserLineOffset: Int): Int = line + preParserLineOffset
+}

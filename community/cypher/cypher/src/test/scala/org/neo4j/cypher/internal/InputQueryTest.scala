@@ -46,7 +46,7 @@ class InputQueryTest extends CypherFunSuite {
 
   private def toFullyParsedQuery(queryString: String) = FullyParsedQuery(
     state = parser.transform(
-      from = InitialState(queryString, None, IDPPlannerName, new AnonymousVariableNameGenerator),
+      from = InitialState(queryString, IDPPlannerName, new AnonymousVariableNameGenerator),
       context = ContextHelper.create()
     ),
     options = QueryOptions.default

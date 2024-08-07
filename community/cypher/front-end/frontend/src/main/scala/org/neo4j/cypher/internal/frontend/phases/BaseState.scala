@@ -21,13 +21,11 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.frontend.PlannerName
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
-import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.ObfuscationMetadata
 import org.neo4j.cypher.internal.util.StepSequencer
 
 trait BaseState {
   def queryText: String
-  def startPosition: Option[InputPosition]
   def plannerName: PlannerName
   def maybeStatement: Option[Statement]
   def maybeReturnColumns: Option[Seq[String]]
@@ -60,7 +58,6 @@ trait BaseState {
 }
 
 case class InitialState(queryText: String,
-  startPosition: Option[InputPosition],
   plannerName: PlannerName,
   anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
   maybeStatement: Option[Statement] = None,

@@ -47,7 +47,7 @@ case object InputDataStreamTestParsing extends Phase[BaseContext, BaseState, Bas
 
   override def process(in: BaseState, context: BaseContext): BaseState = {
     val idsIn = in.asInstanceOf[InputDataStreamTestInitialState]
-    idsIn.withStatement(parser.parse(idsIn.idsQueryText, context.cypherExceptionFactory, in.startPosition))
+    idsIn.withStatement(parser.parse(idsIn.idsQueryText, context.cypherExceptionFactory))
   }
 
   override val phase = PARSING
@@ -99,7 +99,7 @@ class InputDataStreamTestCypherParser extends Parser
 
   @throws(classOf[CypherException])
   def parse(queryText: String, cypherExceptionFactory: CypherExceptionFactory, offset: Option[InputPosition] = None): ast.Statement =
-    parseOrThrow(queryText, cypherExceptionFactory, offset, InputDataStreamTestCypherParser.Statements)
+    parseOrThrow(queryText, cypherExceptionFactory, InputDataStreamTestCypherParser.Statements)
 }
 
 object InputDataStreamTestCypherParser extends Parser with Statement with Expressions {

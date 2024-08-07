@@ -259,7 +259,6 @@ class CheckForUnresolvedTokensTest extends CypherFunSuite with AstConstructionTe
     val plannerQuery = mock[PlannerQuery]
     when(plannerQuery.readOnly).thenReturn(true)
     val compilationState = LogicalPlanState(queryText = "apa",
-      startPosition = None,
       plannerName = IDPPlannerName,
       newStubbedPlanningAttributes,
       new AnonymousVariableNameGenerator(),

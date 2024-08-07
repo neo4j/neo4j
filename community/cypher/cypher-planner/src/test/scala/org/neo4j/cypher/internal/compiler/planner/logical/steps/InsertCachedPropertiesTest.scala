@@ -2048,7 +2048,7 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
     idGen: IdGen = new SequentialIdGen(),
     pushdownPropertyReads: Boolean = false
   ): (LogicalPlan, SemanticTable) = {
-    val state = LogicalPlanState(InitialState("", None, IDPPlannerName, new AnonymousVariableNameGenerator))
+    val state = LogicalPlanState(InitialState("", IDPPlannerName, new AnonymousVariableNameGenerator))
       .withSemanticTable(initialTable)
       .withMaybeLogicalPlan(Some(plan))
       .withNewPlanningAttributes(PlanningAttributes.newAttributes.copy(effectiveCardinalities = effectiveCardinalities))

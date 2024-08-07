@@ -37,8 +37,8 @@ case object JavaccParsing extends Phase[BaseContext, BaseState, BaseState] {
 
   override def process(in: BaseState, context: BaseContext): BaseState = {
     context.cypherExceptionFactory match {
-      case exceptionFactory: Neo4jCypherExceptionFactory => in.withStatement(Neo4jJavaCCParserWithFallback.parse(in.queryText, exceptionFactory, in.anonymousVariableNameGenerator, in.startPosition))
-      case exceptionFactory: OpenCypherExceptionFactory => in.withStatement(OpenCypherJavaCCParserWithFallback.parse(in.queryText, exceptionFactory, in.anonymousVariableNameGenerator, in.startPosition))
+      case exceptionFactory: Neo4jCypherExceptionFactory => in.withStatement(Neo4jJavaCCParserWithFallback.parse(in.queryText, exceptionFactory, in.anonymousVariableNameGenerator))
+      case exceptionFactory: OpenCypherExceptionFactory => in.withStatement(OpenCypherJavaCCParserWithFallback.parse(in.queryText, exceptionFactory, in.anonymousVariableNameGenerator))
     }
   }
 

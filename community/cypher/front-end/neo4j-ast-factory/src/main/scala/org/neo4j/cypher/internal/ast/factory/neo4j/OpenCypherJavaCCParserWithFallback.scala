@@ -49,7 +49,7 @@ object OpenCypherJavaCCParserWithFallback {
     } catch {
       // OpenCypherExceptionFactory error messages does not include the original query, so we need to verify if we should fallback using the original query.
       case _: OpenCypherExceptionFactory.SyntaxException if JavaCCParser.shouldFallback(queryText) =>
-        oldParser.parse(queryText, exceptionFactory, offset)
+        oldParser.parse(queryText, exceptionFactory)
     }
   }
 }

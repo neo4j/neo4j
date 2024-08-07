@@ -39,24 +39,29 @@ case object ObfuscationMetadataCollection extends Phase[BaseContext, BaseState, 
 
   override def process(from: BaseState, context: BaseContext): BaseState = {
     val extractedParamNames = from.maybeExtractedParams.map(_.keys.toSet).getOrElse(Set.empty)
-    val preParserOffset = from.startPosition.map(_.offset).getOrElse(0)
     val parameters = from.statement().folder.findAllByClass[Parameter]
 
-    val offsets = collectSensitiveLiteralOffsets(from.statement(), extractedParamNames, preParserOffset)
+    val offsets = collectSensitiveLiteralOffsets(from.statement(), extractedParamNames)
     val sensitiveParams = collectSensitiveParameterNames(parameters, extractedParamNames)
 
     from.withObfuscationMetadata(ObfuscationMetadata(offsets, sensitiveParams))
   }
 
-  private def collectSensitiveLiteralOffsets(statement: Statement, extractedParamNames: Set[String], preParserOffset: Int): Vector[LiteralOffset] =
+  private def collectSensitiveLiteralOffsets(
+    statement: Statement,
+    extractedParamNames: Set[String]
+  ): Vector[LiteralOffset] =
     statement.folder.treeFold(Vector.empty[LiteralOffset]) {
       case literal: SensitiveLiteral =>
-        acc => SkipChildren(acc :+ LiteralOffset(preParserOffset + literal.position.offset, literal.literalLength))
+        acc => SkipChildren(acc :+ LiteralOffset(literal.position.offset, literal.position.line, literal.literalLength))
       case p: SensitiveAutoParameter if extractedParamNames.contains(p.name) =>
-        acc => SkipChildren(acc :+ LiteralOffset(preParserOffset + p.position.offset, None))
+        acc => SkipChildren(acc :+ LiteralOffset(p.position.offset, p.position.line, None))
 
-    }.distinct.sortBy(_.start)
+    }.distinct.sortBy(_.start(0))
 
-  private def collectSensitiveParameterNames(queryParams: Seq[Parameter], extractedParamNames: Set[String]): Set[String] =
+  private def collectSensitiveParameterNames(
+    queryParams: Seq[Parameter],
+    extractedParamNames: Set[String]
+  ): Set[String] =
     queryParams.folder.findAllByClass[SensitiveParameter].map(_.name).toSet -- extractedParamNames
 }
