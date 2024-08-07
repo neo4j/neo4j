@@ -30,6 +30,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
+import org.neo4j.internal.schema.constraints.ExistenceConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.KeyConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.RelationshipEndpointConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
@@ -144,6 +145,28 @@ class ConstraintDescriptorTest extends SchemaRuleTestBase {
                 ConstraintDescriptorFactory.existsForLabel(false, LABEL_ID, PROPERTY_ID_1, PROPERTY_ID_2));
         assertEqualityByDescriptor(ConstraintDescriptorFactory.uniqueForLabel(LABEL_ID, PROPERTY_ID_1, PROPERTY_ID_2));
         assertEqualityByDescriptor(ConstraintDescriptorFactory.nodeKeyForLabel(LABEL_ID, PROPERTY_ID_1, PROPERTY_ID_2));
+    }
+
+    @Test
+    void isRelationshipEndpointConstraintShouldReturnFalseWhenNot() {
+        KeyConstraintDescriptor nodeKeyConstraintDescriptor = nodeKeyForLabel(LABEL_ID, PROPERTY_ID_1);
+        assertThat(nodeKeyConstraintDescriptor.isRelationshipEndpointConstraint())
+                .isFalse();
+
+        UniquenessConstraintDescriptor nodeUniquenessConstraintDescriptor =
+                ConstraintDescriptorFactory.uniqueForLabel(LABEL_ID, PROPERTY_ID_1);
+        assertThat(nodeUniquenessConstraintDescriptor.isRelationshipEndpointConstraint())
+                .isFalse();
+
+        ExistenceConstraintDescriptor nodeExistenceConstraintDescriptor =
+                existsForLabel(false, LABEL_ID, PROPERTY_ID_1);
+        assertThat(nodeExistenceConstraintDescriptor.isRelationshipEndpointConstraint())
+                .isFalse();
+
+        ExistenceConstraintDescriptor relationshipExistenceConstraintDescriptor =
+                ConstraintDescriptorFactory.existsForRelType(false, REL_TYPE_ID, PROPERTY_ID_1);
+        assertThat(relationshipExistenceConstraintDescriptor.isRelationshipEndpointConstraint())
+                .isFalse();
     }
 
     private static void assertEqualityByDescriptor(UniquenessConstraintDescriptor descriptor) {
