@@ -131,20 +131,27 @@ public class FailingDatabaseUpgradeTransactionIT {
             }
         }
 
+        String dbNamePrefix = "["
+                + db.getDependencyResolver()
+                        .resolveDependency(NamedDatabaseId.class)
+                        .logPrefix() + "]";
         LogAssertions.assertThat(logProvider)
                 .containsMessageWithArguments(
-                        "Upgrade transaction from %s to %s not possible right now because maximum concurrently "
+                        dbNamePrefix
+                                + " Upgrade transaction from %s to %s not possible right now because maximum concurrently "
                                 + "executed transactions was reached, will retry on next write. If this persists "
                                 + "see setting %s.",
                         oldKernelVersion,
                         LatestVersions.LATEST_KERNEL_VERSION,
                         GraphDatabaseSettings.max_concurrent_transactions.name())
                 .containsMessageWithArguments(
-                        "Upgrade transaction from %s to %s started",
-                        oldKernelVersion, LatestVersions.LATEST_KERNEL_VERSION)
+                        dbNamePrefix + " Upgrade transaction from %s to %s started",
+                        oldKernelVersion,
+                        LatestVersions.LATEST_KERNEL_VERSION)
                 .doesNotContainMessageWithArguments(
-                        "Upgrade transaction from %s to %s completed",
-                        oldKernelVersion, LatestVersions.LATEST_KERNEL_VERSION);
+                        dbNamePrefix + " Upgrade transaction from %s to %s completed",
+                        oldKernelVersion,
+                        LatestVersions.LATEST_KERNEL_VERSION);
 
         final var originalNodeCount = originalNodeCount();
         assertThat(getNodeCount()).as("tx triggering upgrade succeeded").isEqualTo(originalNodeCount + 1);
@@ -158,8 +165,9 @@ public class FailingDatabaseUpgradeTransactionIT {
         assertThat(getNodeCount()).as("tx triggering upgrade succeeded").isEqualTo(originalNodeCount + 2);
         LogAssertions.assertThat(logProvider)
                 .containsMessageWithArguments(
-                        "Upgrade transaction from %s to %s completed",
-                        oldKernelVersion, LatestVersions.LATEST_KERNEL_VERSION);
+                        dbNamePrefix + " Upgrade transaction from %s to %s completed",
+                        oldKernelVersion,
+                        LatestVersions.LATEST_KERNEL_VERSION);
         assertThat(kernelVersion()).isEqualTo(LatestVersions.LATEST_KERNEL_VERSION);
     }
 
