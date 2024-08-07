@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.ir.PlannerQuery
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.options.CypherEagerAnalyzerOption
 import org.neo4j.cypher.internal.rewriting.ValidatingCondition
 import org.neo4j.cypher.internal.util.CancellationChecker
 
@@ -37,7 +38,9 @@ case class CompilationContains[T]()(implicit val tag: ClassTag[T]) extends Valid
         case x if classOf[SemanticState] == x && state.maybeSemantics.isEmpty => Seq("Semantic State missing")
         case x if classOf[PlannerQuery] == x && state.maybeQuery.isEmpty      => Seq("Planner query missing")
         case x if classOf[LogicalPlan] == x && state.maybeLogicalPlan.isEmpty => Seq("Logical plan missing")
-        case _                                                                => Seq.empty
+        case x if classOf[CypherEagerAnalyzerOption] == x && state.maybeEagerAnalyzerOption.isEmpty =>
+          Seq("EagerAnalyzerOption missing")
+        case _ => Seq.empty
       }
     case x => throw new IllegalArgumentException(s"Unknown state: $x")
   }

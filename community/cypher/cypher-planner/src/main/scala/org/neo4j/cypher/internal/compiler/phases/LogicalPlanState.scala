@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.frontend.PlannerName
 import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.ir.PlannerQuery
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.options.CypherEagerAnalyzerOption
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.ObfuscationMetadata
@@ -56,7 +57,8 @@ case class LogicalPlanState(
   accumulatedConditions: Set[StepSequencer.Condition] = Set.empty,
   hasLoadCSV: Boolean = false,
   maybeReturnColumns: Option[Seq[String]] = None,
-  maybeObfuscationMetadata: Option[ObfuscationMetadata] = None
+  maybeObfuscationMetadata: Option[ObfuscationMetadata] = None,
+  maybeEagerAnalyzerOption: Option[CypherEagerAnalyzerOption] = None
 ) extends BaseState {
 
   def query: PlannerQuery = maybeQuery getOrElse fail("The planner query")

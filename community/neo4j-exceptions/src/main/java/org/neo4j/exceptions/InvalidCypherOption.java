@@ -52,6 +52,12 @@ public class InvalidCypherOption extends InvalidArgumentException {
         return new InvalidCypherOption(format("Unsupported options: %s", String.join(", ", keys)));
     }
 
+    public static InvalidCypherOption irEagerAnalyzerUnsupported(String operation) {
+        return new InvalidCypherOption(format(
+                "The Cypher option `eagerAnalyzer=ir` is not supported while %s. Use `eagerAnalyzer=lp` instead.",
+                operation));
+    }
+
     // NOTE: this is an internal error and should probably not have any GQL code
     public static InvalidCypherOption sourceGenerationDisabled() {
         return new InvalidCypherOption("In order to use source generation you need to enable "

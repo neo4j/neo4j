@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.options
 
+import org.neo4j.configuration.Config
 import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.cypher.internal
@@ -534,10 +535,22 @@ case object CypherEagerAnalyzerOption extends CypherOptionCompanion[CypherEagerA
 
   case object lp extends CypherEagerAnalyzerOption("lp")
   case object ir extends CypherEagerAnalyzerOption("ir")
+  case object irFromConfig extends CypherEagerAnalyzerOption("irFromConfig")
 
   override def default: CypherEagerAnalyzerOption = lp
 
   def values: Set[CypherEagerAnalyzerOption] = Set(lp, ir)
+
+  /**
+   * Read this option from config
+   */
+  override def fromConfig(configuration: Config): CypherEagerAnalyzerOption = {
+    super.fromConfig(configuration) match {
+      case CypherEagerAnalyzerOption.ir             => irFromConfig
+      case CypherEagerAnalyzerOption.`irFromConfig` => irFromConfig
+      case CypherEagerAnalyzerOption.lp             => lp
+    }
+  }
 
   implicit val hasDefault: OptionDefault[CypherEagerAnalyzerOption] = OptionDefault.create(default)
   implicit val renderer: OptionRenderer[CypherEagerAnalyzerOption] = OptionRenderer.create(_.render)

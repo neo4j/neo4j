@@ -44,6 +44,7 @@ import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.ir.UnionQuery
 import org.neo4j.cypher.internal.ir.ast.IRExpression
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.options.CypherEagerAnalyzerOption
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
@@ -106,7 +107,7 @@ case object QueryPlanner
       legacyCsvQuoteEscaping = context.config.legacyCsvQuoteEscaping(),
       csvBufferSize = context.config.csvBufferSize(),
       planningIntersectionScansEnabled = context.config.planningIntersectionScansEnabled(),
-      eagerAnalyzer = context.eagerAnalyzer,
+      eagerAnalyzer = from.maybeEagerAnalyzerOption.getOrElse(context.eagerAnalyzer),
       statefulShortestPlanningRewriteQuantifiersAbove =
         context.config.statefulShortestPlanningRewriteQuantifiersAbove(),
       planVarExpandInto = context.planVarExpandInto
@@ -159,6 +160,7 @@ case object QueryPlanner
   override def preConditions: Set[StepSequencer.Condition] = Set(
     // This works on the IR
     CompilationContains[PlannerQuery](),
+    CompilationContains[CypherEagerAnalyzerOption](),
     OptionalMatchRemover.completed,
     GetDegreeRewriterStep.completed,
     UnfulfillableQueryRewriter.completed,

@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.compiler.UnsupportedSystemCommand
 import org.neo4j.cypher.internal.compiler.planner.CheckForUnresolvedTokens
 import org.neo4j.cypher.internal.compiler.planner.ResolveTokens
 import org.neo4j.cypher.internal.compiler.planner.VerifyGraphTarget
+import org.neo4j.cypher.internal.compiler.planner.logical.DeriveEagerAnalyzerOption
 import org.neo4j.cypher.internal.compiler.planner.logical.EmptyRelationshipListEndpointProjection
 import org.neo4j.cypher.internal.compiler.planner.logical.GetDegreeRewriterStep
 import org.neo4j.cypher.internal.compiler.planner.logical.InlineRelationshipTypePredicates
@@ -124,6 +125,7 @@ object CompilationPhases extends FrontEndCompilationPhases {
     StepSequencer[StepSequencer.Step with PlanPipelineTransformerFactory]()
       .orderSteps(
         Set(
+          DeriveEagerAnalyzerOption,
           QueryPlanner,
           PlanRewriter,
           InsertCachedProperties,

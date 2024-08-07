@@ -41,7 +41,6 @@ import org.neo4j.cypher.internal.ir.EagernessReason.Unknown
 import org.neo4j.cypher.internal.ir.EagernessReason.UnknownLabelReadRemoveConflict
 import org.neo4j.cypher.internal.ir.EagernessReason.UnknownLabelReadSetConflict
 import org.neo4j.cypher.internal.ir.HasHeaders
-import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.column
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNodeWithProperties
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createRelationship
@@ -901,6 +900,7 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
       .setAllNodesCardinality(10)
       .setRelationshipCardinality("()-[]->()", 10)
       .addSemanticFeature(SemanticFeature.DynamicProperties)
+      .withSetting(GraphDatabaseInternalSettings.cypher_eager_analysis_implementation, impl)
       .build()
 
     val query =
@@ -933,7 +933,7 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
         .filter("start.prop = 1")
         .apply()
         .|.allNodeScan("start", "a")
-        .eager(lpReasons(
+        .eager(ListSet(
           EagernessReason.UnknownPropertyReadSetConflict.withConflict(EagernessReason.Conflict(Id(7), Id(1))),
           EagernessReason.UnknownPropertyReadSetConflict.withConflict(EagernessReason.Conflict(Id(7), Id(3)))
         ))
@@ -947,6 +947,7 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
     val planner = plannerBuilder()
       .setAllNodesCardinality(10)
       .setRelationshipCardinality("()-[]->()", 10)
+      .withSetting(GraphDatabaseInternalSettings.cypher_eager_analysis_implementation, impl)
       .build()
 
     val query = "CREATE (a)-[s:S]->(b) WITH b MATCH ANY SHORTEST (start {prop: 5})-[r]->(end) RETURN end"
@@ -975,6 +976,7 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
       .setAllNodesCardinality(10)
       .setLabelCardinality("Label", 10)
       .setRelationshipCardinality("()-[]->()", 10)
+      .withSetting(GraphDatabaseInternalSettings.cypher_eager_analysis_implementation, impl)
       .build()
 
     val query = "MATCH (a:Label) DELETE a WITH * MATCH ANY SHORTEST (start {prop: 5})-[r]->(end) RETURN end"
@@ -1014,6 +1016,7 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
       .setAllNodesCardinality(10)
       .setRelationshipCardinality("()-[]->()", 10)
       .setRelationshipCardinality("()-[:R]->()", 10)
+      .withSetting(GraphDatabaseInternalSettings.cypher_eager_analysis_implementation, impl)
       .build()
 
     val query =
@@ -1069,6 +1072,7 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
     val planner = plannerBuilder()
       .setAllNodesCardinality(10)
       .setRelationshipCardinality("()-[:R]->()", 10)
+      .withSetting(GraphDatabaseInternalSettings.cypher_eager_analysis_implementation, impl)
       .build()
 
     val query = "MATCH ANY SHORTEST (start{prop:1})-[r:R]->(end) SET end.prop = 1 RETURN end"
@@ -1110,6 +1114,7 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
       .setAllNodesCardinality(10)
       .setRelationshipCardinality("()-[:R]->()", 10)
       .addSemanticFeature(SemanticFeature.DynamicProperties)
+      .withSetting(GraphDatabaseInternalSettings.cypher_eager_analysis_implementation, impl)
       .build()
 
     val query = "MATCH ANY SHORTEST (start{prop:1})-[r:R]->(end) SET end[$p] = 1 RETURN end"
@@ -1118,12 +1123,12 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
     plan should equal(
       planner.planBuilder()
         .produceResults("end")
-        .eager(lpReasons(EagernessReason.UnknownPropertyReadSetConflict.withConflict(EagernessReason.Conflict(
+        .eager(ListSet(EagernessReason.UnknownPropertyReadSetConflict.withConflict(EagernessReason.Conflict(
           Id(2),
           Id(0)
         ))))
         .setDynamicProperty("end", "$p", "1")
-        .eager(lpReasons(EagernessReason.UnknownPropertyReadSetConflict.withConflict(EagernessReason.Conflict(
+        .eager(ListSet(EagernessReason.UnknownPropertyReadSetConflict.withConflict(EagernessReason.Conflict(
           Id(2),
           Id(5)
         ))))
@@ -1599,9 +1604,9 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
     plan should equal(
       planner.planBuilder()
         .produceResults("m", "n")
-        .lpEager(ListSet(UnknownLabelReadSetConflict.withConflict(Conflict(Id(2), Id(0)))))
+        .eager(ListSet(UnknownLabelReadSetConflict.withConflict(Conflict(Id(2), Id(0)))))
         .setLabels("n", Seq(), Seq("'Label2'"))
-        .lpEager(ListSet(UnknownLabelReadSetConflict.withConflict(Conflict(Id(2), Id(5)))))
+        .eager(ListSet(UnknownLabelReadSetConflict.withConflict(Conflict(Id(2), Id(5)))))
         .cartesianProduct()
         .|.nodeByLabelScan("m", "Label2", IndexOrderNone)
         .nodeByLabelScan("n", "Label", IndexOrderNone)
@@ -1622,15 +1627,12 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
                   |RETURN n""".stripMargin
 
     val plan = planner.plan(query)
-//Produces no eager since n is unique so no risk of overwrite. For LP Eagerness
+//Produces no eager since n is unique so no risk of overwrite.
     plan should equal(
       planner.planBuilder()
         .produceResults("n")
-        .irEager(ListSet(EagernessReason.Unknown))
         .setNodeProperty("n", "genre", "NULL")
-        .irEager(ListSet(EagernessReason.Unknown))
         .setLabels("n", Seq(), Seq("n.genre"))
-        .irEager(ListSet(EagernessReason.Unknown))
         .nodeByLabelScan("n", "Label", IndexOrderNone)
         .build()
     )
@@ -1650,33 +1652,20 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
 
     val plan = planner.plan(query)
 
-    val expected = impl match {
-      case GraphDatabaseInternalSettings.EagerAnalysisImplementation.IR => planner.planBuilder()
-          .produceResults(column("n", "cacheN[n.genre]"))
-          .eager(ListSet(Unknown))
-          .setNodeProperty("m", "genre", "NULL")
-          .eager(ListSet(Unknown))
-          .setLabels("m", Seq(), Seq("cacheN[n.genre]"))
-          .cartesianProduct()
-          .|.nodeByLabelScan("m", "Label", IndexOrderNone)
-          .cacheProperties("cacheNFromStore[n.genre]")
-          .allNodeScan("n")
-          .build()
-      case GraphDatabaseInternalSettings.EagerAnalysisImplementation.LP => planner.planBuilder()
-          .produceResults("n")
-          .lpEager(ListSet(PropertyReadSetConflict(propName("genre")).withConflict(Conflict(Id(2), Id(0)))))
-          .setNodeProperty("m", "genre", "NULL")
-          .lpEager(ListSet(
-            UnknownLabelReadSetConflict.withConflict(Conflict(Id(4), Id(0))),
-            PropertyReadSetConflict(propName("genre")).withConflict(Conflict(Id(2), Id(4)))
-          ))
-          .setLabels("m", Seq(), Seq("n.genre"))
-          .lpEager(ListSet(UnknownLabelReadSetConflict.withConflict(Conflict(Id(4), Id(7)))))
-          .cartesianProduct()
-          .|.nodeByLabelScan("m", "Label", IndexOrderNone)
-          .allNodeScan("n")
-          .build()
-    }
+    val expected = planner.planBuilder()
+      .produceResults("n")
+      .eager(ListSet(PropertyReadSetConflict(propName("genre")).withConflict(Conflict(Id(2), Id(0)))))
+      .setNodeProperty("m", "genre", "NULL")
+      .eager(ListSet(
+        UnknownLabelReadSetConflict.withConflict(Conflict(Id(4), Id(0))),
+        PropertyReadSetConflict(propName("genre")).withConflict(Conflict(Id(2), Id(4)))
+      ))
+      .setLabels("m", Seq(), Seq("n.genre"))
+      .eager(ListSet(UnknownLabelReadSetConflict.withConflict(Conflict(Id(4), Id(7)))))
+      .cartesianProduct()
+      .|.nodeByLabelScan("m", "Label", IndexOrderNone)
+      .allNodeScan("n")
+      .build()
 
     plan shouldEqual expected
   }
@@ -1698,17 +1687,16 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
     plan should equal(
       planner.planBuilder()
         .produceResults("n")
-        .eager(lpReasons(PropertyReadSetConflict(propName("year")).withConflict(Conflict(Id(2), Id(0)))))
+        .eager(ListSet(PropertyReadSetConflict(propName("year")).withConflict(Conflict(Id(2), Id(0)))))
         .setNodeProperty("n", "year", "NULL")
-        .lpEager(ListSet(
+        .eager(ListSet(
           PropertyReadSetConflict(propName("genre")).withConflict(Conflict(Id(4), Id(0))),
           UnknownLabelReadSetConflict.withConflict(Conflict(Id(5), Id(0))),
           PropertyReadSetConflict(propName("year")).withConflict(Conflict(Id(2), Id(5)))
         ))
         .setNodeProperty("n", "genre", "NULL")
-        .irEager(ListSet(Unknown))
         .setLabels("n", Seq(), Seq("toString(n.year)"))
-        .lpEager(ListSet(UnknownLabelReadSetConflict.withConflict(Conflict(Id(5), Id(8)))))
+        .eager(ListSet(UnknownLabelReadSetConflict.withConflict(Conflict(Id(5), Id(8)))))
         .cartesianProduct()
         .|.nodeByLabelScan("n", "Label", IndexOrderNone)
         .allNodeScan("m")
@@ -1733,7 +1721,7 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
     plan should equal(
       planner.planBuilder()
         .produceResults("n")
-        .lpEager(ListSet(UnknownLabelReadSetConflict.withConflict(Conflict(Id(2), Id(0)))))
+        .eager(ListSet(UnknownLabelReadSetConflict.withConflict(Conflict(Id(2), Id(0)))))
         .setLabels("n", Seq(), Seq("line.label"))
         .create(createNodeWithProperties("n", Seq(), "{name: line.Name}"))
         .loadCSV("'file:///artists-with-headers.csv'", "line", HasHeaders, None)
@@ -1760,7 +1748,7 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
       planner.planBuilder()
         .produceResults("leftoverLabels")
         .projection("labels(m) AS leftoverLabels")
-        .lpEager(ListSet(UnknownLabelReadRemoveConflict.withConflict(Conflict(Id(3), Id(1)))))
+        .eager(ListSet(UnknownLabelReadRemoveConflict.withConflict(Conflict(Id(3), Id(1)))))
         .removeLabels("n", Seq(), Seq("labels"))
         .apply()
         .|.cartesianProduct()

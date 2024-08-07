@@ -64,7 +64,7 @@ case object EagerRewriter extends Phase[PlannerContext, LogicalPlanState, Logica
   override def phase: CompilationPhaseTracer.CompilationPhase = LOGICAL_PLANNING
 
   override def process(from: LogicalPlanState, context: PlannerContext): LogicalPlanState = {
-    if (context.eagerAnalyzer != CypherEagerAnalyzerOption.lp) return from
+    if (!from.maybeEagerAnalyzerOption.contains(CypherEagerAnalyzerOption.lp)) return from
     if (from.logicalPlan.readOnly) return from
 
     val attributes: Attributes[LogicalPlan] = from.planningAttributes.asAttributes(context.logicalPlanIdGen)
