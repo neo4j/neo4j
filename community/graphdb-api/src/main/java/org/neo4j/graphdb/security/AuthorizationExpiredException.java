@@ -32,6 +32,7 @@ public class AuthorizationExpiredException extends RuntimeException implements S
     private final ErrorGqlStatusObject gqlStatusObject;
     private final String oldMessage;
 
+    @Deprecated
     public AuthorizationExpiredException(String message) {
         super(message);
         this.gqlStatusObject = null;
@@ -44,6 +45,7 @@ public class AuthorizationExpiredException extends RuntimeException implements S
         this.oldMessage = message;
     }
 
+    @Deprecated
     public AuthorizationExpiredException(String message, Throwable cause) {
         super(message, cause);
         this.gqlStatusObject = null;
