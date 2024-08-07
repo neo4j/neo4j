@@ -24,12 +24,13 @@ import static org.neo4j.configuration.GraphDatabaseSettings.logs_directory;
 import static org.neo4j.configuration.GraphDatabaseSettings.max_concurrent_transactions;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 import static org.neo4j.configuration.GraphDatabaseSettings.plugin_dir;
-import static org.neo4j.configuration.GraphDatabaseSettings.script_root_path;
 import static org.neo4j.configuration.GraphDatabaseSettings.server_logging_config_path;
 import static org.neo4j.logging.LogAssertions.assertThat;
 
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.connectors.HttpConnector;
 import org.neo4j.configuration.ssl.SslPolicyConfig;
@@ -59,18 +60,24 @@ class ConfigDiagnosticsTest {
                 .doesNotContainMessage("No provided DBMS settings.");
     }
 
-    @Test
-    void dumpPathConfigValues() {
+    @ParameterizedTest
+    @ValueSource(strings = {"", "bar", "/", "/bar", "/bar/"})
+    void dumpPathConfigValues(String destination) {
         SslPolicyConfig sslPolicy = SslPolicyConfig.forScope(SslPolicyScope.BOLT);
+        // For windows, we need to take into account the drive letter
+        Path pth = Path.of(destination);
+
         Config config = Config.newBuilder()
                 .set(HttpConnector.enabled, true)
-                .set(plugin_dir, Path.of("bar"))
-                .set(script_root_path, Path.of("/"))
+                .set(plugin_dir, pth)
                 .set(sslPolicy.enabled, true)
                 .build();
 
         ConfigDiagnostics configDiagnostics = new ConfigDiagnostics(config);
         configDiagnostics.dump(log::info);
+
+        // Relative destinations should be resolved against neo4j_home
+        String expected = (pth.isAbsolute() ? pth : config.get(neo4j_home).resolve(pth)).toString();
 
         // Check that groups, unspecified and specified directories are listed, but not files (alphabetic order)
         assertThat(logProvider)
@@ -78,8 +85,7 @@ class ConfigDiagnosticsTest {
                         "Directories in use:",
                         sslPolicy.base_directory.name(),
                         logs_directory.name(),
-                        plugin_dir.name() + "=" + config.get(neo4j_home).resolve("bar"),
-                        script_root_path.name() + "=/")
+                        plugin_dir.name() + "=" + expected)
                 .doesNotContainMessage(server_logging_config_path.name());
     }
 
