@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.ast.SetIncludingPropertiesFromMapItem
 import org.neo4j.cypher.internal.ast.SetProperty
 import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.TextCreateIndex
+import org.neo4j.cypher.internal.ast.Union
 import org.neo4j.cypher.internal.ast.UnionAll
 import org.neo4j.cypher.internal.ast.UnionDistinct
 import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
@@ -68,6 +69,8 @@ import org.neo4j.cypher.internal.util.Ref
 import org.neo4j.cypher.internal.util.UnionReturnItemsInDifferentOrder
 import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.symbols.CTRelationship
+
+import scala.annotation.tailrec
 
 object Deprecations {
 
@@ -221,7 +224,20 @@ object Deprecations {
         ))
 
       case c @ ImportingWithSubqueryCall(innerQuery, _) =>
-        val importing = if (innerQuery.isCorrelated) "a" else ""
+        @tailrec
+        def includesExisting(q: Query): Boolean = {
+          q match {
+            case sq: SingleQuery => sq.partitionedClauses.importingWith.exists(w => w.returnItems.includeExisting)
+            case un: Union =>
+              un.rhs.partitionedClauses.importingWith.exists(w => w.returnItems.includeExisting) ||
+              includesExisting(un.lhs)
+          }
+        }
+
+        val importing = if (innerQuery.isCorrelated) {
+          if (includesExisting(innerQuery)) "*" else innerQuery.importColumns.mkString(", ")
+        } else ""
+
         Some(Deprecation(
           None,
           Some(DeprecatedImportingWithInSubqueryCall(c.position, importing))
