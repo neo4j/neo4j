@@ -134,11 +134,9 @@ import org.neo4j.cypher.internal.parser.ast.util.Util.optUnsignedDecimalInt
 import org.neo4j.cypher.internal.parser.ast.util.Util.pos
 import org.neo4j.cypher.internal.parser.ast.util.Util.unsignedDecimalInt
 import org.neo4j.cypher.internal.parser.common.ast.factory.ParserTrimSpecification
-import org.neo4j.cypher.internal.parser.common.deprecation.DeprecatedChars
 import org.neo4j.cypher.internal.parser.v6.Cypher6Parser
 import org.neo4j.cypher.internal.parser.v6.Cypher6ParserListener
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
-import org.neo4j.cypher.internal.util.DeprecatedIdentifierUnicode
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.InternalNotificationLogger
 import org.neo4j.cypher.internal.util.symbols.AnyType
@@ -978,18 +976,8 @@ trait ExpressionBuilder extends Cypher6ParserListener {
 
   protected def notificationLogger: Option[InternalNotificationLogger]
 
-  private def reportDeprecatedChars(text: String, p: InputPosition): Unit = {
-    for {
-      logger <- notificationLogger
-      deprecatedChar <- DeprecatedChars.deprecatedChars(text).asScala
-    } {
-      logger.log(DeprecatedIdentifierUnicode(p, deprecatedChar, text))
-    }
-  }
-
   final override def exitUnescapedSymbolicNameString(ctx: Cypher6Parser.UnescapedSymbolicNameStringContext): Unit = {
     val text = ctx.getText
-    if (DeprecatedChars.containsDeprecatedChar(text)) reportDeprecatedChars(text, pos(ctx))
     ctx.ast = text
   }
 

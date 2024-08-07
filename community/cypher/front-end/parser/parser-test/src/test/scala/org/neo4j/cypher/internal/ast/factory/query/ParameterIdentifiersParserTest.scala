@@ -25,9 +25,12 @@ import org.neo4j.cypher.internal.util.symbols.CTAny
 
 class ParameterIdentifiersParserTest extends AstParsingTestBase {
 
+  // These chars are characters that will change the meaning of the query, making it a different test, so skip them.
+  val specialChars: Seq[Char] = List('"', '\'', '/', '*', '%', '+', '-', ',', '.', ':', '<', '>', '=', '^', '`')
+
   test("Identifier Start characters are allowed in first position") {
     for (c <- Character.MIN_VALUE to Character.MAX_VALUE) {
-      if (Character.getType(c) != Character.SURROGATE) {
+      if (Character.getType(c) != Character.SURROGATE && !specialChars.contains(c)) {
         val paramWithCharName = f"paramWithChar_${Integer.valueOf(c)}%04X"
 
         s"RETURN $$${c}abc AS `$paramWithCharName`" should parseIn[Statements] {
@@ -37,10 +40,10 @@ class ParameterIdentifiersParserTest extends AstParsingTestBase {
                 return_(aliasedReturnItem(parameter(s"${c}abc", CTAny), paramWithCharName))
               )
             )
-          case _ if UnicodeHelper.isIdentifierStart(c, CypherVersion.Cypher5) || (c >= 0x31 && c <= 0x39) =>
+          case _ if Character.isWhitespace(c) || Character.isSpaceChar(c) =>
             _.toAstPositioned(
               singleQuery(
-                return_(aliasedReturnItem(parameter(s"${c}abc", CTAny), paramWithCharName))
+                return_(aliasedReturnItem(parameter(s"abc", CTAny), paramWithCharName))
               )
             )
           case Cypher6 if c == '\u0085' =>
@@ -49,13 +52,14 @@ class ParameterIdentifiersParserTest extends AstParsingTestBase {
                 return_(aliasedReturnItem(parameter(s"abc", CTAny), paramWithCharName))
               )
             )
-          case _ if Character.isWhitespace(c) || Character.isSpaceChar(c) =>
+          case Cypher6 => _.withSyntaxErrorContaining("Invalid input")
+          case _ if UnicodeHelper.isIdentifierStart(c, CypherVersion.Cypher5) || (c >= 0x31 && c <= 0x39) =>
             _.toAstPositioned(
               singleQuery(
-                return_(aliasedReturnItem(parameter(s"abc", CTAny), paramWithCharName))
+                return_(aliasedReturnItem(parameter(s"${c}abc", CTAny), paramWithCharName))
               )
             )
-          case _ => _.withAnyFailure
+          case _ => _.withSyntaxErrorContaining("Invalid input")
         }
       }
     }
@@ -64,10 +68,7 @@ class ParameterIdentifiersParserTest extends AstParsingTestBase {
   test("Extended Identifier characters should be allowed in second position") {
     for (c <- Character.MIN_VALUE to Character.MAX_VALUE) {
       val paramWithCharName = f"paramWithChar_${Integer.valueOf(c)}%04X"
-      if (
-        Character.getType(c) != Character.SURROGATE &&
-        !List('"', '\'', '/', '*', '%', '+', '-', ',', '.', ':', '<', '>', '=', '^', '`').contains(c)
-      ) {
+      if (Character.getType(c) != Character.SURROGATE && !specialChars.contains(c)) {
         s"RETURN $$a${c}abc AS `$paramWithCharName`" should parseIn[Statements] {
           case Cypher6 if UnicodeHelper.isIdentifierPart(c, CypherVersion.Cypher6) =>
             _.toAstPositioned(
@@ -75,14 +76,14 @@ class ParameterIdentifiersParserTest extends AstParsingTestBase {
                 return_(aliasedReturnItem(parameter(s"a${c}abc", CTAny), paramWithCharName))
               )
             )
-          case Cypher6 => _.withAnyFailure
+          case Cypher6 => _.withSyntaxErrorContaining("Invalid input")
           case _ if UnicodeHelper.isIdentifierPart(c, CypherVersion.Cypher5) =>
             _.toAstPositioned(
               singleQuery(
                 return_(aliasedReturnItem(parameter(s"a${c}abc", CTAny), paramWithCharName))
               )
             )
-          case _ => _.withAnyFailure
+          case _ => _.withSyntaxErrorContaining("Invalid input")
         }
       }
     }

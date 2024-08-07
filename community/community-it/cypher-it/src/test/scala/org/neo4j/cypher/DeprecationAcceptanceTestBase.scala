@@ -603,7 +603,8 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
       assertNotification(
         deprecateQueries._2,
         shouldContainNotification = true,
-        deprecatedIdentifierUnicode(_, deprecateQueries._1, s"a${deprecateQueries._1}bc")
+        deprecatedIdentifierUnicode(_, deprecateQueries._1, s"a${deprecateQueries._1}bc"),
+        Set(CypherVersion.cypher5)
       )
     }
   }
@@ -627,7 +628,8 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
         _,
         deprecatedStartUnicodeChar,
         s"${deprecatedStartUnicodeChar}b${deprecatedExtendedUnicodeChar}c"
-      )
+      ),
+      Set(CypherVersion.cypher5)
     )
 
     assertNotification(
@@ -637,7 +639,8 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
         _,
         deprecatedExtendedUnicodeChar,
         s"${deprecatedStartUnicodeChar}b${deprecatedExtendedUnicodeChar}c"
-      )
+      ),
+      Set(CypherVersion.cypher5)
     )
   }
 
@@ -655,7 +658,8 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
     assertNotification(
       queriesWithDeprecatedStartChar,
       shouldContainNotification = true,
-      deprecatedIdentifierUnicode(_, deprecatedStartUnicodeChar, s"${deprecatedStartUnicodeChar}bc")
+      deprecatedIdentifierUnicode(_, deprecatedStartUnicodeChar, s"${deprecatedStartUnicodeChar}bc"),
+      Set(CypherVersion.cypher5)
     )
   }
 

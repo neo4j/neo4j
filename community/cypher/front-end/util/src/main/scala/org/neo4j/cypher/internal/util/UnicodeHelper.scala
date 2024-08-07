@@ -47,7 +47,9 @@ object UnicodeHelper {
     }
   })
 
-  private val deprecatedIdentifierStartUnicodes = Seq()
+  private val deprecatedIdentifierStartUnicodes = Seq(
+    "\u2e2f"
+  )
 
   // all chars for which Character.isJavaIdentifierStart(c) && Character.getType(c) != Character.CURRENCY_SYMBOL is true (in Java 17)
   private val identifierStartUnicodesCypher6 = Seq(
@@ -341,7 +343,6 @@ object UnicodeHelper {
     "\u2dc8-\u2dce",
     "\u2dd0-\u2dd6",
     "\u2dd8-\u2dde",
-    "\u2e2f",
     "\u3005-\u3007",
     "\u3021-\u3029",
     "\u3031-\u3035",
@@ -440,22 +441,39 @@ object UnicodeHelper {
     "\uffda-\uffdc"
   )
 
-  val deprecatedIdentifierPartUnicodes = Seq("\u0085")
-
-  // all chars for which Character.isIdentifierPart is true (in Java 17)
-  val identifierPartUnicodesCypher6 = Seq(
+  val deprecatedIdentifierPartUnicodes: Seq[String] = Seq(
     "\u0000-\u0008",
     "\u000e-\u001b",
-    "\u0024",
+    "\u007f-\u009f",
+    // Category Sc// Category Sc
+    "\u0024", // $
+    "\u00a2", // ¢
+    "\u00a3", // £
+    "\u00a4", // ¤
+    "\u00a5", // ¥
+    // Category Cf// Category Cf
+    "\u00AD",
+    "\u0600-\u0605",
+    "\u061C",
+    "\u06DD",
+    "\u070F",
+    "\u08E2",
+    "\u180E",
+    "\u200b-\u200f",
+    "\u202a-\u202e",
+    "\u2060-\u2064",
+    "\u2066-\u206f",
+    "\u2E2F",
+    "\uFEFF",
+    "\ufff9-\ufffb"
+  )
+
+  val identifierPartUnicodesCypher6: Seq[String] = Seq(
     "\u0030-\u0039",
     "\u0041-\u005a",
     "\u005f",
     "\u0061-\u007a",
-    "\u007f-\u0084",
-    "\u0086-\u009f",
-    "\u00a2-\u00a5",
     "\u00aa",
-    "\u00ad",
     "\u00b5",
     "\u00ba",
     "\u00c0-\u00d6",
@@ -488,17 +506,15 @@ object UnicodeHelper {
     "\u05c7",
     "\u05d0-\u05ea",
     "\u05ef-\u05f2",
-    "\u0600-\u0605",
     "\u060b",
     "\u0610-\u061a",
-    "\u061c",
     "\u0620-\u0669",
     "\u066e-\u06d3",
-    "\u06d5-\u06dd",
+    "\u06d5-\u06dc",
     "\u06df-\u06e8",
     "\u06ea-\u06fc",
     "\u06ff",
-    "\u070f-\u074a",
+    "\u0710-\u074a",
     "\u074d-\u07b1",
     "\u07c0-\u07f5",
     "\u07fa",
@@ -507,7 +523,8 @@ object UnicodeHelper {
     "\u0860-\u086a",
     "\u08a0-\u08b4",
     "\u08b6-\u08c7",
-    "\u08d3-\u0963",
+    "\u08d3-\u08e1",
+    "\u08e3-\u0963",
     "\u0966-\u096f",
     "\u0971-\u0983",
     "\u0985-\u098c",
@@ -702,7 +719,7 @@ object UnicodeHelper {
     "\u17d7",
     "\u17db-\u17dd",
     "\u17e0-\u17e9",
-    "\u180b-\u180e",
+    "\u180b-\u180d",
     "\u1810-\u1819",
     "\u1820-\u1878",
     "\u1880-\u18aa",
@@ -755,12 +772,8 @@ object UnicodeHelper {
     "\u1fe0-\u1fec",
     "\u1ff2-\u1ff4",
     "\u1ff6-\u1ffc",
-    "\u200b-\u200f",
-    "\u202a-\u202e",
     "\u203f-\u2040",
     "\u2054",
-    "\u2060-\u2064",
-    "\u2066-\u206f",
     "\u2071",
     "\u207f",
     "\u2090-\u209c",
@@ -801,7 +814,6 @@ object UnicodeHelper {
     "\u2dd0-\u2dd6",
     "\u2dd8-\u2dde",
     "\u2de0-\u2dff",
-    "\u2e2f",
     "\u3005-\u3007",
     "\u3021-\u302f",
     "\u3031-\u3035",
@@ -885,7 +897,6 @@ object UnicodeHelper {
     "\ufe69",
     "\ufe70-\ufe74",
     "\ufe76-\ufefc",
-    "\ufeff",
     "\uff04",
     "\uff10-\uff19",
     "\uff21-\uff3a",
@@ -897,7 +908,6 @@ object UnicodeHelper {
     "\uffd2-\uffd7",
     "\uffda-\uffdc",
     "\uffe0-\uffe1",
-    "\uffe5-\uffe6",
-    "\ufff9-\ufffb"
+    "\uffe5-\uffe6"
   )
 }
