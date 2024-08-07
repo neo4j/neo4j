@@ -43,6 +43,7 @@ import org.neo4j.internal.schema.FulltextSchemaDescriptor;
 import org.neo4j.internal.schema.GraphTypeDependence;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
+import org.neo4j.internal.schema.RelationshipEndpointSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.internal.schema.SchemaRule;
@@ -194,7 +195,8 @@ public class SchemaMigrator {
                                         var relEndpointSchemaDescriptor =
                                                 constraintDescriptor.asRelationshipEndpointConstraint();
                                         yield ConstraintDescriptorFactory.relationshipEndpointForSchema(
-                                                schema,
+                                                schema.asSchemaDescriptorType(
+                                                        RelationshipEndpointSchemaDescriptor.class),
                                                 relEndpointSchemaDescriptor.endpointLabelId(),
                                                 relEndpointSchemaDescriptor.endpointType());
                                     }

@@ -21,6 +21,7 @@ package org.neo4j.internal.schema.constraints;
 
 import org.neo4j.internal.schema.EndpointType;
 import org.neo4j.internal.schema.IndexType;
+import org.neo4j.internal.schema.RelationshipEndpointSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.util.VisibleForTesting;
@@ -54,7 +55,7 @@ public class ConstraintDescriptorFactory {
     }
 
     public static RelationshipEndpointConstraintDescriptor relationshipEndpointForSchema(
-            SchemaDescriptor schema, int endpointLabelId, EndpointType endpointType) {
+            RelationshipEndpointSchemaDescriptor schema, int endpointLabelId, EndpointType endpointType) {
         return RelationshipEndpointConstraintDescriptorImplementation.make(schema, endpointLabelId, endpointType);
     }
 

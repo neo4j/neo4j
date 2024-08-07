@@ -29,6 +29,7 @@ import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.ConstraintType;
 import org.neo4j.internal.schema.EndpointType;
 import org.neo4j.internal.schema.GraphTypeDependence;
+import org.neo4j.internal.schema.RelationshipEndpointSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaNameUtil;
 import org.neo4j.internal.schema.SchemaUserDescription;
@@ -38,11 +39,15 @@ final class RelationshipEndpointConstraintDescriptorImplementation implements Re
     private final long id;
     private final int endpointLabelId;
     private final String name;
-    private final SchemaDescriptor schema;
+    private final RelationshipEndpointSchemaDescriptor schema;
     private final EndpointType endpointType;
 
     RelationshipEndpointConstraintDescriptorImplementation(
-            SchemaDescriptor schema, long id, int endpointLabelId, String name, EndpointType endpointType) {
+            RelationshipEndpointSchemaDescriptor schema,
+            long id,
+            int endpointLabelId,
+            String name,
+            EndpointType endpointType) {
         if (endpointLabelId < 0) {
             throw new IllegalArgumentException("endpointLabelId cannot be negative");
         }
@@ -54,7 +59,7 @@ final class RelationshipEndpointConstraintDescriptorImplementation implements Re
     }
 
     static RelationshipEndpointConstraintDescriptor make(
-            SchemaDescriptor schema, int endpointLabelId, EndpointType endpointType) {
+            RelationshipEndpointSchemaDescriptor schema, int endpointLabelId, EndpointType endpointType) {
         return new RelationshipEndpointConstraintDescriptorImplementation(
                 schema, NO_ID, endpointLabelId, null, endpointType);
     }

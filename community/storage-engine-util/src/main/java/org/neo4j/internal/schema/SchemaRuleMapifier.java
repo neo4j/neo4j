@@ -366,7 +366,9 @@ public class SchemaRuleMapifier {
                     graphTypeDependence == GraphTypeDependence.DEPENDENT);
 
             case ENDPOINT -> ConstraintDescriptorFactory.relationshipEndpointForSchema(
-                    schema, (int) getLong(PROP_SCHEMA_ENDPOINT_LABEL_ID, props), getEndpointType(props));
+                    schema.asSchemaDescriptorType(RelationshipEndpointSchemaDescriptor.class),
+                    (int) getLong(PROP_SCHEMA_ENDPOINT_LABEL_ID, props),
+                    getEndpointType(props));
         };
     }
 

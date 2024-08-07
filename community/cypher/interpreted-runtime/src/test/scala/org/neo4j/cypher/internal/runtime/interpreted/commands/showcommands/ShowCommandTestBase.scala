@@ -48,6 +48,7 @@ import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler
 import org.neo4j.internal.kernel.api.security.SecurityContext
 import org.neo4j.internal.schema.LabelSchemaDescriptor
 import org.neo4j.internal.schema.RelationTypeSchemaDescriptor
+import org.neo4j.internal.schema.RelationshipEndpointSchemaDescriptor
 import org.neo4j.internal.schema.SchemaDescriptors
 import org.neo4j.kernel.database.NamedDatabaseId
 import org.neo4j.kernel.impl.api.TransactionRegistry
@@ -90,6 +91,9 @@ class ShowCommandTestBase extends CypherFunSuite {
   protected lazy val prop: String = "prop"
   protected lazy val labelDescriptor: LabelSchemaDescriptor = SchemaDescriptors.forLabel(0, 0)
   protected lazy val relTypeDescriptor: RelationTypeSchemaDescriptor = SchemaDescriptors.forRelType(0, 0)
+
+  protected lazy val relEndpointDescriptor: RelationshipEndpointSchemaDescriptor =
+    SchemaDescriptors.forRelationshipEndpoint(0)
 
   // Transaction variables
 

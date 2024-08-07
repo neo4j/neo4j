@@ -2288,7 +2288,10 @@ public class Operations implements Write, SchemaWrite, Upgrade {
     }
 
     private RelationshipEndpointConstraintDescriptor lockAndValidateRelationshipEndpointConstraint(
-            SchemaDescriptor schemaDescriptor, String name, int endpointLabelId, EndpointType endpointType)
+            RelationshipEndpointSchemaDescriptor schemaDescriptor,
+            String name,
+            int endpointLabelId,
+            EndpointType endpointType)
             throws KernelException {
         exclusiveSchemaLock(schemaDescriptor);
         ktx.assertOpen();

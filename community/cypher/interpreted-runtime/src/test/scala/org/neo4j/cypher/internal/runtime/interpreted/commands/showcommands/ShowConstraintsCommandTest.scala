@@ -1096,7 +1096,7 @@ class ShowConstraintsCommandTest extends ShowCommandTestBase {
     // Given
     val relTargetConstraintDescriptor =
       ConstraintDescriptorFactory.relationshipEndpointForSchema(
-        relTypeDescriptor,
+        relEndpointDescriptor,
         labelDescriptor.getLabelId,
         EndpointType.END
       )
@@ -1136,7 +1136,7 @@ class ShowConstraintsCommandTest extends ShowCommandTestBase {
     // Given
     val relSourceConstraintDescriptor =
       ConstraintDescriptorFactory.relationshipEndpointForSchema(
-        relTypeDescriptor,
+        relEndpointDescriptor,
         labelDescriptor.getLabelId,
         EndpointType.START
       )
