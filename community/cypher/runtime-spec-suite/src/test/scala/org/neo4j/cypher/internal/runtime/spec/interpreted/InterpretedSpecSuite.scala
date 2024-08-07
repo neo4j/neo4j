@@ -177,6 +177,7 @@ import org.neo4j.cypher.internal.runtime.spec.tests.TransactionForeachDbHitsTest
 import org.neo4j.cypher.internal.runtime.spec.tests.TransactionForeachMemoryManagementTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.TransactionForeachProfileRowsTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.TransactionForeachTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.TransactionTerminationTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.TriadicSelectionTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.UndirectedRelationshipByElementIdSeekTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.UndirectedRelationshipByIdSeekTestBase
@@ -549,3 +550,6 @@ class InterpretedRelationshipIndexLockingUniqueSeekConcurrencyStressTest
 
 class InterpretedRuntimeDebugLoggingTest
     extends RuntimeDebugLoggingTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
+
+class InterpretedTransactionTerminationTest
+    extends TransactionTerminationTestBase(COMMUNITY.EDITION, InterpretedRuntime)
