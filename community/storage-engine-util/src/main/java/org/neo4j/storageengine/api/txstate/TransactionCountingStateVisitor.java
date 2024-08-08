@@ -153,12 +153,7 @@ public class TransactionCountingStateVisitor extends TxStateVisitor.Delegator {
     }
 
     private void updateRelationshipsCountsFromDegrees(int type, int label, long outgoing, long incoming) {
-        // untyped
-        counts.incrementRelationshipCount(label, ANY_RELATIONSHIP_TYPE, ANY_LABEL, outgoing);
-        counts.incrementRelationshipCount(ANY_LABEL, ANY_RELATIONSHIP_TYPE, label, incoming);
-        // typed
-        counts.incrementRelationshipCount(label, type, ANY_LABEL, outgoing);
-        counts.incrementRelationshipCount(ANY_LABEL, type, label, incoming);
+        counts.incrementRelationshipCountsForLabelChange(type, label, outgoing, incoming);
     }
 
     private void updateRelationshipCount(long startNode, int type, long endNode, int delta) {

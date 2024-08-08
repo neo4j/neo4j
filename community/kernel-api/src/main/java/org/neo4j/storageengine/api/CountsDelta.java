@@ -19,6 +19,9 @@
  */
 package org.neo4j.storageengine.api;
 
+import static org.neo4j.token.api.TokenConstants.ANY_LABEL;
+import static org.neo4j.token.api.TokenConstants.ANY_RELATIONSHIP_TYPE;
+
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.eclipse.collections.api.map.MutableMap;
 import org.eclipse.collections.impl.map.mutable.UnifiedMap;
@@ -38,8 +41,20 @@ public class CountsDelta {
 
     public void incrementNodeCount(int labelId, long delta) {
         if (delta != 0) {
-            nodeCounts.updateValue(labelId, DEFAULT_COUNT, l -> l + delta);
+            internalIncrementNodeCount(labelId, delta);
         }
+    }
+
+    public void incrementNodeCount(int[] labelIds, long delta) {
+        if (delta != 0) {
+            for (int labelId : labelIds) {
+                internalIncrementNodeCount(labelId, delta);
+            }
+        }
+    }
+
+    private void internalIncrementNodeCount(int labelId, long delta) {
+        nodeCounts.updateValue(labelId, DEFAULT_COUNT, l -> l + delta);
     }
 
     public long relationshipCount(int startLabelId, int typeId, int endLabelId) {
@@ -57,6 +72,19 @@ public class CountsDelta {
         }
     }
 
+    /**
+     * Increments relationship counts for when adding/removing a label on a node.
+     * When adding a label the outgoing/incoming counts should be positive, otherwise negative.
+     */
+    public void incrementRelationshipCountsForLabelChange(int typeId, int labelId, long outgoing, long incoming) {
+        // untyped
+        incrementRelationshipCount(labelId, ANY_RELATIONSHIP_TYPE, ANY_LABEL, outgoing);
+        incrementRelationshipCount(ANY_LABEL, ANY_RELATIONSHIP_TYPE, labelId, incoming);
+        // typed
+        incrementRelationshipCount(labelId, typeId, ANY_LABEL, outgoing);
+        incrementRelationshipCount(ANY_LABEL, typeId, labelId, incoming);
+    }
+
     public void accept(Visitor visitor) {
         nodeCounts.forEachKeyValue(visitor::visitNodeCount);
         relationshipCounts.forEachKeyValue((k, count) ->
@@ -65,6 +93,15 @@ public class CountsDelta {
 
     public boolean hasChanges() {
         return !nodeCounts.isEmpty() || !relationshipCounts.isEmpty();
+    }
+
+    public int size() {
+        return nodeCounts.size() + relationshipCounts.size();
+    }
+
+    public void clear() {
+        nodeCounts.clear();
+        relationshipCounts.clear();
     }
 
     public record RelationshipKey(int startLabelId, int typeId, int endLabelId) {}
