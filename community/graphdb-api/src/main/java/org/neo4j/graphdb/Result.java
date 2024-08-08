@@ -23,7 +23,6 @@ import java.io.PrintWriter;
 import java.util.List;
 import java.util.Map;
 import org.neo4j.annotations.api.PublicApi;
-import org.neo4j.common.Experimental;
 
 /**
  * Represents the result of {@link Transaction#execute(String, java.util.Map) executing} a query.
@@ -218,7 +217,6 @@ public interface Result extends ResourceIterator<Map<String, Object>> {
      *
      * @return an iterable of all GQL-status objects created when running the query.
      */
-    @Experimental
     Iterable<GqlStatusObject> getGqlStatusObjects();
 
     /**
