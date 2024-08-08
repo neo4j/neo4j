@@ -118,6 +118,7 @@ class QueryResourceNotificationsIT {
         assertThat(notificationsJson.get(0).get("position").get("column").asInt())
                 .isEqualTo(10);
         assertThat(notificationsJson.get(0).get("severity").asText()).isEqualTo("WARNING");
+        assertThat(notificationsJson.get(0).get("category").asText()).isEqualTo("UNRECOGNIZED");
     }
 
     @Test

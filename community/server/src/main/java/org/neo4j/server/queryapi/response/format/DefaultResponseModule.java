@@ -90,31 +90,10 @@ public final class DefaultResponseModule extends SimpleModule {
         this.addSerializer(SummaryCounters.class, new SummaryCountersSerializer());
         this.addSerializer(Plan.class, new QueryPlanSerializer());
         this.addSerializer(ProfiledPlan.class, new ProfiledPlanSerializer());
+        this.addSerializer(Notification.class, new NotificationSerializer());
 
-        this.setMixInAnnotation(Notification.class, NotificationMixIn.class);
         this.setMixInAnnotation(InputPosition.class, InputPositionMixIn.class);
         this.setMixInAnnotation(Neo4jException.class, Neo4jExceptionMixIn.class);
-    }
-
-    /**
-     * Not to be implemented. It is public only to be registered with GraalVM AoT via RegisterReflectionForBinding.
-     */
-    public interface NotificationMixIn {
-
-        @JsonProperty
-        String code();
-
-        @JsonProperty
-        String severity();
-
-        @JsonProperty
-        String title();
-
-        @JsonProperty
-        String description();
-
-        @JsonProperty
-        InputPosition position();
     }
 
     /**
@@ -140,6 +119,33 @@ public final class DefaultResponseModule extends SimpleModule {
 
         @JsonProperty
         String code();
+    }
+
+    private static class NotificationSerializer extends StdSerializer<Notification> {
+
+        @Serial
+        private static final long serialVersionUID = 3823657055285501063L;
+
+        NotificationSerializer() {
+            super(Notification.class);
+        }
+
+        @Override
+        public void serialize(
+                Notification notification, JsonGenerator jsonGenerator, SerializerProvider serializerProvider)
+                throws IOException {
+            jsonGenerator.writeStartObject();
+            jsonGenerator.writeStringField("code", notification.code());
+            jsonGenerator.writeStringField("description", notification.description());
+            jsonGenerator.writeStringField("severity", notification.severity());
+            jsonGenerator.writeStringField("title", notification.title());
+            jsonGenerator.writeObjectField("position", notification.position());
+            if (notification.category().isPresent()) {
+                jsonGenerator.writeStringField(
+                        "category", notification.category().get().toString());
+            }
+            jsonGenerator.writeEndObject();
+        }
     }
 
     private static class SummaryCountersSerializer extends StdSerializer<SummaryCounters> {
