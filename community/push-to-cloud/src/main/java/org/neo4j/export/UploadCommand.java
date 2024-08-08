@@ -87,7 +87,7 @@ public class UploadCommand extends AbstractAdminCommand {
             names = "--from-path",
             paramLabel = "<path>",
             description =
-                    "'/path/to/directory-containing-dump' Path to a directory containing a database dump to upload.",
+                    "'/path/to/directory-containing-dump-or-backup' Path to a directory containing a database dump or backup file to upload.",
             required = true)
     private Path archiveDirectory;
 
