@@ -25,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.collection.PrimitiveArrays.countUnique;
 import static org.neo4j.collection.PrimitiveArrays.intersect;
+import static org.neo4j.collection.PrimitiveArrays.subtract;
 
 import java.util.Iterator;
 import java.util.Set;
@@ -177,6 +178,13 @@ class PrimitiveArraysTest {
 
         IntPairAssert.assertThat(countUnique(new int[] {4, 6, 9, 11, 12, 15}, new int[] {2, 3, 4, 7, 8, 9, 12, 16, 19}))
                 .hasCounts(3, 6);
+    }
+
+    @Test
+    void shouldSubtract() {
+        assertThat(subtract(new int[] {0, 1, 2, 3, 4}, 1, 3)).isEqualTo(new int[] {0, 2, 4});
+        assertThat(subtract(new int[] {0, 1, 2, 3, 4}, 0, 4)).isEqualTo(new int[] {1, 2, 3});
+        assertThat(subtract(new int[] {0, 1, 2, 3, 4}, -5, 5)).isEqualTo(new int[] {0, 1, 2, 3, 4});
     }
 
     private static class IntPairAssert extends AbstractAssert<IntPairAssert, Long> {

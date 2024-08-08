@@ -255,6 +255,38 @@ public final class PrimitiveArrays {
         return false;
     }
 
+    public static int[] subtract(int[] sortedItems, int... sortedItemsToRemove) {
+        if (sortedItems == null) {
+            return null;
+        }
+        if (sortedItemsToRemove == null) {
+            return sortedItems;
+        }
+
+        int[] result = new int[sortedItems.length];
+        int i1 = 0;
+        int ri = 0;
+        for (int i2 = 0; i1 < sortedItems.length && i2 < sortedItemsToRemove.length; ) {
+            int item = sortedItems[i1];
+            int itemToRemove = sortedItemsToRemove[i2];
+            if (item < itemToRemove) {
+                result[ri++] = item;
+                i1++;
+            } else {
+                if (item == itemToRemove) {
+                    i1++;
+                }
+                i2++;
+            }
+        }
+        int remaining = sortedItems.length - i1;
+        if (remaining > 0) {
+            System.arraycopy(sortedItems, i1, result, ri, remaining);
+            ri += remaining;
+        }
+        return ri < result.length ? Arrays.copyOf(result, ri) : result;
+    }
+
     private static long intPair(int left, int right) {
         return (((long) left) << Integer.SIZE) | right;
     }
