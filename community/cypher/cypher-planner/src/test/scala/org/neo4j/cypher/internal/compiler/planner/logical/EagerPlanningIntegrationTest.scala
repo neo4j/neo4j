@@ -1762,9 +1762,9 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
     plan should equal(
       planner.planBuilder()
         .produceResults("p")
-        .lpEager(ListSet(UnknownLabelReadSetConflict.withConflict(Conflict(Id(2), Id(0)))))
+        .eager(ListSet(UnknownLabelReadSetConflict.withConflict(Conflict(Id(2), Id(0)))))
         .setDynamicLabelsWithExpression("p", Set(collectExpr))
-        .lpEager(ListSet(UnknownLabelReadSetConflict.withConflict(Conflict(Id(2), Id(7)))))
+        .eager(ListSet(UnknownLabelReadSetConflict.withConflict(Conflict(Id(2), Id(7)))))
         .cartesianProduct()
         .|.nodeByLabelScan("n", "Person", IndexOrderNone)
         .allNodeScan("p")
@@ -1803,9 +1803,9 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
     plan should equal(
       planner.planBuilder()
         .produceResults("p")
-        .lpEager(ListSet(UnknownLabelReadRemoveConflict.withConflict(Conflict(Id(2), Id(0)))))
+        .eager(ListSet(UnknownLabelReadRemoveConflict.withConflict(Conflict(Id(2), Id(0)))))
         .removeDynamicLabelsWithExpressions("p", Set(collectExpr))
-        .lpEager(ListSet(UnknownLabelReadRemoveConflict.withConflict(Conflict(Id(2), Id(7)))))
+        .eager(ListSet(UnknownLabelReadRemoveConflict.withConflict(Conflict(Id(2), Id(7)))))
         .cartesianProduct()
         .|.nodeByLabelScan("n", "Person", IndexOrderNone)
         .allNodeScan("p")
