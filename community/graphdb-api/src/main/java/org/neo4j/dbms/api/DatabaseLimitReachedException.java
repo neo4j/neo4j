@@ -28,6 +28,7 @@ import org.neo4j.kernel.api.exceptions.Status;
  */
 @PublicApi
 public class DatabaseLimitReachedException extends DatabaseManagementException {
+    @Deprecated
     public DatabaseLimitReachedException(String startOfErrorMessage) {
         super(
                 startOfErrorMessage + " The total limit of databases is already reached. "
