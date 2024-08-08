@@ -61,7 +61,6 @@ public class CompleteTransaction implements StorageEngineTransaction {
     // These fields are provided by commit process, storage engine, or recovery process
     private final Commitment commitment;
     private LongConsumer closedCallback;
-    private long appendIndex;
 
     public CompleteTransaction(
             CommittedCommandBatchRepresentation committedCommandBatchRepresentation,
@@ -107,7 +106,7 @@ public class CompleteTransaction implements StorageEngineTransaction {
     @Override
     public void commit() {
         commitment.publishAsCommitedLastBatch();
-        commitment.publishAsCommitted(commandBatch.getTimeCommitted(), appendIndex);
+        commitment.publishAsCommitted(commandBatch.getTimeCommitted(), commandBatch.appendIndex());
     }
 
     @Override
@@ -168,7 +167,7 @@ public class CompleteTransaction implements StorageEngineTransaction {
                 checksum,
                 commandBatch.consensusIndex());
         this.cursorContext.getVersionContext().initWrite(transactionId);
-        this.appendIndex = appendIndex;
+        commandBatch.setAppendIndex(appendIndex);
     }
 
     @Override

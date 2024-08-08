@@ -67,6 +67,7 @@ import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.extension.ExtensionFailureStrategies;
 import org.neo4j.kernel.extension.GlobalExtensions;
 import org.neo4j.kernel.extension.context.GlobalExtensionContext;
+import org.neo4j.kernel.impl.api.CommandCommitListeners;
 import org.neo4j.kernel.impl.cache.VmPauseMonitorComponent;
 import org.neo4j.kernel.impl.factory.DbmsInfo;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
@@ -142,6 +143,7 @@ public class GlobalModule {
     private final GlobalMemoryGroupTracker otherMemoryPool;
     private final CapabilitiesService capabilitiesService;
     private final BinarySupportedKernelVersions binarySupportedKernelVersions;
+    private final CommandCommitListeners defaultCommitListeners;
 
     /**
      * @param globalConfig         configuration affecting global aspects of the system.
@@ -184,6 +186,9 @@ public class GlobalModule {
 
         JobScheduler createdOrResolvedScheduler = tryResolveOrCreate(JobScheduler.class, this::createJobScheduler);
         jobScheduler = globalLife.add(globalDependencies.satisfyDependency(createdOrResolvedScheduler));
+
+        defaultCommitListeners =
+                tryResolveOrCreate(CommandCommitListeners.class, () -> CommandCommitListeners.NO_LISTENERS);
 
         fileLockerService = createFileLockerService();
         Locker storeLocker = fileLockerService.createStoreLocker(fileSystem, neo4jLayout);
@@ -545,5 +550,9 @@ public class GlobalModule {
 
     public CapabilitiesService getCapabilitiesService() {
         return capabilitiesService;
+    }
+
+    public CommandCommitListeners getDefaultCommandCommitListeners() {
+        return defaultCommitListeners;
     }
 }

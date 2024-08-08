@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.api.chunk;
 
+import static org.neo4j.storageengine.AppendIndexProvider.UNKNOWN_APPEND_INDEX;
+
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
@@ -103,6 +105,20 @@ public record ChunkedCommandBatch(List<StorageCommand> commands, ChunkMetadata c
     @Override
     public int commandCount() {
         return commands.size();
+    }
+
+    @Override
+    public long appendIndex() {
+        long appendIndex = chunkMetadata.appendIndex().longValue();
+        if (appendIndex == UNKNOWN_APPEND_INDEX) {
+            throw new IllegalStateException("Append index was not generated for the batch yet.");
+        }
+        return appendIndex;
+    }
+
+    @Override
+    public void setAppendIndex(long appendIndex) {
+        chunkMetadata.appendIndex().setValue(appendIndex);
     }
 
     @Override

@@ -31,6 +31,8 @@ public interface CommandBatch extends CommandStream, KernelVersionProvider {
      */
     long consensusIndex();
 
+    void setConsensusIndex(long commandIndex);
+
     /**
      * @return time when transaction was started, i.e. when the user started it, not when it was committed.
      * Reported in milliseconds.
@@ -86,5 +88,14 @@ public interface CommandBatch extends CommandStream, KernelVersionProvider {
      */
     int commandCount();
 
-    void setConsensusIndex(long commandIndex);
+    /**
+     * Get command batch append index
+     */
+    long appendIndex();
+
+    /**
+     * Set command batch append index. Append index of command batch becomes available only after appending it into the log files.
+     * @param appendIndex provided batch append index
+     */
+    void setAppendIndex(long appendIndex);
 }

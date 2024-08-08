@@ -159,6 +159,7 @@ public class ChunkedTransaction implements StorageEngineTransaction {
                 positionAfter,
                 checksum,
                 chunk.chunkMetadata().consensusIndex().longValue());
+        chunk.setAppendIndex(appendIndex);
         lastBatchLogPosition = beforeStart;
     }
 
@@ -175,7 +176,7 @@ public class ChunkedTransaction implements StorageEngineTransaction {
     @Override
     public String toString() {
         return "ChunkedTransaction{" + "transactionSequenceNumber=" + transactionSequenceNumber + ", transactionId="
-                + transactionId + '}';
+                + transactionId + ", chunkId=" + chunk.chunkMetadata().chunkId() + '}';
     }
 
     /**

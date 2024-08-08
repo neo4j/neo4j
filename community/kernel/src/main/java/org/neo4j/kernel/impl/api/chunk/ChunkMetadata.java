@@ -31,6 +31,7 @@ public record ChunkMetadata(
         LogPosition previousBatchLogPosition,
         long chunkId,
         MutableLong consensusIndex,
+        MutableLong appendIndex,
         long startTimeMillis,
         long lastTransactionIdWhenStarted,
         long chunkCommitTime,

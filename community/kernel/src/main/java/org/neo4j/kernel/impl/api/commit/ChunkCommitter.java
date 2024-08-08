@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api.commit;
 
 import static java.lang.String.format;
 import static java.util.Collections.emptyList;
+import static org.neo4j.storageengine.AppendIndexProvider.UNKNOWN_APPEND_INDEX;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.INTERNAL;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_CHUNK_NUMBER;
 import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_INDEX;
@@ -157,6 +158,7 @@ public final class ChunkCommitter implements TransactionCommitter {
                             previousBatchLogPosition,
                             chunkNumber,
                             new MutableLong(UNKNOWN_CONSENSUS_INDEX),
+                            new MutableLong(UNKNOWN_APPEND_INDEX),
                             startTimeMillis,
                             lastTransactionIdWhenStarted,
                             commitTime,
@@ -227,6 +229,7 @@ public final class ChunkCommitter implements TransactionCommitter {
                 LogPosition.UNSPECIFIED,
                 chunkNumber,
                 new MutableLong(UNKNOWN_CONSENSUS_INDEX),
+                new MutableLong(UNKNOWN_APPEND_INDEX),
                 startTimeMillis,
                 lastTransactionIdWhenStarted,
                 clocks.systemClock().millis(),

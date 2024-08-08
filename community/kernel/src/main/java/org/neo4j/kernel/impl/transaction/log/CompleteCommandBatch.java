@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.transaction.log;
 
 import static java.lang.String.format;
+import static org.neo4j.storageengine.AppendIndexProvider.UNKNOWN_APPEND_INDEX;
 
 import java.io.IOException;
 import java.util.Iterator;
@@ -44,6 +45,7 @@ public class CompleteCommandBatch implements CommandBatch {
     private final int leaseId;
 
     private long consensusIndex;
+    private long appendIndex = UNKNOWN_APPEND_INDEX;
 
     public CompleteCommandBatch(
             List<StorageCommand> commands,
@@ -127,15 +129,17 @@ public class CompleteCommandBatch implements CommandBatch {
         return latestCommittedTxWhenStarted == that.latestCommittedTxWhenStarted
                 && timeStarted == that.timeStarted
                 && consensusIndex == that.consensusIndex
+                && appendIndex == that.appendIndex
                 && commands.equals(that.commands);
     }
 
     @Override
     public int hashCode() {
         int result = commands.hashCode();
-        result = 31 * result + (int) (consensusIndex ^ (consensusIndex >>> 32));
-        result = 31 * result + (int) (timeStarted ^ (timeStarted >>> 32));
-        result = 31 * result + (int) (latestCommittedTxWhenStarted ^ (latestCommittedTxWhenStarted >>> 32));
+        result = 31 * result + Long.hashCode(consensusIndex);
+        result = 31 * result + Long.hashCode(appendIndex);
+        result = 31 * result + Long.hashCode(timeStarted);
+        result = 31 * result + Long.hashCode(latestCommittedTxWhenStarted);
         return result;
     }
 
@@ -189,5 +193,18 @@ public class CompleteCommandBatch implements CommandBatch {
     @Override
     public int commandCount() {
         return commands.size();
+    }
+
+    @Override
+    public long appendIndex() {
+        if (appendIndex == UNKNOWN_APPEND_INDEX) {
+            throw new IllegalStateException("Append index was not generated for the batch yet.");
+        }
+        return appendIndex;
+    }
+
+    @Override
+    public void setAppendIndex(long appendIndex) {
+        this.appendIndex = appendIndex;
     }
 }

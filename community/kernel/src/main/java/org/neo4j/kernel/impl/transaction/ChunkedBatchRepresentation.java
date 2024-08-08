@@ -56,6 +56,7 @@ public record ChunkedBatchRepresentation(
                 logEntryChunkStart.getPreviousBatchLogPosition(),
                 logEntryChunkStart.getChunkId(),
                 new MutableLong(UNKNOWN_CONSENSUS_INDEX),
+                new MutableLong(logEntryChunkStart.getAppendIndex()),
                 logEntryChunkStart.getTimeWritten(),
                 -1,
                 logEntryChunkStart.getTimeWritten(),
