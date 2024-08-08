@@ -1799,4 +1799,33 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
         .build()
     )
   }
+
+  test("eagerness should be consistent with old call subquery syntax") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setLabelCardinality("Person", 10)
+      .build()
+
+    val query = """MATCH (s:Person {name: 'me'})
+                  |CALL (s) {
+                  |   SET s.seen = coalesce(s.seen + 1,1)
+                  |   RETURN s.seen AS result
+                  |}
+                  |RETURN result""".stripMargin
+
+    val plan = planner.plan(query)
+
+    plan should equal(
+      planner.planBuilder()
+        .produceResults("result")
+        .apply()
+        .|.projection("s.seen AS result")
+        .|.eager(lpReasons(PropertyReadSetConflict(propName("seen")).withConflict(Conflict(Id(4), Id(2)))))
+        .|.setNodeProperty("s", "seen", "coalesce(s.seen + 1, 1)")
+        .|.argument("s")
+        .filter("s.name = 'me'")
+        .nodeByLabelScan("s", "Person", IndexOrderNone)
+        .build()
+    )
+  }
 }

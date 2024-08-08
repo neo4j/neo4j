@@ -259,6 +259,13 @@ trait SemanticAnalysisTooling {
   ): SemanticState => Either[SemanticError, SemanticState] =
     (_: SemanticState).declareVariable(v, possibleTypes)
 
+  def declareVariable(
+    v: LogicalVariable,
+    possibleTypes: TypeSpec,
+    maybePreviousDeclaration: Option[Symbol]
+  ): SemanticState => Either[SemanticError, SemanticState] =
+    (_: SemanticState).declareVariable(v, possibleTypes, maybePreviousDeclaration)
+
   /**
    * @param overriding if `true` then a previous occurrence of that variable is overridden.
    *                   if `false` then a previous occurrence of that variable leads to an error

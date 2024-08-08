@@ -1915,7 +1915,7 @@ case class ScopeClauseSubqueryCall(
       // Create empty scope under root
       _ <- SemanticCheck.setState(current.state.newBaseScope)
       // Import variables from outer to new scope
-      innerWithImports <- importVariables(current.state)
+      innerWithImports <- importVariables(stateWithImports.state)
       // Check inner query
       innerChecked <- innerQuery.semanticCheckInSubqueryContext(innerWithImports.state)
       // Return to outer scope
@@ -1943,7 +1943,7 @@ case class ScopeClauseSubqueryCall(
         SemanticCheckResult.success(intermediate)
     } else {
       importedVariables.foldSemanticCheck(item =>
-        declareVariable(item, types(item), previousState.symbol(item.name))
+        declareVariable(item, previousState.expressionType(item).actual, previousState.symbol(item.name))
       )
     }
 
