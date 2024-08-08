@@ -7,6 +7,7 @@ import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.logical.builder.TestNFABuilder
 import org.neo4j.cypher.internal.logical.plans.Expand.ExpandAll
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
+import org.neo4j.cypher.internal.logical.plans.Prober
 import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath.Selector
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
@@ -17,7 +18,7 @@ import org.neo4j.graphdb.Label
 import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.RelationshipType
 import org.neo4j.graphdb.TransactionTerminatedException
-import org.neo4j.graphdb.config.Setting
+import org.neo4j.internal.helpers.ArrayUtil
 
 import java.time.Duration
 
@@ -38,7 +39,7 @@ abstract class TransactionTerminationTestBase[CONTEXT <: RuntimeContext](
 
   test("should terminate long running pruning var-length-expand") {
     // given
-    val (_, nNodes) = givenGraph {
+    givenGraph {
       connectedNestedStarGraph(5, 7, "START", "R") // 19608 nodes
     }
 
@@ -105,6 +106,27 @@ abstract class TransactionTerminationTestBase[CONTEXT <: RuntimeContext](
       .build()
 
     runAndAssertTransactionTimeout(logicalQuery)
+  }
+
+  test("should terminate long running unwind") {
+    // given an empty db
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("i")
+      .prober(sleepProbe(10))
+      .unwind(s"range(1, ${ArrayUtil.MAX_ARRAY_SIZE}) AS i")
+      .argument()
+      .build()
+
+    runAndAssertTransactionTimeout(logicalQuery)
+  }
+
+  private def sleepProbe(sleepFor: Long) = new Prober.Probe {
+
+    override def onRow(row: AnyRef, state: AnyRef): Unit = {
+      Thread.sleep(sleepFor)
+    }
   }
 
   private def runAndAssertTransactionTimeout(logicalQuery: LogicalQuery): Unit = {

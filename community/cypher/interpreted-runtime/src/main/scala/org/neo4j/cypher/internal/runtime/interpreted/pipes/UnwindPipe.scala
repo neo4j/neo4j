@@ -44,6 +44,7 @@ case class UnwindPipe(source: Pipe, collection: Expression, variable: String)(va
     private var context: CypherRow = _
     private var unwindIterator: Iterator[AnyValue] = _
     private var nextItem: CypherRow = _
+    private[this] var rowsEmitted: Long = 0L
 
     prefetch()
 
@@ -53,6 +54,11 @@ case class UnwindPipe(source: Pipe, collection: Expression, variable: String)(va
       if (hasNext) {
         val ret = nextItem
         prefetch()
+        // check in from time to time to make sure no one has closed the transaction
+        if (rowsEmitted % UnwindIterator.CHECK_TX_INTERVAL == 0) {
+          state.query.transactionalContext.assertTransactionOpen()
+        }
+        rowsEmitted += 1L
         ret
       } else Iterator.empty.next()
     }
@@ -71,5 +77,10 @@ case class UnwindPipe(source: Pipe, collection: Expression, variable: String)(va
       }
     }
     override protected[this] def closeMore(): Unit = input.close()
+  }
+
+  private object UnwindIterator {
+    // Specifies how often we should verify that the transaction is still open
+    private val CHECK_TX_INTERVAL: Int = 100
   }
 }
