@@ -24,12 +24,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.queryapi.QueryApiTestUtil.setupLogging;
 import static org.neo4j.server.queryapi.response.format.Fieldnames.DATA_KEY;
+import static org.neo4j.server.queryapi.response.format.Fieldnames.ERRORS_KEY;
 import static org.neo4j.server.queryapi.response.format.Fieldnames.FIELDS_KEY;
 import static org.neo4j.server.queryapi.response.format.Fieldnames.VALUES_KEY;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.net.http.HttpClient;
+import java.net.http.HttpResponse;
 import java.util.EnumSet;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -87,9 +91,7 @@ class QueryResourcePlainJsonIT {
                 "{\"statement\": \"RETURN true as bool, 1 as number, "
                         + "null as aNull, 1.23 as float, 'hello' as string\"}");
 
-        assertThat(response.statusCode()).isEqualTo(202);
-
-        var parsedJson = MAPPER.readTree(response.body());
+        var parsedJson = assertCodeAndParseWithNoErrors(response);
 
         assertThat(parsedJson.get(DATA_KEY).get(FIELDS_KEY).size()).isEqualTo(5);
         assertThat(parsedJson.get(DATA_KEY).get(FIELDS_KEY))
@@ -118,9 +120,7 @@ class QueryResourcePlainJsonIT {
                         + "time('125035.556+0100') AS theTime, "
                         + "localtime('12:50:35.556') AS theLocalTime\"}");
 
-        assertThat(response.statusCode()).isEqualTo(202);
-
-        var parsedJson = MAPPER.readTree(response.body());
+        var parsedJson = assertCodeAndParseWithNoErrors(response);
 
         assertThat(parsedJson.get(DATA_KEY).get(FIELDS_KEY))
                 .containsExactly(
@@ -154,8 +154,7 @@ class QueryResourcePlainJsonIT {
                         + "point({longitude: 56.7, latitude: 12.78}),"
                         + "point({longitude: 56.7, latitude: 12.78, height: 8})\"}");
 
-        assertThat(response.statusCode()).isEqualTo(202);
-        var parsedJson = MAPPER.readTree(response.body());
+        var parsedJson = assertCodeAndParseWithNoErrors(response);
 
         var results = parsedJson.get(DATA_KEY).get(VALUES_KEY).get(0);
         assertThat(results.get(0).asText()).isEqualTo("SRID=7203;POINT (2.3 4.5)");
@@ -173,8 +172,8 @@ class QueryResourcePlainJsonIT {
         var response = QueryApiTestUtil.simpleRequest(
                 client, queryEndpoint, "{\"statement\": \"RETURN duration('P14DT16H12M') AS theDuration\"}");
 
-        assertThat(response.statusCode()).isEqualTo(202);
-        var parsedJson = MAPPER.readTree(response.body());
+        var parsedJson = assertCodeAndParseWithNoErrors(response);
+
         assertThat(parsedJson.get(DATA_KEY).get(FIELDS_KEY)).containsExactly(valueOf("theDuration"));
 
         var results = parsedJson.get(DATA_KEY).get(VALUES_KEY);
@@ -191,9 +190,8 @@ class QueryResourcePlainJsonIT {
         var response =
                 QueryApiTestUtil.simpleRequest(client, queryEndpoint, "{\"statement\": \"MATCH (n:FindMe) return n\"}");
 
-        assertThat(response.statusCode()).isEqualTo(202);
+        var parsedJson = assertCodeAndParseWithNoErrors(response);
 
-        var parsedJson = MAPPER.readTree(response.body());
         var results = parsedJson.get(DATA_KEY).get(VALUES_KEY);
         assertThat(results.get(0)
                         .get(0)
@@ -210,9 +208,7 @@ class QueryResourcePlainJsonIT {
                 queryEndpoint,
                 "{\"statement\": \"RETURN {key: 'Value', listKey: [{inner: 'Map1'}, {inner: 'Map2'}]} AS map\"}");
 
-        assertThat(response.statusCode()).isEqualTo(202);
-
-        var parsedJson = MAPPER.readTree(response.body());
+        var parsedJson = assertCodeAndParseWithNoErrors(response);
 
         assertThat(parsedJson.get(DATA_KEY).get(FIELDS_KEY).size()).isEqualTo(1);
         assertThat(parsedJson.get(DATA_KEY).get(FIELDS_KEY).get(0).asText()).isEqualTo("map");
@@ -251,9 +247,7 @@ class QueryResourcePlainJsonIT {
         var response = QueryApiTestUtil.simpleRequest(
                 client, queryEndpoint, "{\"statement\": \"RETURN [1,true,'hello',date('+2015-W13-4')] as list\"}");
 
-        assertThat(response.statusCode()).isEqualTo(202);
-
-        var parsedJson = MAPPER.readTree(response.body());
+        var parsedJson = assertCodeAndParseWithNoErrors(response);
 
         assertThat(parsedJson.get(DATA_KEY).get(FIELDS_KEY).size()).isEqualTo(1);
 
@@ -270,9 +264,7 @@ class QueryResourcePlainJsonIT {
         var response = QueryApiTestUtil.simpleRequest(
                 client, queryEndpoint, "{\"statement\": \"CREATE (n:MyLabel {aNumber: 1234}) RETURN n\"}");
 
-        assertThat(response.statusCode()).isEqualTo(202);
-
-        var parsedJson = MAPPER.readTree(response.body());
+        var parsedJson = assertCodeAndParseWithNoErrors(response);
 
         var node = parsedJson.get(DATA_KEY).get(VALUES_KEY).get(0).get(0);
         assertThat(node.get("elementId").asText()).isNotBlank();
@@ -286,8 +278,8 @@ class QueryResourcePlainJsonIT {
         var response = QueryApiTestUtil.simpleRequest(
                 client, queryEndpoint, "{\"statement\": \"CREATE (a)-[r:RELTYPE {onFire: true}]->(b) RETURN r\"}");
 
-        assertThat(response.statusCode()).isEqualTo(202);
-        var parsedJson = MAPPER.readTree(response.body());
+        var parsedJson = assertCodeAndParseWithNoErrors(response);
+
         var rel = parsedJson.get(DATA_KEY).get(VALUES_KEY).get(0).get(0);
         assertThat(rel.get("elementId").asText()).isNotBlank();
         assertThat(rel.get("startNodeElementId").asText()).isNotBlank();
@@ -303,14 +295,15 @@ class QueryResourcePlainJsonIT {
                 queryEndpoint,
                 "{\"statement\": \"CREATE (a:LabelA)-[rel1:RELAB]->(b:LabelB)<-[rel2:RELCB]-(c:LabelC)\"}");
 
-        assertThat(createPathReq.statusCode()).isEqualTo(202);
+        assertCodeAndParseWithNoErrors(createPathReq);
+
         var response = QueryApiTestUtil.simpleRequest(
                 client,
                 queryEndpoint,
                 "{\"statement\": \"MATCH p=(a:LabelA)-[rel1:RELAB]->(b:LabelB)<-[rel2:RELCB]-(c:LabelC) RETURN p\"}");
 
-        assertThat(response.statusCode()).isEqualTo(202);
-        var parsedJson = MAPPER.readTree(response.body());
+        var parsedJson = assertCodeAndParseWithNoErrors(response);
+
         var path = parsedJson.get(DATA_KEY).get(VALUES_KEY).get(0).get(0);
 
         assertThat(path.get(0).get("labels").get(0).asText()).isEqualTo("LabelA");
@@ -318,5 +311,12 @@ class QueryResourcePlainJsonIT {
         assertThat(path.get(2).get("labels").get(0).asText()).isEqualTo("LabelB");
         assertThat(path.get(3).get("type").asText()).isEqualTo("RELCB");
         assertThat(path.get(4).get("labels").get(0).asText()).isEqualTo("LabelC");
+    }
+
+    private JsonNode assertCodeAndParseWithNoErrors(HttpResponse<String> response) throws JsonProcessingException {
+        assertThat(response.statusCode()).isEqualTo(202);
+        var parsedJson = MAPPER.readTree(response.body());
+        assertThat(parsedJson.get(ERRORS_KEY)).isNull();
+        return parsedJson;
     }
 }
