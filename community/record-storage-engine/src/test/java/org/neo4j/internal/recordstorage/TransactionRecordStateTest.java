@@ -374,7 +374,7 @@ class TransactionRecordStateTest {
         // WHEN
         StorageEngineTransaction transaction = transaction(storeCursors, recordState);
         IndexUpdatesExtractor extractor = new IndexUpdatesExtractor(CommandSelector.NORMAL);
-        transaction.accept(extractor);
+        transaction.commandBatch().accept(extractor);
 
         // THEN
         // -- later recovering that tx, there should be only one update for each type
@@ -423,7 +423,7 @@ class TransactionRecordStateTest {
 
         // THEN
         StorageEngineTransaction representation = transaction(storeCursors, recordState);
-        representation.accept(command -> ((Command) command).handle(new CommandVisitor.Adapter() {
+        representation.commandBatch().accept(command -> ((Command) command).handle(new CommandVisitor.Adapter() {
             @Override
             public boolean visitPropertyCommand(PropertyCommand command) {
                 // THEN
@@ -983,7 +983,7 @@ class TransactionRecordStateTest {
         // The dynamic label record in before should be the same id as in after, and should be in use
         final AtomicBoolean foundRelationshipGroupInUse = new AtomicBoolean();
 
-        ptx.accept(command -> ((Command) command).handle(new CommandVisitor.Adapter() {
+        ptx.commandBatch().accept(command -> ((Command) command).handle(new CommandVisitor.Adapter() {
             @Override
             public boolean visitRelationshipGroupCommand(Command.RelationshipGroupCommand command) {
                 if (command.getAfter().inUse()) {
@@ -1760,7 +1760,7 @@ class TransactionRecordStateTest {
     private Iterable<Iterable<IndexEntryUpdate<IndexDescriptor>>> indexUpdatesOf(
             NeoStores neoStores, StorageEngineTransaction transaction) throws IOException {
         IndexUpdatesExtractor extractor = new IndexUpdatesExtractor(CommandSelector.NORMAL);
-        transaction.accept(extractor);
+        transaction.commandBatch().accept(extractor);
 
         StorageReader reader = new RecordStorageReader(neoStores);
         List<Iterable<IndexEntryUpdate<IndexDescriptor>>> updates = new ArrayList<>();
@@ -1804,7 +1804,7 @@ class TransactionRecordStateTest {
 
     private static void writeToChannel(StorageEngineTransaction transaction, FlushableChannel channel)
             throws IOException {
-        transaction.accept(command -> {
+        transaction.commandBatch().accept(command -> {
             command.serialize(channel);
             return false;
         });

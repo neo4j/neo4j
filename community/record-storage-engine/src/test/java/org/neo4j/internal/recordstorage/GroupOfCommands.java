@@ -19,21 +19,19 @@
  */
 package org.neo4j.internal.recordstorage;
 
-import static org.mockito.Mockito.mock;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
-import java.io.IOException;
-import java.util.Iterator;
+import java.util.List;
 import org.neo4j.common.Subject;
-import org.neo4j.internal.helpers.collection.Iterators;
-import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.kernel.impl.transaction.log.CompleteCommandBatch;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.storageengine.api.CommandBatch;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageEngineTransaction;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
+import org.neo4j.test.LatestVersions;
 
 public class GroupOfCommands implements StorageEngineTransaction {
     private final long transactionId;
@@ -94,7 +92,8 @@ public class GroupOfCommands implements StorageEngineTransaction {
 
     @Override
     public CommandBatch commandBatch() {
-        return mock(CommandBatch.class);
+        return new CompleteCommandBatch(
+                List.of(commands), 0, 0, 0, 0, 0, LatestVersions.LATEST_KERNEL_VERSION, Subject.SYSTEM);
     }
 
     @Override
@@ -102,19 +101,4 @@ public class GroupOfCommands implements StorageEngineTransaction {
 
     @Override
     public void close() {}
-
-    @Override
-    public boolean accept(Visitor<StorageCommand, IOException> visitor) throws IOException {
-        for (StorageCommand command : commands) {
-            if (visitor.visit(command)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    @Override
-    public Iterator<StorageCommand> iterator() {
-        return Iterators.iterator(commands);
-    }
 }

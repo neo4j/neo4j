@@ -153,7 +153,7 @@ class ApplyRecoveredTransactionsTest {
         CommandHandlerContract.apply(
                 applier,
                 txApplier -> {
-                    tx.accept(txApplier);
+                    tx.commandBatch().accept(txApplier);
                     return false;
                 },
                 new GroupOfCommands(transactionId, storeCursors, commands));

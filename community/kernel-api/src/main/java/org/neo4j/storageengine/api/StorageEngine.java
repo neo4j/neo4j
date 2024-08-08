@@ -127,7 +127,7 @@ public interface StorageEngine extends ReadableStorageEngine, Lifecycle {
      * @param mode used in this case to distinguish between RECOVERY and REVERSE_RECOVERY
      */
     void lockRecoveryCommands(
-            CommandStream commands, LockService lockService, LockGroup lockGroup, TransactionApplicationMode mode)
+            CommandBatch commands, LockService lockService, LockGroup lockGroup, TransactionApplicationMode mode)
             throws IOException;
 
     /**

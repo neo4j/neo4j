@@ -63,7 +63,6 @@ import org.neo4j.logging.InternalLog;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.CommandBatch;
 import org.neo4j.storageengine.api.CommandCreationContext;
-import org.neo4j.storageengine.api.CommandStream;
 import org.neo4j.storageengine.api.IndexUpdateListener;
 import org.neo4j.storageengine.api.InternalErrorTracer;
 import org.neo4j.storageengine.api.MetadataProvider;
@@ -93,7 +92,7 @@ class ParallelRecoveryVisitorTest {
         RecoveryControllableStorageEngine storageEngine = new RecoveryControllableStorageEngine() {
             @Override
             public void apply(StorageEngineTransaction batch, TransactionApplicationMode mode) throws Exception {
-                long txId = idOf(batch);
+                long txId = idOf(batch.commandBatch());
                 if (txId == 2) {
                     barrier.reached();
                 } else if (txId == 3) {
@@ -124,7 +123,7 @@ class ParallelRecoveryVisitorTest {
         RecoveryControllableStorageEngine storageEngine = new RecoveryControllableStorageEngine() {
             @Override
             public void apply(StorageEngineTransaction batch, TransactionApplicationMode mode) throws Exception {
-                if (idOf(batch) == 2) {
+                if (idOf(batch.commandBatch()) == 2) {
                     // Just make it very likely that, if the locking wouldn't work as expected, then the test will fail,
                     // but the test will not be flaky if the visitor works as expected.
                     Thread.sleep(50);
@@ -152,7 +151,7 @@ class ParallelRecoveryVisitorTest {
         RecoveryControllableStorageEngine storageEngine = new RecoveryControllableStorageEngine() {
             @Override
             public void lockRecoveryCommands(
-                    CommandStream commands,
+                    CommandBatch commands,
                     LockService lockService,
                     LockGroup lockGroup,
                     TransactionApplicationMode mode) {
@@ -164,7 +163,7 @@ class ParallelRecoveryVisitorTest {
 
             @Override
             public void apply(StorageEngineTransaction batch, TransactionApplicationMode mode) throws Exception {
-                long txId = idOf(batch);
+                long txId = idOf(batch.commandBatch());
                 if (txId > 2) {
                     barrier.awaitUninterruptibly();
                 }
@@ -253,7 +252,7 @@ class ParallelRecoveryVisitorTest {
         return commands;
     }
 
-    private static long idOf(CommandStream commands) {
+    private static long idOf(CommandBatch commands) {
         return ((RecoveryTestBaseCommand) commands.iterator().next()).txId;
     }
 
@@ -295,14 +294,14 @@ class ParallelRecoveryVisitorTest {
 
         @Override
         public void lockRecoveryCommands(
-                CommandStream commands, LockService lockService, LockGroup lockGroup, TransactionApplicationMode mode) {
+                CommandBatch commands, LockService lockService, LockGroup lockGroup, TransactionApplicationMode mode) {
             commands.forEach(cmd -> ((RecoveryTestBaseCommand) cmd).lock(lockService, lockGroup));
             lockOrder[lockOrderCursor.getAndIncrement()] = idOf(commands);
         }
 
         @Override
         public void apply(StorageEngineTransaction batch, TransactionApplicationMode mode) throws Exception {
-            applyOrder[applyOrderCursor.getAndIncrement()] = idOf(batch);
+            applyOrder[applyOrderCursor.getAndIncrement()] = idOf(batch.commandBatch());
         }
 
         @Override

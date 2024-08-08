@@ -21,17 +21,13 @@ package org.neo4j.kernel.impl.api.chunk;
 
 import static org.neo4j.kernel.impl.api.CompleteTransaction.TRANSACTION_ID_NOT_SPECIFIED;
 
-import java.io.IOException;
-import java.util.Iterator;
 import org.neo4j.common.Subject;
-import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.api.txid.TransactionIdGenerator;
 import org.neo4j.kernel.impl.transaction.CommittedCommandBatchRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.storageengine.api.CommandBatch;
 import org.neo4j.storageengine.api.Commitment;
-import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageEngineTransaction;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
@@ -74,11 +70,6 @@ public class ChunkedTransaction implements StorageEngineTransaction {
 
     public void init(ChunkedCommandBatch chunk) {
         this.chunk = chunk;
-    }
-
-    @Override
-    public boolean accept(Visitor<StorageCommand, IOException> visitor) throws IOException {
-        return chunk.accept(visitor);
     }
 
     @Override
@@ -166,11 +157,6 @@ public class ChunkedTransaction implements StorageEngineTransaction {
     @Override
     public void close() {
         commitment.publishAsClosed();
-    }
-
-    @Override
-    public Iterator<StorageCommand> iterator() {
-        return chunk.iterator();
     }
 
     @Override

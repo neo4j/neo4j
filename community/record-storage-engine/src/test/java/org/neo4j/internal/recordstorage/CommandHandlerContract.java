@@ -58,7 +58,7 @@ public class CommandHandlerContract {
         when(batchContext.getIndexActivator()).thenReturn(mock(IndexActivator.class));
         for (StorageEngineTransaction tx : transactions) {
             try (TransactionApplier txApplier = applier.startTx(tx, batchContext)) {
-                tx.accept(txApplier);
+                tx.commandBatch().accept(txApplier);
             }
         }
     }

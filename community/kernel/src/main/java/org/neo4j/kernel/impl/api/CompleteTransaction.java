@@ -23,7 +23,6 @@ import static org.neo4j.internal.helpers.Format.date;
 import static org.neo4j.kernel.impl.api.txid.TransactionIdGenerator.EXTERNAL_ID;
 
 import java.io.IOException;
-import java.util.Iterator;
 import java.util.function.LongConsumer;
 import org.neo4j.common.Subject;
 import org.neo4j.internal.helpers.collection.Visitor;
@@ -145,11 +144,6 @@ public class CompleteTransaction implements StorageEngineTransaction {
     }
 
     @Override
-    public boolean accept(Visitor<StorageCommand, IOException> visitor) throws IOException {
-        return commandBatch.accept(visitor);
-    }
-
-    @Override
     public CommandBatch commandBatch() {
         return commandBatch;
     }
@@ -212,15 +206,10 @@ public class CompleteTransaction implements StorageEngineTransaction {
         }
         try {
             Counter counter = new Counter();
-            accept(counter);
+            commandBatch.accept(counter);
             return String.valueOf(counter.count);
         } catch (Throwable e) {
             return "(unable to count: " + e.getMessage() + ")";
         }
-    }
-
-    @Override
-    public Iterator<StorageCommand> iterator() {
-        return commandBatch.iterator();
     }
 }

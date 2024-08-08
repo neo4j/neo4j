@@ -104,8 +104,8 @@ import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.monitoring.DatabaseHealth;
+import org.neo4j.storageengine.api.CommandBatch;
 import org.neo4j.storageengine.api.CommandCreationContext;
-import org.neo4j.storageengine.api.CommandStream;
 import org.neo4j.storageengine.api.ConstraintRuleAccessor;
 import org.neo4j.storageengine.api.IndexUpdateListener;
 import org.neo4j.storageengine.api.InternalErrorTracer;
@@ -499,7 +499,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
 
     @Override
     public void lockRecoveryCommands(
-            CommandStream commands, LockService lockService, LockGroup lockGroup, TransactionApplicationMode mode) {
+            CommandBatch commands, LockService lockService, LockGroup lockGroup, TransactionApplicationMode mode) {
         for (StorageCommand command : commands) {
             ((Command) command).lockForRecovery(lockService, lockGroup, mode);
         }
@@ -512,7 +512,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
         try (BatchContext context = createBatchContext(batchApplier, batch)) {
             while (batch != null) {
                 try (TransactionApplier txApplier = batchApplier.startTx(batch, context)) {
-                    batch.accept(txApplier);
+                    batch.commandBatch().accept(txApplier);
                 }
                 batch = batch.next();
             }
@@ -743,7 +743,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
         if (!mode.isReverseStep() && batch != null) {
             try (PreAllocationTransactionApplier txApplier = new PreAllocationTransactionApplier(neoStores)) {
                 while (batch != null) {
-                    batch.accept(txApplier);
+                    batch.commandBatch().accept(txApplier);
                     batch = batch.next();
                 }
             } catch (OutOfDiskSpaceException e) {

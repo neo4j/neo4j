@@ -28,7 +28,7 @@ import org.neo4j.storageengine.api.cursor.StoreCursors;
  * Group of commands to apply onto {@link StorageEngine}, as well as reference to {@link #next()} group of commands.
  * The linked list will form a batch.
  */
-public interface StorageEngineTransaction extends CommandStream, AutoCloseable {
+public interface StorageEngineTransaction extends AutoCloseable {
     /**
      * @return transaction id representing this group of commands.
      */

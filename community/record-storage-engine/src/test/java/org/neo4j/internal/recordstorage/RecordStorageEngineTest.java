@@ -113,6 +113,7 @@ class RecordStorageEngineTest {
                 .transactionApplierTransformer(facade -> transactionApplierFacadeTransformer(facade, failure))
                 .build();
         StorageEngineTransaction storageEngineTransaction = mock(StorageEngineTransaction.class);
+        when(storageEngineTransaction.commandBatch()).thenReturn(mock(CommandBatch.class));
 
         assertThatThrownBy(() -> engine.apply(storageEngineTransaction, TransactionApplicationMode.INTERNAL))
                 .rootCause()
@@ -183,8 +184,9 @@ class RecordStorageEngineTest {
             StorageEngineTransaction storageEngineTransaction = mock(StorageEngineTransaction.class);
             when(storageEngineTransaction.cursorContext()).thenReturn(NULL_CONTEXT);
             when(storageEngineTransaction.storeCursors()).thenReturn(storageCursors);
-            when(storageEngineTransaction.commandBatch()).thenReturn(mock(CommandBatch.class));
-            when(storageEngineTransaction.accept(any())).thenAnswer(invocationOnMock -> {
+            var commandBatch = mock(CommandBatch.class);
+            when(storageEngineTransaction.commandBatch()).thenReturn(commandBatch);
+            when(commandBatch.accept(any())).thenAnswer(invocationOnMock -> {
                 // Visit one node command
                 Visitor<StorageCommand, IOException> visitor = invocationOnMock.getArgument(0);
                 NodeRecord after = new NodeRecord(nodeId);
@@ -225,8 +227,10 @@ class RecordStorageEngineTest {
     }
 
     private static StorageEngineTransaction newTransactionThatFailsWith(Exception error) throws IOException {
-        StorageEngineTransaction transaction = mock(StorageEngineTransaction.class);
-        doThrow(error).when(transaction).accept(any());
+        var transaction = mock(StorageEngineTransaction.class);
+        var commandBatch = mock(CommandBatch.class);
+        when(transaction.commandBatch()).thenReturn(commandBatch);
+        doThrow(error).when(commandBatch).accept(any());
         long txId = ThreadLocalRandom.current().nextLong(0, 1000);
         when(transaction.transactionId()).thenReturn(txId);
         return transaction;

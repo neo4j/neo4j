@@ -86,7 +86,7 @@ class WriteTransactionCommandOrderingTest {
 
         // Then
         final OrderVerifyingCommandHandler orderVerifyingCommandHandler = new OrderVerifyingCommandHandler();
-        commands.accept(element -> ((Command) element).handle(orderVerifyingCommandHandler));
+        commands.commandBatch().accept(element -> ((Command) element).handle(orderVerifyingCommandHandler));
     }
 
     private static StorageEngineTransaction transactionRepresentationOf(TransactionRecordState tx)
