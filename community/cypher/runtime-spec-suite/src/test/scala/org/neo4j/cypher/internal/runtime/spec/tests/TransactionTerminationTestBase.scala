@@ -54,6 +54,42 @@ abstract class TransactionTerminationTestBase[CONTEXT <: RuntimeContext](
     runAndAssertTransactionTimeout(logicalQuery)
   }
 
+  test("should terminate long running bfs pruning var-length-expand") {
+    // given
+    givenGraph {
+      connectedNestedStarGraph(5, 7, "START", "R") // 19608 nodes
+    }
+
+    // when
+    val logicalQuery: LogicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("result")
+      .projection("42 AS result")
+      .prober(sleepProbe(100))
+      .bfsPruningVarExpand("(x)-[*0..11]-(y)")
+      .nodeByLabelScan("x", "START", IndexOrderNone)
+      .build()
+
+    runAndAssertTransactionTimeout(logicalQuery)
+  }
+
+  test("should terminate long running var-length-expand") {
+    // given
+    givenGraph {
+      connectedNestedStarGraph(5, 7, "START", "R") // 19608 nodes
+    }
+
+    // when
+    val logicalQuery: LogicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("result")
+      .projection("42 AS result")
+      .prober(sleepProbe(100))
+      .expand("(x)-[*0..]-(y)")
+      .nodeByLabelScan("x", "START", IndexOrderNone)
+      .build()
+
+    runAndAssertTransactionTimeout(logicalQuery)
+  }
+
   test("should terminate long running stateful shortest path") {
     // given
     givenGraph {
