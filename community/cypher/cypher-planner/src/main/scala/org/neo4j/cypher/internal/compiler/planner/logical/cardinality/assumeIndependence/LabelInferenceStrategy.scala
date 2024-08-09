@@ -97,6 +97,29 @@ object LabelInferenceStrategy {
 
   private class InferOnlyIfNoOtherLabel(planContext: PlanContext) extends LabelInferenceStrategy {
 
+    private def inferLabelsForNodeConnection(
+      nodeConnection: NodeConnection,
+      semanticTable: SemanticTable
+    ): Seq[SimpleRelationship.InferredLabel] = {
+      val simpleRelationships = SimpleRelationship.fromNodeConnection(nodeConnection, semanticTable)
+      simpleRelationships.size match {
+        case 0 => Seq.empty
+        case 1 => simpleRelationships.head.inferLabels(planContext)
+        case _ =>
+          // Populate intersectionInferredLabels with the inferred labels from the first simpleRelationship
+          var intersectionInferredLabels = simpleRelationships.head.inferLabels(planContext)
+          // Continue with the other simpleRelationships
+          // Stop when the intersection is empty, or when all simpleRelationships have been processed
+          (1 until simpleRelationships.size).foreach(i => {
+            if (intersectionInferredLabels.nonEmpty) {
+              val inferredLabelsForSimpleRelationship = simpleRelationships(i).inferLabels(planContext)
+              intersectionInferredLabels = intersectionInferredLabels intersect inferredLabelsForSimpleRelationship
+            }
+          })
+          intersectionInferredLabels
+      }
+    }
+
     def inferLabels(
       semanticTable: SemanticTable,
       graphStatistics: GraphStatistics,
@@ -104,12 +127,7 @@ object LabelInferenceStrategy {
       nodeConnections: Seq[NodeConnection]
     ): (LabelInfo, SemanticTable) = {
 
-      val allInferredLabels = nodeConnections.flatMap(nodeConnection =>
-        SimpleRelationship.fromNodeConnection(nodeConnection, semanticTable)
-          .map(_.inferLabels(planContext))
-          .reduceLeftOption(_.intersect(_))
-          .getOrElse(Set.empty)
-      )
+      val allInferredLabels = nodeConnections.flatMap(inferLabelsForNodeConnection(_, semanticTable))
 
       val inferredLabels: Seq[SimpleRelationship.InferredLabel] = allInferredLabels
         .sequentiallyGroupBy(_.node)
