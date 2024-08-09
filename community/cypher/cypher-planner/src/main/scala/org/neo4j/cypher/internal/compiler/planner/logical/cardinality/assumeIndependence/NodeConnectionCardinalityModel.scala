@@ -95,8 +95,12 @@ trait NodeConnectionCardinalityModel
         val boundaryNodePredicates =
           predicates.otherPredicates.filter(_.dependencies.exists(selectivePathPattern.boundaryNodesSet.contains))
 
+        // Disable label inference during cardinality estimation within selective path pattern.
+        // The cardinality estimation of selective path patterns is very crude, leading to large estimation errors.
+        // Label inference is not likely to make a big difference here. However, it can increase planning times significantly.
+        // When label inference becomes much cheaper we might reconsider this decision.
         val cardinality = getSelectivePathPatternCardinality(
-          context,
+          context.copy(labelInferenceStrategy = LabelInferenceStrategy.NoInference),
           predicates.allLabelInfo,
           selectivePathPattern,
           boundaryNodePredicates
