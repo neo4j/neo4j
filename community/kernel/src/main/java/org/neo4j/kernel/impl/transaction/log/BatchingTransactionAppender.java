@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.transaction.log;
 
 import static org.neo4j.kernel.KernelVersion.VERSION_ENVELOPED_TRANSACTION_LOGS_INTRODUCED;
+import static org.neo4j.storageengine.AppendIndexProvider.BASE_APPEND_INDEX;
 
 import java.io.IOException;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
@@ -69,7 +70,7 @@ class BatchingTransactionAppender extends LifecycleAdapter implements Transactio
     @Override
     public long append(StorageEngineTransaction batch, LogAppendEvent logAppendEvent) throws IOException {
         // Assigned base tx id just to make compiler happy
-        long lastTransactionId = TransactionIdStore.BASE_TX_ID;
+        long lastAppendIndex = BASE_APPEND_INDEX;
         // Synchronized with logFile to get absolute control over concurrent rotations happening
         synchronized (logFile) {
             // Assert that kernel is healthy before making any changes
@@ -78,10 +79,10 @@ class BatchingTransactionAppender extends LifecycleAdapter implements Transactio
                 // Append all transactions in this batch to the log under the same logFile monitor
                 StorageEngineTransaction commands = batch;
                 while (commands != null) {
-                    long transactionId = commands.transactionId();
-                    appendToLog(commands, transactionId, logAppendEvent);
+                    long appendIndex = appendIndexProvider.nextAppendIndex();
+                    appendToLog(commands, appendIndex, logAppendEvent);
                     commands = commands.next();
-                    lastTransactionId = transactionId;
+                    lastAppendIndex = appendIndex;
                 }
             }
         }
@@ -101,7 +102,7 @@ class BatchingTransactionAppender extends LifecycleAdapter implements Transactio
         // Mark all transactions as committed
         publishAsCommitted(batch);
 
-        return lastTransactionId;
+        return lastAppendIndex;
     }
 
     private static boolean checkIfRotationCheckIsRequired(StorageEngineTransaction batch) {
@@ -117,7 +118,7 @@ class BatchingTransactionAppender extends LifecycleAdapter implements Transactio
         }
     }
 
-    private void appendToLog(StorageEngineTransaction commands, long transactionId, LogAppendEvent logAppendEvent)
+    private void appendToLog(StorageEngineTransaction commands, long appendIndex, LogAppendEvent logAppendEvent)
             throws IOException {
         // The outcome of this try block is either of:
         // a) transaction successfully appended, at which point we return a Commitment to be used after force
@@ -127,10 +128,9 @@ class BatchingTransactionAppender extends LifecycleAdapter implements Transactio
         // log rotation, which will wait for all transactions closed or fail on kernel panic.
         try {
             transactionLogWriter.resetAppendedBytesCounter();
-            long appendIndex = appendIndexProvider.nextAppendIndex();
             this.previousChecksum = transactionLogWriter.append(
                     commands.commandBatch(),
-                    transactionId,
+                    commands.transactionId(),
                     commands.chunkId(),
                     appendIndex,
                     previousChecksum,

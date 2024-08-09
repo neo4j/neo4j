@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.transaction.log;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.locks.LockSupport.parkNanos;
 import static org.neo4j.internal.helpers.Exceptions.throwIfUnchecked;
+import static org.neo4j.storageengine.AppendIndexProvider.BASE_APPEND_INDEX;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -135,8 +136,8 @@ public class TransactionLogQueue extends LifecycleAdapter {
         private final Thread executor;
         private Throwable throwable;
         private TxQueueElement[] elementsToNotify;
-        private volatile long[] txIds;
-        private volatile long txId;
+        private volatile long[] appendIndexes;
+        private volatile long appendIndex;
 
         TxQueueElement(StorageEngineTransaction batch, LogAppendEvent logAppendEvent) {
             this.batch = batch;
@@ -144,30 +145,30 @@ public class TransactionLogQueue extends LifecycleAdapter {
             this.executor = Thread.currentThread();
         }
 
-        public long getCommittedTxId() {
-            while (txId == 0 && txIds == null) {
+        public long getCommittedAppendIndex() {
+            while (appendIndex == 0 && appendIndexes == null) {
                 LockSupport.parkNanos(PARK_TIME);
             }
             var elements = this.elementsToNotify;
             if (elements != null) {
-                long[] ids = txIds;
+                long[] indexes = appendIndexes;
                 for (int i = 1; i < elements.length; i++) {
                     TxQueueElement element = elements[i];
-                    element.txId = ids[i];
+                    element.appendIndex = indexes[i];
                     LockSupport.unpark(element.executor);
                 }
-                txId = ids[0];
+                appendIndex = indexes[0];
             }
             var exception = throwable;
             if (exception != null) {
                 throw new RuntimeException(exception);
             }
-            return txId;
+            return appendIndex;
         }
 
         public void fail(Throwable throwable) {
             this.throwable = throwable;
-            this.txId = FAILED_TX_MARKER;
+            this.appendIndex = FAILED_TX_MARKER;
             LockSupport.unpark(executor);
         }
     }
@@ -253,7 +254,7 @@ public class TransactionLogQueue extends LifecycleAdapter {
             private final TxQueueElement[] txElements = new TransactionLogQueue.TxQueueElement[CONSUMER_MAX_BATCH];
             private int index;
             private TxQueueElement[] elements;
-            private long[] txIds;
+            private long[] appendIndexes;
 
             TxConsumer(
                     Panic databasePanic,
@@ -277,21 +278,21 @@ public class TransactionLogQueue extends LifecycleAdapter {
                 databasePanic.assertNoPanic(IOException.class);
                 int drainedElements = index;
                 elements = new TxQueueElement[drainedElements];
-                txIds = new long[drainedElements];
+                appendIndexes = new long[drainedElements];
                 for (int i = 0; i < drainedElements; i++) {
                     TxQueueElement txQueueElement = txElements[i];
                     elements[i] = txQueueElement;
                     LogAppendEvent logAppendEvent = txQueueElement.logAppendEvent;
-                    long lastTransactionId = TransactionIdStore.BASE_TX_ID;
+                    long lastAppendIndex = BASE_APPEND_INDEX;
                     try (var appendEvent = logAppendEvent.beginAppendTransaction(drainedElements)) {
                         StorageEngineTransaction commands = txQueueElement.batch;
                         while (commands != null) {
-                            long transactionId = commands.transactionId();
-                            appendToLog(commands, transactionId, logAppendEvent);
+                            long appendIndex = appendIndexProvider.nextAppendIndex();
+                            appendToLog(commands, appendIndex, logAppendEvent);
                             commands = commands.next();
-                            lastTransactionId = transactionId;
+                            lastAppendIndex = appendIndex;
                         }
-                        txIds[i] = lastTransactionId;
+                        appendIndexes[i] = lastAppendIndex;
                     } catch (Exception e) {
                         throwIfUnchecked(e);
                         throw new RuntimeException(e);
@@ -300,17 +301,14 @@ public class TransactionLogQueue extends LifecycleAdapter {
             }
 
             private void appendToLog(
-                    StorageEngineTransaction storageEngineTransaction,
-                    long transactionId,
-                    LogAppendEvent logAppendEvent)
+                    StorageEngineTransaction storageEngineTransaction, long appendIndex, LogAppendEvent logAppendEvent)
                     throws IOException {
 
                 transactionLogWriter.resetAppendedBytesCounter();
                 CommandBatch commandBatch = storageEngineTransaction.commandBatch();
-                long appendIndex = appendIndexProvider.nextAppendIndex();
                 this.checksum = transactionLogWriter.append(
                         commandBatch,
-                        transactionId,
+                        storageEngineTransaction.transactionId(),
                         storageEngineTransaction.chunkId(),
                         appendIndex,
                         checksum,
@@ -327,7 +325,7 @@ public class TransactionLogQueue extends LifecycleAdapter {
             public void complete() {
                 TxQueueElement first = txElements[0];
                 first.elementsToNotify = elements;
-                first.txIds = txIds;
+                first.appendIndexes = appendIndexes;
                 LockSupport.unpark(first.executor);
 
                 Arrays.fill(txElements, 0, index, null);

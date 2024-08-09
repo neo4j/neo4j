@@ -19,11 +19,12 @@
  */
 package org.neo4j.kernel.impl.transaction.log.stresstest.workload;
 
+import static org.neo4j.storageengine.AppendIndexProvider.BASE_APPEND_INDEX;
+
 import java.util.function.BooleanSupplier;
 import org.neo4j.kernel.impl.api.CompleteTransaction;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
-import org.neo4j.storageengine.api.TransactionIdStore;
 
 class Worker implements Runnable {
     private final TransactionAppender transactionAppender;
@@ -41,11 +42,11 @@ class Worker implements Runnable {
 
     @Override
     public void run() {
-        long latestTxId = TransactionIdStore.BASE_TX_ID;
+        long latestAppendIndex = BASE_APPEND_INDEX;
         while (condition.getAsBoolean()) {
-            CompleteTransaction transaction = factory.nextTransaction(latestTxId);
+            CompleteTransaction transaction = factory.nextTransaction(latestAppendIndex);
             try {
-                latestTxId = transactionAppender.append(transaction, LogAppendEvent.NULL);
+                latestAppendIndex = transactionAppender.append(transaction, LogAppendEvent.NULL);
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }

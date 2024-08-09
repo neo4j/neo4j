@@ -19,22 +19,25 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
+import static org.neo4j.storageengine.AppendIndexProvider.BASE_APPEND_INDEX;
+
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.storageengine.api.StorageEngineTransaction;
-import org.neo4j.storageengine.api.TransactionIdStore;
 
 public class TestableTransactionAppender extends LifecycleAdapter implements TransactionAppender {
 
     @Override
     public long append(StorageEngineTransaction batch, LogAppendEvent logAppendEvent) {
-        long txId = TransactionIdStore.BASE_TX_ID;
+        long appendIndex = BASE_APPEND_INDEX;
         while (batch != null) {
-            txId = batch.transactionId();
-            batch.batchAppended(txId + 7, new LogPosition(txId, 128), new LogPosition(txId, 256), 1);
+            // force transaction id generation
+            batch.transactionId();
+            appendIndex = batch.commandBatch().appendIndex();
+            batch.batchAppended(appendIndex, new LogPosition(appendIndex, 128), new LogPosition(appendIndex, 256), 1);
             batch.commit();
             batch = batch.next();
         }
-        return txId;
+        return appendIndex;
     }
 }

@@ -25,27 +25,23 @@ import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.storageengine.api.StorageEngineTransaction;
-import org.neo4j.storageengine.api.TransactionIdStore;
 
 /**
- * Writes batches of transactions, each containing groups of commands to a log that is guaranteed to be recoverable,
+ * Writes batches of commands, each containing groups of commands to a log that is guaranteed to be recoverable,
  * i.e. consistently readable, in the event of failure.
  */
 public interface TransactionAppender extends Lifecycle {
     /**
-     * Appends a batch of transactions to a log, effectively committing the transactions.
-     * After this method have returned the returned transaction id should be visible in
-     * {@link TransactionIdStore#getLastCommittedTransactionId()}.
+     * Appends a batch of commands to a log, effectively committing them.
+     * After this method have returned the returned command batch should be committed with progress of append index and possibly transaction counters
      * <p>
-     * Any failure happening inside this method will cause a {@link DatabaseHealth#panic(Throwable) kernel panic}.
-     * Callers must make sure that successfully appended
-     * transactions exiting this method are closed.
+     * Failure happening inside this method will cause a {@link DatabaseHealth#panic(Throwable) kernel panic}.
+     * Callers must make sure that successfully appended command batches exiting this method are closed.
      *
-     * @param batch transactions to append to the log.
+     * @param batch command batch to append to the log.
      * @param logAppendEvent A trace event for the given log append operation.
-     * @return last committed transaction in this batch.
-     * @throws IOException if there was a problem appending the transaction. See method javadoc body for
-     * how to handle exceptions in general thrown from this method.
+     * @return last append index in this batch.
+     * @throws IOException if there was a problem appending the command batch.
      */
     long append(StorageEngineTransaction batch, LogAppendEvent logAppendEvent)
             throws IOException, ExecutionException, InterruptedException;

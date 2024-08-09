@@ -37,7 +37,7 @@ public interface CommandCommitListener {
     /**
      * Notifies listeners that the entire commandBatch committed successfully.
      * @param commandBatch the first command in a batch which committed fully, i.e. all commands in the batch committed successfully.
-     * @param lastCommittedTx the last committed transaction after all commands in the batch committed successfully.
+     * @param lastAppendIndex the last committed append index after all commands in the batch committed successfully.
      */
-    void onCommandBatchCommitSuccess(CommandBatch commandBatch, long lastCommittedTx);
+    void onCommandBatchCommitSuccess(CommandBatch commandBatch, long lastAppendIndex);
 }

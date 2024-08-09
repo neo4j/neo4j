@@ -111,7 +111,7 @@ class TransactionLogQueueIT {
             CompleteTransaction transaction = createTransaction();
             assertEquals(
                     ++committedTransactionId,
-                    logQueue.submit(transaction, LogAppendEvent.NULL).getCommittedTxId());
+                    logQueue.submit(transaction, LogAppendEvent.NULL).getCommittedAppendIndex());
         }
     }
 
@@ -124,12 +124,12 @@ class TransactionLogQueueIT {
         life.add(logQueue);
 
         assertDoesNotThrow(
-                () -> logQueue.submit(createTransaction(), LogAppendEvent.NULL).getCommittedTxId());
+                () -> logQueue.submit(createTransaction(), LogAppendEvent.NULL).getCommittedAppendIndex());
 
         logQueue.shutdown();
 
         assertThatThrownBy(() -> logQueue.submit(createTransaction(), LogAppendEvent.NULL)
-                        .getCommittedTxId())
+                        .getCommittedAppendIndex())
                 .isInstanceOf(DatabaseShutdownException.class);
     }
 
@@ -142,12 +142,12 @@ class TransactionLogQueueIT {
         life.add(logQueue);
 
         assertDoesNotThrow(
-                () -> logQueue.submit(createTransaction(), LogAppendEvent.NULL).getCommittedTxId());
+                () -> logQueue.submit(createTransaction(), LogAppendEvent.NULL).getCommittedAppendIndex());
 
         logQueue.stop();
 
         assertDoesNotThrow(
-                () -> logQueue.submit(createTransaction(), LogAppendEvent.NULL).getCommittedTxId());
+                () -> logQueue.submit(createTransaction(), LogAppendEvent.NULL).getCommittedAppendIndex());
     }
 
     private CompleteTransaction createTransaction() {

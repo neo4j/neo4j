@@ -109,7 +109,7 @@ class TransactionAppendIndexIT {
         public void onCommandBatchCommitFailure(CommandBatch commandBatch, Exception exception) {}
 
         @Override
-        public void onCommandBatchCommitSuccess(CommandBatch commandBatch, long lastCommittedTx) {
+        public void onCommandBatchCommitSuccess(CommandBatch commandBatch, long lastAppendIndex) {
             if (enabledCheck.get()) {
                 observedBatches.add(commandBatch.appendIndex());
             }

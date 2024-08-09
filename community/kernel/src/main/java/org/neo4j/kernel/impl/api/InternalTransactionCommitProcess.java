@@ -61,15 +61,15 @@ public class InternalTransactionCommitProcess implements TransactionCommitProces
                 preAllocateSpaceInStores(batch, transactionWriteEvent, mode);
             }
 
-            long lastTxId = appendToLog(batch, transactionWriteEvent);
+            long lastAppendIndex = appendToLog(batch, transactionWriteEvent);
             try {
                 applyToStore(batch, transactionWriteEvent, mode);
             } finally {
                 close(batch);
             }
 
-            commandCommitListeners.registerSuccess(batch.commandBatch(), lastTxId);
-            return lastTxId;
+            commandCommitListeners.registerSuccess(batch.commandBatch(), lastAppendIndex);
+            return lastAppendIndex;
         } catch (Exception e) {
             commandCommitListeners.registerFailure(batch.commandBatch(), e);
             throw e;

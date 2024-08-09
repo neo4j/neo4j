@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.api;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -35,6 +36,7 @@ import static org.neo4j.common.Subject.ANONYMOUS;
 import static org.neo4j.internal.helpers.Exceptions.contains;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.KernelVersion.DEFAULT_BOOTSTRAP_VERSION;
+import static org.neo4j.kernel.impl.api.CommandCommitListeners.NO_LISTENERS;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.INTERNAL;
 import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_INDEX;
 
@@ -128,6 +130,39 @@ class InternalTransactionCommitProcessTest {
     }
 
     @Test
+    void commandBatchWithoutAppendIndexFailingToCommit() {
+        long txId = 11;
+        long appendIndex = txId + 7;
+
+        var transactionIdStore = mock(TransactionIdStore.class);
+        var appender = new TestableTransactionAppender();
+        when(transactionIdStore.nextCommittingTransactionId()).thenReturn(txId);
+
+        var storageEngine = mock(StorageEngine.class);
+        var commitProcess = new InternalTransactionCommitProcess(appender, storageEngine, false, NO_LISTENERS);
+        var batch = new CompleteCommandBatch(
+                Collections.emptyList(),
+                UNKNOWN_CONSENSUS_INDEX,
+                -1,
+                -1,
+                -1,
+                -1,
+                LatestVersions.LATEST_KERNEL_VERSION,
+                ANONYMOUS);
+        var transactionToApply = new CompleteTransaction(
+                batch,
+                NULL_CONTEXT,
+                StoreCursors.NULL,
+                new FakeCommitment(txId, appendIndex, transactionIdStore, true),
+                new IdStoreTransactionIdGenerator(transactionIdStore));
+
+        assertThatThrownBy(() -> commitProcess.commit(transactionToApply, transactionWriteEvent, INTERNAL))
+                .rootCause()
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("Append index was not generated for the batch yet.");
+    }
+
+    @Test
     void shouldSuccessfullyCommitTransactionWithNoCommands() throws Exception {
         // GIVEN
         long txId = 11;
@@ -151,6 +186,7 @@ class InternalTransactionCommitProcessTest {
                 -1,
                 LatestVersions.LATEST_KERNEL_VERSION,
                 ANONYMOUS);
+        noCommandTx.setAppendIndex(appendIndex);
 
         // WHEN
 
@@ -171,7 +207,7 @@ class InternalTransactionCommitProcessTest {
                         FakeCommitment.TIMESTAMP,
                         FakeCommitment.CONSENSUS_INDEX);
         verify(commandCommitListeners, never()).registerFailure(any(), any());
-        verify(commandCommitListeners).registerSuccess(transactionToApply.commandBatch(), txId);
+        verify(commandCommitListeners).registerSuccess(transactionToApply.commandBatch(), appendIndex);
     }
 
     @Test
