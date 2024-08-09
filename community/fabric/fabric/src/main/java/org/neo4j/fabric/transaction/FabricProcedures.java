@@ -21,7 +21,7 @@ package org.neo4j.fabric.transaction;
 
 import java.time.Clock;
 import java.util.stream.Stream;
-import org.neo4j.collection.RawIterator;
+import org.neo4j.collection.ResourceRawIterator;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.security.URLAccessChecker;
@@ -96,25 +96,25 @@ public class FabricProcedures implements Procedures {
     }
 
     @Override
-    public RawIterator<AnyValue[], ProcedureException> procedureCallRead(
+    public ResourceRawIterator<AnyValue[], ProcedureException> procedureCallRead(
             int id, AnyValue[] arguments, ProcedureCallContext context) throws ProcedureException {
         return notAvailable();
     }
 
     @Override
-    public RawIterator<AnyValue[], ProcedureException> procedureCallWrite(
+    public ResourceRawIterator<AnyValue[], ProcedureException> procedureCallWrite(
             int id, AnyValue[] arguments, ProcedureCallContext context) throws ProcedureException {
         return notAvailable();
     }
 
     @Override
-    public RawIterator<AnyValue[], ProcedureException> procedureCallSchema(
+    public ResourceRawIterator<AnyValue[], ProcedureException> procedureCallSchema(
             int id, AnyValue[] arguments, ProcedureCallContext context) throws ProcedureException {
         return notAvailable();
     }
 
     @Override
-    public RawIterator<AnyValue[], ProcedureException> procedureCallDbms(
+    public ResourceRawIterator<AnyValue[], ProcedureException> procedureCallDbms(
             int id, AnyValue[] arguments, ProcedureCallContext context) throws ProcedureException {
         return notAvailable();
     }

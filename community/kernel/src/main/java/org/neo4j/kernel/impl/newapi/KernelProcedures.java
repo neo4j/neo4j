@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.newapi;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 import org.neo4j.collection.Dependencies;
-import org.neo4j.collection.RawIterator;
+import org.neo4j.collection.ResourceRawIterator;
 import org.neo4j.internal.kernel.api.Procedures;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
@@ -108,14 +108,14 @@ public abstract sealed class KernelProcedures implements Procedures {
         }
 
         @Override
-        public RawIterator<AnyValue[], ProcedureException> procedureCallWrite(
+        public ResourceRawIterator<AnyValue[], ProcedureException> procedureCallWrite(
                 int id, AnyValue[] arguments, ProcedureCallContext context) {
             throw new UnsupportedOperationException(
                     "Invoking procedure with WRITE access mode is not allowed during parallel execution.");
         }
 
         @Override
-        public RawIterator<AnyValue[], ProcedureException> procedureCallSchema(
+        public ResourceRawIterator<AnyValue[], ProcedureException> procedureCallSchema(
                 int id, AnyValue[] arguments, ProcedureCallContext context) {
             throw new UnsupportedOperationException(
                     "Invoking procedure with SCHEMA access mode is not allowed during parallel execution.");
@@ -129,25 +129,25 @@ public abstract sealed class KernelProcedures implements Procedures {
     }
 
     @Override
-    public RawIterator<AnyValue[], ProcedureException> procedureCallRead(
+    public ResourceRawIterator<AnyValue[], ProcedureException> procedureCallRead(
             int id, AnyValue[] arguments, ProcedureCallContext context) throws ProcedureException {
         return getProcedureCaller().callProcedure(id, arguments, AccessMode.Static.READ, context);
     }
 
     @Override
-    public RawIterator<AnyValue[], ProcedureException> procedureCallWrite(
+    public ResourceRawIterator<AnyValue[], ProcedureException> procedureCallWrite(
             int id, AnyValue[] arguments, ProcedureCallContext context) throws ProcedureException {
         return getProcedureCaller().callProcedure(id, arguments, AccessMode.Static.TOKEN_WRITE, context);
     }
 
     @Override
-    public RawIterator<AnyValue[], ProcedureException> procedureCallSchema(
+    public ResourceRawIterator<AnyValue[], ProcedureException> procedureCallSchema(
             int id, AnyValue[] arguments, ProcedureCallContext context) throws ProcedureException {
         return getProcedureCaller().callProcedure(id, arguments, AccessMode.Static.SCHEMA, context);
     }
 
     @Override
-    public RawIterator<AnyValue[], ProcedureException> procedureCallDbms(
+    public ResourceRawIterator<AnyValue[], ProcedureException> procedureCallDbms(
             int id, AnyValue[] arguments, ProcedureCallContext context) throws ProcedureException {
         return getProcedureCaller().callProcedure(id, arguments, AccessMode.Static.ACCESS, context);
     }

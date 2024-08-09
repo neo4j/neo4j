@@ -22,7 +22,7 @@ package org.neo4j.bolt.test.util;
 import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureSignature;
 
 import org.neo4j.bolt.transport.Neo4jWithSocket;
-import org.neo4j.collection.RawIterator;
+import org.neo4j.collection.ResourceRawIterator;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.function.ThrowingFunction;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
@@ -98,7 +98,7 @@ public final class ServerUtil {
                         .out(ProcedureSignature.VOID)
                         .build()) {
                     @Override
-                    public RawIterator<AnyValue[], ProcedureException> apply(
+                    public ResourceRawIterator<AnyValue[], ProcedureException> apply(
                             Context context, AnyValue[] objects, ResourceMonitor resourceMonitor)
                             throws ProcedureException {
                         try {
@@ -106,7 +106,7 @@ public final class ServerUtil {
                         } catch (InterruptedException e) {
                             throw new ProcedureException(Status.General.UnknownError, e, "Interrupted");
                         }
-                        return RawIterator.empty();
+                        return ResourceRawIterator.empty();
                     }
                 });
     }

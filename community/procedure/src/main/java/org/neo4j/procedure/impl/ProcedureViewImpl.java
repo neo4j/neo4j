@@ -21,7 +21,7 @@ package org.neo4j.procedure.impl;
 
 import java.util.function.Predicate;
 import java.util.stream.Stream;
-import org.neo4j.collection.RawIterator;
+import org.neo4j.collection.ResourceRawIterator;
 import org.neo4j.function.ThrowingFunction;
 import org.neo4j.internal.helpers.collection.LfuCache;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
@@ -135,7 +135,7 @@ public class ProcedureViewImpl implements ProcedureView {
     }
 
     @Override
-    public RawIterator<AnyValue[], ProcedureException> callProcedure(
+    public ResourceRawIterator<AnyValue[], ProcedureException> callProcedure(
             Context ctx, int id, AnyValue[] input, ResourceMonitor resourceMonitor) throws ProcedureException {
         return registry.callProcedure(ctx, id, input, resourceMonitor);
     }

@@ -45,15 +45,6 @@ case class SlottedCypherRowFactory(slots: SlotConfiguration, argumentSize: SlotC
     newCtx
   }
 
-  override def copyWith(row: ReadableRow, newEntries: Seq[(String, AnyValue)]): CypherRow = {
-    val newCopy = SlottedRow(slots)
-    newCopy.copyAllFrom(row)
-    for ((key, value) <- newEntries) {
-      newCopy.set(key, value)
-    }
-    newCopy
-  }
-
   override def copyWith(row: ReadableRow, key: String, value: AnyValue): CypherRow = {
     val newCtx = SlottedRow(slots)
     newCtx.copyAllFrom(row)

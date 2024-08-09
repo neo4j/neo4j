@@ -36,6 +36,7 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.collection.RawIterator;
+import org.neo4j.collection.ResourceRawIterator;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.ProcedureHandle;
@@ -170,9 +171,9 @@ class ProceduresTest {
 
         procs.register(new CallableProcedure.BasicProcedure(signature) {
             @Override
-            public RawIterator<AnyValue[], ProcedureException> apply(
+            public ResourceRawIterator<AnyValue[], ProcedureException> apply(
                     Context ctx, AnyValue[] input, ResourceMonitor resourceMonitor) {
-                return RawIterator.<AnyValue[], ProcedureException>of(
+                return ResourceRawIterator.<AnyValue[], ProcedureException>of(
                         new AnyValue[] {stringValue(ctx.thread().getName())});
             }
         });
@@ -197,7 +198,7 @@ class ProceduresTest {
     private CallableProcedure.BasicProcedure procedureWithSignature(final ProcedureSignature signature) {
         return new CallableProcedure.BasicProcedure(signature) {
             @Override
-            public RawIterator<AnyValue[], ProcedureException> apply(
+            public ResourceRawIterator<AnyValue[], ProcedureException> apply(
                     Context ctx, AnyValue[] input, ResourceMonitor resourceMonitor) {
                 return null;
             }
@@ -207,9 +208,9 @@ class ProceduresTest {
     private CallableProcedure procedure(ProcedureSignature signature) {
         return new CallableProcedure.BasicProcedure(signature) {
             @Override
-            public RawIterator<AnyValue[], ProcedureException> apply(
+            public ResourceRawIterator<AnyValue[], ProcedureException> apply(
                     Context ctx, AnyValue[] input, ResourceMonitor resourceMonitor) {
-                return RawIterator.<AnyValue[], ProcedureException>of(input);
+                return ResourceRawIterator.<AnyValue[], ProcedureException>of(input);
             }
         };
     }

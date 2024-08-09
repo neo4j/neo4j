@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.api.procedure;
 
-import org.neo4j.collection.RawIterator;
+import org.neo4j.collection.ResourceRawIterator;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.kernel.api.ResourceMonitor;
@@ -32,7 +32,7 @@ public class FailedLoadProcedure extends CallableProcedure.BasicProcedure {
     }
 
     @Override
-    public RawIterator<AnyValue[], ProcedureException> apply(
+    public ResourceRawIterator<AnyValue[], ProcedureException> apply(
             Context ctx, AnyValue[] input, ResourceMonitor resourceMonitor) throws ProcedureException {
         throw new ProcedureException(
                 Status.Procedure.ProcedureRegistrationFailed,

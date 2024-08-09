@@ -27,7 +27,6 @@ import org.neo4j.csv.reader.CharReadable
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.logical.plans.IndexOrder
 import org.neo4j.cypher.internal.macros.TranslateExceptionMacros.translateException
-import org.neo4j.cypher.internal.macros.TranslateExceptionMacros.translateIterator
 import org.neo4j.cypher.internal.runtime.ClosingLongIterator
 import org.neo4j.cypher.internal.runtime.ConstraintInfo
 import org.neo4j.cypher.internal.runtime.ConstraintInformation
@@ -48,6 +47,7 @@ import org.neo4j.cypher.internal.runtime.ResourceManager
 import org.neo4j.cypher.internal.runtime.interpreted.DelegatingQueryTransactionalContext
 import org.neo4j.dbms.database.DatabaseContext
 import org.neo4j.dbms.database.DatabaseContextProvider
+import org.neo4j.exceptions.CypherExecutionException
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.internal.kernel.api.IndexReadSession
 import org.neo4j.internal.kernel.api.NodeCursor
@@ -60,6 +60,7 @@ import org.neo4j.internal.kernel.api.RelationshipTraversalCursor
 import org.neo4j.internal.kernel.api.RelationshipTypeIndexCursor
 import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor
 import org.neo4j.internal.kernel.api.TokenReadSession
+import org.neo4j.internal.kernel.api.exceptions.ProcedureException
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext
 import org.neo4j.internal.kernel.api.procs.UserAggregationReducer
 import org.neo4j.internal.schema.ConstraintDescriptor
@@ -312,29 +313,45 @@ class ExceptionTranslatingReadQueryContext(val inner: ReadQueryContext) extends 
     id: Int,
     args: Array[AnyValue],
     context: ProcedureCallContext
-  ): Iterator[Array[AnyValue]] =
-    translateIterator(tokenNameLookup, inner.callReadOnlyProcedure(id, args, context))
+  ): ProcedureIterator =
+    try {
+      new ExceptionWrappingProcedureIterator(inner.callReadOnlyProcedure(id, args, context))
+    } catch {
+      case e: ProcedureException => throw new CypherExecutionException(e.getMessage, e)
+    }
 
   override def callReadWriteProcedure(
     id: Int,
     args: Array[AnyValue],
     context: ProcedureCallContext
-  ): Iterator[Array[AnyValue]] =
-    translateIterator(tokenNameLookup, inner.callReadWriteProcedure(id, args, context))
+  ): ProcedureIterator =
+    try {
+      new ExceptionWrappingProcedureIterator(inner.callReadWriteProcedure(id, args, context))
+    } catch {
+      case e: ProcedureException => throw new CypherExecutionException(e.getMessage, e)
+    }
 
   override def callSchemaWriteProcedure(
     id: Int,
     args: Array[AnyValue],
     context: ProcedureCallContext
-  ): Iterator[Array[AnyValue]] =
-    translateIterator(tokenNameLookup, inner.callSchemaWriteProcedure(id, args, context))
+  ): ProcedureIterator =
+    try {
+      new ExceptionWrappingProcedureIterator(inner.callSchemaWriteProcedure(id, args, context))
+    } catch {
+      case e: ProcedureException => throw new CypherExecutionException(e.getMessage, e)
+    }
 
   override def callDbmsProcedure(
     id: Int,
     args: Array[AnyValue],
     context: ProcedureCallContext
-  ): Iterator[Array[AnyValue]] =
-    translateIterator(tokenNameLookup, inner.callDbmsProcedure(id, args, context))
+  ): ProcedureIterator =
+    try {
+      new ExceptionWrappingProcedureIterator(inner.callDbmsProcedure(id, args, context))
+    } catch {
+      case e: ProcedureException => throw new CypherExecutionException(e.getMessage, e)
+    }
 
   override def callFunction(id: Int, args: Array[AnyValue], context: ProcedureCallContext): AnyValue =
     translateException(tokenNameLookup, inner.callFunction(id, args, context))

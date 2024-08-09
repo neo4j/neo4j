@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.spec.tests
 
-import org.neo4j.collection.RawIterator
+import org.neo4j.collection.ResourceRawIterator
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
@@ -540,8 +540,8 @@ trait NonParallelProfileTimeTestBase[CONTEXT <: RuntimeContext] {
         ctx: Context,
         input: Array[AnyValue],
         resourceMonitor: ResourceMonitor
-      ): RawIterator[Array[AnyValue], ProcedureException] = {
-        RawIterator.empty[Array[AnyValue], ProcedureException]()
+      ): ResourceRawIterator[Array[AnyValue], ProcedureException] = {
+        ResourceRawIterator.empty[Array[AnyValue], ProcedureException]()
       }
     })
 

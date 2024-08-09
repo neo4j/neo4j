@@ -1672,41 +1672,41 @@ private[internal] class TransactionBoundReadQueryContext(
     id: Int,
     args: Array[AnyValue],
     context: ProcedureCallContext
-  ): Iterator[Array[AnyValue]] =
-    CallSupport.callReadOnlyProcedure(transactionalContext.procedures, id, args, context)
+  ): ProcedureIterator =
+    transactionalContext.procedures.procedureCallRead(id, args, context)
 
   override def callReadWriteProcedure(
     id: Int,
     args: Array[AnyValue],
     context: ProcedureCallContext
-  ): Iterator[Array[AnyValue]] =
-    CallSupport.callReadWriteProcedure(transactionalContext.procedures, id, args, context)
+  ): ProcedureIterator =
+    transactionalContext.procedures.procedureCallWrite(id, args, context)
 
   override def callSchemaWriteProcedure(
     id: Int,
     args: Array[AnyValue],
     context: ProcedureCallContext
-  ): Iterator[Array[AnyValue]] =
-    CallSupport.callSchemaWriteProcedure(transactionalContext.procedures, id, args, context)
+  ): ProcedureIterator =
+    transactionalContext.procedures.procedureCallSchema(id, args, context)
 
   override def callDbmsProcedure(
     id: Int,
     args: Array[AnyValue],
     context: ProcedureCallContext
-  ): Iterator[Array[AnyValue]] =
-    CallSupport.callDbmsProcedure(transactionalContext.procedures, id, args, context)
+  ): ProcedureIterator =
+    transactionalContext.procedures.procedureCallDbms(id, args, context)
 
   override def callFunction(id: Int, args: Array[AnyValue], context: ProcedureCallContext): AnyValue =
-    CallSupport.callFunction(transactionalContext.procedures, id, args, context)
+    transactionalContext.procedures.functionCall(id, args, context)
 
   override def callBuiltInFunction(id: Int, args: Array[AnyValue], context: ProcedureCallContext): AnyValue =
-    CallSupport.callBuiltInFunction(transactionalContext.procedures, id, args, context)
+    transactionalContext.procedures.builtInFunctionCall(id, args, context)
 
   override def aggregateFunction(id: Int, context: ProcedureCallContext): UserAggregationReducer =
-    CallSupport.aggregateFunction(transactionalContext.procedures, id, context)
+    transactionalContext.procedures.aggregationFunction(id, context)
 
   override def builtInAggregateFunction(id: Int, context: ProcedureCallContext): UserAggregationReducer =
-    CallSupport.builtInAggregateFunction(transactionalContext.procedures, id, context)
+    transactionalContext.procedures.builtInAggregationFunction(id, context)
 
   override def assertShowIndexAllowed(): Unit = {
     val ktx = transactionalContext.kernelTransaction

@@ -19,15 +19,15 @@
  */
 package org.neo4j.cypher.internal.runtime
 
+import org.neo4j.collection.ResourceRawIterator
 import org.neo4j.cypher.internal.frontend.phases.ProcedureAccessMode
 import org.neo4j.cypher.internal.frontend.phases.ProcedureDbmsAccess
 import org.neo4j.cypher.internal.frontend.phases.ProcedureReadOnlyAccess
 import org.neo4j.cypher.internal.frontend.phases.ProcedureReadWriteAccess
 import org.neo4j.cypher.internal.frontend.phases.ProcedureSchemaWriteAccess
+import org.neo4j.internal.kernel.api.exceptions.ProcedureException
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext
 import org.neo4j.values.AnyValue
-
-import scala.collection.mutable.ArrayBuffer
 
 object ProcedureCallMode {
 
@@ -36,6 +36,15 @@ object ProcedureCallMode {
     case ProcedureReadWriteAccess   => EagerReadWriteCallMode
     case ProcedureSchemaWriteAccess => SchemaWriteCallMode
     case ProcedureDbmsAccess        => DbmsCallMode
+  }
+
+  def eager(iter: ResourceRawIterator[Array[AnyValue], ProcedureException])
+    : ResourceRawIterator[Array[AnyValue], ProcedureException] = {
+    val builder = Array.newBuilder[Array[AnyValue]]
+    while (iter.hasNext) {
+      builder += iter.next()
+    }
+    ResourceRawIterator.of(builder.result(): _*)
   }
 }
 
@@ -47,7 +56,7 @@ sealed trait ProcedureCallMode {
     id: Int,
     args: Array[AnyValue],
     context: ProcedureCallContext
-  ): Iterator[Array[AnyValue]]
+  ): ResourceRawIterator[Array[AnyValue], ProcedureException]
 }
 
 case object LazyReadOnlyCallMode extends ProcedureCallMode {
@@ -58,48 +67,32 @@ case object LazyReadOnlyCallMode extends ProcedureCallMode {
     id: Int,
     args: Array[AnyValue],
     context: ProcedureCallContext
-  ): Iterator[Array[AnyValue]] =
+  ): ResourceRawIterator[Array[AnyValue], ProcedureException] =
     ctx.callReadOnlyProcedure(id, args, context)
 }
 
 case object EagerReadWriteCallMode extends ProcedureCallMode {
   override val queryType: InternalQueryType = READ_WRITE
 
-  private def call(iterator: Iterator[Array[AnyValue]]) = {
-    val builder = ArrayBuffer.newBuilder[Array[AnyValue]]
-    while (iterator.hasNext) {
-      builder += iterator.next()
-    }
-    builder.result().iterator
-  }
-
   override def callProcedure(
     ctx: ReadQueryContext,
     id: Int,
     args: Array[AnyValue],
     context: ProcedureCallContext
-  ): Iterator[Array[AnyValue]] =
-    call(ctx.callReadWriteProcedure(id, args, context))
+  ): ResourceRawIterator[Array[AnyValue], ProcedureException] =
+    ProcedureCallMode.eager(ctx.callReadWriteProcedure(id, args, context))
 }
 
 case object SchemaWriteCallMode extends ProcedureCallMode {
   override val queryType: InternalQueryType = SCHEMA_WRITE
 
-  private def call(iterator: Iterator[Array[AnyValue]]) = {
-    val builder = ArrayBuffer.newBuilder[Array[AnyValue]]
-    while (iterator.hasNext) {
-      builder += iterator.next()
-    }
-    builder.result().iterator
-  }
-
   override def callProcedure(
     ctx: ReadQueryContext,
     id: Int,
     args: Array[AnyValue],
     context: ProcedureCallContext
-  ): Iterator[Array[AnyValue]] =
-    call(ctx.callSchemaWriteProcedure(id, args, context))
+  ): ResourceRawIterator[Array[AnyValue], ProcedureException] =
+    ProcedureCallMode.eager(ctx.callSchemaWriteProcedure(id, args, context))
 }
 
 case object DbmsCallMode extends ProcedureCallMode {
@@ -110,14 +103,6 @@ case object DbmsCallMode extends ProcedureCallMode {
     id: Int,
     args: Array[AnyValue],
     context: ProcedureCallContext
-  ): Iterator[Array[AnyValue]] =
-    call(ctx.callDbmsProcedure(id, args, context))
-
-  private def call(iterator: Iterator[Array[AnyValue]]) = {
-    val builder = ArrayBuffer.newBuilder[Array[AnyValue]]
-    while (iterator.hasNext) {
-      builder += iterator.next()
-    }
-    builder.result().iterator
-  }
+  ): ResourceRawIterator[Array[AnyValue], ProcedureException] =
+    ProcedureCallMode.eager(ctx.callDbmsProcedure(id, args, context))
 }

@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.spec.tests
 
-import org.neo4j.collection.RawIterator
+import org.neo4j.collection.ResourceRawIterator
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.TrailParameters
@@ -2224,8 +2224,8 @@ trait NonParallelProfileRowsTestBase[CONTEXT <: RuntimeContext] {
         ctx: Context,
         input: Array[AnyValue],
         resourceMonitor: ResourceMonitor
-      ): RawIterator[Array[AnyValue], ProcedureException] = {
-        RawIterator.of[Array[AnyValue], ProcedureException](input, input)
+      ): ResourceRawIterator[Array[AnyValue], ProcedureException] = {
+        ResourceRawIterator.of[Array[AnyValue], ProcedureException](input, input)
       }
     })
 

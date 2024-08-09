@@ -46,6 +46,7 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import org.eclipse.collections.api.iterator.LongIterator;
 import org.neo4j.collection.RawIterator;
+import org.neo4j.collection.ResourceRawIterator;
 import org.neo4j.function.Predicates;
 import org.neo4j.function.ThrowingFunction;
 import org.neo4j.graphdb.Resource;
@@ -706,8 +707,8 @@ public final class Iterators {
         return new RawMapIterator<>(from, function);
     }
 
-    public static <T, EX extends Exception> RawIterator<T, EX> asRawIterator(Iterator<T> iter) {
-        return new RawIterator<>() {
+    public static <T, EX extends Exception> ResourceRawIterator<T, EX> asRawIterator(Iterator<T> iter) {
+        return new ResourceRawIterator<>() {
             @Override
             public boolean hasNext() {
                 return iter.hasNext();
@@ -717,10 +718,19 @@ public final class Iterators {
             public T next() {
                 return iter.next();
             }
+
+            @Override
+            public void close() {
+                if (iter instanceof Resource resource) resource.close();
+            }
         };
     }
 
-    public static <T, EX extends Exception> RawIterator<T, EX> asRawIterator(Stream<T> stream) {
+    /**
+     * Returns a ResourceRawIterator based on the specified Stream.
+     * NOTE! The returned iterator will NOT close the stream.
+     */
+    public static <T, EX extends Exception> ResourceRawIterator<T, EX> asRawIterator(Stream<T> stream) {
         return asRawIterator(stream.iterator());
     }
 

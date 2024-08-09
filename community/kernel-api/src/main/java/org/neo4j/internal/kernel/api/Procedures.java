@@ -20,7 +20,7 @@
 package org.neo4j.internal.kernel.api;
 
 import java.util.stream.Stream;
-import org.neo4j.collection.RawIterator;
+import org.neo4j.collection.ResourceRawIterator;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
 import org.neo4j.internal.kernel.api.procs.ProcedureHandle;
@@ -88,7 +88,7 @@ public interface Procedures {
      * @return an iterator containing the procedure results.
      * @throws ProcedureException if there was an exception thrown during procedure execution.
      */
-    RawIterator<AnyValue[], ProcedureException> procedureCallRead(
+    ResourceRawIterator<AnyValue[], ProcedureException> procedureCallRead(
             int id, AnyValue[] arguments, ProcedureCallContext context) throws ProcedureException;
 
     /**
@@ -99,7 +99,7 @@ public interface Procedures {
      * @return an iterator containing the procedure results.
      * @throws ProcedureException if there was an exception thrown during procedure execution.
      */
-    RawIterator<AnyValue[], ProcedureException> procedureCallWrite(
+    ResourceRawIterator<AnyValue[], ProcedureException> procedureCallWrite(
             int id, AnyValue[] arguments, ProcedureCallContext context) throws ProcedureException;
 
     /**
@@ -110,7 +110,7 @@ public interface Procedures {
      * @return an iterator containing the procedure results.
      * @throws ProcedureException if there was an exception thrown during procedure execution.
      */
-    RawIterator<AnyValue[], ProcedureException> procedureCallSchema(
+    ResourceRawIterator<AnyValue[], ProcedureException> procedureCallSchema(
             int id, AnyValue[] arguments, ProcedureCallContext context) throws ProcedureException;
 
     /**
@@ -121,7 +121,7 @@ public interface Procedures {
      * @return an iterator containing the procedure results.
      * @throws ProcedureException if there was an exception thrown during procedure execution.
      */
-    RawIterator<AnyValue[], ProcedureException> procedureCallDbms(
+    ResourceRawIterator<AnyValue[], ProcedureException> procedureCallDbms(
             int id, AnyValue[] arguments, ProcedureCallContext context) throws ProcedureException;
 
     /** Invoke a read-only function by id

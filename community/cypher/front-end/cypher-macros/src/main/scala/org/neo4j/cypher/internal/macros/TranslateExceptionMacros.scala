@@ -53,39 +53,4 @@ object TranslateExceptionMacros {
         }
       """
   }
-
-  def translateIterator[A](tokenNameLookup: AnyRef, iteratorFactory: => Iterator[A]): Iterator[A] =
-    macro translateIteratorImp[A]
-
-  def translateIteratorImp[A](c: blackbox.Context)(tokenNameLookup: c.Tree, iteratorFactory: c.Tree)(implicit
-  tag: c.WeakTypeTag[A]): c.universe.Tree = {
-    import c.universe.Quasiquote
-    import c.universe.TypeName
-    import c.universe.Ident
-    import c.universe.Type
-    import c.universe.AppliedTypeTree
-
-    def toTypeTree(typ: Type): c.universe.Tree = {
-      val base = Ident(TypeName(typ.typeSymbol.name.toString))
-      val args = typ.typeArgs.map(t => toTypeTree(t))
-
-      if (args.isEmpty)
-        base
-      else
-        AppliedTypeTree(base, args)
-    }
-    val innerTypeTree = toTypeTree(tag.tpe)
-
-    val translatedIterator = translateExceptionImpl(c)(tokenNameLookup, iteratorFactory)
-    val translatedNext = translateExceptionImpl(c)(tokenNameLookup, q"innerIterator.next()")
-    val translatedHasNext = translateExceptionImpl(c)(tokenNameLookup, q"innerIterator.hasNext")
-
-    q"""
-        val innerIterator = $translatedIterator
-        new Iterator[$innerTypeTree] {
-          override def hasNext: Boolean = $translatedHasNext
-          override def next(): $innerTypeTree = $translatedNext
-        }
-      """
-  }
 }

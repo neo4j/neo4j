@@ -71,7 +71,7 @@ import org.neo4j.codegen.CompilationFailureException;
 import org.neo4j.codegen.Expression;
 import org.neo4j.codegen.FieldReference;
 import org.neo4j.codegen.MethodDeclaration;
-import org.neo4j.collection.RawIterator;
+import org.neo4j.collection.ResourceRawIterator;
 import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
@@ -120,17 +120,21 @@ import org.neo4j.values.virtual.VirtualRelationshipValue;
  */
 @SuppressWarnings({"WeakerAccess", "unused"})
 public final class ProcedureCompilation {
-    public static final RawIterator<AnyValue[], ProcedureException> VOID_ITERATOR = new RawIterator<>() {
-        @Override
-        public boolean hasNext() {
-            return false;
-        }
+    public static final ResourceRawIterator<AnyValue[], ProcedureException> VOID_ITERATOR =
+            new ResourceRawIterator<>() {
+                @Override
+                public boolean hasNext() {
+                    return false;
+                }
 
-        @Override
-        public AnyValue[] next() {
-            return EMPTY_ARRAY;
-        }
-    };
+                @Override
+                public AnyValue[] next() {
+                    return EMPTY_ARRAY;
+                }
+
+                @Override
+                public void close() {}
+            };
 
     private static final boolean DEBUG = false;
     private static final String LONG = long.class.getCanonicalName();
@@ -165,7 +169,7 @@ public final class ProcedureCompilation {
             .throwsException(typeReference(ProcedureException.class));
     private static final MethodDeclaration.Builder USER_PROCEDURE = method(
                     parameterizedType(
-                            RawIterator.class,
+                            ResourceRawIterator.class,
                             typeReference(AnyValue[].class),
                             typeReference(ProcedureException.class)),
                     "apply",
@@ -758,7 +762,9 @@ public final class ProcedureCompilation {
                 VOID_ITERATOR.getClass())) { // if we are calling a void method we just need to call and return empty
             block.expression(invoke(block.load(USER_CLASS), methodReference(methodToCall), parameters));
             block.returns(getStatic(FieldReference.field(
-                    typeReference(ProcedureCompilation.class), typeReference(RawIterator.class), "VOID_ITERATOR")));
+                    typeReference(ProcedureCompilation.class),
+                    typeReference(ResourceRawIterator.class),
+                    "VOID_ITERATOR")));
         } else { // here we must both call and map stream to an iterator
             block.assign(
                     parameterizedType(Stream.class, procedureType(methodToCall)),

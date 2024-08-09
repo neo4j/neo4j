@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.runtime
 
 import org.eclipse.collections.api.map.primitive.IntObjectMap
 import org.eclipse.collections.api.set.primitive.IntSet
+import org.neo4j.collection.ResourceRawIterator
 import org.neo4j.common.EntityType
 import org.neo4j.configuration.Config
 import org.neo4j.csv.reader.CharReadable
@@ -54,6 +55,7 @@ import org.neo4j.internal.kernel.api.TokenRead
 import org.neo4j.internal.kernel.api.TokenReadSession
 import org.neo4j.internal.kernel.api.TokenWrite
 import org.neo4j.internal.kernel.api.Write
+import org.neo4j.internal.kernel.api.exceptions.ProcedureException
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext
 import org.neo4j.internal.kernel.api.procs.UserAggregationReducer
 import org.neo4j.internal.kernel.api.security.AccessMode
@@ -109,6 +111,7 @@ import java.util.Optional
 trait QueryContext extends ReadQueryContext with WriteQueryContext
 
 trait ReadQueryContext extends ReadTokenContext with DbAccess with AutoCloseable {
+  type ProcedureIterator = ResourceRawIterator[Array[AnyValue], ProcedureException]
 
   // See QueryContextAdaptation if you need a dummy that overrides all methods as ??? for writing a test
   def createParallelQueryContext(initialHeapMemory: Long = 0L): QueryContext =
@@ -281,15 +284,15 @@ trait ReadQueryContext extends ReadTokenContext with DbAccess with AutoCloseable
 
   def lockRelationships(relIds: Long*): Unit
 
-  def callReadOnlyProcedure(id: Int, args: Array[AnyValue], context: ProcedureCallContext): Iterator[Array[AnyValue]]
+  def callReadOnlyProcedure(id: Int, args: Array[AnyValue], context: ProcedureCallContext): ProcedureIterator
 
   // Even though the procedure itself could perform writes the call is in the kernel Read API
-  def callReadWriteProcedure(id: Int, args: Array[AnyValue], context: ProcedureCallContext): Iterator[Array[AnyValue]]
+  def callReadWriteProcedure(id: Int, args: Array[AnyValue], context: ProcedureCallContext): ProcedureIterator
 
   // Even though the procedure itself could perform writes the call is in the kernel Read API
-  def callSchemaWriteProcedure(id: Int, args: Array[AnyValue], context: ProcedureCallContext): Iterator[Array[AnyValue]]
+  def callSchemaWriteProcedure(id: Int, args: Array[AnyValue], context: ProcedureCallContext): ProcedureIterator
 
-  def callDbmsProcedure(id: Int, args: Array[AnyValue], context: ProcedureCallContext): Iterator[Array[AnyValue]]
+  def callDbmsProcedure(id: Int, args: Array[AnyValue], context: ProcedureCallContext): ProcedureIterator
 
   def aggregateFunction(id: Int, context: ProcedureCallContext): UserAggregationReducer
 

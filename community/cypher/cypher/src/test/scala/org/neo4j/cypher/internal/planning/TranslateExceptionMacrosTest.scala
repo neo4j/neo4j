@@ -22,8 +22,6 @@ package org.neo4j.cypher.internal.planning
 import org.neo4j.common.EntityType
 import org.neo4j.common.TokenNameLookup
 import org.neo4j.cypher.internal.macros.TranslateExceptionMacros.translateException
-import org.neo4j.cypher.internal.macros.TranslateExceptionMacros.translateIterator
-import org.neo4j.cypher.internal.planner.spi.ReadTokenContext
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.exceptions.CypherExecutionException
 import org.neo4j.exceptions.KernelException
@@ -91,45 +89,5 @@ class TranslateExceptionMacrosTest extends CypherFunSuite {
       tokenNameLookup,
       throw exception
     ) should have message exception.getMessage
-  }
-
-  test("should rethrow exception in iterator creation") {
-    val exception = new java.lang.ArithmeticException("foo")
-    def theIt: Iterator[String] = throw exception
-    the[org.neo4j.exceptions.ArithmeticException] thrownBy translateIterator(
-      tokenNameLookup,
-      theIt
-    ) should have message exception.getMessage
-  }
-
-  test("should rethrow exception in iterator next") {
-    val exception = new java.lang.ArithmeticException("foo")
-    def theIt: Iterator[String] = new Iterator[String] {
-      override def hasNext: Boolean = true
-      override def next(): String = throw exception
-    }
-    val it = translateIterator(tokenNameLookup, theIt)
-    it.hasNext should be(true)
-    the[org.neo4j.exceptions.ArithmeticException] thrownBy it.next() should have message exception.getMessage
-  }
-
-  test("should rethrow exception in iterator hasNext") {
-    val exception = new java.lang.ArithmeticException("foo")
-    def theIt: Iterator[String] = new Iterator[String] {
-      override def hasNext: Boolean = throw exception
-      override def next(): String = "hello"
-    }
-    val it = translateIterator(tokenNameLookup, theIt)
-    it.next() should be("hello")
-    the[org.neo4j.exceptions.ArithmeticException] thrownBy it.hasNext should have message exception.getMessage
-  }
-
-  test("should work with deeply generic type") {
-    def theIt: Iterator[Array[(String, List[Int], ReadTokenContext) => String]] =
-      new Iterator[Array[(String, List[Int], ReadTokenContext) => String]] {
-        override def hasNext: Boolean = true
-        override def next(): Array[(String, List[Int], ReadTokenContext) => String] = Array((s, _, _) => s)
-      }
-    translateIterator(tokenNameLookup, theIt).next().head("foo", List(1), null) should be("foo")
   }
 }

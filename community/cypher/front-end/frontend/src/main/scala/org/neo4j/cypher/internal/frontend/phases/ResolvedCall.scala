@@ -142,11 +142,11 @@ case class ResolvedCall(
   override def returnVariables: ReturnVariables =
     ReturnVariables(includeExisting = false, callResults.map(_.variable).toList)
 
-  def callResultIndices: IndexedSeq[(Int, (String, String))] = { // pos, newName, oldName
+  def callResultIndices: IndexedSeq[(Int, String, String)] = { // pos, newName, oldName
     val outputIndices: Map[String, Int] = signature.outputSignature.map { outputs =>
       outputs.map(_.name).zip(outputs.indices).toMap
     }.getOrElse(Map.empty)
-    callResults.map(result => outputIndices(result.outputName) -> (result.variable.name -> result.outputName))
+    callResults.map(result => (outputIndices(result.outputName), result.variable.name, result.outputName))
   }
 
   def callResultTypes: Seq[(String, CypherType)] = {

@@ -20,7 +20,7 @@
 package org.neo4j.kernel.api.procedure;
 
 import java.util.stream.Stream;
-import org.neo4j.collection.RawIterator;
+import org.neo4j.collection.ResourceRawIterator;
 import org.neo4j.function.ThrowingFunction;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.ProcedureHandle;
@@ -48,7 +48,7 @@ public interface ProcedureView {
 
     /* Note: The id-based functions have no concept of CypherScope.*/
 
-    RawIterator<AnyValue[], ProcedureException> callProcedure(
+    ResourceRawIterator<AnyValue[], ProcedureException> callProcedure(
             Context ctx, int id, AnyValue[] input, ResourceMonitor resourceMonitor) throws ProcedureException;
 
     AnyValue callFunction(Context ctx, int id, AnyValue[] input) throws ProcedureException;

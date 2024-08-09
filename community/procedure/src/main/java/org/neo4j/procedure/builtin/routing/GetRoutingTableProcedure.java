@@ -27,7 +27,7 @@ import static org.neo4j.internal.kernel.api.procs.DefaultParameterValue.nullValu
 import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureSignature;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 
-import org.neo4j.collection.RawIterator;
+import org.neo4j.collection.ResourceRawIterator;
 import org.neo4j.dbms.routing.RoutingException;
 import org.neo4j.dbms.routing.RoutingService;
 import org.neo4j.dbms.routing.result.RoutingResultFormat;
@@ -89,7 +89,7 @@ public final class GetRoutingTableProcedure implements CallableProcedure {
     }
 
     @Override
-    public RawIterator<AnyValue[], ProcedureException> apply(
+    public ResourceRawIterator<AnyValue[], ProcedureException> apply(
             Context ctx, AnyValue[] input, ResourceMonitor resourceMonitor) throws ProcedureException {
         var user = ctx.securityContext().subject().executingUser();
         var databaseName = extractDatabaseName(input);
@@ -100,7 +100,7 @@ public final class GetRoutingTableProcedure implements CallableProcedure {
             log.info(
                     "Routing result for database %s and routing context %s is %s",
                     databaseName, routingContext, result);
-            return RawIterator.<AnyValue[], ProcedureException>of(RoutingResultFormat.build(result));
+            return ResourceRawIterator.<AnyValue[], ProcedureException>of(RoutingResultFormat.build(result));
         } catch (RoutingException ex) {
             throw new ProcedureException(ex.status(), ex, ex.getMessage());
         }

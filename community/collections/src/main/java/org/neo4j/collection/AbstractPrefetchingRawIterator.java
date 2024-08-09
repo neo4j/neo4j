@@ -22,7 +22,7 @@ package org.neo4j.collection;
 import java.util.NoSuchElementException;
 
 public abstract class AbstractPrefetchingRawIterator<T, EXCEPTION extends Exception>
-        implements RawIterator<T, EXCEPTION> {
+        implements ResourceRawIterator<T, EXCEPTION> {
     private boolean hasFetchedNext;
     private T nextObject;
 

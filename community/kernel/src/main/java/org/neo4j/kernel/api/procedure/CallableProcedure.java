@@ -24,7 +24,7 @@ import static org.neo4j.values.storable.Values.NO_VALUE;
 
 import java.util.Arrays;
 import java.util.Optional;
-import org.neo4j.collection.RawIterator;
+import org.neo4j.collection.ResourceRawIterator;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.kernel.api.ResourceMonitor;
@@ -33,8 +33,8 @@ import org.neo4j.values.AnyValue;
 public interface CallableProcedure {
     ProcedureSignature signature();
 
-    RawIterator<AnyValue[], ProcedureException> apply(Context ctx, AnyValue[] input, ResourceMonitor resourceMonitor)
-            throws ProcedureException;
+    ResourceRawIterator<AnyValue[], ProcedureException> apply(
+            Context ctx, AnyValue[] input, ResourceMonitor resourceMonitor) throws ProcedureException;
 
     abstract class BasicProcedure implements CallableProcedure {
         private final ProcedureSignature signature;
@@ -49,7 +49,7 @@ public interface CallableProcedure {
         }
 
         @Override
-        public abstract RawIterator<AnyValue[], ProcedureException> apply(
+        public abstract ResourceRawIterator<AnyValue[], ProcedureException> apply(
                 Context ctx, AnyValue[] input, ResourceMonitor resourceMonitor) throws ProcedureException;
 
         protected static <T extends AnyValue> Optional<T> getOptionalParameter(

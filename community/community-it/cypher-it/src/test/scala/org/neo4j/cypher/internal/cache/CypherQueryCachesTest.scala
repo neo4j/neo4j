@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.cache
 
-import org.neo4j.collection.RawIterator
+import org.neo4j.collection.ResourceRawIterator
 import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.cypher.ExecutionEngineTestSupport
 import org.neo4j.cypher.GraphDatabaseTestSupport
@@ -283,8 +283,8 @@ class CypherQueryCachesTest extends CypherFunSuite with GraphDatabaseTestSupport
           ctx: Context,
           input: Array[AnyValue],
           resourceMonitor: ResourceMonitor
-        ): RawIterator[Array[AnyValue], ProcedureException] = {
-          RawIterator.empty()
+        ): ResourceRawIterator[Array[AnyValue], ProcedureException] = {
+          ResourceRawIterator.empty()
         }
       }
     }

@@ -21,7 +21,6 @@ package org.neo4j.collection;
 
 import java.util.Iterator;
 import java.util.NoSuchElementException;
-import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.internal.helpers.collection.Iterators;
 
 /**
@@ -40,11 +39,11 @@ public interface RawIterator<T, EXCEPTION extends Exception> {
         throw new UnsupportedOperationException();
     }
 
-    RawIterator<Object, Exception> EMPTY_ITERATOR = RawIterator.of();
+    ResourceRawIterator<Object, Exception> EMPTY_ITERATOR = ResourceRawIterator.of();
 
     @SuppressWarnings("unchecked")
-    static <T, EXCEPTION extends Exception> RawIterator<T, EXCEPTION> empty() {
-        return (RawIterator<T, EXCEPTION>) EMPTY_ITERATOR;
+    static <T, EXCEPTION extends Exception> ResourceRawIterator<T, EXCEPTION> empty() {
+        return (ResourceRawIterator<T, EXCEPTION>) EMPTY_ITERATOR;
     }
 
     static <T, EX extends Exception> RawIterator<T, EX> of(T... values) {
@@ -62,19 +61,6 @@ public interface RawIterator<T, EXCEPTION extends Exception> {
                     return values[position++];
                 }
                 throw new NoSuchElementException();
-            }
-        };
-    }
-
-    /**
-     * Create a raw iterator from the provided {@link ThrowingSupplier} - the iterator will end
-     * when the supplier returns null.
-     */
-    static <T, EX extends Exception> RawIterator<T, EX> from(ThrowingSupplier<T, EX> supplier) {
-        return new AbstractPrefetchingRawIterator<>() {
-            @Override
-            protected T fetchNextOrNull() throws EX {
-                return supplier.get();
             }
         };
     }

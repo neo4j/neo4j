@@ -26,7 +26,7 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
-import org.neo4j.collection.RawIterator;
+import org.neo4j.collection.ResourceRawIterator;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.function.ThrowingFunction;
 import org.neo4j.graphdb.Transaction;
@@ -213,7 +213,7 @@ public class LazyProcedures implements GlobalProcedures, Consumer<Supplier<Globa
         }
 
         @Override
-        public RawIterator<AnyValue[], ProcedureException> callProcedure(
+        public ResourceRawIterator<AnyValue[], ProcedureException> callProcedure(
                 Context ctx, int id, AnyValue[] input, ResourceMonitor resourceMonitor) throws ProcedureException {
             initView();
             return view.callProcedure(ctx, id, input, resourceMonitor);

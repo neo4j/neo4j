@@ -603,28 +603,28 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
     id: Int,
     args: Array[AnyValue],
     context: ProcedureCallContext
-  ): Iterator[Array[AnyValue]] =
+  ): ProcedureIterator =
     unknownDbHits(inner.callReadOnlyProcedure(id, args, context))
 
   override def callReadWriteProcedure(
     id: Int,
     args: Array[AnyValue],
     context: ProcedureCallContext
-  ): Iterator[Array[AnyValue]] =
+  ): ProcedureIterator =
     unknownDbHits(inner.callReadWriteProcedure(id, args, context))
 
   override def callSchemaWriteProcedure(
     id: Int,
     args: Array[AnyValue],
     context: ProcedureCallContext
-  ): Iterator[Array[AnyValue]] =
+  ): ProcedureIterator =
     unknownDbHits(inner.callSchemaWriteProcedure(id, args, context))
 
   override def callDbmsProcedure(
     id: Int,
     args: Array[AnyValue],
     context: ProcedureCallContext
-  ): Iterator[Array[AnyValue]] =
+  ): ProcedureIterator =
     unknownDbHits(inner.callDbmsProcedure(id, args, context))
 
   override def callFunction(id: Int, args: Array[AnyValue], context: ProcedureCallContext): AnyValue =

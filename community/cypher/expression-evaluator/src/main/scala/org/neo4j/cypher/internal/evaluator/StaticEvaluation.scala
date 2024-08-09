@@ -448,25 +448,25 @@ object StaticEvaluation {
       id: Int,
       args: Array[AnyValue],
       context: ProcedureCallContext
-    ): Iterator[Array[AnyValue]] = notAvailable()
+    ): ProcedureIterator = notAvailable()
 
     override def callReadWriteProcedure(
       id: Int,
       args: Array[AnyValue],
       context: ProcedureCallContext
-    ): Iterator[Array[AnyValue]] = notAvailable()
+    ): ProcedureIterator = notAvailable()
 
     override def callSchemaWriteProcedure(
       id: Int,
       args: Array[AnyValue],
       context: ProcedureCallContext
-    ): Iterator[Array[AnyValue]] = notAvailable()
+    ): ProcedureIterator = notAvailable()
 
     override def callDbmsProcedure(
       id: Int,
       args: Array[AnyValue],
       context: ProcedureCallContext
-    ): Iterator[Array[AnyValue]] = notAvailable()
+    ): ProcedureIterator = notAvailable()
 
     override def aggregateFunction(id: Int, context: ProcedureCallContext): UserAggregationReducer = notAvailable()
 

@@ -37,7 +37,7 @@ import javax.management.ObjectName;
 import javax.management.RuntimeMBeanException;
 import javax.management.openmbean.CompositeData;
 import javax.management.openmbean.TabularData;
-import org.neo4j.collection.RawIterator;
+import org.neo4j.collection.ResourceRawIterator;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
 import org.neo4j.internal.kernel.api.procs.QualifiedName;
@@ -72,7 +72,7 @@ public class JmxQueryProcedure extends CallableProcedure.BasicProcedure {
     }
 
     @Override
-    public RawIterator<AnyValue[], ProcedureException> apply(
+    public ResourceRawIterator<AnyValue[], ProcedureException> apply(
             Context ctx, AnyValue[] input, ResourceMonitor resourceMonitor) throws ProcedureException {
         String query = getParameter(0, TextValue.class, "query", input).stringValue();
         try {
@@ -81,7 +81,7 @@ public class JmxQueryProcedure extends CallableProcedure.BasicProcedure {
                     jmxServer.queryNames(new ObjectName(query), null).iterator();
 
             // Then convert them to a Neo4j type system representation
-            return RawIterator.from(() -> {
+            return ResourceRawIterator.from(() -> {
                 if (!names.hasNext()) {
                     return null;
                 }

@@ -19,7 +19,7 @@
  */
 package cypher.features
 
-import org.neo4j.collection.RawIterator
+import org.neo4j.collection.ResourceRawIterator
 import org.neo4j.cypher.internal.util.symbols.CTBoolean
 import org.neo4j.cypher.internal.util.symbols.CTFloat
 import org.neo4j.cypher.internal.util.symbols.CTInteger
@@ -47,7 +47,6 @@ import org.opencypher.tools.tck.api.Graph
 import org.opencypher.tools.tck.api.ProcedureSupport
 import org.opencypher.tools.tck.values.CypherValue
 
-import scala.jdk.CollectionConverters.IteratorHasAsJava
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
@@ -99,17 +98,13 @@ trait Neo4jProcedureAdapter extends ProcedureSupport {
         ctx: Context,
         input: Array[AnyValue],
         resourceMonitor: ResourceMonitor
-      ): RawIterator[Array[AnyValue], ProcedureException] = {
-        // For example of usage see ProcedureCallAcceptance.feature e.g. "Standalone call to procedure with explicit arguments"
-        val rowsWithMatchingInput = rows.filter { row =>
-          row.startsWith(input)
-        }
-        val extractResultsFromRows = rowsWithMatchingInput.map { row =>
-          row.drop(input.length)
-        }
-
-        val rawIterator = RawIterator.wrap[Array[AnyValue], ProcedureException](extractResultsFromRows.iterator.asJava)
-        rawIterator
+      ): ResourceRawIterator[Array[AnyValue], ProcedureException] = {
+        ResourceRawIterator.of(
+          rows
+            // For example of usage see ProcedureCallAcceptance.feature e.g. "Standalone call to procedure with explicit arguments"
+            .filter(_.startsWith(input))
+            .map(_.drop(input.length)): _*
+        )
       }
     }
     kernelProcedure

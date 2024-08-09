@@ -27,7 +27,7 @@ import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureSi
 import static org.neo4j.values.storable.Values.stringValue;
 import static org.neo4j.values.storable.Values.utf8Value;
 
-import org.neo4j.collection.RawIterator;
+import org.neo4j.collection.ResourceRawIterator;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.QualifiedName;
 import org.neo4j.kernel.api.ResourceMonitor;
@@ -73,7 +73,7 @@ public class ListComponentsProcedure extends CallableProcedure.BasicProcedure {
     }
 
     @Override
-    public RawIterator<AnyValue[], ProcedureException> apply(
+    public ResourceRawIterator<AnyValue[], ProcedureException> apply(
             Context ctx, AnyValue[] input, ResourceMonitor resourceMonitor) throws ProcedureException {
         return asRawIterator(
                 singletonList(new AnyValue[] {NEO4J_KERNEL, VirtualValues.list(neo4jVersion), neo4jEdition})

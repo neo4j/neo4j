@@ -30,6 +30,7 @@ import static org.neo4j.values.storable.Values.longValue;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.neo4j.collection.RawIterator;
+import org.neo4j.collection.ResourceRawIterator;
 import org.neo4j.internal.kernel.api.Procedures;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
@@ -147,9 +148,9 @@ class ProceduresKernelIT extends KernelIntegrationTest {
         // Given
         internalKernel().registerProcedure(new CallableProcedure.BasicProcedure(signature) {
             @Override
-            public RawIterator<AnyValue[], ProcedureException> apply(
+            public ResourceRawIterator<AnyValue[], ProcedureException> apply(
                     Context ctx, AnyValue[] input, ResourceMonitor resourceMonitor) throws ProcedureException {
-                return RawIterator.<AnyValue[], ProcedureException>of(new AnyValue[] {
+                return ResourceRawIterator.<AnyValue[], ProcedureException>of(new AnyValue[] {
                     Values.stringValue(ctx.kernelTransaction().dataRead().toString())
                 });
             }
@@ -189,9 +190,9 @@ class ProceduresKernelIT extends KernelIntegrationTest {
     private static CallableProcedure procedure(final ProcedureSignature signature) {
         return new CallableProcedure.BasicProcedure(signature) {
             @Override
-            public RawIterator<AnyValue[], ProcedureException> apply(
+            public ResourceRawIterator<AnyValue[], ProcedureException> apply(
                     Context ctx, AnyValue[] input, ResourceMonitor resourceMonitor) {
-                return RawIterator.<AnyValue[], ProcedureException>of(input);
+                return ResourceRawIterator.<AnyValue[], ProcedureException>of(input);
             }
         };
     }

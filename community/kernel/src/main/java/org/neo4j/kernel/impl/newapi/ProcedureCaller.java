@@ -23,7 +23,7 @@ import static java.lang.String.format;
 import static org.neo4j.kernel.api.procedure.BasicContext.buildContext;
 
 import java.util.function.Supplier;
-import org.neo4j.collection.RawIterator;
+import org.neo4j.collection.ResourceRawIterator;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.graphdb.security.URLAccessChecker;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
@@ -160,7 +160,7 @@ public abstract class ProcedureCaller {
                 .context();
     }
 
-    public RawIterator<AnyValue[], ProcedureException> callProcedure(
+    public ResourceRawIterator<AnyValue[], ProcedureException> callProcedure(
             int id, AnyValue[] input, AccessMode.Static procedureMode, ProcedureCallContext procedureCallContext)
             throws ProcedureException {
         performCheckBeforeOperation();
@@ -178,7 +178,7 @@ public abstract class ProcedureCaller {
                         .withMode(AdminAccessMode.FULL)
                 : securityContext.withMode(new RestrictedAccessMode(mode, procedureMode));
 
-        RawIterator<AnyValue[], ProcedureException> procedureCall;
+        ResourceRawIterator<AnyValue[], ProcedureException> procedureCall;
         try (var ignore = overrideSecurityContext(procedureSecurityContext)) {
             procedureCall = doCallProcedure(prepareContext(procedureSecurityContext, procedureCallContext), id, input);
         }
@@ -186,9 +186,10 @@ public abstract class ProcedureCaller {
         return createIterator(procedureSecurityContext, procedureCall);
     }
 
-    private RawIterator<AnyValue[], ProcedureException> createIterator(
-            SecurityContext procedureSecurityContext, RawIterator<AnyValue[], ProcedureException> procedureCall) {
-        return new RawIterator<>() {
+    private ResourceRawIterator<AnyValue[], ProcedureException> createIterator(
+            SecurityContext procedureSecurityContext,
+            ResourceRawIterator<AnyValue[], ProcedureException> procedureCall) {
+        return new ResourceRawIterator<>() {
             @Override
             public boolean hasNext() throws ProcedureException {
                 try (var ignore = overrideSecurityContext(procedureSecurityContext)) {
@@ -201,6 +202,11 @@ public abstract class ProcedureCaller {
                 try (var ignore = overrideSecurityContext(procedureSecurityContext)) {
                     return procedureCall.next();
                 }
+            }
+
+            @Override
+            public void close() {
+                procedureCall.close();
             }
         };
     }
@@ -233,7 +239,7 @@ public abstract class ProcedureCaller {
     public abstract UserAggregationReducer createAggregationFunction(int id, ProcedureCallContext context)
             throws ProcedureException;
 
-    abstract RawIterator<AnyValue[], ProcedureException> doCallProcedure(Context ctx, int id, AnyValue[] input)
+    abstract ResourceRawIterator<AnyValue[], ProcedureException> doCallProcedure(Context ctx, int id, AnyValue[] input)
             throws ProcedureException;
 
     public static class ForTransactionScope extends ProcedureCaller {
@@ -276,7 +282,7 @@ public abstract class ProcedureCaller {
         }
 
         @Override
-        RawIterator<AnyValue[], ProcedureException> doCallProcedure(Context ctx, int id, AnyValue[] input)
+        ResourceRawIterator<AnyValue[], ProcedureException> doCallProcedure(Context ctx, int id, AnyValue[] input)
                 throws ProcedureException {
             return procedureView.callProcedure(ctx, id, input, ktx.resourceMonitor());
         }
@@ -349,7 +355,7 @@ public abstract class ProcedureCaller {
         }
 
         @Override
-        RawIterator<AnyValue[], ProcedureException> doCallProcedure(Context ctx, int id, AnyValue[] input)
+        ResourceRawIterator<AnyValue[], ProcedureException> doCallProcedure(Context ctx, int id, AnyValue[] input)
                 throws ProcedureException {
             return procedureView.callProcedure(ctx, id, input, executionContext);
         }

@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.runtime
 
 import org.eclipse.collections.api.iterator.LongIterator
+import org.neo4j.collection.ResourceRawIterator
 import org.neo4j.cypher.internal.runtime.ClosingIterator.MemoryTrackingEagerBatchingIterator.INIT_CHUNK_SIZE
 import org.neo4j.function.Suppliers
 import org.neo4j.io.IOUtils
@@ -287,6 +288,15 @@ object ClosingIterator {
 
   implicit class OptionAsClosingIterator[T](val option: Option[T]) {
     def asClosingIterator: ClosingIterator[T] = new DelegatingClosingIterator(option.toIterator)
+  }
+
+  implicit class ResourceRawIteratorAsClosingIterator[T](val iterator: ResourceRawIterator[T, _]) {
+
+    def asClosingIterator: ClosingIterator[T] = new ClosingIterator[T] {
+      override protected[this] def closeMore(): Unit = iterator.close()
+      override def next(): T = iterator.next()
+      override protected[this] def innerHasNext: Boolean = iterator.hasNext
+    }
   }
 
   implicit class MemoryTrackingClosingIterator[T <: Measurable](val iterator: ClosingIterator[T]) {

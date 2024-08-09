@@ -19,97 +19,77 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.neo4j.cypher.internal.frontend.phases.ProcedureSignature
 import org.neo4j.cypher.internal.runtime.ClosingIterator
-import org.neo4j.cypher.internal.runtime.ClosingIterator.ScalaSeqAsClosingIterator
+import org.neo4j.cypher.internal.runtime.ClosingIterator.ResourceRawIteratorAsClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.ProcedureCallMode
-import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.util.attribution.Id
-import org.neo4j.cypher.internal.util.symbols.CypherType
-import org.neo4j.internal.kernel.api.procs.ProcedureCallContext
-import org.neo4j.values.AnyValue
 
-object ProcedureCallRowProcessing {
+object ProcedureCallPipe {
 
-  def apply(signature: ProcedureSignature): ProcedureCallRowProcessing =
-    if (signature.isVoid) PassThroughRow else FlatMapAndAppendToRow
+  def apply(
+    id: Id,
+    source: Pipe,
+    pId: Int,
+    callMode: ProcedureCallMode,
+    args: Array[Expression],
+    outputColumns: Seq[(Int, String, String)]
+  ): ProcedureCallPipe = {
+    val (outputIndex, outputCols, origFields) = outputColumns.view.unzip3
+    new ProcedureCallPipe(source, pId, callMode, args, outputCols.toArray, outputIndex.toArray, origFields.toArray)(id)
+  }
 }
-
-sealed trait ProcedureCallRowProcessing
-
-case object FlatMapAndAppendToRow extends ProcedureCallRowProcessing
-case object PassThroughRow extends ProcedureCallRowProcessing
 
 case class ProcedureCallPipe(
   source: Pipe,
-  signature: ProcedureSignature,
+  pId: Int,
   callMode: ProcedureCallMode,
-  argExprs: Seq[Expression],
-  rowProcessing: ProcedureCallRowProcessing,
-  resultSymbols: Seq[(String, CypherType)],
-  resultIndices: Seq[(Int, (String, String))]
-)(val id: Id = Id.INVALID_ID)
-    extends PipeWithSource(source) {
-
-  private val rowProcessor = rowProcessing match {
-    case FlatMapAndAppendToRow => internalCreateResultsByAppending _
-    case PassThroughRow        => internalCreateResultsByPassingThrough _
-  }
-
-  private def createProcedureCallContext(qtx: QueryContext): ProcedureCallContext = {
-    // getting the original name of the yielded variable
-    val originalVariables = resultIndices.map(_._2._2).toArray
-    qtx.procedureCallContext(signature.id, originalVariables)
-  }
+  argExprs: Array[Expression],
+  outputColumnNames: Array[String],
+  outputResultIndex: Array[Int],
+  originalFieldNames: Array[String]
+)(val id: Id = Id.INVALID_ID) extends PipeWithSource(source) {
 
   override protected def internalCreateResults(
     input: ClosingIterator[CypherRow],
     state: QueryState
-  ): ClosingIterator[CypherRow] = rowProcessor(input, state)
-
-  private def internalCreateResultsByAppending(
-    input: ClosingIterator[CypherRow],
-    state: QueryState
   ): ClosingIterator[CypherRow] = {
     val qtx = state.query
-    val builder = Seq.newBuilder[(String, AnyValue)]
-    builder.sizeHint(resultIndices.length)
     input.flatMap { input =>
-      val argValues = argExprs.map(arg => arg(input, state)).toArray
-      val results: ClosingIterator[Array[AnyValue]] = call(
-        qtx,
-        argValues,
-        createProcedureCallContext(qtx)
-      ).asClosingIterator // always returns all items from the procedure
-      results map { resultValues =>
-        resultIndices foreach { case (k, (v, _)) =>
-          builder += v -> resultValues(k) // get the output from correct position and add store variable -> value
+      val args = argExprs.map(_.apply(input, state))
+      callMode
+        .callProcedure(qtx, pId, args, qtx.procedureCallContext(pId, originalFieldNames))
+        .asClosingIterator
+        .map { resultValues =>
+          val output = rowFactory.copyWith(input)
+          var i = 0
+          while (i < outputResultIndex.length) {
+            output.set(outputColumnNames(i), resultValues(outputResultIndex(i)))
+            i += 1
+          }
+          output
         }
-        val rowEntries = builder.result()
-        val output = rowFactory.copyWith(input, rowEntries)
-        builder.clear()
-        output
-      }
     }
   }
+}
 
-  private def call(
-    qtx: QueryContext,
-    argValues: Array[AnyValue],
-    context: ProcedureCallContext
-  ): Iterator[Array[AnyValue]] =
-    callMode.callProcedure(qtx, signature.id, argValues, context)
+case class VoidProcedureCallPipe(
+  source: Pipe,
+  pId: Int,
+  callMode: ProcedureCallMode,
+  argExprs: Array[Expression],
+  originalFieldNames: Array[String]
+)(val id: Id = Id.INVALID_ID) extends PipeWithSource(source) {
 
-  private def internalCreateResultsByPassingThrough(
+  override protected def internalCreateResults(
     input: ClosingIterator[CypherRow],
     state: QueryState
   ): ClosingIterator[CypherRow] = {
     val qtx = state.query
     input map { input =>
-      val argValues = argExprs.map(arg => arg(input, state)).toArray
-      val results = call(qtx, argValues, createProcedureCallContext(qtx))
+      val args = argExprs.map(arg => arg(input, state))
+      val results = callMode.callProcedure(qtx, pId, args, qtx.procedureCallContext(pId, originalFieldNames))
       // the iterator here should be empty; we'll drain just in case
       while (results.hasNext) results.next()
       input

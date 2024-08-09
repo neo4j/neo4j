@@ -20,6 +20,7 @@
 package org.neo4j.fabric
 
 import org.neo4j.collection.RawIterator
+import org.neo4j.collection.ResourceRawIterator
 import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.compiler.helpers.ProcedureLookup
 import org.neo4j.cypher.internal.compiler.helpers.SignatureResolver
@@ -149,8 +150,8 @@ trait ProcedureSignatureResolverTestSupport {
         ctx: Context,
         input: Array[AnyValue],
         resourceMonitor: ResourceMonitor
-      ): RawIterator[Array[AnyValue], ProcedureException] =
-        RawIterator.of(values: _*)
+      ): ResourceRawIterator[Array[AnyValue], ProcedureException] =
+        ResourceRawIterator.of(values: _*)
     }
   }
 

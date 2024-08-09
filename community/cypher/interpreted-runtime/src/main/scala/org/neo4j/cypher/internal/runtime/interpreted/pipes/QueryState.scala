@@ -399,8 +399,6 @@ trait CypherRowFactory {
 
   def copyWith(row: ReadableRow): CypherRow
 
-  def copyWith(row: ReadableRow, newEntries: Seq[(String, AnyValue)]): CypherRow
-
   def copyWith(row: ReadableRow, key: String, value: AnyValue): CypherRow
 
   def copyWith(row: ReadableRow, key1: String, value1: AnyValue, key2: String, value2: AnyValue): CypherRow
@@ -426,12 +424,6 @@ case class CommunityCypherRowFactory() extends CypherRowFactory {
   override def copyWith(row: ReadableRow): CypherRow = row match {
     case context: MapCypherRow =>
       context.createClone()
-  }
-
-  // Not using polymorphism here, instead cast since the cost of being megamorhpic is too high
-  override def copyWith(row: ReadableRow, newEntries: Seq[(String, AnyValue)]): CypherRow = row match {
-    case context: MapCypherRow =>
-      context.copyWith(newEntries)
   }
 
   // Not using polymorphism here, instead cast since the cost of being megamorhpic is too high

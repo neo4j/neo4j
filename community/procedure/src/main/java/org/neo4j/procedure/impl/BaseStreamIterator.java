@@ -23,8 +23,7 @@ import static org.apache.commons.lang3.exception.ExceptionUtils.getRootCause;
 
 import java.util.Iterator;
 import java.util.stream.Stream;
-import org.neo4j.collection.RawIterator;
-import org.neo4j.graphdb.Resource;
+import org.neo4j.collection.ResourceRawIterator;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.io.IOUtils;
@@ -37,7 +36,7 @@ import org.neo4j.values.AnyValue;
  * Base iterator class used extended by generated code to map from procedure streams
  */
 @SuppressWarnings("WeakerAccess")
-public abstract class BaseStreamIterator implements RawIterator<AnyValue[], ProcedureException>, Resource {
+public abstract class BaseStreamIterator implements ResourceRawIterator<AnyValue[], ProcedureException> {
     private final Iterator<?> out;
     private Stream<?> stream;
     private final ResourceMonitor resourceMonitor;

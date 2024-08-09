@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.spec.tests
 
-import org.neo4j.collection.RawIterator
+import org.neo4j.collection.ResourceRawIterator
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
@@ -60,9 +60,9 @@ abstract class ProcedureCallTestBase[CONTEXT <: RuntimeContext](
         ctx: Context,
         input: Array[AnyValue],
         resourceMonitor: ResourceMonitor
-      ): RawIterator[Array[AnyValue], ProcedureException] = {
+      ): ResourceRawIterator[Array[AnyValue], ProcedureException] = {
         testVar.addAndGet(1)
-        RawIterator.empty[Array[AnyValue], ProcedureException]()
+        ResourceRawIterator.empty[Array[AnyValue], ProcedureException]()
       }
     },
     new BasicProcedure(
@@ -73,9 +73,9 @@ abstract class ProcedureCallTestBase[CONTEXT <: RuntimeContext](
         ctx: Context,
         input: Array[AnyValue],
         resourceMonitor: ResourceMonitor
-      ): RawIterator[Array[AnyValue], ProcedureException] = {
+      ): ResourceRawIterator[Array[AnyValue], ProcedureException] = {
         ctx.graphDatabaseAPI().executeTransactionally("CREATE (n:INPROC)")
-        RawIterator.empty[Array[AnyValue], ProcedureException]()
+        ResourceRawIterator.empty[Array[AnyValue], ProcedureException]()
       }
     },
     new BasicProcedure(
@@ -89,9 +89,9 @@ abstract class ProcedureCallTestBase[CONTEXT <: RuntimeContext](
         ctx: Context,
         input: Array[AnyValue],
         resourceMonitor: ResourceMonitor
-      ): RawIterator[Array[AnyValue], ProcedureException] = {
+      ): ResourceRawIterator[Array[AnyValue], ProcedureException] = {
         ctx.graphDatabaseAPI().executeTransactionally("CREATE (n:INPROC)")
-        RawIterator.of[Array[AnyValue], ProcedureException](Array(Values.of(42)), Array(Values.of(42)))
+        ResourceRawIterator.of[Array[AnyValue], ProcedureException](Array(Values.of(42)), Array(Values.of(42)))
       }
     },
     new BasicProcedure(ProcedureSignature.procedureSignature(new QualifiedName("readIntProc")).mode(Mode.READ).out(
@@ -103,9 +103,12 @@ abstract class ProcedureCallTestBase[CONTEXT <: RuntimeContext](
         ctx: Context,
         input: Array[AnyValue],
         resourceMonitor: ResourceMonitor
-      ): RawIterator[Array[AnyValue], ProcedureException] = {
+      ): ResourceRawIterator[Array[AnyValue], ProcedureException] = {
         val testVarInt = testVar.addAndGet(1)
-        RawIterator.of[Array[AnyValue], ProcedureException](Array(Values.of(testVarInt)), Array(Values.of(testVarInt)))
+        ResourceRawIterator.of[Array[AnyValue], ProcedureException](
+          Array(Values.of(testVarInt)),
+          Array(Values.of(testVarInt))
+        )
       }
     },
     new BasicProcedure(ProcedureSignature.procedureSignature(new QualifiedName("readIntIntProc")).mode(Mode.READ).in(
@@ -117,9 +120,9 @@ abstract class ProcedureCallTestBase[CONTEXT <: RuntimeContext](
         ctx: Context,
         input: Array[AnyValue],
         resourceMonitor: ResourceMonitor
-      ): RawIterator[Array[AnyValue], ProcedureException] = {
+      ): ResourceRawIterator[Array[AnyValue], ProcedureException] = {
         def twice(v: AnyValue): AnyValue = v.asInstanceOf[NumberValue].times(2L)
-        RawIterator.of[Array[AnyValue], ProcedureException](input.map(twice), input.map(twice))
+        ResourceRawIterator.of[Array[AnyValue], ProcedureException](input.map(twice), input.map(twice))
       }
     },
     new BasicProcedure(ProcedureSignature.procedureSignature(new QualifiedName("cardinalityIncreasingProc")).mode(
@@ -130,10 +133,10 @@ abstract class ProcedureCallTestBase[CONTEXT <: RuntimeContext](
         ctx: Context,
         input: Array[AnyValue],
         resourceMonitor: ResourceMonitor
-      ): RawIterator[Array[AnyValue], ProcedureException] = {
+      ): ResourceRawIterator[Array[AnyValue], ProcedureException] = {
 
         val nElemants = input.head.asInstanceOf[NumberValue].longValue().intValue()
-        RawIterator.of[Array[AnyValue], ProcedureException]((1 to nElemants).map(i =>
+        ResourceRawIterator.of[Array[AnyValue], ProcedureException]((1 to nElemants).map(i =>
           Array[AnyValue](Values.intValue(i))
         ): _*)
       }
@@ -148,8 +151,8 @@ abstract class ProcedureCallTestBase[CONTEXT <: RuntimeContext](
         ctx: Context,
         input: Array[AnyValue],
         resourceMonitor: ResourceMonitor
-      ): RawIterator[Array[AnyValue], ProcedureException] = {
-        RawIterator.of[Array[AnyValue], ProcedureException](input)
+      ): ResourceRawIterator[Array[AnyValue], ProcedureException] = {
+        ResourceRawIterator.of[Array[AnyValue], ProcedureException](input)
       }
     },
     new BasicProcedure(
@@ -163,8 +166,8 @@ abstract class ProcedureCallTestBase[CONTEXT <: RuntimeContext](
         ctx: Context,
         input: Array[AnyValue],
         resourceMonitor: ResourceMonitor
-      ): RawIterator[Array[AnyValue], ProcedureException] = {
-        RawIterator.of[Array[AnyValue], ProcedureException](
+      ): ResourceRawIterator[Array[AnyValue], ProcedureException] = {
+        ResourceRawIterator.of[Array[AnyValue], ProcedureException](
           Array[AnyValue](Values.stringValue(ctx.procedureCallContext().cypherRuntimeName()))
         )
       }

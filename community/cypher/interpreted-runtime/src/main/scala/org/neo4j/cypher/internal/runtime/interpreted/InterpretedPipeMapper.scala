@@ -304,7 +304,6 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.Pipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.PipeMapper
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.ProberPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.ProcedureCallPipe
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.ProcedureCallRowProcessing
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.ProduceResultsPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.ProjectEndpointsPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.ProjectionPipe
@@ -357,6 +356,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.UnwindPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.ValueHashJoinPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.VarLengthExpandPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.VarLengthPredicate
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.VoidProcedureCallPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation.GroupingAggTable
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation.NonGroupingAggTable
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation.OrderedGroupingAggTable
@@ -1579,20 +1579,31 @@ case class InterpretedPipeMapper(
 
       case ProcedureCall(_, call @ ResolvedCall(signature, callArguments, _, _, _, _)) =>
         val callMode = ProcedureCallMode.fromAccessMode(signature.accessMode)
-        val callArgumentCommands =
-          callArguments.map(Some(_)).zipAll(signature.inputSignature.map(_.default), None, None).map {
-            case (givenArg, default) => givenArg.map(buildExpression).getOrElse(Literal(default.get))
+        val callArgumentCommands: Array[Expression] = callArguments
+          .map(Some(_))
+          .zipAll(signature.inputSignature.map(_.default), None, None)
+          .map { case (givenArg, default) =>
+            givenArg.map(buildExpression).getOrElse(Literal(default.get))
           }
-        val rowProcessing = ProcedureCallRowProcessing(signature)
-        ProcedureCallPipe(
-          source,
-          signature,
-          callMode,
-          callArgumentCommands,
-          rowProcessing,
-          call.callResultTypes,
-          call.callResultIndices
-        )(id = id)
+          .toArray
+        val resultIndices = call.callResultIndices
+        if (signature.isVoid)
+          VoidProcedureCallPipe(
+            source,
+            signature.id,
+            callMode,
+            callArgumentCommands,
+            resultIndices.view.map { case (_, _, oldName) => oldName }.toArray
+          )(id = id)
+        else
+          ProcedureCallPipe(
+            id,
+            source,
+            signature.id,
+            callMode,
+            callArgumentCommands,
+            resultIndices
+          )
 
       // `parameterMapping` already contains the parameters defined in `RunQueryAt`, we can ignore them here.
       // `importsAsParameters` need to be created here, to forward value imported in sub-queries to the component DB.
