@@ -59,6 +59,13 @@ class Cypher6PrettifierTCKTest extends PrettifierTCKTestBase {
 
   override protected def parseStatements(query: String): Statement =
     AstParserFactory(CypherVersion.Cypher6)(query, Neo4jCypherExceptionFactory(query, None), None).singleStatement()
+
+  override def denylist(): Seq[DenylistEntry] = super.denylist() ++ Seq(
+    // Parser changes for Cypher 6
+    """Feature "LiteralAcceptance": Scenario "Fail on a hexadecimal number with underscore in prefix"""",
+    """Feature "LiteralAcceptance": Scenario "Fail on an deprecated octal number syntax with underscore"""",
+    """Feature "LiteralAcceptance": Scenario "Fail on an octal number with underscore in prefix""""
+  ).map(DenylistEntry.apply)
 }
 
 class PrettifierJavaCcTCKTest extends PrettifierTCKTestBase {

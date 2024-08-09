@@ -22,7 +22,9 @@ import org.neo4j.cypher.internal.ast.factory.expression.LiteralsParserTest.escap
 import org.neo4j.cypher.internal.ast.factory.expression.LiteralsParserTest.genCodepoint
 import org.neo4j.cypher.internal.ast.factory.expression.LiteralsParserTest.genCypherUnicodeEscape
 import org.neo4j.cypher.internal.ast.factory.expression.LiteralsParserTest.toCypherHex
+import org.neo4j.cypher.internal.ast.test.util.AstParsing.Cypher5
 import org.neo4j.cypher.internal.ast.test.util.AstParsing.Cypher5JavaCc
+import org.neo4j.cypher.internal.ast.test.util.AstParsing.Cypher6
 import org.neo4j.cypher.internal.ast.test.util.AstParsingTestBase
 import org.neo4j.cypher.internal.expressions.DecimalDoubleLiteral
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
@@ -56,14 +58,22 @@ class LiteralsParserTest extends AstParsingTestBase
       i should parseTo[NumberLiteral](SignedDecimalIntegerLiteral(i)(pos))
     }
 
-    val validOctalInts = Seq("0234", "-0234", "01", "0o1", "0_2")
-    for (o <- validOctalInts) {
-      o should parseTo[NumberLiteral](SignedOctalIntegerLiteral(o)(pos))
+    val validOctalIntsCypher5 = Seq("0234", "0o234", "-0o234", "-0234", "01", "0o1", "0_2", "0o_2")
+    val validOctalIntsCypher6 = Seq("0o234", "-0o234", "0o1", "0o_2")
+    for (o <- validOctalIntsCypher5) {
+      o should parseIn[NumberLiteral] {
+        case Cypher6 if !validOctalIntsCypher6.contains(o) => _.withMessageStart("""Invalid input""".stripMargin)
+        case _                                             => _.toAst(SignedOctalIntegerLiteral(o)(pos))
+      }
     }
 
-    val validHexInts = Seq("0x1", "0X1", "0xffff", "-0x45FG")
-    for (h <- validHexInts) {
-      h should parseTo[NumberLiteral](SignedHexIntegerLiteral(h)(pos))
+    val validHexIntsCypher5 = Seq("0x1", "0X1", "0xffff", "-0x45FG")
+    val validHexIntsCypher6 = Seq("0x1", "0xffff", "-0x45FG")
+    for (h <- validHexIntsCypher5) {
+      h should parseIn[NumberLiteral] {
+        case Cypher6 if !validHexIntsCypher6.contains(h) => _.withMessageStart("""Invalid input""".stripMargin)
+        case _                                           => _.toAst(SignedHexIntegerLiteral(h)(pos))
+      }
     }
 
     val validDoubles = Seq(
@@ -109,10 +119,15 @@ class LiteralsParserTest extends AstParsingTestBase
     )
     "RETURN 0_.0" should notParse[Statements].in {
       case Cypher5JavaCc => _.withMessageStart("Invalid input '.0'")
-      case _ => _.withSyntaxError(
+      case Cypher5 => _.withSyntaxError(
           """Invalid input '.0': expected an expression, 'FOREACH', ',', 'AS', 'ORDER BY', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'LIMIT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'SKIP', 'UNION', 'UNWIND', 'USE', 'WITH' or <EOF> (line 1, column 10 (offset: 9))
             |"RETURN 0_.0"
             |          ^""".stripMargin
+        )
+      case Cypher6 => _.withSyntaxError(
+          """Invalid input '_': expected an expression, 'FOREACH', ',', 'AS', 'ORDER BY', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'LIMIT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'SKIP', 'UNION', 'UNWIND', 'USE', 'WITH' or <EOF> (line 1, column 9 (offset: 8))
+            |"RETURN 0_.0"
+            |         ^""".stripMargin
         )
     }
     "RETURN 1_._1" should parseTo[Statements](
@@ -147,10 +162,15 @@ class LiteralsParserTest extends AstParsingTestBase
 
     "$0_2" should notParse[Parameter].in {
       case Cypher5JavaCc => _.withMessageStart("Encountered")
-      case _ => _.withSyntaxError(
+      case Cypher5 => _.withSyntaxError(
           """Invalid input '0_2': expected an identifier or an integer value (line 1, column 2 (offset: 1))
             |"$0_2"
             |  ^""".stripMargin
+        )
+      case Cypher6 => _.withSyntaxError(
+          """Invalid input '_2' (line 1, column 3 (offset: 2))
+            |"$0_2"
+            |   ^""".stripMargin
         )
     }
     "return $1.0f" should notParse[Statements].in {

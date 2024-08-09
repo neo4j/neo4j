@@ -74,11 +74,11 @@ fragment INTEGER_PART
    ;
 
 UNSIGNED_HEX_INTEGER
-   : '0' [xX] (PART_LETTER)*
+   : '0x' (PART_LETTER)*
    ;
 
 UNSIGNED_OCTAL_INTEGER
-   : '0' ('o')? (PART_LETTER)*
+   : '0o' (PART_LETTER)*
    ;
 
 STRING_LITERAL1
