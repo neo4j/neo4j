@@ -1894,21 +1894,53 @@ public class Operations implements Write, SchemaWrite, Upgrade {
             throw new IllegalStateException("Expected constraint to always have a name by this point");
         }
 
-        // Equivalent constraint
         final List<ConstraintDescriptor> constraintsWithSameSchema =
                 Iterators.asList(schemaRead.constraintsGetForSchema(constraint.schema()));
-        for (ConstraintDescriptor constraintWithSameSchema : constraintsWithSameSchema) {
-            if (constraint.equals(constraintWithSameSchema)
-                    && constraint.getName().equals(constraintWithSameSchema.getName())) {
-                throw new EquivalentSchemaRuleAlreadyExistsException(
-                        constraintWithSameSchema, CONSTRAINT_CREATION, token);
+
+        assertNoEquivalentConstraintExist(constraint, constraintsWithSameSchema);
+        assertSchemaRuleWithNameDoesNotExist(name);
+        assertNoConflictingConstraints(constraint, constraintsWithSameSchema);
+        assertNotAlreadyIndexed(constraint);
+        assertConstraintNotBackedBySimilarIndexDroppedInThisTx(constraint);
+    }
+
+    private void assertConstraintNotBackedBySimilarIndexDroppedInThisTx(ConstraintDescriptor constraint) {
+        // We cannot allow this because if we crash while new backing index
+        // is being populated we will end up with two indexes on the same schema and type.
+        if (constraint.isIndexBackedConstraint() && ktx.hasTxStateWithChanges()) {
+            for (ConstraintDescriptor droppedConstraint :
+                    ktx.txState().constraintsChanges().getRemoved()) {
+                // If dropped and new constraint have similar backing index we cannot allow this constraint creation
+                if (droppedConstraint.isIndexBackedConstraint()
+                        && constraint.schema().equals(droppedConstraint.schema())
+                        && droppedConstraint.asIndexBackedConstraint().indexType()
+                                == constraint.asIndexBackedConstraint().indexType()) {
+                    throw new UnsupportedOperationException(format(
+                            "Trying to create constraint '%s' in same transaction as dropping '%s'. "
+                                    + "This is not supported because they are both backed by similar indexes. "
+                                    + "Please drop constraint in a separate transaction before creating the new one.",
+                            constraint.getName(), droppedConstraint.getName()));
+                }
             }
         }
+    }
 
-        // Name conflict with other schema rule
-        assertSchemaRuleWithNameDoesNotExist(name);
+    private void assertNotAlreadyIndexed(ConstraintDescriptor constraint) throws AlreadyIndexedException {
+        // A node-key or uniqueness constraint with relationship schema is not counted as index-backed so we don't check
+        // blocking indexes for them. But that will fail later anyway since we don't support such constraints.
+        if (constraint.isIndexBackedConstraint()) {
+            IndexDescriptor existingIndex = schemaRead.index(
+                    constraint.schema(), constraint.asIndexBackedConstraint().indexType());
+            // An index of the same type on the schema blocks constraint creation.
+            if (existingIndex != IndexDescriptor.NO_INDEX) {
+                throw new AlreadyIndexedException(existingIndex.schema(), CONSTRAINT_CREATION, token);
+            }
+        }
+    }
 
-        // Already constrained
+    private void assertNoConflictingConstraints(
+            ConstraintDescriptor constraint, List<ConstraintDescriptor> constraintsWithSameSchema)
+            throws ConflictingConstraintException, AlreadyConstrainedException {
         for (ConstraintDescriptor constraintWithSameSchema : constraintsWithSameSchema) {
             // For Type Constraints, verify that no prior constraints conflict with the addition.
             if (constraint.isPropertyTypeConstraint()
@@ -1931,36 +1963,16 @@ public class Operations implements Write, SchemaWrite, Upgrade {
                 }
             }
         }
+    }
 
-        // Already indexed
-        // A node-key or uniqueness constraint with relationship schema is not counted as index-backed so we don't check
-        // blocking indexes for them. But that will fail later anyway since we don't support such constraints.
-        if (constraint.isIndexBackedConstraint()) {
-            IndexDescriptor existingIndex = schemaRead.index(
-                    constraint.schema(), constraint.asIndexBackedConstraint().indexType());
-            // An index of the same type on the schema blocks constraint creation.
-            if (existingIndex != IndexDescriptor.NO_INDEX) {
-                throw new AlreadyIndexedException(existingIndex.schema(), CONSTRAINT_CREATION, token);
-            }
-        }
-
-        // Constraint backed by similar index dropped in this transaction.
-        // We cannot allow this because if we crash while new backing index
-        // is being populated we will end up with two indexes on the same schema and type.
-        if (constraint.isIndexBackedConstraint() && ktx.hasTxStateWithChanges()) {
-            for (ConstraintDescriptor droppedConstraint :
-                    ktx.txState().constraintsChanges().getRemoved()) {
-                // If dropped and new constraint have similar backing index we cannot allow this constraint creation
-                if (droppedConstraint.isIndexBackedConstraint()
-                        && constraint.schema().equals(droppedConstraint.schema())
-                        && droppedConstraint.asIndexBackedConstraint().indexType()
-                                == constraint.asIndexBackedConstraint().indexType()) {
-                    throw new UnsupportedOperationException(format(
-                            "Trying to create constraint '%s' in same transaction as dropping '%s'. "
-                                    + "This is not supported because they are both backed by similar indexes. "
-                                    + "Please drop constraint in a separate transaction before creating the new one.",
-                            constraint.getName(), droppedConstraint.getName()));
-                }
+    private void assertNoEquivalentConstraintExist(
+            ConstraintDescriptor constraint, List<ConstraintDescriptor> constraintsWithSameSchema)
+            throws EquivalentSchemaRuleAlreadyExistsException {
+        for (ConstraintDescriptor constraintWithSameSchema : constraintsWithSameSchema) {
+            if (constraint.equals(constraintWithSameSchema)
+                    && constraint.getName().equals(constraintWithSameSchema.getName())) {
+                throw new EquivalentSchemaRuleAlreadyExistsException(
+                        constraintWithSameSchema, CONSTRAINT_CREATION, token);
             }
         }
     }
