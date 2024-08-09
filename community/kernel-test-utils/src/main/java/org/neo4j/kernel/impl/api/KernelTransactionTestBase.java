@@ -34,6 +34,7 @@ import static org.neo4j.kernel.api.exceptions.Status.Transaction.TransactionTime
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.TransactionTimedOutClientConfiguration;
 import static org.neo4j.kernel.database.DatabaseIdFactory.from;
 import static org.neo4j.kernel.impl.api.transaction.serial.DatabaseSerialGuard.EMPTY_GUARD;
+import static org.neo4j.storageengine.AppendIndexProvider.BASE_APPEND_INDEX;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -102,7 +103,6 @@ import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageEngineTransaction;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
-import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.api.enrichment.ApplyEnrichmentStrategy;
 import org.neo4j.storageengine.api.enrichment.EnrichmentMode;
@@ -286,7 +286,7 @@ class KernelTransactionTestBase {
     }
 
     public static class CapturingCommitProcess implements TransactionCommitProcess {
-        private long txId = TransactionIdStore.BASE_TX_ID;
+        private long appendIndex = BASE_APPEND_INDEX;
         public List<CommandBatch> transactions = new ArrayList<>();
 
         @Override
@@ -295,7 +295,7 @@ class KernelTransactionTestBase {
                 TransactionWriteEvent transactionWriteEvent,
                 TransactionApplicationMode mode) {
             transactions.add(batch.commandBatch());
-            return ++txId;
+            return ++appendIndex;
         }
     }
 

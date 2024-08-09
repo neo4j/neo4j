@@ -26,9 +26,9 @@ import org.neo4j.storageengine.api.StorageEngineTransaction;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 
 /**
- * This interface represents the contract for committing a batch of transactions. While the concept of a transaction is
- * captured in {@link CommandBatch}, commit requires some more information to proceed, since a transaction
- * can come from various sources (normal commit, recovery etc) each of which can be committed but requires
+ * This interface represents the contract for committing a batch of commands. While the concept of a command batch is
+ * captured in {@link CommandBatch}, commit requires some more information to proceed, since a command batch
+ * can come from various sources (plain commit, chunked commit. recovery etc) each of which can be committed but requires
  * different/additional handling.
  *
  * A simple implementation of this would be to append to a log and then apply the commands of the representation
@@ -36,13 +36,13 @@ import org.neo4j.storageengine.api.TransactionApplicationMode;
  */
 public interface TransactionCommitProcess {
     /**
-     * Commit a batch of transactions. After this method returns the batch of transaction should be committed
+     * Commit a batch of commands. After this method returns the batch of commands should be committed
      * durably and be recoverable in the event of failure after this point.
      *
-     * @param batch transactions to commit.
+     * @param batch batch of commands to commit.
      * @param transactionWriteEvent {@link TransactionWriteEvent} for traceability.
      * @param mode The {@link TransactionApplicationMode} to use when applying these transactions.
-     * @return transaction id of the last committed transaction in this batch.
+     * @return append index of the last committed command batch in the provided batch.
      * @throws TransactionFailureException If the commit process fails.
      */
     long commit(
