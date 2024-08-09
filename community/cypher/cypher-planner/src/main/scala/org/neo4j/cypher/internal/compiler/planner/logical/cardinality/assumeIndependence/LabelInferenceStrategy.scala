@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.ir.NodeConnection
 import org.neo4j.cypher.internal.ir.PatternRelationship
+import org.neo4j.cypher.internal.ir.helpers.CachedFunction
 import org.neo4j.cypher.internal.options.CypherInferSchemaPartsOption
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.spi.PlanContext
@@ -97,6 +98,10 @@ object LabelInferenceStrategy {
 
   private class InferOnlyIfNoOtherLabel(planContext: PlanContext) extends LabelInferenceStrategy {
 
+    private val cachedMostCommonLabelGivenRelationshipType: RelTypeId => Seq[Int] = CachedFunction {
+      relTypeId => planContext.statistics.mostCommonLabelGivenRelationshipType(relTypeId.id)
+    }
+
     private def inferLabelsForNodeConnection(
       nodeConnection: NodeConnection,
       semanticTable: SemanticTable
@@ -104,15 +109,17 @@ object LabelInferenceStrategy {
       val simpleRelationships = SimpleRelationship.fromNodeConnection(nodeConnection, semanticTable)
       simpleRelationships.size match {
         case 0 => Seq.empty
-        case 1 => simpleRelationships.head.inferLabels(planContext)
+        case 1 => simpleRelationships.head.inferLabels(planContext, cachedMostCommonLabelGivenRelationshipType)
         case _ =>
           // Populate intersectionInferredLabels with the inferred labels from the first simpleRelationship
-          var intersectionInferredLabels = simpleRelationships.head.inferLabels(planContext)
+          var intersectionInferredLabels =
+            simpleRelationships.head.inferLabels(planContext, cachedMostCommonLabelGivenRelationshipType)
           // Continue with the other simpleRelationships
           // Stop when the intersection is empty, or when all simpleRelationships have been processed
           (1 until simpleRelationships.size).foreach(i => {
             if (intersectionInferredLabels.nonEmpty) {
-              val inferredLabelsForSimpleRelationship = simpleRelationships(i).inferLabels(planContext)
+              val inferredLabelsForSimpleRelationship =
+                simpleRelationships(i).inferLabels(planContext, cachedMostCommonLabelGivenRelationshipType)
               intersectionInferredLabels = intersectionInferredLabels intersect inferredLabelsForSimpleRelationship
             }
           })
@@ -203,9 +210,12 @@ object LabelInferenceStrategy {
       ).flatten
     }
 
-    def inferLabels(planContext: PlanContext): Seq[SimpleRelationship.InferredLabel] = {
+    def inferLabels(
+      planContext: PlanContext,
+      mostCommonLabelGivenRelationshipType: RelTypeId => Seq[Int]
+    ): Seq[SimpleRelationship.InferredLabel] = {
       for {
-        mostCommonLabelId <- planContext.statistics.mostCommonLabelGivenRelationshipType(this.relationshipType.id)
+        mostCommonLabelId <- mostCommonLabelGivenRelationshipType(this.relationshipType)
 
         // Get the nodes where adding the label does not restrict the cardinality
         // (this could be the start node, end node, both or none)
