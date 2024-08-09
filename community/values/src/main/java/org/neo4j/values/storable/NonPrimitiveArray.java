@@ -77,11 +77,11 @@ public abstract class NonPrimitiveArray<T extends Comparable<? super T>> extends
 
     final int compareToNonPrimitiveArray(NonPrimitiveArray<T> other) {
         int compare = 0;
-        int length = Math.min(this.length(), other.length());
+        int length = Math.min(this.intSize(), other.intSize());
         for (int index = 0; compare == 0 && index < length; index++) {
             compare = this.value()[index].compareTo(other.value()[index]);
         }
-        return compare == 0 ? Integer.compare(this.length(), other.length()) : compare;
+        return compare == 0 ? Integer.compare(this.intSize(), other.intSize()) : compare;
     }
 
     @Override
@@ -91,7 +91,7 @@ public abstract class NonPrimitiveArray<T extends Comparable<? super T>> extends
 
     @Override
     public long updateHash(HashFunction hashFunction, long hash) {
-        hash = hashFunction.update(hash, length());
+        hash = hashFunction.update(hash, this.intSize());
         for (T obj : value()) {
             hash = hashFunction.update(hash, obj.hashCode());
         }
@@ -99,7 +99,7 @@ public abstract class NonPrimitiveArray<T extends Comparable<? super T>> extends
     }
 
     @Override
-    public final int length() {
+    public final int intSize() {
         return value().length;
     }
 

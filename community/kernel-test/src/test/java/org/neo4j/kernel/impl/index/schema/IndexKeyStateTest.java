@@ -801,7 +801,7 @@ abstract class IndexKeyStateTest<KEY extends GenericKey<KEY>> {
 
         int arrayLength = 0;
         if (value instanceof ArrayValue) {
-            arrayLength = ((ArrayValue) value).length();
+            arrayLength = ((ArrayValue) value).intSize();
         }
 
         int normalArrayOverhead = 3;
@@ -1159,7 +1159,7 @@ abstract class IndexKeyStateTest<KEY extends GenericKey<KEY>> {
             Value value, int actualSizeOfData, int normalArrayOverhead, String typeName) {
         if (value instanceof TextArray stringArray) {
             int sumOfStrings = 0;
-            for (int i = 0; i < stringArray.length(); i++) {
+            for (int i = 0; i < stringArray.intSize(); i++) {
                 String string = stringArray.stringValue(i);
                 sumOfStrings += 2 + string.getBytes(UTF_8).length;
             }

@@ -88,12 +88,12 @@ class GenericIndexKeyValidator implements IndexValueValidator {
             SequenceValue sequenceValue = (SequenceValue) value;
             if (sequenceValue instanceof TextArray textArray) {
                 int length = 0;
-                for (int i = 0; i < textArray.length(); i++) {
+                for (int i = 0; i < textArray.intSize(); i++) {
                     length += stringWorstCaseLength(textArray.stringValue(i).length());
                 }
                 return length;
             }
-            return sequenceValue.length() * BIGGEST_STATIC_SIZE;
+            return sequenceValue.intSize() * BIGGEST_STATIC_SIZE;
         } else {
             if (((Value) value).valueGroup().category() == ValueCategory.TEXT) {
                 // For text, which is very dynamic in its nature do a worst-case off of number of characters in it

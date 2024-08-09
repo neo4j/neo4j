@@ -68,7 +68,7 @@ public class TransactionIndependentValueMapper extends DefaultValueMapper {
 
     @Override
     public List<?> mapSequence(SequenceValue value) {
-        List<Object> list = new ArrayList<>(value.length());
+        List<Object> list = new ArrayList<>(value.intSize());
         value.forEach(v -> {
             if (v instanceof NodeValue || v instanceof RelationshipValue) {
                 try {

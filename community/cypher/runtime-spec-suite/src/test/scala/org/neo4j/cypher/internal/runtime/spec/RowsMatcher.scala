@@ -597,8 +597,8 @@ object SortListValueMapper extends ValueMapper[AnyValue] {
   override def mapNoValue(): AnyValue = Values.NO_VALUE
 
   override def mapSequence(seq: SequenceValue): AnyValue = {
-    val array = new Array[AnyValue](seq.length())
-    for (i <- 0 until seq.length()) {
+    val array = new Array[AnyValue](seq.intSize())
+    for (i <- 0 until seq.intSize()) {
       array(i) = seq.value(i).map(this)
     }
     java.util.Arrays.sort(array, AnyValues.COMPARATOR)

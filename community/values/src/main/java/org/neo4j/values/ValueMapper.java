@@ -246,7 +246,7 @@ public interface ValueMapper<Base> {
 
         @Override
         public List<?> mapSequence(SequenceValue value) {
-            final var size = value.length();
+            final var size = value.intSize();
             final var list = new ArrayList<>(size);
             if (value.iterationPreference() == SequenceValue.IterationPreference.RANDOM_ACCESS) {
                 for (int i = 0; i < size; ++i) list.add(value.value(i).map(this));

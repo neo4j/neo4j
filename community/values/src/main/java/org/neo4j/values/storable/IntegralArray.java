@@ -44,7 +44,7 @@ public abstract class IntegralArray extends NumberArray {
 
     @Override
     public long updateHash(HashFunction hashFunction, long hash) {
-        int len = length();
+        int len = intSize();
         hash = hashFunction.update(hash, len);
         for (int i = 0; i < len; i++) {
             hash = hashFunction.update(hash, longValue(i));

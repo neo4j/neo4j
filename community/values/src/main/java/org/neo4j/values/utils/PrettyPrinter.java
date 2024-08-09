@@ -107,7 +107,7 @@ public class PrettyPrinter implements AnyValueWriter<RuntimeException> {
         append("(elementId=");
         append(elementId);
         String sep = " ";
-        for (int i = 0; i < labels.length(); i++) {
+        for (int i = 0; i < labels.intSize(); i++) {
             append(sep);
             append(":");
             append(labels.stringValue(i));

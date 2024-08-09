@@ -348,12 +348,12 @@ public class VectorTestUtils {
                         return objectComparator.compare(lhs, rhs);
                     }
 
-                    var comparison = Integer.compare(lhsSequence.length(), rhsSequence.length());
+                    var comparison = Integer.compare(lhsSequence.intSize(), rhsSequence.intSize());
                     if (comparison != 0) {
                         return comparison;
                     }
 
-                    for (int i = 0; i < lhsSequence.length(); i++) {
+                    for (int i = 0; i < lhsSequence.intSize(); i++) {
                         final var lhsElement = lhsSequence.value(i);
                         final var rhsElement = rhsSequence.value(i);
 
@@ -441,7 +441,7 @@ public class VectorTestUtils {
     }
 
     private static ListValue convertEvenElementsToStringValues(ArrayValue arrayValue) {
-        final var array = new AnyValue[arrayValue.length()];
+        final var array = new AnyValue[arrayValue.intSize()];
         for (int i = 0; i < array.length; i++) {
             final var value = (Value) arrayValue.value(i);
             array[i] = (i & 1) == 0 ? Values.stringValue(value.prettyPrint()) : value;
@@ -470,7 +470,7 @@ public class VectorTestUtils {
             PRIMITIVE_ARRAY {
                 @Override
                 ListValue toListValue(ArrayValue arrayValue) {
-                    final var array = new AnyValue[arrayValue.length()];
+                    final var array = new AnyValue[arrayValue.intSize()];
                     for (int i = 0; i < array.length; i++) {
                         array[i] = arrayValue.value(i);
                     }
@@ -481,7 +481,7 @@ public class VectorTestUtils {
             LIST {
                 @Override
                 ListValue toListValue(ArrayValue arrayValue) {
-                    final var list = new ArrayList<AnyValue>(arrayValue.length());
+                    final var list = new ArrayList<AnyValue>(arrayValue.intSize());
                     for (final var element : arrayValue) {
                         list.add(element);
                     }

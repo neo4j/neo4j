@@ -81,7 +81,7 @@ object ParameterValueTypeHelper {
         // NOTE: we need to preserve inner type for Strings since that allows us to use the text index, for other types
         //       we would end up with the same plan anyway so there is no need to keep the inner type.
         val typ = if (l.itemValueRepresentation().valueGroup() == ValueGroup.TEXT) CTList(CTString) else CTList(CTAny)
-        if (useSizeHint) info(typ, l.size())
+        if (useSizeHint) info(typ, l.intSize())
         else ParameterTypeInfo(typ, UnknownSize)
       case _ => ANY
     }

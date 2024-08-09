@@ -213,7 +213,7 @@ abstract class RandomValuesTest {
             Set<Class<? extends AnyValue>> seen = new HashSet<>(TYPES);
             while (!seen.isEmpty()) {
                 ArrayValue arrayValue = randomValues.nextArray();
-                assertThat(arrayValue.length()).isGreaterThanOrEqualTo(1);
+                assertThat(arrayValue.intSize()).isGreaterThanOrEqualTo(1);
                 AnyValue value = arrayValue.value(0);
                 assertKnownType(value.getClass(), TYPES);
                 markSeen(value.getClass(), seen);

@@ -46,7 +46,7 @@ public class InCache implements AutoCloseable {
     }
 
     public Value check(AnyValue value, ListValue list, MemoryTracker memoryTracker) {
-        if (list.size() < 128 || value == NO_VALUE) {
+        if (list.actualSize() < 128 || value == NO_VALUE) {
             return ValueBooleanLogic.in(value, list);
         } else {
             return seen.getOrCache(list, (oldValue) -> {

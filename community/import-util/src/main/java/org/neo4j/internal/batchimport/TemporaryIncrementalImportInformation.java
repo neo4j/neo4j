@@ -340,8 +340,8 @@ public class TemporaryIncrementalImportInformation implements Closeable {
             @Override
             protected void writeValue(DataOutputStream output, Value value) throws IOException {
                 final var typedData = (BooleanArray) value;
-                output.writeInt(typedData.length());
-                for (var i = 0; i < typedData.length(); i++) {
+                output.writeInt(typedData.intSize());
+                for (var i = 0; i < typedData.intSize(); i++) {
                     output.writeBoolean(typedData.booleanValue(i));
                 }
             }
@@ -370,8 +370,8 @@ public class TemporaryIncrementalImportInformation implements Closeable {
             @Override
             protected void writeValue(DataOutputStream output, Value value) throws IOException {
                 final var typedData = (ShortArray) value;
-                output.writeInt(typedData.length());
-                for (var i = 0; i < typedData.length(); i++) {
+                output.writeInt(typedData.intSize());
+                for (var i = 0; i < typedData.intSize(); i++) {
                     output.writeShort((short) typedData.longValue(i));
                 }
             }
@@ -400,8 +400,8 @@ public class TemporaryIncrementalImportInformation implements Closeable {
             @Override
             protected void writeValue(DataOutputStream output, Value value) throws IOException {
                 final var typedData = (IntArray) value;
-                output.writeInt(typedData.length());
-                for (var i = 0; i < typedData.length(); i++) {
+                output.writeInt(typedData.intSize());
+                for (var i = 0; i < typedData.intSize(); i++) {
                     output.writeInt((int) typedData.longValue(i));
                 }
             }
@@ -430,8 +430,8 @@ public class TemporaryIncrementalImportInformation implements Closeable {
             @Override
             protected void writeValue(DataOutputStream output, Value value) throws IOException {
                 final var typedData = (LongArray) value;
-                output.writeInt(typedData.length());
-                for (var i = 0; i < typedData.length(); i++) {
+                output.writeInt(typedData.intSize());
+                for (var i = 0; i < typedData.intSize(); i++) {
                     output.writeLong(typedData.longValue(i));
                 }
             }
@@ -460,8 +460,8 @@ public class TemporaryIncrementalImportInformation implements Closeable {
             @Override
             protected void writeValue(DataOutputStream output, Value value) throws IOException {
                 final var typedData = (FloatArray) value;
-                output.writeInt(typedData.length());
-                for (var i = 0; i < typedData.length(); i++) {
+                output.writeInt(typedData.intSize());
+                for (var i = 0; i < typedData.intSize(); i++) {
                     output.writeFloat((float) typedData.doubleValue(i));
                 }
             }
@@ -490,8 +490,8 @@ public class TemporaryIncrementalImportInformation implements Closeable {
             @Override
             protected void writeValue(DataOutputStream output, Value value) throws IOException {
                 final var typedData = (DoubleArray) value;
-                output.writeInt(typedData.length());
-                for (var i = 0; i < typedData.length(); i++) {
+                output.writeInt(typedData.intSize());
+                for (var i = 0; i < typedData.intSize(); i++) {
                     output.writeDouble(typedData.doubleValue(i));
                 }
             }
@@ -520,8 +520,8 @@ public class TemporaryIncrementalImportInformation implements Closeable {
             @Override
             protected void writeValue(DataOutputStream output, Value value) throws IOException {
                 final var typedData = (TextArray) value;
-                output.writeInt(typedData.length());
-                for (var i = 0; i < typedData.length(); i++) {
+                output.writeInt(typedData.intSize());
+                for (var i = 0; i < typedData.intSize(); i++) {
                     output.writeUTF(typedData.stringValue(i));
                 }
             }

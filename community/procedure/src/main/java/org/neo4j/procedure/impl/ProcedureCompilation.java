@@ -554,14 +554,14 @@ public final class ProcedureCompilation {
         }
         if (input instanceof SequenceValue list) {
             if (list.iterationPreference() == RANDOM_ACCESS) {
-                byte[] bytes = new byte[list.length()];
+                byte[] bytes = new byte[list.intSize()];
                 for (int a = 0; a < bytes.length; a++) {
                     bytes[a] = asByte(list.value(a));
                 }
                 return bytes;
             } else {
                 // list.length may have linear complexity, still worth doing it upfront
-                byte[] bytes = new byte[list.length()];
+                byte[] bytes = new byte[list.intSize()];
                 int i = 0;
                 for (AnyValue anyValue : list) {
                     bytes[i++] = asByte(anyValue);

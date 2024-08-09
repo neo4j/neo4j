@@ -246,8 +246,8 @@ public record ValuesWriter(WriteEnrichmentChannel channel) implements AnyValueWr
         writeString(elementId);
         writeBoolean(isDeleted);
 
-        writeInteger(labels.length());
-        for (var i = 0; i < labels.length(); i++) {
+        writeInteger(labels.intSize());
+        for (var i = 0; i < labels.intSize(); i++) {
             writeString(labels.stringValue(i));
         }
 
@@ -343,10 +343,10 @@ public record ValuesWriter(WriteEnrichmentChannel channel) implements AnyValueWr
     }
 
     private void writeList(ListValue list) {
-        beginList(list.size());
+        beginList(list.intSize());
         switch (list.iterationPreference()) {
             case RANDOM_ACCESS -> {
-                for (var i = 0; i < list.size(); i++) {
+                for (var i = 0; i < list.actualSize(); i++) {
                     write(list.value(i));
                 }
             }

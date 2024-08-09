@@ -40,7 +40,7 @@ public final class BooleanArray extends ArrayValue {
     }
 
     @Override
-    public int length() {
+    public int intSize() {
         return value.length;
     }
 

@@ -43,7 +43,7 @@ public class StringArray extends TextArray {
     }
 
     @Override
-    public int length() {
+    public int intSize() {
         return value.length;
     }
 
@@ -119,9 +119,9 @@ public class StringArray extends TextArray {
             return "[]";
         }
 
-        final var sb = new StringBuilder(length());
+        final var sb = new StringBuilder(this.intSize());
         sb.append('[').append(value(0).prettyPrint());
-        for (int i = 1; i < length(); i++) {
+        for (int i = 1; i < this.intSize(); i++) {
             sb.append(", ").append(value(i).prettyPrint());
         }
         return sb.append(']').toString();

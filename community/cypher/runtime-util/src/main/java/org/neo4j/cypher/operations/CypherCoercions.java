@@ -376,7 +376,7 @@ class ListCoercer implements CypherCoercions.Coercer {
     private ListValue slowCoersion(
             final SequenceValue sequence, final DbAccess access, final ExpressionCursors cursors) {
         if (sequence.iterationPreference() == RANDOM_ACCESS) {
-            final int length = sequence.length();
+            final int length = sequence.intSize();
             final var builder = ListValueBuilder.newListBuilder(length);
             for (int i = 0; i < length; i++) {
                 builder.add(innerCoercer.apply(sequence.value(i), access, cursors));

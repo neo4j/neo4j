@@ -38,7 +38,7 @@ public final class FloatArray extends FloatingPointArray {
     }
 
     @Override
-    public int length() {
+    public int intSize() {
         return value.length;
     }
 

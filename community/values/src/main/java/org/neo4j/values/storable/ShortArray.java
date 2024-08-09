@@ -39,7 +39,7 @@ public class ShortArray extends IntegralArray {
     }
 
     @Override
-    public int length() {
+    public int intSize() {
         return value.length;
     }
 

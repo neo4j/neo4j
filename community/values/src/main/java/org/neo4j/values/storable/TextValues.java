@@ -41,14 +41,14 @@ public final class TextValues {
     public static int compareTextArrays(TextArray a, TextArray b) {
         int i = 0;
         int x = 0;
-        int length = Math.min(a.length(), b.length());
+        int length = Math.min(a.intSize(), b.intSize());
 
         while (x == 0 && i < length) {
             x = a.stringValue(i).compareTo(b.stringValue(i));
             i++;
         }
         if (x == 0) {
-            x = a.length() - b.length();
+            x = a.intSize() - b.intSize();
         }
         return x;
     }

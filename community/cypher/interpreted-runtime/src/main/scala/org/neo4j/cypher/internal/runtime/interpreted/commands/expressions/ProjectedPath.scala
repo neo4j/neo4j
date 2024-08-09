@@ -233,7 +233,7 @@ object ProjectedPath {
     f: (PathValueBuilder, AnyValue) => PathValueBuilder
   ): PathValueBuilder = {
     var aggregated = builder
-    val size = list.size()
+    val size = list.actualSize()
     var i = 0
     while (i < size - 1) {
       // we know these relationships have already loaded start and end relationship

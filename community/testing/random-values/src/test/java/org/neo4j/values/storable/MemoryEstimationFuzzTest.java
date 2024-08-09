@@ -65,7 +65,7 @@ class MemoryEstimationFuzzTest {
             for (int i = 0; i < ITERATIONS; i++) {
                 ArrayValue a = (ArrayValue) random.nextValueOfType(type);
                 ArrayValue b = (ArrayValue) random.nextValueOfType(type);
-                if (a.length() < b.length()) {
+                if (a.intSize() < b.intSize()) {
                     assertTrue(a.estimatedHeapUsage() <= b.estimatedHeapUsage());
                 } else {
                     assertTrue(a.estimatedHeapUsage() >= b.estimatedHeapUsage());
@@ -80,7 +80,7 @@ class MemoryEstimationFuzzTest {
             for (int i = 0; i < ITERATIONS; i++) {
                 ListValue a = fromArray((ArrayValue) random.nextValueOfType(type));
                 ListValue b = fromArray((ArrayValue) random.nextValueOfType(type));
-                if (a.length() < b.length()) {
+                if (a.intSize() < b.intSize()) {
                     assertTrue(a.estimatedHeapUsage() <= b.estimatedHeapUsage());
                 } else {
                     assertTrue(a.estimatedHeapUsage() >= b.estimatedHeapUsage());

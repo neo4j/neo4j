@@ -36,7 +36,7 @@ case class ExtractFunction(
 
   override def compute(value: AnyValue, row: ReadableRow, state: QueryState): ListValue = {
     val list = makeTraversable(value)
-    val extracted = new Array[AnyValue](list.size())
+    val extracted = new Array[AnyValue](list.intSize())
     val values = list.iterator()
     var i = 0
     while (values.hasNext) {

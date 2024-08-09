@@ -190,7 +190,7 @@ case class MaterializedEntityHasLabel(entity: commands.expressions.Expression, l
       val node = CastSupport.castOrFail[NodeValue](value)
 
       var i = 0
-      while (i < node.labels().length()) {
+      while (i < node.labels().intSize()) {
         if (node.labels().stringValue(i).equals(label.name)) {
           return IsTrue
         }
@@ -245,7 +245,7 @@ case class MaterializedEntityHasLabelOrType(entity: commands.expressions.Express
 
     case node: NodeValue =>
       var i = 0
-      while (i < node.labels().length()) {
+      while (i < node.labels().intSize()) {
         if (node.labels().stringValue(i).equals(labelOrType)) {
           return IsTrue
         }

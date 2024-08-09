@@ -672,7 +672,7 @@ public final class CypherFunctions {
         if (container == NO_VALUE) {
             return NO_VALUE;
         } else if (container instanceof SequenceValue sequence) {
-            if (sequence.length() == 0) {
+            if (sequence.intSize() == 0) {
                 return NO_VALUE;
             }
 
@@ -702,7 +702,7 @@ public final class CypherFunctions {
             return NO_VALUE;
         }
         if (container instanceof SequenceValue sequence) {
-            int length = sequence.length();
+            int length = sequence.intSize();
             if (length == 0) {
                 return NO_VALUE;
             }
@@ -1081,7 +1081,7 @@ public final class CypherFunctions {
         if (collection == NO_VALUE) {
             return NO_VALUE;
         } else if (collection instanceof SequenceValue elementIds) {
-            var builder = ListValueBuilder.newListBuilder(elementIds.length());
+            var builder = ListValueBuilder.newListBuilder(elementIds.intSize());
             for (var elementId : elementIds) {
                 AnyValue value = elementIdToNodeId(elementId, idMapper);
                 builder.add(value);
@@ -1095,7 +1095,7 @@ public final class CypherFunctions {
         if (collection == NO_VALUE) {
             return NO_VALUE;
         } else if (collection instanceof SequenceValue elementIds) {
-            var builder = ListValueBuilder.newListBuilder(elementIds.length());
+            var builder = ListValueBuilder.newListBuilder(elementIds.intSize());
             for (var elementId : elementIds) {
                 AnyValue value = elementIdToRelationshipId(elementId, idMapper);
                 builder.add(value);
@@ -1121,7 +1121,7 @@ public final class CypherFunctions {
         } else if (item instanceof NodeEntityWrappingNodeValue node && node.id() < 0) {
             // Labels for entities with negative id, such as db schema visualization, are already populated since
             // the entity isn't a node in storage
-            var builder = ListValueBuilder.newListBuilder(node.labels().length());
+            var builder = ListValueBuilder.newListBuilder(node.labels().intSize());
             node.labels().forEach(builder::add);
             return builder.build();
         } else if (item instanceof VirtualNodeValue node) {
@@ -1389,7 +1389,7 @@ public final class CypherFunctions {
         } else if (item instanceof TextValue) {
             return longValue(((TextValue) item).length());
         } else if (item instanceof SequenceValue) {
-            return longValue(((SequenceValue) item).length());
+            return longValue(((SequenceValue) item).actualSize());
         } else {
             throw new CypherTypeException(
                     "Invalid input for function 'size()': Expected a String or List, got: " + item);
@@ -1608,7 +1608,7 @@ public final class CypherFunctions {
         if (from >= 0) {
             return list.drop(from);
         } else {
-            return list.drop(list.size() + from);
+            return list.drop(list.actualSize() + from);
         }
     }
 
@@ -1621,7 +1621,7 @@ public final class CypherFunctions {
         if (from >= 0) {
             return list.take(from);
         } else {
-            return list.take(list.size() + from);
+            return list.take(list.intSize() + from);
         }
     }
 
@@ -1632,7 +1632,7 @@ public final class CypherFunctions {
         int from = asIntExact(fromValue);
         int to = asIntExact(toValue);
         ListValue list = asList(collection);
-        int size = list.size();
+        int size = list.intSize();
         if (from >= 0 && to >= 0) {
             return list.slice(from, to);
         } else if (from >= 0) {
@@ -1748,19 +1748,14 @@ public final class CypherFunctions {
                     format("Cannot access a list using an non-integer number index, got %s", number), null);
         }
         long idx = number.longValue();
-        if (idx > Integer.MAX_VALUE || idx < Integer.MIN_VALUE) {
-            throw new InvalidArgumentException(format(
-                    "Cannot index a list using a value greater than %d or lesser than %d, got %d",
-                    Integer.MAX_VALUE, Integer.MIN_VALUE, idx));
-        }
 
         if (idx < 0) {
-            idx = container.length() + idx;
+            idx = container.actualSize() + idx;
         }
-        if (idx >= container.length() || idx < 0) {
+        if (idx >= container.actualSize() || idx < 0) {
             return NO_VALUE;
         }
-        return container.value((int) idx);
+        return container.value(idx);
     }
 
     private static int propertyKeyId(DbAccess dbAccess, AnyValue index) {
@@ -2084,8 +2079,8 @@ public final class CypherFunctions {
     }
 
     private static ListValue toIntegerList(FloatingPointArray array) {
-        var converted = ListValueBuilder.newListBuilder(array.length());
-        for (int i = 0; i < array.length(); i++) {
+        var converted = ListValueBuilder.newListBuilder(array.intSize());
+        for (int i = 0; i < array.intSize(); i++) {
             converted.add(longValue((long) array.doubleValue(i)));
         }
         return converted.build();

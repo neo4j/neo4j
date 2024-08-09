@@ -63,7 +63,7 @@ public enum ValueRepresentation {
     GEOMETRY(ValueGroup.GEOMETRY, true) {
         @Override
         public ArrayValue arrayOf(SequenceValue values) {
-            PointValue[] points = new PointValue[values.length()];
+            PointValue[] points = new PointValue[values.intSize()];
             int i = 0;
             PointValue first = null;
             for (AnyValue value : values) {
@@ -87,7 +87,7 @@ public enum ValueRepresentation {
     ZONED_DATE_TIME(ValueGroup.ZONED_DATE_TIME, true) {
         @Override
         public ArrayValue arrayOf(SequenceValue values) {
-            ZonedDateTime[] temporals = new ZonedDateTime[values.length()];
+            ZonedDateTime[] temporals = new ZonedDateTime[values.intSize()];
             int i = 0;
             for (AnyValue value : values) {
                 temporals[i++] = (getOrFail(value, DateTimeValue.class)).temporal();
@@ -98,7 +98,7 @@ public enum ValueRepresentation {
     LOCAL_DATE_TIME(ValueGroup.LOCAL_DATE_TIME, true) {
         @Override
         public ArrayValue arrayOf(SequenceValue values) {
-            LocalDateTime[] temporals = new LocalDateTime[values.length()];
+            LocalDateTime[] temporals = new LocalDateTime[values.intSize()];
             int i = 0;
             for (AnyValue value : values) {
                 temporals[i++] = getOrFail(value, LocalDateTimeValue.class).temporal();
@@ -109,7 +109,7 @@ public enum ValueRepresentation {
     DATE(ValueGroup.DATE, true) {
         @Override
         public ArrayValue arrayOf(SequenceValue values) {
-            LocalDate[] temporals = new LocalDate[values.length()];
+            LocalDate[] temporals = new LocalDate[values.intSize()];
             int i = 0;
             for (AnyValue value : values) {
                 temporals[i++] = getOrFail(value, DateValue.class).temporal();
@@ -120,7 +120,7 @@ public enum ValueRepresentation {
     ZONED_TIME(ValueGroup.ZONED_TIME, true) {
         @Override
         public ArrayValue arrayOf(SequenceValue values) {
-            OffsetTime[] temporals = new OffsetTime[values.length()];
+            OffsetTime[] temporals = new OffsetTime[values.intSize()];
             int i = 0;
             for (AnyValue value : values) {
                 temporals[i++] = ((TimeValue) value).temporal();
@@ -131,7 +131,7 @@ public enum ValueRepresentation {
     LOCAL_TIME(ValueGroup.LOCAL_TIME, true) {
         @Override
         public ArrayValue arrayOf(SequenceValue values) {
-            LocalTime[] temporals = new LocalTime[values.length()];
+            LocalTime[] temporals = new LocalTime[values.intSize()];
             int i = 0;
             for (AnyValue value : values) {
                 temporals[i++] = ((LocalTimeValue) value).temporal();
@@ -142,7 +142,7 @@ public enum ValueRepresentation {
     DURATION(ValueGroup.DURATION, true) {
         @Override
         public ArrayValue arrayOf(SequenceValue values) {
-            DurationValue[] temporals = new DurationValue[values.length()];
+            DurationValue[] temporals = new DurationValue[values.intSize()];
             int i = 0;
             for (AnyValue value : values) {
                 temporals[i++] = (DurationValue) value;
@@ -153,7 +153,7 @@ public enum ValueRepresentation {
     UTF16_TEXT(ValueGroup.TEXT, true) {
         @Override
         public ArrayValue arrayOf(SequenceValue values) {
-            String[] strings = new String[values.length()];
+            String[] strings = new String[values.intSize()];
             int i = 0;
             for (AnyValue value : values) {
                 strings[i++] = ((TextValue) value).stringValue();
@@ -172,7 +172,7 @@ public enum ValueRepresentation {
     UTF8_TEXT(ValueGroup.TEXT, true) {
         @Override
         public ArrayValue arrayOf(SequenceValue values) {
-            String[] strings = new String[values.length()];
+            String[] strings = new String[values.intSize()];
             int i = 0;
             for (AnyValue value : values) {
                 strings[i++] = ((TextValue) value).stringValue();
@@ -192,7 +192,7 @@ public enum ValueRepresentation {
     BOOLEAN(ValueGroup.BOOLEAN, true) {
         @Override
         public ArrayValue arrayOf(SequenceValue values) {
-            boolean[] bools = new boolean[values.length()];
+            boolean[] bools = new boolean[values.intSize()];
             int i = 0;
             for (AnyValue value : values) {
                 bools[i++] = ((BooleanValue) value).booleanValue();
@@ -203,7 +203,7 @@ public enum ValueRepresentation {
     INT64(ValueGroup.NUMBER, true) {
         @Override
         public ArrayValue arrayOf(SequenceValue values) {
-            long[] longs = new long[values.length()];
+            long[] longs = new long[values.intSize()];
             int i = 0;
             for (AnyValue value : values) {
                 longs[i++] = getOrFail(value, NumberValue.class).longValue();
@@ -223,7 +223,7 @@ public enum ValueRepresentation {
     INT32(ValueGroup.NUMBER, true) {
         @Override
         public ArrayValue arrayOf(SequenceValue values) {
-            int[] ints = new int[values.length()];
+            int[] ints = new int[values.intSize()];
             int i = 0;
             for (AnyValue value : values) {
                 ints[i++] = getOrFail(value, IntegralValue.class).intValue();
@@ -244,7 +244,7 @@ public enum ValueRepresentation {
     INT16(ValueGroup.NUMBER, true) {
         @Override
         public ArrayValue arrayOf(SequenceValue values) {
-            short[] shorts = new short[values.length()];
+            short[] shorts = new short[values.intSize()];
             int i = 0;
             for (AnyValue value : values) {
                 shorts[i++] = getOrFail(value, IntegralValue.class).shortValue();
@@ -268,7 +268,7 @@ public enum ValueRepresentation {
     INT8(ValueGroup.NUMBER, true) {
         @Override
         public ArrayValue arrayOf(SequenceValue values) {
-            byte[] bytes = new byte[values.length()];
+            byte[] bytes = new byte[values.intSize()];
             int i = 0;
             for (AnyValue value : values) {
                 bytes[i++] = getOrFail(value, ByteValue.class).value();
@@ -292,7 +292,7 @@ public enum ValueRepresentation {
     FLOAT64(ValueGroup.NUMBER, true) {
         @Override
         public ArrayValue arrayOf(SequenceValue values) {
-            double[] doubles = new double[values.length()];
+            double[] doubles = new double[values.intSize()];
             int i = 0;
             for (AnyValue value : values) {
                 doubles[i++] = ((NumberValue) value).doubleValue();
@@ -311,7 +311,7 @@ public enum ValueRepresentation {
     FLOAT32(ValueGroup.NUMBER, true) {
         @Override
         public ArrayValue arrayOf(SequenceValue values) {
-            float[] floats = new float[values.length()];
+            float[] floats = new float[values.intSize()];
             int i = 0;
             for (AnyValue value : values) {
                 NumberValue asNumberValue = getOrFail(value, NumberValue.class);

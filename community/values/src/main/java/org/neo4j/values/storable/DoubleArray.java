@@ -39,7 +39,7 @@ public final class DoubleArray extends FloatingPointArray {
     }
 
     @Override
-    public int length() {
+    public int intSize() {
         return value.length;
     }
 

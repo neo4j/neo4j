@@ -23,6 +23,7 @@ import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfObjectArray;
 import static org.neo4j.memory.HeapEstimator.sizeOf;
 import static org.neo4j.memory.HeapEstimator.sizeOfObjectArray;
+import static org.neo4j.values.SequenceValue.IterationPreference.ITERATION;
 import static org.neo4j.values.SequenceValue.IterationPreference.RANDOM_ACCESS;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 import static org.neo4j.values.utils.ValueMath.HASH_CONSTANT;
@@ -37,11 +38,13 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
 import org.github.jamm.Unmetered;
+import org.neo4j.exceptions.ArithmeticException;
 import org.neo4j.exceptions.CypherTypeException;
-import org.neo4j.internal.helpers.ArrayUtil;
+import org.neo4j.internal.helpers.Numbers;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.helpers.collection.PrefetchingIterator;
 import org.neo4j.values.AnyValue;
@@ -59,7 +62,6 @@ import org.neo4j.values.storable.ValueRepresentation;
 import org.neo4j.values.storable.Values;
 
 public abstract class ListValue extends VirtualValue implements SequenceValue, Iterable<AnyValue> {
-    public abstract int size();
 
     public Value ternaryContains(AnyValue value) {
         Iterator<AnyValue> iterator = iterator();
@@ -80,9 +82,6 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
     }
 
     public abstract ValueRepresentation itemValueRepresentation();
-
-    @Override
-    public abstract AnyValue value(int offset);
 
     @Override
     public String getTypeName() {
@@ -109,8 +108,8 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
         }
 
         @Override
-        public int size() {
-            return array.length();
+        public long actualSize() {
+            return array.intSize();
         }
 
         @Override
@@ -119,7 +118,7 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
         }
 
         @Override
-        public AnyValue value(int offset) {
+        public AnyValue value(long offset) {
             return array.value(offset);
         }
 
@@ -155,7 +154,7 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
         }
 
         @Override
-        public int size() {
+        public long actualSize() {
             return list.size();
         }
 
@@ -165,8 +164,9 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
         }
 
         @Override
-        public AnyValue value(int offset) {
-            return list.get(offset);
+        public AnyValue value(long offset) {
+            Objects.checkIndex(0, list.size());
+            return list.get((int) offset);
         }
 
         @Override
@@ -206,13 +206,14 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
         }
 
         @Override
-        public int size() {
+        public long actualSize() {
             return values.length;
         }
 
         @Override
-        public AnyValue value(int offset) {
-            return values[offset];
+        public AnyValue value(long offset) {
+            Objects.checkIndex(0, values.length);
+            return values[(int) offset];
         }
 
         @Override
@@ -278,7 +279,7 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
             if (values instanceof ArrayList<?>) {
                 return RANDOM_ACCESS;
             } else {
-                return IterationPreference.ITERATION;
+                return ITERATION;
             }
         }
 
@@ -288,7 +289,7 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
         }
 
         @Override
-        public int size() {
+        public long actualSize() {
             return values.size();
         }
 
@@ -310,8 +311,9 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
         }
 
         @Override
-        public AnyValue value(int offset) {
-            return values.get(offset);
+        public AnyValue value(long offset) {
+            Objects.checkIndex(0, values.size());
+            return values.get((int) offset);
         }
 
         @Override
@@ -344,12 +346,12 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
 
     static final class ListSlice extends ListValue {
         private final ListValue inner;
-        private final int from;
-        private final int to;
+        private final long from;
+        private final long to;
 
-        ListSlice(ListValue inner, int from, int to) {
+        ListSlice(ListValue inner, long from, long to) {
             assert from >= 0;
-            assert to <= inner.size();
+            assert to <= inner.actualSize();
             assert from <= to;
             this.inner = inner;
             this.from = from;
@@ -362,12 +364,12 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
         }
 
         @Override
-        public int size() {
+        public long actualSize() {
             return to - from;
         }
 
         @Override
-        public AnyValue value(int offset) {
+        public AnyValue value(long offset) {
             return inner.value(offset + from);
         }
 
@@ -431,8 +433,8 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
         }
 
         @Override
-        public int size() {
-            return inner.size();
+        public long actualSize() {
+            return inner.actualSize();
         }
 
         @Override
@@ -446,8 +448,8 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
         }
 
         @Override
-        public AnyValue value(int offset) {
-            return inner.value(size() - 1 - offset);
+        public AnyValue value(long offset) {
+            return inner.value(actualSize() - 1 - offset);
         }
 
         @Override
@@ -468,7 +470,6 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
         private final long start;
         private final long end;
         private final long step;
-        private int length = -1;
 
         IntegralRangeListValue(long start, long end, long step) {
             this.start = start;
@@ -487,20 +488,25 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
         }
 
         @Override
-        public int size() {
-            if (length == -1) {
-                long l = ((end - start) / step) + 1;
-                if (l > ArrayUtil.MAX_ARRAY_SIZE) {
-                    throw new OutOfMemoryError("Cannot index an collection of size " + l);
+        public long actualSize() {
+            long diff = (end - start) / step;
+            if (diff < 0L) {
+                return 0L;
+            } else {
+                try {
+                    return Math.addExact(diff, 1L);
+                } catch (java.lang.ArithmeticException e) {
+                    // TODO: STATUS_22003
+                    throw new ArithmeticException("numeric value out of range", e);
                 }
-                length = Math.max((int) l, 0);
             }
-            return length;
         }
 
         @Override
-        public AnyValue value(int offset) {
-            if (offset >= size()) {
+        public AnyValue value(long offset) {
+            if (offset >= actualSize()) {
+                // TODO: this should be a GQL error and not java.lang.IndexOutOfBoundsException
+                //      but changing it is semi-breaking.
                 throw new IndexOutOfBoundsException();
             } else {
                 return Values.longValue(start + offset * step);
@@ -511,7 +517,9 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
         protected int computeHashToMemoize() {
             int hashCode = 1;
             long current = start;
-            int size = size();
+            // If the size is bigger than Integer.MAX_VALUE it will anyway
+            // take forever to compute it so let's not bother
+            int size = (int) Math.min(actualSize(), Integer.MAX_VALUE);
             for (int i = 0; i < size; i++, current += step) {
                 hashCode = HASH_CONSTANT * hashCode + Long.hashCode(current);
             }
@@ -525,8 +533,13 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
 
         @Override
         public ArrayValue toStorableArray() {
+            int size = (int) actualSize();
+            if (size < 0) {
+                // TODO: STATUS_22003
+                throw new ArithmeticException("numeric value out of range");
+            }
+
             long current = start;
-            int size = size();
             long[] array = new long[size];
             for (int i = 0; i < size; i++, current += step) {
                 array[i] = current;
@@ -545,7 +558,7 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
     static final class ConcatList extends ListValue {
         private final ListValue[] lists;
         private final ValueRepresentation itemValueRepresentation;
-        private int size = -1;
+        private volatile long size = -1;
 
         ConcatList(ListValue[] lists) {
             ValueRepresentation representation = ValueRepresentation.ANYTHING;
@@ -558,15 +571,15 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
 
         @Override
         public IterationPreference iterationPreference() {
-            return IterationPreference.ITERATION;
+            return ITERATION;
         }
 
         @Override
-        public int size() {
+        public long actualSize() {
             if (size < 0) {
                 int s = 0;
                 for (ListValue list : lists) {
-                    s += list.size();
+                    s += list.actualSize();
                 }
                 size = s;
             }
@@ -584,9 +597,9 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
         }
 
         @Override
-        public AnyValue value(int offset) {
+        public AnyValue value(long offset) {
             for (ListValue list : lists) {
-                int size = list.size();
+                long size = list.actualSize();
                 if (offset < size) {
                     return list.value(offset);
                 }
@@ -624,9 +637,9 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
     public static final class AppendList extends ListValue {
         private final ListValue base;
         private final AnyValue appended;
-        private int size;
+        private long size;
         private volatile long memoizedEstimatedHeapUsage;
-        private static final int NOT_MEMOIZED = -1;
+        private static final long NOT_MEMOIZED = -1L;
 
         AppendList(ListValue base, AnyValue appended) {
             this.base = base;
@@ -652,9 +665,9 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
         }
 
         @Override
-        public int size() {
+        public long actualSize() {
             if (size == NOT_MEMOIZED) {
-                size = base.size() + 1;
+                size = base.actualSize() + 1;
             }
             return size;
         }
@@ -688,11 +701,11 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
         }
 
         @Override
-        public AnyValue value(int offset) {
-            int size = base.size();
+        public AnyValue value(long offset) {
+            long size = base.actualSize();
             if (offset < size) {
                 return base.value(offset);
-            } else if (offset < size + 1) {
+            } else if (offset < size + 1L) {
                 return appended;
             } else {
                 throw new IndexOutOfBoundsException(offset + " is outside range " + size);
@@ -743,9 +756,9 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
     static final class PrependList extends ListValue {
         private final ListValue base;
         private final AnyValue prepended;
-        private int size;
+        private volatile long size;
         private volatile long memoizedEstimatedHeapUsage;
-        private static final int NOT_MEMOIZED = -1;
+        private static final long NOT_MEMOIZED = -1L;
 
         PrependList(ListValue base, AnyValue prepended) {
             this.base = base;
@@ -760,9 +773,9 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
         }
 
         @Override
-        public int size() {
+        public long actualSize() {
             if (size == NOT_MEMOIZED) {
-                size = base.size() + 1;
+                size = base.actualSize() + 1;
             }
             return size;
         }
@@ -807,10 +820,10 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
         }
 
         @Override
-        public AnyValue value(int offset) {
+        public AnyValue value(long offset) {
             if (offset == 0) {
                 return prepended;
-            } else if (offset < base.size() + 1) {
+            } else if (offset < base.actualSize() + 1) {
                 return base.value(offset - 1);
             } else {
                 throw new IndexOutOfBoundsException(offset + " is outside range " + size);
@@ -864,11 +877,11 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
     public String toString() {
         StringBuilder sb = new StringBuilder().append(getTypeName()).append('{');
         int i = 0;
-        for (; i < size() - 1; i++) {
+        for (; i < actualSize() - 1; i++) {
             sb.append(value(i));
             sb.append(", ");
         }
-        if (size() > 0) {
+        if (actualSize() > 0) {
             sb.append(value(i));
         }
         sb.append('}');
@@ -891,7 +904,7 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
     }
 
     public AnyValue head() {
-        int size = size();
+        long size = actualSize();
         if (size == 0) {
             throw new NoSuchElementException("head of empty list");
         }
@@ -899,7 +912,7 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
     }
 
     public AnyValue last() {
-        int size = size();
+        long size = actualSize();
         if (size == 0) {
             throw new NoSuchElementException("last of empty list");
         }
@@ -912,11 +925,11 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
     }
 
     private class ListValueIterator implements Iterator<AnyValue> {
-        private int count;
+        private long count;
 
         @Override
         public boolean hasNext() {
-            return count < size();
+            return count < actualSize();
         }
 
         @Override
@@ -934,8 +947,13 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
     }
 
     @Override
-    public int length() {
-        return size();
+    public int intSize() {
+        try {
+            return Numbers.safeCastLongToInt(actualSize());
+        } catch (java.lang.ArithmeticException e) {
+            // TODO: STATUS_22003
+            throw new ArithmeticException("numeric value out of range", e);
+        }
     }
 
     @Override
@@ -975,7 +993,7 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
 
     public ListValue slice(int from, int to) {
         int f = Math.max(from, 0);
-        int t = Math.min(to, size());
+        int t = Math.min(to, intSize());
         if (f > t) {
             return EMPTY_LIST;
         } else {
@@ -984,17 +1002,17 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
     }
 
     public ListValue tail() {
-        return slice(1, size());
+        return slice(1, intSize());
     }
 
-    public ListValue drop(int n) {
-        int size = size();
-        int start = Math.max(0, Math.min(n, size));
+    public ListValue drop(long n) {
+        long size = actualSize();
+        long start = Math.max(0, Math.min(n, size));
         return new ListSlice(this, start, size);
     }
 
     public ListValue take(int n) {
-        int end = Math.max(0, Math.min(n, size()));
+        long end = Math.max(0, Math.min(n, actualSize()));
         return new ListSlice(this, 0, end);
     }
 
@@ -1048,7 +1066,7 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
     }
 
     private AnyValue[] randomAccessAsArray() {
-        int size = size();
+        int size = intSize();
         AnyValue[] values = new AnyValue[size];
         for (int i = 0; i < values.length; i++) {
             values[i] = value(i);
@@ -1058,7 +1076,7 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
 
     private int randomAccessComputeHash() {
         int hashCode = 1;
-        int size = size();
+        int size = intSize();
         for (int i = 0; i < size; i++) {
             hashCode = HASH_CONSTANT * hashCode + value(i).hashCode();
         }
@@ -1074,15 +1092,16 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
     }
 
     private <E extends Exception> void randomAccessWriteTo(AnyValueWriter<E> writer) throws E {
-        writer.beginList(size());
-        for (int i = 0; i < size(); i++) {
+        int size = intSize();
+        writer.beginList(size);
+        for (int i = 0; i < size; i++) {
             value(i).writeTo(writer);
         }
         writer.endList();
     }
 
     private <E extends Exception> void iterationWriteTo(AnyValueWriter<E> writer) throws E {
-        writer.beginList(size());
+        writer.beginList(intSize());
         for (AnyValue value : this) {
             value.writeTo(writer);
         }

@@ -273,4 +273,19 @@ abstract class UnwindTestBase[CONTEXT <: RuntimeContext](
 
     execute(query, runtime) should beColumns("r1", "r2").withSingleRow(null, null)
   }
+
+  test("should unwind big list") {
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("i")
+      .filter(s"i > ${Int.MaxValue}")
+      .unwind(s"range(1, ${Int.MaxValue + 7L}) AS i")
+      .argument()
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("i").withRows(singleColumn(Int.MaxValue + 1L to Int.MaxValue + 7L))
+  }
 }

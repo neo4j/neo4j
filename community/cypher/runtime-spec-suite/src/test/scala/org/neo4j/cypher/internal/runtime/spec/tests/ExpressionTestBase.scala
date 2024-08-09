@@ -1498,4 +1498,46 @@ trait ExpressionWithTxStateChangesTests[CONTEXT <: RuntimeContext] {
 
   }
 
+  test("should be able to return size of a huge list") {
+    // given, an empty db
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("size")
+      .projection(s"size(range(1 ,${Long.MaxValue}))  AS size")
+      .argument()
+      .build()
+
+    val result = execute(logicalQuery, runtime)
+
+    // then
+    result should beColumns("size").withSingleRow(Values.longValue(Long.MaxValue))
+  }
+
+  test("should not overflow when returning size of a too huge list") {
+    // given, an empty db
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("size")
+      .projection(s"size(range(0 ,${Long.MaxValue}))  AS size")
+      .argument()
+      .build()
+
+    // then
+    an[org.neo4j.exceptions.ArithmeticException] should be thrownBy consume(execute(logicalQuery, runtime))
+  }
+
+  test("should be able to index into a huge list") {
+    // given, an empty db
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("last")
+      .projection("range(1 ,$upper)[$upper - 1] AS last")
+      .argument()
+      .build()
+
+    val result = execute(logicalQuery, runtime, Map("upper" -> Long.MaxValue))
+
+    // then
+    result should beColumns("last").withSingleRow(Values.longValue(Long.MaxValue))
+  }
 }

@@ -249,7 +249,7 @@ object SlottedProjectedPath {
         }
       )
       val patternSize = values.size
-      val repetitions = values.head.size()
+      val repetitions = values.head.actualSize()
       if (patternSize * repetitions > 0) {
         var repetitionOffset = 0
         while (repetitionOffset < repetitions) {
@@ -314,7 +314,7 @@ object SlottedProjectedPath {
     f: (PathValueBuilder, AnyValue) => PathValueBuilder
   ) = {
     var aggregated = builder
-    val size = list.size()
+    val size = list.actualSize()
     var i = 0
     while (i < size - 1) {
       // we know these relationships have already loaded start and end relationship

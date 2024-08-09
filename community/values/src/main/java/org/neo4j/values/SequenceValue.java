@@ -42,13 +42,22 @@ public interface SequenceValue extends Iterable<AnyValue> {
         ITERATION
     }
 
-    int length();
+    /**
+     * @return the number of elements of the collection.
+     */
+    long actualSize();
+
+    /**
+     * @return the number of elements of the collection.
+     * @throws ArithmeticException if the size doesn't fit into an int.
+     */
+    int intSize();
 
     default boolean isEmpty() {
-        return length() == 0;
+        return intSize() == 0;
     }
 
-    AnyValue value(int offset);
+    AnyValue value(long offset);
 
     @Override
     Iterator<AnyValue> iterator();
@@ -71,9 +80,9 @@ public interface SequenceValue extends Iterable<AnyValue> {
 
     static boolean equalsUsingRandomAccess(SequenceValue a, SequenceValue b) {
         int i = 0;
-        boolean areEqual = a.length() == b.length();
+        boolean areEqual = a.intSize() == b.intSize();
 
-        while (areEqual && i < a.length()) {
+        while (areEqual && i < a.intSize()) {
             areEqual = a.value(i).equals(b.value(i));
             i++;
         }
@@ -81,8 +90,8 @@ public interface SequenceValue extends Iterable<AnyValue> {
     }
 
     static Equality ternaryEqualsUsingRandomAccess(SequenceValue a, SequenceValue b) {
-        int length = a.length();
-        if (length != b.length()) {
+        int length = a.intSize();
+        if (length != b.intSize()) {
             return Equality.FALSE;
         }
         int i = 0;
@@ -151,7 +160,7 @@ public interface SequenceValue extends Iterable<AnyValue> {
     static int compareUsingRandomAccess(SequenceValue a, SequenceValue b, Comparator<AnyValue> comparator) {
         int i = 0;
         int x = 0;
-        int length = Math.min(a.length(), b.length());
+        int length = Math.min(a.intSize(), b.intSize());
 
         while (x == 0 && i < length) {
             x = comparator.compare(a.value(i), b.value(i));
@@ -159,7 +168,7 @@ public interface SequenceValue extends Iterable<AnyValue> {
         }
 
         if (x == 0) {
-            x = a.length() - b.length();
+            x = a.intSize() - b.intSize();
         }
 
         return x;
@@ -185,13 +194,13 @@ public interface SequenceValue extends Iterable<AnyValue> {
             SequenceValue a, SequenceValue b, TernaryComparator<AnyValue> comparator) {
         Comparison cmp = Comparison.EQUAL;
         int i = 0;
-        int length = Math.min(a.length(), b.length());
+        int length = Math.min(a.intSize(), b.intSize());
         while (cmp == Comparison.EQUAL && i < length) {
             cmp = comparator.ternaryCompare(a.value(i), b.value(i));
             i++;
         }
         if (cmp == Comparison.EQUAL) {
-            cmp = Comparison.from(a.length() - b.length());
+            cmp = Comparison.from(a.intSize() - b.intSize());
         }
 
         return cmp;

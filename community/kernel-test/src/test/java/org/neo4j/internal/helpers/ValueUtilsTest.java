@@ -52,7 +52,7 @@ class ValueUtilsTest {
         assertThat(listValue.value(0)).isEqualTo(intValue(1));
         assertThat(listValue.value(1)).isEqualTo(intValue(2));
         assertThat(listValue.value(2)).isEqualTo(intValue(3));
-        assertThat(listValue.size()).isEqualTo(3);
+        assertThat(listValue.actualSize()).isEqualTo(3);
     }
 
     @Test
@@ -69,7 +69,7 @@ class ValueUtilsTest {
         assertThat(listValue.value(0)).isEqualTo(intValue(1));
         assertThat(listValue.value(1)).isEqualTo(intValue(2));
         assertThat(listValue.value(2)).isEqualTo(intValue(3));
-        assertThat(listValue.size()).isEqualTo(3);
+        assertThat(listValue.actualSize()).isEqualTo(3);
     }
 
     @Test
@@ -101,7 +101,7 @@ class ValueUtilsTest {
         assertThat(listValue.value(0)).isEqualTo(intValue(1));
         assertThat(listValue.value(1)).isEqualTo(intValue(2));
         assertThat(listValue.value(2)).isEqualTo(intValue(3));
-        assertThat(listValue.size()).isEqualTo(3);
+        assertThat(listValue.actualSize()).isEqualTo(3);
     }
 
     @Test

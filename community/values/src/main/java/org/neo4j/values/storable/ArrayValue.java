@@ -21,21 +21,87 @@ package org.neo4j.values.storable;
 
 import java.util.Iterator;
 import java.util.NoSuchElementException;
+import java.util.Objects;
+import org.neo4j.hashing.HashFunction;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.SequenceValue;
+import org.neo4j.values.ValueMapper;
 
 /**
  * Array of one of the storable primitives
  */
 public abstract class ArrayValue extends HashMemoizingValue implements SequenceValue {
+
     @Override
-    public abstract int length();
+    public long actualSize() {
+        return intSize();
+    }
+
+    @Override
+    protected int computeHashToMemoize() {
+        return 0;
+    }
+
+    @Override
+    public boolean equals(Value other) {
+        return false;
+    }
+
+    @Override
+    protected int unsafeCompareTo(Value other) {
+        return 0;
+    }
+
+    @Override
+    public <E extends Exception> void writeTo(ValueWriter<E> writer) throws E {}
+
+    @Override
+    public Object asObjectCopy() {
+        return null;
+    }
+
+    @Override
+    public String prettyPrint() {
+        return "";
+    }
+
+    @Override
+    public ValueRepresentation valueRepresentation() {
+        return null;
+    }
+
+    @Override
+    public NumberType numberType() {
+        return null;
+    }
+
+    @Override
+    public long updateHash(HashFunction hashFunction, long hash) {
+        return 0;
+    }
+
+    @Override
+    public <T> T map(ValueMapper<T> mapper) {
+        return null;
+    }
+
+    @Override
+    public String getTypeName() {
+        return "";
+    }
+
+    @Override
+    public long estimatedHeapUsage() {
+        return 0;
+    }
 
     public abstract boolean hasCompatibleType(AnyValue value);
 
     public abstract ArrayValue copyWithAppended(AnyValue added);
 
     public abstract ArrayValue copyWithPrepended(AnyValue prepended);
+
+    public abstract AnyValue value(int offset);
 
     @Override
     public IterationPreference iterationPreference() {
@@ -49,7 +115,7 @@ public abstract class ArrayValue extends HashMemoizingValue implements SequenceV
 
             @Override
             public boolean hasNext() {
-                return offset < length();
+                return offset < intSize();
             }
 
             @Override
@@ -69,6 +135,12 @@ public abstract class ArrayValue extends HashMemoizingValue implements SequenceV
         }
 
         return other instanceof SequenceValue && this.equals((SequenceValue) other);
+    }
+
+    @Override
+    public AnyValue value(long offset) {
+        Objects.checkIndex(offset, intSize());
+        return value((int) offset);
     }
 
     @Override

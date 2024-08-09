@@ -63,7 +63,7 @@ public final class RoutingResultFormat {
 
         ListValueBuilder servers = ListValueBuilder.newListBuilder();
 
-        if (writers.size() > 0) {
+        if (writers.actualSize() > 0) {
             MapValueBuilder builder = new MapValueBuilder();
 
             builder.add(ROLE_KEY, WRTE_NAME);
@@ -72,7 +72,7 @@ public final class RoutingResultFormat {
             servers.add(builder.build());
         }
 
-        if (readers.size() > 0) {
+        if (readers.actualSize() > 0) {
             MapValueBuilder builder = new MapValueBuilder();
 
             builder.add(ROLE_KEY, READ_NAME);
@@ -81,7 +81,7 @@ public final class RoutingResultFormat {
             servers.add(builder.build());
         }
 
-        if (routers.size() > 0) {
+        if (routers.actualSize() > 0) {
             MapValueBuilder builder = new MapValueBuilder();
 
             builder.add(ROLE_KEY, ROUTE_NAME);
@@ -111,7 +111,7 @@ public final class RoutingResultFormat {
     }
 
     public static List<SocketAddress> parseEndpoints(ListValue addresses) {
-        List<SocketAddress> result = new ArrayList<>(addresses.size());
+        List<SocketAddress> result = new ArrayList<>(addresses.intSize());
         for (AnyValue address : addresses) {
             result.add(parseAddress(((TextValue) address).stringValue()));
         }

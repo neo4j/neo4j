@@ -104,7 +104,7 @@ class SchemaProcedureIT extends KernelIntegrationTest {
                 AnyValue[] next = stream.next();
                 assertEquals(2, next.length);
                 ListValue nodes = (ListValue) next[0];
-                assertEquals(1, nodes.size());
+                assertEquals(1, nodes.actualSize());
                 NodeValue node = (NodeValue) nodes.value(0);
                 assertThat(node.labels()).isEqualTo(Values.stringArray("Person"));
                 assertEquals(stringValue("Person"), node.properties().get("name"));
@@ -148,7 +148,7 @@ class SchemaProcedureIT extends KernelIntegrationTest {
                 AnyValue[] next = stream.next();
                 assertEquals(2, next.length);
                 ListValue relationships = (ListValue) next[1];
-                assertEquals(1, relationships.size());
+                assertEquals(1, relationships.actualSize());
                 RelationshipValue relationship = (RelationshipValue) relationships.value(0);
                 assertEquals("LIVES_IN", relationship.type().stringValue());
                 NodeValue start = (NodeValue) relationship.startNode();

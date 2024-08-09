@@ -82,7 +82,7 @@ public enum TemporalType {
         @Override
         public ArrayValue decodeArray(Value dataValue) {
             if (dataValue instanceof LongArray numbers) {
-                LocalDate[] dates = new LocalDate[numbers.length()];
+                LocalDate[] dates = new LocalDate[numbers.intSize()];
                 for (int i = 0; i < dates.length; i++) {
                     dates[i] = LocalDate.ofEpochDay(numbers.longValue(i));
                 }
@@ -114,7 +114,7 @@ public enum TemporalType {
         @Override
         public ArrayValue decodeArray(Value dataValue) {
             if (dataValue instanceof LongArray numbers) {
-                LocalTime[] times = new LocalTime[numbers.length()];
+                LocalTime[] times = new LocalTime[numbers.intSize()];
                 for (int i = 0; i < times.length; i++) {
                     long nanoOfDay = numbers.longValue(i);
                     checkValidNanoOfDay(nanoOfDay);
@@ -149,7 +149,7 @@ public enum TemporalType {
         @Override
         public ArrayValue decodeArray(Value dataValue) {
             if (dataValue instanceof LongArray numbers) {
-                LocalDateTime[] dateTimes = new LocalDateTime[numbers.length() / BLOCKS_LOCAL_DATETIME];
+                LocalDateTime[] dateTimes = new LocalDateTime[numbers.intSize() / BLOCKS_LOCAL_DATETIME];
                 for (int i = 0; i < dateTimes.length; i++) {
                     long epochSecond = numbers.longValue(i * BLOCKS_LOCAL_DATETIME);
                     long nanoOfSecond = numbers.longValue(i * BLOCKS_LOCAL_DATETIME + 1);
@@ -180,7 +180,7 @@ public enum TemporalType {
         @Override
         public ArrayValue decodeArray(Value dataValue) {
             if (dataValue instanceof LongArray numbers) {
-                OffsetTime[] times = new OffsetTime[numbers.length() / BLOCKS_TIME];
+                OffsetTime[] times = new OffsetTime[numbers.intSize() / BLOCKS_TIME];
                 for (int i = 0; i < times.length; i++) {
                     long nanoOfDay = numbers.longValue(i * BLOCKS_TIME);
                     int secondOffset = (int) numbers.longValue(i * BLOCKS_TIME + 1);
@@ -220,7 +220,7 @@ public enum TemporalType {
         @Override
         public ArrayValue decodeArray(Value dataValue) {
             if (dataValue instanceof LongArray numbers) {
-                ZonedDateTime[] dateTimes = new ZonedDateTime[numbers.length() / BLOCKS_DATETIME];
+                ZonedDateTime[] dateTimes = new ZonedDateTime[numbers.intSize() / BLOCKS_DATETIME];
                 for (int i = 0; i < dateTimes.length; i++) {
                     long epochSecond = numbers.longValue(i * BLOCKS_DATETIME);
                     long nanoOfSecond = numbers.longValue(i * BLOCKS_DATETIME + 1);
@@ -267,7 +267,7 @@ public enum TemporalType {
         @Override
         public ArrayValue decodeArray(Value dataValue) {
             if (dataValue instanceof LongArray numbers) {
-                DurationValue[] durations = new DurationValue[numbers.length() / BLOCKS_DURATION];
+                DurationValue[] durations = new DurationValue[numbers.intSize() / BLOCKS_DURATION];
                 for (int i = 0; i < durations.length; i++) {
                     durations[i] = DurationValue.duration(
                             numbers.longValue(i * BLOCKS_DURATION),

@@ -39,7 +39,7 @@ public final class IntArray extends IntegralArray {
     }
 
     @Override
-    public int length() {
+    public int intSize() {
         return value.length;
     }
 

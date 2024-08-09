@@ -201,7 +201,7 @@ case class SlottedGroupingExpression(sortedGroupingExpression: Array[SlotExpress
 
   override def project(context: WritableRow, groupingKey: ListValue): Unit = {
     var i = 0
-    while (i < groupingKey.size()) {
+    while (i < groupingKey.actualSize()) {
       setters(i)(context, groupingKey.value(i))
       i += 1
     }

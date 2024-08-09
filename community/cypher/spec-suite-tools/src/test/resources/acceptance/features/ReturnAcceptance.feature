@@ -240,6 +240,27 @@ Feature: ReturnAcceptance
       | []     |
     And no side effects
 
+  Scenario: Return size of a huge list
+      Given any graph
+      When executing query:
+        """
+        RETURN size(range(1, 100000000000000)) AS result
+        """
+      Then the result should be, in any order:
+        | result          |
+        | 100000000000000 |
+      And no side effects
+
+  Scenario: Index into a huge list
+      Given any graph
+      When executing query:
+        """
+        RETURN range(1, 100000000000000)[99999999999999] AS result
+        """
+      Then the result should be, in any order:
+        | result          |
+        | 100000000000000 |
+      And no side effects
   Scenario: Unaliased return items in a top level union should be accepted
     Given any graph
     When executing query:

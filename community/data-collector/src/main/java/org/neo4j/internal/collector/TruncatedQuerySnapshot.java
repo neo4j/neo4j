@@ -159,7 +159,7 @@ public class TruncatedQuerySnapshot {
 
         @Override
         public AnyValue mapSequence(SequenceValue value) {
-            return Values.stringValue("§LIST[" + value.length() + "]");
+            return Values.stringValue("§LIST[" + value.intSize() + "]");
         }
 
         @Override

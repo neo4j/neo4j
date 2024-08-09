@@ -103,7 +103,7 @@ public class GraphFunctionsTest extends CypherFunSuite {
     @Test
     public void graphNamesEmptyConstituents() {
         AnyValue names = GraphFunctions.names(emptyComposite, securityContext);
-        assertEquals(0, ((StringArray) names).length());
+        assertEquals(0, ((StringArray) names).intSize());
     }
 
     @ParameterizedTest

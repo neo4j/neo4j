@@ -337,3 +337,18 @@ Feature: UnwindAcceptance
       | (:B)  |
       | (:C)  |
     And no side effects
+
+  Scenario: Unwind huge list
+    Given an empty graph
+    When executing query:
+      """
+        UNWIND range(1, 2147483648) as i
+        WITH i WHERE i = 11
+        RETURN i
+      """
+    Then the result should be, in any order:
+      | i  |
+      | 11 |
+    And no side effects
+
+

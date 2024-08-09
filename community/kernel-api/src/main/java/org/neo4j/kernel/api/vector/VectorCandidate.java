@@ -76,7 +76,7 @@ public interface VectorCandidate {
 
         @Override
         public int dimensions() {
-            return array.length();
+            return array.intSize();
         }
     }
 
@@ -94,7 +94,7 @@ public interface VectorCandidate {
 
         @Override
         public int dimensions() {
-            return array.length();
+            return array.intSize();
         }
     }
 
@@ -112,7 +112,7 @@ public interface VectorCandidate {
 
         @Override
         public int dimensions() {
-            return sequence.length();
+            return sequence.intSize();
         }
     }
 }

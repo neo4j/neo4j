@@ -209,9 +209,9 @@ class PercentilesFunction(
 
   override protected def onFirstRow(data: ReadableRow, state: QueryState): Unit = {
     val percsValue = CypherCoercions.asSequenceValue(percentiles(data, state))
-    percs = new Array[Double](percsValue.length())
+    percs = new Array[Double](percsValue.intSize())
     var i = 0
-    while (i < percsValue.length()) {
+    while (i < percsValue.intSize()) {
       val perc = CypherCoercions.asNumberValue(percsValue.value(i)).doubleValue()
       percs(i) = perc
       if (perc < 0 || perc > 1.0)
@@ -222,26 +222,26 @@ class PercentilesFunction(
     }
 
     val keysValue = CypherCoercions.asSequenceValue(keys(data, state))
-    mapKeys = new Array[String](keysValue.length())
+    mapKeys = new Array[String](keysValue.intSize())
     i = 0
     while (i < mapKeys.length) {
       mapKeys(i) = CypherFunctions.asTextValue(keysValue.value(i)).stringValue()
       i += 1
     }
-    if (keysValue.length() != percs.length) {
+    if (keysValue.intSize() != percs.length) {
       throw new InternalException(
         s"Expected 'percentiles' ${percs.mkString(",")} and 'keys' ${mapKeys.mkString(",")} to have the same length"
       )
     }
 
     val isDiscreteValues = CypherCoercions.asSequenceValue(isDiscreteRange(data, state))
-    isDiscretes = new Array[Boolean](isDiscreteValues.length())
+    isDiscretes = new Array[Boolean](isDiscreteValues.intSize())
     i = 0
     while (i < isDiscretes.length) {
       isDiscretes(i) = isDiscreteValues.value(i).asInstanceOf[BooleanValue].booleanValue()
       i += 1
     }
-    if (isDiscreteValues.length() != percs.length) {
+    if (isDiscreteValues.intSize() != percs.length) {
       throw new InternalException(
         s"Expected 'percentiles' ${percs.mkString(",")} and 'isDiscreteRange' ${isDiscretes.mkString(",")} to have the same length"
       )

@@ -377,7 +377,7 @@ public class PathValueBuilder implements Consumer<RelationshipVisitor> {
             return;
         }
 
-        AnyValue last = relationships.value(relationships.size() - 1);
+        AnyValue last = relationships.value(relationships.actualSize() - 1);
 
         relationships.forEach(r -> {
             if (r == last) {

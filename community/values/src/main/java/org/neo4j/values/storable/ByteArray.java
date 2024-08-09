@@ -47,7 +47,7 @@ public final class ByteArray extends IntegralArray {
     }
 
     @Override
-    public int length() {
+    public int intSize() {
         checkValid();
         return value.length;
     }

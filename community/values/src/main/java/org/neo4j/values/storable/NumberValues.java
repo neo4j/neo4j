@@ -194,8 +194,8 @@ public final class NumberValues {
     }
 
     public static boolean numbersEqual(IntegralArray lhs, IntegralArray rhs) {
-        int length = lhs.length();
-        if (length != rhs.length()) {
+        int length = lhs.intSize();
+        if (length != rhs.intSize()) {
             return false;
         }
         for (int i = 0; i < length; i++) {
@@ -207,8 +207,8 @@ public final class NumberValues {
     }
 
     public static boolean numbersEqual(FloatingPointArray lhs, FloatingPointArray rhs) {
-        int length = lhs.length();
-        if (length != rhs.length()) {
+        int length = lhs.intSize();
+        if (length != rhs.intSize()) {
             return false;
         }
         for (int i = 0; i < length; i++) {
@@ -220,8 +220,8 @@ public final class NumberValues {
     }
 
     public static boolean numbersEqual(FloatingPointArray fps, IntegralArray ins) {
-        int length = ins.length();
-        if (length != fps.length()) {
+        int length = ins.intSize();
+        if (length != fps.intSize()) {
             return false;
         }
         for (int i = 0; i < length; i++) {
@@ -235,7 +235,7 @@ public final class NumberValues {
     public static int compareIntegerArrays(IntegralArray a, IntegralArray b) {
         int i = 0;
         int x = 0;
-        int length = Math.min(a.length(), b.length());
+        int length = Math.min(a.intSize(), b.intSize());
 
         while (x == 0 && i < length) {
             x = Long.compare(a.longValue(i), b.longValue(i));
@@ -243,7 +243,7 @@ public final class NumberValues {
         }
 
         if (x == 0) {
-            x = a.length() - b.length();
+            x = a.intSize() - b.intSize();
         }
 
         return x;
@@ -252,7 +252,7 @@ public final class NumberValues {
     public static int compareIntegerVsFloatArrays(IntegralArray a, FloatingPointArray b) {
         int i = 0;
         int x = 0;
-        int length = Math.min(a.length(), b.length());
+        int length = Math.min(a.intSize(), b.intSize());
 
         while (x == 0 && i < length) {
             x = compareLongAgainstDouble(a.longValue(i), b.doubleValue(i));
@@ -260,7 +260,7 @@ public final class NumberValues {
         }
 
         if (x == 0) {
-            x = a.length() - b.length();
+            x = a.intSize() - b.intSize();
         }
 
         return x;
@@ -269,7 +269,7 @@ public final class NumberValues {
     public static int compareFloatArrays(FloatingPointArray a, FloatingPointArray b) {
         int i = 0;
         int x = 0;
-        int length = Math.min(a.length(), b.length());
+        int length = Math.min(a.intSize(), b.intSize());
 
         while (x == 0 && i < length) {
             x = Double.compare(a.doubleValue(i), b.doubleValue(i));
@@ -277,7 +277,7 @@ public final class NumberValues {
         }
 
         if (x == 0) {
-            x = a.length() - b.length();
+            x = a.intSize() - b.intSize();
         }
 
         return x;
@@ -286,7 +286,7 @@ public final class NumberValues {
     public static int compareBooleanArrays(BooleanArray a, BooleanArray b) {
         int i = 0;
         int x = 0;
-        int length = Math.min(a.length(), b.length());
+        int length = Math.min(a.intSize(), b.intSize());
 
         while (x == 0 && i < length) {
             x = Boolean.compare(a.booleanValue(i), b.booleanValue(i));
@@ -294,7 +294,7 @@ public final class NumberValues {
         }
 
         if (x == 0) {
-            x = a.length() - b.length();
+            x = a.intSize() - b.intSize();
         }
 
         return x;

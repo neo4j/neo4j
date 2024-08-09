@@ -244,7 +244,7 @@ public final class ValueBooleanLogic {
 
         @Override
         public Value mapSequence(SequenceValue value) {
-            return value.length() > 0 ? TRUE : FALSE;
+            return value.intSize() > 0 ? TRUE : FALSE;
         }
 
         @Override

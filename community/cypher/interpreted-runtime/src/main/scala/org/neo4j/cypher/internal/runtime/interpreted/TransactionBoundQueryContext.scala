@@ -1855,7 +1855,7 @@ private[internal] class TransactionBoundReadQueryContext(
       case l: ListValue if !l.isEmpty =>
         cache.getOrElseUpdate(
           l, {
-            val builder = ListValueBuilder.newListBuilder(l.size())
+            val builder = ListValueBuilder.newListBuilder(l.intSize())
             l.forEach(v => builder.add(rebindEntityWrappingValue(v)))
             builder.build()
           }
