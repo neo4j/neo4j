@@ -29,4 +29,8 @@ public class DeadlockDetectedException extends TransientTransactionFailureExcept
     public DeadlockDetectedException(String message) {
         super(Status.Transaction.DeadlockDetected, message);
     }
+
+    public DeadlockDetectedException(String message, Throwable cause) {
+        super(Status.Transaction.DeadlockDetected, message, cause);
+    }
 }
