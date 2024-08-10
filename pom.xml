@@ -145,7 +145,7 @@
     <lucene.version>9.11.1</lucene.version>
     <bouncycastle.version>1.78.1</bouncycastle.version>
     <jetty.version>10.0.20</jetty.version>
-    <scala-maven-plugin.version>4.9.1</scala-maven-plugin.version>
+    <scala-maven-plugin.version>4.9.2</scala-maven-plugin.version>
     <scala.version>2.13.11</scala.version>
     <scala.binary.version>2.13</scala.binary.version>
     <scala.plugin.recompileMode>all</scala.plugin.recompileMode>
@@ -406,7 +406,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-jar-plugin</artifactId>
-          <version>3.4.1</version>
+          <version>3.4.2</version>
           <executions>
             <!-- Augment default jar with url -->
             <execution>
@@ -508,7 +508,7 @@
           <!-- Updates and validates source code headers -->
           <groupId>com.mycila</groupId>
           <artifactId>license-maven-plugin</artifactId>
-          <version>4.3</version>
+          <version>4.5</version>
           <executions>
             <execution>
               <id>check-licenses</id>
@@ -554,7 +554,7 @@
           <!-- Generates LICENSE.txt files -->
           <groupId>org.codehaus.mojo</groupId>
           <artifactId>license-maven-plugin</artifactId>
-          <version>2.3.0</version>
+          <version>2.4.0</version>
           <configuration>
             <licenseResolver>classpath://license</licenseResolver>
             <licenseName>${license.id}</licenseName>
@@ -625,7 +625,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-enforcer-plugin</artifactId>
-          <version>3.4.1</version>
+          <version>3.5.0</version>
           <dependencies>
             <dependency>
               <groupId>de.skuzzle.enforcer</groupId>
@@ -740,7 +740,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-dependency-plugin</artifactId>
-          <version>3.6.1</version>
+          <version>3.7.1</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -760,7 +760,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-install-plugin</artifactId>
-          <version>3.1.1</version>
+          <version>3.1.2</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -775,7 +775,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-shade-plugin</artifactId>
-          <version>3.5.3</version>
+          <version>3.6.0</version>
           <dependencies>
             <dependency>
               <groupId>org.ow2.asm</groupId>
@@ -849,7 +849,7 @@
           </upToDateChecking>
           <java>
             <palantirJavaFormat>
-              <version>2.46.0</version>
+              <version>2.49.0</version>
             </palantirJavaFormat>
           </java>
           <scala>
