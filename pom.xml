@@ -160,13 +160,13 @@
     <opencypher.version>1.0.0-M23</opencypher.version>
     <caffeine.version>3.1.8</caffeine.version>
     <required.maven.version>3.8.2</required.maven.version>
-    <jackson.version>2.17.1</jackson.version>
-    <jackson-databind.version>2.17.1</jackson-databind.version>
+    <jackson.version>2.17.2</jackson.version>
+    <jackson-databind.version>2.17.2</jackson-databind.version>
     <amazon-sdk.version>1.12.714</amazon-sdk.version>
-    <awssdk.version>2.26.15</awssdk.version>
+    <awssdk.version>2.27.1</awssdk.version>
     <awssdk-crt.version>0.29.25</awssdk-crt.version>
     <guava.version>33.2.1-jre</guava.version>
-    <awaitility.version>4.2.1</awaitility.version>
+    <awaitility.version>4.2.2</awaitility.version>
     <log4j.version>2.20.0</log4j.version>
     <slf4j.version>2.0.9</slf4j.version>
     <neo4j-java-driver.version>5.23.0</neo4j-java-driver.version>
@@ -174,12 +174,12 @@
     <picocli.version>4.7.6</picocli.version>
     <jakarta.activation-api.version>1.2.2</jakarta.activation-api.version>
     <jakarta.ws.rs-api.version>2.1.6</jakarta.ws.rs-api.version>
-    <antlr.version>4.13.1</antlr.version>
-    <error_prone_annotations.version>2.28.0</error_prone_annotations.version>
-    <teavm.version>0.10.0</teavm.version>
+    <antlr.version>4.13.2</antlr.version>
+    <error_prone.version>2.29.2</error_prone.version>
+    <teavm.version>0.10.1</teavm.version>
     <javapoet.version>1.13.0</javapoet.version>
-    <grpc.version>1.65.0</grpc.version>
-    <testcontainers.version>1.19.8</testcontainers.version>
+    <grpc.version>1.66.0</grpc.version>
+    <testcontainers.version>1.20.1</testcontainers.version>
     <build-resources.version>2024-07.1</build-resources.version>
   </properties>
 
@@ -962,7 +962,7 @@
                 <path>
                   <groupId>com.google.errorprone</groupId>
                   <artifactId>error_prone_core</artifactId>
-                  <version>${error_prone_annotations.version}</version>
+                  <version>${error_prone.version}</version>
                 </path>
               </annotationProcessorPaths>
             </configuration>
@@ -1279,7 +1279,7 @@
       <dependency>
         <groupId>org.assertj</groupId>
         <artifactId>assertj-core</artifactId>
-        <version>3.26.0</version>
+        <version>3.26.3</version>
         <scope>test</scope>
         <exclusions>
           <exclusion>
@@ -1291,7 +1291,7 @@
       <dependency>
         <groupId>org.hamcrest</groupId>
         <artifactId>hamcrest</artifactId>
-        <version>2.2</version>
+        <version>3.0</version>
         <scope>test</scope>
       </dependency>
       <dependency>
@@ -1342,7 +1342,7 @@
       <dependency>
         <groupId>commons-codec</groupId>
         <artifactId>commons-codec</artifactId>
-        <version>1.17.0</version>
+        <version>1.17.1</version>
       </dependency>
 
       <dependency>
@@ -1519,7 +1519,7 @@
       <dependency>
         <groupId>org.apache.commons</groupId>
         <artifactId>commons-lang3</artifactId>
-        <version>3.14.0</version>
+        <version>3.16.0</version>
       </dependency>
       <dependency>
         <groupId>org.apache.commons</groupId>
@@ -1529,12 +1529,12 @@
       <dependency>
         <groupId>org.apache.commons</groupId>
         <artifactId>commons-compress</artifactId>
-        <version>1.26.2</version>
+        <version>1.27.0</version>
       </dependency>
       <dependency>
         <groupId>com.github.luben</groupId>
         <artifactId>zstd-jni</artifactId>
-        <version>1.5.6-3</version>
+        <version>1.5.6-4</version>
       </dependency>
 
       <!--
@@ -1755,7 +1755,7 @@
       <dependency>
         <groupId>com.google.truth</groupId>
         <artifactId>truth</artifactId>
-        <version>1.4.2</version>
+        <version>1.4.4</version>
         <exclusions>
           <exclusion>
             <groupId>com.google.guava</groupId>
@@ -1804,7 +1804,7 @@
       <dependency>
         <groupId>com.google.errorprone</groupId>
         <artifactId>error_prone_annotations</artifactId>
-        <version>${error_prone_annotations.version}</version>
+        <version>${error_prone.version}</version>
       </dependency>
       <dependency>
         <groupId>com.fasterxml.jackson.core</groupId>
@@ -1814,7 +1814,7 @@
       <dependency>
         <groupId>net.bytebuddy</groupId>
         <artifactId>byte-buddy</artifactId>
-        <version>1.14.17</version>
+        <version>1.14.18</version>
       </dependency>
       <dependency>
         <groupId>software.amazon.awssdk</groupId>

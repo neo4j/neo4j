@@ -34,5 +34,6 @@ Apache Software License, Version 2.0
   Guava ListenableFuture only
   Guava: Google Core Libraries for Java
   J2ObjC Annotations
+  JSpecify annotations
   Truth Core
 
