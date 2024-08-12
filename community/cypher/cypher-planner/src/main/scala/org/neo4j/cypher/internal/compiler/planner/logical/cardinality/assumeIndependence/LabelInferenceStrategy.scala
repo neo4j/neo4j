@@ -70,6 +70,9 @@ object LabelInferenceStrategy {
       NoInference
   }
 
+  // Don't infer labels for relationships with many types, as it might get too expensive.
+  val REL_TYPE_LIMIT = 8
+
   case object NoInference extends LabelInferenceStrategy {
 
     override def inferLabels(
@@ -250,7 +253,8 @@ object LabelInferenceStrategy {
      */
     def fromNodeConnection(nodeConnection: NodeConnection, semanticTable: SemanticTable): Seq[SimpleRelationship] =
       nodeConnection match {
-        case relationship @ PatternRelationship(_, _, dir, relationshipTypeNames, _) =>
+        case relationship @ PatternRelationship(_, _, dir, relationshipTypeNames, _)
+          if relationshipTypeNames.size <= REL_TYPE_LIMIT =>
           // relationshipTypeNames contains possibly a disjunction of multiple relationship types
           val (startNode, endNode) = relationship.inOrder
           relationshipTypeNames
