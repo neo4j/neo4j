@@ -125,9 +125,9 @@ class LiteralsParserTest extends AstParsingTestBase
             |          ^""".stripMargin
         )
       case Cypher6 => _.withSyntaxError(
-          """Invalid input '_': expected an expression, 'FOREACH', ',', 'AS', 'ORDER BY', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'LIMIT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'SKIP', 'UNION', 'UNWIND', 'USE', 'WITH' or <EOF> (line 1, column 9 (offset: 8))
+          """Invalid input '0_': expected an expression, '*' or 'DISTINCT' (line 1, column 8 (offset: 7))
             |"RETURN 0_.0"
-            |         ^""".stripMargin
+            |        ^""".stripMargin
         )
     }
     "RETURN 1_._1" should parseTo[Statements](
@@ -160,23 +160,24 @@ class LiteralsParserTest extends AstParsingTestBase
     "$1" should parseTo(parameter("1", CTAny))
     "$1gibberish" should parseTo(parameter("1gibberish", CTAny))
 
-    "$0_2" should notParse[Parameter].in {
+    "$0_2" should parseIn[Parameter] {
       case Cypher5JavaCc => _.withMessageStart("Encountered")
       case Cypher5 => _.withSyntaxError(
           """Invalid input '0_2': expected an identifier or an integer value (line 1, column 2 (offset: 1))
             |"$0_2"
             |  ^""".stripMargin
         )
-      case Cypher6 => _.withSyntaxError(
-          """Invalid input '_2' (line 1, column 3 (offset: 2))
-            |"$0_2"
-            |   ^""".stripMargin
-        )
+      case Cypher6 => _.toAst(parameter("0_2", CTAny))
     }
     "return $1.0f" should notParse[Statements].in {
       case Cypher5JavaCc => _.withMessageStart("Invalid input '$': expected \"+\" or \"-\"")
-      case _ => _.withSyntaxError(
+      case Cypher5 => _.withSyntaxError(
           """Invalid input '1.0f': expected an identifier or an integer value (line 1, column 9 (offset: 8))
+            |"return $1.0f"
+            |         ^""".stripMargin
+        )
+      case _ => _.withSyntaxError(
+          """Invalid input '1.0f': expected an identifier, an integer value or an octal integer value (line 1, column 9 (offset: 8))
             |"return $1.0f"
             |         ^""".stripMargin
         )

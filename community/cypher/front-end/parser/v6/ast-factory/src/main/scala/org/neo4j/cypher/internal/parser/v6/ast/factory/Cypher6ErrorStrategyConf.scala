@@ -51,6 +51,7 @@ class Cypher6ErrorStrategyConf extends CypherErrorStrategy.Conf {
     Cypher6Parser.UNSIGNED_DECIMAL_INTEGER -> "an integer value",
     Cypher6Parser.UNSIGNED_HEX_INTEGER -> "a hexadecimal integer value",
     Cypher6Parser.UNSIGNED_OCTAL_INTEGER -> "an octal integer value",
+    Cypher6Parser.EXTENDED_IDENTIFIER -> "an identifier",
     Cypher6Parser.IDENTIFIER -> "an identifier",
     Cypher6Parser.ARROW_LINE -> "'-'",
     Cypher6Parser.ARROW_LEFT_HEAD -> "'<'",

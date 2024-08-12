@@ -1259,6 +1259,10 @@ IDENTIFIER
    : LETTER (PART_LETTER)*
    ;
 
+EXTENDED_IDENTIFIER
+   : PART_LETTER+
+   ;
+
 ARROW_LINE
    : [\-\u00AD‐‑‒–—―﹘﹣－]
    ;

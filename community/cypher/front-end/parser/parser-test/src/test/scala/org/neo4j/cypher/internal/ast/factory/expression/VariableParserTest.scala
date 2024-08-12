@@ -17,7 +17,9 @@
 package org.neo4j.cypher.internal.ast.factory.expression
 
 import org.neo4j.cypher.internal.ast.Statements
+import org.neo4j.cypher.internal.ast.test.util.AstParsing.Cypher5
 import org.neo4j.cypher.internal.ast.test.util.AstParsing.Cypher5JavaCc
+import org.neo4j.cypher.internal.ast.test.util.AstParsing.Cypher6
 import org.neo4j.cypher.internal.ast.test.util.AstParsingTestBase
 import org.neo4j.cypher.internal.expressions
 import org.neo4j.cypher.internal.expressions.Variable
@@ -94,8 +96,19 @@ class VariableParserTest extends AstParsingTestBase
     Seq("$", "¢", "£", "₲", "₶", "\u20BD", "＄", "﹩").foreach { curr =>
       s"${curr}var" should notParse[Variable].in {
         case Cypher5JavaCc => _.withMessageContaining("Was expecting one of:")
-        case _ => _.withSyntaxError(
+        case Cypher5 => _.withSyntaxError(
             s"""Invalid input '$curr': expected an identifier (line 1, column 1 (offset: 0))
+               |"${curr}var"
+               | ^""".stripMargin
+          )
+        case Cypher6 if curr == "$" || curr == "¢" || curr == "£" =>
+          _.withSyntaxError(
+            s"""Invalid input '$curr': expected an identifier (line 1, column 1 (offset: 0))
+               |"${curr}var"
+               | ^""".stripMargin
+          )
+        case _ => _.withSyntaxError(
+            s"""Invalid input '${curr}var': expected an identifier (line 1, column 1 (offset: 0))
                |"${curr}var"
                | ^""".stripMargin
           )

@@ -28,13 +28,14 @@ class ParameterIdentifiersParserTest extends AstParsingTestBase {
   // These chars are characters that will change the meaning of the query, making it a different test, so skip them.
   val specialChars: Seq[Char] = List('"', '\'', '/', '*', '%', '+', '-', ',', '.', ':', '<', '>', '=', '^', '`')
 
+  // In Cypher6 Extended Identifiers are allowed in the first position as well.
   test("Identifier Start characters are allowed in first position") {
     for (c <- Character.MIN_VALUE to Character.MAX_VALUE) {
       if (Character.getType(c) != Character.SURROGATE && !specialChars.contains(c)) {
         val paramWithCharName = f"paramWithChar_${Integer.valueOf(c)}%04X"
 
         s"RETURN $$${c}abc AS `$paramWithCharName`" should parseIn[Statements] {
-          case Cypher6 if UnicodeHelper.isIdentifierStart(c, CypherVersion.Cypher6) || (c >= 0x31 && c <= 0x39) =>
+          case Cypher6 if UnicodeHelper.isIdentifierPart(c, CypherVersion.Cypher6) =>
             _.toAstPositioned(
               singleQuery(
                 return_(aliasedReturnItem(parameter(s"${c}abc", CTAny), paramWithCharName))

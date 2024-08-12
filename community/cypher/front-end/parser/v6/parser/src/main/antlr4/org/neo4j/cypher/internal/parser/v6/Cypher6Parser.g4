@@ -677,7 +677,7 @@ parameter[String paramType]
    ;
 
 parameterName[String paramType]
-   : (symbolicNameString | UNSIGNED_DECIMAL_INTEGER)
+   : (symbolicNameString | UNSIGNED_DECIMAL_INTEGER | UNSIGNED_OCTAL_INTEGER | EXTENDED_IDENTIFIER)
    ;
 
 functionInvocation

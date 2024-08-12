@@ -359,6 +359,7 @@ class Cypher6VocabularyTest extends CypherFunSuite {
     Cypher6Parser.YIELD -> "'YIELD'",
     Cypher6Parser.ZONE -> "'ZONE'",
     Cypher6Parser.ZONED -> "'ZONED'",
+    Cypher6Parser.EXTENDED_IDENTIFIER -> "an identifier",
     Cypher6Parser.IDENTIFIER -> "an identifier",
     Cypher6Parser.ARROW_LINE -> "'-'",
     Cypher6Parser.ARROW_LEFT_HEAD -> "'<'",
