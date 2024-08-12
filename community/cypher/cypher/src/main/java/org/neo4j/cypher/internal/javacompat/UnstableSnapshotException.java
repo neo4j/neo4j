@@ -20,10 +20,15 @@
 package org.neo4j.cypher.internal.javacompat;
 
 import org.neo4j.exceptions.KernelException;
+import org.neo4j.gqlstatus.ErrorGqlStatusObject;
 import org.neo4j.kernel.api.exceptions.Status;
 
 class UnstableSnapshotException extends KernelException {
     UnstableSnapshotException(String message, Object... parameters) {
         super(Status.Transaction.Outdated, message, parameters);
+    }
+
+    UnstableSnapshotException(ErrorGqlStatusObject gqlStatusObject, String message, Object... parameters) {
+        super(gqlStatusObject, Status.Transaction.Outdated, message, parameters);
     }
 }

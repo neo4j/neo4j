@@ -19,8 +19,14 @@
  */
 package org.neo4j.exceptions;
 
+import org.neo4j.gqlstatus.ErrorGqlStatusObject;
+
 public abstract class DatabaseAdministrationException extends CypherExecutionException {
     public DatabaseAdministrationException(String message) {
         super(message);
+    }
+
+    public DatabaseAdministrationException(ErrorGqlStatusObject gqlStatusObject, String message) {
+        super(gqlStatusObject, message);
     }
 }

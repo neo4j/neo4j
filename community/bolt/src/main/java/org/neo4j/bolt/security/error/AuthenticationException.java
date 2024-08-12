@@ -20,26 +20,58 @@
 package org.neo4j.bolt.security.error;
 
 import java.io.IOException;
+import org.neo4j.gqlstatus.ErrorGqlStatusObject;
+import org.neo4j.gqlstatus.ErrorMessageHolder;
+import org.neo4j.gqlstatus.HasGqlStatusInfo;
 import org.neo4j.kernel.api.exceptions.Status;
 
-public class AuthenticationException extends IOException implements Status.HasStatus {
+public class AuthenticationException extends IOException implements Status.HasStatus, HasGqlStatusInfo {
     private final Status status;
+    private final ErrorGqlStatusObject gqlStatusObject;
+    private final String oldMessage;
 
     public AuthenticationException(Status status) {
         this(status, status.code().description(), null);
+    }
+
+    public AuthenticationException(ErrorGqlStatusObject gqlStatusObject, Status status) {
+        this(gqlStatusObject, status, status.code().description(), null);
     }
 
     public AuthenticationException(Status status, String message) {
         this(status, message, null);
     }
 
+    public AuthenticationException(ErrorGqlStatusObject gqlStatusObject, Status status, String message) {
+        this(gqlStatusObject, status, message, null);
+    }
+
     public AuthenticationException(Status status, String message, Throwable e) {
         super(message, e);
         this.status = status;
+        gqlStatusObject = null;
+        oldMessage = message;
+    }
+
+    public AuthenticationException(ErrorGqlStatusObject gqlStatusObject, Status status, String message, Throwable e) {
+        super(ErrorMessageHolder.getMessage(gqlStatusObject, message), e);
+        this.status = status;
+        this.gqlStatusObject = gqlStatusObject;
+        oldMessage = message;
+    }
+
+    @Override
+    public String getOldMessage() {
+        return oldMessage;
     }
 
     @Override
     public Status status() {
         return status;
+    }
+
+    @Override
+    public ErrorGqlStatusObject gqlStatusObject() {
+        return gqlStatusObject;
     }
 }

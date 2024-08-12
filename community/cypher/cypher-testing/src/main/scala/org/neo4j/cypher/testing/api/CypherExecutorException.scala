@@ -19,6 +19,9 @@
  */
 package org.neo4j.cypher.testing.api
 
+import org.neo4j.gqlstatus.ErrorGqlStatusObject
+import org.neo4j.gqlstatus.ErrorMessageHolder
+import org.neo4j.gqlstatus.HasGqlStatusInfo
 import org.neo4j.kernel.api.exceptions.Status
 import org.neo4j.kernel.api.exceptions.Status.HasStatus
 
@@ -29,12 +32,46 @@ import scala.collection.JavaConverters.iterableAsScalaIterableConverter
  * All exceptions thrown when executing cypher in a CypherExecutor should be converted into CypherExecutorException:s
  */
 case class CypherExecutorException(
-  status: Status,
+  errorGqlStatusObject: ErrorGqlStatusObject,
+  override val status: Status,
   original: Throwable,
-  message: Option[String] = None
-) extends RuntimeException(message.getOrElse(original.getMessage)) with HasStatus
+  message: Option[String]
+) extends RuntimeException(ErrorMessageHolder.getMessage(errorGqlStatusObject, message.getOrElse(original.getMessage)))
+    with HasStatus with HasGqlStatusInfo {
+
+  def this(errorGqlStatusObject: ErrorGqlStatusObject, status: Status, original: Throwable) =
+    this(errorGqlStatusObject, status, original, None)
+  def this(status: Status, original: Throwable, message: Option[String]) = this(null, status, original, message)
+  def this(status: Status, original: Throwable) = this(null, status, original, None)
+
+  override def gqlStatusObject: ErrorGqlStatusObject = errorGqlStatusObject
+
+  override def getOldMessage: String = if (message.isDefined) message.get
+  else {
+    original match {
+      case e: HasGqlStatusInfo => e.getOldMessage
+      case _                   => original.getMessage
+    }
+  }
+}
 
 object CypherExecutorException {
+
+  def unapply(cypherExecutorException: CypherExecutorException): Option[(Status, Throwable, Option[String])] = {
+    Some((cypherExecutorException.status, cypherExecutorException.original, cypherExecutorException.message))
+  }
+
+  def apply(gqlStatusObject: ErrorGqlStatusObject, status: Status, original: Throwable): CypherExecutorException = {
+    new CypherExecutorException(gqlStatusObject, status, original, None)
+  }
+
+  def apply(status: Status, original: Throwable, message: Option[String]): CypherExecutorException = {
+    new CypherExecutorException(null, status, original, message)
+  }
+
+  def apply(status: Status, original: Throwable): CypherExecutorException = {
+    new CypherExecutorException(null, status, original, None)
+  }
 
   trait ExceptionConverter {
 

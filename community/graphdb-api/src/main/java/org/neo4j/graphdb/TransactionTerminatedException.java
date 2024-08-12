@@ -20,6 +20,7 @@
 package org.neo4j.graphdb;
 
 import org.neo4j.annotations.api.PublicApi;
+import org.neo4j.gqlstatus.ErrorGqlStatusObject;
 import org.neo4j.kernel.api.exceptions.Status;
 
 /**
@@ -34,12 +35,28 @@ public class TransactionTerminatedException extends TransactionFailureException 
         this(status, "");
     }
 
+    public TransactionTerminatedException(ErrorGqlStatusObject gqlStatusObject, Status status) {
+        this(gqlStatusObject, status, "");
+    }
+
     protected TransactionTerminatedException(Status status, String additionalInfo) {
         super(
                 "The transaction has been terminated. Retry your operation in a new transaction, "
                         + "and you should see a successful result. "
                         + status.code().description() + " " + additionalInfo,
                 status);
+        this.status = status;
+    }
+
+    protected TransactionTerminatedException(
+            ErrorGqlStatusObject gqlStatusObject, Status status, String additionalInfo) {
+        super(
+                gqlStatusObject,
+                "The transaction has been terminated. Retry your operation in a new transaction, "
+                        + "and you should see a successful result. "
+                        + status.code().description() + " " + additionalInfo,
+                status);
+
         this.status = status;
     }
 

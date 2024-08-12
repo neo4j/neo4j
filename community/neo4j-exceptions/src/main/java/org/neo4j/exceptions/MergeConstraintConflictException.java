@@ -21,11 +21,16 @@ package org.neo4j.exceptions;
 
 import static java.lang.String.format;
 
+import org.neo4j.gqlstatus.ErrorGqlStatusObject;
 import org.neo4j.kernel.api.exceptions.Status;
 
 public class MergeConstraintConflictException extends Neo4jException {
     public MergeConstraintConflictException(String message) {
         super(message);
+    }
+
+    public MergeConstraintConflictException(ErrorGqlStatusObject gqlStatusObject, String message) {
+        super(gqlStatusObject, message);
     }
 
     @Override

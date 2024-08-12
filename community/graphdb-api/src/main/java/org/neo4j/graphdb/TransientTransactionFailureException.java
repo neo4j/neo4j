@@ -19,6 +19,7 @@
  */
 package org.neo4j.graphdb;
 
+import org.neo4j.gqlstatus.ErrorGqlStatusObject;
 import org.neo4j.kernel.api.exceptions.Status;
 
 /**
@@ -35,8 +36,21 @@ public class TransientTransactionFailureException extends TransientFailureExcept
         this.status = status;
     }
 
+    public TransientTransactionFailureException(ErrorGqlStatusObject gqlStatusObject, Status status, String message) {
+        super(gqlStatusObject, message);
+
+        this.status = status;
+    }
+
     public TransientTransactionFailureException(Status status, String message, Throwable cause) {
         super(message, cause);
+        this.status = status;
+    }
+
+    public TransientTransactionFailureException(
+            ErrorGqlStatusObject gqlStatusObject, Status status, String message, Throwable cause) {
+        super(gqlStatusObject, message, cause);
+
         this.status = status;
     }
 

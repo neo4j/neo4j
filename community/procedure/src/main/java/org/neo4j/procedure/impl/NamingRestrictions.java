@@ -21,6 +21,7 @@ package org.neo4j.procedure.impl;
 
 import java.util.List;
 import java.util.Objects;
+import org.neo4j.gqlstatus.ErrorGqlStatusObject;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.QualifiedName;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -67,6 +68,10 @@ interface NamingRestrictions {
     class IllegalNamingException extends ProcedureException {
         IllegalNamingException(String message, Object... parameters) {
             super(Status.Procedure.ProcedureRegistrationFailed, message, parameters);
+        }
+
+        IllegalNamingException(ErrorGqlStatusObject gqlStatusObject, String message, Object... parameters) {
+            super(gqlStatusObject, Status.Procedure.ProcedureRegistrationFailed, message, parameters);
         }
     }
 }

@@ -19,25 +19,56 @@
  */
 package org.neo4j.graphdb.security;
 
+import org.neo4j.gqlstatus.ErrorGqlStatusObject;
+import org.neo4j.gqlstatus.ErrorMessageHolder;
+import org.neo4j.gqlstatus.HasGqlStatusInfo;
 import org.neo4j.kernel.api.exceptions.Status;
 
 /**
  * Thrown when required authorization info has expired in the Neo4j auth cache
  */
-public class AuthorizationExpiredException extends RuntimeException implements Status.HasStatus {
+public class AuthorizationExpiredException extends RuntimeException implements Status.HasStatus, HasGqlStatusInfo {
     private static final Status statusCode = Status.Security.AuthorizationExpired;
+    private final ErrorGqlStatusObject gqlStatusObject;
+    private final String oldMessage;
 
-    public AuthorizationExpiredException(String msg) {
-        super(msg);
+    public AuthorizationExpiredException(String message) {
+        super(message);
+        this.gqlStatusObject = null;
+        this.oldMessage = message;
     }
 
-    public AuthorizationExpiredException(String msg, Throwable cause) {
-        super(msg, cause);
+    public AuthorizationExpiredException(ErrorGqlStatusObject gqlStatusObject, String message) {
+        super(ErrorMessageHolder.getMessage(gqlStatusObject, message));
+        this.gqlStatusObject = gqlStatusObject;
+        this.oldMessage = message;
+    }
+
+    public AuthorizationExpiredException(String message, Throwable cause) {
+        super(message, cause);
+        this.gqlStatusObject = null;
+        this.oldMessage = message;
+    }
+
+    public AuthorizationExpiredException(ErrorGqlStatusObject gqlStatusObject, String message, Throwable cause) {
+        super(ErrorMessageHolder.getMessage(gqlStatusObject, message), cause);
+        this.gqlStatusObject = gqlStatusObject;
+        this.oldMessage = message;
+    }
+
+    @Override
+    public String getOldMessage() {
+        return oldMessage;
     }
 
     /** The Neo4j status code associated with this exception type. */
     @Override
     public Status status() {
         return statusCode;
+    }
+
+    @Override
+    public ErrorGqlStatusObject gqlStatusObject() {
+        return gqlStatusObject;
     }
 }

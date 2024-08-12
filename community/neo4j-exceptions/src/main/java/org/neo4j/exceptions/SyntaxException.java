@@ -22,6 +22,7 @@ package org.neo4j.exceptions;
 import static java.lang.System.lineSeparator;
 
 import java.util.Optional;
+import org.neo4j.gqlstatus.ErrorGqlStatusObject;
 import org.neo4j.kernel.api.exceptions.Status;
 
 @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
@@ -35,20 +36,49 @@ public class SyntaxException extends Neo4jException {
         this.query = query;
     }
 
+    public SyntaxException(
+            ErrorGqlStatusObject gqlStatusObject,
+            String message,
+            String query,
+            Optional<Integer> offset,
+            Throwable cause) {
+        super(gqlStatusObject, message, cause);
+
+        this.offset = offset;
+        this.query = query;
+    }
+
     public SyntaxException(String message, String query, int offset) {
         this(message, query, Optional.of(offset), null);
+    }
+
+    public SyntaxException(ErrorGqlStatusObject gqlStatusObject, String message, String query, int offset) {
+        this(gqlStatusObject, message, query, Optional.of(offset), null);
     }
 
     public SyntaxException(String message, String query, int offset, Throwable cause) {
         this(message, query, Optional.of(offset), cause);
     }
 
+    public SyntaxException(
+            ErrorGqlStatusObject gqlStatusObject, String message, String query, int offset, Throwable cause) {
+        this(gqlStatusObject, message, query, Optional.of(offset), cause);
+    }
+
     public SyntaxException(String message, Throwable cause) {
         this(message, "", Optional.empty(), cause);
     }
 
+    public SyntaxException(ErrorGqlStatusObject gqlStatusObject, String message, Throwable cause) {
+        this(gqlStatusObject, message, "", Optional.empty(), cause);
+    }
+
     public SyntaxException(String message) {
         this(message, "", Optional.empty(), null);
+    }
+
+    public SyntaxException(ErrorGqlStatusObject gqlStatusObject, String message) {
+        this(gqlStatusObject, message, "", Optional.empty(), null);
     }
 
     @Override

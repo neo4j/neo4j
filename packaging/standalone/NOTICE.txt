@@ -64,6 +64,9 @@ Apache Software License, Version 2.0
   forever-agent
   grpc
   IPAddress
+  Jackson-annotations
+  Jackson-core
+  jackson-databind
   Java Concurrency Tools Core Library
   Java Native Access
   Jettison

@@ -19,6 +19,7 @@
  */
 package org.neo4j.packstream.error.struct;
 
+import org.neo4j.gqlstatus.ErrorGqlStatusObject;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.packstream.error.reader.PackstreamReaderException;
 
@@ -33,8 +34,23 @@ public class IllegalStructArgumentException extends PackstreamStructException {
         this.fieldName = fieldName;
     }
 
+    public IllegalStructArgumentException(
+            ErrorGqlStatusObject gqlStatusObject, String fieldName, PackstreamReaderException cause) {
+        // In case of Packstream exceptions, we'll copy the cause message in order to make it available to the client
+        // as well - in all other cases this information will be suppressed as we do not wish to accidentally leak any
+        // information that could provide information about internal processes
+        super(String.format("Illegal value for field \"%s\": %s", fieldName, cause.getMessage()), cause);
+        this.fieldName = fieldName;
+    }
+
     public IllegalStructArgumentException(String fieldName, Throwable cause) {
         super(String.format("Illegal value for field \"%s\"", fieldName), cause);
+        this.fieldName = fieldName;
+    }
+
+    public IllegalStructArgumentException(ErrorGqlStatusObject gqlStatusObject, String fieldName, Throwable cause) {
+        super(gqlStatusObject, String.format("Illegal value for field \"%s\"", fieldName), cause);
+
         this.fieldName = fieldName;
     }
 
@@ -43,8 +59,19 @@ public class IllegalStructArgumentException extends PackstreamStructException {
         this.fieldName = fieldName;
     }
 
+    public IllegalStructArgumentException(
+            ErrorGqlStatusObject gqlStatusObject, String fieldName, String message, Throwable cause) {
+        super(gqlStatusObject, String.format("Illegal value for field \"%s\": %s", fieldName, message), cause);
+
+        this.fieldName = fieldName;
+    }
+
     public IllegalStructArgumentException(String fieldName, String message) {
         this(fieldName, message, null);
+    }
+
+    public IllegalStructArgumentException(ErrorGqlStatusObject gqlStatusObject, String fieldName, String message) {
+        this(gqlStatusObject, fieldName, message, null);
     }
 
     public String getFieldName() {

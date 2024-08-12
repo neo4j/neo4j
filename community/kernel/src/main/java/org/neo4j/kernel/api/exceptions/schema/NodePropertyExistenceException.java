@@ -23,6 +23,7 @@ import static java.lang.String.format;
 
 import java.util.function.Function;
 import org.neo4j.common.TokenNameLookup;
+import org.neo4j.gqlstatus.ErrorGqlStatusObject;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
@@ -39,6 +40,19 @@ public class NodePropertyExistenceException extends ConstraintValidationExceptio
             long nodeId,
             TokenNameLookup tokenNameLookup) {
         super(constraintFunc.apply(schema), phase, format("Node(%d)", nodeId), tokenNameLookup);
+        this.schema = schema;
+        this.nodeId = nodeId;
+    }
+
+    public NodePropertyExistenceException(
+            ErrorGqlStatusObject gqlStatusObject,
+            LabelSchemaDescriptor schema,
+            Function<LabelSchemaDescriptor, ConstraintDescriptor> constraintFunc,
+            ConstraintValidationException.Phase phase,
+            long nodeId,
+            TokenNameLookup tokenNameLookup) {
+        super(gqlStatusObject, constraintFunc.apply(schema), phase, format("Node(%d)", nodeId), tokenNameLookup);
+
         this.schema = schema;
         this.nodeId = nodeId;
     }

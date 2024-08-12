@@ -19,6 +19,7 @@
  */
 package org.neo4j.exceptions;
 
+import org.neo4j.gqlstatus.ErrorGqlStatusObject;
 import org.neo4j.kernel.api.exceptions.Status;
 
 public class LoadExternalResourceException extends Neo4jException {
@@ -26,8 +27,16 @@ public class LoadExternalResourceException extends Neo4jException {
         super(message, cause);
     }
 
+    public LoadExternalResourceException(ErrorGqlStatusObject gqlStatusObject, String message, Throwable cause) {
+        super(gqlStatusObject, message, cause);
+    }
+
     public LoadExternalResourceException(String message) {
         super(message);
+    }
+
+    public LoadExternalResourceException(ErrorGqlStatusObject gqlStatusObject, String message) {
+        super(gqlStatusObject, message);
     }
 
     @Override

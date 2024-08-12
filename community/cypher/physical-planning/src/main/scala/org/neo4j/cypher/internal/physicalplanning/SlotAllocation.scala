@@ -186,6 +186,7 @@ import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.symbols.CTPath
 import org.neo4j.cypher.internal.util.symbols.CTRelationship
 import org.neo4j.exceptions.InternalException
+import org.neo4j.gqlstatus.ErrorGqlStatusObject
 
 import java.util
 
@@ -1423,4 +1424,11 @@ class SingleQuerySlotAllocator private[physicalplanning] (
   }
 }
 
-class SlotAllocationFailed(str: String) extends InternalException(str)
+class SlotAllocationFailed(gqlStatusObject: ErrorGqlStatusObject, str: String)
+    extends InternalException(gqlStatusObject, str) {
+
+  def this(str: String) = {
+    this(null, str)
+  }
+
+}

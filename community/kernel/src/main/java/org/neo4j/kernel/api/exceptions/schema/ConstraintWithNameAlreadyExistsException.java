@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.exceptions.schema;
 
+import org.neo4j.gqlstatus.ErrorGqlStatusObject;
 import org.neo4j.kernel.api.exceptions.Status;
 
 public class ConstraintWithNameAlreadyExistsException extends SchemaRuleWithNameAlreadyExistsException {
@@ -26,5 +27,12 @@ public class ConstraintWithNameAlreadyExistsException extends SchemaRuleWithName
 
     public ConstraintWithNameAlreadyExistsException(String schemaName) {
         super(Status.Schema.ConstraintWithNameAlreadyExists, String.format(CONSTRAINT_NAME_FORMAT, schemaName));
+    }
+
+    public ConstraintWithNameAlreadyExistsException(ErrorGqlStatusObject gqlStatusObject, String schemaName) {
+        super(
+                gqlStatusObject,
+                Status.Schema.ConstraintWithNameAlreadyExists,
+                String.format(CONSTRAINT_NAME_FORMAT, schemaName));
     }
 }

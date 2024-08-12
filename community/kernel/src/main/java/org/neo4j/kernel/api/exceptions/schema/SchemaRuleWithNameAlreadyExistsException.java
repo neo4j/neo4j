@@ -19,11 +19,16 @@
  */
 package org.neo4j.kernel.api.exceptions.schema;
 
+import org.neo4j.gqlstatus.ErrorGqlStatusObject;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.api.exceptions.Status;
 
 public abstract class SchemaRuleWithNameAlreadyExistsException extends SchemaKernelException {
     SchemaRuleWithNameAlreadyExistsException(Status status, String message) {
         super(status, message);
+    }
+
+    SchemaRuleWithNameAlreadyExistsException(ErrorGqlStatusObject gqlStatusObject, Status status, String message) {
+        super(gqlStatusObject, status, message);
     }
 }

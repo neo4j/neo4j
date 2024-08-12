@@ -19,17 +19,35 @@
  */
 package org.neo4j.packstream.error.reader;
 
+import org.neo4j.gqlstatus.ErrorGqlStatusObject;
+import org.neo4j.gqlstatus.ErrorMessageHolder;
+import org.neo4j.gqlstatus.HasGqlStatusInfo;
 import org.neo4j.kernel.api.exceptions.Status;
 
-public class LimitExceededException extends PackstreamReaderException implements Status.HasStatus {
+public class LimitExceededException extends PackstreamReaderException implements Status.HasStatus, HasGqlStatusInfo {
     private final long limit;
     private final long actual;
+    private final ErrorGqlStatusObject gqlStatusObject;
+    private final String oldMessage;
 
     public LimitExceededException(long limit, long actual) {
         super("Value of size " + actual + " exceeded limit of " + limit);
 
         this.limit = limit;
         this.actual = actual;
+
+        this.gqlStatusObject = null;
+        this.oldMessage = "Value of size " + actual + " exceeded limit of " + limit;
+    }
+
+    public LimitExceededException(ErrorGqlStatusObject gqlStatusObject, long limit, long actual) {
+        super(ErrorMessageHolder.getMessage(
+                gqlStatusObject, "Value of size " + actual + " exceeded limit of " + limit));
+        this.gqlStatusObject = gqlStatusObject;
+
+        this.limit = limit;
+        this.actual = actual;
+        this.oldMessage = "Value of size " + actual + " exceeded limit of " + limit;
     }
 
     public long getLimit() {
@@ -41,7 +59,17 @@ public class LimitExceededException extends PackstreamReaderException implements
     }
 
     @Override
+    public String getOldMessage() {
+        return oldMessage;
+    }
+
+    @Override
     public Status status() {
         return Status.Request.Invalid;
+    }
+
+    @Override
+    public ErrorGqlStatusObject gqlStatusObject() {
+        return gqlStatusObject;
     }
 }

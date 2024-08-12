@@ -12,6 +12,9 @@ Apache Software License, Version 2.0
   Apache Log4j Layout for JSON template
   Caffeine cache
   IPAddress
+  Jackson-annotations
+  Jackson-core
+  jackson-databind
   Java Native Access
   Jettison
   org.apiguardian:apiguardian-api

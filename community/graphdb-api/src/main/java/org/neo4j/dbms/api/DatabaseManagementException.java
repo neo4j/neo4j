@@ -20,6 +20,9 @@
 package org.neo4j.dbms.api;
 
 import org.neo4j.annotations.api.PublicApi;
+import org.neo4j.gqlstatus.ErrorGqlStatusObject;
+import org.neo4j.gqlstatus.ErrorMessageHolder;
+import org.neo4j.gqlstatus.HasGqlStatusInfo;
 import org.neo4j.kernel.api.exceptions.Status;
 
 /**
@@ -27,26 +30,74 @@ import org.neo4j.kernel.api.exceptions.Status;
  * @see DatabaseManagementService
  */
 @PublicApi
-public class DatabaseManagementException extends RuntimeException implements Status.HasStatus {
+public class DatabaseManagementException extends RuntimeException implements Status.HasStatus, HasGqlStatusInfo {
+    private final ErrorGqlStatusObject gqlStatusObject;
+    private final String oldMessage;
+
     public DatabaseManagementException() {
         super();
+        this.gqlStatusObject = null;
+        this.oldMessage = "";
+    }
+
+    public DatabaseManagementException(ErrorGqlStatusObject gqlStatusObject) {
+        super();
+        this.gqlStatusObject = gqlStatusObject;
+        this.oldMessage = "";
     }
 
     public DatabaseManagementException(String message) {
         super(message);
+
+        this.gqlStatusObject = null;
+        this.oldMessage = message;
+    }
+
+    public DatabaseManagementException(ErrorGqlStatusObject gqlStatusObject, String message) {
+        super(ErrorMessageHolder.getMessage(gqlStatusObject, message));
+        this.gqlStatusObject = gqlStatusObject;
+        this.oldMessage = message;
     }
 
     public DatabaseManagementException(String message, Throwable cause) {
         super(message, cause);
+
+        this.gqlStatusObject = null;
+        this.oldMessage = message;
+    }
+
+    public DatabaseManagementException(ErrorGqlStatusObject gqlStatusObject, String message, Throwable cause) {
+        super(ErrorMessageHolder.getMessage(gqlStatusObject, message), cause);
+        this.gqlStatusObject = gqlStatusObject;
+        this.oldMessage = message;
     }
 
     public DatabaseManagementException(Throwable cause) {
         super(cause);
+
+        this.gqlStatusObject = null;
+        this.oldMessage = HasGqlStatusInfo.getOldCauseMessage(cause);
+    }
+
+    public DatabaseManagementException(ErrorGqlStatusObject gqlStatusObject, Throwable cause) {
+        super(ErrorMessageHolder.getMessage(gqlStatusObject, HasGqlStatusInfo.getOldCauseMessage(cause)), cause);
+        this.gqlStatusObject = gqlStatusObject;
+        this.oldMessage = HasGqlStatusInfo.getOldCauseMessage(cause);
+    }
+
+    @Override
+    public String getOldMessage() {
+        return oldMessage;
     }
 
     @Override
     public Status status() {
         return Status.Database.Unknown;
+    }
+
+    @Override
+    public ErrorGqlStatusObject gqlStatusObject() {
+        return gqlStatusObject;
     }
 
     public static DatabaseManagementException wrap(Throwable toWrap) {

@@ -19,20 +19,51 @@
  */
 package org.neo4j.kernel.api.exceptions;
 
-public class InvalidArgumentsException extends Exception implements Status.HasStatus {
+import org.neo4j.gqlstatus.ErrorGqlStatusObject;
+import org.neo4j.gqlstatus.ErrorMessageHolder;
+import org.neo4j.gqlstatus.HasGqlStatusInfo;
+
+public class InvalidArgumentsException extends Exception implements Status.HasStatus, HasGqlStatusInfo {
     private final Status status;
+    private final ErrorGqlStatusObject gqlStatusObject;
+    private final String oldMessage;
 
     public InvalidArgumentsException(String message) {
         this(message, null);
     }
 
+    public InvalidArgumentsException(ErrorGqlStatusObject gqlStatusObject, String message) {
+        this(gqlStatusObject, message, null);
+    }
+
     public InvalidArgumentsException(String message, Throwable cause) {
         super(message, cause);
         this.status = Status.General.InvalidArguments;
+
+        this.gqlStatusObject = null;
+        this.oldMessage = message;
+    }
+
+    public InvalidArgumentsException(ErrorGqlStatusObject gqlStatusObject, String message, Throwable cause) {
+        super(ErrorMessageHolder.getMessage(gqlStatusObject, message), cause);
+        this.gqlStatusObject = gqlStatusObject;
+
+        this.status = Status.General.InvalidArguments;
+        this.oldMessage = message;
+    }
+
+    @Override
+    public String getOldMessage() {
+        return oldMessage;
     }
 
     @Override
     public Status status() {
         return status;
+    }
+
+    @Override
+    public ErrorGqlStatusObject gqlStatusObject() {
+        return gqlStatusObject;
     }
 }

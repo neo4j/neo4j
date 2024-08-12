@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.Set;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.exceptions.KernelException;
+import org.neo4j.gqlstatus.ErrorGqlStatusObject;
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
@@ -40,6 +41,15 @@ public class UniquePropertyValueValidationException extends ConstraintValidation
     }
 
     public UniquePropertyValueValidationException(
+            ErrorGqlStatusObject gqlStatusObject,
+            IndexBackedConstraintDescriptor constraint,
+            ConstraintValidationException.Phase phase,
+            IndexEntryConflictException conflict,
+            TokenNameLookup tokenNameLookup) {
+        this(gqlStatusObject, constraint, phase, Collections.singleton(conflict), tokenNameLookup);
+    }
+
+    public UniquePropertyValueValidationException(
             IndexBackedConstraintDescriptor constraint,
             ConstraintValidationException.Phase phase,
             Set<IndexEntryConflictException> conflicts,
@@ -50,6 +60,23 @@ public class UniquePropertyValueValidationException extends ConstraintValidation
                 phase == Phase.VERIFICATION ? "Existing data" : "New data",
                 buildCauseChain(conflicts),
                 tokenNameLookup);
+        this.conflicts = conflicts;
+    }
+
+    public UniquePropertyValueValidationException(
+            ErrorGqlStatusObject gqlStatusObject,
+            IndexBackedConstraintDescriptor constraint,
+            ConstraintValidationException.Phase phase,
+            Set<IndexEntryConflictException> conflicts,
+            TokenNameLookup tokenNameLookup) {
+        super(
+                gqlStatusObject,
+                constraint,
+                phase,
+                phase == Phase.VERIFICATION ? "Existing data" : "New data",
+                buildCauseChain(conflicts),
+                tokenNameLookup);
+
         this.conflicts = conflicts;
     }
 
@@ -67,6 +94,23 @@ public class UniquePropertyValueValidationException extends ConstraintValidation
             Throwable cause,
             TokenNameLookup tokenNameLookup) {
         super(constraint, phase, phase == Phase.VERIFICATION ? "Existing data" : "New data", cause, tokenNameLookup);
+        this.conflicts = Collections.emptySet();
+    }
+
+    public UniquePropertyValueValidationException(
+            ErrorGqlStatusObject gqlStatusObject,
+            IndexBackedConstraintDescriptor constraint,
+            ConstraintValidationException.Phase phase,
+            Throwable cause,
+            TokenNameLookup tokenNameLookup) {
+        super(
+                gqlStatusObject,
+                constraint,
+                phase,
+                phase == Phase.VERIFICATION ? "Existing data" : "New data",
+                cause,
+                tokenNameLookup);
+
         this.conflicts = Collections.emptySet();
     }
 

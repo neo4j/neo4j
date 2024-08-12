@@ -19,10 +19,26 @@
  */
 package org.neo4j.gqlstatus;
 
-public interface HasGqlStatusInfo {
-    public final String DEFAULT_STATUS_CODE = GqlStatusInfoCodes.STATUS_50N42.getStatusString();
+import org.neo4j.annotations.api.PublicApi;
 
-    default String getGqlStatus() {
-        return DEFAULT_STATUS_CODE;
+@PublicApi
+public interface HasGqlStatusInfo {
+    String DEFAULT_STATUS_CODE = GqlStatusInfoCodes.STATUS_50N42.getStatusString();
+
+    String getOldMessage();
+
+    static String getOldCauseMessage(Throwable cause) {
+        if (cause instanceof HasGqlStatusInfo) {
+            return ((HasGqlStatusInfo) cause).getOldMessage();
+        } else {
+            return cause.getMessage();
+        }
     }
+
+    default String gqlStatus() {
+        var statusObject = gqlStatusObject();
+        return statusObject != null ? statusObject.gqlStatus() : DEFAULT_STATUS_CODE;
+    }
+
+    ErrorGqlStatusObject gqlStatusObject();
 }

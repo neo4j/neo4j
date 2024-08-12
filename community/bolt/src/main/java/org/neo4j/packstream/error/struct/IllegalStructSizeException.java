@@ -19,21 +19,23 @@
  */
 package org.neo4j.packstream.error.struct;
 
+import org.neo4j.gqlstatus.ErrorGqlStatusObject;
+
 public class IllegalStructSizeException extends PackstreamStructException {
     private final long expectedMin;
     private final long expectedMax;
     private final long actual;
 
-    public IllegalStructSizeException(long expectedMin, long expectedMax, long actual) {
-        super("Illegal struct size: Expected struct to be " + expectedMin + "-" + expectedMax + " fields but got "
-                + actual);
-        this.expectedMin = expectedMin;
-        this.expectedMax = expectedMax;
+    public IllegalStructSizeException(long expected, long actual) {
+        super("Illegal struct size: Expected struct to be " + expected + " fields but got " + actual);
+        this.expectedMin = expected;
+        this.expectedMax = expected;
         this.actual = actual;
     }
 
-    public IllegalStructSizeException(long expected, long actual) {
-        super("Illegal struct size: Expected struct to be " + expected + " fields but got " + actual);
+    public IllegalStructSizeException(ErrorGqlStatusObject gqlStatusObject, long expected, long actual) {
+        super(gqlStatusObject, "Illegal struct size: Expected struct to be " + expected + " fields but got " + actual);
+
         this.expectedMin = expected;
         this.expectedMax = expected;
         this.actual = actual;

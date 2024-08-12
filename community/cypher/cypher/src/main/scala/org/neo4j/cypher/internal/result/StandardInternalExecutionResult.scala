@@ -151,7 +151,7 @@ class StandardInternalExecutionResult(
   override def gqlStatusObjects: Iterable[GqlStatusObject] = {
     val gqlStatusObjectsNotifications = internalNotifications.asInstanceOf[Iterable[GqlStatusObject]]
 
-    val allGqlStatusObjects = {
+    val allGqlStatusObjects: Seq[GqlStatusObject] = {
 
       if (fieldNames().isEmpty) {
         // No result columns =>  OMITTED RESULT

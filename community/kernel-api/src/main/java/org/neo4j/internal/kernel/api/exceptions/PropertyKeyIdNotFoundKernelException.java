@@ -20,10 +20,21 @@
 package org.neo4j.internal.kernel.api.exceptions;
 
 import org.neo4j.exceptions.KernelException;
+import org.neo4j.gqlstatus.ErrorGqlStatusObject;
 import org.neo4j.kernel.api.exceptions.Status;
 
 public class PropertyKeyIdNotFoundKernelException extends KernelException {
     public PropertyKeyIdNotFoundKernelException(int propertyKeyId, Exception cause) {
         super(Status.Schema.PropertyKeyAccessFailed, cause, "Property key with id=%d not found", propertyKeyId);
+    }
+
+    public PropertyKeyIdNotFoundKernelException(
+            ErrorGqlStatusObject gqlStatusObject, int propertyKeyId, Exception cause) {
+        super(
+                gqlStatusObject,
+                Status.Schema.PropertyKeyAccessFailed,
+                cause,
+                "Property key with id=%d not found",
+                propertyKeyId);
     }
 }

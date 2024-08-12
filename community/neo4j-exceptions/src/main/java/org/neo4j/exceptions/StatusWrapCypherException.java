@@ -22,6 +22,7 @@ package org.neo4j.exceptions;
 import java.util.Map;
 import java.util.stream.Collectors;
 import org.eclipse.collections.impl.factory.Maps;
+import org.neo4j.gqlstatus.ErrorGqlStatusObject;
 import org.neo4j.kernel.api.exceptions.Status;
 
 /**
@@ -37,6 +38,10 @@ public class StatusWrapCypherException extends Neo4jException {
 
     public StatusWrapCypherException(Neo4jException cause) {
         super(cause.getMessage(), cause);
+    }
+
+    public StatusWrapCypherException(ErrorGqlStatusObject gqlStatusObject, Neo4jException cause) {
+        super(gqlStatusObject, cause.getMessage(), cause);
     }
 
     public StatusWrapCypherException addExtraInfo(ExtraInformation informationType, String extraInfo) {

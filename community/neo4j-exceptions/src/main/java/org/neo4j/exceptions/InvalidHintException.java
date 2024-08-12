@@ -19,6 +19,7 @@
  */
 package org.neo4j.exceptions;
 
+import org.neo4j.gqlstatus.ErrorGqlStatusObject;
 import org.neo4j.kernel.api.exceptions.Status;
 
 /**
@@ -27,6 +28,10 @@ import org.neo4j.kernel.api.exceptions.Status;
 public class InvalidHintException extends Neo4jException {
     public InvalidHintException(String message) {
         super(message);
+    }
+
+    public InvalidHintException(ErrorGqlStatusObject gqlStatusObject, String message) {
+        super(gqlStatusObject, message);
     }
 
     @Override

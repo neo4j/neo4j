@@ -20,6 +20,7 @@
 package org.neo4j.storageengine.api.txstate.validation;
 
 import java.util.Arrays;
+import org.neo4j.gqlstatus.ErrorGqlStatusObject;
 import org.neo4j.graphdb.TransientFailureException;
 import org.neo4j.io.layout.DatabaseFile;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseFile;
@@ -40,16 +41,43 @@ public class TransactionConflictException extends TransientFailureException {
         this.highestClosed = versionContext.highestClosed();
     }
 
+    public TransactionConflictException(
+            ErrorGqlStatusObject gqlStatusObject,
+            DatabaseFile databaseFile,
+            VersionContext versionContext,
+            long pageId) {
+        super(gqlStatusObject, createMessage(databaseFile.getName(), pageId, versionContext));
+
+        this.databaseFile = databaseFile;
+        this.observedVersion = versionContext.chainHeadVersion();
+        this.highestClosed = versionContext.highestClosed();
+    }
+
     public TransactionConflictException(String message, Exception cause) {
         super(message, cause);
+    }
+
+    public TransactionConflictException(ErrorGqlStatusObject gqlStatusObject, String message, Exception cause) {
+        super(gqlStatusObject, message, cause);
     }
 
     public TransactionConflictException(Exception cause) {
         this(GENERIC_MESSAGE, cause);
     }
 
+    public TransactionConflictException(ErrorGqlStatusObject gqlStatusObject, Exception cause) {
+        this(gqlStatusObject, GENERIC_MESSAGE, cause);
+    }
+
     public TransactionConflictException(RecordDatabaseFile databaseFile, long pageId) {
         super(createPageIdPagedMessage(databaseFile.getName(), pageId));
+        this.databaseFile = databaseFile;
+    }
+
+    public TransactionConflictException(
+            ErrorGqlStatusObject gqlStatusObject, RecordDatabaseFile databaseFile, long pageId) {
+        super(gqlStatusObject, createPageIdPagedMessage(databaseFile.getName(), pageId));
+
         this.databaseFile = databaseFile;
     }
 

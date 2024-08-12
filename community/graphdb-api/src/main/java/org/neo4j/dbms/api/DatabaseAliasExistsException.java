@@ -20,6 +20,7 @@
 package org.neo4j.dbms.api;
 
 import org.neo4j.annotations.api.PublicApi;
+import org.neo4j.gqlstatus.ErrorGqlStatusObject;
 import org.neo4j.kernel.api.exceptions.Status;
 
 /**
@@ -31,16 +32,32 @@ public class DatabaseAliasExistsException extends DatabaseManagementException {
         super();
     }
 
+    public DatabaseAliasExistsException(ErrorGqlStatusObject gqlStatusObject) {
+        super(gqlStatusObject);
+    }
+
     public DatabaseAliasExistsException(String message) {
         super(message);
+    }
+
+    public DatabaseAliasExistsException(ErrorGqlStatusObject gqlStatusObject, String message) {
+        super(gqlStatusObject, message);
     }
 
     public DatabaseAliasExistsException(String message, Throwable cause) {
         super(message, cause);
     }
 
+    public DatabaseAliasExistsException(ErrorGqlStatusObject gqlStatusObject, String message, Throwable cause) {
+        super(gqlStatusObject, message, cause);
+    }
+
     public DatabaseAliasExistsException(Throwable cause) {
         super(cause);
+    }
+
+    public DatabaseAliasExistsException(ErrorGqlStatusObject gqlStatusObject, Throwable cause) {
+        super(gqlStatusObject, cause);
     }
 
     @Override

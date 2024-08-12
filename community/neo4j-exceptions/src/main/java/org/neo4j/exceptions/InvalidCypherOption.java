@@ -21,10 +21,16 @@ package org.neo4j.exceptions;
 
 import static java.lang.String.format;
 
+import org.neo4j.gqlstatus.ErrorGqlStatusObject;
+
 public class InvalidCypherOption extends InvalidArgumentException {
 
     public InvalidCypherOption(String message) {
         super(message);
+    }
+
+    public InvalidCypherOption(ErrorGqlStatusObject gqlStatusObject, String message) {
+        super(gqlStatusObject, message);
     }
 
     public static InvalidCypherOption invalidCombination(

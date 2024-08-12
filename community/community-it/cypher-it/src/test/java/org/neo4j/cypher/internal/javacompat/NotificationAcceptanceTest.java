@@ -40,7 +40,6 @@ import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.exceptions.IndexHintException.IndexHintIndexType;
-import org.neo4j.graphdb.GqlStatusObject;
 import org.neo4j.graphdb.InputPosition;
 import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.Transaction;
@@ -548,10 +547,10 @@ class NotificationAcceptanceTest extends NotificationTestSupport {
 
         // When
         try (Transaction transaction = db.beginTx()) {
-            GqlStatusObject cachedGqlStatusObject = Iterables.asList(
+            var cachedGqlStatusObject = Iterables.asList(
                             transaction.execute("EXPLAIN " + cachedQuery).getGqlStatusObjects())
                     .get(0);
-            GqlStatusObject nonCachedGqlStatusObject = Iterables.asList(
+            var nonCachedGqlStatusObject = Iterables.asList(
                             transaction.execute("EXPLAIN " + nonCachedQuery).getGqlStatusObjects())
                     .get(0);
 

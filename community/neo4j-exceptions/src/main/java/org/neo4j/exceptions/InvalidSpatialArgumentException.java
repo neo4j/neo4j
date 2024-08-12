@@ -22,11 +22,16 @@ package org.neo4j.exceptions;
 import static java.lang.String.format;
 
 import java.util.Arrays;
+import org.neo4j.gqlstatus.ErrorGqlStatusObject;
 
 public class InvalidSpatialArgumentException extends InvalidArgumentException {
 
     public InvalidSpatialArgumentException(String message) {
         super(message);
+    }
+
+    public InvalidSpatialArgumentException(ErrorGqlStatusObject gqlStatusObject, String message) {
+        super(gqlStatusObject, message);
     }
 
     public static InvalidSpatialArgumentException invalidDimension(String crs, int dimension, double... coordinate) {

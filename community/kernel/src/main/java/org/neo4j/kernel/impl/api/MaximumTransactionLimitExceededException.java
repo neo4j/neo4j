@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.max_concurrent_transactions;
 
+import org.neo4j.gqlstatus.ErrorGqlStatusObject;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.Status;
 
@@ -31,5 +32,9 @@ public class MaximumTransactionLimitExceededException extends TransactionFailure
 
     MaximumTransactionLimitExceededException() {
         super(MAXIMUM_TRANSACTIONS_LIMIT_MESSAGE, Status.Transaction.MaximumTransactionLimitReached);
+    }
+
+    MaximumTransactionLimitExceededException(ErrorGqlStatusObject gqlStatusObject) {
+        super(gqlStatusObject, MAXIMUM_TRANSACTIONS_LIMIT_MESSAGE, Status.Transaction.MaximumTransactionLimitReached);
     }
 }

@@ -19,13 +19,15 @@
  */
 package org.neo4j.bolt.fsm.error.state;
 
-public class IllegalRequestParameterException extends IllegalRequestException {
+import org.neo4j.gqlstatus.ErrorGqlStatusObject;
 
-    public IllegalRequestParameterException(String message, Throwable cause) {
-        super(message, cause);
-    }
+public class IllegalRequestParameterException extends IllegalRequestException {
 
     public IllegalRequestParameterException(String message) {
         super(message);
+    }
+
+    public IllegalRequestParameterException(ErrorGqlStatusObject gqlStatusObject, String message) {
+        super(gqlStatusObject, message);
     }
 }

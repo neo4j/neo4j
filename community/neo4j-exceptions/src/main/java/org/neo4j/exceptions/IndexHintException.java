@@ -22,6 +22,7 @@ package org.neo4j.exceptions;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.neo4j.common.EntityType;
+import org.neo4j.gqlstatus.ErrorGqlStatusObject;
 import org.neo4j.kernel.api.exceptions.Status;
 
 /**
@@ -43,6 +44,16 @@ public class IndexHintException extends Neo4jException {
             EntityType entityType,
             IndexHintIndexType indexType) {
         super(msg(variableName, labelOrRelType, properties, entityType, indexType));
+    }
+
+    public IndexHintException(
+            ErrorGqlStatusObject gqlStatusObject,
+            String variableName,
+            String labelOrRelType,
+            List<String> properties,
+            EntityType entityType,
+            IndexHintIndexType indexType) {
+        super(gqlStatusObject, msg(variableName, labelOrRelType, properties, entityType, indexType));
     }
 
     @Override

@@ -21,6 +21,7 @@ package org.neo4j.internal.kernel.api.exceptions.schema;
 
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.exceptions.KernelException;
+import org.neo4j.gqlstatus.ErrorGqlStatusObject;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.exceptions.Status;
 
@@ -37,12 +38,30 @@ public abstract class SchemaKernelException extends KernelException {
         super(statusCode, cause, message, parameters);
     }
 
+    protected SchemaKernelException(
+            ErrorGqlStatusObject gqlStatusObject,
+            Status statusCode,
+            Throwable cause,
+            String message,
+            Object... parameters) {
+        super(gqlStatusObject, statusCode, cause, message, parameters);
+    }
+
     public SchemaKernelException(Status statusCode, String message, Throwable cause) {
         super(statusCode, cause, message);
     }
 
+    public SchemaKernelException(
+            ErrorGqlStatusObject gqlStatusObject, Status statusCode, String message, Throwable cause) {
+        super(gqlStatusObject, statusCode, cause, message);
+    }
+
     public SchemaKernelException(Status statusCode, String message) {
         super(statusCode, message);
+    }
+
+    public SchemaKernelException(ErrorGqlStatusObject gqlStatusObject, Status statusCode, String message) {
+        super(gqlStatusObject, statusCode, message);
     }
 
     protected static String messageWithLabelAndPropertyName(

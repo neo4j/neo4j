@@ -20,6 +20,7 @@
 package org.neo4j.internal.kernel.api.exceptions;
 
 import org.neo4j.exceptions.KernelException;
+import org.neo4j.gqlstatus.ErrorGqlStatusObject;
 import org.neo4j.kernel.api.exceptions.Status;
 
 /**
@@ -31,7 +32,16 @@ public class ConstraintViolationTransactionFailureException extends TransactionF
         super(Status.Schema.ConstraintValidationFailed, cause, msg);
     }
 
+    public ConstraintViolationTransactionFailureException(
+            ErrorGqlStatusObject gqlStatusObject, String msg, KernelException cause) {
+        super(gqlStatusObject, Status.Schema.ConstraintValidationFailed, cause, msg);
+    }
+
     public ConstraintViolationTransactionFailureException(String msg) {
         this(msg, null);
+    }
+
+    public ConstraintViolationTransactionFailureException(ErrorGqlStatusObject gqlStatusObject, String msg) {
+        this(gqlStatusObject, msg, null);
     }
 }

@@ -21,6 +21,7 @@ package org.neo4j.internal.kernel.api.exceptions.schema;
 
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.exceptions.KernelException;
+import org.neo4j.gqlstatus.ErrorGqlStatusObject;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.kernel.api.exceptions.Status;
 
@@ -40,8 +41,36 @@ public class CreateConstraintFailureException extends SchemaKernelException {
         this.cause = null;
     }
 
+    public CreateConstraintFailureException(
+            ErrorGqlStatusObject gqlStatusObject, ConstraintDescriptor constraint, Throwable cause) {
+        super(
+                gqlStatusObject,
+                Status.Schema.ConstraintCreationFailed,
+                cause,
+                "Unable to create constraint %s: %s",
+                constraint,
+                cause.getMessage());
+
+        this.constraint = constraint;
+        this.cause = null;
+    }
+
     public CreateConstraintFailureException(ConstraintDescriptor constraint, String cause) {
         super(Status.Schema.ConstraintCreationFailed, null, "Unable to create constraint %s: %s", constraint, cause);
+        this.constraint = constraint;
+        this.cause = cause;
+    }
+
+    public CreateConstraintFailureException(
+            ErrorGqlStatusObject gqlStatusObject, ConstraintDescriptor constraint, String cause) {
+        super(
+                gqlStatusObject,
+                Status.Schema.ConstraintCreationFailed,
+                null,
+                "Unable to create constraint %s: %s",
+                constraint,
+                cause);
+
         this.constraint = constraint;
         this.cause = cause;
     }

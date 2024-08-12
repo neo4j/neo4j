@@ -22,11 +22,9 @@ package org.neo4j.gqlstatus;
 import java.util.List;
 
 public sealed interface GqlStatusInfo permits GqlStatusInfoCodes {
-    boolean useGqlMessage = false;
-
     String getMessage();
 
-    String getMessage(List<String> param);
+    String getMessage(List<String> params);
 
     Condition getCondition();
 
@@ -37,10 +35,4 @@ public sealed interface GqlStatusInfo permits GqlStatusInfoCodes {
     String getStatusString();
 
     String[] getStatusParameterKeys();
-
-    default String toJavaFormattable(String message) {
-        String regex = "\\$\\w+";
-        String replacementString = "%s";
-        return message.replaceAll(regex, replacementString);
-    }
 }

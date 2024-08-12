@@ -110,7 +110,7 @@ trait AntlrAstParser[P <: AstBuildingAntlrParser] extends AstParser {
       new CommonTokenStream(lexer)
     } catch {
       case e: UnicodeEscapeReplacementReader.InvalidUnicodeLiteral =>
-        throw exceptionFactory.syntaxException(e.getMessage, InputPosition(e.offset, e.line, e.col))
+        throw exceptionFactory.syntaxException(e.getMessage, InputPosition(e.offset, e.line, e.column))
     }
 
   private def position(token: Token): InputPosition = token match {

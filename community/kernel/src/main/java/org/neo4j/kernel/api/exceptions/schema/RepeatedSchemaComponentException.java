@@ -20,6 +20,7 @@
 package org.neo4j.kernel.api.exceptions.schema;
 
 import org.neo4j.common.TokenNameLookup;
+import org.neo4j.gqlstatus.ErrorGqlStatusObject;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -36,6 +37,20 @@ public abstract class RepeatedSchemaComponentException extends SchemaKernelExcep
             SchemaComponent component,
             TokenNameLookup tokenNameLookup) {
         super(status, format(schema, context, tokenNameLookup, component));
+        this.schema = schema;
+        this.context = context;
+        this.component = component;
+    }
+
+    RepeatedSchemaComponentException(
+            ErrorGqlStatusObject gqlStatusObject,
+            Status status,
+            SchemaDescriptor schema,
+            OperationContext context,
+            SchemaComponent component,
+            TokenNameLookup tokenNameLookup) {
+        super(gqlStatusObject, status, format(schema, context, tokenNameLookup, component));
+
         this.schema = schema;
         this.context = context;
         this.component = component;

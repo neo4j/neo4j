@@ -23,6 +23,9 @@ Apache Software License, Version 2.0
   Apache Commons Text
   Caffeine cache
   FindBugs-jsr305
+  Jackson-annotations
+  Jackson-core
+  jackson-databind
   Java Native Access
   Javassist
   Reflections

@@ -28,6 +28,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.exceptions.KernelException;
+import org.neo4j.gqlstatus.ErrorGqlStatusObject;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaUserDescription;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -47,6 +48,15 @@ public class IndexEntryConflictException extends KernelException {
     }
 
     public IndexEntryConflictException(
+            ErrorGqlStatusObject gqlStatusObject,
+            SchemaDescriptor schemaDescriptor,
+            long existingEntityId,
+            long addedEntityId,
+            Value... propertyValue) {
+        this(gqlStatusObject, schemaDescriptor, existingEntityId, addedEntityId, ValueTuple.of(propertyValue));
+    }
+
+    public IndexEntryConflictException(
             SchemaDescriptor schemaDescriptor, long existingEntityId, long addedEntityId, ValueTuple propertyValues) {
         super(
                 Status.Schema.ConstraintViolation,
@@ -56,6 +66,28 @@ public class IndexEntryConflictException extends KernelException {
                         propertyValues,
                         addedEntityId,
                         existingEntityId));
+        this.schemaDescriptor = schemaDescriptor;
+        this.existingEntityId = existingEntityId;
+        this.addedEntityId = addedEntityId;
+        this.propertyValues = propertyValues;
+    }
+
+    public IndexEntryConflictException(
+            ErrorGqlStatusObject gqlStatusObject,
+            SchemaDescriptor schemaDescriptor,
+            long existingEntityId,
+            long addedEntityId,
+            ValueTuple propertyValues) {
+        super(
+                gqlStatusObject,
+                Status.Schema.ConstraintViolation,
+                buildErrorMessage(
+                        SchemaUserDescription.TOKEN_ID_NAME_LOOKUP,
+                        schemaDescriptor,
+                        propertyValues,
+                        addedEntityId,
+                        existingEntityId));
+
         this.schemaDescriptor = schemaDescriptor;
         this.existingEntityId = existingEntityId;
         this.addedEntityId = addedEntityId;

@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.locking;
 
 import java.util.concurrent.TimeUnit;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.gqlstatus.ErrorGqlStatusObject;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.lock.ResourceType;
@@ -41,7 +42,21 @@ public class LockAcquisitionTimeoutException extends TransactionTerminatedExcept
                         resourceType, resourceId, TimeUnit.NANOSECONDS.toMillis(timeoutNano)));
     }
 
+    public LockAcquisitionTimeoutException(
+            ErrorGqlStatusObject gqlStatusObject, ResourceType resourceType, long resourceId, long timeoutNano) {
+        super(
+                gqlStatusObject,
+                Status.Transaction.LockAcquisitionTimeout,
+                String.format(
+                        "Unable to acquire lock for resource: %s with id: %d within %d millis.",
+                        resourceType, resourceId, TimeUnit.NANOSECONDS.toMillis(timeoutNano)));
+    }
+
     public LockAcquisitionTimeoutException(Status status, String message) {
         super(status, message);
+    }
+
+    public LockAcquisitionTimeoutException(ErrorGqlStatusObject gqlStatusObject, Status status, String message) {
+        super(gqlStatusObject, status, message);
     }
 }

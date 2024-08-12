@@ -2,3 +2,25 @@ org.neo4j.gqlstatus.CommonGqlStatusObject public abstract interface
 org.neo4j.gqlstatus.CommonGqlStatusObject::diagnosticRecord() java.util.Map<java.lang.String,java.lang.Object> public abstract
 org.neo4j.gqlstatus.CommonGqlStatusObject::gqlStatus() java.lang.String public abstract
 org.neo4j.gqlstatus.CommonGqlStatusObject::statusDescription() java.lang.String public abstract
+org.neo4j.gqlstatus.ErrorGqlStatusObject public abstract interface implements org.neo4j.gqlstatus.CommonGqlStatusObject
+org.neo4j.gqlstatus.ErrorGqlStatusObject::getCause() java.util.Optional<org.neo4j.gqlstatus.ErrorGqlStatusObject> public abstract
+org.neo4j.gqlstatus.GqlClassification public abstract interface
+org.neo4j.gqlstatus.HasGqlStatusInfo public abstract interface
+org.neo4j.gqlstatus.HasGqlStatusInfo::DEFAULT_STATUS_CODE java.lang.String public static final
+org.neo4j.gqlstatus.HasGqlStatusInfo::getOldCauseMessage(java.lang.Throwable) java.lang.String public static
+org.neo4j.gqlstatus.HasGqlStatusInfo::getOldMessage() java.lang.String public abstract
+org.neo4j.gqlstatus.HasGqlStatusInfo::gqlStatus() java.lang.String public default
+org.neo4j.gqlstatus.HasGqlStatusInfo::gqlStatusObject() org.neo4j.gqlstatus.ErrorGqlStatusObject public abstract
+org.neo4j.gqlstatus.NotificationClassification public final enum extends java.lang.Enum<org.neo4j.gqlstatus.NotificationClassification> implements org.neo4j.gqlstatus.GqlClassification
+org.neo4j.gqlstatus.NotificationClassification::DEPRECATION org.neo4j.gqlstatus.NotificationClassification public static final
+org.neo4j.gqlstatus.NotificationClassification::GENERIC org.neo4j.gqlstatus.NotificationClassification public static final
+org.neo4j.gqlstatus.NotificationClassification::HINT org.neo4j.gqlstatus.NotificationClassification public static final
+org.neo4j.gqlstatus.NotificationClassification::PERFORMANCE org.neo4j.gqlstatus.NotificationClassification public static final
+org.neo4j.gqlstatus.NotificationClassification::SCHEMA org.neo4j.gqlstatus.NotificationClassification public static final
+org.neo4j.gqlstatus.NotificationClassification::SECURITY org.neo4j.gqlstatus.NotificationClassification public static final
+org.neo4j.gqlstatus.NotificationClassification::TOPOLOGY org.neo4j.gqlstatus.NotificationClassification public static final
+org.neo4j.gqlstatus.NotificationClassification::UNKNOWN org.neo4j.gqlstatus.NotificationClassification public static final
+org.neo4j.gqlstatus.NotificationClassification::UNRECOGNIZED org.neo4j.gqlstatus.NotificationClassification public static final
+org.neo4j.gqlstatus.NotificationClassification::UNSUPPORTED org.neo4j.gqlstatus.NotificationClassification public static final
+org.neo4j.gqlstatus.NotificationClassification::valueOf(java.lang.String) org.neo4j.gqlstatus.NotificationClassification public static
+org.neo4j.gqlstatus.NotificationClassification::values() org.neo4j.gqlstatus.NotificationClassification[] public static

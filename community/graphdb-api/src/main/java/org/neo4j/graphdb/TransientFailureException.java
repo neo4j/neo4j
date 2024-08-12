@@ -19,6 +19,9 @@
  */
 package org.neo4j.graphdb;
 
+import org.neo4j.gqlstatus.ErrorGqlStatusObject;
+import org.neo4j.gqlstatus.ErrorMessageHolder;
+import org.neo4j.gqlstatus.HasGqlStatusInfo;
 import org.neo4j.kernel.api.exceptions.Status;
 
 /**
@@ -27,12 +30,43 @@ import org.neo4j.kernel.api.exceptions.Status;
  * A proper response to a caught exception of this type is to cancel the unit of work that produced
  * this exception and retry the unit of work again, as a whole.
  */
-public abstract class TransientFailureException extends RuntimeException implements Status.HasStatus {
+public abstract class TransientFailureException extends RuntimeException implements Status.HasStatus, HasGqlStatusInfo {
+    private final ErrorGqlStatusObject gqlStatusObject;
+    private final String oldMessage;
+
     protected TransientFailureException(String message, Throwable cause) {
         super(message, cause);
+
+        this.gqlStatusObject = null;
+        this.oldMessage = message;
+    }
+
+    protected TransientFailureException(ErrorGqlStatusObject gqlStatusObject, String message, Throwable cause) {
+        super(ErrorMessageHolder.getMessage(gqlStatusObject, message), cause);
+        this.gqlStatusObject = gqlStatusObject;
+        this.oldMessage = message;
     }
 
     protected TransientFailureException(String message) {
         super(message);
+
+        this.gqlStatusObject = null;
+        this.oldMessage = message;
+    }
+
+    protected TransientFailureException(ErrorGqlStatusObject gqlStatusObject, String message) {
+        super(ErrorMessageHolder.getMessage(gqlStatusObject, message));
+        this.gqlStatusObject = gqlStatusObject;
+        this.oldMessage = message;
+    }
+
+    @Override
+    public String getOldMessage() {
+        return oldMessage;
+    }
+
+    @Override
+    public ErrorGqlStatusObject gqlStatusObject() {
+        return gqlStatusObject;
     }
 }

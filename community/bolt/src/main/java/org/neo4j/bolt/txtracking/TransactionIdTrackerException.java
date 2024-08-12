@@ -19,22 +19,53 @@
  */
 package org.neo4j.bolt.txtracking;
 
+import org.neo4j.gqlstatus.ErrorGqlStatusObject;
+import org.neo4j.gqlstatus.ErrorMessageHolder;
+import org.neo4j.gqlstatus.HasGqlStatusInfo;
 import org.neo4j.kernel.api.exceptions.Status;
 
-public class TransactionIdTrackerException extends RuntimeException implements Status.HasStatus {
+public class TransactionIdTrackerException extends RuntimeException implements Status.HasStatus, HasGqlStatusInfo {
     private final Status status;
+    private final ErrorGqlStatusObject gqlStatusObject;
+    private final String oldMessage;
 
     TransactionIdTrackerException(Status status, String message) {
         this(status, message, null);
     }
 
+    TransactionIdTrackerException(ErrorGqlStatusObject gqlStatusObject, Status status, String message) {
+        this(gqlStatusObject, status, message, null);
+    }
+
     TransactionIdTrackerException(Status status, String message, Throwable cause) {
         super(message, cause);
         this.status = status;
+
+        this.gqlStatusObject = null;
+        this.oldMessage = message;
+    }
+
+    TransactionIdTrackerException(
+            ErrorGqlStatusObject gqlStatusObject, Status status, String message, Throwable cause) {
+        super(ErrorMessageHolder.getMessage(gqlStatusObject, message), cause);
+        this.gqlStatusObject = gqlStatusObject;
+
+        this.status = status;
+        this.oldMessage = message;
+    }
+
+    @Override
+    public String getOldMessage() {
+        return oldMessage;
     }
 
     @Override
     public Status status() {
         return status;
+    }
+
+    @Override
+    public ErrorGqlStatusObject gqlStatusObject() {
+        return gqlStatusObject;
     }
 }

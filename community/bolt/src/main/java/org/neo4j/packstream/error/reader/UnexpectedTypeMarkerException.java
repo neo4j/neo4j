@@ -19,6 +19,7 @@
  */
 package org.neo4j.packstream.error.reader;
 
+import org.neo4j.gqlstatus.ErrorGqlStatusObject;
 import org.neo4j.packstream.io.TypeMarker;
 
 public class UnexpectedTypeMarkerException extends UnexpectedTypeException {
@@ -27,6 +28,13 @@ public class UnexpectedTypeMarkerException extends UnexpectedTypeException {
 
     public UnexpectedTypeMarkerException(TypeMarker expected, TypeMarker actual) {
         super("Expected " + expected + " but got " + actual, expected.getType(), actual.getType());
+
+        this.expectedMarker = expected;
+        this.actualMarker = actual;
+    }
+
+    public UnexpectedTypeMarkerException(ErrorGqlStatusObject gqlStatusObject, TypeMarker expected, TypeMarker actual) {
+        super(gqlStatusObject, "Expected " + expected + " but got " + actual, expected.getType(), actual.getType());
 
         this.expectedMarker = expected;
         this.actualMarker = actual;

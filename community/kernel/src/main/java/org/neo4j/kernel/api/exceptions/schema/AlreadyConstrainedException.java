@@ -20,6 +20,7 @@
 package org.neo4j.kernel.api.exceptions.schema;
 
 import org.neo4j.common.TokenNameLookup;
+import org.neo4j.gqlstatus.ErrorGqlStatusObject;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -37,6 +38,20 @@ public class AlreadyConstrainedException extends SchemaKernelException {
     public AlreadyConstrainedException(
             ConstraintDescriptor constraint, OperationContext context, TokenNameLookup tokenNameLookup) {
         super(Status.Schema.ConstraintAlreadyExists, constructUserMessage(context, tokenNameLookup, constraint));
+        this.constraint = constraint;
+        this.context = context;
+    }
+
+    public AlreadyConstrainedException(
+            ErrorGqlStatusObject gqlStatusObject,
+            ConstraintDescriptor constraint,
+            OperationContext context,
+            TokenNameLookup tokenNameLookup) {
+        super(
+                gqlStatusObject,
+                Status.Schema.ConstraintAlreadyExists,
+                constructUserMessage(context, tokenNameLookup, constraint));
+
         this.constraint = constraint;
         this.context = context;
     }

@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.exceptions.schema;
 
+import org.neo4j.gqlstatus.ErrorGqlStatusObject;
 import org.neo4j.kernel.api.exceptions.Status;
 
 public class IndexWithNameAlreadyExistsException extends SchemaRuleWithNameAlreadyExistsException {
@@ -26,5 +27,9 @@ public class IndexWithNameAlreadyExistsException extends SchemaRuleWithNameAlrea
 
     public IndexWithNameAlreadyExistsException(String schemaName) {
         super(Status.Schema.IndexWithNameAlreadyExists, String.format(INDEX_NAME_FORMAT, schemaName));
+    }
+
+    public IndexWithNameAlreadyExistsException(ErrorGqlStatusObject gqlStatusObject, String schemaName) {
+        super(gqlStatusObject, Status.Schema.IndexWithNameAlreadyExists, String.format(INDEX_NAME_FORMAT, schemaName));
     }
 }

@@ -20,6 +20,7 @@
 package org.neo4j.internal.kernel.api.exceptions;
 
 import org.neo4j.exceptions.KernelException;
+import org.neo4j.gqlstatus.ErrorGqlStatusObject;
 import org.neo4j.kernel.api.exceptions.Status;
 
 /**
@@ -28,5 +29,10 @@ import org.neo4j.kernel.api.exceptions.Status;
 public class TransactionApplyKernelException extends KernelException {
     public TransactionApplyKernelException(Throwable cause, String message, Object... parameters) {
         super(Status.General.UnknownError, cause, message, parameters);
+    }
+
+    public TransactionApplyKernelException(
+            ErrorGqlStatusObject gqlStatusObject, Throwable cause, String message, Object... parameters) {
+        super(gqlStatusObject, Status.General.UnknownError, cause, message, parameters);
     }
 }

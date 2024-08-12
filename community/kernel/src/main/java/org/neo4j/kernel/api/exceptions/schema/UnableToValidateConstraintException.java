@@ -22,6 +22,7 @@ package org.neo4j.kernel.api.exceptions.schema;
 import static java.lang.String.format;
 
 import org.neo4j.common.TokenNameLookup;
+import org.neo4j.gqlstatus.ErrorGqlStatusObject;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 
@@ -33,6 +34,20 @@ public class UnableToValidateConstraintException extends ConstraintValidationExc
     public UnableToValidateConstraintException(
             ConstraintDescriptor constraint, Throwable cause, TokenNameLookup tokenNameLookup) {
         super(
+                constraint,
+                Phase.VERIFICATION,
+                format("Unable to validate constraint %s", constraint.userDescription(tokenNameLookup)),
+                cause,
+                tokenNameLookup);
+    }
+
+    public UnableToValidateConstraintException(
+            ErrorGqlStatusObject gqlStatusObject,
+            ConstraintDescriptor constraint,
+            Throwable cause,
+            TokenNameLookup tokenNameLookup) {
+        super(
+                gqlStatusObject,
                 constraint,
                 Phase.VERIFICATION,
                 format("Unable to validate constraint %s", constraint.userDescription(tokenNameLookup)),

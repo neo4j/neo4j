@@ -19,6 +19,7 @@
  */
 package org.neo4j.internal.kernel.api.exceptions.schema;
 
+import org.neo4j.gqlstatus.ErrorGqlStatusObject;
 import org.neo4j.kernel.api.exceptions.Status;
 
 /**
@@ -30,7 +31,15 @@ public class MalformedSchemaRuleException extends SchemaKernelException {
         super(Status.General.SchemaCorruptionDetected, message, cause);
     }
 
+    public MalformedSchemaRuleException(ErrorGqlStatusObject gqlStatusObject, String message, Throwable cause) {
+        super(gqlStatusObject, Status.General.SchemaCorruptionDetected, message, cause);
+    }
+
     public MalformedSchemaRuleException(String message) {
         super(Status.General.SchemaCorruptionDetected, message);
+    }
+
+    public MalformedSchemaRuleException(ErrorGqlStatusObject gqlStatusObject, String message) {
+        super(gqlStatusObject, Status.General.SchemaCorruptionDetected, message);
     }
 }

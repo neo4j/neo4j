@@ -19,22 +19,52 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import org.neo4j.gqlstatus.ErrorGqlStatusObject;
+import org.neo4j.gqlstatus.ErrorMessageHolder;
+import org.neo4j.gqlstatus.HasGqlStatusInfo;
 import org.neo4j.kernel.api.exceptions.Status;
 
-public class LeaseException extends RuntimeException implements Status.HasStatus {
+public class LeaseException extends RuntimeException implements Status.HasStatus, HasGqlStatusInfo {
     private final Status status;
+    private final ErrorGqlStatusObject gqlStatusObject;
+    private final String oldMessage;
 
     public LeaseException(String message, Status status) {
         this(message, null, status);
     }
 
+    public LeaseException(ErrorGqlStatusObject gqlStatusObject, String message, Status status) {
+        this(gqlStatusObject, message, null, status);
+    }
+
     public LeaseException(String message, Throwable cause, Status status) {
         super(message, cause);
         this.status = status;
+
+        this.gqlStatusObject = null;
+        this.oldMessage = message;
+    }
+
+    public LeaseException(ErrorGqlStatusObject gqlStatusObject, String message, Throwable cause, Status status) {
+        super(ErrorMessageHolder.getMessage(gqlStatusObject, message), cause);
+        this.gqlStatusObject = gqlStatusObject;
+
+        this.status = status;
+        this.oldMessage = message;
+    }
+
+    @Override
+    public String getOldMessage() {
+        return oldMessage;
     }
 
     @Override
     public Status status() {
         return status;
+    }
+
+    @Override
+    public ErrorGqlStatusObject gqlStatusObject() {
+        return gqlStatusObject;
     }
 }

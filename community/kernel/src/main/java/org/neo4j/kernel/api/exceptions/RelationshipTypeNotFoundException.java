@@ -20,10 +20,20 @@
 package org.neo4j.kernel.api.exceptions;
 
 import org.neo4j.exceptions.KernelException;
+import org.neo4j.gqlstatus.ErrorGqlStatusObject;
 
 public class RelationshipTypeNotFoundException extends KernelException {
     public RelationshipTypeNotFoundException(String relationshipType, Exception cause) {
         super(
+                Status.Schema.RelationshipTypeAccessFailed,
+                cause,
+                "Relationship type '" + relationshipType + "' not found");
+    }
+
+    public RelationshipTypeNotFoundException(
+            ErrorGqlStatusObject gqlStatusObject, String relationshipType, Exception cause) {
+        super(
+                gqlStatusObject,
                 Status.Schema.RelationshipTypeAccessFailed,
                 cause,
                 "Relationship type '" + relationshipType + "' not found");

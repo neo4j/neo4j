@@ -19,6 +19,7 @@
  */
 package org.neo4j.graphdb;
 
+import org.neo4j.gqlstatus.ErrorGqlStatusObject;
 import org.neo4j.kernel.api.exceptions.Status;
 
 /**
@@ -29,6 +30,13 @@ public class TransactionStatusFailureException extends TransactionFailureExcepti
 
     public TransactionStatusFailureException(Status status, String message, Exception exception) {
         super(message, exception, status);
+        this.status = status;
+    }
+
+    public TransactionStatusFailureException(
+            ErrorGqlStatusObject gqlStatusObject, Status status, String message, Exception exception) {
+        super(gqlStatusObject, message, exception, status);
+
         this.status = status;
     }
 

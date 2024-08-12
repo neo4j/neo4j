@@ -19,18 +19,44 @@
  */
 package org.neo4j.commandline.admin.security.exception;
 
+import org.neo4j.gqlstatus.ErrorGqlStatusObject;
+import org.neo4j.gqlstatus.ErrorMessageHolder;
+import org.neo4j.gqlstatus.HasGqlStatusInfo;
 import org.neo4j.kernel.api.exceptions.Status;
 
-public class InvalidPasswordException extends RuntimeException implements Status.HasStatus {
+public class InvalidPasswordException extends RuntimeException implements Status.HasStatus, HasGqlStatusInfo {
     private final Status status;
+    private final ErrorGqlStatusObject gqlStatusObject;
+    private final String oldMessage;
 
     public InvalidPasswordException(String message) {
         super(message, null, false, false);
         this.status = Status.Statement.ArgumentError;
+
+        this.gqlStatusObject = null;
+        this.oldMessage = message;
+    }
+
+    public InvalidPasswordException(ErrorGqlStatusObject gqlStatusObject, String message) {
+        super(ErrorMessageHolder.getMessage(gqlStatusObject, message), null, false, false);
+        this.gqlStatusObject = gqlStatusObject;
+
+        this.status = Status.Statement.ArgumentError;
+        this.oldMessage = message;
+    }
+
+    @Override
+    public String getOldMessage() {
+        return oldMessage;
     }
 
     @Override
     public Status status() {
         return status;
+    }
+
+    @Override
+    public ErrorGqlStatusObject gqlStatusObject() {
+        return gqlStatusObject;
     }
 }

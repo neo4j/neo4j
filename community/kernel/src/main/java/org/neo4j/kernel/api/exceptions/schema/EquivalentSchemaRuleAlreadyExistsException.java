@@ -20,6 +20,7 @@
 package org.neo4j.kernel.api.exceptions.schema;
 
 import org.neo4j.common.TokenNameLookup;
+import org.neo4j.gqlstatus.ErrorGqlStatusObject;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -31,6 +32,17 @@ public class EquivalentSchemaRuleAlreadyExistsException extends SchemaKernelExce
     public EquivalentSchemaRuleAlreadyExistsException(
             SchemaRule schemaRule, OperationContext context, TokenNameLookup tokenNameLookup) {
         super(
+                Status.Schema.EquivalentSchemaRuleAlreadyExists,
+                constructUserMessage(context, tokenNameLookup, schemaRule));
+    }
+
+    public EquivalentSchemaRuleAlreadyExistsException(
+            ErrorGqlStatusObject gqlStatusObject,
+            SchemaRule schemaRule,
+            OperationContext context,
+            TokenNameLookup tokenNameLookup) {
+        super(
+                gqlStatusObject,
                 Status.Schema.EquivalentSchemaRuleAlreadyExists,
                 constructUserMessage(context, tokenNameLookup, schemaRule));
     }

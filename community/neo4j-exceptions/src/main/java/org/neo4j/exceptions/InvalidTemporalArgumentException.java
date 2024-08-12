@@ -19,10 +19,16 @@
  */
 package org.neo4j.exceptions;
 
+import org.neo4j.gqlstatus.ErrorGqlStatusObject;
+
 public class InvalidTemporalArgumentException extends InvalidArgumentException {
 
     public InvalidTemporalArgumentException(String message) {
         super(message);
+    }
+
+    public InvalidTemporalArgumentException(ErrorGqlStatusObject gqlStatusObject, String message) {
+        super(gqlStatusObject, message);
     }
 
     public static InvalidArgumentException namedTimeZoneWithoutDate() {

@@ -21,6 +21,7 @@ package org.neo4j.internal.kernel.api.exceptions.schema;
 
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.exceptions.KernelException;
+import org.neo4j.gqlstatus.ErrorGqlStatusObject;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.exceptions.Status;
 
@@ -32,8 +33,20 @@ public class IndexNotFoundKernelException extends KernelException {
         this.index = null;
     }
 
+    public IndexNotFoundKernelException(ErrorGqlStatusObject gqlStatusObject, String msg) {
+        super(gqlStatusObject, Status.Schema.IndexNotFound, msg);
+
+        this.index = null;
+    }
+
     public IndexNotFoundKernelException(String msg, IndexDescriptor index) {
         super(Status.Schema.IndexNotFound, msg);
+        this.index = index;
+    }
+
+    public IndexNotFoundKernelException(ErrorGqlStatusObject gqlStatusObject, String msg, IndexDescriptor index) {
+        super(gqlStatusObject, Status.Schema.IndexNotFound, msg);
+
         this.index = index;
     }
 

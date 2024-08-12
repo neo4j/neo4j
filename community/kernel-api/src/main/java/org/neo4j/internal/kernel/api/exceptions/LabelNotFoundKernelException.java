@@ -22,10 +22,15 @@ package org.neo4j.internal.kernel.api.exceptions;
 import static java.lang.String.format;
 
 import org.neo4j.exceptions.KernelException;
+import org.neo4j.gqlstatus.ErrorGqlStatusObject;
 import org.neo4j.kernel.api.exceptions.Status;
 
 public class LabelNotFoundKernelException extends KernelException {
     public LabelNotFoundKernelException(int labelId, Exception cause) {
         super(Status.Schema.LabelAccessFailed, cause, format("Label with id=%d not found", labelId));
+    }
+
+    public LabelNotFoundKernelException(ErrorGqlStatusObject gqlStatusObject, int labelId, Exception cause) {
+        super(gqlStatusObject, Status.Schema.LabelAccessFailed, cause, format("Label with id=%d not found", labelId));
     }
 }

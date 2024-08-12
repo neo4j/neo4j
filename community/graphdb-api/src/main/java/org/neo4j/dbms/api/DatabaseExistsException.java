@@ -20,6 +20,7 @@
 package org.neo4j.dbms.api;
 
 import org.neo4j.annotations.api.PublicApi;
+import org.neo4j.gqlstatus.ErrorGqlStatusObject;
 import org.neo4j.kernel.api.exceptions.Status;
 
 /**
@@ -31,16 +32,32 @@ public class DatabaseExistsException extends DatabaseManagementException {
         super();
     }
 
+    public DatabaseExistsException(ErrorGqlStatusObject gqlStatusObject) {
+        super(gqlStatusObject);
+    }
+
     public DatabaseExistsException(String message) {
         super(message);
+    }
+
+    public DatabaseExistsException(ErrorGqlStatusObject gqlStatusObject, String message) {
+        super(gqlStatusObject, message);
     }
 
     public DatabaseExistsException(String message, Throwable cause) {
         super(message, cause);
     }
 
+    public DatabaseExistsException(ErrorGqlStatusObject gqlStatusObject, String message, Throwable cause) {
+        super(gqlStatusObject, message, cause);
+    }
+
     public DatabaseExistsException(Throwable cause) {
         super(cause);
+    }
+
+    public DatabaseExistsException(ErrorGqlStatusObject gqlStatusObject, Throwable cause) {
+        super(gqlStatusObject, cause);
     }
 
     @Override

@@ -23,11 +23,11 @@ import java.util.Objects;
 import org.neo4j.gqlstatus.CommonGqlStatusObjectImplementation;
 import org.neo4j.gqlstatus.DiagnosticRecord;
 import org.neo4j.gqlstatus.GqlStatusInfo;
+import org.neo4j.gqlstatus.NotificationClassification;
 import org.neo4j.graphdb.GqlStatusObject;
 import org.neo4j.graphdb.InputPosition;
 import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.NotificationCategory;
-import org.neo4j.graphdb.NotificationClassification;
 import org.neo4j.graphdb.SeverityLevel;
 import org.neo4j.kernel.api.exceptions.Status;
 
@@ -100,12 +100,12 @@ public final class NotificationImplementation extends CommonGqlStatusObjectImple
             }
 
             String severity;
-            String classification;
+            NotificationClassification classification;
 
             var statusCode = notificationCodeWithDescription.getStatus().code();
             if (statusCode instanceof Status.NotificationCode notificationCode) {
                 severity = notificationCode.getSeverity();
-                classification = notificationCode.getNotificationCategory();
+                classification = NotificationClassification.valueOf(notificationCode.getNotificationCategory());
             } else {
                 throw new IllegalStateException("'" + statusCode + "' is not a notification code.");
             }

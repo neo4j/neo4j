@@ -23,6 +23,7 @@ import static java.lang.String.format;
 
 import java.util.Locale;
 import org.neo4j.common.TokenNameLookup;
+import org.neo4j.gqlstatus.ErrorGqlStatusObject;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
@@ -52,6 +53,24 @@ public class SchemaRuleException extends SchemaKernelException {
                         messageTemplate,
                         describe(schemaThing),
                         schemaThing.schema().userDescription(tokenNameLookup)));
+        this.schemaThing = schemaThing;
+        this.messageTemplate = messageTemplate;
+    }
+
+    SchemaRuleException(
+            ErrorGqlStatusObject gqlStatusObject,
+            Status status,
+            String messageTemplate,
+            SchemaDescriptorSupplier schemaThing,
+            TokenNameLookup tokenNameLookup) {
+        super(
+                gqlStatusObject,
+                status,
+                format(
+                        messageTemplate,
+                        describe(schemaThing),
+                        schemaThing.schema().userDescription(tokenNameLookup)));
+
         this.schemaThing = schemaThing;
         this.messageTemplate = messageTemplate;
     }

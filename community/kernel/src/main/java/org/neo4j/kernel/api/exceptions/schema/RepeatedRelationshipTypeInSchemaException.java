@@ -20,6 +20,7 @@
 package org.neo4j.kernel.api.exceptions.schema;
 
 import org.neo4j.common.TokenNameLookup;
+import org.neo4j.gqlstatus.ErrorGqlStatusObject;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.exceptions.Status;
 
@@ -27,6 +28,20 @@ public class RepeatedRelationshipTypeInSchemaException extends RepeatedSchemaCom
     public RepeatedRelationshipTypeInSchemaException(
             SchemaDescriptor schema, OperationContext context, TokenNameLookup tokenNameLookup) {
         super(
+                Status.Schema.RepeatedRelationshipTypeInSchema,
+                schema,
+                context,
+                SchemaComponent.RELATIONSHIP_TYPE,
+                tokenNameLookup);
+    }
+
+    public RepeatedRelationshipTypeInSchemaException(
+            ErrorGqlStatusObject gqlStatusObject,
+            SchemaDescriptor schema,
+            OperationContext context,
+            TokenNameLookup tokenNameLookup) {
+        super(
+                gqlStatusObject,
                 Status.Schema.RepeatedRelationshipTypeInSchema,
                 schema,
                 context,

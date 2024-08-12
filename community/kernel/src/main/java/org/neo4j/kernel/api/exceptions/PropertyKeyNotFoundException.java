@@ -20,9 +20,18 @@
 package org.neo4j.kernel.api.exceptions;
 
 import org.neo4j.exceptions.KernelException;
+import org.neo4j.gqlstatus.ErrorGqlStatusObject;
 
 public class PropertyKeyNotFoundException extends KernelException {
     public PropertyKeyNotFoundException(String propertyKey, Exception cause) {
         super(Status.Schema.PropertyKeyAccessFailed, cause, "Property key '" + propertyKey + "' not found");
+    }
+
+    public PropertyKeyNotFoundException(ErrorGqlStatusObject gqlStatusObject, String propertyKey, Exception cause) {
+        super(
+                gqlStatusObject,
+                Status.Schema.PropertyKeyAccessFailed,
+                cause,
+                "Property key '" + propertyKey + "' not found");
     }
 }

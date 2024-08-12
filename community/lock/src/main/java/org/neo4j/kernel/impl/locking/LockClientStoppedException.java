@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.locking;
 
+import org.neo4j.gqlstatus.ErrorGqlStatusObject;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.kernel.api.exceptions.Status;
 
@@ -28,5 +29,9 @@ import org.neo4j.kernel.api.exceptions.Status;
 public class LockClientStoppedException extends TransactionTerminatedException {
     public LockClientStoppedException(LockManager.Client client) {
         super(Status.Transaction.LockClientStopped, String.valueOf(client));
+    }
+
+    public LockClientStoppedException(ErrorGqlStatusObject gqlStatusObject, LockManager.Client client) {
+        super(gqlStatusObject, Status.Transaction.LockClientStopped, String.valueOf(client));
     }
 }

@@ -28,4 +28,8 @@ public sealed class TransactionStateTransitionException extends StateTransitionE
     public TransactionStateTransitionException(TransactionException cause) {
         super(cause.getMessage(), cause);
     }
+
+    public TransactionStateTransitionException(String message, TransactionException cause) {
+        super(message, cause);
+    }
 }

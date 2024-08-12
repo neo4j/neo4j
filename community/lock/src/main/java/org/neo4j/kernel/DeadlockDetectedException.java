@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel;
 
+import org.neo4j.gqlstatus.ErrorGqlStatusObject;
 import org.neo4j.graphdb.TransientTransactionFailureException;
 import org.neo4j.kernel.api.exceptions.Status;
 
@@ -30,7 +31,15 @@ public class DeadlockDetectedException extends TransientTransactionFailureExcept
         super(Status.Transaction.DeadlockDetected, message);
     }
 
+    public DeadlockDetectedException(ErrorGqlStatusObject gqlStatusObject, String message) {
+        super(gqlStatusObject, Status.Transaction.DeadlockDetected, message);
+    }
+
     public DeadlockDetectedException(String message, Throwable cause) {
         super(Status.Transaction.DeadlockDetected, message, cause);
+    }
+
+    public DeadlockDetectedException(ErrorGqlStatusObject gqlStatusObject, String message, Throwable cause) {
+        super(gqlStatusObject, Status.Transaction.DeadlockDetected, message, cause);
     }
 }

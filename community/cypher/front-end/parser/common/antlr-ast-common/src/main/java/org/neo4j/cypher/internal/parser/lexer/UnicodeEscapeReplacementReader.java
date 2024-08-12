@@ -162,13 +162,13 @@ public class UnicodeEscapeReplacementReader extends Reader {
     public record Result(CharStream charStream, int[] offsetTable) {}
 
     public static class InvalidUnicodeLiteral extends RuntimeException {
-        public final int offset, line, col;
+        public final int offset, line, column;
 
-        private InvalidUnicodeLiteral(String message, int offset, int line, int col) {
+        private InvalidUnicodeLiteral(String message, int offset, int line, int column) {
             super(message);
             this.offset = offset;
             this.line = line;
-            this.col = col;
+            this.column = column;
         }
     }
 }

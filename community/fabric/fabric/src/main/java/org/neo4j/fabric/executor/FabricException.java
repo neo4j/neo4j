@@ -19,40 +19,105 @@
  */
 package org.neo4j.fabric.executor;
 
+import org.neo4j.gqlstatus.ErrorGqlStatusObject;
+import org.neo4j.gqlstatus.ErrorMessageHolder;
+import org.neo4j.gqlstatus.HasGqlStatusInfo;
 import org.neo4j.kernel.api.exceptions.HasQuery;
 import org.neo4j.kernel.api.exceptions.Status;
 
-public class FabricException extends RuntimeException implements Status.HasStatus, HasQuery {
+public class FabricException extends RuntimeException implements Status.HasStatus, HasQuery, HasGqlStatusInfo {
     private final Status statusCode;
     private Long queryId;
+    private final ErrorGqlStatusObject gqlStatusObject;
+    private final String oldMessage;
 
     public FabricException(Status statusCode, Throwable cause) {
         super(cause);
         this.statusCode = statusCode;
         this.queryId = null;
+
+        this.gqlStatusObject = null;
+        this.oldMessage = HasGqlStatusInfo.getOldCauseMessage(cause);
+    }
+
+    public FabricException(ErrorGqlStatusObject gqlStatusObject, Status statusCode, Throwable cause) {
+        super(ErrorMessageHolder.getMessage(gqlStatusObject, HasGqlStatusInfo.getOldCauseMessage(cause)), cause);
+        this.statusCode = statusCode;
+        this.queryId = null;
+
+        this.gqlStatusObject = gqlStatusObject;
+        this.oldMessage = HasGqlStatusInfo.getOldCauseMessage(cause);
     }
 
     public FabricException(Status statusCode, String message, Object... parameters) {
         super(String.format(message, parameters));
         this.statusCode = statusCode;
         this.queryId = null;
+
+        this.gqlStatusObject = null;
+        this.oldMessage = String.format(message, parameters);
+    }
+
+    public FabricException(
+            ErrorGqlStatusObject gqlStatusObject, Status statusCode, String message, Object... parameters) {
+        super(ErrorMessageHolder.getMessage(gqlStatusObject, String.format(message, parameters)));
+        this.gqlStatusObject = gqlStatusObject;
+
+        this.statusCode = statusCode;
+        this.queryId = null;
+        this.oldMessage = String.format(message, parameters);
     }
 
     public FabricException(Status statusCode, String message, Throwable cause) {
         super(message, cause);
         this.statusCode = statusCode;
         this.queryId = null;
+
+        this.gqlStatusObject = null;
+        this.oldMessage = message;
+    }
+
+    public FabricException(ErrorGqlStatusObject gqlStatusObject, Status statusCode, String message, Throwable cause) {
+        super(ErrorMessageHolder.getMessage(gqlStatusObject, message), cause);
+        this.gqlStatusObject = gqlStatusObject;
+
+        this.statusCode = statusCode;
+        this.queryId = null;
+        this.oldMessage = message;
     }
 
     public FabricException(Status statusCode, String message, Throwable cause, Long queryId) {
         super(message, cause);
         this.statusCode = statusCode;
         this.queryId = queryId;
+
+        this.gqlStatusObject = null;
+        this.oldMessage = message;
+    }
+
+    public FabricException(
+            ErrorGqlStatusObject gqlStatusObject, Status statusCode, String message, Throwable cause, Long queryId) {
+        super(ErrorMessageHolder.getMessage(gqlStatusObject, message), cause);
+        this.gqlStatusObject = gqlStatusObject;
+
+        this.statusCode = statusCode;
+        this.queryId = queryId;
+        this.oldMessage = message;
+    }
+
+    @Override
+    public String getOldMessage() {
+        return oldMessage;
     }
 
     @Override
     public Status status() {
         return statusCode;
+    }
+
+    @Override
+    public ErrorGqlStatusObject gqlStatusObject() {
+        return gqlStatusObject;
     }
 
     @Override

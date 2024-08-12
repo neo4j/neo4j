@@ -20,6 +20,7 @@
 package org.neo4j.kernel.api.exceptions;
 
 import org.neo4j.exceptions.KernelException;
+import org.neo4j.gqlstatus.ErrorGqlStatusObject;
 
 /**
  * This exception is thrown when committing an updating transaction in a read only database. Can also be thrown when
@@ -28,5 +29,12 @@ import org.neo4j.exceptions.KernelException;
 public class ReadOnlyDbException extends KernelException {
     public ReadOnlyDbException() {
         super(Status.General.ForbiddenOnReadOnlyDatabase, "This Neo4j instance is read only for all databases");
+    }
+
+    public ReadOnlyDbException(ErrorGqlStatusObject gqlStatusObject) {
+        super(
+                gqlStatusObject,
+                Status.General.ForbiddenOnReadOnlyDatabase,
+                "This Neo4j instance is read only for all databases");
     }
 }

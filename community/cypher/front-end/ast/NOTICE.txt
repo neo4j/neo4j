@@ -22,6 +22,9 @@ Apache Software License, Version 2.0
   Apache Commons Lang
   Apache Commons Text
   Caffeine cache
+  Jackson-annotations
+  Jackson-core
+  jackson-databind
   Java Native Access
 
 BSD - Scala License

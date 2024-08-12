@@ -19,6 +19,8 @@
  */
 package org.neo4j.exceptions;
 
+import org.neo4j.gqlstatus.ErrorGqlStatusObject;
+
 public class ShortestPathCommonEndNodesForbiddenException extends CypherExecutionException {
     private static final String ERROR_MSG =
             "The shortest path algorithm does not work when the start and end nodes are the same. This can happen if you\n"
@@ -31,5 +33,9 @@ public class ShortestPathCommonEndNodesForbiddenException extends CypherExecutio
 
     public ShortestPathCommonEndNodesForbiddenException() {
         super(ERROR_MSG);
+    }
+
+    public ShortestPathCommonEndNodesForbiddenException(ErrorGqlStatusObject gqlStatusObject) {
+        super(gqlStatusObject, ERROR_MSG);
     }
 }

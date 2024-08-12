@@ -22,16 +22,42 @@ package org.neo4j.bolt.protocol.common.fsm.error;
 import org.neo4j.bolt.fsm.error.ConnectionTerminating;
 import org.neo4j.bolt.fsm.error.state.StateTransitionException;
 import org.neo4j.bolt.security.error.AuthenticationException;
+import org.neo4j.gqlstatus.ErrorGqlStatusObject;
+import org.neo4j.gqlstatus.ErrorMessageHolder;
+import org.neo4j.gqlstatus.HasGqlStatusInfo;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.Status.HasStatus;
 
 public final class AuthenticationStateTransitionException extends StateTransitionException
-        implements HasStatus, ConnectionTerminating {
+        implements HasStatus, ConnectionTerminating, HasGqlStatusInfo {
     private final Status status;
+    private final String oldMessage;
+    private final ErrorGqlStatusObject gqlStatusObject;
 
     public AuthenticationStateTransitionException(AuthenticationException cause) {
         super(cause.getMessage(), cause);
         this.status = cause.status();
+
+        this.gqlStatusObject = null;
+        this.oldMessage = HasGqlStatusInfo.getOldCauseMessage(cause);
+    }
+
+    public AuthenticationStateTransitionException(ErrorGqlStatusObject gqlStatusObject, AuthenticationException cause) {
+        super(ErrorMessageHolder.getMessage(gqlStatusObject, HasGqlStatusInfo.getOldCauseMessage(cause)), cause);
+        this.gqlStatusObject = gqlStatusObject;
+
+        this.status = cause.status();
+        this.oldMessage = HasGqlStatusInfo.getOldCauseMessage(cause);
+    }
+
+    @Override
+    public String getOldMessage() {
+        return oldMessage;
+    }
+
+    @Override
+    public ErrorGqlStatusObject gqlStatusObject() {
+        return gqlStatusObject;
     }
 
     @Override

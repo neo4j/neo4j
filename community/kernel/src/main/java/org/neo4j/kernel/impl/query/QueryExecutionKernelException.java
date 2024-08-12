@@ -20,12 +20,18 @@
 package org.neo4j.kernel.impl.query;
 
 import org.neo4j.exceptions.KernelException;
+import org.neo4j.gqlstatus.ErrorGqlStatusObject;
 import org.neo4j.graphdb.QueryExecutionException;
 import org.neo4j.kernel.api.exceptions.Status;
 
 public class QueryExecutionKernelException extends KernelException {
     public <EX extends Throwable & Status.HasStatus> QueryExecutionKernelException(EX cause) {
         super(cause.status(), cause, cause.getMessage());
+    }
+
+    public <EX extends Throwable & Status.HasStatus> QueryExecutionKernelException(
+            ErrorGqlStatusObject gqlStatusObject, EX cause) {
+        super(gqlStatusObject, cause.status(), cause, cause.getMessage());
     }
 
     public QueryExecutionException asUserException() {

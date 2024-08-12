@@ -21,6 +21,7 @@ package org.neo4j.kernel.api.exceptions.schema;
 
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.exceptions.KernelException;
+import org.neo4j.gqlstatus.ErrorGqlStatusObject;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -35,7 +36,29 @@ public class DropConstraintFailureException extends SchemaKernelException {
         this.nameOrSchema = null;
     }
 
+    public DropConstraintFailureException(
+            ErrorGqlStatusObject gqlStatusObject, SchemaDescriptorSupplier constraint, Throwable cause) {
+        super(
+                gqlStatusObject,
+                Status.Schema.ConstraintDropFailed,
+                cause,
+                "Unable to drop constraint: " + cause.getMessage());
+
+        this.constraint = constraint;
+        this.nameOrSchema = null;
+    }
+
     public DropConstraintFailureException(String nameOrSchema, Throwable cause) {
+        // nameOrSchema is just 'name' or 'on schema'
+        super(
+                Status.Schema.ConstraintDropFailed,
+                cause,
+                "Unable to drop constraint `" + nameOrSchema + "`: " + cause.getMessage());
+        this.nameOrSchema = nameOrSchema;
+        this.constraint = null;
+    }
+
+    public DropConstraintFailureException(ErrorGqlStatusObject gqlStatusObject, String nameOrSchema, Throwable cause) {
         // nameOrSchema is just 'name' or 'on schema'
         super(
                 Status.Schema.ConstraintDropFailed,

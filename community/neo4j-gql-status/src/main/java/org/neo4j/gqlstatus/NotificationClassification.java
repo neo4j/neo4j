@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.graphdb;
+package org.neo4j.gqlstatus;
 
 import org.neo4j.annotations.api.PublicApi;
 
@@ -25,7 +25,7 @@ import org.neo4j.annotations.api.PublicApi;
  * Classification indicates to a client the classification of a notification.
  */
 @PublicApi
-public enum NotificationClassification {
+public enum NotificationClassification implements GqlClassification {
     /**
      * Deprecated feature/format/functionality
      */
@@ -74,5 +74,5 @@ public enum NotificationClassification {
     /**
      * Schema warnings and information
      */
-    SCHEMA
+    SCHEMA;
 }

@@ -20,6 +20,7 @@
 package org.neo4j.dbms.database;
 
 import org.neo4j.dbms.api.DatabaseManagementException;
+import org.neo4j.gqlstatus.ErrorGqlStatusObject;
 import org.neo4j.kernel.api.exceptions.Status;
 
 /**
@@ -30,8 +31,16 @@ public class UnableToStartDatabaseException extends DatabaseManagementException 
         super(message);
     }
 
+    public UnableToStartDatabaseException(ErrorGqlStatusObject gqlStatusObject, String message) {
+        super(gqlStatusObject, message);
+    }
+
     public UnableToStartDatabaseException(String message, Throwable cause) {
         super(message, cause);
+    }
+
+    public UnableToStartDatabaseException(ErrorGqlStatusObject gqlStatusObject, String message, Throwable cause) {
+        super(gqlStatusObject, message, cause);
     }
 
     @Override

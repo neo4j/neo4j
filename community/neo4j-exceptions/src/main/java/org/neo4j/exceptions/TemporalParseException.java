@@ -19,6 +19,8 @@
  */
 package org.neo4j.exceptions;
 
+import org.neo4j.gqlstatus.ErrorGqlStatusObject;
+
 /**
  * {@code TemporalParseException} is thrown if parsing of a TemporalValue is unsuccessful.
  * The constructor parameters {@code parsedData} and {@code errorIndex} can optionally be provided
@@ -29,11 +31,25 @@ public class TemporalParseException extends SyntaxException {
         super(errorMsg, cause);
     }
 
+    public TemporalParseException(ErrorGqlStatusObject gqlStatusObject, String errorMsg, Throwable cause) {
+        super(gqlStatusObject, errorMsg, cause);
+    }
+
     public TemporalParseException(String errorMsg, String parsedData, int errorIndex) {
         super(errorMsg, parsedData, errorIndex);
     }
 
+    public TemporalParseException(
+            ErrorGqlStatusObject gqlStatusObject, String errorMsg, String parsedData, int errorIndex) {
+        super(gqlStatusObject, errorMsg, parsedData, errorIndex);
+    }
+
     public TemporalParseException(String errorMsg, String parsedData, int errorIndex, Throwable cause) {
         super(errorMsg, parsedData, errorIndex, cause);
+    }
+
+    public TemporalParseException(
+            ErrorGqlStatusObject gqlStatusObject, String errorMsg, String parsedData, int errorIndex, Throwable cause) {
+        super(gqlStatusObject, errorMsg, parsedData, errorIndex, cause);
     }
 }

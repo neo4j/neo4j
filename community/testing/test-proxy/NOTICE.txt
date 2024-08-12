@@ -31,6 +31,9 @@ Apache Software License, Version 2.0
   Apache Commons Text
   Caffeine cache
   com.github.netcrusherorg:netcrusher-core
+  Jackson-annotations
+  Jackson-core
+  jackson-databind
   Java Native Access
   org.apiguardian:apiguardian-api
   org.opentest4j:opentest4j

@@ -16,9 +16,24 @@
  */
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
+import org.neo4j.gqlstatus.ErrorGqlStatusObject
+import org.neo4j.gqlstatus.ErrorMessageHolder
+import org.neo4j.gqlstatus.HasGqlStatusInfo
 import org.neo4j.kernel.api.exceptions.Status
 import org.neo4j.kernel.api.exceptions.Status.HasStatus
 
-class Neo4jASTConstructionException(msg: String) extends RuntimeException(msg) with HasStatus {
+class Neo4jASTConstructionException(errorGqlStatusObject: ErrorGqlStatusObject, msg: String)
+    extends RuntimeException(ErrorMessageHolder.getMessage(errorGqlStatusObject, msg))
+    with HasStatus with HasGqlStatusInfo {
+  def this(msg: String) = this(null, msg)
   override def status(): Status = Status.Statement.SyntaxError
+  override def gqlStatusObject(): ErrorGqlStatusObject = errorGqlStatusObject
+  override def getOldMessage: String = msg
+}
+
+object Neo4jASTConstructionException {
+
+  def apply(msg: String): Neo4jASTConstructionException = {
+    new Neo4jASTConstructionException(null, msg)
+  }
 }

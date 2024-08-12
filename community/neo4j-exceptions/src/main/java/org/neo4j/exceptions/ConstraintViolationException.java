@@ -19,11 +19,16 @@
  */
 package org.neo4j.exceptions;
 
+import org.neo4j.gqlstatus.ErrorGqlStatusObject;
 import org.neo4j.kernel.api.exceptions.Status;
 
 public class ConstraintViolationException extends Neo4jException {
     public ConstraintViolationException(String message, Throwable cause) {
         super(message, cause);
+    }
+
+    public ConstraintViolationException(ErrorGqlStatusObject gqlObject, String message, Throwable cause) {
+        super(gqlObject, message, cause);
     }
 
     @Override

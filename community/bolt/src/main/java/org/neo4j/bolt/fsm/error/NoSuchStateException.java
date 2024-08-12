@@ -20,6 +20,9 @@
 package org.neo4j.bolt.fsm.error;
 
 import org.neo4j.bolt.fsm.state.StateReference;
+import org.neo4j.gqlstatus.ErrorGqlStatusObject;
+import org.neo4j.gqlstatus.ErrorMessageHolder;
+import org.neo4j.gqlstatus.HasGqlStatusInfo;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.Status.General;
 import org.neo4j.kernel.api.exceptions.Status.HasStatus;
@@ -27,16 +30,34 @@ import org.neo4j.kernel.api.exceptions.Status.HasStatus;
 /**
  * Represents error cases in which a referenced state is not accessible within a state machine.
  */
-public class NoSuchStateException extends StateMachineException implements HasStatus, ConnectionTerminating {
+public class NoSuchStateException extends StateMachineException
+        implements HasStatus, ConnectionTerminating, HasGqlStatusInfo {
     private final StateReference target;
+    private final ErrorGqlStatusObject gqlStatusObject;
+    private final String oldMessage;
 
     public NoSuchStateException(StateReference target, Throwable cause) {
         super("No such state: " + target.name(), cause);
+        this.target = target;
+
+        this.gqlStatusObject = null;
+        this.oldMessage = "No such state: " + target.name();
+    }
+
+    public NoSuchStateException(ErrorGqlStatusObject gqlStatusObject, StateReference target, Throwable cause) {
+        super(ErrorMessageHolder.getMessage(gqlStatusObject, "No such state: " + target.name()), cause);
+        this.gqlStatusObject = gqlStatusObject;
+        this.oldMessage = "No such state: " + target.name();
+
         this.target = target;
     }
 
     public NoSuchStateException(StateReference target) {
         this(target, null);
+    }
+
+    public NoSuchStateException(ErrorGqlStatusObject gqlStatusObject, StateReference target) {
+        this(gqlStatusObject, target, null);
     }
 
     public StateReference getTarget() {
@@ -46,5 +67,15 @@ public class NoSuchStateException extends StateMachineException implements HasSt
     @Override
     public Status status() {
         return General.UnknownError;
+    }
+
+    @Override
+    public String getOldMessage() {
+        return oldMessage;
+    }
+
+    @Override
+    public ErrorGqlStatusObject gqlStatusObject() {
+        return gqlStatusObject;
     }
 }

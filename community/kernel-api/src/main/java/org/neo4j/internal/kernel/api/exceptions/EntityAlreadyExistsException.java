@@ -23,6 +23,7 @@ import static java.util.Objects.requireNonNull;
 
 import org.neo4j.common.EntityType;
 import org.neo4j.exceptions.KernelException;
+import org.neo4j.gqlstatus.ErrorGqlStatusObject;
 import org.neo4j.kernel.api.exceptions.Status;
 
 public class EntityAlreadyExistsException extends KernelException {
@@ -31,6 +32,13 @@ public class EntityAlreadyExistsException extends KernelException {
 
     public EntityAlreadyExistsException(EntityType entityType, String entityId) {
         super(Status.Statement.EntityNotFound, "%s %s already exists.", entityType.name(), entityId);
+        this.entityType = requireNonNull(entityType);
+        this.entityId = requireNonNull(entityId);
+    }
+
+    public EntityAlreadyExistsException(ErrorGqlStatusObject gqlStatusObject, EntityType entityType, String entityId) {
+        super(gqlStatusObject, Status.Statement.EntityNotFound, "%s %s already exists.", entityType.name(), entityId);
+
         this.entityType = requireNonNull(entityType);
         this.entityId = requireNonNull(entityId);
     }

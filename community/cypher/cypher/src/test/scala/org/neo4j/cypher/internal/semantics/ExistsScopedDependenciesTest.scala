@@ -46,11 +46,11 @@ import org.neo4j.cypher.messages.MessageUtilProvider
 import org.neo4j.kernel.database.DatabaseReference
 import org.neo4j.monitoring.Monitors
 
+class DummyException() extends RuntimeException
+
 class ExistsScopedDependenciesTest extends CypherFunSuite with AstConstructionTestSupport {
 
   private val parsing = CompilationPhases.parsing(ParsingConfig(CypherVersion.Default)) andThen Namespacer
-
-  class DummyException() extends RuntimeException
 
   private val dummyExceptionFactory = new CypherExceptionFactory {
     override def arithmeticException(message: String, cause: Exception): RuntimeException = new DummyException

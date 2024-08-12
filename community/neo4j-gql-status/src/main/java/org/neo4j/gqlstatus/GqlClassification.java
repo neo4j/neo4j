@@ -17,16 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.gqlstatus
+package org.neo4j.gqlstatus;
 
-import org.scalatest.funsuite.AnyFunSuite
-import org.scalatest.matchers.should.Matchers
+import org.neo4j.annotations.api.PublicApi;
 
-class GqlStatusInfoScalaTest extends AnyFunSuite with Matchers {
-
-  test("String is formatted correctly") {
-    val m = "Hello my name is `$name`"
-    val result = GqlStatusInfoCodes.STATUS_00000.toJavaFormattable(m)
-    result shouldBe "Hello my name is `%s`"
-  }
-}
+@PublicApi
+public interface GqlClassification {}

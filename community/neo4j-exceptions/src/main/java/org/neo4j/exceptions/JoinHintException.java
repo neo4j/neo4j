@@ -19,11 +19,16 @@
  */
 package org.neo4j.exceptions;
 
+import org.neo4j.gqlstatus.ErrorGqlStatusObject;
 import org.neo4j.kernel.api.exceptions.Status;
 
 public class JoinHintException extends Neo4jException {
     public JoinHintException(String message) {
         super(message);
+    }
+
+    public JoinHintException(ErrorGqlStatusObject gqlStatusObject, String message) {
+        super(gqlStatusObject, message);
     }
 
     @Override

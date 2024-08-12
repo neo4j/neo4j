@@ -24,14 +24,41 @@ import static java.lang.String.format;
 import java.text.CharacterIterator;
 import java.text.StringCharacterIterator;
 import org.apache.commons.lang3.StringUtils;
+import org.neo4j.gqlstatus.ErrorGqlStatusObject;
+import org.neo4j.gqlstatus.ErrorMessageHolder;
+import org.neo4j.gqlstatus.HasGqlStatusInfo;
 import org.neo4j.kernel.api.exceptions.Status;
 
-public class MemoryLimitExceededException extends RuntimeException implements Status.HasStatus {
+public class MemoryLimitExceededException extends RuntimeException implements Status.HasStatus, HasGqlStatusInfo {
     private final Status status;
+    private final ErrorGqlStatusObject gqlStatusObject;
+    private final String oldMessage;
 
     public MemoryLimitExceededException(long allocation, long limit, long current, Status status, String settingName) {
         super(getMessage(allocation, limit, current, settingName));
         this.status = status;
+
+        this.gqlStatusObject = null;
+        this.oldMessage = getMessage(allocation, limit, current, settingName);
+    }
+
+    public MemoryLimitExceededException(
+            ErrorGqlStatusObject gqlStatusObject,
+            long allocation,
+            long limit,
+            long current,
+            Status status,
+            String settingName) {
+        super(ErrorMessageHolder.getMessage(gqlStatusObject, getMessage(allocation, limit, current, settingName)));
+        this.gqlStatusObject = gqlStatusObject;
+
+        this.status = status;
+        this.oldMessage = getMessage(allocation, limit, current, settingName);
+    }
+
+    @Override
+    public String getOldMessage() {
+        return oldMessage;
     }
 
     @Override
@@ -69,5 +96,10 @@ public class MemoryLimitExceededException extends RuntimeException implements St
         }
         value *= Long.signum(bytes);
         return String.format("%.1f %ciB", value / 1024.0, ci.current());
+    }
+
+    @Override
+    public ErrorGqlStatusObject gqlStatusObject() {
+        return gqlStatusObject;
     }
 }

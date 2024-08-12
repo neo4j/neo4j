@@ -19,6 +19,7 @@
  */
 package org.neo4j.exceptions;
 
+import org.neo4j.gqlstatus.ErrorGqlStatusObject;
 import org.neo4j.kernel.api.exceptions.Status;
 
 public class CypherExecutionInterruptedException extends Neo4jException {
@@ -26,6 +27,12 @@ public class CypherExecutionInterruptedException extends Neo4jException {
 
     public CypherExecutionInterruptedException(String message, Status status) {
         super(message);
+        this.status = status;
+    }
+
+    public CypherExecutionInterruptedException(ErrorGqlStatusObject gqlStatusObject, String message, Status status) {
+        super(gqlStatusObject, message);
+
         this.status = status;
     }
 

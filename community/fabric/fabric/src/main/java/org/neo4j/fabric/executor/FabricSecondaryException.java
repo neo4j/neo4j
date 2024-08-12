@@ -19,6 +19,7 @@
  */
 package org.neo4j.fabric.executor;
 
+import org.neo4j.gqlstatus.ErrorGqlStatusObject;
 import org.neo4j.kernel.api.exceptions.Status;
 
 /**
@@ -34,6 +35,17 @@ public class FabricSecondaryException extends FabricException {
     public FabricSecondaryException(
             Status statusCode, String message, Throwable cause, FabricException primaryException) {
         super(statusCode, message, cause);
+        this.primaryException = primaryException;
+    }
+
+    public FabricSecondaryException(
+            ErrorGqlStatusObject gqlStatusObject,
+            Status statusCode,
+            String message,
+            Throwable cause,
+            FabricException primaryException) {
+        super(gqlStatusObject, statusCode, message, cause);
+
         this.primaryException = primaryException;
     }
 

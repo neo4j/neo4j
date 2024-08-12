@@ -19,6 +19,8 @@
  */
 package org.neo4j.exceptions;
 
+import org.neo4j.gqlstatus.ErrorGqlStatusObject;
+
 /**
  * {@code UnsupportedTemporalUnitException} is thrown if trying to get or assign a temporal unit
  * which is not supported for the current temporal type. Examples of such cases include trying to
@@ -30,7 +32,15 @@ public class UnsupportedTemporalUnitException extends CypherTypeException {
         super(errorMsg);
     }
 
+    public UnsupportedTemporalUnitException(ErrorGqlStatusObject gqlStatusObject, String errorMsg) {
+        super(gqlStatusObject, errorMsg);
+    }
+
     public UnsupportedTemporalUnitException(String errorMsg, Throwable cause) {
         super(errorMsg, cause);
+    }
+
+    public UnsupportedTemporalUnitException(ErrorGqlStatusObject gqlStatusObject, String errorMsg, Throwable cause) {
+        super(gqlStatusObject, errorMsg, cause);
     }
 }

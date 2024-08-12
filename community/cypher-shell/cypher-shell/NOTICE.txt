@@ -29,6 +29,9 @@ Apache Software License, Version 2.0
   Apache Commons Lang
   Apache Commons Text
   Caffeine cache
+  Jackson-annotations
+  Jackson-core
+  jackson-databind
   jansi
   Java Native Access
   Neo4j Java Driver

@@ -19,19 +19,45 @@
  */
 package org.neo4j.graphdb;
 
+import org.neo4j.gqlstatus.ErrorGqlStatusObject;
+import org.neo4j.gqlstatus.ErrorMessageHolder;
+import org.neo4j.gqlstatus.HasGqlStatusInfo;
 import org.neo4j.kernel.api.exceptions.Status;
 
-public class WriteOperationsNotAllowedException extends RuntimeException implements Status.HasStatus {
+public class WriteOperationsNotAllowedException extends RuntimeException implements Status.HasStatus, HasGqlStatusInfo {
     private final Status statusCode;
+    private final ErrorGqlStatusObject gqlStatusObject;
+    private final String oldMessage;
 
-    public WriteOperationsNotAllowedException(String msg, Status statusCode) {
-        super(msg);
+    public WriteOperationsNotAllowedException(String message, Status statusCode) {
+        super(message);
         this.statusCode = statusCode;
+
+        this.gqlStatusObject = null;
+        this.oldMessage = message;
+    }
+
+    public WriteOperationsNotAllowedException(ErrorGqlStatusObject gqlStatusObject, String message, Status statusCode) {
+        super(ErrorMessageHolder.getMessage(gqlStatusObject, message));
+        this.gqlStatusObject = gqlStatusObject;
+
+        this.statusCode = statusCode;
+        this.oldMessage = message;
+    }
+
+    @Override
+    public String getOldMessage() {
+        return oldMessage;
     }
 
     /** The Neo4j status code associated with this exception type. */
     @Override
     public Status status() {
         return statusCode;
+    }
+
+    @Override
+    public ErrorGqlStatusObject gqlStatusObject() {
+        return gqlStatusObject;
     }
 }

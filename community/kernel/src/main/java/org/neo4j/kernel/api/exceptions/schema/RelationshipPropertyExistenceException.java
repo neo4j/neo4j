@@ -23,6 +23,7 @@ import static java.lang.String.format;
 
 import java.util.function.Function;
 import org.neo4j.common.TokenNameLookup;
+import org.neo4j.gqlstatus.ErrorGqlStatusObject;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
@@ -39,6 +40,24 @@ public class RelationshipPropertyExistenceException extends ConstraintValidation
             long relationshipId,
             TokenNameLookup tokenNameLookup) {
         super(constraintFunc.apply(schema), phase, format("Relationship(%s)", relationshipId), tokenNameLookup);
+        this.schema = schema;
+        this.relationshipId = relationshipId;
+    }
+
+    public RelationshipPropertyExistenceException(
+            ErrorGqlStatusObject gqlStatusObject,
+            RelationTypeSchemaDescriptor schema,
+            Function<RelationTypeSchemaDescriptor, ConstraintDescriptor> constraintFunc,
+            ConstraintValidationException.Phase phase,
+            long relationshipId,
+            TokenNameLookup tokenNameLookup) {
+        super(
+                gqlStatusObject,
+                constraintFunc.apply(schema),
+                phase,
+                format("Relationship(%s)", relationshipId),
+                tokenNameLookup);
+
         this.schema = schema;
         this.relationshipId = relationshipId;
     }

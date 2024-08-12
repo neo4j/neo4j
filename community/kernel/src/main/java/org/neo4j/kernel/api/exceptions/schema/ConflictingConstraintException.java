@@ -20,6 +20,7 @@
 package org.neo4j.kernel.api.exceptions.schema;
 
 import org.neo4j.common.TokenNameLookup;
+import org.neo4j.gqlstatus.ErrorGqlStatusObject;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -29,6 +30,14 @@ public class ConflictingConstraintException extends SchemaKernelException {
 
     public ConflictingConstraintException(ConstraintDescriptor constraint, TokenNameLookup tokenNameLookup) {
         super(Status.Schema.ConstraintAlreadyExists, constructUserMessage(tokenNameLookup, constraint));
+    }
+
+    public ConflictingConstraintException(
+            ErrorGqlStatusObject gqlStatusObject, ConstraintDescriptor constraint, TokenNameLookup tokenNameLookup) {
+        super(
+                gqlStatusObject,
+                Status.Schema.ConstraintAlreadyExists,
+                constructUserMessage(tokenNameLookup, constraint));
     }
 
     private static String constructUserMessage(TokenNameLookup tokenNameLookup, ConstraintDescriptor constraint) {

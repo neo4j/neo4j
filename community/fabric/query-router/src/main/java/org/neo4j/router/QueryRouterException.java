@@ -19,40 +19,87 @@
  */
 package org.neo4j.router;
 
+import org.neo4j.gqlstatus.ErrorGqlStatusObject;
+import org.neo4j.gqlstatus.ErrorMessageHolder;
+import org.neo4j.gqlstatus.HasGqlStatusInfo;
 import org.neo4j.kernel.api.exceptions.HasQuery;
 import org.neo4j.kernel.api.exceptions.Status;
 
-public class QueryRouterException extends RuntimeException implements Status.HasStatus, HasQuery {
+public class QueryRouterException extends RuntimeException implements Status.HasStatus, HasQuery, HasGqlStatusInfo {
     private final Status statusCode;
     private Long queryId;
+    private final ErrorGqlStatusObject gqlStatusObject;
+    private final String oldMessage;
 
     public QueryRouterException(Status statusCode, Throwable cause) {
         super(cause);
         this.statusCode = statusCode;
         this.queryId = null;
+
+        this.gqlStatusObject = null;
+        this.oldMessage = HasGqlStatusInfo.getOldCauseMessage(cause);
+    }
+
+    public QueryRouterException(ErrorGqlStatusObject gqlStatusObject, Status statusCode, Throwable cause) {
+        super(ErrorMessageHolder.getMessage(gqlStatusObject, HasGqlStatusInfo.getOldCauseMessage(cause)), cause);
+        this.gqlStatusObject = gqlStatusObject;
+
+        this.statusCode = statusCode;
+        this.queryId = null;
+        this.oldMessage = HasGqlStatusInfo.getOldCauseMessage(cause);
     }
 
     public QueryRouterException(Status statusCode, String message, Object... parameters) {
         super(String.format(message, parameters));
         this.statusCode = statusCode;
         this.queryId = null;
+
+        this.gqlStatusObject = null;
+        this.oldMessage = String.format(message, parameters);
+    }
+
+    public QueryRouterException(
+            ErrorGqlStatusObject gqlStatusObject, Status statusCode, String message, Object... parameters) {
+        super(ErrorMessageHolder.getMessage(gqlStatusObject, String.format(message, parameters)));
+        this.gqlStatusObject = gqlStatusObject;
+
+        this.statusCode = statusCode;
+        this.queryId = null;
+        this.oldMessage = String.format(message, parameters);
     }
 
     public QueryRouterException(Status statusCode, String message, Throwable cause) {
         super(message, cause);
         this.statusCode = statusCode;
         this.queryId = null;
+
+        this.gqlStatusObject = null;
+        this.oldMessage = message;
     }
 
-    public QueryRouterException(Status statusCode, String message, Throwable cause, Long queryId) {
-        super(message, cause);
+    public QueryRouterException(
+            ErrorGqlStatusObject gqlStatusObject, Status statusCode, String message, Throwable cause) {
+        super(ErrorMessageHolder.getMessage(gqlStatusObject, message), cause);
+        this.gqlStatusObject = gqlStatusObject;
+
         this.statusCode = statusCode;
-        this.queryId = queryId;
+        this.queryId = null;
+        this.oldMessage = message;
+    }
+
+    @Override
+    public String getOldMessage() {
+        return oldMessage;
     }
 
     @Override
     public Status status() {
         return statusCode;
+    }
+
+    @Override
+    public ErrorGqlStatusObject gqlStatusObject() {
+        return gqlStatusObject;
     }
 
     @Override

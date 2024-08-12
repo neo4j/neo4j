@@ -23,6 +23,7 @@ import static java.lang.String.format;
 
 import org.neo4j.common.EntityType;
 import org.neo4j.common.TokenNameLookup;
+import org.neo4j.gqlstatus.ErrorGqlStatusObject;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.constraints.TypeConstraintDescriptor;
@@ -47,6 +48,26 @@ public class PropertyTypeException extends ConstraintValidationException {
                 phase,
                 format(descriptor.schema().entityType() == EntityType.NODE ? "Node(%s)" : "Relationship(%s)", entityId),
                 tokenNameLookup);
+        this.entityId = entityId;
+        this.descriptor = descriptor;
+        this.value = value;
+        this.phase = phase;
+    }
+
+    public PropertyTypeException(
+            ErrorGqlStatusObject gqlStatusObject,
+            TypeConstraintDescriptor descriptor,
+            Phase phase,
+            long entityId,
+            TokenNameLookup tokenNameLookup,
+            Value value) {
+        super(
+                gqlStatusObject,
+                descriptor,
+                phase,
+                format(descriptor.schema().entityType() == EntityType.NODE ? "Node(%s)" : "Relationship(%s)", entityId),
+                tokenNameLookup);
+
         this.entityId = entityId;
         this.descriptor = descriptor;
         this.value = value;

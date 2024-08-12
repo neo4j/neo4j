@@ -17,19 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.security.auth.exception;
+package org.neo4j.gqlstatus;
 
-import org.neo4j.kernel.api.exceptions.Status;
-
-public class ConcurrentModificationException extends Exception implements Status.HasStatus {
-    private final Status status;
-
-    public ConcurrentModificationException() {
-        this.status = Status.Security.ModifiedConcurrently;
-    }
-
-    @Override
-    public Status status() {
-        return status;
+public class ErrorMessageHolder {
+    public static String getMessage(ErrorGqlStatusObject gqlStatusObject, String oldMessage) {
+        // gqlStatusObject might be null! (given that there are Scala exceptions created with old constructors that
+        // doesn't populate with GQL info
+        return oldMessage;
     }
 }

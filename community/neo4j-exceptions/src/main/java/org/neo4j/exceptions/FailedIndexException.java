@@ -21,11 +21,16 @@ package org.neo4j.exceptions;
 
 import static java.lang.System.lineSeparator;
 
+import org.neo4j.gqlstatus.ErrorGqlStatusObject;
 import org.neo4j.kernel.api.exceptions.Status;
 
 public class FailedIndexException extends Neo4jException {
     public FailedIndexException(String indexName, String failureMessage) {
         super(msg(indexName, failureMessage), null);
+    }
+
+    public FailedIndexException(ErrorGqlStatusObject gqlStatusObject, String indexName, String failureMessage) {
+        super(gqlStatusObject, msg(indexName, failureMessage), null);
     }
 
     private static String msg(String indexName, String failureMessage) {

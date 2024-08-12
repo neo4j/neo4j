@@ -19,22 +19,56 @@
  */
 package org.neo4j.bolt.fsm.error.state;
 
+import org.neo4j.gqlstatus.ErrorGqlStatusObject;
+import org.neo4j.gqlstatus.ErrorMessageHolder;
+import org.neo4j.gqlstatus.HasGqlStatusInfo;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.Status.HasStatus;
 import org.neo4j.kernel.api.exceptions.Status.Request;
 
-public abstract class IllegalRequestException extends StateTransitionException implements HasStatus {
+public abstract class IllegalRequestException extends StateTransitionException implements HasStatus, HasGqlStatusInfo {
+
+    private final ErrorGqlStatusObject gqlStatusObject;
+    private final String oldMessage;
 
     public IllegalRequestException(String message, Throwable cause) {
         super(message, cause);
+
+        this.gqlStatusObject = null;
+        this.oldMessage = message;
+    }
+
+    public IllegalRequestException(ErrorGqlStatusObject gqlStatusObject, String message, Throwable cause) {
+        super(ErrorMessageHolder.getMessage(gqlStatusObject, message), cause);
+        this.gqlStatusObject = gqlStatusObject;
+        this.oldMessage = message;
     }
 
     public IllegalRequestException(String message) {
         super(message);
+
+        this.gqlStatusObject = null;
+        this.oldMessage = message;
+    }
+
+    public IllegalRequestException(ErrorGqlStatusObject gqlStatusObject, String message) {
+        super(ErrorMessageHolder.getMessage(gqlStatusObject, message));
+        this.gqlStatusObject = gqlStatusObject;
+        this.oldMessage = message;
+    }
+
+    @Override
+    public String getOldMessage() {
+        return oldMessage;
     }
 
     @Override
     public Status status() {
         return Request.InvalidFormat;
+    }
+
+    @Override
+    public ErrorGqlStatusObject gqlStatusObject() {
+        return gqlStatusObject;
     }
 }

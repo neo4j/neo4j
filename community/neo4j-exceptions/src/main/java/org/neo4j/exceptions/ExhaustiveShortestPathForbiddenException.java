@@ -19,6 +19,8 @@
  */
 package org.neo4j.exceptions;
 
+import org.neo4j.gqlstatus.ErrorGqlStatusObject;
+
 public class ExhaustiveShortestPathForbiddenException extends CypherExecutionException {
     public static final String ERROR_MSG =
             "Shortest path fallback has been explicitly disabled. That means that no full path enumeration is performed in\n"
@@ -33,5 +35,9 @@ public class ExhaustiveShortestPathForbiddenException extends CypherExecutionExc
 
     public ExhaustiveShortestPathForbiddenException() {
         super(ERROR_MSG);
+    }
+
+    public ExhaustiveShortestPathForbiddenException(ErrorGqlStatusObject gqlStatusObject) {
+        super(gqlStatusObject, ERROR_MSG);
     }
 }

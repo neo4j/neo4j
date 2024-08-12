@@ -20,6 +20,7 @@
 package org.neo4j.dbms.api;
 
 import org.neo4j.annotations.api.PublicApi;
+import org.neo4j.gqlstatus.ErrorGqlStatusObject;
 import org.neo4j.kernel.api.exceptions.Status;
 
 /**
@@ -29,6 +30,13 @@ import org.neo4j.kernel.api.exceptions.Status;
 public class DatabaseLimitReachedException extends DatabaseManagementException {
     public DatabaseLimitReachedException(String startOfErrorMessage) {
         super(
+                startOfErrorMessage + " The total limit of databases is already reached. "
+                        + "To create more you need to either drop databases or change the limit via the config setting 'dbms.max_databases'");
+    }
+
+    public DatabaseLimitReachedException(ErrorGqlStatusObject gqlStatusObject, String startOfErrorMessage) {
+        super(
+                gqlStatusObject,
                 startOfErrorMessage + " The total limit of databases is already reached. "
                         + "To create more you need to either drop databases or change the limit via the config setting 'dbms.max_databases'");
     }

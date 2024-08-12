@@ -20,6 +20,7 @@
 package org.neo4j.dbms.api;
 
 import org.neo4j.annotations.api.PublicApi;
+import org.neo4j.gqlstatus.ErrorGqlStatusObject;
 import org.neo4j.kernel.api.exceptions.Status;
 
 /**
@@ -31,16 +32,32 @@ public class DatabaseNotFoundException extends DatabaseManagementException {
         super();
     }
 
+    public DatabaseNotFoundException(ErrorGqlStatusObject gqlStatusObject) {
+        super(gqlStatusObject);
+    }
+
     public DatabaseNotFoundException(String message) {
         super(message);
+    }
+
+    public DatabaseNotFoundException(ErrorGqlStatusObject gqlStatusObject, String message) {
+        super(gqlStatusObject, message);
     }
 
     public DatabaseNotFoundException(String message, Throwable cause) {
         super(message, cause);
     }
 
+    public DatabaseNotFoundException(ErrorGqlStatusObject gqlStatusObject, String message, Throwable cause) {
+        super(gqlStatusObject, message, cause);
+    }
+
     public DatabaseNotFoundException(Throwable cause) {
         super(cause);
+    }
+
+    public DatabaseNotFoundException(ErrorGqlStatusObject gqlStatusObject, Throwable cause) {
+        super(gqlStatusObject, cause);
     }
 
     @Override

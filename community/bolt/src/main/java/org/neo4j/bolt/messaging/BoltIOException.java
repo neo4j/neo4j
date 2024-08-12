@@ -20,23 +20,53 @@
 package org.neo4j.bolt.messaging;
 
 import java.io.IOException;
+import org.neo4j.gqlstatus.ErrorGqlStatusObject;
+import org.neo4j.gqlstatus.ErrorMessageHolder;
+import org.neo4j.gqlstatus.HasGqlStatusInfo;
 import org.neo4j.kernel.api.exceptions.Status;
 
-public class BoltIOException extends IOException implements Status.HasStatus {
+public class BoltIOException extends IOException implements Status.HasStatus, HasGqlStatusInfo {
     private final Status status;
+    private final ErrorGqlStatusObject gqlStatusObject;
+    private final String oldMessage;
 
     public BoltIOException(Status status, String message, Throwable cause) {
         super(message, cause);
         this.status = status;
+
+        this.gqlStatusObject = null;
+        this.oldMessage = message;
+    }
+
+    public BoltIOException(ErrorGqlStatusObject gqlStatusObject, Status status, String message, Throwable cause) {
+        super(ErrorMessageHolder.getMessage(gqlStatusObject, message), cause);
+        this.gqlStatusObject = gqlStatusObject;
+
+        this.status = status;
+        this.oldMessage = message;
     }
 
     public BoltIOException(Status status, String message) {
         this(status, message, null);
     }
 
+    public BoltIOException(ErrorGqlStatusObject gqlStatusObject, Status status, String message) {
+        this(gqlStatusObject, status, message, null);
+    }
+
+    @Override
+    public String getOldMessage() {
+        return oldMessage;
+    }
+
     @Override
     public Status status() {
         return status;
+    }
+
+    @Override
+    public ErrorGqlStatusObject gqlStatusObject() {
+        return gqlStatusObject;
     }
 
     public boolean causesFailureMessage() {

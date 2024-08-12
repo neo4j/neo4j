@@ -20,6 +20,7 @@
 package org.neo4j.kernel.api.exceptions.schema;
 
 import org.neo4j.common.TokenNameLookup;
+import org.neo4j.gqlstatus.ErrorGqlStatusObject;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -36,6 +37,20 @@ public class AlreadyIndexedException extends SchemaKernelException {
     public AlreadyIndexedException(
             SchemaDescriptor descriptor, OperationContext context, TokenNameLookup tokenNameLookup) {
         super(Status.Schema.IndexAlreadyExists, constructUserMessage(context, tokenNameLookup, descriptor));
+
+        this.descriptor = descriptor;
+        this.context = context;
+    }
+
+    public AlreadyIndexedException(
+            ErrorGqlStatusObject gqlStatusObject,
+            SchemaDescriptor descriptor,
+            OperationContext context,
+            TokenNameLookup tokenNameLookup) {
+        super(
+                gqlStatusObject,
+                Status.Schema.IndexAlreadyExists,
+                constructUserMessage(context, tokenNameLookup, descriptor));
 
         this.descriptor = descriptor;
         this.context = context;

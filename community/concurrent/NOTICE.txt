@@ -28,6 +28,9 @@ Third-party licenses
 Apache Software License, Version 2.0
   Apache Commons Lang
   Apache Commons Text
+  Jackson-annotations
+  Jackson-core
+  jackson-databind
 
 Eclipse Distribution License - v 1.0
   Eclipse Collections API

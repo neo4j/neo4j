@@ -112,7 +112,7 @@ public class CommonGqlStatusObjectImplementation implements CommonGqlStatusObjec
             }
         }
         diagnosticRecord.setStatusParameters(statusParameters);
-        return String.format(gqlStatusInfo.getMessage(), (Object[]) messageParameters);
+        return gqlStatusInfo.getMessage(List.of(messageParameters));
     }
 
     private boolean isListOfString(Object obj) {

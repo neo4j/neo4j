@@ -19,12 +19,17 @@
  */
 package org.neo4j.exceptions;
 
+import org.neo4j.gqlstatus.ErrorGqlStatusObject;
 import org.neo4j.kernel.api.exceptions.Status;
 
 public class ParameterWrongTypeException extends Neo4jException {
 
     public ParameterWrongTypeException(String message) {
         super(message);
+    }
+
+    public ParameterWrongTypeException(ErrorGqlStatusObject gqlStatusObject, String message) {
+        super(gqlStatusObject, message);
     }
 
     @Override

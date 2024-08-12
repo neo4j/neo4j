@@ -21,6 +21,7 @@ package org.neo4j.graphdb;
 
 import org.neo4j.annotations.api.PublicApi;
 import org.neo4j.gqlstatus.CommonGqlStatusObject;
+import org.neo4j.gqlstatus.NotificationClassification;
 
 /**
  * Representation for the GQL-status object from the execution of a successful query.

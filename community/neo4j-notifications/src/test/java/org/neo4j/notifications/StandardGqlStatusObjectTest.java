@@ -24,8 +24,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import org.junit.jupiter.api.Test;
 import org.neo4j.gqlstatus.Condition;
 import org.neo4j.gqlstatus.DiagnosticRecord;
+import org.neo4j.gqlstatus.NotificationClassification;
 import org.neo4j.graphdb.InputPosition;
-import org.neo4j.graphdb.NotificationClassification;
 import org.neo4j.graphdb.SeverityLevel;
 
 class StandardGqlStatusObjectTest {

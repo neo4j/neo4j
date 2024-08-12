@@ -20,6 +20,7 @@
 package org.neo4j.internal.kernel.api.exceptions.schema;
 
 import org.neo4j.common.TokenNameLookup;
+import org.neo4j.gqlstatus.ErrorGqlStatusObject;
 import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.kernel.api.exceptions.Status;
 
@@ -28,5 +29,17 @@ public class DuplicateSchemaRuleException extends SchemaRuleException {
 
     public DuplicateSchemaRuleException(SchemaDescriptorSupplier schemaThing, TokenNameLookup tokenNameLookup) {
         super(Status.Schema.SchemaRuleDuplicateFound, MULTIPLE_FOUND_MESSAGE_TEMPLATE, schemaThing, tokenNameLookup);
+    }
+
+    public DuplicateSchemaRuleException(
+            ErrorGqlStatusObject gqlStatusObject,
+            SchemaDescriptorSupplier schemaThing,
+            TokenNameLookup tokenNameLookup) {
+        super(
+                gqlStatusObject,
+                Status.Schema.SchemaRuleDuplicateFound,
+                MULTIPLE_FOUND_MESSAGE_TEMPLATE,
+                schemaThing,
+                tokenNameLookup);
     }
 }

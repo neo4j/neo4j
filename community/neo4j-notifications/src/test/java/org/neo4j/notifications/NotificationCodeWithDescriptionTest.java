@@ -88,9 +88,9 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.common.EntityType;
 import org.neo4j.exceptions.IndexHintException.IndexHintIndexType;
 import org.neo4j.gqlstatus.DiagnosticRecord;
+import org.neo4j.gqlstatus.NotificationClassification;
 import org.neo4j.graphdb.InputPosition;
 import org.neo4j.graphdb.NotificationCategory;
-import org.neo4j.graphdb.NotificationClassification;
 import org.neo4j.graphdb.SeverityLevel;
 import org.neo4j.kernel.api.exceptions.Status;
 
@@ -111,7 +111,14 @@ class NotificationCodeWithDescriptionTest {
                 NotificationCategory.HINT,
                 NotificationClassification.HINT,
                 "01N31",
-                new DiagnosticRecord(warning, hint, -1, -1, -1, Map.of("index_descr", "INDEX :Person(name)")).asMap(),
+                new DiagnosticRecord(
+                                warning,
+                                NotificationClassification.HINT,
+                                -1,
+                                -1,
+                                -1,
+                                Map.of("indexDescr", "INDEX :Person(name)"))
+                        .asMap(),
                 "warn: hinted index not found. Unable to create a plan with `INDEX :Person(name)` because the index does not exist.");
     }
 
@@ -131,7 +138,13 @@ class NotificationCodeWithDescriptionTest {
                 NotificationCategory.HINT,
                 NotificationClassification.HINT,
                 "01N31",
-                new DiagnosticRecord(warning, hint, -1, -1, -1, Map.of("index_descr", "TEXT INDEX :Person(name)"))
+                new DiagnosticRecord(
+                                warning,
+                                NotificationClassification.HINT,
+                                -1,
+                                -1,
+                                -1,
+                                Map.of("indexDescr", "TEXT INDEX :Person(name)"))
                         .asMap(),
                 "warn: hinted index not found. Unable to create a plan with `TEXT INDEX :Person(name)` because the index does not exist.");
     }
@@ -153,7 +166,14 @@ class NotificationCodeWithDescriptionTest {
                 NotificationCategory.HINT,
                 NotificationClassification.HINT,
                 "01N31",
-                new DiagnosticRecord(warning, hint, -1, -1, -1, Map.of("index_descr", "INDEX :Person(name)")).asMap(),
+                new DiagnosticRecord(
+                                warning,
+                                NotificationClassification.HINT,
+                                -1,
+                                -1,
+                                -1,
+                                Map.of("indexDescr", "INDEX :Person(name)"))
+                        .asMap(),
                 "warn: hinted index not found. Unable to create a plan with `INDEX :Person(name)` because the index does not exist.");
     }
 
@@ -174,7 +194,13 @@ class NotificationCodeWithDescriptionTest {
                 NotificationCategory.HINT,
                 NotificationClassification.HINT,
                 "01N31",
-                new DiagnosticRecord(warning, hint, -1, -1, -1, Map.of("index_descr", "TEXT INDEX :Person(name)"))
+                new DiagnosticRecord(
+                                warning,
+                                NotificationClassification.HINT,
+                                -1,
+                                -1,
+                                -1,
+                                Map.of("indexDescr", "TEXT INDEX :Person(name)"))
                         .asMap(),
                 "warn: hinted index not found. Unable to create a plan with `TEXT INDEX :Person(name)` because the index does not exist.");
     }
@@ -196,7 +222,13 @@ class NotificationCodeWithDescriptionTest {
                 NotificationCategory.HINT,
                 NotificationClassification.HINT,
                 "01N31",
-                new DiagnosticRecord(warning, hint, -1, -1, -1, Map.of("index_descr", "TEXT INDEX :Person(name, age)"))
+                new DiagnosticRecord(
+                                warning,
+                                NotificationClassification.HINT,
+                                -1,
+                                -1,
+                                -1,
+                                Map.of("indexDescr", "TEXT INDEX :Person(name, age)"))
                         .asMap(),
                 "warn: hinted index not found. Unable to create a plan with `TEXT INDEX :Person(name, age)` because the index does not exist.");
     }
@@ -223,7 +255,14 @@ class NotificationCodeWithDescriptionTest {
                 NotificationCategory.PERFORMANCE,
                 NotificationClassification.PERFORMANCE,
                 "03N90",
-                new DiagnosticRecord(info, performance, -1, -1, -1, Map.of("pat", "(node1), (node)--(node2)")).asMap(),
+                new DiagnosticRecord(
+                                info,
+                                NotificationClassification.PERFORMANCE,
+                                -1,
+                                -1,
+                                -1,
+                                Map.of("pat", "(node1), (node)--(node2)"))
+                        .asMap(),
                 "info: cartesian product. The disconnected patterns `(node1), (node)--(node2)` build a cartesian product. A cartesian product may produce a large amount of data and slow down query processing.");
     }
 
@@ -243,7 +282,14 @@ class NotificationCodeWithDescriptionTest {
                 NotificationCategory.HINT,
                 NotificationClassification.HINT,
                 "01N30",
-                new DiagnosticRecord(warning, hint, -1, -1, -1, Map.of("var_list", List.of("n", "node2"))).asMap(),
+                new DiagnosticRecord(
+                                warning,
+                                NotificationClassification.HINT,
+                                -1,
+                                -1,
+                                -1,
+                                Map.of("varList", List.of("n", "node2")))
+                        .asMap(),
                 "warn: join hint unfulfillable. Unable to create a plan with `JOIN ON n, node2`. Try to change the join key(s) or restructure your query.");
     }
 
@@ -262,7 +308,13 @@ class NotificationCodeWithDescriptionTest {
                 NotificationCategory.DEPRECATION,
                 NotificationClassification.DEPRECATION,
                 "01N01",
-                new DiagnosticRecord(warning, deprecation, -1, -1, -1, Map.of("thing1", "oldName", "thing2", "newName"))
+                new DiagnosticRecord(
+                                warning,
+                                NotificationClassification.DEPRECATION,
+                                -1,
+                                -1,
+                                -1,
+                                Map.of("thing1", "oldName", "thing2", "newName"))
                         .asMap(),
                 "warn: feature deprecated with replacement. `oldName` is deprecated. It is replaced by `newName`.");
     }
@@ -282,7 +334,9 @@ class NotificationCodeWithDescriptionTest {
                 NotificationCategory.DEPRECATION,
                 NotificationClassification.DEPRECATION,
                 "01N02",
-                new DiagnosticRecord(warning, deprecation, -1, -1, -1, Map.of("thing", "oldName")).asMap(),
+                new DiagnosticRecord(
+                                warning, NotificationClassification.DEPRECATION, -1, -1, -1, Map.of("thing", "oldName"))
+                        .asMap(),
                 "warn: feature deprecated without replacement. `oldName` is deprecated and will be removed without a replacement.");
     }
 
@@ -302,14 +356,14 @@ class NotificationCodeWithDescriptionTest {
                 "01N40",
                 new DiagnosticRecord(
                                 warning,
-                                unsupported,
+                                NotificationClassification.UNSUPPORTED,
                                 -1,
                                 -1,
                                 -1,
                                 Map.of(
-                                        "preparser_input1",
+                                        "preparserInput1",
                                         "runtime=parallel",
-                                        "preparser_input2",
+                                        "preparserInput2",
                                         "runtime=pipelined",
                                         "msg",
                                         "PARALLEL"))
@@ -331,7 +385,14 @@ class NotificationCodeWithDescriptionTest {
                 NotificationCategory.PERFORMANCE,
                 NotificationClassification.PERFORMANCE,
                 "03N95",
-                new DiagnosticRecord(info, performance, -1, -1, -1, Map.of("label_list", List.of("A"))).asMap(),
+                new DiagnosticRecord(
+                                info,
+                                NotificationClassification.PERFORMANCE,
+                                -1,
+                                -1,
+                                -1,
+                                Map.of("labelList", List.of("A")))
+                        .asMap(),
                 "info: dynamic property. An index exists on label/type(s) `A`. It is not possible to use indexes for dynamic properties. Consider using static properties.");
     }
 
@@ -350,7 +411,13 @@ class NotificationCodeWithDescriptionTest {
                 NotificationCategory.DEPRECATION,
                 NotificationClassification.DEPRECATION,
                 "01N01",
-                new DiagnosticRecord(warning, deprecation, -1, -1, -1, Map.of("thing1", "oldName", "thing2", "newName"))
+                new DiagnosticRecord(
+                                warning,
+                                NotificationClassification.DEPRECATION,
+                                -1,
+                                -1,
+                                -1,
+                                Map.of("thing1", "oldName", "thing2", "newName"))
                         .asMap(),
                 "warn: feature deprecated with replacement. `oldName` is deprecated. It is replaced by `newName`.");
     }
@@ -370,7 +437,9 @@ class NotificationCodeWithDescriptionTest {
                 NotificationCategory.DEPRECATION,
                 NotificationClassification.DEPRECATION,
                 "01N02",
-                new DiagnosticRecord(warning, deprecation, -1, -1, -1, Map.of("thing", "oldName")).asMap(),
+                new DiagnosticRecord(
+                                warning, NotificationClassification.DEPRECATION, -1, -1, -1, Map.of("thing", "oldName"))
+                        .asMap(),
                 "warn: feature deprecated without replacement. `oldName` is deprecated and will be removed without a replacement.");
     }
 
@@ -390,7 +459,7 @@ class NotificationCodeWithDescriptionTest {
                 "01N01",
                 new DiagnosticRecord(
                                 warning,
-                                deprecation,
+                                NotificationClassification.DEPRECATION,
                                 -1,
                                 -1,
                                 -1,
@@ -415,7 +484,7 @@ class NotificationCodeWithDescriptionTest {
                 "01N62",
                 new DiagnosticRecord(
                                 warning,
-                                generic,
+                                NotificationClassification.GENERIC,
                                 -1,
                                 -1,
                                 -1,
@@ -438,7 +507,13 @@ class NotificationCodeWithDescriptionTest {
                 NotificationCategory.DEPRECATION,
                 NotificationClassification.DEPRECATION,
                 "01N03",
-                new DiagnosticRecord(warning, deprecation, -1, -1, -1, Map.of("field", "field", "proc", "proc"))
+                new DiagnosticRecord(
+                                warning,
+                                NotificationClassification.DEPRECATION,
+                                -1,
+                                -1,
+                                -1,
+                                Map.of("field", "field", "proc", "proc"))
                         .asMap(),
                 "warn: procedure field deprecated. `field` for procedure `proc` is deprecated.");
     }
@@ -457,7 +532,13 @@ class NotificationCodeWithDescriptionTest {
                 NotificationCategory.DEPRECATION,
                 NotificationClassification.DEPRECATION,
                 "01N01",
-                new DiagnosticRecord(warning, deprecation, -1, -1, -1, Map.of("thing1", ":A:|B", "thing2", ":A|B"))
+                new DiagnosticRecord(
+                                warning,
+                                NotificationClassification.DEPRECATION,
+                                -1,
+                                -1,
+                                -1,
+                                Map.of("thing1", ":A:|B", "thing2", ":A|B"))
                         .asMap(),
                 "warn: feature deprecated with replacement. `:A:|B` is deprecated. It is replaced by `:A|B`.");
     }
@@ -479,7 +560,7 @@ class NotificationCodeWithDescriptionTest {
                 "01N01",
                 new DiagnosticRecord(
                                 warning,
-                                deprecation,
+                                NotificationClassification.DEPRECATION,
                                 -1,
                                 -1,
                                 -1,
@@ -505,7 +586,7 @@ class NotificationCodeWithDescriptionTest {
                 "01N01",
                 new DiagnosticRecord(
                                 warning,
-                                deprecation,
+                                NotificationClassification.DEPRECATION,
                                 -1,
                                 -1,
                                 -1,
@@ -532,7 +613,12 @@ class NotificationCodeWithDescriptionTest {
                 NotificationClassification.DEPRECATION,
                 "01N01",
                 new DiagnosticRecord(
-                                warning, deprecation, -1, -1, -1, Map.of("thing1", "text-1.0", "thing2", "text-2.0"))
+                                warning,
+                                NotificationClassification.DEPRECATION,
+                                -1,
+                                -1,
+                                -1,
+                                Map.of("thing1", "text-1.0", "thing2", "text-2.0"))
                         .asMap(),
                 "warn: feature deprecated with replacement. `text-1.0` is deprecated. It is replaced by `text-2.0`.");
     }
@@ -554,7 +640,7 @@ class NotificationCodeWithDescriptionTest {
                 NotificationCategory.PERFORMANCE,
                 NotificationClassification.PERFORMANCE,
                 "03N94",
-                new DiagnosticRecord(info, performance, -1, -1, -1, Map.of()).asMap(),
+                new DiagnosticRecord(info, NotificationClassification.PERFORMANCE, -1, -1, -1, Map.of()).asMap(),
                 "info: eager operator. The query execution plan contains the `Eager` operator. `LOAD CSV` in combination with `Eager` can consume a lot of memory.");
     }
 
@@ -574,7 +660,7 @@ class NotificationCodeWithDescriptionTest {
                 "01N01",
                 new DiagnosticRecord(
                                 warning,
-                                deprecation,
+                                NotificationClassification.DEPRECATION,
                                 -1,
                                 -1,
                                 -1,
@@ -599,7 +685,9 @@ class NotificationCodeWithDescriptionTest {
                 NotificationCategory.DEPRECATION,
                 NotificationClassification.DEPRECATION,
                 "01N00",
-                new DiagnosticRecord(warning, deprecation, -1, -1, -1, Map.of("msg", message)).asMap(),
+                new DiagnosticRecord(
+                                warning, NotificationClassification.DEPRECATION, -1, -1, -1, Map.of("msg", message))
+                        .asMap(),
                 String.format("warn: feature deprecated. %s", message));
     }
 
@@ -618,7 +706,9 @@ class NotificationCodeWithDescriptionTest {
                 NotificationCategory.DEPRECATION,
                 NotificationClassification.DEPRECATION,
                 "01N00",
-                new DiagnosticRecord(warning, deprecation, -1, -1, -1, Map.of("msg", message)).asMap(),
+                new DiagnosticRecord(
+                                warning, NotificationClassification.DEPRECATION, -1, -1, -1, Map.of("msg", message))
+                        .asMap(),
                 String.format("warn: feature deprecated. %s", message));
     }
 
@@ -636,7 +726,8 @@ class NotificationCodeWithDescriptionTest {
                 NotificationCategory.PERFORMANCE,
                 NotificationClassification.PERFORMANCE,
                 "03N93",
-                new DiagnosticRecord(info, performance, -1, -1, -1, Map.of("label", "Label")).asMap(),
+                new DiagnosticRecord(info, NotificationClassification.PERFORMANCE, -1, -1, -1, Map.of("label", "Label"))
+                        .asMap(),
                 "info: no applicable index. `LOAD CSV` in combination with `MATCH` or `MERGE` on a label that does not have an index may result in long execution times. Consider adding an index for label `Label`.");
     }
 
@@ -655,7 +746,9 @@ class NotificationCodeWithDescriptionTest {
                 NotificationCategory.UNRECOGNIZED,
                 NotificationClassification.UNRECOGNIZED,
                 "01N50",
-                new DiagnosticRecord(warning, unrecognized, -1, -1, -1, Map.of("label", "Label")).asMap(),
+                new DiagnosticRecord(
+                                warning, NotificationClassification.UNRECOGNIZED, -1, -1, -1, Map.of("label", "Label"))
+                        .asMap(),
                 "warn: unknown label. The label `Label` does not exist. Verify that the spelling is correct.");
     }
 
@@ -674,7 +767,9 @@ class NotificationCodeWithDescriptionTest {
                 NotificationCategory.UNRECOGNIZED,
                 NotificationClassification.UNRECOGNIZED,
                 "01N51",
-                new DiagnosticRecord(warning, unrecognized, -1, -1, -1, Map.of("reltype", "Rel")).asMap(),
+                new DiagnosticRecord(
+                                warning, NotificationClassification.UNRECOGNIZED, -1, -1, -1, Map.of("reltype", "Rel"))
+                        .asMap(),
                 "warn: unknown relationship type. The relationship type `Rel` does not exist. Verify that the spelling is correct.");
     }
 
@@ -694,7 +789,9 @@ class NotificationCodeWithDescriptionTest {
                 NotificationCategory.UNRECOGNIZED,
                 NotificationClassification.UNRECOGNIZED,
                 "01N52",
-                new DiagnosticRecord(warning, unrecognized, -1, -1, -1, Map.of("propkey", "prop")).asMap(),
+                new DiagnosticRecord(
+                                warning, NotificationClassification.UNRECOGNIZED, -1, -1, -1, Map.of("propkey", "prop"))
+                        .asMap(),
                 "warn: unknown property key. The property `prop` does not exist. Verify that the spelling is correct.");
     }
 
@@ -714,7 +811,8 @@ class NotificationCodeWithDescriptionTest {
                 NotificationCategory.PERFORMANCE,
                 NotificationClassification.PERFORMANCE,
                 "03N91",
-                new DiagnosticRecord(info, performance, -1, -1, -1, Map.of("pat", pattern)).asMap(),
+                new DiagnosticRecord(info, NotificationClassification.PERFORMANCE, -1, -1, -1, Map.of("pat", pattern))
+                        .asMap(),
                 String.format(
                         "info: unbounded variable length pattern. The provided pattern `%s` is unbounded. Shortest path with an unbounded pattern may result in long execution times. Use an upper limit (e.g. `[*..5]`) on the number of node hops in your pattern.",
                         pattern));
@@ -737,7 +835,13 @@ class NotificationCodeWithDescriptionTest {
                 NotificationCategory.PERFORMANCE,
                 NotificationClassification.PERFORMANCE,
                 "03N92",
-                new DiagnosticRecord(info, performance, -1, -1, -1, Map.of("pred_list", List.of("length(p) > 1")))
+                new DiagnosticRecord(
+                                info,
+                                NotificationClassification.PERFORMANCE,
+                                -1,
+                                -1,
+                                -1,
+                                Map.of("predList", List.of("length(p) > 1")))
                         .asMap(),
                 "info: exhaustive shortest path. The query runs with exhaustive shortest path due to the existential predicate(s) `length(p) > 1`. It may be possible to use `WITH` to separate the `MATCH` from the existential predicate(s).");
     }
@@ -757,7 +861,14 @@ class NotificationCodeWithDescriptionTest {
                 NotificationCategory.GENERIC,
                 NotificationClassification.GENERIC,
                 "01N60",
-                new DiagnosticRecord(warning, generic, -1, -1, -1, Map.of("param_list", List.of("$param1"))).asMap(),
+                new DiagnosticRecord(
+                                warning,
+                                NotificationClassification.GENERIC,
+                                -1,
+                                -1,
+                                -1,
+                                Map.of("paramList", List.of("$param1")))
+                        .asMap(),
                 "warn: parameter missing. The query plan cannot be cached and is not executable without `EXPLAIN` due to the undefined parameter(s) `$param1`. Provide the parameter(s).");
     }
 
@@ -778,7 +889,13 @@ class NotificationCodeWithDescriptionTest {
                 NotificationCategory.GENERIC,
                 NotificationClassification.GENERIC,
                 "01N60",
-                new DiagnosticRecord(warning, generic, -1, -1, -1, Map.of("param_list", List.of("$param1", "$param2")))
+                new DiagnosticRecord(
+                                warning,
+                                NotificationClassification.GENERIC,
+                                -1,
+                                -1,
+                                -1,
+                                Map.of("paramList", List.of("$param1", "$param2")))
                         .asMap(),
                 "warn: parameter missing. The query plan cannot be cached and is not executable without `EXPLAIN` due to the undefined parameter(s) `$param1, $param2`. Provide the parameter(s).");
     }
@@ -802,7 +919,12 @@ class NotificationCodeWithDescriptionTest {
                 NotificationClassification.PERFORMANCE,
                 "03N96",
                 new DiagnosticRecord(
-                                info, performance, -1, -1, -1, Map.of("enginetype", failingEnginetype, "msg", cause))
+                                info,
+                                NotificationClassification.PERFORMANCE,
+                                -1,
+                                -1,
+                                -1,
+                                Map.of("enginetype", failingEnginetype, "msg", cause))
                         .asMap(),
                 String.format(
                         "info: failed code generation. Failed to generate code, falling back to interpreted %s engine. A stacktrace can be found in the debug.log. Cause: %s.",
@@ -828,7 +950,12 @@ class NotificationCodeWithDescriptionTest {
                 NotificationClassification.PERFORMANCE,
                 "03N96",
                 new DiagnosticRecord(
-                                info, performance, -1, -1, -1, Map.of("enginetype", failingEnginetype, "msg", cause))
+                                info,
+                                NotificationClassification.PERFORMANCE,
+                                -1,
+                                -1,
+                                -1,
+                                Map.of("enginetype", failingEnginetype, "msg", cause))
                         .asMap(),
                 String.format(
                         "info: failed code generation. Failed to generate code, falling back to interpreted %s engine. A stacktrace can be found in the debug.log. Cause: %s.",
@@ -851,7 +978,7 @@ class NotificationCodeWithDescriptionTest {
                 NotificationCategory.GENERIC,
                 NotificationClassification.GENERIC,
                 "03N60",
-                new DiagnosticRecord(info, generic, -1, -1, -1, Map.of("var", "v")).asMap(),
+                new DiagnosticRecord(info, NotificationClassification.GENERIC, -1, -1, -1, Map.of("var", "v")).asMap(),
                 "info: subquery variable shadowing. The variable `v` in the subquery uses the same name as a variable from the outer query. Use `WITH v` in the subquery to import the one from the outer scope unless you want it to be a new variable.");
     }
 
@@ -869,7 +996,9 @@ class NotificationCodeWithDescriptionTest {
                 NotificationCategory.DEPRECATION,
                 NotificationClassification.DEPRECATION,
                 "01N00",
-                new DiagnosticRecord(warning, deprecation, -1, -1, -1, Map.of("msg", message)).asMap(),
+                new DiagnosticRecord(
+                                warning, NotificationClassification.DEPRECATION, -1, -1, -1, Map.of("msg", message))
+                        .asMap(),
                 String.format("warn: feature deprecated. %s", message));
     }
 
@@ -887,7 +1016,8 @@ class NotificationCodeWithDescriptionTest {
                 NotificationCategory.UNRECOGNIZED,
                 NotificationClassification.UNRECOGNIZED,
                 "00N50",
-                new DiagnosticRecord(info, unrecognized, -1, -1, -1, Map.of("db", "db")).asMap(),
+                new DiagnosticRecord(info, NotificationClassification.UNRECOGNIZED, -1, -1, -1, Map.of("db", "db"))
+                        .asMap(),
                 "note: successful completion - home database not found. The database `db` does not exist. Verify that the spelling is correct or create the database for the command to take effect.");
     }
 
@@ -907,7 +1037,9 @@ class NotificationCodeWithDescriptionTest {
                 NotificationCategory.DEPRECATION,
                 NotificationClassification.DEPRECATION,
                 "01N00",
-                new DiagnosticRecord(warning, deprecation, -1, -1, -1, Map.of("msg", message)).asMap(),
+                new DiagnosticRecord(
+                                warning, NotificationClassification.DEPRECATION, -1, -1, -1, Map.of("msg", message))
+                        .asMap(),
                 String.format("warn: feature deprecated. %s", message));
     }
 
@@ -925,7 +1057,8 @@ class NotificationCodeWithDescriptionTest {
                 NotificationCategory.GENERIC,
                 NotificationClassification.GENERIC,
                 "01N61",
-                new DiagnosticRecord(warning, generic, -1, -1, -1, Map.of("label_expr", "!%")).asMap(),
+                new DiagnosticRecord(warning, NotificationClassification.GENERIC, -1, -1, -1, Map.of("labelExpr", "!%"))
+                        .asMap(),
                 "warn: unsatisfiable relationship type expression. The expression `!%` cannot be satisfied because relationships must have exactly one type.");
     }
 
@@ -943,7 +1076,13 @@ class NotificationCodeWithDescriptionTest {
                 NotificationCategory.GENERIC,
                 NotificationClassification.GENERIC,
                 "01N63",
-                new DiagnosticRecord(warning, generic, -1, -1, -1, Map.of("var", "r", "pat", "()-[r]->()<-[r]-()"))
+                new DiagnosticRecord(
+                                warning,
+                                NotificationClassification.GENERIC,
+                                -1,
+                                -1,
+                                -1,
+                                Map.of("var", "r", "pat", "()-[r]->()<-[r]-()"))
                         .asMap(),
                 "warn: repeated relationship reference. `r` is repeated in `()-[r]->()<-[r]-()`, which leads to no results.");
     }
@@ -962,7 +1101,13 @@ class NotificationCodeWithDescriptionTest {
                 NotificationCategory.GENERIC,
                 NotificationClassification.GENERIC,
                 "01N63",
-                new DiagnosticRecord(warning, generic, -1, -1, -1, Map.of("var", "r", "pat", "()-[r*]->()-[r*]->()"))
+                new DiagnosticRecord(
+                                warning,
+                                NotificationClassification.GENERIC,
+                                -1,
+                                -1,
+                                -1,
+                                Map.of("var", "r", "pat", "()-[r*]->()-[r*]->()"))
                         .asMap(),
                 "warn: repeated relationship reference. `r` is repeated in `()-[r*]->()-[r*]->()`, which leads to no results.");
     }
@@ -982,7 +1127,9 @@ class NotificationCodeWithDescriptionTest {
                 NotificationCategory.DEPRECATION,
                 NotificationClassification.DEPRECATION,
                 "01N00",
-                new DiagnosticRecord(warning, deprecation, -1, -1, -1, Map.of("msg", message)).asMap(),
+                new DiagnosticRecord(
+                                warning, NotificationClassification.DEPRECATION, -1, -1, -1, Map.of("msg", message))
+                        .asMap(),
                 String.format("warn: feature deprecated. %s", message));
     }
 
@@ -1002,7 +1149,13 @@ class NotificationCodeWithDescriptionTest {
                 NotificationCategory.DEPRECATION,
                 NotificationClassification.DEPRECATION,
                 "01N02",
-                new DiagnosticRecord(warning, deprecation, -1, -1, -1, Map.of("thing", "connectComponentsPlanner"))
+                new DiagnosticRecord(
+                                warning,
+                                NotificationClassification.DEPRECATION,
+                                -1,
+                                -1,
+                                -1,
+                                Map.of("thing", "connectComponentsPlanner"))
                         .asMap(),
                 "warn: feature deprecated without replacement. `connectComponentsPlanner` is deprecated and will be removed without a replacement.");
     }
@@ -1021,8 +1174,9 @@ class NotificationCodeWithDescriptionTest {
                 NotificationCategory.SECURITY,
                 NotificationClassification.SECURITY,
                 "00N72",
-                new DiagnosticRecord(info, security, -1, -1, -1, Map.of("provider", "foo")).asMap(),
-                "note: successful completion - the auth provider is not defined. "
+                new DiagnosticRecord(info, NotificationClassification.SECURITY, -1, -1, -1, Map.of("provider", "foo"))
+                        .asMap(),
+                "note: successful completion - no such auth provider. "
                         + "The auth provider `foo` is not defined in the configuration. "
                         + "Verify that the spelling is correct or define `foo` in the configuration.");
     }
@@ -1040,9 +1194,8 @@ class NotificationCodeWithDescriptionTest {
                 NotificationCategory.SECURITY,
                 NotificationClassification.SECURITY,
                 "01N71",
-                new DiagnosticRecord(warning, security, -1, -1, -1, Map.of()).asMap(),
-                "warn: setting not enabled. External auth for user is not enabled. "
-                        + "Use setting `dbms.security.require_local_user` to enable external auth.");
+                new DiagnosticRecord(warning, NotificationClassification.SECURITY, -1, -1, -1, Map.of()).asMap(),
+                "warn: external auth disabled. Use setting `dbms.security.require_local_user` to enable external auth.");
     }
 
     @Test
@@ -1059,7 +1212,13 @@ class NotificationCodeWithDescriptionTest {
                 NotificationCategory.SECURITY,
                 NotificationClassification.SECURITY,
                 "00N70",
-                new DiagnosticRecord(info, security, -1, -1, -1, Map.of("cmd", "GRANT WRITE ON GRAPH * TO editor"))
+                new DiagnosticRecord(
+                                info,
+                                NotificationClassification.SECURITY,
+                                -1,
+                                -1,
+                                -1,
+                                Map.of("cmd", "GRANT WRITE ON GRAPH * TO editor"))
                         .asMap(),
                 "note: successful completion - role or privilege already assigned. `GRANT WRITE ON GRAPH * TO editor` has no effect. The role or privilege is already assigned.");
     }
@@ -1080,7 +1239,7 @@ class NotificationCodeWithDescriptionTest {
                 "00N71",
                 new DiagnosticRecord(
                                 info,
-                                security,
+                                NotificationClassification.SECURITY,
                                 -1,
                                 -1,
                                 -1,
@@ -1103,7 +1262,13 @@ class NotificationCodeWithDescriptionTest {
                 NotificationCategory.SECURITY,
                 NotificationClassification.SECURITY,
                 "00N70",
-                new DiagnosticRecord(info, security, -1, -1, -1, Map.of("cmd", "GRANT ROLE aliceRole TO alice"))
+                new DiagnosticRecord(
+                                info,
+                                NotificationClassification.SECURITY,
+                                -1,
+                                -1,
+                                -1,
+                                Map.of("cmd", "GRANT ROLE aliceRole TO alice"))
                         .asMap(),
                 "note: successful completion - role or privilege already assigned. `GRANT ROLE aliceRole TO alice` has no effect. The role or privilege is already assigned.");
     }
@@ -1122,7 +1287,14 @@ class NotificationCodeWithDescriptionTest {
                 NotificationCategory.SECURITY,
                 NotificationClassification.SECURITY,
                 "00N71",
-                new DiagnosticRecord(info, security, -1, -1, -1, Map.of("cmd", "REVOKE ROLE other FROM alice")).asMap(),
+                new DiagnosticRecord(
+                                info,
+                                NotificationClassification.SECURITY,
+                                -1,
+                                -1,
+                                -1,
+                                Map.of("cmd", "REVOKE ROLE other FROM alice"))
+                        .asMap(),
                 "note: successful completion - role or privilege not assigned. `REVOKE ROLE other FROM alice` has no effect. The role or privilege is not assigned.");
     }
 
@@ -1143,7 +1315,7 @@ class NotificationCodeWithDescriptionTest {
                 "01N70",
                 new DiagnosticRecord(
                                 warning,
-                                security,
+                                NotificationClassification.SECURITY,
                                 -1,
                                 -1,
                                 -1,
@@ -1167,7 +1339,9 @@ class NotificationCodeWithDescriptionTest {
                 NotificationCategory.DEPRECATION,
                 NotificationClassification.DEPRECATION,
                 "01N00",
-                new DiagnosticRecord(warning, deprecation, -1, -1, -1, Map.of("msg", message)).asMap(),
+                new DiagnosticRecord(
+                                warning, NotificationClassification.DEPRECATION, -1, -1, -1, Map.of("msg", message))
+                        .asMap(),
                 String.format("warn: feature deprecated. %s", message));
     }
 
@@ -1186,7 +1360,9 @@ class NotificationCodeWithDescriptionTest {
                 NotificationCategory.DEPRECATION,
                 NotificationClassification.DEPRECATION,
                 "01N00",
-                new DiagnosticRecord(warning, deprecation, -1, -1, -1, Map.of("msg", message)).asMap(),
+                new DiagnosticRecord(
+                                warning, NotificationClassification.DEPRECATION, -1, -1, -1, Map.of("msg", message))
+                        .asMap(),
                 String.format("warn: feature deprecated. %s", message));
     }
 
@@ -1203,7 +1379,8 @@ class NotificationCodeWithDescriptionTest {
                 NotificationCategory.TOPOLOGY,
                 NotificationClassification.TOPOLOGY,
                 "00N80",
-                new DiagnosticRecord(info, topology, -1, -1, -1, Map.of("server", "server")).asMap(),
+                new DiagnosticRecord(info, NotificationClassification.TOPOLOGY, -1, -1, -1, Map.of("server", "server"))
+                        .asMap(),
                 "note: successful completion - server already enabled. `ENABLE SERVER` has no effect. Server `server` is already enabled. Verify that this is the intended server.");
     }
 
@@ -1220,7 +1397,8 @@ class NotificationCodeWithDescriptionTest {
                 NotificationCategory.TOPOLOGY,
                 NotificationClassification.TOPOLOGY,
                 "00N81",
-                new DiagnosticRecord(info, topology, -1, -1, -1, Map.of("server", "server")).asMap(),
+                new DiagnosticRecord(info, NotificationClassification.TOPOLOGY, -1, -1, -1, Map.of("server", "server"))
+                        .asMap(),
                 "note: successful completion - server already cordoned. `CORDON SERVER` has no effect. Server `server` is already cordoned. Verify that this is the intended server.");
     }
 
@@ -1237,7 +1415,7 @@ class NotificationCodeWithDescriptionTest {
                 NotificationCategory.TOPOLOGY,
                 NotificationClassification.TOPOLOGY,
                 "00N82",
-                new DiagnosticRecord(info, topology, -1, -1, -1, Map.of()).asMap(),
+                new DiagnosticRecord(info, NotificationClassification.TOPOLOGY, -1, -1, -1, Map.of()).asMap(),
                 "note: successful completion - no databases reallocated. `REALLOCATE DATABASES` has no effect. No databases were reallocated. No better allocation is currently possible.");
     }
 
@@ -1257,11 +1435,11 @@ class NotificationCodeWithDescriptionTest {
                 "00N83",
                 new DiagnosticRecord(
                                 info,
-                                topology,
+                                NotificationClassification.TOPOLOGY,
                                 -1,
                                 -1,
                                 -1,
-                                Map.of("server_list", List.of("server-1", "server-2", "server-3")))
+                                Map.of("serverList", List.of("server-1", "server-2", "server-3")))
                         .asMap(),
                 "note: successful completion - cordoned servers existed during allocation. Cordoned servers existed when making an allocation decision. Server(s) `server-1, server-2, server-3` are cordoned. This can impact allocation decisions.");
     }
@@ -1279,7 +1457,7 @@ class NotificationCodeWithDescriptionTest {
                 NotificationCategory.TOPOLOGY,
                 NotificationClassification.TOPOLOGY,
                 "00N84",
-                new DiagnosticRecord(info, topology, -1, -1, -1, Map.of()).asMap(),
+                new DiagnosticRecord(info, NotificationClassification.TOPOLOGY, -1, -1, -1, Map.of()).asMap(),
                 "note: successful completion - requested topology matched current topology. `ALTER DATABASE` has no effect. The requested topology matched the current topology. No allocations were changed.");
     }
 
@@ -1301,14 +1479,14 @@ class NotificationCodeWithDescriptionTest {
                 "00NA0",
                 new DiagnosticRecord(
                                 info,
-                                schema,
+                                NotificationClassification.SCHEMA,
                                 -1,
                                 -1,
                                 -1,
                                 Map.of(
                                         "cmd",
                                         "CREATE INDEX foo IF NOT EXISTS FOR (n:L) ON (n.p1)",
-                                        "index_constr_pat",
+                                        "indexConstrPat",
                                         "INDEX foo FOR (n:L) ON (n.p2)"))
                         .asMap(),
                 "note: successful completion - index or constraint already exists. `CREATE INDEX foo IF NOT EXISTS FOR (n:L) ON (n.p1)` has no effect. `INDEX foo FOR (n:L) ON (n.p2)` already exists.");
@@ -1329,14 +1507,14 @@ class NotificationCodeWithDescriptionTest {
                 "00NA0",
                 new DiagnosticRecord(
                                 info,
-                                schema,
+                                NotificationClassification.SCHEMA,
                                 -1,
                                 -1,
                                 -1,
                                 Map.of(
                                         "cmd",
                                         "CREATE CONSTRAINT bar IF NOT EXISTS FOR (n:L) REQUIRE (n.p1) IS NODE KEY",
-                                        "index_constr_pat",
+                                        "indexConstrPat",
                                         "CONSTRAINT baz FOR (n:L) REQUIRE (n.p1) IS NODE KEY"))
                         .asMap(),
                 "note: successful completion - index or constraint already exists. `CREATE CONSTRAINT bar IF NOT EXISTS FOR (n:L) REQUIRE (n.p1) IS NODE KEY` has no effect. `CONSTRAINT baz FOR (n:L) REQUIRE (n.p1) IS NODE KEY` already exists.");
@@ -1358,11 +1536,11 @@ class NotificationCodeWithDescriptionTest {
                 "00NA1",
                 new DiagnosticRecord(
                                 info,
-                                schema,
+                                NotificationClassification.SCHEMA,
                                 -1,
                                 -1,
                                 -1,
-                                Map.of("cmd", "DROP INDEX foo IF EXISTS", "index_constr_name", "foo"))
+                                Map.of("cmd", "DROP INDEX foo IF EXISTS", "indexConstrName", "foo"))
                         .asMap(),
                 "note: successful completion - index or constraint does not exist. `DROP INDEX foo IF EXISTS` has no effect. `foo` does not exist.");
 
@@ -1379,11 +1557,11 @@ class NotificationCodeWithDescriptionTest {
                 "00NA1",
                 new DiagnosticRecord(
                                 info,
-                                schema,
+                                NotificationClassification.SCHEMA,
                                 -1,
                                 -1,
                                 -1,
-                                Map.of("cmd", "DROP CONSTRAINT bar IF EXISTS", "index_constr_name", "foo"))
+                                Map.of("cmd", "DROP CONSTRAINT bar IF EXISTS", "indexConstrName", "foo"))
                         .asMap(),
                 "note: successful completion - index or constraint does not exist. `DROP CONSTRAINT bar IF EXISTS` has no effect. `foo` does not exist.");
     }
@@ -1412,15 +1590,6 @@ class NotificationCodeWithDescriptionTest {
 
     private final String warning = SeverityLevel.WARNING.name();
     private final String info = SeverityLevel.INFORMATION.name();
-    private final String deprecation = NotificationCategory.DEPRECATION.name();
-    private final String generic = NotificationCategory.GENERIC.name();
-    private final String hint = NotificationCategory.HINT.name();
-    private final String performance = NotificationCategory.PERFORMANCE.name();
-    private final String schema = NotificationCategory.SCHEMA.name();
-    private final String security = NotificationCategory.SECURITY.name();
-    private final String topology = NotificationCategory.TOPOLOGY.name();
-    private final String unrecognized = NotificationCategory.UNRECOGNIZED.name();
-    private final String unsupported = NotificationCategory.UNSUPPORTED.name();
 
     @Test
     void allNotificationsShouldBeAClientNotification() {
@@ -1518,6 +1687,7 @@ class NotificationCodeWithDescriptionTest {
             notificationBuilder.append(notificationCode.description()); // Title
             notificationBuilder.append(notification.getDescription()); // Description
             notificationBuilder.append(notification.getGqlStatusInfo());
+            notificationBuilder.append(notification.getGqlStatusInfo().getMessage());
             notificationBuilder.append(notificationCode.serialize());
             notificationBuilder.append(notificationCode.getSeverity());
             notificationBuilder.append(notificationCode.getNotificationCategory());
@@ -1526,8 +1696,8 @@ class NotificationCodeWithDescriptionTest {
         byte[] notificationHash = DigestUtils.sha256(notificationBuilder.toString());
 
         byte[] expectedHash = new byte[] {
-            -119, -8, -35, -2, -83, 70, -32, -127, 50, 33, 31, -72, 22, 80, 35, -72, 16, -22, -32, -48, -13, 87, -60,
-            -36, 126, 79, -42, -97, 25, -95, -11, -27
+            126, -90, 21, 53, 49, 93, 24, -13, -59, -40, 117, -88, 35, -117, 68, 118, -97, 44, 46, -7, 70, -61, -28,
+            -126, 28, 101, -6, 77, -79, -107, -1, 51
         };
 
         if (!Arrays.equals(notificationHash, expectedHash)) {

@@ -20,6 +20,7 @@
 package org.neo4j.kernel.api.exceptions.index;
 
 import org.neo4j.exceptions.KernelException;
+import org.neo4j.gqlstatus.ErrorGqlStatusObject;
 import org.neo4j.kernel.api.exceptions.Status;
 
 public class IndexPopulationFailedKernelException extends KernelException {
@@ -29,7 +30,21 @@ public class IndexPopulationFailedKernelException extends KernelException {
         super(Status.Schema.IndexCreationFailed, cause, FORMAT_MESSAGE, indexUserDescription);
     }
 
+    public IndexPopulationFailedKernelException(
+            ErrorGqlStatusObject gqlStatusObject, String indexUserDescription, Throwable cause) {
+        super(gqlStatusObject, Status.Schema.IndexCreationFailed, cause, FORMAT_MESSAGE, indexUserDescription);
+    }
+
     public IndexPopulationFailedKernelException(String indexUserDescription, String message) {
         super(Status.Schema.IndexCreationFailed, FORMAT_MESSAGE + ", due to " + message, indexUserDescription);
+    }
+
+    public IndexPopulationFailedKernelException(
+            ErrorGqlStatusObject gqlStatusObject, String indexUserDescription, String message) {
+        super(
+                gqlStatusObject,
+                Status.Schema.IndexCreationFailed,
+                FORMAT_MESSAGE + ", due to " + message,
+                indexUserDescription);
     }
 }

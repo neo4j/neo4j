@@ -20,11 +20,20 @@
 package org.neo4j.kernel.api.exceptions.index;
 
 import org.neo4j.exceptions.KernelException;
+import org.neo4j.gqlstatus.ErrorGqlStatusObject;
 import org.neo4j.kernel.api.exceptions.Status;
 
 public final class IndexProxyAlreadyClosedKernelException extends KernelException {
     public IndexProxyAlreadyClosedKernelException(Class<?> proxyClazz) {
         super(
+                Status.Schema.IndexCreationFailed,
+                "%s has been closed. No more interactions allowed.",
+                proxyClazz.getSimpleName());
+    }
+
+    public IndexProxyAlreadyClosedKernelException(ErrorGqlStatusObject gqlStatusObject, Class<?> proxyClazz) {
+        super(
+                gqlStatusObject,
                 Status.Schema.IndexCreationFailed,
                 "%s has been closed. No more interactions allowed.",
                 proxyClazz.getSimpleName());

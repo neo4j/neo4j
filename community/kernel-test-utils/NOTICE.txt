@@ -41,6 +41,9 @@ Apache Software License, Version 2.0
   Byte Buddy agent
   Caffeine cache
   IPAddress
+  Jackson-annotations
+  Jackson-core
+  jackson-databind
   Java Concurrency Tools Core Library
   Java Native Access
   Jettison

@@ -19,22 +19,47 @@
  */
 package org.neo4j.bolt.tx.error;
 
+import org.neo4j.gqlstatus.ErrorGqlStatusObject;
+import org.neo4j.gqlstatus.ErrorMessageHolder;
+import org.neo4j.gqlstatus.HasGqlStatusInfo;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.Status.General;
 import org.neo4j.kernel.api.exceptions.Status.HasStatus;
 
-public class DatabaseUnavailableTransactionCreationException extends TransactionCreationException implements HasStatus {
+public class DatabaseUnavailableTransactionCreationException extends TransactionCreationException
+        implements HasStatus, HasGqlStatusInfo {
+    private final ErrorGqlStatusObject gqlStatusObject;
+    private final String oldMessage;
 
     public DatabaseUnavailableTransactionCreationException(String databaseName, Throwable cause) {
         super(String.format("Database '%s' is unavailable.", databaseName), cause);
+
+        this.gqlStatusObject = null;
+        this.oldMessage = String.format("Database '%s' is unavailable.", databaseName);
     }
 
-    public DatabaseUnavailableTransactionCreationException(String databaseName) {
-        this(databaseName, null);
+    public DatabaseUnavailableTransactionCreationException(
+            ErrorGqlStatusObject gqlStatusObject, String databaseName, Throwable cause) {
+        super(
+                ErrorMessageHolder.getMessage(
+                        gqlStatusObject, String.format("Database '%s' is unavailable.", databaseName)),
+                cause);
+        this.gqlStatusObject = gqlStatusObject;
+        this.oldMessage = String.format("Database '%s' is unavailable.", databaseName);
+    }
+
+    @Override
+    public String getOldMessage() {
+        return oldMessage;
     }
 
     @Override
     public Status status() {
         return General.DatabaseUnavailable;
+    }
+
+    @Override
+    public ErrorGqlStatusObject gqlStatusObject() {
+        return gqlStatusObject;
     }
 }

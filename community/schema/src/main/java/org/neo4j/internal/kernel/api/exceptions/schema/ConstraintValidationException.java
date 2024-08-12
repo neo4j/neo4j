@@ -21,6 +21,7 @@ package org.neo4j.internal.kernel.api.exceptions.schema;
 
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.exceptions.KernelException;
+import org.neo4j.gqlstatus.ErrorGqlStatusObject;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.kernel.api.exceptions.Status;
 
@@ -64,6 +65,22 @@ public abstract class ConstraintValidationException extends KernelException {
     }
 
     protected ConstraintValidationException(
+            ErrorGqlStatusObject gqlStatusObject,
+            ConstraintDescriptor constraint,
+            Phase phase,
+            String subject,
+            TokenNameLookup tokenNameLookup) {
+        super(
+                gqlStatusObject,
+                phase.getStatus(),
+                "%s does not satisfy %s.",
+                subject,
+                constraint.userDescription(tokenNameLookup));
+
+        this.constraint = constraint;
+    }
+
+    protected ConstraintValidationException(
             ConstraintDescriptor constraint,
             Phase phase,
             String subject,
@@ -76,6 +93,25 @@ public abstract class ConstraintValidationException extends KernelException {
                 subject,
                 constraint.userDescription(tokenNameLookup),
                 failure.getMessage());
+        this.constraint = constraint;
+    }
+
+    protected ConstraintValidationException(
+            ErrorGqlStatusObject gqlStatusObject,
+            ConstraintDescriptor constraint,
+            Phase phase,
+            String subject,
+            Throwable failure,
+            TokenNameLookup tokenNameLookup) {
+        super(
+                gqlStatusObject,
+                phase.getStatus(),
+                failure,
+                "%s does not satisfy %s: %s",
+                subject,
+                constraint.userDescription(tokenNameLookup),
+                failure.getMessage());
+
         this.constraint = constraint;
     }
 

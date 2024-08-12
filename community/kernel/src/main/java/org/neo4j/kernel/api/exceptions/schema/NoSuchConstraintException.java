@@ -22,6 +22,7 @@ package org.neo4j.kernel.api.exceptions.schema;
 import static java.lang.String.format;
 
 import org.neo4j.common.TokenNameLookup;
+import org.neo4j.gqlstatus.ErrorGqlStatusObject;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -37,8 +38,23 @@ public class NoSuchConstraintException extends SchemaKernelException {
         this.name = "";
     }
 
+    public NoSuchConstraintException(
+            ErrorGqlStatusObject gqlStatusObject, SchemaDescriptorSupplier constraint, TokenNameLookup lookup) {
+        super(gqlStatusObject, Status.Schema.ConstraintNotFound, format(MESSAGE, constraint.userDescription(lookup)));
+
+        this.constraint = constraint;
+        this.name = "";
+    }
+
     public NoSuchConstraintException(String name) {
         super(Status.Schema.ConstraintNotFound, format(MESSAGE, name));
+        this.constraint = null;
+        this.name = name;
+    }
+
+    public NoSuchConstraintException(ErrorGqlStatusObject gqlStatusObject, String name) {
+        super(gqlStatusObject, Status.Schema.ConstraintNotFound, format(MESSAGE, name));
+
         this.constraint = null;
         this.name = name;
     }

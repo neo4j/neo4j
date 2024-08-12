@@ -20,11 +20,21 @@
 package org.neo4j.kernel.api.exceptions.index;
 
 import org.neo4j.exceptions.KernelException;
+import org.neo4j.gqlstatus.ErrorGqlStatusObject;
 import org.neo4j.kernel.api.exceptions.Status;
 
 public final class ExceptionDuringFlipKernelException extends KernelException {
     public ExceptionDuringFlipKernelException(Throwable cause) {
         super(
+                Status.Schema.IndexCreationFailed,
+                cause,
+                "Failed to transition index to new context: %s",
+                cause.getMessage());
+    }
+
+    public ExceptionDuringFlipKernelException(ErrorGqlStatusObject gqlStatusObject, Throwable cause) {
+        super(
+                gqlStatusObject,
                 Status.Schema.IndexCreationFailed,
                 cause,
                 "Failed to transition index to new context: %s",

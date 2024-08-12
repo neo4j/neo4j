@@ -19,11 +19,16 @@
  */
 package org.neo4j.exceptions;
 
+import org.neo4j.gqlstatus.ErrorGqlStatusObject;
 import org.neo4j.kernel.api.exceptions.Status;
 
 public class SecurityAdministrationException extends CypherExecutionException {
     public SecurityAdministrationException(String message) {
         super(message);
+    }
+
+    public SecurityAdministrationException(ErrorGqlStatusObject gqlStatusObject, String message) {
+        super(gqlStatusObject, message);
     }
 
     @Override
