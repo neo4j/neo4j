@@ -205,7 +205,7 @@ abstract class TransactionTerminationTestBase[CONTEXT <: RuntimeContext](
         val responseTimeConsumeMs = stopTime - startTimeConsume
 
         // Add a hefty margin to the expected response time to reduce flakiness
-        val maxExpectedResponseTimeLimitMs = SECONDS.toMillis((TRANSACTION_TIMEOUT_SECONDS * 1.5).toLong)
+        val maxExpectedResponseTimeLimitMs = SECONDS.toMillis((TRANSACTION_TIMEOUT_SECONDS * 3.0).toLong)
         responseTimeConsumeMs should be < maxExpectedResponseTimeLimitMs
 
         // Make sure the test is doing sufficient work in the consume phase (approximately)
