@@ -232,6 +232,10 @@ public class BuiltInDbmsProcedures {
             clearedRouterAndCompositeQueries += queryRouter.clearQueryCachesForDatabase(graph.databaseName());
         }
 
+        if (kernelTransaction.isSPDTransaction()) {
+            kernelTransaction.clearSPDQueryCaches();
+        }
+
         // we subtract 1 because the query "CALL db.queryClearCaches()" is compiled and thus populates the caches by 1
         long numberOfClearedQueries =
                 Math.max(queryExecutionEngine.clearQueryCaches(), clearedRouterAndCompositeQueries) - 1;
