@@ -19,11 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
-import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.compiler.ExecutionModel.BatchedParallel
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
-import org.neo4j.cypher.internal.compiler.helpers.WindowsSafeAnyRef
 import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.QuerySolvableByGetDegree.SetExtractor
@@ -67,9 +65,7 @@ import org.neo4j.cypher.internal.logical.plans.Expand.VariablePredicate
 import org.neo4j.cypher.internal.logical.plans.GetValue
 import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
-import org.neo4j.cypher.internal.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.logical.plans.NestedPlanCollectExpression
-import org.neo4j.cypher.internal.logical.plans.NestedPlanExistsExpression
+import org.neo4j.cypher.internal.logical.plans.LogicalPlanAstConstructionTestSupport
 import org.neo4j.cypher.internal.logical.plans.NestedPlanGetByNameExpression
 import org.neo4j.cypher.internal.logical.plans.Projection
 import org.neo4j.cypher.internal.logical.plans.RollUpApply
@@ -81,9 +77,7 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.schema.IndexType
 
 class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIntegrationTestSupport
-    with AstConstructionTestSupport with BeLikeMatcher {
-
-  private val NL = System.lineSeparator()
+    with LogicalPlanAstConstructionTestSupport with BeLikeMatcher {
 
   private val planner = plannerBuilder()
     .setAllNodesCardinality(1000)
@@ -155,13 +149,13 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
 
     val resultExpr = containerIndex(
       listOfInt(1, 2, 3),
-      NestedPlanGetByNameExpression(
+      nestedGetColumnExpr(
         planner.subPlanBuilder()
           .nodeCountFromCountStore("anon_0", Seq(None))
           .build(),
-        v"anon_0",
+        "anon_0",
         "COUNT { MATCH (x) }"
-      )(pos)
+      )
     )
 
     plan shouldEqual planner.subPlanBuilder()
@@ -385,7 +379,9 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
 
   test("should consider variables introduced by outer list comprehensions when planning pattern predicates") {
     val plan = planner.plan(
-      """MATCH (a:Person)-[:KNOWS]->(b:Person) WITH a, collect(b) AS friends RETURN a, [f IN friends WHERE (f)-[:WORKS_AT]->(:ComedyClub)] AS clowns"""
+      """MATCH (a:Person)-[:KNOWS]->(b:Person)
+        |WITH a, collect(b) AS friends
+        |RETURN a, [f IN friends WHERE (f)-[:WORKS_AT]->(:ComedyClub)] AS clowns""".stripMargin
     ).stripProduceResults
 
     val nestedPlan = planner.subPlanBuilder()
@@ -398,10 +394,11 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
       v"f",
       v"friends",
       Some(
-        NestedPlanExistsExpression(
+        nestedExistsExpr(
           nestedPlan,
-          s"EXISTS { MATCH (f)-[`anon_1`:WORKS_AT]->(`anon_2`)$NL  WHERE `anon_2`:ComedyClub }"
-        )(pos)
+          """EXISTS { MATCH (f)-[`anon_1`:WORKS_AT]->(`anon_2`)
+            |  WHERE `anon_2`:ComedyClub }""".stripMargin
+        )
       ),
       None
     )
@@ -1732,26 +1729,22 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
   }
 
   test("should solve pattern comprehensions for ShortestPath") {
-    // We compare "solvedExpressionAsString" nested inside NestedPlanCollectExpressions.
-    // This saves us from windows line break mismatches in those strings.
-    implicit val windowsSafe: WindowsSafeAnyRef[LogicalPlan] = new WindowsSafeAnyRef[LogicalPlan]
-
     val q =
-      """
-        |MATCH p=shortestPath((n)-[r*..6]-(n2)) WHERE NONE(n in nodes(p) WHERE n.foo = reduce(sum=0, x IN [(a)-->(b) | b.age] | sum + x)) RETURN n, n2
-      """.stripMargin
+      """MATCH p=shortestPath((n)-[r*..6]-(n2))
+        |  WHERE none(n in nodes(p) WHERE n.foo = reduce(sum=0, x IN [(a)-->(b) | b.age] | sum + x))
+        |RETURN n, n2""".stripMargin
 
     val nestedPlan = planner.subPlanBuilder()
       .projection("b.age AS anon_0")
       .allRelationshipsScan("(a)-[anon_1]->(b)")
       .build()
     val nestedCollection =
-      NestedPlanCollectExpression(
+      nestedCollectExpr(
         nestedPlan,
-        v"anon_0",
+        "anon_0",
         """COLLECT { MATCH (a)-[`anon_1`]->(b)
           |RETURN b.age AS `anon_0` }""".stripMargin
-      )(pos)
+      )
     val reduceExprWithNestedPlan = reduce(
       varFor("sum", pos),
       literalInt(0, pos),
@@ -1793,10 +1786,6 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
   }
 
   test("should solve pattern comprehensions for MERGE node") {
-    // We compare "solvedExpressionAsString" nested inside NestedPlanCollectExpressions.
-    // This saves us from windows line break mismatches in those strings.
-    implicit val windowsSafe: WindowsSafeAnyRef[LogicalPlan] = new WindowsSafeAnyRef[LogicalPlan]
-
     val q =
       """
         |MERGE (n {foo: reduce(sum=0, x IN [(a)-->(b) | b.age] | sum + x)}) RETURN n
@@ -1807,12 +1796,12 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
       .allRelationshipsScan("(a)-[anon_1]->(b)")
       .build()
     val nestedCollection =
-      NestedPlanCollectExpression(
+      nestedCollectExpr(
         nestedPlan,
-        v"anon_0",
+        "anon_0",
         """COLLECT { MATCH (a)-[`anon_1`]->(b)
           |RETURN b.age AS `anon_0` }""".stripMargin
-      )(pos)
+      )
     val reduceExprWithNestedPlan = reduce(
       varFor("sum", pos),
       literalInt(0, pos),
@@ -1835,10 +1824,6 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
   }
 
   test("should solve pattern comprehensions for MERGE relationship") {
-    // We compare "solvedExpressionAsString" nested inside NestedPlanCollectExpressions.
-    // This saves us from windows line break mismatches in those strings.
-    implicit val windowsSafe: WindowsSafeAnyRef[LogicalPlan] = new WindowsSafeAnyRef[LogicalPlan]
-
     val q =
       """
         |MERGE ()-[r:R {foo: reduce(sum=0, x IN [(a)-->(b) | b.age] | sum + x)}]->() RETURN r
@@ -1849,12 +1834,12 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
       .allRelationshipsScan("(a)-[anon_2]->(b)")
       .build()
     val nestedCollection =
-      NestedPlanCollectExpression(
+      nestedCollectExpr(
         nestedPlan,
-        v"anon_0",
+        "anon_0",
         """COLLECT { MATCH (a)-[`anon_2`]->(b)
           |RETURN b.age AS `anon_0` }""".stripMargin
-      )(pos)
+      )
     val reduceExprWithNestedPlan = reduce(
       varFor("sum", pos),
       literalInt(0, pos),
@@ -1887,10 +1872,6 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
   }
 
   test("should solve pattern comprehensions for DeleteNode") {
-    // We compare "solvedExpressionAsString" nested inside NestedPlanCollectExpressions.
-    // This saves us from windows line break mismatches in those strings.
-    implicit val windowsSafe: WindowsSafeAnyRef[LogicalPlan] = new WindowsSafeAnyRef[LogicalPlan]
-
     val q =
       """
         |MATCH (n)
@@ -1903,12 +1884,12 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
       .allRelationshipsScan("(a)-[anon_2]->(b)")
       .build()
     val nestedCollection =
-      NestedPlanCollectExpression(
+      nestedCollectExpr(
         nestedPlan,
-        v"anon_1",
+        "anon_1",
         """COLLECT { MATCH (a)-[`anon_2`]->(b)
           |RETURN b.age AS `anon_1` }""".stripMargin
-      )(pos)
+      )
     val reduceExprWithNestedPlan = reduce(
       varFor("sum", pos),
       literalInt(0, pos),
@@ -1933,10 +1914,6 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
   }
 
   test("should solve pattern comprehensions for DeleteRelationship") {
-    // We compare "solvedExpressionAsString" nested inside NestedPlanCollectExpressions.
-    // This saves us from windows line break mismatches in those strings.
-    implicit val windowsSafe: WindowsSafeAnyRef[LogicalPlan] = new WindowsSafeAnyRef[LogicalPlan]
-
     val q =
       """
         |MATCH ()-[r]->()
@@ -1949,12 +1926,12 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
       .allRelationshipsScan("(a)-[anon_4]->(b)")
       .build()
     val nestedCollection =
-      NestedPlanCollectExpression(
+      nestedCollectExpr(
         nestedPlan,
-        v"anon_1",
+        "anon_1",
         """COLLECT { MATCH (a)-[`anon_4`]->(b)
           |RETURN b.age AS `anon_1` }""".stripMargin
-      )(pos)
+      )
     val reduceExprWithNestedPlan = reduce(
       varFor("sum", pos),
       literalInt(0, pos),
@@ -1979,10 +1956,6 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
   }
 
   test("should solve pattern comprehensions for DeleteExpression") {
-    // We compare "solvedExpressionAsString" nested inside NestedPlanCollectExpressions.
-    // This saves us from windows line break mismatches in those strings.
-    implicit val windowsSafe: WindowsSafeAnyRef[LogicalPlan] = new WindowsSafeAnyRef[LogicalPlan]
-
     val q =
       """
         |MATCH ()-[r]->()
@@ -1995,12 +1968,12 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
       .allRelationshipsScan("(a)-[anon_4]->(b)")
       .build()
     val nestedCollection =
-      NestedPlanCollectExpression(
+      nestedCollectExpr(
         nestedPlan,
-        v"anon_1",
+        "anon_1",
         """COLLECT { MATCH (a)-[`anon_4`]->(b)
           |RETURN b.age AS `anon_1` }""".stripMargin
-      )(pos)
+      )
     val reduceExprWithNestedPlan = reduce(
       varFor("sum", pos),
       literalInt(0, pos),
@@ -2030,10 +2003,6 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
   }
 
   test("should solve pattern comprehensions for SetNodeProperty") {
-    // We compare "solvedExpressionAsString" nested inside NestedPlanCollectExpressions.
-    // This saves us from windows line break mismatches in those strings.
-    implicit val windowsSafe: WindowsSafeAnyRef[LogicalPlan] = new WindowsSafeAnyRef[LogicalPlan]
-
     val q =
       """
         |MATCH (n) SET n.foo = reduce(sum=0, x IN [(a)-->(b) | b.age] | sum + x) RETURN n
@@ -2046,12 +2015,12 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
       .allRelationshipsScan("(a)-[anon_1]->(b)")
       .build()
     val npExpression =
-      NestedPlanCollectExpression(
+      nestedCollectExpr(
         expectedNestedPlan,
-        varFor("anon_0"),
-        s"""COLLECT { MATCH (a)-[`anon_1`]->(b)
-           |RETURN b.age AS `anon_0` }""".stripMargin
-      )(pos)
+        "anon_0",
+        """COLLECT { MATCH (a)-[`anon_1`]->(b)
+          |RETURN b.age AS `anon_0` }""".stripMargin
+      )
 
     val reduceExpression = reduce(
       varFor("sum"),
@@ -2068,10 +2037,6 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
   }
 
   test("should solve pattern comprehensions for SetNodePropertiesFromMap") {
-    // We compare "solvedExpressionAsString" nested inside NestedPlanCollectExpressions.
-    // This saves us from windows line break mismatches in those strings.
-    implicit val windowsSafe: WindowsSafeAnyRef[LogicalPlan] = new WindowsSafeAnyRef[LogicalPlan]
-
     val q =
       """
         |MATCH (n) SET n = {foo: reduce(sum=0, x IN [(a)-->(b) | b.age] | sum + x)} RETURN n
@@ -2084,12 +2049,12 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
       .allRelationshipsScan("(a)-[anon_1]->(b)")
       .build()
     val npExpression =
-      NestedPlanCollectExpression(
+      nestedCollectExpr(
         expectedNestedPlan,
-        varFor("anon_0"),
+        "anon_0",
         s"""COLLECT { MATCH (a)-[`anon_1`]->(b)
            |RETURN b.age AS `anon_0` }""".stripMargin
-      )(pos)
+      )
 
     val reduceExpression = reduce(
       varFor("sum"),
@@ -2107,10 +2072,6 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
   }
 
   test("should solve pattern comprehensions for SetRelationshipProperty") {
-    // We compare "solvedExpressionAsString" nested inside NestedPlanCollectExpressions.
-    // This saves us from windows line break mismatches in those strings.
-    implicit val windowsSafe: WindowsSafeAnyRef[LogicalPlan] = new WindowsSafeAnyRef[LogicalPlan]
-
     val q =
       """
         |MATCH ()-[r]->() SET r.foo = reduce(sum=0, x IN [(a)-->(b) | b.age] | sum + x) RETURN r
@@ -2123,12 +2084,12 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
       .allRelationshipsScan("(a)-[anon_3]->(b)")
       .build()
     val npExpression =
-      NestedPlanCollectExpression(
+      nestedCollectExpr(
         expectedNestedPlan,
-        varFor("anon_0"),
+        "anon_0",
         s"""COLLECT { MATCH (a)-[`anon_3`]->(b)
            |RETURN b.age AS `anon_0` }""".stripMargin
-      )(pos)
+      )
 
     val reduceExpression = reduce(
       varFor("sum"),
@@ -2145,10 +2106,6 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
   }
 
   test("should solve pattern comprehensions for SetRelationshipPropertiesFromMap") {
-    // We compare "solvedExpressionAsString" nested inside NestedPlanCollectExpressions.
-    // This saves us from windows line break mismatches in those strings.
-    implicit val windowsSafe: WindowsSafeAnyRef[LogicalPlan] = new WindowsSafeAnyRef[LogicalPlan]
-
     val q =
       """
         |MATCH ()-[r]->() SET r = {foo: reduce(sum=0, x IN [(a)-->(b) | b.age] | sum + x)} RETURN r
@@ -2161,12 +2118,12 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
       .allRelationshipsScan("(a)-[anon_3]->(b)")
       .build()
     val npExpression =
-      NestedPlanCollectExpression(
+      nestedCollectExpr(
         expectedNestedPlan,
-        varFor("anon_0"),
+        "anon_0",
         s"""COLLECT { MATCH (a)-[`anon_3`]->(b)
            |RETURN b.age AS `anon_0` }""".stripMargin
-      )(pos)
+      )
 
     val reduceExpression = reduce(
       varFor("sum"),
@@ -2184,10 +2141,6 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
   }
 
   test("should solve pattern comprehensions for SetProperty") {
-    // We compare "solvedExpressionAsString" nested inside NestedPlanCollectExpressions.
-    // This saves us from windows line break mismatches in those strings.
-    implicit val windowsSafe: WindowsSafeAnyRef[LogicalPlan] = new WindowsSafeAnyRef[LogicalPlan]
-
     val q =
       """
         |SET $param.foo = reduce(sum=0, x IN [(a)-->(b) | b.age] | sum + x)
@@ -2200,12 +2153,12 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
       .allRelationshipsScan("(a)-[anon_1]->(b)")
       .build()
     val npExpression =
-      NestedPlanCollectExpression(
+      nestedCollectExpr(
         expectedNestedPlan,
-        varFor("anon_0"),
+        "anon_0",
         s"""COLLECT { MATCH (a)-[`anon_1`]->(b)
            |RETURN b.age AS `anon_0` }""".stripMargin
-      )(pos)
+      )
 
     val reduceExpression = reduce(
       varFor("sum"),
@@ -2298,10 +2251,6 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
   }
 
   test("should solve and name pattern comprehensions with NestedPlanExpression for Projection") {
-    // We compare "solvedExpressionAsString" nested inside NestedPlanCollectExpressions.
-    // This saves us from windows line break mismatches in those strings.
-    implicit val windowsSafe: WindowsSafeAnyRef[LogicalPlan] = new WindowsSafeAnyRef[LogicalPlan]
-
     val q =
       """
         |MATCH (n)
@@ -2321,12 +2270,12 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
       planner.subPlanBuilder()
         .projection(
           Map("age" -> containerIndex(
-            NestedPlanCollectExpression(
+            nestedCollectExpr(
               expectedNestedPlan,
-              v"anon_0",
+              "anon_0",
               """COLLECT { MATCH (n)-[`anon_1`]->(b)
                 |RETURN b.age AS `anon_0` }""".stripMargin
-            )(pos),
+            ),
             literalInt(1)
           ))
         )
@@ -2336,10 +2285,6 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
   }
 
   test("should insert limit for nested plan expression inside isEmpty") {
-    // We compare "solvedExpressionAsString" nested inside NestedPlanCollectExpressions.
-    // This saves us from windows line break mismatches in those strings.
-    implicit val windowsSafe: WindowsSafeAnyRef[LogicalPlan] = new WindowsSafeAnyRef[LogicalPlan]
-
     val q =
       """
         |MATCH p = (n)
@@ -2364,13 +2309,13 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
               FilterScope(
                 v"node",
                 Some(IsEmpty(
-                  NestedPlanCollectExpression(
+                  nestedCollectExpr(
                     expectedNestedPlan,
-                    v"anon_0",
+                    "anon_0",
                     s"""COLLECT { MATCH (n)-[r]->(b)
                        |  WHERE n.prop > 5
                        |RETURN b.age AS `anon_0` }""".stripMargin
-                  )(pos)
+                  )
                 )(pos))
               )(pos),
               nodes(PathExpression(NodePathStep(v"n", NilPathStep()(pos))(pos))(pos))
@@ -2401,10 +2346,11 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
       planner.subPlanBuilder()
         .projection(Map("foo" ->
           Head(listOf(
-            NestedPlanExistsExpression(
+            nestedExistsExpr(
               expectedNestedPlan,
-              s"EXISTS { MATCH (n)-[`anon_0`]->(`anon_1`)-[`anon_2`]->(`anon_3`)$NL  WHERE NOT `anon_2` = `anon_0` }"
-            )(pos)
+              """EXISTS { MATCH (n)-[`anon_0`]->(`anon_1`)-[`anon_2`]->(`anon_3`)
+                |  WHERE NOT `anon_2` = `anon_0` }""".stripMargin
+            )
           ))(pos)))
         .allNodeScan("n")
         .build()
@@ -2430,10 +2376,11 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
       planner.subPlanBuilder()
         .projection(Map("foo" ->
           Head(listOf(
-            NestedPlanExistsExpression(
+            nestedExistsExpr(
               expectedNestedPlan,
-              s"EXISTS { MATCH (n)-[`anon_0`]->(`anon_1`)$NL  WHERE `anon_1`:B }"
-            )(pos)
+              """EXISTS { MATCH (n)-[`anon_0`]->(`anon_1`)
+                |  WHERE `anon_1`:B }""".stripMargin
+            )
           ))(pos)))
         .allNodeScan("n")
         .build()
@@ -2461,10 +2408,11 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
       planner.subPlanBuilder()
         .projection(Map("foo" ->
           Head(listOf(
-            NestedPlanExistsExpression(
+            nestedExistsExpr(
               expectedNestedPlan,
-              s"EXISTS { MATCH (n)-[`anon_0`]->(`anon_1`)$NL  WHERE `anon_1`:B OR `anon_1`:C }"
-            )(pos)
+              """EXISTS { MATCH (n)-[`anon_0`]->(`anon_1`)
+                |  WHERE `anon_1`:B OR `anon_1`:C }""".stripMargin
+            )
           ))(pos)))
         .allNodeScan("n")
         .build()
@@ -2489,11 +2437,10 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
       planner.subPlanBuilder()
         .projection(Map("foo" ->
           Head(listOf(
-            NestedPlanExistsExpression(
+            nestedExistsExpr(
               expectedNestedPlan,
-              s"EXISTS { MATCH (n)-[`anon_0`]->(`anon_1`)$NL  WHERE `anon_1`.prop IN [5] AND `anon_1`:D }"
-            )(
-              pos
+              """EXISTS { MATCH (n)-[`anon_0`]->(`anon_1`)
+                |  WHERE `anon_1`.prop IN [5] AND `anon_1`:D }""".stripMargin
             )
           ))(pos)))
         .allNodeScan("n")
@@ -2837,10 +2784,6 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
   test(
     "in an expression with 2 PatternComprehensions, use RollupApply for one and NestedPlanExpression for the other"
   ) {
-    // We compare "solvedExpressionAsString" nested inside NestedPlanCollectExpressions.
-    // This saves us from windows line break mismatches in those strings.
-    implicit val windowsSafe: WindowsSafeAnyRef[LogicalPlan] = new WindowsSafeAnyRef[LogicalPlan]
-
     // Here we have an expression that contains 2 PatternComprehensions. One of them can be solved with RollUpApply, the other cannot.
     val q =
       """
@@ -2859,12 +2802,12 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
 
     val expectedExpression = listOf(
       containerIndex(
-        NestedPlanCollectExpression(
+        nestedCollectExpr(
           expectedNestedPlan,
-          v"anon_0",
+          "anon_0",
           """COLLECT { MATCH (a)<-[`anon_2`]-(`b`)
             |RETURN `b`.prop4 IN [true] AS `anon_0` }""".stripMargin
-        )(pos),
+        ),
         literalInt(2)
       ),
       v"anon_4"
@@ -2899,20 +2842,21 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
 
     val plan = planner.plan(query).stripProduceResults
     plan.folder.findAllByClass[NestedPlanGetByNameExpression].toSet shouldBe Set(
-      NestedPlanGetByNameExpression(
+      nestedGetColumnExpr(
         planner.subPlanBuilder()
           .relationshipCountFromCountStore("anon_0", None, Seq("REL"), None)
           .build(),
-        v"anon_0",
+        "anon_0",
         "COUNT { MATCH (a)-[r:REL]->(b) }"
-      )(pos),
-      NestedPlanGetByNameExpression(
+      ),
+      nestedGetColumnExpr(
         planner.subPlanBuilder()
           .relationshipCountFromCountStore("anon_1", Some("Person"), Seq("KNOWS"), None)
           .build(),
-        v"anon_1",
-        s"COUNT { MATCH (c)-[k:KNOWS]->(d)$NL  WHERE c:Person }"
-      )(pos)
+        "anon_1",
+        """COUNT { MATCH (c)-[k:KNOWS]->(d)
+          |  WHERE c:Person }""".stripMargin
+      )
     )
   }
 
@@ -3622,7 +3566,11 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
       .build()
 
     val npeExpression =
-      NestedPlanExistsExpression(expectedNestedPlan, s"EXISTS { MATCH (a)-[r:X]->(b)$NL  WHERE b:Foo }")(pos)
+      nestedExistsExpr(
+        expectedNestedPlan,
+        """EXISTS { MATCH (a)-[r:X]->(b)
+          |  WHERE b:Foo }""".stripMargin
+      )
     val caseExp = caseExpression(
       Some(prop("a", "prop")),
       Some(falseLiteral),
@@ -3724,7 +3672,7 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
       .allNodeScan("`anon_0`")
       .build()
 
-    val npeExpression = NestedPlanExistsExpression(expectedNestedPlan, s"EXISTS { MATCH (`anon_0`) }")(pos)
+    val npeExpression = nestedExistsExpr(expectedNestedPlan, s"EXISTS { MATCH (`anon_0`) }")
     val caseExp = caseExpression(None, None, npeExpression -> nullLiteral)
 
     planner.plan(query) should equal(
@@ -3749,7 +3697,7 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
       .allNodeScan("`anon_0`")
       .build()
 
-    val npeExpression = NestedPlanExistsExpression(expectedNestedPlan, s"EXISTS { MATCH (`anon_0`) }")(pos)
+    val npeExpression = nestedExistsExpr(expectedNestedPlan, "EXISTS { MATCH (`anon_0`) }")
     val caseExp = caseExpression(None, None, npeExpression -> nullLiteral)
 
     planner.plan(query) should equal(
@@ -3763,10 +3711,6 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
   }
 
   test("should plan remove with entity expressed through lazy subquery expression") {
-    // We compare "solvedExpressionAsString" nested inside NestedPlanCollectExpressions.
-    // This saves us from windows line break mismatches in those strings.
-    implicit val windowsSafe: WindowsSafeAnyRef[LogicalPlan] = new WindowsSafeAnyRef[LogicalPlan]
-
     val planner = plannerBuilder()
       .setAllNodesCardinality(100)
       .build()
@@ -3780,10 +3724,12 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
       .allNodeScan("m")
       .build()
 
-    val solvedString =
+    val collectExpression = nestedCollectExpr(
+      nestedPlan,
+      "m",
       """COLLECT { MATCH (m)
         |RETURN m AS m }""".stripMargin
-    val collectExpression = NestedPlanCollectExpression(nestedPlan, v"m", solvedString)(pos)
+    )
     val indexExpression = containerIndex(collectExpression, 0)
 
     planner.plan(query) should equal(
@@ -3985,10 +3931,6 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
   test(
     "Should plan horizon subquery expression with a NestedPlanExpression if that is needed to preserve ordering (parallel runtime)"
   ) {
-    // We compare "solvedExpressionAsString" nested inside NestedPlanExpressions.
-    // This saves us from windows line break mismatches in those strings.
-    implicit val windowsSafe: WindowsSafeAnyRef[LogicalPlan] = new WindowsSafeAnyRef[LogicalPlan]
-
     val query =
       """MATCH (a:A)
         |WITH a, a.prop AS prop
@@ -4010,11 +3952,11 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
       .argument("a", "prop")
       .build()
 
-    val nestedPlanExpression = NestedPlanExistsExpression(
+    val nestedPlanExpression = nestedExistsExpr(
       expectedNestedPlan,
       """EXISTS { MATCH (a)-[`anon_0`:R]->(`anon_1`)
         |  WHERE `anon_1`.prop IN [prop] }""".stripMargin
-    )(pos)
+    )
 
     val plan = planner.plan(query)
     plan should equal(planner.subPlanBuilder()
