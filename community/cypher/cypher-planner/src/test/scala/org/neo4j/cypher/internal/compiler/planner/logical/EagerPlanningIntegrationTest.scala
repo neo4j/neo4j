@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.configuration.GraphDatabaseInternalSettings.EagerAnalysisImplementation
-import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.compiler.ExecutionModel.Volcano
@@ -48,8 +47,8 @@ import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setL
 import org.neo4j.cypher.internal.logical.builder.TestNFABuilder
 import org.neo4j.cypher.internal.logical.plans.Expand.ExpandAll
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
+import org.neo4j.cypher.internal.logical.plans.LogicalPlanAstConstructionTestSupport
 import org.neo4j.cypher.internal.logical.plans.NFA
-import org.neo4j.cypher.internal.logical.plans.NestedPlanCollectExpression
 import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.attribution.Id
@@ -61,7 +60,7 @@ class EagerIRPlanningIntegrationTest extends EagerPlanningIntegrationTest(EagerA
 
 abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) extends CypherFunSuite
     with LogicalPlanningIntegrationTestSupport
-    with AstConstructionTestSupport {
+    with LogicalPlanAstConstructionTestSupport {
 
   override protected def plannerBuilder(): StatisticsBackedLogicalPlanningConfigurationBuilder =
     super.plannerBuilder()
@@ -1753,11 +1752,11 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
       .argument()
       .build()
 
-    val collectExpr = NestedPlanCollectExpression(
+    val collectExpr = nestedCollectExpr(
       plan = nestedPlan,
-      projection = v"strings",
+      projection = "strings",
       solvedExpressionAsString = solvedExpr
-    )(pos)
+    )
 
     plan should equal(
       planner.planBuilder()
@@ -1794,11 +1793,11 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
       .argument()
       .build()
 
-    val collectExpr = NestedPlanCollectExpression(
+    val collectExpr = nestedCollectExpr(
       plan = nestedPlan,
-      projection = v"strings",
+      projection = "strings",
       solvedExpressionAsString = solvedExpr
-    )(pos)
+    )
 
     plan should equal(
       planner.planBuilder()
