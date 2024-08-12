@@ -81,7 +81,6 @@ final class ConstraintSubSection {
                 RelationshipEndpointConstraintDescriptor endpointConstraintDescriptor =
                         constraint.asRelationshipEndpointConstraint();
                 data.put("type", "Relationship endpoint constraint");
-                data.put("endpointLabel", tokens.labelGetName(endpointConstraintDescriptor.endpointLabelId()));
                 data.put(
                         "endpointType",
                         endpointConstraintDescriptor.endpointType().name());

@@ -179,7 +179,6 @@ class ConstraintSubSectionTest {
                 "relationshipType", "REL",
                 "type", "Relationship endpoint constraint",
                 "endpointType", "START",
-                "endpointLabel", "Label",
                 "properties", List.of());
         assertEquals(serializeConstraint(Constraint.ENDPOINT_START), expectedDataStart);
 
@@ -187,7 +186,6 @@ class ConstraintSubSectionTest {
                 "relationshipType", "REL",
                 "type", "Relationship endpoint constraint",
                 "endpointType", "END",
-                "endpointLabel", "Label",
                 "properties", List.of());
         assertEquals(serializeConstraint(Constraint.ENDPOINT_END), expectedDataEnd);
     }
