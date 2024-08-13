@@ -55,7 +55,7 @@ case class UnwindPipe(source: Pipe, collection: Expression, variable: String)(va
         val ret = nextItem
         prefetch()
         // check in from time to time to make sure no one has closed the transaction
-        if (rowsEmitted % UnwindIterator.CHECK_TX_INTERVAL == 0) {
+        if (rowsEmitted & UnwindIterator.CHECK_TX_INTERVAL == 0) {
           state.query.transactionalContext.assertTransactionOpen()
         }
         rowsEmitted += 1L
@@ -81,6 +81,7 @@ case class UnwindPipe(source: Pipe, collection: Expression, variable: String)(va
 
   private object UnwindIterator {
     // Specifies how often we should verify that the transaction is still open
-    private val CHECK_TX_INTERVAL: Int = 100
+    // NOTE, if you modify this make sure to pick a value that satisfies 2^n - 1
+    private val CHECK_TX_INTERVAL: Int = 127
   }
 }
