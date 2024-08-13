@@ -100,8 +100,11 @@ abstract class AbstractConcurrentTransactionsPipe(
     private[this] val activeTaskCount: AtomicInteger = new AtomicInteger(0)
 
     override def closeMore(): Unit = {
-      if (input != null) input.close()
-      if (currentOutputIterator != null) input.close()
+      input.close()
+      if (currentOutputIterator != null) {
+        currentOutputIterator.close()
+      }
+      drainOutputQueue()
     }
 
     override def produceNext(): Option[CypherRow] = {
@@ -148,7 +151,7 @@ abstract class AbstractConcurrentTransactionsPipe(
       }
     }
 
-    private def drainOutputQueue(error: Throwable): Unit = {
+    private def drainOutputQueue(error: Throwable = null): Unit = {
       while (pendingTaskCount > 0) {
         val taskOutputResult = outputQueue.take()
         val newError = taskOutputResult.error
@@ -158,7 +161,7 @@ abstract class AbstractConcurrentTransactionsPipe(
             if (newError != null) newError else "<committed>"
           )
         }
-        if (newError != null && newError != error && shouldReportError(newError)) {
+        if (error != null && newError != null && newError != error && shouldReportError(newError)) {
           error.addSuppressed(newError)
         }
         pendingTaskCount -= 1
