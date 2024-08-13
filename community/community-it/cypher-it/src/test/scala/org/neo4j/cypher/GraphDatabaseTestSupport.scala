@@ -23,6 +23,7 @@ import org.assertj.core.api.Condition
 import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME
+import org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.dbms.api.DatabaseManagementService
@@ -31,6 +32,7 @@ import org.neo4j.graphdb.Label
 import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.Relationship
 import org.neo4j.graphdb.RelationshipType
+import org.neo4j.graphdb.Result
 import org.neo4j.graphdb.Transaction
 import org.neo4j.graphdb.TransactionFailureException
 import org.neo4j.graphdb.config.Setting
@@ -92,7 +94,7 @@ trait GraphDatabaseTestSupport
     startGraphDatabase()
   }
 
-  def awaitDefaultDatabase: Boolean = false
+  def expectedShardCount: Int = 0
 
   def databaseConfig(): Map[Setting[_], Object] = Map(
     GraphDatabaseSettings.transaction_timeout -> Duration.ofMinutes(15),
@@ -129,20 +131,27 @@ trait GraphDatabaseTestSupport
 
     managementService =
       updatedDatabaseFactory.setConfig(config.asJava).setInternalLogProvider(logProvider).build()
-    if (awaitDefaultDatabase) {
+    if (expectedShardCount > 0) {
       assertEventually(
         () => managementService.listDatabases().contains(dbName),
         new Condition[Boolean]((value: Boolean) => value, "Should be true."),
-        30L,
+        60L,
         TimeUnit.SECONDS
       )
     }
     graphOps = managementService.database(dbName)
-    if (awaitDefaultDatabase) {
+    if (expectedShardCount > 0) {
       assertEventually(
-        () => graphOps.isAvailable(1000),
+        () => {
+          val onlineDatabaseCount: Long = managementService.database(SYSTEM_DATABASE_NAME).executeTransactionally(
+            "SHOW DATABASES YIELD name, currentStatus WHERE currentStatus = 'online'",
+            Map.empty.asJava,
+            (result: Result) => result.stream.count()
+          )
+          onlineDatabaseCount >= expectedShardCount
+        },
         new Condition[Boolean]((value: Boolean) => value, "Should be true."),
-        30L,
+        60L,
         TimeUnit.SECONDS
       )
     }
