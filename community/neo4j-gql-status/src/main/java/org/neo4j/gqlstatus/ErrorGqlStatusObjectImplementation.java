@@ -78,7 +78,7 @@ public class ErrorGqlStatusObjectImplementation extends CommonGqlStatusObjectImp
         private ErrorGqlStatusObject cause = null;
         private final Map<String, String> paramMap = new HashMap<>();
         private final GqlStatusInfoCodes gqlStatusInfoCode;
-        private DiagnosticRecord diagnosticRecord = new DiagnosticRecord();
+        private final DiagnosticRecord.Builder diagnosticRecordBuilder = DiagnosticRecord.from();
 
         private Builder(GqlStatusInfoCodes gqlStatusInfo) {
             this.gqlStatusInfoCode = gqlStatusInfo;
@@ -94,12 +94,18 @@ public class ErrorGqlStatusObjectImplementation extends CommonGqlStatusObjectImp
             return this;
         }
 
-        public Builder withDiagnosticRecord(DiagnosticRecord diagnosticRecord) {
-            this.diagnosticRecord = diagnosticRecord;
+        public Builder withClassification(GqlClassification classification) {
+            diagnosticRecordBuilder.withClassification(classification);
+            return this;
+        }
+
+        public Builder atPosition(int line, int col, int offset) {
+            diagnosticRecordBuilder.atPosition(line, col, offset);
             return this;
         }
 
         public ErrorGqlStatusObject build() {
+            DiagnosticRecord diagnosticRecord = diagnosticRecordBuilder.build();
             return new ErrorGqlStatusObjectImplementation(gqlStatusInfoCode, paramMap, cause, diagnosticRecord);
         }
     }

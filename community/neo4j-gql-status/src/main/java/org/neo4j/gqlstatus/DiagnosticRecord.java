@@ -35,6 +35,10 @@ public class DiagnosticRecord {
     private static final String OPERATION_CODE_DEFAULT = "0";
     private final Map<String, Object> innerDiagnosticRecord;
 
+    public static Builder from() {
+        return new Builder();
+    }
+
     public DiagnosticRecord(
             String severity,
             GqlClassification classification,
@@ -140,6 +144,36 @@ public class DiagnosticRecord {
             return Optional.of(new DiagnosticRecord(parsed));
         } catch (JsonProcessingException e) {
             return Optional.empty();
+        }
+    }
+
+    public static class Builder {
+        private final Map<String, Object> innerDiagnosticRecord;
+
+        private Builder() {
+            innerDiagnosticRecord = new HashMap<>();
+            innerDiagnosticRecord.put("CURRENT_SCHEMA", CURRENT_SCHEMA_DEFAULT);
+            innerDiagnosticRecord.put("OPERATION", OPERATION_DEFAULT);
+            innerDiagnosticRecord.put("OPERATION_CODE", OPERATION_CODE_DEFAULT);
+        }
+
+        public Builder atPosition(int offset, int line, int column) {
+            innerDiagnosticRecord.put("_position", Map.of("offset", offset, "line", line, "column", column));
+            return this;
+        }
+
+        public Builder withClassification(GqlClassification classification) {
+            innerDiagnosticRecord.put("_classification", classification.toString());
+            return this;
+        }
+
+        public Builder withSeverity(String severity) {
+            innerDiagnosticRecord.put("_severity", severity);
+            return this;
+        }
+
+        public DiagnosticRecord build() {
+            return new DiagnosticRecord(innerDiagnosticRecord);
         }
     }
 }
