@@ -26,12 +26,16 @@ import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
+import org.neo4j.cypher.internal.logical.plans.Prober.Probe
+import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.exceptions.CantCompileQueryException
 import org.neo4j.graphdb.Label
 import org.neo4j.graphdb.Node
+import org.neo4j.graphdb.NotFoundException
+import org.neo4j.values.virtual.VirtualValues
 
 abstract class OrderedUnionTestBase[CONTEXT <: RuntimeContext](
   edition: Edition[CONTEXT],
@@ -1183,6 +1187,65 @@ abstract class OrderedUnionTestBase[CONTEXT <: RuntimeContext](
 
     // then
     runtimeResult should beColumns("size(dst)").withRows(Array(Array(sizeHint)))
+  }
+
+  test("should not schedule rhs before lhs is fully exhausted in union") {
+    val nNodes = 10
+    assume(!isParallel)
+    val nodes = givenGraph {
+      nodeGraph(nNodes)
+    }
+
+    var seenLhsNode = false
+    var seenRhsNode = false
+    val probe = new Probe {
+      override def onRow(row: AnyRef, state: AnyRef): Unit = {
+        val cypherRow = row.asInstanceOf[CypherRow]
+        val n =
+          try {
+            cypherRow.getByName("n")
+          } catch {
+            case _: NotFoundException =>
+              null
+          }
+        val m =
+          try {
+            cypherRow.getByName("m")
+          } catch {
+            case _: NotFoundException =>
+              null
+          }
+        if (n != null) {
+          seenLhsNode = true
+          if (seenRhsNode) {
+            fail("should see all n before m")
+          }
+        }
+        if (m != null) {
+          seenRhsNode = true
+          if (!seenLhsNode) {
+            fail("should not see m before n")
+          }
+        }
+      }
+    }
+
+    val query = new LogicalQueryBuilder(this)
+      .produceResults("n")
+      .union()
+      .|.projection("m AS n")
+      .|.prober(probe)
+      .|.create(createNode("m"))
+      .|.argument()
+      .prober(probe)
+      .orderedUnion("n ASC")
+      .|.limit(1)
+      .|.allNodeScan("n")
+      .allNodeScan("n")
+      .build()
+
+    val expected = nodes.head +: nodes.map(n => n) :+ VirtualValues.node(nNodes) // Sorry, this is a bit fragile
+    execute(query, runtime) should beColumns("n").withRows(singleColumn(expected))
   }
 
   test("github issue #13169") {
