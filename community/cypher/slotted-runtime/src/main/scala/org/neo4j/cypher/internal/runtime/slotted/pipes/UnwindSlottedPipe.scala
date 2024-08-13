@@ -58,7 +58,7 @@ case class UnwindSlottedPipe(source: Pipe, collection: Expression, offset: Int, 
         val ret = nextItem
         prefetch()
         // check in from time to time to make sure no one has closed the transaction
-        if (rowsEmitted & UnwindIterator.CHECK_TX_INTERVAL == 0) {
+        if ((rowsEmitted & UnwindIterator.CHECK_TX_INTERVAL) == 0) {
           state.query.transactionalContext.assertTransactionOpen()
         }
         rowsEmitted += 1L
