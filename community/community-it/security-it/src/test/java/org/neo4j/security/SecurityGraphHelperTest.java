@@ -223,6 +223,32 @@ public class SecurityGraphHelperTest {
     }
 
     @Test
+    void getUserByAuthShouldReturnUser() {
+        createUser(new User("alice", "userId", null, false, false, Set.of(new User.Auth("provider1", "sub123"))));
+        User result = securityGraphHelper.getUserByAuth("provider1", "sub123");
+        assertThat(result.name()).isEqualTo("alice");
+        assertThat(result.id()).isEqualTo("userId");
+        assertThat(result.passwordChangeRequired()).isFalse();
+        assertThat(result.suspended()).isFalse();
+        assertThat(result.auth()).isEqualTo(Set.of(new User.Auth("provider1", "sub123")));
+        verify(securityLog).debug("Looking up user with auth provider: provider1, auth id: sub123");
+        verify(securityLog)
+                .debug(
+                        "Found user: User[name=alice, id=userId, credential=null, passwordChangeRequired=false, suspended=false, auth=[Auth[provider=provider1, id=sub123]]]");
+        verifyNoMoreInteractions(securityLog);
+    }
+
+    @Test
+    void getUserByAuthShouldReturnNullWhenAuthDoesNotExist() {
+        createUser(new User("alice", "userId", null, false, false, Set.of(new User.Auth("provider1", "sub456"))));
+        User result = securityGraphHelper.getUserByAuth("provider1", "sub123");
+        assertThat(result).isNull();
+        verify(securityLog).debug("Looking up user with auth provider: provider1, auth id: sub123");
+        verify(securityLog).debug("No auth for auth provider: provider1, auth id: sub123");
+        verifyNoMoreInteractions(securityLog);
+    }
+
+    @Test
     void getUserByIdShouldReturnNullUserIdIsNull() {
         // WHEN
         User result = securityGraphHelper.getUserById(null);

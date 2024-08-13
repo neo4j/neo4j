@@ -22,6 +22,7 @@ package org.neo4j.server.security.systemgraph;
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 import static org.neo4j.kernel.database.NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID;
 import static org.neo4j.server.security.systemgraph.versions.KnownCommunitySecurityComponentVersion.AUTH_ID;
+import static org.neo4j.server.security.systemgraph.versions.KnownCommunitySecurityComponentVersion.AUTH_LABEL;
 import static org.neo4j.server.security.systemgraph.versions.KnownCommunitySecurityComponentVersion.AUTH_PROVIDER;
 import static org.neo4j.server.security.systemgraph.versions.KnownCommunitySecurityComponentVersion.HAS_AUTH;
 import static org.neo4j.server.security.systemgraph.versions.KnownCommunitySecurityComponentVersion.USER_CREDENTIALS;
@@ -40,6 +41,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.ResourceIterable;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.security.AuthProviderFailedException;
 import org.neo4j.internal.kernel.api.security.AbstractSecurityLog;
 import org.neo4j.kernel.api.security.AuthToken;
@@ -166,6 +168,28 @@ public class SecurityGraphHelper {
                     auths);
             securityLog.debug(String.format("Found user: %s", user));
             return user;
+        }
+    }
+
+    public User getUserByAuth(String provider, String authId) {
+        securityLog.debug(String.format("Looking up user with auth provider: %s, auth id: %s", provider, authId));
+        try (var tx = systemSupplier.get().beginTx()) {
+            try (ResourceIterator<Node> authNodeIterator =
+                    tx.findNodes(AUTH_LABEL, AUTH_ID, authId, AUTH_PROVIDER, provider)) {
+                if (authNodeIterator.hasNext()) {
+                    Node authNode = authNodeIterator.next();
+                    Relationship hasAuth = authNode.getSingleRelationship(HAS_AUTH, Direction.INCOMING);
+                    if (hasAuth == null) {
+                        securityLog.debug(
+                                String.format("No user found with auth provider: %s, auth id: %s", provider, authId));
+                        return null;
+                    }
+                    return getUser(hasAuth.getStartNode());
+                } else {
+                    securityLog.debug(String.format("No auth for auth provider: %s, auth id: %s", provider, authId));
+                    return null;
+                }
+            }
         }
     }
 
