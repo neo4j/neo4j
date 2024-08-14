@@ -74,8 +74,8 @@ public class DatabaseManagementServiceImpl implements DatabaseManagementService 
                 .databaseIdRepository()
                 .getByName(name)
                 .flatMap(databaseContextProvider::getDatabaseContext)
-                .orElseThrow(() -> new DatabaseNotFoundException(name))
-                .databaseFacade();
+                .map(DatabaseContext::databaseFacade)
+                .orElseThrow(() -> new DatabaseNotFoundException(name));
     }
 
     @Override
