@@ -172,8 +172,8 @@ Feature: DynamicLabelsAcceptance
     Examples:
       | invalid_value |
       | 1 + 2         |
-      | null          |
-      | ''            |
+      | true          |
+      | {x : 1}       |
 
   Scenario: Should throw type error if labels missing in the CSV file
     Given an empty graph
@@ -204,8 +204,8 @@ Feature: DynamicLabelsAcceptance
     Examples:
       | invalid_param |
       | 1             |
-      | null          |
-      | ''            |
+      | true          |
+      | {x: 1}        |
 
   Scenario Outline: Should throw type errors when a node property being set as a dynamic label is invalid
     Given an empty graph
@@ -224,7 +224,7 @@ Feature: DynamicLabelsAcceptance
       | invalid_value |
       | 1             |
       | null          |
-      | ''            |
+      | false         |
 
   Scenario Outline: Should remove dynamic labels
     Given an empty graph
@@ -339,10 +339,10 @@ Feature: DynamicLabelsAcceptance
       """
     Then a SyntaxError should be raised at compile time: *
     Examples:
-      | invalid_value |
-      | 1 + 2         |
-      | null          |
-      | ''            |
+      | invalid_value  |
+      | 1 + 2          |
+      | true           |
+      | {x : 1}        |
 
   Scenario Outline: Should throw syntax errors for removing labels where parameters evaluate to invalid values
     Given an empty graph
@@ -356,10 +356,10 @@ Feature: DynamicLabelsAcceptance
       """
     Then a SyntaxError should be raised at compile time: *
     Examples:
-      | invalid_param |
-      | 1             |
-      | null          |
-      | ''            |
+      | invalid_param    |
+      | 1                |
+      | {x: 2.3, y: 4.5} |
+      | true             |
 
   Scenario Outline: Should throw type errors when a node property being removed as a dynamic label is invalid
     Given an empty graph
@@ -378,4 +378,19 @@ Feature: DynamicLabelsAcceptance
       | invalid_value |
       | 1             |
       | null          |
-      | ''            |
+      | true          |
+
+  @allowCustomErrors
+  Scenario: Should throw token error for settings labels where parameters evaluate to invalid token values
+    Given an empty graph
+    And having executed:
+      """
+      CREATE (:A {prop:''})
+      """
+    When executing query:
+      """
+      MATCH (n)
+      SET n:$(n.prop)
+      RETURN labels(n) AS labels
+      """
+    Then a TokenNameError should be raised at runtime: *

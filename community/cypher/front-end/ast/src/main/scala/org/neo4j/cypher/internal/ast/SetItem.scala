@@ -89,6 +89,7 @@ case class SetDynamicPropertyItem(dynamicPropertyLookup: ContainerIndex, express
 
   def semanticCheck =
     SemanticExpressionCheck.simple(dynamicPropertyLookup) chain
+      SemanticPatternCheck.checkValidDynamicLabels(Seq(dynamicPropertyLookup.idx), position) chain
       SemanticExpressionCheck.simple(expression) chain
       SemanticExpressionCheck.expectType(CTNode.covariant | CTRelationship.covariant, dynamicPropertyLookup.expr)
 

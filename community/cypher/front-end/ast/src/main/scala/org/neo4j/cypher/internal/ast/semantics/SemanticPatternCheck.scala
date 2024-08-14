@@ -34,6 +34,7 @@ import org.neo4j.cypher.internal.expressions.MapExpression
 import org.neo4j.cypher.internal.expressions.NODE_TYPE
 import org.neo4j.cypher.internal.expressions.NamedPatternPart
 import org.neo4j.cypher.internal.expressions.NodePattern
+import org.neo4j.cypher.internal.expressions.Null
 import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.expressions.ParenthesizedPath
 import org.neo4j.cypher.internal.expressions.PathConcatenation
@@ -853,6 +854,7 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
   def checkValidDynamicLabels(labelNames: Seq[Expression], pos: InputPosition): SemanticCheck =
     labelNames.view.flatMap {
       case StringLiteral(name) => checkValidTokenName(name)
+      case _: Null             => checkValidTokenName(null)
       case _                   => None
     }.headOption.map(message => SemanticError(message, pos))
 

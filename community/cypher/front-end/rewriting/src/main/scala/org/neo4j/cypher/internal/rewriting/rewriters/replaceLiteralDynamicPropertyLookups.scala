@@ -16,8 +16,13 @@
  */
 package org.neo4j.cypher.internal.rewriting.rewriters
 
+import org.neo4j.cypher.internal.ast.RemoveDynamicPropertyItem
+import org.neo4j.cypher.internal.ast.RemovePropertyItem
+import org.neo4j.cypher.internal.ast.SetDynamicPropertyItem
+import org.neo4j.cypher.internal.ast.SetPropertyItem
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.expressions.ContainerIndex
+import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.StringLiteral
@@ -30,8 +35,8 @@ import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.StepSequencer.DefaultPostCondition
 import org.neo4j.cypher.internal.util.StepSequencer.Step
-import org.neo4j.cypher.internal.util.bottomUp
 import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo
+import org.neo4j.cypher.internal.util.topDown
 
 case object replaceLiteralDynamicPropertyLookups extends Step with DefaultPostCondition with ASTRewriterFactory {
 
@@ -39,7 +44,21 @@ case object replaceLiteralDynamicPropertyLookups extends Step with DefaultPostCo
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = SemanticInfoAvailable
 
-  val instance: Rewriter = bottomUp(Rewriter.lift {
+  val instance: Rewriter = topDown(Rewriter.lift {
+    case dP @ SetDynamicPropertyItem(
+        dynamicPropertyLookup @ ContainerIndex(expr, lit: StringLiteral),
+        expression: Expression
+      ) =>
+      SetPropertyItem(
+        Property(expr, PropertyKeyName(lit.value)(lit.position))(dynamicPropertyLookup.position),
+        expression
+      )(dP.position)
+    case _ @RemoveDynamicPropertyItem(
+        dynamicPropertyLookup @ ContainerIndex(expr, lit: StringLiteral)
+      ) =>
+      RemovePropertyItem(
+        Property(expr, PropertyKeyName(lit.value)(lit.position))(dynamicPropertyLookup.position)
+      )
     case index @ ContainerIndex(expr, lit: StringLiteral) =>
       Property(expr, PropertyKeyName(lit.value)(lit.position))(index.position)
   })

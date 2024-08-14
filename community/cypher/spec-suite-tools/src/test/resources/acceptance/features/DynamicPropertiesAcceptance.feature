@@ -192,6 +192,10 @@ Feature: DynamicPropertiesAcceptance
 
   Scenario Outline: Should throw syntax errors when setting properties whose names are variables with invalid values
     Given an empty graph
+    And having executed:
+      """
+      CREATE ()
+      """
     When executing query:
       """
       WITH <invalid_value> AS a
@@ -201,10 +205,10 @@ Feature: DynamicPropertiesAcceptance
       """
     Then a SyntaxError should be raised at compile time: *
     Examples:
-      | invalid_value |
-      | 1 + 2         |
-      | null          |
-      | ''            |
+      | invalid_value           |
+      | 1 + 2                   |
+      | point({x: 2.3, y: 4.5}) |
+      | true                    |
 
   Scenario: Should throw type error if property name missing in the CSV file
     Given an empty graph
@@ -233,10 +237,10 @@ Feature: DynamicPropertiesAcceptance
       """
     Then a SyntaxError should be raised at compile time: *
     Examples:
-      | invalid_param |
-      | 1             |
-      | null          |
-      | ''            |
+      | invalid_param    |
+      | 1                |
+      | {x: 2.3, y: 4.5} |
+      | true             |
 
   Scenario Outline: Should throw syntax errors when removing properties using invalid constant expressions
     Given an empty graph
@@ -264,10 +268,10 @@ Feature: DynamicPropertiesAcceptance
       """
     Then a SyntaxError should be raised at compile time: *
     Examples:
-      | invalid_value |
-      | 1 + 2         |
-      | null          |
-      | ''            |
+      | invalid_value           |
+      | 1 + 2                   |
+      | point({x: 2.3, y: 4.5}) |
+      | true                    |
 
   Scenario Outline: Should throw syntax errors when removing properties where parameters evaluate to invalid values
     Given an empty graph
@@ -281,7 +285,23 @@ Feature: DynamicPropertiesAcceptance
       """
     Then a SyntaxError should be raised at compile time: *
     Examples:
-      | invalid_param |
-      | 1             |
-      | null          |
-      | ''            |
+      | invalid_param    |
+      | 1                |
+      | {x: 2.3, y: 4.5} |
+      | true             |
+
+  @allowCustomErrors
+  Scenario: Should throw token error for setting properties where variables evaluate to invalid token values
+    Given an empty graph
+    And having executed:
+      """
+      CREATE ()
+      """
+    When executing query:
+      """
+      WITH '' AS a
+      MATCH (n)
+      SET n[a] = 1
+      RETURN n.a
+      """
+    Then a TokenNameError should be raised at runtime: *

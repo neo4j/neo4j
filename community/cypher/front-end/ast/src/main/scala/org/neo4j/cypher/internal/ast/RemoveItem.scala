@@ -76,6 +76,7 @@ case class RemoveDynamicPropertyItem(dynamicPropertyLookup: ContainerIndex) exte
   override def position: InputPosition = dynamicPropertyLookup.position
 
   override def semanticCheck: SemanticCheck = SemanticExpressionCheck.simple(dynamicPropertyLookup) chain
+    SemanticPatternCheck.checkValidDynamicLabels(Seq(dynamicPropertyLookup.idx), position) chain
     SemanticExpressionCheck.expectType(CTNode.covariant | CTRelationship.covariant, dynamicPropertyLookup.expr)
 
   override def mapExpressions(f: Expression => Expression): RemoveItem = copy(
