@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api.chunk;
 
 import static org.neo4j.kernel.impl.api.CompleteTransaction.TRANSACTION_ID_NOT_SPECIFIED;
 
+import java.util.function.LongConsumer;
 import org.neo4j.common.Subject;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.api.txid.TransactionIdGenerator;
@@ -34,7 +35,6 @@ import org.neo4j.storageengine.api.cursor.StoreCursors;
 public class ChunkedTransaction implements StorageEngineTransaction {
 
     private ChunkedCommandBatch chunk;
-    // to sure for what reason we need those now here?
     private final CursorContext cursorContext;
     private final long transactionSequenceNumber;
     private final StoreCursors storeCursors;
@@ -45,6 +45,7 @@ public class ChunkedTransaction implements StorageEngineTransaction {
     private long transactionId = TRANSACTION_ID_NOT_SPECIFIED;
     private StorageEngineTransaction next;
     private long firstAppendIndex;
+    private LongConsumer closedCallback;
 
     public ChunkedTransaction(
             CursorContext cursorContext,
@@ -118,6 +119,11 @@ public class ChunkedTransaction implements StorageEngineTransaction {
     }
 
     @Override
+    public void onClose(LongConsumer closedCallback) {
+        this.closedCallback = closedCallback;
+    }
+
+    @Override
     public void commit() {
         commitment.publishAsCommitedLastBatch();
         if (chunk.isLast()) {
@@ -157,6 +163,9 @@ public class ChunkedTransaction implements StorageEngineTransaction {
     @Override
     public void close() {
         commitment.publishAsClosed();
+        if (chunk.isLast() && closedCallback != null) {
+            closedCallback.accept(transactionId);
+        }
     }
 
     @Override

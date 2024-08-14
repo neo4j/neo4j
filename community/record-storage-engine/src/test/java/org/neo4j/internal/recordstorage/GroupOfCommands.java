@@ -22,6 +22,7 @@ package org.neo4j.internal.recordstorage;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
 import java.util.List;
+import java.util.function.LongConsumer;
 import org.neo4j.common.Subject;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.transaction.log.CompleteCommandBatch;
@@ -86,6 +87,9 @@ public class GroupOfCommands implements StorageEngineTransaction {
 
     @Override
     public void next(StorageEngineTransaction next) {}
+
+    @Override
+    public void onClose(LongConsumer closedCallback) {}
 
     @Override
     public void commit() {}

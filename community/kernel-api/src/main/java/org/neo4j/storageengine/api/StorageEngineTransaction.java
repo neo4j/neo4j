@@ -19,6 +19,7 @@
  */
 package org.neo4j.storageengine.api;
 
+import java.util.function.LongConsumer;
 import org.neo4j.common.Subject;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
@@ -72,6 +73,11 @@ public interface StorageEngineTransaction extends AutoCloseable {
      * @param next set next group of commands in this batch.
      */
     void next(StorageEngineTransaction next);
+
+    /**
+     * Set transaction close callback
+     */
+    void onClose(LongConsumer closedCallback);
 
     void commit();
 
