@@ -159,6 +159,7 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.recovery.facade.RecoveryCriteria;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.service.Services;
 import org.neo4j.storageengine.api.MetadataProvider;
@@ -1405,6 +1406,20 @@ class RecoveryIT {
         assertThat(extension.stopped).isTrue();
     }
 
+    @Test
+    void recoveryDoesNotSucceedOnPanic() throws Exception {
+        GraphDatabaseService database = createDatabase();
+        generateSomeData(database);
+        managementService.shutdown();
+        removeLastCheckpointRecordFromLastLogFile(databaseLayout, fileSystem);
+
+        var extension = new TestPanicRecoveryExtension();
+        assertThatThrownBy(() -> recoverDatabase(List.of(extension)))
+                .hasRootCauseMessage(TestPanicRecoveryExtension.PANIC_MSG);
+
+        assertThat(extension.panicked).isTrue();
+    }
+
     @RecoveryExtension
     private class TestRecoveryExtension extends ExtensionFactory<TestRecoveryExtension.Dependencies> {
         private final int expectedCheckpointsOnStop;
@@ -1422,6 +1437,28 @@ class RecoveryIT {
             return LifecycleAdapter.onStop(() -> {
                 stopped = true;
                 assertThat(countCheckPointsInTransactionLogs()).isEqualTo(expectedCheckpointsOnStop);
+            });
+        }
+    }
+
+    @RecoveryExtension
+    private class TestPanicRecoveryExtension extends ExtensionFactory<TestPanicRecoveryExtension.Dependencies> {
+        private static final String PANIC_MSG = "AAAAAAAAAAAAH!";
+        boolean panicked = false;
+
+        interface Dependencies {
+            DatabaseHealth health();
+        }
+
+        TestPanicRecoveryExtension() {
+            super(ExtensionType.DATABASE, "testPanicRecoveryExtension");
+        }
+
+        @Override
+        public Lifecycle newInstance(ExtensionContext context, Dependencies dependencies) {
+            return LifecycleAdapter.onStart(() -> {
+                panicked = true;
+                dependencies.health().panic(new RuntimeException(PANIC_MSG));
             });
         }
     }

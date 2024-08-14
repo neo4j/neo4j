@@ -559,7 +559,8 @@ public final class Recovery {
                 guard,
                 tracers,
                 namedDatabaseId,
-                cursorContextFactory));
+                cursorContextFactory,
+                databaseHealth));
         Dependencies indexDependencies = new Dependencies(extensions);
         indexDependencies.satisfyDependencies(recoveryVersionStorage);
 
@@ -768,6 +769,9 @@ public final class Recovery {
         } finally {
             recoveryLife.shutdown();
         }
+        if (!databaseHealth.hasNoPanic()) {
+            throw new IllegalStateException(databaseHealth.causeOfPanic());
+        }
         return true;
     }
 
@@ -911,7 +915,8 @@ public final class Recovery {
             AvailabilityGuard availabilityGuard,
             DatabaseTracers tracers,
             NamedDatabaseId namedDatabaseId,
-            CursorContextFactory contextFactory) {
+            CursorContextFactory contextFactory,
+            DatabaseHealth databaseHealth) {
         List<ExtensionFactory<?>> recoveryExtensions = stream(extensionFactories)
                 .filter(extension -> extension.getClass().isAnnotationPresent(RecoveryExtension.class))
                 .toList();
@@ -933,7 +938,8 @@ public final class Recovery {
                 availabilityGuard,
                 namedDatabaseId,
                 FileStoreProviderRegistry.EMPTY,
-                contextFactory);
+                contextFactory,
+                databaseHealth);
         DatabaseExtensionContext extensionContext = new DatabaseExtensionContext(databaseLayout, info, deps);
         return new DatabaseExtensions(extensionContext, recoveryExtensions, deps, ExtensionFailureStrategies.fail());
     }
