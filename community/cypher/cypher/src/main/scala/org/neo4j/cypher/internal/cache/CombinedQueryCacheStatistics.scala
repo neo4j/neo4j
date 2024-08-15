@@ -111,4 +111,9 @@ class CombinedCacheTracer[T](a: CacheTracer[T], b: CacheTracer[T]) extends Cache
     a.cacheFlush(sizeOfCacheBeforeFlush)
     b.cacheFlush(sizeOfCacheBeforeFlush)
   }
+
+  override def awaitOngoingComputation(key: T, metaData: String): Unit = {
+    a.awaitOngoingComputation(key, metaData)
+    b.awaitOngoingComputation(key, metaData)
+  }
 }
