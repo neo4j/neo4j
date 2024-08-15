@@ -130,6 +130,10 @@ public abstract class AbstractLuceneIndexReader implements ValueIndexReader {
         return new AllEntriesValueReaderForPartition(indexProgressor, entityConsumer);
     }
 
+    protected final String indexName() {
+        return descriptor.getName();
+    }
+
     private record AllEntriesValueReaderForPartition(
             IndexProgressor indexProgressor, InRangeEntityConsumer entityConsumer) implements BoundedIterable<Long> {
 
