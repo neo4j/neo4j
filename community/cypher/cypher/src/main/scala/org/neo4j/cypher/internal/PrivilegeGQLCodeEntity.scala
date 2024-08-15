@@ -23,6 +23,7 @@ import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_LABEL
 import org.neo4j.gqlstatus.ErrorClassification
 import org.neo4j.gqlstatus.ErrorGqlStatusObject
 import org.neo4j.gqlstatus.ErrorGqlStatusObjectImplementation
+import org.neo4j.gqlstatus.GqlMessageParams
 import org.neo4j.gqlstatus.GqlStatusInfoCodes
 import org.neo4j.graphdb.Label
 import org.neo4j.server.security.systemgraph.versions.KnownCommunitySecurityComponentVersion.ROLE_LABEL
@@ -58,7 +59,7 @@ object PrivilegeGQLCodeEntity {
     }
     ErrorGqlStatusObjectImplementation.from(statusCode)
       .withClassification(ErrorClassification.CLIENT_ERROR)
-      .withParam("name", value)
+      .withParam(GqlMessageParams.name, value)
       .build()
   }
 
@@ -73,7 +74,7 @@ object PrivilegeGQLCodeEntity {
     }
     ErrorGqlStatusObjectImplementation.from(statusCode)
       .withClassification(ErrorClassification.CLIENT_ERROR)
-      .withParam("name", value)
+      .withParam(GqlMessageParams.name, value)
       .build()
   }
 
