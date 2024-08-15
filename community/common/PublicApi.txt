@@ -158,6 +158,7 @@ org.neo4j.kernel.api.exceptions.Status.Security::valueOf(java.lang.String) org.n
 org.neo4j.kernel.api.exceptions.Status.Security::values() org.neo4j.kernel.api.exceptions.Status.Security[] public static
 org.neo4j.kernel.api.exceptions.Status.Statement public static final enum extends java.lang.Enum<org.neo4j.kernel.api.exceptions.Status.Statement> implements org.neo4j.kernel.api.exceptions.Status
 org.neo4j.kernel.api.exceptions.Status.Statement::AccessMode org.neo4j.kernel.api.exceptions.Status.Statement public static final
+org.neo4j.kernel.api.exceptions.Status.Statement::AggregationSkippedNull org.neo4j.kernel.api.exceptions.Status.Statement public static final
 org.neo4j.kernel.api.exceptions.Status.Statement::ArgumentError org.neo4j.kernel.api.exceptions.Status.Statement public static final
 org.neo4j.kernel.api.exceptions.Status.Statement::ArithmeticError org.neo4j.kernel.api.exceptions.Status.Statement public static final
 org.neo4j.kernel.api.exceptions.Status.Statement::CartesianProduct org.neo4j.kernel.api.exceptions.Status.Statement public static final

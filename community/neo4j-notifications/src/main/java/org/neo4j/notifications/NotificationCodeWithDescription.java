@@ -305,7 +305,12 @@ public enum NotificationCodeWithDescription {
             Status.Schema.IndexOrConstraintAlreadyExists, GqlStatusInfoCodes.STATUS_00NA0, "`%s` already exists."),
 
     INDEX_OR_CONSTRAINT_DOES_NOT_EXIST(
-            Status.Schema.IndexOrConstraintDoesNotExist, GqlStatusInfoCodes.STATUS_00NA1, "`%s` does not exist.");
+            Status.Schema.IndexOrConstraintDoesNotExist, GqlStatusInfoCodes.STATUS_00NA1, "`%s` does not exist."),
+
+    AGGREGATION_SKIPPED_NULL(
+            Status.Statement.AggregationSkippedNull,
+            GqlStatusInfoCodes.STATUS_01G11,
+            "null value eliminated in set function");
 
     private final Status status;
     private final GqlStatusInfoCodes gqlStatusInfo;
@@ -667,6 +672,10 @@ public enum NotificationCodeWithDescription {
 
     public static NotificationImplementation requestedTopologyMatchedCurrentTopology(InputPosition position) {
         return REQUESTED_TOPOLOGY_MATCHED_CURRENT_TOPOLOGY.notification(position);
+    }
+
+    public static NotificationImplementation aggregationSkippedNull() {
+        return AGGREGATION_SKIPPED_NULL.notification(InputPosition.empty);
     }
 
     public static NotificationImplementation indexOrConstraintAlreadyExists(

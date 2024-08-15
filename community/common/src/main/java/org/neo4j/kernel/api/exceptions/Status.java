@@ -363,7 +363,14 @@ public interface Status {
                 ClientNotification,
                 "Variable in subquery is shadowing a variable with the same name from the outer scope.",
                 SeverityLevel.INFORMATION,
-                NotificationCategory.GENERIC);
+                NotificationCategory.GENERIC),
+        // client notifications (runtime)
+        AggregationSkippedNull(
+                ClientNotification,
+                "null value eliminated in set function",
+                SeverityLevel.WARNING,
+                NotificationCategory.UNRECOGNIZED),
+        ;
 
         private final Code code;
 

@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.ast.UsingIndexHint.UsingAnyIndexType
 import org.neo4j.cypher.internal.ast.UsingIndexHint.UsingPointIndexType
 import org.neo4j.cypher.internal.ast.UsingIndexHint.UsingRangeIndexType
 import org.neo4j.cypher.internal.ast.UsingIndexHint.UsingTextIndexType
+import org.neo4j.cypher.internal.util.AggregationSkippedNull
 import org.neo4j.cypher.internal.util.AssignPrivilegeCommandHasNoEffectNotification
 import org.neo4j.cypher.internal.util.AuthProviderNotDefined
 import org.neo4j.cypher.internal.util.CartesianProductNotification
@@ -409,6 +410,8 @@ object NotificationWrapping {
       NotificationCodeWithDescription.requestedTopologyMatchedCurrentTopology(
         graphdb.InputPosition.empty
       )
+
+    case AggregationSkippedNull => NotificationCodeWithDescription.aggregationSkippedNull()
 
     case _ => throw new IllegalStateException("Missing mapping for notification detail.")
   }

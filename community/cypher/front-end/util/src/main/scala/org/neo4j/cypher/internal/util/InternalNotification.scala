@@ -82,7 +82,8 @@ object InternalNotification {
     "DeprecatedFunctionFieldNotification",
     "DeprecatedProcedureFieldNotification",
     "AuthProviderNotDefined",
-    "ExternalAuthNotEnabled"
+    "ExternalAuthNotEnabled",
+    "AggregationSkippedNull"
   )
 
   def allNotificationsAsJavaIterable(): lang.Iterable[String] = allNotifications.asJava
@@ -167,3 +168,4 @@ case class RequestedTopologyMatchedCurrentTopology() extends InternalNotificatio
 case class IndexOrConstraintAlreadyExistsNotification(command: String, conflicting: String)
     extends InternalNotification
 case class IndexOrConstraintDoesNotExistNotification(command: String, name: String) extends InternalNotification
+case object AggregationSkippedNull extends InternalNotification
