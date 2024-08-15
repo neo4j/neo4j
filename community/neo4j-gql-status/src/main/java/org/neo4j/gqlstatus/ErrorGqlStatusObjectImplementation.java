@@ -26,12 +26,12 @@ import java.util.Optional;
 public class ErrorGqlStatusObjectImplementation extends CommonGqlStatusObjectImplementation
         implements ErrorGqlStatusObject {
     private final Optional<ErrorGqlStatusObject> cause;
-    private final Map<String, String> paramMap;
+    private final Map<GqlMessageParams, String> paramMap;
     private final GqlStatusInfoCodes gqlStatusInfoCode;
 
     private ErrorGqlStatusObjectImplementation(
             GqlStatusInfoCodes gqlStatusInfoCode,
-            Map<String, String> parameters,
+            Map<GqlMessageParams, String> parameters,
             ErrorGqlStatusObject cause,
             DiagnosticRecord diagnosticRecord) {
         super(gqlStatusInfoCode, diagnosticRecord, parameters.values().toArray());
@@ -76,7 +76,7 @@ public class ErrorGqlStatusObjectImplementation extends CommonGqlStatusObjectImp
 
     public static class Builder {
         private ErrorGqlStatusObject cause = null;
-        private final Map<String, String> paramMap = new HashMap<>();
+        private final Map<GqlMessageParams, String> paramMap = new HashMap<>();
         private final GqlStatusInfoCodes gqlStatusInfoCode;
         private final DiagnosticRecord.Builder diagnosticRecordBuilder = DiagnosticRecord.from();
 
@@ -84,7 +84,7 @@ public class ErrorGqlStatusObjectImplementation extends CommonGqlStatusObjectImp
             this.gqlStatusInfoCode = gqlStatusInfo;
         }
 
-        public Builder withParam(String key, String value) {
+        public Builder withParam(GqlMessageParams key, String value) {
             paramMap.put(key, value);
             return this;
         }

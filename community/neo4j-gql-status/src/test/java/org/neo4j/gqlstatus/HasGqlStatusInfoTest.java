@@ -30,8 +30,8 @@ public class HasGqlStatusInfoTest {
     @Test
     void testGetOldCauseMessage() {
         var gql1 = ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_22N08)
-                .withParam("option1", "blabla")
-                .withParam("option2", "blabla")
+                .withParam(GqlMessageParams.option1, "blabla")
+                .withParam(GqlMessageParams.option2, "blabla")
                 .withCause(ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_22G10)
                         .build())
                 .build();
@@ -40,7 +40,7 @@ public class HasGqlStatusInfoTest {
                         .build())
                 .build();
         var someOtherGql = ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_08N09)
-                .withParam("db", "some db")
+                .withParam(GqlMessageParams.db, "some db")
                 .build();
         var oldMessage = "this is an old message";
 
