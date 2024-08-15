@@ -29,11 +29,14 @@ import static org.neo4j.test.extension.ExecutionSharedContext.SUCCESSFUL_TEST_FI
 
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestFactory;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.extension.ConditionEvaluationResult;
 import org.junit.jupiter.api.extension.ExecutionCondition;
@@ -103,6 +106,26 @@ abstract class DirectoryExtensionLifecycleVerificationTest {
         Path nonDeletableDirectory = directory.directory("c");
         ExecutionSharedContext.setValue(LOCKED_TEST_FILE_KEY, nonDeletableDirectory);
         assertTrue(nonDeletableDirectory.toFile().setReadable(false, false));
+    }
+
+    @TestFactory
+    Collection<DynamicTest> dynamicTests() {
+        ExecutionSharedContext.setValue(CREATED_TEST_FILE_PAIRS_KEY, directory.homePath());
+        return List.of(
+                DynamicTest.dynamicTest("Succeed1", () -> directory.createFile("succeed1")),
+                DynamicTest.dynamicTest("Succeed2", () -> directory.createFile("succeed2")));
+    }
+
+    @TestFactory
+    Collection<DynamicTest> dynamicTestsWithFailure() {
+        ExecutionSharedContext.setValue(CREATED_TEST_FILE_PAIRS_KEY, directory.homePath());
+        return List.of(
+                DynamicTest.dynamicTest("Succeed1", () -> directory.createFile("succeed1")),
+                DynamicTest.dynamicTest("Fail", () -> {
+                    directory.createFile("fail");
+                    fail();
+                }),
+                DynamicTest.dynamicTest("Succeed2", () -> directory.createFile("succeed2")));
     }
 
     static class SecondTestFailTest {

@@ -179,6 +179,23 @@ abstract class TestDirectoryExtensionTestSupport {
         }
     }
 
+    @Test
+    void successfulDynamicTestsShouldCleanupDirectory() {
+        ExecutionSharedContext.clear();
+        execute("dynamicTests");
+        assertThat(Files.exists(ExecutionSharedContext.getValue(CREATED_TEST_FILE_PAIRS_KEY)))
+                .isFalse();
+    }
+
+    @Test
+    void failedDynamicTestsShouldKeepDirectory() {
+        ExecutionSharedContext.clear();
+        execute("dynamicTestsWithFailure");
+        Path path = ExecutionSharedContext.getValue(CREATED_TEST_FILE_PAIRS_KEY);
+        assertThat(Files.isDirectory(path)).isTrue();
+        assertThat(FileUtils.listPaths(path)).hasSize(3);
+    }
+
     private static List<Pair<Path, Boolean>> executeAndReturnCreatedFiles(Class<?> testClass, int count) {
         ExecutionSharedContext.clear();
         executeClass(testClass);

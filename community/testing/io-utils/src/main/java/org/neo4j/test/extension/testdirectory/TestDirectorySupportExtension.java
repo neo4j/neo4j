@@ -31,8 +31,10 @@ import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
+import org.junit.jupiter.api.extension.DynamicTestInvocationContext;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ExtensionContext.Namespace;
+import org.junit.jupiter.api.extension.InvocationInterceptor;
 import org.junit.jupiter.api.extension.TestExecutionExceptionHandler;
 import org.junit.platform.commons.JUnitException;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -46,9 +48,11 @@ public class TestDirectorySupportExtension extends StatefulFieldExtension<TestDi
                 BeforeAllCallback,
                 AfterEachCallback,
                 AfterAllCallback,
-                TestExecutionExceptionHandler {
+                TestExecutionExceptionHandler,
+                InvocationInterceptor {
     public static final String TEST_DIRECTORY = "testDirectory";
     public static final String FAILURE_MARKER = "failureMarker";
+    public static final String DYNAMIC_TEST_FAILURE_MARKER = "dynamicTestFailureMarker";
     public static final Namespace TEST_DIRECTORY_NAMESPACE = Namespace.create(TEST_DIRECTORY);
     private static final String JUNIT4_ASSUMPTION_EXCEPTION = "org.junit.AssumptionViolatedException";
 
@@ -70,6 +74,34 @@ public class TestDirectorySupportExtension extends StatefulFieldExtension<TestDi
     public void afterEach(ExtensionContext context) {
         if (getLifecycle(context) == PER_METHOD) {
             cleanUp(context);
+        }
+    }
+
+    @Override
+    public void interceptDynamicTest(
+            Invocation<Void> inv, DynamicTestInvocationContext invContext, ExtensionContext context) throws Throwable {
+        // All dynamic tests in one @TestFactory share the same lifecycle calls and test instance. E.g
+        // beforeEach <-- creates the instance
+        //  DynamicTest1 executes
+        //  DynamicTest2 executes
+        //  DynamicTestN executes
+        // afterEach <-- cleans up the instance
+        // The dynamic tests have individual contexts, with the same parent context (the one called before/afterEach)
+        // If one fails (throws) the parent context is still successful, so we need to mark it as failed to keep the
+        // files
+        try {
+            // Note that this is callback intercepts the test and behaves differently from the other callbacks.
+            // It is very important that the original exception on failure is the one rethrown
+            InvocationInterceptor.super.interceptDynamicTest(inv, invContext, context);
+        } catch (Throwable throwable) {
+            try {
+                if (!isTestAssumptionCheckFailure(throwable)) {
+                    getTestDirectoryStore(context.getParent().orElseThrow()).put(DYNAMIC_TEST_FAILURE_MARKER, TRUE);
+                }
+            } catch (RuntimeException e) {
+                throwable.addSuppressed(e);
+            }
+            throw throwable;
         }
     }
 
@@ -154,7 +186,9 @@ public class TestDirectorySupportExtension extends StatefulFieldExtension<TestDi
     }
 
     private boolean hasFailureMarker(ExtensionContext context) {
-        return getLifecycle(context) == PER_CLASS && getLocalStore(context).get(FAILURE_MARKER) != null;
+        ExtensionContext.Store store = getLocalStore(context);
+        return getLifecycle(context) == PER_CLASS && store.get(FAILURE_MARKER) != null
+                || store.get(DYNAMIC_TEST_FAILURE_MARKER) != null;
     }
 
     private ExtensionContext.Store getTestDirectoryStore(ExtensionContext context) {
