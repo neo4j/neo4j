@@ -85,7 +85,7 @@ case class CreatePlannerQuery(semanticFeatures: Set[SemanticFeature])
   override def postConditions: Set[StepSequencer.Condition] = CreatePlannerQuery.postConditions
 }
 
-object CreatePlannerQuery extends StepSequencer.Step with PlanPipelineTransformerFactory {
+case object CreatePlannerQuery extends StepSequencer.Step with PlanPipelineTransformerFactory {
 
   override def preConditions: Set[StepSequencer.Condition] = Set(
     // We would get MatchErrors if the first 3 conditions would not be met.
