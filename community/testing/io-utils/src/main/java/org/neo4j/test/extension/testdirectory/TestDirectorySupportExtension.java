@@ -50,6 +50,7 @@ public class TestDirectorySupportExtension extends StatefulFieldExtension<TestDi
     public static final String TEST_DIRECTORY = "testDirectory";
     public static final String FAILURE_MARKER = "failureMarker";
     public static final Namespace TEST_DIRECTORY_NAMESPACE = Namespace.create(TEST_DIRECTORY);
+    private static final String JUNIT4_ASSUMPTION_EXCEPTION = "org.junit.AssumptionViolatedException";
 
     @Override
     public void beforeAll(ExtensionContext context) throws IOException {
@@ -143,11 +144,13 @@ public class TestDirectorySupportExtension extends StatefulFieldExtension<TestDi
         throw throwable;
     }
 
-    private boolean isTestAssumptionCheckFailure(Throwable throwable) {
+    private static boolean isTestAssumptionCheckFailure(Throwable throwable) {
+        // Junit5
         if (throwable instanceof TestAbortedException) {
             return true;
         }
-        return false;
+        // Hacky Junit4 compat
+        return throwable.getClass().getCanonicalName().equals(JUNIT4_ASSUMPTION_EXCEPTION);
     }
 
     private boolean hasFailureMarker(ExtensionContext context) {
