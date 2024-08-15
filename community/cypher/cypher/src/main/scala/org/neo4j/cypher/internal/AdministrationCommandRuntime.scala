@@ -21,6 +21,8 @@ package org.neo4j.cypher.internal
 
 import org.neo4j.configuration.Config
 import org.neo4j.configuration.GraphDatabaseSettings
+import org.neo4j.cypher.internal.PrivilegeGQLCodeEntity.entityAlreadyExistsGqlStatus
+import org.neo4j.cypher.internal.PrivilegeGQLCodeEntity.entityNotFoundGqlStatus
 import org.neo4j.cypher.internal.ast.DatabaseName
 import org.neo4j.cypher.internal.ast.ExternalAuth
 import org.neo4j.cypher.internal.ast.HomeDatabaseAction
@@ -628,7 +630,7 @@ object AdministrationCommandRuntime {
     }).getOrElse((params, Set.empty))
 
   private[internal] def makeRenameExecutionPlan(
-    entity: String,
+    entity: PrivilegeGQLCodeEntity,
     namePropKey: String,
     fromName: Either[String, Parameter],
     toName: Either[String, Parameter],
@@ -657,28 +659,30 @@ object AdministrationCommandRuntime {
         Array(fromNameFields.nameValue, toNameFields.nameValue)
       ),
       QueryHandler
-        .handleNoResult(p =>
+        .handleNoResult(p => {
           Some(ThrowException(new InvalidArgumentException(
-            s"Failed to rename the specified ${entity.toLowerCase(Locale.ROOT)} '${runtimeStringValue(fromName, p)}' to " +
-              s"'${runtimeStringValue(toName, p)}': The ${entity.toLowerCase(Locale.ROOT)} '${runtimeStringValue(fromName, p)}' does not exist."
+            entityNotFoundGqlStatus(entity, entity.toString),
+            s"Failed to rename the specified ${entity.toString.toLowerCase(Locale.ROOT)} '${runtimeStringValue(fromName, p)}' to " +
+              s"'${runtimeStringValue(toName, p)}': The ${entity.toString.toLowerCase(Locale.ROOT)} '${runtimeStringValue(fromName, p)}' does not exist."
           )))
-        )
+        })
         .handleError((error, p) =>
           (error, error.getCause) match {
             case (_, _: UniquePropertyValueValidationException) =>
               new InvalidArgumentException(
-                s"Failed to rename the specified ${entity.toLowerCase(Locale.ROOT)} '${runtimeStringValue(fromName, p)}' to " +
+                entityAlreadyExistsGqlStatus(entity, entity.toString),
+                s"Failed to rename the specified ${entity.toString.toLowerCase(Locale.ROOT)} '${runtimeStringValue(fromName, p)}' to " +
                   s"'${runtimeStringValue(toName, p)}': " + s"$entity '${runtimeStringValue(toName, p)}' already exists.",
                 error
               )
             case (e: HasStatus, _) if e.status() == Status.Cluster.NotALeader =>
               new DatabaseAdministrationOnFollowerException(
-                s"Failed to rename the specified ${entity.toLowerCase(Locale.ROOT)} '${runtimeStringValue(fromName, p)}': $followerError",
+                s"Failed to rename the specified ${entity.toString.toLowerCase(Locale.ROOT)} '${runtimeStringValue(fromName, p)}': $followerError",
                 error
               )
             case _ =>
               new CypherExecutionException(
-                s"Failed to rename the specified ${entity.toLowerCase(Locale.ROOT)} '${runtimeStringValue(fromName, p)}' to '${runtimeStringValue(toName, p)}'.",
+                s"Failed to rename the specified ${entity.toString.toLowerCase(Locale.ROOT)} '${runtimeStringValue(fromName, p)}' to '${runtimeStringValue(toName, p)}'.",
                 error
               )
           }

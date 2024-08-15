@@ -54,6 +54,7 @@ public abstract class KnownCommunitySecurityComponentVersion extends KnownSystem
 
     public static final String AUTH_CONSTRAINT = "auth-constraint";
     public static final Label AUTH_LABEL = Label.label("Auth");
+    public static final Label ROLE_LABEL = Label.label("Role");
     public static final String AUTH_PROVIDER = "provider";
     public static final String AUTH_ID = "id";
 

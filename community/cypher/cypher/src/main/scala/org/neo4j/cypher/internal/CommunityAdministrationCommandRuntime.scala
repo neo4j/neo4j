@@ -25,7 +25,6 @@ import org.neo4j.cypher.internal.AdministrationCommandRuntime.followerError
 import org.neo4j.cypher.internal.AdministrationCommandRuntime.internalKey
 import org.neo4j.cypher.internal.AdministrationCommandRuntime.makeRenameExecutionPlan
 import org.neo4j.cypher.internal.AdministrationCommandRuntime.runtimeStringValue
-import org.neo4j.cypher.internal.AdministrationCommandRuntime.userLabel
 import org.neo4j.cypher.internal.AdministrationCommandRuntime.userNamePropKey
 import org.neo4j.cypher.internal.administration.AlterUserExecutionPlanner
 import org.neo4j.cypher.internal.administration.CreateUserExecutionPlanner
@@ -286,7 +285,7 @@ case class CommunityAdministrationCommandRuntime(
         val sourcePlan: Option[ExecutionPlan] =
           Some(fullLogicalToExecutable.applyOrElse(source, throwCantCompile).apply(context))
         makeRenameExecutionPlan(
-          userLabel,
+          PrivilegeGQLCodeEntity.User(),
           userNamePropKey,
           fromUserName,
           toUserName,
