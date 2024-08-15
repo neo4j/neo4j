@@ -535,9 +535,6 @@ object CypherCurrentCompiler {
           val runtimeResult: RuntimeResult =
             executionPlan.run(queryContext, innerExecutionMode, params, prePopulateResults, input, subscriber)
 
-          val filteredRuntimeNotifications = runtimeResult.notifications().asScala
-            .map(asKernelNotification(None))
-            .filter(filterNotifications(_, notificationConfig))
           if (isOutermostQuery) {
             transactionalContext.executingQuery().onExecutionStarted(runtimeResult)
           }
@@ -551,7 +548,10 @@ object CypherCurrentCompiler {
             innerExecutionMode,
             planDescriptionBuilder,
             subscriber,
-            filteredPlannerNotifications ++ filteredRuntimeNotifications
+            () =>
+              filteredPlannerNotifications ++ runtimeResult.notifications().asScala
+                .map(asKernelNotification(None))
+                .filter(filterNotifications(_, notificationConfig))
           )
         }
 

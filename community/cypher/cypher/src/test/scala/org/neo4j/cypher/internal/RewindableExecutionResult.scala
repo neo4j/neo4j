@@ -90,10 +90,13 @@ class RewindableExecutionResultImplementation(
   val executionMode: ExecutionMode,
   protected val planDescription: InternalPlanDescription,
   protected val statistics: QueryStatistics,
-  val notifications: Iterable[NotificationImplementation],
+  notificationsSupplier: () => Iterable[NotificationImplementation],
   val gqlStatusObjectsCallable: () => Iterable[GqlStatusObject],
   val closeable: AutoCloseable
-) extends RewindableExecutionResult
+) extends RewindableExecutionResult {
+
+  override def notifications: Iterable[NotificationImplementation] = notificationsSupplier()
+}
 
 object RewindableExecutionResult {
 
@@ -110,7 +113,7 @@ object RewindableExecutionResult {
         NormalMode,
         in.getExecutionPlanDescription.asInstanceOf[InternalPlanDescription],
         QueryStatistics(in.getQueryStatistics),
-        in.getNotifications.asScala.map(not => not.asInstanceOf[NotificationImplementation]).toSeq,
+        () => in.getNotifications.asScala.map(not => not.asInstanceOf[NotificationImplementation]).toSeq,
         () => in.getGqlStatusObjects.asScala.toSeq,
         closeable = () => in.close()
       )
@@ -121,15 +124,14 @@ object RewindableExecutionResult {
     result: QueryExecution,
     transactionalContext: TransactionalContext,
     queryContext: QueryContext,
-    subscriber: RecordingQuerySubscriber,
-    internalNotifications: Seq[NotificationImplementation] = Seq.empty
+    subscriber: RecordingQuerySubscriber
   ): RewindableExecutionResult = {
     try {
-      val (executionMode, notifications, gqlStatusObjectsCallable) = result match {
+      val (executionMode, notificationsSupplier, gqlStatusObjectsCallable) = result match {
         case r: InternalExecutionResult =>
-          (r.executionMode, r.notifications, () => r.gqlStatusObjects)
+          (r.executionMode, () => r.notifications, () => r.gqlStatusObjects)
         case _ =>
-          (NormalMode, Set.empty[NotificationImplementation], () => Seq.empty[GqlStatusObject])
+          (NormalMode, () => Set.empty[NotificationImplementation], () => Seq.empty[GqlStatusObject])
       }
 
       apply(
@@ -139,7 +141,7 @@ object RewindableExecutionResult {
         result.fieldNames(),
         executionMode,
         () => result.executionPlanDescription().asInstanceOf[InternalPlanDescription],
-        notifications ++ internalNotifications.filterNot(notification => notifications.exists(notification.equals(_))),
+        notificationsSupplier,
         gqlStatusObjectsCallable
       )
     } finally {
@@ -155,7 +157,7 @@ object RewindableExecutionResult {
     columns: Array[String],
     executionMode: ExecutionMode,
     planDescription: () => InternalPlanDescription,
-    notifications: Iterable[NotificationImplementation],
+    notifications: () => Iterable[NotificationImplementation],
     gqlStatusObjectsCallable: () => Iterable[GqlStatusObject]
   ): RewindableExecutionResult = {
     subscription.request(Long.MaxValue)

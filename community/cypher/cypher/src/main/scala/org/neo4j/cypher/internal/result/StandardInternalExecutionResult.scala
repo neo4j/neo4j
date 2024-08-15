@@ -43,7 +43,7 @@ class StandardInternalExecutionResult(
   override val executionMode: ExecutionMode,
   planDescriptionBuilder: PlanDescriptionBuilder,
   subscriber: QuerySubscriber,
-  val internalNotifications: Seq[NotificationImplementation]
+  internalNotifications: () => Seq[NotificationImplementation]
 ) extends InternalExecutionResult {
 
   self =>
@@ -146,10 +146,10 @@ class StandardInternalExecutionResult(
 
   }
 
-  override def notifications: Iterable[NotificationImplementation] = internalNotifications
+  override def notifications: Iterable[NotificationImplementation] = internalNotifications()
 
   override def gqlStatusObjects: Iterable[GqlStatusObject] = {
-    val gqlStatusObjectsNotifications = internalNotifications.asInstanceOf[Iterable[GqlStatusObject]]
+    val gqlStatusObjectsNotifications = internalNotifications().asInstanceOf[Iterable[GqlStatusObject]]
 
     val allGqlStatusObjects: Seq[GqlStatusObject] = {
 

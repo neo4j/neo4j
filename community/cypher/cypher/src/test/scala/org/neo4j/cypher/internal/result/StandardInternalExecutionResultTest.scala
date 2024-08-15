@@ -161,7 +161,7 @@ class StandardInternalExecutionResultTest extends CypherFunSuite {
       NormalMode,
       mock[PlanDescriptionBuilder],
       subscriber,
-      Seq.empty
+      () => Seq.empty
     )
 
   case class TestRuntimeResult(
