@@ -32,6 +32,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.neo4j.bolt.BoltServer;
@@ -42,6 +43,7 @@ import org.neo4j.bolt.protocol.common.connection.Job;
 import org.neo4j.bolt.protocol.common.connector.Connector;
 import org.neo4j.bolt.protocol.common.connector.connection.listener.ConnectionListener;
 import org.neo4j.bolt.protocol.common.fsm.error.AuthenticationStateTransitionException;
+import org.neo4j.bolt.protocol.common.fsm.response.ResponseHandler;
 import org.neo4j.bolt.protocol.common.message.AccessMode;
 import org.neo4j.bolt.protocol.common.message.Error;
 import org.neo4j.bolt.protocol.common.message.notifications.NotificationsConfig;
@@ -52,6 +54,8 @@ import org.neo4j.bolt.protocol.error.BoltNetworkException;
 import org.neo4j.bolt.tx.Transaction;
 import org.neo4j.bolt.tx.TransactionType;
 import org.neo4j.bolt.tx.error.TransactionException;
+import org.neo4j.dbms.admissioncontrol.AdmissionControlService;
+import org.neo4j.dbms.admissioncontrol.AdmissionControlToken;
 import org.neo4j.graphdb.security.AuthorizationExpiredException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.query.NotificationConfiguration;
@@ -83,6 +87,13 @@ public class AtomicSchedulingConnection extends AbstractConnection {
     private final AtomicInteger remainingInterrupts = new AtomicInteger();
     private final AtomicReference<Transaction> transaction = new AtomicReference<>();
 
+    /**
+     * A flag to denote that the connection should create a new admission control token.
+     * This is set to false when a transaction receives it's first RUN currently, and is reset when the transaction
+     * finishes. This is likely to change, but as a solution it works.
+     */
+    private final AtomicBoolean connectionRequiresAdmissionControl = new AtomicBoolean(true);
+
     public AtomicSchedulingConnection(
             Connector connector,
             String id,
@@ -91,8 +102,9 @@ public class AtomicSchedulingConnection extends AbstractConnection {
             MemoryTracker memoryTracker,
             LogService logService,
             ExecutorService executor,
-            Clock clock) {
-        super(connector, id, channel, connectedAt, memoryTracker, logService);
+            Clock clock,
+            AdmissionControlService admissionControlService) {
+        super(connector, id, channel, connectedAt, memoryTracker, logService, admissionControlService);
         this.executor = executor;
         this.clock = clock;
     }
@@ -110,28 +122,13 @@ public class AtomicSchedulingConnection extends AbstractConnection {
     @Override
     public void submit(RequestMessage message) {
         this.notifyListeners(listener -> listener.onRequestReceived(message));
-
-        var queuedAt = this.clock.millis();
-        this.submit((fsm, responseHandler) -> {
-            var processingStartedAt = this.clock.millis();
-            var queuedForMillis = processingStartedAt - queuedAt;
-            this.notifyListeners(listener -> listener.onRequestBeginProcessing(message, queuedForMillis));
-
-            try {
-                log.debug("[%s] Beginning execution of %s (queued for %d ms)", this.id, message, queuedForMillis);
-                fsm.process(message, responseHandler);
-            } catch (StateMachineException ex) {
-                this.notifyListeners(listener -> listener.onRequestFailedProcessing(message, ex));
-
-                // re-throw the exception to let the scheduler handle the connection closure (if applicable)
-                throw ex;
-            } finally {
-                var processedForMillis = this.clock.millis() - processingStartedAt;
-                this.notifyListeners(listener -> listener.onRequestCompletedProcessing(message, processedForMillis));
-
-                log.debug("[%s] Completed execution of %s (took %d ms)", this.id, message, processedForMillis);
-            }
-        });
+        if (this.admissionControl.enabled()
+                && message.requiresAdmissionControl()
+                && this.connectionRequiresAdmissionControl.compareAndSet(true, false)) {
+            this.submit(new ProcessJob(this, this.clock.millis(), message, this.admissionControl.requestToken()));
+        } else {
+            this.submit(new ProcessJob(this, this.clock.millis(), message, null));
+        }
     }
 
     @Override
@@ -395,7 +392,6 @@ public class AtomicSchedulingConnection extends AbstractConnection {
         var transaction = this.connector()
                 .transactionManager()
                 .create(type, this, databaseName, mode, bookmarks, timeout, metadata, notificationsConfig);
-
         // if another transaction has been created in the meantime or was already present when the
         // method was originally invoked, we'll destroy the optimistically created transaction and
         // throw immediately to indicate misuse
@@ -430,6 +426,8 @@ public class AtomicSchedulingConnection extends AbstractConnection {
 
     @Override
     public void closeTransaction() throws TransactionException {
+        this.connectionRequiresAdmissionControl.set(true);
+
         var tx = this.transaction.getAndSet(null);
         if (tx == null) {
             return;
@@ -623,15 +621,44 @@ public class AtomicSchedulingConnection extends AbstractConnection {
         CLOSED
     }
 
+    private record ProcessJob(
+            AtomicSchedulingConnection conn, long queuedAt, RequestMessage message, AdmissionControlToken token)
+            implements Job {
+        @Override
+        public void perform(StateMachine machine, ResponseHandler responseHandler) throws StateMachineException {
+            var processingStartedAt = this.conn.clock.millis();
+            var queuedForMillis = processingStartedAt - queuedAt;
+            conn.notifyListeners(listener -> listener.onRequestBeginProcessing(message, queuedForMillis));
+            try {
+                conn.log.debug("[%s] Beginning execution of %s (queued for %d ms)", conn.id, message, queuedForMillis);
+                conn.fsm.process(message, responseHandler, token);
+            } catch (StateMachineException ex) {
+                conn.notifyListeners(listener -> listener.onRequestFailedProcessing(message, ex));
+                // re-throw the exception to let the scheduler handle the connection closure (if applicable)
+                throw ex;
+            } finally {
+                var processedForMillis = this.conn.clock.millis() - processingStartedAt;
+                conn.notifyListeners(listener -> listener.onRequestCompletedProcessing(message, processedForMillis));
+                conn.log.debug("[%s] Completed execution of %s (took %d ms)", conn.id, message, processedForMillis);
+            }
+        }
+    }
+
     public static class Factory implements Connection.Factory {
         private final ExecutorService executor;
         private final Clock clock;
         private final LogService logService;
+        private final AdmissionControlService admissionControl;
 
-        public Factory(ExecutorService executor, Clock clock, LogService logService) {
+        public Factory(
+                ExecutorService executor,
+                Clock clock,
+                LogService logService,
+                AdmissionControlService admissionControl) {
             this.executor = executor;
             this.clock = clock;
             this.logService = logService;
+            this.admissionControl = admissionControl;
         }
 
         @Override
@@ -648,7 +675,8 @@ public class AtomicSchedulingConnection extends AbstractConnection {
                     memoryTracker,
                     this.logService,
                     this.executor,
-                    this.clock);
+                    this.clock,
+                    this.admissionControl);
         }
     }
 }

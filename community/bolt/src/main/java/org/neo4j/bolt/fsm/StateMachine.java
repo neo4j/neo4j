@@ -27,6 +27,7 @@ import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.protocol.common.connector.connection.ConnectionHandle;
 import org.neo4j.bolt.protocol.common.fsm.response.ResponseHandler;
 import org.neo4j.bolt.protocol.common.message.request.RequestMessage;
+import org.neo4j.dbms.admissioncontrol.AdmissionControlToken;
 
 /**
  * Represents a {@link Connection connection}-bound state machine instance which follows the state
@@ -109,5 +110,21 @@ public interface StateMachine {
      *                               recovering from this condition.
      * @see State#process(Context, RequestMessage, ResponseHandler)
      */
-    void process(RequestMessage message, ResponseHandler handler) throws StateMachineException;
+    default void process(RequestMessage message, ResponseHandler handler) throws StateMachineException {
+        process(message, handler, null);
+    }
+
+    /**
+     * Processes a request within the scope of a state machine instance and advances its state
+     * accordingly.
+     *
+     * @param message a request message.
+     * @param handler a response handler.
+     * @param admissionControlToken a token to await handling message to ensure server health.
+     * @throws StateMachineException when the state machine fails to transition and is incapable of
+     *                               recovering from this condition.
+     * @see State#process(Context, RequestMessage, ResponseHandler)
+     */
+    void process(RequestMessage message, ResponseHandler handler, AdmissionControlToken admissionControlToken)
+            throws StateMachineException;
 }

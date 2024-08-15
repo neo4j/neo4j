@@ -45,7 +45,7 @@ public class NegotiatedStateMachineInitializer implements StateMachineInitialize
 
         var recorder = new ResponseRecorder();
 
-        fsm.process(messages.hello(), recorder);
+        fsm.process(messages.hello(), recorder, null);
         ResponseRecorderAssertions.assertThat(recorder).hasSuccessResponse();
     }
 }

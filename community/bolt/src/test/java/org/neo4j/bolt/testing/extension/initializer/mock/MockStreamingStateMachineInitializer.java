@@ -72,8 +72,8 @@ public class MockStreamingStateMachineInitializer implements StateMachineInitial
                                 .build())
                 .apply(transactionManager);
 
-        fsm.process(provider.messages().begin(), recorder);
-        fsm.process(provider.messages().run("UNWIND RANGE(0, " + n + ") AS n RETURN n"), recorder);
+        fsm.process(provider.messages().begin(), recorder, null);
+        fsm.process(provider.messages().run("UNWIND RANGE(0, " + n + ") AS n RETURN n"), recorder, null);
 
         ResponseRecorderAssertions.assertThat(recorder).hasSuccessResponse(2);
 

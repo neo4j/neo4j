@@ -96,7 +96,12 @@ public interface Status {
         NoThreadsAvailable(
                 TransientError, // TODO: see above
                 "There are no available threads to serve this request at the moment. You can retry at a later time "
-                        + "or consider increasing max thread pool size for bolt connector(s).");
+                        + "or consider increasing max thread pool size for bolt connector(s)."),
+        ResourceExhaustion(
+                TransientError,
+                "The server has rejected this request as a resource is exhausted at the moment. "
+                        + "You can retry at a later time. For further details see server logs.");
+
         private final Code code;
 
         @Override

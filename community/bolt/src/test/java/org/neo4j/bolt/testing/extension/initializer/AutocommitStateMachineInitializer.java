@@ -49,7 +49,7 @@ public class AutocommitStateMachineInitializer implements StateMachineInitialize
                 .filter(q -> !q.isBlank())
                 .orElse("CREATE (n {k:'k'}) RETURN n.k");
 
-        fsm.process(provider.messages().run(query), recorder);
+        fsm.process(provider.messages().run(query), recorder, null);
 
         ResponseRecorderAssertions.assertThat(recorder).hasSuccessResponse();
         StateMachineAssertions.assertThat(fsm).isInState(States.AUTO_COMMIT);

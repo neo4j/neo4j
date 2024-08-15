@@ -82,7 +82,7 @@ public class StateTransitionStateMachineTest {
     @StateMachineTest(since = @Version(major = 5, minor = 1))
     void shouldTransitionFromNegotiationToAuthenticationOnHello(
             StateMachine fsm, BoltMessages messages, ResponseRecorder recorder) throws StateMachineException {
-        fsm.process(messages.hello(), recorder);
+        fsm.process(messages.hello(), recorder, null);
 
         ResponseRecorderAssertions.assertThat(recorder).hasSuccessResponse();
 
@@ -101,7 +101,7 @@ public class StateTransitionStateMachineTest {
     void shouldTransitionFromAuthenticationToReadyOnLogon(
             @Negotiated StateMachine fsm, BoltMessages messages, ResponseRecorder recorder)
             throws StateMachineException {
-        fsm.process(messages.logon(), recorder);
+        fsm.process(messages.logon(), recorder, null);
 
         ResponseRecorderAssertions.assertThat(recorder).hasSuccessResponse();
 
@@ -121,7 +121,7 @@ public class StateTransitionStateMachineTest {
     void shouldTransitionFromReadyToAuthenticationOnLogoff(
             @Authenticated StateMachine fsm, BoltMessages messages, ResponseRecorder recorder)
             throws StateMachineException {
-        fsm.process(messages.logoff(), recorder);
+        fsm.process(messages.logoff(), recorder, null);
 
         ResponseRecorderAssertions.assertThat(recorder).hasSuccessResponse();
 
@@ -139,7 +139,7 @@ public class StateTransitionStateMachineTest {
     @StateMachineTest(until = @Version(major = 5, minor = 1))
     void shouldTransitionFromNegotiationToReadyOnHello(
             StateMachine fsm, BoltMessages messages, ResponseRecorder recorder) throws StateMachineException {
-        fsm.process(messages.hello(), recorder);
+        fsm.process(messages.hello(), recorder, null);
 
         ResponseRecorderAssertions.assertThat(recorder).hasSuccessResponse();
 
@@ -171,7 +171,7 @@ public class StateTransitionStateMachineTest {
                                 .build())
                 .apply(transactionManager);
 
-        fsm.process(messages.route(), recorder);
+        fsm.process(messages.route(), recorder, null);
 
         ResponseRecorderAssertions.assertThat(recorder).hasSuccessResponse();
 
@@ -186,7 +186,7 @@ public class StateTransitionStateMachineTest {
     void shouldTransitionFromReadyToAutocommitOnRun(
             @Authenticated StateMachine fsm, BoltMessages messages, ResponseRecorder recorder)
             throws StateMachineException {
-        fsm.process(messages.run("RETURN 1"), recorder);
+        fsm.process(messages.run("RETURN 1"), recorder, null);
 
         ResponseRecorderAssertions.assertThat(recorder).hasSuccessResponse();
 
@@ -202,7 +202,7 @@ public class StateTransitionStateMachineTest {
     void shouldRemainInAutocommitOnPullWhenResultsRemain(
             @MockAutocommit(results = 10) StateMachine fsm, BoltMessages messages, ResponseRecorder recorder)
             throws StateMachineException {
-        fsm.process(messages.pull(5), recorder);
+        fsm.process(messages.pull(5), recorder, null);
 
         ResponseRecorderAssertions.assertThat(recorder).hasRecords(5).hasSuccessResponse();
 
@@ -218,7 +218,7 @@ public class StateTransitionStateMachineTest {
     void shouldTransitionFromAutocommitToReadyOnPullWhenNoResultsRemain(
             @MockAutocommit StateMachine fsm, BoltMessages messages, ResponseRecorder recorder)
             throws StateMachineException {
-        fsm.process(messages.pull(), recorder);
+        fsm.process(messages.pull(), recorder, null);
 
         ResponseRecorderAssertions.assertThat(recorder).hasRecord().hasSuccessResponse();
 
@@ -234,7 +234,7 @@ public class StateTransitionStateMachineTest {
     void shouldRemainInAutocommitOnDiscardWhenResultsRemain(
             @MockAutocommit(results = 10) StateMachine fsm, BoltMessages messages, ResponseRecorder recorder)
             throws StateMachineException {
-        fsm.process(messages.discard(5), recorder);
+        fsm.process(messages.discard(5), recorder, null);
 
         ResponseRecorderAssertions.assertThat(recorder).hasSuccessResponse();
 
@@ -250,7 +250,7 @@ public class StateTransitionStateMachineTest {
     void shouldTransitionFromAutocommitToReadyOnDiscardWhenNoResultsRemain(
             @MockAutocommit StateMachine fsm, BoltMessages messages, ResponseRecorder recorder)
             throws StateMachineException {
-        fsm.process(messages.discard(), recorder);
+        fsm.process(messages.discard(), recorder, null);
 
         ResponseRecorderAssertions.assertThat(recorder).hasSuccessResponse();
 
@@ -265,7 +265,7 @@ public class StateTransitionStateMachineTest {
     void shouldTransitionFromReadyToInTransactionOnBegin(
             @Authenticated StateMachine fsm, BoltMessages messages, ResponseRecorder recorder)
             throws StateMachineException {
-        fsm.process(messages.begin(), recorder);
+        fsm.process(messages.begin(), recorder, null);
 
         ResponseRecorderAssertions.assertThat(recorder).hasSuccessResponse();
 
@@ -280,7 +280,7 @@ public class StateTransitionStateMachineTest {
     void shouldRemainInInTransactionOnRun(
             @InTransaction StateMachine fsm, BoltMessages messages, ResponseRecorder recorder)
             throws StateMachineException {
-        fsm.process(messages.run("RETURN 1"), recorder);
+        fsm.process(messages.run("RETURN 1"), recorder, null);
 
         ResponseRecorderAssertions.assertThat(recorder).hasSuccessResponse();
 
@@ -296,7 +296,7 @@ public class StateTransitionStateMachineTest {
     void shouldRemainInInTransactionOnPullWhenResultsRemain(
             @MockStreaming(results = 10) StateMachine fsm, BoltMessages messages, ResponseRecorder recorder)
             throws StateMachineException {
-        fsm.process(messages.pull(5), recorder);
+        fsm.process(messages.pull(5), recorder, null);
 
         ResponseRecorderAssertions.assertThat(recorder).hasRecords(5).hasSuccessResponse();
 
@@ -312,7 +312,7 @@ public class StateTransitionStateMachineTest {
     void shouldRemainInInTransactionOnPullWhenNoResultsRemain(
             @MockStreaming StateMachine fsm, BoltMessages messages, ResponseRecorder recorder)
             throws StateMachineException {
-        fsm.process(messages.pull(), recorder);
+        fsm.process(messages.pull(), recorder, null);
 
         ResponseRecorderAssertions.assertThat(recorder).hasRecords(1).hasSuccessResponse();
 
@@ -328,7 +328,7 @@ public class StateTransitionStateMachineTest {
     void shouldTransitionFromInTransactionToReadyOnCommitWhenNoResultsRemain(
             @InTransaction StateMachine fsm, BoltMessages messages, ResponseRecorder recorder)
             throws StateMachineException {
-        fsm.process(messages.commit(), recorder);
+        fsm.process(messages.commit(), recorder, null);
 
         ResponseRecorderAssertions.assertThat(recorder).hasSuccessResponse();
 
@@ -344,7 +344,7 @@ public class StateTransitionStateMachineTest {
     void shouldTransitionFromInTransactionToReadyOnCommitWhenResultsRemain(
             @MockStreaming StateMachine fsm, BoltMessages messages, ResponseRecorder recorder)
             throws StateMachineException {
-        fsm.process(messages.commit(), recorder);
+        fsm.process(messages.commit(), recorder, null);
 
         ResponseRecorderAssertions.assertThat(recorder).hasSuccessResponse();
 
@@ -360,7 +360,7 @@ public class StateTransitionStateMachineTest {
     void shouldTransitionFromInTransactionToReadyOnRollbackWhenNoResultsRemain(
             @InTransaction StateMachine fsm, BoltMessages messages, ResponseRecorder recorder)
             throws StateMachineException {
-        fsm.process(messages.rollback(), recorder);
+        fsm.process(messages.rollback(), recorder, null);
 
         ResponseRecorderAssertions.assertThat(recorder).hasSuccessResponse();
 
@@ -376,7 +376,7 @@ public class StateTransitionStateMachineTest {
     void shouldTransitionFromInTransactionToReadyOnRollbackWhenResultsRemain(
             @MockStreaming StateMachine fsm, BoltMessages messages, ResponseRecorder recorder)
             throws StateMachineException {
-        fsm.process(messages.rollback(), recorder);
+        fsm.process(messages.rollback(), recorder, null);
 
         ResponseRecorderAssertions.assertThat(recorder).hasSuccessResponse();
 

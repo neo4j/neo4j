@@ -73,7 +73,7 @@ public class MockAutocommitStateMachineInitializer implements StateMachineInitia
                                 .build())
                 .apply(transactionManager);
 
-        fsm.process(provider.messages().run("UNWIND RANGE(0, " + n + ") AS n RETURN n"), recorder);
+        fsm.process(provider.messages().run("UNWIND RANGE(0, " + n + ") AS n RETURN n"), recorder, null);
 
         ResponseRecorderAssertions.assertThat(recorder).hasSuccessResponse();
         StateMachineAssertions.assertThat(fsm).isInState(States.AUTO_COMMIT);

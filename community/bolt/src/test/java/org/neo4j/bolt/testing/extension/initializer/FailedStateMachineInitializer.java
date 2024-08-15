@@ -39,7 +39,8 @@ public class FailedStateMachineInitializer implements StateMachineInitializer {
             StateMachine fsm)
             throws StateMachineException {
         try {
-            fsm.process(provider.messages().run("✨✨✨ MAGICAL CRASH STRING ✨✨✨"), NoopResponseHandler.getInstance());
+            fsm.process(
+                    provider.messages().run("✨✨✨ MAGICAL CRASH STRING ✨✨✨"), NoopResponseHandler.getInstance(), null);
         } catch (StateMachineException ignore) {
         }
 

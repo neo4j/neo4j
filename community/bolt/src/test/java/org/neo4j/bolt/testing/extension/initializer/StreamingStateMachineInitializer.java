@@ -49,7 +49,7 @@ public class StreamingStateMachineInitializer implements StateMachineInitializer
                 .filter(it -> !it.isBlank())
                 .orElse("CREATE (n {k:'k'}) RETURN n.k");
 
-        fsm.process(provider.messages().run(annotation), recorder);
+        fsm.process(provider.messages().run(annotation), recorder, null);
 
         ResponseRecorderAssertions.assertThat(recorder).hasSuccessResponse();
 

@@ -103,6 +103,7 @@ public enum Group {
     BOLT_NETWORK_IO("BoltNetworkIO", ExecutorServiceFactory.unschedulable()),
     /** Transaction processing threads for Bolt. */
     BOLT_WORKER("BoltWorker", ExecutorServiceFactory.unschedulable()),
+    BOLT_ADMISSION_CONTROL("AdmissionControl", ExecutorServiceFactory.singleThread()),
 
     // CAUSAL CLUSTER, TOPOLOGY & BACKUP.
     RAFT_CLIENT("RaftClient"),

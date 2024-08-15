@@ -22,6 +22,7 @@ package org.neo4j.bolt.fsm;
 import static java.lang.String.format;
 import static org.neo4j.kernel.api.exceptions.Status.Classification.DatabaseError;
 
+import org.neo4j.bolt.fsm.error.AdmissionControlException;
 import org.neo4j.bolt.fsm.error.ConnectionTerminating;
 import org.neo4j.bolt.fsm.error.NoSuchStateException;
 import org.neo4j.bolt.fsm.error.StateMachineException;
@@ -32,6 +33,8 @@ import org.neo4j.bolt.protocol.common.connector.connection.ConnectionHandle;
 import org.neo4j.bolt.protocol.common.fsm.response.ResponseHandler;
 import org.neo4j.bolt.protocol.common.message.Error;
 import org.neo4j.bolt.protocol.common.message.request.RequestMessage;
+import org.neo4j.dbms.admissioncontrol.AdmissionControlService;
+import org.neo4j.dbms.admissioncontrol.AdmissionControlToken;
 import org.neo4j.kernel.api.exceptions.Status.Request;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.internal.LogService;
@@ -45,6 +48,7 @@ final class StateMachineImpl implements StateMachine, Context {
 
     private State defaultState;
     private State currentState;
+    private final AdmissionControlService admissionControlService;
 
     private boolean failed;
     private volatile boolean interrupted;
@@ -53,7 +57,8 @@ final class StateMachineImpl implements StateMachine, Context {
             ConnectionHandle connection,
             StateMachineConfiguration configuration,
             LogService logging,
-            State initialState) {
+            State initialState,
+            AdmissionControlService admissionControlService) {
         this.connection = connection;
         this.configuration = configuration;
 
@@ -61,6 +66,7 @@ final class StateMachineImpl implements StateMachine, Context {
         this.internalLog = logging.getInternalLog(StateMachineImpl.class);
 
         this.currentState = this.defaultState = initialState;
+        this.admissionControlService = admissionControlService;
     }
 
     @Override
@@ -131,7 +137,8 @@ final class StateMachineImpl implements StateMachine, Context {
 
     @Override
     @SuppressWarnings("removal") // Removal of isIgnoredWhenFailed - see RequestMessage
-    public void process(RequestMessage message, ResponseHandler handler) throws StateMachineException {
+    public void process(RequestMessage message, ResponseHandler handler, AdmissionControlToken admissionControlToken)
+            throws StateMachineException {
         if (this.failed || this.interrupted) {
             if (!message.isIgnoredWhenFailed()) {
                 handler.onFailure(Error.from(
@@ -148,9 +155,9 @@ final class StateMachineImpl implements StateMachine, Context {
         }
 
         try {
+            awaitAdmissionControlToken(admissionControlToken);
             var nextStateReference = this.currentState.process(this, message, handler);
             this.currentState = this.lookup(nextStateReference);
-
             handler.onSuccess();
         } catch (Throwable ex) {
             this.failed = true;
@@ -169,8 +176,8 @@ final class StateMachineImpl implements StateMachine, Context {
                             "Client triggered an unexpected error [%s]: %s, reference %s.",
                             error.status().code().serialize(), error.message(), error.reference());
                 }
-
                 this.userLog.error(errorMessage);
+
                 if (error.cause() != null) {
                     this.internalLog.error(errorMessage, error.cause());
                 }
@@ -185,6 +192,19 @@ final class StateMachineImpl implements StateMachine, Context {
             if (error.isFatal()
                     || (ex instanceof ConnectionTerminating terminating && terminating.shouldTerminateConnection())) {
                 throw ex;
+            }
+        }
+    }
+
+    private void awaitAdmissionControlToken(AdmissionControlToken admissionControlToken)
+            throws AdmissionControlException {
+        if (admissionControlToken != null) {
+            var response = admissionControlService.awaitRelease(admissionControlToken);
+            // Convert the admission control response in to a state machine friendly error.
+            switch (response) {
+                case RELEASED -> {}
+                case UNABLE_TO_ALLOCATE_NEW_TOKEN,
+                        ADMISSION_CONTROL_PROCESS_STOPPED -> throw new AdmissionControlException();
             }
         }
     }

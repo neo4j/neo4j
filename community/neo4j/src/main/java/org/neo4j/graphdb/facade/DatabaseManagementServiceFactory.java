@@ -50,6 +50,8 @@ import org.neo4j.configuration.connectors.BoltConnectorInternalSettings;
 import org.neo4j.configuration.connectors.HttpConnector;
 import org.neo4j.configuration.connectors.HttpsConnector;
 import org.neo4j.dbms.DatabaseStateService;
+import org.neo4j.dbms.admissioncontrol.AdmissionControlService;
+import org.neo4j.dbms.admissioncontrol.NoopAdmissionControlService;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseContextProvider;
@@ -198,7 +200,9 @@ public class DatabaseManagementServiceFactory {
                 new TransactionManagerImpl(boltGraphDatabaseManagementServiceSPI, globalModule.getGlobalClock());
         globalDependencies.satisfyDependency(transactionManager);
 
-        var boltServer = createBoltServer(globalModule, edition, transactionManager, routingService, config);
+        var acs =
+                tryResolveOrCreate(AdmissionControlService.class, globalDependencies, NoopAdmissionControlService::new);
+        var boltServer = createBoltServer(globalModule, edition, transactionManager, routingService, config, acs);
 
         globalLife.add(boltServer);
         globalDependencies.satisfyDependency(boltServer);
@@ -426,7 +430,8 @@ public class DatabaseManagementServiceFactory {
             AbstractEditionModule edition,
             TransactionManager transactionManager,
             RoutingService routingService,
-            Config config) {
+            Config config,
+            AdmissionControlService admissionControlService) {
 
         // Must be called before loading any Netty classes in order to override the factory
         InternalLoggerFactory.setDefaultFactory(
@@ -454,7 +459,8 @@ public class DatabaseManagementServiceFactory {
                 edition.getBoltLoopbackAuthManager(),
                 globalModule.getMemoryPools(),
                 routingService,
-                edition.getDefaultDatabaseResolver());
+                edition.getDefaultDatabaseResolver(),
+                admissionControlService);
     }
 
     private static void dumpDbmsInfo(InternalLog log, GraphDatabaseAPI system) {

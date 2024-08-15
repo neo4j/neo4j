@@ -42,10 +42,10 @@ public class AuthenticatedStateMachineInitializer implements StateMachineInitial
         var recorder = new ResponseRecorder();
 
         if (!messages.supportsLogonMessage()) {
-            fsm.process(provider.messages().hello(), recorder);
+            fsm.process(provider.messages().hello(), recorder, null);
             ResponseRecorderAssertions.assertThat(recorder).hasSuccessResponse();
         } else {
-            fsm.process(provider.messages().logon(), recorder);
+            fsm.process(provider.messages().logon(), recorder, null);
             ResponseRecorderAssertions.assertThat(recorder).hasSuccessResponse();
         }
     }

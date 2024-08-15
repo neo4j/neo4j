@@ -41,7 +41,7 @@ public class InTransactionStateMachineInitializer implements StateMachineInitial
             throws StateMachineException {
         var recorder = new ResponseRecorder();
 
-        fsm.process(provider.messages().begin(), recorder);
+        fsm.process(provider.messages().begin(), recorder, null);
 
         ResponseRecorderAssertions.assertThat(recorder).hasSuccessResponse();
 

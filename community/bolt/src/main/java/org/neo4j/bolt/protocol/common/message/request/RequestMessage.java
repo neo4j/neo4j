@@ -35,4 +35,12 @@ public interface RequestMessage {
     default boolean isIgnoredWhenFailed() {
         return true;
     }
+
+    /**
+     * Indicates whether this message requires entering into the admission control process.
+     * @return true if the message should join admission control queue, false otherwise.
+     */
+    default boolean requiresAdmissionControl() {
+        return false;
+    }
 }
