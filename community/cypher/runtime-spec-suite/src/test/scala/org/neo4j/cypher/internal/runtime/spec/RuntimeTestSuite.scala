@@ -208,7 +208,7 @@ abstract class BaseRuntimeTestSuite[CONTEXT <: RuntimeContext](
     }
 
     val predicate: Predicate[String] = (status: String) => status == "All started"
-    await().atMost(30, SECONDS).pollDelay(500, MILLISECONDS).pollInSameThread.until(callable, predicate)
+    await().atMost(60, SECONDS).pollDelay(500, MILLISECONDS).pollInSameThread.until(callable, predicate)
 
     // Let's create the default indexes that could not be created when the database was created
     val dbs =
