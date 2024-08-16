@@ -21,6 +21,7 @@ package org.neo4j.kernel.api.impl.chunk;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.common.Subject.AUTH_DISABLED;
+import static org.neo4j.storageengine.AppendIndexProvider.UNKNOWN_APPEND_INDEX;
 import static org.neo4j.test.LatestVersions.LATEST_KERNEL_VERSION;
 
 import java.util.List;
@@ -32,7 +33,6 @@ import org.neo4j.kernel.impl.api.chunk.ChunkMetadata;
 import org.neo4j.kernel.impl.api.chunk.ChunkedCommandBatch;
 import org.neo4j.kernel.impl.api.chunk.ChunkedTransaction;
 import org.neo4j.kernel.impl.api.txid.TransactionIdGenerator;
-import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.storageengine.api.Commitment;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
@@ -50,7 +50,7 @@ public class ChunkedTransactionTest {
                     true,
                     false,
                     false,
-                    LogPosition.UNSPECIFIED,
+                    UNKNOWN_APPEND_INDEX,
                     1,
                     new MutableLong(1),
                     new MutableLong(2),
@@ -81,7 +81,7 @@ public class ChunkedTransactionTest {
                     false,
                     true,
                     false,
-                    LogPosition.UNSPECIFIED,
+                    UNKNOWN_APPEND_INDEX,
                     1,
                     new MutableLong(1),
                     new MutableLong(2),
