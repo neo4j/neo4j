@@ -26,7 +26,6 @@ import java.util.zip.CRC32C;
 import org.neo4j.io.fs.ReadableChannel;
 import org.neo4j.io.fs.WritableChannel;
 import org.neo4j.kernel.KernelVersion;
-import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntrySerializer;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes;
@@ -93,20 +92,18 @@ public class ChunkStartLogEntrySerializerV5_7 extends LogEntrySerializer<LogEntr
             throws IOException {
         long timeWritten = channel.getLong();
         long chunkId = channel.getLong();
-        long logVersion = channel.getLong();
-        long offset = channel.getLong();
-        return new LogEntryChunkStart(version, timeWritten, chunkId, new LogPosition(logVersion, offset));
+        long previousBatchAppendIndex = channel.getLong();
+        return new LogEntryChunkStart(version, timeWritten, chunkId, previousBatchAppendIndex);
     }
 
     @Override
     public int write(WritableChannel channel, LogEntryChunkStart logEntry) throws IOException {
         channel.beginChecksumForWriting();
         writeLogEntryHeader(logEntry.kernelVersion(), CHUNK_START, channel);
-        LogPosition previousChunkStart = logEntry.getPreviousBatchLogPosition();
+        long previousBatchAppendIndex = logEntry.getPreviousBatchAppendIndex();
         channel.putLong(logEntry.getTimeWritten())
                 .putLong(logEntry.getChunkId())
-                .putLong(previousChunkStart.getLogVersion())
-                .putLong(previousChunkStart.getByteOffset());
+                .putLong(previousBatchAppendIndex);
         return NO_RETURN_VALUE;
     }
 }

@@ -23,21 +23,20 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.CHUN
 import static org.neo4j.storageengine.AppendIndexProvider.BASE_APPEND_INDEX;
 
 import org.neo4j.kernel.KernelVersion;
-import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.entry.AbstractVersionAwareLogEntry;
 import org.neo4j.string.Mask;
 
 public class LogEntryChunkStart extends AbstractVersionAwareLogEntry {
     protected final long timeWritten;
     protected final long chunkId;
-    protected final LogPosition previousBatchLogPosition;
+    protected final long previousBatchAppendIndex;
 
     public LogEntryChunkStart(
-            KernelVersion kernelVersion, long timeWritten, long chunkId, LogPosition previousBatchLogPosition) {
+            KernelVersion kernelVersion, long timeWritten, long chunkId, long previousBatchAppendIndex) {
         super(kernelVersion, CHUNK_START);
         this.timeWritten = timeWritten;
         this.chunkId = chunkId;
-        this.previousBatchLogPosition = previousBatchLogPosition;
+        this.previousBatchAppendIndex = previousBatchAppendIndex;
     }
 
     public long getTimeWritten() {
@@ -52,15 +51,15 @@ public class LogEntryChunkStart extends AbstractVersionAwareLogEntry {
         return BASE_APPEND_INDEX;
     }
 
-    public LogPosition getPreviousBatchLogPosition() {
-        return previousBatchLogPosition;
+    public long getPreviousBatchAppendIndex() {
+        return previousBatchAppendIndex;
     }
 
     @Override
     public String toString(Mask mask) {
         return "LogEntryChunkStart{" + "timeWritten="
                 + timeWritten + ", chunkId="
-                + chunkId + ", previousBatchLogPosition="
-                + previousBatchLogPosition + '}';
+                + chunkId + ", previousBatchAppendIndex="
+                + previousBatchAppendIndex + '}';
     }
 }

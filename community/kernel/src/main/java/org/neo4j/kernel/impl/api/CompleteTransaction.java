@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api;
 
 import static org.neo4j.internal.helpers.Format.date;
 import static org.neo4j.kernel.impl.api.txid.TransactionIdGenerator.EXTERNAL_ID;
+import static org.neo4j.storageengine.AppendIndexProvider.UNKNOWN_APPEND_INDEX;
 
 import java.io.IOException;
 import java.util.function.LongConsumer;
@@ -124,8 +125,8 @@ public class CompleteTransaction implements StorageEngineTransaction {
     }
 
     @Override
-    public LogPosition previousBatchLogPosition() {
-        return LogPosition.UNSPECIFIED;
+    public long previousBatchAppendIndex() {
+        return UNKNOWN_APPEND_INDEX;
     }
 
     @Override

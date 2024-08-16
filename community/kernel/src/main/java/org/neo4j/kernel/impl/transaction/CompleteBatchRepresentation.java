@@ -21,13 +21,13 @@ package org.neo4j.kernel.impl.transaction;
 
 import static org.neo4j.common.Subject.ANONYMOUS;
 import static org.neo4j.kernel.impl.transaction.log.LogIndexEncoding.decodeLogIndex;
+import static org.neo4j.storageengine.AppendIndexProvider.UNKNOWN_APPEND_INDEX;
 
 import java.io.IOException;
 import java.util.List;
 import org.neo4j.io.fs.WritableChannel;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.log.CompleteCommandBatch;
-import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
@@ -104,8 +104,8 @@ public record CompleteBatchRepresentation(
     }
 
     @Override
-    public LogPosition previousBatchLogPosition() {
-        return LogPosition.UNSPECIFIED;
+    public long previousBatchAppendIndex() {
+        return UNKNOWN_APPEND_INDEX;
     }
 
     @Override

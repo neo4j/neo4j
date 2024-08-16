@@ -88,7 +88,7 @@ public class TransactionLogWriter {
             long chunkId,
             long appendIndex,
             int previousChecksum,
-            LogPosition previousBatchPosition,
+            long previousBatchAppendIndex,
             LogAppendEvent logAppendEvent)
             throws IOException {
         KernelVersion kernelVersion = batch.kernelVersion();
@@ -120,7 +120,7 @@ public class TransactionLogWriter {
                     encodeLogIndex(batch.consensusIndex()));
         } else {
             writer.writeChunkStartEntry(
-                    kernelVersion, batch.getTimeCommitted(), chunkId, appendIndex, previousBatchPosition);
+                    kernelVersion, batch.getTimeCommitted(), chunkId, appendIndex, previousBatchAppendIndex);
         }
 
         // Write all the commands to the log channel

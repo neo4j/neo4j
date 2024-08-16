@@ -32,6 +32,7 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.impl.transaction.log.LogIndexEncoding.encodeLogIndex;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryFactory.newCommitEntry;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryFactory.newStartEntry;
+import static org.neo4j.storageengine.AppendIndexProvider.UNKNOWN_APPEND_INDEX;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 import static org.neo4j.test.LatestVersions.LATEST_KERNEL_VERSION;
 
@@ -60,7 +61,7 @@ class CommittedCommandBatchRepresentationCursorTest {
     private static final LogEntryCommit COMMIT_ENTRY = newCommitEntry(LATEST_KERNEL_VERSION, 42, 0, BASE_TX_CHECKSUM);
     private static final LogEntryCommand COMMAND_ENTRY = new LogEntryCommand(new TestCommand());
     private static final LogEntryChunkStart CHUNK_START =
-            new LogEntryChunkStart(LATEST_KERNEL_VERSION, 12, 2, LogPosition.UNSPECIFIED);
+            new LogEntryChunkStart(LATEST_KERNEL_VERSION, 12, 2, UNKNOWN_APPEND_INDEX);
     private static final LogEntryChunkEnd CHUNK_END =
             new LogEntryChunkEnd(LATEST_KERNEL_VERSION, 12, 2, BASE_TX_CHECKSUM);
     private CommittedCommandBatchCursor cursor;

@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
+import static org.neo4j.storageengine.AppendIndexProvider.UNKNOWN_APPEND_INDEX;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_CHUNK_NUMBER;
 import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_INDEX;
 
@@ -30,7 +31,6 @@ import org.neo4j.io.fs.WritableChannel;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.api.chunk.ChunkMetadata;
 import org.neo4j.kernel.impl.api.chunk.ChunkedCommandBatch;
-import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
@@ -53,7 +53,7 @@ public record ChunkedBatchRepresentation(
                 start instanceof LogEntryStart,
                 end instanceof LogEntryCommit,
                 false,
-                logEntryChunkStart.getPreviousBatchLogPosition(),
+                logEntryChunkStart.getPreviousBatchAppendIndex(),
                 logEntryChunkStart.getChunkId(),
                 new MutableLong(UNKNOWN_CONSENSUS_INDEX),
                 new MutableLong(logEntryChunkStart.getAppendIndex()),
@@ -75,7 +75,7 @@ public record ChunkedBatchRepresentation(
                 chunkStart.getTimeWritten(),
                 chunkStart.getChunkId(),
                 chunkStart.getAppendIndex(),
-                chunkStart.getPreviousBatchLogPosition());
+                chunkStart.getPreviousBatchAppendIndex());
         writer.serialize(commandBatch);
         return writer.writeChunkEndEntry(kernelVersion, chunkEnd.getTransactionId(), chunkEnd.getChunkId());
     }
@@ -106,8 +106,8 @@ public record ChunkedBatchRepresentation(
     }
 
     @Override
-    public LogPosition previousBatchLogPosition() {
-        return chunkStart.getPreviousBatchLogPosition();
+    public long previousBatchAppendIndex() {
+        return chunkStart.getPreviousBatchAppendIndex();
     }
 
     private static LogEntryChunkStart createChunkStart(LogEntry start) {
@@ -119,7 +119,7 @@ public record ChunkedBatchRepresentation(
                     entryStart.getTimeWritten(),
                     BASE_CHUNK_NUMBER,
                     entryStart.getAppendIndex(),
-                    LogPosition.UNSPECIFIED);
+                    UNKNOWN_APPEND_INDEX);
         } else {
             throw new IllegalArgumentException("Was expecting start record. Actual entry: " + start);
         }

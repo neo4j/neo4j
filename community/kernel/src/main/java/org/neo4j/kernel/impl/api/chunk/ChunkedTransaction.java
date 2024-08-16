@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.api.chunk;
 
 import static org.neo4j.kernel.impl.api.CompleteTransaction.TRANSACTION_ID_NOT_SPECIFIED;
+import static org.neo4j.storageengine.AppendIndexProvider.UNKNOWN_APPEND_INDEX;
 
 import java.util.function.LongConsumer;
 import org.neo4j.common.Subject;
@@ -41,7 +42,7 @@ public class ChunkedTransaction implements StorageEngineTransaction {
     private final Commitment commitment;
     private final TransactionIdGenerator transactionIdGenerator;
     private boolean idGenerated;
-    private LogPosition lastBatchLogPosition = LogPosition.UNSPECIFIED;
+    private long lastBatchAppendIndex = UNKNOWN_APPEND_INDEX;
     private long transactionId = TRANSACTION_ID_NOT_SPECIFIED;
     private StorageEngineTransaction next;
     private long firstAppendIndex;
@@ -94,8 +95,8 @@ public class ChunkedTransaction implements StorageEngineTransaction {
     }
 
     @Override
-    public LogPosition previousBatchLogPosition() {
-        return chunk.chunkMetadata().previousBatchLogPosition();
+    public long previousBatchAppendIndex() {
+        return chunk.chunkMetadata().previousBatchAppendIndex();
     }
 
     @Override
@@ -131,8 +132,8 @@ public class ChunkedTransaction implements StorageEngineTransaction {
         }
     }
 
-    public LogPosition lastBatchLogPosition() {
-        return lastBatchLogPosition;
+    public long lastBatchAppendIndex() {
+        return lastBatchAppendIndex;
     }
 
     @Override
@@ -157,7 +158,7 @@ public class ChunkedTransaction implements StorageEngineTransaction {
                 checksum,
                 chunk.chunkMetadata().consensusIndex().longValue());
         chunk.setAppendIndex(appendIndex);
-        lastBatchLogPosition = beforeStart;
+        lastBatchAppendIndex = appendIndex;
     }
 
     @Override

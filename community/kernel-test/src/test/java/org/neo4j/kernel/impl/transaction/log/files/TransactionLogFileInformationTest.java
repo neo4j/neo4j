@@ -30,6 +30,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryFactory.newStartEntry;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogSegments.UNKNOWN_LOG_SEGMENT_SIZE;
+import static org.neo4j.storageengine.AppendIndexProvider.UNKNOWN_APPEND_INDEX;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 import static org.neo4j.test.LatestVersions.LATEST_KERNEL_VERSION;
 import static org.neo4j.test.LatestVersions.LATEST_LOG_FORMAT;
@@ -170,8 +171,7 @@ class TransactionLogFileInformationTest {
         var logEntryReader = mock(LogEntryReader.class);
         var readableLogChannel = mock(ReadableLogChannel.class);
         when(logEntryReader.readLogEntry(readableLogChannel))
-                .thenReturn(
-                        new LogEntryChunkStart(LatestVersions.LATEST_KERNEL_VERSION, 42, 1, LogPosition.UNSPECIFIED));
+                .thenReturn(new LogEntryChunkStart(LatestVersions.LATEST_KERNEL_VERSION, 42, 1, UNKNOWN_APPEND_INDEX));
         var fileInfo = new TransactionLogFileInformation(logFiles, logHeaderCache, context, () -> logEntryReader);
 
         var expectedHeader = LATEST_LOG_FORMAT.newHeader(

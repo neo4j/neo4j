@@ -36,7 +36,6 @@ import org.neo4j.io.fs.WritableChannel;
 import org.neo4j.kernel.BinarySupportedKernelVersions;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.CommittedCommandBatchRepresentation;
-import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.entry.v57.LogEntryChunkEnd;
 import org.neo4j.storageengine.api.CommandBatch;
 import org.neo4j.storageengine.api.StorageCommand;
@@ -82,7 +81,7 @@ public class LogEntryWriter<T extends WritableChannel> {
             long timeWritten,
             long chunkId,
             long appendIndex,
-            LogPosition previousChunkStart)
+            long previousBatchAppendIndex)
             throws IOException {
         updateSerializationSet(kernelVersion);
 
@@ -90,7 +89,7 @@ public class LogEntryWriter<T extends WritableChannel> {
                 .select(CHUNK_START)
                 .write(
                         channel,
-                        newChunkStartEntry(kernelVersion, timeWritten, chunkId, appendIndex, previousChunkStart));
+                        newChunkStartEntry(kernelVersion, timeWritten, chunkId, appendIndex, previousBatchAppendIndex));
     }
 
     public int writeChunkEndEntry(KernelVersion kernelVersion, long transactionId, long chunkId) throws IOException {

@@ -25,9 +25,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.common.Subject.ANONYMOUS;
 import static org.neo4j.kernel.impl.api.CompleteTransaction.NOT_SPECIFIED_CHUNK_ID;
 import static org.neo4j.kernel.impl.transaction.log.GivenCommandBatchCursor.exhaust;
-import static org.neo4j.kernel.impl.transaction.log.LogPosition.UNSPECIFIED;
 import static org.neo4j.kernel.impl.transaction.log.TestLogEntryReader.logEntryReader;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.TX_START;
+import static org.neo4j.storageengine.AppendIndexProvider.UNKNOWN_APPEND_INDEX;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_INDEX;
 import static org.neo4j.test.LatestVersions.LATEST_KERNEL_VERSION_PROVIDER;
@@ -269,7 +269,7 @@ class ReversedSingleFileCommandBatchCursorTest {
                     txId,
                     NOT_SPECIFIED_CHUNK_ID,
                     previousChecksum,
-                    UNSPECIFIED,
+                    UNKNOWN_APPEND_INDEX,
                     LogAppendEvent.NULL);
         }
         channel.prepareForFlush().flush();
@@ -292,7 +292,7 @@ class ReversedSingleFileCommandBatchCursorTest {
                 txId,
                 NOT_SPECIFIED_CHUNK_ID,
                 BASE_TX_CHECKSUM,
-                UNSPECIFIED,
+                UNKNOWN_APPEND_INDEX,
                 LogAppendEvent.NULL);
     }
 

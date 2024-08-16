@@ -30,6 +30,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME
 import static org.neo4j.kernel.impl.api.CompleteTransaction.NOT_SPECIFIED_CHUNK_ID;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.TX_START;
 import static org.neo4j.logging.LogAssertions.assertThat;
+import static org.neo4j.storageengine.AppendIndexProvider.UNKNOWN_APPEND_INDEX;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_INDEX;
 import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_TRANSACTION_ID;
@@ -1406,7 +1407,7 @@ class RecoveryCorruptedTransactionLogIT {
                     1001,
                     NOT_SPECIFIED_CHUNK_ID,
                     BASE_TX_CHECKSUM,
-                    LogPosition.UNSPECIFIED,
+                    UNKNOWN_APPEND_INDEX,
                     LogAppendEvent.NULL);
         }
     }

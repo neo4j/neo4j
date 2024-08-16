@@ -48,7 +48,6 @@ import org.neo4j.kernel.impl.api.txid.TransactionIdGenerator;
 import org.neo4j.kernel.impl.locking.LockManager;
 import org.neo4j.kernel.impl.transaction.CommittedCommandBatchRepresentation;
 import org.neo4j.kernel.impl.transaction.log.CommandBatchCursor;
-import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionCommitmentFactory;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionRollbackEvent;
@@ -69,7 +68,7 @@ import org.neo4j.storageengine.api.txstate.validation.ValidationLockDumper;
 public final class ChunkCommitter implements TransactionCommitter {
     private final KernelTransactionImplementation ktx;
     private int chunkNumber = BASE_CHUNK_NUMBER;
-    private LogPosition previousBatchLogPosition = LogPosition.UNSPECIFIED;
+    private long previousBatchAppendIndex = UNKNOWN_APPEND_INDEX;
     private KernelVersion kernelVersion;
     private ChunkedTransaction transactionPayload;
     private final TransactionCommitmentFactory commitmentFactory;
@@ -155,7 +154,7 @@ public final class ChunkCommitter implements TransactionCommitter {
                             chunkNumber == BASE_CHUNK_NUMBER,
                             commit,
                             false,
-                            previousBatchLogPosition,
+                            previousBatchAppendIndex,
                             chunkNumber,
                             new MutableLong(UNKNOWN_CONSENSUS_INDEX),
                             new MutableLong(UNKNOWN_APPEND_INDEX),
@@ -186,7 +185,7 @@ public final class ChunkCommitter implements TransactionCommitter {
                     log.debug("Transaction chunk commit failure.", e);
                     throw e;
                 }
-                previousBatchLogPosition = transactionPayload.lastBatchLogPosition();
+                previousBatchAppendIndex = transactionPayload.lastBatchAppendIndex();
                 chunkNumber++;
             }
             return transactionPayload != null ? transactionPayload.transactionId() : KernelTransaction.READ_ONLY_ID;
@@ -227,7 +226,7 @@ public final class ChunkCommitter implements TransactionCommitter {
                 false,
                 true,
                 true,
-                LogPosition.UNSPECIFIED,
+                UNKNOWN_APPEND_INDEX,
                 chunkNumber,
                 new MutableLong(UNKNOWN_CONSENSUS_INDEX),
                 new MutableLong(UNKNOWN_APPEND_INDEX),
@@ -256,10 +255,10 @@ public final class ChunkCommitter implements TransactionCommitter {
         long transactionIdToRollback = transactionPayload.transactionId();
         int rolledbackBatches = 0;
         int chunksToRollback = chunkNumber - 1;
-        LogPosition logPosition = transactionPayload.lastBatchLogPosition();
+        long previousBatchAppendIndex = transactionPayload.lastBatchAppendIndex();
         try (var rollbackDataEvent = transactionRollbackEvent.beginRollbackDataEvent()) {
             while (rolledbackBatches != chunksToRollback) {
-                try (CommandBatchCursor commandBatches = transactionStore.getCommandBatches(logPosition)) {
+                try (CommandBatchCursor commandBatches = transactionStore.getCommandBatches(previousBatchAppendIndex)) {
                     if (!commandBatches.next()) {
                         throw new TransactionRollbackException(format(
                                 "Transaction rollback failed. Expected to rollback %d batches, but was able to undo only %d for transaction with id %d.",
@@ -274,13 +273,13 @@ public final class ChunkCommitter implements TransactionCommitter {
                     transactionPayload.init((ChunkedCommandBatch) commandBatch.commandBatch());
                     storageEngine.apply(transactionPayload, TransactionApplicationMode.MVCC_ROLLBACK);
                     rolledbackBatches++;
-                    logPosition = commandBatch.previousBatchLogPosition();
+                    previousBatchAppendIndex = commandBatch.previousBatchAppendIndex();
                 }
             }
-            if (logPosition != LogPosition.UNSPECIFIED) {
+            if (previousBatchAppendIndex != UNKNOWN_APPEND_INDEX) {
                 throw new TransactionRollbackException(String.format(
                         "Transaction rollback failed. All expected %d batches in transaction id %d were rolled back but chain claims to have more at: %s.",
-                        chunksToRollback, transactionIdToRollback, logPosition));
+                        chunksToRollback, transactionIdToRollback, previousBatchAppendIndex));
             }
             rollbackDataEvent.batchedRolledBack(chunksToRollback, transactionIdToRollback);
         }

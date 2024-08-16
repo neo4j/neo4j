@@ -222,12 +222,9 @@ class BatchingTransactionAppenderTest {
             CompleteTransaction batch = batchOf(batch1, batch2, batch3);
             appender.append(batch, LogAppendEvent.NULL);
 
-            verify(logWriterSpy)
-                    .append(eq(batch1), eq(2L), anyLong(), anyLong(), anyInt(), any(LogPosition.class), any());
-            verify(logWriterSpy)
-                    .append(eq(batch2), eq(3L), anyLong(), anyLong(), anyInt(), any(LogPosition.class), any());
-            verify(logWriterSpy)
-                    .append(eq(batch3), eq(4L), anyLong(), anyLong(), anyInt(), any(LogPosition.class), any());
+            verify(logWriterSpy).append(eq(batch1), eq(2L), anyLong(), anyLong(), anyInt(), anyLong(), any());
+            verify(logWriterSpy).append(eq(batch2), eq(3L), anyLong(), anyLong(), anyInt(), anyLong(), any());
+            verify(logWriterSpy).append(eq(batch3), eq(4L), anyLong(), anyLong(), anyInt(), anyLong(), any());
         }
     }
 

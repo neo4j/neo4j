@@ -29,6 +29,7 @@ import static org.neo4j.kernel.impl.api.CompleteTransaction.NOT_SPECIFIED_CHUNK_
 import static org.neo4j.kernel.impl.transaction.log.GivenCommandBatchCursor.exhaust;
 import static org.neo4j.kernel.impl.transaction.log.TestLogEntryReader.logEntryReader;
 import static org.neo4j.kernel.impl.transaction.log.reverse.ReversedMultiFileCommandBatchCursor.fromLogFile;
+import static org.neo4j.storageengine.AppendIndexProvider.UNKNOWN_APPEND_INDEX;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
 import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_INDEX;
@@ -248,7 +249,7 @@ class ReversedMultiFileCommandBatchCursorTest {
                     transactionId,
                     NOT_SPECIFIED_CHUNK_ID,
                     previousChecksum,
-                    LogPosition.UNSPECIFIED,
+                    UNKNOWN_APPEND_INDEX,
                     LogAppendEvent.NULL);
         }
         channel.prepareForFlush().flush();

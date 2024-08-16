@@ -312,7 +312,7 @@ public class TransactionLogQueue extends LifecycleAdapter {
                         storageEngineTransaction.chunkId(),
                         appendIndex,
                         checksum,
-                        storageEngineTransaction.previousBatchLogPosition(),
+                        storageEngineTransaction.previousBatchAppendIndex(),
                         logAppendEvent);
                 var logPositionBeforeCommit = transactionLogWriter.beforeAppendPosition();
                 metadataCache.cacheTransactionMetadata(appendIndex, logPositionBeforeCommit);

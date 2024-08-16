@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.transaction.log.entry.v520;
 
 import org.neo4j.kernel.KernelVersion;
-import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.entry.v57.LogEntryChunkStart;
 import org.neo4j.string.Mask;
 
@@ -32,8 +31,8 @@ public class LogEntryChunkStartV5_20 extends LogEntryChunkStart {
             long timeWritten,
             long chunkId,
             long appendIndex,
-            LogPosition previousBatchLogPosition) {
-        super(kernelVersion, timeWritten, chunkId, previousBatchLogPosition);
+            long previousBatchAppendIndex) {
+        super(kernelVersion, timeWritten, chunkId, previousBatchAppendIndex);
         this.appendIndex = appendIndex;
     }
 
@@ -46,7 +45,7 @@ public class LogEntryChunkStartV5_20 extends LogEntryChunkStart {
     public String toString(Mask mask) {
         return "LogEntryChunkStartV5_20{timeWritten="
                 + timeWritten + ", chunkId="
-                + chunkId + ", previousBatchLogPosition="
-                + previousBatchLogPosition + ", appendIndex=" + appendIndex + '}';
+                + chunkId + ", previousBatchAppendIndex="
+                + previousBatchAppendIndex + ", appendIndex=" + appendIndex + '}';
     }
 }

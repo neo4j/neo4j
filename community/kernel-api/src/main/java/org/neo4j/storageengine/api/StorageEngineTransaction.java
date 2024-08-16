@@ -23,6 +23,7 @@ import java.util.function.LongConsumer;
 import org.neo4j.common.Subject;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.storageengine.AppendIndexProvider;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 /**
@@ -41,10 +42,10 @@ public interface StorageEngineTransaction extends AutoCloseable {
     long chunkId();
 
     /**
-     * Position of previous command batch of the same transaction in the transaction log
-     * @return position of previous batch or {@link LogPosition#UNSPECIFIED} if no previous batch exists.
+     * Append index of previous command batch of the same transaction in the transaction log
+     * @return append index of previous batch or {@link AppendIndexProvider#UNKNOWN_APPEND_INDEX} if no previous batch exists.
      */
-    LogPosition previousBatchLogPosition();
+    long previousBatchAppendIndex();
 
     /**
      * Subject that triggered the commands.

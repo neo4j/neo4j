@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.transaction.log.files;
 import static org.neo4j.common.Subject.ANONYMOUS;
 import static org.neo4j.kernel.impl.api.CompleteTransaction.NOT_SPECIFIED_CHUNK_ID;
 import static org.neo4j.kernel.impl.api.LeaseService.NO_LEASE;
+import static org.neo4j.storageengine.AppendIndexProvider.UNKNOWN_APPEND_INDEX;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_INDEX;
 
@@ -181,7 +182,7 @@ public class TransactionLogInitializer {
                 NOT_SPECIFIED_CHUNK_ID,
                 appendIndex,
                 BASE_TX_CHECKSUM,
-                LogPosition.UNSPECIFIED,
+                UNKNOWN_APPEND_INDEX,
                 LogAppendEvent.NULL);
         logFile.forceAfterAppend(LogAppendEvent.NULL);
         LogPosition position = transactionLogWriter.getCurrentPosition();

@@ -88,7 +88,7 @@ class LogEntrySerializerDispatcherTest {
                 var entryWriter = new LogEntryWriter<>(writeChannel, BINARY_VERSIONS);
                 entryWriter.writeStartEntry(version, 1, 2, 3, 4, EMPTY_BYTE_ARRAY);
                 entryWriter.writeChunkEndEntry(version, 17, 13);
-                entryWriter.writeChunkStartEntry(version, 11, 13, 14, new LogPosition(14, 15));
+                entryWriter.writeChunkStartEntry(version, 11, 13, 14, 15);
                 entryWriter.writeCommitEntry(version, 7, 8);
             }
 

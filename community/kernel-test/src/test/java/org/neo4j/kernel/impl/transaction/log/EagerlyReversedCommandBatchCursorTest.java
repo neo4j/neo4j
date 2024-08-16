@@ -26,6 +26,7 @@ import static org.neo4j.kernel.impl.transaction.log.GivenCommandBatchCursor.exha
 import static org.neo4j.kernel.impl.transaction.log.GivenCommandBatchCursor.given;
 import static org.neo4j.kernel.impl.transaction.log.TestLogEntryReader.logEntryReader;
 import static org.neo4j.kernel.impl.transaction.log.reverse.EagerlyReversedCommandBatchCursor.eagerlyReverse;
+import static org.neo4j.storageengine.AppendIndexProvider.UNKNOWN_APPEND_INDEX;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
 import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_INDEX;
@@ -172,7 +173,7 @@ class EagerlyReversedCommandBatchCursorTest {
                     transactionId,
                     NOT_SPECIFIED_CHUNK_ID,
                     previousChecksum,
-                    LogPosition.UNSPECIFIED,
+                    UNKNOWN_APPEND_INDEX,
                     LogAppendEvent.NULL);
         }
         channel.prepareForFlush().flush();
