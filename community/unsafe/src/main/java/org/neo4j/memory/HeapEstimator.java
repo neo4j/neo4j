@@ -423,6 +423,13 @@ public final class HeapEstimator {
     }
 
     /**
+     * Returns true if the JVM has XX:+UseCompressedOops. Not that this is not guaranteed to be correct.
+     */
+    public static boolean hasCompressedOOPS() {
+        return RuntimeInternals.COMPRESSED_OOPS;
+    }
+
+    /**
      * Return shallow size of any <code>array</code>.
      */
     private static long shallowSizeOfArray(Object array) {

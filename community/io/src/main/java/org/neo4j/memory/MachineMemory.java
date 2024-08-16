@@ -35,6 +35,11 @@ public interface MachineMemory {
      */
     MemoryUsage getHeapMemoryUsage();
 
+    /**
+     * @return true if the running JVM uses compressed oops
+     */
+    boolean hasCompressedOOPS();
+
     MachineMemory DEFAULT = new MachineMemory() {
         @Override
         public long getTotalPhysicalMemory() {
@@ -44,6 +49,11 @@ public interface MachineMemory {
         @Override
         public MemoryUsage getHeapMemoryUsage() {
             return ManagementFactory.getMemoryMXBean().getHeapMemoryUsage();
+        }
+
+        @Override
+        public boolean hasCompressedOOPS() {
+            return HeapEstimator.hasCompressedOOPS();
         }
     };
 }

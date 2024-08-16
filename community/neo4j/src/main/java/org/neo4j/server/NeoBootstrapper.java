@@ -47,6 +47,7 @@ import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.graphdb.facade.GraphDatabaseDependencies;
+import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.os.OsBeanUtil;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
@@ -241,9 +242,19 @@ public abstract class NeoBootstrapper implements Bootstrapper {
                     "Unable to determine total physical memory of machine. JVM is most likely running in a container that do not expose that.");
             return false;
         }
+        long xmx = heapMemoryUsage.getMax();
+        if (xmx > ByteUnit.gibiBytes(32) && xmx < ByteUnit.gibiBytes(48) && !machineMemory.hasCompressedOOPS()) {
+            log.warn(
+                    """
+                    The JVM heap memory is currently set to %s, which results in the disabling of compressed ordinary object pointers (OOPs) within the JVM. \
+                    It should be noted that compressed OOPs are automatically disabled when heap memory exceeds 32GB. \
+                    Utilizing uncompressed OOPs can increase heap memory consumption by up to 50%, although the exact impact may vary depending on the specific use case. \
+                    Consequently, a larger heap may accommodate less data. To optimize performance, it is recommended to configure the heap memory to either below 32GB or above 48GB.
+                    """,
+                    ByteUnit.bytesToString(xmx));
+        }
 
-        return totalPhysicalMemory != OsBeanUtil.VALUE_UNAVAILABLE
-                && pageCacheSize + heapMemoryUsage.getMax() > totalPhysicalMemory;
+        return totalPhysicalMemory != OsBeanUtil.VALUE_UNAVAILABLE && pageCacheSize + xmx > totalPhysicalMemory;
     }
 
     @Override

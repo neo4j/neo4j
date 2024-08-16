@@ -31,15 +31,24 @@ import java.lang.management.MemoryUsage;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Predicate;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.ResourceLock;
 import org.junit.jupiter.api.parallel.Resources;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.configuration.BootloaderSettings;
+import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.dbms.api.DatabaseManagementService;
+import org.neo4j.graphdb.facade.GraphDatabaseDependencies;
 import org.neo4j.internal.helpers.collection.MapUtil;
+import org.neo4j.io.ByteUnit;
 import org.neo4j.memory.MachineMemory;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.SuppressOutput;
@@ -80,9 +89,9 @@ class NeoBootstrapperTest {
     }
 
     @Test
-    void shouldNotThrowNullPointerExceptionIfConfigurationValidationFails() throws IOException {
+    void shouldNotThrowNullPointerExceptionIfConfigurationValidationFails() {
         // given
-        neoBootstrapper = new CommunityBootstrapper();
+        neoBootstrapper = new CommunityBootstrapperWithoutStartingServer();
 
         // when
         assertThatThrownBy(() -> neoBootstrapper.start(dir, Map.of("initial.dbms.default_database", "$%^&*#)@!")))
@@ -100,7 +109,7 @@ class NeoBootstrapperTest {
     @Test
     void shouldFailToStartIfRequestedPageCacheMemoryExceedsTotal() throws IOException {
         // given
-        neoBootstrapper = new CommunityBootstrapper();
+        neoBootstrapper = new CommunityBootstrapperWithoutStartingServer();
         Map<String, String> config = MapUtil.stringMap();
         config.put(GraphDatabaseSettings.pagecache_memory.name(), "10B");
 
@@ -120,7 +129,7 @@ class NeoBootstrapperTest {
     @Test
     void shouldFailToStartIfRequestedHeapMemoryExceedsTotal() throws IOException {
         // given
-        neoBootstrapper = new CommunityBootstrapper();
+        neoBootstrapper = new CommunityBootstrapperWithoutStartingServer();
         Map<String, String> config = MapUtil.stringMap();
         config.put(BootloaderSettings.max_heap_size.name(), "10B");
         config.put(GraphDatabaseSettings.pagecache_memory.name(), "1B");
@@ -140,7 +149,7 @@ class NeoBootstrapperTest {
     @Test
     void shouldFailToStartIfRequestedHeapAndPageCacheMemoryExceedsTotal() throws IOException {
         // given
-        neoBootstrapper = new CommunityBootstrapper();
+        neoBootstrapper = new CommunityBootstrapperWithoutStartingServer();
         Map<String, String> config = MapUtil.stringMap();
         config.put(BootloaderSettings.max_heap_size.name(), "10B");
         config.put(GraphDatabaseSettings.pagecache_memory.name(), "10B");
@@ -160,7 +169,7 @@ class NeoBootstrapperTest {
     @Test
     void shouldFailToStartIfCalculatedPageCacheSizeExceedsTotalMemory() throws IOException {
         // given
-        neoBootstrapper = new CommunityBootstrapper();
+        neoBootstrapper = new CommunityBootstrapperWithoutStartingServer();
         Map<String, String> config = MapUtil.stringMap();
         config.put(BootloaderSettings.max_heap_size.name(), "10B");
 
@@ -179,7 +188,7 @@ class NeoBootstrapperTest {
     @Test
     void ignoreMemoryChecksIfTotalMemoryIsNotAvailable() throws IOException {
         // given
-        neoBootstrapper = new CommunityBootstrapper();
+        neoBootstrapper = new CommunityBootstrapperWithoutStartingServer();
         Map<String, String> config = MapUtil.stringMap();
 
         // Mock heap usage and free memory.
@@ -194,9 +203,41 @@ class NeoBootstrapperTest {
                 .anyMatch(line -> line.contains("Unable to determine total physical memory of machine."));
     }
 
+    private static Stream<Arguments> memoryConfigs() {
+        return Stream.of(
+                Arguments.of(35, false, true), // Heap in bad range
+                Arguments.of(16, true, false), // Normal heap
+                Arguments.of(64, false, false), // Huge heap
+                Arguments.of(
+                        35, true, false) // Heap in bad range but has COOPS, likely using -XX:ObjectAlignmentInBytes
+                );
+    }
+
+    @ParameterizedTest
+    @MethodSource("memoryConfigs")
+    void shouldWarnAboutCompressedOOPSWhenDisabledWithHeapInBadRange(
+            long heapInGB, boolean compressedOOPS, boolean expectWarning) throws IOException {
+        neoBootstrapper = new CommunityBootstrapperWithoutStartingServer();
+
+        MachineMemory mockedMemory = mock(MachineMemory.class);
+        when(mockedMemory.getTotalPhysicalMemory()).thenReturn(ByteUnit.gibiBytes(128));
+        when(mockedMemory.getHeapMemoryUsage()).thenReturn(new MemoryUsage(0, 1, 1, ByteUnit.gibiBytes(heapInGB)));
+        when(mockedMemory.hasCompressedOOPS()).thenReturn(compressedOOPS);
+        neoBootstrapper.setMachineMemory(mockedMemory);
+
+        assertThat(neoBootstrapper.start(dir, Map.of())).isEqualTo(NeoBootstrapper.OK);
+        Predicate<String> hasWarning =
+                line -> line.contains("which results in the disabling of compressed ordinary object pointers");
+        if (expectWarning) {
+            assertThat(getUserLogFiles()).anyMatch(hasWarning);
+        } else {
+            assertThat(getUserLogFiles()).noneMatch(hasWarning);
+        }
+    }
+
     @Test
     void printLoggingConfig() throws IOException {
-        neoBootstrapper = new CommunityBootstrapper();
+        neoBootstrapper = new CommunityBootstrapperWithoutStartingServer();
         assertThat(neoBootstrapper.start(dir, Map.of())).isEqualTo(NeoBootstrapper.OK);
         neoBootstrapper.stop();
         assertThat(getUserLogFiles()).anyMatch(line -> line.contains("Logging config in use: "));
@@ -204,5 +245,13 @@ class NeoBootstrapperTest {
 
     private List<String> getUserLogFiles() throws IOException {
         return readAllLines(userLog, UTF_8);
+    }
+
+    private static class CommunityBootstrapperWithoutStartingServer extends CommunityBootstrapper {
+        @Override
+        protected DatabaseManagementService createNeo(
+                Config config, boolean daemonMode, GraphDatabaseDependencies dependencies) {
+            return mock(DatabaseManagementService.class);
+        }
     }
 }
