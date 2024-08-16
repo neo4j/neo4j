@@ -1728,7 +1728,7 @@
     "option": {
       "deprecated": false
     },
-    "signature": "dbms.cluster.checkConnectivity(port-name = null :: STRING, server = null :: STRING) :: (serverId :: STRING, mode-constraint :: STRING, port-name :: STRING, port-address :: STRING, result :: STRING)",
+    "signature": "dbms.cluster.checkConnectivity(port-name = null :: STRING, server = null :: STRING) :: (serverId :: STRING, name :: STRING, address :: STRING, mode-constraint :: STRING, port-name :: STRING, port-address :: STRING, result :: STRING)",
     "rolesBoostedExecution": [
       "admin"
     ],
@@ -1737,6 +1737,18 @@
       {
         "name": "serverId",
         "description": "serverId :: STRING",
+        "type": "STRING",
+        "isDeprecated": false
+      },
+      {
+        "name": "name",
+        "description": "name :: STRING",
+        "type": "STRING",
+        "isDeprecated": false
+      },
+      {
+        "name": "address",
+        "description": "address :: STRING",
         "type": "STRING",
         "isDeprecated": false
       },
