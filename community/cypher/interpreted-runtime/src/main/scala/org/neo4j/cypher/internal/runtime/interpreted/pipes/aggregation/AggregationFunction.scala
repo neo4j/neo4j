@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation
 
 import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
+import org.neo4j.cypher.internal.util.AggregationSkippedNull
 import org.neo4j.values.AnyValue
 
 /**
@@ -30,6 +31,7 @@ import org.neo4j.values.AnyValue
  */
 abstract class AggregationFunction {
 
+  private var seenNoValue: Boolean = false
   /**
    * Adds this data to the aggregated total.
    */
@@ -39,4 +41,14 @@ abstract class AggregationFunction {
    * The aggregated result.
    */
   def result(state: QueryState): AnyValue
+
+  protected def onNoValue(state: QueryState): Unit = {
+    //seenNoValue is not needed for correctness but since we only
+    //need to warn once this will create less deduplication work
+    //for the query state
+    if (!seenNoValue) {
+      state.newRuntimeNotification(AggregationSkippedNull)
+      seenNoValue = true
+    }
+  }
 }

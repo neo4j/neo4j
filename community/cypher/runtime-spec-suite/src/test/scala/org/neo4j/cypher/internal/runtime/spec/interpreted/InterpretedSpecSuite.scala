@@ -144,6 +144,7 @@ import org.neo4j.cypher.internal.runtime.spec.tests.RightOuterHashJoinTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.RollupApplyTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.RunQueryAtTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.RuntimeDebugLoggingTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.RuntimeNotificationsTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.SelectOrAntiSemiApplyTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.SelectOrSemiApplyTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.SemiApplyTestBase
@@ -553,3 +554,5 @@ class InterpretedRuntimeDebugLoggingTest
 
 class InterpretedTransactionTerminationTest
     extends TransactionTerminationTestBase(COMMUNITY.EDITION, InterpretedRuntime)
+
+class InterpretedRuntimeNotificationsTest extends RuntimeNotificationsTestBase(COMMUNITY.EDITION, InterpretedRuntime)

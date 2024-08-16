@@ -31,8 +31,7 @@ import org.neo4j.values.storable.Values
 import org.neo4j.values.utils.ValueMath.overflowSafeAdd
 
 class SumFunction(val value: Expression)
-    extends AggregationFunction
-    with NumericOrDurationAggregationExpression {
+    extends NumericOrDurationAggregationExpression {
 
   private[this] var sumNumber: NumberValue = Values.ZERO_INT
   private[this] var sumDuration: DurationValue = DurationValue.ZERO
@@ -59,7 +58,8 @@ class SumFunction(val value: Expression)
       },
       duration => {
         sumDuration = sumDuration.add(duration)
-      }
+      },
+      state
     )
   }
 }

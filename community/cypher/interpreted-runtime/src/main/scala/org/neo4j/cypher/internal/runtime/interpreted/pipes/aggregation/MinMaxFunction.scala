@@ -39,7 +39,7 @@ trait MinMax extends AggregationFunction {
 
   override def apply(data: ReadableRow, state: QueryState): Unit = {
     value(data, state) match {
-      case IsNoValue() =>
+      case IsNoValue() => onNoValue(state)
       case x: AnyValue => checkIfLargest(x)
     }
   }

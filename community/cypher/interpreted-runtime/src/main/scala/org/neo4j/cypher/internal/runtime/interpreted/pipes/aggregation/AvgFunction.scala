@@ -39,8 +39,7 @@ import java.time.temporal.ChronoUnit
  * TODO consider combining it with https://en.wikipedia.org/wiki/Kahan_summation_algorithm
  */
 class AvgFunction(val value: Expression)
-    extends AggregationFunction
-    with NumericOrDurationAggregationExpression {
+    extends NumericOrDurationAggregationExpression {
 
   def name = "AVG"
 
@@ -64,10 +63,6 @@ class AvgFunction(val value: Expression)
 
   override def apply(data: ReadableRow, state: QueryState): Unit = {
     val vl = value(data, state)
-    applyValueDirectly(vl)
-  }
-
-  def applyValueDirectly(vl: AnyValue): Unit = {
     actOnNumberOrDuration(
       vl,
       number => {
@@ -80,12 +75,10 @@ class AvgFunction(val value: Expression)
         daysRunningAvg += (duration.get(ChronoUnit.DAYS).asInstanceOf[Double] - daysRunningAvg) / count
         secondsRunningAvg += (duration.get(ChronoUnit.SECONDS).asInstanceOf[Double] - secondsRunningAvg) / count
         nanosRunningAvg += (duration.get(ChronoUnit.NANOS).asInstanceOf[Double] - nanosRunningAvg) / count
-      }
+      },
+      state
     )
-
   }
-
-  def aggregatedRowCount: Long = count
 }
 
 object AvgFunction {

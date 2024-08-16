@@ -21,12 +21,13 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation
 
 import org.neo4j.cypher.internal.runtime.IsNoValue
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.DurationValue
 import org.neo4j.values.storable.NumberValue
 
-trait NumericOrDurationAggregationExpression {
+trait NumericOrDurationAggregationExpression extends AggregationFunction {
   trait AggregatingType
   case object AggregatingNumbers extends AggregatingType
   case object AggregatingDurations extends AggregatingType
@@ -40,10 +41,11 @@ trait NumericOrDurationAggregationExpression {
   protected def actOnNumberOrDuration(
     vl: AnyValue,
     aggNumber: NumberValue => Unit,
-    aggDuration: DurationValue => Unit
+    aggDuration: DurationValue => Unit,
+    state: QueryState
   ): Unit = {
     vl match {
-      case IsNoValue() =>
+      case IsNoValue() => onNoValue(state)
       case number: NumberValue =>
         aggregatingType match {
           case None =>

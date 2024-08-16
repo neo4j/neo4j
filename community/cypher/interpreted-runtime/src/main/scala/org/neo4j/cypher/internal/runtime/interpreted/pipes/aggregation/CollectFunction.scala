@@ -33,7 +33,7 @@ class CollectFunction(value: Expression, memoryTracker: MemoryTracker) extends A
 
   override def apply(data: ReadableRow, state: QueryState): Unit = {
     value(data, state) match {
-      case IsNoValue() =>
+      case IsNoValue() => onNoValue(state)
       case v =>
         collection.add(v)
     }

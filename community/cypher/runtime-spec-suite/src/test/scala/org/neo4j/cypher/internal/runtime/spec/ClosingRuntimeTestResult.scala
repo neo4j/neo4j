@@ -151,7 +151,7 @@ class ClosingRuntimeTestResult(
     }
   }
 
-  override def notifications(): util.Set[InternalNotification] = Collections.emptySet()
+  override def notifications(): util.Set[InternalNotification] = inner.notifications()
 
   override def getErrorOrNull: Throwable = this.error
 

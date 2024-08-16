@@ -40,8 +40,7 @@ import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.MapValueBuilder
 
 abstract class PercentileFunction(val value: Expression, memoryTracker: MemoryTracker)
-    extends AggregationFunction
-    with NumericExpressionOnly
+    extends NumericExpressionOnly
     with InitiateOnFirstRow {
 
   protected var temp: HeapTrackingArrayList[NumberValue] =
@@ -62,7 +61,8 @@ abstract class PercentileFunction(val value: Expression, memoryTracker: MemoryTr
           estimatedNumberValue = number.estimatedHeapUsage()
         }
         memoryTracker.allocateHeap(estimatedNumberValue)
-      }
+      },
+      state
     )
   }
 }
