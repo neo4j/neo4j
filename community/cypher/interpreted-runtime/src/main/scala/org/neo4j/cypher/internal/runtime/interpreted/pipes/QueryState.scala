@@ -35,6 +35,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.profiler.InterpretedProfile
 import org.neo4j.cypher.internal.runtime.interpreted.profiler.Profiler
 import org.neo4j.cypher.internal.runtime.memory.MemoryTrackerForOperatorProvider
 import org.neo4j.cypher.internal.runtime.memory.QueryMemoryTracker
+import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.graphdb.TransactionFailureException
 import org.neo4j.internal.kernel
 import org.neo4j.internal.kernel.api.IndexReadSession
@@ -42,10 +43,13 @@ import org.neo4j.internal.kernel.api.TokenReadSession
 import org.neo4j.io.IOUtils.closeAll
 import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.api.exceptions.Status
+import org.neo4j.kernel.impl.query.NotificationConfiguration.Severity
 import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.scheduler.CallableExecutor
 import org.neo4j.values.AnyValue
 import org.neo4j.values.utils.InCache
+
+import java.util
 
 class QueryState(
   val query: QueryContext,
@@ -72,6 +76,9 @@ class QueryState(
 
   private var _rowFactory: CypherRowFactory = _
   private var _closed = false
+  private val notificationsEnabled =
+    query.transactionalContext.queryExecutingConfiguration.notificationFilters().severityLevel() != Severity.NONE
+  private val _notifications = new util.HashSet[InternalNotification]()
 
   def newRow(rowFactory: CypherRowFactory): CypherRow = {
     initialContext match {
@@ -79,6 +86,14 @@ class QueryState(
       case None       => rowFactory.newRow()
     }
   }
+
+  def newRuntimeNotification(notification: InternalNotification): Unit = {
+    if (notificationsEnabled) {
+      _notifications.add(notification)
+    }
+  }
+
+  def notifications(): util.Set[InternalNotification] = _notifications
 
   /**
    * When running on the RHS of an Apply, this method will fill the new row with argument data

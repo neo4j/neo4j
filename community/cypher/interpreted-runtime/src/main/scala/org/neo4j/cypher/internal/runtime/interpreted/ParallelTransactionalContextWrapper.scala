@@ -49,6 +49,7 @@ import org.neo4j.kernel.impl.api.SchemaStateKey
 import org.neo4j.kernel.impl.api.parallel.ExecutionContextValueMapper
 import org.neo4j.kernel.impl.factory.DbmsInfo
 import org.neo4j.kernel.impl.query.ConstituentTransactionFactory
+import org.neo4j.kernel.impl.query.QueryExecutionConfiguration
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.kernel.impl.query.statistic.StatisticProvider
 import org.neo4j.memory.MemoryTracker
@@ -118,6 +119,8 @@ class ParallelTransactionalContextWrapper(
   override def isTransactionOpen: Boolean = _kernelExecutionContext.isTransactionOpen
 
   override def assertTransactionOpen(): Unit = _kernelExecutionContext.performCheckBeforeOperation()
+
+  override def queryExecutingConfiguration: QueryExecutionConfiguration = tc.queryExecutingConfiguration()
 
   override def close(): Unit = {
     if (DebugSupport.DEBUG_TRANSACTIONAL_CONTEXT) {

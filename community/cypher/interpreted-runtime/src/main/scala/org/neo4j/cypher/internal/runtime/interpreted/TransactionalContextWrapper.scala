@@ -49,6 +49,7 @@ import org.neo4j.kernel.database.NamedDatabaseId
 import org.neo4j.kernel.impl.api.SchemaStateKey
 import org.neo4j.kernel.impl.factory.DbmsInfo
 import org.neo4j.kernel.impl.query.ConstituentTransactionFactory
+import org.neo4j.kernel.impl.query.QueryExecutionConfiguration
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.kernel.impl.query.statistic.StatisticProvider
 import org.neo4j.kernel.impl.util.DefaultValueMapper
@@ -206,6 +207,8 @@ class SingleThreadedTransactionalContextWrapper(tc: TransactionalContext)
 
   override def createExecutionContextMemoryTracker(): MemoryTracker =
     tc.kernelTransaction().createExecutionContextMemoryTracker()
+
+  override def queryExecutingConfiguration: QueryExecutionConfiguration = tc.queryExecutingConfiguration()
 }
 
 object TransactionalContextWrapper {

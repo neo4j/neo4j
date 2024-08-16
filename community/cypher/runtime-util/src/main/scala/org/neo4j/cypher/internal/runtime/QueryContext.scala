@@ -78,6 +78,7 @@ import org.neo4j.kernel.database.NamedDatabaseId
 import org.neo4j.kernel.impl.factory.DbmsInfo
 import org.neo4j.kernel.impl.query.ConstituentTransactionFactory
 import org.neo4j.kernel.impl.query.FunctionInformation
+import org.neo4j.kernel.impl.query.QueryExecutionConfiguration
 import org.neo4j.kernel.impl.query.statistic.StatisticProvider
 import org.neo4j.logging.InternalLogProvider
 import org.neo4j.memory.MemoryTracker
@@ -800,6 +801,8 @@ trait QueryTransactionalContext extends CloseableResource {
   def isTransactionOpen: Boolean
 
   def assertTransactionOpen(): Unit
+
+  def queryExecutingConfiguration: QueryExecutionConfiguration
 
   def close(): Unit
 
