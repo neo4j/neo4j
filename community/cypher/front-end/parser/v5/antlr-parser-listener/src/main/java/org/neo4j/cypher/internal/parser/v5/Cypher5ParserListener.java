@@ -607,6 +607,8 @@ public interface Cypher5ParserListener extends ParseTreeListener {
 
     void exitDropDatabase(Cypher5Parser.DropDatabaseContext ctx);
 
+    void exitAliasAction(Cypher5Parser.AliasActionContext ctx);
+
     void exitAlterDatabase(Cypher5Parser.AlterDatabaseContext ctx);
 
     void exitAlterDatabaseAccess(Cypher5Parser.AlterDatabaseAccessContext ctx);

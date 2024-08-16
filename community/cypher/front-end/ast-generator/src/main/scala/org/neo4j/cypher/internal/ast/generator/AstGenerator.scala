@@ -58,6 +58,7 @@ import org.neo4j.cypher.internal.ast.AssignRoleAction
 import org.neo4j.cypher.internal.ast.Auth
 import org.neo4j.cypher.internal.ast.AuthId
 import org.neo4j.cypher.internal.ast.BuiltInFunctions
+import org.neo4j.cypher.internal.ast.CascadeAliases
 import org.neo4j.cypher.internal.ast.CatalogName
 import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.CollectExpression
@@ -224,6 +225,7 @@ import org.neo4j.cypher.internal.ast.RenameRoleAction
 import org.neo4j.cypher.internal.ast.RenameServer
 import org.neo4j.cypher.internal.ast.RenameUser
 import org.neo4j.cypher.internal.ast.RenameUserAction
+import org.neo4j.cypher.internal.ast.Restrict
 import org.neo4j.cypher.internal.ast.Return
 import org.neo4j.cypher.internal.ast.ReturnItem
 import org.neo4j.cypher.internal.ast.ReturnItems
@@ -2904,9 +2906,10 @@ class AstGenerator(
     dbName <- _databaseName
     ifExists <- boolean
     composite <- boolean
-    additionalAction <- Gen.oneOf(DumpData, DestroyData)
+    additionalAction <- oneOf(DumpData, DestroyData)
+    aliasAction <- oneOf(Restrict, CascadeAliases)
     wait <- _waitUntilComplete
-  } yield DropDatabase(dbName, ifExists, composite, additionalAction, wait)(pos)
+  } yield DropDatabase(dbName, ifExists, composite, aliasAction, additionalAction, wait)(pos)
 
   def _alterDatabase: Gen[AlterDatabase] = for {
     dbName <- _databaseName

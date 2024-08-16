@@ -1420,7 +1420,13 @@ public class NullAstFactory
 
     @Override
     public NULL dropDatabase(
-            NULL p, NULL databaseName, boolean ifExists, boolean composite, boolean dumpData, NULL wait) {
+            NULL p,
+            NULL databaseName,
+            boolean ifExists,
+            boolean composite,
+            boolean aliasAction,
+            boolean dumpData,
+            NULL wait) {
         return null;
     }
 

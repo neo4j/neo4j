@@ -144,7 +144,7 @@ class SystemCommandQuerySubscriber(
       }
     }
     if (failed.isEmpty) {
-      if (statistics.containsUpdates()) {
+      for (_ <- 1 to queryHandler.countSystemUpdates(statistics)) {
         ctx.systemUpdates.increase()
       }
       inner.onResultCompleted(ctx.getStatistics)

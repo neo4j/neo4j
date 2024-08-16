@@ -16,6 +16,7 @@
  */
 package org.neo4j.cypher.internal.ast.factory.ddl
 
+import org.neo4j.cypher.internal.ast.CascadeAliases
 import org.neo4j.cypher.internal.ast.CreateCompositeDatabase
 import org.neo4j.cypher.internal.ast.DestroyData
 import org.neo4j.cypher.internal.ast.DropDatabase
@@ -27,6 +28,7 @@ import org.neo4j.cypher.internal.ast.IndefiniteWait
 import org.neo4j.cypher.internal.ast.NoOptions
 import org.neo4j.cypher.internal.ast.NoWait
 import org.neo4j.cypher.internal.ast.OptionsMap
+import org.neo4j.cypher.internal.ast.Restrict
 import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.TimeoutAfter
 import org.neo4j.cypher.internal.ast.test.util.AstParsing.Cypher5JavaCc
@@ -159,6 +161,7 @@ class CompositeDatabaseParserTest extends AdministrationAndSchemaCommandParserTe
       namespacedName("name"),
       ifExists = false,
       composite = true,
+      Restrict,
       DestroyData,
       NoWait
     )(pos))
@@ -169,6 +172,7 @@ class CompositeDatabaseParserTest extends AdministrationAndSchemaCommandParserTe
       namespacedName("db.name"),
       ifExists = false,
       composite = true,
+      Restrict,
       DestroyData,
       NoWait
     )(pos))
@@ -179,6 +183,7 @@ class CompositeDatabaseParserTest extends AdministrationAndSchemaCommandParserTe
       namespacedName("db", "name"),
       ifExists = false,
       composite = true,
+      Restrict,
       DestroyData,
       NoWait
     )(pos))
@@ -189,6 +194,7 @@ class CompositeDatabaseParserTest extends AdministrationAndSchemaCommandParserTe
       stringParamName("name"),
       ifExists = false,
       composite = true,
+      Restrict,
       DestroyData,
       NoWait
     )(pos))
@@ -199,6 +205,7 @@ class CompositeDatabaseParserTest extends AdministrationAndSchemaCommandParserTe
       namespacedName("name"),
       ifExists = true,
       composite = true,
+      Restrict,
       DestroyData,
       NoWait
     )(pos))
@@ -209,6 +216,7 @@ class CompositeDatabaseParserTest extends AdministrationAndSchemaCommandParserTe
       namespacedName("name"),
       ifExists = false,
       composite = true,
+      Restrict,
       DestroyData,
       IndefiniteWait
     )(pos))
@@ -219,6 +227,7 @@ class CompositeDatabaseParserTest extends AdministrationAndSchemaCommandParserTe
       namespacedName("name"),
       ifExists = false,
       composite = true,
+      Restrict,
       DestroyData,
       TimeoutAfter(10)
     )(pos))
@@ -229,6 +238,7 @@ class CompositeDatabaseParserTest extends AdministrationAndSchemaCommandParserTe
       namespacedName("name"),
       ifExists = false,
       composite = true,
+      Restrict,
       DestroyData,
       NoWait
     )(pos))
@@ -236,13 +246,68 @@ class CompositeDatabaseParserTest extends AdministrationAndSchemaCommandParserTe
 
   test("DROP COMPOSITE DATABASE foo DUMP DATA") {
     parsesTo[Statements](
-      DropDatabase(literalFoo, ifExists = false, composite = true, DumpData, NoWait)(pos)
+      DropDatabase(literalFoo, ifExists = false, composite = true, Restrict, DumpData, NoWait)(pos)
     )
   }
 
   test("DROP COMPOSITE DATABASE foo DESTROY DATA") {
     parsesTo[Statements](
-      DropDatabase(literalFoo, ifExists = false, composite = true, DestroyData, NoWait)(pos)
+      DropDatabase(literalFoo, ifExists = false, composite = true, Restrict, DestroyData, NoWait)(pos)
     )
+  }
+
+  test("DROP COMPOSITE DATABASE name RESTRICT") {
+    parsesTo[Statements](DropDatabase(
+      namespacedName("name"),
+      ifExists = false,
+      composite = true,
+      Restrict,
+      DestroyData,
+      NoWait
+    )(pos))
+  }
+
+  test("DROP COMPOSITE DATABASE name CASCADE ALIASES") {
+    parsesTo[Statements](DropDatabase(
+      namespacedName("name"),
+      ifExists = false,
+      composite = true,
+      CascadeAliases,
+      DestroyData,
+      NoWait
+    )(pos))
+  }
+
+  test("DROP COMPOSITE DATABASE name IF EXISTS CASCADE ALIAS") {
+    parsesTo[Statements](DropDatabase(
+      namespacedName("name"),
+      ifExists = true,
+      composite = true,
+      CascadeAliases,
+      DestroyData,
+      NoWait
+    )(pos))
+  }
+
+  test("DROP COMPOSITE DATABASE name RESTRICT DUMP DATA") {
+    parsesTo[Statements](DropDatabase(
+      namespacedName("name"),
+      ifExists = false,
+      composite = true,
+      Restrict,
+      DumpData,
+      NoWait
+    )(pos))
+  }
+
+  test("DROP COMPOSITE DATABASE name CASCADE ALIASES WAIT") {
+    parsesTo[Statements](DropDatabase(
+      namespacedName("name"),
+      ifExists = false,
+      composite = true,
+      CascadeAliases,
+      DestroyData,
+      IndefiniteWait
+    )(pos))
   }
 }

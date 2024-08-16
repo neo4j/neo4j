@@ -91,6 +91,7 @@ import org.neo4j.cypher.internal.ast.RelationshipPropertyExistence
 import org.neo4j.cypher.internal.ast.RelationshipPropertyType
 import org.neo4j.cypher.internal.ast.RelationshipPropertyUniqueness
 import org.neo4j.cypher.internal.ast.RemoveAuth
+import org.neo4j.cypher.internal.ast.Restrict
 import org.neo4j.cypher.internal.ast.ShowColumn
 import org.neo4j.cypher.internal.ast.ShowProceduresClause
 import org.neo4j.cypher.internal.ast.ShowUserAction
@@ -7220,7 +7221,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     )
 
     assertGood(
-      attach(DropDatabase(privLhsLP, NamespacedName("db1")(pos), DumpData, forceComposite = false), 1.0),
+      attach(DropDatabase(privLhsLP, NamespacedName("db1")(pos), DumpData, forceComposite = false, Restrict), 1.0),
       adminPlanDescription
     )
 

@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.ast.AlterUser
 import org.neo4j.cypher.internal.ast.Auth
 import org.neo4j.cypher.internal.ast.AuthAttribute
 import org.neo4j.cypher.internal.ast.AuthId
+import org.neo4j.cypher.internal.ast.CascadeAliases
 import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.DatabaseName
 import org.neo4j.cypher.internal.ast.DeallocateServers
@@ -33,6 +34,7 @@ import org.neo4j.cypher.internal.ast.DestroyData
 import org.neo4j.cypher.internal.ast.DropConstraintOnName
 import org.neo4j.cypher.internal.ast.DropDatabase
 import org.neo4j.cypher.internal.ast.DropDatabaseAlias
+import org.neo4j.cypher.internal.ast.DropDatabaseAliasAction
 import org.neo4j.cypher.internal.ast.DropIndexOnName
 import org.neo4j.cypher.internal.ast.DropRole
 import org.neo4j.cypher.internal.ast.DropServer
@@ -58,6 +60,7 @@ import org.neo4j.cypher.internal.ast.RemoveHomeDatabaseAction
 import org.neo4j.cypher.internal.ast.RenameRole
 import org.neo4j.cypher.internal.ast.RenameServer
 import org.neo4j.cypher.internal.ast.RenameUser
+import org.neo4j.cypher.internal.ast.Restrict
 import org.neo4j.cypher.internal.ast.SetHomeDatabaseAction
 import org.neo4j.cypher.internal.ast.SetOwnPassword
 import org.neo4j.cypher.internal.ast.SingleQuery
@@ -402,13 +405,23 @@ trait DdlBuilder extends Cypher6ParserListener {
     ctx: Cypher6Parser.DropDatabaseContext
   ): Unit = {
     val additionalAction = if (ctx.DUMP() != null) DumpData else DestroyData
+    val aliasAction = astOpt[DropDatabaseAliasAction](ctx.aliasAction(), Restrict)
     ctx.ast = DropDatabase(
       ctx.symbolicAliasNameOrParameter().ast[DatabaseName](),
       ctx.EXISTS() != null,
       ctx.COMPOSITE() != null,
+      aliasAction,
       additionalAction,
       astOpt[WaitUntilComplete](ctx.waitClause(), NoWait)
     )(pos(ctx.getParent))
+  }
+
+  final override def exitAliasAction(
+    ctx: Cypher6Parser.AliasActionContext
+  ): Unit = {
+    ctx.ast =
+      if (ctx.CASCADE() != null) CascadeAliases
+      else Restrict
   }
 
   final override def exitAlterDatabase(

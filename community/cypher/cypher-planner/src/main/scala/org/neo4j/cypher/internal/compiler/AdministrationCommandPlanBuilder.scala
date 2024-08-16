@@ -34,6 +34,7 @@ import org.neo4j.cypher.internal.ast.AssignImmutablePrivilegeAction
 import org.neo4j.cypher.internal.ast.AssignPrivilegeAction
 import org.neo4j.cypher.internal.ast.AssignRoleAction
 import org.neo4j.cypher.internal.ast.CallClause
+import org.neo4j.cypher.internal.ast.CascadeAliases
 import org.neo4j.cypher.internal.ast.CatalogName
 import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.ClauseAllowedOnSystem
@@ -95,6 +96,7 @@ import org.neo4j.cypher.internal.ast.RenameRoleAction
 import org.neo4j.cypher.internal.ast.RenameServer
 import org.neo4j.cypher.internal.ast.RenameUser
 import org.neo4j.cypher.internal.ast.RenameUserAction
+import org.neo4j.cypher.internal.ast.Restrict
 import org.neo4j.cypher.internal.ast.Return
 import org.neo4j.cypher.internal.ast.RevokeBothType
 import org.neo4j.cypher.internal.ast.RevokeDenyType
@@ -963,8 +965,8 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
                   dbName,
                   DropDatabaseAction
                 ))
-                  .map(plans.EnsureDatabaseSafeToDelete(_, dbName))
-                  .map(plans.DropDatabase(_, dbName, DestroyData, forceComposite = false))
+                  .map(plans.EnsureDatabaseSafeToDelete(_, dbName, Restrict))
+                  .map(plans.DropDatabase(_, dbName, DestroyData, forceComposite = false, Restrict))
               case IfExistsDoNothing =>
                 Some(canCreateCheck)
                   .map(plans.DoNothingIfDatabaseExists(
@@ -991,8 +993,8 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
                   dbName,
                   DropCompositeDatabaseAction
                 ))
-                  .map(plans.EnsureDatabaseSafeToDelete(_, dbName))
-                  .map(plans.DropDatabase(_, dbName, DestroyData, forceComposite = false))
+                  .map(plans.EnsureDatabaseSafeToDelete(_, dbName, Restrict))
+                  .map(plans.DropDatabase(_, dbName, DestroyData, forceComposite = false, Restrict))
               case IfExistsDoNothing =>
                 Some(canCreateCheck)
                   .map(plans.DoNothingIfDatabaseExists(
@@ -1009,12 +1011,19 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
           .map(plans.LogSystemCommand(_, prettifier.asString(c)))
 
       // DROP [COMPOSITE] DATABASE foo [IF EXISTS] [DESTROY | DUMP DATA]
-      case c @ DropDatabase(dbName, ifExists, composite, additionalAction, waitUntilComplete) =>
+      case c @ DropDatabase(dbName, ifExists, composite, aliasAction, additionalAction, waitUntilComplete) =>
         val action = if (composite) DropCompositeDatabaseAction else DropDatabaseAction
         val assertNotBlockedPlan = plans.AssertManagementActionNotBlocked(action)
         Some(
           if (composite) plans.AssertAllowedDbmsActions(assertNotBlockedPlan, DropCompositeDatabaseAction)
           else plans.AssertCanDropDatabase(assertNotBlockedPlan, dbName, DropDatabaseAction)
+        ).map(assertAllowed =>
+          if (aliasAction == CascadeAliases)
+            plans.AssertAllowedDbmsActions(
+              Some(assertAllowed),
+              Seq(DropAliasAction)
+            )
+          else assertAllowed
         ).map(assertAllowed =>
           if (ifExists)
             plans.DoNothingIfDatabaseNotExists(
@@ -1025,9 +1034,9 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
             )
           else assertAllowed
         )
-          .map(plans.EnsureDatabaseSafeToDelete(_, dbName))
+          .map(plans.EnsureDatabaseSafeToDelete(_, dbName, aliasAction))
           .map(plans.EnsureValidNonSystemDatabase(_, dbName, "delete"))
-          .map(plans.DropDatabase(_, dbName, additionalAction, composite))
+          .map(plans.DropDatabase(_, dbName, additionalAction, composite, aliasAction))
           .map(wrapInWait(_, dbName, waitUntilComplete))
           .map(plans.LogSystemCommand(_, prettifier.asString(c)))
 

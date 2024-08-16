@@ -1039,7 +1039,13 @@ public class LiteralInterpreter
 
     @Override
     public NULL dropDatabase(
-            NULL p, NULL databaseName, boolean ifExists, boolean composite, boolean dumpData, NULL wait) {
+            NULL p,
+            NULL databaseName,
+            boolean ifExists,
+            boolean composite,
+            boolean aliasAction,
+            boolean dumpData,
+            NULL wait) {
         throw new UnsupportedOperationException("dropDatabase is not a literal");
     }
 

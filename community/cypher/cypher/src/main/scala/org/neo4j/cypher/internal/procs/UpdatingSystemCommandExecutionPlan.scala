@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.runtime.ExecutionMode
 import org.neo4j.cypher.internal.runtime.ProfileMode
 import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.result.RuntimeResult
+import org.neo4j.graphdb.QueryStatistics
 import org.neo4j.graphdb.Transaction
 import org.neo4j.graphdb.TransientFailureException
 import org.neo4j.graphdb.security.AuthorizationViolationException
@@ -179,6 +180,10 @@ class QueryHandler {
   def onResult(offset: Int, value: AnyValue, p: MapValue): QueryHandlerResult = Continue
 
   def onNoResults(p: MapValue): QueryHandlerResult = Continue
+
+  def countSystemUpdates(statistics: QueryStatistics): Int = {
+    if (statistics.containsUpdates()) 1 else 0
+  }
 }
 
 class QueryHandlerBuilder(parent: QueryHandler) extends QueryHandler {
@@ -188,6 +193,8 @@ class QueryHandlerBuilder(parent: QueryHandler) extends QueryHandler {
     parent.onResult(offset, value, params)
 
   override def onNoResults(params: MapValue): QueryHandlerResult = parent.onNoResults(params)
+
+  override def countSystemUpdates(statistics: QueryStatistics): Int = parent.countSystemUpdates(statistics)
 
   def handleError(f: (Throwable, MapValue) => Throwable): QueryHandlerBuilder = new QueryHandlerBuilder(this) {
 
@@ -205,6 +212,13 @@ class QueryHandlerBuilder(parent: QueryHandler) extends QueryHandler {
 
     override def onNoResults(params: MapValue): QueryHandlerResult =
       f(params).getOrElse(Continue)
+  }
+
+  def handleCountSystemUpdates(f: QueryStatistics => Int): QueryHandlerBuilder = new QueryHandlerBuilder(this) {
+
+    override def countSystemUpdates(statistics: QueryStatistics): Int = {
+      f(statistics)
+    }
   }
 
   def ignoreNoResult(): QueryHandlerBuilder = new QueryHandlerBuilder(this) {
@@ -231,6 +245,9 @@ object QueryHandler {
 
   def handleNoResult(f: MapValue => Option[QueryHandlerResult]): QueryHandlerBuilder =
     new QueryHandlerBuilder(new QueryHandler).handleNoResult(f)
+
+  def handleCountSystemUpdates(f: QueryStatistics => Int): QueryHandlerBuilder =
+    new QueryHandlerBuilder(new QueryHandler).handleCountSystemUpdates(f)
 
   def ignoreNoResult(): QueryHandlerBuilder = new QueryHandlerBuilder(new QueryHandler).ignoreNoResult()
 

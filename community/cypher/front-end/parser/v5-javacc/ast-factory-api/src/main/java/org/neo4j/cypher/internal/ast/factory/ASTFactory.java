@@ -686,7 +686,13 @@ public interface ASTFactory<
             WAIT_CLAUSE waitClause);
 
     ADMINISTRATION_COMMAND dropDatabase(
-            POS p, DATABASE_NAME databaseName, boolean ifExists, boolean composite, boolean dumpData, WAIT_CLAUSE wait);
+            POS p,
+            DATABASE_NAME databaseName,
+            boolean ifExists,
+            boolean composite,
+            boolean aliasAction,
+            boolean dumpData,
+            WAIT_CLAUSE wait);
 
     ADMINISTRATION_COMMAND alterDatabase(
             POS p,

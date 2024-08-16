@@ -222,6 +222,10 @@ CALL
    : C A L L
    ;
 
+CASCADE
+   : C A S C A D E
+   ;
+
 CASE
    : C A S E
    ;
@@ -976,6 +980,10 @@ REQUIRE
 
 REQUIRED
    : R E Q U I R E D
+   ;
+
+RESTRICT
+   : R E S T R I C T
    ;
 
 RETURN

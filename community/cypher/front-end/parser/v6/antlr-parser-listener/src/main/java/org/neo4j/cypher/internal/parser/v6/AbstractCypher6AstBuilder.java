@@ -422,6 +422,7 @@ public abstract class AbstractCypher6AstBuilder implements Cypher6ParserListener
                     (Cypher6Parser.SecondaryTopologyContext) ctx);
             case Cypher6Parser.RULE_secondaryToken -> exitSecondaryToken((Cypher6Parser.SecondaryTokenContext) ctx);
             case Cypher6Parser.RULE_dropDatabase -> exitDropDatabase((Cypher6Parser.DropDatabaseContext) ctx);
+            case Cypher6Parser.RULE_aliasAction -> exitAliasAction((Cypher6Parser.AliasActionContext) ctx);
             case Cypher6Parser.RULE_alterDatabase -> exitAlterDatabase((Cypher6Parser.AlterDatabaseContext) ctx);
             case Cypher6Parser.RULE_alterDatabaseAccess -> exitAlterDatabaseAccess(
                     (Cypher6Parser.AlterDatabaseAccessContext) ctx);

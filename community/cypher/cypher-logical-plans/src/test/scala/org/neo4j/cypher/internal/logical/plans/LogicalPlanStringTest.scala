@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.ast.DatabaseName
 import org.neo4j.cypher.internal.ast.DatabaseScope
 import org.neo4j.cypher.internal.ast.DbmsAction
 import org.neo4j.cypher.internal.ast.DropDatabaseAdditionalAction
+import org.neo4j.cypher.internal.ast.DropDatabaseAliasAction
 import org.neo4j.cypher.internal.ast.GraphDirectReference
 import org.neo4j.cypher.internal.ast.GraphFunctionReference
 import org.neo4j.cypher.internal.ast.IsNormalized
@@ -308,6 +309,7 @@ object LogicalPlanStringTest {
       classOf[Options],
       classOf[DatabaseScope],
       classOf[DropDatabaseAdditionalAction],
+      classOf[DropDatabaseAliasAction],
       classOf[WaitUntilComplete],
       classOf[PrivilegeQualifier],
       classOf[PropertyResource],

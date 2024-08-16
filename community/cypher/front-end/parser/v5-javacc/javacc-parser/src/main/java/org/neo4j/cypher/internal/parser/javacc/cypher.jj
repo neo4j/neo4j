@@ -449,6 +449,7 @@ TOKEN [IGNORE_CASE] :
     | < BUILT: "BUILT" >
     | < BY: "BY" >
     | < CALL: "CALL" >
+    | < CASCADE: "CASCADE" >
     | < CASE: "CASE" >
     | < CHANGE: "CHANGE">
     | < CIDR: "CIDR">
@@ -638,6 +639,7 @@ TOKEN [IGNORE_CASE] :
     | < REPORT: "REPORT" >
     | < REQUIRE: "REQUIRE" >
     | < REQUIRED: "REQUIRED" >
+    | < RESTRICT: "RESTRICT" >
     | < RETURN: "RETURN" >
     | < REVOKE: "REVOKE">
     | < ROLE: "ROLE">
@@ -6980,15 +6982,17 @@ ADMINISTRATION_COMMAND DropDatabase( Token start ) throws Exception:
     WAIT_CLAUSE wait = astFactory.wait( false, -1 );
     boolean dumpData = false;
     boolean composite = false;
+    boolean aliasAction = false;
 }
 {
     ( <COMPOSITE> { composite = true; } )?
     <DATABASE> databaseName=SymbolicAliasNameOrParameter()
     ( <IF> <EXISTS> { ifExists = true; } )?
+    ( <CASCADE> ( <ALIAS> | <ALIASES> ) {aliasAction = true;} | <RESTRICT>)?
     ( ( <DUMP> { dumpData = true; } | <DESTROY> ) <DATA> )?
     ( wait = WaitClause() )?
     {
-        return astFactory.dropDatabase( pos( start ), databaseName.getLocalAliasName(astFactory), ifExists, composite, dumpData, wait );
+        return astFactory.dropDatabase( pos( start ), databaseName.getLocalAliasName(astFactory), ifExists, composite, aliasAction, dumpData, wait );
     }
 }
 
@@ -7596,6 +7600,7 @@ Token UnescapedLabelSymbolicNameString() :
         | t=<BUILT>
         | t=<BY>
         | t=<CALL>
+        | t=<CASCADE>
         | t=<CASE>
         | t=<CHANGE>
         | t=<CIDR>
@@ -7749,6 +7754,7 @@ Token UnescapedLabelSymbolicNameString() :
         | t=<REPORT>
         | t=<REQUIRE>
         | t=<REQUIRED>
+        | t=<RESTRICT>
         | t=<RETURN>
         | t=<REVOKE>
         | t=<ROLE>

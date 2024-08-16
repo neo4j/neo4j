@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.ast.DatabaseName
 import org.neo4j.cypher.internal.ast.DatabaseScope
 import org.neo4j.cypher.internal.ast.DbmsAction
 import org.neo4j.cypher.internal.ast.DropDatabaseAdditionalAction
+import org.neo4j.cypher.internal.ast.DropDatabaseAliasAction
 import org.neo4j.cypher.internal.ast.ExternalAuth
 import org.neo4j.cypher.internal.ast.GraphAction
 import org.neo4j.cypher.internal.ast.HomeDatabaseAction
@@ -493,7 +494,8 @@ case class DropDatabase(
   source: AdministrationCommandLogicalPlan,
   databaseName: DatabaseName,
   additionalAction: DropDatabaseAdditionalAction,
-  forceComposite: Boolean
+  forceComposite: Boolean,
+  aliasAction: DropDatabaseAliasAction
 )(implicit idGen: IdGen) extends DatabaseAdministrationLogicalPlan(Some(source))
 
 case class AlterDatabase(
@@ -574,7 +576,8 @@ case class EnsureValidNonSystemDatabase(
 
 case class EnsureDatabaseSafeToDelete(
   source: AdministrationCommandLogicalPlan,
-  databaseName: DatabaseName
+  databaseName: DatabaseName,
+  aliasAction: DropDatabaseAliasAction
 )(implicit idGen: IdGen)
     extends DatabaseAdministrationLogicalPlan(Some(source))
 

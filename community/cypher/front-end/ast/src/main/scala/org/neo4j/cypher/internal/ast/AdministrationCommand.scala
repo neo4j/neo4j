@@ -1412,6 +1412,7 @@ final case class DropDatabase(
   dbName: DatabaseName,
   ifExists: Boolean,
   composite: Boolean,
+  aliasAction: DropDatabaseAliasAction,
   additionalAction: DropDatabaseAdditionalAction,
   waitUntilComplete: WaitUntilComplete
 )(val position: InputPosition) extends WaitableAdministrationCommand {
@@ -1500,6 +1501,10 @@ case object ReadWriteAccess extends Access
 sealed abstract class DropDatabaseAdditionalAction(val name: String)
 case object DumpData extends DropDatabaseAdditionalAction("DUMP DATA")
 case object DestroyData extends DropDatabaseAdditionalAction("DESTROY DATA")
+
+sealed abstract class DropDatabaseAliasAction(val name: String)
+case object Restrict extends DropDatabaseAliasAction("RESTRICT")
+case object CascadeAliases extends DropDatabaseAliasAction("CASCADE ALIASES")
 
 // Alias commands
 

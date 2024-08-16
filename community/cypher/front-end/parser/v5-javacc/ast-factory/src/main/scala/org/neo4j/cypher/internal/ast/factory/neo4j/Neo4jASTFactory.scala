@@ -59,6 +59,7 @@ import org.neo4j.cypher.internal.ast.AuthAttribute
 import org.neo4j.cypher.internal.ast.AuthId
 import org.neo4j.cypher.internal.ast.BtreeIndexes
 import org.neo4j.cypher.internal.ast.BuiltInFunctions
+import org.neo4j.cypher.internal.ast.CascadeAliases
 import org.neo4j.cypher.internal.ast.CatalogName
 import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.CollectExpression
@@ -110,6 +111,7 @@ import org.neo4j.cypher.internal.ast.DropDatabase
 import org.neo4j.cypher.internal.ast.DropDatabaseAction
 import org.neo4j.cypher.internal.ast.DropDatabaseAdditionalAction
 import org.neo4j.cypher.internal.ast.DropDatabaseAlias
+import org.neo4j.cypher.internal.ast.DropDatabaseAliasAction
 import org.neo4j.cypher.internal.ast.DropIndexAction
 import org.neo4j.cypher.internal.ast.DropIndexOnName
 import org.neo4j.cypher.internal.ast.DropRole
@@ -230,6 +232,7 @@ import org.neo4j.cypher.internal.ast.RenameRoleAction
 import org.neo4j.cypher.internal.ast.RenameServer
 import org.neo4j.cypher.internal.ast.RenameUser
 import org.neo4j.cypher.internal.ast.RenameUserAction
+import org.neo4j.cypher.internal.ast.Restrict
 import org.neo4j.cypher.internal.ast.Return
 import org.neo4j.cypher.internal.ast.ReturnItem
 import org.neo4j.cypher.internal.ast.ReturnItems
@@ -2909,17 +2912,13 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
     databaseName: DatabaseName,
     ifExists: Boolean,
     composite: Boolean,
+    javaAliasAction: Boolean,
     dumpData: Boolean,
     wait: WaitUntilComplete
   ): DropDatabase = {
-    val action: DropDatabaseAdditionalAction =
-      if (dumpData) {
-        DumpData
-      } else {
-        DestroyData
-      }
-
-    DropDatabase(databaseName, ifExists, composite, action, wait)(p)
+    val action: DropDatabaseAdditionalAction = if (dumpData) DumpData else DestroyData
+    val aliasAction: DropDatabaseAliasAction = if (javaAliasAction) CascadeAliases else Restrict
+    DropDatabase(databaseName, ifExists, composite, aliasAction, action, wait)(p)
   }
 
   override def alterDatabase(

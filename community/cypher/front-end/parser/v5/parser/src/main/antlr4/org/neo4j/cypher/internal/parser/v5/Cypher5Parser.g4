@@ -1592,7 +1592,12 @@ secondaryToken
    ;
 
 dropDatabase
-   : COMPOSITE? DATABASE symbolicAliasNameOrParameter (IF EXISTS)? ((DUMP | DESTROY) DATA)? waitClause?
+   : COMPOSITE? DATABASE symbolicAliasNameOrParameter (IF EXISTS)? aliasAction? ((DUMP | DESTROY) DATA)? waitClause?
+   ;
+
+aliasAction
+   : RESTRICT
+   | CASCADE (ALIAS | ALIASES)
    ;
 
 alterDatabase
@@ -1810,6 +1815,7 @@ unescapedLabelSymbolicNameString
    | BUILT
    | BY
    | CALL
+   | CASCADE
    | CASE
    | CHANGE
    | CIDR
@@ -1963,6 +1969,7 @@ unescapedLabelSymbolicNameString
    | REPORT
    | REQUIRE
    | REQUIRED
+   | RESTRICT
    | RETURN
    | REVOKE
    | ROLE

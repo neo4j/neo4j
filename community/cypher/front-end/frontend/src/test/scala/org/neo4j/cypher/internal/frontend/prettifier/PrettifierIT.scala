@@ -2099,21 +2099,29 @@ class PrettifierIT extends CypherFunSuite {
     "create composite database $c options {existingData: 'use'}" ->
       "CREATE COMPOSITE DATABASE $c OPTIONS {existingData: \"use\"}",
     "DROP database foO_Bar_42" ->
-      "DROP DATABASE foO_Bar_42 DESTROY DATA",
+      "DROP DATABASE foO_Bar_42 RESTRICT DESTROY DATA",
     "DROP database $foo" ->
-      "DROP DATABASE $foo DESTROY DATA",
+      "DROP DATABASE $foo RESTRICT DESTROY DATA",
     "DROP database foO_Bar_42 if EXISTS" ->
-      "DROP DATABASE foO_Bar_42 IF EXISTS DESTROY DATA",
+      "DROP DATABASE foO_Bar_42 IF EXISTS RESTRICT DESTROY DATA",
     "DROP database blah if EXISTS WAIT" ->
-      "DROP DATABASE blah IF EXISTS DESTROY DATA WAIT",
+      "DROP DATABASE blah IF EXISTS RESTRICT DESTROY DATA WAIT",
     "DROP database foO_Bar_42 dump Data" ->
-      "DROP DATABASE foO_Bar_42 DUMP DATA",
+      "DROP DATABASE foO_Bar_42 RESTRICT DUMP DATA",
     "DROP database foO_Bar_42 Destroy DATA" ->
-      "DROP DATABASE foO_Bar_42 DESTROY DATA",
+      "DROP DATABASE foO_Bar_42 RESTRICT DESTROY DATA",
     "DROP composite database foo Destroy DATA" ->
-      "DROP COMPOSITE DATABASE foo DESTROY DATA",
+      "DROP COMPOSITE DATABASE foo RESTRICT DESTROY DATA",
     "DROP composite database $foo DUMP DATA" ->
-      "DROP COMPOSITE DATABASE $foo DUMP DATA",
+      "DROP COMPOSITE DATABASE $foo RESTRICT DUMP DATA",
+    "DROP database `foO-Bar-42` restRICT" ->
+      "DROP DATABASE `foO-Bar-42` RESTRICT DESTROY DATA",
+    "DROP database `foO-Bar-42` CAScade aliaS" ->
+      "DROP DATABASE `foO-Bar-42` CASCADE ALIASES DESTROY DATA",
+    "DROP database `foO-Bar-42` IF EXISTS restRICT WAIT" ->
+      "DROP DATABASE `foO-Bar-42` IF EXISTS RESTRICT DESTROY DATA WAIT",
+    "DROP composite database `foO-Bar-42` CAScade aliaS DUMP DATA WAIT 10" ->
+      "DROP COMPOSITE DATABASE `foO-Bar-42` CASCADE ALIASES DUMP DATA WAIT 10 SECONDS",
     "alter database foo set ACCESS read only" ->
       "ALTER DATABASE foo SET ACCESS READ ONLY".stripMargin,
     "alteR databaSe foo if EXISTS SEt access read WRITE" ->

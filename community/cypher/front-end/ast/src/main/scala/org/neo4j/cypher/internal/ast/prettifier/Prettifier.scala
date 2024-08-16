@@ -58,7 +58,6 @@ import org.neo4j.cypher.internal.ast.DefaultGraphScope
 import org.neo4j.cypher.internal.ast.Delete
 import org.neo4j.cypher.internal.ast.DenyPrivilege
 import org.neo4j.cypher.internal.ast.DescSortItem
-import org.neo4j.cypher.internal.ast.DestroyData
 import org.neo4j.cypher.internal.ast.DropConstraintOnName
 import org.neo4j.cypher.internal.ast.DropDatabase
 import org.neo4j.cypher.internal.ast.DropDatabaseAlias
@@ -66,7 +65,6 @@ import org.neo4j.cypher.internal.ast.DropIndexOnName
 import org.neo4j.cypher.internal.ast.DropRole
 import org.neo4j.cypher.internal.ast.DropServer
 import org.neo4j.cypher.internal.ast.DropUser
-import org.neo4j.cypher.internal.ast.DumpData
 import org.neo4j.cypher.internal.ast.ElementQualifier
 import org.neo4j.cypher.internal.ast.ElementsAllQualifier
 import org.neo4j.cypher.internal.ast.EnableServer
@@ -681,17 +679,9 @@ case class Prettifier(
         }
         s"${x.name} ${escapeName(name)}$ifExists$formattedOptions${waitUntilComplete.name}"
 
-      case x @ DropDatabase(dbName, ifExists, _, additionalAction, waitUntilComplete) =>
-        (ifExists, additionalAction) match {
-          case (false, DestroyData) =>
-            s"${x.name} ${Prettifier.escapeName(dbName)} DESTROY DATA${waitUntilComplete.name}"
-          case (true, DestroyData) =>
-            s"${x.name} ${Prettifier.escapeName(dbName)} IF EXISTS DESTROY DATA${waitUntilComplete.name}"
-          case (false, DumpData) =>
-            s"${x.name} ${Prettifier.escapeName(dbName)} DUMP DATA${waitUntilComplete.name}"
-          case (true, DumpData) =>
-            s"${x.name} ${Prettifier.escapeName(dbName)} IF EXISTS DUMP DATA${waitUntilComplete.name}"
-        }
+      case x @ DropDatabase(dbName, ifExists, _, aliasAction, additionalAction, waitUntilComplete) =>
+        val maybeIfExists = if (ifExists) " IF EXISTS" else ""
+        s"${x.name} ${Prettifier.escapeName(dbName)}$maybeIfExists ${aliasAction.name} ${additionalAction.name}${waitUntilComplete.name}"
 
       case x @ AlterDatabase(dbName, ifExists, access, topology, options, optionsToRemove, waitUntilComplete) =>
         val maybeAccessString = access.map(getAccessString).getOrElse("")

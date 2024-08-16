@@ -46,6 +46,7 @@ import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.BTREE;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.BUILT;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.BY;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.CALL;
+import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.CASCADE;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.CASE;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.CHANGE;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.CIDR;
@@ -208,6 +209,7 @@ import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.REPLACE;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.REPORT;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.REQUIRE;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.REQUIRED;
+import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.RESTRICT;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.RETURN;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.REVOKE;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.ROLE;
@@ -320,6 +322,7 @@ public class IdentifierTokens {
             BUILT,
             BY,
             CALL,
+            CASCADE,
             CASE,
             CIDR,
             CHANGE,
@@ -481,6 +484,7 @@ public class IdentifierTokens {
             REPORT,
             REQUIRE,
             REQUIRED,
+            RESTRICT,
             RETURN,
             REVOKE,
             ROLE,
