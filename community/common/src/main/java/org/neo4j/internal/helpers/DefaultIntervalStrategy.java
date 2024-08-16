@@ -31,6 +31,11 @@ public class DefaultIntervalStrategy implements IntervalStrategy {
         return new DefaultIntervalStrategy(initialTime, initialTime, timeUnit, i -> i);
     }
 
+    public static IntervalStrategy incremental(
+            long initialTime, long upperBoundTime, long deltaTime, TimeUnit timeUnit) {
+        return new DefaultIntervalStrategy(initialTime, upperBoundTime, timeUnit, i -> i + deltaTime);
+    }
+
     private final Function<Long, Long> increasingFunction;
     private final long startTimeMillis;
     private final long upperBoundTime;
