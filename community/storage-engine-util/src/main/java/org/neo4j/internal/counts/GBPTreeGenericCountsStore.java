@@ -312,6 +312,17 @@ public class GBPTreeGenericCountsStore implements AutoCloseable, ConsistencyChec
     }
 
     /**
+     * Essentially a normal updater, but one which isn't associated with any particular transaction ID,
+     * and its changes can therefor not be reasoned about in terms of whether to apply again in recovery.
+     */
+    protected CountUpdater createDirectParallelUpdater(CursorContext cursorContext) {
+        checkCacheSizeAndPotentiallyFlush(cursorContext);
+        Lock lock = lock(this.lock.readLock());
+        return new CountUpdater(
+                new MapWriter(key -> readCountFromTree(key, cursorContext), changes, idSequence, -1, false), lock);
+    }
+
+    /**
      * Opens and returns a {@link CountUpdater} which makes direct insertions into the backing tree. This comes from the use case of having a way
      * to build the initial data set without the context of transactions, such as batch-insertion or initial import.
      *
