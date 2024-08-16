@@ -31,10 +31,6 @@ public class ContinuousIdRange implements PageIdRange {
     private int cursor = 0;
     private int marker;
 
-    // investigation fields
-    private long reuseCount;
-    private long ownerThread;
-
     public ContinuousIdRange(long rangeStart, int rangeSize, long idsPerPage) {
         this.rangeStart = rangeStart;
         this.rangeSize = rangeSize;
@@ -80,15 +76,8 @@ public class ContinuousIdRange implements PageIdRange {
     }
 
     @Override
-    public void setContext(long owner) {
-        this.ownerThread = owner;
-        reuseCount++;
-    }
-
-    @Override
     public String toString() {
         return "ContinuousIdRange{" + "rangeStart=" + rangeStart + ", rangeSize=" + rangeSize + ", idsPerPage="
-                + idsPerPage + ", cursor=" + cursor + ", marker=" + marker + ", reuseCount=" + reuseCount
-                + ", ownerThread=" + ownerThread + '}';
+                + idsPerPage + ", cursor=" + cursor + ", marker=" + marker + '}';
     }
 }
