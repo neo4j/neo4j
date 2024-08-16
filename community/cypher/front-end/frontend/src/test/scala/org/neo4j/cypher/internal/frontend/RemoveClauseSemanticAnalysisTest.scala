@@ -17,7 +17,6 @@
 package org.neo4j.cypher.internal.frontend
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticError
-import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
@@ -26,25 +25,15 @@ class RemoveClauseSemanticAnalysisTest
     with NameBasedSemanticAnalysisTestSuite {
 
   test("MATCH (n) REMOVE n[\"prop\"]") {
-    runSemanticAnalysis().errors.toSet shouldEqual Set(
-      SemanticError(
-        "Removing labels or properties dynamically is not supported.",
-        InputPosition(19, 1, 20).withInputLength(6)
-      )
-    )
+    runSemanticAnalysis().errors.toSet shouldBe empty
   }
 
   test("MATCH (n), (m) REMOVE (CASE WHEN n.prop = 5 THEN n ELSE m END)[\"prop\"]") {
-    runSemanticAnalysis().errors.toSet shouldEqual Set(
-      SemanticError(
-        "Removing labels or properties dynamically is not supported.",
-        InputPosition(63, 1, 64).withInputLength(6)
-      )
-    )
+    runSemanticAnalysis().errors.toSet shouldBe empty
   }
 
   test("MATCH (n), (m) REMOVE n[1]") {
-    runSemanticAnalysisWithSemanticFeatures(SemanticFeature.DynamicProperties).errors.toSet shouldEqual Set(
+    runSemanticAnalysis().errors.toSet shouldEqual Set(
       SemanticError(
         "Type mismatch: node or relationship property key must be given as String, but was Integer",
         InputPosition(24, 1, 25)
@@ -53,7 +42,7 @@ class RemoveClauseSemanticAnalysisTest
   }
 
   test("MATCH (n)-[r]->(m) REMOVE r[5.0]") {
-    runSemanticAnalysisWithSemanticFeatures(SemanticFeature.DynamicProperties).errors.toSet shouldEqual Set(
+    runSemanticAnalysis().errors.toSet shouldEqual Set(
       SemanticError(
         "Type mismatch: node or relationship property key must be given as String, but was Float",
         InputPosition(28, 1, 29)
@@ -62,7 +51,7 @@ class RemoveClauseSemanticAnalysisTest
   }
 
   test("WITH 5 AS var MATCH (n) REMOVE n[var]") {
-    runSemanticAnalysisWithSemanticFeatures(SemanticFeature.DynamicProperties).errors.toSet shouldEqual Set(
+    runSemanticAnalysis().errors.toSet shouldEqual Set(
       SemanticError(
         "Type mismatch: node or relationship property key must be given as String, but was Integer",
         InputPosition(33, 1, 34)
@@ -71,7 +60,7 @@ class RemoveClauseSemanticAnalysisTest
   }
 
   test("WITH {key: 1} AS var REMOVE var['key']") {
-    runSemanticAnalysisWithSemanticFeatures(SemanticFeature.DynamicProperties).errors.toSet shouldEqual Set(
+    runSemanticAnalysis().errors.toSet shouldEqual Set(
       SemanticError(
         "Type mismatch: expected Node or Relationship but was Map",
         InputPosition(28, 1, 29)
@@ -80,22 +69,22 @@ class RemoveClauseSemanticAnalysisTest
   }
 
   test("MATCH (n) REMOVE n[\"prop2\"]") {
-    runSemanticAnalysisWithSemanticFeatures(SemanticFeature.DynamicProperties).errors.toSet shouldBe empty
+    runSemanticAnalysis().errors.toSet shouldBe empty
   }
 
   test("MATCH ()-[r]->() REMOVE r[\"prop2\"]") {
-    runSemanticAnalysisWithSemanticFeatures(SemanticFeature.DynamicProperties).errors.toSet shouldBe empty
+    runSemanticAnalysis().errors.toSet shouldBe empty
   }
 
   test("MATCH (n) REMOVE n.prop") {
-    runSemanticAnalysisWithSemanticFeatures(SemanticFeature.DynamicProperties).errors.toSet shouldBe empty
+    runSemanticAnalysis().errors.toSet shouldBe empty
   }
 
   test("MATCH (n) REMOVE n IS Label") {
-    runSemanticAnalysisWithSemanticFeatures(SemanticFeature.DynamicProperties).errors.toSet shouldBe empty
+    runSemanticAnalysis().errors.toSet shouldBe empty
   }
 
   test("MATCH (n) REMOVE n :Label") {
-    runSemanticAnalysisWithSemanticFeatures(SemanticFeature.DynamicProperties).errors.toSet shouldBe empty
+    runSemanticAnalysis().errors.toSet shouldBe empty
   }
 }

@@ -21,12 +21,10 @@ package cypher.features
 
 import cypher.features.Neo4jExceptionToExecutionFailed.convert
 import org.neo4j.configuration.Config
-import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.configuration.GraphDatabaseSettings.cypher_hints_error
 import org.neo4j.configuration.connectors.BoltConnector
 import org.neo4j.configuration.helpers.SocketAddress
-import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.testing.api.StatementResult
 import org.neo4j.cypher.testing.impl.FeatureDatabaseManagementService
 import org.neo4j.cypher.testing.impl.driver.DriverCypherExecutorFactory
@@ -43,7 +41,6 @@ import org.opencypher.tools.tck.values.CypherValue
 
 import java.lang.Boolean.TRUE
 import java.time.Duration
-import java.util.Collections
 
 import scala.jdk.CollectionConverters.MapHasAsJava
 import scala.util.Failure
@@ -63,16 +60,15 @@ object Neo4jAdapter {
   // This method will allow introducing semanticfeatures (feature flags) for a set of feature files
   // When the semantic feature is made generally available, we will just need to update the case statements.
   def featureDependentSettings(featureName: String): collection.Map[Setting[_], Object] = featureName match {
-    case "DynamicLabelsAcceptance" | "DynamicPropertiesAcceptance" =>
-      enableSemanticFeature(SemanticFeature.DynamicProperties)
     case _ =>
       Map.empty
   }
 
-  private def enableSemanticFeature(feature: SemanticFeature): Map[Setting[_], Object] = Map[Setting[_], Object](
-    GraphDatabaseInternalSettings.cypher_enable_extra_semantic_features ->
-      Collections.singleton(feature.productPrefix)
-  )
+  // Uncomment and use if you want to make use of a feature flag in the acceptance tests :)
+  // private def enableSemanticFeature(feature: SemanticFeature): Map[Setting[_], Object] = Map[Setting[_], Object](
+  //  GraphDatabaseInternalSettings.cypher_enable_extra_semantic_features ->
+  //    Collections.singleton(feature.productPrefix)
+  // )
 
   def apply(
     prefix: QueryPrefix,

@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.configuration.GraphDatabaseInternalSettings.EagerAnalysisImplementation
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
-import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.compiler.ExecutionModel.Volcano
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
@@ -899,7 +898,6 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
     val planner = plannerBuilder()
       .setAllNodesCardinality(10)
       .setRelationshipCardinality("()-[]->()", 10)
-      .addSemanticFeature(SemanticFeature.DynamicProperties)
       .withSetting(GraphDatabaseInternalSettings.cypher_eager_analysis_implementation, impl)
       .build()
 
@@ -1113,7 +1111,6 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
     val planner = plannerBuilder()
       .setAllNodesCardinality(10)
       .setRelationshipCardinality("()-[:R]->()", 10)
-      .addSemanticFeature(SemanticFeature.DynamicProperties)
       .withSetting(GraphDatabaseInternalSettings.cypher_eager_analysis_implementation, impl)
       .build()
 
@@ -1594,7 +1591,6 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
       .setAllNodesCardinality(100)
       .setLabelCardinality("Label", 50)
       .setLabelCardinality("Label2", 50)
-      .addSemanticFeature(SemanticFeature.DynamicProperties)
       .build()
 
     val query = """MATCH (n:Label), (m:Label2) SET n:$("Label2") RETURN m, n""".stripMargin
@@ -1618,7 +1614,6 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
     val planner = plannerBuilder()
       .setAllNodesCardinality(100)
       .setLabelCardinality("Label", 50)
-      .addSemanticFeature(SemanticFeature.DynamicProperties)
       .build()
 
     val query = """MATCH (n:Label)
@@ -1642,7 +1637,6 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
     val planner = plannerBuilder()
       .setAllNodesCardinality(100)
       .setLabelCardinality("Label", 50)
-      .addSemanticFeature(SemanticFeature.DynamicProperties)
       .build()
 
     val query = """MATCH (m:Label), (n)
@@ -1674,7 +1668,6 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
     val planner = plannerBuilder()
       .setAllNodesCardinality(100)
       .setLabelCardinality("Label", 50)
-      .addSemanticFeature(SemanticFeature.DynamicProperties)
       .build()
 
     val query = """MATCH (n:Label), (m)
@@ -1708,7 +1701,6 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
     val planner = plannerBuilder()
       .setAllNodesCardinality(100)
       .setLabelCardinality("Label", 50)
-      .addSemanticFeature(SemanticFeature.DynamicProperties)
       .build()
 
     val query = """LOAD CSV WITH HEADERS FROM 'file:///artists-with-headers.csv' AS line
@@ -1734,7 +1726,6 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
     val planner = plannerBuilder()
       .setAllNodesCardinality(100)
       .setLabelCardinality("Person", 50)
-      .addSemanticFeature(SemanticFeature.DynamicProperties)
       .build()
 
     val query = """MATCH (p), (n:Person)
@@ -1775,7 +1766,6 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
     val planner = plannerBuilder()
       .setAllNodesCardinality(100)
       .setLabelCardinality("Person", 50)
-      .addSemanticFeature(SemanticFeature.DynamicProperties)
       .build()
 
     val query = """MATCH (p), (n:Person)
@@ -1816,7 +1806,6 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
     val planner = plannerBuilder()
       .setAllNodesCardinality(100)
       .setLabelCardinality("Label", 50)
-      .addSemanticFeature(SemanticFeature.DynamicProperties)
       .build()
 
     val query = """WITH COLLECT { UNWIND range(0,3) AS id RETURN id} as labels
@@ -1848,7 +1837,6 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
     val planner = plannerBuilder()
       .setAllNodesCardinality(100)
       .setLabelCardinality("Label", 50)
-      .addSemanticFeature(SemanticFeature.DynamicProperties)
       .build()
     // Node is distinct so no eager is necessary.
     val query = """WITH "NewLabel" AS label, "OldLabel" AS label2

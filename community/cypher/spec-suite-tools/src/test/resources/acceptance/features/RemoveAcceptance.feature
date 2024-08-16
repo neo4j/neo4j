@@ -52,12 +52,3 @@ Feature: RemoveAcceptance
     Then the side effects should be:
       | -labels     | 1 |
       | -properties | 1 |
-
-  Scenario: Remove Dynamic Labels should fail on feature flag
-    Given an empty graph
-    When executing query:
-      """
-      MATCH (n)
-      REMOVE n:$("Label")
-      """
-    Then a SyntaxError should be raised at compile time: *
