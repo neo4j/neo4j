@@ -39,11 +39,9 @@ public interface RawIterator<T, EXCEPTION extends Exception> {
         throw new UnsupportedOperationException();
     }
 
-    ResourceRawIterator<Object, Exception> EMPTY_ITERATOR = ResourceRawIterator.of();
-
     @SuppressWarnings("unchecked")
     static <T, EXCEPTION extends Exception> ResourceRawIterator<T, EXCEPTION> empty() {
-        return (ResourceRawIterator<T, EXCEPTION>) EMPTY_ITERATOR;
+        return ResourceRawIterator.empty();
     }
 
     static <T, EX extends Exception> RawIterator<T, EX> of(T... values) {

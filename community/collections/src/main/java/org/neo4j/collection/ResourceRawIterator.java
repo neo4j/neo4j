@@ -26,8 +26,11 @@ import org.neo4j.graphdb.Resource;
 /** A {@link RawIterator} with resources. */
 public interface ResourceRawIterator<T, E extends Exception> extends RawIterator<T, E>, Resource {
 
+    ResourceRawIterator<Object, Exception> EMPTY_ITERATOR = ResourceRawIterator.of();
+
+    @SuppressWarnings("unchecked")
     static <T, E extends Exception> ResourceRawIterator<T, E> empty() {
-        return RawIterator.empty();
+        return (ResourceRawIterator<T, E>) EMPTY_ITERATOR;
     }
 
     static <T, E extends Exception> ResourceRawIterator<T, E> of(T... values) {
