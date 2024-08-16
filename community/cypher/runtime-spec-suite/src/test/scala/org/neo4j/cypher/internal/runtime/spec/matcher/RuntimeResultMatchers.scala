@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.logical.plans.Prober
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.spec._
+import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.graphdb.QueryStatistics
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.lock.LockType
@@ -121,6 +122,7 @@ trait RuntimeResultMatchers[CONTEXT <: RuntimeContext] {
     private var maybeLockedRelationships: Option[LockResourceMatcher] = None
 
     private var maybeLocks: Option[LockMatcher] = None
+    private var maybeNotifications: Option[NotificationsMatcher] = None
 
     def withNoUpdates(): RuntimeResultMatcher = withStatistics()
 
@@ -194,6 +196,11 @@ trait RuntimeResultMatchers[CONTEXT <: RuntimeContext] {
       this
     }
 
+    def withNotifications(notifications: InternalNotification*): RuntimeResultMatcher = {
+      maybeNotifications = Some(new NotificationsMatcher(notifications))
+      this
+    }
+
     def withSingleRow(values: Any*): RuntimeResultMatcher = withRows(singleRow(values: _*))
 
     def withRows(rows: Iterable[Array[_]], listInAnyOrder: Boolean = false): RuntimeResultMatcher =
@@ -230,6 +237,11 @@ trait RuntimeResultMatchers[CONTEXT <: RuntimeContext] {
           .orElse {
             maybeLockedRelationships
               .map(_.apply(()))
+              .filter(_.matches == false)
+          }
+          .orElse {
+            maybeNotifications
+              .map(_.apply(left.notifications))
               .filter(_.matches == false)
           }
           .getOrElse {
@@ -294,6 +306,21 @@ trait RuntimeResultMatchers[CONTEXT <: RuntimeContext] {
         rawFailureMessage = s"expected locks ${expectedLocked.mkString(", ")} but got ${actualLockList.mkString(", ")}",
         rawNegatedFailureMessage = ""
       )
+    }
+  }
+
+  class NotificationsMatcher(expectedNotifications: Seq[InternalNotification])
+      extends Matcher[Seq[InternalNotification]] {
+
+    override def apply(left: Seq[InternalNotification]): MatchResult = {
+
+      val expectedString = if (left.isEmpty) "no notifications" else left.mkString(", ")
+      MatchResult(
+        matches = left.sortBy(_.notificationName) == expectedNotifications.sortBy(_.notificationName),
+        rawFailureMessage = s"expected notifications ${expectedNotifications.mkString(", ")} but got $expectedString.",
+        rawNegatedFailureMessage = ""
+      )
+
     }
   }
 

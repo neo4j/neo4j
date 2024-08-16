@@ -45,6 +45,7 @@ import org.neo4j.cypher.internal.runtime.spec.execution.RuntimeTestSupportExecut
 import org.neo4j.cypher.internal.runtime.spec.matcher.RuntimeResultMatchers
 import org.neo4j.cypher.internal.runtime.spec.resolver.RuntimeTestResolver
 import org.neo4j.cypher.internal.runtime.spec.rewriters.TestPlanCombinationRewriter.TestPlanCombinationRewriterHint
+import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.result.RuntimeResult
@@ -549,6 +550,7 @@ trait RuntimeTestResult {
   def resultConsumptionController: RuntimeTestResultConsumptionController
   def pageCacheHits: Long = runtimeResult.asInstanceOf[ClosingRuntimeTestResult].pageCacheHits
   def pageCacheMisses: Long = runtimeResult.asInstanceOf[ClosingRuntimeTestResult].pageCacheMisses
+  def notifications: Seq[InternalNotification] = runtimeResult.notifications().asScala.toSeq
 }
 
 trait RuntimeTestResultConsumptionController {
