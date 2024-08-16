@@ -78,8 +78,8 @@ public class UploadCommand extends AbstractAdminCommand {
 
     @Parameters(
             paramLabel = "<database>",
-            description = "Name of the database that should be uploaded. The name is used to select a dump file "
-                    + "which is expected to be named <database>.dump.",
+            description = "Name of the database that should be uploaded. The name is used to select a file "
+                    + "which is expected to be named <database>.dump or <database>.backup.",
             converter = Converters.DatabaseNameConverter.class)
     private NormalizedDatabaseName database;
 
