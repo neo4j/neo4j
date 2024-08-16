@@ -19,6 +19,8 @@
  */
 package org.neo4j.batchimport.api;
 
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_INT_ARRAY;
+
 import java.io.Closeable;
 import java.io.IOException;
 
@@ -37,10 +39,7 @@ public interface IndexImporter extends Closeable {
 
     class EmptyIndexImporter implements IndexImporter, Writer {
         @Override
-        public void add(long entity, int[] tokens) {}
-
-        @Override
-        public void remove(long entity, int[] tokens) {}
+        public void change(long entity, int[] removed, int[] added, boolean logical) {}
 
         @Override
         public void close() throws IOException {}
@@ -60,7 +59,9 @@ public interface IndexImporter extends Closeable {
          * @param entity the id of the entity (node id/relationship id)
          * @param tokens the tokens associated with the entity (labels/relationship types)
          */
-        void add(long entity, int[] tokens);
+        default void add(long entity, int[] tokens) {
+            change(entity, EMPTY_INT_ARRAY, tokens, true);
+        }
 
         /**
          * Called by the batch importer for entity that is removed, typically after observing
@@ -68,7 +69,21 @@ public interface IndexImporter extends Closeable {
          * @param entity the id of the entity (node id/relationship id)
          * @param tokens the tokens associated with the entity (labels/relationship types)
          */
-        void remove(long entity, int[] tokens);
+        default void remove(long entity, int[] tokens) {
+            change(entity, tokens, EMPTY_INT_ARRAY, true);
+        }
+
+        /**
+         * Called by the batch importer for entity that has changes in its entity tokens
+         * @param entity the id of the entity (node id/relationship id)
+         * @param beforeTokens if {@code logical == true} then it means labels to remove,
+         * else labels before the change.
+         * @param afterTokens if {@code logical == true} then it means labels to add,
+         * else labels after the change.
+         * @param logical if {@code true} interprets before/after tokens as remove/add,
+         * else as before/after.
+         */
+        void change(long entity, int[] beforeTokens, int[] afterTokens, boolean logical);
 
         void yield();
     }
