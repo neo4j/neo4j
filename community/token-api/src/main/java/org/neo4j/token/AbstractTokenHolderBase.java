@@ -43,7 +43,7 @@ public abstract class AbstractTokenHolderBase implements TokenHolder {
 
     @Override
     public void addToken(NamedToken token, boolean atomic) {
-        tokenRegistry.put(token);
+        tokenRegistry.put(token, atomic);
     }
 
     @Override
