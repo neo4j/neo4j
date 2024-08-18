@@ -26,6 +26,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.token.api.TokenConstants.NO_TOKEN;
 
 import java.util.Collection;
 import org.junit.jupiter.api.BeforeEach;
@@ -71,8 +72,8 @@ class TokenRegistryTest {
 
         assertThrows(NonUniqueTokenException.class, () -> registry.put(new NamedToken(INBOUND1_TYPE, 3)));
 
-        assertEquals(1, registry.getId(INBOUND1_TYPE).intValue());
-        assertEquals(2, registry.getId(INBOUND2_TYPE).intValue());
+        assertEquals(1, registry.getId(INBOUND1_TYPE));
+        assertEquals(2, registry.getId(INBOUND2_TYPE));
         assertNull(registry.getToken(3));
         assertNull(registry.getTokenInternal(3));
     }
@@ -84,8 +85,8 @@ class TokenRegistryTest {
 
         assertThrows(NonUniqueTokenException.class, () -> registry.put(new NamedToken(INBOUND1_TYPE, 3, true)));
 
-        assertEquals(1, registry.getIdInternal(INBOUND1_TYPE).intValue());
-        assertEquals(2, registry.getIdInternal(INBOUND2_TYPE).intValue());
+        assertEquals(1, registry.getIdInternal(INBOUND1_TYPE));
+        assertEquals(2, registry.getIdInternal(INBOUND2_TYPE));
         assertNull(registry.getTokenInternal(3));
         assertNull(registry.getToken(3));
     }
@@ -178,7 +179,7 @@ class TokenRegistryTest {
                 NonUniqueTokenException.class, () -> registry.putAll(singletonList(new NamedToken(INBOUND2_TYPE, 1))));
         assertThat(registry.getToken(1)).isEqualTo(new NamedToken(INBOUND1_TYPE, 1));
         assertThat(registry.getId(INBOUND1_TYPE)).isEqualTo(1);
-        assertThat(registry.getId(INBOUND2_TYPE)).isNull();
+        assertThat(registry.getId(INBOUND2_TYPE)).isEqualTo(NO_TOKEN);
     }
 
     @Test
@@ -189,9 +190,9 @@ class TokenRegistryTest {
                 () -> registry.putAll(singletonList(new NamedToken(INBOUND2_TYPE, 1, true))));
         assertThat(registry.getToken(1)).isEqualTo(new NamedToken(INBOUND1_TYPE, 1));
         assertThat(registry.getId(INBOUND1_TYPE)).isEqualTo(1);
-        assertThat(registry.getId(INBOUND2_TYPE)).isNull();
-        assertThat(registry.getIdInternal(INBOUND1_TYPE)).isNull();
-        assertThat(registry.getIdInternal(INBOUND2_TYPE)).isNull();
+        assertThat(registry.getId(INBOUND2_TYPE)).isEqualTo(NO_TOKEN);
+        assertThat(registry.getIdInternal(INBOUND1_TYPE)).isEqualTo(NO_TOKEN);
+        assertThat(registry.getIdInternal(INBOUND2_TYPE)).isEqualTo(NO_TOKEN);
     }
 
     @Test
@@ -201,10 +202,10 @@ class TokenRegistryTest {
                 NonUniqueTokenException.class, () -> registry.putAll(singletonList(new NamedToken(INBOUND2_TYPE, 1))));
         assertThat(registry.getTokenInternal(1)).isEqualTo(new NamedToken(INBOUND1_TYPE, 1, true));
         assertThat(registry.getToken(1)).isNull();
-        assertThat(registry.getId(INBOUND1_TYPE)).isNull();
-        assertThat(registry.getId(INBOUND2_TYPE)).isNull();
+        assertThat(registry.getId(INBOUND1_TYPE)).isEqualTo(NO_TOKEN);
+        assertThat(registry.getId(INBOUND2_TYPE)).isEqualTo(NO_TOKEN);
         assertThat(registry.getIdInternal(INBOUND1_TYPE)).isEqualTo(1);
-        assertThat(registry.getIdInternal(INBOUND2_TYPE)).isNull();
+        assertThat(registry.getIdInternal(INBOUND2_TYPE)).isEqualTo(NO_TOKEN);
     }
 
     @Test
@@ -217,7 +218,7 @@ class TokenRegistryTest {
     void getIdMustNotFindInternalTokens() {
         registry.put(new NamedToken(INBOUND1_TYPE, 1, true));
 
-        assertThat(registry.getId(INBOUND1_TYPE)).isNull();
+        assertThat(registry.getId(INBOUND1_TYPE)).isEqualTo(NO_TOKEN);
     }
 
     @Test
@@ -231,7 +232,7 @@ class TokenRegistryTest {
     void getIdInternalMustNotFindPublicTokens() {
         registry.put(new NamedToken(INBOUND1_TYPE, 1));
 
-        assertThat(registry.getIdInternal(INBOUND1_TYPE)).isNull();
+        assertThat(registry.getIdInternal(INBOUND1_TYPE)).isEqualTo(NO_TOKEN);
     }
 
     @Test

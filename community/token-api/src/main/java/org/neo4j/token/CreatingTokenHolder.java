@@ -20,6 +20,7 @@
 package org.neo4j.token;
 
 import static org.neo4j.function.Predicates.ALWAYS_TRUE_INT;
+import static org.neo4j.token.api.TokenConstants.NO_TOKEN;
 
 import java.util.function.IntPredicate;
 import org.eclipse.collections.api.set.primitive.IntSet;
@@ -60,8 +61,8 @@ public class CreatingTokenHolder extends AbstractTokenHolderBase {
      */
     @Override
     protected synchronized int createToken(String name, boolean internal) throws KernelException {
-        Integer id = internal ? tokenRegistry.getIdInternal(name) : tokenRegistry.getId(name);
-        if (id != null) {
+        int id = internal ? tokenRegistry.getIdInternal(name) : tokenRegistry.getId(name);
+        if (id != NO_TOKEN) {
             return id;
         }
 

@@ -20,12 +20,12 @@
 package org.neo4j.token;
 
 import static org.neo4j.function.Predicates.ALWAYS_FALSE_INT;
+import static org.neo4j.token.api.TokenConstants.NO_TOKEN;
 
 import java.util.List;
 import java.util.function.IntPredicate;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.token.api.NamedToken;
-import org.neo4j.token.api.TokenConstants;
 import org.neo4j.token.api.TokenHolder;
 import org.neo4j.token.api.TokenNotFoundException;
 
@@ -52,8 +52,8 @@ public abstract class AbstractTokenHolderBase implements TokenHolder {
     }
 
     protected int innerGetOrCreateId(String name, boolean internal) throws KernelException {
-        Integer id = innerGetId(name, internal);
-        if (id != null) {
+        int id = innerGetId(name, internal);
+        if (id != NO_TOKEN) {
             return id;
         }
 
@@ -72,11 +72,7 @@ public abstract class AbstractTokenHolderBase implements TokenHolder {
 
     @Override
     public int getIdByName(String name) {
-        Integer id = tokenRegistry.getId(name);
-        if (id == null) {
-            return TokenConstants.NO_TOKEN;
-        }
-        return id;
+        return tokenRegistry.getId(name);
     }
 
     @Override
@@ -120,8 +116,8 @@ public abstract class AbstractTokenHolderBase implements TokenHolder {
     boolean resolveIds(String[] names, int[] ids, boolean internal, IntPredicate unresolvedIndexCheck) {
         boolean foundUnresolvable = false;
         for (int i = 0; i < ids.length; i++) {
-            Integer id = innerGetId(names[i], internal);
-            if (id != null) {
+            int id = innerGetId(names[i], internal);
+            if (id != NO_TOKEN) {
                 ids[i] = id;
             } else {
                 foundUnresolvable = true;
@@ -134,7 +130,7 @@ public abstract class AbstractTokenHolderBase implements TokenHolder {
         return foundUnresolvable;
     }
 
-    private Integer innerGetId(String name, boolean internal) {
+    private int innerGetId(String name, boolean internal) {
         return internal ? tokenRegistry.getIdInternal(name) : tokenRegistry.getId(name);
     }
 }

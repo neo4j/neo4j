@@ -90,11 +90,11 @@ public class TokenRegistry {
         registries = insertAllChecked(tokens, registries.copy());
     }
 
-    public Integer getId(String name) {
+    public int getId(String name) {
         return getIdForName(registries.publicNameToId, name);
     }
 
-    public Integer getIdInternal(String name) {
+    public int getIdInternal(String name) {
         return getIdForName(registries.internalNameToId, name);
     }
 
@@ -186,9 +186,8 @@ public class TokenRegistry {
         }
     }
 
-    private static Integer getIdForName(MutableObjectIntMap<String> nameToId, String name) {
-        int id = nameToId.getIfAbsent(name, NO_TOKEN);
-        return id == NO_TOKEN ? null : id;
+    private static int getIdForName(MutableObjectIntMap<String> nameToId, String name) {
+        return nameToId.getIfAbsent(name, NO_TOKEN);
     }
 
     private static final class Registries {
