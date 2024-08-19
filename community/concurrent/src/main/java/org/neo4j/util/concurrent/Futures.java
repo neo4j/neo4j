@@ -32,7 +32,7 @@ import org.neo4j.internal.helpers.Exceptions;
 /**
  * Constructors for basic {@link Future} types
  */
-public class Futures {
+public final class Futures {
     private Futures() {}
 
     /**
