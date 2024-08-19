@@ -32,9 +32,7 @@ import org.neo4j.values.storable.Values
  * http://www.alias-i.com/lingpipe/src/com/aliasi/stats/OnlineNormalEstimator.java
  * https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Welford's_online_algorithm
  */
-class StdevFunction(val value: Expression, val population: Boolean)
-    extends AggregationFunction
-    with NumericExpressionOnly {
+class StdevFunction(val value: Expression, val population: Boolean) extends NumericExpressionOnly {
 
   def name: String = if (population) "STDEVP" else "STDEV"
 
@@ -61,7 +59,8 @@ class StdevFunction(val value: Expression, val population: Boolean)
         val nextM = movingAvg + (x - movingAvg) / count
         m2 += (x - movingAvg) * (x - nextM)
         movingAvg = nextM
-      }
+      },
+      state
     )
   }
 }

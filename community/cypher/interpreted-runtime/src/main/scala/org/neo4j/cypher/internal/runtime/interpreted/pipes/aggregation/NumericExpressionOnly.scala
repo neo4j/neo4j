@@ -26,7 +26,7 @@ import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.NumberValue
 
-trait NumericExpressionOnly extends AggregationFunction{
+trait NumericExpressionOnly extends AggregationFunction {
   def name: String
 
   def value: Expression
