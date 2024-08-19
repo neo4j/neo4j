@@ -65,7 +65,7 @@ public abstract class TransactionMonitor<T extends TransactionMonitor.MonitoredT
         if (transactionTimeoutNanos > 0) {
             if (isTransactionExpired(transaction, nowNanos, transactionTimeoutNanos)
                     && !transaction.isSchemaTransaction()) {
-                if (transaction.markForTermination(transaction.timeout().timoutStatus())) {
+                if (transaction.markForTermination(transaction.timeout().status())) {
                     log.warn("Transaction %s timeout.", transaction.getIdentifyingDescription());
                 }
             }

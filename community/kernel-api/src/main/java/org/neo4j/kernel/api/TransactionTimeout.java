@@ -28,12 +28,12 @@ import org.neo4j.kernel.api.exceptions.Status;
  * In case if timeout is {@link Duration#ZERO} - transaction does not have a timeout.
  *
  * @param timeout max transaction duration since its start.
- * @param timoutStatus status to use if the transaction actually times out.
+ * @param status status to use if the transaction actually times out.
  *                     It should be either {@link Status.Transaction#TransactionTimedOut}
  *                     or {@link Status.Transaction#TransactionTimedOutClientConfiguration}.
  *                     Which one depends on how the timeout was configured.
  */
-public record TransactionTimeout(Duration timeout, Status timoutStatus) {
+public record TransactionTimeout(Duration timeout, Status status) {
 
     public static final TransactionTimeout NO_TIMEOUT =
             new TransactionTimeout(Duration.ZERO, Status.Transaction.TransactionTimedOut);
