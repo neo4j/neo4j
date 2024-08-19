@@ -29,6 +29,9 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import org.neo4j.fabric.bolt.QueryRouterBookmark;
 import org.neo4j.fabric.executor.FabricException;
+import org.neo4j.gqlstatus.ErrorClassification;
+import org.neo4j.gqlstatus.ErrorGqlStatusObjectImplementation;
+import org.neo4j.gqlstatus.GqlStatusInfoCodes;
 import org.neo4j.packstream.error.reader.PackstreamReaderException;
 import org.neo4j.packstream.io.PackstreamBuf;
 
@@ -68,7 +71,11 @@ public class BookmarkFormat {
             var unpacker = new Unpacker(serializedBookmark);
             return unpacker.unpack();
         } catch (Exception exception) {
+            var gql = ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_08N12)
+                    .withClassification(ErrorClassification.CLIENT_ERROR)
+                    .build();
             throw new FabricException(
+                    gql,
                     InvalidBookmark,
                     "Parsing of supplied bookmarks failed with message: " + exception.getMessage(),
                     exception);

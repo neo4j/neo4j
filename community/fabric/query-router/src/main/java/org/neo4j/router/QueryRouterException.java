@@ -31,6 +31,7 @@ public class QueryRouterException extends RuntimeException implements Status.Has
     private final ErrorGqlStatusObject gqlStatusObject;
     private final String oldMessage;
 
+    @Deprecated
     public QueryRouterException(Status statusCode, Throwable cause) {
         super(cause);
         this.statusCode = statusCode;
@@ -49,6 +50,7 @@ public class QueryRouterException extends RuntimeException implements Status.Has
         this.oldMessage = HasGqlStatusInfo.getOldCauseMessage(cause);
     }
 
+    @Deprecated
     public QueryRouterException(Status statusCode, String message, Object... parameters) {
         super(String.format(message, parameters));
         this.statusCode = statusCode;
@@ -68,6 +70,7 @@ public class QueryRouterException extends RuntimeException implements Status.Has
         this.oldMessage = String.format(message, parameters);
     }
 
+    @Deprecated
     public QueryRouterException(Status statusCode, String message, Throwable cause) {
         super(message, cause);
         this.statusCode = statusCode;

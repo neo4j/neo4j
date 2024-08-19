@@ -31,6 +31,7 @@ public class FabricException extends RuntimeException implements Status.HasStatu
     private final ErrorGqlStatusObject gqlStatusObject;
     private final String oldMessage;
 
+    @Deprecated
     public FabricException(Status statusCode, Throwable cause) {
         super(cause);
         this.statusCode = statusCode;
@@ -49,6 +50,7 @@ public class FabricException extends RuntimeException implements Status.HasStatu
         this.oldMessage = HasGqlStatusInfo.getOldCauseMessage(cause);
     }
 
+    @Deprecated
     public FabricException(Status statusCode, String message, Object... parameters) {
         super(String.format(message, parameters));
         this.statusCode = statusCode;
@@ -68,6 +70,7 @@ public class FabricException extends RuntimeException implements Status.HasStatu
         this.oldMessage = String.format(message, parameters);
     }
 
+    @Deprecated
     public FabricException(Status statusCode, String message, Throwable cause) {
         super(message, cause);
         this.statusCode = statusCode;
@@ -86,6 +89,7 @@ public class FabricException extends RuntimeException implements Status.HasStatu
         this.oldMessage = message;
     }
 
+    @Deprecated
     public FabricException(Status statusCode, String message, Throwable cause, Long queryId) {
         super(message, cause);
         this.statusCode = statusCode;

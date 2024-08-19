@@ -20,11 +20,14 @@
 package org.neo4j.gqlstatus;
 
 import java.util.List;
+import java.util.Map;
 
 public sealed interface GqlStatusInfo permits GqlStatusInfoCodes {
     String getMessage();
 
     String getMessage(List<String> params);
+
+    String getMessage(Map<GqlMessageParams, String> parameterMap);
 
     Condition getCondition();
 

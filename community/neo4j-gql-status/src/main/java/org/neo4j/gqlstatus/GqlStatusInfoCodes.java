@@ -378,7 +378,7 @@ public enum GqlStatusInfoCodes implements GqlStatusInfo {
     STATUS_08N02(
             new GqlStatus("08N02"),
             """
-                    Unable to connect to database `%s`. Server-side routing is disabled. Either connect to the `%s` directly, or enable server-side routing by setting `%s=true`.""",
+                    Unable to connect to database `%s`. Server-side routing is disabled. Either connect to `%s` directly, or enable server-side routing by setting `%s=true`.""",
             new GqlMessageParams[] {
                 GqlMessageParams.dbName, GqlMessageParams.dbName, GqlMessageParams.routingEnabledSetting
             },
@@ -3566,6 +3566,7 @@ public enum GqlStatusInfoCodes implements GqlStatusInfo {
         return getMessage(message, paramMap);
     }
 
+    @Override
     public String getMessage(Map<GqlMessageParams, String> parameterMap) {
         return GqlStatusInfoCodes.getMessage(message, parameterMap);
     }

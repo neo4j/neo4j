@@ -29,6 +29,7 @@ public class TransactionIdTrackerException extends RuntimeException implements S
     private final ErrorGqlStatusObject gqlStatusObject;
     private final String oldMessage;
 
+    @Deprecated
     TransactionIdTrackerException(Status status, String message) {
         this(status, message, null);
     }
@@ -37,6 +38,7 @@ public class TransactionIdTrackerException extends RuntimeException implements S
         this(gqlStatusObject, status, message, null);
     }
 
+    @Deprecated
     TransactionIdTrackerException(Status status, String message, Throwable cause) {
         super(message, cause);
         this.status = status;

@@ -206,8 +206,8 @@ public class GqlStatusInfoCodesTest {
         byte[] gqlHash = DigestUtils.sha256(gqlBuilder.toString());
 
         byte[] expectedHash = new byte[] {
-            -92, 10, 100, -116, 54, 76, -87, 80, 34, -22, -26, 104, 107, -66, -120, 29, 14, -7, -110, -75, 64, -101,
-            -115, 39, -72, 55, 116, 4, 76, 25, -2, -93
+            42, 111, -42, 96, -115, -100, -105, -11, -108, -71, 40, -94, -26, 81, -8, -13, -124, 35, -55, -20, -32, -8,
+            -7, 84, -3, 24, -25, -60, 110, -74, 67, 17
         };
 
         if (!Arrays.equals(gqlHash, expectedHash)) {
@@ -217,6 +217,7 @@ public class GqlStatusInfoCodesTest {
             Actual: %s
             Updating the GQL status code is a breaking change!!!
             If parameters are updated, you must change them everywhere they are used (i.e. each time they are used in the call `.withParam(..., ...)`)
+            If you update an error message, it is not breaking, but please update documentation.
             """
                             .formatted(Arrays.toString(expectedHash), Arrays.toString(gqlHash)));
         }

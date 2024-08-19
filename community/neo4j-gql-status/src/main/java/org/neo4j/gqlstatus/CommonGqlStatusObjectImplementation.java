@@ -45,6 +45,15 @@ public class CommonGqlStatusObjectImplementation implements CommonGqlStatusObjec
         this.messageWithParameters = insertMessageParameters(messageParameterValues);
     }
 
+    public CommonGqlStatusObjectImplementation(
+            GqlStatusInfo gqlStatusInfo,
+            DiagnosticRecord diagnosticRecord,
+            Map<GqlMessageParams, Object> messageParameters) {
+        this.gqlStatusInfo = gqlStatusInfo;
+        this.diagnosticRecord = diagnosticRecord;
+        this.messageWithParameters = insertMessageParameters(messageParameters);
+    }
+
     public CommonGqlStatusObjectImplementation(GqlStatusInfo gqlStatusInfo, DiagnosticRecord diagnosticRecord) {
         this.gqlStatusInfo = gqlStatusInfo;
         this.diagnosticRecord = diagnosticRecord;
@@ -77,7 +86,7 @@ public class CommonGqlStatusObjectImplementation implements CommonGqlStatusObjec
      * Insert the message parameter values in the message and
      * create a statusParameters map for the diagnostic record
      */
-    private String insertMessageParameters(Object[] parameterValues) {
+    protected String insertMessageParameters(Object[] parameterValues) {
         String[] parameterKeys = gqlStatusInfo.getStatusParameterKeys();
         Map<String, Object> statusParameters = new HashMap<>();
         var messageParameters = new String[parameterValues.length];
@@ -91,19 +100,16 @@ public class CommonGqlStatusObjectImplementation implements CommonGqlStatusObjec
         for (int i = 0; i < parameterKeys.length; i++) {
             String key = parameterKeys[i];
             Object value = parameterValues[i];
-
-            if (value instanceof String s) {
-                statusParameters.put(key, value);
+            statusParameters.put(key, value);
+            if (value == null) {
+                messageParameters[i] = "null";
+            } else if (value instanceof String s) {
                 messageParameters[i] = s;
             } else if (value instanceof Boolean b) {
-                statusParameters.put(key, value);
                 messageParameters[i] = b.toString();
             } else if (value instanceof Integer nbr) {
-                statusParameters.put(key, value);
                 messageParameters[i] = nbr.toString();
             } else if (isListOfString(value)) {
-                statusParameters.put(key, value);
-
                 //noinspection unchecked
                 messageParameters[i] = String.join(", ", ((List<String>) value));
             } else {
@@ -113,6 +119,39 @@ public class CommonGqlStatusObjectImplementation implements CommonGqlStatusObjec
         }
         diagnosticRecord.setStatusParameters(statusParameters);
         return gqlStatusInfo.getMessage(List.of(messageParameters));
+    }
+
+    /*
+     * Insert the message parameter values in the message and
+     * check the types of the statusParameters map for the diagnostic record
+     */
+    protected String insertMessageParameters(Map<GqlMessageParams, Object> parameters) {
+        var messageParameters = new HashMap<GqlMessageParams, String>();
+        var statusParameters = new HashMap<String, Object>();
+
+        for (var entry : parameters.entrySet()) {
+            var key = entry.getKey();
+            var value = entry.getValue();
+            statusParameters.put(key.name(), value);
+
+            if (value == null) {
+                messageParameters.put(key, "null");
+            } else if (value instanceof String s) {
+                messageParameters.put(key, s);
+            } else if (value instanceof Boolean b) {
+                messageParameters.put(key, b.toString());
+            } else if (value instanceof Integer nbr) {
+                messageParameters.put(key, nbr.toString());
+            } else if (isListOfString(value)) {
+                //noinspection unchecked
+                messageParameters.put(key, String.join(", ", ((List<String>) value)));
+            } else {
+                throw new IllegalArgumentException(String.format(
+                        "Expected parameter to be String, Boolean, Integer or List<String> but was %s", value));
+            }
+        }
+        diagnosticRecord.setStatusParameters(statusParameters);
+        return gqlStatusInfo.getMessage(messageParameters);
     }
 
     private boolean isListOfString(Object obj) {

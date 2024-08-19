@@ -43,6 +43,9 @@ import org.neo4j.fabric.executor.Location;
 import org.neo4j.fabric.transaction.ErrorReporter;
 import org.neo4j.fabric.transaction.TransactionMode;
 import org.neo4j.fabric.transaction.parent.CompoundTransaction;
+import org.neo4j.gqlstatus.ErrorClassification;
+import org.neo4j.gqlstatus.ErrorGqlStatusObjectImplementation;
+import org.neo4j.gqlstatus.GqlStatusInfoCodes;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.kernel.api.TerminationMark;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -450,7 +453,11 @@ public class RouterTransactionImpl implements CompoundTransaction<DatabaseTransa
         // There are two situations and the error should reflect them in order not to confuse the users:
         // 1. This is actually the same database, but the location has changed, because of leader switch in the cluster.
         if (current.getUuid().equals(attempt.getUuid())) {
+            var gql = ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_51N34)
+                    .withClassification(ErrorClassification.TRANSIENT_ERROR)
+                    .build();
             return new QueryRouterException(
+                    gql,
                     Status.Transaction.LeaderSwitch,
                     "Could not write to a database due to a cluster leader switch that occurred during the transaction. "
                             + "Previous leader: %s, Current leader: %s.",

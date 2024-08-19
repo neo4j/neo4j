@@ -20,21 +20,22 @@
 package org.neo4j.gqlstatus;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
 public class ErrorGqlStatusObjectImplementation extends CommonGqlStatusObjectImplementation
         implements ErrorGqlStatusObject {
     private final Optional<ErrorGqlStatusObject> cause;
-    private final Map<GqlMessageParams, String> paramMap;
+    private final Map<GqlMessageParams, Object> paramMap;
     private final GqlStatusInfoCodes gqlStatusInfoCode;
 
     private ErrorGqlStatusObjectImplementation(
             GqlStatusInfoCodes gqlStatusInfoCode,
-            Map<GqlMessageParams, String> parameters,
+            Map<GqlMessageParams, Object> parameters,
             ErrorGqlStatusObject cause,
             DiagnosticRecord diagnosticRecord) {
-        super(gqlStatusInfoCode, diagnosticRecord, parameters.values().toArray());
+        super(gqlStatusInfoCode, diagnosticRecord, parameters);
         this.gqlStatusInfoCode = gqlStatusInfoCode;
         this.cause = Optional.ofNullable(cause);
         this.paramMap = Map.copyOf(parameters);
@@ -61,7 +62,7 @@ public class ErrorGqlStatusObjectImplementation extends CommonGqlStatusObjectImp
         sb.append(gqlStatusInfoCode.getStatusString().trim());
         sb.append("\n");
         sb.append("Message: ");
-        sb.append(gqlStatusInfoCode.getMessage(paramMap).trim());
+        sb.append(insertMessageParameters(paramMap).trim());
         sb.append("\n");
         sb.append("Subcondition: ");
         sb.append(gqlStatusInfoCode.getSubCondition().trim());
@@ -76,7 +77,7 @@ public class ErrorGqlStatusObjectImplementation extends CommonGqlStatusObjectImp
 
     public static class Builder {
         private ErrorGqlStatusObject cause = null;
-        private final Map<GqlMessageParams, String> paramMap = new HashMap<>();
+        private final Map<GqlMessageParams, Object> paramMap = new HashMap<>();
         private final GqlStatusInfoCodes gqlStatusInfoCode;
         private final DiagnosticRecord.Builder diagnosticRecordBuilder = DiagnosticRecord.from();
 
@@ -85,6 +86,21 @@ public class ErrorGqlStatusObjectImplementation extends CommonGqlStatusObjectImp
         }
 
         public Builder withParam(GqlMessageParams key, String value) {
+            paramMap.put(key, value);
+            return this;
+        }
+
+        public Builder withParam(GqlMessageParams key, Integer value) {
+            paramMap.put(key, value);
+            return this;
+        }
+
+        public Builder withParam(GqlMessageParams key, List<String> value) {
+            paramMap.put(key, value);
+            return this;
+        }
+
+        public Builder withParam(GqlMessageParams key, Boolean value) {
             paramMap.put(key, value);
             return this;
         }

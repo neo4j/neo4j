@@ -28,6 +28,10 @@ import java.time.Duration;
 import java.util.concurrent.locks.LockSupport;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.api.DatabaseNotFoundException;
+import org.neo4j.gqlstatus.ErrorClassification;
+import org.neo4j.gqlstatus.ErrorGqlStatusObjectImplementation;
+import org.neo4j.gqlstatus.GqlMessageParams;
+import org.neo4j.gqlstatus.GqlStatusInfoCodes;
 import org.neo4j.kernel.database.AbstractDatabase;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -198,7 +202,14 @@ public class TransactionIdTracker {
 
     private static TransactionIdTrackerException unreachableDatabaseVersion(
             AbstractDatabase db, long lastTransactionId, long oldestAcceptableTxId, Throwable cause) {
+        var gql = ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_08N13)
+                .withClassification(ErrorClassification.TRANSIENT_ERROR)
+                .withParam(GqlMessageParams.dbName, db.getNamedDatabaseId().name())
+                .withParam(GqlMessageParams.oldestAcceptableTxId, String.valueOf(oldestAcceptableTxId))
+                .withParam(GqlMessageParams.latestTransactionId, String.valueOf(lastTransactionId))
+                .build();
         return new TransactionIdTrackerException(
+                gql,
                 BookmarkTimeout,
                 "Database '" + db.getNamedDatabaseId().name() + "' not up to the requested version: "
                         + oldestAcceptableTxId + ". " + "Latest database version is " + lastTransactionId,
