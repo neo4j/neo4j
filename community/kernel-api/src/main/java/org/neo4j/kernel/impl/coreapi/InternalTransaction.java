@@ -25,6 +25,7 @@ import java.util.UUID;
 import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
+import org.neo4j.internal.kernel.api.connectioninfo.RoutingInfo;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.ResourceMonitor;
@@ -46,6 +47,11 @@ public interface InternalTransaction extends Transaction, TransactionalEntityFac
     SecurityContext securityContext();
 
     ClientConnectionInfo clientInfo();
+
+    /**
+     * Routing information provided by the client or {@code null} if not available.
+     */
+    RoutingInfo routingInfo();
 
     KernelTransaction.Revertable overrideWith(SecurityContext context);
 

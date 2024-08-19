@@ -181,7 +181,7 @@ public class FabricTransactionImplTest {
                 var graphDatabaseApi = mock(GraphDatabaseAPI.class, RETURNS_MOCKS);
                 when(graphDatabaseApi.databaseId())
                         .thenReturn(DatabaseIdFactory.from(loc.getDatabaseName(), loc.getUuid()));
-                when(graphDatabaseApi.beginTransaction(any(), any(), any(), anyLong(), any(), any(), any()))
+                when(graphDatabaseApi.beginTransaction(any(), any(), any(), any(), anyLong(), any(), any(), any()))
                         .thenReturn(itx);
                 when(fabricDatabaseManager.getDatabaseFacade(eq(loc.getDatabaseName())))
                         .thenReturn(graphDatabaseApi);

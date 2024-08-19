@@ -252,6 +252,6 @@ class ExecutionContextProcedureTransactionIT {
             executionContext.close();
         });
         return new ExecutionContextProcedureTransaction(
-                new ExecutionContextProcedureKernelTransaction(ktx, executionContext));
+                new ExecutionContextProcedureKernelTransaction(ktx, executionContext), null);
     }
 }

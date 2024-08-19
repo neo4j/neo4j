@@ -280,7 +280,8 @@ public class ExecutionContextProcedureKernelTransaction implements KernelTransac
 
     @Override
     public InternalTransaction internalTransaction() {
-        return new ExecutionContextProcedureTransaction(this);
+        return new ExecutionContextProcedureTransaction(
+                this, ktx.internalTransaction().routingInfo());
     }
 
     @Override

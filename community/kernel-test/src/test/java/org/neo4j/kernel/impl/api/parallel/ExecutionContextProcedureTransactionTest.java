@@ -40,7 +40,7 @@ public class ExecutionContextProcedureTransactionTest {
     void getAllNodesShouldRegisterAndUnregisterAsResource() {
         ExecutionContext executionContext = mock(ExecutionContext.class);
         var tx = new ExecutionContextProcedureTransaction(
-                new ExecutionContextProcedureKernelTransaction(mock(KernelTransaction.class), executionContext));
+                new ExecutionContextProcedureKernelTransaction(mock(KernelTransaction.class), executionContext), null);
         ResourceIterable<Node> nodes = tx.getAllNodes();
 
         verify(executionContext, times(1)).registerCloseableResource(eq(nodes));
@@ -57,7 +57,7 @@ public class ExecutionContextProcedureTransactionTest {
     void getAllRelationshipsShouldRegisterAndUnregisterAsResource() {
         ExecutionContext executionContext = mock(ExecutionContext.class);
         var tx = new ExecutionContextProcedureTransaction(
-                new ExecutionContextProcedureKernelTransaction(mock(KernelTransaction.class), executionContext));
+                new ExecutionContextProcedureKernelTransaction(mock(KernelTransaction.class), executionContext), null);
         ResourceIterable<Relationship> relationships = tx.getAllRelationships();
 
         verify(executionContext, times(1)).registerCloseableResource(eq(relationships));

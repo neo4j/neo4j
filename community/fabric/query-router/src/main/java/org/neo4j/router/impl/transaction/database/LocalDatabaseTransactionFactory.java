@@ -29,6 +29,7 @@ import org.neo4j.fabric.bookmark.LocalGraphTransactionIdTracker;
 import org.neo4j.fabric.bookmark.TransactionBookmarkManager;
 import org.neo4j.fabric.executor.Location;
 import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.internal.kernel.api.connectioninfo.RoutingInfo;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.availability.UnavailableException;
@@ -108,11 +109,18 @@ public class LocalDatabaseTransactionFactory implements DatabaseTransactionFacto
 
     protected InternalTransaction beginInternalTransaction(
             GraphDatabaseAPI databaseApi, TransactionInfo transactionInfo, Consumer<Status> terminationCallback) {
-
+        var accessMode =
+                switch (transactionInfo.accessMode()) {
+                    case WRITE -> RoutingInfo.AccessMode.WRITE;
+                    case READ -> RoutingInfo.AccessMode.READ;
+                };
+        var routingInfo =
+                new RoutingInfo(accessMode, transactionInfo.routingContext().getParameters());
         InternalTransaction internalTransaction = databaseApi.beginTransaction(
                 transactionInfo.type(),
                 transactionInfo.loginContext(),
                 transactionInfo.clientInfo(),
+                routingInfo,
                 transactionInfo.txTimeout().toMillis(),
                 TimeUnit.MILLISECONDS,
                 terminationCallback,

@@ -38,6 +38,7 @@ import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.internal.kernel.api.RelationshipDataAccessor;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
+import org.neo4j.internal.kernel.api.connectioninfo.RoutingInfo;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -286,6 +287,11 @@ public class ProcedureTransactionImpl implements InternalTransaction {
     @Override
     public ClientConnectionInfo clientInfo() {
         return transaction.clientInfo();
+    }
+
+    @Override
+    public RoutingInfo routingInfo() {
+        return transaction.routingInfo();
     }
 
     @Override

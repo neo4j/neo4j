@@ -359,6 +359,7 @@ class TransactionImplTest {
                 resourceTracker,
                 null,
                 DefaultTransactionExceptionMapper.INSTANCE,
-                mock(ElementIdMapper.class));
+                mock(ElementIdMapper.class),
+                null);
     }
 }

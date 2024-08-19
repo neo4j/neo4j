@@ -49,6 +49,7 @@ import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
+import org.neo4j.internal.kernel.api.connectioninfo.RoutingInfo;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.ExecutionContext;
@@ -67,10 +68,13 @@ public class ExecutionContextProcedureTransaction extends DataLookup implements 
 
     private final ExecutionContext executionContext;
     private final ExecutionContextProcedureKernelTransaction ktx;
+    private final RoutingInfo routingInfo;
 
-    public ExecutionContextProcedureTransaction(ExecutionContextProcedureKernelTransaction ktx) {
+    public ExecutionContextProcedureTransaction(
+            ExecutionContextProcedureKernelTransaction ktx, RoutingInfo routingInfo) {
         this.executionContext = ktx.executionContext();
         this.ktx = ktx;
+        this.routingInfo = routingInfo;
     }
 
     @Override
@@ -288,6 +292,11 @@ public class ExecutionContextProcedureTransaction extends DataLookup implements 
     @Override
     public ClientConnectionInfo clientInfo() {
         return ktx.clientInfo();
+    }
+
+    @Override
+    public RoutingInfo routingInfo() {
+        return routingInfo;
     }
 
     @Override

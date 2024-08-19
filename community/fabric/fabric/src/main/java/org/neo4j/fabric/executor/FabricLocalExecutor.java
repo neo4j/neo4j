@@ -39,6 +39,7 @@ import org.neo4j.fabric.transaction.FabricTransactionInfo;
 import org.neo4j.fabric.transaction.TransactionMode;
 import org.neo4j.fabric.transaction.parent.CompoundTransaction;
 import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.internal.kernel.api.connectioninfo.RoutingInfo;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.availability.UnavailableException;
@@ -186,11 +187,19 @@ public class FabricLocalExecutor {
         private InternalTransaction beginInternalTransaction(
                 GraphDatabaseAPI databaseAPI, FabricTransactionInfo transactionInfo) {
             KernelTransaction.Type kernelTransactionType = getKernelTransactionType(transactionInfo);
+            var accessMode =
+                    switch (transactionInfo.getAccessMode()) {
+                        case WRITE -> RoutingInfo.AccessMode.WRITE;
+                        case READ -> RoutingInfo.AccessMode.READ;
+                    };
+            var routingInfo = new RoutingInfo(
+                    accessMode, transactionInfo.getRoutingContext().getParameters());
 
             InternalTransaction internalTransaction = databaseAPI.beginTransaction(
                     kernelTransactionType,
                     transactionInfo.getLoginContext(),
                     transactionInfo.getClientConnectionInfo(),
+                    routingInfo,
                     transactionInfo.getTxTimeout().toMillis(),
                     TimeUnit.MILLISECONDS,
                     parentTransaction::childTransactionTerminated,

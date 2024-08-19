@@ -25,6 +25,7 @@ import org.neo4j.common.DependencyResolver;
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.HostedOnMode;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
+import org.neo4j.internal.kernel.api.connectioninfo.RoutingInfo;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -97,18 +98,36 @@ public interface GraphDatabaseAPI extends GraphDatabaseService {
      * @param type transaction type
      * @param loginContext transaction login context
      * @param clientInfo transaction client info
+     * @param routingInfo routing information provided by the client
      * @param timeout transaction timeout
      * @param unit time unit of timeout argument
      * @param terminationCallback termination callback
      * @param transactionExceptionMapper  transaction exception mapper
      * @return internal transaction
      */
-    InternalTransaction beginTransaction(
+    default InternalTransaction beginTransaction(
+            KernelTransaction.Type type,
+            LoginContext loginContext,
+            ClientConnectionInfo clientInfo,
+            RoutingInfo routingInfo,
+            long timeout,
+            TimeUnit unit,
+            Consumer<Status> terminationCallback,
+            TransactionExceptionMapper transactionExceptionMapper) {
+        // The new signature is temporarily default method in order not to break APOC
+        throw new IllegalStateException("not implemented");
+    }
+
+    // A temporary version of the method above with an old signature in order not to break APOC
+    default InternalTransaction beginTransaction(
             KernelTransaction.Type type,
             LoginContext loginContext,
             ClientConnectionInfo clientInfo,
             long timeout,
             TimeUnit unit,
             Consumer<Status> terminationCallback,
-            TransactionExceptionMapper transactionExceptionMapper);
+            TransactionExceptionMapper transactionExceptionMapper) {
+        return beginTransaction(
+                type, loginContext, clientInfo, null, timeout, unit, terminationCallback, transactionExceptionMapper);
+    }
 }

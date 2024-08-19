@@ -769,7 +769,7 @@ public class FindEntityByTokenAndPropertyIT {
             executionContext.close();
         });
         return new ExecutionContextProcedureTransaction(
-                new ExecutionContextProcedureKernelTransaction(ktx, executionContext));
+                new ExecutionContextProcedureKernelTransaction(ktx, executionContext), null);
     }
 
     private enum FindMethod {

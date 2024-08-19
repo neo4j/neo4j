@@ -29,6 +29,7 @@ import org.neo4j.graphdb.QueryExecutionException;
 import org.neo4j.graphdb.ResultTransformer;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
+import org.neo4j.internal.kernel.api.connectioninfo.RoutingInfo;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -147,6 +148,7 @@ public class ExecutionContextGraphDatabaseAPI implements GraphDatabaseAPI {
             KernelTransaction.Type type,
             LoginContext loginContext,
             ClientConnectionInfo clientInfo,
+            RoutingInfo routingInfo,
             long timeout,
             TimeUnit unit,
             Consumer<Status> terminationCallback,

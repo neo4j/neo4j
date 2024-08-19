@@ -57,6 +57,7 @@ import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
+import org.neo4j.internal.kernel.api.connectioninfo.RoutingInfo;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException;
@@ -112,6 +113,8 @@ public class TransactionImpl extends DataLookup implements InternalTransaction {
      */
     private final ResourceTracker coreApiResourceTracker;
 
+    private final RoutingInfo routingInfo;
+
     private KernelTransaction transaction;
     private boolean closed;
 
@@ -131,7 +134,8 @@ public class TransactionImpl extends DataLookup implements InternalTransaction {
                 new CloseableResourceManager(),
                 null,
                 null,
-                elementIdMapper);
+                elementIdMapper,
+                null);
     }
 
     public TransactionImpl(
@@ -143,7 +147,8 @@ public class TransactionImpl extends DataLookup implements InternalTransaction {
             ResourceTracker coreApiResourceTracker,
             Consumer<Status> terminationCallback,
             TransactionExceptionMapper exceptionMapper,
-            ElementIdMapper elementIdMapper) {
+            ElementIdMapper elementIdMapper,
+            RoutingInfo routingInfo) {
         this.tokenHolders = tokenHolders;
         this.contextFactory = contextFactory;
         this.availabilityGuard = availabilityGuard;
@@ -152,6 +157,7 @@ public class TransactionImpl extends DataLookup implements InternalTransaction {
         this.terminationCallback = terminationCallback;
         this.exceptionMapper = exceptionMapper;
         this.elementIdMapper = elementIdMapper;
+        this.routingInfo = routingInfo;
         setTransaction(transaction);
     }
 
@@ -378,6 +384,11 @@ public class TransactionImpl extends DataLookup implements InternalTransaction {
     @Override
     public ClientConnectionInfo clientInfo() {
         return kernelTransaction().clientInfo();
+    }
+
+    @Override
+    public RoutingInfo routingInfo() {
+        return routingInfo;
     }
 
     @Override

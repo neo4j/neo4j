@@ -28,6 +28,7 @@ import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.HostedOnMode;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
+import org.neo4j.internal.kernel.api.connectioninfo.RoutingInfo;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -86,7 +87,7 @@ public class GraphDatabaseFacade extends GraphDatabaseTransactions implements Gr
     @Override
     public InternalTransaction beginTransaction(
             Type type, LoginContext loginContext, ClientConnectionInfo clientInfo, long timeout, TimeUnit unit) {
-        return beginTransactionInternal(type, loginContext, clientInfo, unit.toMillis(timeout), null, INSTANCE);
+        return beginTransactionInternal(type, loginContext, clientInfo, null, unit.toMillis(timeout), null, INSTANCE);
     }
 
     @Override
@@ -94,6 +95,7 @@ public class GraphDatabaseFacade extends GraphDatabaseTransactions implements Gr
             Type type,
             LoginContext loginContext,
             ClientConnectionInfo clientInfo,
+            RoutingInfo routingInfo,
             long timeout,
             TimeUnit unit,
             Consumer<Status> terminationCallback,
@@ -102,6 +104,7 @@ public class GraphDatabaseFacade extends GraphDatabaseTransactions implements Gr
                 type,
                 loginContext,
                 clientInfo,
+                routingInfo,
                 unit.toMillis(timeout),
                 terminationCallback,
                 transactionExceptionMapper);
@@ -111,6 +114,7 @@ public class GraphDatabaseFacade extends GraphDatabaseTransactions implements Gr
             Type type,
             LoginContext loginContext,
             ClientConnectionInfo connectionInfo,
+            RoutingInfo routingInfo,
             long timeoutMillis,
             Consumer<Status> terminationCallback,
             TransactionExceptionMapper transactionExceptionMapper) {
@@ -124,7 +128,8 @@ public class GraphDatabaseFacade extends GraphDatabaseTransactions implements Gr
                 new CloseableResourceManager(),
                 terminationCallback,
                 transactionExceptionMapper,
-                database.getElementIdMapper());
+                database.getElementIdMapper(),
+                routingInfo);
     }
 
     @Override
