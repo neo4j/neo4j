@@ -243,13 +243,13 @@ public abstract class NeoBootstrapper implements Bootstrapper {
             return false;
         }
         long xmx = heapMemoryUsage.getMax();
-        if (xmx > ByteUnit.gibiBytes(32) && xmx < ByteUnit.gibiBytes(48) && !machineMemory.hasCompressedOOPS()) {
+        if (xmx > ByteUnit.mebiBytes(32000) && xmx < ByteUnit.gibiBytes(48) && !machineMemory.hasCompressedOOPS()) {
             log.warn(
                     """
-                    The JVM heap memory is currently set to %s, which results in the disabling of compressed ordinary object pointers (OOPs) within the JVM. \
-                    It should be noted that compressed OOPs are automatically disabled when heap memory exceeds 32GB. \
-                    Utilizing uncompressed OOPs can increase heap memory consumption by up to 50%, although the exact impact may vary depending on the specific use case. \
-                    Consequently, a larger heap may accommodate less data. To optimize performance, it is recommended to configure the heap memory to either below 32GB or above 48GB.
+                    The JVM heap memory is currently set to %s, which has resulted in the disabling of compressed ordinary object pointers (OOPs) within the JVM. \
+                    It is important to note that compressed OOPs are automatically disabled when heap memory exceeds approximately 32GB, though the exact threshold may vary depending on the platform and JVM version. \
+                    Using uncompressed OOPs can increase heap memory consumption by up to 50%, although the actual impact depends on the specific use case. \
+                    As a result, a larger heap may accommodate less data. To optimize memory utilization, it is recommended to configure the heap memory to either below 32GB or above 48GB.
                     """,
                     ByteUnit.bytesToString(xmx));
         }

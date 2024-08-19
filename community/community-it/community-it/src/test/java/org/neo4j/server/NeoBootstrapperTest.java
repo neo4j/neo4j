@@ -226,8 +226,7 @@ class NeoBootstrapperTest {
         neoBootstrapper.setMachineMemory(mockedMemory);
 
         assertThat(neoBootstrapper.start(dir, Map.of())).isEqualTo(NeoBootstrapper.OK);
-        Predicate<String> hasWarning =
-                line -> line.contains("which results in the disabling of compressed ordinary object pointers");
+        Predicate<String> hasWarning = line -> line.contains("disabling of compressed ordinary object pointers");
         if (expectWarning) {
             assertThat(getUserLogFiles()).anyMatch(hasWarning);
         } else {
