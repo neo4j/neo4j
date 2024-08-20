@@ -42,7 +42,8 @@ public final class SchemaDescriptorImplementation
                 RelationTypeSchemaDescriptor,
                 FulltextSchemaDescriptor,
                 AnyTokenSchemaDescriptor,
-                RelationshipEndpointSchemaDescriptor {
+                RelationshipEndpointSchemaDescriptor,
+                LabelCoexistenceSchemaDescriptor {
     public static final int TOKEN_INDEX_LOCKING_ID = Integer.MAX_VALUE;
     public static final long[] TOKEN_INDEX_LOCKING_IDS = {TOKEN_INDEX_LOCKING_ID};
 
@@ -110,6 +111,8 @@ public final class SchemaDescriptorImplementation
         } else if (schemaPatternMatchingType == SINGLE_ENTITY_TOKEN) {
             if (entityType == RELATIONSHIP) {
                 return SchemaArchetype.SINGLE_RELATIONSHIP;
+            } else if (entityType == NODE) {
+                return SchemaArchetype.SINGLE_LABEL;
             }
         }
         throw new IllegalArgumentException("Can't detect schema archetype for arguments: " + entityType + " "
@@ -182,6 +185,7 @@ public final class SchemaDescriptorImplementation
             case "FulltextSchemaDescriptor" -> schemaArchetype == SchemaArchetype.MULTI_TOKEN;
             case "AnyTokenSchemaDescriptor" -> schemaArchetype == SchemaArchetype.ANY_TOKEN;
             case "RelationshipEndpointSchemaDescriptor" -> schemaArchetype == SchemaArchetype.SINGLE_RELATIONSHIP;
+            case "LabelCoexistenceSchemaDescriptor" -> schemaArchetype == SchemaArchetype.SINGLE_LABEL;
             default -> false;
         };
     }
@@ -295,15 +299,18 @@ public final class SchemaDescriptorImplementation
      *      and if node/relationship has at least one property specified by the schema.
      *      I.e. fulltext indexes are described by this kind of schema
      * 4. ANY_TOKEN - schema that describes any labels or any relationship types, not specifying any properties.
-     *      Any labeled node or any relationship type is matched by this schema
+     *      Any labeled node or any relationship type is matched by this schema.
      * 5. SINGLE_RELATIONSHIP - schema that describes exactly one relationship type and no properties.
-     *      This schema matches relationships of specified type
+     *      This schema matches relationships of specified type.
+     * 6. SINGLE_LABEL - schema that describes exactly one label and no properties.
+     *      This schema matches nodes that are labeled with specified label.
      */
     private enum SchemaArchetype {
         LABEL_PROPERTY,
         RELATIONSHIP_PROPERTY,
         MULTI_TOKEN,
         ANY_TOKEN,
-        SINGLE_RELATIONSHIP
+        SINGLE_RELATIONSHIP,
+        SINGLE_LABEL
     }
 }

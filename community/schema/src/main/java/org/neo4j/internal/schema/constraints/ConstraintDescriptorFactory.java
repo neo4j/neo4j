@@ -21,6 +21,7 @@ package org.neo4j.internal.schema.constraints;
 
 import org.neo4j.internal.schema.EndpointType;
 import org.neo4j.internal.schema.IndexType;
+import org.neo4j.internal.schema.LabelCoexistenceSchemaDescriptor;
 import org.neo4j.internal.schema.RelationshipEndpointSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptors;
@@ -59,6 +60,11 @@ public class ConstraintDescriptorFactory {
         return RelationshipEndpointConstraintDescriptorImplementation.make(schema, endpointLabelId, endpointType);
     }
 
+    public static LabelCoexistenceConstraintDescriptor labelCoexistenceForSchema(
+            LabelCoexistenceSchemaDescriptor schema, int requiredLabelId) {
+        return LabelCoexistenceConstraintDescriptorImplementation.make(schema, requiredLabelId);
+    }
+
     public static ExistenceConstraintDescriptor existsForLabel(boolean isDependent, int labelId, int... propertyIds) {
         return existsForSchema(SchemaDescriptors.forLabel(labelId, propertyIds), isDependent);
     }
@@ -89,5 +95,11 @@ public class ConstraintDescriptorFactory {
             int relTypeId, int endpointLabelId, EndpointType endpointType) {
         return relationshipEndpointForSchema(
                 SchemaDescriptors.forRelationshipEndpoint(relTypeId), endpointLabelId, endpointType);
+    }
+
+    @VisibleForTesting
+    public static LabelCoexistenceConstraintDescriptor labelCoexistenceForLabel(
+            int existingLabelId, int requiredLabelId) {
+        return labelCoexistenceForSchema(SchemaDescriptors.forLabelCoexistence(existingLabelId), requiredLabelId);
     }
 }

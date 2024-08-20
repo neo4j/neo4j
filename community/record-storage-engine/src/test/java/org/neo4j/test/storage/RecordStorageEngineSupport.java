@@ -37,6 +37,7 @@ import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexConfigCompleter;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.internal.schema.constraints.KeyConstraintDescriptor;
+import org.neo4j.internal.schema.constraints.LabelCoexistenceConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.RelationshipEndpointConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.TypeConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
@@ -167,6 +168,13 @@ public class RecordStorageEngineSupport {
             @Override
             public ConstraintDescriptor createRelationshipEndpointConstraint(
                     long ruleId, RelationshipEndpointConstraintDescriptor descriptor)
+                    throws CreateConstraintFailureException {
+                throw new UnsupportedOperationException("Not needed a.t.m.");
+            }
+
+            @Override
+            public ConstraintDescriptor createLabelCoexistenceConstraint(
+                    long ruleId, LabelCoexistenceConstraintDescriptor descriptor)
                     throws CreateConstraintFailureException {
                 throw new UnsupportedOperationException("Not needed a.t.m.");
             }

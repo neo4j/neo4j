@@ -34,7 +34,8 @@ public enum ConstraintType {
     EXISTS(false, true, false),
     UNIQUE_EXISTS(true, true, false),
     PROPERTY_TYPE(false, false, true),
-    ENDPOINT(false, false, false);
+    ENDPOINT(false, false, false),
+    LABEL_COEXISTENCE(false, false, false);
 
     private final boolean isUnique;
     private final boolean mustExist;
@@ -66,6 +67,7 @@ public enum ConstraintType {
             case UNIQUE_EXISTS -> name + " KEY";
             case PROPERTY_TYPE -> name + " PROPERTY TYPE";
             case ENDPOINT -> name + " ENDPOINT";
+            case LABEL_COEXISTENCE -> name + " LABEL COEXISTENCE";
         };
     }
 }

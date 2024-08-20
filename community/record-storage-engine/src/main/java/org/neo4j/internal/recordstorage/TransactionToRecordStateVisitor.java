@@ -168,6 +168,11 @@ class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter {
                         constraintId, constraint.asRelationshipEndpointConstraint());
                 schemaStateChanger.createSchemaRule(recordState, rule);
             }
+            case LABEL_COEXISTENCE -> {
+                ConstraintDescriptor rule = constraintSemantics.createLabelCoexistenceConstraint(
+                        constraintId, constraint.asLabelCoexistenceConstraint());
+                schemaStateChanger.createSchemaRule(recordState, rule);
+            }
             default -> throw new IllegalStateException(constraint.type().toString());
         }
     }

@@ -84,6 +84,9 @@ final class ConstraintSubSection {
                 data.put(
                         "endpointType",
                         endpointConstraintDescriptor.endpointType().name());
+                break;
+            case LABEL_COEXISTENCE:
+                data.put("type", "Label coexistence constraint");
             default:
         }
 

@@ -22,6 +22,7 @@ package org.neo4j.internal.schema;
 import org.neo4j.internal.schema.constraints.ExistenceConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.KeyConstraintDescriptor;
+import org.neo4j.internal.schema.constraints.LabelCoexistenceConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.RelationshipEndpointConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.TypeConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
@@ -53,6 +54,11 @@ public interface ConstraintDescriptor extends SchemaDescriptorSupplier, SchemaRu
      * @return {@code true} if calling {@link #asPropertyTypeConstraint()} would not throw.
      */
     boolean isRelationshipEndpointConstraint();
+
+    /**
+     * Test if this constraint descriptor is a label coexistence constraint.
+     */
+    boolean isLabelCoexistenceConstraint();
 
     /**
      * Test if this constraint descriptor is a node property type constraint.
@@ -144,9 +150,14 @@ public interface ConstraintDescriptor extends SchemaDescriptorSupplier, SchemaRu
     KeyConstraintDescriptor asKeyConstraint();
 
     /**
-     * @return this constraint descriptor as an {@link KeyConstraintDescriptor} if possible, or throw a {@link IllegalStateException}.
+     * @return this constraint descriptor as an {@link RelationshipEndpointConstraintDescriptor} if possible, or throw a {@link IllegalStateException}.
      */
     RelationshipEndpointConstraintDescriptor asRelationshipEndpointConstraint();
+
+    /**
+     * @return this constraint descriptor as an {@link LabelCoexistenceConstraintDescriptor} if possible, or throw a {@link IllegalStateException}.
+     */
+    LabelCoexistenceConstraintDescriptor asLabelCoexistenceConstraint();
 
     /**
      * Produce a copy of this constraint descriptor, that has the given id.

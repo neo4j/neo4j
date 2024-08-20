@@ -271,8 +271,18 @@ public class ConstraintDescriptorImplementation
     }
 
     @Override
+    public boolean isLabelCoexistenceConstraint() {
+        return false;
+    }
+
+    @Override
     public RelationshipEndpointConstraintDescriptor asRelationshipEndpointConstraint() {
         throw conversionException(RelationshipEndpointConstraintDescriptor.class);
+    }
+
+    @Override
+    public LabelCoexistenceConstraintDescriptor asLabelCoexistenceConstraint() {
+        throw conversionException(LabelCoexistenceConstraintDescriptor.class);
     }
 
     private IllegalStateException conversionException(Class<? extends ConstraintDescriptor> targetType) {

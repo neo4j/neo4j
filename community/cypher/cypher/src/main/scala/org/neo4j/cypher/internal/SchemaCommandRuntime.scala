@@ -91,6 +91,7 @@ import org.neo4j.graphdb.security.AuthorizationViolationException
 import org.neo4j.internal.schema.ConstraintDescriptor
 import org.neo4j.internal.schema.ConstraintType.ENDPOINT
 import org.neo4j.internal.schema.ConstraintType.EXISTS
+import org.neo4j.internal.schema.ConstraintType.LABEL_COEXISTENCE
 import org.neo4j.internal.schema.ConstraintType.PROPERTY_TYPE
 import org.neo4j.internal.schema.ConstraintType.UNIQUE
 import org.neo4j.internal.schema.ConstraintType.UNIQUE_EXISTS
@@ -790,15 +791,16 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
       val pattern = getPrettyEntityPattern(isNode, entityName)
       val propertyString = getPrettyPropertyPattern(properties, "(", ")")
       val assertion = constraintType match {
-        case EXISTS        => "IS NOT NULL"
-        case UNIQUE_EXISTS => if (isNode) "IS NODE KEY" else "IS RELATIONSHIP KEY"
-        case UNIQUE        => "IS UNIQUE"
-        case PROPERTY_TYPE => s"IS :: ${propertyType.get}"
-        case ENDPOINT      => ""
+        case EXISTS            => "IS NOT NULL"
+        case UNIQUE_EXISTS     => if (isNode) "IS NODE KEY" else "IS RELATIONSHIP KEY"
+        case UNIQUE            => "IS UNIQUE"
+        case PROPERTY_TYPE     => s"IS :: ${propertyType.get}"
+        case ENDPOINT          => ""
+        case LABEL_COEXISTENCE => ""
       }
       val prettyAssertion = asPrettyString.raw(assertion)
-      // Currently don't have a constraint command for endpoint constraints so let's return the same as if the user wasn't allowed to see the constraint for now
-      if (constraintType == ENDPOINT) "constraint"
+      // Currently don't have a constraint command for endpoint and label coexistence constraints so let's return the same as if the user wasn't allowed to see the constraint for now
+      if (constraintType == ENDPOINT || constraintType == LABEL_COEXISTENCE) "constraint"
       else pretty"CONSTRAINT$nameString FOR $pattern REQUIRE $propertyString $prettyAssertion".prettifiedString
     } catch {
       // Not allowed to see constraint description, only show `constraint`

@@ -84,7 +84,8 @@ final class SchemaDescriptorImplementationTest {
                 RELATIONSHIP_SCHEMA_DESCRIPTOR_SUPPLIER,
                 FULLTEXT_SCHEMA_DESCRIPTOR_SUPPLIER,
                 ANY_TOKEN_SCHEMA_DESCRIPTOR_SUPPLIER,
-                RELATIONSHIP_ENDPOINT_SCHEMA_DESCRIPTOR_SUPPLIER);
+                RELATIONSHIP_ENDPOINT_SCHEMA_DESCRIPTOR_SUPPLIER,
+                LABEL_COEXISTENCE_SCHEMA_DESCRIPTOR_SUPPLIER);
 
         final Map<String, Set<Class<? extends SchemaDescriptor>>> shouldBeTrue = new HashMap<>();
         shouldBeTrue.put(
@@ -102,6 +103,9 @@ final class SchemaDescriptorImplementationTest {
         shouldBeTrue.put(
                 RELATIONSHIP_ENDPOINT_SCHEMA_DESCRIPTOR_SUPPLIER.toString(),
                 new HashSet<>(Arrays.asList(SchemaDescriptor.class, RelationshipEndpointSchemaDescriptor.class)));
+        shouldBeTrue.put(
+                LABEL_COEXISTENCE_SCHEMA_DESCRIPTOR_SUPPLIER.toString(),
+                new HashSet<>(Arrays.asList(SchemaDescriptor.class, LabelCoexistenceSchemaDescriptor.class)));
 
         final List<Arguments> cases = new ArrayList<>();
         for (var s : schemaSuppliers) {
@@ -129,6 +133,10 @@ final class SchemaDescriptorImplementationTest {
     private static final Supplier<SchemaDescriptor> RELATIONSHIP_ENDPOINT_SCHEMA_DESCRIPTOR_SUPPLIER = supplierFor(
             new SchemaDescriptorImplementation(RELATIONSHIP, SINGLE_ENTITY_TOKEN, new int[] {1}, new int[] {}),
             "RELATIONSHIP_ENDPOINT");
+
+    private static final Supplier<SchemaDescriptor> LABEL_COEXISTENCE_SCHEMA_DESCRIPTOR_SUPPLIER = supplierFor(
+            new SchemaDescriptorImplementation(NODE, SINGLE_ENTITY_TOKEN, new int[] {1}, new int[] {}),
+            "LABEL_COEXISTENCE");
 
     private static Supplier<SchemaDescriptor> supplierFor(SchemaDescriptor schemaDescriptor, String name) {
         return new Supplier<>() {

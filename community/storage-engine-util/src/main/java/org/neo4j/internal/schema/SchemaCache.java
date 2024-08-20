@@ -672,6 +672,7 @@ public class SchemaCache {
                 case EXISTS -> 2;
                 case PROPERTY_TYPE -> 3;
                 case ENDPOINT -> 4;
+                case LABEL_COEXISTENCE -> 5;
             };
         }
     }

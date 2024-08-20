@@ -41,7 +41,7 @@ public final class RelationshipEndpointConstraintCommunityIT {
 
     @ExtensionCallback
     void configure(TestDatabaseManagementServiceBuilder builder) {
-        builder.setConfig(GraphDatabaseInternalSettings.relationship_endpoint_constraints_enabled, true);
+        builder.setConfig(GraphDatabaseInternalSettings.relationship_endpoint_and_label_coexistence_constraints, true);
     }
 
     @Test

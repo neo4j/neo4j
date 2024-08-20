@@ -44,6 +44,7 @@ import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.internal.schema.EndpointType
 import org.neo4j.internal.schema.IndexPrototype
 import org.neo4j.internal.schema.IndexType
+import org.neo4j.internal.schema.SchemaDescriptors
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory
 import org.neo4j.internal.schema.constraints.PropertyTypeSet
 import org.neo4j.internal.schema.constraints.SchemaValueType
@@ -1164,6 +1165,46 @@ class ShowConstraintsCommandTest extends ShowCommandTestBase {
       constraintType = "RELATIONSHIP_ENDPOINT_LABEL",
       entityType = "RELATIONSHIP",
       labelsOrTypes = List(relType),
+      properties = List.empty[String],
+      index = Some(null),
+      propType = Some(null),
+      options = Values.NO_VALUE,
+      createStatement = ""
+    )
+
+  }
+
+  test("show label coexistence constraints") {
+    // Given
+    val labelCoexistanceConstraintDescriptor =
+      ConstraintDescriptorFactory.labelCoexistenceForSchema(
+        SchemaDescriptors.forLabelCoexistence(0),
+        1
+      )
+        .withName("constraint0")
+        .withId(0)
+
+    val constraintInfo =
+      ConstraintInfo(List(label), List(), None)
+
+    // Set-up which constraints to return:
+    when(ctx.getAllConstraints()).thenReturn(Map(
+      labelCoexistanceConstraintDescriptor -> constraintInfo
+    ))
+
+    // When
+    val showConstraints = ShowConstraintsCommand(AllConstraints, allColumns, List.empty)
+    val result = showConstraints.originalNameRows(queryState, initialCypherRow).toList
+
+    // Then
+    result should have size 1
+    checkResult(
+      result.head,
+      name = "constraint0",
+      id = 0,
+      constraintType = "NODE_LABEL_COEXISTENCE",
+      entityType = "NODE",
+      labelsOrTypes = List(label),
       properties = List.empty[String],
       index = Some(null),
       propType = Some(null),

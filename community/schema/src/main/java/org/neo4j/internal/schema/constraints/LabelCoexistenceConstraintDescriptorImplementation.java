@@ -27,41 +27,35 @@ import org.apache.commons.lang3.NotImplementedException;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.ConstraintType;
-import org.neo4j.internal.schema.EndpointType;
 import org.neo4j.internal.schema.GraphTypeDependence;
-import org.neo4j.internal.schema.RelationshipEndpointSchemaDescriptor;
+import org.neo4j.internal.schema.LabelCoexistenceSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaNameUtil;
 import org.neo4j.internal.schema.SchemaUserDescription;
 import org.neo4j.string.Mask;
 
-final class RelationshipEndpointConstraintDescriptorImplementation implements RelationshipEndpointConstraintDescriptor {
+final class LabelCoexistenceConstraintDescriptorImplementation implements LabelCoexistenceConstraintDescriptor {
     private final long id;
-    private final int endpointLabelId;
     private final String name;
-    private final RelationshipEndpointSchemaDescriptor schema;
-    private final EndpointType endpointType;
+    private final LabelCoexistenceSchemaDescriptor schema;
+    private final int requiredLabelId;
 
-    RelationshipEndpointConstraintDescriptorImplementation(
-            RelationshipEndpointSchemaDescriptor schema,
-            long id,
-            int endpointLabelId,
-            String name,
-            EndpointType endpointType) {
-        if (endpointLabelId < 0) {
-            throw new IllegalArgumentException("endpointLabelId cannot be negative");
+    LabelCoexistenceConstraintDescriptorImplementation(
+            LabelCoexistenceSchemaDescriptor schema, long id, int requiredLabelId, String name) {
+        if (requiredLabelId < 0) {
+            throw new IllegalArgumentException("requiredLabelId cannot be negative");
         }
-        this.schema = requireNonNull(schema, "SchemaDescriptor cannot be null");
-        this.endpointType = requireNonNull(endpointType, "EndpointType cannot be null");
+        this.schema = requireNonNull(schema, "LabelCoexistenceSchemaDescriptor cannot be null");
+        if (requiredLabelId == schema.getLabelId()) {
+            throw new IllegalArgumentException("requiredLabelId cannot be same as schema labelId");
+        }
+        this.requiredLabelId = requiredLabelId;
         this.id = id;
-        this.endpointLabelId = endpointLabelId;
         this.name = name;
     }
 
-    static RelationshipEndpointConstraintDescriptor make(
-            RelationshipEndpointSchemaDescriptor schema, int endpointLabelId, EndpointType endpointType) {
-        return new RelationshipEndpointConstraintDescriptorImplementation(
-                schema, NO_ID, endpointLabelId, null, endpointType);
+    static LabelCoexistenceConstraintDescriptor make(LabelCoexistenceSchemaDescriptor schema, int requiredLabelId) {
+        return new LabelCoexistenceConstraintDescriptorImplementation(schema, NO_ID, requiredLabelId, null);
     }
 
     @Override
@@ -71,7 +65,7 @@ final class RelationshipEndpointConstraintDescriptorImplementation implements Re
 
     @Override
     public ConstraintType type() {
-        return ConstraintType.ENDPOINT;
+        return ConstraintType.LABEL_COEXISTENCE;
     }
 
     @Override
@@ -101,12 +95,12 @@ final class RelationshipEndpointConstraintDescriptorImplementation implements Re
 
     @Override
     public boolean isRelationshipEndpointConstraint() {
-        return true;
+        return false;
     }
 
     @Override
     public boolean isLabelCoexistenceConstraint() {
-        return false;
+        return true;
     }
 
     @Override
@@ -195,19 +189,17 @@ final class RelationshipEndpointConstraintDescriptorImplementation implements Re
     }
 
     @Override
-    public RelationshipEndpointConstraintDescriptor withId(long newId) {
-        return new RelationshipEndpointConstraintDescriptorImplementation(
-                schema, newId, endpointLabelId, name, endpointType);
+    public ConstraintDescriptor withId(long newId) {
+        return new LabelCoexistenceConstraintDescriptorImplementation(schema, newId, requiredLabelId, name);
     }
 
     @Override
-    public RelationshipEndpointConstraintDescriptor withName(String newName) {
+    public ConstraintDescriptor withName(String newName) {
         if (newName == null) {
             return this;
         }
         newName = SchemaNameUtil.sanitiseName(newName);
-        return new RelationshipEndpointConstraintDescriptorImplementation(
-                schema, id, endpointLabelId, newName, endpointType);
+        return new LabelCoexistenceConstraintDescriptorImplementation(schema, id, requiredLabelId, newName);
     }
 
     @Override
@@ -217,25 +209,21 @@ final class RelationshipEndpointConstraintDescriptorImplementation implements Re
 
     @Override
     public RelationshipEndpointConstraintDescriptor asRelationshipEndpointConstraint() {
-        return this;
+        throw conversionException(RelationshipEndpointConstraintDescriptor.class);
     }
 
     @Override
     public LabelCoexistenceConstraintDescriptor asLabelCoexistenceConstraint() {
-        throw conversionException(LabelCoexistenceConstraintDescriptor.class);
+        return this;
     }
 
     @Override
     public boolean equals(Object o) {
-        if (!(o instanceof RelationshipEndpointConstraintDescriptor that)) {
+        if (!(o instanceof LabelCoexistenceConstraintDescriptor that)) {
             return false;
         }
 
-        if (this.endpointType != that.endpointType()) {
-            return false;
-        }
-
-        if (this.endpointLabelId != that.endpointLabelId()) {
+        if (this.requiredLabelId != that.requiredLabelId()) {
             return false;
         }
 
@@ -265,8 +253,8 @@ final class RelationshipEndpointConstraintDescriptorImplementation implements Re
     }
 
     @Override
-    public int endpointLabelId() {
-        return endpointLabelId;
+    public int requiredLabelId() {
+        return requiredLabelId;
     }
 
     @Override
@@ -282,16 +270,11 @@ final class RelationshipEndpointConstraintDescriptorImplementation implements Re
 
     private String userDescription(TokenNameLookup tokenNameLookup, Mask mask) {
         return SchemaUserDescription.forConstraint(
-                tokenNameLookup, id, name, ConstraintType.ENDPOINT, schema, null, null, mask);
+                tokenNameLookup, id, name, ConstraintType.LABEL_COEXISTENCE, schema, null, null, mask);
     }
 
     private IllegalStateException conversionException(Class<? extends ConstraintDescriptor> targetType) {
         return new IllegalStateException("Cannot cast this schema to a " + targetType
                 + " because it does not match that structure: " + this + ".");
-    }
-
-    @Override
-    public EndpointType endpointType() {
-        return endpointType;
     }
 }

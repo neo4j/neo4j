@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.ast.AllConstraints
 import org.neo4j.cypher.internal.ast.CommandResultItem
 import org.neo4j.cypher.internal.ast.ExistsConstraints
 import org.neo4j.cypher.internal.ast.KeyConstraints
+import org.neo4j.cypher.internal.ast.LabelCoexistenceConstraints
 import org.neo4j.cypher.internal.ast.NodeExistsConstraints
 import org.neo4j.cypher.internal.ast.NodeKeyConstraints
 import org.neo4j.cypher.internal.ast.NodePropTypeConstraints
@@ -246,6 +247,9 @@ object ShowConstraintsCommand {
       case RelationshipEndpointConstraints =>
         // Currently not implemented
         ""
+      case LabelCoexistenceConstraints =>
+        // Currently not implemented
+        ""
       case _ => throw new IllegalArgumentException(
           s"Did not expect constraint type ${constraintType.prettyPrint} for constraint create command."
         )
@@ -266,6 +270,7 @@ object ShowConstraintsCommand {
       case (schema.ConstraintType.PROPERTY_TYPE, EntityType.NODE)         => NodePropTypeConstraints
       case (schema.ConstraintType.PROPERTY_TYPE, EntityType.RELATIONSHIP) => RelPropTypeConstraints
       case (schema.ConstraintType.ENDPOINT, EntityType.RELATIONSHIP)      => RelationshipEndpointConstraints
+      case (schema.ConstraintType.LABEL_COEXISTENCE, EntityType.NODE)     => LabelCoexistenceConstraints
       case _ => throw new IllegalStateException(
           s"Invalid constraint combination: ConstraintType $internalConstraintType and EntityType $entityType."
         )

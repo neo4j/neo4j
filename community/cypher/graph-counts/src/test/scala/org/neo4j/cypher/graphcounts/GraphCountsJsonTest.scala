@@ -454,6 +454,18 @@ class ConstraintsJsonTest extends CypherFunSuite with TableDrivenPropertyChecks 
           properties = List.empty,
           `type` = ConstraintType.ENDPOINT,
           propertyTypes = Nil
+        ),
+      """{
+        |    "label": "Label",
+        |    "type": "Label coexistence constraint",
+        |    "requiredLabelId": "Integer"
+        |}""".stripMargin ->
+        Constraint(
+          label = Some("Label"),
+          relationshipType = None,
+          properties = List.empty,
+          `type` = ConstraintType.LABEL_COEXISTENCE,
+          propertyTypes = Nil
         )
     )
 

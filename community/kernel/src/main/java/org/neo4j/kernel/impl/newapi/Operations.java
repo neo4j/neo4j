@@ -109,6 +109,7 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.IndexType;
+import org.neo4j.internal.schema.LabelCoexistenceSchemaDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.schema.RelationshipEndpointSchemaDescriptor;
@@ -121,6 +122,7 @@ import org.neo4j.internal.schema.SettingsAccessor;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.KeyConstraintDescriptor;
+import org.neo4j.internal.schema.constraints.LabelCoexistenceConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.PropertyTypeSet;
 import org.neo4j.internal.schema.constraints.RelationshipEndpointConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.TypeConstraintDescriptor;
@@ -193,7 +195,7 @@ public class Operations implements Write, SchemaWrite, Upgrade {
     private final boolean additionLockVerification;
     private final boolean typeConstraintEnabled;
     private final boolean dependentConstraintsEnabled;
-    private final boolean relationshipEndpointConstraintsEnabled;
+    private final boolean relationshipEndpointAndLabelCoexistenceConstraintsEnabled;
     private DefaultNodeCursor nodeCursor;
     private DefaultNodeCursor restrictedNodeCursor;
     private DefaultPropertyCursor propertyCursor;
@@ -239,8 +241,8 @@ public class Operations implements Write, SchemaWrite, Upgrade {
         this.additionLockVerification = config.get(additional_lock_verification);
         this.typeConstraintEnabled = config.get(GraphDatabaseInternalSettings.type_constraints);
         this.dependentConstraintsEnabled = config.get(GraphDatabaseInternalSettings.dependent_constraints_enabled);
-        this.relationshipEndpointConstraintsEnabled =
-                config.get(GraphDatabaseInternalSettings.relationship_endpoint_constraints_enabled);
+        this.relationshipEndpointAndLabelCoexistenceConstraintsEnabled =
+                config.get(GraphDatabaseInternalSettings.relationship_endpoint_and_label_coexistence_constraints);
     }
 
     public void initialize(CursorContext cursorContext) {
@@ -2273,9 +2275,9 @@ public class Operations implements Write, SchemaWrite, Upgrade {
             RelationshipEndpointSchemaDescriptor schema, String name, int endpointLabelId, EndpointType endpointType)
             throws KernelException {
 
-        if (!relationshipEndpointConstraintsEnabled) {
+        if (!relationshipEndpointAndLabelCoexistenceConstraintsEnabled) {
             throw new UnsupportedOperationException("Relationship endpoint constraints are not enabled, setting: "
-                    + GraphDatabaseInternalSettings.relationship_endpoint_constraints_enabled.name());
+                    + GraphDatabaseInternalSettings.relationship_endpoint_and_label_coexistence_constraints.name());
         }
 
         // TODO: Add assertSupportedInVersion check
@@ -2330,6 +2332,49 @@ public class Operations implements Write, SchemaWrite, Upgrade {
         exclusiveSchemaNameLock(constraint.getName());
 
         try {
+            assertNoBlockingSchemaRulesExists(constraint);
+            return constraint;
+        } catch (SchemaKernelException e) {
+            exclusiveSchemaUnlock(schemaDescriptor);
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public ConstraintDescriptor labelCoexistenceConstraintCreate(
+            LabelCoexistenceSchemaDescriptor schema, String name, int requiredLabelId) throws KernelException {
+
+        if (!relationshipEndpointAndLabelCoexistenceConstraintsEnabled) {
+            throw new UnsupportedOperationException("Label coexistence constraints are not enabled, setting: "
+                    + GraphDatabaseInternalSettings.relationship_endpoint_and_label_coexistence_constraints.name());
+        }
+
+        // TODO: Add assertSupportedInVersion check
+
+        LabelCoexistenceConstraintDescriptor constraint =
+                lockAndValidateLabelCoexistenceConstraint(schema, name, requiredLabelId);
+
+        // TODO: Add verification here
+
+        ktx.txState().constraintDoAdd(constraint);
+        return constraint;
+    }
+
+    private LabelCoexistenceConstraintDescriptor lockAndValidateLabelCoexistenceConstraint(
+            LabelCoexistenceSchemaDescriptor schemaDescriptor, String name, int requiredLabelId)
+            throws KernelException {
+        exclusiveSchemaLock(schemaDescriptor);
+        ktx.assertOpen();
+
+        try {
+            assertValidDescriptor(schemaDescriptor, CONSTRAINT_CREATION);
+
+            var constraint = ConstraintDescriptorFactory.labelCoexistenceForSchema(schemaDescriptor, requiredLabelId)
+                    .withName(name)
+                    .asLabelCoexistenceConstraint();
+
+            constraint = ensureConstraintHasName(constraint);
+            exclusiveSchemaNameLock(constraint.getName());
             assertNoBlockingSchemaRulesExists(constraint);
             return constraint;
         } catch (SchemaKernelException e) {

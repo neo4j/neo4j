@@ -57,7 +57,9 @@ class ConstraintSubSectionTest {
         ENDPOINT_START(ConstraintDescriptorFactory.relationshipEndpointForSchema(
                 SchemaDescriptors.forRelationshipEndpoint(0), 0, EndpointType.START)),
         ENDPOINT_END(ConstraintDescriptorFactory.relationshipEndpointForSchema(
-                SchemaDescriptors.forRelationshipEndpoint(0), 0, EndpointType.END));
+                SchemaDescriptors.forRelationshipEndpoint(0), 0, EndpointType.END)),
+        LABEL_COEXISTENCE(
+                ConstraintDescriptorFactory.labelCoexistenceForSchema(SchemaDescriptors.forLabelCoexistence(0), 1));
 
         public final ConstraintDescriptor descriptor;
 
@@ -66,8 +68,11 @@ class ConstraintSubSectionTest {
         }
     }
 
-    private final TokenNameLookup tokens =
-            new InMemoryTokens().label(0, "Label").relationshipType(0, "REL").propertyKey(0, "prop");
+    private final TokenNameLookup tokens = new InMemoryTokens()
+            .label(0, "Label")
+            .label(1, "Label2")
+            .relationshipType(0, "REL")
+            .propertyKey(0, "prop");
 
     private Map<String, Object> serializeConstraint(Constraint constraint) {
         return ConstraintSubSection.constraint(tokens, Anonymizer.PLAIN_TEXT, constraint.descriptor);
@@ -188,5 +193,14 @@ class ConstraintSubSectionTest {
                 "endpointType", "END",
                 "properties", List.of());
         assertEquals(serializeConstraint(Constraint.ENDPOINT_END), expectedDataEnd);
+    }
+
+    @Test
+    void labelCoexistenceConstraintSerialization() {
+        Map<String, Object> expectedData = Map.of(
+                "label", "Label",
+                "type", "Label coexistence constraint",
+                "properties", List.of());
+        assertEquals(serializeConstraint(Constraint.LABEL_COEXISTENCE), expectedData);
     }
 }

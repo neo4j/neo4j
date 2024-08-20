@@ -105,3 +105,10 @@ case object RelationshipEndpointConstraints extends ShowConstraintType {
   override val prettyPrint: String = "RELATIONSHIP ENDPOINT LABEL"
   override val description: String = "relationshipEndpointLabelConstraints"
 }
+
+case object LabelCoexistenceConstraints extends ShowConstraintType {
+  // TODO: Verify once CIP: https://docs.google.com/document/d/1UcqorA0YmqgE-Pvs6zDxsGzoC2sKsGYgT5qDkXeQX6Q/edit is approved
+  override val output: String = "NODE_LABEL_COEXISTENCE"
+  override val prettyPrint: String = "NODE LABEL COEXISTENCE"
+  override val description: String = "nodeLabelCoexistenceConstraints"
+}

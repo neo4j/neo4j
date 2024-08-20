@@ -252,7 +252,7 @@ abstract class OperationsTest {
                 Config.defaults(Map.of(
                         GraphDatabaseInternalSettings.type_constraints,
                         true,
-                        GraphDatabaseInternalSettings.relationship_endpoint_constraints_enabled,
+                        GraphDatabaseInternalSettings.relationship_endpoint_and_label_coexistence_constraints,
                         true)),
                 INSTANCE,
                 () -> Static.FULL);

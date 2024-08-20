@@ -22,6 +22,7 @@ package org.neo4j.storageengine.api;
 import org.neo4j.internal.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.KeyConstraintDescriptor;
+import org.neo4j.internal.schema.constraints.LabelCoexistenceConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.RelationshipEndpointConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.TypeConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
@@ -57,6 +58,12 @@ public class StandardConstraintRuleAccessor implements ConstraintRuleAccessor {
     @Override
     public ConstraintDescriptor createRelationshipEndpointConstraint(
             long ruleId, RelationshipEndpointConstraintDescriptor constraint) throws CreateConstraintFailureException {
+        return constraint.withId(ruleId);
+    }
+
+    @Override
+    public ConstraintDescriptor createLabelCoexistenceConstraint(
+            long ruleId, LabelCoexistenceConstraintDescriptor constraint) throws CreateConstraintFailureException {
         return constraint.withId(ruleId);
     }
 }

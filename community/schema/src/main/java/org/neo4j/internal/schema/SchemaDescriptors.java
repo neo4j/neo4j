@@ -80,6 +80,15 @@ public class SchemaDescriptors {
     }
 
     /**
+     *
+     * @param labelId the label id for the schema descriptor
+     * @return {@link LabelCoexistenceSchemaDescriptor} with the provided label id
+     */
+    public static LabelCoexistenceSchemaDescriptor forLabelCoexistence(int labelId) {
+        return new SchemaDescriptorImplementation(NODE, SINGLE_ENTITY_TOKEN, new int[] {labelId}, EMPTY_INT_ARRAY);
+    }
+
+    /**
      * Create a predicate that checks whether a schema descriptor Supplier supplies the given schema descriptor.
      * @param descriptor The schema descriptor to check equality with.
      * @return A predicate that returns {@code true} if it is given a schema descriptor supplier that supplies the

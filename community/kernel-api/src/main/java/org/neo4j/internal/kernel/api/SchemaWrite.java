@@ -28,6 +28,7 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.IndexType;
+import org.neo4j.internal.schema.LabelCoexistenceSchemaDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.schema.RelationshipEndpointSchemaDescriptor;
@@ -157,6 +158,17 @@ public interface SchemaWrite {
     ConstraintDescriptor relationshipEndpointConstraintCreate(
             RelationshipEndpointSchemaDescriptor schema, String name, int endpointLabelId, EndpointType endpointType)
             throws KernelException;
+
+    /**
+     * Create a label coexistence constraint
+     *
+     * @param schema descriptor of entities that the constraint applies to
+     * @param name the name the created constraint should have, or null (when null a generated name will be chosen)
+     * @param requiredLabelId the token id for the label that the node will be required to have
+     * @return the created constraint
+     */
+    ConstraintDescriptor labelCoexistenceConstraintCreate(
+            LabelCoexistenceSchemaDescriptor schema, String name, int requiredLabelId) throws KernelException;
 
     /**
      * Drop the constraint with the given name.

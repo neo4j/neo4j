@@ -43,6 +43,7 @@ import org.neo4j.internal.schema.FulltextSchemaDescriptor;
 import org.neo4j.internal.schema.GraphTypeDependence;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
+import org.neo4j.internal.schema.LabelCoexistenceSchemaDescriptor;
 import org.neo4j.internal.schema.RelationshipEndpointSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptors;
@@ -199,6 +200,13 @@ public class SchemaMigrator {
                                                         RelationshipEndpointSchemaDescriptor.class),
                                                 relEndpointSchemaDescriptor.endpointLabelId(),
                                                 relEndpointSchemaDescriptor.endpointType());
+                                    }
+                                    case LABEL_COEXISTENCE -> {
+                                        var labelCoexistenceSchemaDescriptor =
+                                                constraintDescriptor.asLabelCoexistenceConstraint();
+                                        yield ConstraintDescriptorFactory.labelCoexistenceForSchema(
+                                                schema.asSchemaDescriptorType(LabelCoexistenceSchemaDescriptor.class),
+                                                labelCoexistenceSchemaDescriptor.requiredLabelId());
                                     }
                                 };
                         descriptor = descriptor.withName(constraintDescriptor.getName());

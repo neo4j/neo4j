@@ -23,6 +23,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.existsForLabel;
+import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.labelCoexistenceForLabel;
 import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.nodeKeyForLabel;
 import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.relationshipEndpointForRelType;
 
@@ -32,6 +33,7 @@ import org.junit.jupiter.params.provider.EnumSource;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.internal.schema.constraints.ExistenceConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.KeyConstraintDescriptor;
+import org.neo4j.internal.schema.constraints.LabelCoexistenceConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.RelationshipEndpointConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
 
@@ -121,18 +123,53 @@ class ConstraintDescriptorTest extends SchemaRuleTestBase {
     }
 
     @Test
-    void shouldFailToCreateRelationshipEndpointConstraintWithBadContent() {
-        // GIVEN invalid arguments for descriptor creation
-        // THEN throw
-
+    void shouldFailToCreateRelationshipEndpointConstraintWithNegativeEntityTokenId() {
         assertThatThrownBy(() -> relationshipEndpointForRelType(-1, LABEL_ID, EndpointType.END))
                 .hasMessageContaining("must not have a negative entity token id");
+    }
 
+    @Test
+    void shouldFailToCreateRelationshipEndpointConstraintWithNegativeEndpointLabelId() {
         assertThatThrownBy(() -> relationshipEndpointForRelType(REL_TYPE_ID, -1, EndpointType.END))
                 .hasMessageContaining("endpointLabelId cannot be negative");
+    }
 
+    @Test
+    void shouldFailToCreateRelationshipEndpointConstraintWithNullEndpointType() {
         assertThatThrownBy(() -> relationshipEndpointForRelType(REL_TYPE_ID, LABEL_ID, null))
                 .hasMessageContaining("EndpointType cannot be null");
+    }
+
+    @Test
+    void shouldCreateLabelCoexistenceConstraint() {
+        // GIVEN
+        LabelCoexistenceConstraintDescriptor descriptor = labelCoexistenceForLabel(LABEL_ID, 11);
+        var constraint = descriptor.withId(RULE_ID);
+        var labelCoexistenceConstraint = constraint.asLabelCoexistenceConstraint();
+
+        assertThat(constraint.getId()).isEqualTo(RULE_ID);
+        assertThat(constraint.schema()).isEqualTo(descriptor.schema());
+        assertThat(constraint).isEqualTo(descriptor);
+        assertThat(labelCoexistenceConstraint.requiredLabelId()).isEqualTo(11);
+        assertThrows(IllegalStateException.class, constraint::asPropertyExistenceConstraint);
+    }
+
+    @Test
+    void shouldFailToCreateLabelCoexistenceConstraintWithNegativeEntityTokenId() {
+        assertThatThrownBy(() -> labelCoexistenceForLabel(-1, LABEL_ID))
+                .hasMessageContaining("must not have a negative entity token id");
+    }
+
+    @Test
+    void shouldFailToCreateLabelCoexistenceConstraintWithNegativeRequiredLabelId() {
+        assertThatThrownBy(() -> labelCoexistenceForLabel(LABEL_ID, -1))
+                .hasMessageContaining("requiredLabelId cannot be negative");
+    }
+
+    @Test
+    void shouldFailToCreateLabelCoexistenceConstraintWithEqualRequiredLabelAndLabelId() {
+        assertThatThrownBy(() -> labelCoexistenceForLabel(LABEL_ID, LABEL_ID))
+                .hasMessageContaining("requiredLabelId cannot be same as schema labelId");
     }
 
     @Test

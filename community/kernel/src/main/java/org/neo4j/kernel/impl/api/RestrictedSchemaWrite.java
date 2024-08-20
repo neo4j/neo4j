@@ -32,6 +32,7 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.IndexType;
+import org.neo4j.internal.schema.LabelCoexistenceSchemaDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.schema.RelationshipEndpointSchemaDescriptor;
@@ -125,6 +126,13 @@ public class RestrictedSchemaWrite implements SchemaWrite {
             throws KernelException {
         securityAuthorizationHandler.assertSchemaWrites(securityContext, PrivilegeAction.CREATE_CONSTRAINT);
         return inner.relationshipEndpointConstraintCreate(schema, name, endpointLabelId, endpointType);
+    }
+
+    @Override
+    public ConstraintDescriptor labelCoexistenceConstraintCreate(
+            LabelCoexistenceSchemaDescriptor schema, String name, int requiredLabelId) throws KernelException {
+        securityAuthorizationHandler.assertSchemaWrites(securityContext, PrivilegeAction.CREATE_CONSTRAINT);
+        return inner.labelCoexistenceConstraintCreate(schema, name, requiredLabelId);
     }
 
     @Override
