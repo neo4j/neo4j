@@ -76,8 +76,9 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <maven.compiler.source>17</maven.compiler.source>
-    <maven.compiler.target>17</maven.compiler.target>
+    <vm.target.version>17</vm.target.version>
+    <maven.compiler.source>${vm.target.version}</maven.compiler.source>
+    <maven.compiler.target>${vm.target.version}</maven.compiler.target>
     <generate-config-docs-phase>prepare-package</generate-config-docs-phase>
     <jdk.custom.options>
       --add-opens=java.base/java.nio=ALL-UNNAMED
@@ -152,7 +153,7 @@
     <scala.test.version>3.2.13</scala.test.version>
     <asm.version>9.7</asm.version>
     <metrics.version>4.2.26</metrics.version>
-    <scala.target.vm>17</scala.target.vm>
+    <scala.target.vm>${vm.target.version}</scala.target.vm>
     <jersey.version>2.43</jersey.version>
     <junit.version>5.10.3</junit.version>
     <junit.platform.version>1.10.3</junit.platform.version>
