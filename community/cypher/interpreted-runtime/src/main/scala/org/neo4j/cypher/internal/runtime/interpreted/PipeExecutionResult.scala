@@ -31,7 +31,6 @@ import org.neo4j.cypher.result.RuntimeResult.ConsumptionState
 import org.neo4j.kernel.impl.query.QuerySubscriber
 
 import java.util
-import java.util.Collections
 
 class PipeExecutionResult(
   pipe: Pipe,

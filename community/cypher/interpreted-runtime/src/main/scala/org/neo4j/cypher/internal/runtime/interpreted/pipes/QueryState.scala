@@ -76,6 +76,7 @@ class QueryState(
 
   private var _rowFactory: CypherRowFactory = _
   private var _closed = false
+
   private val notificationsEnabled =
     query.transactionalContext.queryExecutingConfiguration.notificationFilters().severityLevel() != Severity.NONE
   private val _notifications = new util.HashSet[InternalNotification]()
