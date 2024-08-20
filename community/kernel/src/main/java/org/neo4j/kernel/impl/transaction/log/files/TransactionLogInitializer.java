@@ -20,10 +20,10 @@
 package org.neo4j.kernel.impl.transaction.log.files;
 
 import static org.neo4j.common.Subject.ANONYMOUS;
-import static org.neo4j.kernel.impl.api.CompleteTransaction.NOT_SPECIFIED_CHUNK_ID;
 import static org.neo4j.kernel.impl.api.LeaseService.NO_LEASE;
 import static org.neo4j.storageengine.AppendIndexProvider.UNKNOWN_APPEND_INDEX;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
+import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CHUNK_ID;
 import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_INDEX;
 
 import java.io.IOException;
@@ -179,7 +179,7 @@ public class TransactionLogInitializer {
         int checksum = transactionLogWriter.append(
                 emptyTx,
                 upgradeTransactionId,
-                NOT_SPECIFIED_CHUNK_ID,
+                UNKNOWN_CHUNK_ID,
                 appendIndex,
                 BASE_TX_CHECKSUM,
                 UNKNOWN_APPEND_INDEX,

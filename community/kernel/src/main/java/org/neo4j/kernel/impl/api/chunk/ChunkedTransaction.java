@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.api.chunk;
 
-import static org.neo4j.kernel.impl.api.CompleteTransaction.TRANSACTION_ID_NOT_SPECIFIED;
 import static org.neo4j.storageengine.AppendIndexProvider.UNKNOWN_APPEND_INDEX;
+import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_TX_ID;
 
 import java.util.function.LongConsumer;
 import org.neo4j.common.Subject;
@@ -43,7 +43,7 @@ public class ChunkedTransaction implements StorageEngineTransaction {
     private final TransactionIdGenerator transactionIdGenerator;
     private boolean idGenerated;
     private long lastBatchAppendIndex = UNKNOWN_APPEND_INDEX;
-    private long transactionId = TRANSACTION_ID_NOT_SPECIFIED;
+    private long transactionId = UNKNOWN_TX_ID;
     private StorageEngineTransaction next;
     private long firstAppendIndex;
     private LongConsumer closedCallback;

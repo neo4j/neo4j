@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.api.txid;
 
 import static java.util.Objects.requireNonNull;
-import static org.neo4j.kernel.impl.api.CompleteTransaction.TRANSACTION_ID_NOT_SPECIFIED;
+import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_TX_ID;
 
 import org.neo4j.storageengine.api.TransactionIdStore;
 
@@ -35,7 +35,7 @@ public class IdStoreTransactionIdGenerator implements TransactionIdGenerator {
     @Override
     public long nextId(long externalId) {
         long txId = idStore.nextCommittingTransactionId();
-        if (externalId != TRANSACTION_ID_NOT_SPECIFIED) {
+        if (externalId != UNKNOWN_TX_ID) {
             validate(txId, externalId);
         }
         return txId;

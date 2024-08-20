@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.transaction;
 
 import static java.util.Collections.emptyList;
 import static org.neo4j.storageengine.AppendIndexProvider.UNKNOWN_APPEND_INDEX;
+import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CHUNK_ID;
 import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_INDEX;
 
 import java.io.IOException;
@@ -46,7 +47,7 @@ public record ChunkedRollbackBatchRepresentation(
                         true,
                         true,
                         UNKNOWN_APPEND_INDEX,
-                        -1,
+                        UNKNOWN_CHUNK_ID,
                         new MutableLong(UNKNOWN_CONSENSUS_INDEX),
                         new MutableLong(UNKNOWN_APPEND_INDEX),
                         timeWritten,

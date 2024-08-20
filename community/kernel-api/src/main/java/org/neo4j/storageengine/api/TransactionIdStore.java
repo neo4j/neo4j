@@ -62,7 +62,9 @@ public interface TransactionIdStore {
     /**
      * First chunk id for chunked transaction
      */
-    int BASE_CHUNK_NUMBER = 1;
+    int BASE_CHUNK_ID = 1;
+
+    int UNKNOWN_CHUNK_ID = 0;
 
     /**
      * CONSTANT FOR UNKNOWN TX CHECKSUM

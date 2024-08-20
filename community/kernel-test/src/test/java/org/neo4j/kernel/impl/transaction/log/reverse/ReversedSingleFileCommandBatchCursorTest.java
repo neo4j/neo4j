@@ -23,12 +23,12 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.common.Subject.ANONYMOUS;
-import static org.neo4j.kernel.impl.api.CompleteTransaction.NOT_SPECIFIED_CHUNK_ID;
 import static org.neo4j.kernel.impl.transaction.log.GivenCommandBatchCursor.exhaust;
 import static org.neo4j.kernel.impl.transaction.log.TestLogEntryReader.logEntryReader;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.TX_START;
 import static org.neo4j.storageengine.AppendIndexProvider.UNKNOWN_APPEND_INDEX;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
+import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CHUNK_ID;
 import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_INDEX;
 import static org.neo4j.test.LatestVersions.LATEST_KERNEL_VERSION_PROVIDER;
 
@@ -267,7 +267,7 @@ class ReversedSingleFileCommandBatchCursorTest {
                     tx(random.intBetween(minTransactionSize, maxTransactionSize)),
                     txId,
                     txId,
-                    NOT_SPECIFIED_CHUNK_ID,
+                    UNKNOWN_CHUNK_ID,
                     previousChecksum,
                     UNKNOWN_APPEND_INDEX,
                     LogAppendEvent.NULL);
@@ -290,7 +290,7 @@ class ReversedSingleFileCommandBatchCursorTest {
                 tx(random.intBetween(100, 1000)),
                 txId,
                 txId,
-                NOT_SPECIFIED_CHUNK_ID,
+                UNKNOWN_CHUNK_ID,
                 BASE_TX_CHECKSUM,
                 UNKNOWN_APPEND_INDEX,
                 LogAppendEvent.NULL);

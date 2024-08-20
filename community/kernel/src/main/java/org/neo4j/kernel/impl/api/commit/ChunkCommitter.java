@@ -23,7 +23,7 @@ import static java.lang.String.format;
 import static java.util.Collections.emptyList;
 import static org.neo4j.storageengine.AppendIndexProvider.UNKNOWN_APPEND_INDEX;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.INTERNAL;
-import static org.neo4j.storageengine.api.TransactionIdStore.BASE_CHUNK_NUMBER;
+import static org.neo4j.storageengine.api.TransactionIdStore.BASE_CHUNK_ID;
 import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_INDEX;
 
 import java.util.List;
@@ -67,7 +67,7 @@ import org.neo4j.storageengine.api.txstate.validation.ValidationLockDumper;
 
 public final class ChunkCommitter implements TransactionCommitter {
     private final KernelTransactionImplementation ktx;
-    private int chunkNumber = BASE_CHUNK_NUMBER;
+    private int chunkNumber = BASE_CHUNK_ID;
     private long previousBatchAppendIndex = UNKNOWN_APPEND_INDEX;
     private KernelVersion kernelVersion;
     private ChunkedTransaction transactionPayload;
@@ -151,7 +151,7 @@ public final class ChunkCommitter implements TransactionCommitter {
                     transactionValidator.validate(
                             extractedCommands, cursorContext, lockClient, lockTracer, validationLockDumper);
                     var chunkMetadata = new ChunkMetadata(
-                            chunkNumber == BASE_CHUNK_NUMBER,
+                            chunkNumber == BASE_CHUNK_ID,
                             commit,
                             false,
                             previousBatchAppendIndex,
@@ -293,7 +293,7 @@ public final class ChunkCommitter implements TransactionCommitter {
 
     @Override
     public void reset() {
-        chunkNumber = BASE_CHUNK_NUMBER;
+        chunkNumber = BASE_CHUNK_ID;
         kernelVersion = null;
         transactionPayload = null;
         lastTransactionIdWhenStarted = 0;

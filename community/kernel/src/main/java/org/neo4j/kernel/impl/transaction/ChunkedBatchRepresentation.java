@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.transaction;
 
 import static org.neo4j.storageengine.AppendIndexProvider.UNKNOWN_APPEND_INDEX;
-import static org.neo4j.storageengine.api.TransactionIdStore.BASE_CHUNK_NUMBER;
+import static org.neo4j.storageengine.api.TransactionIdStore.BASE_CHUNK_ID;
 import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_INDEX;
 
 import java.io.IOException;
@@ -117,7 +117,7 @@ public record ChunkedBatchRepresentation(
             return new LogEntryChunkStartV5_20(
                     entryStart.kernelVersion(),
                     entryStart.getTimeWritten(),
-                    BASE_CHUNK_NUMBER,
+                    BASE_CHUNK_ID,
                     entryStart.getAppendIndex(),
                     UNKNOWN_APPEND_INDEX);
         } else {

@@ -21,6 +21,7 @@ package org.neo4j.internal.recordstorage;
 
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.storageengine.AppendIndexProvider.UNKNOWN_APPEND_INDEX;
+import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CHUNK_ID;
 
 import java.util.List;
 import java.util.function.LongConsumer;
@@ -58,7 +59,7 @@ public class GroupOfCommands implements StorageEngineTransaction {
 
     @Override
     public long chunkId() {
-        return 0;
+        return UNKNOWN_CHUNK_ID;
     }
 
     @Override

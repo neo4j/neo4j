@@ -22,6 +22,7 @@ package org.neo4j.kernel.api.impl.chunk;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.common.Subject.AUTH_DISABLED;
 import static org.neo4j.storageengine.AppendIndexProvider.UNKNOWN_APPEND_INDEX;
+import static org.neo4j.storageengine.api.TransactionIdStore.BASE_CHUNK_ID;
 import static org.neo4j.test.LatestVersions.LATEST_KERNEL_VERSION;
 
 import java.util.List;
@@ -51,7 +52,7 @@ public class ChunkedTransactionTest {
                     false,
                     false,
                     UNKNOWN_APPEND_INDEX,
-                    1,
+                    BASE_CHUNK_ID,
                     new MutableLong(1),
                     new MutableLong(2),
                     1,
@@ -82,7 +83,7 @@ public class ChunkedTransactionTest {
                     true,
                     false,
                     UNKNOWN_APPEND_INDEX,
-                    1,
+                    BASE_CHUNK_ID,
                     new MutableLong(1),
                     new MutableLong(2),
                     1,

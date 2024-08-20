@@ -25,13 +25,13 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.common.Subject.ANONYMOUS;
-import static org.neo4j.kernel.impl.api.CompleteTransaction.NOT_SPECIFIED_CHUNK_ID;
 import static org.neo4j.kernel.impl.transaction.log.GivenCommandBatchCursor.exhaust;
 import static org.neo4j.kernel.impl.transaction.log.TestLogEntryReader.logEntryReader;
 import static org.neo4j.kernel.impl.transaction.log.reverse.ReversedMultiFileCommandBatchCursor.fromLogFile;
 import static org.neo4j.storageengine.AppendIndexProvider.UNKNOWN_APPEND_INDEX;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
+import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CHUNK_ID;
 import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_INDEX;
 import static org.neo4j.test.LatestVersions.LATEST_LOG_FORMAT;
 
@@ -247,7 +247,7 @@ class ReversedMultiFileCommandBatchCursorTest {
                     tx(random.intBetween(1, 5)),
                     transactionId,
                     transactionId,
-                    NOT_SPECIFIED_CHUNK_ID,
+                    UNKNOWN_CHUNK_ID,
                     previousChecksum,
                     UNKNOWN_APPEND_INDEX,
                     LogAppendEvent.NULL);

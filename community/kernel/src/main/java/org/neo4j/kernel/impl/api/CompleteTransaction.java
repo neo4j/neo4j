@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.api;
 import static org.neo4j.internal.helpers.Format.date;
 import static org.neo4j.kernel.impl.api.txid.TransactionIdGenerator.EXTERNAL_ID;
 import static org.neo4j.storageengine.AppendIndexProvider.UNKNOWN_APPEND_INDEX;
+import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CHUNK_ID;
 
 import java.io.IOException;
 import java.util.function.LongConsumer;
@@ -46,8 +47,6 @@ import org.neo4j.storageengine.api.cursor.StoreCursors;
  * requires less code... and less objects.
  */
 public class CompleteTransaction implements StorageEngineTransaction {
-    public static final long TRANSACTION_ID_NOT_SPECIFIED = 0;
-    public static final int NOT_SPECIFIED_CHUNK_ID = 0;
 
     // These fields are provided by user
     private final CommandBatch commandBatch;
@@ -121,7 +120,7 @@ public class CompleteTransaction implements StorageEngineTransaction {
 
     @Override
     public long chunkId() {
-        return NOT_SPECIFIED_CHUNK_ID;
+        return UNKNOWN_CHUNK_ID;
     }
 
     @Override
