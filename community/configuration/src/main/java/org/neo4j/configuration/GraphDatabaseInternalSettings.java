@@ -1294,11 +1294,6 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
             .build();
 
     @Internal
-    @Description("A feature toggle behind which the new query router stack is developed")
-    public static final Setting<Boolean> query_router_new_stack =
-            newBuilder("internal.dbms.query_router.new_stack", BOOL, true).build();
-
-    @Internal
     @Description("The size of remote read batches for SPD")
     public static final Setting<Integer> sharded_property_database_batch_size = newBuilder(
                     "internal.dbms.sharded_property_database.batch_size", INT, 8192)
