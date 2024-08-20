@@ -31,6 +31,7 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.IndexUpdateListener;
+import org.neo4j.storageengine.api.IndexUpdatesListener;
 import org.neo4j.util.concurrent.AsyncApply;
 import org.neo4j.util.concurrent.Work;
 import org.neo4j.util.concurrent.WorkSync;
@@ -51,19 +52,27 @@ public class IndexUpdatesWorkSync {
         this.workSync = parallelApply ? null : new WorkSync<>(listener);
     }
 
-    public Batch newBatch() {
-        return new Batch();
+    public Batch newBatch(CursorContext cursorContext) {
+        return new Batch(cursorContext);
     }
 
-    public class Batch {
+    public class Batch implements IndexUpdatesListener {
         private final List<Iterable<IndexEntryUpdate<IndexDescriptor>>> updates = new ArrayList<>();
+        private final CursorContext cursorContext;
         private List<IndexEntryUpdate<IndexDescriptor>> singleUpdates;
+        private AsyncApply apply;
 
-        public void add(Iterable<IndexEntryUpdate<IndexDescriptor>> indexUpdates) {
+        public Batch(CursorContext cursorContext) {
+            this.cursorContext = cursorContext;
+        }
+
+        @Override
+        public void indexUpdates(Iterable<IndexEntryUpdate<IndexDescriptor>> indexUpdates) {
             updates.add(indexUpdates);
         }
 
-        public void add(IndexEntryUpdate<IndexDescriptor> indexUpdate) {
+        @Override
+        public void indexUpdate(IndexEntryUpdate<IndexDescriptor> indexUpdate) {
             if (singleUpdates == null) {
                 singleUpdates = new ArrayList<>();
             }
@@ -76,31 +85,57 @@ public class IndexUpdatesWorkSync {
             }
         }
 
-        public void apply(CursorContext cursorContext) throws ExecutionException {
+        @Override
+        public void close() throws IOException {
+            try {
+                if (apply == null) {
+                    apply();
+                }
+                apply.await();
+            } catch (ExecutionException e) {
+                throw wrapExecutionException(e);
+            }
+        }
+
+        private IOException wrapExecutionException(ExecutionException e) {
+            return e.getCause() instanceof IOException ioe ? ioe : new IOException(e.getCause());
+        }
+
+        private void apply() throws IOException, ExecutionException {
             addSingleUpdates();
             if (!updates.isEmpty()) {
                 if (parallelApply) {
                     // Just skip the work-sync if this is parallel apply and instead update straight in
                     try {
                         listener.applyUpdates(combinedUpdates(updates), cursorContext, true);
-                    } catch (IOException | KernelException e) {
-                        throw new ExecutionException(e);
+                    } catch (KernelException e) {
+                        throw new IOException(e);
                     }
                 } else {
                     workSync.apply(new IndexUpdatesWork(combinedUpdates(updates), cursorContext));
                 }
             }
+            apply = AsyncApply.EMPTY;
         }
 
-        public AsyncApply applyAsync(CursorContext cursorContext) throws ExecutionException {
+        @Override
+        public void applyAsync() throws IOException {
+            if (apply != null) {
+                throw new IllegalStateException("Already applied");
+            }
+
             if (!parallelApply) {
                 addSingleUpdates();
-                return updates.isEmpty()
-                        ? AsyncApply.EMPTY
-                        : workSync.applyAsync(new IndexUpdatesWork(combinedUpdates(updates), cursorContext));
+                apply = !updates.isEmpty()
+                        ? workSync.applyAsync(new IndexUpdatesWork(combinedUpdates(updates), cursorContext))
+                        : AsyncApply.EMPTY;
+                return;
             }
-            apply(cursorContext);
-            return AsyncApply.EMPTY;
+            try {
+                apply();
+            } catch (ExecutionException e) {
+                throw wrapExecutionException(e);
+            }
         }
     }
 
@@ -108,7 +143,6 @@ public class IndexUpdatesWorkSync {
      * Combines index updates from multiple transactions into one bigger job.
      */
     private static class IndexUpdatesWork implements Work<IndexUpdateListener, IndexUpdatesWork> {
-
         record OneWork(Iterable<IndexEntryUpdate<IndexDescriptor>> updates, CursorContext cursorContext) {}
 
         private final List<OneWork> works = new ArrayList<>(1);

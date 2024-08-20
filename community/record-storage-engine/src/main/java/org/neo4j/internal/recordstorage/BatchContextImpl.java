@@ -20,7 +20,6 @@
 package org.neo4j.internal.recordstorage;
 
 import java.io.IOException;
-import java.util.concurrent.ExecutionException;
 import org.neo4j.internal.schema.SchemaCache;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -97,12 +96,8 @@ public class BatchContextImpl implements BatchContext {
     @Override
     public void applyPendingIndexUpdates() throws IOException {
         if (hasUpdates()) {
-            IndexUpdatesWorkSync.Batch indexUpdatesBatch = indexUpdatesSync.newBatch();
-            indexUpdatesBatch.add(indexUpdates);
-            try {
-                indexUpdatesBatch.apply(cursorContext);
-            } catch (ExecutionException e) {
-                throw new IOException("Failed to flush index updates", e);
+            try (IndexUpdatesWorkSync.Batch indexUpdatesBatch = indexUpdatesSync.newBatch(cursorContext)) {
+                indexUpdatesBatch.indexUpdates(indexUpdates);
             } finally {
                 indexUpdates.reset();
             }

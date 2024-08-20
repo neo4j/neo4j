@@ -54,6 +54,7 @@ public interface IndexUpdateListener {
      * Applies indexing updates from changes in underlying storage.
      * @param updates stream of updates to apply.
      * @param cursorContext underlying page cursor context
+     * @param parallel whether the updates can be applied with a parallel writer
      */
     void applyUpdates(
             Iterable<IndexEntryUpdate<IndexDescriptor>> updates, CursorContext cursorContext, boolean parallel)

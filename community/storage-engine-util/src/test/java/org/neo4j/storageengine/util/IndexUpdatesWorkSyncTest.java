@@ -122,12 +122,13 @@ class IndexUpdatesWorkSyncTest {
         race.addContestants(
                 threads,
                 i -> throwing(() -> {
-                    IndexUpdatesWorkSync.Batch batch = workSync.newBatch();
-                    ValueIndexEntryUpdate<IndexDescriptor> update = IndexEntryUpdate.add(i, index, intValue(10 + i));
                     var cursorContext = contextFactory.create(Integer.toString(i));
-                    sentUpdates.add(new UpdateAndContext(update, cursorContext));
-                    batch.add(update);
-                    batch.apply(cursorContext);
+                    try (IndexUpdatesWorkSync.Batch batch = workSync.newBatch(cursorContext)) {
+                        ValueIndexEntryUpdate<IndexDescriptor> update =
+                                IndexEntryUpdate.add(i, index, intValue(10 + i));
+                        sentUpdates.add(new UpdateAndContext(update, cursorContext));
+                        batch.indexUpdate(update);
+                    }
                 }),
                 1);
         race.goUnchecked();
