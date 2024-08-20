@@ -77,8 +77,12 @@ class QueryState(
   private var _rowFactory: CypherRowFactory = _
   private var _closed = false
 
-  private val notificationsEnabled =
+  private val notificationsEnabled = if (query != null) {
     query.transactionalContext.queryExecutingConfiguration.notificationFilters().severityLevel() != Severity.NONE
+  } else {
+    false
+  }
+
   private val _notifications = new util.HashSet[InternalNotification]()
 
   def newRow(rowFactory: CypherRowFactory): CypherRow = {
