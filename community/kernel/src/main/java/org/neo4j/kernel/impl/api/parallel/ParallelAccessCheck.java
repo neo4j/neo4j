@@ -23,6 +23,7 @@ import static org.neo4j.scheduler.Group.CYPHER_WORKER;
 import static org.neo4j.util.FeatureToggles.flag;
 
 import java.util.Collection;
+import java.util.function.Supplier;
 import org.neo4j.configuration.Config;
 import org.neo4j.kernel.impl.api.LeaseClient;
 import org.neo4j.kernel.impl.locking.LockManager;
@@ -35,9 +36,19 @@ import org.neo4j.memory.MemoryTracker;
 public class ParallelAccessCheck {
 
     public static final boolean CHECK_PARALLEL_ACCESS = flag(ParallelAccessCheck.class, "CHECK_PARALLEL_ACCESS", false);
+    private static final ThreadLocal<Boolean> DISABLED = new ThreadLocal<>();
 
     public static boolean shouldPerformCheck() {
-        return CHECK_PARALLEL_ACCESS;
+        return CHECK_PARALLEL_ACCESS && DISABLED.get() == null;
+    }
+
+    public static <T> T performWithCheckDisabled(Supplier<T> operation) {
+        try {
+            DISABLED.set(true);
+            return operation.get();
+        } finally {
+            DISABLED.remove();
+        }
     }
 
     public static void checkNotCypherWorkerThread() {
