@@ -59,6 +59,7 @@ import org.neo4j.procedure.Mode;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.NotThreadSafe;
 import org.neo4j.procedure.Procedure;
+import org.neo4j.procedure.UnsupportedDatabaseTypes;
 import org.neo4j.storageengine.api.StoreIdProvider;
 
 @SuppressWarnings({"unused", "WeakerAccess"})
@@ -192,6 +193,7 @@ public class BuiltInProcedures {
     @NotThreadSafe
     @Description("Schedule resampling of an index (for example: CALL db.resampleIndex(\"MyIndex\")).")
     @Procedure(name = "db.resampleIndex", mode = READ)
+    @UnsupportedDatabaseTypes(UnsupportedDatabaseTypes.DatabaseType.SPD)
     public void resampleIndex(@Name("indexName") String indexName) throws ProcedureException {
         if (callContext.isSystemDatabase()) {
             return;
@@ -205,6 +207,7 @@ public class BuiltInProcedures {
     @NotThreadSafe
     @Description("Schedule resampling of all outdated indexes.")
     @Procedure(name = "db.resampleOutdatedIndexes", mode = READ)
+    @UnsupportedDatabaseTypes(UnsupportedDatabaseTypes.DatabaseType.SPD)
     public void resampleOutdatedIndexes() {
         if (callContext.isSystemDatabase()) {
             return;
@@ -221,6 +224,7 @@ public class BuiltInProcedures {
             "Triggers an index resample and waits for it to complete, and after that clears query caches. After this "
                     + "procedure has finished queries will be planned using the latest database statistics.")
     @Procedure(name = "db.prepareForReplanning", mode = READ)
+    @UnsupportedDatabaseTypes(UnsupportedDatabaseTypes.DatabaseType.SPD)
     public void prepareForReplanning(@Name(value = "timeOutSeconds", defaultValue = "300") long timeOutSeconds)
             throws ProcedureException {
         if (callContext.isSystemDatabase()) {
