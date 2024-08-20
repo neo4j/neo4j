@@ -43,7 +43,6 @@ import org.neo4j.internal.kernel.api.TokenReadSession
 import org.neo4j.io.IOUtils.closeAll
 import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.api.exceptions.Status
-import org.neo4j.kernel.impl.query.NotificationConfiguration.Severity
 import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.scheduler.CallableExecutor
 import org.neo4j.values.AnyValue
@@ -77,12 +76,6 @@ class QueryState(
   private var _rowFactory: CypherRowFactory = _
   private var _closed = false
 
-  private val notificationsEnabled = if (query != null) {
-    query.transactionalContext.queryExecutingConfiguration.notificationFilters().severityLevel() != Severity.NONE
-  } else {
-    false
-  }
-
   private val _notifications = new util.HashSet[InternalNotification]()
 
   def newRow(rowFactory: CypherRowFactory): CypherRow = {
@@ -93,9 +86,7 @@ class QueryState(
   }
 
   def newRuntimeNotification(notification: InternalNotification): Unit = {
-    if (notificationsEnabled) {
-      _notifications.add(notification)
-    }
+    _notifications.add(notification)
   }
 
   def notifications(): util.Set[InternalNotification] = _notifications
