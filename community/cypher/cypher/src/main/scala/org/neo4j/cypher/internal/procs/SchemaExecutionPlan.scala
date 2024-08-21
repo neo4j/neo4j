@@ -23,7 +23,6 @@ import org.neo4j.cypher.internal.ExecutionPlan
 import org.neo4j.cypher.internal.RuntimeName
 import org.neo4j.cypher.internal.SchemaRuntimeName
 import org.neo4j.cypher.internal.runtime.ExecutionMode
-import org.neo4j.cypher.internal.runtime.InputDataStream
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.UpdateCountingQueryContext
 import org.neo4j.cypher.internal.util.InternalNotification
@@ -52,7 +51,6 @@ case class SchemaExecutionPlan(
     executionMode: ExecutionMode,
     params: MapValue,
     prePopulateResults: Boolean,
-    ignore: InputDataStream,
     subscriber: QuerySubscriber,
     previousNotifications: Set[InternalNotification]
   ): RuntimeResult = {

@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.procs
 import org.neo4j.cypher.internal.ExecutionEngine
 import org.neo4j.cypher.internal.ExecutionPlan
 import org.neo4j.cypher.internal.runtime.ExecutionMode
-import org.neo4j.cypher.internal.runtime.InputDataStream
 import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.graphdb.Transaction
@@ -61,7 +60,6 @@ case class NonTransactionalUpdatingSystemCommandExecutionPlan(
     executionMode: ExecutionMode,
     params: MapValue,
     prePopulateResults: Boolean,
-    ignore: InputDataStream,
     subscriber: QuerySubscriber,
     previousNotifications: Set[InternalNotification]
   ): RuntimeResult = {
@@ -74,7 +72,6 @@ case class NonTransactionalUpdatingSystemCommandExecutionPlan(
         executionMode,
         params,
         prePopulateResults,
-        ignore,
         subscriber,
         previousNotifications
       )

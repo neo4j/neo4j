@@ -26,7 +26,6 @@ import org.neo4j.cypher.internal.plandescription.Argument
 import org.neo4j.cypher.internal.procs.PredicateExecutionPlan.AccessModeChanger
 import org.neo4j.cypher.internal.procs.PredicateExecutionPlan.NoAccessModeChange
 import org.neo4j.cypher.internal.runtime.ExecutionMode
-import org.neo4j.cypher.internal.runtime.InputDataStream
 import org.neo4j.cypher.internal.runtime.QueryStatistics
 import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.result.EmptyQuerySubscription
@@ -77,7 +76,6 @@ class PredicateExecutionPlan(
     executionMode: ExecutionMode,
     params: MapValue,
     prePopulateResults: Boolean,
-    ignore: InputDataStream,
     subscriber: QuerySubscriber,
     previousNotifications: Set[InternalNotification]
   ): RuntimeResult = {

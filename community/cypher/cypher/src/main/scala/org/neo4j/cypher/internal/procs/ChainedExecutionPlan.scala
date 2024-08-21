@@ -58,7 +58,6 @@ abstract class ChainedExecutionPlan[T <: QueryContext with CountingQueryContext]
     executionMode: ExecutionMode,
     params: MapValue,
     prePopulateResults: Boolean,
-    ignore: InputDataStream,
     subscriber: QuerySubscriber,
     previousNotifications: Set[InternalNotification]
   ): RuntimeResult
@@ -87,14 +86,13 @@ abstract class ChainedExecutionPlan[T <: QueryContext with CountingQueryContext]
           executionMode,
           params,
           prePopulateResults,
-          ignore,
           subscriber,
           runtimeNotifications
         )
       case Some(r: RuntimeResult) =>
-        runSpecific(ctx, executionMode, params, prePopulateResults, ignore, subscriber, r.notifications.asScala.toSet)
+        runSpecific(ctx, executionMode, params, prePopulateResults, subscriber, r.notifications.asScala.toSet)
       case _ =>
-        runSpecific(ctx, executionMode, params, prePopulateResults, ignore, subscriber, Set.empty)
+        runSpecific(ctx, executionMode, params, prePopulateResults, subscriber, Set.empty)
     }
   }
 

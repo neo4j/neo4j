@@ -26,7 +26,6 @@ import org.neo4j.cypher.internal.SystemCommandRuntimeName
 import org.neo4j.cypher.internal.plandescription.Argument
 import org.neo4j.cypher.internal.result.InternalExecutionResult
 import org.neo4j.cypher.internal.runtime.ExecutionMode
-import org.neo4j.cypher.internal.runtime.InputDataStream
 import org.neo4j.cypher.internal.runtime.ProfileMode
 import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.result.RuntimeResult
@@ -61,7 +60,6 @@ case class SystemCommandExecutionPlan(
     executionMode: ExecutionMode,
     params: MapValue,
     prePopulateResults: Boolean,
-    ignore: InputDataStream,
     subscriber: QuerySubscriber,
     previousNotifications: Set[InternalNotification]
   ): RuntimeResult = {
