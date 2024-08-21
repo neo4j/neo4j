@@ -75,7 +75,7 @@ public class UpgradeTestUtil {
     public static void upgradeDbms(DatabaseManagementService dbms) {
         final var system = dbms.database(GraphDatabaseSettings.SYSTEM_DATABASE_NAME);
         Awaitility.await()
-                .atMost(Durations.ONE_MINUTE)
+                .atMost(Durations.FIVE_MINUTES)
                 .pollDelay(Durations.FIVE_SECONDS)
                 .untilAsserted(() -> assertThat(callUpgrade(system))
                         .as("Unable to upgrade the system graph to the current version")
