@@ -25,7 +25,7 @@ public interface RollbackBatchEvent extends AutoCloseable {
         public void close() {}
 
         @Override
-        public void batchedRolledBack(int rolledBackBatches, long transactionId) {}
+        public void batchedRolledBack(long rolledBackBatches, long transactionId) {}
     };
 
     /**
@@ -39,5 +39,5 @@ public interface RollbackBatchEvent extends AutoCloseable {
      * @param rolledBackBatches number of rolled back batches
      * @param transactionId id of transaction that was rolled back
      */
-    void batchedRolledBack(int rolledBackBatches, long transactionId);
+    void batchedRolledBack(long rolledBackBatches, long transactionId);
 }

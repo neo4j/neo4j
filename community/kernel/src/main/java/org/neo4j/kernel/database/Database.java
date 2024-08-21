@@ -100,7 +100,6 @@ import org.neo4j.kernel.extension.DatabaseExtensions;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.extension.context.DatabaseExtensionContext;
 import org.neo4j.kernel.impl.api.CommandCommitListeners;
-import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.api.DatabaseSchemaState;
 import org.neo4j.kernel.impl.api.ExternalIdReuseConditionProvider;
 import org.neo4j.kernel.impl.api.KernelImpl;
@@ -110,6 +109,7 @@ import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionIdSequence;
 import org.neo4j.kernel.impl.api.TransactionRegistry;
 import org.neo4j.kernel.impl.api.TransactionVisibilityProvider;
+import org.neo4j.kernel.impl.api.TransactionalProcessFactory;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.IndexingServiceFactory;
@@ -210,7 +210,7 @@ public class Database extends AbstractDatabase {
     private final FileSystemAbstraction fs;
     private final DatabaseTransactionStats transactionStats;
     private final DatabaseIndexStats indexStats;
-    private final CommitProcessFactory commitProcessFactory;
+    private final TransactionalProcessFactory commitProcessFactory;
     private final ConstraintSemantics constraintSemantics;
     private final GlobalProcedures globalProcedures;
     private final IOControllerService ioControllerService;
@@ -969,6 +969,8 @@ public class Database extends AbstractDatabase {
                 readOnlyDatabaseChecker,
                 databaseConfig.get(GraphDatabaseInternalSettings.out_of_disk_space_protection),
                 commandCommitListeners);
+        var rollbackProcess =
+                commitProcessFactory.createRollbackProcess(storageEngine, logsModule.getLogicalTransactionStore());
         var transactionValidatorFactory = storageEngine.createTransactionValidatorFactory(databaseConfig);
 
         /*
@@ -995,6 +997,7 @@ public class Database extends AbstractDatabase {
                 databaseLockManager,
                 constraintIndexCreator,
                 transactionCommitProcess,
+                rollbackProcess,
                 databaseTransactionEventListeners,
                 transactionStats,
                 databaseAvailabilityGuard,
@@ -1027,7 +1030,6 @@ public class Database extends AbstractDatabase {
                 transactionIdSequence,
                 transactionIdGenerator,
                 databaseHealth,
-                logsModule.getLogicalTransactionStore(),
                 transactionValidatorFactory,
                 internalLogProvider,
                 spdKernelTransactionDecorator));

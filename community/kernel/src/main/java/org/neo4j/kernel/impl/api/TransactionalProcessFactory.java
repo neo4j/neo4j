@@ -20,14 +20,19 @@
 package org.neo4j.kernel.impl.api;
 
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
+import org.neo4j.kernel.impl.api.chunk.TransactionRollbackProcess;
+import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.storageengine.api.StorageEngine;
 
-public interface CommitProcessFactory {
+public interface TransactionalProcessFactory {
     TransactionCommitProcess create(
             TransactionAppender appender,
             StorageEngine storageEngine,
             DatabaseReadOnlyChecker readOnlyDatabaseChecker,
             boolean preAllocateSpaceInStoreFiles,
             CommandCommitListeners commandCommitListeners);
+
+    TransactionRollbackProcess createRollbackProcess(
+            StorageEngine storageEngine, LogicalTransactionStore transactionStore);
 }

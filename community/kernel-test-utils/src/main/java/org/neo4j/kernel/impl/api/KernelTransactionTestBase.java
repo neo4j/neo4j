@@ -33,6 +33,7 @@ import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_C
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.TransactionTimedOut;
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.TransactionTimedOutClientConfiguration;
 import static org.neo4j.kernel.database.DatabaseIdFactory.from;
+import static org.neo4j.kernel.impl.api.chunk.TransactionRollbackProcess.EMPTY_ROLLBACK_PROCESS;
 import static org.neo4j.kernel.impl.api.transaction.serial.DatabaseSerialGuard.EMPTY_GUARD;
 import static org.neo4j.storageengine.AppendIndexProvider.BASE_APPEND_INDEX;
 
@@ -85,7 +86,6 @@ import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.locking.LockManager;
 import org.neo4j.kernel.impl.monitoring.TransactionMonitor;
 import org.neo4j.kernel.impl.query.TransactionExecutionMonitor;
-import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionCommitmentFactory;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionWriteEvent;
 import org.neo4j.kernel.internal.event.DatabaseTransactionEventListeners;
@@ -242,6 +242,7 @@ class KernelTransactionTestBase {
                 mock(DatabaseTransactionEventListeners.class),
                 null,
                 commitProcess,
+                EMPTY_ROLLBACK_PROCESS,
                 transactionMonitor,
                 txPool,
                 clock,
@@ -271,7 +272,6 @@ class KernelTransactionTestBase {
                 TransactionIdGenerator.EMPTY,
                 mock(DbmsRuntimeVersionProvider.class),
                 LatestVersions.LATEST_KERNEL_VERSION_PROVIDER,
-                mock(LogicalTransactionStore.class),
                 serverIdentity,
                 enrichmentStrategy,
                 mock(DatabaseHealth.class),

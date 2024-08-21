@@ -50,6 +50,7 @@ import static org.neo4j.kernel.api.KernelTransaction.Type.IMPLICIT;
 import static org.neo4j.kernel.api.TransactionTimeout.NO_TIMEOUT;
 import static org.neo4j.kernel.api.security.AnonymousContext.access;
 import static org.neo4j.kernel.database.DatabaseIdFactory.from;
+import static org.neo4j.kernel.impl.api.chunk.TransactionRollbackProcess.EMPTY_ROLLBACK_PROCESS;
 import static org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier.ON_HEAP;
 import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_INDEX;
 import static org.neo4j.storageengine.api.txstate.validation.TransactionValidatorFactory.EMPTY_VALIDATOR_FACTORY;
@@ -114,7 +115,6 @@ import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.locking.LockManager;
 import org.neo4j.kernel.impl.monitoring.TransactionMonitor;
 import org.neo4j.kernel.impl.query.TransactionExecutionMonitor;
-import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionCommitmentFactory;
 import org.neo4j.kernel.internal.event.DatabaseTransactionEventListeners;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -787,6 +787,7 @@ class KernelTransactionsTest {
                 locks,
                 null,
                 commitProcess,
+                EMPTY_ROLLBACK_PROCESS,
                 mock(DatabaseTransactionEventListeners.class),
                 mock(TransactionMonitor.class),
                 databaseAvailabilityGuard,
@@ -819,7 +820,6 @@ class KernelTransactionsTest {
                 new TransactionIdSequence(),
                 TransactionIdGenerator.EMPTY,
                 mock(DatabaseHealth.class),
-                mock(LogicalTransactionStore.class),
                 EMPTY_VALIDATOR_FACTORY,
                 NullLogProvider.getInstance(),
                 null);
@@ -913,6 +913,7 @@ class KernelTransactionsTest {
                     locks,
                     constraintIndexCreator,
                     transactionCommitProcess,
+                    EMPTY_ROLLBACK_PROCESS,
                     eventListeners,
                     transactionMonitor,
                     databaseAvailabilityGuard,
@@ -945,7 +946,6 @@ class KernelTransactionsTest {
                     new TransactionIdSequence(),
                     TransactionIdGenerator.EMPTY,
                     mock(DatabaseHealth.class),
-                    mock(LogicalTransactionStore.class),
                     EMPTY_VALIDATOR_FACTORY,
                     NullLogProvider.getInstance(),
                     null);

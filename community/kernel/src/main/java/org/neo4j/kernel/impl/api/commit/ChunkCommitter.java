@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.api.commit;
 
-import static java.lang.String.format;
 import static java.util.Collections.emptyList;
 import static org.neo4j.storageengine.AppendIndexProvider.UNKNOWN_APPEND_INDEX;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.INTERNAL;
@@ -43,12 +42,10 @@ import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.chunk.ChunkMetadata;
 import org.neo4j.kernel.impl.api.chunk.ChunkedCommandBatch;
 import org.neo4j.kernel.impl.api.chunk.ChunkedTransaction;
+import org.neo4j.kernel.impl.api.chunk.TransactionRollbackProcess;
 import org.neo4j.kernel.impl.api.transaction.serial.SerialExecutionGuard;
 import org.neo4j.kernel.impl.api.txid.TransactionIdGenerator;
 import org.neo4j.kernel.impl.locking.LockManager;
-import org.neo4j.kernel.impl.transaction.CommittedCommandBatchRepresentation;
-import org.neo4j.kernel.impl.transaction.log.CommandBatchCursor;
-import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionCommitmentFactory;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionRollbackEvent;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionWriteEvent;
@@ -58,7 +55,6 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.storageengine.api.StorageCommand;
-import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.api.txstate.validation.TransactionConflictException;
@@ -78,8 +74,7 @@ public final class ChunkCommitter implements TransactionCommitter {
     private final TransactionCommitProcess commitProcess;
     private final DatabaseHealth databaseHealth;
     private final TransactionClockContext clocks;
-    private final StorageEngine storageEngine;
-    private final LogicalTransactionStore transactionStore;
+    private final TransactionRollbackProcess chunkedRollbackProcess;
     private final TransactionValidator transactionValidator;
     private final ValidationLockDumper validationLockDumper;
     private final SerialExecutionGuard serialExecutionGuard;
@@ -97,8 +92,7 @@ public final class ChunkCommitter implements TransactionCommitter {
             TransactionCommitProcess commitProcess,
             DatabaseHealth databaseHealth,
             TransactionClockContext clocks,
-            StorageEngine storageEngine,
-            LogicalTransactionStore transactionStore,
+            TransactionRollbackProcess chunkedRollbackProcess,
             TransactionValidator transactionValidator,
             ValidationLockDumper validationLockDumper,
             SerialExecutionGuard serialExecutionGuard,
@@ -111,8 +105,7 @@ public final class ChunkCommitter implements TransactionCommitter {
         this.commitProcess = commitProcess;
         this.databaseHealth = databaseHealth;
         this.clocks = clocks;
-        this.storageEngine = storageEngine;
-        this.transactionStore = transactionStore;
+        this.chunkedRollbackProcess = chunkedRollbackProcess;
         this.transactionValidator = transactionValidator;
         this.validationLockDumper = validationLockDumper;
         this.serialExecutionGuard = serialExecutionGuard;
@@ -199,7 +192,7 @@ public final class ChunkCommitter implements TransactionCommitter {
         if (transactionPayload != null) {
             try {
                 validateCurrentKernelVersion();
-                rollbackBatches(rollbackEvent);
+                chunkedRollbackProcess.rollbackChunks(transactionPayload, rollbackEvent);
                 writeRollbackEntry(rollbackEvent);
             } catch (Exception e) {
                 databaseHealth.panic(e);
@@ -222,6 +215,13 @@ public final class ChunkCommitter implements TransactionCommitter {
 
     private void writeRollbackEntry(TransactionRollbackEvent transactionRollbackEvent)
             throws TransactionFailureException {
+        prepareRollBackEntry();
+        try (var writeEvent = transactionRollbackEvent.beginRollbackWriteEvent()) {
+            commitProcess.commit(transactionPayload, writeEvent, INTERNAL);
+        }
+    }
+
+    private void prepareRollBackEntry() {
         var chunkMetadata = new ChunkMetadata(
                 false,
                 true,
@@ -238,9 +238,6 @@ public final class ChunkCommitter implements TransactionCommitter {
                 ktx.securityContext().subject().userSubject());
         ChunkedCommandBatch chunk = new ChunkedCommandBatch(emptyList(), chunkMetadata);
         transactionPayload.init(chunk);
-        try (var writeEvent = transactionRollbackEvent.beginRollbackWriteEvent()) {
-            commitProcess.commit(transactionPayload, writeEvent, INTERNAL);
-        }
     }
 
     // kernel version can be updated by upgrade listener and for now we only fail to commit such
@@ -249,46 +246,6 @@ public final class ChunkCommitter implements TransactionCommitter {
         if (kernelVersion != kernelVersionProvider.kernelVersion()) {
             throw new UnsupportedOperationException("We do not support upgrade during chunked transaction.");
         }
-    }
-
-    private void rollbackBatches(TransactionRollbackEvent transactionRollbackEvent) throws Exception {
-        long transactionIdToRollback = transactionPayload.transactionId();
-        int rolledbackBatches = 0;
-        int chunksToRollback = chunkNumber - 1;
-        long previousBatchAppendIndex = transactionPayload.lastBatchAppendIndex();
-        try (var rollbackDataEvent = transactionRollbackEvent.beginRollbackDataEvent()) {
-            while (rolledbackBatches != chunksToRollback) {
-                try (CommandBatchCursor commandBatches = transactionStore.getCommandBatches(previousBatchAppendIndex)) {
-                    if (!commandBatches.next()) {
-                        throw new TransactionRollbackException(format(
-                                "Transaction rollback failed. Expected to rollback %d batches, but was able to undo only %d for transaction with id %d.",
-                                chunksToRollback, rolledbackBatches, transactionIdToRollback));
-                    }
-                    CommittedCommandBatchRepresentation commandBatch = commandBatches.get();
-                    if (commandBatch.txId() != transactionIdToRollback) {
-                        throw new TransactionRollbackException(String.format(
-                                "Transaction rollback failed. Batch with transaction id %d encountered, while it was expected to belong to transaction id %d. Batch id: %s.",
-                                commandBatch.txId(), transactionIdToRollback, chunkId(commandBatch)));
-                    }
-                    transactionPayload.init((ChunkedCommandBatch) commandBatch.commandBatch());
-                    storageEngine.apply(transactionPayload, TransactionApplicationMode.MVCC_ROLLBACK);
-                    rolledbackBatches++;
-                    previousBatchAppendIndex = commandBatch.previousBatchAppendIndex();
-                }
-            }
-            if (previousBatchAppendIndex != UNKNOWN_APPEND_INDEX) {
-                throw new TransactionRollbackException(String.format(
-                        "Transaction rollback failed. All expected %d batches in transaction id %d were rolled back but chain claims to have more at: %s.",
-                        chunksToRollback, transactionIdToRollback, previousBatchAppendIndex));
-            }
-            rollbackDataEvent.batchedRolledBack(chunksToRollback, transactionIdToRollback);
-        }
-    }
-
-    private String chunkId(CommittedCommandBatchRepresentation commandBatch) {
-        return commandBatch.commandBatch() instanceof ChunkedCommandBatch cc
-                ? String.valueOf(cc.chunkMetadata().chunkId())
-                : "N/A";
     }
 
     @Override

@@ -34,9 +34,9 @@ import org.neo4j.kernel.database.DatabaseCreationContext;
 import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.database.GlobalAvailabilityGuardController;
 import org.neo4j.kernel.database.NamedDatabaseId;
-import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.api.ExternalIdReuseConditionProvider;
 import org.neo4j.kernel.impl.api.LeaseService;
+import org.neo4j.kernel.impl.api.TransactionalProcessFactory;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.factory.AccessCapabilityFactory;
 import org.neo4j.kernel.impl.index.DatabaseIndexStats;
@@ -50,7 +50,7 @@ public class DefaultDatabaseContextFactory
     private final DatabaseIndexStats.Factory indexStatsFactory;
     private final DeviceMapper deviceMapper;
     private final IOControllerService controllerService;
-    private final CommitProcessFactory commitProcessFactory;
+    private final TransactionalProcessFactory commitProcessFactory;
     private final DefaultDatabaseContextFactoryComponents components;
     private final ServerIdentity serverIdentity;
 
@@ -62,7 +62,7 @@ public class DefaultDatabaseContextFactory
             IdContextFactory idContextFactory,
             DeviceMapper deviceMapper,
             IOControllerService controllerService,
-            CommitProcessFactory commitProcessFactory,
+            TransactionalProcessFactory commitProcessFactory,
             DefaultDatabaseContextFactoryComponents components) {
         super(globalModule, idContextFactory);
         this.serverIdentity = serverIdentity;

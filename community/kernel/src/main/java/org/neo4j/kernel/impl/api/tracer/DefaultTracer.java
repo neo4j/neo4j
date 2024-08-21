@@ -255,7 +255,7 @@ public class DefaultTracer implements DatabaseTracer {
                 }
 
                 @Override
-                public void batchedRolledBack(int rolledBackBatches, long transactionId) {
+                public void batchedRolledBack(long rolledBackBatches, long transactionId) {
                     batchesRolledBack.add(rolledBackBatches);
                 }
             };

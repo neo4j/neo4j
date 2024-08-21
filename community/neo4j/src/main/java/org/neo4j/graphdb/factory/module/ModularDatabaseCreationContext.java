@@ -52,9 +52,9 @@ import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.database.StorageEngineFactorySupplier;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.impl.api.CommandCommitListeners;
-import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.api.ExternalIdReuseConditionProvider;
 import org.neo4j.kernel.impl.api.LeaseService;
+import org.neo4j.kernel.impl.api.TransactionalProcessFactory;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.factory.AccessCapabilityFactory;
 import org.neo4j.kernel.impl.factory.DbmsInfo;
@@ -96,7 +96,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext {
     private final DatabaseTransactionStats transactionStats;
     private final DatabaseIndexStats indexStats;
     private final Factory<DatabaseHealth> databaseHealthFactory;
-    private final CommitProcessFactory commitProcessFactory;
+    private final TransactionalProcessFactory commitProcessFactory;
     private final PageCache pageCache;
     private final ConstraintSemantics constraintSemantics;
     private final Monitors parentMonitors;
@@ -150,7 +150,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext {
             AccessCapabilityFactory accessCapabilityFactory,
             ExternalIdReuseConditionProvider externalIdReuseConditionProvider,
             DatabaseIdContext databaseIdContext,
-            CommitProcessFactory commitProcessFactory,
+            TransactionalProcessFactory commitProcessFactory,
             TokenHolders tokenHolders,
             DatabaseStartupController databaseStartupController,
             ReadOnlyDatabases readOnlyDatabases,
@@ -282,7 +282,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext {
     }
 
     @Override
-    public CommitProcessFactory getCommitProcessFactory() {
+    public TransactionalProcessFactory getCommitProcessFactory() {
         return commitProcessFactory;
     }
 

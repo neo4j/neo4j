@@ -19,16 +19,22 @@
  */
 package org.neo4j.kernel.impl.factory;
 
+import static org.neo4j.io.pagecache.PageCacheOpenOptions.MULTI_VERSIONED;
+import static org.neo4j.kernel.impl.api.chunk.TransactionRollbackProcess.EMPTY_ROLLBACK_PROCESS;
+
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.kernel.impl.api.CommandCommitListeners;
-import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.api.DatabaseTransactionCommitProcess;
 import org.neo4j.kernel.impl.api.InternalTransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
+import org.neo4j.kernel.impl.api.TransactionalProcessFactory;
+import org.neo4j.kernel.impl.api.chunk.MultiVersionTransactionRollbackProcess;
+import org.neo4j.kernel.impl.api.chunk.TransactionRollbackProcess;
+import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.storageengine.api.StorageEngine;
 
-public class CommunityCommitProcessFactory implements CommitProcessFactory {
+public class DefaultTransactionalProcessFactory implements TransactionalProcessFactory {
     @Override
     public TransactionCommitProcess create(
             TransactionAppender appender,
@@ -40,5 +46,14 @@ public class CommunityCommitProcessFactory implements CommitProcessFactory {
                 new InternalTransactionCommitProcess(
                         appender, storageEngine, preAllocateSpaceInStoreFiles, commandCommitListeners),
                 readOnlyChecker);
+    }
+
+    @Override
+    public TransactionRollbackProcess createRollbackProcess(
+            StorageEngine storageEngine, LogicalTransactionStore transactionStore) {
+        if (storageEngine.getOpenOptions().contains(MULTI_VERSIONED)) {
+            return new MultiVersionTransactionRollbackProcess(transactionStore, storageEngine);
+        }
+        return EMPTY_ROLLBACK_PROCESS;
     }
 }

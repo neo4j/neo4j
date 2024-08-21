@@ -115,6 +115,7 @@ import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.impl.api.chunk.ChunkSink;
 import org.neo4j.kernel.impl.api.chunk.ChunkedTransactionSink;
+import org.neo4j.kernel.impl.api.chunk.TransactionRollbackProcess;
 import org.neo4j.kernel.impl.api.commit.ChunkCommitter;
 import org.neo4j.kernel.impl.api.commit.DefaultCommitter;
 import org.neo4j.kernel.impl.api.commit.TransactionCommitter;
@@ -147,7 +148,6 @@ import org.neo4j.kernel.impl.newapi.KernelTokenRead;
 import org.neo4j.kernel.impl.newapi.Operations;
 import org.neo4j.kernel.impl.newapi.TransactionQueryContext;
 import org.neo4j.kernel.impl.query.TransactionExecutionMonitor;
-import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionCommitmentFactory;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionEvent;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionTracer;
@@ -217,6 +217,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
     // For committing
     private final TransactionCommitProcess commitProcess;
+    private final TransactionRollbackProcess rollbackProcess;
     private final TransactionMonitor transactionMonitor;
     private final TransactionExecutionMonitor transactionExecutionMonitor;
     private final LeaseService leaseService;
@@ -244,7 +245,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final ApplyEnrichmentStrategy enrichmentStrategy;
     private final DatabaseHealth databaseHealth;
     private final SecurityAuthorizationHandler securityAuthorizationHandler;
-    private final LogicalTransactionStore transactionStore;
 
     // State that needs to be reset between uses. Most of these should be cleared or released in #release(),
     // whereas others, such as timestamp or txId when transaction starts, even locks, needs to be set in #initialize().
@@ -316,6 +316,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             DatabaseTransactionEventListeners transactionEventListeners,
             ConstraintIndexCreator constraintIndexCreator,
             TransactionCommitProcess commitProcess,
+            TransactionRollbackProcess rollbackProcess,
             TransactionMonitor transactionMonitor,
             Pool<KernelTransactionImplementation> pool,
             SystemNanoClock clock,
@@ -344,7 +345,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             TransactionIdGenerator transactionIdGenerator,
             DbmsRuntimeVersionProvider dbmsRuntimeVersionProvider,
             KernelVersionProvider kernelVersionProvider,
-            LogicalTransactionStore transactionStore,
             ServerIdentity serverIdentity,
             ApplyEnrichmentStrategy enrichmentStrategy,
             DatabaseHealth databaseHealth,
@@ -366,6 +366,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.memoryTracker = transactionMemoryPool.getTransactionTracker();
         this.constraintIndexCreator = constraintIndexCreator;
         this.commitProcess = commitProcess;
+        this.rollbackProcess = rollbackProcess;
         this.transactionMonitor = transactionMonitor;
         this.transactionExecutionMonitor = transactionExecutionMonitor;
         this.storageReader = storageEngine.newReader();
@@ -379,7 +380,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.clocks = new TransactionClockContext(clock);
         this.transactionTracer = tracers.getDatabaseTracer();
         this.leaseService = leaseService;
-        this.transactionStore = transactionStore;
         this.currentStatement =
                 new KernelStatement(this, tracers.getLockTracer(), this.clocks, cpuClockRef, namedDatabaseId, config);
         this.statistics = new Statistics(
@@ -1637,8 +1637,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                         commitProcess,
                         databaseHealth,
                         clocks,
-                        storageEngine,
-                        transactionStore,
+                        rollbackProcess,
                         transactionValidator,
                         validationLockDumper,
                         serialExecutionGuard,

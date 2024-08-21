@@ -80,9 +80,9 @@ import org.neo4j.kernel.database.MapCachingDatabaseIdRepository;
 import org.neo4j.kernel.database.MapCachingDatabaseReferenceRepository;
 import org.neo4j.kernel.database.SystemGraphDatabaseIdRepository;
 import org.neo4j.kernel.database.SystemGraphDatabaseReferenceRepository;
-import org.neo4j.kernel.impl.api.CommitProcessFactory;
-import org.neo4j.kernel.impl.factory.CommunityCommitProcessFactory;
+import org.neo4j.kernel.impl.api.TransactionalProcessFactory;
 import org.neo4j.kernel.impl.factory.DbmsInfo;
+import org.neo4j.kernel.impl.factory.DefaultTransactionalProcessFactory;
 import org.neo4j.kernel.impl.pagecache.CommunityIOControllerService;
 import org.neo4j.kernel.impl.security.URIAccessRules;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -381,8 +381,8 @@ public class CommunityEditionModule extends AbstractEditionModule implements Def
         return globalModule.getGlobalDependencies().resolveDependency(BoltGraphDatabaseManagementServiceSPI.class);
     }
 
-    protected CommitProcessFactory createCommitProcessFactory() {
-        return new CommunityCommitProcessFactory();
+    protected TransactionalProcessFactory createCommitProcessFactory() {
+        return new DefaultTransactionalProcessFactory();
     }
 
     @Override

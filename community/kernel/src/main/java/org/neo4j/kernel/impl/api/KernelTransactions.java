@@ -70,6 +70,7 @@ import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.database.NormalizedDatabaseName;
 import org.neo4j.kernel.database.PrivilegeDatabaseReference;
 import org.neo4j.kernel.database.PrivilegeDatabaseReferenceImpl;
+import org.neo4j.kernel.impl.api.chunk.TransactionRollbackProcess;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
@@ -81,7 +82,6 @@ import org.neo4j.kernel.impl.factory.AccessCapabilityFactory;
 import org.neo4j.kernel.impl.locking.LockManager;
 import org.neo4j.kernel.impl.monitoring.TransactionMonitor;
 import org.neo4j.kernel.impl.query.TransactionExecutionMonitor;
-import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionCommitmentFactory;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
 import org.neo4j.kernel.internal.event.DatabaseTransactionEventListeners;
@@ -114,6 +114,7 @@ public class KernelTransactions extends LifecycleAdapter
     private final LockManager lockManager;
     private final ConstraintIndexCreator constraintIndexCreator;
     private final TransactionCommitProcess transactionCommitProcess;
+    private final TransactionRollbackProcess rollbackProcess;
     private final DatabaseTransactionEventListeners eventListeners;
     private final TransactionMonitor transactionMonitor;
     private final GlobalMemoryGroupTracker transactionsMemoryPool;
@@ -125,7 +126,6 @@ public class KernelTransactions extends LifecycleAdapter
     private final TransactionIdStore transactionIdStore;
     private final KernelVersionProvider kernelVersionProvider;
     private final ServerIdentity serverIdentity;
-    private final LogicalTransactionStore transactionStore;
     private final AtomicReference<CpuClock> cpuClockRef;
     private final AccessCapabilityFactory accessCapabilityFactory;
     private final SystemNanoClock clock;
@@ -185,6 +185,7 @@ public class KernelTransactions extends LifecycleAdapter
             LockManager lockManager,
             ConstraintIndexCreator constraintIndexCreator,
             TransactionCommitProcess transactionCommitProcess,
+            TransactionRollbackProcess rollbackProcess,
             DatabaseTransactionEventListeners eventListeners,
             TransactionMonitor transactionMonitor,
             AvailabilityGuard databaseAvailabilityGuard,
@@ -217,7 +218,6 @@ public class KernelTransactions extends LifecycleAdapter
             TransactionIdSequence transactionIdSequence,
             TransactionIdGenerator transactionIdGenerator,
             DatabaseHealth databaseHealth,
-            LogicalTransactionStore transactionStore,
             TransactionValidatorFactory transactionValidatorFactory,
             LogProvider internalLogProvider,
             SpdKernelTransactionDecorator spdKernelTransactionDecorator) {
@@ -225,6 +225,7 @@ public class KernelTransactions extends LifecycleAdapter
         this.lockManager = lockManager;
         this.constraintIndexCreator = constraintIndexCreator;
         this.transactionCommitProcess = transactionCommitProcess;
+        this.rollbackProcess = rollbackProcess;
         this.eventListeners = eventListeners;
         this.transactionMonitor = transactionMonitor;
         this.transactionsMemoryPool = transactionsMemoryPool;
@@ -258,7 +259,6 @@ public class KernelTransactions extends LifecycleAdapter
         this.schemaState = schemaState;
         this.leaseService = leaseService;
         this.transactionIdSequence = transactionIdSequence;
-        this.transactionStore = transactionStore;
         this.multiVersioned = storageEngine.getOpenOptions().contains(MULTI_VERSIONED);
         this.txPool = new MonitoredTransactionPool(
                 new GlobalKernelTransactionPool(
@@ -539,6 +539,7 @@ public class KernelTransactions extends LifecycleAdapter
                     eventListeners,
                     constraintIndexCreator,
                     transactionCommitProcess,
+                    rollbackProcess,
                     transactionMonitor,
                     txPool,
                     clock,
@@ -567,7 +568,6 @@ public class KernelTransactions extends LifecycleAdapter
                     transactionIdGenerator,
                     dbmsRuntimeVersionProvider,
                     kernelVersionProvider,
-                    transactionStore,
                     serverIdentity,
                     enrichmentStrategy,
                     databaseHealth,

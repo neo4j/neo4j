@@ -30,10 +30,10 @@ import org.neo4j.kernel.impl.api.DatabaseTransactionCommitProcess;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.storageengine.api.StorageEngine;
 
-class CommunityCommitProcessFactoryTest {
+class DefaultTransactionalProcessFactoryTest {
     @Test
     void createRegularCommitProcessWhenWritable() {
-        var factory = new CommunityCommitProcessFactory();
+        var factory = new DefaultTransactionalProcessFactory();
 
         var commitProcess = factory.create(
                 mock(TransactionAppender.class),
@@ -47,7 +47,7 @@ class CommunityCommitProcessFactoryTest {
 
     @Test
     void createRegularCommitProcessWhenDynamicallyReadOnly() {
-        var factory = new CommunityCommitProcessFactory();
+        var factory = new DefaultTransactionalProcessFactory();
 
         var commitProcess = factory.create(
                 mock(TransactionAppender.class),
