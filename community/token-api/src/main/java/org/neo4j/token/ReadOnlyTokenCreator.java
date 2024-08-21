@@ -20,6 +20,9 @@
 package org.neo4j.token;
 
 import java.util.function.IntPredicate;
+import org.neo4j.gqlstatus.ErrorClassification;
+import org.neo4j.gqlstatus.ErrorGqlStatusObjectImplementation;
+import org.neo4j.gqlstatus.GqlStatusInfoCodes;
 import org.neo4j.kernel.api.exceptions.ReadOnlyDbException;
 
 /**
@@ -32,12 +35,18 @@ public class ReadOnlyTokenCreator implements TokenCreator {
 
     @Override
     public int createToken(String name, boolean internal) throws ReadOnlyDbException {
-        throw new ReadOnlyDbException();
+        var gql = ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_08N08)
+                .withClassification(ErrorClassification.CLIENT_ERROR)
+                .build();
+        throw new ReadOnlyDbException(gql);
     }
 
     @Override
     public void createTokens(String[] names, int[] ids, boolean internal, IntPredicate filter)
             throws ReadOnlyDbException {
-        throw new ReadOnlyDbException();
+        var gql = ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_08N08)
+                .withClassification(ErrorClassification.CLIENT_ERROR)
+                .build();
+        throw new ReadOnlyDbException(gql);
     }
 }

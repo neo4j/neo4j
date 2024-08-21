@@ -27,6 +27,7 @@ import org.neo4j.kernel.api.exceptions.Status;
  * An error
  */
 public class UnableToStartDatabaseException extends DatabaseManagementException {
+    @Deprecated
     public UnableToStartDatabaseException(String message) {
         super(message);
     }
@@ -35,6 +36,7 @@ public class UnableToStartDatabaseException extends DatabaseManagementException 
         super(gqlStatusObject, message);
     }
 
+    @Deprecated
     public UnableToStartDatabaseException(String message, Throwable cause) {
         super(message, cause);
     }

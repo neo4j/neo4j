@@ -68,6 +68,7 @@ public class TransactionFailureException extends RuntimeException implements Sta
         this.oldMessage = message;
     }
 
+    @Deprecated
     public TransactionFailureException(String message, Status status) {
         super(message);
         this.status = status;
@@ -84,6 +85,7 @@ public class TransactionFailureException extends RuntimeException implements Sta
         this.oldMessage = message;
     }
 
+    @Deprecated
     public TransactionFailureException(String message, Throwable cause, Status status) {
         super(message, cause);
         this.status = status;

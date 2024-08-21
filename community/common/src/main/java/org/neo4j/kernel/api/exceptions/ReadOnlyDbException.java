@@ -27,6 +27,8 @@ import org.neo4j.gqlstatus.ErrorGqlStatusObject;
  * trying to create tokens (like new property names), ids, indexes files in a read only database.
  */
 public class ReadOnlyDbException extends KernelException {
+
+    @Deprecated
     public ReadOnlyDbException() {
         super(Status.General.ForbiddenOnReadOnlyDatabase, "This Neo4j instance is read only for all databases");
     }

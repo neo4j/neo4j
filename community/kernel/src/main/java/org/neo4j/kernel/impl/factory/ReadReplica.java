@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.impl.factory;
 
+import org.neo4j.gqlstatus.ErrorClassification;
+import org.neo4j.gqlstatus.ErrorGqlStatusObjectImplementation;
+import org.neo4j.gqlstatus.GqlStatusInfoCodes;
 import org.neo4j.graphdb.WriteOperationsNotAllowedException;
 import org.neo4j.kernel.api.exceptions.Status;
 
@@ -29,7 +32,11 @@ public class ReadReplica implements AccessCapability {
 
     @Override
     public void assertCanWrite() {
+        var gql = ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_08N08)
+                .withClassification(ErrorClassification.CLIENT_ERROR)
+                .build();
         throw new WriteOperationsNotAllowedException(
+                gql,
                 "No write operations are allowed on this database. This is a read only Neo4j instance.",
                 Status.General.ForbiddenOnReadOnlyDatabase);
     }

@@ -29,6 +29,7 @@ public class WriteOperationsNotAllowedException extends RuntimeException impleme
     private final ErrorGqlStatusObject gqlStatusObject;
     private final String oldMessage;
 
+    @Deprecated
     public WriteOperationsNotAllowedException(String message, Status statusCode) {
         super(message);
         this.statusCode = statusCode;

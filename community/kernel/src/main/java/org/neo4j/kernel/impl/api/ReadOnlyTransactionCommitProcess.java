@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import org.neo4j.gqlstatus.ErrorClassification;
+import org.neo4j.gqlstatus.ErrorGqlStatusObjectImplementation;
+import org.neo4j.gqlstatus.GqlStatusInfoCodes;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionWriteEvent;
@@ -36,7 +39,11 @@ public class ReadOnlyTransactionCommitProcess implements TransactionCommitProces
             TransactionWriteEvent transactionWriteEvent,
             TransactionApplicationMode mode)
             throws TransactionFailureException {
+        var gql = ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_08N08)
+                .withClassification(ErrorClassification.CLIENT_ERROR)
+                .build();
         throw new TransactionFailureException(
+                gql,
                 Status.General.ForbiddenOnReadOnlyDatabase,
                 "Transactions cannot be committed in a read-only Neo4j database");
     }

@@ -29,6 +29,7 @@ public class LeaseException extends RuntimeException implements Status.HasStatus
     private final ErrorGqlStatusObject gqlStatusObject;
     private final String oldMessage;
 
+    @Deprecated
     public LeaseException(String message, Status status) {
         this(message, null, status);
     }
@@ -37,6 +38,7 @@ public class LeaseException extends RuntimeException implements Status.HasStatus
         this(gqlStatusObject, message, null, status);
     }
 
+    @Deprecated
     public LeaseException(String message, Throwable cause, Status status) {
         super(message, cause);
         this.status = status;

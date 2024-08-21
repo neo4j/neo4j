@@ -31,6 +31,7 @@ import org.neo4j.kernel.api.exceptions.Status;
 public class TransientTransactionFailureException extends TransientFailureException {
     private final Status status;
 
+    @Deprecated
     public TransientTransactionFailureException(Status status, String message) {
         super(message);
         this.status = status;
@@ -42,6 +43,7 @@ public class TransientTransactionFailureException extends TransientFailureExcept
         this.status = status;
     }
 
+    @Deprecated
     public TransientTransactionFailureException(Status status, String message, Throwable cause) {
         super(message, cause);
         this.status = status;

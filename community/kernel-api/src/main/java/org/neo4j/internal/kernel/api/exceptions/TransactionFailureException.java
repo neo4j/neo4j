@@ -24,6 +24,7 @@ import org.neo4j.gqlstatus.ErrorGqlStatusObject;
 import org.neo4j.kernel.api.exceptions.Status;
 
 public class TransactionFailureException extends KernelException {
+    @Deprecated
     public TransactionFailureException(Status statusCode, Throwable cause, String message, Object... parameters) {
         super(statusCode, cause, message, parameters);
     }
@@ -37,6 +38,7 @@ public class TransactionFailureException extends KernelException {
         super(gqlStatusObject, statusCode, cause, message, parameters);
     }
 
+    @Deprecated
     public TransactionFailureException(Status statusCode, Throwable cause) {
         super(statusCode, cause);
     }
@@ -45,6 +47,7 @@ public class TransactionFailureException extends KernelException {
         super(gqlStatusObject, statusCode, cause);
     }
 
+    @Deprecated
     public TransactionFailureException(Status statusCode, String message, Object... parameters) {
         super(statusCode, message, parameters);
     }
@@ -55,6 +58,7 @@ public class TransactionFailureException extends KernelException {
     }
 
     // To satisfy DatabaseHealth
+    @Deprecated
     public TransactionFailureException(String message, Throwable cause) {
         super(Status.Transaction.TransactionStartFailed, cause, message);
     }

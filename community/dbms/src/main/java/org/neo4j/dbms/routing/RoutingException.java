@@ -29,6 +29,7 @@ public class RoutingException extends Exception implements Status.HasStatus, Has
     private final ErrorGqlStatusObject gqlStatusObject;
     private final String oldMessage;
 
+    @Deprecated
     public RoutingException(Status status, String message) {
         super(message);
         this.status = status;

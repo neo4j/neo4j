@@ -23,6 +23,7 @@ import org.neo4j.gqlstatus.ErrorGqlStatusObject;
 import org.neo4j.kernel.api.exceptions.Status;
 
 public class InvalidArgumentException extends Neo4jException {
+    @Deprecated
     public InvalidArgumentException(String message, Throwable cause) {
         super(message, cause);
     }
@@ -31,6 +32,7 @@ public class InvalidArgumentException extends Neo4jException {
         super(gqlStatusObject, message, cause);
     }
 
+    @Deprecated
     public InvalidArgumentException(String message) {
         super(message);
     }

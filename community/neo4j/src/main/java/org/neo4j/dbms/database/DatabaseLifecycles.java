@@ -27,6 +27,10 @@ import static org.neo4j.kernel.database.NamedDatabaseId.SYSTEM_DATABASE_NAME;
 import java.util.Optional;
 import org.neo4j.dbms.api.DatabaseManagementException;
 import org.neo4j.dbms.api.DatabaseNotFoundException;
+import org.neo4j.gqlstatus.ErrorClassification;
+import org.neo4j.gqlstatus.ErrorGqlStatusObjectImplementation;
+import org.neo4j.gqlstatus.GqlMessageParams;
+import org.neo4j.gqlstatus.GqlStatusInfoCodes;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -123,8 +127,12 @@ public final class DatabaseLifecycles {
             database.start();
         } catch (Throwable t) {
             log.error("Failed to start " + namedDatabaseId, t);
+            var gql = ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_51N40)
+                    .withParam(GqlMessageParams.namedDatabaseId, namedDatabaseId.name())
+                    .withClassification(ErrorClassification.DATABASE_ERROR)
+                    .build();
             context.fail(new UnableToStartDatabaseException(
-                    format("An error occurred! Unable to start `%s`.", namedDatabaseId), t));
+                    gql, format("An error occurred! Unable to start `%s`.", namedDatabaseId), t));
         }
     }
 

@@ -52,6 +52,8 @@ public enum GqlMessageParams {
     db1,
     db2,
     dbName,
+
+    desc,
     desiredPrimaries,
     enginetype,
     entity,

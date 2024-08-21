@@ -3158,8 +3158,8 @@ public enum GqlStatusInfoCodes implements GqlStatusInfo {
     STATUS_51N57(
             new GqlStatus("51N57"),
             """
-                    Unexpected error while picking allocations - primary exceeded.""",
-            new GqlMessageParams[] {},
+                    Unexpected error while picking allocations - '$desc'.""",
+            new GqlMessageParams[] {GqlMessageParams.desc},
             Condition.SYSTEM_CONFIGURATION_OR_OPERATION_EXCEPTION,
             "generic topology modification error"),
     STATUS_51N58(
