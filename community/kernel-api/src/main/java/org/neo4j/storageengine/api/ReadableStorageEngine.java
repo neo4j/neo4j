@@ -59,4 +59,9 @@ public interface ReadableStorageEngine {
     default ImmutableSet<OpenOption> getOpenOptions() {
         return Sets.immutable.empty();
     }
+
+    /**
+     * @return cost characteristics for accessing data in this storage engine.
+     */
+    StorageEngineCostCharacteristics costCharacteristics();
 }

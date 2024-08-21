@@ -68,6 +68,7 @@ import org.neo4j.storageengine.api.InternalErrorTracer;
 import org.neo4j.storageengine.api.MetadataProvider;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageEngine;
+import org.neo4j.storageengine.api.StorageEngineCostCharacteristics;
 import org.neo4j.storageengine.api.StorageEngineTransaction;
 import org.neo4j.storageengine.api.StorageLocks;
 import org.neo4j.storageengine.api.StorageReader;
@@ -291,6 +292,7 @@ class ParallelRecoveryVisitorTest {
         private final long[] applyOrder = new long[100];
         private final AtomicInteger lockOrderCursor = new AtomicInteger();
         private final AtomicInteger applyOrderCursor = new AtomicInteger();
+        private final StorageEngineCostCharacteristics costCharacteristics = () -> false;
 
         @Override
         public void lockRecoveryCommands(
@@ -440,6 +442,11 @@ class ParallelRecoveryVisitorTest {
         @Override
         public StorageEngineIndexingBehaviour indexingBehaviour() {
             return StorageEngineIndexingBehaviour.EMPTY;
+        }
+
+        @Override
+        public StorageEngineCostCharacteristics costCharacteristics() {
+            return costCharacteristics;
         }
     }
 }
