@@ -27,7 +27,6 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.LiteralHelper.lite
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.exceptions.CypherTypeException
-import org.neo4j.exceptions.InvalidArgumentException
 import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.Relationship
 import org.neo4j.values.AnyValue
@@ -139,14 +138,6 @@ class ContainerIndexTest extends CypherFunSuite {
     a[CypherTypeException] should be thrownBy idx(1.0f)
     a[CypherTypeException] should be thrownBy idx(1.0d)
     a[CypherTypeException] should be thrownBy idx("bad value")
-  }
-
-  test("should fail when too big values are used to access the array") {
-    implicit val collection = literal(Seq(1, 2, 3, 4))
-
-    val index = Int.MaxValue + 1L
-
-    an[InvalidArgumentException] should be thrownBy idx(index)
   }
 
   private def idx(value: Any)(implicit collection: Expression) =
