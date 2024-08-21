@@ -154,13 +154,48 @@ Feature: DynamicLabelsAcceptance
       """
     Then a SyntaxError should be raised at compile time: *
     Examples:
-      | invalid_expr |
-      | 1 + 2        |
-      | null         |
-      | ''           |
+      | invalid_expr                      |
+      | 1 + 2                             |
+      | localdatetime("2024185T19:32:24") |
+      | point({x:3,y:0})                  |
 
-  Scenario Outline: Should throw syntax errors when setting labels are variables with invalid values
+  Scenario: Should throw type errors when setting labels with variables with null
     Given an empty graph
+    And having executed:
+      """
+      CREATE ()
+      """
+    When executing query:
+      """
+      WITH NULL AS a
+      MATCH (n)
+      SET n:$(a)
+      RETURN labels(n) AS labels
+      """
+    Then a TypeError should be raised at runtime: *
+
+  @allowCustomErrors
+  Scenario: Should throw token errors when setting labels with variables with empty strings
+    Given an empty graph
+    And having executed:
+      """
+      CREATE ()
+      """
+    When executing query:
+      """
+      WITH '' AS a
+      MATCH (n)
+      SET n:$(a)
+      RETURN labels(n) AS labels
+      """
+    Then a TokenNameError should be raised at runtime: *
+
+  Scenario Outline: Should throw syntax errors when setting labels with invalid values
+    Given an empty graph
+    And having executed:
+      """
+      CREATE ()
+      """
     When executing query:
       """
       WITH <invalid_value> AS a
@@ -170,10 +205,12 @@ Feature: DynamicLabelsAcceptance
       """
     Then a SyntaxError should be raised at compile time: *
     Examples:
-      | invalid_value |
-      | 1 + 2         |
-      | true          |
-      | {x : 1}       |
+      | invalid_value                     |
+      | 1 + 2                             |
+      | true                              |
+      | {x : 1}                           |
+      | localdatetime("2024185T19:32:24") |
+      | point({x:3,y:0})                  |
 
   Scenario: Should throw type error if labels missing in the CSV file
     Given an empty graph
@@ -207,6 +244,39 @@ Feature: DynamicLabelsAcceptance
       | true          |
       | {x: 1}        |
 
+  Scenario: Should throw type errors for setting labels where parameters evaluate to null
+    Given an empty graph
+    And having executed:
+      """
+      CREATE ()
+      """
+    And parameters are:
+      | a | null |
+    When executing query:
+      """
+      MATCH (n)
+      SET n:$($a)
+      RETURN labels(n) AS labels
+      """
+    Then a TypeError should be raised at runtime: *
+
+  @allowCustomErrors
+  Scenario: Should throw token name errors for setting labels where parameters evaluate to empty strings
+    Given an empty graph
+    And having executed:
+      """
+      CREATE ()
+      """
+    And parameters are:
+      | a | '' |
+    When executing query:
+      """
+      MATCH (n)
+      SET n:$($a)
+      RETURN labels(n) AS labels
+      """
+    Then a TokenNameError should be raised at runtime: *
+
   Scenario Outline: Should throw type errors when a node property being set as a dynamic label is invalid
     Given an empty graph
     And having executed:
@@ -221,10 +291,11 @@ Feature: DynamicLabelsAcceptance
       """
     Then a TypeError should be raised at runtime: *
     Examples:
-      | invalid_value |
-      | 1             |
-      | null          |
-      | false         |
+      | invalid_value                     |
+      | 1                                 |
+      | null                              |
+      | false                             |
+      | localdatetime("2024185T19:32:24") |
 
   Scenario Outline: Should remove dynamic labels
     Given an empty graph
@@ -323,12 +394,12 @@ Feature: DynamicLabelsAcceptance
       """
     Then a SyntaxError should be raised at compile time: *
     Examples:
-      | invalid_expr |
-      | 1 + 2        |
-      | null         |
-      | ''           |
+      | invalid_expr                      |
+      | 1 + 2                             |
+      | localdatetime("2024185T19:32:24") |
+      | point({x:3,y:0})                  |
 
-  Scenario Outline: Should throw syntax errors when removing labels are variables with invalid values
+  Scenario Outline: Should throw syntax errors when removing labels using variables with invalid values
     Given an empty graph
     When executing query:
       """
@@ -339,10 +410,12 @@ Feature: DynamicLabelsAcceptance
       """
     Then a SyntaxError should be raised at compile time: *
     Examples:
-      | invalid_value  |
-      | 1 + 2          |
-      | true           |
-      | {x : 1}        |
+      | invalid_value                     |
+      | 1 + 2                             |
+      | true                              |
+      | {x : 1}                           |
+      | point({x:3,y:0})                  |
+      | localdatetime("2024185T19:32:24") |
 
   Scenario Outline: Should throw syntax errors for removing labels where parameters evaluate to invalid values
     Given an empty graph
@@ -360,6 +433,22 @@ Feature: DynamicLabelsAcceptance
       | 1                |
       | {x: 2.3, y: 4.5} |
       | true             |
+
+  Scenario: Should throw type errors for removing labels where parameters evaluates to null
+    Given an empty graph
+    And having executed:
+      """
+      CREATE ()
+      """
+    And parameters are:
+      | a | null |
+    When executing query:
+      """
+      MATCH (n)
+      REMOVE n:$($a)
+      RETURN labels(n) AS labels
+      """
+    Then a TypeError should be raised at runtime: *
 
   Scenario Outline: Should throw type errors when a node property being removed as a dynamic label is invalid
     Given an empty graph
@@ -394,3 +483,19 @@ Feature: DynamicLabelsAcceptance
       RETURN labels(n) AS labels
       """
     Then a TokenNameError should be raised at runtime: *
+
+
+  Scenario: Should throw type errors when removing dynamic labels that resolve to null
+    Given an empty graph
+    And having executed:
+      """
+      CREATE ()
+      """
+    When executing query:
+      """
+      WITH NULL AS a
+      MATCH (n)
+      REMOVE n:$(a)
+      RETURN labels(n) AS labels
+      """
+    Then a TypeError should be raised at runtime: *

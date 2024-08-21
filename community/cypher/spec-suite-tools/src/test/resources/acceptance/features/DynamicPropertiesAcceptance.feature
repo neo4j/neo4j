@@ -185,17 +185,14 @@ Feature: DynamicPropertiesAcceptance
       """
     Then a SyntaxError should be raised at compile time: *
     Examples:
-      | invalid_expr |
-      | 1 + 2        |
-      | null         |
-      | ''           |
+      | invalid_expr                      |
+      | 1 + 2                             |
+      | localdatetime("2024185T19:32:24") |
+      | point({x:3,y:0})                  |
+      | null                              |
 
   Scenario Outline: Should throw syntax errors when setting properties whose names are variables with invalid values
     Given an empty graph
-    And having executed:
-      """
-      CREATE ()
-      """
     When executing query:
       """
       WITH <invalid_value> AS a
@@ -205,10 +202,43 @@ Feature: DynamicPropertiesAcceptance
       """
     Then a SyntaxError should be raised at compile time: *
     Examples:
-      | invalid_value           |
-      | 1 + 2                   |
-      | point({x: 2.3, y: 4.5}) |
-      | true                    |
+      | invalid_value                     |
+      | 1 + 2                             |
+      | point({x: 2.3, y: 4.5})           |
+      | true                              |
+      | localdatetime("2024185T19:32:24") |
+      | point({x:3,y:0})                  |
+
+  Scenario: Should throw type errors when setting properties whose names are variables that evaluate to NULL
+    Given an empty graph
+    And having executed:
+      """
+      CREATE ()
+      """
+    When executing query:
+      """
+      WITH NULL AS a
+      MATCH (n)
+      SET n[a] = 1
+      RETURN n
+      """
+    Then a TypeError should be raised at runtime: *
+
+  @allowCustomErrors
+  Scenario: Should throw token errors when setting dynamic properties with variables with empty strings
+    Given an empty graph
+    And having executed:
+      """
+      CREATE ()
+      """
+    When executing query:
+      """
+      WITH '' AS a
+      MATCH (n)
+      SET n[a] = 1
+      RETURN n
+      """
+    Then a TokenNameError should be raised at runtime: *
 
   Scenario: Should throw type error if property name missing in the CSV file
     Given an empty graph
@@ -242,6 +272,39 @@ Feature: DynamicPropertiesAcceptance
       | {x: 2.3, y: 4.5} |
       | true             |
 
+  Scenario: Should throw type errors when setting properties where parameters evaluate to null
+    Given an empty graph
+    And having executed:
+      """
+      CREATE ()
+      """
+    And parameters are:
+      | a | null |
+    When executing query:
+      """
+      MATCH (n)
+      SET n[$a]=1
+      RETURN n
+      """
+    Then a TypeError should be raised at runtime: *
+
+  @allowCustomErrors
+  Scenario: Should throw token name errors when setting properties where parameters evaluate to empty strings
+    Given an empty graph
+    And having executed:
+      """
+      CREATE ()
+      """
+    And parameters are:
+      | a | '' |
+    When executing query:
+      """
+      MATCH (n)
+      SET n[$a]=1
+      RETURN n
+      """
+    Then a TokenNameError should be raised at runtime: *
+
   Scenario Outline: Should throw syntax errors when removing properties using invalid constant expressions
     Given an empty graph
     When executing query:
@@ -252,10 +315,25 @@ Feature: DynamicPropertiesAcceptance
       """
     Then a SyntaxError should be raised at compile time: *
     Examples:
-      | invalid_expr |
-      | 1 + 2        |
-      | null         |
-      | ''           |
+      | invalid_expr                      |
+      | 1 + 2                             |
+      | localdatetime("2024185T19:32:24") |
+      | point({x:3,y:0})                  |
+
+  Scenario: Should throw type errors when removing null dynamic properties
+    Given an empty graph
+    And having executed:
+      """
+      CREATE ()
+      """
+    When executing query:
+      """
+      WITH NULL AS a
+      MATCH (n)
+      REMOVE n[a]
+      RETURN n
+      """
+    Then a TypeError should be raised at runtime: *
 
   Scenario Outline: Should throw syntax errors when removing properties whose names are variables with invalid values
     Given an empty graph
@@ -268,10 +346,11 @@ Feature: DynamicPropertiesAcceptance
       """
     Then a SyntaxError should be raised at compile time: *
     Examples:
-      | invalid_value           |
-      | 1 + 2                   |
-      | point({x: 2.3, y: 4.5}) |
-      | true                    |
+      | invalid_value                     |
+      | 1 + 2                             |
+      | point({x: 2.3, y: 4.5})           |
+      | true                              |
+      | localdatetime("2024185T19:32:24") |
 
   Scenario Outline: Should throw syntax errors when removing properties where parameters evaluate to invalid values
     Given an empty graph
@@ -305,3 +384,19 @@ Feature: DynamicPropertiesAcceptance
       RETURN n.a
       """
     Then a TokenNameError should be raised at runtime: *
+
+  Scenario: Should throw type errors when removing properties where parameters evaluate to null
+    Given an empty graph
+    And having executed:
+      """
+      CREATE ()
+      """
+    And parameters are:
+      | a | null |
+    When executing query:
+      """
+      MATCH (n)
+      REMOVE n[$a]
+      RETURN n
+      """
+    Then a TypeError should be raised at runtime: *
