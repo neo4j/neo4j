@@ -105,7 +105,7 @@ public interface GraphDatabaseAPI extends GraphDatabaseService {
      * @param transactionExceptionMapper  transaction exception mapper
      * @return internal transaction
      */
-    default InternalTransaction beginTransaction(
+    InternalTransaction beginTransaction(
             KernelTransaction.Type type,
             LoginContext loginContext,
             ClientConnectionInfo clientInfo,
@@ -113,21 +113,5 @@ public interface GraphDatabaseAPI extends GraphDatabaseService {
             long timeout,
             TimeUnit unit,
             Consumer<Status> terminationCallback,
-            TransactionExceptionMapper transactionExceptionMapper) {
-        // The new signature is temporarily default method in order not to break APOC
-        throw new IllegalStateException("not implemented");
-    }
-
-    // A temporary version of the method above with an old signature in order not to break APOC
-    default InternalTransaction beginTransaction(
-            KernelTransaction.Type type,
-            LoginContext loginContext,
-            ClientConnectionInfo clientInfo,
-            long timeout,
-            TimeUnit unit,
-            Consumer<Status> terminationCallback,
-            TransactionExceptionMapper transactionExceptionMapper) {
-        return beginTransaction(
-                type, loginContext, clientInfo, null, timeout, unit, terminationCallback, transactionExceptionMapper);
-    }
+            TransactionExceptionMapper transactionExceptionMapper);
 }
