@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation
 
-import org.neo4j.cypher.internal.runtime.IsNoValue
 import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
@@ -38,9 +37,11 @@ trait MinMax extends AggregationFunction {
   override def result(state: QueryState): AnyValue = biggestSeen
 
   override def apply(data: ReadableRow, state: QueryState): Unit = {
-    value(data, state) match {
-      case IsNoValue() => onNoValue(state)
-      case x: AnyValue => checkIfLargest(x)
+    val x = value(data, state)
+    if (x ne Values.NO_VALUE) {
+      checkIfLargest(x)
+    } else {
+      onNoValue(state)
     }
   }
 
