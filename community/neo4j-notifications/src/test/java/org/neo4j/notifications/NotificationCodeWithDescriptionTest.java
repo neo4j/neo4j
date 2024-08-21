@@ -24,6 +24,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.fail;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.notifications.NotificationCodeWithDescription.aggregationSkippedNull;
 import static org.neo4j.notifications.NotificationCodeWithDescription.authProviderNotDefined;
 import static org.neo4j.notifications.NotificationCodeWithDescription.cartesianProduct;
 import static org.neo4j.notifications.NotificationCodeWithDescription.codeGenerationFailed;
@@ -1570,6 +1571,23 @@ class NotificationCodeWithDescriptionTest {
                 "note: successful completion - index or constraint does not exist. `DROP CONSTRAINT bar IF EXISTS` has no effect. `foo` does not exist.");
     }
 
+    @Test
+    void shouldConstructNotificationsFor_AGGREGATION_SKIPPED_NULL() {
+        NotificationImplementation notification = aggregationSkippedNull();
+
+        verifyNotification(
+                notification,
+                "null value eliminated in set function",
+                SeverityLevel.WARNING,
+                "Neo.ClientNotification.Statement.AggregationSkippedNull",
+                "null value eliminated in set function",
+                NotificationCategory.UNRECOGNIZED,
+                NotificationClassification.UNRECOGNIZED,
+                "01G11",
+                new DiagnosticRecord(warning, NotificationClassification.UNRECOGNIZED, -1, -1, -1, Map.of()).asMap(),
+                "warn: null value eliminated in set function");
+    }
+
     private void verifyNotification(
             NotificationImplementation notification,
             String title,
@@ -1700,8 +1718,8 @@ class NotificationCodeWithDescriptionTest {
         byte[] notificationHash = DigestUtils.sha256(notificationBuilder.toString());
 
         byte[] expectedHash = new byte[] {
-            126, -90, 21, 53, 49, 93, 24, -13, -59, -40, 117, -88, 35, -117, 68, 118, -97, 44, 46, -7, 70, -61, -28,
-            -126, 28, 101, -6, 77, -79, -107, -1, 51
+            119, 7, -110, -103, -100, -68, 118, 61, -118, 71, -100, -18, 99, -49, 28, 104, -43, 79, 36, 23, -107, 12,
+            -96, 53, -119, 89, 111, -46, -107, -35, -37, 18
         };
 
         if (!Arrays.equals(notificationHash, expectedHash)) {
