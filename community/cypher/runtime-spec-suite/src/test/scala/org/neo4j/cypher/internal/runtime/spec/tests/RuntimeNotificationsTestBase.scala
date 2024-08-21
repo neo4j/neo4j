@@ -75,6 +75,25 @@ abstract class RuntimeNotificationsTestBase[CONTEXT <: RuntimeContext](
           .withSingleRow(expected)
           .withNotifications(AggregationSkippedNull)
       }
+
+      test(s"$aggregationFunction should not warn when not encountering null") {
+        // given empty db
+
+        // when
+        val logicalQuery = new LogicalQueryBuilder(this)
+          .produceResults("x")
+          .aggregation(Seq.empty, Seq(s"$aggregationFunction(i) AS x"))
+          .unwind("[1.0, 2.0, 3.0, 4.0, 5.0] AS i")
+          .argument()
+          .build()
+
+        val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+
+        // then
+        runtimeResult should beColumns("x")
+          .withSingleRow(expected)
+          .withNoNotifications()
+      }
   }
 
   binaryAggregations.foreach {
@@ -96,6 +115,24 @@ abstract class RuntimeNotificationsTestBase[CONTEXT <: RuntimeContext](
         runtimeResult should beColumns("x")
           .withSingleRow(expected)
           .withNotifications(AggregationSkippedNull)
+      }
+      test(s"$aggregationFunction should not warn when not encountering null") {
+        // given empty db
+
+        // when
+        val logicalQuery = new LogicalQueryBuilder(this)
+          .produceResults("x")
+          .aggregation(Seq.empty, Seq(s"$aggregationFunction(i, 0.5) AS x"))
+          .unwind("[1, 2, 3, 4, 5] AS i")
+          .argument()
+          .build()
+
+        val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+
+        // then
+        runtimeResult should beColumns("x")
+          .withSingleRow(expected)
+          .withNoNotifications()
       }
   }
 }

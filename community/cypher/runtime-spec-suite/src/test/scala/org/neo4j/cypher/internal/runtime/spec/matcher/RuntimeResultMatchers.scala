@@ -201,6 +201,11 @@ trait RuntimeResultMatchers[CONTEXT <: RuntimeContext] {
       this
     }
 
+    def withNoNotifications(): RuntimeResultMatcher = {
+      maybeNotifications = Some(new NotificationsMatcher(Seq.empty))
+      this
+    }
+
     def withSingleRow(values: Any*): RuntimeResultMatcher = withRows(singleRow(values: _*))
 
     def withRows(rows: Iterable[Array[_]], listInAnyOrder: Boolean = false): RuntimeResultMatcher =
@@ -313,11 +318,12 @@ trait RuntimeResultMatchers[CONTEXT <: RuntimeContext] {
       extends Matcher[Seq[InternalNotification]] {
 
     override def apply(left: Seq[InternalNotification]): MatchResult = {
-
-      val expectedString = if (left.isEmpty) "no notifications" else left.mkString(", ")
+      val expectedNotificationsString = if (expectedNotifications.isEmpty) "no notifications"
+      else "notifications " + expectedNotifications.mkString(", ")
+      val actualNotificationsString = if (left.isEmpty) "no notifications" else left.mkString(", ")
       MatchResult(
         matches = left.sortBy(_.notificationName) == expectedNotifications.sortBy(_.notificationName),
-        rawFailureMessage = s"expected notifications ${expectedNotifications.mkString(", ")} but got $expectedString.",
+        rawFailureMessage = s"expected $expectedNotificationsString but got $actualNotificationsString.",
         rawNegatedFailureMessage = ""
       )
 
