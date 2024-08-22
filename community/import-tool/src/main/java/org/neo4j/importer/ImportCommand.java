@@ -390,6 +390,17 @@ public class ImportCommand {
                         "Automatically skip accidental header lines in subsequent files in file groups with more than one file.")
         private boolean autoSkipHeaders;
 
+        @Option(
+                names = "--ranges",
+                hidden = true,
+                defaultValue = "-1",
+                description =
+                        "(advanced) override the number of ranges the relationship data is split into during import. "
+                                + "Number of ranges relates to reducing unnecessary page faults during import and typically the number of ranges "
+                                + "is automatically and optimally calculated for best performance. However, if it turns out that this calculation "
+                                + "may not be optimal, this option can override this calculation")
+        private int overrideNumRanges;
+
         protected Base(ExecutionContext ctx) {
             super(ctx);
         }
@@ -568,6 +579,14 @@ public class ImportCommand {
                 @Override
                 public boolean strictNodeCheck() {
                     return strict;
+                }
+
+                @Override
+                public int forcedNumberOfNodeIdRanges() {
+                    if (overrideNumRanges != -1) {
+                        return overrideNumRanges;
+                    }
+                    return super.forcedNumberOfNodeIdRanges();
                 }
             };
         }
