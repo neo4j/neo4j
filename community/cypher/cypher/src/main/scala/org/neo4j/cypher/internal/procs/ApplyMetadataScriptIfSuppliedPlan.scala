@@ -31,7 +31,6 @@ import org.neo4j.cypher.internal.optionsmap.CreateDatabaseOptionsConverter
 import org.neo4j.cypher.internal.optionsmap.ExistingMetadataOption
 import org.neo4j.cypher.internal.result.InternalExecutionResult
 import org.neo4j.cypher.internal.runtime.ExecutionMode
-import org.neo4j.cypher.internal.runtime.InputDataStream
 import org.neo4j.cypher.internal.runtime.ProfileMode
 import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.result.RuntimeResult
