@@ -81,3 +81,23 @@ Feature: MapProjectionAcceptance
       | result                                                                   |
       | {prop_a1: 'a1', prop_r1: null, prop_b1: null, k2: 'b1', k3: 'r1', k4: 1} |
     And no side effects
+
+  Scenario: Should return all properties when all-properties selector is used:
+    Given an empty graph
+    And having executed:
+      """
+      CREATE (:A {x: 1})
+      CREATE (:B {x: true, y: false})
+      CREATE (:C {x: 'hello', y: [1,2,3], z: 123})
+      """
+    When executing query:
+      """
+      MATCH (n)
+      RETURN n AS node, n {.*} AS projection
+      """
+    Then the result should be, in any order:
+      | node                                    | projection                         |
+      | (:A {x: 1})                             | {x: 1}                             |
+      | (:B {x: true, y: false})                | {x: true, y: false}                |
+      | (:C {x: 'hello', y: [1, 2, 3], z: 123}) | {x: 'hello', y: [1, 2, 3], z: 123} |
+    And no side effects
