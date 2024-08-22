@@ -1443,7 +1443,7 @@ class ShowConstraintsCommandTest extends ShowCommandTestBase {
 
   test("show label coexistence constraints") {
     // Given
-    val labelCoexistanceConstraintDescriptor =
+    val labelCoexistenceConstraintDescriptor =
       ConstraintDescriptorFactory.labelCoexistenceForSchema(
         SchemaDescriptors.forLabelCoexistence(0),
         1
@@ -1456,11 +1456,11 @@ class ShowConstraintsCommandTest extends ShowCommandTestBase {
 
     // Set-up which constraints to return:
     when(ctx.getAllConstraints()).thenReturn(Map(
-      labelCoexistanceConstraintDescriptor -> constraintInfo
+      labelCoexistenceConstraintDescriptor -> constraintInfo
     ))
 
     // When
-    val showConstraints = ShowConstraintsCommand(AllConstraints, allColumns, List.empty)
+    val showConstraints = ShowConstraintsCommand(AllConstraints, allColumns, List.empty, returnCypher5Values = false)
     val result = showConstraints.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
