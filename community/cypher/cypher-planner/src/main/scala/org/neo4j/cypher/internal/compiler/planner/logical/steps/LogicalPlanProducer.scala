@@ -2199,7 +2199,8 @@ case class LogicalPlanProducer(
           s.constraintType,
           s.unfilteredColumns.columns,
           s.yieldItems,
-          s.yieldAll
+          s.yieldAll,
+          s.returnCypher5Values
         )
       case s: ShowProceduresClause =>
         ShowProcedures(

@@ -60,7 +60,8 @@ class ShowConstraintsCommandTest extends ShowCommandTestBase {
       AllConstraints,
       None,
       List.empty,
-      yieldAll = false
+      yieldAll = false,
+      returnCypher5Values = false
     )(InputPosition.NONE)
       .unfilteredColumns
       .columns
@@ -70,7 +71,8 @@ class ShowConstraintsCommandTest extends ShowCommandTestBase {
       AllConstraints,
       None,
       List.empty,
-      yieldAll = true
+      yieldAll = true,
+      returnCypher5Values = false
     )(InputPosition.NONE)
       .unfilteredColumns
       .columns
@@ -272,7 +274,8 @@ class ShowConstraintsCommandTest extends ShowCommandTestBase {
     ))
 
     // When
-    val showConstraints = ShowConstraintsCommand(AllConstraints, defaultColumns, List.empty)
+    val showConstraints =
+      ShowConstraintsCommand(AllConstraints, defaultColumns, List.empty, returnCypher5Values = false)
     val result = showConstraints.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -281,7 +284,7 @@ class ShowConstraintsCommandTest extends ShowCommandTestBase {
       result.head,
       name = "constraint0",
       id = 1,
-      constraintType = "UNIQUENESS",
+      constraintType = "NODE_PROPERTY_UNIQUENESS",
       entityType = "NODE",
       labelsOrTypes = List(label),
       properties = List(prop),
@@ -316,7 +319,7 @@ class ShowConstraintsCommandTest extends ShowCommandTestBase {
     ))
 
     // When
-    val showConstraints = ShowConstraintsCommand(AllConstraints, allColumns, List.empty)
+    val showConstraints = ShowConstraintsCommand(AllConstraints, allColumns, List.empty, returnCypher5Values = false)
     val result = showConstraints.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -325,7 +328,7 @@ class ShowConstraintsCommandTest extends ShowCommandTestBase {
       result.head,
       name = "constraint0",
       id = 1,
-      constraintType = "UNIQUENESS",
+      constraintType = "NODE_PROPERTY_UNIQUENESS",
       entityType = "NODE",
       labelsOrTypes = List(label),
       properties = List(prop),
@@ -357,7 +360,8 @@ class ShowConstraintsCommandTest extends ShowCommandTestBase {
     ))
 
     // When
-    val showConstraints = ShowConstraintsCommand(AllConstraints, defaultColumns, List.empty)
+    val showConstraints =
+      ShowConstraintsCommand(AllConstraints, defaultColumns, List.empty, returnCypher5Values = false)
     val result = showConstraints.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -371,7 +375,657 @@ class ShowConstraintsCommandTest extends ShowCommandTestBase {
     setupAllConstraints()
 
     // When
-    val showConstraints = ShowConstraintsCommand(AllConstraints, allColumns, List.empty)
+    val showConstraints = ShowConstraintsCommand(AllConstraints, allColumns, List.empty, returnCypher5Values = false)
+    val result = showConstraints.originalNameRows(queryState, initialCypherRow).toList
+
+    // Then
+    result should have size 8
+    checkResult(
+      result.head,
+      name = "constraint0",
+      constraintType = "NODE_PROPERTY_UNIQUENESS",
+      entityType = "NODE",
+      index = "constraint0",
+      propType = Some(null),
+      options = optionsMap,
+      createStatement =
+        s"CREATE CONSTRAINT `constraint0` FOR (n:`$label`) REQUIRE (n.`$prop`) IS UNIQUE"
+    )
+    checkResult(
+      result(1),
+      name = "constraint1",
+      constraintType = "RELATIONSHIP_PROPERTY_EXISTENCE",
+      entityType = "RELATIONSHIP",
+      index = Some(null),
+      propType = Some(null),
+      options = Values.NO_VALUE,
+      createStatement =
+        s"CREATE CONSTRAINT `constraint1` FOR ()-[r:`$relType`]-() REQUIRE (r.`$prop`) IS NOT NULL"
+    )
+    checkResult(
+      result(2),
+      name = "constraint10",
+      id = 10,
+      constraintType = "NODE_PROPERTY_TYPE",
+      entityType = "NODE",
+      labelsOrTypes = List(label),
+      properties = List(prop),
+      index = Some(null),
+      propType = "BOOLEAN",
+      options = Values.NO_VALUE,
+      createStatement = s"CREATE CONSTRAINT `constraint10` FOR (n:`$label`) REQUIRE (n.`$prop`) IS :: BOOLEAN"
+    )
+    checkResult(
+      result(3),
+      name = "constraint11",
+      id = 11,
+      constraintType = "RELATIONSHIP_PROPERTY_TYPE",
+      entityType = "RELATIONSHIP",
+      labelsOrTypes = List(relType),
+      properties = List(prop),
+      index = Some(null),
+      propType = "STRING",
+      options = Values.NO_VALUE,
+      createStatement = s"CREATE CONSTRAINT `constraint11` FOR ()-[r:`$relType`]-() REQUIRE (r.`$prop`) IS :: STRING"
+    )
+    checkResult(
+      result(4),
+      name = "constraint2",
+      constraintType = "RELATIONSHIP_PROPERTY_UNIQUENESS",
+      entityType = "RELATIONSHIP",
+      index = "constraint2",
+      propType = Some(null),
+      options = optionsMap,
+      createStatement =
+        s"CREATE CONSTRAINT `constraint2` FOR ()-[r:`$relType`]-() REQUIRE (r.`$prop`) IS UNIQUE"
+    )
+    checkResult(
+      result(5),
+      name = "constraint3",
+      constraintType = "NODE_KEY",
+      entityType = "NODE",
+      index = "constraint3",
+      propType = Some(null),
+      options = optionsMap,
+      createStatement =
+        s"CREATE CONSTRAINT `constraint3` FOR (n:`$label`) REQUIRE (n.`$prop`) IS NODE KEY"
+    )
+    checkResult(
+      result(6),
+      name = "constraint4",
+      constraintType = "RELATIONSHIP_KEY",
+      entityType = "RELATIONSHIP",
+      index = "constraint4",
+      propType = Some(null),
+      options = optionsMap,
+      createStatement =
+        s"CREATE CONSTRAINT `constraint4` FOR ()-[r:`$relType`]-() REQUIRE (r.`$prop`) IS RELATIONSHIP KEY"
+    )
+    checkResult(
+      result(7),
+      name = "constraint5",
+      constraintType = "NODE_PROPERTY_EXISTENCE",
+      entityType = "NODE",
+      index = Some(null),
+      propType = Some(null),
+      options = Values.NO_VALUE,
+      createStatement =
+        s"CREATE CONSTRAINT `constraint5` FOR (n:`$label`) REQUIRE (n.`$prop`) IS NOT NULL"
+    )
+  }
+
+  test("show property uniqueness constraints should show property uniqueness constraint types") {
+    // Given
+    setupAllConstraints()
+
+    // When
+    val showConstraints =
+      ShowConstraintsCommand(UniqueConstraints.cypher6, allColumns, List.empty, returnCypher5Values = false)
+    val result = showConstraints.originalNameRows(queryState, initialCypherRow).toList
+
+    // Then
+    result should have size 2
+    checkResult(
+      result.head,
+      name = "constraint0",
+      constraintType = "NODE_PROPERTY_UNIQUENESS",
+      entityType = "NODE",
+      index = "constraint0",
+      propType = Some(null),
+      options = optionsMap,
+      createStatement =
+        s"CREATE CONSTRAINT `constraint0` FOR (n:`$label`) REQUIRE (n.`$prop`) IS UNIQUE"
+    )
+    checkResult(
+      result.last,
+      name = "constraint2",
+      constraintType = "RELATIONSHIP_PROPERTY_UNIQUENESS",
+      entityType = "RELATIONSHIP",
+      index = "constraint2",
+      propType = Some(null),
+      options = optionsMap,
+      createStatement =
+        s"CREATE CONSTRAINT `constraint2` FOR ()-[r:`$relType`]-() REQUIRE (r.`$prop`) IS UNIQUE"
+    )
+  }
+
+  test("show node property uniqueness constraints should show node property uniqueness constraint types") {
+    // Given
+    setupAllConstraints()
+
+    // When
+    val showConstraints =
+      ShowConstraintsCommand(NodeUniqueConstraints.cypher6, allColumns, List.empty, returnCypher5Values = false)
+    val result = showConstraints.originalNameRows(queryState, initialCypherRow).toList
+
+    // Then
+    result should have size 1
+    checkResult(
+      result.head,
+      name = "constraint0",
+      constraintType = "NODE_PROPERTY_UNIQUENESS",
+      entityType = "NODE",
+      index = "constraint0",
+      propType = Some(null),
+      options = optionsMap,
+      createStatement =
+        s"CREATE CONSTRAINT `constraint0` FOR (n:`$label`) REQUIRE (n.`$prop`) IS UNIQUE"
+    )
+  }
+
+  test(
+    "show relationship property uniqueness constraints should show relationship property uniqueness constraint types"
+  ) {
+    // Given
+    setupAllConstraints()
+
+    // When
+    val showConstraints =
+      ShowConstraintsCommand(RelUniqueConstraints.cypher6, allColumns, List.empty, returnCypher5Values = false)
+    val result = showConstraints.originalNameRows(queryState, initialCypherRow).toList
+
+    // Then
+    result should have size 1
+    checkResult(
+      result.head,
+      name = "constraint2",
+      constraintType = "RELATIONSHIP_PROPERTY_UNIQUENESS",
+      entityType = "RELATIONSHIP",
+      index = "constraint2",
+      propType = Some(null),
+      options = optionsMap,
+      createStatement =
+        s"CREATE CONSTRAINT `constraint2` FOR ()-[r:`$relType`]-() REQUIRE (r.`$prop`) IS UNIQUE"
+    )
+  }
+
+  test("show key constraints should show key constraint types") {
+    // Given
+    setupAllConstraints()
+
+    // When
+    val showConstraints = ShowConstraintsCommand(KeyConstraints, allColumns, List.empty, returnCypher5Values = false)
+    val result = showConstraints.originalNameRows(queryState, initialCypherRow).toList
+
+    // Then
+    result should have size 2
+    checkResult(
+      result.head,
+      name = "constraint3",
+      constraintType = "NODE_KEY",
+      entityType = "NODE",
+      index = "constraint3",
+      propType = Some(null),
+      options = optionsMap,
+      createStatement =
+        s"CREATE CONSTRAINT `constraint3` FOR (n:`$label`) REQUIRE (n.`$prop`) IS NODE KEY"
+    )
+    checkResult(
+      result.last,
+      name = "constraint4",
+      constraintType = "RELATIONSHIP_KEY",
+      entityType = "RELATIONSHIP",
+      index = "constraint4",
+      propType = Some(null),
+      options = optionsMap,
+      createStatement =
+        s"CREATE CONSTRAINT `constraint4` FOR ()-[r:`$relType`]-() REQUIRE (r.`$prop`) IS RELATIONSHIP KEY"
+    )
+  }
+
+  test("show node key constraints should show node key constraint types") {
+    // Given
+    setupAllConstraints()
+
+    // When
+    val showConstraints =
+      ShowConstraintsCommand(NodeKeyConstraints, allColumns, List.empty, returnCypher5Values = false)
+    val result = showConstraints.originalNameRows(queryState, initialCypherRow).toList
+
+    // Then
+    result should have size 1
+    checkResult(
+      result.head,
+      name = "constraint3",
+      constraintType = "NODE_KEY",
+      entityType = "NODE",
+      index = "constraint3",
+      propType = Some(null),
+      options = optionsMap,
+      createStatement =
+        s"CREATE CONSTRAINT `constraint3` FOR (n:`$label`) REQUIRE (n.`$prop`) IS NODE KEY"
+    )
+  }
+
+  test("show relationship key constraints should show relationship key constraint types") {
+    // Given
+    setupAllConstraints()
+
+    // When
+    val showConstraints = ShowConstraintsCommand(RelKeyConstraints, allColumns, List.empty, returnCypher5Values = false)
+    val result = showConstraints.originalNameRows(queryState, initialCypherRow).toList
+
+    // Then
+    result should have size 1
+    checkResult(
+      result.head,
+      name = "constraint4",
+      constraintType = "RELATIONSHIP_KEY",
+      entityType = "RELATIONSHIP",
+      index = "constraint4",
+      propType = Some(null),
+      options = optionsMap,
+      createStatement =
+        s"CREATE CONSTRAINT `constraint4` FOR ()-[r:`$relType`]-() REQUIRE (r.`$prop`) IS RELATIONSHIP KEY"
+    )
+  }
+
+  test("show property existence constraints should show property existence constraint types") {
+    // Given
+    setupAllConstraints()
+
+    // When
+    val showConstraints =
+      ShowConstraintsCommand(ExistsConstraints.cypher6, allColumns, List.empty, returnCypher5Values = false)
+    val result = showConstraints.originalNameRows(queryState, initialCypherRow).toList
+
+    // Then
+    result should have size 2
+    checkResult(
+      result.head,
+      name = "constraint1",
+      constraintType = "RELATIONSHIP_PROPERTY_EXISTENCE",
+      entityType = "RELATIONSHIP",
+      index = Some(null),
+      propType = Some(null),
+      options = Values.NO_VALUE,
+      createStatement =
+        s"CREATE CONSTRAINT `constraint1` FOR ()-[r:`$relType`]-() REQUIRE (r.`$prop`) IS NOT NULL"
+    )
+    checkResult(
+      result.last,
+      name = "constraint5",
+      constraintType = "NODE_PROPERTY_EXISTENCE",
+      entityType = "NODE",
+      index = Some(null),
+      propType = Some(null),
+      options = Values.NO_VALUE,
+      createStatement =
+        s"CREATE CONSTRAINT `constraint5` FOR (n:`$label`) REQUIRE (n.`$prop`) IS NOT NULL"
+    )
+  }
+
+  test("show node property existence constraints should show node property existence constraint types") {
+    // Given
+    setupAllConstraints()
+
+    // When
+    val showConstraints =
+      ShowConstraintsCommand(NodeExistsConstraints.cypher6, allColumns, List.empty, returnCypher5Values = false)
+    val result = showConstraints.originalNameRows(queryState, initialCypherRow).toList
+
+    // Then
+    result should have size 1
+    checkResult(
+      result.head,
+      name = "constraint5",
+      constraintType = "NODE_PROPERTY_EXISTENCE",
+      entityType = "NODE",
+      index = Some(null),
+      propType = Some(null),
+      options = Values.NO_VALUE,
+      createStatement =
+        s"CREATE CONSTRAINT `constraint5` FOR (n:`$label`) REQUIRE (n.`$prop`) IS NOT NULL"
+    )
+  }
+
+  test(
+    "show relationship property existence constraints should show relationship property existence constraint types"
+  ) {
+    // Given
+    setupAllConstraints()
+
+    // When
+    val showConstraints =
+      ShowConstraintsCommand(RelExistsConstraints.cypher6, allColumns, List.empty, returnCypher5Values = false)
+    val result = showConstraints.originalNameRows(queryState, initialCypherRow).toList
+
+    // Then
+    result should have size 1
+    checkResult(
+      result.head,
+      name = "constraint1",
+      constraintType = "RELATIONSHIP_PROPERTY_EXISTENCE",
+      entityType = "RELATIONSHIP",
+      index = Some(null),
+      propType = Some(null),
+      options = Values.NO_VALUE,
+      createStatement =
+        s"CREATE CONSTRAINT `constraint1` FOR ()-[r:`$relType`]-() REQUIRE (r.`$prop`) IS NOT NULL"
+    )
+  }
+
+  test("show property type constraints should show property type constraint types") {
+    // Given
+    setupAllConstraints()
+
+    // When
+    val showConstraints =
+      ShowConstraintsCommand(PropTypeConstraints, allColumns, List.empty, returnCypher5Values = false)
+    val result = showConstraints.originalNameRows(queryState, initialCypherRow).toList
+
+    // Then
+    result should have size 2
+    checkResult(
+      result.head,
+      name = "constraint10",
+      constraintType = "NODE_PROPERTY_TYPE",
+      entityType = "NODE",
+      index = Some(null),
+      propType = "BOOLEAN",
+      options = Values.NO_VALUE,
+      createStatement =
+        s"CREATE CONSTRAINT `constraint10` FOR (n:`$label`) REQUIRE (n.`$prop`) IS :: BOOLEAN"
+    )
+    checkResult(
+      result.last,
+      name = "constraint11",
+      constraintType = "RELATIONSHIP_PROPERTY_TYPE",
+      entityType = "RELATIONSHIP",
+      index = Some(null),
+      propType = "STRING",
+      options = Values.NO_VALUE,
+      createStatement =
+        s"CREATE CONSTRAINT `constraint11` FOR ()-[r:`$relType`]-() REQUIRE (r.`$prop`) IS :: STRING"
+    )
+  }
+
+  test("show node property type constraints should show node property type constraint types") {
+    // Given
+    setupAllConstraints()
+
+    // When
+    val showConstraints =
+      ShowConstraintsCommand(NodePropTypeConstraints, allColumns, List.empty, returnCypher5Values = false)
+    val result = showConstraints.originalNameRows(queryState, initialCypherRow).toList
+
+    // Then
+    result should have size 1
+    checkResult(
+      result.head,
+      name = "constraint10",
+      constraintType = "NODE_PROPERTY_TYPE",
+      entityType = "NODE",
+      index = Some(null),
+      propType = "BOOLEAN",
+      options = Values.NO_VALUE,
+      createStatement =
+        s"CREATE CONSTRAINT `constraint10` FOR (n:`$label`) REQUIRE (n.`$prop`) IS :: BOOLEAN"
+    )
+  }
+
+  test(
+    "show relationship property type constraints should show relationship property type constraint types"
+  ) {
+    // Given
+    setupAllConstraints()
+
+    // When
+    val showConstraints =
+      ShowConstraintsCommand(RelPropTypeConstraints, allColumns, List.empty, returnCypher5Values = false)
+    val result = showConstraints.originalNameRows(queryState, initialCypherRow).toList
+
+    // Then
+    result should have size 1
+    checkResult(
+      result.head,
+      name = "constraint11",
+      constraintType = "RELATIONSHIP_PROPERTY_TYPE",
+      entityType = "RELATIONSHIP",
+      index = Some(null),
+      propType = "STRING",
+      options = Values.NO_VALUE,
+      createStatement =
+        s"CREATE CONSTRAINT `constraint11` FOR ()-[r:`$relType`]-() REQUIRE (r.`$prop`) IS :: STRING"
+    )
+  }
+
+  private val allowedSingleTypes = Seq(
+    ("BOOLEAN", SchemaValueType.BOOLEAN),
+    ("STRING", SchemaValueType.STRING),
+    ("INTEGER", SchemaValueType.INTEGER),
+    ("FLOAT", SchemaValueType.FLOAT),
+    ("DATE", SchemaValueType.DATE),
+    ("LOCAL TIME", SchemaValueType.LOCAL_TIME),
+    ("ZONED TIME", SchemaValueType.ZONED_TIME),
+    ("LOCAL DATETIME", SchemaValueType.LOCAL_DATETIME),
+    ("ZONED DATETIME", SchemaValueType.ZONED_DATETIME),
+    ("DURATION", SchemaValueType.DURATION),
+    ("POINT", SchemaValueType.POINT),
+    ("LIST<BOOLEAN NOT NULL>", SchemaValueType.LIST_BOOLEAN),
+    ("LIST<STRING NOT NULL>", SchemaValueType.LIST_STRING),
+    ("LIST<INTEGER NOT NULL>", SchemaValueType.LIST_INTEGER),
+    ("LIST<FLOAT NOT NULL>", SchemaValueType.LIST_FLOAT),
+    ("LIST<DATE NOT NULL>", SchemaValueType.LIST_DATE),
+    ("LIST<LOCAL TIME NOT NULL>", SchemaValueType.LIST_LOCAL_TIME),
+    ("LIST<ZONED TIME NOT NULL>", SchemaValueType.LIST_ZONED_TIME),
+    ("LIST<LOCAL DATETIME NOT NULL>", SchemaValueType.LIST_LOCAL_DATETIME),
+    ("LIST<ZONED DATETIME NOT NULL>", SchemaValueType.LIST_ZONED_DATETIME),
+    ("LIST<DURATION NOT NULL>", SchemaValueType.LIST_DURATION),
+    ("LIST<POINT NOT NULL>", SchemaValueType.LIST_POINT)
+  )
+
+  allowedSingleTypes.zipWithIndex.foreach { case ((propTypeString, propType), currentIndex) =>
+    test(s"show normalized property type representation: $propType") {
+      // Given
+      val nodePropTypeConstraintDescriptor =
+        ConstraintDescriptorFactory.typeForSchema(labelDescriptor, PropertyTypeSet.of(propType), false)
+          .withName("constraint0")
+          .withId(0)
+      val relPropTypeConstraintDescriptor =
+        ConstraintDescriptorFactory.typeForSchema(relTypeDescriptor, PropertyTypeSet.of(propType), false)
+          .withName("constraint1")
+          .withId(1)
+      when(ctx.getAllConstraints()).thenReturn(Map(
+        nodePropTypeConstraintDescriptor -> nodePropTypeConstraintInfo,
+        relPropTypeConstraintDescriptor -> relPropTypeConstraintInfo
+      ))
+
+      // When
+      val showConstraints =
+        ShowConstraintsCommand(PropTypeConstraints, allColumns, List.empty, returnCypher5Values = false)
+      val result = showConstraints.originalNameRows(queryState, initialCypherRow).toList
+
+      // Then
+      result should have size 2
+      checkResult(
+        result.head,
+        name = "constraint0",
+        propType = propTypeString,
+        createStatement =
+          s"CREATE CONSTRAINT `constraint0` FOR (n:`$label`) REQUIRE (n.`$prop`) IS :: $propTypeString"
+      )
+      checkResult(
+        result.last,
+        name = "constraint1",
+        propType = propTypeString,
+        createStatement =
+          s"CREATE CONSTRAINT `constraint1` FOR ()-[r:`$relType`]-() REQUIRE (r.`$prop`) IS :: $propTypeString"
+      )
+    }
+
+    // Union of 2 types
+    // allowedSingleTypes is ordered so the normalized form should always be `propType | propType2`
+    // if we only check the types after the current one
+    allowedSingleTypes.drop(currentIndex + 1).foreach { case (propTypeString2, propType2) =>
+      test(s"show normalized property type representation: $propType | $propType2") {
+        // Given
+        val nodePropTypeConstraintDescriptor =
+          ConstraintDescriptorFactory.typeForSchema(labelDescriptor, PropertyTypeSet.of(propType, propType2), false)
+            .withName("constraint0")
+            .withId(0)
+        val relPropTypeConstraintDescriptor =
+          ConstraintDescriptorFactory.typeForSchema(relTypeDescriptor, PropertyTypeSet.of(propType2, propType), false)
+            .withName("constraint1")
+            .withId(1)
+        when(ctx.getAllConstraints()).thenReturn(Map(
+          nodePropTypeConstraintDescriptor -> nodePropTypeConstraintInfo,
+          relPropTypeConstraintDescriptor -> relPropTypeConstraintInfo
+        ))
+
+        // When
+        val showConstraints =
+          ShowConstraintsCommand(PropTypeConstraints, allColumns, List.empty, returnCypher5Values = false)
+        val result = showConstraints.originalNameRows(queryState, initialCypherRow).toList
+
+        // Then
+        result should have size 2
+        checkResult(
+          result.head,
+          name = "constraint0",
+          propType = s"$propTypeString | $propTypeString2",
+          createStatement =
+            s"CREATE CONSTRAINT `constraint0` FOR (n:`$label`) REQUIRE (n.`$prop`) IS :: $propTypeString | $propTypeString2"
+        )
+        checkResult(
+          result.last,
+          name = "constraint1",
+          propType = s"$propTypeString | $propTypeString2",
+          createStatement =
+            s"CREATE CONSTRAINT `constraint1` FOR ()-[r:`$relType`]-() REQUIRE (r.`$prop`) IS :: $propTypeString | $propTypeString2"
+        )
+      }
+    }
+  }
+
+  test("show normalized property type representation for larger unions") {
+    // Given
+    val nodePropTypeConstraintDescriptor =
+      ConstraintDescriptorFactory.typeForSchema(
+        labelDescriptor,
+        PropertyTypeSet.of(
+          SchemaValueType.INTEGER,
+          SchemaValueType.LIST_ZONED_TIME,
+          SchemaValueType.LIST_DURATION,
+          SchemaValueType.LOCAL_TIME,
+          SchemaValueType.BOOLEAN
+        ),
+        false
+      )
+        .withName("constraint0")
+        .withId(0)
+    val relPropTypeConstraintDescriptor =
+      ConstraintDescriptorFactory.typeForSchema(
+        relTypeDescriptor,
+        PropertyTypeSet.of(
+          SchemaValueType.FLOAT,
+          SchemaValueType.LIST_INTEGER,
+          SchemaValueType.STRING,
+          SchemaValueType.LIST_BOOLEAN,
+          SchemaValueType.BOOLEAN,
+          SchemaValueType.FLOAT,
+          SchemaValueType.STRING
+        ),
+        false
+      )
+        .withName("constraint1")
+        .withId(1)
+    when(ctx.getAllConstraints()).thenReturn(Map(
+      nodePropTypeConstraintDescriptor -> nodePropTypeConstraintInfo,
+      relPropTypeConstraintDescriptor -> relPropTypeConstraintInfo
+    ))
+
+    // When
+    val showConstraints =
+      ShowConstraintsCommand(PropTypeConstraints, allColumns, List.empty, returnCypher5Values = false)
+    val result = showConstraints.originalNameRows(queryState, initialCypherRow).toList
+
+    // Then
+    result should have size 2
+    checkResult(
+      result.head,
+      name = "constraint0",
+      propType = "BOOLEAN | INTEGER | LOCAL TIME | LIST<ZONED TIME NOT NULL> | LIST<DURATION NOT NULL>",
+      createStatement =
+        s"CREATE CONSTRAINT `constraint0` FOR (n:`$label`) " +
+          s"REQUIRE (n.`$prop`) IS :: BOOLEAN | INTEGER | LOCAL TIME | LIST<ZONED TIME NOT NULL> | LIST<DURATION NOT NULL>"
+    )
+    checkResult(
+      result.last,
+      name = "constraint1",
+      propType = "BOOLEAN | STRING | FLOAT | LIST<BOOLEAN NOT NULL> | LIST<INTEGER NOT NULL>",
+      createStatement =
+        s"CREATE CONSTRAINT `constraint1` FOR ()-[r:`$relType`]-() " +
+          s"REQUIRE (r.`$prop`) IS :: BOOLEAN | STRING | FLOAT | LIST<BOOLEAN NOT NULL> | LIST<INTEGER NOT NULL>"
+    )
+  }
+
+  test("show constraints should rename columns renamed in YIELD") {
+    // Given: YIELD name AS constraint, labelsOrTypes, createStatement AS create, type
+    val yieldColumns: List[CommandResultItem] = List(
+      CommandResultItem(
+        ShowConstraintsClause.nameColumn,
+        Variable("constraint")(InputPosition.NONE)
+      )(InputPosition.NONE),
+      CommandResultItem(
+        ShowConstraintsClause.labelsOrTypesColumn,
+        Variable(ShowConstraintsClause.labelsOrTypesColumn)(InputPosition.NONE)
+      )(InputPosition.NONE),
+      CommandResultItem(
+        ShowConstraintsClause.createStatementColumn,
+        Variable("create")(InputPosition.NONE)
+      )(InputPosition.NONE),
+      CommandResultItem(
+        ShowConstraintsClause.typeColumn,
+        Variable(ShowConstraintsClause.typeColumn)(InputPosition.NONE)
+      )(InputPosition.NONE)
+    )
+
+    // Set-up which constraints to return:
+    when(ctx.getAllConstraints()).thenReturn(Map(nodeUniquenessConstraintDescriptor -> nodeUniquenessConstraintInfo))
+
+    // When
+    val showConstraints = ShowConstraintsCommand(AllConstraints, allColumns, yieldColumns, returnCypher5Values = false)
+    val result = showConstraints.originalNameRows(queryState, initialCypherRow).toList
+
+    // Then
+    result should have size 1
+    result.head should be(Map(
+      "constraint" -> Values.stringValue("constraint0"),
+      ShowConstraintsClause.labelsOrTypesColumn -> VirtualValues.list(Values.stringValue(label)),
+      "create" -> Values.stringValue(
+        s"CREATE CONSTRAINT `constraint0` FOR (n:`$label`) REQUIRE (n.`$prop`) IS UNIQUE"
+      ),
+      ShowConstraintsClause.typeColumn -> Values.stringValue("NODE_PROPERTY_UNIQUENESS")
+    ))
+  }
+
+  test("show all constraints with Cypher 5") {
+    // Given
+    setupAllConstraints()
+
+    // When
+    val showConstraints = ShowConstraintsCommand(AllConstraints, allColumns, List.empty, returnCypher5Values = true)
     val result = showConstraints.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -470,18 +1124,19 @@ class ShowConstraintsCommandTest extends ShowCommandTestBase {
     )
   }
 
-  test("show property uniqueness constraints should show property uniqueness constraint types") {
+  test("show unique constraints with Cypher 5") {
     // Given
     setupAllConstraints()
 
-    // When
-    val showConstraints = ShowConstraintsCommand(UniqueConstraints, allColumns, List.empty)
-    val result = showConstraints.originalNameRows(queryState, initialCypherRow).toList
+    // When: all unique
+    val showConstraintsAll =
+      ShowConstraintsCommand(UniqueConstraints.cypher5, allColumns, List.empty, returnCypher5Values = true)
+    val resultAll = showConstraintsAll.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
-    result should have size 2
+    resultAll should have size 2
     checkResult(
-      result.head,
+      resultAll.head,
       name = "constraint0",
       constraintType = "UNIQUENESS",
       entityType = "NODE",
@@ -492,7 +1147,45 @@ class ShowConstraintsCommandTest extends ShowCommandTestBase {
         s"CREATE CONSTRAINT `constraint0` FOR (n:`$label`) REQUIRE (n.`$prop`) IS UNIQUE"
     )
     checkResult(
-      result.last,
+      resultAll.last,
+      name = "constraint2",
+      constraintType = "RELATIONSHIP_UNIQUENESS",
+      entityType = "RELATIONSHIP",
+      index = "constraint2",
+      propType = Some(null),
+      options = optionsMap,
+      createStatement =
+        s"CREATE CONSTRAINT `constraint2` FOR ()-[r:`$relType`]-() REQUIRE (r.`$prop`) IS UNIQUE"
+    )
+
+    // When: node unique
+    val showConstraintsNode =
+      ShowConstraintsCommand(NodeUniqueConstraints.cypher5, allColumns, List.empty, returnCypher5Values = true)
+    val resultNode = showConstraintsNode.originalNameRows(queryState, initialCypherRow).toList
+
+    // Then
+    resultNode should have size 1
+    checkResult(
+      resultNode.head,
+      name = "constraint0",
+      constraintType = "UNIQUENESS",
+      entityType = "NODE",
+      index = "constraint0",
+      propType = Some(null),
+      options = optionsMap,
+      createStatement =
+        s"CREATE CONSTRAINT `constraint0` FOR (n:`$label`) REQUIRE (n.`$prop`) IS UNIQUE"
+    )
+
+    // When: rel unique
+    val showConstraintsRel =
+      ShowConstraintsCommand(RelUniqueConstraints.cypher5, allColumns, List.empty, returnCypher5Values = true)
+    val resultRel = showConstraintsRel.originalNameRows(queryState, initialCypherRow).toList
+
+    // Then
+    resultRel should have size 1
+    checkResult(
+      resultRel.head,
       name = "constraint2",
       constraintType = "RELATIONSHIP_UNIQUENESS",
       entityType = "RELATIONSHIP",
@@ -504,146 +1197,19 @@ class ShowConstraintsCommandTest extends ShowCommandTestBase {
     )
   }
 
-  test("show node property uniqueness constraints should show node property uniqueness constraint types") {
+  test("show existence constraints with Cypher 5") {
     // Given
     setupAllConstraints()
 
-    // When
-    val showConstraints = ShowConstraintsCommand(NodeUniqueConstraints, allColumns, List.empty)
-    val result = showConstraints.originalNameRows(queryState, initialCypherRow).toList
+    // When: all exists
+    val showConstraintsAll =
+      ShowConstraintsCommand(ExistsConstraints.cypher5, allColumns, List.empty, returnCypher5Values = true)
+    val resultAll = showConstraintsAll.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
-    result should have size 1
+    resultAll should have size 2
     checkResult(
-      result.head,
-      name = "constraint0",
-      constraintType = "UNIQUENESS",
-      entityType = "NODE",
-      index = "constraint0",
-      propType = Some(null),
-      options = optionsMap,
-      createStatement =
-        s"CREATE CONSTRAINT `constraint0` FOR (n:`$label`) REQUIRE (n.`$prop`) IS UNIQUE"
-    )
-  }
-
-  test(
-    "show relationship property uniqueness constraints should show relationship property uniqueness constraint types"
-  ) {
-    // Given
-    setupAllConstraints()
-
-    // When
-    val showConstraints = ShowConstraintsCommand(RelUniqueConstraints, allColumns, List.empty)
-    val result = showConstraints.originalNameRows(queryState, initialCypherRow).toList
-
-    // Then
-    result should have size 1
-    checkResult(
-      result.head,
-      name = "constraint2",
-      constraintType = "RELATIONSHIP_UNIQUENESS",
-      entityType = "RELATIONSHIP",
-      index = "constraint2",
-      propType = Some(null),
-      options = optionsMap,
-      createStatement =
-        s"CREATE CONSTRAINT `constraint2` FOR ()-[r:`$relType`]-() REQUIRE (r.`$prop`) IS UNIQUE"
-    )
-  }
-
-  test("show key constraints should show key constraint types") {
-    // Given
-    setupAllConstraints()
-
-    // When
-    val showConstraints = ShowConstraintsCommand(KeyConstraints, allColumns, List.empty)
-    val result = showConstraints.originalNameRows(queryState, initialCypherRow).toList
-
-    // Then
-    result should have size 2
-    checkResult(
-      result.head,
-      name = "constraint3",
-      constraintType = "NODE_KEY",
-      entityType = "NODE",
-      index = "constraint3",
-      propType = Some(null),
-      options = optionsMap,
-      createStatement =
-        s"CREATE CONSTRAINT `constraint3` FOR (n:`$label`) REQUIRE (n.`$prop`) IS NODE KEY"
-    )
-    checkResult(
-      result.last,
-      name = "constraint4",
-      constraintType = "RELATIONSHIP_KEY",
-      entityType = "RELATIONSHIP",
-      index = "constraint4",
-      propType = Some(null),
-      options = optionsMap,
-      createStatement =
-        s"CREATE CONSTRAINT `constraint4` FOR ()-[r:`$relType`]-() REQUIRE (r.`$prop`) IS RELATIONSHIP KEY"
-    )
-  }
-
-  test("show node key constraints should show node key constraint types") {
-    // Given
-    setupAllConstraints()
-
-    // When
-    val showConstraints = ShowConstraintsCommand(NodeKeyConstraints, allColumns, List.empty)
-    val result = showConstraints.originalNameRows(queryState, initialCypherRow).toList
-
-    // Then
-    result should have size 1
-    checkResult(
-      result.head,
-      name = "constraint3",
-      constraintType = "NODE_KEY",
-      entityType = "NODE",
-      index = "constraint3",
-      propType = Some(null),
-      options = optionsMap,
-      createStatement =
-        s"CREATE CONSTRAINT `constraint3` FOR (n:`$label`) REQUIRE (n.`$prop`) IS NODE KEY"
-    )
-  }
-
-  test("show relationship key constraints should show relationship key constraint types") {
-    // Given
-    setupAllConstraints()
-
-    // When
-    val showConstraints = ShowConstraintsCommand(RelKeyConstraints, allColumns, List.empty)
-    val result = showConstraints.originalNameRows(queryState, initialCypherRow).toList
-
-    // Then
-    result should have size 1
-    checkResult(
-      result.head,
-      name = "constraint4",
-      constraintType = "RELATIONSHIP_KEY",
-      entityType = "RELATIONSHIP",
-      index = "constraint4",
-      propType = Some(null),
-      options = optionsMap,
-      createStatement =
-        s"CREATE CONSTRAINT `constraint4` FOR ()-[r:`$relType`]-() REQUIRE (r.`$prop`) IS RELATIONSHIP KEY"
-    )
-  }
-
-  test("show property existence constraints should show property existence constraint types") {
-    // Given
-    setupAllConstraints()
-
-    // When
-    val showConstraints = ShowConstraintsCommand(ExistsConstraints, allColumns, List.empty)
-    val result = showConstraints.originalNameRows(queryState, initialCypherRow).toList
-
-    // Then
-    result should have size 2
-    checkResult(
-      result.head,
+      resultAll.head,
       name = "constraint1",
       constraintType = "RELATIONSHIP_PROPERTY_EXISTENCE",
       entityType = "RELATIONSHIP",
@@ -654,7 +1220,7 @@ class ShowConstraintsCommandTest extends ShowCommandTestBase {
         s"CREATE CONSTRAINT `constraint1` FOR ()-[r:`$relType`]-() REQUIRE (r.`$prop`) IS NOT NULL"
     )
     checkResult(
-      result.last,
+      resultAll.last,
       name = "constraint5",
       constraintType = "NODE_PROPERTY_EXISTENCE",
       entityType = "NODE",
@@ -664,20 +1230,16 @@ class ShowConstraintsCommandTest extends ShowCommandTestBase {
       createStatement =
         s"CREATE CONSTRAINT `constraint5` FOR (n:`$label`) REQUIRE (n.`$prop`) IS NOT NULL"
     )
-  }
 
-  test("show node property existence constraints should show node property existence constraint types") {
-    // Given
-    setupAllConstraints()
-
-    // When
-    val showConstraints = ShowConstraintsCommand(NodeExistsConstraints, allColumns, List.empty)
-    val result = showConstraints.originalNameRows(queryState, initialCypherRow).toList
+    // When: node exists
+    val showConstraintsNode =
+      ShowConstraintsCommand(NodeExistsConstraints.cypher5, allColumns, List.empty, returnCypher5Values = true)
+    val resultNode = showConstraintsNode.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
-    result should have size 1
+    resultNode should have size 1
     checkResult(
-      result.head,
+      resultNode.head,
       name = "constraint5",
       constraintType = "NODE_PROPERTY_EXISTENCE",
       entityType = "NODE",
@@ -687,22 +1249,16 @@ class ShowConstraintsCommandTest extends ShowCommandTestBase {
       createStatement =
         s"CREATE CONSTRAINT `constraint5` FOR (n:`$label`) REQUIRE (n.`$prop`) IS NOT NULL"
     )
-  }
 
-  test(
-    "show relationship property existence constraints should show relationship property existence constraint types"
-  ) {
-    // Given
-    setupAllConstraints()
-
-    // When
-    val showConstraints = ShowConstraintsCommand(RelExistsConstraints, allColumns, List.empty)
-    val result = showConstraints.originalNameRows(queryState, initialCypherRow).toList
+    // When: rel exists
+    val showConstraintsRel =
+      ShowConstraintsCommand(RelExistsConstraints.cypher5, allColumns, List.empty, returnCypher5Values = true)
+    val resultRel = showConstraintsRel.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
-    result should have size 1
+    resultRel should have size 1
     checkResult(
-      result.head,
+      resultRel.head,
       name = "constraint1",
       constraintType = "RELATIONSHIP_PROPERTY_EXISTENCE",
       entityType = "RELATIONSHIP",
@@ -712,295 +1268,6 @@ class ShowConstraintsCommandTest extends ShowCommandTestBase {
       createStatement =
         s"CREATE CONSTRAINT `constraint1` FOR ()-[r:`$relType`]-() REQUIRE (r.`$prop`) IS NOT NULL"
     )
-  }
-
-  test("show property type constraints should show property type constraint types") {
-    // Given
-    setupAllConstraints()
-
-    // When
-    val showConstraints = ShowConstraintsCommand(PropTypeConstraints, allColumns, List.empty)
-    val result = showConstraints.originalNameRows(queryState, initialCypherRow).toList
-
-    // Then
-    result should have size 2
-    checkResult(
-      result.head,
-      name = "constraint10",
-      constraintType = "NODE_PROPERTY_TYPE",
-      entityType = "NODE",
-      index = Some(null),
-      propType = "BOOLEAN",
-      options = Values.NO_VALUE,
-      createStatement =
-        s"CREATE CONSTRAINT `constraint10` FOR (n:`$label`) REQUIRE (n.`$prop`) IS :: BOOLEAN"
-    )
-    checkResult(
-      result.last,
-      name = "constraint11",
-      constraintType = "RELATIONSHIP_PROPERTY_TYPE",
-      entityType = "RELATIONSHIP",
-      index = Some(null),
-      propType = "STRING",
-      options = Values.NO_VALUE,
-      createStatement =
-        s"CREATE CONSTRAINT `constraint11` FOR ()-[r:`$relType`]-() REQUIRE (r.`$prop`) IS :: STRING"
-    )
-  }
-
-  test("show node property type constraints should show node property type constraint types") {
-    // Given
-    setupAllConstraints()
-
-    // When
-    val showConstraints = ShowConstraintsCommand(NodePropTypeConstraints, allColumns, List.empty)
-    val result = showConstraints.originalNameRows(queryState, initialCypherRow).toList
-
-    // Then
-    result should have size 1
-    checkResult(
-      result.head,
-      name = "constraint10",
-      constraintType = "NODE_PROPERTY_TYPE",
-      entityType = "NODE",
-      index = Some(null),
-      propType = "BOOLEAN",
-      options = Values.NO_VALUE,
-      createStatement =
-        s"CREATE CONSTRAINT `constraint10` FOR (n:`$label`) REQUIRE (n.`$prop`) IS :: BOOLEAN"
-    )
-  }
-
-  test(
-    "show relationship property type constraints should show relationship property type constraint types"
-  ) {
-    // Given
-    setupAllConstraints()
-
-    // When
-    val showConstraints = ShowConstraintsCommand(RelPropTypeConstraints, allColumns, List.empty)
-    val result = showConstraints.originalNameRows(queryState, initialCypherRow).toList
-
-    // Then
-    result should have size 1
-    checkResult(
-      result.head,
-      name = "constraint11",
-      constraintType = "RELATIONSHIP_PROPERTY_TYPE",
-      entityType = "RELATIONSHIP",
-      index = Some(null),
-      propType = "STRING",
-      options = Values.NO_VALUE,
-      createStatement =
-        s"CREATE CONSTRAINT `constraint11` FOR ()-[r:`$relType`]-() REQUIRE (r.`$prop`) IS :: STRING"
-    )
-  }
-
-  private val allowedSingleTypes = Seq(
-    ("BOOLEAN", SchemaValueType.BOOLEAN),
-    ("STRING", SchemaValueType.STRING),
-    ("INTEGER", SchemaValueType.INTEGER),
-    ("FLOAT", SchemaValueType.FLOAT),
-    ("DATE", SchemaValueType.DATE),
-    ("LOCAL TIME", SchemaValueType.LOCAL_TIME),
-    ("ZONED TIME", SchemaValueType.ZONED_TIME),
-    ("LOCAL DATETIME", SchemaValueType.LOCAL_DATETIME),
-    ("ZONED DATETIME", SchemaValueType.ZONED_DATETIME),
-    ("DURATION", SchemaValueType.DURATION),
-    ("POINT", SchemaValueType.POINT),
-    ("LIST<BOOLEAN NOT NULL>", SchemaValueType.LIST_BOOLEAN),
-    ("LIST<STRING NOT NULL>", SchemaValueType.LIST_STRING),
-    ("LIST<INTEGER NOT NULL>", SchemaValueType.LIST_INTEGER),
-    ("LIST<FLOAT NOT NULL>", SchemaValueType.LIST_FLOAT),
-    ("LIST<DATE NOT NULL>", SchemaValueType.LIST_DATE),
-    ("LIST<LOCAL TIME NOT NULL>", SchemaValueType.LIST_LOCAL_TIME),
-    ("LIST<ZONED TIME NOT NULL>", SchemaValueType.LIST_ZONED_TIME),
-    ("LIST<LOCAL DATETIME NOT NULL>", SchemaValueType.LIST_LOCAL_DATETIME),
-    ("LIST<ZONED DATETIME NOT NULL>", SchemaValueType.LIST_ZONED_DATETIME),
-    ("LIST<DURATION NOT NULL>", SchemaValueType.LIST_DURATION),
-    ("LIST<POINT NOT NULL>", SchemaValueType.LIST_POINT)
-  )
-
-  allowedSingleTypes.zipWithIndex.foreach { case ((propTypeString, propType), currentIndex) =>
-    test(s"show normalized property type representation: $propType") {
-      // Given
-      val nodePropTypeConstraintDescriptor =
-        ConstraintDescriptorFactory.typeForSchema(labelDescriptor, PropertyTypeSet.of(propType), false)
-          .withName("constraint0")
-          .withId(0)
-      val relPropTypeConstraintDescriptor =
-        ConstraintDescriptorFactory.typeForSchema(relTypeDescriptor, PropertyTypeSet.of(propType), false)
-          .withName("constraint1")
-          .withId(1)
-      when(ctx.getAllConstraints()).thenReturn(Map(
-        nodePropTypeConstraintDescriptor -> nodePropTypeConstraintInfo,
-        relPropTypeConstraintDescriptor -> relPropTypeConstraintInfo
-      ))
-
-      // When
-      val showConstraints = ShowConstraintsCommand(PropTypeConstraints, allColumns, List.empty)
-      val result = showConstraints.originalNameRows(queryState, initialCypherRow).toList
-
-      // Then
-      result should have size 2
-      checkResult(
-        result.head,
-        name = "constraint0",
-        propType = propTypeString,
-        createStatement =
-          s"CREATE CONSTRAINT `constraint0` FOR (n:`$label`) REQUIRE (n.`$prop`) IS :: $propTypeString"
-      )
-      checkResult(
-        result.last,
-        name = "constraint1",
-        propType = propTypeString,
-        createStatement =
-          s"CREATE CONSTRAINT `constraint1` FOR ()-[r:`$relType`]-() REQUIRE (r.`$prop`) IS :: $propTypeString"
-      )
-    }
-
-    // Union of 2 types
-    // allowedSingleTypes is ordered so the normalized form should always be `propType | propType2`
-    // if we only check the types after the current one
-    allowedSingleTypes.drop(currentIndex + 1).foreach { case (propTypeString2, propType2) =>
-      test(s"show normalized property type representation: $propType | $propType2") {
-        // Given
-        val nodePropTypeConstraintDescriptor =
-          ConstraintDescriptorFactory.typeForSchema(labelDescriptor, PropertyTypeSet.of(propType, propType2), false)
-            .withName("constraint0")
-            .withId(0)
-        val relPropTypeConstraintDescriptor =
-          ConstraintDescriptorFactory.typeForSchema(relTypeDescriptor, PropertyTypeSet.of(propType2, propType), false)
-            .withName("constraint1")
-            .withId(1)
-        when(ctx.getAllConstraints()).thenReturn(Map(
-          nodePropTypeConstraintDescriptor -> nodePropTypeConstraintInfo,
-          relPropTypeConstraintDescriptor -> relPropTypeConstraintInfo
-        ))
-
-        // When
-        val showConstraints = ShowConstraintsCommand(PropTypeConstraints, allColumns, List.empty)
-        val result = showConstraints.originalNameRows(queryState, initialCypherRow).toList
-
-        // Then
-        result should have size 2
-        checkResult(
-          result.head,
-          name = "constraint0",
-          propType = s"$propTypeString | $propTypeString2",
-          createStatement =
-            s"CREATE CONSTRAINT `constraint0` FOR (n:`$label`) REQUIRE (n.`$prop`) IS :: $propTypeString | $propTypeString2"
-        )
-        checkResult(
-          result.last,
-          name = "constraint1",
-          propType = s"$propTypeString | $propTypeString2",
-          createStatement =
-            s"CREATE CONSTRAINT `constraint1` FOR ()-[r:`$relType`]-() REQUIRE (r.`$prop`) IS :: $propTypeString | $propTypeString2"
-        )
-      }
-    }
-  }
-
-  test("show normalized property type representation for larger unions") {
-    // Given
-    val nodePropTypeConstraintDescriptor =
-      ConstraintDescriptorFactory.typeForSchema(
-        labelDescriptor,
-        PropertyTypeSet.of(
-          SchemaValueType.INTEGER,
-          SchemaValueType.LIST_ZONED_TIME,
-          SchemaValueType.LIST_DURATION,
-          SchemaValueType.LOCAL_TIME,
-          SchemaValueType.BOOLEAN
-        ),
-        false
-      )
-        .withName("constraint0")
-        .withId(0)
-    val relPropTypeConstraintDescriptor =
-      ConstraintDescriptorFactory.typeForSchema(
-        relTypeDescriptor,
-        PropertyTypeSet.of(
-          SchemaValueType.FLOAT,
-          SchemaValueType.LIST_INTEGER,
-          SchemaValueType.STRING,
-          SchemaValueType.LIST_BOOLEAN,
-          SchemaValueType.BOOLEAN,
-          SchemaValueType.FLOAT,
-          SchemaValueType.STRING
-        ),
-        false
-      )
-        .withName("constraint1")
-        .withId(1)
-    when(ctx.getAllConstraints()).thenReturn(Map(
-      nodePropTypeConstraintDescriptor -> nodePropTypeConstraintInfo,
-      relPropTypeConstraintDescriptor -> relPropTypeConstraintInfo
-    ))
-
-    // When
-    val showConstraints = ShowConstraintsCommand(PropTypeConstraints, allColumns, List.empty)
-    val result = showConstraints.originalNameRows(queryState, initialCypherRow).toList
-
-    // Then
-    result should have size 2
-    checkResult(
-      result.head,
-      name = "constraint0",
-      propType = "BOOLEAN | INTEGER | LOCAL TIME | LIST<ZONED TIME NOT NULL> | LIST<DURATION NOT NULL>",
-      createStatement =
-        s"CREATE CONSTRAINT `constraint0` FOR (n:`$label`) " +
-          s"REQUIRE (n.`$prop`) IS :: BOOLEAN | INTEGER | LOCAL TIME | LIST<ZONED TIME NOT NULL> | LIST<DURATION NOT NULL>"
-    )
-    checkResult(
-      result.last,
-      name = "constraint1",
-      propType = "BOOLEAN | STRING | FLOAT | LIST<BOOLEAN NOT NULL> | LIST<INTEGER NOT NULL>",
-      createStatement =
-        s"CREATE CONSTRAINT `constraint1` FOR ()-[r:`$relType`]-() " +
-          s"REQUIRE (r.`$prop`) IS :: BOOLEAN | STRING | FLOAT | LIST<BOOLEAN NOT NULL> | LIST<INTEGER NOT NULL>"
-    )
-  }
-
-  test("show constraints should rename columns renamed in YIELD") {
-    // Given: YIELD name AS constraint, labelsOrTypes, createStatement AS create, type
-    val yieldColumns: List[CommandResultItem] = List(
-      CommandResultItem(
-        ShowConstraintsClause.nameColumn,
-        Variable("constraint")(InputPosition.NONE)
-      )(InputPosition.NONE),
-      CommandResultItem(
-        ShowConstraintsClause.labelsOrTypesColumn,
-        Variable(ShowConstraintsClause.labelsOrTypesColumn)(InputPosition.NONE)
-      )(InputPosition.NONE),
-      CommandResultItem(
-        ShowConstraintsClause.createStatementColumn,
-        Variable("create")(InputPosition.NONE)
-      )(InputPosition.NONE),
-      CommandResultItem(
-        ShowConstraintsClause.typeColumn,
-        Variable(ShowConstraintsClause.typeColumn)(InputPosition.NONE)
-      )(InputPosition.NONE)
-    )
-
-    // Set-up which constraints to return:
-    when(ctx.getAllConstraints()).thenReturn(Map(nodeUniquenessConstraintDescriptor -> nodeUniquenessConstraintInfo))
-
-    // When
-    val showConstraints = ShowConstraintsCommand(AllConstraints, allColumns, yieldColumns)
-    val result = showConstraints.originalNameRows(queryState, initialCypherRow).toList
-
-    // Then
-    result should have size 1
-    result.head should be(Map(
-      "constraint" -> Values.stringValue("constraint0"),
-      ShowConstraintsClause.labelsOrTypesColumn -> VirtualValues.list(Values.stringValue(label)),
-      "create" -> Values.stringValue(
-        s"CREATE CONSTRAINT `constraint0` FOR (n:`$label`) REQUIRE (n.`$prop`) IS UNIQUE"
-      ),
-      ShowConstraintsClause.typeColumn -> Values.stringValue("UNIQUENESS")
-    ))
   }
 
   test("show graph dependent constraints") {
@@ -1029,7 +1296,7 @@ class ShowConstraintsCommandTest extends ShowCommandTestBase {
     ))
 
     // When
-    val showConstraints = ShowConstraintsCommand(AllConstraints, allColumns, List.empty)
+    val showConstraints = ShowConstraintsCommand(AllConstraints, allColumns, List.empty, returnCypher5Values = false)
     val result = showConstraints.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -1112,7 +1379,7 @@ class ShowConstraintsCommandTest extends ShowCommandTestBase {
     ))
 
     // When
-    val showConstraints = ShowConstraintsCommand(AllConstraints, allColumns, List.empty)
+    val showConstraints = ShowConstraintsCommand(AllConstraints, allColumns, List.empty, returnCypher5Values = false)
     val result = showConstraints.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -1153,7 +1420,7 @@ class ShowConstraintsCommandTest extends ShowCommandTestBase {
     ))
 
     // When
-    val showConstraints = ShowConstraintsCommand(AllConstraints, allColumns, List.empty)
+    val showConstraints = ShowConstraintsCommand(AllConstraints, allColumns, List.empty, returnCypher5Values = false)
     val result = showConstraints.originalNameRows(queryState, initialCypherRow).toList
 
     // Then

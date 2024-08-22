@@ -90,7 +90,7 @@ class CombinedCommandParserTest extends AdministrationAndSchemaCommandParserTest
     yieldAll: Boolean,
     yieldItems: List[ast.CommandResultItem]
   ): InputPosition => ast.CommandClause =
-    ast.ShowConstraintsClause(constraintType, where.map(_._1), yieldItems, yieldAll)
+    ast.ShowConstraintsClause(constraintType, where.map(_._1), yieldItems, yieldAll, returnCypher5Values = false)
 
   private def showIndex(
     indexType: ast.ShowIndexType,
@@ -221,21 +221,21 @@ class CombinedCommandParserTest extends AdministrationAndSchemaCommandParserTest
       ),
       (
         "SHOW NODE UNIQUENESS CONSTRAINTS",
-        showConstraint(ast.NodeUniqueConstraints, _, _, _),
+        showConstraint(ast.NodeUniqueConstraints.cypher6, _, _, _),
         "SHOW UNIQUE CONSTRAINTS",
-        showConstraint(ast.UniqueConstraints, _, _, _)
+        showConstraint(ast.UniqueConstraints.cypher6, _, _, _)
       ),
       (
         "SHOW REL UNIQUE CONSTRAINTS",
-        showConstraint(ast.RelUniqueConstraints, _, _, _),
+        showConstraint(ast.RelUniqueConstraints.cypher6, _, _, _),
         "SHOW EXISTENCE CONSTRAINTS",
-        showConstraint(ast.ExistsConstraints, _, _, _)
+        showConstraint(ast.ExistsConstraints.cypher6, _, _, _)
       ),
       (
         "SHOW NODE EXIST CONSTRAINTS",
-        showConstraint(ast.NodeExistsConstraints, _, _, _),
+        showConstraint(ast.NodeExistsConstraints.cypher6, _, _, _),
         "SHOW REL EXIST CONSTRAINTS",
-        showConstraint(ast.RelExistsConstraints, _, _, _)
+        showConstraint(ast.RelExistsConstraints.cypher6, _, _, _)
       ),
       (
         "SHOW PROPERTY TYPE CONSTRAINTS",
@@ -364,7 +364,7 @@ class CombinedCommandParserTest extends AdministrationAndSchemaCommandParserTest
         "TERMINATE TRANSACTIONS 'db1-transaction-123'",
         terminateTx(Right(literalString("db1-transaction-123")), _, _, _),
         "SHOW NODE EXISTENCE CONSTRAINTS",
-        showConstraint(ast.NodeExistsConstraints, _, _, _)
+        showConstraint(ast.NodeExistsConstraints.cypher6, _, _, _)
       ),
       (
         "SHOW CONSTRAINTS",
@@ -413,7 +413,7 @@ class CombinedCommandParserTest extends AdministrationAndSchemaCommandParserTest
         "SHOW SETTINGS",
         showSetting(Left(List.empty), _, _, _),
         "SHOW UNIQUENESS CONSTRAINTS",
-        showConstraint(ast.UniqueConstraints, _, _, _)
+        showConstraint(ast.UniqueConstraints.cypher6, _, _, _)
       ),
       (
         "SHOW CONSTRAINTS",
@@ -515,52 +515,88 @@ class CombinedCommandParserTest extends AdministrationAndSchemaCommandParserTest
       (firstCommand, firstClause(Left(List.empty), _, _, _), secondCommand, secondClause(Left(List.empty), _, _, _))
     } ++ commandCombinationsWithoutExpressions
 
+  private def updateForCypher5(clause: ast.Clause): ast.Clause = clause match {
+    case scc: ast.ShowConstraintsClause =>
+      scc.constraintType match {
+        case _: ast.UniqueConstraints =>
+          scc.copy(constraintType = ast.UniqueConstraints.cypher5, returnCypher5Values = true)(scc.position)
+        case _: ast.NodeUniqueConstraints =>
+          scc.copy(constraintType = ast.NodeUniqueConstraints.cypher5, returnCypher5Values = true)(scc.position)
+        case _: ast.RelUniqueConstraints =>
+          scc.copy(constraintType = ast.RelUniqueConstraints.cypher5, returnCypher5Values = true)(scc.position)
+        case _: ast.ExistsConstraints =>
+          scc.copy(constraintType = ast.ExistsConstraints.cypher5, returnCypher5Values = true)(scc.position)
+        case _: ast.NodeExistsConstraints =>
+          scc.copy(constraintType = ast.NodeExistsConstraints.cypher5, returnCypher5Values = true)(scc.position)
+        case _: ast.RelExistsConstraints =>
+          scc.copy(constraintType = ast.RelExistsConstraints.cypher5, returnCypher5Values = true)(scc.position)
+        case _ =>
+          scc.copy(returnCypher5Values = true)(scc.position)
+      }
+    case other => other
+  }
+
+  private def assertAst(expectedClauses: ast.Clause*): Unit = {
+    parsesIn[ast.Statements] {
+      case Cypher5 | Cypher5JavaCc =>
+        _.toAstPositioned(ast.Statements(Seq(singleQuery(expectedClauses.map(updateForCypher5): _*))))
+      case _ =>
+        _.toAstPositioned(ast.Statements(Seq(singleQuery(expectedClauses: _*))))
+    }
+  }
+
+  private def assertAstDontComparePos(expectedClauses: ast.Clause*): Unit = {
+    parsesIn[ast.Statements] {
+      case Cypher5 | Cypher5JavaCc =>
+        _.toAst(ast.Statements(Seq(singleQuery(expectedClauses.map(updateForCypher5): _*))))
+      case _ =>
+        _.toAst(ast.Statements(Seq(singleQuery(expectedClauses: _*))))
+    }
+  }
+
   commandCombinationsAll.foreach {
     case (firstCommand, firstClause, secondCommand, secondClause) =>
       test(s"$firstCommand $secondCommand") {
-        assertAst(singleQuery(
+        assertAst(
           firstClause(None, false, List.empty)(defaultPos),
           secondClause(None, false, List.empty)(pos)
-        ))
+        )
       }
 
       test(s"USE db $firstCommand $secondCommand") {
-        assertAst(
-          singleQuery(
-            use(List("db")),
-            firstClause(None, false, List.empty)(pos),
-            secondClause(None, false, List.empty)(pos)
-          ),
-          comparePosition = false
+        assertAstDontComparePos(
+          use(List("db")),
+          firstClause(None, false, List.empty)(pos),
+          secondClause(None, false, List.empty)(pos)
         )
       }
 
       test(s"$firstCommand WHERE transactionId = '123' $secondCommand") {
-        assertAst(singleQuery(
+        assertAst(
           firstClause(
             Some((where(equals(varFor("transactionId"), literalString("123"))), getWherePosition())),
             false,
             List.empty
           )(defaultPos),
           secondClause(None, false, List.empty)(pos)
-        ))
+        )
       }
 
       test(s"$firstCommand $secondCommand WHERE transactionId = '123'") {
-        assertAst(singleQuery(
+        assertAst(
           firstClause(None, false, List.empty)(defaultPos),
           secondClause(
             Some((where(equals(varFor("transactionId"), literalString("123"))), getWherePosition())),
             false,
             List.empty
           )(pos)
-        ))
+        )
       }
 
       test(s"$firstCommand WHERE transactionId = '123' $secondCommand WHERE transactionId = '123'") {
         val where1Pos = getWherePosition()
         val where2Pos = getWherePosition(where1Pos.offset + 1)
-        assertAst(singleQuery(
+        assertAst(
           firstClause(
             Some((where(equals(varFor("transactionId"), literalString("123"))), where1Pos)),
             false,
@@ -571,29 +607,29 @@ class CombinedCommandParserTest extends AdministrationAndSchemaCommandParserTest
             false,
             List.empty
           )(pos)
-        ))
+        )
       }
 
       test(s"$firstCommand YIELD transactionId AS txId $secondCommand") {
-        assertAst(singleQuery(
+        assertAst(
           firstClause(None, false, List(commandResultItem("transactionId", Some("txId"))))(defaultPos),
           withFromYield(returnAllItems.withDefaultOrderOnColumns(List("txId"))),
           secondClause(None, false, List.empty)(pos)
-        ))
+        )
       }
 
       test(s"$firstCommand $secondCommand YIELD transactionId AS txId") {
-        assertAst(singleQuery(
+        assertAst(
           firstClause(None, false, List.empty)(defaultPos),
           secondClause(None, false, List(commandResultItem("transactionId", Some("txId"))))(pos),
           withFromYield(returnAllItems.withDefaultOrderOnColumns(List("txId")))
-        ))
+        )
       }
 
       test(
         s"$firstCommand YIELD transactionId AS txId $secondCommand YIELD username"
       ) {
-        assertAst(singleQuery(
+        assertAst(
           firstClause(None, false, List(commandResultItem("transactionId", Some("txId"))))(defaultPos),
           withFromYield(returnAllItems.withDefaultOrderOnColumns(List("txId"))),
           secondClause(
@@ -602,61 +638,61 @@ class CombinedCommandParserTest extends AdministrationAndSchemaCommandParserTest
             List(commandResultItem("username"))
           )(pos),
           withFromYield(returnAllItems.withDefaultOrderOnColumns(List("username")))
-        ))
+        )
       }
 
       test(
         s"$firstCommand YIELD transactionId AS txId $secondCommand YIELD username RETURN txId, username"
       ) {
-        assertAst(singleQuery(
+        assertAst(
           firstClause(None, false, List(commandResultItem("transactionId", Some("txId"))))(defaultPos),
           withFromYield(returnAllItems.withDefaultOrderOnColumns(List("txId"))),
           secondClause(None, false, List(commandResultItem("username")))(pos),
           withFromYield(returnAllItems.withDefaultOrderOnColumns(List("username"))),
           returnClause(returnItems(variableReturnItem("txId"), variableReturnItem("username")))
-        ))
+        )
       }
 
       test(
         s"$firstCommand YIELD * $secondCommand YIELD username RETURN txId, username"
       ) {
-        assertAst(singleQuery(
+        assertAst(
           firstClause(None, true, List.empty)(defaultPos),
           withFromYield(returnAllItems),
           secondClause(None, false, List(commandResultItem("username")))(pos),
           withFromYield(returnAllItems.withDefaultOrderOnColumns(List("username"))),
           returnClause(returnItems(variableReturnItem("txId"), variableReturnItem("username")))
-        ))
+        )
       }
 
       test(
         s"$firstCommand YIELD transactionId AS txId $secondCommand YIELD * RETURN txId, username"
       ) {
-        assertAst(singleQuery(
+        assertAst(
           firstClause(None, false, List(commandResultItem("transactionId", Some("txId"))))(defaultPos),
           withFromYield(returnAllItems.withDefaultOrderOnColumns(List("txId"))),
           secondClause(None, true, List.empty)(pos),
           withFromYield(returnAllItems),
           returnClause(returnItems(variableReturnItem("txId"), variableReturnItem("username")))
-        ))
+        )
       }
 
       test(
         s"$firstCommand YIELD * $secondCommand YIELD * RETURN txId, username"
       ) {
-        assertAst(singleQuery(
+        assertAst(
           firstClause(None, true, List.empty)(defaultPos),
           withFromYield(returnAllItems),
           secondClause(None, true, List.empty)(pos),
           withFromYield(returnAllItems),
           returnClause(returnItems(variableReturnItem("txId"), variableReturnItem("username")))
-        ))
+        )
       }
 
       test(
         s"$firstCommand YIELD transactionId AS txId RETURN txId $secondCommand YIELD username RETURN txId, username"
       ) {
-        assertAst(singleQuery(
+        assertAst(
           firstClause(None, false, List(commandResultItem("transactionId", Some("txId"))))(defaultPos),
           withFromYield(returnAllItems.withDefaultOrderOnColumns(List("txId"))),
           returnClause(returnItems(variableReturnItem("txId"))),
@@ -667,7 +703,7 @@ class CombinedCommandParserTest extends AdministrationAndSchemaCommandParserTest
           )(pos),
           withFromYield(returnAllItems.withDefaultOrderOnColumns(List("username"))),
           returnClause(returnItems(variableReturnItem("txId"), variableReturnItem("username")))
-        ))
+        )
       }
 
       test(
@@ -677,7 +713,7 @@ class CombinedCommandParserTest extends AdministrationAndSchemaCommandParserTest
            |YIELD username, message
            |RETURN *""".stripMargin
       ) {
-        assertAst(singleQuery(
+        assertAst(
           firstClause(
             None,
             false,
@@ -698,7 +734,7 @@ class CombinedCommandParserTest extends AdministrationAndSchemaCommandParserTest
           )(pos),
           withFromYield(returnAllItems.withDefaultOrderOnColumns(List("username", "message"))),
           returnAll
-        ))
+        )
       }
 
       // more commands per query
@@ -707,12 +743,12 @@ class CombinedCommandParserTest extends AdministrationAndSchemaCommandParserTest
         test(
           s"$firstCommand $secondCommand $thirdCommand $fourthCommand"
         ) {
-          assertAst(singleQuery(
+          assertAst(
             firstClause(None, false, List.empty)(defaultPos),
             secondClause(None, false, List.empty)(pos),
             thirdClause(None, false, List.empty)(pos),
             fourthClause(None, false, List.empty)(pos)
-          ))
+          )
         }
 
         test(
@@ -725,7 +761,7 @@ class CombinedCommandParserTest extends AdministrationAndSchemaCommandParserTest
              |$fourthCommand
              |YIELD *""".stripMargin
         ) {
-          assertAst(singleQuery(
+          assertAst(
             firstClause(None, true, List.empty)(defaultPos),
             withFromYield(returnAllItems),
             secondClause(None, true, List.empty)(pos),
@@ -734,7 +770,7 @@ class CombinedCommandParserTest extends AdministrationAndSchemaCommandParserTest
             withFromYield(returnAllItems),
             fourthClause(None, true, List.empty)(pos),
             withFromYield(returnAllItems)
-          ))
+          )
         }
 
         test(
@@ -748,7 +784,7 @@ class CombinedCommandParserTest extends AdministrationAndSchemaCommandParserTest
              |YIELD transactionId AS txId, message AS status
              |RETURN *""".stripMargin
         ) {
-          assertAst(singleQuery(
+          assertAst(
             firstClause(
               None,
               false,
@@ -780,7 +816,7 @@ class CombinedCommandParserTest extends AdministrationAndSchemaCommandParserTest
             )(pos),
             withFromYield(returnAllItems.withDefaultOrderOnColumns(List("txId", "status"))),
             returnAll
-          ))
+          )
         }
 
         test(
@@ -794,7 +830,7 @@ class CombinedCommandParserTest extends AdministrationAndSchemaCommandParserTest
           val where2Pos = getWherePosition(where1Pos.offset + 1)
           val where3Pos = getWherePosition(where2Pos.offset + 1)
           val where4Pos = getWherePosition(where3Pos.offset + 1)
-          assertAst(singleQuery(
+          assertAst(
             firstClause(
               Some((where(equals(varFor("message"), literalString("Transaction terminated."))), where1Pos)),
               false,
@@ -815,7 +851,7 @@ class CombinedCommandParserTest extends AdministrationAndSchemaCommandParserTest
               false,
               List.empty
             )(pos)
-          ))
+          )
         }
       }
   }
@@ -1303,7 +1339,7 @@ class CombinedCommandParserTest extends AdministrationAndSchemaCommandParserTest
       "SHOW CONSTRAINTS YIELD a7, b7 AS c7, d7 AS d7, e7 AS f7, g7 AS e7 ORDER BY a7, b7, d7, e7 WHERE a7 AND b7 AND d7 AND e7 " +
       "RETURN *"
   ) {
-    assertAst(singleQuery(
+    assertAst(
       showTx(
         Left(List.empty),
         None,
@@ -1537,7 +1573,7 @@ class CombinedCommandParserTest extends AdministrationAndSchemaCommandParserTest
         ))
       ),
       returnAll
-    ))
+    )
   }
 
   test(
@@ -1571,7 +1607,7 @@ class CombinedCommandParserTest extends AdministrationAndSchemaCommandParserTest
       "SHOW CONSTRAINTS YIELD a " +
       "RETURN *"
   ) {
-    assertAst(singleQuery(
+    assertAst(
       showTx(
         Left(List.empty),
         None,
@@ -1773,7 +1809,7 @@ class CombinedCommandParserTest extends AdministrationAndSchemaCommandParserTest
       ),
       withFromYield(returnAllItems.withDefaultOrderOnColumns(List("a"))),
       returnAll
-    ))
+    )
   }
 
   private val manyCommands = (for (_ <- 1 to 300) yield "SHOW TRANSACTIONS YIELD a").mkString(" ")

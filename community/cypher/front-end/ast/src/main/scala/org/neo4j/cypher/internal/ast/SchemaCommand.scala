@@ -727,7 +727,7 @@ object CreateConstraint {
       entityName = label,
       properties,
       name,
-      constraintType = NodeUniqueness,
+      constraintType = NodePropertyUniqueness,
       ifExistsDo,
       options,
       useGraph
@@ -747,7 +747,7 @@ object CreateConstraint {
       entityName = relType,
       properties,
       name,
-      constraintType = RelationshipUniqueness,
+      constraintType = RelationshipPropertyUniqueness,
       ifExistsDo,
       options,
       useGraph

@@ -89,11 +89,18 @@ trait PrettifierTestUtils extends Matchers {
     sb.result()
   }
 
-  def roundTripCheck(original: Statement): Unit = {
+  // If `notAvailableInCypher5` is true then the round trip skips the Cypher 5 parsers
+  // If `onlyAvailableInCypher5` is true then the round trip only users the Cypher 5 parsers
+  // Otherwise all parsers are tested
+  def roundTripCheck(
+    original: Statement,
+    notAvailableInCypher5: Boolean = false,
+    onlyAvailableInCypher5: Boolean = false
+  ): Unit = {
     val pretty = prettifier.asString(original)
     val statements =
       try {
-        parse(pretty)
+        parse(pretty, notAvailableInCypher5, onlyAvailableInCypher5)
       } catch {
         case e: Exception =>
           printSeparator("failed query")
@@ -132,10 +139,24 @@ trait PrettifierTestUtils extends Matchers {
       case i @ UnaliasedReturnItem(e, _) => UnaliasedReturnItem(e, "")(i.position)
     })))
 
-  private def parse(original: String): Seq[Statement] = {
-    val javaCcStatement = JavaCCParser.parse(original, OpenCypherExceptionFactory(None))
-    val statements = CypherVersion.values()
-      .map(v => AstParserFactory(v)(original, OpenCypherExceptionFactory(None), None).singleStatement())
-    statements :+ javaCcStatement
-  }
+  private def parse(
+    original: String,
+    notAvailableInCypher5: Boolean,
+    onlyAvailableInCypher5: Boolean
+  ): Seq[Statement] =
+    if (notAvailableInCypher5) {
+      CypherVersion.values().toSeq.diff(Seq(CypherVersion.Cypher5))
+        .map(v => AstParserFactory(v)(original, OpenCypherExceptionFactory(None), None).singleStatement())
+    } else if (onlyAvailableInCypher5) {
+      val javaCcStatement = JavaCCParser.parse(original, OpenCypherExceptionFactory(None))
+      val antlrStatement =
+        AstParserFactory(CypherVersion.Cypher5)(original, OpenCypherExceptionFactory(None), None).singleStatement()
+
+      Seq(antlrStatement, javaCcStatement)
+    } else {
+      val javaCcStatement = JavaCCParser.parse(original, OpenCypherExceptionFactory(None))
+      val statements = CypherVersion.values()
+        .map(v => AstParserFactory(v)(original, OpenCypherExceptionFactory(None), None).singleStatement())
+      statements :+ javaCcStatement
+    }
 }

@@ -33,12 +33,12 @@ case object RelationshipKey extends CreateConstraintType {
   override val predicate: String = "IS RELATIONSHIP KEY"
 }
 
-case object NodeUniqueness extends CreateConstraintType {
+case object NodePropertyUniqueness extends CreateConstraintType {
   override val description: String = "uniqueness"
   override val predicate: String = "IS UNIQUE"
 }
 
-case object RelationshipUniqueness extends CreateConstraintType {
+case object RelationshipPropertyUniqueness extends CreateConstraintType {
   override val description: String = "relationship uniqueness"
   override val predicate: String = "IS UNIQUE"
 }

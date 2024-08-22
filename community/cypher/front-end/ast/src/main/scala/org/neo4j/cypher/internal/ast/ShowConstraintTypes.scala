@@ -28,39 +28,114 @@ case object AllConstraints extends ShowConstraintType {
   override val description: String = "allConstraints"
 }
 
-case object UniqueConstraints extends ShowConstraintType {
+sealed trait UniqueConstraints extends ShowConstraintType
+
+object UniqueConstraints {
+  def cypher6: UniqueConstraints = UniqueConstraintsCypher6
+  def cypher5: UniqueConstraints = UniqueConstraintsCypher5
+}
+
+private case object UniqueConstraintsCypher6 extends UniqueConstraints {
+  override val output: String = "PROPERTY_UNIQUENESS"
+  override val prettyPrint: String = "PROPERTY UNIQUENESS"
+  override val description: String = "propertyUniquenessConstraints"
+}
+
+private case object UniqueConstraintsCypher5 extends UniqueConstraints {
   override val output: String = "UNIQUENESS"
   override val prettyPrint: String = "UNIQUENESS"
   override val description: String = "uniquenessConstraints"
 }
 
-case object NodeUniqueConstraints extends ShowConstraintType {
-  override val output: String = "UNIQUENESS" // cannot change constraint type until 6.0: update to `NODE_UNIQUENESS`
+sealed trait NodeUniqueConstraints extends ShowConstraintType
+
+object NodeUniqueConstraints {
+  def cypher6: NodeUniqueConstraints = NodeUniqueConstraintsCypher6
+  def cypher5: NodeUniqueConstraints = NodeUniqueConstraintsCypher5
+}
+
+private case object NodeUniqueConstraintsCypher6 extends NodeUniqueConstraints {
+  override val output: String = "NODE_PROPERTY_UNIQUENESS"
+  override val prettyPrint: String = "NODE PROPERTY UNIQUENESS"
+  override val description: String = "nodePropertyUniquenessConstraints"
+}
+
+private case object NodeUniqueConstraintsCypher5 extends NodeUniqueConstraints {
+  override val output: String = "UNIQUENESS"
   override val prettyPrint: String = "NODE UNIQUENESS"
   override val description: String = "nodeUniquenessConstraints"
 }
 
-case object RelUniqueConstraints extends ShowConstraintType {
+sealed trait RelUniqueConstraints extends ShowConstraintType
+
+object RelUniqueConstraints {
+  def cypher6: RelUniqueConstraints = RelUniqueConstraintsCypher6
+  def cypher5: RelUniqueConstraints = RelUniqueConstraintsCypher5
+}
+
+private case object RelUniqueConstraintsCypher6 extends RelUniqueConstraints {
+  override val output: String = "RELATIONSHIP_PROPERTY_UNIQUENESS"
+  override val prettyPrint: String = "RELATIONSHIP PROPERTY UNIQUENESS"
+  override val description: String = "relationshipPropertyUniquenessConstraints"
+}
+
+private case object RelUniqueConstraintsCypher5 extends RelUniqueConstraints {
   override val output: String = "RELATIONSHIP_UNIQUENESS"
   override val prettyPrint: String = "RELATIONSHIP UNIQUENESS"
   override val description: String = "relationshipUniquenessConstraints"
 }
 
-case object ExistsConstraints extends ShowConstraintType {
+sealed trait ExistsConstraints extends ShowConstraintType {
   override val output: String = "PROPERTY_EXISTENCE"
   override val prettyPrint: String = "PROPERTY EXISTENCE"
+}
+
+object ExistsConstraints {
+  def cypher6: ExistsConstraints = ExistsConstraintsCypher6
+  def cypher5: ExistsConstraints = ExistsConstraintsCypher5
+}
+
+private case object ExistsConstraintsCypher6 extends ExistsConstraints {
+  override val description: String = "propertyExistenceConstraints"
+}
+
+private case object ExistsConstraintsCypher5 extends ExistsConstraints {
   override val description: String = "existenceConstraints"
 }
 
-case object NodeExistsConstraints extends ShowConstraintType {
+sealed trait NodeExistsConstraints extends ShowConstraintType {
   override val output: String = "NODE_PROPERTY_EXISTENCE"
   override val prettyPrint: String = "NODE PROPERTY EXISTENCE"
+}
+
+object NodeExistsConstraints {
+  def cypher6: NodeExistsConstraints = NodeExistsConstraintsCypher6
+  def cypher5: NodeExistsConstraints = NodeExistsConstraintsCypher5
+}
+
+private case object NodeExistsConstraintsCypher6 extends NodeExistsConstraints {
+  override val description: String = "nodePropertyExistenceConstraints"
+}
+
+private case object NodeExistsConstraintsCypher5 extends NodeExistsConstraints {
   override val description: String = "nodeExistenceConstraints"
 }
 
-case object RelExistsConstraints extends ShowConstraintType {
+sealed trait RelExistsConstraints extends ShowConstraintType {
   override val output: String = "RELATIONSHIP_PROPERTY_EXISTENCE"
   override val prettyPrint: String = "RELATIONSHIP PROPERTY EXISTENCE"
+}
+
+object RelExistsConstraints {
+  def cypher6: RelExistsConstraints = RelExistsConstraintsCypher6
+  def cypher5: RelExistsConstraints = RelExistsConstraintsCypher5
+}
+
+private case object RelExistsConstraintsCypher6 extends RelExistsConstraints {
+  override val description: String = "relationshipPropertyExistenceConstraints"
+}
+
+private case object RelExistsConstraintsCypher5 extends RelExistsConstraints {
   override val description: String = "relationshipExistenceConstraints"
 }
 

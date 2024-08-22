@@ -24,12 +24,12 @@ import org.neo4j.cypher.internal.ast.CreateConstraintType
 import org.neo4j.cypher.internal.ast.NodeKey
 import org.neo4j.cypher.internal.ast.NodePropertyExistence
 import org.neo4j.cypher.internal.ast.NodePropertyType
-import org.neo4j.cypher.internal.ast.NodeUniqueness
+import org.neo4j.cypher.internal.ast.NodePropertyUniqueness
 import org.neo4j.cypher.internal.ast.Options
 import org.neo4j.cypher.internal.ast.RelationshipKey
 import org.neo4j.cypher.internal.ast.RelationshipPropertyExistence
 import org.neo4j.cypher.internal.ast.RelationshipPropertyType
-import org.neo4j.cypher.internal.ast.RelationshipUniqueness
+import org.neo4j.cypher.internal.ast.RelationshipPropertyUniqueness
 import org.neo4j.cypher.internal.ast.prettifier.Prettifier
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.expressions.ElementTypeName
@@ -166,7 +166,7 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
 
       // CREATE CONSTRAINT [name] [IF NOT EXISTS] FOR (node:Label) REQUIRE node.prop IS UNIQUE [OPTIONS {...}]
     // CREATE CONSTRAINT [name] [IF NOT EXISTS] FOR (node:Label) REQUIRE (node.prop1,node.prop2) IS UNIQUE [OPTIONS {...}]
-    case CreateConstraint(source, NodeUniqueness, label: LabelName, props, name, options) => context =>
+    case CreateConstraint(source, NodePropertyUniqueness, label: LabelName, props, name, options) => context =>
         SchemaExecutionPlan(
           "CreateNodePropertyUniquenessConstraint",
           (ctx, params) => {
@@ -185,7 +185,8 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
 
       // CREATE CONSTRAINT [name] [IF NOT EXISTS] FOR ()-[rel:TYPE]-() REQUIRE rel.prop IS UNIQUE [OPTIONS {...}]
     // CREATE CONSTRAINT [name] [IF NOT EXISTS] FOR ()-[rel:TYPE]-() REQUIRE (rel.prop1,rel.prop2) IS UNIQUE [OPTIONS {...}]
-    case CreateConstraint(source, RelationshipUniqueness, relType: RelTypeName, props, name, options) => context =>
+    case CreateConstraint(source, RelationshipPropertyUniqueness, relType: RelTypeName, props, name, options) =>
+      context =>
         SchemaExecutionPlan(
           "CreateRelationshipPropertyUniquenessConstraint",
           (ctx, params) => {
@@ -565,9 +566,9 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
                 IndexBackedConstraintsOptionsConverter("node key constraint", ctx).convert(options, params)
               case RelationshipKey =>
                 IndexBackedConstraintsOptionsConverter("relationship key constraint", ctx).convert(options, params)
-              case NodeUniqueness =>
+              case NodePropertyUniqueness =>
                 IndexBackedConstraintsOptionsConverter("uniqueness constraint", ctx).convert(options, params)
-              case RelationshipUniqueness =>
+              case RelationshipPropertyUniqueness =>
                 IndexBackedConstraintsOptionsConverter("relationship uniqueness constraint", ctx)
                   .convert(options, params)
               case NodePropertyExistence =>
@@ -648,12 +649,12 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
   private def convertConstraintTypeToConstraintMatcher(assertion: CreateConstraintType)
     : ConstraintDescriptor => Boolean =
     assertion match {
-      case NodePropertyExistence         => c => c.isNodePropertyExistenceConstraint
-      case RelationshipPropertyExistence => c => c.isRelationshipPropertyExistenceConstraint
-      case NodeUniqueness                => c => c.isNodeUniquenessConstraint
-      case RelationshipUniqueness        => c => c.isRelationshipUniquenessConstraint
-      case NodeKey                       => c => c.isNodeKeyConstraint
-      case RelationshipKey               => c => c.isRelationshipKeyConstraint
+      case NodePropertyExistence          => c => c.isNodePropertyExistenceConstraint
+      case RelationshipPropertyExistence  => c => c.isRelationshipPropertyExistenceConstraint
+      case NodePropertyUniqueness         => c => c.isNodeUniquenessConstraint
+      case RelationshipPropertyUniqueness => c => c.isRelationshipUniquenessConstraint
+      case NodeKey                        => c => c.isNodeKeyConstraint
+      case RelationshipKey                => c => c.isRelationshipKeyConstraint
       case NodePropertyType(propType) =>
         c => c.isNodePropertyTypeConstraint && checkTypes(propType, c.asPropertyTypeConstraint().propertyType())
       case RelationshipPropertyType(propType) =>
@@ -764,12 +765,12 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
     val pattern = getPrettyEntityPattern(entityName)
     val propertyString = getPrettyPropertyPattern(properties.map(p => p.propertyKey), "(", ")")
     val assertion = constraintType match {
-      case NodePropertyExistence | RelationshipPropertyExistence => "IS NOT NULL"
-      case NodeKey                                               => "IS NODE KEY"
-      case RelationshipKey                                       => "IS RELATIONSHIP KEY"
-      case NodeUniqueness | RelationshipUniqueness               => "IS UNIQUE"
-      case NodePropertyType(t)                                   => s"IS :: ${t.description}"
-      case RelationshipPropertyType(t)                           => s"IS :: ${t.description}"
+      case NodePropertyExistence | RelationshipPropertyExistence   => "IS NOT NULL"
+      case NodeKey                                                 => "IS NODE KEY"
+      case RelationshipKey                                         => "IS RELATIONSHIP KEY"
+      case NodePropertyUniqueness | RelationshipPropertyUniqueness => "IS UNIQUE"
+      case NodePropertyType(t)                                     => s"IS :: ${t.description}"
+      case RelationshipPropertyType(t)                             => s"IS :: ${t.description}"
     }
     val prettyAssertion = asPrettyString.raw(assertion)
     pretty"CONSTRAINT$name IF NOT EXISTS FOR $pattern REQUIRE $propertyString $prettyAssertion${prettyOptions(options)}".prettifiedString

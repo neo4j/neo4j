@@ -28,14 +28,14 @@ import org.neo4j.cypher.internal.ast.NoOptions
 import org.neo4j.cypher.internal.ast.NodeKey
 import org.neo4j.cypher.internal.ast.NodePropertyExistence
 import org.neo4j.cypher.internal.ast.NodePropertyType
-import org.neo4j.cypher.internal.ast.NodeUniqueness
+import org.neo4j.cypher.internal.ast.NodePropertyUniqueness
 import org.neo4j.cypher.internal.ast.Options
 import org.neo4j.cypher.internal.ast.OptionsMap
 import org.neo4j.cypher.internal.ast.OptionsParam
 import org.neo4j.cypher.internal.ast.RelationshipKey
 import org.neo4j.cypher.internal.ast.RelationshipPropertyExistence
 import org.neo4j.cypher.internal.ast.RelationshipPropertyType
-import org.neo4j.cypher.internal.ast.RelationshipUniqueness
+import org.neo4j.cypher.internal.ast.RelationshipPropertyUniqueness
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorBreak
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorContinue
@@ -3643,12 +3643,12 @@ case class LogicalPlan2PlanDescription(
   ): PrettyString = {
     val name = getPrettyStringName(nameOption)
     val assertion = constraintType match {
-      case NodePropertyExistence | RelationshipPropertyExistence => "IS NOT NULL"
-      case NodeKey                                               => "IS NODE KEY"
-      case RelationshipKey                                       => "IS RELATIONSHIP KEY"
-      case NodeUniqueness | RelationshipUniqueness               => "IS UNIQUE"
-      case NodePropertyType(t)                                   => s"IS :: ${t.description}"
-      case RelationshipPropertyType(t)                           => s"IS :: ${t.description}"
+      case NodePropertyExistence | RelationshipPropertyExistence   => "IS NOT NULL"
+      case NodeKey                                                 => "IS NODE KEY"
+      case RelationshipKey                                         => "IS RELATIONSHIP KEY"
+      case NodePropertyUniqueness | RelationshipPropertyUniqueness => "IS UNIQUE"
+      case NodePropertyType(t)                                     => s"IS :: ${t.description}"
+      case RelationshipPropertyType(t)                             => s"IS :: ${t.description}"
     }
     val prettyAssertion = asPrettyString.raw(assertion)
 

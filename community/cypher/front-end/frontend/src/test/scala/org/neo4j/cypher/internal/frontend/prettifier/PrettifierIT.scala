@@ -1019,21 +1019,21 @@ class PrettifierIT extends CypherFunSuite {
     "show rel property EXISTence cOnStRaInTs" ->
       "SHOW RELATIONSHIP PROPERTY EXISTENCE CONSTRAINTS",
     "show unique constraint" ->
-      "SHOW UNIQUENESS CONSTRAINTS",
+      "SHOW PROPERTY UNIQUENESS CONSTRAINTS",
     "show node unique constraint" ->
-      "SHOW NODE UNIQUENESS CONSTRAINTS",
+      "SHOW NODE PROPERTY UNIQUENESS CONSTRAINTS",
     "show REL unique constraint" ->
-      "SHOW RELATIONSHIP UNIQUENESS CONSTRAINTS",
+      "SHOW RELATIONSHIP PROPERTY UNIQUENESS CONSTRAINTS",
     "show Relationship unique constraint" ->
-      "SHOW RELATIONSHIP UNIQUENESS CONSTRAINTS",
+      "SHOW RELATIONSHIP PROPERTY UNIQUENESS CONSTRAINTS",
     "show uniqueness constraint" ->
-      "SHOW UNIQUENESS CONSTRAINTS",
+      "SHOW PROPERTY UNIQUENESS CONSTRAINTS",
     "show node uniqueness constraint" ->
-      "SHOW NODE UNIQUENESS CONSTRAINTS",
+      "SHOW NODE PROPERTY UNIQUENESS CONSTRAINTS",
     "show REL uniqueness constraint" ->
-      "SHOW RELATIONSHIP UNIQUENESS CONSTRAINTS",
+      "SHOW RELATIONSHIP PROPERTY UNIQUENESS CONSTRAINTS",
     "show Relationship uniqueness constraint" ->
-      "SHOW RELATIONSHIP UNIQUENESS CONSTRAINTS",
+      "SHOW RELATIONSHIP PROPERTY UNIQUENESS CONSTRAINTS",
     "show key CONSTRAINTS" ->
       "SHOW KEY CONSTRAINTS",
     "show node key CONSTRAINTS" ->
@@ -1060,7 +1060,7 @@ class PrettifierIT extends CypherFunSuite {
       """SHOW ALL CONSTRAINTS
         |YIELD *""".stripMargin,
     "show UNIQUE constraint  YIELD * Return DISTINCT type" ->
-      """SHOW UNIQUENESS CONSTRAINTS
+      """SHOW PROPERTY UNIQUENESS CONSTRAINTS
         |YIELD *
         |RETURN DISTINCT type""".stripMargin,
     "show existence constraint YIELD * where name = 'neo4j' Return *" ->
@@ -2879,7 +2879,7 @@ class PrettifierIT extends CypherFunSuite {
   }
 
   tests foreach {
-    case (inputString, expected) =>
+    case (inputString, expected) if parsesSameInAllCypherVersions(inputString) =>
       test(inputString) {
         val statementJavaCc = JavaCCParser.parse(inputString, OpenCypherExceptionFactory(None))
         prettifier.asString(statementJavaCc) should equal(expected)
@@ -2890,8 +2890,30 @@ class PrettifierIT extends CypherFunSuite {
           prettifier.asString(statement) should equal(expected)
         }
       }
+    case (inputString, expectedNotCypher5) =>
+      test(inputString) {
+        // The two Cypher 5 parsers should get the same values
+        val statementJavaCc = JavaCCParser.parse(inputString, OpenCypherExceptionFactory(None))
+        val statementCypher5 = parseAntlr(CypherVersion.Cypher5, inputString)
+        statementCypher5 shouldBe statementJavaCc
+        prettifier.asString(statementJavaCc) should equal(prettifier.asString(statementCypher5))
+
+        CypherVersion.values().toList.diff(Seq(CypherVersion.Cypher5)).foreach { version =>
+          val statement = parseAntlr(version, inputString)
+          prettifier.asString(statement) should equal(expectedNotCypher5)
+        }
+      }
   }
 
   private def parseAntlr(version: CypherVersion, cypher: String): Statement =
     AstParserFactory(version)(cypher, Neo4jCypherExceptionFactory(cypher, None), None).singleStatement()
+
+  private def parsesSameInAllCypherVersions(inputString: String): Boolean = {
+    // to compare case insensitively
+    val inputLowerCase = inputString.toLowerCase
+
+    // showing constraints differs between Cypher 5 and Cypher 6
+    // removing 'database' as that is the privileges and not the show command
+    !(inputLowerCase.matches(".*show.*constraint.*") && !inputLowerCase.contains("database"))
+  }
 }

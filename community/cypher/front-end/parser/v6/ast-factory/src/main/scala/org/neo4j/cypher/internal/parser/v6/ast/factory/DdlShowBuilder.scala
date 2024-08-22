@@ -265,9 +265,9 @@ trait DdlShowBuilder extends Cypher6ParserListener {
       case c: Cypher6Parser.ShowConstraintExistContext =>
         val constraintType = pickShowConstraintType(
           c.showConstraintEntity(),
-          NodeExistsConstraints,
-          RelExistsConstraints,
-          ExistsConstraints
+          NodeExistsConstraints.cypher6,
+          RelExistsConstraints.cypher6,
+          ExistsConstraints.cypher6
         )
         c.showConstraintsEnd().ast[ShowWrapper]().buildConstraintClauses(constraintType, parentPos)
       case c: Cypher6Parser.ShowConstraintKeyContext =>
@@ -289,9 +289,9 @@ trait DdlShowBuilder extends Cypher6ParserListener {
       case c: Cypher6Parser.ShowConstraintUniqueContext =>
         val constraintType = pickShowConstraintType(
           c.showConstraintEntity(),
-          NodeUniqueConstraints,
-          RelUniqueConstraints,
-          UniqueConstraints
+          NodeUniqueConstraints.cypher6,
+          RelUniqueConstraints.cypher6,
+          UniqueConstraints.cypher6
         )
         c.showConstraintsEnd().ast[ShowWrapper]().buildConstraintClauses(constraintType, parentPos)
       case _ => throw new IllegalStateException("Invalid Constraint Type")
@@ -558,7 +558,8 @@ object DdlShowBuilder {
           constraintType,
           where,
           yieldedItems,
-          yieldAll
+          yieldAll,
+          returnCypher5Values = false
         )(position)
       )
     }

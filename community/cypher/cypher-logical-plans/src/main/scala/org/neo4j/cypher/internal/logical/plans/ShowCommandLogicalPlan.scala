@@ -39,7 +39,8 @@ case class ShowConstraints(
   constraintType: ShowConstraintType,
   defaultColumns: List[ShowColumn],
   yieldColumns: List[CommandResultItem],
-  yieldAll: Boolean
+  yieldAll: Boolean,
+  returnCypher5Values: Boolean
 )(implicit idGen: IdGen) extends CommandLogicalPlan(idGen)
 
 case class ShowProcedures(

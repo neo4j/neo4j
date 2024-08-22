@@ -286,8 +286,8 @@ trait DdlShowBuilder extends Cypher5ParserListener {
       case c: Cypher5Parser.ShowConstraintUniqueContext =>
         val entityType = if (c.NODE() != null) Node else Rel
         val constraintType = entityType match {
-          case Node     => NodeUniqueConstraints
-          case Rel      => RelUniqueConstraints
+          case Node     => NodeUniqueConstraints.cypher5
+          case Rel      => RelUniqueConstraints.cypher5
           case NoEntity => throw new IllegalStateException("Invalid Constraint Type")
         }
         c.showConstraintsAllowYield().ast[ShowWrapper]().buildConstraintClauses(constraintType, parentPos)
@@ -302,7 +302,7 @@ trait DdlShowBuilder extends Cypher5ParserListener {
         c.showConstraintsAllowYield().ast[ShowWrapper]().buildConstraintClauses(constraintType, parentPos)
 
       case c: Cypher5Parser.ShowConstraintRelExistContext =>
-        val constraintType = RelExistsConstraints
+        val constraintType = RelExistsConstraints.cypher5
         c.showConstraintsAllowYield().ast[ShowWrapper]().buildConstraintClauses(constraintType, parentPos)
 
       case _: Cypher5Parser.ShowConstraintOldExistsContext =>
@@ -327,12 +327,12 @@ trait DdlShowBuilder extends Cypher5ParserListener {
       case (Node, true, _)     => NodePropTypeConstraints
       case (Rel, true, _)      => RelPropTypeConstraints
       case (NoEntity, true, _) => PropTypeConstraints
-      case (Node, _, true)     => NodeUniqueConstraints
-      case (Rel, _, true)      => RelUniqueConstraints
-      case (NoEntity, _, true) => UniqueConstraints
-      case (Node, _, _)        => NodeExistsConstraints
-      case (Rel, _, _)         => RelExistsConstraints
-      case (NoEntity, _, _)    => ExistsConstraints
+      case (Node, _, true)     => NodeUniqueConstraints.cypher5
+      case (Rel, _, true)      => RelUniqueConstraints.cypher5
+      case (NoEntity, _, true) => UniqueConstraints.cypher5
+      case (Node, _, _)        => NodeExistsConstraints.cypher5
+      case (Rel, _, _)         => RelExistsConstraints.cypher5
+      case (NoEntity, _, _)    => ExistsConstraints.cypher5
     }
   }
 
@@ -345,12 +345,12 @@ trait DdlShowBuilder extends Cypher5ParserListener {
   ): Unit = {
     ctx.ast = nodeChild(ctx, 0).getSymbol.getType match {
       case Cypher5Parser.ALL    => AllConstraints
-      case Cypher5Parser.UNIQUE => UniqueConstraints
-      case Cypher5Parser.EXIST  => ExistsConstraints
+      case Cypher5Parser.UNIQUE => UniqueConstraints.cypher5
+      case Cypher5Parser.EXIST  => ExistsConstraints.cypher5
       case Cypher5Parser.NODE =>
-        if (ctx.EXIST() != null) NodeExistsConstraints else NodeKeyConstraints
+        if (ctx.EXIST() != null) NodeExistsConstraints.cypher5 else NodeKeyConstraints
       case Cypher5Parser.RELATIONSHIP =>
-        RelExistsConstraints
+        RelExistsConstraints.cypher5
     }
   }
 
@@ -601,7 +601,8 @@ object DdlShowBuilder {
           constraintType,
           where,
           yieldedItems,
-          yieldAll
+          yieldAll,
+          returnCypher5Values = true
         )(position)
       )
     }

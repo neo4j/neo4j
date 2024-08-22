@@ -16,6 +16,7 @@
  */
 package org.neo4j.cypher.internal.ast.generator
 
+import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.ast.Access
 import org.neo4j.cypher.internal.ast.AccessDatabaseAction
 import org.neo4j.cypher.internal.ast.ActionResource
@@ -591,7 +592,11 @@ object AstGenerator {
  * Generated queries are syntactically (but not semantically) valid
  */
 //noinspection ScalaWeakerAccess
-class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[String]] = None) {
+class AstGenerator(
+  simpleStrings: Boolean = true,
+  allowedVarNames: Option[Seq[String]] = None,
+  whenAstDifferUseCypherVersion: CypherVersion = CypherVersion.Default
+) {
   // HELPERS
   // ==========================================================================
 
@@ -1566,14 +1571,15 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
   } yield types
 
   def _constraintType: Gen[ShowConstraintType] = for {
+    returnCypher5Values <- const(whenAstDifferUseCypherVersion.equals(CypherVersion.Cypher5))
     constraintType <- oneOf(
       AllConstraints,
-      UniqueConstraints,
-      NodeUniqueConstraints,
-      RelUniqueConstraints,
-      ExistsConstraints,
-      NodeExistsConstraints,
-      RelExistsConstraints,
+      if (returnCypher5Values) UniqueConstraints.cypher5 else UniqueConstraints.cypher6,
+      if (returnCypher5Values) NodeUniqueConstraints.cypher5 else NodeUniqueConstraints.cypher6,
+      if (returnCypher5Values) RelUniqueConstraints.cypher5 else RelUniqueConstraints.cypher6,
+      if (returnCypher5Values) ExistsConstraints.cypher5 else ExistsConstraints.cypher6,
+      if (returnCypher5Values) NodeExistsConstraints.cypher5 else NodeExistsConstraints.cypher6,
+      if (returnCypher5Values) RelExistsConstraints.cypher5 else RelExistsConstraints.cypher6,
       KeyConstraints,
       NodeKeyConstraints,
       RelKeyConstraints,
@@ -1652,6 +1658,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     yields <- _eitherYieldOrWhere
     yieldAll <- boolean
   } yield {
+    val returnCypher5Values = whenAstDifferUseCypherVersion.equals(CypherVersion.Cypher5)
     val showClauses = yields match {
       case Some(Right(w)) =>
         Seq(
@@ -1659,20 +1666,21 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
             constraintType,
             Some(w),
             List.empty,
-            yieldAll = false
+            yieldAll = false,
+            returnCypher5Values
           )(pos)
         )
       case Some(Left((y, Some(r)))) =>
         val (w, yi) = turnYieldToWith(y)
         Seq(
-          ShowConstraintsClause(constraintType, None, yi, yieldAll = false)(pos),
+          ShowConstraintsClause(constraintType, None, yi, yieldAll = false, returnCypher5Values)(pos),
           w,
           r
         )
       case Some(Left((y, None))) =>
         val (w, yi) = turnYieldToWith(y)
         Seq(
-          ShowConstraintsClause(constraintType, None, yi, yieldAll = false)(pos),
+          ShowConstraintsClause(constraintType, None, yi, yieldAll = false, returnCypher5Values)(pos),
           w
         )
       case _ if yieldAll =>
@@ -1681,7 +1689,8 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
             constraintType,
             None,
             List.empty,
-            yieldAll = true
+            yieldAll = true,
+            returnCypher5Values
           )(pos),
           getFullWithStarFromYield
         )
@@ -1691,7 +1700,8 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
             constraintType,
             None,
             List.empty,
-            yieldAll = false
+            yieldAll = false,
+            returnCypher5Values
           )(pos)
         )
     }
@@ -1867,7 +1877,13 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
       (item: List[CommandResultItem], all: Boolean) => ShowProceduresClause(exec, None, item, all)(pos),
       (item: List[CommandResultItem], all: Boolean) => ShowSettingsClause(ids, None, item, all)(pos),
       (item: List[CommandResultItem], all: Boolean) =>
-        ShowConstraintsClause(constraintType, None, item, all)(pos),
+        ShowConstraintsClause(
+          constraintType,
+          None,
+          item,
+          all,
+          returnCypher5Values = whenAstDifferUseCypherVersion.equals(CypherVersion.Cypher5)
+        )(pos),
       (item: List[CommandResultItem], all: Boolean) =>
         ShowIndexesClause(indexType, None, item, all)(pos)
     )

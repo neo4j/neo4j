@@ -975,8 +975,8 @@ case class InterpretedPipeMapper(
       case ShowIndexes(indexType, columns, yields, _) =>
         CommandPipe(ShowIndexesCommand(indexType, columns, yields))(id)
 
-      case ShowConstraints(constraintType, columns, yields, _) =>
-        CommandPipe(ShowConstraintsCommand(constraintType, columns, yields))(id)
+      case ShowConstraints(constraintType, columns, yields, _, returnCypher5Values) =>
+        CommandPipe(ShowConstraintsCommand(constraintType, columns, yields, returnCypher5Values))(id)
 
       case ShowProcedures(executableBy, columns, yields, _) =>
         CommandPipe(ShowProceduresCommand(executableBy, columns, yields, isCommunity, toKernelScope(cypherVersion)))(id)

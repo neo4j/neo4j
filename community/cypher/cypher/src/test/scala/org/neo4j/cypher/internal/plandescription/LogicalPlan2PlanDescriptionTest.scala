@@ -66,8 +66,8 @@ import org.neo4j.cypher.internal.ast.NodeKeyConstraints
 import org.neo4j.cypher.internal.ast.NodePropTypeConstraints
 import org.neo4j.cypher.internal.ast.NodePropertyExistence
 import org.neo4j.cypher.internal.ast.NodePropertyType
+import org.neo4j.cypher.internal.ast.NodePropertyUniqueness
 import org.neo4j.cypher.internal.ast.NodeUniqueConstraints
-import org.neo4j.cypher.internal.ast.NodeUniqueness
 import org.neo4j.cypher.internal.ast.OptionsMap
 import org.neo4j.cypher.internal.ast.OptionsParam
 import org.neo4j.cypher.internal.ast.Password
@@ -89,7 +89,7 @@ import org.neo4j.cypher.internal.ast.RelUniqueConstraints
 import org.neo4j.cypher.internal.ast.RelationshipKey
 import org.neo4j.cypher.internal.ast.RelationshipPropertyExistence
 import org.neo4j.cypher.internal.ast.RelationshipPropertyType
-import org.neo4j.cypher.internal.ast.RelationshipUniqueness
+import org.neo4j.cypher.internal.ast.RelationshipPropertyUniqueness
 import org.neo4j.cypher.internal.ast.RemoveAuth
 import org.neo4j.cypher.internal.ast.ShowColumn
 import org.neo4j.cypher.internal.ast.ShowProceduresClause
@@ -3424,7 +3424,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
   test("CreateNodeUniquePropertyConstraint") {
     assertGood(
       attach(
-        CreateConstraint(None, NodeUniqueness, label("Label"), Seq(prop(" x", "prop")), None, NoOptions),
+        CreateConstraint(None, NodePropertyUniqueness, label("Label"), Seq(prop(" x", "prop")), None, NoOptions),
         63.2
       ),
       planDescription(
@@ -3440,7 +3440,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       attach(
         CreateConstraint(
           None,
-          NodeUniqueness,
+          NodePropertyUniqueness,
           label("Label"),
           Seq(prop("x", "prop")),
           Some(Left("constraintName")),
@@ -3461,7 +3461,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       attach(
         CreateConstraint(
           None,
-          NodeUniqueness,
+          NodePropertyUniqueness,
           label("Label"),
           Seq(prop("x", "prop1"), prop("x", "prop2")),
           Some(Left("constraintName")),
@@ -3482,7 +3482,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       attach(
         CreateConstraint(
           None,
-          NodeUniqueness,
+          NodePropertyUniqueness,
           label("Label"),
           List(prop("x", "prop")),
           Some(Left("$constraintName")),
@@ -3507,11 +3507,11 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           Some(DoNothingIfExistsForConstraint(
             label("Label"),
             Seq(prop(" x", "prop")),
-            NodeUniqueness,
+            NodePropertyUniqueness,
             None,
             NoOptions
           )),
-          NodeUniqueness,
+          NodePropertyUniqueness,
           label("Label"),
           Seq(prop(" x", "prop")),
           None,
@@ -3540,7 +3540,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       attach(
         CreateConstraint(
           None,
-          NodeUniqueness,
+          NodePropertyUniqueness,
           label("Label"),
           Seq(prop(" x", "prop")),
           None,
@@ -3561,7 +3561,14 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
   test("CreateRelationshipUniquePropertyConstraint") {
     assertGood(
       attach(
-        CreateConstraint(None, RelationshipUniqueness, relType("REL_TYPE"), Seq(prop(" x", "prop")), None, NoOptions),
+        CreateConstraint(
+          None,
+          RelationshipPropertyUniqueness,
+          relType("REL_TYPE"),
+          Seq(prop(" x", "prop")),
+          None,
+          NoOptions
+        ),
         63.2
       ),
       planDescription(
@@ -3577,7 +3584,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       attach(
         CreateConstraint(
           None,
-          RelationshipUniqueness,
+          RelationshipPropertyUniqueness,
           relType("REL_TYPE"),
           Seq(prop("x", "prop")),
           Some(Left("constraintName")),
@@ -3598,7 +3605,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       attach(
         CreateConstraint(
           None,
-          RelationshipUniqueness,
+          RelationshipPropertyUniqueness,
           relType("REL_TYPE"),
           Seq(prop("x", "prop1"), prop("x", "prop2")),
           Some(Left("constraintName")),
@@ -3619,7 +3626,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       attach(
         CreateConstraint(
           None,
-          RelationshipUniqueness,
+          RelationshipPropertyUniqueness,
           relType("REL-TYPE"),
           List(prop("x", "prop-prop")),
           Some(Right(parameter("constraintName", CTString))),
@@ -3644,11 +3651,11 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           Some(DoNothingIfExistsForConstraint(
             relType("REL_TYPE"),
             Seq(prop(" x", "prop")),
-            RelationshipUniqueness,
+            RelationshipPropertyUniqueness,
             None,
             NoOptions
           )),
-          RelationshipUniqueness,
+          RelationshipPropertyUniqueness,
           relType("REL_TYPE"),
           Seq(prop(" x", "prop")),
           None,
@@ -3677,7 +3684,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       attach(
         CreateConstraint(
           None,
-          RelationshipUniqueness,
+          RelationshipPropertyUniqueness,
           relType("REL_TYPE"),
           Seq(prop(" x", "prop")),
           None,
@@ -4261,7 +4268,13 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
   test("ShowConstraints") {
     assertGood(
       attach(
-        ShowConstraints(constraintType = AllConstraints, List.empty, List.empty, yieldAll = false),
+        ShowConstraints(
+          constraintType = AllConstraints,
+          List.empty,
+          List.empty,
+          yieldAll = false,
+          returnCypher5Values = false
+        ),
         1.0
       ),
       planDescription(id, "ShowConstraints", NoChildren, Seq(details("allConstraints, defaultColumns")), Set.empty)
@@ -4269,19 +4282,32 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     assertGood(
       attach(
-        ShowConstraints(constraintType = UniqueConstraints, List.empty, List.empty, yieldAll = true),
+        ShowConstraints(
+          constraintType = UniqueConstraints.cypher6,
+          List.empty,
+          List.empty,
+          yieldAll = true,
+          returnCypher5Values = false
+        ),
         1.0
       ),
-      planDescription(id, "ShowConstraints", NoChildren, Seq(details("uniquenessConstraints, allColumns")), Set.empty)
+      planDescription(
+        id,
+        "ShowConstraints",
+        NoChildren,
+        Seq(details("propertyUniquenessConstraints, allColumns")),
+        Set.empty
+      )
     )
 
     assertGood(
       attach(
         ShowConstraints(
-          constraintType = NodeUniqueConstraints,
+          constraintType = NodeUniqueConstraints.cypher5,
           List.empty,
           List.empty,
-          yieldAll = true
+          yieldAll = true,
+          returnCypher5Values = true
         ),
         1.0
       ),
@@ -4297,10 +4323,11 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     assertGood(
       attach(
         ShowConstraints(
-          constraintType = RelUniqueConstraints,
+          constraintType = RelUniqueConstraints.cypher6,
           List.empty,
           List.empty,
-          yieldAll = true
+          yieldAll = true,
+          returnCypher5Values = false
         ),
         1.0
       ),
@@ -4308,14 +4335,20 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         id,
         "ShowConstraints",
         NoChildren,
-        Seq(details("relationshipUniquenessConstraints, allColumns")),
+        Seq(details("relationshipPropertyUniquenessConstraints, allColumns")),
         Set.empty
       )
     )
 
     assertGood(
       attach(
-        ShowConstraints(constraintType = KeyConstraints, List.empty, List.empty, yieldAll = false),
+        ShowConstraints(
+          constraintType = KeyConstraints,
+          List.empty,
+          List.empty,
+          yieldAll = false,
+          returnCypher5Values = false
+        ),
         1.0
       ),
       planDescription(id, "ShowConstraints", NoChildren, Seq(details("keyConstraints, defaultColumns")), Set.empty)
@@ -4327,7 +4360,8 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           constraintType = NodeKeyConstraints,
           List.empty,
           List.empty,
-          yieldAll = false
+          yieldAll = false,
+          returnCypher5Values = false
         ),
         1.0
       ),
@@ -4336,7 +4370,13 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     assertGood(
       attach(
-        ShowConstraints(constraintType = RelKeyConstraints, List.empty, List.empty, yieldAll = false),
+        ShowConstraints(
+          constraintType = RelKeyConstraints,
+          List.empty,
+          List.empty,
+          yieldAll = false,
+          returnCypher5Values = false
+        ),
         1.0
       ),
       planDescription(
@@ -4351,10 +4391,11 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     assertGood(
       attach(
         ShowConstraints(
-          constraintType = ExistsConstraints,
+          constraintType = ExistsConstraints.cypher5,
           List.empty,
           List.empty,
-          yieldAll = true
+          yieldAll = true,
+          returnCypher5Values = true
         ),
         1.0
       ),
@@ -4364,10 +4405,11 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     assertGood(
       attach(
         ShowConstraints(
-          constraintType = NodeExistsConstraints,
+          constraintType = NodeExistsConstraints.cypher6,
           List.empty,
           List.empty,
-          yieldAll = false
+          yieldAll = false,
+          returnCypher5Values = false
         ),
         1.0
       ),
@@ -4375,7 +4417,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         id,
         "ShowConstraints",
         NoChildren,
-        Seq(details("nodeExistenceConstraints, defaultColumns")),
+        Seq(details("nodePropertyExistenceConstraints, defaultColumns")),
         Set.empty
       )
     )
@@ -4383,10 +4425,11 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     assertGood(
       attach(
         ShowConstraints(
-          constraintType = RelExistsConstraints,
+          constraintType = RelExistsConstraints.cypher5,
           List.empty,
           List.empty,
-          yieldAll = true
+          yieldAll = true,
+          returnCypher5Values = true
         ),
         1.0
       ),
@@ -4405,7 +4448,8 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           constraintType = PropTypeConstraints,
           List.empty,
           List.empty,
-          yieldAll = false
+          yieldAll = false,
+          returnCypher5Values = false
         ),
         1.0
       ),
@@ -4424,7 +4468,8 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           constraintType = NodePropTypeConstraints,
           List.empty,
           List.empty,
-          yieldAll = true
+          yieldAll = true,
+          returnCypher5Values = true
         ),
         1.0
       ),
@@ -4447,7 +4492,8 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
             CommandResultItem("yyy", varFor("zzz"))(pos),
             CommandResultItem("vvv", varFor("vvv"))(pos)
           ),
-          yieldAll = false
+          yieldAll = false,
+          returnCypher5Values = false
         ),
         1.0
       ),

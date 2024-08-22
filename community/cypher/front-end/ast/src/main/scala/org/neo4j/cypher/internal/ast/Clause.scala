@@ -2140,7 +2140,8 @@ case class ShowConstraintsClause(
   constraintType: ShowConstraintType,
   where: Option[Where],
   yieldItems: List[CommandResultItem],
-  yieldAll: Boolean
+  yieldAll: Boolean,
+  returnCypher5Values: Boolean
 )(val position: InputPosition) extends CommandClause {
   override def name: String = "SHOW CONSTRAINTS"
 
@@ -2174,7 +2175,8 @@ object ShowConstraintsClause {
     constraintType: ShowConstraintType,
     where: Option[Where],
     yieldItems: List[CommandResultItem],
-    yieldAll: Boolean
+    yieldAll: Boolean,
+    returnCypher5Values: Boolean
   )(position: InputPosition): ShowConstraintsClause = {
     val briefCols = List(
       ShowAndTerminateColumn(idColumn, CTInteger),
@@ -2197,7 +2199,8 @@ object ShowConstraintsClause {
       constraintType,
       where,
       yieldItems,
-      yieldAll
+      yieldAll,
+      returnCypher5Values
     )(position)
   }
 }

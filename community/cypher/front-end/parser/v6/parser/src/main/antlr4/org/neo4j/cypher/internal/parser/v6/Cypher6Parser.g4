@@ -893,11 +893,11 @@ showIndexesEnd
    ;
 
 showConstraintCommand
-   : ALL? showConstraintsEnd                                            # ShowConstraintAll
-   | (showConstraintEntity)? constraintExistType showConstraintsEnd     # ShowConstraintExist
-   | (showConstraintEntity)? KEY showConstraintsEnd                     # ShowConstraintKey
-   | (showConstraintEntity)? PROPERTY TYPE showConstraintsEnd           # ShowConstraintPropType
-   | (showConstraintEntity)? (UNIQUE | UNIQUENESS) showConstraintsEnd   # ShowConstraintUnique
+   : ALL? showConstraintsEnd                                                        # ShowConstraintAll
+   | (showConstraintEntity)? constraintExistType showConstraintsEnd                 # ShowConstraintExist
+   | (showConstraintEntity)? KEY showConstraintsEnd                                 # ShowConstraintKey
+   | (showConstraintEntity)? PROPERTY TYPE showConstraintsEnd                       # ShowConstraintPropType
+   | (showConstraintEntity)? (PROPERTY)? (UNIQUE | UNIQUENESS) showConstraintsEnd   # ShowConstraintUnique
    ;
 
 showConstraintEntity

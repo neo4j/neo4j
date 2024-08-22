@@ -1673,25 +1673,25 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
   ): Clause = {
     val constraintType: ShowConstraintType = initialConstraintType match {
       case ShowCommandFilterTypes.ALL                    => AllConstraints
-      case ShowCommandFilterTypes.UNIQUE                 => UniqueConstraints
-      case ShowCommandFilterTypes.NODE_UNIQUE            => NodeUniqueConstraints
-      case ShowCommandFilterTypes.RELATIONSHIP_UNIQUE    => RelUniqueConstraints
+      case ShowCommandFilterTypes.UNIQUE                 => UniqueConstraints.cypher5
+      case ShowCommandFilterTypes.NODE_UNIQUE            => NodeUniqueConstraints.cypher5
+      case ShowCommandFilterTypes.RELATIONSHIP_UNIQUE    => RelUniqueConstraints.cypher5
       case ShowCommandFilterTypes.KEY                    => KeyConstraints
       case ShowCommandFilterTypes.NODE_KEY               => NodeKeyConstraints
       case ShowCommandFilterTypes.RELATIONSHIP_KEY       => RelKeyConstraints
-      case ShowCommandFilterTypes.EXIST                  => ExistsConstraints
-      case ShowCommandFilterTypes.OLD_EXIST              => ExistsConstraints
-      case ShowCommandFilterTypes.NODE_EXIST             => NodeExistsConstraints
-      case ShowCommandFilterTypes.NODE_OLD_EXIST         => NodeExistsConstraints
-      case ShowCommandFilterTypes.RELATIONSHIP_EXIST     => RelExistsConstraints
-      case ShowCommandFilterTypes.RELATIONSHIP_OLD_EXIST => RelExistsConstraints
+      case ShowCommandFilterTypes.EXIST                  => ExistsConstraints.cypher5
+      case ShowCommandFilterTypes.OLD_EXIST              => ExistsConstraints.cypher5
+      case ShowCommandFilterTypes.NODE_EXIST             => NodeExistsConstraints.cypher5
+      case ShowCommandFilterTypes.NODE_OLD_EXIST         => NodeExistsConstraints.cypher5
+      case ShowCommandFilterTypes.RELATIONSHIP_EXIST     => RelExistsConstraints.cypher5
+      case ShowCommandFilterTypes.RELATIONSHIP_OLD_EXIST => RelExistsConstraints.cypher5
       case ShowCommandFilterTypes.PROP_TYPE              => PropTypeConstraints
       case ShowCommandFilterTypes.NODE_PROP_TYPE         => NodePropTypeConstraints
       case ShowCommandFilterTypes.RELATIONSHIP_PROP_TYPE => RelPropTypeConstraints
       case t => throw new Neo4jASTConstructionException(ASTExceptionFactory.invalidShowFilterType("constraints", t))
     }
     val (yieldAll, yieldedItems) = getYieldAllAndYieldItems(yieldClause)
-    ShowConstraintsClause(constraintType, Option(where), yieldedItems, yieldAll)(p)
+    ShowConstraintsClause(constraintType, Option(where), yieldedItems, yieldAll, returnCypher5Values = true)(p)
   }
 
   override def showProcedureClause(

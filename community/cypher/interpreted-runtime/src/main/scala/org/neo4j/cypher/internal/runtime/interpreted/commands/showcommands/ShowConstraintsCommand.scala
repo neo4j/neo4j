@@ -77,7 +77,8 @@ import scala.jdk.CollectionConverters.SeqHasAsJava
 case class ShowConstraintsCommand(
   constraintType: ShowConstraintType,
   columns: List[ShowColumn],
-  yieldColumns: List[CommandResultItem]
+  yieldColumns: List[CommandResultItem],
+  returnCypher5Values: Boolean
 ) extends Command(columns, yieldColumns) {
 
   override def originalNameRows(state: QueryState, baseRow: CypherRow): ClosingIterator[Map[String, AnyValue]] = {
@@ -88,20 +89,20 @@ case class ShowConstraintsCommand(
       .map { case (descriptor, _) => descriptor.getId -> descriptor.getName }
 
     val predicate: ConstraintDescriptor => Boolean = constraintType match {
-      case UniqueConstraints => c => c.`type`().equals(schema.ConstraintType.UNIQUE)
-      case NodeUniqueConstraints =>
+      case _: UniqueConstraints => c => c.`type`().equals(schema.ConstraintType.UNIQUE)
+      case _: NodeUniqueConstraints =>
         c => c.`type`().equals(schema.ConstraintType.UNIQUE) && c.schema.entityType.equals(EntityType.NODE)
-      case RelUniqueConstraints =>
+      case _: RelUniqueConstraints =>
         c => c.`type`().equals(schema.ConstraintType.UNIQUE) && c.schema.entityType.equals(EntityType.RELATIONSHIP)
       case KeyConstraints => c => c.`type`().equals(schema.ConstraintType.UNIQUE_EXISTS)
       case NodeKeyConstraints =>
         c => c.`type`().equals(schema.ConstraintType.UNIQUE_EXISTS) && c.schema.entityType.equals(EntityType.NODE)
       case RelKeyConstraints => c =>
           c.`type`().equals(schema.ConstraintType.UNIQUE_EXISTS) && c.schema.entityType.equals(EntityType.RELATIONSHIP)
-      case ExistsConstraints => c => c.`type`().equals(schema.ConstraintType.EXISTS)
-      case NodeExistsConstraints =>
+      case _: ExistsConstraints => c => c.`type`().equals(schema.ConstraintType.EXISTS)
+      case _: NodeExistsConstraints =>
         c => c.`type`().equals(schema.ConstraintType.EXISTS) && c.schema.entityType.equals(EntityType.NODE)
-      case RelExistsConstraints =>
+      case _: RelExistsConstraints =>
         c => c.`type`().equals(schema.ConstraintType.EXISTS) && c.schema.entityType.equals(EntityType.RELATIONSHIP)
       case PropTypeConstraints => c => c.`type`().equals(schema.ConstraintType.PROPERTY_TYPE)
       case NodePropTypeConstraints =>
@@ -135,7 +136,7 @@ case class ShowConstraintsCommand(
         // These don't really have a default/fallback and is used in multiple columns
         // so let's keep them as is regardless of if they are actually needed or not
         val entityType = constraintDescriptor.schema.entityType
-        val constraintType = getConstraintType(constraintDescriptor.`type`, entityType)
+        val constraintType = getConstraintType(constraintDescriptor.`type`, entityType, returnCypher5Values)
 
         requestedColumnsNames.map {
           // The id of the constraint, or null if created in transaction
@@ -222,17 +223,17 @@ object ShowConstraintsCommand {
     propertyType: Option[String]
   ): String = {
     constraintType match {
-      case NodeUniqueConstraints =>
+      case _: NodeUniqueConstraints =>
         createNodeConstraintCommand(name, labelsOrTypes, properties, "IS UNIQUE")
-      case RelUniqueConstraints =>
+      case _: RelUniqueConstraints =>
         createRelConstraintCommand(name, labelsOrTypes, properties, "IS UNIQUE")
       case NodeKeyConstraints =>
         createNodeConstraintCommand(name, labelsOrTypes, properties, "IS NODE KEY")
       case RelKeyConstraints =>
         createRelConstraintCommand(name, labelsOrTypes, properties, "IS RELATIONSHIP KEY")
-      case NodeExistsConstraints =>
+      case _: NodeExistsConstraints =>
         createNodeConstraintCommand(name, labelsOrTypes, properties, "IS NOT NULL")
-      case RelExistsConstraints =>
+      case _: RelExistsConstraints =>
         createRelConstraintCommand(name, labelsOrTypes, properties, "IS NOT NULL")
       case NodePropTypeConstraints =>
         val typeString = propertyType.getOrElse(
@@ -258,15 +259,20 @@ object ShowConstraintsCommand {
 
   private def getConstraintType(
     internalConstraintType: schema.ConstraintType,
-    entityType: EntityType
+    entityType: EntityType,
+    returnCypher5Values: Boolean
   ): ShowConstraintType = {
     (internalConstraintType, entityType) match {
-      case (schema.ConstraintType.UNIQUE, EntityType.NODE)                => NodeUniqueConstraints
-      case (schema.ConstraintType.UNIQUE, EntityType.RELATIONSHIP)        => RelUniqueConstraints
+      case (schema.ConstraintType.UNIQUE, EntityType.NODE) =>
+        if (returnCypher5Values) NodeUniqueConstraints.cypher5 else NodeUniqueConstraints.cypher6
+      case (schema.ConstraintType.UNIQUE, EntityType.RELATIONSHIP) =>
+        if (returnCypher5Values) RelUniqueConstraints.cypher5 else RelUniqueConstraints.cypher6
       case (schema.ConstraintType.UNIQUE_EXISTS, EntityType.NODE)         => NodeKeyConstraints
       case (schema.ConstraintType.UNIQUE_EXISTS, EntityType.RELATIONSHIP) => RelKeyConstraints
-      case (schema.ConstraintType.EXISTS, EntityType.NODE)                => NodeExistsConstraints
-      case (schema.ConstraintType.EXISTS, EntityType.RELATIONSHIP)        => RelExistsConstraints
+      case (schema.ConstraintType.EXISTS, EntityType.NODE) =>
+        if (returnCypher5Values) NodeExistsConstraints.cypher5 else NodeExistsConstraints.cypher6
+      case (schema.ConstraintType.EXISTS, EntityType.RELATIONSHIP) =>
+        if (returnCypher5Values) RelExistsConstraints.cypher5 else RelExistsConstraints.cypher6
       case (schema.ConstraintType.PROPERTY_TYPE, EntityType.NODE)         => NodePropTypeConstraints
       case (schema.ConstraintType.PROPERTY_TYPE, EntityType.RELATIONSHIP) => RelPropTypeConstraints
       case (schema.ConstraintType.ENDPOINT, EntityType.RELATIONSHIP)      => RelationshipEndpointConstraints
