@@ -153,6 +153,21 @@ object SeedConfigOption extends StringOptionValidator {
   }
 }
 
+object ExistingMetadataOption extends StringOptionValidator {
+  val KEY = "existingMetadata"
+
+  // possible options:
+  val VALID_VALUE = "use"
+
+  override protected def validateContent(value: String, config: Option[Config])(implicit operation: String): Unit = {
+    if (!value.equalsIgnoreCase(VALID_VALUE)) {
+      throw new InvalidArgumentsException(
+        s"Could not $operation with specified $KEY '$value'. Expected '$VALID_VALUE'."
+      )
+    }
+  }
+}
+
 object LogEnrichmentOption extends StringOptionValidator {
   override val KEY: String = "txLogEnrichment"
 

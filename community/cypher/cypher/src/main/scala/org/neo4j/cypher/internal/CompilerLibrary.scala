@@ -38,7 +38,7 @@ import scala.jdk.CollectionConverters.CollectionHasAsScala
 class CompilerLibrary(factory: CompilerFactory, executionEngineProvider: () => ExecutionEngine) {
   def supportsAdministrativeCommands(): Boolean = factory.supportsAdministrativeCommands()
 
-  private val compilers = new ConcurrentHashMap[CompilerKey, Compiler]
+  protected val compilers = new ConcurrentHashMap[CompilerKey, Compiler]
 
   def selectCompiler(
     cypherPlanner: CypherPlannerOption,

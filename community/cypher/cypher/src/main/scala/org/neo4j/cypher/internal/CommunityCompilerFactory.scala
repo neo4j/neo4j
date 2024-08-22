@@ -55,7 +55,8 @@ class CommunityCompilerFactory(
     cypherPlanner: CypherPlannerOption,
     cypherRuntime: CypherRuntimeOption,
     materializedEntitiesMode: Boolean,
-    executionEngineProvider: () => ExecutionEngine
+    executionEngineProvider: () => ExecutionEngine,
+    outerExecutionEngineProvider: Option[() => ExecutionEngine]
   ): Compiler = {
 
     val dependencies = graph.getDependencyResolver

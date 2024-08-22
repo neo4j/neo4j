@@ -38,6 +38,7 @@ case object CreateDatabaseOptionsConverter extends OptionsConverter[CreateDataba
     SeedURIOption.KEY,
     SeedCredentialsOption.KEY,
     SeedConfigOption.KEY,
+    ExistingMetadataOption.KEY,
     LogEnrichmentOption.KEY
   )
 
@@ -69,6 +70,7 @@ case object CreateDatabaseOptionsConverter extends OptionsConverter[CreateDataba
       seedURI = SeedURIOption.findIn(optionsMap, config),
       seedCredentials = SeedCredentialsOption.findIn(optionsMap, config),
       seedConfig = SeedConfigOption.findIn(optionsMap, config),
+      existingMetadata = ExistingMetadataOption.findIn(optionsMap, config),
       txLogEnrichment = LogEnrichmentOption.findIn(optionsMap, config)
     )
   }
@@ -83,5 +85,6 @@ case class CreateDatabaseOptions(
   seedURI: Option[String],
   seedCredentials: Option[String],
   seedConfig: Option[String],
+  existingMetadata: Option[String],
   txLogEnrichment: Option[String]
 )

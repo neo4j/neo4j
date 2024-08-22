@@ -20,6 +20,7 @@
 package org.neo4j.cypher
 
 import org.assertj.core.api.Condition
+import org.neo4j.collection.Dependencies
 import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME
@@ -101,6 +102,8 @@ trait GraphDatabaseTestSupport
     GraphDatabaseInternalSettings.enable_experimental_cypher_versions -> java.lang.Boolean.TRUE
   )
 
+  def dependencies(): Option[Dependencies] = None
+
   def logProvider: InternalLogProvider = NullLogProvider.getInstance()
 
   /**
@@ -128,6 +131,8 @@ trait GraphDatabaseTestSupport
         databaseFactory.addExtension(new BuiltInDelegatingIndexProviderFactory(providerFactory, descriptor))
       case None => databaseFactory
     }
+
+    dependencies().foreach(databaseFactory.setExternalDependencies(_))
 
     managementService =
       updatedDatabaseFactory.setConfig(config.asJava).setInternalLogProvider(logProvider).build()

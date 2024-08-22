@@ -31,7 +31,7 @@ case object CreateCompositeDatabaseOptionsConverter extends OptionsConverter[Cre
       throw new InvalidArgumentsException(
         s"Could not $operation: composite databases have no valid options values."
       )
-    CreateDatabaseOptions(None, None, None, None, None, None, None)
+    CreateDatabaseOptions(None, None, None, None, None, None, None, None)
   }
 
   override def operation: String = s"create composite database"

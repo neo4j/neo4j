@@ -22,17 +22,29 @@ package org.neo4j.cypher.internal
 import org.neo4j.cypher.internal.options.CypherPlannerOption
 import org.neo4j.cypher.internal.options.CypherRuntimeOption
 
-/**
- * Factory which creates cypher compilers.
- */
-trait CompilerFactory {
-  def supportsAdministrativeCommands(): Boolean
+class InternalCompilerLibrary(
+  factory: CompilerFactory,
+  executionEngineProvider: () => ExecutionEngine,
+  outerExecutionEngineProvider: () => ExecutionEngine
+) extends CompilerLibrary(factory: CompilerFactory, executionEngineProvider: () => ExecutionEngine) {
 
-  def createCompiler(
+  override def selectCompiler(
     cypherPlanner: CypherPlannerOption,
     cypherRuntime: CypherRuntimeOption,
-    materializedEntitiesMode: Boolean,
-    executionEngineProvider: () => ExecutionEngine,
-    outerExecutionEngineProvider: Option[() => ExecutionEngine] = None
-  ): Compiler
+    materializedEntitiesMode: Boolean
+  ): Compiler = {
+    val key = CompilerKey(cypherPlanner, cypherRuntime)
+    compilers.computeIfAbsent(
+      key,
+      _ =>
+        factory.createCompiler(
+          cypherPlanner,
+          cypherRuntime,
+          materializedEntitiesMode,
+          executionEngineProvider,
+          Some(outerExecutionEngineProvider)
+        )
+    )
+  }
+
 }

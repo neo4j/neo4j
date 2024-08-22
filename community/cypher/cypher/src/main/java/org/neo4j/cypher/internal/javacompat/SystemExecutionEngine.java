@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.javacompat;
 
 import org.neo4j.cypher.internal.CompilerFactory;
 import org.neo4j.cypher.internal.CompilerLibrary;
+import org.neo4j.cypher.internal.InternalCompilerLibrary;
 import org.neo4j.cypher.internal.cache.CypherQueryCaches;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.logging.InternalLogProvider;
@@ -56,7 +57,8 @@ class SystemExecutionEngine extends ExecutionEngine {
                         queryService,
                         systemQueryCaches,
                         logProvider,
-                        new CompilerLibrary(systemCompilerFactory, this::normalExecutionEngine));
+                        new InternalCompilerLibrary(
+                                systemCompilerFactory, this::normalExecutionEngine, this::outerExecutionEngine));
     }
 
     @Override
@@ -66,5 +68,9 @@ class SystemExecutionEngine extends ExecutionEngine {
 
     org.neo4j.cypher.internal.ExecutionEngine normalExecutionEngine() {
         return innerCypherExecutionEngine;
+    }
+
+    private org.neo4j.cypher.internal.ExecutionEngine outerExecutionEngine() {
+        return cypherExecutionEngine;
     }
 }
