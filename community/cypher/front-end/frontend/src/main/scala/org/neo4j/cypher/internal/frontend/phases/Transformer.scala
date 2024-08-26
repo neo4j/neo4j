@@ -88,12 +88,12 @@ object Transformer {
 class PipeLine[-C <: BaseContext, FROM, MID, TO](first: Transformer[C, FROM, MID], after: Transformer[C, MID, TO])
     extends Transformer[C, FROM, TO] {
 
-  override def postConditions: Set[StepSequencer.Condition] =
+  override lazy val postConditions: Set[StepSequencer.Condition] =
     first.postConditions ++
       after.postConditions --
       after.invalidatedConditions
 
-  override def invalidatedConditions: Set[StepSequencer.Condition] =
+  override lazy val invalidatedConditions: Set[StepSequencer.Condition] =
     after.invalidatedConditions ++
       first.invalidatedConditions --
       after.postConditions
