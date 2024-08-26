@@ -94,13 +94,10 @@ public final class NotificationImplementation extends CommonGqlStatusObjectImple
         }
 
         public NotificationImplementation build() {
-            var detailedDescription = notificationCodeWithDescription.getDescription();
-            if (notificationDetails != null) {
-                detailedDescription = String.format(detailedDescription, (Object[]) notificationDetails);
-            }
+            final var detailedDescription = notificationCodeWithDescription.getDescription(notificationDetails);
 
-            String severity;
-            NotificationClassification classification;
+            final String severity;
+            final NotificationClassification classification;
 
             var statusCode = notificationCodeWithDescription.getStatus().code();
             if (statusCode instanceof Status.NotificationCode notificationCode) {

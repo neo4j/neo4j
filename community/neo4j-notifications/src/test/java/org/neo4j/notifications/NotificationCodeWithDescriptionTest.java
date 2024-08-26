@@ -19,7 +19,9 @@
  */
 package org.neo4j.notifications;
 
+import static java.util.Arrays.stream;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.fail;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.notifications.NotificationCodeWithDescription.authProviderNotDefined;
@@ -83,11 +85,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.stream.Stream;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.junit.jupiter.api.Test;
 import org.neo4j.common.EntityType;
 import org.neo4j.exceptions.IndexHintException.IndexHintIndexType;
 import org.neo4j.gqlstatus.DiagnosticRecord;
+import org.neo4j.gqlstatus.GqlStatusInfoCodes;
 import org.neo4j.gqlstatus.NotificationClassification;
 import org.neo4j.graphdb.InputPosition;
 import org.neo4j.graphdb.NotificationCategory;
@@ -1594,25 +1598,26 @@ class NotificationCodeWithDescriptionTest {
     @Test
     void allNotificationsShouldBeAClientNotification() {
 
-        Arrays.stream(NotificationCodeWithDescription.values())
+        stream(NotificationCodeWithDescription.values())
                 .forEach(notification ->
                         assertThat(notification.getStatus().code().serialize()).contains("ClientNotification"));
     }
 
     @Test
     void noNotificationShouldHaveUnknownCategory() {
-        Arrays.stream(NotificationCodeWithDescription.values()).forEach(notification -> assertThat(
+        stream(NotificationCodeWithDescription.values()).forEach(notification -> assertThat(
                         ((Status.NotificationCode) notification.getStatus().code()).getNotificationCategory())
                 .isNotEqualTo(NotificationCategory.UNKNOWN.name()));
     }
 
     @Test
     void noNotificationShouldHaveUnknownClassification() {
-        Arrays.stream(NotificationCodeWithDescription.values()).forEach(notification -> {
+        stream(NotificationCodeWithDescription.values()).forEach(notification -> {
             var notificationImpl = new NotificationImplementation.NotificationBuilder(notification)
                     // We need to fake a message parameter value array here
                     // To make sure it has the correct length we set it to the message parameter key array
-                    .setMessageParameters(notification.getGqlStatusInfo().getStatusParameterKeys())
+                    .setMessageParameters(((GqlStatusInfoCodes) notification.getGqlStatusInfo())
+                            .getStatusParameterKeys().stream().map(Enum::name).toArray())
                     .build();
             assertThat(notificationImpl.getClassification()).isNotEqualTo(NotificationClassification.UNKNOWN);
         });
@@ -1623,12 +1628,11 @@ class NotificationCodeWithDescriptionTest {
         var notificationBuilder =
                 new NotificationImplementation.NotificationBuilder(NotificationCodeWithDescription.MISSING_REL_TYPE);
 
-        Exception e = assertThrows(IllegalArgumentException.class, () -> {
-            notificationBuilder.setMessageParameters(new String[] {});
-            notificationBuilder.build();
-        });
-        assertThat(e.getMessage())
-                .isEqualTo("Expected parameterKeys: [reltype] and parameterValues: [] to have the same length.");
+        assertThatThrownBy(() -> notificationBuilder
+                        .setMessageParameters(new String[] {})
+                        .build())
+                .isExactlyInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Expected parameterKeys: [reltype] and parameterValues: [] to have the same length.");
     }
 
     @Test
@@ -1636,12 +1640,11 @@ class NotificationCodeWithDescriptionTest {
         var notificationBuilder =
                 new NotificationImplementation.NotificationBuilder(NotificationCodeWithDescription.MISSING_REL_TYPE);
 
-        Exception e = assertThrows(IllegalArgumentException.class, () -> {
-            notificationBuilder.setMessageParameters(new String[] {"A", "B"});
-            notificationBuilder.build();
-        });
-        assertThat(e.getMessage())
-                .isEqualTo("Expected parameterKeys: [reltype] and parameterValues: [A, B] to have the same length.");
+        assertThatThrownBy(() -> notificationBuilder
+                        .setMessageParameters(new String[] {"A", "B"})
+                        .build())
+                .isExactlyInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Expected parameterKeys: [reltype] and parameterValues: [A, B] to have the same length.");
     }
 
     @Test
@@ -1662,12 +1665,11 @@ class NotificationCodeWithDescriptionTest {
         var notificationBuilder = new NotificationImplementation.NotificationBuilder(
                 NotificationCodeWithDescription.DEPRECATED_PROCEDURE_WITH_REPLACEMENT);
         var illegalList = List.of(true);
-        Exception e = assertThrows(IllegalArgumentException.class, () -> {
-            notificationBuilder.setMessageParameters(new Object[] {"A", illegalList});
-            notificationBuilder.build();
-        });
-        assertThat(e.getMessage())
-                .isEqualTo("Expected parameter to be String, Boolean, Integer or List<String> but was [true]");
+        assertThatThrownBy(() -> notificationBuilder
+                        .setMessageParameters(new Object[] {"A", illegalList})
+                        .build())
+                .isExactlyInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Expected parameter to be String, Boolean, Integer or List<String> but was [true]");
     }
 
     /**
@@ -1678,16 +1680,18 @@ class NotificationCodeWithDescriptionTest {
      */
     @Test
     void verifyNotificationsHaveNotChanged() {
+        // Hack to not have to break this test now that the template string is not available.
+        final var args = Stream.generate(() -> "%s").limit(64).toArray();
         StringBuilder notificationBuilder = new StringBuilder();
-        Arrays.stream(NotificationCodeWithDescription.values()).forEach(notification -> {
+        stream(NotificationCodeWithDescription.values()).forEach(notification -> {
             var status = notification.getStatus();
             Status.NotificationCode notificationCode = (Status.NotificationCode) status.code();
 
             // Covers all notification information except NotificationDetail and position, which are query dependent
             notificationBuilder.append(notificationCode.description()); // Title
-            notificationBuilder.append(notification.getDescription()); // Description
+            notificationBuilder.append(notification.getDescription(args)); // Description
             notificationBuilder.append(notification.getGqlStatusInfo());
-            notificationBuilder.append(notification.getGqlStatusInfo().getMessage());
+            notificationBuilder.append(notification.getGqlStatusInfo().getMessage(new Object[0]));
             notificationBuilder.append(notificationCode.serialize());
             notificationBuilder.append(notificationCode.getSeverity());
             notificationBuilder.append(notificationCode.getNotificationCategory());

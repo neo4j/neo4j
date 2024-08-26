@@ -19,58 +19,62 @@
  */
 package org.neo4j.gqlstatus;
 
+import static java.util.Arrays.asList;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Comparator;
+import java.util.EnumMap;
+import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Stream;
+import java.util.function.Predicate;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 public class GqlStatusInfoCodesTest {
 
-    private List<String> extractParametersFromMessage(GqlStatusInfoCodes c) {
-        String msg = c.getMessage();
-        // Find all camelCase words that comes after a $-sign (indicating start of parameter)
-        Pattern p = Pattern.compile("\\$([a-z][a-zA-Z0-9]*([0-9]?[A-Z][a-z0-9]*)*)");
-        Matcher matcher = p.matcher(msg);
-        List<String> parameters = new ArrayList<>();
-        while (matcher.find()) {
-            String str = matcher.group(1);
-            parameters.add(str);
-        }
-        return parameters;
-    }
-
     @Test
     void verifyParametersCorrectlyWritten() {
+        final var allUniqueParams = new EnumMap<GqlMessageParams, Object>(GqlMessageParams.class);
+        for (final var p : GqlMessageParams.values()) {
+            allUniqueParams.put(p, "⚠️very-unique-param-value-%s⚠️".formatted(p.name()));
+        }
         for (GqlStatusInfoCodes gqlCode : GqlStatusInfoCodes.values()) {
-            // Parameters must be a camelCase word (possibly containing numbers)
-            Stream.of(gqlCode.getStatusParameterKeys()).forEach((key) -> {
-                // this $ at the end is regex syntax for end of string, not referring to $ as start of parameter
-                if (!key.matches("^[a-z][a-zA-Z0-9]*([0-9]?[A-Z][a-z0-9]*)*$")) {
-                    fail("Parameter key `" + key + "` for " + gqlCode + " is not in camel case");
-                }
-            });
-            var declaredParameters = gqlCode.getStatusParameterKeys();
-            var parametersInMessage = extractParametersFromMessage(gqlCode);
-            // Parameters needs to be the same and declared in the same order
-            if (!List.of(declaredParameters).equals(parametersInMessage)) {
-                fail(
-                        """
-                        Parameters used in message for %s does not match the ones declared as parameter keys.
-                        Declared: %s
-                        In message: %s
-                        """
-                                .formatted(gqlCode, Arrays.toString(declaredParameters), parametersInMessage));
+            final var keys = gqlCode.getStatusParameterKeys();
+            final var keySet = EnumSet.noneOf(GqlMessageParams.class);
+            keySet.addAll(keys);
+            assertThat(gqlCode.parameterCount())
+                    .describedAs("Number of parameters needs to match the message template")
+                    .isEqualTo(gqlCode.messageFormatParameterCount());
+
+            assertThat(keys)
+                    .allSatisfy(key -> assertThat(key.name())
+                            .describedAs("Parameters must be a camelCase word (possibly containing numbers)")
+                            .matches("^[a-z][a-zA-Z0-9]*$"))
+                    .hasSize(gqlCode.parameterCount());
+
+            if (!keys.isEmpty()) {
+                assertThat(gqlCode.getMessage(allUniqueParams))
+                        .describedAs("Message should contain all expected parameters")
+                        .contains(filterValues(allUniqueParams, keySet::contains));
+                assertThat(gqlCode.getMessage(orderKeys(allUniqueParams, keys)))
+                        .describedAs("Message should contain all expected parameters")
+                        .contains(filterValues(allUniqueParams, keySet::contains));
             }
+
+            assertThat(gqlCode.getMessage(allUniqueParams))
+                    .describedAs("Message should not contain unexpected parameters")
+                    .doesNotContain(filterValues(allUniqueParams, k -> !keySet.contains(k)));
+            assertThat(gqlCode.getMessage(orderKeys(allUniqueParams, keys)))
+                    .describedAs("Message should not contain unexpected parameters")
+                    .doesNotContain(filterValues(allUniqueParams, k -> !keySet.contains(k)));
         }
     }
 
@@ -123,7 +127,7 @@ public class GqlStatusInfoCodesTest {
         whitelist.add(GqlStatusInfoCodes.STATUS_51N54);
         whitelist.add(GqlStatusInfoCodes.STATUS_52U00);
         for (GqlStatusInfoCodes gqlCode : GqlStatusInfoCodes.values()) {
-            var message = gqlCode.getMessage();
+            var message = gqlCode.getMessage(Map.of());
             if (!message.isEmpty()) {
                 var lastChar = message.charAt(message.length() - 1);
                 var endsWithFullStop = String.valueOf(lastChar).matches("[.!?]");
@@ -142,7 +146,7 @@ public class GqlStatusInfoCodesTest {
     void verifyMessageStartsWithUpperCaseOrParamOrQuery() {
         Set<GqlStatusInfoCodes> whitelist = new HashSet<>();
         for (GqlStatusInfoCodes gqlCode : GqlStatusInfoCodes.values()) {
-            var message = gqlCode.getMessage();
+            var message = gqlCode.getMessage(new Object[] {"A"});
             if (!message.isEmpty()) {
                 var firstChar = message.charAt(0);
                 var startsWithUpperCaseOrParam = String.valueOf(firstChar).matches("^[`$A-Z]");
@@ -174,7 +178,7 @@ public class GqlStatusInfoCodesTest {
 
     @Test
     void verifyEnumsComeInAlphabeticalOrder() {
-        var sorted = new ArrayList<>(Arrays.asList(GqlStatusInfoCodes.values()));
+        var sorted = new ArrayList<>(asList(GqlStatusInfoCodes.values()));
         sorted.sort(Comparator.comparing(GqlStatusInfoCodes::getStatusString));
         var declared = List.of(GqlStatusInfoCodes.values());
         if (!sorted.equals(declared)) {
@@ -185,7 +189,7 @@ public class GqlStatusInfoCodesTest {
     @Test
     void verifyMessageIsNotOnlyWhitespace() {
         for (var gqlCode : GqlStatusInfoCodes.values()) {
-            var message = gqlCode.getMessage();
+            var message = gqlCode.getMessage(Map.of());
             if (!message.isEmpty() && message.matches("\\s*")) {
                 fail("The message for " + gqlCode + " is non-empty but contains only whitespaces");
             }
@@ -194,13 +198,16 @@ public class GqlStatusInfoCodesTest {
 
     @Test
     void verifyGqlStatusHaveNotChanged() {
+        final var params = new EnumMap<>(GqlMessageParams.class);
+        for (final var p : GqlMessageParams.values()) params.put(p, p.toParamFormat());
         StringBuilder gqlBuilder = new StringBuilder();
         Arrays.stream(GqlStatusInfoCodes.values()).forEach(gqlCode -> {
             gqlBuilder.append(gqlCode.getStatusString());
             gqlBuilder.append(gqlCode.getCondition());
             gqlBuilder.append(gqlCode.getSubCondition());
-            gqlBuilder.append(gqlCode.getMessage());
-            gqlBuilder.append(Arrays.toString(gqlCode.getStatusParameterKeys()));
+            gqlBuilder.append(gqlCode.getMessage(params));
+            gqlBuilder.append(Arrays.toString(
+                    gqlCode.getStatusParameterKeys().stream().map(Enum::name).toArray()));
         });
 
         byte[] gqlHash = DigestUtils.sha256(gqlBuilder.toString());
@@ -221,5 +228,19 @@ public class GqlStatusInfoCodesTest {
             """
                             .formatted(Arrays.toString(expectedHash), Arrays.toString(gqlHash)));
         }
+    }
+
+    private static Collection<String> filterValues(
+            Map<GqlMessageParams, Object> source, Predicate<GqlMessageParams> predicate) {
+        return source.entrySet().stream()
+                .filter(e -> predicate.test(e.getKey()))
+                .map(e -> e.getValue().toString())
+                .toList();
+    }
+
+    private static Object[] orderKeys(Map<GqlMessageParams, Object> source, List<GqlMessageParams> keep) {
+        final var result = new ArrayList<>();
+        for (final var p : keep) result.add(source.get(p));
+        return result.toArray();
     }
 }

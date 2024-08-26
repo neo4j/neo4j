@@ -19,13 +19,15 @@
  */
 package org.neo4j.gqlstatus;
 
-import java.util.ArrayList;
+import static java.util.Collections.emptyMap;
+import static java.util.Collections.singletonMap;
+
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.function.Function;
 
 public enum GqlStatusInfoCodes implements GqlStatusInfo {
     STATUS_00000(
@@ -1723,7 +1725,7 @@ public enum GqlStatusInfoCodes implements GqlStatusInfo {
             new GqlStatus("42I10"),
             // %% is used to escape % in formatted block string, i.e. it will become a single %
             """
-                    Mixing label expression symbols (`|`, `&`, `!`, and `%%`) with colon (`:`) between labels is not allowed. This expression could be expressed as %s.""",
+                    Mixing label expression symbols (`|`, `&`, `!`, and `%`) with colon (`:`) between labels is not allowed. This expression could be expressed as %s.""",
             new GqlMessageParams[] {GqlMessageParams.syntax},
             Condition.SYNTAX_ERROR_OR_ACCESS_RULE_VIOLATION,
             "invalid label expression"),
@@ -3158,7 +3160,7 @@ public enum GqlStatusInfoCodes implements GqlStatusInfo {
     STATUS_51N57(
             new GqlStatus("51N57"),
             """
-                    Unexpected error while picking allocations - '$desc'.""",
+                    Unexpected error while picking allocations - '%s'.""",
             new GqlMessageParams[] {GqlMessageParams.desc},
             Condition.SYSTEM_CONFIGURATION_OR_OPERATION_EXCEPTION,
             "generic topology modification error"),
@@ -3508,10 +3510,10 @@ public enum GqlStatusInfoCodes implements GqlStatusInfo {
             """, new GqlMessageParams[] {}, Condition.GRAPH_TYPE_VIOLATION, "");
 
     private final GqlStatus gqlStatus;
-    private final String message;
     private final GqlMessageParams[] statusParameterKeys;
     private final String subCondition;
     private final Condition condition;
+    private final SimpleMessageFormat messageFormat;
 
     GqlStatusInfoCodes(
             GqlStatus gqlStatus,
@@ -3521,11 +3523,9 @@ public enum GqlStatusInfoCodes implements GqlStatusInfo {
             String subCondition) {
         this.gqlStatus = gqlStatus;
         this.statusParameterKeys = statusParameterKeys;
-        this.message = message.formatted(Arrays.stream(statusParameterKeys)
-                .map(GqlMessageParams::toParamFormat)
-                .toArray());
         this.condition = condition;
         this.subCondition = subCondition;
+        this.messageFormat = SimpleMessageFormat.compile(message, GqlStatusInfoCodeArgumentFormatter.INSTANCE);
     }
 
     @Override
@@ -3539,44 +3539,13 @@ public enum GqlStatusInfoCodes implements GqlStatusInfo {
     }
 
     @Override
-    public String getMessage() {
-        return message;
+    public String getMessage(Object[] params) {
+        return messageFormat.format(populateMissingParams(params));
     }
 
     @Override
-    public String getMessage(List<String> params) {
-        return GqlStatusInfoCodes.getMessage(message, params);
-    }
-
-    public static String getMessage(String message, List<String> params) {
-        // Find which parameters a message has
-        Pattern p = Pattern.compile("\\$([a-z][a-zA-Z0-9]*([0-9]?[A-Z][a-z0-9]*)*)");
-        Matcher matcher = p.matcher(message);
-        List<String> foundParams = new ArrayList<>();
-        while (matcher.find()) {
-            // add the parameter key, without the $ at the beginning
-            foundParams.add(matcher.group(1));
-        }
-        // Populate the found parameters with the values sent in
-        // Stopping early if the sizes differ, but still replaces as much as possible
-        Map<GqlMessageParams, String> paramMap = new HashMap<>();
-        for (int i = 0; i < params.size() && i < foundParams.size(); i++) {
-            paramMap.put(GqlMessageParams.valueOf(foundParams.get(i)), params.get(i));
-        }
-        return getMessage(message, paramMap);
-    }
-
-    @Override
-    public String getMessage(Map<GqlMessageParams, String> parameterMap) {
-        return GqlStatusInfoCodes.getMessage(message, parameterMap);
-    }
-
-    public static String getMessage(String message, Map<GqlMessageParams, String> parameterMap) {
-        String result = message;
-        for (var entry : parameterMap.entrySet()) {
-            result = result.replaceAll("\\$" + entry.getKey(), Matcher.quoteReplacement(entry.getValue()));
-        }
-        return result;
+    public String getMessage(Map<GqlMessageParams, Object> params) {
+        return messageFormat.format(orderedParams(params));
     }
 
     @Override
@@ -3590,7 +3559,112 @@ public enum GqlStatusInfoCodes implements GqlStatusInfo {
     }
 
     @Override
-    public String[] getStatusParameterKeys() {
-        return Arrays.stream(statusParameterKeys).map(GqlMessageParams::name).toArray(String[]::new);
+    public Map<String, Object> parameterMap(Object[] params) {
+        final var keys = statusParameterKeys;
+
+        // Almost all codes have zero or one parameters, so here is an un-nessesary micro optimisation for that case.
+        if (keys.length == 0 || params == null) {
+            return emptyMap();
+        } else if (keys.length == 1 && params.length > 0) {
+            return singletonMap(keys[0].name(), params[0]);
+        } else {
+            final var result = new HashMap<String, Object>(keys.length, 1.0f);
+            for (int i = 0; i < keys.length && i < params.length; i++) {
+                final var key = keys[i];
+                result.put(key.name(), params[i]);
+            }
+            return result;
+        }
+    }
+
+    @Override
+    public Map<String, Object> parameterMap(Map<GqlMessageParams, Object> params) {
+        final var keys = statusParameterKeys;
+
+        // Almost all codes have zero or one parameters, so here is an un-nessesary micro optimisation for that case.
+        if (keys.length == 0 || params == null) {
+            return emptyMap();
+        } else if (keys.length == 1 && params.containsKey(keys[0])) {
+            return singletonMap(keys[0].name(), params.get(keys[0]));
+        } else {
+            final var result = new HashMap<String, Object>(statusParameterKeys.length, 1.0f);
+            for (int i = 0; i < statusParameterKeys.length; i++) {
+                final var key = statusParameterKeys[i];
+                result.put(key.name(), params.get(key));
+            }
+            return result;
+        }
+    }
+
+    @Override
+    public int parameterCount() {
+        return statusParameterKeys.length;
+    }
+
+    // Visible for testing
+    int messageFormatParameterCount() {
+        return messageFormat.parameterCount();
+    }
+
+    @Override
+    public List<GqlMessageParams> getStatusParameterKeys() {
+        return Collections.unmodifiableList(Arrays.asList(statusParameterKeys));
+    }
+
+    // In case of missing parameters (should not happen) we substitute with the param name to make message more readable
+    private Object[] populateMissingParams(Object[] params) {
+        if (params == null) params = new Object[0];
+        if (params.length >= statusParameterKeys.length) {
+            return params;
+        } else {
+            final var result = Arrays.copyOf(params, statusParameterKeys.length);
+            for (int i = params.length; i < result.length; ++i) result[i] = statusParameterKeys[i].toParamFormat();
+            return result;
+        }
+    }
+
+    private Object[] orderedParams(Map<GqlMessageParams, Object> paramMap) {
+        if (paramMap == null) paramMap = emptyMap();
+        final var params = new Object[statusParameterKeys.length];
+        for (int i = 0; i < statusParameterKeys.length; ++i) {
+            final var key = statusParameterKeys[i];
+            params[i] = readbleValue(key, paramMap.get(key));
+        }
+        return params;
+    }
+
+    // In case of missing parameters (should not happen) we substitute with the param name to make message more
+    // readable.
+    private static Object readbleValue(GqlMessageParams param, Object value) {
+        return value != null ? value : param.toParamFormat();
+    }
+}
+
+class GqlStatusInfoCodeArgumentFormatter implements Function<Object, String> {
+    static final GqlStatusInfoCodeArgumentFormatter INSTANCE = new GqlStatusInfoCodeArgumentFormatter();
+
+    private GqlStatusInfoCodeArgumentFormatter() {}
+
+    @Override
+    public String apply(Object arg) {
+        if (arg == null || arg instanceof String || arg instanceof Boolean || arg instanceof Integer) {
+            return String.valueOf(arg);
+        } else if (isListOfString(arg)) {
+            //noinspection unchecked
+            return String.join(", ", ((List<String>) arg));
+        } else {
+            // TODO I see no reason to throw an exception here when we could just fallback using toString.
+            //      Kept it here for now to limit the scope of my PR.
+            throw new IllegalArgumentException(
+                    "Expected parameter to be String, Boolean, Integer or List<String> but was %s".formatted(arg));
+        }
+    }
+
+    private static boolean isListOfString(Object value) {
+        if (value instanceof List<?> list) {
+            for (final var item : list) if (!(item instanceof String)) return false;
+            return true;
+        }
+        return false;
     }
 }

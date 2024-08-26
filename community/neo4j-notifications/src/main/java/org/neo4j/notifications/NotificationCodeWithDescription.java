@@ -22,6 +22,7 @@ package org.neo4j.notifications;
 import java.util.List;
 import org.neo4j.gqlstatus.GqlStatusInfo;
 import org.neo4j.gqlstatus.GqlStatusInfoCodes;
+import org.neo4j.gqlstatus.SimpleMessageFormat;
 import org.neo4j.graphdb.InputPosition;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.impl.schema.TextIndexProvider;
@@ -308,12 +309,12 @@ public enum NotificationCodeWithDescription {
 
     private final Status status;
     private final GqlStatusInfoCodes gqlStatusInfo;
-    private final String description;
+    private final SimpleMessageFormat messageFormat;
 
     NotificationCodeWithDescription(Status status, GqlStatusInfoCodes gqlStatusInfo, String description) {
         this.status = status;
         this.gqlStatusInfo = gqlStatusInfo;
-        this.description = description;
+        this.messageFormat = SimpleMessageFormat.compile(description);
     }
 
     public Status getStatus() {
@@ -324,8 +325,8 @@ public enum NotificationCodeWithDescription {
         return gqlStatusInfo;
     }
 
-    public String getDescription() {
-        return description;
+    public String getDescription(Object[] args) {
+        return messageFormat.format(args);
     }
 
     public static NotificationImplementation cartesianProduct(

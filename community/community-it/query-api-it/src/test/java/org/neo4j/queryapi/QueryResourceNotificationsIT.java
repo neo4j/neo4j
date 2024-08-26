@@ -109,9 +109,8 @@ class QueryResourceNotificationsIT {
                         .code()
                         .description());
         assertThat(notificationsJson.get(0).get("description").asText())
-                .isEqualTo(String.format(
-                        NotificationCodeWithDescription.MISSING_LABEL.getDescription(),
-                        "the missing label name is: thisLabelDoesNotExist"));
+                .isEqualTo(
+                        "One of the labels in your query is not available in the database, make sure you didn't misspell it or that the label is available when you run this statement in your application (the missing label name is: thisLabelDoesNotExist)");
         assertThat(notificationsJson.get(0).get("position").get("offset").asInt())
                 .isEqualTo(9);
         assertThat(notificationsJson.get(0).get("position").get("line").asInt()).isEqualTo(1);
