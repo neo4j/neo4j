@@ -157,7 +157,7 @@ public class ConstraintDescriptorImplementation
 
     private String userDescription(TokenNameLookup tokenNameLookup, Mask mask) {
         return SchemaUserDescription.forConstraint(
-                tokenNameLookup, id, name, type, schema(), ownedIndex, propertyType, mask);
+                tokenNameLookup, id, name, type, schema(), ownedIndex, propertyType, null, mask);
     }
 
     @Override

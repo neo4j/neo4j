@@ -2354,7 +2354,7 @@ public class Operations implements Write, SchemaWrite, Upgrade {
         LabelCoexistenceConstraintDescriptor constraint =
                 lockAndValidateLabelCoexistenceConstraint(schema, name, requiredLabelId);
 
-        // TODO: Add verification here
+        enforceLabelCoexistenceConstraint(constraint);
 
         ktx.txState().constraintDoAdd(constraint);
         return constraint;
@@ -2368,18 +2368,47 @@ public class Operations implements Write, SchemaWrite, Upgrade {
 
         try {
             assertValidDescriptor(schemaDescriptor, CONSTRAINT_CREATION);
+        } catch (SchemaKernelException e) {
+            exclusiveSchemaUnlock(schemaDescriptor);
+            throw new RuntimeException(e);
+        }
+        var constraint = ConstraintDescriptorFactory.labelCoexistenceForSchema(schemaDescriptor, requiredLabelId)
+                .withName(name)
+                .asLabelCoexistenceConstraint();
 
-            var constraint = ConstraintDescriptorFactory.labelCoexistenceForSchema(schemaDescriptor, requiredLabelId)
-                    .withName(name)
-                    .asLabelCoexistenceConstraint();
+        constraint = ensureConstraintHasName(constraint);
+        exclusiveSchemaNameLock(constraint.getName());
 
-            constraint = ensureConstraintHasName(constraint);
-            exclusiveSchemaNameLock(constraint.getName());
+        try {
             assertNoBlockingSchemaRulesExists(constraint);
             return constraint;
         } catch (SchemaKernelException e) {
             exclusiveSchemaUnlock(schemaDescriptor);
             throw new RuntimeException(e);
+        }
+    }
+
+    private void enforceLabelCoexistenceConstraint(LabelCoexistenceConstraintDescriptor descriptor)
+            throws KernelException {
+        exclusiveLock(ResourceType.LABEL, new long[] {descriptor.requiredLabelId()});
+        var schema = descriptor.schema();
+
+        IndexDescriptor index = findUsableTokenIndex(NODE);
+        if (index != IndexDescriptor.NO_INDEX) {
+            try (var cursor = cursors.allocateFullAccessNodeLabelIndexCursor(ktx.cursorContext())) {
+                var session = kernelRead.tokenReadSession(index);
+                kernelRead.nodeLabelScan(
+                        session, cursor, unconstrained(), new TokenPredicate(schema.getLabelId()), ktx.cursorContext());
+                constraintSemantics.validateLabelCoexistenceConstraint(cursor, nodeCursor, descriptor, token);
+            }
+        } else {
+            try (var cursor = cursors.allocateFullAccessNodeCursor(ktx.cursorContext())) {
+                kernelRead.allNodesScan(cursor);
+                constraintSemantics.validateLabelCoexistenceConstraint(
+                        new FilteringNodeCursorWrapper(cursor, CursorPredicates.hasLabel(schema.getLabelId())),
+                        descriptor,
+                        token);
+            }
         }
     }
 

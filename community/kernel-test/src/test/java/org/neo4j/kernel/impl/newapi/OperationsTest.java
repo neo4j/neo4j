@@ -72,6 +72,7 @@ import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.internal.schema.EndpointType;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
+import org.neo4j.internal.schema.LabelCoexistenceSchemaDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.RelationshipEndpointSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorImplementation;
@@ -161,9 +162,8 @@ abstract class OperationsTest {
         nodeCursor = mock(FullAccessNodeCursor.class);
         propertyCursor = mock(FullAccessPropertyCursor.class);
         relationshipCursor = mock(FullAccessRelationshipScanCursor.class);
-        when(cursors.allocateFullAccessNodeCursor(NULL_CONTEXT)).thenReturn(nodeCursor);
+        when(cursors.allocateFullAccessNodeCursor(any())).thenReturn(nodeCursor);
         when(cursors.allocateFullAccessPropertyCursor(NULL_CONTEXT, INSTANCE)).thenReturn(propertyCursor);
-        when(cursors.allocateFullAccessRelationshipScanCursor(NULL_CONTEXT)).thenReturn(relationshipCursor);
         when(cursors.allocateFullAccessRelationshipScanCursor(any())).thenReturn(relationshipCursor);
         StorageEngine engine = mock(StorageEngine.class);
         storageReader = mock(StorageReader.class);
@@ -377,7 +377,20 @@ abstract class OperationsTest {
                 relationshipEndpointSchemaDescriptor, "SomeName", expectedLabelId, EndpointType.START);
 
         verify(locks).acquireExclusive(any(), eq(ResourceType.RELATIONSHIP_TYPE), eq((long) expectedType));
-        verify(locks).acquireExclusive(any(), eq(ResourceType.LABEL), eq(((long) expectedLabelId)));
+        verify(locks).acquireExclusive(any(), eq(ResourceType.LABEL), eq((long) expectedLabelId));
+    }
+
+    @Test
+    void creationOfLabelCoexistenceConstraintShouldLockLabels() throws Exception {
+        int schemaLabelId = 1;
+        int requiredLabelId = 2;
+
+        LabelCoexistenceSchemaDescriptor labelCoexistenceSchemaDescriptor =
+                SchemaDescriptors.forLabelCoexistence(schemaLabelId);
+        operations.labelCoexistenceConstraintCreate(labelCoexistenceSchemaDescriptor, "SomeName", requiredLabelId);
+
+        verify(locks).acquireExclusive(any(), eq(ResourceType.LABEL), eq((long) schemaLabelId));
+        verify(locks).acquireExclusive(any(), eq(ResourceType.LABEL), eq((long) requiredLabelId));
     }
 
     protected String runForSecurityLevel(Executable executable, AccessMode mode, boolean shoudldBeAuthorized)

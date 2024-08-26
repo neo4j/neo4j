@@ -91,7 +91,7 @@ public interface SchemaRule44 {
         @Override
         public String userDescription(TokenNameLookup tokenNameLookup) {
             return SchemaUserDescription.forConstraint(
-                    tokenNameLookup, id, name, constraintRuleType.asConstraintType(), schema, ownedIndex, null);
+                    tokenNameLookup, id, name, constraintRuleType.asConstraintType(), schema, ownedIndex, null, null);
         }
 
         @Override

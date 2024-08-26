@@ -31,6 +31,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.CreateConstraintFailureEx
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.constraints.LabelCoexistenceConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.RelationshipEndpointConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.TypeConstraintDescriptor;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -144,7 +145,7 @@ public interface ConstraintValidator {
             throws CreateConstraintFailureException;
 
     /**
-     * Verify that none of relationships from `relCursor` violates the relationship endpoint constraint
+     * Verify that none of the relationships from `relCursor` violates the relationship endpoint constraint
      * defined by `descriptor`.
      *
      * @param relCursor initialized scan cursor with all relationships that are going to be checked.
@@ -158,5 +159,35 @@ public interface ConstraintValidator {
             NodeCursor nodeCursor,
             RelationshipEndpointConstraintDescriptor descriptor,
             TokenNameLookup tokenNameLookup)
+            throws CreateConstraintFailureException;
+
+    /**
+     * Verify that none of the nodes from `nodeCursor` violate the label coexistence constraint
+     * defined by `descriptor`.
+     *
+     * @param allNodes indexed scan cursor with all nodes that are going to be checked.
+     * @param nodeCursor cursor for what the indexed scan indicates in the storage.
+     * @param descriptor the descriptor of the constraint being checked.
+     * @param tokenNameLookup used to resolve token names for exception messages.
+     * @throws CreateConstraintFailureException if any of the nodes violate the constraint.
+     */
+    void validateLabelCoexistenceConstraint(
+            NodeLabelIndexCursor allNodes,
+            NodeCursor nodeCursor,
+            LabelCoexistenceConstraintDescriptor descriptor,
+            TokenNameLookup tokenNameLookup)
+            throws CreateConstraintFailureException;
+
+    /**
+     * Verify that none of the nodes from `nodeCursor` violate the label coexistence constraint
+     * defined by `descriptor`.
+     *
+     * @param nodeCursor initialized scan cursor with all nodes that are going to be checked.
+     * @param descriptor the descriptor of the constraint being checked.
+     * @param tokenNameLookup used to resolve token names for exception messages.
+     * @throws CreateConstraintFailureException if any of the nodes violate the constraint.
+     */
+    void validateLabelCoexistenceConstraint(
+            NodeCursor nodeCursor, LabelCoexistenceConstraintDescriptor descriptor, TokenNameLookup tokenNameLookup)
             throws CreateConstraintFailureException;
 }

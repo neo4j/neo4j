@@ -282,7 +282,7 @@ final class RelationshipEndpointConstraintDescriptorImplementation implements Re
 
     private String userDescription(TokenNameLookup tokenNameLookup, Mask mask) {
         return SchemaUserDescription.forConstraint(
-                tokenNameLookup, id, name, ConstraintType.ENDPOINT, schema, null, null, mask);
+                tokenNameLookup, id, name, ConstraintType.ENDPOINT, schema, null, null, null, mask);
     }
 
     private IllegalStateException conversionException(Class<? extends ConstraintDescriptor> targetType) {

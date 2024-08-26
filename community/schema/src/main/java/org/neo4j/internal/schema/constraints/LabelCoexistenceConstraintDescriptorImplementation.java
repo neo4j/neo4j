@@ -189,12 +189,12 @@ final class LabelCoexistenceConstraintDescriptorImplementation implements LabelC
     }
 
     @Override
-    public ConstraintDescriptor withId(long newId) {
+    public LabelCoexistenceConstraintDescriptor withId(long newId) {
         return new LabelCoexistenceConstraintDescriptorImplementation(schema, newId, requiredLabelId, name);
     }
 
     @Override
-    public ConstraintDescriptor withName(String newName) {
+    public LabelCoexistenceConstraintDescriptor withName(String newName) {
         if (newName == null) {
             return this;
         }
@@ -270,7 +270,20 @@ final class LabelCoexistenceConstraintDescriptorImplementation implements LabelC
 
     private String userDescription(TokenNameLookup tokenNameLookup, Mask mask) {
         return SchemaUserDescription.forConstraint(
-                tokenNameLookup, id, name, ConstraintType.LABEL_COEXISTENCE, schema, null, null, mask);
+                tokenNameLookup,
+                id,
+                name,
+                ConstraintType.LABEL_COEXISTENCE,
+                schema,
+                null,
+                null,
+                tokenNameLookup.labelGetName(requiredLabelId),
+                mask);
+    }
+
+    @Override
+    public String userDescription(TokenNameLookup tokenNameLookup) {
+        return userDescription(TOKEN_ID_NAME_LOOKUP, Mask.NO);
     }
 
     private IllegalStateException conversionException(Class<? extends ConstraintDescriptor> targetType) {

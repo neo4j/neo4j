@@ -312,4 +312,21 @@ public class StandardConstraintSemantics extends ConstraintSemantics {
             throws CreateConstraintFailureException {
         throw relationshipEndpointLabelConstraintsNotAllowed(descriptor);
     }
+
+    @Override
+    public void validateLabelCoexistenceConstraint(
+            NodeLabelIndexCursor allNodes,
+            NodeCursor nodeCursor,
+            LabelCoexistenceConstraintDescriptor descriptor,
+            TokenNameLookup tokenNameLookup)
+            throws CreateConstraintFailureException {
+        throw labelCoexistenceConstraintsNotAllowed(descriptor);
+    }
+
+    @Override
+    public void validateLabelCoexistenceConstraint(
+            NodeCursor nodeCursor, LabelCoexistenceConstraintDescriptor descriptor, TokenNameLookup tokenNameLookup)
+            throws CreateConstraintFailureException {
+        throw labelCoexistenceConstraintsNotAllowed(descriptor);
+    }
 }

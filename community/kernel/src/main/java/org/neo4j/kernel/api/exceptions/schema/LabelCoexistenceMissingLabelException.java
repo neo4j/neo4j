@@ -23,21 +23,18 @@ import static java.lang.String.format;
 
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
-import org.neo4j.internal.schema.constraints.RelationshipEndpointConstraintDescriptor;
+import org.neo4j.internal.schema.constraints.LabelCoexistenceConstraintDescriptor;
 
-public final class RelationshipEndpointMissingLabelException extends ConstraintValidationException {
-    private final long relationshipReference;
-    private final RelationshipEndpointConstraintDescriptor descriptor;
+public final class LabelCoexistenceMissingLabelException extends ConstraintValidationException {
+    private final LabelCoexistenceConstraintDescriptor descriptor;
     private final long nodeReference;
 
-    public RelationshipEndpointMissingLabelException(
-            RelationshipEndpointConstraintDescriptor descriptor,
+    public LabelCoexistenceMissingLabelException(
+            LabelCoexistenceConstraintDescriptor descriptor,
             Phase phase,
-            long relationshipReference,
             long nodeReference,
             TokenNameLookup tokenNameLookup) {
-        super(descriptor, phase, "Relationship(" + relationshipReference + ")", tokenNameLookup);
-        this.relationshipReference = relationshipReference;
+        super(descriptor, phase, format("Node(%d)", nodeReference), tokenNameLookup);
         this.descriptor = descriptor;
         this.nodeReference = nodeReference;
     }
@@ -45,11 +42,9 @@ public final class RelationshipEndpointMissingLabelException extends ConstraintV
     @Override
     public String getUserMessage(TokenNameLookup tokenNameLookup) {
         return format(
-                "Relationship(%s) with type %s requires it's %s Node(%s) to have label %s",
-                relationshipReference,
-                tokenNameLookup.relationshipTypeGetName(descriptor.schema().getRelTypeId()),
-                descriptor.endpointType().name(),
+                "Node(%d) with label %s is required to have label %s",
                 nodeReference,
-                tokenNameLookup.labelGetName(descriptor.endpointLabelId()));
+                tokenNameLookup.labelGetName(descriptor.schema().getLabelId()),
+                tokenNameLookup.labelGetName(descriptor.requiredLabelId()));
     }
 }

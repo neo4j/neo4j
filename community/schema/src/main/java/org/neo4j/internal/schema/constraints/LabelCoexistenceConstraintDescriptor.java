@@ -29,4 +29,10 @@ public interface LabelCoexistenceConstraintDescriptor extends ConstraintDescript
      * @return the token id for label `:B`.
      */
     int requiredLabelId();
+
+    @Override
+    LabelCoexistenceConstraintDescriptor withName(String name);
+
+    @Override
+    LabelCoexistenceConstraintDescriptor withId(long id);
 }
