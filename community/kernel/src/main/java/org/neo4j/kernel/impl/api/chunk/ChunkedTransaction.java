@@ -65,9 +65,14 @@ public class ChunkedTransaction implements StorageEngineTransaction {
             CommittedCommandBatchRepresentation committedCommandBatchRepresentation,
             CursorContext cursorContext,
             StoreCursors storeCursors) {
-        this(cursorContext, -1, storeCursors, Commitment.NO_COMMITMENT, TransactionIdGenerator.EXTERNAL_ID);
-        this.transactionId = committedCommandBatchRepresentation.txId();
+        this(committedCommandBatchRepresentation.txId(), cursorContext, storeCursors);
         init((ChunkedCommandBatch) committedCommandBatchRepresentation.commandBatch());
+    }
+
+    public ChunkedTransaction(long transactionId, CursorContext cursorContext, StoreCursors storeCursors) {
+        this(cursorContext, -1, storeCursors, Commitment.NO_COMMITMENT, TransactionIdGenerator.EXTERNAL_ID);
+        this.transactionId = transactionId;
+        this.idGenerated = true;
     }
 
     public void init(ChunkedCommandBatch chunk) {

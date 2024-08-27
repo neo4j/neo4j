@@ -192,6 +192,7 @@ public final class ChunkCommitter implements TransactionCommitter {
         if (transactionPayload != null) {
             try {
                 validateCurrentKernelVersion();
+                prepareRollBackEntry();
                 chunkedRollbackProcess.rollbackChunks(transactionPayload, rollbackEvent);
                 writeRollbackEntry(rollbackEvent);
             } catch (Exception e) {
@@ -215,7 +216,6 @@ public final class ChunkCommitter implements TransactionCommitter {
 
     private void writeRollbackEntry(TransactionRollbackEvent transactionRollbackEvent)
             throws TransactionFailureException {
-        prepareRollBackEntry();
         try (var writeEvent = transactionRollbackEvent.beginRollbackWriteEvent()) {
             commitProcess.commit(transactionPayload, writeEvent, INTERNAL);
         }

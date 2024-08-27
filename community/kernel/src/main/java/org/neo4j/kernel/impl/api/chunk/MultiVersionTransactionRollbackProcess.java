@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.api.chunk;
 
 import static java.lang.String.format;
+import static org.neo4j.storageengine.AppendIndexProvider.BASE_APPEND_INDEX;
 import static org.neo4j.storageengine.AppendIndexProvider.UNKNOWN_APPEND_INDEX;
 
 import org.neo4j.graphdb.TransactionRollbackException;
@@ -44,12 +45,16 @@ public final class MultiVersionTransactionRollbackProcess implements Transaction
     public void rollbackChunks(ChunkedTransaction chunkedTransaction, TransactionRollbackEvent rollbackEvent)
             throws Exception {
         long transactionIdToRollback = chunkedTransaction.transactionId();
-        long chunksToRollback = chunkedTransaction.chunkId();
+        long chunksToRollback = chunkedTransaction.chunkId() - 1;
         int rolledbackBatches = 0;
-        long previousBatchAppendIndex = chunkedTransaction.lastBatchAppendIndex();
+        long nextBatchToRollbackIndex = chunkedTransaction.lastBatchAppendIndex();
+        var rollbackChunkedTransaction = new ChunkedTransaction(
+                transactionIdToRollback, chunkedTransaction.cursorContext(), chunkedTransaction.storeCursors());
         try (var rollbackDataEvent = rollbackEvent.beginRollbackDataEvent()) {
             while (rolledbackBatches != chunksToRollback) {
-                try (CommandBatchCursor commandBatches = transactionStore.getCommandBatches(previousBatchAppendIndex)) {
+                validateBatchIndex(
+                        nextBatchToRollbackIndex, chunksToRollback, rolledbackBatches, transactionIdToRollback);
+                try (CommandBatchCursor commandBatches = transactionStore.getCommandBatches(nextBatchToRollbackIndex)) {
                     if (!commandBatches.next()) {
                         throw new TransactionRollbackException(format(
                                 "Transaction rollback failed. Expected to rollback %d batches, but was able to undo only %d for transaction with id %d.",
@@ -61,22 +66,34 @@ public final class MultiVersionTransactionRollbackProcess implements Transaction
                                 "Transaction rollback failed. Batch with transaction id %d encountered, while it was expected to belong to transaction id %d. Batch id: %s.",
                                 commandBatch.txId(), transactionIdToRollback, chunkId(commandBatch)));
                     }
-                    chunkedTransaction.init((ChunkedCommandBatch) commandBatch.commandBatch());
-                    storageEngine.apply(chunkedTransaction, TransactionApplicationMode.MVCC_ROLLBACK);
+                    rollbackChunkedTransaction.init((ChunkedCommandBatch) commandBatch.commandBatch());
+                    storageEngine.apply(rollbackChunkedTransaction, TransactionApplicationMode.MVCC_ROLLBACK);
                     rolledbackBatches++;
-                    previousBatchAppendIndex = commandBatch.previousBatchAppendIndex();
+                    nextBatchToRollbackIndex = commandBatch.previousBatchAppendIndex();
                 }
             }
-            if (previousBatchAppendIndex != UNKNOWN_APPEND_INDEX) {
+            if (nextBatchToRollbackIndex != UNKNOWN_APPEND_INDEX) {
                 throw new TransactionRollbackException(String.format(
                         "Transaction rollback failed. All expected %d batches in transaction id %d were rolled back but chain claims to have more at append index: %s.",
-                        chunksToRollback, transactionIdToRollback, previousBatchAppendIndex));
+                        chunksToRollback, transactionIdToRollback, nextBatchToRollbackIndex));
             }
             rollbackDataEvent.batchedRolledBack(chunksToRollback, transactionIdToRollback);
         }
     }
 
-    private String chunkId(CommittedCommandBatchRepresentation commandBatch) {
+    private static void validateBatchIndex(
+            long batchToRollbackIndex,
+            long totalChunksToRollback,
+            long rolledBackChunks,
+            long transactionIdToRollback) {
+        if (batchToRollbackIndex < BASE_APPEND_INDEX) {
+            throw new TransactionRollbackException(String.format(
+                    "Transaction rollback failed. Was able to rollback %d chunks out of %d for transaction %d until encountered incorrect batch index %d.",
+                    rolledBackChunks, totalChunksToRollback, transactionIdToRollback, batchToRollbackIndex));
+        }
+    }
+
+    private static String chunkId(CommittedCommandBatchRepresentation commandBatch) {
         return commandBatch.commandBatch() instanceof ChunkedCommandBatch cc
                 ? String.valueOf(cc.chunkMetadata().chunkId())
                 : "N/A";

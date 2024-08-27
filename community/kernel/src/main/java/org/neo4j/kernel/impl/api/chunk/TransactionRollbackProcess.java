@@ -31,7 +31,6 @@ public sealed interface TransactionRollbackProcess
         private EmptyTransactionRollbackProcess() {}
 
         @Override
-        public void rollbackChunks(ChunkedTransaction chunkedTransaction, TransactionRollbackEvent rollbackEvent)
-                throws Exception {}
+        public void rollbackChunks(ChunkedTransaction chunkedTransaction, TransactionRollbackEvent rollbackEvent) {}
     }
 }
