@@ -134,6 +134,11 @@ abstract class BaseRuntimeTestSuite[CONTEXT <: RuntimeContext](
   def debugOptions: CypherDebugOptions = CypherDebugOptions.default
   val isParallel: Boolean = RuntimeTestSuite.isParallel(runtime)
 
+  def updateDynamicSetting[T](setting: Setting[T], value: T): Unit = {
+    val resolver = graphDb.asInstanceOf[GraphDatabaseFacade].getDependencyResolver
+    resolver.resolveDependency(classOf[Config]).setDynamicByUser(setting, value, "dbms.setConfigValue")
+  }
+
   def canFuse: Boolean = {
     val runtimeUsed = runtime.name.toLowerCase(Locale.ROOT)
     val fuseablePipeline = runtimeUsed == "pipelined" || runtimeUsed == "parallel"

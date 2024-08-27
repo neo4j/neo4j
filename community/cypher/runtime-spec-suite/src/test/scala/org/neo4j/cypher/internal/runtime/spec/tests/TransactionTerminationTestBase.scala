@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.spec.tests
 
-import org.neo4j.configuration.GraphDatabaseSettings
+import org.neo4j.configuration.GraphDatabaseSettings.transaction_timeout
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.LogicalQuery
 import org.neo4j.cypher.internal.RuntimeContext
@@ -32,7 +32,7 @@ import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.spec.ScalaTestDeflaker
-import org.neo4j.cypher.internal.runtime.spec.tests.TransactionTerminationTestBase.TRANSACTION_TIMEOUT_SECONDS
+import org.neo4j.cypher.internal.runtime.spec.tests.TransactionTerminationTestBase.TEST_TRANSACTION_TIMEOUT
 import org.neo4j.graphdb.Label
 import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.RelationshipType
@@ -42,19 +42,12 @@ import org.neo4j.internal.helpers.ArrayUtil
 import java.time.Duration
 
 import scala.collection.mutable.ArrayBuffer
-import scala.concurrent.duration.SECONDS
 
 // NOTE: Be careful when you are retuning these tests to avoid flakiness.
-//       Creating the graph also need to complete within the timeout
 abstract class TransactionTerminationTestBase[CONTEXT <: RuntimeContext](
   edition: Edition[CONTEXT],
   runtime: CypherRuntime[CONTEXT]
-) extends RuntimeTestSuite[CONTEXT](
-      edition.copyWith(
-        GraphDatabaseSettings.transaction_timeout -> Duration.ofSeconds(TRANSACTION_TIMEOUT_SECONDS)
-      ),
-      runtime
-    ) {
+) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   test("should terminate long running pruning var-length-expand") {
     // given
@@ -185,6 +178,8 @@ abstract class TransactionTerminationTestBase[CONTEXT <: RuntimeContext](
   }
 
   private def runAndAssertTransactionTimeout(logicalQuery: LogicalQuery): Unit = {
+    updateDynamicSetting(transaction_timeout, TEST_TRANSACTION_TIMEOUT)
+    restartTx()
     val testDeflaker = ScalaTestDeflaker(
       acceptInstantSuccess = true,
       retries = 3,
@@ -192,34 +187,38 @@ abstract class TransactionTerminationTestBase[CONTEXT <: RuntimeContext](
       sleepMs = 1000,
       printToleratedFailuresTo = Some(System.out)
     )
-    testDeflaker.apply(
-      () => {
-        val runtimeResult = execute(logicalQuery, runtime)
+    try {
+      testDeflaker.apply(
+        () => {
+          val runtimeResult = execute(logicalQuery, runtime)
 
-        val startTimeConsume = System.currentTimeMillis()
-        a[TransactionTerminatedException] should be thrownBy {
-          consume(runtimeResult)
-          println("Finished after:" + (System.currentTimeMillis() - startTimeConsume))
+          val startTimeConsume = System.currentTimeMillis()
+          a[TransactionTerminatedException] should be thrownBy {
+            consume(runtimeResult)
+            println("Finished after:" + (System.currentTimeMillis() - startTimeConsume))
+          }
+          val stopTime = System.currentTimeMillis()
+          val responseTimeConsumeMs = stopTime - startTimeConsume
+
+          // Add a hefty margin to the expected response time to reduce flakiness
+          val maxExpectedResponseTimeLimitMs = (TEST_TRANSACTION_TIMEOUT.toMillis * 3.0).toLong
+          responseTimeConsumeMs should be < maxExpectedResponseTimeLimitMs
+
+          // Make sure the test is doing sufficient work in the consume phase (approximately)
+          val minExpectedResponseTimeLimitMs = (TEST_TRANSACTION_TIMEOUT.toMillis * 0.6).toLong
+          responseTimeConsumeMs should be >= minExpectedResponseTimeLimitMs
+        },
+        afterEachAttempt = () => {
+          rollbackAndRestartTx()
         }
-        val stopTime = System.currentTimeMillis()
-        val responseTimeConsumeMs = stopTime - startTimeConsume
-
-        // Add a hefty margin to the expected response time to reduce flakiness
-        val maxExpectedResponseTimeLimitMs = SECONDS.toMillis((TRANSACTION_TIMEOUT_SECONDS * 3.0).toLong)
-        responseTimeConsumeMs should be < maxExpectedResponseTimeLimitMs
-
-        // Make sure the test is doing sufficient work in the consume phase (approximately)
-        val minExpectedResponseTimeLimitMs = SECONDS.toMillis((TRANSACTION_TIMEOUT_SECONDS * 0.6).toLong)
-        responseTimeConsumeMs should be >= minExpectedResponseTimeLimitMs
-      },
-      afterEachAttempt = () => {
-        rollbackAndRestartTx()
-      }
-    )
+      )
+    } finally {
+      updateDynamicSetting(transaction_timeout, transaction_timeout.defaultValue())
+      restartTx()
+    }
   }
-
 }
 
 object TransactionTerminationTestBase {
-  val TRANSACTION_TIMEOUT_SECONDS: Long = 8L
+  val TEST_TRANSACTION_TIMEOUT: Duration = Duration.ofSeconds(8L)
 }
