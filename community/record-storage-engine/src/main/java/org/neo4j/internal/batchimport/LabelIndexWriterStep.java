@@ -75,11 +75,13 @@ public class LabelIndexWriterStep extends IndexWriterStep<NodeRecord[]> {
     }
 
     @Override
-    protected void process(NodeRecord[] batch, BatchSender sender, CursorContext cursorContext) throws Throwable {
+    protected void process(
+            NodeRecord[] batch, BatchSender sender, CursorContext cursorContext, MemoryTracker memoryTracker)
+            throws Throwable {
         cachedStoreCursors.reset(cursorContext);
         for (NodeRecord node : batch) {
             if (node.inUse() && node.getId() >= fromNodeId) {
-                writer.add(node.getId(), get(node, nodeStore, cachedStoreCursors));
+                writer.add(node.getId(), get(node, nodeStore, cachedStoreCursors, memoryTracker));
             }
         }
         sender.send(batch);

@@ -32,6 +32,7 @@ import org.neo4j.kernel.impl.store.allocator.ReusableRecordsAllocator;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
@@ -88,7 +89,7 @@ class PropertyStoreConsistentReadTest extends RecordStoreConsistentReadTest<Prop
 
     private static void ensureHeavy(PropertyStore store, PropertyRecord record) {
         for (PropertyBlock propertyBlock : record) {
-            store.ensureHeavy(propertyBlock, StoreCursors.NULL);
+            store.ensureHeavy(propertyBlock, StoreCursors.NULL, EmptyMemoryTracker.INSTANCE);
         }
     }
 

@@ -50,6 +50,7 @@ import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.transaction.log.LogTailLogVersionsMetadata;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.migration.SchemaRuleMigrationAccess;
 import org.neo4j.token.TokenHolders;
 
@@ -153,7 +154,8 @@ public class SchemaStoreMigration {
             PageCache pageCache,
             PageCacheTracer pageCacheTracer,
             FileSystemAbstraction fileSystem,
-            CursorContextFactory contextFactory)
+            CursorContextFactory contextFactory,
+            MemoryTracker memoryTracker)
             throws IOException {
         IdGeneratorFactory srcIdGeneratorFactory = new ScanOnOpenReadOnlyIdGeneratorFactory();
         StoreFactory srcFactory = createStoreFactory(
@@ -186,11 +188,11 @@ public class SchemaStoreMigration {
                             StoreType.PROPERTY_ARRAY,
                             StoreType.SCHEMA);
                     var srcCursors = new CachedStoreCursors(srcStore, cursorContext)) {
-                TokenHolders srcTokenHolders = createTokenHolders(srcStore, srcCursors);
+                TokenHolders srcTokenHolders = createTokenHolders(srcStore, srcCursors, memoryTracker);
                 org.neo4j.internal.recordstorage.SchemaStorage schemaStorage =
                         new org.neo4j.internal.recordstorage.SchemaStorage(srcStore.getSchemaStore(), srcTokenHolders);
 
-                schemaRules = Iterables.asList(schemaStorage.getAll(srcCursors));
+                schemaRules = Iterables.asList(schemaStorage.getAll(srcCursors, memoryTracker));
             }
             return new SchemaStoreNewFamilyMigration(schemaRules);
         }
@@ -208,7 +210,8 @@ public class SchemaStoreMigration {
                 pageCacheTracer,
                 contextFactory,
                 srcIdGeneratorFactory,
-                srcFactory);
+                srcFactory,
+                memoryTracker);
     }
 
     private static StoreFactory createStoreFactory(

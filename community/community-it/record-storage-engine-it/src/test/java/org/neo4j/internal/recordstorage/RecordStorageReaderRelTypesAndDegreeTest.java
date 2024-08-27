@@ -59,6 +59,7 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.storageengine.api.RelationshipSelection;
 import org.neo4j.storageengine.api.StorageNodeCursor;
 import org.neo4j.storageengine.util.EagerDegrees;
@@ -434,7 +435,8 @@ public class RecordStorageReaderRelTypesAndDegreeTest extends RecordStorageReade
     }
 
     protected StorageNodeCursor newCursor(long nodeId) {
-        StorageNodeCursor nodeCursor = storageReader.allocateNodeCursor(NULL_CONTEXT, storageCursors);
+        StorageNodeCursor nodeCursor =
+                storageReader.allocateNodeCursor(NULL_CONTEXT, storageCursors, EmptyMemoryTracker.INSTANCE);
         nodeCursor.single(nodeId);
         assertTrue(nodeCursor.next());
         return nodeCursor;
@@ -536,7 +538,8 @@ public class RecordStorageReaderRelTypesAndDegreeTest extends RecordStorageReade
     }
 
     protected static <R extends AbstractBaseRecord> R getRecord(RecordStore<R> store, long id, PageCursor storeCursor) {
-        return store.getRecordByCursor(id, store.newRecord(), RecordLoad.FORCE, storeCursor);
+        return store.getRecordByCursor(
+                id, store.newRecord(), RecordLoad.FORCE, storeCursor, EmptyMemoryTracker.INSTANCE);
     }
 
     protected NodeRecord getNodeRecord(long id) {

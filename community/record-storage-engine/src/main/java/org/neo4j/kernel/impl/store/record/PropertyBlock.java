@@ -31,6 +31,8 @@ import java.util.List;
 import java.util.Objects;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.PropertyType;
+import org.neo4j.memory.EmptyMemoryTracker;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.PropertyKeyValue;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.string.Mask;
@@ -199,28 +201,7 @@ public class PropertyBlock {
             if (type != null) {
                 switch (type) {
                     case STRING, ARRAY -> result.append(",firstDynamic=").append(getSingleValueLong());
-                    default -> {
-                        Object value = type.value(this, null, null).asObject();
-                        if (value != null && value.getClass().isArray()) {
-                            int length = Array.getLength(value);
-                            StringBuilder buf = new StringBuilder(
-                                            value.getClass().getComponentType().getSimpleName())
-                                    .append('[');
-                            for (int i = 0; i < length && i <= MAX_ARRAY_TOSTRING_SIZE; i++) {
-                                if (i != 0) {
-                                    buf.append(',');
-                                }
-                                buf.append(Array.get(value, i));
-                            }
-                            if (length > MAX_ARRAY_TOSTRING_SIZE) {
-                                buf.append(",...");
-                            }
-                            value = buf.append(']');
-                        }
-                        if (value != null) {
-                            result.append(",value=").append(mask.filter(value));
-                        }
-                    }
+                    default -> appendNonDynamicValue(mask, type, result);
                 }
             }
             if (!isLight()) {
@@ -243,19 +224,42 @@ public class PropertyBlock {
         return result.toString();
     }
 
+    private void appendNonDynamicValue(Mask mask, PropertyType type, StringBuilder result) {
+        Object value = type.value(this, null, null, EmptyMemoryTracker.INSTANCE).asObject();
+        if (value != null && value.getClass().isArray()) {
+            int length = Array.getLength(value);
+            StringBuilder buf =
+                    new StringBuilder(value.getClass().getComponentType().getSimpleName()).append('[');
+            for (int i = 0; i < length && i <= MAX_ARRAY_TOSTRING_SIZE; i++) {
+                if (i != 0) {
+                    buf.append(',');
+                }
+                buf.append(Array.get(value, i));
+            }
+            if (length > MAX_ARRAY_TOSTRING_SIZE) {
+                buf.append(",...");
+            }
+            value = buf.append(']');
+        }
+        if (value != null) {
+            result.append(",value=").append(mask.filter(value));
+        }
+    }
+
     public boolean hasSameContentsAs(PropertyBlock other) {
         // Assumption (which happens to be true) that if a heavy (long string/array) property
         // changes it will get another id, making the valueBlocks values differ.
         return Arrays.equals(valueBlocks, other.valueBlocks);
     }
 
-    public Value newPropertyValue(PropertyStore propertyStore, StoreCursors cursors) {
-        return getType().value(this, propertyStore, cursors);
+    public Value newPropertyValue(PropertyStore propertyStore, StoreCursors cursors, MemoryTracker memoryTracker) {
+        return getType().value(this, propertyStore, cursors, memoryTracker);
     }
 
-    public PropertyKeyValue newPropertyKeyValue(PropertyStore propertyStore, StoreCursors cursors) {
+    public PropertyKeyValue newPropertyKeyValue(
+            PropertyStore propertyStore, StoreCursors cursors, MemoryTracker memoryTracker) {
         int propertyKeyId = getKeyIndexId();
-        return new PropertyKeyValue(propertyKeyId, getType().value(this, propertyStore, cursors));
+        return new PropertyKeyValue(propertyKeyId, getType().value(this, propertyStore, cursors, memoryTracker));
     }
 
     public static int keyIndexId(long valueBlock) {

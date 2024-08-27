@@ -39,6 +39,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 class TestPropertyBlocks extends AbstractNeo4jTestCase {
@@ -148,10 +149,11 @@ class TestPropertyBlocks extends AbstractNeo4jTestCase {
                 var propertyCursor = propertyStore.openPageCursorForReading(0, NULL_CONTEXT)) {
             var nodeRecord = nodeStore.newRecord();
             var propertyRecord = propertyStore.newRecord();
-            nodeStore.getRecordByCursor(nodeId, nodeRecord, RecordLoad.NORMAL, cursor);
+            nodeStore.getRecordByCursor(nodeId, nodeRecord, RecordLoad.NORMAL, cursor, EmptyMemoryTracker.INSTANCE);
             long prop = nodeRecord.getNextProp();
             for (int i = 0; i < recordIndexInChain; i++) {
-                propertyStore.getRecordByCursor(prop, propertyRecord, RecordLoad.NORMAL, propertyCursor);
+                propertyStore.getRecordByCursor(
+                        prop, propertyRecord, RecordLoad.NORMAL, propertyCursor, EmptyMemoryTracker.INSTANCE);
                 prop = propertyRecord.getNextProp();
             }
             return getPropertiesFromRecord(prop);
@@ -163,14 +165,16 @@ class TestPropertyBlocks extends AbstractNeo4jTestCase {
         PropertyStore propertyStore = propertyStore();
         final PropertyRecord record = propertyStore.newRecord();
         try (var cursor = propertyStore.openPageCursorForReading(0, NULL_CONTEXT)) {
-            propertyStore.getRecordByCursor(recordId, record, RecordLoad.FORCE, cursor);
+            propertyStore.getRecordByCursor(recordId, record, RecordLoad.FORCE, cursor, EmptyMemoryTracker.INSTANCE);
         }
         try (StoreCursors storeCursors = createStoreCursors()) {
             record.forEach(block -> {
-                final Object value = propertyStore.getValue(block, storeCursors).asObject();
+                final Object value = propertyStore
+                        .getValue(block, storeCursors, EmptyMemoryTracker.INSTANCE)
+                        .asObject();
                 final String name = propertyStore
                         .getPropertyKeyTokenStore()
-                        .getToken(block.getKeyIndexId(), storeCursors)
+                        .getToken(block.getKeyIndexId(), storeCursors, EmptyMemoryTracker.INSTANCE)
                         .name();
                 props.add(pair(name, value));
             });

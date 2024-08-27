@@ -32,6 +32,7 @@ import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.token.TokenHolders;
 
@@ -46,7 +47,8 @@ class LenientRelationshipReader extends LenientStoreInputChunk {
             TokenHolders tokenHolders,
             CursorContextFactory contextFactory,
             StoreCursors storeCursors,
-            Group group) {
+            Group group,
+            MemoryTracker memoryTracker) {
         super(
                 readBehaviour,
                 propertyStore,
@@ -54,16 +56,18 @@ class LenientRelationshipReader extends LenientStoreInputChunk {
                 contextFactory,
                 storeCursors,
                 storeCursors.readCursor(RELATIONSHIP_CURSOR),
-                group);
+                group,
+                memoryTracker);
         this.relationshipStore = relationshipStore;
         this.record = relationshipStore.newRecord();
     }
 
     @Override
-    void readAndVisit(long id, InputEntityVisitor visitor, StoreCursors storeCursors) throws IOException {
-        relationshipStore.getRecordByCursor(id, record, RecordLoad.LENIENT_CHECK, cursor);
+    void readAndVisit(long id, InputEntityVisitor visitor, StoreCursors storeCursors, MemoryTracker memoryTracker)
+            throws IOException {
+        relationshipStore.getRecordByCursor(id, record, RecordLoad.LENIENT_CHECK, cursor, memoryTracker);
         if (record.inUse()) {
-            relationshipStore.ensureHeavy(record, storeCursors);
+            relationshipStore.ensureHeavy(record, storeCursors, memoryTracker);
             int relationshipType = record.getType();
             String relationshipTypeName = LenientStoreInput.getTokenByIdSafe(
                             tokenHolders.relationshipTypeTokens(), relationshipType)
@@ -74,7 +78,7 @@ class LenientRelationshipReader extends LenientStoreInputChunk {
                 visitor.startId(record.getFirstNode(), group);
                 visitor.endId(record.getSecondNode(), group);
                 visitPropertyChainNoThrow(
-                        visitor, record, EntityType.RELATIONSHIP, new String[] {relationshipTypeName});
+                        visitor, record, EntityType.RELATIONSHIP, new String[] {relationshipTypeName}, memoryTracker);
                 visitor.endOfEntity();
             }
         } else {

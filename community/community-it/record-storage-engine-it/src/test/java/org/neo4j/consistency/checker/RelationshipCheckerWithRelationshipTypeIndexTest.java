@@ -52,6 +52,7 @@ import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.storageengine.api.TokenIndexEntryUpdate;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
@@ -72,7 +73,9 @@ class RelationshipCheckerWithRelationshipTypeIndexTest extends CheckerTestBase {
     void extractRelationshipTypeIndexProxy() {
         IndexingService indexingService = db.getDependencyResolver().resolveDependency(IndexingService.class);
         final IndexDescriptor[] indexDescriptors = schemaStorage.indexGetForSchema(
-                () -> SchemaDescriptors.ANY_TOKEN_RELATIONSHIP_SCHEMA_DESCRIPTOR, storeCursors);
+                () -> SchemaDescriptors.ANY_TOKEN_RELATIONSHIP_SCHEMA_DESCRIPTOR,
+                storeCursors,
+                EmptyMemoryTracker.INSTANCE);
         // The Relationship Type Index should exist and be unique.
         assertThat(indexDescriptors.length).isEqualTo(1);
         rtiDescriptor = indexDescriptors[0];
@@ -322,7 +325,11 @@ class RelationshipCheckerWithRelationshipTypeIndexTest extends CheckerTestBase {
     private void notInUse(long relationshipId) {
         RelationshipRecord relationshipRecord = relationshipStore.newRecord();
         relationshipStore.getRecordByCursor(
-                relationshipId, relationshipRecord, RecordLoad.NORMAL, storeCursors.readCursor(RELATIONSHIP_CURSOR));
+                relationshipId,
+                relationshipRecord,
+                RecordLoad.NORMAL,
+                storeCursors.readCursor(RELATIONSHIP_CURSOR),
+                EmptyMemoryTracker.INSTANCE);
         relationshipRecord.setInUse(false);
         try (var storeCursor = storeCursors.writeCursor(RELATIONSHIP_CURSOR)) {
             relationshipStore.updateRecord(relationshipRecord, storeCursor, CursorContext.NULL_CONTEXT, storeCursors);
@@ -335,7 +342,11 @@ class RelationshipCheckerWithRelationshipTypeIndexTest extends CheckerTestBase {
 
     private void check(CheckerContext context) throws Exception {
         new RelationshipChecker(context, noMandatoryProperties, noAllowedTypes)
-                .check(LongRange.range(0, nodeStore.getIdGenerator().getHighId()), true, true);
+                .check(
+                        LongRange.range(0, nodeStore.getIdGenerator().getHighId()),
+                        true,
+                        true,
+                        EmptyMemoryTracker.INSTANCE);
     }
 
     private IndexUpdater relationshipTypeIndexWriter() {

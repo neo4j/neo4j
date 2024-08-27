@@ -28,6 +28,7 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
+import org.neo4j.memory.MemoryTracker;
 
 /**
  * Reads records from a {@link RecordStore} and sends batches of those records downstream.
@@ -88,7 +89,8 @@ public class ReadRecordsStep<RECORD extends AbstractBaseRecord> extends Processo
     }
 
     @Override
-    protected void process(LongIterator idRange, BatchSender sender, CursorContext cursorContext) {
+    protected void process(
+            LongIterator idRange, BatchSender sender, CursorContext cursorContext, MemoryTracker memoryTracker) {
         if (!idRange.hasNext()) {
             return;
         }
@@ -102,7 +104,7 @@ public class ReadRecordsStep<RECORD extends AbstractBaseRecord> extends Processo
         try (PageCursor cursor = store.openPageCursorForReading(id, cursorContext)) {
             boolean hasNext = true;
             while (hasNext) {
-                if (assembler.append(store, cursor, batch, id, i)) {
+                if (assembler.append(store, cursor, batch, id, i, memoryTracker)) {
                     i++;
                 } else {
                     monitor.recordSkipped(id);

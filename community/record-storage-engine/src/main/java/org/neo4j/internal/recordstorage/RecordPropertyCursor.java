@@ -395,11 +395,11 @@ public class RecordPropertyCursor extends PropertyRecord implements StoragePrope
     private void property(PropertyRecord record, long reference, PageCursor pageCursor) {
         // We need to load forcefully here since otherwise we can have inconsistent reads
         // for properties across blocks, see org.neo4j.graphdb.ConsistentPropertyReadsIT
-        propertyStore.getRecordByCursor(reference, record, loadMode.orElse(ALWAYS), pageCursor);
+        propertyStore.getRecordByCursor(reference, record, loadMode.orElse(ALWAYS), pageCursor, memoryTracker);
     }
 
     private TextValue string(RecordPropertyCursor cursor, long reference, PageCursor page) {
-        propertyStore.loadString(reference, cursor, page, loadMode.orElse(ALWAYS));
+        propertyStore.loadString(reference, cursor, page, loadMode.orElse(ALWAYS), memoryTracker);
         buffer.flip();
         byte[] bytes = new byte[buffer.limit()];
         buffer.get(bytes);
@@ -407,7 +407,7 @@ public class RecordPropertyCursor extends PropertyRecord implements StoragePrope
     }
 
     private ArrayValue array(RecordPropertyCursor cursor, long reference, PageCursor page) {
-        propertyStore.loadArray(reference, cursor, page, loadMode.orElse(ALWAYS));
+        propertyStore.loadArray(reference, cursor, page, loadMode.orElse(ALWAYS), memoryTracker);
         buffer.flip();
         return propertyStore.readArrayFromBuffer(buffer);
     }

@@ -224,7 +224,7 @@ public abstract class AbstractRecordFormatTest {
         */
         do {
             cursor.setOffset(0);
-            format.read(read, cursor, mode, recordSize, 1);
+            format.read(read, cursor, mode, recordSize, 1, EmptyMemoryTracker.INSTANCE);
         } while (cursor.shouldRetry());
     }
 

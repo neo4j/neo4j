@@ -60,6 +60,7 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.transaction.log.LogTailLogVersionsMetadata;
 import org.neo4j.logging.internal.NullLogService;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
@@ -135,8 +136,10 @@ class NodeImporterTest {
         // then
         NodeStore nodeStore = stores.getNodeStore();
         PageCursor nodeCursor = storeCursors.readCursor(NODE_CURSOR);
-        NodeRecord record = nodeStore.getRecordByCursor(nodeId, nodeStore.newRecord(), RecordLoad.NORMAL, nodeCursor);
-        int[] labels = NodeLabelsField.parseLabelsField(record).get(nodeStore, storeCursors);
+        NodeRecord record = nodeStore.getRecordByCursor(
+                nodeId, nodeStore.newRecord(), RecordLoad.NORMAL, nodeCursor, EmptyMemoryTracker.INSTANCE);
+        int[] labels =
+                NodeLabelsField.parseLabelsField(record).get(nodeStore, storeCursors, EmptyMemoryTracker.INSTANCE);
         assertEquals(numberOfLabels, labels.length);
     }
 
@@ -172,8 +175,10 @@ class NodeImporterTest {
         // then
         NodeStore nodeStore = stores.getNodeStore();
         PageCursor nodeCursor = storeCursors.readCursor(NODE_CURSOR);
-        NodeRecord record = nodeStore.getRecordByCursor(nodeId, nodeStore.newRecord(), RecordLoad.NORMAL, nodeCursor);
-        int[] labels = NodeLabelsField.parseLabelsField(record).get(nodeStore, storeCursors);
+        NodeRecord record = nodeStore.getRecordByCursor(
+                nodeId, nodeStore.newRecord(), RecordLoad.NORMAL, nodeCursor, EmptyMemoryTracker.INSTANCE);
+        int[] labels =
+                NodeLabelsField.parseLabelsField(record).get(nodeStore, storeCursors, EmptyMemoryTracker.INSTANCE);
         assertEquals(numberOfLabels, labels.length);
         assertThat(cacheTracer.faults()).isEqualTo(2);
         assertThat(cacheTracer.pins()).isEqualTo(5);

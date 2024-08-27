@@ -115,7 +115,8 @@ class DegreesRebuildFromStoreTest {
                             i,
                             new RelationshipGroupRecord(i),
                             RecordLoad.ALWAYS,
-                            storageCursors.readCursor(GROUP_CURSOR));
+                            storageCursors.readCursor(GROUP_CURSOR),
+                            EmptyMemoryTracker.INSTANCE);
                     expectedDegrees.remove(
                             combinedKeyOnGroupAndDirection(record.getId(), RelationshipDirection.OUTGOING));
                     expectedDegrees.remove(

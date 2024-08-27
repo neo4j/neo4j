@@ -480,7 +480,7 @@ class LockGuardedNeoStoreTransactionApplierTest {
         after.addNameRecord(dynamicRecord);
         Command.RelationshipTypeTokenCommand command =
                 new Command.RelationshipTypeTokenCommand(LATEST_LOG_SERIALIZATION, before, after);
-        when(relationshipTypeTokenStore.getToken(eq(command.tokenId()), any(StoreCursors.class)))
+        when(relationshipTypeTokenStore.getToken(eq(command.tokenId()), any(StoreCursors.class), any()))
                 .thenReturn(token);
 
         // when
@@ -586,7 +586,7 @@ class LockGuardedNeoStoreTransactionApplierTest {
         after.addNameRecord(dynamicRecord);
         Command.PropertyKeyTokenCommand command =
                 new Command.PropertyKeyTokenCommand(LATEST_LOG_SERIALIZATION, before, after);
-        when(propertyKeyTokenStore.getToken(eq(command.tokenId()), any(StoreCursors.class)))
+        when(propertyKeyTokenStore.getToken(eq(command.tokenId()), any(StoreCursors.class), any()))
                 .thenReturn(token);
 
         // when

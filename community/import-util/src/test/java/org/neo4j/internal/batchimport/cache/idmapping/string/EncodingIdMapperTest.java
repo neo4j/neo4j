@@ -66,6 +66,7 @@ import org.neo4j.internal.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.internal.batchimport.input.Groups;
 import org.neo4j.internal.helpers.progress.ProgressListener;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.test.Race;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
@@ -75,7 +76,7 @@ import org.neo4j.test.extension.RandomExtension;
 public class EncodingIdMapperTest {
     private static final PropertyValueLookup CONVERT_TO_STRING = () -> new PropertyValueLookup.Lookup() {
         @Override
-        public Object lookupProperty(long nodeId) {
+        public Object lookupProperty(long nodeId, MemoryTracker memoryTracker) {
             return String.valueOf(nodeId);
         }
 
@@ -84,7 +85,7 @@ public class EncodingIdMapperTest {
     };
     private static final PropertyValueLookup FAILING_LOOKUP = () -> new PropertyValueLookup.Lookup() {
         @Override
-        public Object lookupProperty(long nodeId) {
+        public Object lookupProperty(long nodeId, MemoryTracker memoryTracker) {
             throw new RuntimeException("Should not be called");
         }
 
@@ -120,7 +121,7 @@ public class EncodingIdMapperTest {
         // WHEN
         try (var lookup = inputIdLookup.newLookup()) {
             for (long nodeId = 0; nodeId < count; nodeId++) {
-                idMapper.put(lookup.lookupProperty(nodeId), nodeId, globalGroup);
+                idMapper.put(lookup.lookupProperty(nodeId, INSTANCE), nodeId, globalGroup);
             }
         }
         idMapper.prepare(inputIdLookup, mock(Collector.class), NONE);
@@ -130,7 +131,7 @@ public class EncodingIdMapperTest {
                 var lookup = inputIdLookup.newLookup()) {
             for (long nodeId = 0; nodeId < count; nodeId++) {
                 // the UUIDs here will be generated in the same sequence as above because we reset the random
-                Object id = lookup.lookupProperty(nodeId);
+                Object id = lookup.lookupProperty(nodeId, INSTANCE);
                 if (getter.get(id, globalGroup) == IdMapper.ID_NOT_FOUND) {
                     fail("Couldn't find " + id + " even though I added it just previously");
                 }
@@ -262,7 +263,7 @@ public class EncodingIdMapperTest {
         // WHEN
         ValueGenerator values = new ValueGenerator(type.data(random.random()));
         for (int nodeId = 0; nodeId < size; nodeId++) {
-            mapper.put(values.lookupProperty(nodeId), nodeId, globalGroup);
+            mapper.put(values.lookupProperty(nodeId, INSTANCE), nodeId, globalGroup);
         }
         mapper.prepare(values, mock(Collector.class), NONE);
 
@@ -283,7 +284,7 @@ public class EncodingIdMapperTest {
         PropertyValueLookup values = values("10", "9", "10");
         try (var lookup = values.newLookup()) {
             for (int i = 0; i < 3; i++) {
-                mapper.put(lookup.lookupProperty(i), i, globalGroup);
+                mapper.put(lookup.lookupProperty(i, INSTANCE), i, globalGroup);
             }
         }
 
@@ -307,7 +308,7 @@ public class EncodingIdMapperTest {
         PropertyValueLookup ids = values("10", "9");
         try (var lookup = ids.newLookup()) {
             for (int i = 0; i < 2; i++) {
-                mapper.put(lookup.lookupProperty(i), i, globalGroup);
+                mapper.put(lookup.lookupProperty(i, INSTANCE), i, globalGroup);
             }
         }
 
@@ -359,7 +360,7 @@ public class EncodingIdMapperTest {
         // WHEN
         try (var lookup = ids.newLookup()) {
             for (int i = 0; i < 6; i++) {
-                mapper.put(lookup.lookupProperty(i), i, groups[i]);
+                mapper.put(lookup.lookupProperty(i, INSTANCE), i, groups[i]);
             }
         }
         Collector collector = mock(Collector.class);
@@ -389,10 +390,10 @@ public class EncodingIdMapperTest {
         int id = 0;
         // group 0
         try (var lookup = ids.newLookup()) {
-            mapper.put(lookup.lookupProperty(id), id++, firstGroup);
-            mapper.put(lookup.lookupProperty(id), id++, firstGroup);
+            mapper.put(lookup.lookupProperty(id, INSTANCE), id++, firstGroup);
+            mapper.put(lookup.lookupProperty(id, INSTANCE), id++, firstGroup);
             // group 1
-            mapper.put(lookup.lookupProperty(id), id, secondGroup);
+            mapper.put(lookup.lookupProperty(id, INSTANCE), id, secondGroup);
         }
         Collector collector = mock(Collector.class);
         mapper.prepare(ids, collector, NONE);
@@ -419,9 +420,9 @@ public class EncodingIdMapperTest {
         PropertyValueLookup ids = values("8", "9", "10");
         int id = 0;
         try (var lookup = ids.newLookup()) {
-            mapper.put(lookup.lookupProperty(id), id++, firstGroup);
-            mapper.put(lookup.lookupProperty(id), id++, secondGroup);
-            mapper.put(lookup.lookupProperty(id), id, thirdGroup);
+            mapper.put(lookup.lookupProperty(id, INSTANCE), id++, firstGroup);
+            mapper.put(lookup.lookupProperty(id, INSTANCE), id++, secondGroup);
+            mapper.put(lookup.lookupProperty(id, INSTANCE), id, thirdGroup);
         }
         mapper.prepare(ids, mock(Collector.class), NONE);
 
@@ -488,7 +489,7 @@ public class EncodingIdMapperTest {
         Function<Long, Integer> nodeIdToGroupId = nodeId -> toIntExact(nodeId / idsPerGroup);
         PropertyValueLookup ids = () -> new PropertyValueLookup.Lookup() {
             @Override
-            public Object lookupProperty(long nodeId) {
+            public Object lookupProperty(long nodeId, MemoryTracker memoryTracker) {
                 int groupId = nodeIdToGroupId.apply(nodeId);
                 // Let the first 10% in each group be accidental collisions with each other
                 // i.e. all first 10% in each group collides with all other first 10% in each group
@@ -512,7 +513,7 @@ public class EncodingIdMapperTest {
         int count = idsPerGroup * groupCount;
         for (long nodeId = 0; nodeId < count; nodeId++) {
             var groupId = nodeIdToGroupId.apply(nodeId);
-            var inputId = lookup.lookupProperty(nodeId);
+            var inputId = lookup.lookupProperty(nodeId, INSTANCE);
             mapper.put(inputId, nodeId, groups.get(groupId));
         }
         Collector collector = mock(Collector.class);
@@ -524,7 +525,7 @@ public class EncodingIdMapperTest {
         try (var getter = mapper.newGetter()) {
             for (long nodeId = 0; nodeId < count; nodeId++) {
                 var groupId = nodeIdToGroupId.apply(nodeId);
-                var inputId = lookup.lookupProperty(nodeId);
+                var inputId = lookup.lookupProperty(nodeId, INSTANCE);
                 var actual = getter.get(inputId, groups.get(groupId));
                 assertEquals(nodeId, actual);
             }
@@ -636,7 +637,7 @@ public class EncodingIdMapperTest {
                     long nodeId = nextNodeId++;
                     cursor++;
 
-                    idMapper.put(lookup.lookupProperty(nodeId), nodeId, globalGroup);
+                    idMapper.put(lookup.lookupProperty(nodeId, INSTANCE), nodeId, globalGroup);
                 }
             }
         });
@@ -652,7 +653,7 @@ public class EncodingIdMapperTest {
         try (var getter = idMapper.newGetter();
                 var lookup = inputIdLookup.newLookup()) {
             for (long nodeId = 0; nodeId < countWithGapsWorstCase; nodeId++) {
-                long result = getter.get(lookup.lookupProperty(nodeId), globalGroup);
+                long result = getter.get(lookup.lookupProperty(nodeId, INSTANCE), globalGroup);
                 if (result != -1) {
                     assertEquals(nodeId, result);
                     correctHits++;
@@ -755,7 +756,7 @@ public class EncodingIdMapperTest {
     private PropertyValueLookup mapValues(Map<Long, String> data) {
         return () -> new PropertyValueLookup.Lookup() {
             @Override
-            public Object lookupProperty(long nodeId) {
+            public Object lookupProperty(long nodeId, MemoryTracker memoryTracker) {
                 return data.get(nodeId);
             }
 
@@ -767,7 +768,7 @@ public class EncodingIdMapperTest {
     private static PropertyValueLookup values(Object... values) {
         return () -> new PropertyValueLookup.Lookup() {
             @Override
-            public Object lookupProperty(long nodeId) {
+            public Object lookupProperty(long nodeId, MemoryTracker memoryTracker) {
                 return values[toIntExact(nodeId)];
             }
 
@@ -837,7 +838,7 @@ public class EncodingIdMapperTest {
     private PropertyValueLookup alwaysReturn(Object id) {
         return () -> new PropertyValueLookup.Lookup() {
             @Override
-            public Object lookupProperty(long nodeId) {
+            public Object lookupProperty(long nodeId, MemoryTracker memoryTracker) {
                 return id;
             }
 
@@ -861,7 +862,7 @@ public class EncodingIdMapperTest {
         }
 
         @Override
-        public Object lookupProperty(long nodeId) {
+        public Object lookupProperty(long nodeId, MemoryTracker memoryTracker) {
             while (true) {
                 Object value = generator.newInstance();
                 if (deduper.add(value)) {

@@ -24,6 +24,7 @@ import org.neo4j.kernel.impl.store.format.BaseOneByteHeaderRecordFormat;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.TokenRecord;
+import org.neo4j.memory.MemoryTracker;
 
 public abstract class TokenRecordFormat<RECORD extends TokenRecord> extends BaseOneByteHeaderRecordFormat<RECORD> {
     static final int BASE_RECORD_SIZE = 1 /*inUse*/ + 4 /*nameId*/;
@@ -35,7 +36,13 @@ public abstract class TokenRecordFormat<RECORD extends TokenRecord> extends Base
     }
 
     @Override
-    public void read(RECORD record, PageCursor cursor, RecordLoad mode, int recordSize, int recordsPerPage) {
+    public void read(
+            RECORD record,
+            PageCursor cursor,
+            RecordLoad mode,
+            int recordSize,
+            int recordsPerPage,
+            MemoryTracker memoryTracker) {
         byte headerByte = cursor.getByte();
         boolean inUse = isInUse(headerByte);
         record.setInUse(inUse);

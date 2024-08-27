@@ -22,6 +22,7 @@ package org.neo4j.internal.batchimport.staging;
 import org.neo4j.batchimport.api.Configuration;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.memory.MemoryTracker;
 
 public class DeadEndStep extends ProcessorStep<Object> {
     public DeadEndStep(StageControl control, CursorContextFactory contextFactory) {
@@ -29,5 +30,6 @@ public class DeadEndStep extends ProcessorStep<Object> {
     }
 
     @Override
-    protected void process(Object batch, BatchSender sender, CursorContext cursorContext) {}
+    protected void process(
+            Object batch, BatchSender sender, CursorContext cursorContext, MemoryTracker memoryTracker) {}
 }

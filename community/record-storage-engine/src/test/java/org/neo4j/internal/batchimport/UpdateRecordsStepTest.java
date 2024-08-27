@@ -51,6 +51,7 @@ import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 class UpdateRecordsStepTest {
@@ -79,7 +80,7 @@ class UpdateRecordsStepTest {
         NodeRecord[] batch = new NodeRecord[11];
         Arrays.fill(batch, record);
 
-        step.process(batch, mock(BatchSender.class), NULL_CONTEXT);
+        step.process(batch, mock(BatchSender.class), NULL_CONTEXT, EmptyMemoryTracker.INSTANCE);
 
         Stat stat = step.stat(Keys.io_throughput);
 
@@ -107,7 +108,7 @@ class UpdateRecordsStepTest {
         NodeRecord nodeWithReservedId = new NodeRecord(INTEGER_MINUS_ONE);
         NodeRecord[] batch = {node1, node2, nodeWithReservedId};
 
-        step.process(batch, mock(BatchSender.class), NULL_CONTEXT);
+        step.process(batch, mock(BatchSender.class), NULL_CONTEXT, EmptyMemoryTracker.INSTANCE);
 
         verify(store).prepareForCommit(eq(node1), any(IdSequence.class), any(CursorContext.class));
         verify(store).updateRecord(eq(node1), any(), any(), any(), any());

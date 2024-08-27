@@ -51,6 +51,7 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.impl.index.SchemaIndexMigrator;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.impl.transaction.log.EmptyLogTailMetadata;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StoreVersion;
 import org.neo4j.storageengine.api.format.CapabilityType;
@@ -97,7 +98,7 @@ class SchemaIndexMigratorTest {
         schemaRules.add(forSchema(SchemaDescriptors.fulltext(NODE, new int[] {1, 2, 3}, new int[] {4, 5, 6}))
                 .withName("n2")
                 .materialise(4L));
-        when(storageEngineFactory.loadSchemaRules(any(), any(), any(), any(), any(), anyBoolean(), any(), any()))
+        when(storageEngineFactory.loadSchemaRules(any(), any(), any(), any(), any(), anyBoolean(), any(), any(), any()))
                 .thenReturn(schemaRules);
         SchemaIndexMigrator migrator = new SchemaIndexMigrator(
                 "Test migrator",
@@ -117,7 +118,12 @@ class SchemaIndexMigratorTest {
                 toVersion,
                 IndexImporterFactory.EMPTY,
                 new EmptyLogTailMetadata(Config.defaults()));
-        migrator.moveMigratedFiles(databaseLayout, migrationLayout, mock(StoreVersion.class), mock(StoreVersion.class));
+        migrator.moveMigratedFiles(
+                databaseLayout,
+                migrationLayout,
+                mock(StoreVersion.class),
+                mock(StoreVersion.class),
+                EmptyMemoryTracker.INSTANCE);
 
         // then
         verify(fs, never()).deleteRecursively(directoryStructure.directoryForIndex(1L));

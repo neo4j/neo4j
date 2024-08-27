@@ -77,11 +77,13 @@ final class EntityCounter {
         if (!multiVersioned && accessMode.allowsTraverseAllNodesWithLabel(labelId)) {
             // All nodes with the specified label can be traversed, so the count store can be used.
             return storageReader.countsForNode(labelId, cursorContext)
-                    + countsForNodeInTxState(labelId, storageReader, cursorContext, storageCursors, txStateHolder);
+                    + countsForNodeInTxState(
+                            labelId, storageReader, cursorContext, storageCursors, txStateHolder, memoryTracker);
         }
         if (accessMode.disallowsTraverseLabel(labelId)) {
             // No nodes with the specified label can't be traversed, so the count only ones in transaction state
-            return countsForNodeInTxState(labelId, storageReader, cursorContext, storageCursors, txStateHolder);
+            return countsForNodeInTxState(
+                    labelId, storageReader, cursorContext, storageCursors, txStateHolder, memoryTracker);
         }
         // Scanning adheres security and isolation requirements and includes transaction state too
         return countNodesByScan(labelId, cursors, cursorContext, memoryTracker, read);
@@ -92,14 +94,15 @@ final class EntityCounter {
             StorageReader storageReader,
             CursorContext cursorContext,
             StoreCursors storageCursors,
-            TxStateHolder txStateHolder) {
+            TxStateHolder txStateHolder,
+            MemoryTracker memoryTracker) {
         long count = 0;
         if (txStateHolder.hasTxStateWithChanges()) {
             CountsDelta counts = new CountsDelta();
             try {
                 TransactionState txState = txStateHolder.txState();
                 try (var countingVisitor = new TransactionCountingStateVisitor(
-                        EMPTY, storageReader, txState, counts, cursorContext, storageCursors)) {
+                        EMPTY, storageReader, txState, counts, cursorContext, storageCursors, memoryTracker)) {
                     txState.accept(countingVisitor);
                 }
                 if (counts.hasChanges()) {
@@ -162,7 +165,8 @@ final class EntityCounter {
                             txStateHolder,
                             storageReader,
                             storageCursors,
-                            cursorContext);
+                            cursorContext,
+                            memoryTracker);
         }
         if (accessMode.disallowsTraverseRelType(typeId)
                 || accessMode.disallowsTraverseLabel(startLabelId)
@@ -170,7 +174,14 @@ final class EntityCounter {
             // Not allowed to traverse any relationship with the specified relationship type, start node label and end
             // node label, so count only ones in transaction state.
             return countsForRelationshipInTxState(
-                    startLabelId, typeId, endLabelId, txStateHolder, storageReader, storageCursors, cursorContext);
+                    startLabelId,
+                    typeId,
+                    endLabelId,
+                    txStateHolder,
+                    storageReader,
+                    storageCursors,
+                    cursorContext,
+                    memoryTracker);
         }
 
         return countRelationshipByScan(
@@ -215,8 +226,8 @@ final class EntityCounter {
 
         long count;
         try (var rels = cursors.allocateRelationshipScanCursor(cursorContext, memoryTracker);
-                DefaultNodeCursor sourceNode = cursors.allocateFullAccessNodeCursor(cursorContext);
-                DefaultNodeCursor targetNode = cursors.allocateFullAccessNodeCursor(cursorContext)) {
+                DefaultNodeCursor sourceNode = cursors.allocateFullAccessNodeCursor(cursorContext, memoryTracker);
+                DefaultNodeCursor targetNode = cursors.allocateFullAccessNodeCursor(cursorContext, memoryTracker)) {
             read.allRelationshipsScan(rels);
             Predicate<RelationshipScanCursor> predicate =
                     typeId == TokenRead.ANY_RELATIONSHIP_TYPE ? alwaysTrue() : CursorPredicates.hasType(typeId);
@@ -288,14 +299,15 @@ final class EntityCounter {
             TxStateHolder txStateHolder,
             StorageReader storageReader,
             StoreCursors storageCursors,
-            CursorContext cursorContext) {
+            CursorContext cursorContext,
+            MemoryTracker memoryTracker) {
         long count = 0;
         if (txStateHolder.hasTxStateWithChanges()) {
             CountsDelta counts = new CountsDelta();
             try {
                 TransactionState txState = txStateHolder.txState();
                 try (var countingVisitor = new TransactionCountingStateVisitor(
-                        EMPTY, storageReader, txState, counts, cursorContext, storageCursors)) {
+                        EMPTY, storageReader, txState, counts, cursorContext, storageCursors, memoryTracker)) {
                     txState.accept(countingVisitor);
                 }
                 if (counts.hasChanges()) {

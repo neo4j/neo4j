@@ -71,6 +71,7 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.transaction.log.LogTailLogVersionsMetadata;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
@@ -228,7 +229,7 @@ public class RecordPropertyCursorTest {
         // and a cycle on the second record
         PropertyStore store = neoStores.getPropertyStore();
         PropertyRecord propertyRecord = getRecord(store, firstProp, NORMAL);
-        store.ensureHeavy(propertyRecord, new CachedStoreCursors(neoStores, NULL_CONTEXT));
+        store.ensureHeavy(propertyRecord, new CachedStoreCursors(neoStores, NULL_CONTEXT), EmptyMemoryTracker.INSTANCE);
         PropertyBlock block = propertyRecord.iterator().next();
         int cycleEndRecordIndex = random.nextInt(1, block.getValueRecords().size());
         DynamicRecord cycle = block.getValueRecords().get(cycleEndRecordIndex);
@@ -311,7 +312,8 @@ public class RecordPropertyCursorTest {
     }
 
     protected long storeValuesAsPropertyChain(NodeRecord owner, Value[] values) {
-        DirectRecordAccessSet access = new DirectRecordAccessSet(neoStores, idGeneratorFactory, NULL_CONTEXT);
+        DirectRecordAccessSet access =
+                new DirectRecordAccessSet(neoStores, idGeneratorFactory, NULL_CONTEXT, EmptyMemoryTracker.INSTANCE);
         long firstPropertyId = createPropertyChain(
                 owner, blocksOf(neoStores.getPropertyStore(), values, allocatorProvider), access.getPropertyRecords());
         access.commit();
@@ -353,7 +355,8 @@ public class RecordPropertyCursorTest {
 
     private PropertyRecord getRecord(PropertyStore propertyStore, long id, RecordLoad load) {
         try (PageCursor cursor = propertyStore.openPageCursorForReading(id, NULL_CONTEXT)) {
-            return propertyStore.getRecordByCursor(id, propertyStore.newRecord(), load, cursor);
+            return propertyStore.getRecordByCursor(
+                    id, propertyStore.newRecord(), load, cursor, EmptyMemoryTracker.INSTANCE);
         }
     }
 }

@@ -45,6 +45,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
+import org.neo4j.memory.MemoryTracker;
 
 public class DirectRecordAccessSet implements RecordAccessSet, AutoCloseable {
     private final DirectRecordAccess<NodeRecord, Void> nodeRecords;
@@ -60,7 +61,10 @@ public class DirectRecordAccessSet implements RecordAccessSet, AutoCloseable {
     private final CachedStoreCursors storeCursors;
 
     public DirectRecordAccessSet(
-            NeoStores neoStores, IdGeneratorFactory idGeneratorFactory, CursorContext cursorContext) {
+            NeoStores neoStores,
+            IdGeneratorFactory idGeneratorFactory,
+            CursorContext cursorContext,
+            MemoryTracker memoryTracker) {
         RecordStore<NodeRecord> nodeStore = neoStores.getNodeStore();
         PropertyStore propertyStore = neoStores.getPropertyStore();
         RecordStore<RelationshipRecord> relationshipStore = neoStores.getRelationshipStore();
@@ -70,28 +74,45 @@ public class DirectRecordAccessSet implements RecordAccessSet, AutoCloseable {
         RecordStore<LabelTokenRecord> labelTokenStore = neoStores.getLabelTokenStore();
         storeCursors = new CachedStoreCursors(neoStores, cursorContext);
         loaders = new Loaders(neoStores, storeCursors);
-        nodeRecords =
-                new DirectRecordAccess<>(nodeStore, loaders.nodeLoader(), cursorContext, NODE_CURSOR, storeCursors);
+        nodeRecords = new DirectRecordAccess<>(
+                nodeStore, loaders.nodeLoader(), cursorContext, NODE_CURSOR, storeCursors, memoryTracker);
         propertyRecords = new DirectRecordAccess<>(
-                propertyStore, loaders.propertyLoader(), cursorContext, PROPERTY_CURSOR, storeCursors);
+                propertyStore, loaders.propertyLoader(), cursorContext, PROPERTY_CURSOR, storeCursors, memoryTracker);
         relationshipRecords = new DirectRecordAccess<>(
-                relationshipStore, loaders.relationshipLoader(), cursorContext, RELATIONSHIP_CURSOR, storeCursors);
+                relationshipStore,
+                loaders.relationshipLoader(),
+                cursorContext,
+                RELATIONSHIP_CURSOR,
+                storeCursors,
+                memoryTracker);
         relationshipGroupRecords = new DirectRecordAccess<>(
-                relationshipGroupStore, loaders.relationshipGroupLoader(), cursorContext, GROUP_CURSOR, storeCursors);
+                relationshipGroupStore,
+                loaders.relationshipGroupLoader(),
+                cursorContext,
+                GROUP_CURSOR,
+                storeCursors,
+                memoryTracker);
         propertyKeyTokenRecords = new DirectRecordAccess<>(
                 propertyKeyTokenStore,
                 loaders.propertyKeyTokenLoader(),
                 cursorContext,
                 PROPERTY_KEY_TOKEN_CURSOR,
-                storeCursors);
+                storeCursors,
+                memoryTracker);
         relationshipTypeTokenRecords = new DirectRecordAccess<>(
                 relationshipTypeTokenStore,
                 loaders.relationshipTypeTokenLoader(),
                 cursorContext,
                 REL_TYPE_TOKEN_CURSOR,
-                storeCursors);
+                storeCursors,
+                memoryTracker);
         labelTokenRecords = new DirectRecordAccess<>(
-                labelTokenStore, loaders.labelTokenLoader(), cursorContext, LABEL_TOKEN_CURSOR, storeCursors);
+                labelTokenStore,
+                loaders.labelTokenLoader(),
+                cursorContext,
+                LABEL_TOKEN_CURSOR,
+                storeCursors,
+                memoryTracker);
         all = new DirectRecordAccess[] {
             nodeRecords,
             propertyRecords,

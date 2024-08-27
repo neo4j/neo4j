@@ -40,6 +40,7 @@ import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.logging.InternalLogProvider;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.util.IdUpdateListener;
 import org.neo4j.util.BitBuffer;
@@ -98,13 +99,15 @@ public class NodeStore extends CommonAbstractStore<NodeRecord, NoStoreHeader> {
     }
 
     @Override
-    public void ensureHeavy(NodeRecord node, StoreCursors storeCursors) {
+    public void ensureHeavy(NodeRecord node, StoreCursors storeCursors, MemoryTracker memoryTracker) {
         if (NodeLabelsField.fieldPointsToDynamicRecordOfLabels(node.getLabelField())) {
-            ensureHeavy(node, NodeLabelsField.firstDynamicLabelRecordId(node.getLabelField()), storeCursors);
+            ensureHeavy(
+                    node, NodeLabelsField.firstDynamicLabelRecordId(node.getLabelField()), storeCursors, memoryTracker);
         }
     }
 
-    public void ensureHeavy(NodeRecord node, long firstDynamicLabelRecord, StoreCursors storeCursors) {
+    public void ensureHeavy(
+            NodeRecord node, long firstDynamicLabelRecord, StoreCursors storeCursors, MemoryTracker memoryTracker) {
         if (!node.isLight()) {
             return;
         }
@@ -118,7 +121,8 @@ public class NodeStore extends CommonAbstractStore<NodeRecord, NoStoreHeader> {
                             RecordLoad
                                     .ALWAYS /* We might load labels that are no longer in use. In situations where this matters, getUsedDynamicLabels should be used. */,
                             false,
-                            storeCursors.readCursor(DYNAMIC_LABEL_STORE_CURSOR)));
+                            storeCursors.readCursor(DYNAMIC_LABEL_STORE_CURSOR),
+                            memoryTracker));
         } catch (InvalidRecordException e) {
             throw new InvalidRecordException(
                     format("Error loading dynamic label records for %s | %s", node, e.getMessage()), e);

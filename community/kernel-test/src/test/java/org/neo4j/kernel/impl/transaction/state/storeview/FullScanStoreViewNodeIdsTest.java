@@ -41,6 +41,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageNodeCursor;
@@ -88,9 +89,10 @@ class FullScanStoreViewNodeIdsTest {
         // then
         MutableLongObjectMap<int[]> actual = LongObjectMaps.mutable.empty();
         consumer.batches.forEach(batch -> batch.forEach(record -> actual.put(record.entityId(), record.tokens())));
-        try (var nodeCursor = storageReader.allocateNodeCursor(NULL_CONTEXT, StoreCursors.NULL);
-                var relationshipCursor =
-                        storageReader.allocateRelationshipTraversalCursor(NULL_CONTEXT, StoreCursors.NULL)) {
+        try (var nodeCursor =
+                        storageReader.allocateNodeCursor(NULL_CONTEXT, StoreCursors.NULL, EmptyMemoryTracker.INSTANCE);
+                var relationshipCursor = storageReader.allocateRelationshipTraversalCursor(
+                        NULL_CONTEXT, StoreCursors.NULL, EmptyMemoryTracker.INSTANCE)) {
             nodeCursor.scan();
             while (nodeCursor.next()) {
                 int[] actualRelationshipTypes = actual.remove(nodeCursor.entityReference());

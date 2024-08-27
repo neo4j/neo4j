@@ -66,7 +66,8 @@ public class RelationshipTypeIndexWriterStep extends IndexWriterStep<Relationshi
     }
 
     @Override
-    protected void process(RelationshipRecord[] batch, BatchSender sender, CursorContext cursorTracer)
+    protected void process(
+            RelationshipRecord[] batch, BatchSender sender, CursorContext cursorTracer, MemoryTracker memoryTracker)
             throws Throwable {
         for (RelationshipRecord relationship : batch) {
             if (relationship.inUse()) {

@@ -147,7 +147,8 @@ public interface StorageReader extends AutoCloseable, StorageSchemaReader {
     /**
      * @return a new {@link StorageNodeCursor} capable of reading node data from the underlying storage.
      */
-    StorageNodeCursor allocateNodeCursor(CursorContext cursorContext, StoreCursors storeCursors);
+    StorageNodeCursor allocateNodeCursor(
+            CursorContext cursorContext, StoreCursors storeCursors, MemoryTracker memoryTracker);
 
     /**
      * @return a new {@link StoragePropertyCursor} capable of reading property data from the underlying storage.
@@ -159,13 +160,13 @@ public interface StorageReader extends AutoCloseable, StorageSchemaReader {
      * @return a new {@link StorageRelationshipTraversalCursor} capable of traversing relationships from the underlying storage.
      */
     StorageRelationshipTraversalCursor allocateRelationshipTraversalCursor(
-            CursorContext cursorContext, StoreCursors storeCursors);
+            CursorContext cursorContext, StoreCursors storeCursors, MemoryTracker memoryTracker);
 
     /**
      * @return a new {@link StorageRelationshipScanCursor} capable of reading relationship data from the underlying storage.
      */
     StorageRelationshipScanCursor allocateRelationshipScanCursor(
-            CursorContext cursorContext, StoreCursors storeCursors);
+            CursorContext cursorContext, StoreCursors storeCursors, MemoryTracker memoryTracker);
 
     /**
      * Get a lock-free snapshot of the current schema, for inspecting the current schema when no mutations are intended.

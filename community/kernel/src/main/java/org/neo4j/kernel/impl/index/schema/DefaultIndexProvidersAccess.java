@@ -39,6 +39,7 @@ import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.transaction.state.StaticIndexProviderMapFactory;
 import org.neo4j.kernel.lifecycle.LifeContainer;
 import org.neo4j.logging.internal.LogService;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StorageEngineFactory;
@@ -73,9 +74,12 @@ public class DefaultIndexProvidersAccess extends LifeContainer implements IndexP
 
     @Override
     public IndexProviderMap access(
-            PageCache pageCache, DatabaseLayout layout, DatabaseReadOnlyChecker readOnlyChecker) {
+            PageCache pageCache,
+            DatabaseLayout layout,
+            DatabaseReadOnlyChecker readOnlyChecker,
+            MemoryTracker memoryTracker) {
         var tokenHolders = storageEngineFactory.loadReadOnlyTokens(
-                fileSystem, layout, databaseConfig, pageCache, pageCacheTracer, false, contextFactory);
+                fileSystem, layout, databaseConfig, pageCache, pageCacheTracer, false, contextFactory, memoryTracker);
         return access(pageCache, layout, readOnlyChecker, tokenHolders);
     }
 

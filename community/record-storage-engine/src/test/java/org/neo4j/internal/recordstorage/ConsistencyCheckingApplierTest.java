@@ -49,6 +49,7 @@ import org.neo4j.kernel.impl.transaction.log.LogTailLogVersionsMetadata;
 import org.neo4j.lock.LockGroup;
 import org.neo4j.lock.LockService;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.storageengine.api.CommandVersion;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.test.LatestVersions;
@@ -95,7 +96,7 @@ class ConsistencyCheckingApplierTest {
                         LogTailLogVersionsMetadata.EMPTY_LOG_TAIL)
                 .openAllNeoStores();
         storeCursors = new CachedStoreCursors(neoStores, CursorContext.NULL_CONTEXT);
-        checker = new ConsistencyCheckingApplier(neoStores, CursorContext.NULL_CONTEXT);
+        checker = new ConsistencyCheckingApplier(neoStores, CursorContext.NULL_CONTEXT, EmptyMemoryTracker.INSTANCE);
         BatchContext batchContext = mock(BatchContext.class);
         when(batchContext.getLockGroup()).thenReturn(new LockGroup());
         applier = new LockGuardedNeoStoreTransactionApplier(

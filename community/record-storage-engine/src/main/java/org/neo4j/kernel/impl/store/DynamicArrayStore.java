@@ -366,8 +366,8 @@ public class DynamicArrayStore extends AbstractDynamicStore {
         }
     }
 
-    public Value getArrayFor(Iterable<DynamicRecord> records, StoreCursors storeCursors) {
-        HeavyRecordData data = readFullByteArray(records, PropertyType.ARRAY, storeCursors);
+    public Value getArrayFor(Iterable<DynamicRecord> records, StoreCursors storeCursors, MemoryTracker memoryTracker) {
+        HeavyRecordData data = readFullByteArray(records, PropertyType.ARRAY, storeCursors, memoryTracker);
         byte[] header = data.header();
         byte[] bArray = data.data();
         return getRightArray(header, bArray);

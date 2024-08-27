@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.transaction.state.storeview;
 
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.api.index.StoreScan;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.storageengine.api.StorageEntityScanCursor;
 import org.neo4j.storageengine.api.StoragePropertyCursor;
@@ -30,7 +31,8 @@ import org.neo4j.storageengine.api.cursor.StoreCursors;
  * Injectable logic to a {@link StoreScan} to accommodate for different types of scans.
  */
 interface EntityScanCursorBehaviour<CURSOR extends StorageEntityScanCursor<?>> {
-    CURSOR allocateEntityScanCursor(CursorContext cursorContext, StoreCursors storeCursors);
+    CURSOR allocateEntityScanCursor(
+            CursorContext cursorContext, StoreCursors storeCursors, MemoryTracker memoryTracker);
 
     int[] readTokens(CURSOR cursor);
 

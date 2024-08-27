@@ -39,6 +39,7 @@ import org.neo4j.kernel.impl.store.format.FormatFamily;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.ExtensionCallback;
@@ -95,7 +96,8 @@ public abstract class AbstractNeo4jTestCase {
         try (var cursor = store.openPageCursorForReading(0, NULL_CONTEXT)) {
             IdGenerator idGenerator = store.getIdGenerator();
             for (long id = store.getNumberOfReservedLowIds(); id < idGenerator.getHighId(); id++) {
-                RECORD record = store.getRecordByCursor(id, store.newRecord(), RecordLoad.FORCE, cursor);
+                RECORD record = store.getRecordByCursor(
+                        id, store.newRecord(), RecordLoad.FORCE, cursor, EmptyMemoryTracker.INSTANCE);
                 if (record.inUse()) {
                     inUse++;
                 }
@@ -108,7 +110,8 @@ public abstract class AbstractNeo4jTestCase {
         long usedIds = store.getIdGenerator().getHighId();
         try (var cursor = store.openPageCursorForReading(usedIds, NULL_CONTEXT)) {
             for (long id = usedIds; id > store.getNumberOfReservedLowIds(); id--) {
-                RECORD record = store.getRecordByCursor(id, store.newRecord(), RecordLoad.FORCE, cursor);
+                RECORD record = store.getRecordByCursor(
+                        id, store.newRecord(), RecordLoad.FORCE, cursor, EmptyMemoryTracker.INSTANCE);
                 if (record.inUse()) {
                     return id;
                 }

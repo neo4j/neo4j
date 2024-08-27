@@ -59,6 +59,7 @@ import org.neo4j.kernel.impl.index.schema.DatabaseIndexContext;
 import org.neo4j.kernel.impl.index.schema.IndexFiles;
 import org.neo4j.kernel.impl.index.schema.TokenIndexAccessor;
 import org.neo4j.kernel.impl.index.schema.TokenIndexProvider;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.RandomSupport;
@@ -186,7 +187,8 @@ class ReadEntityIdsStepUsingTokenIndexTest {
         }
 
         @Override
-        protected void process(long[] entityIds, BatchSender sender, CursorContext cursorContext) {
+        protected void process(
+                long[] entityIds, BatchSender sender, CursorContext cursorContext, MemoryTracker memoryTracker) {
             for (long entityId : entityIds) {
                 seenEntityIds.set((int) entityId);
             }

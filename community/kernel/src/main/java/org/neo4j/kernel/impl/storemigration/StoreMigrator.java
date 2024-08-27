@@ -336,7 +336,12 @@ public class StoreMigrator {
 
         if (MigrationStatus.MigrationState.moving.isNeededFor(migrationState)) {
             moveMigratedFilesToStoreDirectory(
-                    participants, migrationStructures.migrationLayout, databaseLayout, fromVersion, toVersion);
+                    participants,
+                    migrationStructures.migrationLayout,
+                    databaseLayout,
+                    fromVersion,
+                    toVersion,
+                    memoryTracker);
         }
 
         progressMonitor.startTransactionLogsMigration();
@@ -519,11 +524,12 @@ public class StoreMigrator {
             DatabaseLayout migrationLayout,
             DatabaseLayout directoryLayout,
             StoreVersion versionToMigrateFrom,
-            StoreVersion versionToMigrateTo) {
+            StoreVersion versionToMigrateTo,
+            MemoryTracker memoryTracker) {
         try {
             for (StoreMigrationParticipant participant : participants) {
                 participant.moveMigratedFiles(
-                        migrationLayout, directoryLayout, versionToMigrateFrom, versionToMigrateTo);
+                        migrationLayout, directoryLayout, versionToMigrateFrom, versionToMigrateTo, memoryTracker);
             }
         } catch (IOException e) {
             throw new UnableToMigrateException(

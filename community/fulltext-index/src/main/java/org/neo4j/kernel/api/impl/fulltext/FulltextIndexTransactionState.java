@@ -95,7 +95,8 @@ class FulltextIndexTransactionState implements Closeable {
         // time.
         writer.resetWriterState();
 
-        try (NodeCursor nodeCursor = visitingNodes ? cursors.allocateFullAccessNodeCursor(cursorContext) : null;
+        try (NodeCursor nodeCursor =
+                        visitingNodes ? cursors.allocateFullAccessNodeCursor(cursorContext, memoryTracker) : null;
                 RelationshipScanCursor relationshipCursor =
                         visitingNodes ? null : cursors.allocateRelationshipScanCursor(cursorContext, memoryTracker);
                 PropertyCursor propertyCursor =

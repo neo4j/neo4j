@@ -297,7 +297,11 @@ public class DegreesRebuildFromStore implements DegreesRebuilder {
         }
 
         @Override
-        protected void process(RelationshipGroupRecord[] batch, BatchSender sender, CursorContext cursorContext)
+        protected void process(
+                RelationshipGroupRecord[] batch,
+                BatchSender sender,
+                CursorContext cursorContext,
+                MemoryTracker memoryTracker)
                 throws Throwable {
             for (RelationshipGroupRecord record : batch) {
                 if (record.inUse()
@@ -342,7 +346,11 @@ public class DegreesRebuildFromStore implements DegreesRebuilder {
         }
 
         @Override
-        protected void process(RelationshipRecord[] batch, BatchSender sender, CursorContext cursorContext)
+        protected void process(
+                RelationshipRecord[] batch,
+                BatchSender sender,
+                CursorContext cursorContext,
+                MemoryTracker memoryTracker)
                 throws Throwable {
             for (RelationshipRecord record : batch) {
                 if (record.inUse()) {

@@ -331,7 +331,7 @@ class CsvInputEstimateCalculationIT {
                     .getIdGenerator()
                     .getHighId();
             for (long id = 0; id < highId; id++) {
-                stores.getPropertyStore().getRecordByCursor(id, record, CHECK, cursor);
+                stores.getPropertyStore().getRecordByCursor(id, record, CHECK, cursor, EmptyMemoryTracker.INSTANCE);
                 if (record.inUse()) {
                     count += count(record);
                 }

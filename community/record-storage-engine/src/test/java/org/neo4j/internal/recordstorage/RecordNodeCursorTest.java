@@ -44,6 +44,7 @@ import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.storageengine.api.RelationshipSelection;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.util.SingleDegree;
@@ -65,7 +66,7 @@ class RecordNodeCursorTest {
                     return null;
                 })
                 .when(nodeStore)
-                .getRecordByCursor(anyLong(), any(), any(), any());
+                .getRecordByCursor(anyLong(), any(), any(), any(), any());
         doAnswer(invocationOnMock -> {
                     NodeRecord record = invocationOnMock.getArgument(0);
                     record.setId(record.getId() + 1);
@@ -73,8 +74,9 @@ class RecordNodeCursorTest {
                     return null;
                 })
                 .when(nodeStore)
-                .nextRecordByCursor(any(), any(), any());
-        RecordNodeCursor cursor = new RecordNodeCursor(nodeStore, null, null, null, NULL_CONTEXT, StoreCursors.NULL);
+                .nextRecordByCursor(any(), any(), any(), any());
+        RecordNodeCursor cursor = new RecordNodeCursor(
+                nodeStore, null, null, null, NULL_CONTEXT, StoreCursors.NULL, EmptyMemoryTracker.INSTANCE);
 
         // when
         cursor.scan();
@@ -103,7 +105,7 @@ class RecordNodeCursorTest {
                     return null;
                 })
                 .when(nodeStore)
-                .getRecordByCursor(eq(nodeId), any(), any(), any());
+                .getRecordByCursor(eq(nodeId), any(), any(), any(), any());
         RelationshipStore relationshipStore = mock(RelationshipStore.class);
         doAnswer(invocationOnMock -> {
                     long id = invocationOnMock.getArgument(0);
@@ -124,11 +126,17 @@ class RecordNodeCursorTest {
                     return null;
                 })
                 .when(relationshipStore)
-                .getRecordByCursor(eq(relationshipId), any(), any(), any());
+                .getRecordByCursor(eq(relationshipId), any(), any(), any(), any());
         RelationshipGroupStore groupStore = mock(RelationshipGroupStore.class);
         RelationshipGroupDegreesStore groupDegreesStore = mock(RelationshipGroupDegreesStore.class);
         RecordNodeCursor nodeCursor = new RecordNodeCursor(
-                nodeStore, relationshipStore, groupStore, groupDegreesStore, NULL_CONTEXT, StoreCursors.NULL);
+                nodeStore,
+                relationshipStore,
+                groupStore,
+                groupDegreesStore,
+                NULL_CONTEXT,
+                StoreCursors.NULL,
+                EmptyMemoryTracker.INSTANCE);
 
         // when
         nodeCursor.single(nodeId);
@@ -139,7 +147,7 @@ class RecordNodeCursorTest {
         // then
         assertThat(mutator.getTotal()).isEqualTo(degree);
         verifyNoInteractions(groupStore);
-        verify(relationshipStore).getRecordByCursor(eq(relationshipId), any(), any(), any());
-        verify(relationshipStore, never()).getRecordByCursor(eq(nextRelationshipId), any(), any(), any());
+        verify(relationshipStore).getRecordByCursor(eq(relationshipId), any(), any(), any(), any());
+        verify(relationshipStore, never()).getRecordByCursor(eq(nextRelationshipId), any(), any(), any(), any());
     }
 }

@@ -24,6 +24,7 @@ import static org.neo4j.internal.recordstorage.RecordCursorTypes.DYNAMIC_LABEL_S
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 /**
@@ -55,7 +56,8 @@ public class NodeLabelsField {
     /**
      * Get node labels without making node heavy
      */
-    public static int[] getNoEnsureHeavy(NodeRecord node, NodeStore nodeStore, StoreCursors storeCursors) {
+    public static int[] getNoEnsureHeavy(
+            NodeRecord node, NodeStore nodeStore, StoreCursors storeCursors, MemoryTracker memoryTracker) {
         long labelField = node.getLabelField();
         if (!fieldPointsToDynamicRecordOfLabels(labelField)) {
             return InlineNodeLabels.parseInlined(labelField);
@@ -69,22 +71,26 @@ public class NodeLabelsField {
                     firstDynamicLabelRecord,
                     RecordLoad.NORMAL,
                     false,
-                    storeCursors.readCursor(DYNAMIC_LABEL_STORE_CURSOR));
+                    storeCursors.readCursor(DYNAMIC_LABEL_STORE_CURSOR),
+                    memoryTracker);
         } else {
             dynamicLabelRecords = node.getUsedDynamicLabelRecords();
         }
-        return DynamicNodeLabels.getDynamicLabelsArray(dynamicLabelRecords, dynamicLabelStore, storeCursors);
+        return DynamicNodeLabels.getDynamicLabelsArray(
+                dynamicLabelRecords, dynamicLabelStore, storeCursors, memoryTracker);
     }
 
-    public static int[] get(NodeRecord node, NodeStore nodeStore, StoreCursors storeCursors) {
+    public static int[] get(
+            NodeRecord node, NodeStore nodeStore, StoreCursors storeCursors, MemoryTracker memoryTracker) {
         return fieldPointsToDynamicRecordOfLabels(node.getLabelField())
-                ? DynamicNodeLabels.get(node, nodeStore, storeCursors)
+                ? DynamicNodeLabels.get(node, nodeStore, storeCursors, memoryTracker)
                 : InlineNodeLabels.get(node);
     }
 
-    public static boolean hasLabel(NodeRecord node, NodeStore nodeStore, StoreCursors storeCursors, int label) {
+    public static boolean hasLabel(
+            NodeRecord node, NodeStore nodeStore, StoreCursors storeCursors, int label, MemoryTracker memoryTracker) {
         return fieldPointsToDynamicRecordOfLabels(node.getLabelField())
-                ? DynamicNodeLabels.hasLabel(node, nodeStore, storeCursors, label)
+                ? DynamicNodeLabels.hasLabel(node, nodeStore, storeCursors, label, memoryTracker)
                 : InlineNodeLabels.hasLabel(node, label);
     }
 

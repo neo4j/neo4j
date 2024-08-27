@@ -29,6 +29,7 @@ import org.neo4j.consistency.report.ConsistencyReport.RelationshipGroupConsisten
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.helpers.collection.LongRange;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.memory.EmptyMemoryTracker;
 
 class RelationshipGroupCheckerTest extends CheckerTestBase {
     private int type1;
@@ -323,6 +324,10 @@ class RelationshipGroupCheckerTest extends CheckerTestBase {
 
     private void check() throws Exception {
         new RelationshipGroupChecker(context())
-                .check(LongRange.range(0, nodeStore.getIdGenerator().getHighId()), true, true);
+                .check(
+                        LongRange.range(0, nodeStore.getIdGenerator().getHighId()),
+                        true,
+                        true,
+                        EmptyMemoryTracker.INSTANCE);
     }
 }

@@ -38,6 +38,7 @@ import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 /**
@@ -61,7 +62,8 @@ class RelationshipGroupChecker implements Checker {
     }
 
     @Override
-    public void check(LongRange nodeIdRange, boolean firstRange, boolean lastRange) throws Exception {
+    public void check(LongRange nodeIdRange, boolean firstRange, boolean lastRange, MemoryTracker memoryTracker)
+            throws Exception {
         ParallelExecution execution = context.execution;
         checkToOwner(nodeIdRange, context.contextFactory);
         if (firstRange) {
@@ -88,8 +90,8 @@ class RelationshipGroupChecker implements Checker {
 
         try (var cursorContext = contextFactory.create(RELATIONSHIP_GROUPS_CHECKER_TAG);
                 var storeCursors = new CachedStoreCursors(neoStores, cursorContext);
-                RecordReader<RelationshipGroupRecord> groupReader =
-                        new RecordReader<>(neoStores.getRelationshipGroupStore(), true, cursorContext);
+                RecordReader<RelationshipGroupRecord> groupReader = new RecordReader<>(
+                        neoStores.getRelationshipGroupStore(), true, cursorContext, context.memoryTracker);
                 var localProgress = progress.threadLocalReporter()) {
             for (long id = groupStore.getNumberOfReservedLowIds(); id < highId && !context.isCancelled(); id++) {
                 localProgress.add(1);
@@ -117,7 +119,8 @@ class RelationshipGroupChecker implements Checker {
                                 client.getBooleanFromCache(owningNode, CacheSlots.NodeLink.SLOT_HAS_LAST_GROUP);
                         if (hasAlreadySeenLastGroup) {
                             reporter.forRelationshipGroup(record)
-                                    .multipleLastGroups(context.recordLoader.node(owningNode, storeCursors));
+                                    .multipleLastGroups(
+                                            context.recordLoader.node(owningNode, storeCursors, context.memoryTracker));
                         }
                         client.putToCacheSingle(owningNode, CacheSlots.NodeLink.SLOT_HAS_LAST_GROUP, 1);
                     }
@@ -132,13 +135,13 @@ class RelationshipGroupChecker implements Checker {
     private void checkToRelationship(long fromGroupId, long toGroupId, CursorContextFactory contextFactory) {
         try (var cursorContext = contextFactory.create(RELATIONSHIP_GROUPS_CHECKER_TAG);
                 var storeCursors = new CachedStoreCursors(neoStores, cursorContext);
-                RecordReader<RelationshipGroupRecord> groupReader =
-                        new RecordReader<>(neoStores.getRelationshipGroupStore(), true, cursorContext);
-                RecordReader<RelationshipGroupRecord> comparativeReader =
-                        new RecordReader<>(neoStores.getRelationshipGroupStore(), false, cursorContext);
+                RecordReader<RelationshipGroupRecord> groupReader = new RecordReader<>(
+                        neoStores.getRelationshipGroupStore(), true, cursorContext, context.memoryTracker);
+                RecordReader<RelationshipGroupRecord> comparativeReader = new RecordReader<>(
+                        neoStores.getRelationshipGroupStore(), false, cursorContext, context.memoryTracker);
                 RecordStorageReader reader = new RecordStorageReader(neoStores);
                 RecordRelationshipScanCursor relationshipCursor =
-                        reader.allocateRelationshipScanCursor(cursorContext, storeCursors)) {
+                        reader.allocateRelationshipScanCursor(cursorContext, storeCursors, context.memoryTracker)) {
             for (long id = fromGroupId; id < toGroupId && !context.isCancelled(); id++) {
                 RelationshipGroupRecord record = groupReader.read(id);
                 if (!record.inUse()) {
@@ -157,7 +160,8 @@ class RelationshipGroupChecker implements Checker {
                         neoStores.getRelationshipTypeTokenStore(),
                         (group, token) -> reporter.forRelationshipGroup(group).illegalRelationshipType(),
                         (group, token) -> reporter.forRelationshipGroup(group).relationshipTypeNotInUse(token),
-                        storeCursors);
+                        storeCursors,
+                        context.memoryTracker);
 
                 if (!NULL_REFERENCE.is(record.getNext())) {
                     RelationshipGroupRecord comparativeRecord = comparativeReader.read(record.getNext());
@@ -236,7 +240,9 @@ class RelationshipGroupChecker implements Checker {
                         || relationshipCursor.getSecondNode() == record.getOwningNode();
                 if (!hasCorrectNode) {
                     reportNodeNotSharedWithGroup.accept(
-                            record, context.recordLoader.relationship(relationshipCursor.getId(), storeCursors));
+                            record,
+                            context.recordLoader.relationship(
+                                    relationshipCursor.getId(), storeCursors, context.memoryTracker));
                 }
             }
         }

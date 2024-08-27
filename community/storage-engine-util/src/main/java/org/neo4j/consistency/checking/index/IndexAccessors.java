@@ -44,6 +44,7 @@ import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
+import org.neo4j.memory.MemoryTracker;
 
 public class IndexAccessors implements Closeable {
     private static final String CONSISTENCY_INDEX_ACCESSOR_BUILDER_TAG = "consistencyIndexAccessorBuilder";
@@ -61,7 +62,8 @@ public class IndexAccessors implements Closeable {
             TokenNameLookup tokenNameLookup,
             CursorContextFactory contextFactory,
             ImmutableSet<OpenOption> openOptions,
-            StorageEngineIndexingBehaviour behavior) {
+            StorageEngineIndexingBehaviour behavior,
+            MemoryTracker memoryTracker) {
         this(
                 providers,
                 indexes,
@@ -70,7 +72,8 @@ public class IndexAccessors implements Closeable {
                 tokenNameLookup,
                 contextFactory,
                 openOptions,
-                behavior);
+                behavior,
+                memoryTracker);
     }
 
     public IndexAccessors(
@@ -81,14 +84,15 @@ public class IndexAccessors implements Closeable {
             TokenNameLookup tokenNameLookup,
             CursorContextFactory contextFactory,
             ImmutableSet<OpenOption> openOptions,
-            StorageEngineIndexingBehaviour behavior) {
+            StorageEngineIndexingBehaviour behavior,
+            MemoryTracker memoryTracker) {
         try (var cursorContext = contextFactory.create(CONSISTENCY_INDEX_ACCESSOR_BUILDER_TAG)) {
             // Default to instantiate new accessors
             accessorLookup = accessorLookup != null
                     ? accessorLookup
                     : index -> provider(providers, index)
                             .getOnlineAccessor(index, samplingConfig, tokenNameLookup, openOptions, true, behavior);
-            try (var descriptors = descriptorProvider.indexDescriptors(cursorContext)) {
+            try (var descriptors = descriptorProvider.indexDescriptors(cursorContext, memoryTracker)) {
                 while (descriptors.hasNext()) {
                     try {
                         IndexDescriptor indexDescriptor = descriptors.next();

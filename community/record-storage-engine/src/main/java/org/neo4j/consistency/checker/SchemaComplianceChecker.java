@@ -168,11 +168,11 @@ class SchemaComplianceChecker implements AutoCloseable {
             Function<ENTITY, ConsistencyReport.PrimitiveConsistencyReport> reportSupplier) {
         if (count == 0 && areValuesSupportedByIndex(indexRule, propertyValues)) {
             reportSupplier
-                    .apply(context.recordLoader.entity(entity, storeCursors))
+                    .apply(context.recordLoader.entity(entity, storeCursors, context.memoryTracker))
                     .notIndexed(indexRule, Values.asObjects(propertyValues));
         } else if (count != 1) {
             reportSupplier
-                    .apply(context.recordLoader.entity(entity, storeCursors))
+                    .apply(context.recordLoader.entity(entity, storeCursors, context.memoryTracker))
                     .indexedMultipleTimes(indexRule, Values.asObjects(propertyValues), count);
         }
     }

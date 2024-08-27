@@ -27,6 +27,7 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.kernel.impl.store.TokenStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.token.CreatingTokenHolder;
 import org.neo4j.token.ReadOnlyTokenCreator;
@@ -43,7 +44,14 @@ class RecordLoadingTest {
 
         // when
         boolean valid = RecordLoading.checkValidToken(
-                entity, 0, tokenHolder, store, noopReporter, noopReporter, StoreCursors.NULL);
+                entity,
+                0,
+                tokenHolder,
+                store,
+                noopReporter,
+                noopReporter,
+                StoreCursors.NULL,
+                EmptyMemoryTracker.INSTANCE);
 
         // then
         assertFalse(valid);

@@ -55,11 +55,11 @@ class InternalCursorFactory {
     }
 
     StorageNodeCursor allocateStorageNodeCursor() {
-        return storageReader.allocateNodeCursor(cursorContext, storeCursors);
+        return storageReader.allocateNodeCursor(cursorContext, storeCursors, memoryTracker);
     }
 
     StorageRelationshipTraversalCursor allocateStorageRelationshipTraversalCursor() {
-        return storageReader.allocateRelationshipTraversalCursor(cursorContext, storeCursors);
+        return storageReader.allocateRelationshipTraversalCursor(cursorContext, storeCursors, memoryTracker);
     }
 
     StoragePropertyCursor allocateStoragePropertyCursor() {
@@ -71,12 +71,13 @@ class InternalCursorFactory {
     }
 
     FullAccessNodeCursor allocateFullAccessNodeCursor() {
-        return new FullAccessNodeCursor(c -> {}, storageReader.allocateNodeCursor(cursorContext, storeCursors));
+        return new FullAccessNodeCursor(
+                c -> {}, storageReader.allocateNodeCursor(cursorContext, storeCursors, memoryTracker));
     }
 
     FullAccessRelationshipScanCursor allocateFullAccessRelationshipScanCursor() {
         return new FullAccessRelationshipScanCursor(
-                c -> {}, storageReader.allocateRelationshipScanCursor(cursorContext, storeCursors));
+                c -> {}, storageReader.allocateRelationshipScanCursor(cursorContext, storeCursors, memoryTracker));
     }
 
     DefaultPropertyCursor allocatePropertyCursor() {

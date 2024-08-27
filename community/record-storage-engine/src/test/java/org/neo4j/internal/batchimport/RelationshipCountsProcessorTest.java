@@ -36,6 +36,7 @@ import org.neo4j.internal.batchimport.cache.NodeLabelsCache;
 import org.neo4j.internal.batchimport.cache.NumberArrayFactories;
 import org.neo4j.internal.batchimport.cache.NumberArrayFactory;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
@@ -97,8 +98,8 @@ class RelationshipCountsProcessorTest {
                 NumberArrayFactories.AUTO_WITHOUT_PAGECACHE,
                 INSTANCE);
 
-        countsProcessor.process(record(1, 0, 3), StoreCursors.NULL);
-        countsProcessor.process(record(2, 1, 4), StoreCursors.NULL);
+        countsProcessor.process(record(1, 0, 3), StoreCursors.NULL, EmptyMemoryTracker.INSTANCE);
+        countsProcessor.process(record(2, 1, 4), StoreCursors.NULL, EmptyMemoryTracker.INSTANCE);
 
         countsProcessor.done();
 

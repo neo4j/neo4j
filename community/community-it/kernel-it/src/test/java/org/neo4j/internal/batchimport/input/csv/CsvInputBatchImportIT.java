@@ -107,6 +107,7 @@ import org.neo4j.kernel.impl.util.AutoCreatingHashMap;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.LogTimeZone;
 import org.neo4j.logging.internal.NullLogService;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
@@ -475,7 +476,7 @@ class CsvInputBatchImportIT {
             TokenStore<?> tokenStore, final int anyValue, RecordStorageEngine storageEngine) {
         final Map<String, Integer> translationTable = new HashMap<>();
         try (var storeCursors = storageEngine.createStorageCursors(NULL_CONTEXT)) {
-            for (NamedToken token : tokenStore.getTokens(storeCursors)) {
+            for (NamedToken token : tokenStore.getTokens(storeCursors, EmptyMemoryTracker.INSTANCE)) {
                 translationTable.put(token.name(), token.id());
             }
             return from -> from == null ? anyValue : translationTable.get(from);

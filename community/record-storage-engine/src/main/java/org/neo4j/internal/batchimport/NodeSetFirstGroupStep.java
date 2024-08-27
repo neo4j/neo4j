@@ -33,6 +33,7 @@ import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
+import org.neo4j.memory.MemoryTracker;
 
 /**
  * Scans {@link RelationshipGroupRecord group records} and discovers which should affect the owners.
@@ -74,7 +75,11 @@ public class NodeSetFirstGroupStep extends ProcessorStep<RelationshipGroupRecord
     }
 
     @Override
-    protected void process(RelationshipGroupRecord[] batch, BatchSender sender, CursorContext cursorContext) {
+    protected void process(
+            RelationshipGroupRecord[] batch,
+            BatchSender sender,
+            CursorContext cursorContext,
+            MemoryTracker memoryTracker) {
         for (RelationshipGroupRecord group : batch) {
             if (!group.inUse()) {
                 continue;
@@ -84,7 +89,7 @@ public class NodeSetFirstGroupStep extends ProcessorStep<RelationshipGroupRecord
             if (cache.getByte(nodeId, 0) == 0) {
                 cache.setByte(nodeId, 0, (byte) 1);
                 NodeRecord nodeRecord = nodeStore.newRecord();
-                nodeStore.getRecordByCursor(nodeId, nodeRecord, NORMAL, nodeCursor);
+                nodeStore.getRecordByCursor(nodeId, nodeRecord, NORMAL, nodeCursor, memoryTracker);
                 nodeRecord.setNextRel(group.getId());
                 nodeRecord.setDense(true);
 

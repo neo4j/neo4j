@@ -20,6 +20,7 @@
 package org.neo4j.internal.batchimport;
 
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 /**
@@ -31,9 +32,10 @@ public interface RecordProcessor<T extends AbstractBaseRecord> extends AutoClose
     /**
      * Processes an item.
      * @param storeCursors underlying page cursors provider.
+     * @param memoryTracker
      * @return {@code true} if processing this item resulted in changes that should be updated back to the source.
      */
-    boolean process(T item, StoreCursors storeCursors);
+    boolean process(T item, StoreCursors storeCursors, MemoryTracker memoryTracker);
 
     void done();
 

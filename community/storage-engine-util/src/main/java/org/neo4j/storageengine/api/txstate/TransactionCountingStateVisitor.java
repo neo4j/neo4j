@@ -36,6 +36,7 @@ import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.CountsDelta;
 import org.neo4j.storageengine.api.StorageNodeCursor;
 import org.neo4j.storageengine.api.StorageReader;
@@ -55,12 +56,14 @@ public class TransactionCountingStateVisitor extends TxStateVisitor.Delegator {
             ReadableTransactionState txState,
             CountsDelta counts,
             CursorContext cursorContext,
-            StoreCursors storeCursors) {
+            StoreCursors storeCursors,
+            MemoryTracker memoryTracker) {
         super(next);
         this.txState = txState;
         this.counts = counts;
-        this.nodeCursor = storageReader.allocateNodeCursor(cursorContext, storeCursors);
-        this.relationshipCursor = storageReader.allocateRelationshipScanCursor(cursorContext, storeCursors);
+        this.nodeCursor = storageReader.allocateNodeCursor(cursorContext, storeCursors, memoryTracker);
+        this.relationshipCursor =
+                storageReader.allocateRelationshipScanCursor(cursorContext, storeCursors, memoryTracker);
     }
 
     @Override

@@ -41,6 +41,7 @@ import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.values.storable.Value;
@@ -61,6 +62,7 @@ public abstract class LenientStoreInputChunk implements InputChunk {
     private final MutableIntSet seenPropertyKeyIds = IntSets.mutable.empty();
     private final PageCursor propertyCursor;
     private final PropertyRecord propertyRecord;
+    private final MemoryTracker memoryTracker;
 
     LenientStoreInputChunk(
             ReadBehaviour readBehaviour,
@@ -69,7 +71,8 @@ public abstract class LenientStoreInputChunk implements InputChunk {
             CursorContextFactory contextFactory,
             StoreCursors storeCursors,
             PageCursor cursor,
-            Group group) {
+            Group group,
+            MemoryTracker memoryTracker) {
         this.readBehaviour = readBehaviour;
         this.propertyStore = propertyStore;
         this.tokenHolders = tokenHolders;
@@ -79,6 +82,7 @@ public abstract class LenientStoreInputChunk implements InputChunk {
         this.propertyCursor = storeCursors.readCursor(PROPERTY_CURSOR);
         this.propertyRecord = propertyStore.newRecord();
         this.group = group;
+        this.memoryTracker = memoryTracker;
     }
 
     void setChunkRange(long startId, long endId) {
@@ -90,7 +94,7 @@ public abstract class LenientStoreInputChunk implements InputChunk {
     public boolean next(InputEntityVisitor visitor) {
         if (id < endId) {
             try {
-                readAndVisit(id, visitor, storeCursors);
+                readAndVisit(id, visitor, storeCursors, memoryTracker);
             } catch (Exception e) {
                 readBehaviour.removed();
                 readBehaviour.error(e, "%s(%d): Ignoring broken record.", recordType(), id);
@@ -107,7 +111,9 @@ public abstract class LenientStoreInputChunk implements InputChunk {
         closeAllUnchecked(storeCursors, cursorContext);
     }
 
-    abstract void readAndVisit(long id, InputEntityVisitor visitor, StoreCursors storeCursors) throws IOException;
+    abstract void readAndVisit(
+            long id, InputEntityVisitor visitor, StoreCursors storeCursors, MemoryTracker memoryTracker)
+            throws IOException;
 
     abstract String recordType();
 
@@ -120,7 +126,8 @@ public abstract class LenientStoreInputChunk implements InputChunk {
             InputEntityVisitor visitor,
             PrimitiveRecord record,
             EntityType owningEntityType,
-            String[] owningEntityTokens) {
+            String[] owningEntityTokens,
+            MemoryTracker memoryTracker) {
         try {
             if (record.getNextProp() == Record.NO_NEXT_PROPERTY.intValue()) {
                 return;
@@ -142,7 +149,8 @@ public abstract class LenientStoreInputChunk implements InputChunk {
                     return;
                 }
 
-                propertyStore.getRecordByCursor(nextProp, propertyRecord, RecordLoad.NORMAL, propertyCursor);
+                propertyStore.getRecordByCursor(
+                        nextProp, propertyRecord, RecordLoad.NORMAL, propertyCursor, memoryTracker);
 
                 // Validate back pointer to make sure chain is intact
                 if (propertyRecord.getPrevProp() != prevProp) {
@@ -152,12 +160,12 @@ public abstract class LenientStoreInputChunk implements InputChunk {
                 prevProp = propertyRecord.getId();
 
                 for (PropertyBlock propBlock : propertyRecord) {
-                    propertyStore.ensureHeavy(propBlock, storeCursors);
+                    propertyStore.ensureHeavy(propBlock, storeCursors, memoryTracker);
                     String key = LenientStoreInput.getTokenByIdSafe(
                                     tokenHolders.propertyKeyTokens(), propBlock.getKeyIndexId())
                             .name();
                     if (shouldIncludeProperty(readBehaviour, key, owningEntityTokens)) {
-                        Value propertyValue = propBlock.newPropertyValue(propertyStore, storeCursors);
+                        Value propertyValue = propBlock.newPropertyValue(propertyStore, storeCursors, memoryTracker);
 
                         if (!seenPropertyKeyIds.add(propBlock.getKeyIndexId())) {
                             readBehaviour.error(

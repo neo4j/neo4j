@@ -330,22 +330,34 @@ public class RecordStorageReader implements StorageReader {
     }
 
     @Override
-    public RecordNodeCursor allocateNodeCursor(CursorContext cursorContext, StoreCursors storeCursors) {
+    public RecordNodeCursor allocateNodeCursor(
+            CursorContext cursorContext, StoreCursors storeCursors, MemoryTracker memoryTracker) {
         return new RecordNodeCursor(
-                nodeStore, relationshipStore, relationshipGroupStore, groupDegreesStore, cursorContext, storeCursors);
+                nodeStore,
+                relationshipStore,
+                relationshipGroupStore,
+                groupDegreesStore,
+                cursorContext,
+                storeCursors,
+                memoryTracker);
     }
 
     @Override
     public RecordRelationshipTraversalCursor allocateRelationshipTraversalCursor(
-            CursorContext cursorContext, StoreCursors storeCursors) {
+            CursorContext cursorContext, StoreCursors storeCursors, MemoryTracker memoryTracker) {
         return new RecordRelationshipTraversalCursor(
-                relationshipStore, relationshipGroupStore, groupDegreesStore, cursorContext, storeCursors);
+                relationshipStore,
+                relationshipGroupStore,
+                groupDegreesStore,
+                cursorContext,
+                storeCursors,
+                memoryTracker);
     }
 
     @Override
     public RecordRelationshipScanCursor allocateRelationshipScanCursor(
-            CursorContext cursorContext, StoreCursors storeCursors) {
-        return new RecordRelationshipScanCursor(relationshipStore, cursorContext, storeCursors);
+            CursorContext cursorContext, StoreCursors storeCursors, MemoryTracker memoryTracker) {
+        return new RecordRelationshipScanCursor(relationshipStore, cursorContext, storeCursors, memoryTracker);
     }
 
     @Override

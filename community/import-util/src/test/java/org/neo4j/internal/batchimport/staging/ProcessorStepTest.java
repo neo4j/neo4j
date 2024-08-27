@@ -46,6 +46,7 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.OtherThread;
 import org.neo4j.test.extension.OtherThreadExtension;
@@ -178,10 +179,11 @@ class ProcessorStepTest {
             if (failingProcessorIndex == i) {
                 failingProcessor = new BlockingProcessorStep<>(stage.control(), configuration, 1, latch) {
                     @Override
-                    protected void process(Integer batch, BatchSender sender, CursorContext cursorContext)
+                    protected void process(
+                            Integer batch, BatchSender sender, CursorContext cursorContext, MemoryTracker memoryTracker)
                             throws Throwable {
                         // Block until the latch is released below
-                        super.process(batch, sender, cursorContext);
+                        super.process(batch, sender, cursorContext, memoryTracker);
                         // Then immediately throw exception so that a panic will be issued
                         throw new RuntimeException(exceptionMessage);
                     }
@@ -230,7 +232,8 @@ class ProcessorStepTest {
     private static ProcessorStep<Integer> intProcessor(Configuration configuration, Stage stage) {
         return new ProcessorStep<>(stage.control(), "processor", configuration, 1, CONTEXT_FACTORY) {
             @Override
-            protected void process(Integer batch, BatchSender sender, CursorContext cursorContext) {
+            protected void process(
+                    Integer batch, BatchSender sender, CursorContext cursorContext, MemoryTracker memoryTracker) {
                 sender.send(batch);
             }
         };
@@ -246,7 +249,8 @@ class ProcessorStepTest {
         }
 
         @Override
-        protected void process(T batch, BatchSender sender, CursorContext cursorContext) throws Throwable {
+        protected void process(T batch, BatchSender sender, CursorContext cursorContext, MemoryTracker memoryTracker)
+                throws Throwable {
             latch.await();
         }
     }
@@ -263,7 +267,8 @@ class ProcessorStepTest {
         }
 
         @Override
-        protected void process(Integer batch, BatchSender sender, CursorContext cursorContext) {
+        protected void process(
+                Integer batch, BatchSender sender, CursorContext cursorContext, MemoryTracker memoryTracker) {
             var swapper = mock(PageSwapper.class, RETURNS_MOCKS);
             try (var pinEvent = cursorContext.getCursorTracer().beginPin(false, 1, swapper)) {
                 pinEvent.hit();

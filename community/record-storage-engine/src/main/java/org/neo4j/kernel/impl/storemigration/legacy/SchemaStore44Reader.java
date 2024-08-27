@@ -59,6 +59,7 @@ import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.kernel.impl.storemigration.SchemaStore44MigrationUtil;
 import org.neo4j.logging.InternalLogProvider;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.PropertyKeyValue;
 import org.neo4j.storageengine.api.SchemaRule44;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
@@ -147,7 +148,7 @@ public class SchemaStore44Reader implements AutoCloseable {
                 openOptions);
     }
 
-    public List<SchemaRule44> loadAllSchemaRules(StoreCursors storeCursors) {
+    public List<SchemaRule44> loadAllSchemaRules(StoreCursors storeCursors, MemoryTracker memoryTracker) {
         long startId = schemaStore.getNumberOfReservedLowIds();
         long endId = schemaStore.getIdGenerator().getHighId();
 
@@ -155,13 +156,17 @@ public class SchemaStore44Reader implements AutoCloseable {
         maybeAddFormerLabelScanStore(schemaRules);
         for (long id = startId; id < endId; id++) {
             SchemaRecord schemaRecord = schemaStore.getRecordByCursor(
-                    id, schemaStore.newRecord(), RecordLoad.LENIENT_ALWAYS, storeCursors.readCursor(SCHEMA_CURSOR));
+                    id,
+                    schemaStore.newRecord(),
+                    RecordLoad.LENIENT_ALWAYS,
+                    storeCursors.readCursor(SCHEMA_CURSOR),
+                    memoryTracker);
             if (!schemaRecord.inUse()) {
                 continue;
             }
 
             try {
-                Map<String, Value> propertyKeyValue = schemaRecordToMap(schemaRecord, storeCursors);
+                Map<String, Value> propertyKeyValue = schemaRecordToMap(schemaRecord, storeCursors, memoryTracker);
                 SchemaRule44 schemaRule = createSchemaRule(id, propertyKeyValue);
                 schemaRules.add(schemaRule);
             } catch (MalformedSchemaRuleException ignored) {
@@ -178,7 +183,8 @@ public class SchemaStore44Reader implements AutoCloseable {
         }
     }
 
-    private Map<String, Value> schemaRecordToMap(SchemaRecord record, StoreCursors storeCursors)
+    private Map<String, Value> schemaRecordToMap(
+            SchemaRecord record, StoreCursors storeCursors, MemoryTracker memoryTracker)
             throws MalformedSchemaRuleException {
         Map<String, Value> props = new HashMap<>();
         PropertyRecord propRecord = propertyStore.newRecord();
@@ -186,7 +192,11 @@ public class SchemaStore44Reader implements AutoCloseable {
         while (nextProp != NO_NEXT_PROPERTY.longValue()) {
             try {
                 propertyStore.getRecordByCursor(
-                        nextProp, propRecord, RecordLoad.NORMAL, storeCursors.readCursor(PROPERTY_CURSOR));
+                        nextProp,
+                        propRecord,
+                        RecordLoad.NORMAL,
+                        storeCursors.readCursor(PROPERTY_CURSOR),
+                        memoryTracker);
             } catch (InvalidRecordException e) {
                 throw new MalformedSchemaRuleException(
                         "Cannot read schema rule because it is referencing a property record (id " + nextProp
@@ -194,7 +204,8 @@ public class SchemaStore44Reader implements AutoCloseable {
                         e);
             }
             for (PropertyBlock propertyBlock : propRecord) {
-                PropertyKeyValue propertyKeyValue = propertyBlock.newPropertyKeyValue(propertyStore, storeCursors);
+                PropertyKeyValue propertyKeyValue =
+                        propertyBlock.newPropertyKeyValue(propertyStore, storeCursors, memoryTracker);
                 insertPropertyIntoMap(propertyKeyValue, props, tokenHolders);
             }
             nextProp = propRecord.getNextProp();

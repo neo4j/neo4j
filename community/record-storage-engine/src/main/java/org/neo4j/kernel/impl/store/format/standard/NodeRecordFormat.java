@@ -25,6 +25,7 @@ import org.neo4j.kernel.impl.store.format.BaseRecordFormat;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
+import org.neo4j.memory.MemoryTracker;
 
 public class NodeRecordFormat extends BaseOneByteHeaderRecordFormat<NodeRecord> {
     // in_use(byte)+next_rel_id(int)+next_prop_id(int)+labels(5)+extra(byte)
@@ -44,7 +45,13 @@ public class NodeRecordFormat extends BaseOneByteHeaderRecordFormat<NodeRecord> 
     }
 
     @Override
-    public void read(NodeRecord record, PageCursor cursor, RecordLoad mode, int recordSize, int recordsPerPage) {
+    public void read(
+            NodeRecord record,
+            PageCursor cursor,
+            RecordLoad mode,
+            int recordSize,
+            int recordsPerPage,
+            MemoryTracker memoryTracker) {
         byte headerByte = cursor.getByte();
         boolean inUse = isInUse(headerByte);
         record.setInUse(inUse);

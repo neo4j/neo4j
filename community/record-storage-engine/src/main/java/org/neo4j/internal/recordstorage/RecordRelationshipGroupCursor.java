@@ -33,6 +33,7 @@ import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.RecordLoadOverride;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.Degrees;
 import org.neo4j.storageengine.api.RelationshipDirection;
 import org.neo4j.storageengine.api.RelationshipSelection;
@@ -51,6 +52,7 @@ class RecordRelationshipGroupCursor extends RelationshipGroupRecord implements A
     private boolean open;
     RecordLoadOverride loadMode;
     private final StoreCursors storeCursors;
+    private final MemoryTracker memoryTracker;
 
     RecordRelationshipGroupCursor(
             RelationshipStore relationshipStore,
@@ -58,7 +60,8 @@ class RecordRelationshipGroupCursor extends RelationshipGroupRecord implements A
             RelationshipGroupDegreesStore groupDegreesStore,
             RecordLoadOverride loadMode,
             CursorContext cursorContext,
-            StoreCursors storeCursors) {
+            StoreCursors storeCursors,
+            MemoryTracker memoryTracker) {
         super(NO_ID);
         this.relationshipStore = relationshipStore;
         this.groupStore = groupStore;
@@ -66,6 +69,7 @@ class RecordRelationshipGroupCursor extends RelationshipGroupRecord implements A
         this.cursorContext = cursorContext;
         this.loadMode = loadMode;
         this.storeCursors = storeCursors;
+        this.memoryTracker = memoryTracker;
     }
 
     void init(long nodeReference, long reference, boolean nodeIsDense) {
@@ -133,7 +137,7 @@ class RecordRelationshipGroupCursor extends RelationshipGroupRecord implements A
             if (edgePage == null) {
                 edgePage = storeCursors.readCursor(RecordCursorTypes.RELATIONSHIP_CURSOR);
             }
-            relationshipStore.getRecordByCursor(reference, edge, loadMode.orElse(ALWAYS), edgePage);
+            relationshipStore.getRecordByCursor(reference, edge, loadMode.orElse(ALWAYS), edgePage, memoryTracker);
             count = (int) edge.getPrevRel(getOwningNode());
         }
         return add(direction, mutator, Math.max(count - 1, 0));
@@ -195,6 +199,6 @@ class RecordRelationshipGroupCursor extends RelationshipGroupRecord implements A
         // We need to load forcefully here since otherwise we cannot traverse over groups
         // records which have been concurrently deleted (flagged as inUse = false).
         // @see #org.neo4j.kernel.impl.store.RelationshipChainPointerChasingTest
-        groupStore.getRecordByCursor(reference, record, loadMode.orElse(ALWAYS), page);
+        groupStore.getRecordByCursor(reference, record, loadMode.orElse(ALWAYS), page, memoryTracker);
     }
 }

@@ -97,7 +97,7 @@ public interface RecordAccess<RECORD extends AbstractBaseRecord, ADDITIONAL> {
 
         RECORD load(long key, ADDITIONAL additionalData, RecordLoad load, MemoryTracker memoryTracker);
 
-        void ensureHeavy(RECORD record, StoreCursors storeCursors);
+        void ensureHeavy(RECORD record, StoreCursors storeCursors, MemoryTracker memoryTracker);
 
         RECORD copy(RECORD record, MemoryTracker memoryTracker);
     }

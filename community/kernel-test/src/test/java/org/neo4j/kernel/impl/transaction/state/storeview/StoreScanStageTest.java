@@ -93,8 +93,8 @@ class StoreScanStageTest {
     void shouldGenerateUpdatesInParallel(boolean parallelWrite) {
         // given
         StubStorageCursors data = someData();
-        EntityIdIterator entityIdIterator =
-                new CursorEntityIdIterator<>(data.allocateNodeCursor(NULL_CONTEXT, StoreCursors.NULL));
+        EntityIdIterator entityIdIterator = new CursorEntityIdIterator<>(
+                data.allocateNodeCursor(NULL_CONTEXT, StoreCursors.NULL, EmptyMemoryTracker.INSTANCE));
         var propertyConsumer = new ThreadCapturingPropertyConsumer();
         var tokenConsumer = new ThreadCapturingTokenConsumer();
         ControlledLockFunction lockFunction = new ControlledLockFunction();
@@ -136,8 +136,8 @@ class StoreScanStageTest {
     void shouldPanicAndExitStageOnWriteFailure() {
         // given
         StubStorageCursors data = someData();
-        EntityIdIterator entityIdIterator =
-                new CursorEntityIdIterator<>(data.allocateNodeCursor(NULL_CONTEXT, StoreCursors.NULL));
+        EntityIdIterator entityIdIterator = new CursorEntityIdIterator<>(
+                data.allocateNodeCursor(NULL_CONTEXT, StoreCursors.NULL, EmptyMemoryTracker.INSTANCE));
 
         var failingWriter = new PropertyConsumer(() -> {
             throw new IllegalStateException("Failed to write");
@@ -172,8 +172,8 @@ class StoreScanStageTest {
     void shouldApplyExternalUpdatesIfThereAreSuch() {
         // given
         StubStorageCursors data = someData();
-        EntityIdIterator entityIdIterator =
-                new CursorEntityIdIterator<>(data.allocateNodeCursor(NULL_CONTEXT, StoreCursors.NULL));
+        EntityIdIterator entityIdIterator = new CursorEntityIdIterator<>(
+                data.allocateNodeCursor(NULL_CONTEXT, StoreCursors.NULL, EmptyMemoryTracker.INSTANCE));
         AtomicInteger numBatchesProcessed = new AtomicInteger();
         ControlledExternalUpdatesCheck externalUpdatesCheck =
                 new ControlledExternalUpdatesCheck(config.batchSize(), 2, numBatchesProcessed, true);
@@ -210,8 +210,8 @@ class StoreScanStageTest {
     void shouldAbortScanOnStopped() {
         // given
         StubStorageCursors data = someData();
-        EntityIdIterator entityIdIterator =
-                new CursorEntityIdIterator<>(data.allocateNodeCursor(NULL_CONTEXT, StoreCursors.NULL));
+        EntityIdIterator entityIdIterator = new CursorEntityIdIterator<>(
+                data.allocateNodeCursor(NULL_CONTEXT, StoreCursors.NULL, EmptyMemoryTracker.INSTANCE));
         AtomicInteger numBatchesProcessed = new AtomicInteger();
         AtomicBoolean continueScanning = new AtomicBoolean(true);
         AbortingExternalUpdatesCheck externalUpdatesCheck = new AbortingExternalUpdatesCheck(1, continueScanning);
@@ -247,8 +247,8 @@ class StoreScanStageTest {
     void shouldReportCorrectNumberOfCompletedEntities() {
         // given
         StubStorageCursors data = someData();
-        EntityIdIterator entityIdIterator =
-                new CursorEntityIdIterator<>(data.allocateNodeCursor(NULL_CONTEXT, StoreCursors.NULL));
+        EntityIdIterator entityIdIterator = new CursorEntityIdIterator<>(
+                data.allocateNodeCursor(NULL_CONTEXT, StoreCursors.NULL, EmptyMemoryTracker.INSTANCE));
         StoreScanStage<StorageNodeCursor> scan = new StoreScanStage<>(
                 dbConfig,
                 config,
@@ -280,8 +280,8 @@ class StoreScanStageTest {
     void shouldProvideMaxIdIfCannotDetermineCutOffPoint() {
         // given
         StubStorageCursors data = someData();
-        EntityIdIterator entityIdIterator =
-                new CursorEntityIdIterator<>(data.allocateNodeCursor(NULL_CONTEXT, StoreCursors.NULL));
+        EntityIdIterator entityIdIterator = new CursorEntityIdIterator<>(
+                data.allocateNodeCursor(NULL_CONTEXT, StoreCursors.NULL, EmptyMemoryTracker.INSTANCE));
         AtomicInteger numBatchesProcessed = new AtomicInteger();
         ControlledExternalUpdatesCheck externalUpdatesCheck =
                 new ControlledExternalUpdatesCheck(config.batchSize(), 2, numBatchesProcessed, false);

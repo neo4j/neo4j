@@ -19,12 +19,14 @@
  */
 package org.neo4j.batchimport.api;
 
+import org.neo4j.memory.MemoryTracker;
+
 @FunctionalInterface
 public interface PropertyValueLookup {
     Lookup newLookup();
 
     interface Lookup extends AutoCloseable {
-        Object lookupProperty(long nodeId);
+        Object lookupProperty(long nodeId, MemoryTracker memoryTracker);
 
         @Override
         void close();

@@ -70,6 +70,7 @@ import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.util.IdUpdateListener;
 import org.neo4j.util.concurrent.Runnables;
@@ -419,7 +420,8 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord, HEA
     }
 
     /**
-     * Opens a new {@link PageCursor} to this store, mainly for use in {@link #getRecordByCursor(long, AbstractBaseRecord, RecordLoad, PageCursor)}.
+     * Opens a new {@link PageCursor} to this store, mainly for use in
+     * {@link #getRecordByCursor(long, AbstractBaseRecord, RecordLoad, PageCursor, MemoryTracker)}.
      * The opened cursor will make use of the {@link PagedFile#PF_READ_AHEAD} flag for optimal scanning performance.
      */
     @Override
@@ -744,17 +746,19 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord, HEA
     }
 
     @Override
-    public RECORD getRecordByCursor(long id, RECORD record, RecordLoad mode, PageCursor cursor)
+    public RECORD getRecordByCursor(
+            long id, RECORD record, RecordLoad mode, PageCursor cursor, MemoryTracker memoryTracker)
             throws UnderlyingStorageException {
         try {
-            readIntoRecord(id, record, mode, cursor);
+            readIntoRecord(id, record, mode, cursor, memoryTracker);
             return record;
         } catch (IOException e) {
             throw new UnderlyingStorageException(e);
         }
     }
 
-    private void readIntoRecord(long id, RECORD record, RecordLoad mode, PageCursor cursor) throws IOException {
+    private void readIntoRecord(long id, RECORD record, RecordLoad mode, PageCursor cursor, MemoryTracker memoryTracker)
+            throws IOException {
         // Mark the record with this id regardless of whether or not we load the contents of it.
         // This is done in this method since there are multiple call sites and they all want the id
         // on that record, so it's to ensure it isn't forgotten.
@@ -763,14 +767,14 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord, HEA
         int offset = offsetForId(id);
         if (cursor.next(pageId)) {
             cursor.setOffset(offset);
-            readRecordFromPage(id, record, mode, cursor);
+            readRecordFromPage(id, record, mode, cursor, memoryTracker);
         } else {
             verifyAfterNotRead(record, mode);
         }
     }
 
     @Override
-    public void nextRecordByCursor(RECORD record, RecordLoad mode, PageCursor cursor)
+    public void nextRecordByCursor(RECORD record, RecordLoad mode, PageCursor cursor, MemoryTracker memoryTracker)
             throws UnderlyingStorageException {
         if (cursor.getCurrentPageId() < -1) {
             throw new IllegalArgumentException("Pages are assumed to be positive or -1 if not initialized");
@@ -786,17 +790,19 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord, HEA
                     return;
                 }
             }
-            readRecordFromPage(id, record, mode, cursor);
+            readRecordFromPage(id, record, mode, cursor, memoryTracker);
         } catch (IOException e) {
             throw new UnderlyingStorageException(e);
         }
     }
 
-    private void readRecordFromPage(long id, RECORD record, RecordLoad mode, PageCursor cursor) throws IOException {
+    private void readRecordFromPage(
+            long id, RECORD record, RecordLoad mode, PageCursor cursor, MemoryTracker memoryTracker)
+            throws IOException {
         cursor.mark();
         do {
             prepareForReading(cursor, record);
-            recordFormat.read(record, cursor, mode, recordSize, recordsPerPage);
+            recordFormat.read(record, cursor, mode, recordSize, recordsPerPage, memoryTracker);
         } while (cursor.shouldRetry());
         checkForDecodingErrors(cursor, id, mode);
         verifyAfterReading(record, mode);
@@ -851,12 +857,12 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord, HEA
     }
 
     @Override
-    public <EXCEPTION extends Exception> void scanAllRecords(Visitor<RECORD, EXCEPTION> visitor, PageCursor pageCursor)
-            throws EXCEPTION {
+    public <EXCEPTION extends Exception> void scanAllRecords(
+            Visitor<RECORD, EXCEPTION> visitor, PageCursor pageCursor, MemoryTracker memoryTracker) throws EXCEPTION {
         RECORD record = newRecord();
         long highId = getIdGenerator().getHighId();
         for (long id = getNumberOfReservedLowIds(); id < highId; id++) {
-            getRecordByCursor(id, record, LENIENT_CHECK, pageCursor);
+            getRecordByCursor(id, record, LENIENT_CHECK, pageCursor, memoryTracker);
             if (record.inUse()) {
                 visitor.visit(record);
             }
@@ -864,9 +870,10 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord, HEA
     }
 
     @Override
-    public List<RECORD> getRecords(long firstId, RecordLoad mode, boolean guardForCycles, PageCursor pageCursor) {
+    public List<RECORD> getRecords(
+            long firstId, RecordLoad mode, boolean guardForCycles, PageCursor pageCursor, MemoryTracker memoryTracker) {
         ArrayList<RECORD> list = new ArrayList<>();
-        streamRecords(firstId, mode, guardForCycles, pageCursor, list::add);
+        streamRecords(firstId, mode, guardForCycles, pageCursor, list::add, memoryTracker);
         return list;
     }
 
@@ -876,7 +883,8 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord, HEA
             RecordLoad mode,
             boolean guardForCycles,
             PageCursor cursor,
-            RecordSubscriber<RECORD> subscriber) {
+            RecordSubscriber<RECORD> subscriber,
+            MemoryTracker memoryTracker) {
         if (Record.NULL_REFERENCE.is(firstId)) {
             return;
         }
@@ -891,7 +899,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord, HEA
             if (cycleGuard.test(id)) {
                 throw newCycleDetectedException(firstId, id, record);
             }
-            getRecordByCursor(id, record, mode, cursor);
+            getRecordByCursor(id, record, mode, cursor, memoryTracker);
             // Even unused records gets added and returned
             if (!subscriber.onRecord(record)) {
                 return;
@@ -979,7 +987,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord, HEA
     }
 
     @Override
-    public void ensureHeavy(RECORD record, StoreCursors storeCursors) {
+    public void ensureHeavy(RECORD record, StoreCursors storeCursors, MemoryTracker memoryTracker) {
         // Do nothing by default. Some record stores have this.
     }
 

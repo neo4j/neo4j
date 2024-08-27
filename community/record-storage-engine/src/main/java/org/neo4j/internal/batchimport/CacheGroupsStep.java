@@ -27,6 +27,7 @@ import org.neo4j.internal.batchimport.stats.StatsProvider;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
+import org.neo4j.memory.MemoryTracker;
 
 /**
  * Caches {@link RelationshipGroupRecord} into {@link RelationshipGroupCache}.
@@ -45,7 +46,11 @@ public class CacheGroupsStep extends ProcessorStep<RelationshipGroupRecord[]> {
     }
 
     @Override
-    protected void process(RelationshipGroupRecord[] batch, BatchSender sender, CursorContext cursorContext) {
+    protected void process(
+            RelationshipGroupRecord[] batch,
+            BatchSender sender,
+            CursorContext cursorContext,
+            MemoryTracker memoryTracker) {
         // These records are read page-wise forwards, but should be cached in reverse
         // since the records exists in the store in reverse order.
         for (int i = batch.length - 1; i >= 0; i--) {

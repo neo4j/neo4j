@@ -57,6 +57,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.transaction.log.LogTailLogVersionsMetadata;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
@@ -105,9 +106,15 @@ class RelationshipGroupGetterTest {
                 Loaders.relationshipGroupLoader(groupStore, storeCursors),
                 NULL_CONTEXT,
                 GROUP_CURSOR,
-                storeCursors);
+                storeCursors,
+                EmptyMemoryTracker.INSTANCE);
         nodeRecords = new DirectRecordAccess<>(
-                nodeStore, Loaders.nodeLoader(nodeStore, storeCursors), NULL_CONTEXT, NODE_CURSOR, storeCursors);
+                nodeStore,
+                Loaders.nodeLoader(nodeStore, storeCursors),
+                NULL_CONTEXT,
+                NODE_CURSOR,
+                storeCursors,
+                EmptyMemoryTracker.INSTANCE);
         groupGetter = new RelationshipGroupGetter(groupStore.getIdGenerator(), NULL_CONTEXT);
     }
 
@@ -136,19 +143,19 @@ class RelationshipGroupGetterTest {
         verification
                 .verify(groupStore)
                 .getRecordByCursor(
-                        eq(group2.getId()), any(RelationshipGroupRecord.class), any(RecordLoad.class), any());
+                        eq(group2.getId()), any(RelationshipGroupRecord.class), any(RecordLoad.class), any(), any());
         verification
                 .verify(groupStore)
                 .getRecordByCursor(
-                        eq(group4.getId()), any(RelationshipGroupRecord.class), any(RecordLoad.class), any());
+                        eq(group4.getId()), any(RelationshipGroupRecord.class), any(RecordLoad.class), any(), any());
         verification
                 .verify(groupStore)
                 .getRecordByCursor(
-                        eq(group10.getId()), any(RelationshipGroupRecord.class), any(RecordLoad.class), any());
+                        eq(group10.getId()), any(RelationshipGroupRecord.class), any(RecordLoad.class), any(), any());
         verification
                 .verify(groupStore, never())
                 .getRecordByCursor(
-                        eq(group23.getId()), any(RelationshipGroupRecord.class), any(RecordLoad.class), any());
+                        eq(group23.getId()), any(RelationshipGroupRecord.class), any(RecordLoad.class), any(), any());
 
         // it should also be reported as not found
         assertThat(result.group()).isNull();

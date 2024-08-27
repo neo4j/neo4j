@@ -46,7 +46,7 @@ public class NodeIndexChecker extends IndexChecker<NodeRecord> {
 
     @Override
     NodeRecord getEntity(StoreCursors storeCursors, long entityId) {
-        return context.recordLoader.node(entityId, storeCursors);
+        return context.recordLoader.node(entityId, storeCursors, context.memoryTracker);
     }
 
     @Override
@@ -55,12 +55,14 @@ public class NodeIndexChecker extends IndexChecker<NodeRecord> {
             StoreCursors storeCursors,
             NodeRecord record,
             RecordReader<DynamicRecord> additionalReader) {
-        return safeGetNodeLabels(context, storeCursors, record.getId(), record.getLabelField(), additionalReader);
+        return safeGetNodeLabels(
+                context, storeCursors, record.getId(), record.getLabelField(), additionalReader, context.memoryTracker);
     }
 
     @Override
     RecordReader<DynamicRecord> additionalEntityTokenReader(CursorContext cursorContext) {
-        return new RecordReader<>(context.neoStores.getNodeStore().getDynamicLabelStore(), false, cursorContext);
+        return new RecordReader<>(
+                context.neoStores.getNodeStore().getDynamicLabelStore(), false, cursorContext, context.memoryTracker);
     }
 
     @Override

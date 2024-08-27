@@ -49,6 +49,7 @@ import org.neo4j.kernel.impl.store.InlineNodeLabels;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
@@ -374,6 +375,7 @@ class NodeCheckerTest extends CheckerTestBase {
 
     private void check() throws Exception {
         NodeChecker checker = new NodeChecker(context(), noMandatoryProperties, noAllowedTypes);
-        checker.check(LongRange.range(0, nodeStore.getIdGenerator().getHighId()), true, true);
+        checker.check(
+                LongRange.range(0, nodeStore.getIdGenerator().getHighId()), true, true, EmptyMemoryTracker.INSTANCE);
     }
 }

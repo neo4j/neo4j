@@ -60,6 +60,7 @@ import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.TokenRecord;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.token.api.NamedToken;
 import org.neo4j.token.api.TokenHolder;
@@ -82,7 +83,8 @@ class RecordLoading {
             StoreCursors storeCursors,
             long nodeId,
             long labelField,
-            RecordReader<DynamicRecord> labelReader) {
+            RecordReader<DynamicRecord> labelReader,
+            MemoryTracker memoryTracker) {
         if (!NodeLabelsField.fieldPointsToDynamicRecordOfLabels(labelField)) {
             return InlineNodeLabels.parseInlined(labelField);
         }
@@ -100,11 +102,11 @@ class RecordLoading {
                 seenRecordIds,
                 NodeLabelsField.firstDynamicLabelRecordId(labelField),
                 nodeLabelBlockSize,
-                (id, labelRecord) -> reporter.forNode(recordLoader.node(nodeId, storeCursors))
+                (id, labelRecord) -> reporter.forNode(recordLoader.node(nodeId, storeCursors, memoryTracker))
                         .dynamicRecordChainCycle(labelRecord),
-                (id, labelRecord) -> reporter.forNode(recordLoader.node(nodeId, storeCursors))
+                (id, labelRecord) -> reporter.forNode(recordLoader.node(nodeId, storeCursors, memoryTracker))
                         .dynamicLabelRecordNotInUse(labelRecord),
-                (id, labelRecord) -> reporter.forNode(recordLoader.node(nodeId, storeCursors))
+                (id, labelRecord) -> reporter.forNode(recordLoader.node(nodeId, storeCursors, memoryTracker))
                         .dynamicLabelRecordNotInUse(labelRecord),
                 (id, labelRecord) -> reporter.forDynamicBlock(RecordType.NODE_DYNAMIC_LABEL, labelRecord)
                         .emptyBlock(),
@@ -112,7 +114,7 @@ class RecordLoading {
                         .recordNotFullReferencesNext(),
                 labelRecord -> reporter.forDynamicBlock(RecordType.NODE_DYNAMIC_LABEL, labelRecord)
                         .invalidLength())) {
-            return DynamicNodeLabels.getDynamicLabelsArray(records, labelReader.store(), storeCursors);
+            return DynamicNodeLabels.getDynamicLabelsArray(records, labelReader.store(), storeCursors, memoryTracker);
         }
         return null;
     }
@@ -142,56 +144,65 @@ class RecordLoading {
         return capability.areValuesAccepted(matched) ? matched : null;
     }
 
-    <T extends PrimitiveRecord> T entity(T entityCursor, StoreCursors storeCursors) {
+    <T extends PrimitiveRecord> T entity(T entityCursor, StoreCursors storeCursors, MemoryTracker memoryTracker) {
         if (entityCursor instanceof NodeRecord) {
-            return (T) node(entityCursor.getId(), storeCursors);
+            return (T) node(entityCursor.getId(), storeCursors, memoryTracker);
         } else if (entityCursor instanceof RelationshipRecord) {
-            return (T) relationship(entityCursor.getId(), storeCursors);
+            return (T) relationship(entityCursor.getId(), storeCursors, memoryTracker);
         }
         throw new IllegalArgumentException(
                 "Was expecting either node cursor or relationship cursor, got " + entityCursor);
     }
 
-    NodeRecord node(long id, StoreCursors storeCursors) {
-        return loadRecord(neoStores.getNodeStore(), id, storeCursors.readCursor(NODE_CURSOR));
+    NodeRecord node(long id, StoreCursors storeCursors, MemoryTracker memoryTracker) {
+        return loadRecord(neoStores.getNodeStore(), id, storeCursors.readCursor(NODE_CURSOR), memoryTracker);
     }
 
-    PropertyRecord property(long id, StoreCursors storeCursors) {
-        return loadRecord(neoStores.getPropertyStore(), id, storeCursors.readCursor(PROPERTY_CURSOR));
+    PropertyRecord property(long id, StoreCursors storeCursors, MemoryTracker memoryTracker) {
+        return loadRecord(neoStores.getPropertyStore(), id, storeCursors.readCursor(PROPERTY_CURSOR), memoryTracker);
     }
 
-    RelationshipRecord relationship(long id, StoreCursors storeCursors) {
-        return loadRecord(neoStores.getRelationshipStore(), id, storeCursors.readCursor(RELATIONSHIP_CURSOR));
+    RelationshipRecord relationship(long id, StoreCursors storeCursors, MemoryTracker memoryTracker) {
+        return loadRecord(
+                neoStores.getRelationshipStore(), id, storeCursors.readCursor(RELATIONSHIP_CURSOR), memoryTracker);
     }
 
-    RelationshipRecord relationship(RelationshipRecord into, long id, StoreCursors storeCursors) {
-        return loadRecord(neoStores.getRelationshipStore(), into, id, storeCursors.readCursor(RELATIONSHIP_CURSOR));
+    RelationshipRecord relationship(
+            RelationshipRecord into, long id, StoreCursors storeCursors, MemoryTracker memoryTracker) {
+        return loadRecord(
+                neoStores.getRelationshipStore(),
+                into,
+                id,
+                storeCursors.readCursor(RELATIONSHIP_CURSOR),
+                memoryTracker);
     }
 
-    RelationshipGroupRecord relationshipGroup(long id, StoreCursors storeCursors) {
-        return loadRecord(neoStores.getRelationshipGroupStore(), id, storeCursors.readCursor(GROUP_CURSOR));
+    RelationshipGroupRecord relationshipGroup(long id, StoreCursors storeCursors, MemoryTracker memoryTracker) {
+        return loadRecord(
+                neoStores.getRelationshipGroupStore(), id, storeCursors.readCursor(GROUP_CURSOR), memoryTracker);
     }
 
     static <RECORD extends AbstractBaseRecord> RECORD loadRecord(
-            RecordStore<RECORD> store, long id, PageCursor pageCursor) {
-        return loadRecord(store, store.newRecord(), id, pageCursor);
+            RecordStore<RECORD> store, long id, PageCursor pageCursor, MemoryTracker memoryTracker) {
+        return loadRecord(store, store.newRecord(), id, pageCursor, memoryTracker);
     }
 
     static <RECORD extends AbstractBaseRecord> RECORD loadRecord(
-            RecordStore<RECORD> store, RECORD record, long id, PageCursor pageCursor) {
-        return store.getRecordByCursor(id, record, RecordLoad.FORCE, pageCursor);
+            RecordStore<RECORD> store, RECORD record, long id, PageCursor pageCursor, MemoryTracker memoryTracker) {
+        return store.getRecordByCursor(id, record, RecordLoad.FORCE, pageCursor, memoryTracker);
     }
 
     static <RECORD extends TokenRecord> List<NamedToken> safeLoadTokens(
-            TokenStore<RECORD> tokenStore, CursorContext cursorContext) {
+            TokenStore<RECORD> tokenStore, CursorContext cursorContext, MemoryTracker memoryTracker) {
         long highId = tokenStore.getIdGenerator().getHighId();
         List<NamedToken> tokens = new ArrayList<>();
         DynamicStringStore nameStore = tokenStore.getNameStore();
         List<DynamicRecord> nameRecords = new ArrayList<>();
         LongHashSet seenRecordIds = new LongHashSet();
         int nameBlockSize = nameStore.getRecordDataSize();
-        try (RecordReader<RECORD> tokenReader = new RecordReader<>(tokenStore, true, cursorContext);
-                RecordReader<DynamicRecord> nameReader = new RecordReader<>(nameStore, false, cursorContext)) {
+        try (RecordReader<RECORD> tokenReader = new RecordReader<>(tokenStore, true, cursorContext, memoryTracker);
+                RecordReader<DynamicRecord> nameReader =
+                        new RecordReader<>(nameStore, false, cursorContext, memoryTracker)) {
             for (long id = 0; id < highId; id++) {
                 RECORD record = tokenReader.read(id);
                 nameRecords.clear();
@@ -206,7 +217,7 @@ class RecordLoading {
                                     record.getNameId(),
                                     nameBlockSize)) {
                         record.addNameRecords(nameRecords);
-                        name = tokenStore.getStringFor(record, StoreCursors.NULL);
+                        name = tokenStore.getStringFor(record, StoreCursors.NULL, memoryTracker);
                     } else {
                         name = format("<name not loaded due to token(%d) referencing unused name record>", id);
                     }
@@ -294,7 +305,8 @@ class RecordLoading {
             TokenStore<TOKEN> tokenStore,
             BiConsumer<RECORD, Integer> illegalTokenReport,
             BiConsumer<RECORD, TOKEN> unusedReporter,
-            StoreCursors storeCursors) {
+            StoreCursors storeCursors,
+            MemoryTracker memoryTracker) {
         return checkValidToken(
                 entity,
                 token,
@@ -302,7 +314,8 @@ class RecordLoading {
                 illegalTokenReport,
                 unusedReporter,
                 tokens::getInternalTokenById,
-                storeCursors);
+                storeCursors,
+                memoryTracker);
     }
 
     static <RECORD extends AbstractBaseRecord, TOKEN extends TokenRecord> boolean checkValidToken(
@@ -312,9 +325,17 @@ class RecordLoading {
             TokenStore<TOKEN> tokenStore,
             BiConsumer<RECORD, Integer> illegalTokenReport,
             BiConsumer<RECORD, TOKEN> unusedReporter,
-            StoreCursors storeCursors) {
+            StoreCursors storeCursors,
+            MemoryTracker memoryTracker) {
         return checkValidToken(
-                entity, token, tokenStore, illegalTokenReport, unusedReporter, tokens::getTokenById, storeCursors);
+                entity,
+                token,
+                tokenStore,
+                illegalTokenReport,
+                unusedReporter,
+                tokens::getTokenById,
+                storeCursors,
+                memoryTracker);
     }
 
     private static <RECORD extends AbstractBaseRecord, TOKEN extends TokenRecord> boolean checkValidToken(
@@ -324,7 +345,8 @@ class RecordLoading {
             BiConsumer<RECORD, Integer> illegalTokenReport,
             BiConsumer<RECORD, TOKEN> unusedReporter,
             ThrowingIntFunction<NamedToken, TokenNotFoundException> tokenGetter,
-            StoreCursors storeCursors) {
+            StoreCursors storeCursors,
+            MemoryTracker memoryTracker) {
         if (token < 0) {
             illegalTokenReport.accept(entity, token);
             return false;
@@ -334,7 +356,11 @@ class RecordLoading {
                 // It's in use, good
             } catch (TokenNotFoundException tnfe) {
                 TOKEN tokenRecord = tokenStore.getRecordByCursor(
-                        token, tokenStore.newRecord(), RecordLoad.FORCE, tokenStore.getTokenStoreCursor(storeCursors));
+                        token,
+                        tokenStore.newRecord(),
+                        RecordLoad.FORCE,
+                        tokenStore.getTokenStoreCursor(storeCursors),
+                        memoryTracker);
                 unusedReporter.accept(entity, tokenRecord);
                 return false;
             }

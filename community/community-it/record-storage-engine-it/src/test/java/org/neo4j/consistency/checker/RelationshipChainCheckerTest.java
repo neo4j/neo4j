@@ -41,6 +41,7 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.memory.EmptyMemoryTracker;
 
 class RelationshipChainCheckerTest extends CheckerTestBase {
     private static final MyRelTypes TYPE = MyRelTypes.TEST;
@@ -178,7 +179,11 @@ class RelationshipChainCheckerTest extends CheckerTestBase {
         RelationshipRecord arbitraryRelationship = relationshipStore.newRecord();
         try (var cursor = relationshipStore.openPageCursorForReading(0, CursorContext.NULL_CONTEXT)) {
             relationshipStore.getRecordByCursor(
-                    relationshipIds[relationshipIds.length / 2], arbitraryRelationship, NORMAL, cursor);
+                    relationshipIds[relationshipIds.length / 2],
+                    arbitraryRelationship,
+                    NORMAL,
+                    cursor,
+                    EmptyMemoryTracker.INSTANCE);
         }
         vandal.accept(arbitraryRelationship);
         try (var storeCursor = storeCursors.writeCursor(RELATIONSHIP_CURSOR)) {
@@ -218,8 +223,10 @@ class RelationshipChainCheckerTest extends CheckerTestBase {
             RelationshipRecord first = relationshipStore.newRecord();
             RelationshipRecord second = relationshipStore.newRecord();
             try (var cursor = relationshipStore.openPageCursorForReading(0, CursorContext.NULL_CONTEXT)) {
-                relationshipStore.getRecordByCursor(firstRelationshipId, first, NORMAL, cursor);
-                relationshipStore.getRecordByCursor(secondRelationshipId, second, NORMAL, cursor);
+                relationshipStore.getRecordByCursor(
+                        firstRelationshipId, first, NORMAL, cursor, EmptyMemoryTracker.INSTANCE);
+                relationshipStore.getRecordByCursor(
+                        secondRelationshipId, second, NORMAL, cursor, EmptyMemoryTracker.INSTANCE);
             }
             vandal.accept(first, second);
             try (var storeCursor = storeCursors.writeCursor(RELATIONSHIP_CURSOR)) {
@@ -237,6 +244,10 @@ class RelationshipChainCheckerTest extends CheckerTestBase {
 
     private void check() throws Exception {
         new RelationshipChainChecker(context(numberOfThreads()))
-                .check(LongRange.range(0, nodeStore.getIdGenerator().getHighId()), true, true);
+                .check(
+                        LongRange.range(0, nodeStore.getIdGenerator().getHighId()),
+                        true,
+                        true,
+                        EmptyMemoryTracker.INSTANCE);
     }
 }

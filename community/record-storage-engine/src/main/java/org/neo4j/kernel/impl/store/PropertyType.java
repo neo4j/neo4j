@@ -24,6 +24,7 @@ import static org.apache.commons.lang3.ArrayUtils.EMPTY_BYTE_ARRAY;
 import java.util.Arrays;
 import org.neo4j.kernel.impl.store.format.standard.PropertyRecordFormat;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
@@ -34,7 +35,8 @@ import org.neo4j.values.storable.Values;
 public enum PropertyType {
     BOOL(1) {
         @Override
-        public Value value(PropertyBlock block, PropertyStore store, StoreCursors cursors) {
+        public Value value(
+                PropertyBlock block, PropertyStore store, StoreCursors cursors, MemoryTracker memoryTracker) {
             return Values.booleanValue(getValue(block.getSingleValueLong()));
         }
 
@@ -44,31 +46,36 @@ public enum PropertyType {
     },
     BYTE(2) {
         @Override
-        public Value value(PropertyBlock block, PropertyStore store, StoreCursors cursors) {
+        public Value value(
+                PropertyBlock block, PropertyStore store, StoreCursors cursors, MemoryTracker memoryTracker) {
             return Values.byteValue(block.getSingleValueByte());
         }
     },
     SHORT(3) {
         @Override
-        public Value value(PropertyBlock block, PropertyStore store, StoreCursors cursors) {
+        public Value value(
+                PropertyBlock block, PropertyStore store, StoreCursors cursors, MemoryTracker memoryTracker) {
             return Values.shortValue(block.getSingleValueShort());
         }
     },
     CHAR(4) {
         @Override
-        public Value value(PropertyBlock block, PropertyStore store, StoreCursors cursors) {
+        public Value value(
+                PropertyBlock block, PropertyStore store, StoreCursors cursors, MemoryTracker memoryTracker) {
             return Values.charValue((char) block.getSingleValueShort());
         }
     },
     INT(5) {
         @Override
-        public Value value(PropertyBlock block, PropertyStore store, StoreCursors cursors) {
+        public Value value(
+                PropertyBlock block, PropertyStore store, StoreCursors cursors, MemoryTracker memoryTracker) {
             return Values.intValue(block.getSingleValueInt());
         }
     },
     LONG(6) {
         @Override
-        public Value value(PropertyBlock block, PropertyStore store, StoreCursors cursors) {
+        public Value value(
+                PropertyBlock block, PropertyStore store, StoreCursors cursors, MemoryTracker memoryTracker) {
             long firstBlock = block.getSingleValueBlock();
             long value = valueIsInlined(firstBlock) ? (block.getSingleValueLong() >>> 1) : block.getValueBlocks()[1];
             return Values.longValue(value);
@@ -86,13 +93,15 @@ public enum PropertyType {
     },
     FLOAT(7) {
         @Override
-        public Value value(PropertyBlock block, PropertyStore store, StoreCursors cursors) {
+        public Value value(
+                PropertyBlock block, PropertyStore store, StoreCursors cursors, MemoryTracker memoryTracker) {
             return Values.floatValue(Float.intBitsToFloat(block.getSingleValueInt()));
         }
     },
     DOUBLE(8) {
         @Override
-        public Value value(PropertyBlock block, PropertyStore store, StoreCursors cursors) {
+        public Value value(
+                PropertyBlock block, PropertyStore store, StoreCursors cursors, MemoryTracker memoryTracker) {
             return Values.doubleValue(Double.longBitsToDouble(block.getValueBlocks()[1]));
         }
 
@@ -103,8 +112,9 @@ public enum PropertyType {
     },
     STRING(9) {
         @Override
-        public Value value(PropertyBlock block, PropertyStore store, StoreCursors storeCursors) {
-            return store.getTextValueFor(block, storeCursors);
+        public Value value(
+                PropertyBlock block, PropertyStore store, StoreCursors storeCursors, MemoryTracker memoryTracker) {
+            return store.getTextValueFor(block, storeCursors, memoryTracker);
         }
 
         @Override
@@ -114,8 +124,9 @@ public enum PropertyType {
     },
     ARRAY(10) {
         @Override
-        public Value value(PropertyBlock block, PropertyStore store, StoreCursors cursors) {
-            return store.getArrayFor(block, cursors);
+        public Value value(
+                PropertyBlock block, PropertyStore store, StoreCursors cursors, MemoryTracker memoryTracker) {
+            return store.getArrayFor(block, cursors, memoryTracker);
         }
 
         @Override
@@ -139,7 +150,8 @@ public enum PropertyType {
     },
     SHORT_STRING(11) {
         @Override
-        public Value value(PropertyBlock block, PropertyStore store, StoreCursors cursors) {
+        public Value value(
+                PropertyBlock block, PropertyStore store, StoreCursors cursors, MemoryTracker memoryTracker) {
             return LongerShortString.decode(block);
         }
 
@@ -150,7 +162,8 @@ public enum PropertyType {
     },
     SHORT_ARRAY(12) {
         @Override
-        public Value value(PropertyBlock block, PropertyStore store, StoreCursors cursors) {
+        public Value value(
+                PropertyBlock block, PropertyStore store, StoreCursors cursors, MemoryTracker memoryTracker) {
             return ShortArray.decode(block);
         }
 
@@ -161,7 +174,8 @@ public enum PropertyType {
     },
     GEOMETRY(13) {
         @Override
-        public Value value(PropertyBlock block, PropertyStore store, StoreCursors cursors) {
+        public Value value(
+                PropertyBlock block, PropertyStore store, StoreCursors cursors, MemoryTracker memoryTracker) {
             return GeometryType.decode(block);
         }
 
@@ -172,7 +186,8 @@ public enum PropertyType {
     },
     TEMPORAL(14) {
         @Override
-        public Value value(PropertyBlock block, PropertyStore store, StoreCursors cursors) {
+        public Value value(
+                PropertyBlock block, PropertyStore store, StoreCursors cursors, MemoryTracker memoryTracker) {
             return TemporalType.decode(block);
         }
 
@@ -213,7 +228,8 @@ public enum PropertyType {
         return (byte) type;
     }
 
-    public abstract Value value(PropertyBlock block, PropertyStore store, StoreCursors storeCursors);
+    public abstract Value value(
+            PropertyBlock block, PropertyStore store, StoreCursors storeCursors, MemoryTracker memoryTracker);
 
     public static PropertyType getPropertyTypeOrNull(long propBlock) {
         // [][][][][    ,tttt][kkkk,kkkk][kkkk,kkkk][kkkk,kkkk]

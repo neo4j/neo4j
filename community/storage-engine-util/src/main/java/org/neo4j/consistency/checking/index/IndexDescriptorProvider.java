@@ -22,8 +22,9 @@ package org.neo4j.consistency.checking.index;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.memory.MemoryTracker;
 
 @FunctionalInterface
 public interface IndexDescriptorProvider {
-    ResourceIterator<IndexDescriptor> indexDescriptors(CursorContext cursorContext);
+    ResourceIterator<IndexDescriptor> indexDescriptors(CursorContext cursorContext, MemoryTracker memoryTracker);
 }

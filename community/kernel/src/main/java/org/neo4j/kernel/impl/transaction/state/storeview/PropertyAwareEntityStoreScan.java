@@ -162,7 +162,8 @@ public abstract class PropertyAwareEntityStoreScan<CURSOR extends StorageEntityS
     }
 
     public EntityIdIterator getEntityIdIterator(CursorContext cursorContext, StoreCursors storeCursors) {
-        return new CursorEntityIdIterator<>(cursorBehaviour.allocateEntityScanCursor(cursorContext, storeCursors));
+        return new CursorEntityIdIterator<>(
+                cursorBehaviour.allocateEntityScanCursor(cursorContext, storeCursors, memoryTracker));
     }
 
     static class CursorEntityIdIterator<CURSOR extends StorageEntityScanCursor<?>>

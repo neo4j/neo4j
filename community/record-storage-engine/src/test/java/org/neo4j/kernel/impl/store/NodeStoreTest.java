@@ -88,6 +88,7 @@ import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.log.LogTailLogVersionsMetadata;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.storageengine.util.IdUpdateListener;
 import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
@@ -195,7 +196,11 @@ class NodeStoreTest {
         // WHEN
         // -- reading that record back
         NodeRecord readRecord = nodeStore.getRecordByCursor(
-                nodeId, nodeStore.newRecord(), NORMAL, storeCursors.readCursor(NODE_CURSOR));
+                nodeId,
+                nodeStore.newRecord(),
+                NORMAL,
+                storeCursors.readCursor(NODE_CURSOR),
+                EmptyMemoryTracker.INSTANCE);
         // THEN
         // -- the label field must be the same
         assertEquals(labels, readRecord.getLabelField());
@@ -292,7 +297,7 @@ class NodeStoreTest {
             assertTrue(nextRelSet.remove(record.getNextRel()));
             return false;
         };
-        nodeStore.scanAllRecords(scanner, storeCursors.readCursor(NODE_CURSOR));
+        nodeStore.scanAllRecords(scanner, storeCursors.readCursor(NODE_CURSOR), EmptyMemoryTracker.INSTANCE);
 
         // ...NOR do we have anything left in the set afterwards.
         assertTrue(nextRelSet.isEmpty());
@@ -417,7 +422,8 @@ class NodeStoreTest {
         }
 
         // when
-        nodeStore.getRecordByCursor(primaryUnitId, record, NORMAL, storeCursors.readCursor(NODE_CURSOR));
+        nodeStore.getRecordByCursor(
+                primaryUnitId, record, NORMAL, storeCursors.readCursor(NODE_CURSOR), EmptyMemoryTracker.INSTANCE);
         record.setSecondaryUnitIdOnCreate(secondaryUnitId);
         IdUpdateListener idUpdateListener = mock(IdUpdateListener.class);
         try (var storeCursor = storeCursors.writeCursor(NODE_CURSOR)) {
@@ -458,8 +464,13 @@ class NodeStoreTest {
 
         // when loading that node and making it heavy
         NodeRecord loadedRecord = nodeStore.newRecord();
-        nodeStore.getRecordByCursor(record.getId(), loadedRecord, NORMAL, storeCursors.readCursor(NODE_CURSOR));
-        nodeStore.ensureHeavy(loadedRecord, storeCursors);
+        nodeStore.getRecordByCursor(
+                record.getId(),
+                loadedRecord,
+                NORMAL,
+                storeCursors.readCursor(NODE_CURSOR),
+                EmptyMemoryTracker.INSTANCE);
+        nodeStore.ensureHeavy(loadedRecord, storeCursors, EmptyMemoryTracker.INSTANCE);
 
         // then
         assertThat(loadedRecord.getUsedDynamicLabelRecords()).isEmpty();

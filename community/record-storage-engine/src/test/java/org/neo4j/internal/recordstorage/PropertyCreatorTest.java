@@ -63,6 +63,7 @@ import org.neo4j.kernel.impl.transaction.log.LogTailLogVersionsMetadata;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceLocker;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
@@ -118,7 +119,8 @@ class PropertyCreatorTest {
                 Loaders.propertyLoader(propertyStore, storeCursors),
                 cursorContext,
                 PROPERTY_CURSOR,
-                storeCursors);
+                storeCursors,
+                EmptyMemoryTracker.INSTANCE);
         var context = new RecordStorageCommandCreationContext(
                 neoStores,
                 SIMPLE_NAME_LOOKUP,
@@ -455,7 +457,9 @@ class PropertyCreatorTest {
         for (ExpectedProperty expectedProperty : expectedRecord.properties) {
             PropertyBlock block = record.getPropertyBlock(expectedProperty.key);
             assertNotNull(block);
-            assertEquals(expectedProperty.value, block.getType().value(block, propertyStore, StoreCursors.NULL));
+            assertEquals(
+                    expectedProperty.value,
+                    block.getType().value(block, propertyStore, StoreCursors.NULL, EmptyMemoryTracker.INSTANCE));
             if (expectedProperty.assertHasDynamicRecords != null) {
                 if (expectedProperty.assertHasDynamicRecords) {
                     assertThat(block.getValueRecords().size()).isGreaterThan(0);

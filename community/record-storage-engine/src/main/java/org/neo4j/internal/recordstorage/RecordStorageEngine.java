@@ -464,7 +464,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
                 serialization,
                 memoryTracker,
                 lockVerificationFactory.createLockVerification(
-                        locks, txState, neoStores, schemaRuleAccess, storeCursors));
+                        locks, txState, neoStores, schemaRuleAccess, storeCursors, memoryTracker));
 
         // Visit transaction state and populate these record state objects
         TxStateVisitor txStateVisitor = new TransactionToRecordStateVisitor(
@@ -474,11 +474,12 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
                 constraintSemantics,
                 cursorContext,
                 storeCursors,
-                multiVersion);
+                multiVersion,
+                memoryTracker);
         CountsRecordState countsRecordState = new CountsRecordState(serialization);
         txStateVisitor = additionalTxStateVisitor.apply(txStateVisitor);
         txStateVisitor = new TransactionCountingStateVisitor(
-                txStateVisitor, storageReader, txState, countsRecordState, cursorContext, storeCursors);
+                txStateVisitor, storageReader, txState, countsRecordState, cursorContext, storeCursors, memoryTracker);
         try (TxStateVisitor visitor = txStateVisitor) {
             txState.accept(visitor);
         }
@@ -488,7 +489,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
 
         // Verify sufficient locks
         CommandLockVerification commandLockVerification = lockVerificationFactory.createCommandVerification(
-                locks, txState, neoStores, schemaRuleAccess, storeCursors);
+                locks, txState, neoStores, schemaRuleAccess, storeCursors, memoryTracker);
         commandLockVerification.verifySufficientlyLocked(commands);
 
         return commands;
@@ -606,7 +607,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
     public void loadSchemaCache() {
         try (var cursorContext = contextFactory.create(SCHEMA_CACHE_START_TAG);
                 var storeCursors = new CachedStoreCursors(neoStores, cursorContext)) {
-            schemaCache.load(schemaRuleAccess.getAll(storeCursors));
+            schemaCache.load(schemaRuleAccess.getAll(storeCursors, otherMemoryTracker));
         }
     }
 
@@ -692,7 +693,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
             public void init() {
                 try (var cursorContext = contextFactory.create(TOKENS_INIT_TAG);
                         var storeCursors = new CachedStoreCursors(neoStores, cursorContext)) {
-                    tokenHolders.setInitialTokens(StoreTokens.allTokens(neoStores), storeCursors);
+                    tokenHolders.setInitialTokens(StoreTokens.allTokens(neoStores), storeCursors, otherMemoryTracker);
                 }
                 loadSchemaCache();
             }

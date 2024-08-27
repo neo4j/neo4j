@@ -183,9 +183,9 @@ public class RecordChanges<RECORD extends AbstractBaseRecord, ADDITIONAL> implem
 
         private void ensureHeavy(StoreCursors storeCursors) {
             if (!created) {
-                loader.ensureHeavy(record, storeCursors);
+                loader.ensureHeavy(record, storeCursors, memoryTracker);
                 if (before != null) {
-                    loader.ensureHeavy(before, storeCursors);
+                    loader.ensureHeavy(before, storeCursors, memoryTracker);
                 }
             }
         }

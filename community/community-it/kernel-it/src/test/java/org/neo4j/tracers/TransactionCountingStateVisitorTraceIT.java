@@ -35,6 +35,7 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.storageengine.api.CountsDelta;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.txstate.TransactionCountingStateVisitor;
@@ -106,7 +107,8 @@ public class TransactionCountingStateVisitorTraceIT {
                             transactionState,
                             counts,
                             cursorContext,
-                            kernelTransaction.storeCursors())) {
+                            kernelTransaction.storeCursors(),
+                            EmptyMemoryTracker.INSTANCE)) {
                 transactionState.accept(stateVisitor);
             }
 

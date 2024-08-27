@@ -25,6 +25,7 @@ import org.neo4j.kernel.impl.store.format.BaseOneByteHeaderRecordFormat;
 import org.neo4j.kernel.impl.store.record.MetaDataRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
+import org.neo4j.memory.MemoryTracker;
 
 public class MetaDataRecordFormat extends BaseOneByteHeaderRecordFormat<MetaDataRecord> {
     public static final int RECORD_SIZE = 9;
@@ -44,7 +45,13 @@ public class MetaDataRecordFormat extends BaseOneByteHeaderRecordFormat<MetaData
     }
 
     @Override
-    public void read(MetaDataRecord record, PageCursor cursor, RecordLoad mode, int recordSize, int recordsPerPage) {
+    public void read(
+            MetaDataRecord record,
+            PageCursor cursor,
+            RecordLoad mode,
+            int recordSize,
+            int recordsPerPage,
+            MemoryTracker memoryTracker) {
         int id = record.getIntId();
         if (id > MetaDataStore.lastOccupiedSlot() && !mode.shouldLoad(false)) {
             record.initialize(false, 0);

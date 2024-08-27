@@ -55,6 +55,7 @@ import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.lock.LockType;
 import org.neo4j.lock.ResourceLocker;
 import org.neo4j.lock.ResourceType;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
@@ -258,40 +259,49 @@ public class LockVerificationMonitor implements LoadMonitor {
         private final NeoStores neoStores;
         private final SchemaRuleAccess schemaRuleAccess;
         private final StoreCursors storeCursors;
+        private final MemoryTracker memoryTracker;
 
-        public NeoStoresLoader(NeoStores neoStores, SchemaRuleAccess schemaRuleAccess, StoreCursors storeCursors) {
+        public NeoStoresLoader(
+                NeoStores neoStores,
+                SchemaRuleAccess schemaRuleAccess,
+                StoreCursors storeCursors,
+                MemoryTracker memoryTracker) {
             this.neoStores = neoStores;
             this.schemaRuleAccess = schemaRuleAccess;
             this.storeCursors = storeCursors;
+            this.memoryTracker = memoryTracker;
         }
 
         @Override
         public NodeRecord loadNode(long id) {
-            return readRecord(id, neoStores.getNodeStore(), storeCursors.readCursor(NODE_CURSOR));
+            return readRecord(id, neoStores.getNodeStore(), storeCursors.readCursor(NODE_CURSOR), memoryTracker);
         }
 
         @Override
         public RelationshipRecord loadRelationship(long id) {
-            return readRecord(id, neoStores.getRelationshipStore(), storeCursors.readCursor(RELATIONSHIP_CURSOR));
+            return readRecord(
+                    id, neoStores.getRelationshipStore(), storeCursors.readCursor(RELATIONSHIP_CURSOR), memoryTracker);
         }
 
         @Override
         public RelationshipGroupRecord loadRelationshipGroup(long id) {
-            return readRecord(id, neoStores.getRelationshipGroupStore(), storeCursors.readCursor(GROUP_CURSOR));
+            return readRecord(
+                    id, neoStores.getRelationshipGroupStore(), storeCursors.readCursor(GROUP_CURSOR), memoryTracker);
         }
 
         @Override
         public PropertyRecord loadProperty(long id) {
             PropertyStore propertyStore = neoStores.getPropertyStore();
-            PropertyRecord record = readRecord(id, propertyStore, storeCursors.readCursor(PROPERTY_CURSOR));
-            propertyStore.ensureHeavy(record, storeCursors);
+            PropertyRecord record =
+                    readRecord(id, propertyStore, storeCursors.readCursor(PROPERTY_CURSOR), memoryTracker);
+            propertyStore.ensureHeavy(record, storeCursors, memoryTracker);
             return record;
         }
 
         @Override
         public SchemaRule loadSchema(long id) {
             try {
-                return schemaRuleAccess.loadSingleSchemaRule(id, storeCursors);
+                return schemaRuleAccess.loadSingleSchemaRule(id, storeCursors, memoryTracker);
             } catch (MalformedSchemaRuleException e) {
                 return null;
             }
@@ -299,12 +309,12 @@ public class LockVerificationMonitor implements LoadMonitor {
 
         @Override
         public SchemaRecord loadSchemaRecord(long id) {
-            return readRecord(id, neoStores.getSchemaStore(), storeCursors.readCursor(SCHEMA_CURSOR));
+            return readRecord(id, neoStores.getSchemaStore(), storeCursors.readCursor(SCHEMA_CURSOR), memoryTracker);
         }
 
         private static <RECORD extends AbstractBaseRecord> RECORD readRecord(
-                long id, RecordStore<RECORD> store, PageCursor pageCursor) {
-            return store.getRecordByCursor(id, store.newRecord(), RecordLoad.ALWAYS, pageCursor);
+                long id, RecordStore<RECORD> store, PageCursor pageCursor, MemoryTracker memoryTracker) {
+            return store.getRecordByCursor(id, store.newRecord(), RecordLoad.ALWAYS, pageCursor, memoryTracker);
         }
     }
 }

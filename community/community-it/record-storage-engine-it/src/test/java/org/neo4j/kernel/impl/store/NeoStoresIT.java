@@ -46,6 +46,7 @@ import org.neo4j.kernel.impl.store.format.FormatFamily;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.Race;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
@@ -155,7 +156,7 @@ class NeoStoresIT {
         var cursorContext = contextFactory.create("tracePageCacheAccessOnGetRecord");
         NodeRecord nodeRecord = new NodeRecord(nodeId);
         try (var cursor = nodeStore.openPageCursorForReading(nodeId, cursorContext)) {
-            nodeStore.getRecordByCursor(nodeId, nodeRecord, RecordLoad.NORMAL, cursor);
+            nodeStore.getRecordByCursor(nodeId, nodeRecord, RecordLoad.NORMAL, cursor, EmptyMemoryTracker.INSTANCE);
         }
 
         PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
@@ -204,7 +205,7 @@ class NeoStoresIT {
 
         var cursorContext = contextFactory.create("tracePageCacheAccessOnTokenReads");
         try (StoreCursors storageCursors = storageEngine.createStorageCursors(cursorContext)) {
-            propertyKeys.getAllReadableTokens(storageCursors);
+            propertyKeys.getAllReadableTokens(storageCursors, EmptyMemoryTracker.INSTANCE);
         }
 
         PageCursorTracer cursorTracer = cursorContext.getCursorTracer();

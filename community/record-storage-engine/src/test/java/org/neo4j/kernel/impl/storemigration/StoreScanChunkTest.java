@@ -37,6 +37,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.transaction.log.LogTailLogVersionsMetadata;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.storageengine.api.StorageNodeCursor;
 import org.neo4j.storageengine.api.StoragePropertyCursor;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
@@ -83,7 +84,7 @@ class StoreScanChunkTest {
     private static class TestStoreScanChunk extends StoreScanChunk<StorageNodeCursor> {
         TestStoreScanChunk(RecordStorageReader storageReader, boolean requiresPropertyMigration) {
             super(
-                    storageReader.allocateNodeCursor(NULL_CONTEXT, StoreCursors.NULL),
+                    storageReader.allocateNodeCursor(NULL_CONTEXT, StoreCursors.NULL, EmptyMemoryTracker.INSTANCE),
                     storageReader,
                     requiresPropertyMigration,
                     NULL_CONTEXT,

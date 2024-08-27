@@ -503,7 +503,14 @@ public class ConsistencyCheckService {
             final var recoveryCleanupWorkCollector = RecoveryCleanupWorkCollector.ignore();
             final var monitors = new Monitors();
             final var tokenHolders = storageEngineFactory.loadReadOnlyTokens(
-                    fileSystem, databaseLayout, config, pageCache, pageCacheTracer, true, contextFactory);
+                    fileSystem,
+                    databaseLayout,
+                    config,
+                    pageCache,
+                    pageCacheTracer,
+                    true,
+                    contextFactory,
+                    memoryTracker);
             final var extensions = life.add(instantiateExtensions(
                     databaseLayout,
                     fileSystem,
@@ -578,7 +585,8 @@ public class ConsistencyCheckService {
                     consistencyFlags,
                     contextFactory,
                     pageCacheTracer,
-                    logTailExtractor.getTailMetadata(databaseLayout, memoryTracker));
+                    logTailExtractor.getTailMetadata(databaseLayout, memoryTracker),
+                    memoryTracker);
 
             if (!summary.isConsistent()) {
                 reportLog.warn("Inconsistencies found: " + summary);

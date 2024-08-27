@@ -77,9 +77,12 @@ class SafePropertyChainReader implements AutoCloseable {
                 neoStores.getPropertyStore().getStringStore().getRecordDataSize();
         this.arrayStoreBlockSize = neoStores.getPropertyStore().getArrayStore().getRecordDataSize();
         this.propertyStore = neoStores.getPropertyStore();
-        this.propertyReader = new RecordReader<>(neoStores.getPropertyStore(), false, cursorContext);
-        this.stringReader = new RecordReader<>(neoStores.getPropertyStore().getStringStore(), false, cursorContext);
-        this.arrayReader = new RecordReader<>(neoStores.getPropertyStore().getArrayStore(), false, cursorContext);
+        this.propertyReader =
+                new RecordReader<>(neoStores.getPropertyStore(), false, cursorContext, context.memoryTracker);
+        this.stringReader = new RecordReader<>(
+                neoStores.getPropertyStore().getStringStore(), false, cursorContext, context.memoryTracker);
+        this.arrayReader = new RecordReader<>(
+                neoStores.getPropertyStore().getArrayStore(), false, cursorContext, context.memoryTracker);
         this.seenRecords = new LongHashSet();
         this.seenDynamicRecordIds = new LongHashSet();
         this.dynamicRecords = new ArrayList<>();
@@ -116,7 +119,8 @@ class SafePropertyChainReader implements AutoCloseable {
             PropertyRecord propertyRecord = propertyReader.read(propertyRecordId);
             if (!propertyRecord.inUse()) {
                 primitiveReporter.apply(entity).propertyNotInUse(propertyRecord);
-                reporter.forProperty(context.recordLoader.property(previousRecordId, storeCursors))
+                reporter.forProperty(
+                                context.recordLoader.property(previousRecordId, storeCursors, context.memoryTracker))
                         .nextNotInUse(propertyRecord);
                 return false;
             } else {
@@ -128,7 +132,8 @@ class SafePropertyChainReader implements AutoCloseable {
                     if (NULL_REFERENCE.is(previousRecordId)) {
                         primitiveReporter.apply(entity).propertyNotFirstInChain(propertyRecord);
                     } else {
-                        reporter.forProperty(context.recordLoader.property(previousRecordId, storeCursors))
+                        reporter.forProperty(context.recordLoader.property(
+                                        previousRecordId, storeCursors, context.memoryTracker))
                                 .nextDoesNotReferenceBack(propertyRecord);
                         // prevDoesNotReferenceBack is not reported, unnecessary double report (same inconsistency from
                         // different directions)
@@ -148,7 +153,8 @@ class SafePropertyChainReader implements AutoCloseable {
                                         reporter.forProperty(property).invalidPropertyKey(block),
                                 // apparently counts for internal tokens are not collected
                                 (property, token) -> {},
-                                storeCursors)) {
+                                storeCursors,
+                                context.memoryTracker)) {
                             chainIsOk = false;
                         }
                     } else {
@@ -161,7 +167,8 @@ class SafePropertyChainReader implements AutoCloseable {
                                         reporter.forProperty(property).invalidPropertyKey(block),
                                 (property, token) ->
                                         reporter.forProperty(property).keyNotInUse(block, token),
-                                storeCursors)) {
+                                storeCursors,
+                                context.memoryTracker)) {
                             chainIsOk = false;
                         }
                     }
@@ -193,7 +200,8 @@ class SafePropertyChainReader implements AutoCloseable {
                                                     .recordNotFullReferencesNext(),
                                             record -> reporter.forDynamicBlock(RecordType.STRING_PROPERTY, record)
                                                     .invalidLength())) {
-                                        value = propertyStore.getTextValueFor(dynamicRecords, storeCursors);
+                                        value = propertyStore.getTextValueFor(
+                                                dynamicRecords, storeCursors, context.memoryTracker);
                                     }
                                     break;
                                 case ARRAY:
@@ -217,11 +225,12 @@ class SafePropertyChainReader implements AutoCloseable {
                                                     .recordNotFullReferencesNext(),
                                             record -> reporter.forDynamicBlock(RecordType.ARRAY_PROPERTY, record)
                                                     .invalidLength())) {
-                                        value = propertyStore.getArrayFor(dynamicRecords, storeCursors);
+                                        value = propertyStore.getArrayFor(
+                                                dynamicRecords, storeCursors, context.memoryTracker);
                                     }
                                     break;
                                 default:
-                                    value = type.value(block, null, storeCursors);
+                                    value = type.value(block, null, storeCursors, context.memoryTracker);
                                     break;
                             }
                         } catch (Exception e) {

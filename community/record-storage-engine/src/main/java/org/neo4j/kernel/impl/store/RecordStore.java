@@ -32,6 +32,7 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.util.IdUpdateListener;
 
@@ -155,9 +156,11 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> {
      * {@code id} as part of this method call.
      * @param mode loading behaviour, read more in method description.
      * @param cursor the PageCursor to use for record loading.
+     * @param memoryTracker
      * @throws InvalidRecordException if record not in use and the {@code mode} allows for throwing.
      */
-    RECORD getRecordByCursor(long id, RECORD target, RecordLoad mode, PageCursor cursor) throws InvalidRecordException;
+    RECORD getRecordByCursor(long id, RECORD target, RecordLoad mode, PageCursor cursor, MemoryTracker memoryTracker)
+            throws InvalidRecordException;
 
     /**
      * Reads a record from the store into {@code target}, see
@@ -170,9 +173,11 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> {
      * @param target the record to fill.
      * @param mode loading behaviour, read more in {@link RecordStore#getRecordByCursor(long, AbstractBaseRecord, RecordLoad, PageCursor)}.
      * @param cursor pageCursor to use for record loading.
+     * @param memoryTracker
      * @throws InvalidRecordException if record not in use and the {@code mode} allows for throwing.
      */
-    void nextRecordByCursor(RECORD target, RecordLoad mode, PageCursor cursor) throws InvalidRecordException;
+    void nextRecordByCursor(RECORD target, RecordLoad mode, PageCursor cursor, MemoryTracker memoryTracker)
+            throws InvalidRecordException;
 
     /**
      * For stores that have other stores coupled underneath, the "top level" record will have a flag
@@ -181,8 +186,9 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> {
      *
      * @param record record to make heavy, if not already.
      * @param storeCursors pageCursor provider to be used for record loading.
+     * @param memoryTracker
      */
-    void ensureHeavy(RECORD record, StoreCursors storeCursors);
+    void ensureHeavy(RECORD record, StoreCursors storeCursors, MemoryTracker memoryTracker);
 
     /**
      * Reads records that belong together, a chain of records that as a whole forms the entirety of a data item.
@@ -194,10 +200,12 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> {
      * If {@code false}, then chain cycles will likely end up causing an {@link OutOfMemoryError}.
      * A cycle would only occur if the store is inconsistent, though.
      * @param pageCursor page cursor to be used for record reading
+     * @param memoryTracker
      * @return {@link Collection} of records in the loaded chain.
      * @throws InvalidRecordException if some record not in use and the {@code mode} is allows for throwing.
      */
-    List<RECORD> getRecords(long firstId, RecordLoad mode, boolean guardForCycles, PageCursor pageCursor)
+    List<RECORD> getRecords(
+            long firstId, RecordLoad mode, boolean guardForCycles, PageCursor pageCursor, MemoryTracker memoryTracker)
             throws InvalidRecordException;
 
     /**
@@ -211,13 +219,15 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> {
      * A cycle would only occur if the store is inconsistent, though.
      * @param pageCursor page cursor to be used for record reading
      * @param subscriber The subscriber of the data, will receive records until the subscriber returns <code>false</code>
+     * @param memoryTracker
      */
     void streamRecords(
             long firstId,
             RecordLoad mode,
             boolean guardForCycles,
             PageCursor pageCursor,
-            RecordSubscriber<RECORD> subscriber);
+            RecordSubscriber<RECORD> subscriber,
+            MemoryTracker memoryTracker);
 
     /**
      * Updates this store with the contents of {@code record} at the record id
@@ -286,10 +296,11 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> {
      * cloned if you want to save it for later.
      * @param visitor {@link Visitor} notified about all records.
      * @param pageCursor pageCursor to use for record reading.
+     * @param memoryTracker
      * @throws EXCEPTION on error reading from store.
      */
-    <EXCEPTION extends Exception> void scanAllRecords(Visitor<RECORD, EXCEPTION> visitor, PageCursor pageCursor)
-            throws EXCEPTION;
+    <EXCEPTION extends Exception> void scanAllRecords(
+            Visitor<RECORD, EXCEPTION> visitor, PageCursor pageCursor, MemoryTracker memoryTracker) throws EXCEPTION;
 
     /**
      * Send a hint to the file system that it may reserve at least the given number of pages worth of capacity

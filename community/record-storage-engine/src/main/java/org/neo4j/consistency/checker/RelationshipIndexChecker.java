@@ -49,7 +49,7 @@ public class RelationshipIndexChecker extends IndexChecker<RelationshipRecord> {
 
     @Override
     RelationshipRecord getEntity(StoreCursors storeCursors, long entityId) {
-        return context.recordLoader.relationship(entityId, storeCursors);
+        return context.recordLoader.relationship(entityId, storeCursors, context.memoryTracker);
     }
 
     @Override

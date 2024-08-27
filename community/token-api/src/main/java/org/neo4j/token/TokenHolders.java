@@ -22,6 +22,7 @@ package org.neo4j.token;
 import static org.neo4j.token.ReadOnlyTokenCreator.READ_ONLY;
 
 import org.neo4j.common.TokenNameLookup;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.token.api.TokenHolder;
 import org.neo4j.token.api.TokenNotFoundException;
@@ -55,10 +56,10 @@ public class TokenHolders implements TokenNameLookup {
         return relationshipTypeTokens;
     }
 
-    public void setInitialTokens(TokensLoader loader, StoreCursors storeCursors) {
-        propertyKeyTokens().setInitialTokens(loader.getPropertyKeyTokens(storeCursors));
-        labelTokens().setInitialTokens(loader.getLabelTokens(storeCursors));
-        relationshipTypeTokens().setInitialTokens(loader.getRelationshipTypeTokens(storeCursors));
+    public void setInitialTokens(TokensLoader loader, StoreCursors storeCursors, MemoryTracker memoryTracker) {
+        propertyKeyTokens().setInitialTokens(loader.getPropertyKeyTokens(storeCursors, memoryTracker));
+        labelTokens().setInitialTokens(loader.getLabelTokens(storeCursors, memoryTracker));
+        relationshipTypeTokens().setInitialTokens(loader.getRelationshipTypeTokens(storeCursors, memoryTracker));
     }
 
     @Override
@@ -110,12 +111,13 @@ public class TokenHolders implements TokenNameLookup {
         };
     }
 
-    public static TokenHolders readOnlyTokenHolders(TokensLoader loader, StoreCursors storeCursors) {
+    public static TokenHolders readOnlyTokenHolders(
+            TokensLoader loader, StoreCursors storeCursors, MemoryTracker memoryTracker) {
         var tokenHolders = new TokenHolders(
                 new CreatingTokenHolder(READ_ONLY, TokenHolder.TYPE_PROPERTY_KEY),
                 new CreatingTokenHolder(READ_ONLY, TokenHolder.TYPE_LABEL),
                 new CreatingTokenHolder(READ_ONLY, TokenHolder.TYPE_RELATIONSHIP_TYPE));
-        tokenHolders.setInitialTokens(loader, storeCursors);
+        tokenHolders.setInitialTokens(loader, storeCursors, memoryTracker);
         return tokenHolders;
     }
 }

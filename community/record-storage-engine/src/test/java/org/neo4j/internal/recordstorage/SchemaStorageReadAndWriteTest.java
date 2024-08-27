@@ -47,6 +47,7 @@ import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.kernel.impl.transaction.log.LogTailLogVersionsMetadata;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.storageengine.util.IdUpdateListener;
 import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
@@ -114,7 +115,7 @@ class SchemaStorageReadAndWriteTest {
                 new RegisteringCreatingTokenHolder(tokenCreator, TokenHolder.TYPE_LABEL),
                 new RegisteringCreatingTokenHolder(tokenCreator, TokenHolder.TYPE_RELATIONSHIP_TYPE));
         storeCursors = new CachedStoreCursors(neoStores, NULL_CONTEXT);
-        tokens.setInitialTokens(StoreTokens.allTokens(neoStores), storeCursors);
+        tokens.setInitialTokens(StoreTokens.allTokens(neoStores), storeCursors, EmptyMemoryTracker.INSTANCE);
         tokenIdCounter.set(
                 Math.max(tokenIdCounter.get(), tokens.propertyKeyTokens().size()));
         tokenIdCounter.set(Math.max(tokenIdCounter.get(), tokens.labelTokens().size()));
@@ -133,7 +134,8 @@ class SchemaStorageReadAndWriteTest {
         SchemaRule schemaRule = randomSchema.nextSchemaRule();
         storage.writeSchemaRule(
                 schemaRule, IdUpdateListener.DIRECT, allocatorProvider, NULL_CONTEXT, INSTANCE, storeCursors);
-        SchemaRule returnedRule = storage.loadSingleSchemaRule(schemaRule.getId(), storeCursors);
+        SchemaRule returnedRule =
+                storage.loadSingleSchemaRule(schemaRule.getId(), storeCursors, EmptyMemoryTracker.INSTANCE);
         assertTrue(
                 RandomSchema.schemaDeepEquals(returnedRule, schemaRule),
                 () -> "\n" + returnedRule + "\nwas not equal to\n" + schemaRule);

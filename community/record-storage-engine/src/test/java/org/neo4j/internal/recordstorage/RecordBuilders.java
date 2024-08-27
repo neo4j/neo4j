@@ -249,7 +249,7 @@ public class RecordBuilders {
         }
 
         @Override
-        public void ensureHeavy(T relationshipRecord, StoreCursors storeCursors) {}
+        public void ensureHeavy(T relationshipRecord, StoreCursors storeCursors, MemoryTracker memoryTracker) {}
 
         @SuppressWarnings("unchecked")
         @Override

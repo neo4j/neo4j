@@ -48,6 +48,7 @@ import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.transaction.state.storeview.GenerateIndexUpdatesStep.GeneratedIndexUpdates;
 import org.neo4j.lock.Lock;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.storageengine.api.StorageNodeCursor;
 import org.neo4j.storageengine.api.StoragePropertyCursor;
@@ -90,7 +91,7 @@ class GenerateIndexUpdatesStepTest {
 
         // when
         CapturingBatchSender<GeneratedIndexUpdates> sender = new CapturingBatchSender<>();
-        step.process(allNodeIds(data), sender, NULL_CONTEXT);
+        step.process(allNodeIds(data), sender, NULL_CONTEXT, EmptyMemoryTracker.INSTANCE);
 
         // then
         if (alsoWrite) {
@@ -128,7 +129,7 @@ class GenerateIndexUpdatesStepTest {
 
         // when
         CapturingBatchSender<GeneratedIndexUpdates> sender = new CapturingBatchSender<>();
-        step.process(allNodeIds(data), sender, NULL_CONTEXT);
+        step.process(allNodeIds(data), sender, NULL_CONTEXT, EmptyMemoryTracker.INSTANCE);
 
         // then
         if (alsoWrite) {
@@ -163,7 +164,8 @@ class GenerateIndexUpdatesStepTest {
                 CONTEXT_FACTORY,
                 INSTANCE);
         Set<TestPropertyScanConsumer.Record> expectedUpdates = new HashSet<>();
-        try (StorageNodeCursor cursor = data.allocateNodeCursor(NULL_CONTEXT, StoreCursors.NULL);
+        try (StorageNodeCursor cursor =
+                        data.allocateNodeCursor(NULL_CONTEXT, StoreCursors.NULL, EmptyMemoryTracker.INSTANCE);
                 StoragePropertyCursor propertyCursor =
                         data.allocatePropertyCursor(NULL_CONTEXT, StoreCursors.NULL, INSTANCE)) {
             cursor.scan();
@@ -180,7 +182,7 @@ class GenerateIndexUpdatesStepTest {
 
         // when
         CapturingBatchSender<GeneratedIndexUpdates> sender = new CapturingBatchSender<>();
-        step.process(allNodeIds(data), sender, NULL_CONTEXT);
+        step.process(allNodeIds(data), sender, NULL_CONTEXT, EmptyMemoryTracker.INSTANCE);
 
         // then
         if (alsoWrite) {
@@ -220,7 +222,8 @@ class GenerateIndexUpdatesStepTest {
                 CONTEXT_FACTORY,
                 INSTANCE);
         Set<TestTokenScanConsumer.Record> expectedUpdates = new HashSet<>();
-        try (StorageNodeCursor cursor = data.allocateNodeCursor(NULL_CONTEXT, StoreCursors.NULL)) {
+        try (StorageNodeCursor cursor =
+                data.allocateNodeCursor(NULL_CONTEXT, StoreCursors.NULL, EmptyMemoryTracker.INSTANCE)) {
             cursor.scan();
             while (cursor.next()) {
                 expectedUpdates.add(new TestTokenScanConsumer.Record(cursor.entityReference(), cursor.labels()));
@@ -229,7 +232,7 @@ class GenerateIndexUpdatesStepTest {
 
         // when
         CapturingBatchSender<GeneratedIndexUpdates> sender = new CapturingBatchSender<>();
-        step.process(allNodeIds(data), sender, NULL_CONTEXT);
+        step.process(allNodeIds(data), sender, NULL_CONTEXT, EmptyMemoryTracker.INSTANCE);
 
         // then
         if (alsoWrite) {
@@ -279,7 +282,7 @@ class GenerateIndexUpdatesStepTest {
 
         // when
         CapturingBatchSender<GeneratedIndexUpdates> sender = new CapturingBatchSender<>();
-        step.process(allNodeIds(data), sender, NULL_CONTEXT);
+        step.process(allNodeIds(data), sender, NULL_CONTEXT, EmptyMemoryTracker.INSTANCE);
 
         // then
         GeneratedIndexUpdates updates = sender.batches.get(0);
@@ -328,7 +331,7 @@ class GenerateIndexUpdatesStepTest {
 
         // when
         CapturingBatchSender<GeneratedIndexUpdates> sender = new CapturingBatchSender<>();
-        step.process(allNodeIds(data), sender, NULL_CONTEXT);
+        step.process(allNodeIds(data), sender, NULL_CONTEXT, EmptyMemoryTracker.INSTANCE);
 
         // then
         if (alsoWrite) {
@@ -372,7 +375,7 @@ class GenerateIndexUpdatesStepTest {
 
         // when
         CapturingBatchSender<GeneratedIndexUpdates> sender = new CapturingBatchSender<>();
-        step.process(allNodeIds(data), sender, NULL_CONTEXT);
+        step.process(allNodeIds(data), sender, NULL_CONTEXT, EmptyMemoryTracker.INSTANCE);
 
         // then
         if (alsoWrite) {
@@ -399,7 +402,8 @@ class GenerateIndexUpdatesStepTest {
     }
 
     private static long[] allNodeIds(StubStorageCursors data) {
-        try (StorageNodeCursor cursor = data.allocateNodeCursor(NULL_CONTEXT, StoreCursors.NULL)) {
+        try (StorageNodeCursor cursor =
+                data.allocateNodeCursor(NULL_CONTEXT, StoreCursors.NULL, EmptyMemoryTracker.INSTANCE)) {
             cursor.scan();
             MutableLongList ids = LongLists.mutable.empty();
             while (cursor.next()) {

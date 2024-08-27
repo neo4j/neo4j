@@ -26,6 +26,7 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.StoreHeader;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
+import org.neo4j.memory.MemoryTracker;
 
 public class ForcedSecondaryUnitRecordFormat<RECORD extends AbstractBaseRecord> implements RecordFormat<RECORD> {
     private final RecordFormat<RECORD> actual;
@@ -55,9 +56,15 @@ public class ForcedSecondaryUnitRecordFormat<RECORD extends AbstractBaseRecord> 
     }
 
     @Override
-    public void read(RECORD record, PageCursor cursor, RecordLoad mode, int recordSize, int recordsPerPage)
+    public void read(
+            RECORD record,
+            PageCursor cursor,
+            RecordLoad mode,
+            int recordSize,
+            int recordsPerPage,
+            MemoryTracker memoryTracker)
             throws IOException {
-        actual.read(record, cursor, mode, recordSize, recordsPerPage);
+        actual.read(record, cursor, mode, recordSize, recordsPerPage, memoryTracker);
     }
 
     @Override

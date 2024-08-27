@@ -24,6 +24,7 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.StorageReader;
 
 /**
@@ -34,17 +35,23 @@ class RecordReader<RECORD extends AbstractBaseRecord> implements AutoCloseable {
     private final CommonAbstractStore<RECORD, ?> store;
     private final RECORD record;
     private final PageCursor cursor;
+    private final MemoryTracker memoryTracker;
 
-    RecordReader(CommonAbstractStore<RECORD, ?> store, boolean prefetch, CursorContext cursorContext) {
+    RecordReader(
+            CommonAbstractStore<RECORD, ?> store,
+            boolean prefetch,
+            CursorContext cursorContext,
+            MemoryTracker memoryTracker) {
         this.store = store;
         this.record = store.newRecord();
+        this.memoryTracker = memoryTracker;
         this.cursor = prefetch
                 ? store.openPageCursorForReadingWithPrefetching(0, cursorContext)
                 : store.openPageCursorForReading(0, cursorContext);
     }
 
     RECORD read(long id) {
-        store.getRecordByCursor(id, record, RecordLoad.FORCE, cursor);
+        store.getRecordByCursor(id, record, RecordLoad.FORCE, cursor, memoryTracker);
         return record;
     }
 

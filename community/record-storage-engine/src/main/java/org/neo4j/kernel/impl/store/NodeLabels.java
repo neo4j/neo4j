@@ -26,7 +26,7 @@ import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 public interface NodeLabels {
-    int[] get(NodeStore nodeStore, StoreCursors storeCursors);
+    int[] get(NodeStore nodeStore, StoreCursors storeCursors, MemoryTracker memoryTracker);
 
     Collection<DynamicRecord> put(
             int[] labelIds,

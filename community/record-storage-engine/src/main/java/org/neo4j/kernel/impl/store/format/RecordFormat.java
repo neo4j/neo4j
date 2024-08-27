@@ -28,6 +28,7 @@ import org.neo4j.kernel.impl.store.StoreHeader;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
+import org.neo4j.memory.MemoryTracker;
 
 /**
  * Specifies a particular {@link AbstractBaseRecord record} format, used to read and write records in a
@@ -78,6 +79,7 @@ public interface RecordFormat<RECORD extends AbstractBaseRecord> {
      * The cursor is placed at the beginning of the record id, which also {@code record}
      * {@link AbstractBaseRecord#getId() refers to}.
      *
+     * @param memoryTracker
      * @param record to put read data into, replacing any existing data in that record object.
      * @param cursor {@link PageCursor} to read data from.
      * @param mode {@link RecordLoad} mode of reading.
@@ -86,7 +88,14 @@ public interface RecordFormat<RECORD extends AbstractBaseRecord> {
      * know the record size in advance, but may be read from store header when opening the store.
      * @throws IOException on error reading.
      */
-    void read(RECORD record, PageCursor cursor, RecordLoad mode, int recordSize, int recordsPerPage) throws IOException;
+    void read(
+            RECORD record,
+            PageCursor cursor,
+            RecordLoad mode,
+            int recordSize,
+            int recordsPerPage,
+            MemoryTracker memoryTracker)
+            throws IOException;
 
     /**
      * Called when all changes about a record has been gathered

@@ -61,6 +61,7 @@ import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.kernel.impl.store.record.TokenRecord;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.values.storable.Value;
@@ -117,7 +118,8 @@ class SchemaChecker {
             CursorContext cursorContext,
             StoreCursors storeCursors) {
         long highId = schemaStore.getIdGenerator().getHighId();
-        try (RecordReader<SchemaRecord> schemaReader = new RecordReader<>(schemaStore, true, cursorContext)) {
+        try (RecordReader<SchemaRecord> schemaReader =
+                new RecordReader<>(schemaStore, true, cursorContext, context.memoryTracker)) {
             MutableLongObjectMap<SchemaRecord> indexObligations = LongObjectMaps.mutable.empty();
             MutableLongObjectMap<ConstraintObligation> constraintObligations = LongObjectMaps.mutable.empty();
             Map<SchemaRuleKey, SchemaRecord> verifiedRulesWithRecords = new HashMap<>();
@@ -164,7 +166,7 @@ class SchemaChecker {
                     continue;
                 }
 
-                SchemaRule schemaRule = schemaStorage.loadSingleSchemaRule(id, storeCursors);
+                SchemaRule schemaRule = schemaStorage.loadSingleSchemaRule(id, storeCursors, context.memoryTracker);
                 SchemaRecord previousContentRecord =
                         verifiedRulesWithRecords.put(SchemaRuleKey.from(schemaRule), new SchemaRecord(record));
                 if (previousContentRecord != null) {
@@ -227,7 +229,8 @@ class SchemaChecker {
                             continue;
                         }
 
-                        SchemaRule schemaRule = schemaStorage.loadSingleSchemaRule(id, storeCursors);
+                        SchemaRule schemaRule =
+                                schemaStorage.loadSingleSchemaRule(id, storeCursors, context.memoryTracker);
                         basicSchemaCheck.check(schemaRule.schema());
                         if (schemaRule instanceof IndexDescriptor rule) {
                             if (rule.isUnique()) {
@@ -296,33 +299,37 @@ class SchemaChecker {
                         neoStores.getLabelTokenStore(),
                         reporter::forLabelName,
                         dynamicRecord -> reporter.forDynamicBlock(RecordType.LABEL_NAME, dynamicRecord),
-                        context.contextFactory),
+                        context.contextFactory,
+                        context.memoryTracker),
                 () -> checkTokens(
                         neoStores.getRelationshipTypeTokenStore(),
                         reporter::forRelationshipTypeName,
                         dynamicRecord -> reporter.forDynamicBlock(RecordType.RELATIONSHIP_TYPE_NAME, dynamicRecord),
-                        context.contextFactory),
+                        context.contextFactory,
+                        context.memoryTracker),
                 () -> checkTokens(
                         neoStores.getPropertyKeyTokenStore(),
                         reporter::forPropertyKey,
                         dynamicRecord -> reporter.forDynamicBlock(RecordType.PROPERTY_KEY_NAME, dynamicRecord),
-                        context.contextFactory));
+                        context.contextFactory,
+                        context.memoryTracker));
     }
 
     private static <R extends TokenRecord> void checkTokens(
             TokenStore<R> store,
             Function<R, ConsistencyReport.NameConsistencyReport> report,
             Function<DynamicRecord, ConsistencyReport.DynamicConsistencyReport> dynamicRecordReport,
-            CursorContextFactory contextFactory) {
+            CursorContextFactory contextFactory,
+            MemoryTracker memoryTracker) {
         DynamicStringStore nameStore = store.getNameStore();
         DynamicRecord nameRecord = nameStore.newRecord();
         long highId = store.getIdGenerator().getHighId();
         LongHashSet seenNameRecordIds = new LongHashSet();
         int blockSize = store.getNameStore().getRecordDataSize();
         try (var cursorContext = contextFactory.create(CONSISTENCY_TOKEN_CHECKER_TAG);
-                RecordReader<R> tokenReader = new RecordReader<>(store, true, cursorContext);
+                RecordReader<R> tokenReader = new RecordReader<>(store, true, cursorContext, memoryTracker);
                 RecordReader<DynamicRecord> nameReader =
-                        new RecordReader<>(store.getNameStore(), false, cursorContext)) {
+                        new RecordReader<>(store.getNameStore(), false, cursorContext, memoryTracker)) {
             for (long id = 0; id < highId; id++) {
                 R record = tokenReader.read(id);
                 if (record.inUse() && !NULL_REFERENCE.is(record.getNameId())) {
@@ -345,13 +352,17 @@ class SchemaChecker {
     }
 
     static Function<AbstractBaseRecord, String> moreDescriptiveRecordToStrings(
-            NeoStores neoStores, TokenHolders tokenHolders) {
+            NeoStores neoStores, TokenHolders tokenHolders, MemoryTracker memoryTracker) {
         return record -> {
             String result = record.toString();
             if (record instanceof SchemaRecord) {
                 try (var storeCursors = new CachedStoreCursors(neoStores, CursorContext.NULL_CONTEXT)) {
                     SchemaRule schemaRule = SchemaStore.readSchemaRule(
-                            (SchemaRecord) record, neoStores.getPropertyStore(), tokenHolders, storeCursors);
+                            (SchemaRecord) record,
+                            neoStores.getPropertyStore(),
+                            tokenHolders,
+                            storeCursors,
+                            memoryTracker);
                     result += " (" + schemaRule.userDescription(tokenHolders) + ")";
                 } catch (Exception e) {
                     result += " (schema user description not available due to: " + e + ")";
@@ -390,7 +401,8 @@ class SchemaChecker {
                                 neoStores.getLabelTokenStore(),
                                 (record, id) -> {},
                                 (ignore, token) -> reporter.forSchema(record).labelNotInUse(token),
-                                storeCursors);
+                                storeCursors,
+                                context.memoryTracker);
                     }
                 }
                 case RELATIONSHIP -> {
@@ -402,7 +414,8 @@ class SchemaChecker {
                                 neoStores.getRelationshipTypeTokenStore(),
                                 (record, id) -> {},
                                 (ignore, token) -> reporter.forSchema(record).relationshipTypeNotInUse(token),
-                                storeCursors);
+                                storeCursors,
+                                context.memoryTracker);
                     }
                 }
                 default -> throw new IllegalArgumentException(
@@ -419,7 +432,8 @@ class SchemaChecker {
                         neoStores.getPropertyKeyTokenStore(),
                         (record, id) -> {},
                         (ignore, token) -> reporter.forSchema(record).propertyKeyNotInUse(token),
-                        storeCursors);
+                        storeCursors,
+                        context.memoryTracker);
             }
         }
     }

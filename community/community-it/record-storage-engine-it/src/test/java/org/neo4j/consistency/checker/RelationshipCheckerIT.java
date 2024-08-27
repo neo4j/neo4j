@@ -55,6 +55,7 @@ import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.NullLog;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.ExtensionCallback;
@@ -132,7 +133,7 @@ class RelationshipCheckerIT {
         long initialUnpins = pageCacheTracer.unpins();
         long initialHits = pageCacheTracer.hits();
 
-        relationshipChecker.check(LongRange.range(0, relationshipId + 1), true, false);
+        relationshipChecker.check(LongRange.range(0, relationshipId + 1), true, false, EmptyMemoryTracker.INSTANCE);
 
         assertThat(pageCacheTracer.pins() - initialPins).isEqualTo(6);
         assertThat(pageCacheTracer.unpins() - initialUnpins).isEqualTo(6);
@@ -145,15 +146,16 @@ class RelationshipCheckerIT {
         try (var storeCursors = new CachedStoreCursors(neoStores, CursorContext.NULL_CONTEXT)) {
             Iterable<IndexDescriptor> indexDescriptors =
                     () -> SchemaRuleAccess.getSchemaRuleAccess(neoStores.getSchemaStore(), tokenHolders)
-                            .indexesGetAll(storeCursors);
+                            .indexesGetAll(storeCursors, EmptyMemoryTracker.INSTANCE);
             var indexAccessors = new IndexAccessors(
                     providerMap,
-                    c -> asResourceIterator(indexDescriptors.iterator()),
+                    (c, m) -> asResourceIterator(indexDescriptors.iterator()),
                     new IndexSamplingConfig(config),
                     tokenHolders,
                     contextFactory,
                     storageEngine.getOpenOptions(),
-                    storageEngine.indexingBehaviour());
+                    storageEngine.indexingBehaviour(),
+                    EmptyMemoryTracker.INSTANCE);
             context = new CheckerContext(
                     neoStores,
                     indexAccessors,

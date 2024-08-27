@@ -27,6 +27,7 @@ import org.neo4j.kernel.impl.store.format.BaseRecordFormat;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
+import org.neo4j.memory.MemoryTracker;
 
 public class DynamicRecordFormat extends BaseOneByteHeaderRecordFormat<DynamicRecord> {
     // (in_use+next high)(1 byte)+nr_of_bytes(3 bytes)+next_block(int)
@@ -51,7 +52,13 @@ public class DynamicRecordFormat extends BaseOneByteHeaderRecordFormat<DynamicRe
     }
 
     @Override
-    public void read(DynamicRecord record, PageCursor cursor, RecordLoad mode, int recordSize, int recordsPerPage) {
+    public void read(
+            DynamicRecord record,
+            PageCursor cursor,
+            RecordLoad mode,
+            int recordSize,
+            int recordsPerPage,
+            MemoryTracker memoryTracker) {
         /*
          * First 4b
          * [x   ,    ][    ,    ][    ,    ][    ,    ] 0: start record, 1: linked record
@@ -81,7 +88,7 @@ public class DynamicRecordFormat extends BaseOneByteHeaderRecordFormat<DynamicRe
 
             long longNextBlock = BaseRecordFormat.longFromIntAndMod(nextBlock, nextModifier);
             record.initialize(inUse, isStartRecord, longNextBlock, -1);
-            readData(record, cursor, nrOfBytes);
+            readData(record, cursor, nrOfBytes, memoryTracker);
             if (longNextBlock != Record.NO_NEXT_BLOCK.intValue() && nrOfBytes != dataSize) {
                 // If we have a next block, but don't use the whole current block
                 cursor.setCursorException(illegalBlockSizeMessage(record, dataSize));
@@ -104,13 +111,20 @@ public class DynamicRecordFormat extends BaseOneByteHeaderRecordFormat<DynamicRe
                 record.getNextBlock(), record.getLength(), dataSize);
     }
 
-    public static void readData(DynamicRecord record, PageCursor cursor, int len) {
-        byte[] data = record.getData();
-        if (data == null || data.length != len) {
-            data = new byte[len];
-        }
+    public static void readData(DynamicRecord record, PageCursor cursor, int len, MemoryTracker memoryTracker) {
+        byte[] data = prepareRecordDataArray(record, len, memoryTracker);
         cursor.getBytes(data);
-        record.setData(data);
+    }
+
+    private static byte[] prepareRecordDataArray(DynamicRecord record, int length, MemoryTracker memoryTracker) {
+        byte[] data = record.getData();
+        if (data != null && data.length == length) {
+            return data;
+        }
+        memoryTracker.allocateHeap(length);
+        byte[] newData = new byte[length];
+        record.setData(newData);
+        return newData;
     }
 
     @Override

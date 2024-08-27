@@ -28,6 +28,7 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.helpers.collection.LongRange;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.values.storable.Values;
 
 public class NodeIndexCheckerTest extends CheckerTestBase {
@@ -57,7 +58,7 @@ public class NodeIndexCheckerTest extends CheckerTestBase {
         ConsistencySummaryStatistics inconsistenciesSummary = new ConsistencySummaryStatistics();
         CheckerContext context = context(4, ConsistencyFlags.ALL, inconsistenciesSummary);
         NodeIndexChecker indexChecker = new NodeIndexChecker(context);
-        indexChecker.check(LongRange.range(0L, 10L), true, false);
+        indexChecker.check(LongRange.range(0L, 10L), true, false, EmptyMemoryTracker.INSTANCE);
 
         // We should not have found any inconsistencies in the consistent index.
         // There was a bug in consistency checker where two empty partitions would generate a not unique inconsistency

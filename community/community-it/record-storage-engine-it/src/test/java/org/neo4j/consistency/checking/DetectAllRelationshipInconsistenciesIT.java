@@ -54,6 +54,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.LogAssertions;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
@@ -164,7 +165,7 @@ public class DetectAllRelationshipInconsistenciesIT {
     private Sabotage sabotage(RelationshipStore store, long id, long lonelyNodeId, StoreCursors storeCursors) {
         RelationshipRecord before = store.newRecord();
         try (var cursor = store.openPageCursorForReading(id, NULL_CONTEXT)) {
-            store.getRecordByCursor(id, before, RecordLoad.NORMAL, cursor);
+            store.getRecordByCursor(id, before, RecordLoad.NORMAL, cursor, EmptyMemoryTracker.INSTANCE);
         }
         RelationshipRecord after = new RelationshipRecord(before);
 
@@ -205,7 +206,8 @@ public class DetectAllRelationshipInconsistenciesIT {
 
     private RelationshipRecord loadRecord(RelationshipStore store, long otherReference) {
         try (var cursor = store.openPageCursorForReading(otherReference, NULL_CONTEXT)) {
-            return store.getRecordByCursor(otherReference, store.newRecord(), RecordLoad.FORCE, cursor);
+            return store.getRecordByCursor(
+                    otherReference, store.newRecord(), RecordLoad.FORCE, cursor, EmptyMemoryTracker.INSTANCE);
         }
     }
 }

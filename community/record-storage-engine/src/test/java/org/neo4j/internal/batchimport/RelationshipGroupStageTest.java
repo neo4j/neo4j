@@ -51,6 +51,7 @@ import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.transaction.log.LogTailLogVersionsMetadata;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
@@ -142,7 +143,7 @@ class RelationshipGroupStageTest {
         var group = store.newRecord();
         try (var cursor = store.openPageCursorForReading(0, NULL_CONTEXT)) {
             for (var id = store.getNumberOfReservedLowIds(); id < groupHighId; id++) {
-                store.getRecordByCursor(id, group, RecordLoad.NORMAL, cursor);
+                store.getRecordByCursor(id, group, RecordLoad.NORMAL, cursor, EmptyMemoryTracker.INSTANCE);
                 assertThat(cache.isDense(group.getOwningNode())).isTrue();
                 try (var verifier = new GroupDataVerifier(group)) {
                     cache.getFirstRel(group.getOwningNode(), verifier);

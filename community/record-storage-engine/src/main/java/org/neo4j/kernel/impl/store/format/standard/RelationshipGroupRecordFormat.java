@@ -25,6 +25,7 @@ import org.neo4j.kernel.impl.store.format.BaseRecordFormat;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
+import org.neo4j.memory.MemoryTracker;
 
 public class RelationshipGroupRecordFormat extends BaseOneByteHeaderRecordFormat<RelationshipGroupRecord> {
     /* Record layout
@@ -51,7 +52,12 @@ public class RelationshipGroupRecordFormat extends BaseOneByteHeaderRecordFormat
 
     @Override
     public void read(
-            RelationshipGroupRecord record, PageCursor cursor, RecordLoad mode, int recordSize, int recordsPerPage) {
+            RelationshipGroupRecord record,
+            PageCursor cursor,
+            RecordLoad mode,
+            int recordSize,
+            int recordsPerPage,
+            MemoryTracker memoryTracker) {
         // [    ,   x] in use
         // [    ,xxx ] high next id bits
         // [ xxx,    ] high firstOut bits

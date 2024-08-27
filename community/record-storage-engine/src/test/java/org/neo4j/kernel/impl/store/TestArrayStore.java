@@ -53,6 +53,7 @@ import org.neo4j.kernel.impl.store.format.aligned.PageAligned;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.transaction.log.LogTailLogVersionsMetadata;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.string.UTF8;
 import org.neo4j.test.extension.Inject;
@@ -347,6 +348,7 @@ public class TestArrayStore {
     }
 
     private HeavyRecordData loadArray(Collection<DynamicRecord> records) {
-        return arrayStore.readFullByteArray(records, PropertyType.ARRAY, StoreCursors.NULL);
+        return arrayStore.readFullByteArray(
+                records, PropertyType.ARRAY, StoreCursors.NULL, EmptyMemoryTracker.INSTANCE);
     }
 }

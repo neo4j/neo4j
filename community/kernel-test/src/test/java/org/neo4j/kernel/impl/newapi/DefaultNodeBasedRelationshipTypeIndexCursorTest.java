@@ -59,10 +59,13 @@ class DefaultNodeBasedRelationshipTypeIndexCursorTest {
         var internalCursors =
                 new InternalCursorFactory(storageCursors, NULL, NULL_CONTEXT, EmptyMemoryTracker.INSTANCE, false);
         var nodeCursor = new DefaultNodeCursor(
-                c -> {}, storageCursors.allocateNodeCursor(NULL_CONTEXT, NULL), internalCursors, false);
+                c -> {},
+                storageCursors.allocateNodeCursor(NULL_CONTEXT, NULL, EmptyMemoryTracker.INSTANCE),
+                internalCursors,
+                false);
         var relationshipCursor = new DefaultRelationshipTraversalCursor(
                 c -> {},
-                storageCursors.allocateRelationshipTraversalCursor(NULL_CONTEXT, NULL),
+                storageCursors.allocateRelationshipTraversalCursor(NULL_CONTEXT, NULL, EmptyMemoryTracker.INSTANCE),
                 internalCursors,
                 false);
         var cursor = new DefaultNodeBasedRelationshipTypeIndexCursor(c -> {}, nodeCursor, relationshipCursor);
@@ -107,10 +110,11 @@ class DefaultNodeBasedRelationshipTypeIndexCursorTest {
 
     private void assertIsOutgoingRelationship(
             StubStorageCursors storageCursors, long sourceNodeId, long relationshipId, int type) {
-        try (var nodeCursor = storageCursors.allocateNodeCursor(NULL_CONTEXT, NULL);
-                var relationshipScanCursor = storageCursors.allocateRelationshipScanCursor(NULL_CONTEXT, NULL);
-                var relationshipTraversalCursor =
-                        storageCursors.allocateRelationshipTraversalCursor(NULL_CONTEXT, NULL)) {
+        try (var nodeCursor = storageCursors.allocateNodeCursor(NULL_CONTEXT, NULL, EmptyMemoryTracker.INSTANCE);
+                var relationshipScanCursor =
+                        storageCursors.allocateRelationshipScanCursor(NULL_CONTEXT, NULL, EmptyMemoryTracker.INSTANCE);
+                var relationshipTraversalCursor = storageCursors.allocateRelationshipTraversalCursor(
+                        NULL_CONTEXT, NULL, EmptyMemoryTracker.INSTANCE)) {
             // Find it using the scan cursor
             relationshipScanCursor.single(relationshipId);
             assertThat(relationshipScanCursor.next()).isTrue();

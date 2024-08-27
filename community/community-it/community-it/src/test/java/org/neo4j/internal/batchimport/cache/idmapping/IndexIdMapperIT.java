@@ -74,6 +74,7 @@ import org.neo4j.kernel.impl.index.schema.DefaultIndexProvidersAccess;
 import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.internal.NullLogService;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.test.extension.Inject;
@@ -95,7 +96,7 @@ class IndexIdMapperIT {
             id -> id < ID_THRESHOLD ? String.valueOf(id) : String.valueOf(id - ID_THRESHOLD);
     private static final PropertyValueLookup ID_LOOKUP = () -> new PropertyValueLookup.Lookup() {
         @Override
-        public Object lookupProperty(long nodeId) {
+        public Object lookupProperty(long nodeId, MemoryTracker memoryTracker) {
             return ID_FUNCTION.valueOf(nodeId);
         }
 

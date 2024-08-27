@@ -161,9 +161,10 @@ public class RecordStorageConsistencyChecker implements AutoCloseable {
                 }
             };
         }
-        TokenHolders tokenHolders = safeLoadTokens(neoStores, contextFactory);
+        TokenHolders tokenHolders = safeLoadTokens(neoStores, contextFactory, memoryTracker);
         this.report = new InconsistencyReport(
-                new InconsistencyMessageLogger(reportLog, moreDescriptiveRecordToStrings(neoStores, tokenHolders)),
+                new InconsistencyMessageLogger(
+                        reportLog, moreDescriptiveRecordToStrings(neoStores, tokenHolders, memoryTracker)),
                 summary);
         this.reporter = new ConsistencyReporter(this.report, monitor);
         ParallelExecution execution = new ParallelExecution(
@@ -176,7 +177,7 @@ public class RecordStorageConsistencyChecker implements AutoCloseable {
         this.cacheAccess = new DefaultCacheAccess(cacheAccessMemory, Counts.NONE, numberOfThreads);
         this.observedCounts = new CountsState(neoStores, cacheAccess, memoryTracker);
         this.progress = progressFactory.multipleParts("Consistency check");
-        this.indexAccessors = instantiateIndexAccessors(neoStores, indexProviders, tokenHolders, config);
+        this.indexAccessors = instantiateIndexAccessors(neoStores, indexProviders, tokenHolders, config, memoryTracker);
         this.context = new CheckerContext(
                 neoStores,
                 indexAccessors,
@@ -197,7 +198,11 @@ public class RecordStorageConsistencyChecker implements AutoCloseable {
     }
 
     private IndexAccessors instantiateIndexAccessors(
-            NeoStores neoStores, IndexProviderMap indexProviders, TokenHolders tokenHolders, Config config) {
+            NeoStores neoStores,
+            IndexProviderMap indexProviders,
+            TokenHolders tokenHolders,
+            Config config,
+            MemoryTracker memoryTracker) {
         SchemaRuleAccess schemaRuleAccess =
                 SchemaRuleAccess.getSchemaRuleAccess(neoStores.getSchemaStore(), tokenHolders);
         return new IndexAccessors(
@@ -209,7 +214,8 @@ public class RecordStorageConsistencyChecker implements AutoCloseable {
                 neoStores.getOpenOptions(),
                 new RecordStorageIndexingBehaviour(
                         neoStores.getNodeStore().getRecordsPerPage(),
-                        neoStores.getRelationshipStore().getRecordsPerPage()));
+                        neoStores.getRelationshipStore().getRecordsPerPage()),
+                memoryTracker);
     }
 
     public void check() throws ConsistencyCheckIncompleteException {
@@ -476,7 +482,8 @@ public class RecordStorageConsistencyChecker implements AutoCloseable {
         }
     }
 
-    private static TokenHolders safeLoadTokens(NeoStores neoStores, CursorContextFactory contextFactory) {
+    private static TokenHolders safeLoadTokens(
+            NeoStores neoStores, CursorContextFactory contextFactory, MemoryTracker memoryTracker) {
         TokenHolders tokenHolders = new TokenHolders(
                 new CreatingTokenHolder(ReadOnlyTokenCreator.READ_ONLY, TokenHolder.TYPE_PROPERTY_KEY),
                 new CreatingTokenHolder(ReadOnlyTokenCreator.READ_ONLY, TokenHolder.TYPE_LABEL),
@@ -484,15 +491,16 @@ public class RecordStorageConsistencyChecker implements AutoCloseable {
         try (var cursorContext = contextFactory.create(CONSISTENCY_CHECKER_TOKEN_LOADER_TAG)) {
             tokenHolders
                     .relationshipTypeTokens()
-                    .setInitialTokens(
-                            RecordLoading.safeLoadTokens(neoStores.getRelationshipTypeTokenStore(), cursorContext));
+                    .setInitialTokens(RecordLoading.safeLoadTokens(
+                            neoStores.getRelationshipTypeTokenStore(), cursorContext, memoryTracker));
             tokenHolders
                     .labelTokens()
-                    .setInitialTokens(RecordLoading.safeLoadTokens(neoStores.getLabelTokenStore(), cursorContext));
+                    .setInitialTokens(
+                            RecordLoading.safeLoadTokens(neoStores.getLabelTokenStore(), cursorContext, memoryTracker));
             tokenHolders
                     .propertyKeyTokens()
-                    .setInitialTokens(
-                            RecordLoading.safeLoadTokens(neoStores.getPropertyKeyTokenStore(), cursorContext));
+                    .setInitialTokens(RecordLoading.safeLoadTokens(
+                            neoStores.getPropertyKeyTokenStore(), cursorContext, memoryTracker));
         }
         return tokenHolders;
     }
@@ -532,9 +540,10 @@ public class RecordStorageConsistencyChecker implements AutoCloseable {
         }
 
         @Override
-        public ResourceIterator<IndexDescriptor> indexDescriptors(CursorContext cursorContext) {
+        public ResourceIterator<IndexDescriptor> indexDescriptors(
+                CursorContext cursorContext, MemoryTracker memoryTracker) {
             var storeCursors = new CachedStoreCursors(neoStores, cursorContext);
-            var descriptorIterator = schemaRuleAccess.indexesGetAllIgnoreMalformed(storeCursors);
+            var descriptorIterator = schemaRuleAccess.indexesGetAllIgnoreMalformed(storeCursors, memoryTracker);
             return resourceIterator(descriptorIterator, storeCursors::close);
         }
     }

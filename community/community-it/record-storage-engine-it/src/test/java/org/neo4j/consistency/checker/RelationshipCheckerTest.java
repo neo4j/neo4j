@@ -31,6 +31,7 @@ import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.memory.EmptyMemoryTracker;
 
 class RelationshipCheckerTest extends CheckerTestBase {
     private int type;
@@ -323,6 +324,10 @@ class RelationshipCheckerTest extends CheckerTestBase {
 
     private void check(CheckerContext checkerContext) throws Exception {
         new RelationshipChecker(checkerContext, noMandatoryProperties, noAllowedTypes)
-                .check(LongRange.range(0, nodeStore.getIdGenerator().getHighId()), true, true);
+                .check(
+                        LongRange.range(0, nodeStore.getIdGenerator().getHighId()),
+                        true,
+                        true,
+                        EmptyMemoryTracker.INSTANCE);
     }
 }

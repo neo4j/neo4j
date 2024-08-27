@@ -40,6 +40,7 @@ import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.StoreHeader;
 import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.token.api.NamedToken;
 import org.neo4j.token.api.TokenHolder;
@@ -56,13 +57,15 @@ public class LenientStoreInput implements Input {
     private final ReadBehaviour readBehaviour;
     private final Groups groups = new Groups();
     private final Group inputGroup = groups.getOrCreate(null);
+    private final MemoryTracker memoryTracker;
 
     public LenientStoreInput(
             NeoStores neoStores,
             TokenHolders tokenHolders,
             boolean compactNodeIdSpace,
             CursorContextFactory contextFactory,
-            ReadBehaviour readBehaviour) {
+            ReadBehaviour readBehaviour,
+            MemoryTracker memoryTracker) {
         this.propertyStore = neoStores.getPropertyStore();
         this.nodeStore = neoStores.getNodeStore();
         this.relationshipStore = neoStores.getRelationshipStore();
@@ -71,6 +74,7 @@ public class LenientStoreInput implements Input {
         this.compactNodeIdSpace = compactNodeIdSpace;
         this.contextFactory = contextFactory;
         this.readBehaviour = readBehaviour;
+        this.memoryTracker = memoryTracker;
     }
 
     @Override
@@ -86,7 +90,8 @@ public class LenientStoreInput implements Input {
                         contextFactory,
                         new CachedStoreCursors(neoStores, CursorContext.NULL_CONTEXT),
                         compactNodeIdSpace,
-                        inputGroup);
+                        inputGroup,
+                        memoryTracker);
             }
         };
     }
@@ -103,7 +108,8 @@ public class LenientStoreInput implements Input {
                         tokenHolders,
                         contextFactory,
                         new CachedStoreCursors(neoStores, CursorContext.NULL_CONTEXT),
-                        inputGroup);
+                        inputGroup,
+                        memoryTracker);
             }
         };
     }

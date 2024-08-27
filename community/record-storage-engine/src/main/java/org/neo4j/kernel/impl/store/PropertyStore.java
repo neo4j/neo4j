@@ -270,13 +270,13 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord, NoStoreHe
     }
 
     @Override
-    public void ensureHeavy(PropertyRecord record, StoreCursors storeCursors) {
+    public void ensureHeavy(PropertyRecord record, StoreCursors storeCursors, MemoryTracker memoryTracker) {
         for (PropertyBlock block : record) {
-            ensureHeavy(block, storeCursors);
+            ensureHeavy(block, storeCursors, memoryTracker);
         }
     }
 
-    public void ensureHeavy(PropertyBlock block, StoreCursors storeCursors) {
+    public void ensureHeavy(PropertyBlock block, StoreCursors storeCursors, MemoryTracker memoryTracker) {
         if (!block.isLight()) {
             return;
         }
@@ -286,7 +286,7 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord, NoStoreHe
         if (dynamicStore != null) {
             var cursorForType = dynamicStoreCursorForType(storeCursors, type);
             List<DynamicRecord> dynamicRecords =
-                    dynamicStore.getRecords(block.getSingleValueLong(), NORMAL, false, cursorForType);
+                    dynamicStore.getRecords(block.getSingleValueLong(), NORMAL, false, cursorForType, memoryTracker);
             for (DynamicRecord dynamicRecord : dynamicRecords) {
                 dynamicRecord.setType(type.intValue());
             }
@@ -310,8 +310,8 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord, NoStoreHe
         };
     }
 
-    public Value getValue(PropertyBlock propertyBlock, StoreCursors cursors) {
-        return propertyBlock.getType().value(propertyBlock, this, cursors);
+    public Value getValue(PropertyBlock propertyBlock, StoreCursors cursors, MemoryTracker memoryTracker) {
+        return propertyBlock.getType().value(propertyBlock, this, cursors, memoryTracker);
     }
 
     private static void allocateStringRecords(
@@ -373,12 +373,22 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord, NoStoreHe
         return arrayStore.openPageCursorForReading(reference, cursorContext);
     }
 
-    public void loadString(long reference, RecordPropertyCursor propertyCursor, PageCursor page, RecordLoad loadMode) {
-        readDynamic(stringStore, reference, propertyCursor, page, loadMode);
+    public void loadString(
+            long reference,
+            RecordPropertyCursor propertyCursor,
+            PageCursor page,
+            RecordLoad loadMode,
+            MemoryTracker memoryTracker) {
+        readDynamic(stringStore, reference, propertyCursor, page, loadMode, memoryTracker);
     }
 
-    public void loadArray(long reference, RecordPropertyCursor propertyCursor, PageCursor page, RecordLoad loadMode) {
-        readDynamic(arrayStore, reference, propertyCursor, page, loadMode);
+    public void loadArray(
+            long reference,
+            RecordPropertyCursor propertyCursor,
+            PageCursor page,
+            RecordLoad loadMode,
+            MemoryTracker memoryTracker) {
+        readDynamic(arrayStore, reference, propertyCursor, page, loadMode, memoryTracker);
     }
 
     private static void readDynamic(
@@ -386,7 +396,8 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord, NoStoreHe
             long reference,
             RecordPropertyCursor propertyCursor,
             PageCursor page,
-            RecordLoad loadMode) {
+            RecordLoad loadMode,
+            MemoryTracker memoryTracker) {
         var buffer = propertyCursor.getOrCreateClearBuffer();
         DynamicRecord record = store.newRecord();
         // Only instantiated if number of dynamic records reaches a certain threshold, at which point it's instantiated
@@ -397,7 +408,7 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord, NoStoreHe
         do {
             // We need to load forcefully here since otherwise we can have inconsistent reads
             // for properties across blocks, see org.neo4j.graphdb.ConsistentPropertyReadsIT
-            store.getRecordByCursor(reference, record, loadMode, page);
+            store.getRecordByCursor(reference, record, loadMode, page, memoryTracker);
             reference = record.getNextBlock();
             byte[] data = record.getData();
             if (buffer.remaining() < data.length) {
@@ -593,25 +604,27 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord, NoStoreHe
         return UTF8.decode(byteArray);
     }
 
-    TextValue getTextValueFor(PropertyBlock propertyBlock, StoreCursors storeCursors) {
-        ensureHeavy(propertyBlock, storeCursors);
-        return getTextValueFor(propertyBlock.getValueRecords(), storeCursors);
+    TextValue getTextValueFor(PropertyBlock propertyBlock, StoreCursors storeCursors, MemoryTracker memoryTracker) {
+        ensureHeavy(propertyBlock, storeCursors, memoryTracker);
+        return getTextValueFor(propertyBlock.getValueRecords(), storeCursors, memoryTracker);
     }
 
-    public TextValue getTextValueFor(Collection<DynamicRecord> dynamicRecords, StoreCursors storeCursors) {
+    public TextValue getTextValueFor(
+            Collection<DynamicRecord> dynamicRecords, StoreCursors storeCursors, MemoryTracker memoryTracker) {
         AbstractDynamicStore.HeavyRecordData source =
-                stringStore.readFullByteArray(dynamicRecords, PropertyType.STRING, storeCursors);
+                stringStore.readFullByteArray(dynamicRecords, PropertyType.STRING, storeCursors, memoryTracker);
         // A string doesn't have a header in the data array
         return Values.utf8Value(source.data());
     }
 
-    Value getArrayFor(PropertyBlock propertyBlock, StoreCursors storeCursors) {
-        ensureHeavy(propertyBlock, storeCursors);
-        return getArrayFor(propertyBlock.getValueRecords(), storeCursors);
+    Value getArrayFor(PropertyBlock propertyBlock, StoreCursors storeCursors, MemoryTracker memoryTracker) {
+        ensureHeavy(propertyBlock, storeCursors, memoryTracker);
+        return getArrayFor(propertyBlock.getValueRecords(), storeCursors, memoryTracker);
     }
 
-    public Value getArrayFor(Collection<DynamicRecord> records, StoreCursors storeCursors) {
-        return arrayStore.getArrayFor(records, storeCursors);
+    public Value getArrayFor(
+            Collection<DynamicRecord> records, StoreCursors storeCursors, MemoryTracker memoryTracker) {
+        return arrayStore.getArrayFor(records, storeCursors, memoryTracker);
     }
 
     @Override

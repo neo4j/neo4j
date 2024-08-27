@@ -36,6 +36,7 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.lock.LockType;
 import org.neo4j.lock.ResourceLocker;
 import org.neo4j.lock.ResourceType;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
@@ -59,10 +60,11 @@ public interface CommandLockVerification {
                 ReadableTransactionState txState,
                 NeoStores neoStores,
                 SchemaRuleAccess schemaRuleAccess,
-                StoreCursors storeCursors) {
+                StoreCursors storeCursors,
+                MemoryTracker memoryTracker) {
             this.locks = locks;
             this.txState = txState;
-            this.loader = new NeoStoresLoader(neoStores, schemaRuleAccess, storeCursors);
+            this.loader = new NeoStoresLoader(neoStores, schemaRuleAccess, storeCursors, memoryTracker);
         }
 
         @Override

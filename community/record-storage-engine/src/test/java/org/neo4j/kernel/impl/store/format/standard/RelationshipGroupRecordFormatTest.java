@@ -33,6 +33,7 @@ import org.neo4j.io.pagecache.StubPageCursor;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
@@ -62,7 +63,13 @@ class RelationshipGroupRecordFormatTest {
             // WHEN
             RelationshipGroupRecord read = new RelationshipGroupRecord(group.getId());
             cursor.setOffset(offset);
-            format.read(read, cursor, NORMAL, recordSize, cursor.getPagedFile().payloadSize() / recordSize);
+            format.read(
+                    read,
+                    cursor,
+                    NORMAL,
+                    recordSize,
+                    cursor.getPagedFile().payloadSize() / recordSize,
+                    EmptyMemoryTracker.INSTANCE);
 
             // THEN
             assertEquals(group, read);

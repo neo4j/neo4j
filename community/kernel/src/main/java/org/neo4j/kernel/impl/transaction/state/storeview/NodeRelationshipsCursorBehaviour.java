@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.transaction.state.storeview;
 
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.RelationshipSelection;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
@@ -40,10 +41,10 @@ public class NodeRelationshipsCursorBehaviour
 
     @Override
     public StorageRelationshipByNodeScanCursor allocateEntityScanCursor(
-            CursorContext cursorContext, StoreCursors storeCursors) {
+            CursorContext cursorContext, StoreCursors storeCursors, MemoryTracker memoryTracker) {
         return new StorageRelationshipByNodeScanCursor(
-                storageReader.allocateNodeCursor(cursorContext, storeCursors),
-                storageReader.allocateRelationshipTraversalCursor(cursorContext, storeCursors),
+                storageReader.allocateNodeCursor(cursorContext, storeCursors, memoryTracker),
+                storageReader.allocateRelationshipTraversalCursor(cursorContext, storeCursors, memoryTracker),
                 relationshipSelection);
     }
 

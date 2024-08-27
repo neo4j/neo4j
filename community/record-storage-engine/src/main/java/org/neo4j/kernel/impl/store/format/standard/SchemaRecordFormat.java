@@ -27,6 +27,7 @@ import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
+import org.neo4j.memory.MemoryTracker;
 
 public class SchemaRecordFormat extends BaseOneByteHeaderRecordFormat<SchemaRecord>
         implements RecordFormat<SchemaRecord> {
@@ -54,7 +55,13 @@ public class SchemaRecordFormat extends BaseOneByteHeaderRecordFormat<SchemaReco
     }
 
     @Override
-    public void read(SchemaRecord record, PageCursor cursor, RecordLoad mode, int recordSize, int recordsPerPage)
+    public void read(
+            SchemaRecord record,
+            PageCursor cursor,
+            RecordLoad mode,
+            int recordSize,
+            int recordsPerPage,
+            MemoryTracker memoryTracker)
             throws IOException {
         long data = cursor.getLong();
         boolean inUse = (data & RECORD_IN_USE_BIT) != 0;

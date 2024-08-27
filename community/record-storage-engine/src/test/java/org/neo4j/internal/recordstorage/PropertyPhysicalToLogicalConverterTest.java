@@ -49,6 +49,7 @@ import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.transaction.log.LogTailLogVersionsMetadata;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.LatestVersions;
@@ -100,7 +101,7 @@ class PropertyPhysicalToLogicalConverterTest {
         allocatorProvider = DynamicAllocatorProviders.nonTransactionalAllocator(neoStores);
 
         store = neoStores.getPropertyStore();
-        converter = new PropertyPhysicalToLogicalConverter(store, StoreCursors.NULL);
+        converter = new PropertyPhysicalToLogicalConverter(store, StoreCursors.NULL, EmptyMemoryTracker.INSTANCE);
     }
 
     @AfterEach

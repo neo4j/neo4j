@@ -32,6 +32,7 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.cursor.CursorType;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.util.IdUpdateListener;
@@ -46,8 +47,9 @@ public class DirectRecordAccess<RECORD extends AbstractBaseRecord, ADDITIONAL>
     private final CursorContext cursorContext;
     private final StoreCursors storeCursors;
     private final CursorType cursorType;
-    private final Map<Long, DirectRecordProxy> batch = new HashMap<>();
+    private final MemoryTracker memoryTracker;
 
+    private final Map<Long, DirectRecordProxy> batch = new HashMap<>();
     private final MutableInt changeCounter = new MutableInt();
 
     public DirectRecordAccess(
@@ -55,12 +57,14 @@ public class DirectRecordAccess<RECORD extends AbstractBaseRecord, ADDITIONAL>
             Loader<RECORD, ADDITIONAL> loader,
             CursorContext cursorContext,
             CursorType cursorType,
-            StoreCursors storeCursors) {
+            StoreCursors storeCursors,
+            MemoryTracker memoryTracker) {
         this.store = store;
         this.loader = loader;
         this.cursorContext = cursorContext;
         this.cursorType = cursorType;
         this.storeCursors = storeCursors;
+        this.memoryTracker = memoryTracker;
     }
 
     @Override
@@ -155,7 +159,7 @@ public class DirectRecordAccess<RECORD extends AbstractBaseRecord, ADDITIONAL>
 
         @Override
         public RECORD forChangingData() {
-            loader.ensureHeavy(record, storeCursors);
+            loader.ensureHeavy(record, storeCursors, memoryTracker);
             prepareChange();
             return record;
         }
@@ -167,7 +171,7 @@ public class DirectRecordAccess<RECORD extends AbstractBaseRecord, ADDITIONAL>
 
         @Override
         public RECORD forReadingData() {
-            loader.ensureHeavy(record, storeCursors);
+            loader.ensureHeavy(record, storeCursors, memoryTracker);
             return record;
         }
 

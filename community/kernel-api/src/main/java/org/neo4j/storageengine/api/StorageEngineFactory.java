@@ -289,7 +289,8 @@ public interface StorageEngineFactory {
             Config config,
             DatabaseLayout databaseLayout,
             CursorContextFactory contextFactory,
-            LogTailLogVersionsMetadata logTailMetadata);
+            LogTailLogVersionsMetadata logTailMetadata,
+            MemoryTracker memoryTracker);
 
     List<SchemaRule> loadSchemaRules(
             FileSystemAbstraction fs,
@@ -299,7 +300,8 @@ public interface StorageEngineFactory {
             DatabaseLayout databaseLayout,
             boolean lenient,
             Function<SchemaRule, SchemaRule> schemaRuleMigration,
-            CursorContextFactory contextFactory);
+            CursorContextFactory contextFactory,
+            MemoryTracker memoryTracker);
 
     TokenHolders loadReadOnlyTokens(
             FileSystemAbstraction fs,
@@ -308,7 +310,8 @@ public interface StorageEngineFactory {
             PageCache pageCache,
             PageCacheTracer pageCacheTracer,
             boolean lenient,
-            CursorContextFactory contextFactory);
+            CursorContextFactory contextFactory,
+            MemoryTracker memoryTracker);
 
     SchemaRuleMigrationAccessExtended schemaRuleMigrationAccess(
             FileSystemAbstraction fs,
@@ -450,6 +453,7 @@ public interface StorageEngineFactory {
      * @param contextFactory underlying page cursor context factory.
      * @param pageCacheTracer underlying page cache tracer
      * @param logTailMetadata meta data read from the tx log.
+     * @param memoryTracker
      * @throws ConsistencyCheckIncompleteException on failure doing the consistency check.
      */
     void consistencyCheck(
@@ -468,7 +472,8 @@ public interface StorageEngineFactory {
             ConsistencyFlags flags,
             CursorContextFactory contextFactory,
             PageCacheTracer pageCacheTracer,
-            LogTailMetadata logTailMetadata)
+            LogTailMetadata logTailMetadata,
+            MemoryTracker memoryTracker)
             throws ConsistencyCheckIncompleteException;
 
     /**

@@ -33,6 +33,7 @@ import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.token.api.TokenHolder;
@@ -50,7 +51,8 @@ class LenientNodeReader extends LenientStoreInputChunk {
             CursorContextFactory cursorFactory,
             StoreCursors storeCursors,
             boolean compactNodeStore,
-            Group group) {
+            Group group,
+            MemoryTracker memoryTracker) {
         super(
                 readBehaviour,
                 propertyStore,
@@ -58,18 +60,20 @@ class LenientNodeReader extends LenientStoreInputChunk {
                 cursorFactory,
                 storeCursors,
                 storeCursors.readCursor(NODE_CURSOR),
-                group);
+                group,
+                memoryTracker);
         this.nodeStore = nodeStore;
         this.record = nodeStore.newRecord();
         this.compactNodeStore = compactNodeStore;
     }
 
     @Override
-    void readAndVisit(long id, InputEntityVisitor visitor, StoreCursors storeCursors) throws IOException {
-        nodeStore.getRecordByCursor(id, record, RecordLoad.LENIENT_CHECK, cursor);
+    void readAndVisit(long id, InputEntityVisitor visitor, StoreCursors storeCursors, MemoryTracker memoryTracker)
+            throws IOException {
+        nodeStore.getRecordByCursor(id, record, RecordLoad.LENIENT_CHECK, cursor, memoryTracker);
         if (record.inUse()) {
-            nodeStore.ensureHeavy(record, storeCursors);
-            int[] labelIds = parseLabelsField(record).get(nodeStore, storeCursors);
+            nodeStore.ensureHeavy(record, storeCursors, memoryTracker);
+            int[] labelIds = parseLabelsField(record).get(nodeStore, storeCursors, memoryTracker);
             String[] labels = toNames(tokenHolders.labelTokens(), labelIds);
             if (readBehaviour.shouldIncludeNode(id, labels)) {
                 labels = readBehaviour.filterLabels(labels);
@@ -81,7 +85,7 @@ class LenientNodeReader extends LenientStoreInputChunk {
                     visitor.id(id, group, cursorContext -> id);
                 }
                 visitor.labels(labels);
-                visitPropertyChainNoThrow(visitor, record, EntityType.NODE, labels);
+                visitPropertyChainNoThrow(visitor, record, EntityType.NODE, labels, memoryTracker);
                 visitor.endOfEntity();
             }
         } else {

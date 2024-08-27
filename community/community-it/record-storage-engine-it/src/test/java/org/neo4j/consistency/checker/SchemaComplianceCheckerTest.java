@@ -61,6 +61,7 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.TextValue;
@@ -295,7 +296,7 @@ class SchemaComplianceCheckerTest extends CheckerTestBase {
             RelationshipRecord record;
             try (var cursor = relationshipStore.openPageCursorForReading(relId, CursorContext.NULL_CONTEXT)) {
                 record = relationshipStore.getRecordByCursor(
-                        relId, relationshipStore.newRecord(), RecordLoad.NORMAL, cursor);
+                        relId, relationshipStore.newRecord(), RecordLoad.NORMAL, cursor, EmptyMemoryTracker.INSTANCE);
             }
 
             checker.checkCorrectlyIndexed(

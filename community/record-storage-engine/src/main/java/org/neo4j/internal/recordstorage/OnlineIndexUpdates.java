@@ -161,10 +161,10 @@ public class OnlineIndexUpdates implements IndexUpdates {
         int[] nodeLabelsAfter;
         if (nodeChanges != null) {
             // Special case since the node may not be heavy, i.e. further loading may be required
-            nodeLabelsBefore =
-                    NodeLabelsField.getNoEnsureHeavy(commandSelector.getBefore(nodeChanges), nodeStore, storeCursors);
-            nodeLabelsAfter =
-                    NodeLabelsField.getNoEnsureHeavy(commandSelector.getAfter(nodeChanges), nodeStore, storeCursors);
+            nodeLabelsBefore = NodeLabelsField.getNoEnsureHeavy(
+                    commandSelector.getBefore(nodeChanges), nodeStore, storeCursors, memoryTracker);
+            nodeLabelsAfter = NodeLabelsField.getNoEnsureHeavy(
+                    commandSelector.getAfter(nodeChanges), nodeStore, storeCursors, memoryTracker);
         } else {
             /* If the node doesn't exist here then we've most likely encountered this scenario:
              * - TX1: Node N exists and has property record P
@@ -235,7 +235,7 @@ public class OnlineIndexUpdates implements IndexUpdates {
 
     private StorageNodeCursor loadNode(long nodeId) {
         if (nodeCursor == null) {
-            nodeCursor = reader.allocateNodeCursor(cursorContext, storeCursors);
+            nodeCursor = reader.allocateNodeCursor(cursorContext, storeCursors, memoryTracker);
         }
         nodeCursor.single(nodeId);
         if (!nodeCursor.next()) {
@@ -246,7 +246,7 @@ public class OnlineIndexUpdates implements IndexUpdates {
 
     private StorageRelationshipScanCursor loadRelationship(long relationshipId) {
         if (relationshipCursor == null) {
-            relationshipCursor = reader.allocateRelationshipScanCursor(cursorContext, storeCursors);
+            relationshipCursor = reader.allocateRelationshipScanCursor(cursorContext, storeCursors, memoryTracker);
         }
         relationshipCursor.single(relationshipId);
         if (!relationshipCursor.next()) {

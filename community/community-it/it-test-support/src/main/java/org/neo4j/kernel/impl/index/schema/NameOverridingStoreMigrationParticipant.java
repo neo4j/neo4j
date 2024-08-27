@@ -25,6 +25,7 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.helpers.progress.ProgressListener;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.StoreVersion;
 import org.neo4j.storageengine.migration.StoreMigrationParticipant;
 
@@ -56,9 +57,11 @@ public class NameOverridingStoreMigrationParticipant implements StoreMigrationPa
             DatabaseLayout migrationLayout,
             DatabaseLayout directoryLayout,
             StoreVersion versionToMigrateFrom,
-            StoreVersion versionToMigrateTo)
+            StoreVersion versionToMigrateTo,
+            MemoryTracker memoryTracker)
             throws IOException {
-        delegate.moveMigratedFiles(migrationLayout, directoryLayout, versionToMigrateFrom, versionToMigrateTo);
+        delegate.moveMigratedFiles(
+                migrationLayout, directoryLayout, versionToMigrateFrom, versionToMigrateTo, memoryTracker);
     }
 
     @Override

@@ -37,6 +37,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StoreVersion;
 import org.neo4j.storageengine.api.format.CapabilityType;
@@ -109,16 +110,18 @@ public class TokenIndexMigrator extends AbstractStoreMigrationParticipant {
             DatabaseLayout migrationLayout,
             DatabaseLayout directoryLayout,
             StoreVersion versionToUpgradeFrom,
-            StoreVersion versionToMigrateTo)
+            StoreVersion versionToMigrateTo,
+            MemoryTracker memoryTracker)
             throws IOException {
         if (moveFiles) {
-            moveTokenIndexes(directoryLayout);
+            moveTokenIndexes(directoryLayout, memoryTracker);
         }
 
         if (deleteAllIndexes) {
-            deleteTokenIndex(directoryLayout, any -> true);
+            deleteTokenIndex(directoryLayout, any -> true, memoryTracker);
         } else if (deleteRelationshipTokenIndex) {
-            deleteTokenIndex(directoryLayout, rule -> rule.schema().entityType() == EntityType.RELATIONSHIP);
+            deleteTokenIndex(
+                    directoryLayout, rule -> rule.schema().entityType() == EntityType.RELATIONSHIP, memoryTracker);
         }
     }
 
@@ -127,7 +130,7 @@ public class TokenIndexMigrator extends AbstractStoreMigrationParticipant {
         // nop
     }
 
-    private void moveTokenIndexes(DatabaseLayout databaseLayout) throws IOException {
+    private void moveTokenIndexes(DatabaseLayout databaseLayout, MemoryTracker memoryTracker) throws IOException {
         for (var schemaRule : storageEngineFactory.loadSchemaRules(
                 fileSystem,
                 pageCache,
@@ -136,7 +139,8 @@ public class TokenIndexMigrator extends AbstractStoreMigrationParticipant {
                 databaseLayout,
                 false,
                 r -> r,
-                contextFactory)) {
+                contextFactory,
+                memoryTracker)) {
             if (!schemaRule.schema().isSchemaDescriptorType(AnyTokenSchemaDescriptor.class)) {
                 continue;
             }
@@ -161,7 +165,8 @@ public class TokenIndexMigrator extends AbstractStoreMigrationParticipant {
         }
     }
 
-    private void deleteTokenIndex(DatabaseLayout databaseLayout, Predicate<SchemaRule> tokenIndexFilter)
+    private void deleteTokenIndex(
+            DatabaseLayout databaseLayout, Predicate<SchemaRule> tokenIndexFilter, MemoryTracker memoryTracker)
             throws IOException {
         for (var schemaRule : storageEngineFactory.loadSchemaRules(
                 fileSystem,
@@ -171,7 +176,8 @@ public class TokenIndexMigrator extends AbstractStoreMigrationParticipant {
                 databaseLayout,
                 false,
                 r -> r,
-                contextFactory)) {
+                contextFactory,
+                memoryTracker)) {
             if (schemaRule.schema().isSchemaDescriptorType(AnyTokenSchemaDescriptor.class)
                     && tokenIndexFilter.test(schemaRule)) {
                 Path indexFile = storeFileProvider.apply(schemaRule);

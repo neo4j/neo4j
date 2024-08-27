@@ -25,6 +25,7 @@ import org.neo4j.kernel.impl.store.format.BaseRecordFormat;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.memory.MemoryTracker;
 
 public class RelationshipRecordFormat extends BaseOneByteHeaderRecordFormat<RelationshipRecord> {
     // record header size
@@ -53,7 +54,12 @@ public class RelationshipRecordFormat extends BaseOneByteHeaderRecordFormat<Rela
 
     @Override
     public void read(
-            RelationshipRecord record, PageCursor cursor, RecordLoad mode, int recordSize, int recordsPerPage) {
+            RelationshipRecord record,
+            PageCursor cursor,
+            RecordLoad mode,
+            int recordSize,
+            int recordsPerPage,
+            MemoryTracker memoryTracker) {
         byte headerByte = cursor.getByte();
         boolean inUse = isInUse(headerByte);
         record.setInUse(inUse);

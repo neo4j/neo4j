@@ -100,6 +100,7 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.storageengine.api.ClosedTransactionMetadata;
 import org.neo4j.storageengine.api.CommandCreationContext;
@@ -613,14 +614,15 @@ class NeoStoresTest {
     }
 
     private StorageRelationshipTraversalCursor allocateRelationshipTraversalCursor(StorageNodeCursor node) {
-        StorageRelationshipTraversalCursor relationships =
-                storageReader.allocateRelationshipTraversalCursor(NULL_CONTEXT, storeCursors);
+        StorageRelationshipTraversalCursor relationships = storageReader.allocateRelationshipTraversalCursor(
+                NULL_CONTEXT, storeCursors, EmptyMemoryTracker.INSTANCE);
         node.relationships(relationships, ALL_RELATIONSHIPS);
         return relationships;
     }
 
     private StorageNodeCursor allocateNodeCursor(long nodeId) {
-        StorageNodeCursor nodeCursor = storageReader.allocateNodeCursor(NULL_CONTEXT, storeCursors);
+        StorageNodeCursor nodeCursor =
+                storageReader.allocateNodeCursor(NULL_CONTEXT, storeCursors, EmptyMemoryTracker.INSTANCE);
         nodeCursor.single(nodeId);
         return nodeCursor;
     }
@@ -640,8 +642,8 @@ class NeoStoresTest {
         RelationshipVisitor<RuntimeException> visitor = (relId, type, startNode, endNode) ->
                 transactionState.relationshipDoDelete(relId, type, startNode, endNode);
         if (!transactionState.relationshipVisit(id, visitor)) {
-            try (StorageRelationshipScanCursor cursor =
-                    storageReader.allocateRelationshipScanCursor(NULL_CONTEXT, storeCursors)) {
+            try (StorageRelationshipScanCursor cursor = storageReader.allocateRelationshipScanCursor(
+                    NULL_CONTEXT, storeCursors, EmptyMemoryTracker.INSTANCE)) {
                 cursor.single(id);
                 if (!cursor.next()) {
                     throw new RuntimeException("Relationship " + id + " not found");
@@ -664,7 +666,8 @@ class NeoStoresTest {
     private StorageProperty nodeAddProperty(long nodeId, int key, Object value) {
         StorageProperty property = new PropertyKeyValue(key, Values.of(value));
         StorageProperty oldProperty = null;
-        try (StorageNodeCursor nodeCursor = storageReader.allocateNodeCursor(NULL_CONTEXT, storeCursors)) {
+        try (StorageNodeCursor nodeCursor =
+                storageReader.allocateNodeCursor(NULL_CONTEXT, storeCursors, EmptyMemoryTracker.INSTANCE)) {
             nodeCursor.single(nodeId);
             if (nodeCursor.next()) {
                 StorageProperty fetched = getProperty(key, nodeCursor.propertiesReference());

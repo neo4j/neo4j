@@ -48,6 +48,7 @@ import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.transaction.log.LogTailLogVersionsMetadata;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 /**
@@ -82,6 +83,7 @@ class DirectRecordStoreMigrator {
             RecordFormats toFormat,
             ProgressListener progressListener,
             StoreType[] types,
+            MemoryTracker memoryTracker,
             StoreType... additionalTypesToOpen)
             throws IOException {
         StoreType[] storesToOpen = ArrayUtil.concat(types, additionalTypesToOpen);
@@ -122,7 +124,12 @@ class DirectRecordStoreMigrator {
             toStores.start(cursorContext);
             for (StoreType type : types) {
                 // This condition will exclude counts store first and foremost.
-                migrate(fromStores.getRecordStore(type), toStores.getRecordStore(type), cursorContext, toStoreCursors);
+                migrate(
+                        fromStores.getRecordStore(type),
+                        toStores.getRecordStore(type),
+                        cursorContext,
+                        toStoreCursors,
+                        memoryTracker);
                 progress.add(1);
             }
         }
@@ -132,7 +139,8 @@ class DirectRecordStoreMigrator {
             RecordStore<RECORD> from,
             RecordStore<RECORD> to,
             CursorContext cursorContext,
-            StoreCursors toStoreCursors) {
+            StoreCursors toStoreCursors,
+            MemoryTracker memoryTracker) {
         IdGenerator toIdGenerator = to.getIdGenerator();
         toIdGenerator.setHighestPossibleIdInUse(from.getHighestPossibleIdInUse(cursorContext));
         try (var toCursor = to.openPageCursorForWriting(0, cursorContext);
@@ -143,7 +151,8 @@ class DirectRecordStoreMigrator {
                         to.updateRecord(record, toCursor, cursorContext, toStoreCursors);
                         return false;
                     },
-                    fromCursor);
+                    fromCursor,
+                    memoryTracker);
         }
     }
 

@@ -29,6 +29,7 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.cursor.CursorType;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
@@ -48,7 +49,11 @@ public class Stages {
                 add(new ReadRecordsStep<>(control(), configuration, inWriteStage, store, contextFactory));
                 add(new ProcessorStep<RECORD[]>(control(), name, configuration, 0, contextFactory) {
                     @Override
-                    protected void process(RECORD[] batch, BatchSender sender, CursorContext cursorContext)
+                    protected void process(
+                            RECORD[] batch,
+                            BatchSender sender,
+                            CursorContext cursorContext,
+                            MemoryTracker memoryTracker)
                             throws Throwable {
                         if (batch != null) {
                             for (RECORD record : batch) {
@@ -79,7 +84,11 @@ public class Stages {
                 add(new ReadRecordsStep<>(control(), configuration, inWriteStage, store, contextFactory));
                 add(new ProcessorStep<RECORD[]>(control(), name, configuration, 0, contextFactory) {
                     @Override
-                    protected void process(RECORD[] batch, BatchSender sender, CursorContext cursorContext)
+                    protected void process(
+                            RECORD[] batch,
+                            BatchSender sender,
+                            CursorContext cursorContext,
+                            MemoryTracker memoryTracker)
                             throws Throwable {
                         if (batch != null) {
                             processor.accept(batch);

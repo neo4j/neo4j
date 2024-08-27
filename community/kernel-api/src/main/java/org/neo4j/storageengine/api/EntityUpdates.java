@@ -281,13 +281,13 @@ public class EntityUpdates {
             MemoryTracker memoryTracker) {
         hasLoadedAdditionalProperties = true;
         if (type == EntityType.NODE) {
-            try (StorageNodeCursor cursor = reader.allocateNodeCursor(cursorContext, storeCursors)) {
+            try (StorageNodeCursor cursor = reader.allocateNodeCursor(cursorContext, storeCursors, memoryTracker)) {
                 cursor.single(entityId);
                 loadProperties(reader, cursor, additionalPropertiesToLoad, cursorContext, storeCursors, memoryTracker);
             }
         } else if (type == EntityType.RELATIONSHIP) {
             try (StorageRelationshipScanCursor cursor =
-                    reader.allocateRelationshipScanCursor(cursorContext, storeCursors)) {
+                    reader.allocateRelationshipScanCursor(cursorContext, storeCursors, memoryTracker)) {
                 cursor.single(entityId);
                 loadProperties(reader, cursor, additionalPropertiesToLoad, cursorContext, storeCursors, memoryTracker);
             }

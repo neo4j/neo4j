@@ -60,6 +60,7 @@ import org.neo4j.kernel.impl.newapi.ReadOnlyTokenRead;
 import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
 import org.neo4j.kernel.recovery.LogTailExtractor;
 import org.neo4j.memory.EmptyMemoryTracker;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.SchemaRule44;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.migration.SchemaRuleMigrationAccessExtended;
@@ -82,14 +83,15 @@ public class SchemaMigrator {
             CursorContextFactory contextFactory,
             LogTailMetadata fromTailMetadata,
             boolean forceBtreeIndexesToRange,
-            ReadBehaviour readBehaviour)
+            ReadBehaviour readBehaviour,
+            MemoryTracker memoryTracker)
             throws IOException, KernelException {
         // Need to start the stores with the correct logTail since some stores depend on tx-id.
         LogTailExtractor logTailExtractor = new LogTailExtractor(fs, config, toStorage, DatabaseTracers.EMPTY);
         LogTailMetadata logTail = logTailExtractor.getTailMetadata(toLayout, EmptyMemoryTracker.INSTANCE);
 
-        var tokenHolders =
-                fromStorage.loadReadOnlyTokens(fs, from, config, pageCache, pageCacheTracer, true, contextFactory);
+        var tokenHolders = fromStorage.loadReadOnlyTokens(
+                fs, from, config, pageCache, pageCacheTracer, true, contextFactory, memoryTracker);
 
         ArrayList<SchemaRule> skippedSchemaRules = new ArrayList<>();
 
@@ -119,7 +121,8 @@ public class SchemaMigrator {
                     from44store,
                     fromTailMetadata,
                     forceBtreeIndexesToRange,
-                    tokenHolders)) {
+                    tokenHolders,
+                    memoryTracker)) {
                 if (schemaRule instanceof IndexDescriptor indexDescriptor) {
                     try {
                         if (indexDescriptor.isTokenIndex()) {
@@ -345,10 +348,11 @@ public class SchemaMigrator {
             boolean from44store,
             LogTailMetadata fromTailMetadata,
             boolean forceBtreeIndexesToRange,
-            TokenHolders srcTokenHolders) {
+            TokenHolders srcTokenHolders,
+            MemoryTracker memoryTracker) {
         if (from44store) {
             List<SchemaRule44> schemaRule44s = fromStorage.load44SchemaRules(
-                    fs, pageCache, pageCacheTracer, config, from, contextFactory, fromTailMetadata);
+                    fs, pageCache, pageCacheTracer, config, from, contextFactory, fromTailMetadata, memoryTracker);
 
             SchemaStore44MigrationUtil.SchemaInfo44 schemaInfo44 =
                     SchemaStore44MigrationUtil.extractRuleInfo(true, schemaRule44s);
@@ -383,7 +387,7 @@ public class SchemaMigrator {
             return schemaInfo44.toCreate();
         }
         return fromStorage.loadSchemaRules(
-                fs, pageCache, pageCacheTracer, config, from, true, Function.identity(), contextFactory);
+                fs, pageCache, pageCacheTracer, config, from, true, Function.identity(), contextFactory, memoryTracker);
     }
 
     private static long getHighestExistingId(SchemaStore44MigrationUtil.SchemaInfo44 schemaInfo44) {

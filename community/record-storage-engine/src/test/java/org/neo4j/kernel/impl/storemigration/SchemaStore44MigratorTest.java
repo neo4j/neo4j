@@ -58,6 +58,7 @@ import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.kernel.impl.storemigration.legacy.SchemaStore44Reader;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.storageengine.api.SchemaRule44;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.migration.SchemaRuleMigrationAccess;
@@ -103,12 +104,12 @@ class SchemaStore44MigratorTest {
         var index = index(BTREE, labels[0], props[0], NAME_ONE);
         var reader = mock(SchemaStore44Reader.class);
         var storeCursors = mock(StoreCursors.class);
-        when(reader.loadAllSchemaRules(any(StoreCursors.class))).thenReturn(List.of(index));
+        when(reader.loadAllSchemaRules(any(StoreCursors.class), any())).thenReturn(List.of(index));
 
         // When
         SchemaStore44Migration.SchemaStore44Migrator schemaStoreMigration44 =
                 SchemaStore44Migration.getSchemaStoreMigration44(
-                        reader, storeCursors, false, changingFormatFamily, tokenHolders);
+                        reader, storeCursors, false, changingFormatFamily, tokenHolders, EmptyMemoryTracker.INSTANCE);
 
         var e = assertThrows(IllegalStateException.class, schemaStoreMigration44::assertCanMigrate);
 
@@ -129,11 +130,12 @@ class SchemaStore44MigratorTest {
         var constraint = indexConstraint.constraint();
         var reader = mock(SchemaStore44Reader.class);
         var storeCursors = mock(StoreCursors.class);
-        when(reader.loadAllSchemaRules(any(StoreCursors.class))).thenReturn(List.of(index, constraint));
+        when(reader.loadAllSchemaRules(any(StoreCursors.class), any())).thenReturn(List.of(index, constraint));
 
         // When
         SchemaStore44Migration.SchemaStore44Migrator schemaStoreMigration44 =
-                SchemaStore44Migration.getSchemaStoreMigration44(reader, storeCursors, false, false, tokenHolders);
+                SchemaStore44Migration.getSchemaStoreMigration44(
+                        reader, storeCursors, false, false, tokenHolders, EmptyMemoryTracker.INSTANCE);
 
         var e = assertThrows(IllegalStateException.class, schemaStoreMigration44::assertCanMigrate);
 
@@ -152,13 +154,14 @@ class SchemaStore44MigratorTest {
         var rangeNodeKey = constraint(otherConstraint, RANGE, labels[0], props[0], NAME_TWO);
         var reader = mock(SchemaStore44Reader.class);
         var storeCursors = mock(StoreCursors.class);
-        when(reader.loadAllSchemaRules(any(StoreCursors.class)))
+        when(reader.loadAllSchemaRules(any(StoreCursors.class), any()))
                 .thenReturn(
                         List.of(btree.index(), btree.constraint(), rangeNodeKey.index(), rangeNodeKey.constraint()));
 
         // When
         SchemaStore44Migration.SchemaStore44Migrator schemaStoreMigration44 =
-                SchemaStore44Migration.getSchemaStoreMigration44(reader, storeCursors, false, false, tokenHolders);
+                SchemaStore44Migration.getSchemaStoreMigration44(
+                        reader, storeCursors, false, false, tokenHolders, EmptyMemoryTracker.INSTANCE);
 
         var e = assertThrows(IllegalStateException.class, schemaStoreMigration44::assertCanMigrate);
 
@@ -178,7 +181,7 @@ class SchemaStore44MigratorTest {
 
         var reader = mock(SchemaStore44Reader.class);
         var storeCursors = mock(StoreCursors.class);
-        when(reader.loadAllSchemaRules(any(StoreCursors.class)))
+        when(reader.loadAllSchemaRules(any(StoreCursors.class), any()))
                 .thenReturn(List.of(
                         btreeIndex1,
                         btreeIndex2,
@@ -189,7 +192,8 @@ class SchemaStore44MigratorTest {
 
         // When
         SchemaStore44Migration.SchemaStore44Migrator schemaStoreMigration44 =
-                SchemaStore44Migration.getSchemaStoreMigration44(reader, storeCursors, false, false, tokenHolders);
+                SchemaStore44Migration.getSchemaStoreMigration44(
+                        reader, storeCursors, false, false, tokenHolders, EmptyMemoryTracker.INSTANCE);
 
         var e = assertThrows(IllegalStateException.class, schemaStoreMigration44::assertCanMigrate);
 
@@ -221,7 +225,7 @@ class SchemaStore44MigratorTest {
         var reader = mock(SchemaStore44Reader.class);
         var storeCursors = mock(StoreCursors.class);
         var access = mock(SchemaRuleMigrationAccess.class);
-        when(reader.loadAllSchemaRules(any(StoreCursors.class)))
+        when(reader.loadAllSchemaRules(any(StoreCursors.class), any()))
                 .thenReturn(List.of(
                         btreeIndexReplacedByRange,
                         replacingRangeIndex,
@@ -234,14 +238,15 @@ class SchemaStore44MigratorTest {
 
         // When
         SchemaStore44Migration.SchemaStore44Migrator schemaStoreMigration44 =
-                SchemaStore44Migration.getSchemaStoreMigration44(reader, storeCursors, false, false, tokenHolders);
+                SchemaStore44Migration.getSchemaStoreMigration44(
+                        reader, storeCursors, false, false, tokenHolders, EmptyMemoryTracker.INSTANCE);
 
         assertDoesNotThrow(schemaStoreMigration44::assertCanMigrate);
 
         schemaStoreMigration44.migrate(access, tokenHolders);
 
         // Then
-        verify(reader).loadAllSchemaRules(any(StoreCursors.class));
+        verify(reader).loadAllSchemaRules(any(StoreCursors.class), any());
         verify(access).deleteSchemaRule(btreeIndexReplacedByRange.id());
         verify(access).deleteSchemaRule(btreeConstraintUnique.index.id());
         verify(access).deleteSchemaRule(btreeConstraintUnique.constraint.id());
@@ -259,18 +264,19 @@ class SchemaStore44MigratorTest {
         var reader = mock(SchemaStore44Reader.class);
         var storeCursors = mock(StoreCursors.class);
         var access = mock(SchemaRuleMigrationAccess.class);
-        when(reader.loadAllSchemaRules(any(StoreCursors.class))).thenReturn(List.of(btree, range));
+        when(reader.loadAllSchemaRules(any(StoreCursors.class), any())).thenReturn(List.of(btree, range));
 
         // When
         SchemaStore44Migration.SchemaStore44Migrator schemaStoreMigration44 =
-                SchemaStore44Migration.getSchemaStoreMigration44(reader, storeCursors, false, false, tokenHolders);
+                SchemaStore44Migration.getSchemaStoreMigration44(
+                        reader, storeCursors, false, false, tokenHolders, EmptyMemoryTracker.INSTANCE);
 
         assertDoesNotThrow(schemaStoreMigration44::assertCanMigrate);
 
         schemaStoreMigration44.migrate(access, tokenHolders);
 
         // Then
-        verify(reader).loadAllSchemaRules(any(StoreCursors.class));
+        verify(reader).loadAllSchemaRules(any(StoreCursors.class), any());
         verify(access).deleteSchemaRule(btree.id());
         verifyNoMoreInteractions(access);
     }
@@ -284,18 +290,19 @@ class SchemaStore44MigratorTest {
         var reader = mock(SchemaStore44Reader.class);
         var storeCursors = mock(StoreCursors.class);
         var access = mock(SchemaRuleMigrationAccess.class);
-        when(reader.loadAllSchemaRules(any(StoreCursors.class))).thenReturn(List.of(btree, range, text));
+        when(reader.loadAllSchemaRules(any(StoreCursors.class), any())).thenReturn(List.of(btree, range, text));
 
         // When
         SchemaStore44Migration.SchemaStore44Migrator schemaStoreMigration44 =
-                SchemaStore44Migration.getSchemaStoreMigration44(reader, storeCursors, false, true, tokenHolders);
+                SchemaStore44Migration.getSchemaStoreMigration44(
+                        reader, storeCursors, false, true, tokenHolders, EmptyMemoryTracker.INSTANCE);
 
         assertDoesNotThrow(schemaStoreMigration44::assertCanMigrate);
 
         schemaStoreMigration44.migrate(access, tokenHolders);
 
         // Then
-        verify(reader).loadAllSchemaRules(any(StoreCursors.class));
+        verify(reader).loadAllSchemaRules(any(StoreCursors.class), any());
         verify(access).writeSchemaRule(range.convertTo50rule());
         verify(access).writeSchemaRule(text.convertTo50rule());
         verifyNoMoreInteractions(access);
@@ -313,20 +320,21 @@ class SchemaStore44MigratorTest {
         var reader = mock(SchemaStore44Reader.class);
         var storeCursors = mock(StoreCursors.class);
         var access = mock(SchemaRuleMigrationAccess.class);
-        when(reader.loadAllSchemaRules(any(StoreCursors.class)))
+        when(reader.loadAllSchemaRules(any(StoreCursors.class), any()))
                 .thenReturn(List.of(
                         btreeUnique.index(), btreeUnique.constraint(), rangeUnique.index(), rangeUnique.constraint()));
 
         // When
         SchemaStore44Migration.SchemaStore44Migrator schemaStoreMigration44 =
-                SchemaStore44Migration.getSchemaStoreMigration44(reader, storeCursors, false, false, tokenHolders);
+                SchemaStore44Migration.getSchemaStoreMigration44(
+                        reader, storeCursors, false, false, tokenHolders, EmptyMemoryTracker.INSTANCE);
 
         assertDoesNotThrow(schemaStoreMigration44::assertCanMigrate);
 
         schemaStoreMigration44.migrate(access, tokenHolders);
 
         // Then
-        verify(reader).loadAllSchemaRules(any(StoreCursors.class));
+        verify(reader).loadAllSchemaRules(any(StoreCursors.class), any());
         verify(access).deleteSchemaRule(btreeUnique.index().id());
         verify(access).deleteSchemaRule(btreeUnique.constraint().id());
         verifyNoMoreInteractions(access);
@@ -342,12 +350,13 @@ class SchemaStore44MigratorTest {
         var rangeUnique = constraint(constraintType, RANGE, labels[0], props[0], NAME_TWO);
         var reader = mock(SchemaStore44Reader.class);
         var storeCursors = mock(StoreCursors.class);
-        when(reader.loadAllSchemaRules(any(StoreCursors.class)))
+        when(reader.loadAllSchemaRules(any(StoreCursors.class), any()))
                 .thenReturn(List.of(btree, rangeUnique.index(), rangeUnique.constraint()));
 
         // When
         SchemaStore44Migration.SchemaStore44Migrator schemaStoreMigration44 =
-                SchemaStore44Migration.getSchemaStoreMigration44(reader, storeCursors, false, false, tokenHolders);
+                SchemaStore44Migration.getSchemaStoreMigration44(
+                        reader, storeCursors, false, false, tokenHolders, EmptyMemoryTracker.INSTANCE);
 
         var e = assertThrows(IllegalStateException.class, schemaStoreMigration44::assertCanMigrate);
 
@@ -355,7 +364,7 @@ class SchemaStore44MigratorTest {
         assertThat(e)
                 .hasMessageContaining(MISSING_REPLACEMENT_MESSAGE)
                 .hasMessageContaining(btree.userDescription(tokenHolders));
-        verify(reader).loadAllSchemaRules(any(StoreCursors.class));
+        verify(reader).loadAllSchemaRules(any(StoreCursors.class), any());
     }
 
     @Test
@@ -388,7 +397,7 @@ class SchemaStore44MigratorTest {
         var reader = mock(SchemaStore44Reader.class);
         var storeCursors = mock(StoreCursors.class);
         var access = mock(SchemaRuleMigrationAccess.class);
-        when(reader.loadAllSchemaRules(any(StoreCursors.class)))
+        when(reader.loadAllSchemaRules(any(StoreCursors.class), any()))
                 .thenReturn(List.of(
                         btreeIndexReplacedByRange,
                         replacingRangeIndex,
@@ -414,14 +423,15 @@ class SchemaStore44MigratorTest {
 
         // When
         SchemaStore44Migration.SchemaStore44Migrator schemaStoreMigration44 =
-                SchemaStore44Migration.getSchemaStoreMigration44(reader, storeCursors, false, false, tokenHolders);
+                SchemaStore44Migration.getSchemaStoreMigration44(
+                        reader, storeCursors, false, false, tokenHolders, EmptyMemoryTracker.INSTANCE);
 
         assertDoesNotThrow(schemaStoreMigration44::assertCanMigrate);
 
         schemaStoreMigration44.migrate(access, tokenHolders);
 
         // Then
-        verify(reader).loadAllSchemaRules(any(StoreCursors.class));
+        verify(reader).loadAllSchemaRules(any(StoreCursors.class), any());
         verify(access).deleteSchemaRule(btreeIndexReplacedByRange.id());
         verify(access).deleteSchemaRule(btreeIndexReplacedByText.id());
         verify(access).deleteSchemaRule(btreeIndexReplacedByPoint.id());
@@ -438,11 +448,12 @@ class SchemaStore44MigratorTest {
         var index = index(BTREE, labels[0], props[0], NAME_ONE);
         var reader = mock(SchemaStore44Reader.class);
         var storeCursors = mock(StoreCursors.class);
-        when(reader.loadAllSchemaRules(any(StoreCursors.class))).thenReturn(List.of(index));
+        when(reader.loadAllSchemaRules(any(StoreCursors.class), any())).thenReturn(List.of(index));
 
         // When
         SchemaStore44Migration.SchemaStore44Migrator schemaStoreMigration44 =
-                SchemaStore44Migration.getSchemaStoreMigration44(reader, storeCursors, true, false, tokenHolders);
+                SchemaStore44Migration.getSchemaStoreMigration44(
+                        reader, storeCursors, true, false, tokenHolders, EmptyMemoryTracker.INSTANCE);
 
         // Then
         assertDoesNotThrow(schemaStoreMigration44::assertCanMigrate);
@@ -456,11 +467,12 @@ class SchemaStore44MigratorTest {
         var storeCursors = mock(StoreCursors.class);
         var access = mock(SchemaRuleMigrationAccess.class);
         when(access.nextId()).then(answerNextId());
-        when(reader.loadAllSchemaRules(any(StoreCursors.class))).thenReturn(List.of(index));
+        when(reader.loadAllSchemaRules(any(StoreCursors.class), any())).thenReturn(List.of(index));
 
         // When
         SchemaStore44Migration.SchemaStore44Migrator schemaStoreMigration44 =
-                SchemaStore44Migration.getSchemaStoreMigration44(reader, storeCursors, true, false, tokenHolders);
+                SchemaStore44Migration.getSchemaStoreMigration44(
+                        reader, storeCursors, true, false, tokenHolders, EmptyMemoryTracker.INSTANCE);
 
         assertDoesNotThrow(schemaStoreMigration44::assertCanMigrate);
 
@@ -468,7 +480,7 @@ class SchemaStore44MigratorTest {
 
         // Then
         ArgumentCaptor<SchemaRule> argument = ArgumentCaptor.forClass(SchemaRule.class);
-        verify(reader).loadAllSchemaRules(any(StoreCursors.class));
+        verify(reader).loadAllSchemaRules(any(StoreCursors.class), any());
         verify(access).nextId();
         verify(access).deleteSchemaRule(index.id());
         verify(access).writeSchemaRule(argument.capture());
@@ -486,18 +498,19 @@ class SchemaStore44MigratorTest {
         var storeCursors = mock(StoreCursors.class);
         var access = mock(SchemaRuleMigrationAccess.class);
         when(access.nextId()).then(answerNextId());
-        when(reader.loadAllSchemaRules(any(StoreCursors.class))).thenReturn(List.of(btreeIndex, rangeIndex));
+        when(reader.loadAllSchemaRules(any(StoreCursors.class), any())).thenReturn(List.of(btreeIndex, rangeIndex));
 
         // When
         SchemaStore44Migration.SchemaStore44Migrator schemaStoreMigration44 =
-                SchemaStore44Migration.getSchemaStoreMigration44(reader, storeCursors, true, false, tokenHolders);
+                SchemaStore44Migration.getSchemaStoreMigration44(
+                        reader, storeCursors, true, false, tokenHolders, EmptyMemoryTracker.INSTANCE);
 
         assertDoesNotThrow(schemaStoreMigration44::assertCanMigrate);
 
         schemaStoreMigration44.migrate(access, tokenHolders);
 
         // Then
-        verify(reader).loadAllSchemaRules(any(StoreCursors.class));
+        verify(reader).loadAllSchemaRules(any(StoreCursors.class), any());
         verify(access).deleteSchemaRule(btreeIndex.id());
         verifyNoMoreInteractions(access);
         verifyNoMoreInteractions(reader);
@@ -515,12 +528,13 @@ class SchemaStore44MigratorTest {
         var storeCursors = mock(StoreCursors.class);
         var access = mock(SchemaRuleMigrationAccess.class);
         when(access.nextId()).then(answerNextId());
-        when(reader.loadAllSchemaRules(any(StoreCursors.class)))
+        when(reader.loadAllSchemaRules(any(StoreCursors.class), any()))
                 .thenReturn(List.of(btreeUnique.index(), btreeUnique.constraint()));
 
         // When
         SchemaStore44Migration.SchemaStore44Migrator schemaStoreMigration44 =
-                SchemaStore44Migration.getSchemaStoreMigration44(reader, storeCursors, true, false, tokenHolders);
+                SchemaStore44Migration.getSchemaStoreMigration44(
+                        reader, storeCursors, true, false, tokenHolders, EmptyMemoryTracker.INSTANCE);
 
         assertDoesNotThrow(schemaStoreMigration44::assertCanMigrate);
 
@@ -528,7 +542,7 @@ class SchemaStore44MigratorTest {
 
         // Then
         ArgumentCaptor<SchemaRule> argument = ArgumentCaptor.forClass(SchemaRule.class);
-        verify(reader).loadAllSchemaRules(any(StoreCursors.class));
+        verify(reader).loadAllSchemaRules(any(StoreCursors.class), any());
         verify(access, times(2)).nextId();
         verify(access).deleteSchemaRule(btreeUnique.index.id());
         verify(access).deleteSchemaRule(btreeUnique.constraint.id());
@@ -552,19 +566,20 @@ class SchemaStore44MigratorTest {
         var storeCursors = mock(StoreCursors.class);
         var access = mock(SchemaRuleMigrationAccess.class);
         when(access.nextId()).then(answerNextId());
-        when(reader.loadAllSchemaRules(any(StoreCursors.class)))
+        when(reader.loadAllSchemaRules(any(StoreCursors.class), any()))
                 .thenReturn(List.of(
                         btreeUnique.index(), btreeUnique.constraint(), rangeUnique.index, rangeUnique.constraint));
 
         // When
         SchemaStore44Migration.SchemaStore44Migrator schemaStoreMigration44 =
-                SchemaStore44Migration.getSchemaStoreMigration44(reader, storeCursors, true, false, tokenHolders);
+                SchemaStore44Migration.getSchemaStoreMigration44(
+                        reader, storeCursors, true, false, tokenHolders, EmptyMemoryTracker.INSTANCE);
 
         assertDoesNotThrow(schemaStoreMigration44::assertCanMigrate);
 
         schemaStoreMigration44.migrate(access, tokenHolders);
         // Then
-        verify(reader).loadAllSchemaRules(any(StoreCursors.class));
+        verify(reader).loadAllSchemaRules(any(StoreCursors.class), any());
         verify(access).deleteSchemaRule(btreeUnique.index.id());
         verify(access).deleteSchemaRule(btreeUnique.constraint.id());
         verifyNoMoreInteractions(access);
@@ -584,18 +599,19 @@ class SchemaStore44MigratorTest {
         var storeCursors = mock(StoreCursors.class);
         var access = mock(SchemaRuleMigrationAccess.class);
         when(access.nextId()).then(answerNextId());
-        when(reader.loadAllSchemaRules(any(StoreCursors.class)))
+        when(reader.loadAllSchemaRules(any(StoreCursors.class), any()))
                 .thenReturn(List.of(rangeIndex, rangeUnique.index(), rangeUnique.constraint()));
 
         // When
         SchemaStore44Migration.SchemaStore44Migrator schemaStoreMigration44 =
-                SchemaStore44Migration.getSchemaStoreMigration44(reader, storeCursors, true, false, tokenHolders);
+                SchemaStore44Migration.getSchemaStoreMigration44(
+                        reader, storeCursors, true, false, tokenHolders, EmptyMemoryTracker.INSTANCE);
 
         assertDoesNotThrow(schemaStoreMigration44::assertCanMigrate);
 
         schemaStoreMigration44.migrate(access, tokenHolders);
         // Then
-        verify(reader).loadAllSchemaRules(any(StoreCursors.class));
+        verify(reader).loadAllSchemaRules(any(StoreCursors.class), any());
         verifyNoMoreInteractions(access);
         verifyNoMoreInteractions(reader);
     }
@@ -608,12 +624,14 @@ class SchemaStore44MigratorTest {
         var reader = mock(SchemaStore44Reader.class);
         var storeCursors = mock(StoreCursors.class);
         var access = mock(SchemaRuleMigrationAccess.class);
-        when(reader.loadAllSchemaRules(any(StoreCursors.class))).thenReturn(List.of(formerLabelScanStoreWithoutId));
+        when(reader.loadAllSchemaRules(any(StoreCursors.class), any()))
+                .thenReturn(List.of(formerLabelScanStoreWithoutId));
         when(access.nextId()).thenReturn(id);
 
         // When
         SchemaStore44Migration.SchemaStore44Migrator schemaStoreMigration44 =
-                SchemaStore44Migration.getSchemaStoreMigration44(reader, storeCursors, false, false, tokenHolders);
+                SchemaStore44Migration.getSchemaStoreMigration44(
+                        reader, storeCursors, false, false, tokenHolders, EmptyMemoryTracker.INSTANCE);
 
         assertThat(schemaStoreMigration44.existingSchemaRulesToAdd())
                 .containsExactly(formerLabelScanStoreWithoutId.convertTo50rule());
@@ -636,11 +654,12 @@ class SchemaStore44MigratorTest {
         var reader = mock(SchemaStore44Reader.class);
         var storeCursors = mock(StoreCursors.class);
         var access = mock(SchemaRuleMigrationAccess.class);
-        when(reader.loadAllSchemaRules(any(StoreCursors.class))).thenReturn(List.of(formerLabelScanStoreWithId));
+        when(reader.loadAllSchemaRules(any(StoreCursors.class), any())).thenReturn(List.of(formerLabelScanStoreWithId));
 
         // When
         SchemaStore44Migration.SchemaStore44Migrator schemaStoreMigration44 =
-                SchemaStore44Migration.getSchemaStoreMigration44(reader, storeCursors, false, false, tokenHolders);
+                SchemaStore44Migration.getSchemaStoreMigration44(
+                        reader, storeCursors, false, false, tokenHolders, EmptyMemoryTracker.INSTANCE);
 
         assertThat(schemaStoreMigration44.existingSchemaRulesToAdd())
                 .containsExactly(formerLabelScanStoreWithId.convertTo50rule());
@@ -669,11 +688,12 @@ class SchemaStore44MigratorTest {
         var reader = mock(SchemaStore44Reader.class);
         var storeCursors = mock(StoreCursors.class);
         var access = mock(SchemaRuleMigrationAccess.class);
-        when(reader.loadAllSchemaRules(any(StoreCursors.class))).thenReturn(List.of(existingNli));
+        when(reader.loadAllSchemaRules(any(StoreCursors.class), any())).thenReturn(List.of(existingNli));
 
         // When
         SchemaStore44Migration.SchemaStore44Migrator schemaStoreMigration44 =
-                SchemaStore44Migration.getSchemaStoreMigration44(reader, storeCursors, false, false, tokenHolders);
+                SchemaStore44Migration.getSchemaStoreMigration44(
+                        reader, storeCursors, false, false, tokenHolders, EmptyMemoryTracker.INSTANCE);
 
         assertThat(schemaStoreMigration44.existingSchemaRulesToAdd()).isEmpty();
 
@@ -700,11 +720,12 @@ class SchemaStore44MigratorTest {
         var reader = mock(SchemaStore44Reader.class);
         var storeCursors = mock(StoreCursors.class);
         var access = mock(SchemaRuleMigrationAccess.class);
-        when(reader.loadAllSchemaRules(any(StoreCursors.class))).thenReturn(List.of(existingNli));
+        when(reader.loadAllSchemaRules(any(StoreCursors.class), any())).thenReturn(List.of(existingNli));
 
         // When
         SchemaStore44Migration.SchemaStore44Migrator schemaStoreMigration44 =
-                SchemaStore44Migration.getSchemaStoreMigration44(reader, storeCursors, false, true, tokenHolders);
+                SchemaStore44Migration.getSchemaStoreMigration44(
+                        reader, storeCursors, false, true, tokenHolders, EmptyMemoryTracker.INSTANCE);
 
         assertThat(schemaStoreMigration44.existingSchemaRulesToAdd()).containsExactly(existingNli.convertTo50rule());
 

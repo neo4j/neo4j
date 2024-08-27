@@ -49,6 +49,7 @@ import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.storageengine.util.IdUpdateListener;
 import org.neo4j.test.Race;
 import org.neo4j.test.extension.Inject;
@@ -109,7 +110,7 @@ class NodeInputIdPropertyLookupTest {
                         var rng = ThreadLocalRandom.current();
                         for (var i = 0; i < 1_000; i++) {
                             var nodeId = rng.nextLong(numNodes);
-                            var value = threadLookup.lookupProperty(nodeId);
+                            var value = threadLookup.lookupProperty(nodeId, EmptyMemoryTracker.INSTANCE);
                             // then
                             assertThat(value).isEqualTo(valueFunction.apply(nodeId));
                         }

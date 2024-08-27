@@ -225,7 +225,8 @@ public class MigrateStoreCommand extends AbstractAdminCommand {
                                 life,
                                 currentStorageEngineFactory,
                                 pageCacheTracer,
-                                contextFactory);
+                                contextFactory,
+                                memoryTracker);
 
                         // Add the kernel store migrator
                         life.start();
@@ -378,11 +379,12 @@ public class MigrateStoreCommand extends AbstractAdminCommand {
             LifeSupport life,
             StorageEngineFactory storageEngineFactory,
             PageCacheTracer pageCacheTracer,
-            CursorContextFactory contextFactory) {
+            CursorContextFactory contextFactory,
+            MemoryTracker memoryTracker) {
         var recoveryCleanupWorkCollector = RecoveryCleanupWorkCollector.ignore();
         var monitors = new Monitors();
         var tokenHolders = storageEngineFactory.loadReadOnlyTokens(
-                fs, databaseLayout, config, pageCache, pageCacheTracer, true, contextFactory);
+                fs, databaseLayout, config, pageCache, pageCacheTracer, true, contextFactory, memoryTracker);
         var extensions = life.add(instantiateExtensions(
                 fs,
                 databaseLayout,

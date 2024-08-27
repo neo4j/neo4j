@@ -43,6 +43,7 @@ import org.neo4j.internal.batchimport.stats.Keys;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
@@ -152,7 +153,8 @@ class StageTest {
 
             stage.add(new ProcessorStep<>(stage.control(), "consumer", config, 1, CONTEXT_FACTORY) {
                 @Override
-                protected void process(Object batch, BatchSender sender, CursorContext cursorContext) {}
+                protected void process(
+                        Object batch, BatchSender sender, CursorContext cursorContext, MemoryTracker memoryTracker) {}
             });
             StageExecution execution = stage.execute();
             for (Step<?> step : execution.steps()) {
@@ -208,7 +210,8 @@ class StageTest {
         }
 
         @Override
-        protected void process(Object batch, BatchSender sender, CursorContext cursorContext) {
+        protected void process(
+                Object batch, BatchSender sender, CursorContext cursorContext, MemoryTracker memoryTracker) {
             try {
                 Thread.sleep(processingTime);
             } catch (InterruptedException e) {
@@ -287,7 +290,8 @@ class StageTest {
                 private final ChaosMonkey chaosMonkey = new ChaosMonkey();
 
                 @Override
-                protected void process(Object batch, BatchSender sender, CursorContext cursorContext) {
+                protected void process(
+                        Object batch, BatchSender sender, CursorContext cursorContext, MemoryTracker memoryTracker) {
                     chaosMonkey.makeChaos();
                     sender.send(batch);
                 }
@@ -308,7 +312,8 @@ class StageTest {
                 private final ChaosMonkey chaosMonkey = new ChaosMonkey();
 
                 @Override
-                protected void process(Object batch, BatchSender sender, CursorContext cursorContext) {
+                protected void process(
+                        Object batch, BatchSender sender, CursorContext cursorContext, MemoryTracker memoryTracker) {
                     chaosMonkey.makeChaos();
                     // don't pass the batch further, i.e. end of the line
                 }

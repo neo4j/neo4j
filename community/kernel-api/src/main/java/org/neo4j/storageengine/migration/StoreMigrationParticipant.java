@@ -26,6 +26,7 @@ import org.neo4j.exceptions.UnsatisfiedDependencyException;
 import org.neo4j.internal.helpers.progress.ProgressListener;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.StoreVersion;
 
 public interface StoreMigrationParticipant {
@@ -50,7 +51,8 @@ public interface StoreMigrationParticipant {
                 DatabaseLayout migrationLayout,
                 DatabaseLayout directoryLayout,
                 StoreVersion versionToMigrateFrom,
-                StoreVersion versionToMigrateTo) {
+                StoreVersion versionToMigrateTo,
+                MemoryTracker memoryTracker) {
             // nop
         }
 
@@ -95,13 +97,15 @@ public interface StoreMigrationParticipant {
      * @param directoryLayout directory the store directory of the to move the migrated files to.
      * @param versionToMigrateFrom the version we have migrated from
      * @param versionToMigrateTo the version we want to migrate to
+     * @param memoryTracker
      * @throws IOException if unable to move one or more files.
      */
     void moveMigratedFiles(
             DatabaseLayout migrationLayout,
             DatabaseLayout directoryLayout,
             StoreVersion versionToMigrateFrom,
-            StoreVersion versionToMigrateTo)
+            StoreVersion versionToMigrateTo,
+            MemoryTracker memoryTracker)
             throws IOException;
 
     /**

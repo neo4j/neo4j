@@ -184,7 +184,8 @@ public class AcrossEngineMigrationParticipant extends AbstractStoreMigrationPart
                 contextFactory,
                 tailMetadata,
                 forceBtreeIndexesToRange,
-                ReadBehaviour.INCLUSIVE_STRICT);
+                ReadBehaviour.INCLUSIVE_STRICT,
+                memoryTracker);
     }
 
     private Monitor progressTrackingMonitor(ProgressListener progressReporter) {
@@ -207,7 +208,8 @@ public class AcrossEngineMigrationParticipant extends AbstractStoreMigrationPart
             DatabaseLayout migrationLayoutArg,
             DatabaseLayout directoryLayoutArg,
             StoreVersion versionToUpgradeFrom,
-            StoreVersion versionToUpgradeTo)
+            StoreVersion versionToUpgradeTo,
+            MemoryTracker memoryTracker)
             throws IOException {
         DatabaseLayout mig = targetStorageEngine.formatSpecificDatabaseLayout(migrationLayoutArg);
         DatabaseLayout dir = srcStorageEngine.formatSpecificDatabaseLayout(directoryLayoutArg);

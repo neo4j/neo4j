@@ -44,6 +44,7 @@ import org.neo4j.internal.batchimport.stats.StepStats;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.memory.MemoryTracker;
 
 class ForkedProcessorStepTest {
     private static final int TIMEOUT_MINUTES = 2;
@@ -314,7 +315,9 @@ class ForkedProcessorStepTest {
             });
             add(new ProcessorStep<Long>(control(), "Yeah", config, 3, CONTEXT_FACTORY) {
                 @Override
-                protected void process(Long batch, BatchSender sender, CursorContext cursorContext) throws Throwable {
+                protected void process(
+                        Long batch, BatchSender sender, CursorContext cursorContext, MemoryTracker memoryTracker)
+                        throws Throwable {
                     Thread.sleep(1);
                     sender.send(batch);
                 }

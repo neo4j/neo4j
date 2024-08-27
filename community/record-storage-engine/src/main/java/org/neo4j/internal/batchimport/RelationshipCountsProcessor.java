@@ -74,7 +74,7 @@ public class RelationshipCountsProcessor implements RecordProcessor<Relationship
     }
 
     @Override
-    public boolean process(RelationshipRecord record, StoreCursors storeCursors) {
+    public boolean process(RelationshipRecord record, StoreCursors storeCursors, MemoryTracker memoryTracker) {
         counter.process(record);
         return false;
     }

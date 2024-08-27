@@ -33,6 +33,7 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.storageengine.api.RelationshipDirection;
 
 /**
@@ -74,7 +75,8 @@ public class RelationshipChainVisitor {
     private static <R extends AbstractBaseRecord> LongFunction<R> recordLoader(RecordStore<R> store) {
         return id -> {
             try (var cursor = store.openPageCursorForReading(id, CursorContext.NULL_CONTEXT)) {
-                return store.getRecordByCursor(id, store.newRecord(), RecordLoad.NORMAL, cursor);
+                return store.getRecordByCursor(
+                        id, store.newRecord(), RecordLoad.NORMAL, cursor, EmptyMemoryTracker.INSTANCE);
             }
         };
     }

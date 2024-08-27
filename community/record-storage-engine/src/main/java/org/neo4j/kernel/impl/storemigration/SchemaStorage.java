@@ -20,10 +20,11 @@
 package org.neo4j.kernel.impl.storemigration;
 
 import org.neo4j.internal.schema.SchemaRule;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 public interface SchemaStorage {
-    Iterable<SchemaRule> getAll(StoreCursors storeCursors);
+    Iterable<SchemaRule> getAll(StoreCursors storeCursors, MemoryTracker memoryTracker);
 
-    Iterable<SchemaRule> getAllIgnoreMalformed(StoreCursors storeCursors);
+    Iterable<SchemaRule> getAllIgnoreMalformed(StoreCursors storeCursors, MemoryTracker memoryTracker);
 }

@@ -20,12 +20,13 @@
 package org.neo4j.token.api;
 
 import java.util.List;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 public interface TokensLoader {
-    List<NamedToken> getPropertyKeyTokens(StoreCursors storeCursors);
+    List<NamedToken> getPropertyKeyTokens(StoreCursors storeCursors, MemoryTracker memoryTracker);
 
-    List<NamedToken> getLabelTokens(StoreCursors storeCursors);
+    List<NamedToken> getLabelTokens(StoreCursors storeCursors, MemoryTracker memoryTracker);
 
-    List<NamedToken> getRelationshipTypeTokens(StoreCursors storeCursors);
+    List<NamedToken> getRelationshipTypeTokens(StoreCursors storeCursors, MemoryTracker memoryTracker);
 }

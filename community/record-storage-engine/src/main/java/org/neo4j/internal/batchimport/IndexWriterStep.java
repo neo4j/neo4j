@@ -81,7 +81,7 @@ public abstract class IndexWriterStep<T> extends ProcessorStep<T> {
         var schemaRuleAccess = getSchemaRuleAccess(schemaStore, tokenHolders);
         try (var cursorContext = contextFactory.create(INDEX_IMPORTER_CREATION_TAG);
                 var storeCursors = storeCursorsFactory.apply(cursorContext)) {
-            var index = findIndex(entityType, schemaRuleAccess, storeCursors)
+            var index = findIndex(entityType, schemaRuleAccess, storeCursors, memoryTracker)
                     .orElseGet(() -> createIndex(
                             entityType,
                             indexConfig,
@@ -136,8 +136,11 @@ public abstract class IndexWriterStep<T> extends ProcessorStep<T> {
     }
 
     private static Optional<IndexDescriptor> findIndex(
-            EntityType entityType, SchemaRuleAccess schemaRule, StoreCursors storeCursors) {
-        Iterator<IndexDescriptor> descriptors = schemaRule.indexesGetAll(storeCursors);
+            EntityType entityType,
+            SchemaRuleAccess schemaRule,
+            StoreCursors storeCursors,
+            MemoryTracker memoryTracker) {
+        Iterator<IndexDescriptor> descriptors = schemaRule.indexesGetAll(storeCursors, memoryTracker);
         return stream(descriptors)
                 .filter(index -> index.schema().entityType() == entityType && index.isTokenIndex())
                 .findFirst();

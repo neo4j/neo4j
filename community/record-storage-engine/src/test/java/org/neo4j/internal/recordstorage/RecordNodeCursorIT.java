@@ -57,6 +57,7 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.transaction.log.LogTailLogVersionsMetadata;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
@@ -122,7 +123,8 @@ class RecordNodeCursorIT {
                 neoStores.getRelationshipGroupStore(),
                 null,
                 NULL_CONTEXT,
-                storeCursors)) {
+                storeCursors,
+                EmptyMemoryTracker.INSTANCE)) {
             nodeCursor.single(nodeId);
             assertThat(nodeCursor.next()).isTrue();
             for (int labelId = 0; labelId < HIGH_LABEL_ID; labelId++) {
@@ -146,7 +148,8 @@ class RecordNodeCursorIT {
                 neoStores.getRelationshipGroupStore(),
                 null,
                 NULL_CONTEXT,
-                storeCursors)) {
+                storeCursors,
+                EmptyMemoryTracker.INSTANCE)) {
             nodeCursor.single(nodeId);
             assertThat(nodeCursor.next()).isTrue();
             boolean fromCursor = nodeCursor.hasLabel();
@@ -165,7 +168,8 @@ class RecordNodeCursorIT {
                 neoStores.getRelationshipGroupStore(),
                 null,
                 NULL_CONTEXT,
-                storeCursors)) {
+                storeCursors,
+                EmptyMemoryTracker.INSTANCE)) {
 
             final var scan = new RecordNodeScan();
             final var found = LongSets.mutable.withInitialCapacity(ids.size());
@@ -206,7 +210,8 @@ class RecordNodeCursorIT {
                 neoStores.getRelationshipGroupStore(),
                 null,
                 NULL_CONTEXT,
-                storeCursors)) {
+                storeCursors,
+                EmptyMemoryTracker.INSTANCE)) {
             nodeCursor.single(nodeId);
             assertThat(nodeCursor.next()).isTrue();
             var supportsFastDegreesLookup = nodeCursor.supportsFastDegreeLookup();

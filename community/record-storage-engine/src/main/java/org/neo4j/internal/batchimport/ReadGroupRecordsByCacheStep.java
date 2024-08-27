@@ -36,6 +36,7 @@ import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
+import org.neo4j.memory.MemoryTracker;
 
 /**
  * Using the {@link NodeRelationshipCache} efficiently looks for changed nodes and reads those
@@ -60,7 +61,9 @@ public class ReadGroupRecordsByCacheStep extends ProcessorStep<RangedLongIterato
     }
 
     @Override
-    protected void process(RangedLongIterator batch, BatchSender sender, CursorContext cursorContext) throws Throwable {
+    protected void process(
+            RangedLongIterator batch, BatchSender sender, CursorContext cursorContext, MemoryTracker memoryTracker)
+            throws Throwable {
         try (var visitor = new NodeVisitor(sender, cursorContext)) {
             cache.visitChangedNodes(visitor, NodeType.NODE_TYPE_DENSE, batch.startInclusive(), batch.endExclusive());
         }

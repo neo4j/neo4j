@@ -70,6 +70,7 @@ import org.neo4j.kernel.api.index.IndexProvidersAccess;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.util.Preconditions;
@@ -118,6 +119,7 @@ public class IncrementalBatchImportUtil {
      * Copies indexes matching {@code schemaDescriptors} (which represents the ID-mapper indexes) as well as
      * indexes backing uniqueness constraints.
      *
+     * @param memoryTracker
      * @param schemaDescriptors {@link Map} from input group name to {@link SchemaDescriptor}.
      * @return a {@link Map} from input group name to actual index ID.
      * @throws IOException on I/O error copying files.
@@ -132,11 +134,13 @@ public class IncrementalBatchImportUtil {
             SchemaCache schemaCache,
             TokenNameLookup tokenNameLookup,
             ImmutableSet<OpenOption> openOptions,
-            CursorContextFactory contextFactory)
+            CursorContextFactory contextFactory,
+            MemoryTracker memoryTracker)
             throws IOException {
         // Figure out which indexes will be used for the ID mapping in the build phase
-        var targetIndexProviders = indexProvidersAccess.access(pageCache, databaseLayout, readOnly());
-        var incrementalIndexProviders = indexProvidersAccess.access(pageCache, incrementalDatabaseLayout, readOnly());
+        var targetIndexProviders = indexProvidersAccess.access(pageCache, databaseLayout, readOnly(), memoryTracker);
+        var incrementalIndexProviders =
+                indexProvidersAccess.access(pageCache, incrementalDatabaseLayout, readOnly(), memoryTracker);
         var idMapperIndexes = findIdMapperIndexes(
                 schemaDescriptors, schemaCache, tokenNameLookup, openOptions, contextFactory, targetIndexProviders);
         var copiedIndexIds = LongSets.mutable.empty();

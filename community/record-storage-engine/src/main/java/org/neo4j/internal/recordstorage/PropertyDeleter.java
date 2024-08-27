@@ -146,7 +146,8 @@ public class PropertyDeleter {
                 new RecordPropertyCursor(neoStores.getPropertyStore(), cursorContext, storeCursors, memoryTracker)) {
             if (primitive instanceof NodeRecord node) {
                 message.append(" with labels: ");
-                int[] labelIds = NodeLabelsField.parseLabelsField(node).get(neoStores.getNodeStore(), storeCursors);
+                int[] labelIds = NodeLabelsField.parseLabelsField(node)
+                        .get(neoStores.getNodeStore(), storeCursors, memoryTracker);
                 message.append(IntStream.of(labelIds)
                         .mapToObj(labelId -> tokenNameLookup.labelGetName(toIntExact(labelId)))
                         .collect(Collectors.toList()));

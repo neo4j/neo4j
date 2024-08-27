@@ -91,6 +91,7 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.logging.internal.SimpleLogService;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.ExternalStoreId;
@@ -182,7 +183,8 @@ class RecordStorageMigratorIT {
                 migrateTo,
                 EMPTY,
                 loadLogTail(databaseLayout, CONFIG, storageEngine));
-        migrator.moveMigratedFiles(migrationLayout, databaseLayout, versionToMigrateFrom, migrateTo);
+        migrator.moveMigratedFiles(
+                migrationLayout, databaseLayout, versionToMigrateFrom, migrateTo, EmptyMemoryTracker.INSTANCE);
 
         StoreFactory storeFactory = new StoreFactory(
                 databaseLayout,
@@ -237,7 +239,8 @@ class RecordStorageMigratorIT {
                 migrateTo,
                 EMPTY,
                 loadLogTail(databaseLayout, CONFIG, storageEngine));
-        migrator.moveMigratedFiles(migrationLayout, databaseLayout, versionToMigrateFrom, migrateTo);
+        migrator.moveMigratedFiles(
+                migrationLayout, databaseLayout, versionToMigrateFrom, migrateTo, EmptyMemoryTracker.INSTANCE);
 
         StoreFactory storeFactory = new StoreFactory(
                 databaseLayout,
@@ -313,7 +316,8 @@ class RecordStorageMigratorIT {
                 versionToMigrateTo,
                 EMPTY,
                 loadLogTail(databaseLayout, config, storageEngine));
-        migrator.moveMigratedFiles(migrationLayout, databaseLayout, versionToMigrateFrom, versionToMigrateTo);
+        migrator.moveMigratedFiles(
+                migrationLayout, databaseLayout, versionToMigrateFrom, versionToMigrateTo, EmptyMemoryTracker.INSTANCE);
 
         StoreFactory storeFactory = new StoreFactory(
                 databaseLayout,
@@ -382,7 +386,8 @@ class RecordStorageMigratorIT {
                 versionToMigrateTo,
                 EMPTY,
                 logTailMetadata);
-        migrator.moveMigratedFiles(migrationLayout, databaseLayout, versionToMigrateFrom, versionToMigrateTo);
+        migrator.moveMigratedFiles(
+                migrationLayout, databaseLayout, versionToMigrateFrom, versionToMigrateTo, EmptyMemoryTracker.INSTANCE);
         var txIdAfterMigration = txIdBeforeMigration + 1;
         migrator.postMigration(databaseLayout, versionToMigrateTo, txIdBeforeMigration, txIdAfterMigration);
 
@@ -484,7 +489,8 @@ class RecordStorageMigratorIT {
                 versionToMigrateTo,
                 EMPTY,
                 logTailMetadata);
-        migrator.moveMigratedFiles(migrationLayout, databaseLayout, versionToMigrateFrom, versionToMigrateTo);
+        migrator.moveMigratedFiles(
+                migrationLayout, databaseLayout, versionToMigrateFrom, versionToMigrateTo, EmptyMemoryTracker.INSTANCE);
 
         // WHEN doing post-migration
         artificiallyMakeCountsStoresHaveAnotherLastTxId(
@@ -571,7 +577,12 @@ class RecordStorageMigratorIT {
 
         // WHEN simulating resuming the migration
 
-        migrator.moveMigratedFiles(migrationLayout, databaseLayout, versionToMigrateFrom, getVersionToMigrateTo());
+        migrator.moveMigratedFiles(
+                migrationLayout,
+                databaseLayout,
+                versionToMigrateFrom,
+                getVersionToMigrateTo(),
+                EmptyMemoryTracker.INSTANCE);
 
         // THEN starting the new store should be successful
         StoreFactory storeFactory = new StoreFactory(
@@ -623,7 +634,8 @@ class RecordStorageMigratorIT {
                 versionToMigrateTo,
                 EMPTY,
                 new EmptyLogTailMetadata(CONFIG));
-        migrator.moveMigratedFiles(migrationLayout, databaseLayout, versionToMigrateFrom, versionToMigrateTo);
+        migrator.moveMigratedFiles(
+                migrationLayout, databaseLayout, versionToMigrateFrom, versionToMigrateTo, EmptyMemoryTracker.INSTANCE);
 
         // then
         try (NeoStores neoStores = new StoreFactory(

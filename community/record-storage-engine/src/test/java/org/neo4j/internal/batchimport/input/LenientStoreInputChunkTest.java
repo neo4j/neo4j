@@ -46,6 +46,8 @@ import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
+import org.neo4j.memory.EmptyMemoryTracker;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.token.api.NamedToken;
@@ -76,7 +78,7 @@ class LenientStoreInputChunkTest {
             long next = i == propertyRecordIds.length - 1 ? propertyRecordIds[1] : propertyRecordIds[i + 1];
             propertyRecords.put(id, new PropertyRecord(id).initialize(true, prev, next));
         }
-        when(propertyStore.getRecordByCursor(anyLong(), any(), any(), any()))
+        when(propertyStore.getRecordByCursor(anyLong(), any(), any(), any(), any()))
                 .thenAnswer(mapBackedPropertyStore(propertyRecords));
 
         try (LenientStoreInputChunk chunk = inputChunkReader()) {
@@ -85,7 +87,8 @@ class LenientStoreInputChunkTest {
             primitiveRecord.initialize(
                     true, propertyRecordIds[0], false, NULL_REFERENCE.longValue(), NULL_REFERENCE.longValue());
             InputEntityVisitor visitor = mock(InputEntityVisitor.class);
-            chunk.visitPropertyChainNoThrow(visitor, primitiveRecord, EntityType.NODE, EMPTY_STRING_ARRAY);
+            chunk.visitPropertyChainNoThrow(
+                    visitor, primitiveRecord, EntityType.NODE, EMPTY_STRING_ARRAY, EmptyMemoryTracker.INSTANCE);
 
             // then
             verify(readBehaviour)
@@ -100,7 +103,7 @@ class LenientStoreInputChunkTest {
         propertyRecords.put(10, new PropertyRecord(10).initialize(true, NULL_REFERENCE.longValue(), 11));
         propertyRecords.put(11, new PropertyRecord(11).initialize(true, 10, NULL_REFERENCE.longValue()));
 
-        when(propertyStore.getRecordByCursor(anyLong(), any(), any(), any()))
+        when(propertyStore.getRecordByCursor(anyLong(), any(), any(), any(), any()))
                 .thenAnswer(mapBackedPropertyStore(propertyRecords));
 
         // Property key: id=3 name=age
@@ -117,7 +120,8 @@ class LenientStoreInputChunkTest {
             NodeRecord nodeRecord = new NodeRecord(9);
             nodeRecord.initialize(true, 10, false, NULL_REFERENCE.longValue(), NULL_REFERENCE.longValue());
             InputEntityVisitor visitor = mock(InputEntityVisitor.class);
-            chunk.visitPropertyChainNoThrow(visitor, nodeRecord, EntityType.NODE, EMPTY_STRING_ARRAY);
+            chunk.visitPropertyChainNoThrow(
+                    visitor, nodeRecord, EntityType.NODE, EMPTY_STRING_ARRAY, EmptyMemoryTracker.INSTANCE);
 
             // then
             verify(readBehaviour)
@@ -138,7 +142,7 @@ class LenientStoreInputChunkTest {
         propertyRecords.put(10, new PropertyRecord(10).initialize(true, NULL_REFERENCE.longValue(), 11));
         propertyRecords.put(11, new PropertyRecord(11).initialize(true, 5, NULL_REFERENCE.longValue()));
 
-        when(propertyStore.getRecordByCursor(anyLong(), any(), any(), any()))
+        when(propertyStore.getRecordByCursor(anyLong(), any(), any(), any(), any()))
                 .thenAnswer(mapBackedPropertyStore(propertyRecords));
 
         try (LenientStoreInputChunk chunk = inputChunkReader()) {
@@ -146,7 +150,8 @@ class LenientStoreInputChunkTest {
             NodeRecord nodeRecord = new NodeRecord(9);
             nodeRecord.initialize(true, 10, false, NULL_REFERENCE.longValue(), NULL_REFERENCE.longValue());
             InputEntityVisitor visitor = mock(InputEntityVisitor.class);
-            chunk.visitPropertyChainNoThrow(visitor, nodeRecord, EntityType.NODE, EMPTY_STRING_ARRAY);
+            chunk.visitPropertyChainNoThrow(
+                    visitor, nodeRecord, EntityType.NODE, EMPTY_STRING_ARRAY, EmptyMemoryTracker.INSTANCE);
 
             // then
             verify(readBehaviour)
@@ -177,9 +182,11 @@ class LenientStoreInputChunkTest {
                 NULL_CONTEXT_FACTORY,
                 StoreCursors.NULL,
                 mock(PageCursor.class),
-                group) {
+                group,
+                INSTANCE) {
             @Override
-            void readAndVisit(long id, InputEntityVisitor visitor, StoreCursors storeCursors) {}
+            void readAndVisit(
+                    long id, InputEntityVisitor visitor, StoreCursors storeCursors, MemoryTracker memoryTracker) {}
 
             @Override
             String recordType() {

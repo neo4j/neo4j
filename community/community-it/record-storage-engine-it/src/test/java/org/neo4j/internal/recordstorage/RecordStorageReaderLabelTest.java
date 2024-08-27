@@ -25,11 +25,11 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.PropertySelection.ALL_PROPERTIES;
 
 import org.eclipse.collections.impl.factory.primitive.IntSets;
 import org.junit.jupiter.api.Test;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.storageengine.api.StorageNodeCursor;
 import org.neo4j.storageengine.api.StoragePropertyCursor;
 
@@ -46,7 +46,8 @@ class RecordStorageReaderLabelTest extends RecordStorageReaderTestBase {
         int labelId2 = labelId(label2);
 
         // THEN
-        StorageNodeCursor nodeCursor = storageReader.allocateNodeCursor(NULL_CONTEXT, storageCursors);
+        StorageNodeCursor nodeCursor =
+                storageReader.allocateNodeCursor(NULL_CONTEXT, storageCursors, EmptyMemoryTracker.INSTANCE);
         nodeCursor.single(nodeId);
         assertTrue(nodeCursor.next());
         assertEquals(newSetWith(labelId1, labelId2), IntSets.immutable.of(nodeCursor.labels()));
@@ -59,9 +60,10 @@ class RecordStorageReaderLabelTest extends RecordStorageReaderTestBase {
         int namePropertyKeyId = propertyKeyId("name");
 
         // WHEN THEN
-        StorageNodeCursor nodeCursor = storageReader.allocateNodeCursor(NULL_CONTEXT, storageCursors);
+        StorageNodeCursor nodeCursor =
+                storageReader.allocateNodeCursor(NULL_CONTEXT, storageCursors, EmptyMemoryTracker.INSTANCE);
         StoragePropertyCursor propertyCursor =
-                storageReader.allocatePropertyCursor(NULL_CONTEXT, storageCursors, INSTANCE);
+                storageReader.allocatePropertyCursor(NULL_CONTEXT, storageCursors, EmptyMemoryTracker.INSTANCE);
         nodeCursor.single(nodeId);
         assertTrue(nodeCursor.next());
         nodeCursor.properties(propertyCursor, ALL_PROPERTIES);

@@ -35,6 +35,7 @@ import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StoreVersion;
 import org.neo4j.storageengine.api.format.CapabilityType;
@@ -91,14 +92,15 @@ public class SchemaIndexMigrator extends AbstractStoreMigrationParticipant {
             DatabaseLayout migrationLayout,
             DatabaseLayout directoryLayout,
             StoreVersion versionToUpgradeFrom,
-            StoreVersion versionToMigrateTo)
+            StoreVersion versionToMigrateTo,
+            MemoryTracker memoryTracker)
             throws IOException {
         Path schemaIndexDirectory = indexDirectoryStructure.rootDirectory();
         if (schemaIndexDirectory != null) {
             if (deleteAllIndexes) {
                 fileSystem.deleteRecursively(schemaIndexDirectory);
             } else if (deleteRelationshipIndexes) {
-                deleteRelationshipIndexes(directoryLayout);
+                deleteRelationshipIndexes(directoryLayout, memoryTracker);
             }
         }
     }
@@ -112,7 +114,8 @@ public class SchemaIndexMigrator extends AbstractStoreMigrationParticipant {
         return toVersion.hasCapability(MULTI_VERSION_INDEXES) ^ fromVersion.hasCapability(MULTI_VERSION_INDEXES);
     }
 
-    private void deleteRelationshipIndexes(DatabaseLayout databaseLayout) throws IOException {
+    private void deleteRelationshipIndexes(DatabaseLayout databaseLayout, MemoryTracker memoryTracker)
+            throws IOException {
         for (SchemaRule schemaRule : storageEngineFactory.loadSchemaRules(
                 fileSystem,
                 pageCache,
@@ -121,7 +124,8 @@ public class SchemaIndexMigrator extends AbstractStoreMigrationParticipant {
                 databaseLayout,
                 false,
                 r -> r,
-                contextFactory)) {
+                contextFactory,
+                memoryTracker)) {
             if (schemaRule.schema().entityType() == EntityType.RELATIONSHIP) {
                 fileSystem.deleteRecursively(indexDirectoryStructure.directoryForIndex(schemaRule.getId()));
             }

@@ -42,7 +42,7 @@ class RecordChangesTest {
         }
 
         @Override
-        public void ensureHeavy(NodeRecord o, StoreCursors storeCursors) {}
+        public void ensureHeavy(NodeRecord o, StoreCursors storeCursors, MemoryTracker memoryTracker) {}
 
         @Override
         public NodeRecord copy(NodeRecord o, MemoryTracker memoryTracker) {

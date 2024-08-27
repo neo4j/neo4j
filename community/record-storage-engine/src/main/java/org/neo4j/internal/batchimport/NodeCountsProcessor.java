@@ -27,6 +27,7 @@ import org.neo4j.internal.helpers.progress.ProgressListener;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 /**
@@ -62,8 +63,8 @@ public class NodeCountsProcessor implements RecordProcessor<NodeRecord> {
     }
 
     @Override
-    public boolean process(NodeRecord node, StoreCursors storeCursors) {
-        int[] labels = NodeLabelsField.get(node, nodeStore, storeCursors);
+    public boolean process(NodeRecord node, StoreCursors storeCursors, MemoryTracker memoryTracker) {
+        int[] labels = NodeLabelsField.get(node, nodeStore, storeCursors, memoryTracker);
         if (labels.length > 0) {
             for (int labelId : labels) {
                 if (node.getId() >= fromNodeId) {

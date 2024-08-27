@@ -27,6 +27,7 @@ import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
+import org.neo4j.memory.MemoryTracker;
 
 public class NoRecordFormat<RECORD extends AbstractBaseRecord> implements RecordFormat<RECORD> {
     @Override
@@ -50,7 +51,13 @@ public class NoRecordFormat<RECORD extends AbstractBaseRecord> implements Record
     }
 
     @Override
-    public void read(RECORD record, PageCursor cursor, RecordLoad mode, int recordSize, int recordsPerPage) {
+    public void read(
+            RECORD record,
+            PageCursor cursor,
+            RecordLoad mode,
+            int recordSize,
+            int recordsPerPage,
+            MemoryTracker memoryTracker) {
         record.clear();
     }
 

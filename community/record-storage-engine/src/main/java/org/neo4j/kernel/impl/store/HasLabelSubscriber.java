@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.store;
 
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.Record;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.util.BitBuffer;
 
@@ -37,11 +38,14 @@ class HasLabelSubscriber implements RecordSubscriber<DynamicRecord> {
     private final DynamicArrayStore labelStore;
     private final StoreCursors storeCursors;
     private int bitsUsedInLastByte;
+    private final MemoryTracker memoryTracker;
 
-    HasLabelSubscriber(int label, DynamicArrayStore labelStore, StoreCursors storeCursors) {
+    HasLabelSubscriber(
+            int label, DynamicArrayStore labelStore, StoreCursors storeCursors, MemoryTracker memoryTracker) {
         this.label = label;
         this.labelStore = labelStore;
         this.storeCursors = storeCursors;
+        this.memoryTracker = memoryTracker;
     }
 
     boolean hasLabel() {
@@ -53,7 +57,7 @@ class HasLabelSubscriber implements RecordSubscriber<DynamicRecord> {
         if (!record.inUse()) {
             return true;
         }
-        labelStore.ensureHeavy(record, storeCursors);
+        labelStore.ensureHeavy(record, storeCursors, memoryTracker);
 
         boolean lastRecord = Record.NO_NEXT_BLOCK.is(record.getNextBlock());
         if (firstRecord) {

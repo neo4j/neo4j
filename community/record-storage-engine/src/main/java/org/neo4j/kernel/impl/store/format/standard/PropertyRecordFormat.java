@@ -28,6 +28,7 @@ import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
+import org.neo4j.memory.MemoryTracker;
 
 public class PropertyRecordFormat extends BaseRecordFormat<PropertyRecord> {
     public static final int DEFAULT_DATA_BLOCK_SIZE = 120;
@@ -51,7 +52,13 @@ public class PropertyRecordFormat extends BaseRecordFormat<PropertyRecord> {
     }
 
     @Override
-    public void read(PropertyRecord record, PageCursor cursor, RecordLoad mode, int recordSize, int recordsPerPage) {
+    public void read(
+            PropertyRecord record,
+            PageCursor cursor,
+            RecordLoad mode,
+            int recordSize,
+            int recordsPerPage,
+            MemoryTracker memoryTracker) {
         int offsetAtBeginning = cursor.getOffset();
 
         /*

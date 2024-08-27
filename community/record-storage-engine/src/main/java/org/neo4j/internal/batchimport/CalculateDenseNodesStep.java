@@ -30,6 +30,7 @@ import org.neo4j.internal.batchimport.stats.StatsProvider;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.memory.MemoryTracker;
 
 /**
  * Increments counts for each visited relationship, once for start node and once for end node
@@ -56,7 +57,8 @@ public class CalculateDenseNodesStep extends ProcessorStep<RelationshipRecord[]>
     }
 
     @Override
-    protected void process(RelationshipRecord[] batch, BatchSender sender, CursorContext cursorContext)
+    protected void process(
+            RelationshipRecord[] batch, BatchSender sender, CursorContext cursorContext, MemoryTracker memoryTracker)
             throws Throwable {
         for (RelationshipRecord record : batch) {
             if (record.inUse()) {

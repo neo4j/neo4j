@@ -122,7 +122,7 @@ class EntityValueUpdatesTest {
         var storageReader = mock(StorageReader.class, RETURNS_MOCKS);
         when(nodeCursor.hasProperties()).thenReturn(true);
         when(nodeCursor.next()).thenReturn(true);
-        when(storageReader.allocateNodeCursor(any(), any())).thenReturn(nodeCursor);
+        when(storageReader.allocateNodeCursor(any(), any(), any())).thenReturn(nodeCursor);
 
         EntityUpdates updates = EntityUpdates.forEntity(ENTITY_ID, false)
                 .withTokens(EMPTY)
@@ -131,7 +131,7 @@ class EntityValueUpdatesTest {
         updates.valueUpdatesForIndexKeys(
                 NODE_INDEXES, storageReader, EntityType.NODE, cursorContext, storeCursors, INSTANCE);
 
-        verify(storageReader).allocateNodeCursor(cursorContext, storeCursors);
+        verify(storageReader).allocateNodeCursor(cursorContext, storeCursors, INSTANCE);
         verify(storageReader).allocatePropertyCursor(cursorContext, storeCursors, INSTANCE);
     }
 
@@ -143,7 +143,7 @@ class EntityValueUpdatesTest {
         var storageReader = mock(StorageReader.class, RETURNS_MOCKS);
         when(relationshipCursor.hasProperties()).thenReturn(true);
         when(relationshipCursor.next()).thenReturn(true);
-        when(storageReader.allocateRelationshipScanCursor(any(), any())).thenReturn(relationshipCursor);
+        when(storageReader.allocateRelationshipScanCursor(any(), any(), any())).thenReturn(relationshipCursor);
 
         EntityUpdates updates = EntityUpdates.forEntity(ENTITY_ID, false)
                 .withTokens(EMPTY)
@@ -152,7 +152,7 @@ class EntityValueUpdatesTest {
         updates.valueUpdatesForIndexKeys(
                 NODE_INDEXES, storageReader, EntityType.RELATIONSHIP, cursorContext, storeCursors, INSTANCE);
 
-        verify(storageReader).allocateRelationshipScanCursor(cursorContext, storeCursors);
+        verify(storageReader).allocateRelationshipScanCursor(cursorContext, storeCursors, INSTANCE);
         verify(storageReader).allocatePropertyCursor(cursorContext, storeCursors, INSTANCE);
     }
 
@@ -749,9 +749,9 @@ class EntityValueUpdatesTest {
     private static StorageReader assertNoLoading() {
         StorageReader reader = mock(StorageReader.class);
         IllegalStateException exception = new IllegalStateException("Should never attempt to load properties!");
-        when(reader.allocateNodeCursor(any(), any())).thenThrow(exception);
-        when(reader.allocateRelationshipScanCursor(any(), any())).thenThrow(exception);
-        when(reader.allocateRelationshipTraversalCursor(any(), any())).thenThrow(exception);
+        when(reader.allocateNodeCursor(any(), any(), any())).thenThrow(exception);
+        when(reader.allocateRelationshipScanCursor(any(), any(), any())).thenThrow(exception);
+        when(reader.allocateRelationshipTraversalCursor(any(), any(), any())).thenThrow(exception);
         when(reader.allocatePropertyCursor(any(), any(), any())).thenThrow(exception);
         return reader;
     }

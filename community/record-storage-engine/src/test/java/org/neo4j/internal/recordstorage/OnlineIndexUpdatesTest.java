@@ -82,6 +82,7 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.StandardConstraintRuleAccessor;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
@@ -170,15 +171,16 @@ class OnlineIndexUpdatesTest {
                 new RecordStorageIndexingBehaviour(
                         nodeStore.getRecordsPerPage(), relationshipStore.getRecordsPerPage()));
         storeCursors = new CachedStoreCursors(neoStores, NULL_CONTEXT);
-        propertyPhysicalToLogicalConverter =
-                new PropertyPhysicalToLogicalConverter(neoStores.getPropertyStore(), storeCursors);
+        propertyPhysicalToLogicalConverter = new PropertyPhysicalToLogicalConverter(
+                neoStores.getPropertyStore(), storeCursors, EmptyMemoryTracker.INSTANCE);
         life.start();
         recordAccess = new DirectRecordAccess<>(
                 neoStores.getPropertyStore(),
                 Loaders.propertyLoader(propertyStore, storeCursors),
                 NULL_CONTEXT,
                 PROPERTY_CURSOR,
-                storeCursors);
+                storeCursors,
+                EmptyMemoryTracker.INSTANCE);
     }
 
     @AfterEach

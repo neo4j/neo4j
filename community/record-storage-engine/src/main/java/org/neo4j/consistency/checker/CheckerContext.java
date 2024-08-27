@@ -234,7 +234,8 @@ class CheckerContext {
                     () -> checker.check(
                             range,
                             EntityBasedMemoryLimiter.isFirst(range),
-                            limiter.isLast(range, checker.isNodeBasedCheck())),
+                            limiter.isLast(range, checker.isNodeBasedCheck()),
+                            memoryTracker),
                     true);
         }
     }

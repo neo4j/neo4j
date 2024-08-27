@@ -36,7 +36,7 @@ public interface CursorFactory {
         return allocateNodeCursor(cursorContext, EmptyMemoryTracker.INSTANCE);
     }
 
-    NodeCursor allocateFullAccessNodeCursor(CursorContext cursorContext);
+    NodeCursor allocateFullAccessNodeCursor(CursorContext cursorContext, MemoryTracker memoryTracker);
 
     RelationshipScanCursor allocateRelationshipScanCursor(CursorContext cursorContext, MemoryTracker memoryTracker);
 
@@ -44,7 +44,8 @@ public interface CursorFactory {
         return allocateRelationshipScanCursor(cursorContext, EmptyMemoryTracker.INSTANCE);
     }
 
-    RelationshipScanCursor allocateFullAccessRelationshipScanCursor(CursorContext cursorContext);
+    RelationshipScanCursor allocateFullAccessRelationshipScanCursor(
+            CursorContext cursorContext, MemoryTracker memoryTracker);
 
     // traversal
 
@@ -55,7 +56,8 @@ public interface CursorFactory {
         return allocateRelationshipTraversalCursor(cursorContext, EmptyMemoryTracker.INSTANCE);
     }
 
-    RelationshipTraversalCursor allocateFullAccessRelationshipTraversalCursor(CursorContext cursorContext);
+    RelationshipTraversalCursor allocateFullAccessRelationshipTraversalCursor(
+            CursorContext cursorContext, MemoryTracker memoryTracker);
 
     // properties
 
@@ -91,5 +93,6 @@ public interface CursorFactory {
         return allocateRelationshipTypeIndexCursor(cursorContext, EmptyMemoryTracker.INSTANCE);
     }
 
-    RelationshipTypeIndexCursor allocateFullAccessRelationshipTypeIndexCursor(CursorContext cursorContext);
+    RelationshipTypeIndexCursor allocateFullAccessRelationshipTypeIndexCursor(
+            CursorContext cursorContext, MemoryTracker memoryTracker);
 }

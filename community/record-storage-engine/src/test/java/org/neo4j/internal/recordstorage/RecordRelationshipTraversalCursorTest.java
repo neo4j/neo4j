@@ -71,6 +71,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.transaction.log.LogTailLogVersionsMetadata;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.storageengine.api.ReadTracer;
 import org.neo4j.storageengine.api.RelationshipDirection;
 import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
@@ -395,8 +396,8 @@ public class RecordRelationshipTraversalCursorTest {
     protected void unUseRecord(long recordId) {
         RelationshipStore relationshipStore = neoStores.getRelationshipStore();
         var readCursor = storeCursors.readCursor(RELATIONSHIP_CURSOR);
-        RelationshipRecord relationshipRecord =
-                relationshipStore.getRecordByCursor(recordId, new RelationshipRecord(-1), RecordLoad.FORCE, readCursor);
+        RelationshipRecord relationshipRecord = relationshipStore.getRecordByCursor(
+                recordId, new RelationshipRecord(-1), RecordLoad.FORCE, readCursor, EmptyMemoryTracker.INSTANCE);
         relationshipRecord.setInUse(false);
         try (var writeCursor = storeCursors.writeCursor(RELATIONSHIP_CURSOR)) {
             relationshipStore.updateRecord(relationshipRecord, writeCursor, NULL_CONTEXT, storeCursors);
@@ -501,7 +502,8 @@ public class RecordRelationshipTraversalCursorTest {
                 neoStores.getRelationshipGroupStore(),
                 null,
                 NULL_CONTEXT,
-                storeCursors);
+                storeCursors,
+                EmptyMemoryTracker.INSTANCE);
     }
 
     protected static RelationshipSpec[] homogenousRelationships(int count, int type, RelationshipDirection direction) {

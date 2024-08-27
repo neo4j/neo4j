@@ -41,6 +41,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.StoreFormatLimits;
 import org.neo4j.storageengine.api.format.Capability;
 import org.neo4j.storageengine.api.format.CapabilityType;
@@ -192,9 +193,15 @@ public class PrepareTrackingRecordFormats implements RecordFormats {
         }
 
         @Override
-        public void read(RECORD record, PageCursor cursor, RecordLoad mode, int recordSize, int recordsPerPage)
+        public void read(
+                RECORD record,
+                PageCursor cursor,
+                RecordLoad mode,
+                int recordSize,
+                int recordsPerPage,
+                MemoryTracker memoryTracker)
                 throws IOException {
-            actual.read(record, cursor, mode, recordSize, recordsPerPage);
+            actual.read(record, cursor, mode, recordSize, recordsPerPage, memoryTracker);
         }
 
         @Override

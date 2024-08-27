@@ -42,6 +42,7 @@ import org.neo4j.internal.helpers.progress.ProgressListener;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.time.Stopwatch;
 
@@ -75,7 +76,8 @@ class RelationshipChainChecker implements Checker {
     }
 
     @Override
-    public void check(LongRange nodeIdRange, boolean firstRange, boolean lastRange) throws Exception {
+    public void check(LongRange nodeIdRange, boolean firstRange, boolean lastRange, MemoryTracker memoryTracker)
+            throws Exception {
         // Forward scan (cache prev pointers)
         checkDirection(nodeIdRange, ScanDirection.FORWARD);
 
@@ -111,7 +113,7 @@ class RelationshipChainChecker implements Checker {
                 long id = direction.startingId(highId);
                 while (id >= 0 && id < highId && !context.isCancelled()) {
                     for (int i = 0; i < recordsPerPage && id >= 0 && id < highId; i++, id = direction.nextId(id)) {
-                        relationshipStore.getRecordByCursor(id, relationship, FORCE, cursor);
+                        relationshipStore.getRecordByCursor(id, relationship, FORCE, cursor, context.memoryTracker);
                         localProgress.add(1);
                         if (relationship.inUse()) {
                             queueRelationshipCheck(threadQueues, threadBatches, relationship);
@@ -163,9 +165,17 @@ class RelationshipChainChecker implements Checker {
 
                     if (!consistent) {
                         RelationshipRecord relationship = relationshipStore.getRecordByCursor(
-                                relationshipId, relationshipStore.newRecord(), FORCE, relationshipCursor);
+                                relationshipId,
+                                relationshipStore.newRecord(),
+                                FORCE,
+                                relationshipCursor,
+                                context.memoryTracker);
                         RelationshipRecord referenceRelationship = relationshipStore.getRecordByCursor(
-                                reference, relationshipStore.newRecord(), FORCE, relationshipCursor);
+                                reference,
+                                relationshipStore.newRecord(),
+                                FORCE,
+                                relationshipCursor,
+                                context.memoryTracker);
                         linkOf(
                                         sourceOrTarget == CacheSlots.RelationshipLink.SOURCE,
                                         prevOrNext == CacheSlots.RelationshipLink.PREV)
@@ -314,12 +324,16 @@ class RelationshipChainChecker implements Checker {
                 } else if (!NULL_REFERENCE.is(fromCache)) {
                     // Load it from store
                     store.getRecordByCursor(
-                            linkId, otherRelationship, FORCE, storeCursors.readCursor(RELATIONSHIP_CURSOR));
+                            linkId,
+                            otherRelationship,
+                            FORCE,
+                            storeCursors.readCursor(RELATIONSHIP_CURSOR),
+                            context.memoryTracker);
                 } else {
                     otherRelationship.clear();
                     link.reportDoesNotReferenceBack(
                             reporter,
-                            recordLoader.relationship(relationshipCursor.getId(), storeCursors),
+                            recordLoader.relationship(relationshipCursor.getId(), storeCursors, context.memoryTracker),
                             otherRelationship);
                 }
             } else {
@@ -353,14 +367,15 @@ class RelationshipChainChecker implements Checker {
         if (nodeLink == null) {
             thing.reportOtherNode(
                     reporter,
-                    recordLoader.relationship(relationshipId, storeCursors),
-                    recordLoader.relationship(linkId, storeCursors));
+                    recordLoader.relationship(relationshipId, storeCursors, context.memoryTracker),
+                    recordLoader.relationship(linkId, storeCursors, context.memoryTracker));
         } else {
             if (thing.other(otherRelationship, nodeLink) != relationshipId) {
                 // Read the relationship from store and do the check on that actual record instead, should happen rarely
                 // anyway
                 if (otherRelationship.isCreated()) {
-                    recordLoader.relationship(otherRelationship, otherRelationship.getId(), storeCursors);
+                    recordLoader.relationship(
+                            otherRelationship, otherRelationship.getId(), storeCursors, context.memoryTracker);
                     // Call this method one more time, now with !created
                     checkRelationshipLink(
                             direction, thing, otherRelationship, relationshipId, nodeId, linkId, storeCursors);
@@ -369,14 +384,14 @@ class RelationshipChainChecker implements Checker {
 
                 thing.reportDoesNotReferenceBack(
                         reporter,
-                        recordLoader.relationship(relationshipId, storeCursors),
-                        recordLoader.relationship(linkId, storeCursors));
+                        recordLoader.relationship(relationshipId, storeCursors, context.memoryTracker),
+                        recordLoader.relationship(linkId, storeCursors, context.memoryTracker));
             } else {
                 if (!direction.exclude(relationshipId, linkId) && !otherRelationship.inUse()) {
                     thing.reportNotUsedRelationshipReferencedInChain(
                             reporter,
-                            recordLoader.relationship(relationshipId, storeCursors),
-                            recordLoader.relationship(linkId, storeCursors));
+                            recordLoader.relationship(relationshipId, storeCursors, context.memoryTracker),
+                            recordLoader.relationship(linkId, storeCursors, context.memoryTracker));
                 }
             }
         }

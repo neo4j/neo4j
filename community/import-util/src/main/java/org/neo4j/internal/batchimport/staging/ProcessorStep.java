@@ -30,12 +30,14 @@ import org.neo4j.internal.batchimport.executor.TaskExecutor;
 import org.neo4j.internal.batchimport.stats.StatsProvider;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.memory.EmptyMemoryTracker;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.util.concurrent.AsyncApply;
 
 /**
  * {@link Step} that uses {@link TaskExecutor} as a queue and execution mechanism.
  * Supports an arbitrary number of threads to execute batches in parallel.
- * Subclasses implement {@link #process(Object, BatchSender, CursorContext)} receiving the batch to process
+ * Subclasses implement {@link #process(Object, BatchSender, CursorContext, MemoryTracker)} receiving the batch to process
  * and an {@link BatchSender} for sending the modified batch, or other batches downstream.
  */
 public abstract class ProcessorStep<T> extends AbstractStep<T> {
@@ -80,7 +82,7 @@ public abstract class ProcessorStep<T> extends AbstractStep<T> {
             sender.initialize(ticket);
             try (var cursorContext = contextFactory.create(cursorTracerName)) {
                 long startTime = nanoTime();
-                process(batch, sender, cursorContext);
+                process(batch, sender, cursorContext, EmptyMemoryTracker.INSTANCE);
                 if (downstream == null) {
                     // No batches were emitted so we couldn't track done batches in that way.
                     // We can see that we're the last step so increment here instead
@@ -130,8 +132,10 @@ public abstract class ProcessorStep<T> extends AbstractStep<T> {
      * @param batch batch to process.
      * @param sender {@link BatchSender} for sending zero or more batches downstream.
      * @param cursorContext underlying page cursor context
+     * @param memoryTracker
      */
-    protected abstract void process(T batch, BatchSender sender, CursorContext cursorContext) throws Throwable;
+    protected abstract void process(
+            T batch, BatchSender sender, CursorContext cursorContext, MemoryTracker memoryTracker) throws Throwable;
 
     @Override
     public void close() throws Exception {

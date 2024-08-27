@@ -54,26 +54,26 @@ public class StoreTokens {
      * <p>
      * Note that this will ignore any tokens that cannot be read, for instance due to a store inconsistency, or if the store needs to be recovered.
      * If you would rather have an exception thrown, then you need to {@link TokenHolder#setInitialTokens(List) set the initial tokens} on each of the token
-     * holders, using tokens read via the {@link TokenStore#getTokens(StoreCursors)} method,
-     * instead of the {@link TokenStore#getAllReadableTokens(StoreCursors)} method.
+     * holders, using tokens read via the {@link TokenStore#getTokens(StoreCursors, MemoryTracker)} method,
+     * instead of the {@link TokenStore#getAllReadableTokens(StoreCursors, MemoryTracker)} method.
      *
      * @param neoStores The {@link NeoStores} to read tokens from.
      */
     public static TokensLoader allReadableTokens(NeoStores neoStores) {
         return new TokensLoader() {
             @Override
-            public List<NamedToken> getPropertyKeyTokens(StoreCursors storeCursors) {
-                return neoStores.getPropertyKeyTokenStore().getAllReadableTokens(storeCursors);
+            public List<NamedToken> getPropertyKeyTokens(StoreCursors storeCursors, MemoryTracker memoryTracker) {
+                return neoStores.getPropertyKeyTokenStore().getAllReadableTokens(storeCursors, memoryTracker);
             }
 
             @Override
-            public List<NamedToken> getLabelTokens(StoreCursors storeCursors) {
-                return neoStores.getLabelTokenStore().getAllReadableTokens(storeCursors);
+            public List<NamedToken> getLabelTokens(StoreCursors storeCursors, MemoryTracker memoryTracker) {
+                return neoStores.getLabelTokenStore().getAllReadableTokens(storeCursors, memoryTracker);
             }
 
             @Override
-            public List<NamedToken> getRelationshipTypeTokens(StoreCursors storeCursors) {
-                return neoStores.getRelationshipTypeTokenStore().getAllReadableTokens(storeCursors);
+            public List<NamedToken> getRelationshipTypeTokens(StoreCursors storeCursors, MemoryTracker memoryTracker) {
+                return neoStores.getRelationshipTypeTokenStore().getAllReadableTokens(storeCursors, memoryTracker);
             }
         };
     }
@@ -88,18 +88,18 @@ public class StoreTokens {
     public static TokensLoader allTokens(NeoStores neoStores) {
         return new TokensLoader() {
             @Override
-            public List<NamedToken> getPropertyKeyTokens(StoreCursors storeCursors) {
-                return neoStores.getPropertyKeyTokenStore().getTokens(storeCursors);
+            public List<NamedToken> getPropertyKeyTokens(StoreCursors storeCursors, MemoryTracker memoryTracker) {
+                return neoStores.getPropertyKeyTokenStore().getTokens(storeCursors, memoryTracker);
             }
 
             @Override
-            public List<NamedToken> getLabelTokens(StoreCursors storeCursors) {
-                return neoStores.getLabelTokenStore().getTokens(storeCursors);
+            public List<NamedToken> getLabelTokens(StoreCursors storeCursors, MemoryTracker memoryTracker) {
+                return neoStores.getLabelTokenStore().getTokens(storeCursors, memoryTracker);
             }
 
             @Override
-            public List<NamedToken> getRelationshipTypeTokens(StoreCursors storeCursors) {
-                return neoStores.getRelationshipTypeTokenStore().getTokens(storeCursors);
+            public List<NamedToken> getRelationshipTypeTokens(StoreCursors storeCursors, MemoryTracker memoryTracker) {
+                return neoStores.getRelationshipTypeTokenStore().getTokens(storeCursors, memoryTracker);
             }
         };
     }
@@ -110,15 +110,17 @@ public class StoreTokens {
      * Note that this call will ignore tokens that cannot be loaded due to inconsistencies, rather than throwing an exception.
      * The reason for this is that the read-only token holders are primarily used by tools, such as the consistency checker.
      *
+     * @param memoryTracker
      * @param neoStores The {@link NeoStores} from which to load the initial tokens.
      * @return TokenHolders that can be used for reading tokens, but cannot create new ones.
      */
-    public static TokenHolders readOnlyTokenHolders(NeoStores neoStores, StoreCursors storeCursors) {
+    public static TokenHolders readOnlyTokenHolders(
+            NeoStores neoStores, StoreCursors storeCursors, MemoryTracker memoryTracker) {
         TokenHolder propertyKeyTokens = createReadOnlyTokenHolder(TYPE_PROPERTY_KEY);
         TokenHolder labelTokens = createReadOnlyTokenHolder(TYPE_LABEL);
         TokenHolder relationshipTypeTokens = createReadOnlyTokenHolder(TYPE_RELATIONSHIP_TYPE);
         TokenHolders tokenHolders = new TokenHolders(propertyKeyTokens, labelTokens, relationshipTypeTokens);
-        tokenHolders.setInitialTokens(allReadableTokens(neoStores), storeCursors);
+        tokenHolders.setInitialTokens(allReadableTokens(neoStores), storeCursors, memoryTracker);
         return tokenHolders;
     }
 
@@ -150,13 +152,13 @@ public class StoreTokens {
                 StoreCursors storeCursors = new CachedStoreCursors(neoStores, cursorContext)) {
             tokenHolders
                     .propertyKeyTokens()
-                    .setInitialTokens(neoStores.getPropertyKeyTokenStore().getTokens(storeCursors));
+                    .setInitialTokens(neoStores.getPropertyKeyTokenStore().getTokens(storeCursors, memoryTracker));
             tokenHolders
                     .labelTokens()
-                    .setInitialTokens(neoStores.getLabelTokenStore().getTokens(storeCursors));
+                    .setInitialTokens(neoStores.getLabelTokenStore().getTokens(storeCursors, memoryTracker));
             tokenHolders
                     .relationshipTypeTokens()
-                    .setInitialTokens(neoStores.getRelationshipTypeTokenStore().getTokens(storeCursors));
+                    .setInitialTokens(neoStores.getRelationshipTypeTokenStore().getTokens(storeCursors, memoryTracker));
         }
         return tokenHolders;
     }

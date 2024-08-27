@@ -27,6 +27,7 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
+import org.neo4j.memory.MemoryTracker;
 
 /**
  * Convenience for reading and assembling records w/ potential filtering into an array.
@@ -60,9 +61,15 @@ public class RecordDataAssembler<RECORD extends AbstractBaseRecord> {
         return (RECORD[]) array;
     }
 
-    public boolean append(RecordStore<RECORD> store, PageCursor cursor, RECORD[] array, long id, int index) {
+    public boolean append(
+            RecordStore<RECORD> store,
+            PageCursor cursor,
+            RECORD[] array,
+            long id,
+            int index,
+            MemoryTracker memoryTracker) {
         RECORD record = array[index];
-        store.getRecordByCursor(id, record, loadMode, cursor);
+        store.getRecordByCursor(id, record, loadMode, cursor, memoryTracker);
         return record.inUse() && filter.test(record);
     }
 

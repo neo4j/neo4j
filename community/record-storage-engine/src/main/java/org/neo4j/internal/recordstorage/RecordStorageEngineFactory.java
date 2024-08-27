@@ -135,7 +135,6 @@ import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.LogService;
-import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.scheduler.JobScheduler;
@@ -409,7 +408,8 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
             Config config,
             DatabaseLayout layout,
             CursorContextFactory contextFactory,
-            LogTailLogVersionsMetadata logTailMetadata) {
+            LogTailLogVersionsMetadata logTailMetadata,
+            MemoryTracker memoryTracker) {
         RecordDatabaseLayout recordDatabaseLayout = formatSpecificDatabaseLayout(layout);
         RecordFormats recordFormats = RecordFormatSelector.selectForStore(
                 recordDatabaseLayout, fs, pageCache, NullLogProvider.getInstance(), contextFactory);
@@ -442,7 +442,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
                         StoreType.PROPERTY_KEY_TOKEN);
                 var storeCursors = new CachedStoreCursors(stores, cursorContext)) {
             stores.start(cursorContext);
-            TokenHolders tokenHolders = loadReadOnlyTokens(stores, true, contextFactory);
+            TokenHolders tokenHolders = loadReadOnlyTokens(stores, true, contextFactory, memoryTracker);
 
             var metadata = LegacyMetadataHandler.readMetadata44FromStore(
                     pageCache,
@@ -468,7 +468,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
                     recordDatabaseLayout.getDatabaseName(),
                     stores.getOpenOptions())) {
 
-                return schemaStoreReader.loadAllSchemaRules(storeCursors);
+                return schemaStoreReader.loadAllSchemaRules(storeCursors, memoryTracker);
             }
         } catch (IOException e) {
             throw new UncheckedIOException(e);
@@ -484,7 +484,8 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
             DatabaseLayout layout,
             boolean lenient,
             Function<SchemaRule, SchemaRule> schemaRuleMigration,
-            CursorContextFactory contextFactory) {
+            CursorContextFactory contextFactory,
+            MemoryTracker memoryTracker) {
         RecordDatabaseLayout databaseLayout = formatSpecificDatabaseLayout(layout);
         StoreFactory factory = new StoreFactory(
                 databaseLayout,
@@ -501,13 +502,14 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
                 var stores = factory.openAllNeoStores();
                 var storeCursors = new CachedStoreCursors(stores, cursorContext)) {
             stores.start(cursorContext);
-            TokenHolders tokenHolders = loadReadOnlyTokens(stores, lenient, contextFactory);
+            TokenHolders tokenHolders = loadReadOnlyTokens(stores, lenient, contextFactory, memoryTracker);
             List<SchemaRule> rules = new ArrayList<>();
             SchemaStorage storage = new SchemaStorage(stores.getSchemaStore(), tokenHolders);
+
             if (lenient) {
-                storage.getAllIgnoreMalformed(storeCursors).forEach(rules::add);
+                storage.getAllIgnoreMalformed(storeCursors, memoryTracker).forEach(rules::add);
             } else {
-                storage.getAll(storeCursors).forEach(rules::add);
+                storage.getAll(storeCursors, memoryTracker).forEach(rules::add);
             }
             return rules;
         } catch (IOException e) {
@@ -523,7 +525,8 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
             PageCache pageCache,
             PageCacheTracer pageCacheTracer,
             boolean lenient,
-            CursorContextFactory contextFactory) {
+            CursorContextFactory contextFactory,
+            MemoryTracker memoryTracker) {
         RecordDatabaseLayout databaseLayout = formatSpecificDatabaseLayout(layout);
         StoreFactory factory = new StoreFactory(
                 databaseLayout,
@@ -543,7 +546,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
                 StoreType.LABEL_TOKEN_NAME,
                 StoreType.RELATIONSHIP_TYPE_TOKEN,
                 StoreType.RELATIONSHIP_TYPE_TOKEN_NAME)) {
-            return loadReadOnlyTokens(stores, lenient, contextFactory);
+            return loadReadOnlyTokens(stores, lenient, contextFactory, memoryTracker);
         }
     }
 
@@ -601,13 +604,13 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
             var storeCursors = new CachedStoreCursors(dstStore, cursorContext);
             dstTokenHolders
                     .propertyKeyTokens()
-                    .setInitialTokens(dstStore.getPropertyKeyTokenStore().getTokens(storeCursors));
+                    .setInitialTokens(dstStore.getPropertyKeyTokenStore().getTokens(storeCursors, memoryTracker));
             dstTokenHolders
                     .labelTokens()
-                    .setInitialTokens(dstStore.getLabelTokenStore().getTokens(storeCursors));
+                    .setInitialTokens(dstStore.getLabelTokenStore().getTokens(storeCursors, memoryTracker));
             dstTokenHolders
                     .relationshipTypeTokens()
-                    .setInitialTokens(dstStore.getRelationshipTypeTokenStore().getTokens(storeCursors));
+                    .setInitialTokens(dstStore.getRelationshipTypeTokenStore().getTokens(storeCursors, memoryTracker));
 
             return new SchemaRuleMigrationAccessImplExtended(
                     dstStore,
@@ -623,7 +626,8 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
         }
     }
 
-    private TokenHolders loadReadOnlyTokens(NeoStores stores, boolean lenient, CursorContextFactory contextFactory) {
+    private TokenHolders loadReadOnlyTokens(
+            NeoStores stores, boolean lenient, CursorContextFactory contextFactory, MemoryTracker memoryTracker) {
         try (var cursorContext = contextFactory.create("loadReadOnlyTokens");
                 var storeCursors = new CachedStoreCursors(stores, cursorContext)) {
             stores.start(cursorContext);
@@ -636,14 +640,16 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
 
             propertyKeys.setInitialTokens(
                     lenient
-                            ? unique(loader.getPropertyKeyTokens(storeCursors))
-                            : loader.getPropertyKeyTokens(storeCursors));
+                            ? unique(loader.getPropertyKeyTokens(storeCursors, memoryTracker))
+                            : loader.getPropertyKeyTokens(storeCursors, memoryTracker));
             labels.setInitialTokens(
-                    lenient ? unique(loader.getLabelTokens(storeCursors)) : loader.getLabelTokens(storeCursors));
+                    lenient
+                            ? unique(loader.getLabelTokens(storeCursors, memoryTracker))
+                            : loader.getLabelTokens(storeCursors, memoryTracker));
             relationshipTypes.setInitialTokens(
                     lenient
-                            ? unique(loader.getRelationshipTypeTokens(storeCursors))
-                            : loader.getRelationshipTypeTokens(storeCursors));
+                            ? unique(loader.getRelationshipTypeTokens(storeCursors, memoryTracker))
+                            : loader.getRelationshipTypeTokens(storeCursors, memoryTracker));
             return new TokenHolders(propertyKeys, labels, relationshipTypes);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
@@ -781,10 +787,11 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
                 .openNeoStores(storesToOpen);
         return new LenientStoreInput(
                 neoStores,
-                readBehaviour.decorateTokenHolders(loadReadOnlyTokens(neoStores, true, contextFactory)),
+                readBehaviour.decorateTokenHolders(loadReadOnlyTokens(neoStores, true, contextFactory, memoryTracker)),
                 compactNodeIdSpace,
                 contextFactory,
-                readBehaviour);
+                readBehaviour,
+                memoryTracker);
     }
 
     @Override
@@ -881,7 +888,8 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
             ConsistencyFlags flags,
             CursorContextFactory contextFactory,
             PageCacheTracer pageCacheTracer,
-            LogTailMetadata logTailMetadata)
+            LogTailMetadata logTailMetadata,
+            MemoryTracker memoryTracker)
             throws ConsistencyCheckIncompleteException {
         IdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory(
                 fileSystem, RecoveryCleanupWorkCollector.ignore(), pageCacheTracer, layout.getDatabaseName());
@@ -917,7 +925,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
                     verbose,
                     flags,
                     EntityBasedMemoryLimiter.defaultMemoryLimiter(maxOffHeapCachingMemory),
-                    EmptyMemoryTracker.INSTANCE,
+                    memoryTracker,
                     contextFactory,
                     pageCacheTracer)) {
                 checker.check();
@@ -965,7 +973,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
                 getPropertyTokenCreator(stores, contextFactory, memoryTracker, allocatorProvider);
         var cursorContext = contextFactory.create("createMigrationTargetSchemaRuleAccess");
         var storeCursors = new CachedStoreCursors(stores, cursorContext);
-        TokenHolders dstTokenHolders = loadTokenHolders(stores, propertyKeyTokenCreator, storeCursors);
+        TokenHolders dstTokenHolders = loadTokenHolders(stores, propertyKeyTokenCreator, storeCursors, memoryTracker);
         return new SchemaRuleMigrationAccessImpl(
                 stores,
                 new SchemaStorage(dstSchema, dstTokenHolders),
@@ -1068,7 +1076,10 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
     }
 
     private static TokenHolders loadTokenHolders(
-            NeoStores stores, TokenCreator propertyKeyTokenCreator, StoreCursors storeCursors) {
+            NeoStores stores,
+            TokenCreator propertyKeyTokenCreator,
+            StoreCursors storeCursors,
+            MemoryTracker memoryTracker) {
         TokenHolder propertyKeyTokens =
                 new RegisteringCreatingTokenHolder(propertyKeyTokenCreator, TokenHolder.TYPE_PROPERTY_KEY);
         TokenHolders dstTokenHolders = new TokenHolders(
@@ -1077,7 +1088,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
                 StoreTokens.createReadOnlyTokenHolder(TokenHolder.TYPE_RELATIONSHIP_TYPE));
         dstTokenHolders
                 .propertyKeyTokens()
-                .setInitialTokens(stores.getPropertyKeyTokenStore().getTokens(storeCursors));
+                .setInitialTokens(stores.getPropertyKeyTokenStore().getTokens(storeCursors, memoryTracker));
         return dstTokenHolders;
     }
 }

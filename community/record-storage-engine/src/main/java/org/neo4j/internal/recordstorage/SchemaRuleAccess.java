@@ -44,39 +44,46 @@ public interface SchemaRuleAccess extends org.neo4j.kernel.impl.storemigration.S
 
     long newRuleId(CursorContext cursorContext);
 
-    SchemaRule loadSingleSchemaRule(long ruleId, StoreCursors storeCursors) throws MalformedSchemaRuleException;
+    SchemaRule loadSingleSchemaRule(long ruleId, StoreCursors storeCursors, MemoryTracker memoryTracker)
+            throws MalformedSchemaRuleException;
 
-    Iterator<IndexDescriptor> indexesGetAll(StoreCursors storeCursors);
+    Iterator<IndexDescriptor> indexesGetAll(StoreCursors storeCursors, MemoryTracker memoryTracker);
 
-    Iterator<IndexDescriptor> indexesGetAllIgnoreMalformed(StoreCursors storeCursors);
+    Iterator<IndexDescriptor> indexesGetAllIgnoreMalformed(StoreCursors storeCursors, MemoryTracker memoryTracker);
 
     /**
      * Find the IndexRule that matches the given {@link SchemaDescriptorSupplier}.
      *
      * @return an array of all the matching index rules. Empty array if none found.
+     * @param memoryTracker
      * @param index the target {@link IndexDescriptor}
      */
-    IndexDescriptor[] indexGetForSchema(SchemaDescriptorSupplier index, StoreCursors storeCursors);
+    IndexDescriptor[] indexGetForSchema(
+            SchemaDescriptorSupplier index, StoreCursors storeCursors, MemoryTracker memoryTracker);
 
     /**
      * Find the IndexRule that has the given user supplied name.
      *
+     * @param memoryTracker
      * @param indexName the user supplied index name to look for.
      * @return the matching IndexRule, or null if no matching index rule was found.
      */
-    IndexDescriptor indexGetForName(String indexName, StoreCursors storeCursors);
+    IndexDescriptor indexGetForName(String indexName, StoreCursors storeCursors, MemoryTracker memoryTracker);
 
     /**
      * Get the constraint rule that matches the given ConstraintDescriptor
+     * @param memoryTracker
      * @param descriptor the ConstraintDescriptor to match
      * @return the matching ConstraintDescriptor
      * @throws SchemaRuleNotFoundException if no ConstraintDescriptor matches the given descriptor
      * @throws DuplicateSchemaRuleException if two or more ConstraintDescriptors match the given descriptor
      */
-    ConstraintDescriptor constraintsGetSingle(ConstraintDescriptor descriptor, StoreCursors storeCursors)
+    ConstraintDescriptor constraintsGetSingle(
+            ConstraintDescriptor descriptor, StoreCursors storeCursors, MemoryTracker memoryTracker)
             throws SchemaRuleNotFoundException, DuplicateSchemaRuleException;
 
-    Iterator<ConstraintDescriptor> constraintsGetAllIgnoreMalformed(StoreCursors storeCursors);
+    Iterator<ConstraintDescriptor> constraintsGetAllIgnoreMalformed(
+            StoreCursors storeCursors, MemoryTracker memoryTracker);
 
     SchemaRecordChangeTranslator getSchemaRecordChangeTranslator();
 

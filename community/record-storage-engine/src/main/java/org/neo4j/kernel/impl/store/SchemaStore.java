@@ -49,6 +49,7 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.logging.InternalLogProvider;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.PropertyKeyValue;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.token.TokenHolders;
@@ -151,14 +152,22 @@ public class SchemaStore extends CommonAbstractStore<SchemaRecord, IntStoreHeade
     }
 
     public static SchemaRule readSchemaRule(
-            SchemaRecord record, PropertyStore propertyStore, TokenHolders tokenHolders, StoreCursors storeCursors)
+            SchemaRecord record,
+            PropertyStore propertyStore,
+            TokenHolders tokenHolders,
+            StoreCursors storeCursors,
+            MemoryTracker memoryTracker)
             throws MalformedSchemaRuleException {
-        Map<String, Value> map = schemaRecordToMap(record, propertyStore, tokenHolders, storeCursors);
+        Map<String, Value> map = schemaRecordToMap(record, propertyStore, tokenHolders, storeCursors, memoryTracker);
         return unmapifySchemaRule(record.getId(), map);
     }
 
     private static Map<String, Value> schemaRecordToMap(
-            SchemaRecord record, PropertyStore propertyStore, TokenHolders tokenHolders, StoreCursors storeCursors)
+            SchemaRecord record,
+            PropertyStore propertyStore,
+            TokenHolders tokenHolders,
+            StoreCursors storeCursors,
+            MemoryTracker memoryTracker)
             throws MalformedSchemaRuleException {
         Map<String, Value> props = new HashMap<>();
         PropertyRecord propRecord = propertyStore.newRecord();
@@ -166,7 +175,11 @@ public class SchemaStore extends CommonAbstractStore<SchemaRecord, IntStoreHeade
         while (nextProp != NO_NEXT_PROPERTY.longValue()) {
             try {
                 propertyStore.getRecordByCursor(
-                        nextProp, propRecord, RecordLoad.NORMAL, storeCursors.readCursor(PROPERTY_CURSOR));
+                        nextProp,
+                        propRecord,
+                        RecordLoad.NORMAL,
+                        storeCursors.readCursor(PROPERTY_CURSOR),
+                        memoryTracker);
             } catch (InvalidRecordException e) {
                 throw new MalformedSchemaRuleException(
                         "Cannot read schema rule because it is referencing a property record (id " + nextProp
@@ -174,7 +187,8 @@ public class SchemaStore extends CommonAbstractStore<SchemaRecord, IntStoreHeade
                         e);
             }
             for (PropertyBlock propertyBlock : propRecord) {
-                PropertyKeyValue propertyKeyValue = propertyBlock.newPropertyKeyValue(propertyStore, storeCursors);
+                PropertyKeyValue propertyKeyValue =
+                        propertyBlock.newPropertyKeyValue(propertyStore, storeCursors, memoryTracker);
                 insertPropertyIntoMap(propertyKeyValue, props, tokenHolders);
             }
             nextProp = propRecord.getNextProp();

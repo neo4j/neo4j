@@ -45,6 +45,7 @@ import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.transaction.log.LogTailLogVersionsMetadata;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
@@ -120,13 +121,14 @@ abstract class RecordStoreConsistentReadTest<R extends AbstractBaseRecord, S ext
     protected abstract void assertRecordsEqual(R actualRecord, R expectedRecord);
 
     protected R getHeavy(S store, long id, PageCursor pageCursor) {
-        R record = store.getRecordByCursor(id, store.newRecord(), NORMAL, pageCursor);
-        store.ensureHeavy(record, storeCursors);
+        R record = store.getRecordByCursor(id, store.newRecord(), NORMAL, pageCursor, EmptyMemoryTracker.INSTANCE);
+        store.ensureHeavy(record, storeCursors, EmptyMemoryTracker.INSTANCE);
         return record;
     }
 
     R getForce(S store, int id, PageCursor pageCursor) {
-        return store.getRecordByCursor(id, store.newRecord(), RecordLoad.FORCE, pageCursor);
+        return store.getRecordByCursor(
+                id, store.newRecord(), RecordLoad.FORCE, pageCursor, EmptyMemoryTracker.INSTANCE);
     }
 
     @Test

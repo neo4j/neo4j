@@ -192,9 +192,12 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore<DynamicRe
     }
 
     HeavyRecordData readFullByteArray(
-            Iterable<DynamicRecord> records, PropertyType propertyType, StoreCursors storeCursors) {
+            Iterable<DynamicRecord> records,
+            PropertyType propertyType,
+            StoreCursors storeCursors,
+            MemoryTracker memoryTracker) {
         for (DynamicRecord record : records) {
-            ensureHeavy(record, storeCursors);
+            ensureHeavy(record, storeCursors, memoryTracker);
         }
 
         return readFullByteArrayFromHeavyRecords(records, propertyType);

@@ -51,6 +51,7 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
+import org.neo4j.memory.EmptyMemoryTracker;
 
 class EncodeGroupsStepTest {
     private static final CursorContextFactory CONTEXT_FACTORY =
@@ -82,10 +83,14 @@ class EncodeGroupsStepTest {
         // WHEN
         encoder.start(Step.ORDER_SEND_DOWNSTREAM);
         Catcher catcher = new Catcher();
-        encoder.process(batch(new Group(1, 3), new Group(2, 3), new Group(3, 4)), catcher, NULL_CONTEXT);
-        encoder.process(batch(new Group(4, 2), new Group(5, 10)), catcher, NULL_CONTEXT);
-        encoder.process(batch(new Group(6, 35)), catcher, NULL_CONTEXT);
-        encoder.process(batch(new Group(7, 2)), catcher, NULL_CONTEXT);
+        encoder.process(
+                batch(new Group(1, 3), new Group(2, 3), new Group(3, 4)),
+                catcher,
+                NULL_CONTEXT,
+                EmptyMemoryTracker.INSTANCE);
+        encoder.process(batch(new Group(4, 2), new Group(5, 10)), catcher, NULL_CONTEXT, EmptyMemoryTracker.INSTANCE);
+        encoder.process(batch(new Group(6, 35)), catcher, NULL_CONTEXT, EmptyMemoryTracker.INSTANCE);
+        encoder.process(batch(new Group(7, 2)), catcher, NULL_CONTEXT, EmptyMemoryTracker.INSTANCE);
         encoder.endOfUpstream();
         encoder.awaitCompleted();
         encoder.close();
@@ -116,7 +121,11 @@ class EncodeGroupsStepTest {
         try (EncodeGroupsStep encoder = new EncodeGroupsStep(control, config, store, CONTEXT_FACTORY)) {
             encoder.start(Step.ORDER_SEND_DOWNSTREAM);
             Catcher catcher = new Catcher();
-            encoder.process(batch(new Group(1, 3), new Group(2, 3), new Group(3, 4)), catcher, cursorContext);
+            encoder.process(
+                    batch(new Group(1, 3), new Group(2, 3), new Group(3, 4)),
+                    catcher,
+                    cursorContext,
+                    EmptyMemoryTracker.INSTANCE);
             encoder.endOfUpstream();
             encoder.awaitCompleted();
         }

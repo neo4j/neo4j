@@ -121,6 +121,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.NullLog;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
@@ -212,8 +213,8 @@ class CheckerTestBase {
 
     IndexUpdater labelIndexWriter() {
         IndexingService indexingService = db.getDependencyResolver().resolveDependency(IndexingService.class);
-        final IndexDescriptor[] indexDescriptors =
-                schemaStorage.indexGetForSchema(() -> ANY_TOKEN_NODE_SCHEMA_DESCRIPTOR, storeCursors);
+        final IndexDescriptor[] indexDescriptors = schemaStorage.indexGetForSchema(
+                () -> ANY_TOKEN_NODE_SCHEMA_DESCRIPTOR, storeCursors, EmptyMemoryTracker.INSTANCE);
         // The Node Label Index should exist and be unique.
         assertThat(indexDescriptors.length).isEqualTo(1);
         IndexDescriptor nli = indexDescriptors[0];
@@ -262,7 +263,7 @@ class CheckerTestBase {
         CursorContextFactory contextFactory = new CursorContextFactory(PageCacheTracer.NULL, EMPTY_CONTEXT_SUPPLIER);
         IndexAccessors indexAccessors = new IndexAccessors(
                 indexProviders,
-                cursorContext ->
+                (cursorContext, memoryTracker) ->
                         asResourceIterator(allIndexes(neoStores, dependencies.resolveDependency(TokenHolders.class))
                                 .iterator()),
                 new IndexSamplingConfig(config),
@@ -272,7 +273,8 @@ class CheckerTestBase {
                 neoStores.getOpenOptions(),
                 new RecordStorageIndexingBehaviour(
                         neoStores.getNodeStore().getRecordsPerPage(),
-                        neoStores.getRelationshipStore().getRecordsPerPage()));
+                        neoStores.getRelationshipStore().getRecordsPerPage()),
+                EmptyMemoryTracker.INSTANCE);
         InconsistencyReport report =
                 new InconsistencyReport(new InconsistencyMessageLogger(NullLog.getInstance()), inconsistenciesSummary);
         monitor = mock(ConsistencyReporter.Monitor.class);
@@ -308,7 +310,7 @@ class CheckerTestBase {
     private Iterable<IndexDescriptor> allIndexes(NeoStores neoStores, TokenHolders tokenHolders) {
         try (var storeCursors = new CachedStoreCursors(neoStores, CursorContext.NULL_CONTEXT)) {
             return Iterators.asCollection(SchemaRuleAccess.getSchemaRuleAccess(neoStores.getSchemaStore(), tokenHolders)
-                    .indexesGetAllIgnoreMalformed(storeCursors));
+                    .indexesGetAllIgnoreMalformed(storeCursors, EmptyMemoryTracker.INSTANCE));
         }
     }
 
@@ -427,13 +429,14 @@ class CheckerTestBase {
     }
 
     int[] nodeLabels(NodeRecord node) {
-        return NodeLabelsField.get(node, neoStores.getNodeStore(), storeCursors);
+        return NodeLabelsField.get(node, neoStores.getNodeStore(), storeCursors, EmptyMemoryTracker.INSTANCE);
     }
 
     NodeRecord loadNode(long id) {
         NodeStore nodeStore = neoStores.getNodeStore();
         var cursor = storeCursors.readCursor(NODE_CURSOR);
-        return nodeStore.getRecordByCursor(id, nodeStore.newRecord(), RecordLoad.NORMAL, cursor);
+        return nodeStore.getRecordByCursor(
+                id, nodeStore.newRecord(), RecordLoad.NORMAL, cursor, EmptyMemoryTracker.INSTANCE);
     }
 
     long node(long id, long nextProp, long nextRel, int... labels) {

@@ -39,6 +39,7 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.util.IdGeneratorUpdatesWorkSync;
 
 public class DeleteDuplicateNodesStep extends ProcessorStep<long[]> {
@@ -66,25 +67,27 @@ public class DeleteDuplicateNodesStep extends ProcessorStep<long[]> {
     }
 
     @Override
-    protected void process(long[] batch, BatchSender sender, CursorContext cursorContext) throws Throwable {
+    protected void process(long[] batch, BatchSender sender, CursorContext cursorContext, MemoryTracker memoryTracker)
+            throws Throwable {
         NodeRecord nodeRecord = nodeStore.newRecord();
         PropertyRecord propertyRecord = propertyStore.newRecord();
         try (var storeCursors = new CachedStoreCursors(neoStores, cursorContext);
                 var idUpdates = idUpdatesWorkSync.newBatch(cursorContext)) {
             long batchPropertiesRemoved = 0;
             for (long duplicateNodeId : batch) {
-                nodeStore.getRecordByCursor(duplicateNodeId, nodeRecord, NORMAL, storeCursors.readCursor(NODE_CURSOR));
+                nodeStore.getRecordByCursor(
+                        duplicateNodeId, nodeRecord, NORMAL, storeCursors.readCursor(NODE_CURSOR), memoryTracker);
                 assert nodeRecord.inUse() : nodeRecord;
                 // Ensure heavy so that the dynamic label records gets loaded (and then deleted) too
-                nodeStore.ensureHeavy(nodeRecord, storeCursors);
+                nodeStore.ensureHeavy(nodeRecord, storeCursors, memoryTracker);
 
                 // Delete property records
                 long nextProp = nodeRecord.getNextProp();
                 while (!Record.NULL_REFERENCE.is(nextProp)) {
                     propertyStore.getRecordByCursor(
-                            nextProp, propertyRecord, NORMAL, storeCursors.readCursor(PROPERTY_CURSOR));
+                            nextProp, propertyRecord, NORMAL, storeCursors.readCursor(PROPERTY_CURSOR), memoryTracker);
                     assert propertyRecord.inUse() : propertyRecord + " for " + nodeRecord;
-                    propertyStore.ensureHeavy(propertyRecord, storeCursors);
+                    propertyStore.ensureHeavy(propertyRecord, storeCursors, memoryTracker);
                     batchPropertiesRemoved += propertyRecord.numberOfProperties();
                     nextProp = propertyRecord.getNextProp();
                     deletePropertyRecordIncludingValueRecords(propertyRecord);

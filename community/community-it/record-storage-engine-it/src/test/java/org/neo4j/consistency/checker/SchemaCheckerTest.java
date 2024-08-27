@@ -68,6 +68,7 @@ import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.kernel.impl.store.record.TokenRecord;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.storageengine.util.IdUpdateListener;
 
 class SchemaCheckerTest extends CheckerTestBase {
@@ -285,7 +286,11 @@ class SchemaCheckerTest extends CheckerTestBase {
                     index, IdUpdateListener.DIRECT, allocatorProvider, cursorContext, INSTANCE, storeCursors);
             SchemaRecord schemaRecord = schemaStore.newRecord();
             schemaStore.getRecordByCursor(
-                    index.getId(), schemaRecord, RecordLoad.NORMAL, storeCursors.readCursor(SCHEMA_CURSOR));
+                    index.getId(),
+                    schemaRecord,
+                    RecordLoad.NORMAL,
+                    storeCursors.readCursor(SCHEMA_CURSOR),
+                    EmptyMemoryTracker.INSTANCE);
             try (var storeCursor = storeCursors.writeCursor(PROPERTY_CURSOR)) {
                 propertyStore.updateRecord(
                         new PropertyRecord(schemaRecord.getNextProp()),
@@ -778,8 +783,8 @@ class SchemaCheckerTest extends CheckerTestBase {
             // (T)--->(D)---> (vandalized dynamic value chain)
             TOKEN record = store.newRecord();
             var cursor = store.getTokenStoreCursor(storeCursors);
-            store.getRecordByCursor(tokenId, record, RecordLoad.NORMAL, cursor);
-            store.ensureHeavy(record, storeCursors);
+            store.getRecordByCursor(tokenId, record, RecordLoad.NORMAL, cursor, EmptyMemoryTracker.INSTANCE);
+            store.ensureHeavy(record, storeCursors, EmptyMemoryTracker.INSTANCE);
             vandal.accept(record);
             DynamicStringStore nameStore = store.getNameStore();
             try (var storeCursor = store.getWriteDynamicTokenCursor(storeCursors)) {

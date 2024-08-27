@@ -56,6 +56,7 @@ import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.NullLog;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.ExtensionCallback;
@@ -125,7 +126,7 @@ class NodeCheckerIT {
         prepareContext();
         var nodeChecker = new NodeChecker(context, new IntObjectHashMap<>(), new IntObjectHashMap<>());
 
-        nodeChecker.check(LongRange.range(0, nodeId + 1), true, false);
+        nodeChecker.check(LongRange.range(0, nodeId + 1), true, false, EmptyMemoryTracker.INSTANCE);
 
         long pins = pageCacheTracer.pins();
         softly.assertThat(pins).isGreaterThan(0);
@@ -139,15 +140,16 @@ class NodeCheckerIT {
         try (var storeCursors = new CachedStoreCursors(neoStores, CursorContext.NULL_CONTEXT)) {
             Iterable<IndexDescriptor> indexDescriptors =
                     () -> SchemaRuleAccess.getSchemaRuleAccess(neoStores.getSchemaStore(), tokenHolders)
-                            .indexesGetAll(storeCursors);
+                            .indexesGetAll(storeCursors, EmptyMemoryTracker.INSTANCE);
             var indexAccessors = new IndexAccessors(
                     providerMap,
-                    cursorContext -> asResourceIterator(indexDescriptors.iterator()),
+                    (cursorContext, memoryTracker) -> asResourceIterator(indexDescriptors.iterator()),
                     new IndexSamplingConfig(config),
                     tokenHolders,
                     contextFactory,
                     storageEngine.getOpenOptions(),
-                    storageEngine.indexingBehaviour());
+                    storageEngine.indexingBehaviour(),
+                    EmptyMemoryTracker.INSTANCE);
             context = new CheckerContext(
                     neoStores,
                     indexAccessors,

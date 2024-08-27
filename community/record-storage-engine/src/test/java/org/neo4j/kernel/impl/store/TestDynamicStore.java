@@ -56,6 +56,7 @@ import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.transaction.log.LogTailLogVersionsMetadata;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
@@ -129,8 +130,12 @@ class TestDynamicStore {
 
         assertThrows(
                 RuntimeException.class,
-                () -> store.getArrayFor(store.getRecords(blockId, NORMAL, false, null), storeCursors));
-        assertThrows(RuntimeException.class, () -> store.getRecords(0, NORMAL, false, null));
+                () -> store.getArrayFor(
+                        store.getRecords(blockId, NORMAL, false, null, EmptyMemoryTracker.INSTANCE),
+                        storeCursors,
+                        EmptyMemoryTracker.INSTANCE));
+        assertThrows(
+                RuntimeException.class, () -> store.getRecords(0, NORMAL, false, null, EmptyMemoryTracker.INSTANCE));
     }
 
     @Test
@@ -165,15 +170,29 @@ class TestDynamicStore {
             float rIndex = random.nextFloat();
             if (rIndex < deleteIndex && currentCount > 0) {
                 long blockId = idsTaken.remove(random.nextInt(currentCount));
-                store.getRecords(blockId, NORMAL, false, storeCursors.readCursor(DYNAMIC_ARRAY_STORE_CURSOR));
+                store.getRecords(
+                        blockId,
+                        NORMAL,
+                        false,
+                        storeCursors.readCursor(DYNAMIC_ARRAY_STORE_CURSOR),
+                        EmptyMemoryTracker.INSTANCE);
                 byte[] bytes = (byte[]) store.getArrayFor(
                                 store.getRecords(
-                                        blockId, NORMAL, false, storeCursors.readCursor(DYNAMIC_ARRAY_STORE_CURSOR)),
-                                storeCursors)
+                                        blockId,
+                                        NORMAL,
+                                        false,
+                                        storeCursors.readCursor(DYNAMIC_ARRAY_STORE_CURSOR),
+                                        EmptyMemoryTracker.INSTANCE),
+                                storeCursors,
+                                EmptyMemoryTracker.INSTANCE)
                         .asObject();
                 validateData(bytes, byteData.remove(blockId));
-                Collection<DynamicRecord> records =
-                        store.getRecords(blockId, NORMAL, false, storeCursors.readCursor(DYNAMIC_ARRAY_STORE_CURSOR));
+                Collection<DynamicRecord> records = store.getRecords(
+                        blockId,
+                        NORMAL,
+                        false,
+                        storeCursors.readCursor(DYNAMIC_ARRAY_STORE_CURSOR),
+                        EmptyMemoryTracker.INSTANCE);
                 try (var storeCursor = storeCursors.writeCursor(DYNAMIC_ARRAY_STORE_CURSOR)) {
                     for (DynamicRecord record : records) {
                         record.setInUse(false);
@@ -239,15 +258,30 @@ class TestDynamicStore {
         DynamicArrayStore store = createDynamicArrayStore();
         byte[] emptyToWrite = createBytes(0);
         long blockId = create(store, emptyToWrite, storeCursors);
-        store.getRecords(blockId, NORMAL, false, storeCursors.readCursor(DYNAMIC_ARRAY_STORE_CURSOR));
+        store.getRecords(
+                blockId,
+                NORMAL,
+                false,
+                storeCursors.readCursor(DYNAMIC_ARRAY_STORE_CURSOR),
+                EmptyMemoryTracker.INSTANCE);
         byte[] bytes = (byte[]) store.getArrayFor(
-                        store.getRecords(blockId, NORMAL, false, storeCursors.readCursor(DYNAMIC_ARRAY_STORE_CURSOR)),
-                        storeCursors)
+                        store.getRecords(
+                                blockId,
+                                NORMAL,
+                                false,
+                                storeCursors.readCursor(DYNAMIC_ARRAY_STORE_CURSOR),
+                                EmptyMemoryTracker.INSTANCE),
+                        storeCursors,
+                        EmptyMemoryTracker.INSTANCE)
                 .asObject();
         assertEquals(0, bytes.length);
 
-        Collection<DynamicRecord> records =
-                store.getRecords(blockId, NORMAL, false, storeCursors.readCursor(DYNAMIC_ARRAY_STORE_CURSOR));
+        Collection<DynamicRecord> records = store.getRecords(
+                blockId,
+                NORMAL,
+                false,
+                storeCursors.readCursor(DYNAMIC_ARRAY_STORE_CURSOR),
+                EmptyMemoryTracker.INSTANCE);
         try (var storeCursor = storeCursors.writeCursor(DYNAMIC_ARRAY_STORE_CURSOR)) {
             for (DynamicRecord record : records) {
                 record.setInUse(false);
@@ -260,15 +294,30 @@ class TestDynamicStore {
     void testAddDeleteSequenceEmptyStringArray() throws IOException {
         DynamicArrayStore store = createDynamicArrayStore();
         long blockId = create(store, EMPTY_STRING_ARRAY, storeCursors);
-        store.getRecords(blockId, NORMAL, false, storeCursors.readCursor(DYNAMIC_ARRAY_STORE_CURSOR));
+        store.getRecords(
+                blockId,
+                NORMAL,
+                false,
+                storeCursors.readCursor(DYNAMIC_ARRAY_STORE_CURSOR),
+                EmptyMemoryTracker.INSTANCE);
         String[] readBack = (String[]) store.getArrayFor(
-                        store.getRecords(blockId, NORMAL, false, storeCursors.readCursor(DYNAMIC_ARRAY_STORE_CURSOR)),
-                        storeCursors)
+                        store.getRecords(
+                                blockId,
+                                NORMAL,
+                                false,
+                                storeCursors.readCursor(DYNAMIC_ARRAY_STORE_CURSOR),
+                                EmptyMemoryTracker.INSTANCE),
+                        storeCursors,
+                        EmptyMemoryTracker.INSTANCE)
                 .asObject();
         assertEquals(0, readBack.length);
 
-        Collection<DynamicRecord> records =
-                store.getRecords(blockId, NORMAL, false, storeCursors.readCursor(DYNAMIC_ARRAY_STORE_CURSOR));
+        Collection<DynamicRecord> records = store.getRecords(
+                blockId,
+                NORMAL,
+                false,
+                storeCursors.readCursor(DYNAMIC_ARRAY_STORE_CURSOR),
+                EmptyMemoryTracker.INSTANCE);
         try (var storeCursor = storeCursors.writeCursor(DYNAMIC_ARRAY_STORE_CURSOR)) {
             for (DynamicRecord record : records) {
                 record.setInUse(false);
@@ -298,7 +347,12 @@ class TestDynamicStore {
 
         var e = assertThrows(
                 RecordChainCycleDetectedException.class,
-                () -> store.getRecords(firstId, NORMAL, true, storeCursors.readCursor(DYNAMIC_ARRAY_STORE_CURSOR)));
+                () -> store.getRecords(
+                        firstId,
+                        NORMAL,
+                        true,
+                        storeCursors.readCursor(DYNAMIC_ARRAY_STORE_CURSOR),
+                        EmptyMemoryTracker.INSTANCE));
         String message = e.getMessage();
         assertThat(message).contains("" + firstId);
         assertThat(message).contains("" + secondLastRecord.getId());

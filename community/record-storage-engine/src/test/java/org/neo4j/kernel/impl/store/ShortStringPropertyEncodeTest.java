@@ -38,6 +38,7 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.transaction.log.LogTailLogVersionsMetadata;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
@@ -206,7 +207,7 @@ class ShortStringPropertyEncodeTest {
                 CursorContext.NULL_CONTEXT,
                 INSTANCE);
         assertEquals(0, block.getValueRecords().size());
-        Value readValue = block.getType().value(block, propertyStore, StoreCursors.NULL);
+        Value readValue = block.getType().value(block, propertyStore, StoreCursors.NULL, EmptyMemoryTracker.INSTANCE);
         assertEquals(expectedValue, readValue);
     }
 }

@@ -29,6 +29,7 @@ import org.neo4j.batchimport.api.input.InputChunk;
 public interface InputIterator extends Closeable {
     /**
      * Called by each thread that will be reading input data and the returned instances will be local to that thread.
+     *
      * @return an instance which is capable of receiving data in chunks when passed into {@link #next(InputChunk)}.
      */
     InputChunk newChunk();

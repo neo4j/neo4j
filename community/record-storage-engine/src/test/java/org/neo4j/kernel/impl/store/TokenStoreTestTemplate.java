@@ -60,6 +60,7 @@ import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.TokenRecord;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
@@ -142,7 +143,7 @@ abstract class TokenStoreTestTemplate<R extends TokenRecord> {
     @Test
     void forceGetRecordSkipInUseCheck() throws IOException {
         createEmptyPageZero();
-        R record = store.getRecordByCursor(7, store.newRecord(), FORCE, storeCursor());
+        R record = store.getRecordByCursor(7, store.newRecord(), FORCE, storeCursor(), EmptyMemoryTracker.INSTANCE);
         assertFalse(record.inUse(), "Record should not be in use");
     }
 
@@ -152,7 +153,8 @@ abstract class TokenStoreTestTemplate<R extends TokenRecord> {
 
         assertThrows(
                 InvalidRecordException.class,
-                () -> store.getRecordByCursor(7, store.newRecord(), NORMAL, storeCursor()));
+                () -> store.getRecordByCursor(
+                        7, store.newRecord(), NORMAL, storeCursor(), EmptyMemoryTracker.INSTANCE));
     }
 
     @Test
@@ -160,8 +162,9 @@ abstract class TokenStoreTestTemplate<R extends TokenRecord> {
         R tokenRecord = createInUseRecord(allocateNameRecords("MyToken"));
         storeToken(tokenRecord);
 
-        R readBack = store.getRecordByCursor(tokenRecord.getId(), store.newRecord(), NORMAL, storeCursor());
-        store.ensureHeavy(readBack, storeCursors);
+        R readBack = store.getRecordByCursor(
+                tokenRecord.getId(), store.newRecord(), NORMAL, storeCursor(), EmptyMemoryTracker.INSTANCE);
+        store.ensureHeavy(readBack, storeCursors, EmptyMemoryTracker.INSTANCE);
         assertThat(readBack).isEqualTo(tokenRecord);
         assertThat(tokenRecord.isInternal()).isEqualTo(false);
         assertThat(readBack.isInternal()).isEqualTo(false);
@@ -173,13 +176,14 @@ abstract class TokenStoreTestTemplate<R extends TokenRecord> {
         tokenRecord.setInternal(true);
         storeToken(tokenRecord);
 
-        R readBack = store.getRecordByCursor(tokenRecord.getId(), store.newRecord(), NORMAL, storeCursor());
-        store.ensureHeavy(readBack, storeCursors);
+        R readBack = store.getRecordByCursor(
+                tokenRecord.getId(), store.newRecord(), NORMAL, storeCursor(), EmptyMemoryTracker.INSTANCE);
+        store.ensureHeavy(readBack, storeCursors, EmptyMemoryTracker.INSTANCE);
         assertThat(readBack).isEqualTo(tokenRecord);
         assertThat(tokenRecord.isInternal()).isEqualTo(true);
         assertThat(readBack.isInternal()).isEqualTo(true);
 
-        NamedToken token = store.getToken(toIntExact(tokenRecord.getId()), storeCursors);
+        NamedToken token = store.getToken(toIntExact(tokenRecord.getId()), storeCursors, EmptyMemoryTracker.INSTANCE);
         assertThat(token.name()).isEqualTo("MyInternalToken");
         assertThat(token.id()).isIn(toIntExact(tokenRecord.getId()));
         assertTrue(token.isInternal());
@@ -198,14 +202,18 @@ abstract class TokenStoreTestTemplate<R extends TokenRecord> {
         storeToken(tokenC);
         storeToken(tokenD);
 
-        R readA = store.getRecordByCursor(tokenA.getId(), store.newRecord(), NORMAL, storeCursor());
-        R readB = store.getRecordByCursor(tokenB.getId(), store.newRecord(), NORMAL, storeCursor());
-        R readC = store.getRecordByCursor(tokenC.getId(), store.newRecord(), NORMAL, storeCursor());
-        R readD = store.getRecordByCursor(tokenD.getId(), store.newRecord(), NORMAL, storeCursor());
-        store.ensureHeavy(readA, storeCursors);
-        store.ensureHeavy(readB, storeCursors);
-        store.ensureHeavy(readC, storeCursors);
-        store.ensureHeavy(readD, storeCursors);
+        R readA = store.getRecordByCursor(
+                tokenA.getId(), store.newRecord(), NORMAL, storeCursor(), EmptyMemoryTracker.INSTANCE);
+        R readB = store.getRecordByCursor(
+                tokenB.getId(), store.newRecord(), NORMAL, storeCursor(), EmptyMemoryTracker.INSTANCE);
+        R readC = store.getRecordByCursor(
+                tokenC.getId(), store.newRecord(), NORMAL, storeCursor(), EmptyMemoryTracker.INSTANCE);
+        R readD = store.getRecordByCursor(
+                tokenD.getId(), store.newRecord(), NORMAL, storeCursor(), EmptyMemoryTracker.INSTANCE);
+        store.ensureHeavy(readA, storeCursors, EmptyMemoryTracker.INSTANCE);
+        store.ensureHeavy(readB, storeCursors, EmptyMemoryTracker.INSTANCE);
+        store.ensureHeavy(readC, storeCursors, EmptyMemoryTracker.INSTANCE);
+        store.ensureHeavy(readD, storeCursors, EmptyMemoryTracker.INSTANCE);
 
         assertThat(readA).isEqualTo(tokenA);
         assertThat(readA.isInternal()).isEqualTo(tokenA.isInternal());
@@ -216,7 +224,8 @@ abstract class TokenStoreTestTemplate<R extends TokenRecord> {
         assertThat(readD).isEqualTo(tokenD);
         assertThat(readD.isInternal()).isEqualTo(tokenD.isInternal());
 
-        Iterator<NamedToken> itr = store.getAllReadableTokens(storeCursors).iterator();
+        Iterator<NamedToken> itr = store.getAllReadableTokens(storeCursors, EmptyMemoryTracker.INSTANCE)
+                .iterator();
         assertTrue(itr.hasNext());
         assertThat(itr.next()).isEqualTo(new NamedToken("TokenA", 0));
         assertTrue(itr.hasNext());
@@ -226,7 +235,7 @@ abstract class TokenStoreTestTemplate<R extends TokenRecord> {
         assertTrue(itr.hasNext());
         assertThat(itr.next()).isEqualTo(new NamedToken("TokenD", 3));
 
-        itr = store.getTokens(storeCursors).iterator();
+        itr = store.getTokens(storeCursors, EmptyMemoryTracker.INSTANCE).iterator();
         assertTrue(itr.hasNext());
         assertThat(itr.next()).isEqualTo(new NamedToken("TokenA", 0));
         assertTrue(itr.hasNext());

@@ -26,6 +26,7 @@ import java.util.function.Supplier;
 import org.neo4j.batchimport.api.PropertyValueLookup;
 import org.neo4j.internal.batchimport.cache.idmapping.string.EncodingIdMapper;
 import org.neo4j.kernel.impl.store.PropertyStore;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 /**
@@ -51,15 +52,16 @@ class NodeInputIdPropertyLookup implements PropertyValueLookup {
         var propertyRecord = propertyStore.newRecord();
         return new Lookup() {
             @Override
-            public Object lookupProperty(long nodeId) {
-                propertyStore.getRecordByCursor(nodeId, propertyRecord, CHECK, cursors.readCursor(PROPERTY_CURSOR));
+            public Object lookupProperty(long nodeId, MemoryTracker memoryTracker) {
+                propertyStore.getRecordByCursor(
+                        nodeId, propertyRecord, CHECK, cursors.readCursor(PROPERTY_CURSOR), memoryTracker);
                 if (!propertyRecord.inUse()) {
                     return null;
                 }
                 return propertyRecord
                         .iterator()
                         .next()
-                        .newPropertyValue(propertyStore, cursors)
+                        .newPropertyValue(propertyStore, cursors, memoryTracker)
                         .asObject();
             }
 

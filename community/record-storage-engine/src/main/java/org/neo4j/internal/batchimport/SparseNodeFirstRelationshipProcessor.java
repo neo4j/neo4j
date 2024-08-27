@@ -21,6 +21,7 @@ package org.neo4j.internal.batchimport;
 
 import org.neo4j.internal.batchimport.cache.NodeRelationshipCache;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 /**
@@ -36,7 +37,7 @@ public class SparseNodeFirstRelationshipProcessor implements RecordProcessor<Nod
     }
 
     @Override
-    public boolean process(NodeRecord node, StoreCursors storeCursors) {
+    public boolean process(NodeRecord node, StoreCursors storeCursors, MemoryTracker memoryTracker) {
         long nodeId = node.getId();
         long firstRel = cache.getFirstRel(nodeId, NodeRelationshipCache.NO_GROUP_VISITOR);
         if (firstRel != -1) {

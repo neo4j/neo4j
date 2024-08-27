@@ -27,6 +27,7 @@ import org.neo4j.internal.batchimport.stats.StatsProvider;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
+import org.neo4j.memory.MemoryTracker;
 
 /**
  * After this step is {@link #done()} all BOTH ID fields in the rel group cache will contain,
@@ -46,7 +47,11 @@ public class CountGroupsStep extends ProcessorStep<RelationshipGroupRecord[]> {
     }
 
     @Override
-    protected void process(RelationshipGroupRecord[] batch, BatchSender sender, CursorContext cursorContext) {
+    protected void process(
+            RelationshipGroupRecord[] batch,
+            BatchSender sender,
+            CursorContext cursorContext,
+            MemoryTracker memoryTracker) {
         for (RelationshipGroupRecord record : batch) {
             if (record.inUse()) {
                 cache.incrementGroupCount(record.getOwningNode());

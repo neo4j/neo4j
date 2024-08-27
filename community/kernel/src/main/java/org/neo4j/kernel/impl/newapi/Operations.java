@@ -246,9 +246,9 @@ public class Operations implements Write, SchemaWrite, Upgrade {
     }
 
     public void initialize(CursorContext cursorContext) {
-        this.nodeCursor = cursors.allocateFullAccessNodeCursor(cursorContext);
+        this.nodeCursor = cursors.allocateFullAccessNodeCursor(cursorContext, memoryTracker);
         this.propertyCursor = cursors.allocateFullAccessPropertyCursor(cursorContext, memoryTracker);
-        this.relationshipCursor = cursors.allocateFullAccessRelationshipScanCursor(cursorContext);
+        this.relationshipCursor = cursors.allocateFullAccessRelationshipScanCursor(cursorContext, memoryTracker);
         this.restrictedNodeCursor = cursors.allocateNodeCursor(cursorContext, memoryTracker);
         this.restrictedPropertyCursor = cursors.allocatePropertyCursor(cursorContext, memoryTracker);
         this.restrictedRelationshipCursor =
@@ -2075,7 +2075,7 @@ public class Operations implements Write, SchemaWrite, Upgrade {
                         token);
             }
         } else {
-            try (var cursor = cursors.allocateFullAccessNodeCursor(ktx.cursorContext())) {
+            try (var cursor = cursors.allocateFullAccessNodeCursor(ktx.cursorContext(), memoryTracker)) {
                 kernelRead.allNodesScan(cursor);
                 constraintSemantics.validateNodeKeyConstraint(
                         new FilteringNodeCursorWrapper(cursor, CursorPredicates.hasLabel(schema.getLabelId())),
@@ -2089,7 +2089,8 @@ public class Operations implements Write, SchemaWrite, Upgrade {
     private void enforceRelKeyConstraint(SchemaDescriptor schema) throws KernelException {
         IndexDescriptor index = findUsableTokenIndex(RELATIONSHIP);
         if (index != IndexDescriptor.NO_INDEX) {
-            try (var cursor = cursors.allocateFullAccessRelationshipTypeIndexCursor(ktx.cursorContext())) {
+            try (var cursor =
+                    cursors.allocateFullAccessRelationshipTypeIndexCursor(ktx.cursorContext(), memoryTracker)) {
                 var session = kernelRead.tokenReadSession(index);
                 kernelRead.relationshipTypeScan(
                         session,
@@ -2105,7 +2106,7 @@ public class Operations implements Write, SchemaWrite, Upgrade {
                         token);
             }
         } else {
-            try (var cursor = cursors.allocateFullAccessRelationshipScanCursor(ktx.cursorContext())) {
+            try (var cursor = cursors.allocateFullAccessRelationshipScanCursor(ktx.cursorContext(), memoryTracker)) {
                 kernelRead.allRelationshipsScan(cursor);
                 constraintSemantics.validateRelKeyConstraint(
                         new FilteringRelationshipScanCursorWrapper(
@@ -2145,7 +2146,7 @@ public class Operations implements Write, SchemaWrite, Upgrade {
                 nodeValidatorWithIndex.validate(cursor, nodeCursor, propertyCursor, token);
             }
         } else {
-            try (var cursor = cursors.allocateFullAccessNodeCursor(ktx.cursorContext())) {
+            try (var cursor = cursors.allocateFullAccessNodeCursor(ktx.cursorContext(), memoryTracker)) {
                 kernelRead.allNodesScan(cursor);
                 nodeValidatorWithoutIndex.validate(
                         new FilteringNodeCursorWrapper(cursor, CursorPredicates.hasLabel(schema.getLabelId())),
@@ -2199,7 +2200,7 @@ public class Operations implements Write, SchemaWrite, Upgrade {
         var index = findUsableTokenIndex(RELATIONSHIP);
         if (index != IndexDescriptor.NO_INDEX) {
             try (var fullAccessIndexCursor =
-                    cursors.allocateFullAccessRelationshipTypeIndexCursor(ktx.cursorContext())) {
+                    cursors.allocateFullAccessRelationshipTypeIndexCursor(ktx.cursorContext(), memoryTracker)) {
                 var session = kernelRead.tokenReadSession(index);
                 kernelRead.relationshipTypeScan(
                         session,
@@ -2211,7 +2212,8 @@ public class Operations implements Write, SchemaWrite, Upgrade {
             }
         } else {
             // fallback to all relationship scan
-            try (var fullAccessCursor = cursors.allocateFullAccessRelationshipScanCursor(ktx.cursorContext())) {
+            try (var fullAccessCursor =
+                    cursors.allocateFullAccessRelationshipScanCursor(ktx.cursorContext(), memoryTracker)) {
                 kernelRead.allRelationshipsScan(fullAccessCursor);
                 relValidatorWithoutIndex.validate(
                         new FilteringRelationshipScanCursorWrapper(
@@ -2295,8 +2297,9 @@ public class Operations implements Write, SchemaWrite, Upgrade {
             throws KernelException {
         exclusiveLock(ResourceType.LABEL, new long[] {descriptor.endpointLabelId()});
         // TODO add check for usable index for possible speedup
-        try (var allRelationshipsCursor = cursors.allocateFullAccessRelationshipScanCursor(ktx.cursorContext());
-                var nodeCursor = cursors.allocateFullAccessNodeCursor(ktx.cursorContext())) {
+        try (var allRelationshipsCursor =
+                        cursors.allocateFullAccessRelationshipScanCursor(ktx.cursorContext(), memoryTracker);
+                var nodeCursor = cursors.allocateFullAccessNodeCursor(ktx.cursorContext(), memoryTracker)) {
             kernelRead.allRelationshipsScan(allRelationshipsCursor);
             constraintSemantics.validateRelationshipEndpointConstraint(
                     new FilteringRelationshipScanCursorWrapper(
@@ -2402,7 +2405,7 @@ public class Operations implements Write, SchemaWrite, Upgrade {
                 constraintSemantics.validateLabelCoexistenceConstraint(cursor, nodeCursor, descriptor, token);
             }
         } else {
-            try (var cursor = cursors.allocateFullAccessNodeCursor(ktx.cursorContext())) {
+            try (var cursor = cursors.allocateFullAccessNodeCursor(ktx.cursorContext(), ktx.memoryTracker())) {
                 kernelRead.allNodesScan(cursor);
                 constraintSemantics.validateLabelCoexistenceConstraint(
                         new FilteringNodeCursorWrapper(cursor, CursorPredicates.hasLabel(schema.getLabelId())),

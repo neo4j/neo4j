@@ -25,6 +25,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.db_format;
 import org.neo4j.configuration.Config;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.lock.ResourceLocker;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
@@ -44,14 +45,16 @@ public interface LockVerificationFactory {
             ReadableTransactionState txState,
             NeoStores neoStores,
             SchemaRuleAccess schemaRuleAccess,
-            StoreCursors storeCursors);
+            StoreCursors storeCursors,
+            MemoryTracker memoryTracker);
 
     RecordAccess.LoadMonitor createLockVerification(
             ResourceLocker locks,
             ReadableTransactionState txState,
             NeoStores neoStores,
             SchemaRuleAccess schemaRuleAccess,
-            StoreCursors storeCursors);
+            StoreCursors storeCursors,
+            MemoryTracker memoryTracker);
 
     class EmptyLockVerificationFactory implements LockVerificationFactory {
 
@@ -61,7 +64,8 @@ public interface LockVerificationFactory {
                 ReadableTransactionState txState,
                 NeoStores neoStores,
                 SchemaRuleAccess schemaRuleAccess,
-                StoreCursors storeCursors) {
+                StoreCursors storeCursors,
+                MemoryTracker memoryTracker) {
             return CommandLockVerification.IGNORE;
         }
 
@@ -71,7 +75,8 @@ public interface LockVerificationFactory {
                 ReadableTransactionState txState,
                 NeoStores neoStores,
                 SchemaRuleAccess schemaRuleAccess,
-                StoreCursors storeCursors) {
+                StoreCursors storeCursors,
+                MemoryTracker memoryTracker) {
             return RecordAccess.LoadMonitor.NULL_MONITOR;
         }
     }
@@ -83,8 +88,10 @@ public interface LockVerificationFactory {
                 ReadableTransactionState txState,
                 NeoStores neoStores,
                 SchemaRuleAccess schemaRuleAccess,
-                StoreCursors storeCursors) {
-            return new CommandLockVerification.RealChecker(locker, txState, neoStores, schemaRuleAccess, storeCursors);
+                StoreCursors storeCursors,
+                MemoryTracker memoryTracker) {
+            return new CommandLockVerification.RealChecker(
+                    locker, txState, neoStores, schemaRuleAccess, storeCursors, memoryTracker);
         }
 
         @Override
@@ -93,11 +100,13 @@ public interface LockVerificationFactory {
                 ReadableTransactionState txState,
                 NeoStores neoStores,
                 SchemaRuleAccess schemaRuleAccess,
-                StoreCursors storeCursors) {
+                StoreCursors storeCursors,
+                MemoryTracker memoryTracker) {
             return new LockVerificationMonitor(
                     locks,
                     txState,
-                    new LockVerificationMonitor.NeoStoresLoader(neoStores, schemaRuleAccess, storeCursors));
+                    new LockVerificationMonitor.NeoStoresLoader(
+                            neoStores, schemaRuleAccess, storeCursors, memoryTracker));
         }
     }
 }

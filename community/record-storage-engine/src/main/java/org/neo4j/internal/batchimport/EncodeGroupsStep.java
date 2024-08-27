@@ -28,6 +28,7 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
+import org.neo4j.memory.MemoryTracker;
 
 /**
  * Takes cached {@link RelationshipGroupRecord relationship groups} and sets real ids and
@@ -49,7 +50,11 @@ public class EncodeGroupsStep extends ProcessorStep<RelationshipGroupRecord[]> {
     }
 
     @Override
-    protected void process(RelationshipGroupRecord[] batch, BatchSender sender, CursorContext cursorContext) {
+    protected void process(
+            RelationshipGroupRecord[] batch,
+            BatchSender sender,
+            CursorContext cursorContext,
+            MemoryTracker memoryTracker) {
         int groupStartIndex = 0;
         for (int i = 0; i < batch.length; i++) {
             RelationshipGroupRecord group = batch[i];

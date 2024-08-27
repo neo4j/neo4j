@@ -72,6 +72,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.logging.NullLog;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.memory.MemoryPools;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.extension.Inject;
@@ -349,7 +350,8 @@ public class ConsistencyCheckServiceIntegrationTest {
         RelationshipRecord relationshipRecord = new RelationshipRecord(-1);
         var storeCursors = fixture.getStoreCursors();
         try (var cursor = storeCursors.readCursor(RELATIONSHIP_CURSOR)) {
-            relationshipStore.getRecordByCursor(4, relationshipRecord, RecordLoad.FORCE, cursor);
+            relationshipStore.getRecordByCursor(
+                    4, relationshipRecord, RecordLoad.FORCE, cursor, EmptyMemoryTracker.INSTANCE);
         }
         relationshipRecord.setInUse(false);
         try (var storeCursor = storeCursors.writeCursor(RELATIONSHIP_CURSOR)) {

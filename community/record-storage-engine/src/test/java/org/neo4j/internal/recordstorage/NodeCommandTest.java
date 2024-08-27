@@ -58,6 +58,7 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
 import org.neo4j.kernel.impl.transaction.log.LogTailLogVersionsMetadata;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.LatestVersions;
 import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
@@ -274,7 +275,7 @@ class NodeCommandTest {
     }
 
     private Set<Integer> labels(NodeRecord record) {
-        int[] rawLabels = parseLabelsField(record).get(nodeStore, StoreCursors.NULL);
+        int[] rawLabels = parseLabelsField(record).get(nodeStore, StoreCursors.NULL, EmptyMemoryTracker.INSTANCE);
         Set<Integer> labels = new HashSet<>(rawLabels.length);
         for (int label : rawLabels) {
             labels.add(label);

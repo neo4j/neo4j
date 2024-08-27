@@ -69,6 +69,7 @@ import org.neo4j.kernel.impl.transaction.log.LogTailLogVersionsMetadata;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.LogAssertions;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
@@ -161,7 +162,8 @@ class PropertyDeleterTest {
         for (int i = 0; i < 20; i++) {
             properties.add(encodedValue(i, random.nextValue()));
         }
-        DirectRecordAccessSet initialChanges = new DirectRecordAccessSet(neoStores, idGeneratorFactory, NULL_CONTEXT);
+        DirectRecordAccessSet initialChanges =
+                new DirectRecordAccessSet(neoStores, idGeneratorFactory, NULL_CONTEXT, EmptyMemoryTracker.INSTANCE);
         long firstPropId = createPropertyChain(propertyStore, node, properties, initialChanges.getPropertyRecords());
         node.setNextProp(firstPropId);
         initialChanges.commit(); // should update all the changed records directly into the store
@@ -180,7 +182,8 @@ class PropertyDeleterTest {
         }
 
         // when
-        DirectRecordAccessSet changes = new DirectRecordAccessSet(neoStores, idGeneratorFactory, NULL_CONTEXT);
+        DirectRecordAccessSet changes =
+                new DirectRecordAccessSet(neoStores, idGeneratorFactory, NULL_CONTEXT, EmptyMemoryTracker.INSTANCE);
         deleter.deletePropertyChain(node, changes.getPropertyRecords(), INSTANCE);
         changes.commit();
 
@@ -208,7 +211,8 @@ class PropertyDeleterTest {
         for (int i = 0; i < 20; i++) {
             properties.add(encodedValue(i, random.nextValue()));
         }
-        DirectRecordAccessSet initialChanges = new DirectRecordAccessSet(neoStores, idGeneratorFactory, NULL_CONTEXT);
+        DirectRecordAccessSet initialChanges =
+                new DirectRecordAccessSet(neoStores, idGeneratorFactory, NULL_CONTEXT, EmptyMemoryTracker.INSTANCE);
         long firstPropId = createPropertyChain(propertyStore, node, properties, initialChanges.getPropertyRecords());
         node.setNextProp(firstPropId);
         initialChanges.commit(); // should update all the changed records directly into the store
@@ -229,7 +233,8 @@ class PropertyDeleterTest {
         }
 
         // when
-        DirectRecordAccessSet changes = new DirectRecordAccessSet(neoStores, idGeneratorFactory, NULL_CONTEXT);
+        DirectRecordAccessSet changes =
+                new DirectRecordAccessSet(neoStores, idGeneratorFactory, NULL_CONTEXT, EmptyMemoryTracker.INSTANCE);
         deleter.deletePropertyChain(node, changes.getPropertyRecords(), INSTANCE);
         changes.commit();
 
@@ -250,7 +255,8 @@ class PropertyDeleterTest {
         node.setId(nodeStore.getIdGenerator().nextId(NULL_CONTEXT));
         List<PropertyBlock> properties =
                 Collections.singletonList(encodedValue(0, random.randomValues().nextAsciiTextValue(1000, 1000)));
-        DirectRecordAccessSet initialChanges = new DirectRecordAccessSet(neoStores, idGeneratorFactory, NULL_CONTEXT);
+        DirectRecordAccessSet initialChanges =
+                new DirectRecordAccessSet(neoStores, idGeneratorFactory, NULL_CONTEXT, EmptyMemoryTracker.INSTANCE);
         long firstPropId = createPropertyChain(propertyStore, node, properties, initialChanges.getPropertyRecords());
         node.setNextProp(firstPropId);
         initialChanges.commit(); // should update all the changed records directly into the store
@@ -261,7 +267,8 @@ class PropertyDeleterTest {
         createCycleIn(dynamicBlock);
 
         // when
-        DirectRecordAccessSet changes = new DirectRecordAccessSet(neoStores, idGeneratorFactory, NULL_CONTEXT);
+        DirectRecordAccessSet changes =
+                new DirectRecordAccessSet(neoStores, idGeneratorFactory, NULL_CONTEXT, EmptyMemoryTracker.INSTANCE);
         deleter.deletePropertyChain(node, changes.getPropertyRecords(), INSTANCE);
         changes.commit();
 
@@ -280,7 +287,8 @@ class PropertyDeleterTest {
         node.setId(nodeStore.getIdGenerator().nextId(NULL_CONTEXT));
         List<PropertyBlock> properties =
                 Collections.singletonList(encodedValue(0, random.randomValues().nextAsciiTextValue(1000, 1000)));
-        DirectRecordAccessSet initialChanges = new DirectRecordAccessSet(neoStores, idGeneratorFactory, NULL_CONTEXT);
+        DirectRecordAccessSet initialChanges =
+                new DirectRecordAccessSet(neoStores, idGeneratorFactory, NULL_CONTEXT, EmptyMemoryTracker.INSTANCE);
         long firstPropId = createPropertyChain(propertyStore, node, properties, initialChanges.getPropertyRecords());
         node.setNextProp(firstPropId);
         initialChanges.commit(); // should update all the changed records directly into the store
@@ -290,7 +298,8 @@ class PropertyDeleterTest {
         makeSomeUnusedIn(dynamicBlock);
 
         // when
-        DirectRecordAccessSet changes = new DirectRecordAccessSet(neoStores, idGeneratorFactory, NULL_CONTEXT);
+        DirectRecordAccessSet changes =
+                new DirectRecordAccessSet(neoStores, idGeneratorFactory, NULL_CONTEXT, EmptyMemoryTracker.INSTANCE);
         deleter.deletePropertyChain(node, changes.getPropertyRecords(), INSTANCE);
         changes.commit();
 
@@ -318,7 +327,8 @@ class PropertyDeleterTest {
         properties.add(encodedValue(2, bigValue1));
         properties.add(encodedValue(3, bigValue2));
         properties.add(encodedValue(4, value3));
-        DirectRecordAccessSet initialChanges = new DirectRecordAccessSet(neoStores, idGeneratorFactory, NULL_CONTEXT);
+        DirectRecordAccessSet initialChanges =
+                new DirectRecordAccessSet(neoStores, idGeneratorFactory, NULL_CONTEXT, EmptyMemoryTracker.INSTANCE);
         long firstPropId = createPropertyChain(propertyStore, node, properties, initialChanges.getPropertyRecords());
         node.setNextProp(firstPropId);
         initialChanges.commit(); // should update all the changed records directly into the store
@@ -328,7 +338,8 @@ class PropertyDeleterTest {
         createCycleIn(random.among(blocksWithDynamicValueRecords));
 
         // when
-        DirectRecordAccessSet changes = new DirectRecordAccessSet(neoStores, idGeneratorFactory, NULL_CONTEXT);
+        DirectRecordAccessSet changes =
+                new DirectRecordAccessSet(neoStores, idGeneratorFactory, NULL_CONTEXT, EmptyMemoryTracker.INSTANCE);
         deleter.deletePropertyChain(node, changes.getPropertyRecords(), INSTANCE);
         changes.commit();
 
@@ -356,8 +367,8 @@ class PropertyDeleterTest {
         try (PageCursor cursor = propertyStore.openPageCursorForReading(propId, NULL_CONTEXT)) {
             PropertyRecord record = propertyStore.newRecord();
             while (!Record.NO_NEXT_PROPERTY.is(propId)) {
-                propertyStore.getRecordByCursor(propId, record, NORMAL, cursor);
-                propertyStore.ensureHeavy(record, storeCursors);
+                propertyStore.getRecordByCursor(propId, record, NORMAL, cursor, EmptyMemoryTracker.INSTANCE);
+                propertyStore.ensureHeavy(record, storeCursors, EmptyMemoryTracker.INSTANCE);
                 for (PropertyBlock block : record) {
                     if (block.getValueRecords().size() > 1) {
                         blocks.add(block);
@@ -370,7 +381,7 @@ class PropertyDeleterTest {
     }
 
     private void makeSomeUnusedIn(PropertyBlock dynamicBlock) {
-        propertyStore.ensureHeavy(dynamicBlock, storeCursors);
+        propertyStore.ensureHeavy(dynamicBlock, storeCursors, EmptyMemoryTracker.INSTANCE);
         DynamicRecord valueRecord = dynamicBlock
                 .getValueRecords()
                 .get(random.nextInt(dynamicBlock.getValueRecords().size()));
@@ -391,7 +402,7 @@ class PropertyDeleterTest {
     }
 
     private void createCycleIn(PropertyBlock dynamicBlock) {
-        propertyStore.ensureHeavy(dynamicBlock, storeCursors);
+        propertyStore.ensureHeavy(dynamicBlock, storeCursors, EmptyMemoryTracker.INSTANCE);
         int cycleEndIndex = random.nextInt(1, dynamicBlock.getValueRecords().size());
         int cycleStartIndex = random.nextInt(cycleEndIndex);
         DynamicRecord cycleEndRecord = dynamicBlock.getValueRecords().get(cycleEndIndex);
@@ -435,7 +446,7 @@ class PropertyDeleterTest {
 
     private void readValuesFromPropertyRecord(PropertyRecord record, List<Value> values) {
         for (PropertyBlock block : record) {
-            values.add(block.getType().value(block, propertyStore, storeCursors));
+            values.add(block.getType().value(block, propertyStore, storeCursors, EmptyMemoryTracker.INSTANCE));
         }
     }
 
@@ -449,7 +460,8 @@ class PropertyDeleterTest {
 
     private PropertyRecord getRecord(PropertyStore propertyStore, long id, RecordLoad load) {
         try (PageCursor cursor = propertyStore.openPageCursorForReading(id, NULL_CONTEXT)) {
-            return propertyStore.getRecordByCursor(id, propertyStore.newRecord(), load, cursor);
+            return propertyStore.getRecordByCursor(
+                    id, propertyStore.newRecord(), load, cursor, EmptyMemoryTracker.INSTANCE);
         }
     }
 }

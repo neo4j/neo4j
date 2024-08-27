@@ -67,7 +67,7 @@ public class StubCursorFactory implements CursorFactory {
     }
 
     @Override
-    public NodeCursor allocateFullAccessNodeCursor(CursorContext cursorContext) {
+    public NodeCursor allocateFullAccessNodeCursor(CursorContext cursorContext, MemoryTracker memoryTracker) {
         return poll(fullNodeCursors);
     }
 
@@ -78,7 +78,8 @@ public class StubCursorFactory implements CursorFactory {
     }
 
     @Override
-    public RelationshipScanCursor allocateFullAccessRelationshipScanCursor(CursorContext cursorContext) {
+    public RelationshipScanCursor allocateFullAccessRelationshipScanCursor(
+            CursorContext cursorContext, MemoryTracker memoryTracker) {
         return poll(fullRelationshipScanCursors);
     }
 
@@ -89,7 +90,8 @@ public class StubCursorFactory implements CursorFactory {
     }
 
     @Override
-    public RelationshipTraversalCursor allocateFullAccessRelationshipTraversalCursor(CursorContext cursorContext) {
+    public RelationshipTraversalCursor allocateFullAccessRelationshipTraversalCursor(
+            CursorContext cursorContext, MemoryTracker memoryTracker) {
         return poll(fullRelationshipTraversalCursors);
     }
 
@@ -143,7 +145,8 @@ public class StubCursorFactory implements CursorFactory {
     }
 
     @Override
-    public RelationshipTypeIndexCursor allocateFullAccessRelationshipTypeIndexCursor(CursorContext cursorContext) {
+    public RelationshipTypeIndexCursor allocateFullAccessRelationshipTypeIndexCursor(
+            CursorContext cursorContext, MemoryTracker memoryTracker) {
         return poll(fullRelationshipTypeIndexCursors);
     }
 

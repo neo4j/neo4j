@@ -35,6 +35,7 @@ import org.neo4j.io.IOUtils;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 /**
@@ -71,12 +72,12 @@ public class RecordProcessorStep<T extends AbstractBaseRecord> extends Processor
     }
 
     @Override
-    protected void process(T[] batch, BatchSender sender, CursorContext cursorContext) {
+    protected void process(T[] batch, BatchSender sender, CursorContext cursorContext, MemoryTracker memoryTracker) {
         RecordProcessor<T> processor = threadProcessors.get();
         try (var storeCursor = storeCursorsCreator.apply(cursorContext)) {
             for (T item : batch) {
                 if (item != null && item.inUse()) {
-                    if (!processor.process(item, storeCursor)) {
+                    if (!processor.process(item, storeCursor, memoryTracker)) {
                         // No change for this record
                         item.setInUse(false);
                     }

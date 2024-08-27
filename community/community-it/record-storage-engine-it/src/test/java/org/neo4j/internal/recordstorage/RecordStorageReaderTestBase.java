@@ -48,6 +48,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceLocker;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.storageengine.api.CommandCreationContext;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
@@ -163,8 +164,8 @@ public abstract class RecordStorageReaderTestBase {
 
     protected void deleteRelationship(long relationshipId) throws Exception {
         TxState txState = new TxState();
-        try (RecordRelationshipScanCursor cursor =
-                commitReader.allocateRelationshipScanCursor(NULL_CONTEXT, storageCursors)) {
+        try (RecordRelationshipScanCursor cursor = commitReader.allocateRelationshipScanCursor(
+                NULL_CONTEXT, storageCursors, EmptyMemoryTracker.INSTANCE)) {
             cursor.single(relationshipId);
             assertTrue(cursor.next());
             txState.relationshipDoDelete(relationshipId, cursor.type(), cursor.getFirstNode(), cursor.getSecondNode());

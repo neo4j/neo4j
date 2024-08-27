@@ -281,9 +281,10 @@ public class DelegatingStorageEngineFactory implements StorageEngineFactory {
             Config config,
             DatabaseLayout databaseLayout,
             CursorContextFactory contextFactory,
-            LogTailLogVersionsMetadata logTailMetadata) {
+            LogTailLogVersionsMetadata logTailMetadata,
+            MemoryTracker memoryTracker) {
         return delegate.load44SchemaRules(
-                fs, pageCache, pageCacheTracer, config, databaseLayout, contextFactory, logTailMetadata);
+                fs, pageCache, pageCacheTracer, config, databaseLayout, contextFactory, logTailMetadata, memoryTracker);
     }
 
     @Override
@@ -295,9 +296,18 @@ public class DelegatingStorageEngineFactory implements StorageEngineFactory {
             DatabaseLayout databaseLayout,
             boolean lenient,
             Function<org.neo4j.internal.schema.SchemaRule, org.neo4j.internal.schema.SchemaRule> schemaRuleMigration,
-            CursorContextFactory contextFactory) {
+            CursorContextFactory contextFactory,
+            MemoryTracker memoryTracker) {
         return delegate.loadSchemaRules(
-                fs, pageCache, pageCacheTracer, config, databaseLayout, lenient, schemaRuleMigration, contextFactory);
+                fs,
+                pageCache,
+                pageCacheTracer,
+                config,
+                databaseLayout,
+                lenient,
+                schemaRuleMigration,
+                contextFactory,
+                memoryTracker);
     }
 
     @Override
@@ -308,9 +318,10 @@ public class DelegatingStorageEngineFactory implements StorageEngineFactory {
             PageCache pageCache,
             PageCacheTracer pageCacheTracer,
             boolean lenient,
-            CursorContextFactory contextFactory) {
+            CursorContextFactory contextFactory,
+            MemoryTracker memoryTracker) {
         return delegate.loadReadOnlyTokens(
-                fs, databaseLayout, config, pageCache, pageCacheTracer, lenient, contextFactory);
+                fs, databaseLayout, config, pageCache, pageCacheTracer, lenient, contextFactory, memoryTracker);
     }
 
     @Override
@@ -480,7 +491,8 @@ public class DelegatingStorageEngineFactory implements StorageEngineFactory {
             ConsistencyFlags flags,
             CursorContextFactory contextFactory,
             PageCacheTracer pageCacheTracer,
-            LogTailMetadata logTailMetadata)
+            LogTailMetadata logTailMetadata,
+            MemoryTracker memoryTracker)
             throws ConsistencyCheckIncompleteException {
         delegate.consistencyCheck(
                 fileSystem,
@@ -498,7 +510,8 @@ public class DelegatingStorageEngineFactory implements StorageEngineFactory {
                 flags,
                 contextFactory,
                 pageCacheTracer,
-                logTailMetadata);
+                logTailMetadata,
+                memoryTracker);
     }
 
     @Override

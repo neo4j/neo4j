@@ -162,22 +162,28 @@ object SimpleInternalExpressionEvaluator {
   private val NULL_CURSOR_FACTORY = new CursorFactory {
     override def allocateNodeCursor(cursorContext: CursorContext, memoryTracker: MemoryTracker): NodeCursor = null
 
-    override def allocateFullAccessNodeCursor(cursorContext: CursorContext): NodeCursor = null
+    override def allocateFullAccessNodeCursor(cursorContext: CursorContext, memoryTracker: MemoryTracker): NodeCursor =
+      null
 
     override def allocateRelationshipScanCursor(
       cursorContext: CursorContext,
       memoryTracker: MemoryTracker
     ): RelationshipScanCursor = null
 
-    override def allocateFullAccessRelationshipScanCursor(cursorContext: CursorContext): RelationshipScanCursor = null
+    override def allocateFullAccessRelationshipScanCursor(
+      cursorContext: CursorContext,
+      memoryTracker: MemoryTracker
+    ): RelationshipScanCursor = null
 
     override def allocateRelationshipTraversalCursor(
       cursorContext: CursorContext,
       memoryTracker: MemoryTracker
     ): RelationshipTraversalCursor = null
 
-    override def allocateFullAccessRelationshipTraversalCursor(cursorContext: CursorContext)
-      : RelationshipTraversalCursor = null
+    override def allocateFullAccessRelationshipTraversalCursor(
+      cursorContext: CursorContext,
+      memoryTracker: MemoryTracker
+    ): RelationshipTraversalCursor = null
 
     override def allocatePropertyCursor(cursorContext: CursorContext, memoryTracker: MemoryTracker): PropertyCursor =
       null
@@ -219,7 +225,9 @@ object SimpleInternalExpressionEvaluator {
       memoryTracker: MemoryTracker
     ): RelationshipTypeIndexCursor = null
 
-    override def allocateFullAccessRelationshipTypeIndexCursor(cursorContext: CursorContext)
-      : RelationshipTypeIndexCursor = null
+    override def allocateFullAccessRelationshipTypeIndexCursor(
+      cursorContext: CursorContext,
+      memoryTracker: MemoryTracker
+    ): RelationshipTypeIndexCursor = null
   }
 }

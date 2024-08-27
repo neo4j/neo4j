@@ -76,51 +76,57 @@ public class SchemaStorage implements SchemaRuleAccess {
     }
 
     @Override
-    public Iterable<SchemaRule> getAll(StoreCursors storeCursors) {
-        return streamAllSchemaRules(false, storeCursors)::iterator;
+    public Iterable<SchemaRule> getAll(StoreCursors storeCursors, MemoryTracker memoryTracker) {
+        return streamAllSchemaRules(false, storeCursors, memoryTracker)::iterator;
     }
 
     @Override
-    public Iterable<SchemaRule> getAllIgnoreMalformed(StoreCursors storeCursors) {
-        return streamAllSchemaRules(true, storeCursors)::iterator;
+    public Iterable<SchemaRule> getAllIgnoreMalformed(StoreCursors storeCursors, MemoryTracker memoryTracker) {
+        return streamAllSchemaRules(true, storeCursors, memoryTracker)::iterator;
     }
 
     @Override
-    public SchemaRule loadSingleSchemaRule(long ruleId, StoreCursors storeCursors) throws MalformedSchemaRuleException {
-        SchemaRecord record = loadSchemaRecord(ruleId, storeCursors);
-        return readSchemaRule(record, storeCursors);
+    public SchemaRule loadSingleSchemaRule(long ruleId, StoreCursors storeCursors, MemoryTracker memoryTracker)
+            throws MalformedSchemaRuleException {
+        SchemaRecord record = loadSchemaRecord(ruleId, storeCursors, memoryTracker);
+        return readSchemaRule(record, storeCursors, memoryTracker);
     }
 
     @Override
-    public Iterator<IndexDescriptor> indexesGetAll(StoreCursors storeCursors) {
-        return indexRules(streamAllSchemaRules(false, storeCursors)).iterator();
+    public Iterator<IndexDescriptor> indexesGetAll(StoreCursors storeCursors, MemoryTracker memoryTracker) {
+        return indexRules(streamAllSchemaRules(false, storeCursors, memoryTracker))
+                .iterator();
     }
 
     @Override
-    public Iterator<IndexDescriptor> indexesGetAllIgnoreMalformed(StoreCursors storeCursors) {
-        return indexRules(streamAllSchemaRules(true, storeCursors)).iterator();
+    public Iterator<IndexDescriptor> indexesGetAllIgnoreMalformed(
+            StoreCursors storeCursors, MemoryTracker memoryTracker) {
+        return indexRules(streamAllSchemaRules(true, storeCursors, memoryTracker))
+                .iterator();
     }
 
     @Override
-    public IndexDescriptor[] indexGetForSchema(SchemaDescriptorSupplier supplier, StoreCursors storeCursors) {
+    public IndexDescriptor[] indexGetForSchema(
+            SchemaDescriptorSupplier supplier, StoreCursors storeCursors, MemoryTracker memoryTracker) {
         SchemaDescriptor schema = supplier.schema();
-        return indexRules(streamAllSchemaRules(false, storeCursors))
+        return indexRules(streamAllSchemaRules(false, storeCursors, memoryTracker))
                 .filter(rule -> rule.schema().equals(schema))
                 .toArray(IndexDescriptor[]::new);
     }
 
     @Override
-    public IndexDescriptor indexGetForName(String indexName, StoreCursors storeCursors) {
-        return indexRules(streamAllSchemaRules(false, storeCursors))
+    public IndexDescriptor indexGetForName(String indexName, StoreCursors storeCursors, MemoryTracker memoryTracker) {
+        return indexRules(streamAllSchemaRules(false, storeCursors, memoryTracker))
                 .filter(idx -> idx.getName().equals(indexName))
                 .findAny()
                 .orElse(null);
     }
 
     @Override
-    public ConstraintDescriptor constraintsGetSingle(ConstraintDescriptor descriptor, StoreCursors storeCursors)
+    public ConstraintDescriptor constraintsGetSingle(
+            ConstraintDescriptor descriptor, StoreCursors storeCursors, MemoryTracker memoryTracker)
             throws SchemaRuleNotFoundException, DuplicateSchemaRuleException {
-        ConstraintDescriptor[] rules = constraintRules(streamAllSchemaRules(false, storeCursors))
+        ConstraintDescriptor[] rules = constraintRules(streamAllSchemaRules(false, storeCursors, memoryTracker))
                 .filter(descriptor::equals)
                 .toArray(ConstraintDescriptor[]::new);
         if (rules.length == 0) {
@@ -133,8 +139,10 @@ public class SchemaStorage implements SchemaRuleAccess {
     }
 
     @Override
-    public Iterator<ConstraintDescriptor> constraintsGetAllIgnoreMalformed(StoreCursors storeCursors) {
-        return constraintRules(streamAllSchemaRules(true, storeCursors)).iterator();
+    public Iterator<ConstraintDescriptor> constraintsGetAllIgnoreMalformed(
+            StoreCursors storeCursors, MemoryTracker memoryTracker) {
+        return constraintRules(streamAllSchemaRules(true, storeCursors, memoryTracker))
+                .iterator();
     }
 
     @Override
@@ -233,7 +241,7 @@ public class SchemaStorage implements SchemaRuleAccess {
             MemoryTracker memoryTracker,
             StoreCursors storeCursors)
             throws KernelException {
-        var schemaRecord = loadSchemaRecord(ruleId, storeCursors);
+        var schemaRecord = loadSchemaRecord(ruleId, storeCursors, memoryTracker);
         var propertyStore = schemaStore.propertyStore();
 
         // Delete property records
@@ -243,8 +251,9 @@ public class SchemaStorage implements SchemaRuleAccess {
             while (nextProp != NO_NEXT_PROPERTY.longValue()) {
                 try {
                     // Ensure all linked dynamic records are also loaded to property record by ensureHeavy
-                    propertyStore.getRecordByCursor(nextProp, propRecord, RecordLoad.NORMAL, propertyCursor);
-                    propertyStore.ensureHeavy(propRecord, storeCursors);
+                    propertyStore.getRecordByCursor(
+                            nextProp, propRecord, RecordLoad.NORMAL, propertyCursor, memoryTracker);
+                    propertyStore.ensureHeavy(propRecord, storeCursors, memoryTracker);
                 } catch (InvalidRecordException e) {
                     throw new MalformedSchemaRuleException(
                             "Cannot read schema rule because it is referencing a property record (id " + nextProp
@@ -304,21 +313,31 @@ public class SchemaStorage implements SchemaRuleAccess {
         propertyStore.updateRecord(record, idUpdateListener, propertyCursor, cursorContext, storeCursors);
     }
 
-    private SchemaRecord loadSchemaRecord(long ruleId, StoreCursors storeCursors) {
+    private SchemaRecord loadSchemaRecord(long ruleId, StoreCursors storeCursors, MemoryTracker memoryTracker) {
         return schemaStore.getRecordByCursor(
-                ruleId, schemaStore.newRecord(), RecordLoad.NORMAL, storeCursors.readCursor(SCHEMA_CURSOR));
+                ruleId,
+                schemaStore.newRecord(),
+                RecordLoad.NORMAL,
+                storeCursors.readCursor(SCHEMA_CURSOR),
+                memoryTracker);
     }
 
     @VisibleForTesting
-    Stream<SchemaRule> streamAllSchemaRules(boolean ignoreMalformed, StoreCursors storeCursors) {
+    Stream<SchemaRule> streamAllSchemaRules(
+            boolean ignoreMalformed, StoreCursors storeCursors, MemoryTracker memoryTracker) {
         long startId = schemaStore.getNumberOfReservedLowIds();
         long endId = schemaStore.getIdGenerator().getHighId();
 
         return LongStream.range(startId, endId)
                 .mapToObj(id -> schemaStore.getRecordByCursor(
-                        id, schemaStore.newRecord(), RecordLoad.LENIENT_ALWAYS, storeCursors.readCursor(SCHEMA_CURSOR)))
+                        id,
+                        schemaStore.newRecord(),
+                        RecordLoad.LENIENT_ALWAYS,
+                        storeCursors.readCursor(SCHEMA_CURSOR),
+                        memoryTracker))
                 .filter(AbstractBaseRecord::inUse)
-                .flatMap(record -> readSchemaRuleThrowingRuntimeException(record, ignoreMalformed, storeCursors));
+                .flatMap(record ->
+                        readSchemaRuleThrowingRuntimeException(record, ignoreMalformed, storeCursors, memoryTracker));
     }
 
     private static Stream<IndexDescriptor> indexRules(Stream<SchemaRule> stream) {
@@ -330,9 +349,9 @@ public class SchemaStorage implements SchemaRuleAccess {
     }
 
     private Stream<SchemaRule> readSchemaRuleThrowingRuntimeException(
-            SchemaRecord record, boolean ignoreMalformed, StoreCursors storeCursors) {
+            SchemaRecord record, boolean ignoreMalformed, StoreCursors storeCursors, MemoryTracker memoryTracker) {
         try {
-            return Stream.of(readSchemaRule(record, storeCursors));
+            return Stream.of(readSchemaRule(record, storeCursors, memoryTracker));
         } catch (MalformedSchemaRuleException e) {
             // In case we've raced with a record deletion, ignore malformed records that no longer appear to be in use.
             if (!ignoreMalformed && schemaStore.isInUse(record.getId(), storeCursors.readCursor(SCHEMA_CURSOR))) {
@@ -342,8 +361,9 @@ public class SchemaStorage implements SchemaRuleAccess {
         return Stream.empty();
     }
 
-    private SchemaRule readSchemaRule(SchemaRecord record, StoreCursors storeCursors)
+    private SchemaRule readSchemaRule(SchemaRecord record, StoreCursors storeCursors, MemoryTracker memoryTracker)
             throws MalformedSchemaRuleException {
-        return SchemaStore.readSchemaRule(record, schemaStore.propertyStore(), tokenHolders, storeCursors);
+        return SchemaStore.readSchemaRule(
+                record, schemaStore.propertyStore(), tokenHolders, storeCursors, memoryTracker);
     }
 }

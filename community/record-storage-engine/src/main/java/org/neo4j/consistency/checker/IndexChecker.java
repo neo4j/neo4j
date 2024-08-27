@@ -46,6 +46,7 @@ import org.neo4j.kernel.impl.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
@@ -120,7 +121,8 @@ public abstract class IndexChecker<Record extends PrimitiveRecord> implements Ch
     }
 
     @Override
-    public void check(LongRange entityIdRange, boolean firstRange, boolean lastRange) throws Exception {
+    public void check(LongRange entityIdRange, boolean firstRange, boolean lastRange, MemoryTracker memoryTracker)
+            throws Exception {
         // While more indexes
         //   Scan through one or more indexes (as sequentially as possible) and cache the entity ids + hash of the
         // indexed value in one bit-set for each index
@@ -306,7 +308,8 @@ public abstract class IndexChecker<Record extends PrimitiveRecord> implements Ch
         CheckerContext noReportingContext = context.withoutReporting();
         try (var cursorContext = context.contextFactory.create(CONSISTENCY_INDEX_ENTITY_CHECK_TAG);
                 var storeCursors = new CachedStoreCursors(context.neoStores, cursorContext);
-                RecordReader<Record> entityReader = new RecordReader<>(store(), true, cursorContext);
+                RecordReader<Record> entityReader =
+                        new RecordReader<>(store(), true, cursorContext, context.memoryTracker);
                 RecordReader<DynamicRecord> entityTokenReader = additionalEntityTokenReader(cursorContext);
                 SafePropertyChainReader propertyReader =
                         new SafePropertyChainReader(noReportingContext, cursorContext);

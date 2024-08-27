@@ -26,6 +26,7 @@ import static org.mockito.Mockito.mock;
 import org.junit.jupiter.api.Test;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.Record;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.util.BitBuffer;
 
@@ -108,7 +109,7 @@ public class HasLabelSubscriberTest {
     }
 
     private HasLabelSubscriber labelSubscriberFor(int label) {
-        return new HasLabelSubscriber(label, labelStore, StoreCursors.NULL);
+        return new HasLabelSubscriber(label, labelStore, StoreCursors.NULL, EmptyMemoryTracker.INSTANCE);
     }
 
     private static DynamicRecord record(int numberOfLabels) {

@@ -26,6 +26,7 @@ import static org.neo4j.internal.helpers.collection.MapUtil.map;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
 import org.junit.jupiter.api.Test;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.storageengine.api.StorageNodeCursor;
 import org.neo4j.storageengine.api.StorageRelationshipScanCursor;
 
@@ -65,15 +66,16 @@ class RecordStorageReaderNodeAndRelTest extends RecordStorageReaderTestBase {
     }
 
     private boolean nodeExists(long id) {
-        try (StorageNodeCursor node = storageReader.allocateNodeCursor(NULL_CONTEXT, storageCursors)) {
+        try (StorageNodeCursor node =
+                storageReader.allocateNodeCursor(NULL_CONTEXT, storageCursors, EmptyMemoryTracker.INSTANCE)) {
             node.single(id);
             return node.next();
         }
     }
 
     private boolean relationshipExists(long id) {
-        try (StorageRelationshipScanCursor relationship =
-                storageReader.allocateRelationshipScanCursor(NULL_CONTEXT, storageCursors)) {
+        try (StorageRelationshipScanCursor relationship = storageReader.allocateRelationshipScanCursor(
+                NULL_CONTEXT, storageCursors, EmptyMemoryTracker.INSTANCE)) {
             relationship.single(id);
             return relationship.next();
         }

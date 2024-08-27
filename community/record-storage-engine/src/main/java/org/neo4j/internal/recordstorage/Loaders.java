@@ -336,15 +336,15 @@ public class Loaders {
         }
 
         @Override
-        public void ensureHeavy(R record, StoreCursors storeCursors) {
-            store.ensureHeavy(record, storeCursors);
+        public void ensureHeavy(R record, StoreCursors storeCursors, MemoryTracker memoryTracker) {
+            store.ensureHeavy(record, storeCursors, memoryTracker);
         }
 
         @Override
         public R load(long key, A additionalData, RecordLoad load, MemoryTracker memoryTracker) {
             memoryTracker.allocateHeap(recordHeapSize);
             R record = store.newRecord();
-            store.getRecordByCursor(key, record, load, getPageCursor());
+            store.getRecordByCursor(key, record, load, getPageCursor(), memoryTracker);
             return record;
         }
 

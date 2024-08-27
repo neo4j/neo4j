@@ -1737,14 +1737,22 @@ class TransactionRecordStateTest {
         NodeStore nodeStore = neoStores.getNodeStore();
         RecordStore<RelationshipGroupRecord> relationshipGroupStore = neoStores.getRelationshipGroupStore();
         NodeRecord node = nodeStore.getRecordByCursor(
-                nodeId, nodeStore.newRecord(), NORMAL, storeCursors.readCursor(NODE_CURSOR));
+                nodeId,
+                nodeStore.newRecord(),
+                NORMAL,
+                storeCursors.readCursor(NODE_CURSOR),
+                EmptyMemoryTracker.INSTANCE);
         assertTrue(node.isDense(), "Node should be dense, is " + node);
         long groupId = node.getNextRel();
         int cursor = 0;
         List<RelationshipGroupRecord> seen = new ArrayList<>();
         while (groupId != Record.NO_NEXT_RELATIONSHIP.intValue()) {
             RelationshipGroupRecord group = relationshipGroupStore.getRecordByCursor(
-                    groupId, relationshipGroupStore.newRecord(), NORMAL, storeCursors.readCursor(GROUP_CURSOR));
+                    groupId,
+                    relationshipGroupStore.newRecord(),
+                    NORMAL,
+                    storeCursors.readCursor(GROUP_CURSOR),
+                    EmptyMemoryTracker.INSTANCE);
             seen.add(group);
             assertEquals(types[cursor++], group.getType(), "Invalid type, seen groups so far " + seen);
             groupId = group.getNext();
@@ -1767,7 +1775,8 @@ class TransactionRecordStateTest {
         OnlineIndexUpdates onlineIndexUpdates = new OnlineIndexUpdates(
                 neoStores.getNodeStore(),
                 schemaCache,
-                new PropertyPhysicalToLogicalConverter(neoStores.getPropertyStore(), storeCursors),
+                new PropertyPhysicalToLogicalConverter(
+                        neoStores.getPropertyStore(), storeCursors, EmptyMemoryTracker.INSTANCE),
                 reader,
                 NULL_CONTEXT,
                 INSTANCE,
@@ -1919,7 +1928,8 @@ class TransactionRecordStateTest {
                 id,
                 allocatorProvider.allocator(StoreType.NODE_LABEL).nextRecord(NULL_CONTEXT),
                 FORCE,
-                storeCursors.readCursor(DYNAMIC_LABEL_STORE_CURSOR));
+                storeCursors.readCursor(DYNAMIC_LABEL_STORE_CURSOR),
+                EmptyMemoryTracker.INSTANCE);
         assertEquals(inUse, record.inUse());
     }
 

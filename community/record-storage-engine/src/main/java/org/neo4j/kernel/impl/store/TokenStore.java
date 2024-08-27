@@ -102,32 +102,34 @@ public abstract class TokenStore<RECORD extends TokenRecord> extends CommonAbstr
         return nameStore;
     }
 
-    public List<NamedToken> getTokens(StoreCursors storeCursors) {
-        return readAllTokens(false, storeCursors);
+    public List<NamedToken> getTokens(StoreCursors storeCursors, MemoryTracker memoryTracker) {
+        return readAllTokens(false, storeCursors, memoryTracker);
     }
 
     /**
-     * Same as {@link #getTokens(StoreCursors)}, except tokens that cannot be read due to inconsistencies will just be ignored,
-     * while {@link #getTokens(StoreCursors)} would throw an exception in such cases.
+     * Same as {@link #getTokens(StoreCursors, MemoryTracker)}, except tokens that cannot be read due to inconsistencies will just be ignored,
+     * while {@link #getTokens(StoreCursors, MemoryTracker)} would throw an exception in such cases.
      * @return All tokens that could be read without any apparent problems.
      */
-    public List<NamedToken> getAllReadableTokens(StoreCursors storeCursors) {
-        return readAllTokens(true, storeCursors);
+    public List<NamedToken> getAllReadableTokens(StoreCursors storeCursors, MemoryTracker memoryTracker) {
+        return readAllTokens(true, storeCursors, memoryTracker);
     }
 
-    private List<NamedToken> readAllTokens(boolean ignoreInconsistentTokens, StoreCursors storeCursors) {
+    private List<NamedToken> readAllTokens(
+            boolean ignoreInconsistentTokens, StoreCursors storeCursors, MemoryTracker memoryTracker) {
         long highId = getIdGenerator().getHighId();
         ArrayList<NamedToken> records = new ArrayList<>(Math.toIntExact(highId));
         RECORD record = newRecord();
         var cursor = getTokenStoreCursor(storeCursors);
         for (int i = 0; i < highId; i++) {
-            if (!getRecordByCursor(i, record, RecordLoad.LENIENT_CHECK, cursor).inUse()) {
+            if (!getRecordByCursor(i, record, RecordLoad.LENIENT_CHECK, cursor, memoryTracker)
+                    .inUse()) {
                 continue;
             }
 
             if (record.getNameId() != Record.RESERVED.intValue()) {
                 try {
-                    String name = getStringFor(record, storeCursors);
+                    String name = getStringFor(record, storeCursors, memoryTracker);
                     records.add(new NamedToken(name, i, record.isInternal()));
                 } catch (Exception e) {
                     if (!ignoreInconsistentTokens) {
@@ -139,9 +141,10 @@ public abstract class TokenStore<RECORD extends TokenRecord> extends CommonAbstr
         return records;
     }
 
-    public NamedToken getToken(int id, StoreCursors storeCursors) {
-        RECORD record = getRecordByCursor(id, newRecord(), NORMAL, getTokenStoreCursor(storeCursors));
-        return new NamedToken(getStringFor(record, storeCursors), record.getIntId(), record.isInternal());
+    public NamedToken getToken(int id, StoreCursors storeCursors, MemoryTracker memoryTracker) {
+        RECORD record = getRecordByCursor(id, newRecord(), NORMAL, getTokenStoreCursor(storeCursors), memoryTracker);
+        return new NamedToken(
+                getStringFor(record, storeCursors, memoryTracker), record.getIntId(), record.isInternal());
     }
 
     public Collection<DynamicRecord> allocateNameRecords(
@@ -172,7 +175,7 @@ public abstract class TokenStore<RECORD extends TokenRecord> extends CommonAbstr
     }
 
     @Override
-    public void ensureHeavy(RECORD record, StoreCursors storeCursors) {
+    public void ensureHeavy(RECORD record, StoreCursors storeCursors, MemoryTracker memoryTracker) {
         if (!record.isLight()) {
             return;
         }
@@ -180,8 +183,8 @@ public abstract class TokenStore<RECORD extends TokenRecord> extends CommonAbstr
         // Guard for cycles in the name chain, since this might be called by the consistency checker on an inconsistent
         // store.
         // This will throw an exception if there's a cycle, and we'll just ignore those tokens at this point.
-        record.addNameRecords(
-                nameStore.getRecords(record.getNameId(), NORMAL, true, getDynamicTokenCursor(storeCursors)));
+        record.addNameRecords(nameStore.getRecords(
+                record.getNameId(), NORMAL, true, getDynamicTokenCursor(storeCursors), memoryTracker));
     }
 
     public PageCursor getTokenStoreCursor(StoreCursors storeCursors) {
@@ -196,8 +199,8 @@ public abstract class TokenStore<RECORD extends TokenRecord> extends CommonAbstr
         return storeCursors.writeCursor(dynamicCursorType);
     }
 
-    public String getStringFor(RECORD nameRecord, StoreCursors storeCursors) {
-        ensureHeavy(nameRecord, storeCursors);
+    public String getStringFor(RECORD nameRecord, StoreCursors storeCursors, MemoryTracker memoryTracker) {
+        ensureHeavy(nameRecord, storeCursors, memoryTracker);
         int recordToFind = nameRecord.getNameId();
         Iterator<DynamicRecord> records = nameRecord.getNameRecords().iterator();
         Collection<DynamicRecord> relevantRecords = new ArrayList<>();
@@ -210,7 +213,7 @@ public abstract class TokenStore<RECORD extends TokenRecord> extends CommonAbstr
             }
         }
         return decodeString(nameStore
-                .readFullByteArray(relevantRecords, PropertyType.STRING, storeCursors)
+                .readFullByteArray(relevantRecords, PropertyType.STRING, storeCursors, memoryTracker)
                 .data());
     }
 }

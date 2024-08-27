@@ -21,9 +21,11 @@ package org.neo4j.consistency.checker;
 
 import org.neo4j.consistency.checking.ConsistencyFlags;
 import org.neo4j.internal.helpers.collection.LongRange;
+import org.neo4j.memory.MemoryTracker;
 
 interface Checker {
-    void check(LongRange nodeIdRange, boolean firstRange, boolean lastRange) throws Exception;
+    void check(LongRange nodeIdRange, boolean firstRange, boolean lastRange, MemoryTracker memoryTracker)
+            throws Exception;
 
     boolean shouldBeChecked(ConsistencyFlags flags);
 

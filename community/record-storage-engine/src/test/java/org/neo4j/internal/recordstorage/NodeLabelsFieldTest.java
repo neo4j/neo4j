@@ -74,6 +74,7 @@ import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.log.LogTailLogVersionsMetadata;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.util.IdUpdateListener;
 import org.neo4j.test.RandomSupport;
@@ -252,7 +253,10 @@ class NodeLabelsFieldTest {
         Assertions.assertArrayEquals(
                 new int[] {labelId1, labelId2, labelId3},
                 DynamicNodeLabels.getDynamicLabelsArray(
-                        changedDynamicRecords, nodeStore.getDynamicLabelStore(), StoreCursors.NULL));
+                        changedDynamicRecords,
+                        nodeStore.getDynamicLabelStore(),
+                        StoreCursors.NULL,
+                        EmptyMemoryTracker.INSTANCE));
     }
 
     @Test
@@ -282,7 +286,7 @@ class NodeLabelsFieldTest {
 
         // WHEN
         long owner = DynamicNodeLabels.getDynamicLabelsArrayOwner(
-                initialRecords, nodeStore.getDynamicLabelStore(), StoreCursors.NULL);
+                initialRecords, nodeStore.getDynamicLabelStore(), StoreCursors.NULL, EmptyMemoryTracker.INSTANCE);
 
         // THEN
         assertEquals(nodeId, owner);
@@ -333,7 +337,10 @@ class NodeLabelsFieldTest {
 
         // WHEN
         long owner = DynamicNodeLabels.getDynamicLabelsArrayOwner(
-                changedDynamicRecords, nodeStore.getDynamicLabelStore(), StoreCursors.NULL);
+                changedDynamicRecords,
+                nodeStore.getDynamicLabelStore(),
+                StoreCursors.NULL,
+                EmptyMemoryTracker.INSTANCE);
 
         // THEN
         assertEquals(nodeId, owner);
@@ -516,7 +523,8 @@ class NodeLabelsFieldTest {
     void shouldNotFailWhenDynamicRecordsBecomeUnused() {
         // GIVEN
         NodeRecord node = nodeRecordWithDynamicLabels(nodeStore, storeCursors, fourByteInts(100));
-        assertThat(NodeLabelsField.get(node, nodeStore, storeCursors)).isNotEmpty();
+        assertThat(NodeLabelsField.get(node, nodeStore, storeCursors, EmptyMemoryTracker.INSTANCE))
+                .isNotEmpty();
 
         // WHEN
         for (DynamicRecord record : node.getDynamicLabelRecords()) {
@@ -524,7 +532,8 @@ class NodeLabelsFieldTest {
         }
 
         // THEN
-        assertThat(NodeLabelsField.get(node, nodeStore, storeCursors)).isEmpty();
+        assertThat(NodeLabelsField.get(node, nodeStore, storeCursors, EmptyMemoryTracker.INSTANCE))
+                .isEmpty();
     }
 
     /*
@@ -561,7 +570,7 @@ class NodeLabelsFieldTest {
 
         // THEN
         NodeLabels labels = NodeLabelsField.parseLabelsField(node);
-        int[] readLabelIds = labels.get(nodeStore, StoreCursors.NULL);
+        int[] readLabelIds = labels.get(nodeStore, StoreCursors.NULL, EmptyMemoryTracker.INSTANCE);
         for (int labelId : readLabelIds) {
             assertTrue(key.remove(labelId), "Found an unexpected label " + labelId);
         }

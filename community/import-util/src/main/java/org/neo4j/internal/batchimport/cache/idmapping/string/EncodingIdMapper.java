@@ -332,7 +332,7 @@ public class EncodingIdMapper implements IdMapper {
         }
         // Strict check needed?
         if (nodeId != ID_NOT_FOUND && strictNodeCheck) {
-            var referenceInputId = lookup.lookupProperty(nodeId);
+            var referenceInputId = lookup.lookupProperty(nodeId, memoryTracker);
             if (!inputId.equals(referenceInputId)) {
                 nodeId = ID_NOT_FOUND;
             }
@@ -556,7 +556,7 @@ public class EncodingIdMapper implements IdMapper {
                     if (isCollision(eId)) {
                         // Store this collision input id for matching later in get()
                         long collisionIndex = nextLocalCollisionId++;
-                        Object id = lookup.lookupProperty(nodeId);
+                        Object id = lookup.lookupProperty(nodeId, memoryTracker);
                         long eIdWithoutCollisionBit = clearCollision(eId);
                         assert eIdMatches(eIdWithoutCollisionBit, id);
                         long offset = collisionValues.add(id);

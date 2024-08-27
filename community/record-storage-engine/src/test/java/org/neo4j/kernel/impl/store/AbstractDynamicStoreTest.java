@@ -58,6 +58,7 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
@@ -149,8 +150,9 @@ class AbstractDynamicStoreTest {
             }
 
             try (var storeCursor = store.openPageCursorForReading(0, NULL_CONTEXT)) {
-                Iterator<DynamicRecord> records =
-                        store.getRecords(1, NORMAL, false, storeCursor).iterator();
+                Iterator<DynamicRecord> records = store.getRecords(
+                                1, NORMAL, false, storeCursor, EmptyMemoryTracker.INSTANCE)
+                        .iterator();
                 assertTrue(records.hasNext());
                 assertEquals(first, records.next());
                 assertTrue(records.hasNext());
@@ -180,8 +182,9 @@ class AbstractDynamicStoreTest {
             }
 
             try (var storeCursor = store.openPageCursorForReading(0, NULL_CONTEXT)) {
-                Iterator<DynamicRecord> records =
-                        store.getRecords(1, FORCE, false, storeCursor).iterator();
+                Iterator<DynamicRecord> records = store.getRecords(
+                                1, FORCE, false, storeCursor, EmptyMemoryTracker.INSTANCE)
+                        .iterator();
                 assertTrue(records.hasNext());
                 assertEquals(first, records.next());
                 assertTrue(records.hasNext());

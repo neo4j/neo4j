@@ -42,6 +42,7 @@ import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.log.LogTailLogVersionsMetadata;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
@@ -104,7 +105,7 @@ class TestGrowingFileMemoryMapping {
             var pageCursor = storeCursors.readCursor(NODE_CURSOR);
             for (int i = 0; i < iterations; i++) {
                 record.setId(startingId + i);
-                nodeStore.getRecordByCursor(i, record, NORMAL, pageCursor);
+                nodeStore.getRecordByCursor(i, record, NORMAL, pageCursor, EmptyMemoryTracker.INSTANCE);
                 assertTrue(record.inUse(), "record[" + i + "] should be in use");
                 assertThat(record.getNextRel())
                         .as("record[" + i + "] should have nextRelId of " + i)

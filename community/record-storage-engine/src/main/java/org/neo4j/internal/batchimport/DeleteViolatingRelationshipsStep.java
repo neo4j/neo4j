@@ -37,6 +37,8 @@ import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.memory.EmptyMemoryTracker;
+import org.neo4j.memory.MemoryTracker;
 
 public class DeleteViolatingRelationshipsStep extends LonelyProcessingStep {
     private static final String DELETE_VIOLATING_IMPORT_STEP_TAG = "deleteViolatingRelationshipsImportStep";
@@ -74,20 +76,22 @@ public class DeleteViolatingRelationshipsStep extends LonelyProcessingStep {
         RelationshipRecord relRecord = relStore.newRecord();
         PropertyRecord propertyRecord = propertyStore.newRecord();
         try (var cursorContext = contextFactory.create(DELETE_VIOLATING_IMPORT_STEP_TAG);
-                var storeCursors = new CachedStoreCursors(neoStores, cursorContext)) {
+                var storeCursors = new CachedStoreCursors(neoStores, cursorContext);
+                MemoryTracker memoryTracker = EmptyMemoryTracker.INSTANCE) {
             while (relIds.hasNext()) {
                 long violatingRelId = relIds.next();
+
                 relStore.getRecordByCursor(
-                        violatingRelId, relRecord, NORMAL, storeCursors.readCursor(RELATIONSHIP_CURSOR));
+                        violatingRelId, relRecord, NORMAL, storeCursors.readCursor(RELATIONSHIP_CURSOR), memoryTracker);
                 assert relRecord.inUse() : relRecord;
 
                 // Delete property records
                 long nextProp = relRecord.getNextProp();
                 while (!Record.NULL_REFERENCE.is(nextProp)) {
                     propertyStore.getRecordByCursor(
-                            nextProp, propertyRecord, NORMAL, storeCursors.readCursor(PROPERTY_CURSOR));
+                            nextProp, propertyRecord, NORMAL, storeCursors.readCursor(PROPERTY_CURSOR), memoryTracker);
                     assert propertyRecord.inUse() : propertyRecord + " for " + relRecord;
-                    propertyStore.ensureHeavy(propertyRecord, storeCursors);
+                    propertyStore.ensureHeavy(propertyRecord, storeCursors, memoryTracker);
                     propertiesRemoved += propertyRecord.numberOfProperties();
                     nextProp = propertyRecord.getNextProp();
                     deletePropertyRecordIncludingValueRecords(propertyRecord);

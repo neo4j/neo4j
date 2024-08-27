@@ -55,6 +55,7 @@ import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.storemigration.SchemaStoreMigration.SchemaStoreMigrator;
 import org.neo4j.kernel.impl.storemigration.legacy.SchemaStore44Reader;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.SchemaRule44;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.migration.SchemaRuleMigrationAccess;
@@ -203,7 +204,8 @@ public class SchemaStore44Migration {
             PageCacheTracer pageCacheTracer,
             CursorContextFactory contextFactory,
             IdGeneratorFactory srcIdGeneratorFactory,
-            StoreFactory srcFactory)
+            StoreFactory srcFactory,
+            MemoryTracker memoryTracker)
             throws IOException {
         try (NeoStores srcStore = srcFactory.openNeoStores(
                         StoreType.SCHEMA,
@@ -220,7 +222,7 @@ public class SchemaStore44Migration {
                             cursorContext)
                     .kernelVersion();
 
-            var srcTokensHolders = createTokenHolders(srcStore, srcCursors);
+            var srcTokensHolders = createTokenHolders(srcStore, srcCursors, memoryTracker);
             try (var schemaStore44Reader = getSchemaStore44Reader(
                     fileSystem,
                     directoryLayout,
@@ -238,7 +240,8 @@ public class SchemaStore44Migration {
                         srcCursors,
                         forceBtreeIndexesToRange,
                         shouldCreateNewSchemaStore,
-                        srcTokensHolders);
+                        srcTokensHolders,
+                        memoryTracker);
             }
         }
     }
@@ -248,8 +251,9 @@ public class SchemaStore44Migration {
             StoreCursors srcCursors,
             boolean forceBtreeIndexesToRange,
             boolean shouldCreateNewSchemaStore,
-            TokenHolders srcTokenHolders) {
-        var all = schemaStore44Reader.loadAllSchemaRules(srcCursors);
+            TokenHolders srcTokenHolders,
+            MemoryTracker memoryTracker) {
+        var all = schemaStore44Reader.loadAllSchemaRules(srcCursors, memoryTracker);
 
         SchemaStore44MigrationUtil.SchemaInfo44 schemaInfo44 =
                 SchemaStore44MigrationUtil.extractRuleInfo(shouldCreateNewSchemaStore, all);

@@ -25,6 +25,7 @@ import org.neo4j.internal.batchimport.staging.ProcessorStep;
 import org.neo4j.internal.batchimport.staging.StageControl;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.memory.MemoryTracker;
 
 public class WriteUpdatesStep extends ProcessorStep<GenerateIndexUpdatesStep<?>.GeneratedIndexUpdates> {
     public WriteUpdatesStep(StageControl control, Configuration config, CursorContextFactory contextFactory) {
@@ -35,7 +36,8 @@ public class WriteUpdatesStep extends ProcessorStep<GenerateIndexUpdatesStep<?>.
     protected void process(
             GenerateIndexUpdatesStep<?>.GeneratedIndexUpdates updates,
             BatchSender sender,
-            CursorContext cursorContext) {
+            CursorContext cursorContext,
+            MemoryTracker memoryTracker) {
         updates.completeBatch();
     }
 }

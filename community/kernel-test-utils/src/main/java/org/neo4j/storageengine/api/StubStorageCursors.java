@@ -342,7 +342,8 @@ public class StubStorageCursors implements StorageReader {
     }
 
     @Override
-    public StorageNodeCursor allocateNodeCursor(CursorContext cursorContext, StoreCursors storeCursors) {
+    public StorageNodeCursor allocateNodeCursor(
+            CursorContext cursorContext, StoreCursors storeCursors, MemoryTracker memoryTracker) {
         return new StubStorageNodeCursor();
     }
 
@@ -354,13 +355,13 @@ public class StubStorageCursors implements StorageReader {
 
     @Override
     public StorageRelationshipTraversalCursor allocateRelationshipTraversalCursor(
-            CursorContext cursorContext, StoreCursors storeCursors) {
+            CursorContext cursorContext, StoreCursors storeCursors, MemoryTracker memoryTracker) {
         return new StubStorageRelationshipTraversalCursor();
     }
 
     @Override
     public StorageRelationshipScanCursor allocateRelationshipScanCursor(
-            CursorContext cursorContext, StoreCursors storeCursors) {
+            CursorContext cursorContext, StoreCursors storeCursors, MemoryTracker memoryTracker) {
         return new StubStorageRelationshipScanCursor();
     }
 

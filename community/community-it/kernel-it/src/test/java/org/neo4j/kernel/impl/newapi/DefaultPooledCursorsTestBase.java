@@ -98,11 +98,11 @@ public abstract class DefaultPooledCursorsTestBase<G extends KernelAPIReadTestSu
 
     @Test
     void shouldReuseFullAccessNodeCursor() {
-        NodeCursor c1 = cursors.allocateFullAccessNodeCursor(NULL_CONTEXT);
+        NodeCursor c1 = cursors.allocateFullAccessNodeCursor(NULL_CONTEXT, EmptyMemoryTracker.INSTANCE);
         read.singleNode(startNode, c1);
         c1.close();
 
-        NodeCursor c2 = cursors.allocateFullAccessNodeCursor(NULL_CONTEXT);
+        NodeCursor c2 = cursors.allocateFullAccessNodeCursor(NULL_CONTEXT, EmptyMemoryTracker.INSTANCE);
         assertThat(c1).isSameAs(c2);
         c2.close();
     }
@@ -120,11 +120,13 @@ public abstract class DefaultPooledCursorsTestBase<G extends KernelAPIReadTestSu
 
     @Test
     void shouldReuseFullAccessRelationshipScanCursor() {
-        RelationshipScanCursor c1 = cursors.allocateFullAccessRelationshipScanCursor(NULL_CONTEXT);
+        RelationshipScanCursor c1 =
+                cursors.allocateFullAccessRelationshipScanCursor(NULL_CONTEXT, EmptyMemoryTracker.INSTANCE);
         read.singleRelationship(relationship, c1);
         c1.close();
 
-        RelationshipScanCursor c2 = cursors.allocateFullAccessRelationshipScanCursor(NULL_CONTEXT);
+        RelationshipScanCursor c2 =
+                cursors.allocateFullAccessRelationshipScanCursor(NULL_CONTEXT, EmptyMemoryTracker.INSTANCE);
         assertThat(c1).isSameAs(c2);
         c2.close();
     }
@@ -149,7 +151,8 @@ public abstract class DefaultPooledCursorsTestBase<G extends KernelAPIReadTestSu
     @Test
     void shouldReuseFullAccessRelationshipTraversalCursor() {
         NodeCursor node = cursors.allocateNodeCursor(NULL_CONTEXT);
-        RelationshipTraversalCursor c1 = cursors.allocateFullAccessRelationshipTraversalCursor(NULL_CONTEXT);
+        RelationshipTraversalCursor c1 =
+                cursors.allocateFullAccessRelationshipTraversalCursor(NULL_CONTEXT, EmptyMemoryTracker.INSTANCE);
 
         read.singleNode(startNode, node);
         node.next();
@@ -158,7 +161,8 @@ public abstract class DefaultPooledCursorsTestBase<G extends KernelAPIReadTestSu
         node.close();
         c1.close();
 
-        RelationshipTraversalCursor c2 = cursors.allocateFullAccessRelationshipTraversalCursor(NULL_CONTEXT);
+        RelationshipTraversalCursor c2 =
+                cursors.allocateFullAccessRelationshipTraversalCursor(NULL_CONTEXT, EmptyMemoryTracker.INSTANCE);
         assertThat(c1).isSameAs(c2);
         c2.close();
     }

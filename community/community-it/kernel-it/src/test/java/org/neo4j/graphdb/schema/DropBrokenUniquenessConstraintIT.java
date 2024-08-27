@@ -28,7 +28,6 @@ import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.impl.store.DynamicAllocatorProviders.nonTransactionalAllocator;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
-import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import org.assertj.core.util.Streams;
 import org.junit.jupiter.api.AfterEach;
@@ -50,6 +49,7 @@ import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.format.FormatFamily;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.util.IdUpdateListener;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
@@ -111,7 +111,10 @@ class DropBrokenUniquenessConstraintIT {
         // when intentionally breaking the schema by setting the backing index rule to unused
         SchemaRuleAccess schemaRules = storageEngine.testAccessSchemaRules();
         try (var storeCursors = storageEngine.createStorageCursors(NULL_CONTEXT)) {
-            deleteSchemaRule(schemaRules.indexGetForName(backingIndexName, storeCursors), NULL_CONTEXT, storeCursors);
+            deleteSchemaRule(
+                    schemaRules.indexGetForName(backingIndexName, storeCursors, EmptyMemoryTracker.INSTANCE),
+                    NULL_CONTEXT,
+                    storeCursors);
         }
         // At this point the SchemaCache doesn't know about this change so we have to reload it
         storageEngine.loadSchemaCache();
@@ -158,7 +161,7 @@ class DropBrokenUniquenessConstraintIT {
         SchemaRuleAccess schemaRules = storageEngine.testAccessSchemaRules();
         try (var storeCursors = storageEngine.createStorageCursors(NULL_CONTEXT)) {
             schemaRules
-                    .constraintsGetAllIgnoreMalformed(storeCursors)
+                    .constraintsGetAllIgnoreMalformed(storeCursors, EmptyMemoryTracker.INSTANCE)
                     .forEachRemaining(rule -> deleteSchemaRule(rule, NULL_CONTEXT, storeCursors));
         }
 
@@ -184,7 +187,7 @@ class DropBrokenUniquenessConstraintIT {
         SchemaRuleAccess schemaRules = storageEngine.testAccessSchemaRules();
         try (var storeCursors = storageEngine.createStorageCursors(NULL_CONTEXT)) {
             schemaRules
-                    .constraintsGetAllIgnoreMalformed(storeCursors)
+                    .constraintsGetAllIgnoreMalformed(storeCursors, EmptyMemoryTracker.INSTANCE)
                     .forEachRemaining(rule -> deleteSchemaRule(rule, NULL_CONTEXT, storeCursors));
             writeSchemaRulesWithoutConstraint(
                     schemaRules, nonTransactionalAllocator(storageEngine.testAccessNeoStores()), storeCursors);
@@ -202,7 +205,11 @@ class DropBrokenUniquenessConstraintIT {
 
     private void deleteSchemaRule(SchemaRule rule, CursorContext cursorContext, StoreCursors storeCursors) {
         var record = schemaStore.getRecordByCursor(
-                rule.getId(), schemaStore.newRecord(), NORMAL, storeCursors.readCursor(SCHEMA_CURSOR));
+                rule.getId(),
+                schemaStore.newRecord(),
+                NORMAL,
+                storeCursors.readCursor(SCHEMA_CURSOR),
+                EmptyMemoryTracker.INSTANCE);
         if (record.inUse()) {
             long nextProp = record.getNextProp();
             record.setInUse(false);
@@ -214,7 +221,7 @@ class DropBrokenUniquenessConstraintIT {
             var propertyReadCursor = storeCursors.readCursor(PROPERTY_CURSOR);
             while (nextProp != NO_NEXT_PROPERTY.longValue()
                     && propertyStore
-                            .getRecordByCursor(nextProp, props, NORMAL, propertyReadCursor)
+                            .getRecordByCursor(nextProp, props, NORMAL, propertyReadCursor, EmptyMemoryTracker.INSTANCE)
                             .inUse()) {
                 nextProp = props.getNextProp();
                 props.setInUse(false);
@@ -228,9 +235,14 @@ class DropBrokenUniquenessConstraintIT {
     private static void writeSchemaRulesWithoutConstraint(
             SchemaRuleAccess schemaRules, DynamicAllocatorProvider allocatorProvider, StoreCursors storeCursors)
             throws KernelException {
-        for (IndexDescriptor rule : loop(schemaRules.indexesGetAll(storeCursors))) {
+        for (IndexDescriptor rule : loop(schemaRules.indexesGetAll(storeCursors, EmptyMemoryTracker.INSTANCE))) {
             schemaRules.writeSchemaRule(
-                    rule, IdUpdateListener.DIRECT, allocatorProvider, NULL_CONTEXT, INSTANCE, storeCursors);
+                    rule,
+                    IdUpdateListener.DIRECT,
+                    allocatorProvider,
+                    NULL_CONTEXT,
+                    EmptyMemoryTracker.INSTANCE,
+                    storeCursors);
         }
     }
 }

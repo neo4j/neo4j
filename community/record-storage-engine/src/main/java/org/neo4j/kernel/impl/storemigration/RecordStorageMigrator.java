@@ -212,7 +212,8 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant {
                     pageCache,
                     pageCacheTracer,
                     fileSystem,
-                    contextFactory);
+                    contextFactory,
+                    memoryTracker);
 
             schemaStoreMigration.assertCanMigrate();
 
@@ -275,7 +276,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant {
                     }
 
                     dstStore.start(cursorContext);
-                    var dstTokensHolders = createTokenHolders(dstStore, dstCursors);
+                    var dstTokensHolders = createTokenHolders(dstStore, dstCursors, memoryTracker);
 
                     schemaStoreMigration.migrate(dstAccess, dstTokensHolders);
 
@@ -368,9 +369,10 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant {
                     indexImporterFactory,
                     memoryTracker,
                     contextFactory);
-            InputIterable nodes = () -> legacyNodesAsInput(legacyStore, requiresPropertyMigration, contextFactory);
-            InputIterable relationships =
-                    () -> legacyRelationshipsAsInput(legacyStore, requiresPropertyMigration, contextFactory);
+            InputIterable nodes =
+                    () -> legacyNodesAsInput(legacyStore, requiresPropertyMigration, contextFactory, memoryTracker);
+            InputIterable relationships = () ->
+                    legacyRelationshipsAsInput(legacyStore, requiresPropertyMigration, contextFactory, memoryTracker);
             long propertyStoreSize = storeSize(legacyStore.getPropertyStore()) / 2
                     + storeSize(legacyStore.getPropertyStore().getStringStore()) / 2
                     + storeSize(legacyStore.getPropertyStore().getArrayStore()) / 2;
@@ -506,6 +508,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant {
                     newFormat,
                     progressListener,
                     storesToMigrate,
+                    memoryTracker,
                     StoreType.NODE);
         }
 
@@ -604,7 +607,10 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant {
     }
 
     private static InputIterator legacyRelationshipsAsInput(
-            NeoStores legacyStore, boolean requiresPropertyMigration, CursorContextFactory contextFactory) {
+            NeoStores legacyStore,
+            boolean requiresPropertyMigration,
+            CursorContextFactory contextFactory,
+            final MemoryTracker memoryTracker) {
         return new StoreScanAsInputIterator<>(legacyStore.getRelationshipStore()) {
             @Override
             public InputChunk newChunk() {
@@ -612,7 +618,6 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant {
                 // Using empty memory tracker since we don't have any threadsafe memory tracker implementation
                 // It's only used for some property reading and we don't want to risk false-positive OOM exceptions
                 // because of incorrect synchronization
-                var memoryTracker = EmptyMemoryTracker.INSTANCE;
                 var storeCursors = new CachedStoreCursors(legacyStore, cursorContext);
                 return new RelationshipRecordChunk(
                         new RecordStorageReader(legacyStore),
@@ -625,7 +630,10 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant {
     }
 
     private static InputIterator legacyNodesAsInput(
-            NeoStores legacyStore, boolean requiresPropertyMigration, CursorContextFactory contextFactory) {
+            NeoStores legacyStore,
+            boolean requiresPropertyMigration,
+            CursorContextFactory contextFactory,
+            final MemoryTracker memoryTracker) {
         return new StoreScanAsInputIterator<>(legacyStore.getNodeStore()) {
             @Override
             public InputChunk newChunk() {
@@ -633,7 +641,6 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant {
                 // Using empty memory tracker since we don't have any threadsafe memory tracker implementation
                 // It's only used for some property reading and we don't want to risk false-positive OOM exceptions
                 // because of incorrect synchronization
-                var memoryTracker = EmptyMemoryTracker.INSTANCE;
                 var storeCursors = new CachedStoreCursors(legacyStore, cursorContext);
                 return new NodeRecordChunk(
                         new RecordStorageReader(legacyStore),
@@ -650,7 +657,8 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant {
             DatabaseLayout migrationLayoutArg,
             DatabaseLayout directoryLayoutArg,
             StoreVersion versionToUpgradeFrom,
-            StoreVersion versionToUpgradeTo)
+            StoreVersion versionToUpgradeTo,
+            MemoryTracker memoryTracker)
             throws IOException {
         RecordDatabaseLayout directoryLayout = RecordDatabaseLayout.convert(directoryLayoutArg);
         RecordDatabaseLayout migrationLayout = RecordDatabaseLayout.convert(migrationLayoutArg);
@@ -699,7 +707,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant {
                         StoreType.RELATIONSHIP_TYPE_TOKEN_NAME);
                 var dstCursors = new CachedStoreCursors(dstStore, cursorContext)) {
             dstStore.start(cursorContext);
-            var dstTokensHolders = createTokenHolders(dstStore, dstCursors);
+            var dstTokensHolders = createTokenHolders(dstStore, dstCursors, memoryTracker);
             try (SchemaRuleMigrationAccess dstAccess =
                     createMigrationTargetSchemaRuleAccess(dstStore, contextFactory, memoryTracker)) {
                 schemaStoreMigration.migrate(dstAccess, dstTokensHolders);
@@ -725,12 +733,12 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant {
         return oldFormat.hasCapability(Index44Compatibility.INSTANCE);
     }
 
-    static TokenHolders createTokenHolders(NeoStores stores, CachedStoreCursors cursors) {
+    static TokenHolders createTokenHolders(NeoStores stores, CachedStoreCursors cursors, MemoryTracker memoryTracker) {
         TokenHolders tokenHolders = new TokenHolders(
                 StoreTokens.createReadOnlyTokenHolder(TokenHolder.TYPE_PROPERTY_KEY),
                 StoreTokens.createReadOnlyTokenHolder(TokenHolder.TYPE_LABEL),
                 StoreTokens.createReadOnlyTokenHolder(TokenHolder.TYPE_RELATIONSHIP_TYPE));
-        tokenHolders.setInitialTokens(allTokens(stores), cursors);
+        tokenHolders.setInitialTokens(allTokens(stores), cursors, memoryTracker);
         return tokenHolders;
     }
 
@@ -877,7 +885,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant {
                 StoreCursors storeCursors,
                 MemoryTracker memoryTracker) {
             super(
-                    storageReader.allocateNodeCursor(cursorContext, storeCursors),
+                    storageReader.allocateNodeCursor(cursorContext, storeCursors, memoryTracker),
                     storageReader,
                     requiresPropertyMigration,
                     cursorContext,
@@ -915,7 +923,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant {
                 StoreCursors storeCursors,
                 MemoryTracker memoryTracker) {
             super(
-                    storageReader.allocateRelationshipScanCursor(cursorContext, storeCursors),
+                    storageReader.allocateRelationshipScanCursor(cursorContext, storeCursors, memoryTracker),
                     storageReader,
                     requiresPropertyMigration,
                     cursorContext,

@@ -148,7 +148,7 @@ class MapRecordStore implements LockVerificationMonitor.StoreLoader {
             }
 
             @Override
-            public void ensureHeavy(T record, StoreCursors storeCursors) {
+            public void ensureHeavy(T record, StoreCursors storeCursors, MemoryTracker memoryTracker) {
                 // ignore
             }
 

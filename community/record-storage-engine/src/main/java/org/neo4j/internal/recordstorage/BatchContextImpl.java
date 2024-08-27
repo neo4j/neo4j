@@ -48,6 +48,7 @@ public class BatchContextImpl implements BatchContext {
     private final IndexActivator indexActivator;
     private final LockGroup lockGroup;
     private final IndexUpdates indexUpdates;
+    private final MemoryTracker memoryTracker;
 
     public BatchContextImpl(
             IndexUpdateListener indexUpdateListener,
@@ -68,11 +69,12 @@ public class BatchContextImpl implements BatchContext {
         this.indexUpdates = new OnlineIndexUpdates(
                 nodeStore,
                 schemaCache,
-                new PropertyPhysicalToLogicalConverter(propertyStore, storeCursors),
+                new PropertyPhysicalToLogicalConverter(propertyStore, storeCursors, memoryTracker),
                 recordStorageEngine.newReader(),
                 cursorContext,
                 memoryTracker,
                 storeCursors);
+        this.memoryTracker = memoryTracker;
     }
 
     @Override
@@ -120,5 +122,10 @@ public class BatchContextImpl implements BatchContext {
     @Override
     public IdUpdateListener getIdUpdateListener() {
         return idUpdateListener;
+    }
+
+    @Override
+    public MemoryTracker memoryTracker() {
+        return memoryTracker;
     }
 }

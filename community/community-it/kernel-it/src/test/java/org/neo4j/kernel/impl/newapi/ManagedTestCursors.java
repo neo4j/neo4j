@@ -63,8 +63,8 @@ public class ManagedTestCursors implements CursorFactory {
     }
 
     @Override
-    public NodeCursor allocateFullAccessNodeCursor(CursorContext cursorContext) {
-        NodeCursor n = cursors.allocateFullAccessNodeCursor(cursorContext);
+    public NodeCursor allocateFullAccessNodeCursor(CursorContext cursorContext, MemoryTracker memoryTracker) {
+        NodeCursor n = cursors.allocateFullAccessNodeCursor(cursorContext, memoryTracker);
         allCursors.add(n);
         return n;
     }
@@ -78,8 +78,9 @@ public class ManagedTestCursors implements CursorFactory {
     }
 
     @Override
-    public RelationshipScanCursor allocateFullAccessRelationshipScanCursor(CursorContext cursorContext) {
-        RelationshipScanCursor n = cursors.allocateFullAccessRelationshipScanCursor(cursorContext);
+    public RelationshipScanCursor allocateFullAccessRelationshipScanCursor(
+            CursorContext cursorContext, MemoryTracker memoryTracker) {
+        RelationshipScanCursor n = cursors.allocateFullAccessRelationshipScanCursor(cursorContext, memoryTracker);
         allCursors.add(n);
         return n;
     }
@@ -93,8 +94,10 @@ public class ManagedTestCursors implements CursorFactory {
     }
 
     @Override
-    public RelationshipTraversalCursor allocateFullAccessRelationshipTraversalCursor(CursorContext cursorContext) {
-        RelationshipTraversalCursor n = cursors.allocateFullAccessRelationshipTraversalCursor(cursorContext);
+    public RelationshipTraversalCursor allocateFullAccessRelationshipTraversalCursor(
+            CursorContext cursorContext, MemoryTracker memoryTracker) {
+        RelationshipTraversalCursor n =
+                cursors.allocateFullAccessRelationshipTraversalCursor(cursorContext, memoryTracker);
         allCursors.add(n);
         return n;
     }
@@ -168,8 +171,10 @@ public class ManagedTestCursors implements CursorFactory {
     }
 
     @Override
-    public RelationshipTypeIndexCursor allocateFullAccessRelationshipTypeIndexCursor(CursorContext cursorContext) {
-        RelationshipTypeIndexCursor n = cursors.allocateFullAccessRelationshipTypeIndexCursor(cursorContext);
+    public RelationshipTypeIndexCursor allocateFullAccessRelationshipTypeIndexCursor(
+            CursorContext cursorContext, MemoryTracker memoryTracker) {
+        RelationshipTypeIndexCursor n =
+                cursors.allocateFullAccessRelationshipTypeIndexCursor(cursorContext, memoryTracker);
         allCursors.add(n);
         return n;
     }

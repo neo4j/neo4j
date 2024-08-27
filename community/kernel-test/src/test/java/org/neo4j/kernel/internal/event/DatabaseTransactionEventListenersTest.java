@@ -198,7 +198,7 @@ class DatabaseTransactionEventListenersTest {
     private StorageReader mockedStorageReader() {
         var reader = mock(StorageReader.class);
         var relationshipScanCursor = mock(StorageRelationshipScanCursor.class);
-        when(reader.allocateRelationshipScanCursor(any(), any())).thenReturn(relationshipScanCursor);
+        when(reader.allocateRelationshipScanCursor(any(), any(), any())).thenReturn(relationshipScanCursor);
         return reader;
     }
 
@@ -221,7 +221,7 @@ class DatabaseTransactionEventListenersTest {
         when(kernelTransaction.internalTransaction()).thenReturn(internalTransaction);
         StorageReader storageReader = mock(StorageReader.class);
         StorageRelationshipScanCursor relationshipScanCursor = mock(StorageRelationshipScanCursor.class);
-        when(storageReader.allocateRelationshipScanCursor(any(), any())).thenReturn(relationshipScanCursor);
+        when(storageReader.allocateRelationshipScanCursor(any(), any(), any())).thenReturn(relationshipScanCursor);
         when(internalTransaction.newRelationshipEntity(anyLong()))
                 .then(invocationOnMock ->
                         new RelationshipEntity(internalTransaction, invocationOnMock.getArgument(0, Long.class)));

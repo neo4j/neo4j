@@ -26,6 +26,7 @@ import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 class RelationshipStoreConsistentReadTest extends RecordStoreConsistentReadTest<RelationshipRecord, RelationshipStore> {
@@ -65,7 +66,7 @@ class RelationshipStoreConsistentReadTest extends RecordStoreConsistentReadTest<
 
     @Override
     protected RelationshipRecord getLight(long id, RelationshipStore store, PageCursor pageCursor) {
-        return store.getRecordByCursor(id, store.newRecord(), NORMAL, pageCursor);
+        return store.getRecordByCursor(id, store.newRecord(), NORMAL, pageCursor, EmptyMemoryTracker.INSTANCE);
     }
 
     @Override

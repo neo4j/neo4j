@@ -89,6 +89,7 @@ import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.TransactionCommitmentFactory;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionWriteEvent;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.storageengine.api.CommandBatch;
 import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.StorageEngine;
@@ -168,7 +169,8 @@ public abstract class GraphStoreFixture implements AutoCloseable {
                 Loaders.propertyLoader(propertyStore, storeCursors),
                 NULL_CONTEXT,
                 PROPERTY_CURSOR,
-                storeCursors);
+                storeCursors,
+                EmptyMemoryTracker.INSTANCE);
     }
 
     protected TestDatabaseManagementServiceBuilder createBuilder(Path homePath) {
@@ -238,7 +240,7 @@ public abstract class GraphStoreFixture implements AutoCloseable {
     public EntityUpdates nodeAsUpdates(long nodeId) {
         try (StorageReader storeReader = storageEngine.newReader();
                 var storeCursors = storageEngine.createStorageCursors(NULL_CONTEXT);
-                StorageNodeCursor nodeCursor = storeReader.allocateNodeCursor(NULL_CONTEXT, storeCursors);
+                StorageNodeCursor nodeCursor = storeReader.allocateNodeCursor(NULL_CONTEXT, storeCursors, INSTANCE);
                 StoragePropertyCursor propertyCursor =
                         storeReader.allocatePropertyCursor(NULL_CONTEXT, storeCursors, INSTANCE)) {
             nodeCursor.single(nodeId);
@@ -259,7 +261,7 @@ public abstract class GraphStoreFixture implements AutoCloseable {
         try (StorageReader storeReader = storageEngine.newReader();
                 var storeCursors = storageEngine.createStorageCursors(NULL_CONTEXT);
                 StorageRelationshipScanCursor relCursor =
-                        storeReader.allocateRelationshipScanCursor(NULL_CONTEXT, storeCursors);
+                        storeReader.allocateRelationshipScanCursor(NULL_CONTEXT, storeCursors, INSTANCE);
                 StoragePropertyCursor propertyCursor =
                         storeReader.allocatePropertyCursor(NULL_CONTEXT, storeCursors, INSTANCE)) {
             relCursor.single(relId);
@@ -321,7 +323,8 @@ public abstract class GraphStoreFixture implements AutoCloseable {
                 TokenHolder.TYPE_RELATIONSHIP_TYPE);
         TokenHolders tokenHolders = new TokenHolders(propertyKeyTokens, labelTokens, relationshipTypeTokens);
         try (var storeCursors = new CachedStoreCursors(neoStores, NULL_CONTEXT)) {
-            tokenHolders.setInitialTokens(allReadableTokens(directStoreAccess().nativeStores()), storeCursors);
+            tokenHolders.setInitialTokens(
+                    allReadableTokens(directStoreAccess().nativeStores()), storeCursors, INSTANCE);
         }
         return tokenHolders;
     }
@@ -481,7 +484,7 @@ public abstract class GraphStoreFixture implements AutoCloseable {
 
             this.tokenHolders = new TokenHolders(propTokens, labelTokens, relTypeTokens);
             try (var storeCursors = new CachedStoreCursors(neoStores, NULL_CONTEXT)) {
-                tokenHolders.setInitialTokens(allReadableTokens(neoStores), storeCursors);
+                tokenHolders.setInitialTokens(allReadableTokens(neoStores), storeCursors, INSTANCE);
                 tokenHolders
                         .propertyKeyTokens()
                         .getAllTokens()
@@ -644,7 +647,8 @@ public abstract class GraphStoreFixture implements AutoCloseable {
 
         private void updateCounts(NodeRecord node, int delta) {
             writer.incrementNodeCount(ANY_LABEL, delta);
-            for (int label : NodeLabelsField.parseLabelsField(node).get(nodes, StoreCursors.NULL)) {
+            for (int label :
+                    NodeLabelsField.parseLabelsField(node).get(nodes, StoreCursors.NULL, EmptyMemoryTracker.INSTANCE)) {
                 writer.incrementNodeCount(label, delta);
             }
         }

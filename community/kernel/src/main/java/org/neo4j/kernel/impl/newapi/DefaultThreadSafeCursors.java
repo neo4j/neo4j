@@ -64,20 +64,20 @@ public class DefaultThreadSafeCursors extends DefaultCursors implements CursorFa
                     cursor.release();
                     storeCursors.close();
                 },
-                storageReader.allocateNodeCursor(cursorContext, storeCursors),
+                storageReader.allocateNodeCursor(cursorContext, storeCursors, memoryTracker),
                 newInternalCursors(storeCursors, cursorContext, memoryTracker),
                 applyAccessModeToTxState));
     }
 
     @Override
-    public FullAccessNodeCursor allocateFullAccessNodeCursor(CursorContext cursorContext) {
+    public FullAccessNodeCursor allocateFullAccessNodeCursor(CursorContext cursorContext, MemoryTracker memoryTracker) {
         var storeCursors = storeCursorsFactory.apply(cursorContext);
         return trace(new FullAccessNodeCursor(
                 cursor -> {
                     cursor.release();
                     storeCursors.close();
                 },
-                storageReader.allocateNodeCursor(cursorContext, storeCursors)));
+                storageReader.allocateNodeCursor(cursorContext, storeCursors, memoryTracker)));
     }
 
     @Override
@@ -89,20 +89,21 @@ public class DefaultThreadSafeCursors extends DefaultCursors implements CursorFa
                     cursor.release();
                     storeCursors.close();
                 },
-                storageReader.allocateRelationshipScanCursor(cursorContext, storeCursors),
+                storageReader.allocateRelationshipScanCursor(cursorContext, storeCursors, memoryTracker),
                 newInternalCursors(storeCursors, cursorContext, memoryTracker),
                 applyAccessModeToTxState));
     }
 
     @Override
-    public FullAccessRelationshipScanCursor allocateFullAccessRelationshipScanCursor(CursorContext cursorContext) {
+    public FullAccessRelationshipScanCursor allocateFullAccessRelationshipScanCursor(
+            CursorContext cursorContext, MemoryTracker memoryTracker) {
         var storeCursors = storeCursorsFactory.apply(cursorContext);
         return trace(new FullAccessRelationshipScanCursor(
                 cursor -> {
                     cursor.release();
                     storeCursors.close();
                 },
-                storageReader.allocateRelationshipScanCursor(cursorContext, storeCursors)));
+                storageReader.allocateRelationshipScanCursor(cursorContext, storeCursors, memoryTracker)));
     }
 
     @Override
@@ -114,21 +115,21 @@ public class DefaultThreadSafeCursors extends DefaultCursors implements CursorFa
                     cursor.release();
                     storeCursors.close();
                 },
-                storageReader.allocateRelationshipTraversalCursor(cursorContext, storeCursors),
+                storageReader.allocateRelationshipTraversalCursor(cursorContext, storeCursors, memoryTracker),
                 newInternalCursors(storeCursors, cursorContext, memoryTracker),
                 applyAccessModeToTxState));
     }
 
     @Override
     public DefaultRelationshipTraversalCursor allocateFullAccessRelationshipTraversalCursor(
-            CursorContext cursorContext) {
+            CursorContext cursorContext, MemoryTracker memoryTracker) {
         var storeCursors = storeCursorsFactory.apply(cursorContext);
         return trace(new FullAccessRelationshipTraversalCursor(
                 cursor -> {
                     cursor.release();
                     storeCursors.close();
                 },
-                storageReader.allocateRelationshipTraversalCursor(cursorContext, storeCursors)));
+                storageReader.allocateRelationshipTraversalCursor(cursorContext, storeCursors, memoryTracker)));
     }
 
     @Override
@@ -227,16 +228,17 @@ public class DefaultThreadSafeCursors extends DefaultCursors implements CursorFa
     }
 
     @Override
-    public RelationshipTypeIndexCursor allocateFullAccessRelationshipTypeIndexCursor(CursorContext cursorContext) {
+    public RelationshipTypeIndexCursor allocateFullAccessRelationshipTypeIndexCursor(
+            CursorContext cursorContext, MemoryTracker memoryTracker) {
         if (indexingBehaviour.useNodeIdsInRelationshipTokenIndex()) {
             return trace(new DefaultNodeBasedRelationshipTypeIndexCursor(
                     DefaultNodeBasedRelationshipTypeIndexCursor::release,
-                    allocateFullAccessNodeCursor(cursorContext),
-                    allocateFullAccessRelationshipTraversalCursor(cursorContext)));
+                    allocateFullAccessNodeCursor(cursorContext, memoryTracker),
+                    allocateFullAccessRelationshipTraversalCursor(cursorContext, memoryTracker)));
         } else {
             return trace(new FullAccessRelationshipBasedRelationshipTypeIndexCursor(
                     DefaultRelationshipBasedRelationshipTypeIndexCursor::release,
-                    allocateFullAccessRelationshipScanCursor(cursorContext)));
+                    allocateFullAccessRelationshipScanCursor(cursorContext, memoryTracker)));
         }
     }
 

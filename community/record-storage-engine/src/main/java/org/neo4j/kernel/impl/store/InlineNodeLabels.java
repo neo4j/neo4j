@@ -47,7 +47,7 @@ public class InlineNodeLabels implements NodeLabels {
     }
 
     @Override
-    public int[] get(NodeStore nodeStore, StoreCursors storeCursors) {
+    public int[] get(NodeStore nodeStore, StoreCursors storeCursors, MemoryTracker memoryTracker) {
         return get(node);
     }
 

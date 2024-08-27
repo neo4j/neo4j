@@ -150,7 +150,9 @@ class SchemaStorageTest {
         var e = assertThrows(
                 SchemaRuleNotFoundException.class,
                 () -> storage.constraintsGetSingle(
-                        ConstraintDescriptorFactory.existsForLabel(false, LABEL1_ID, PROP1_ID), StoreCursors.NULL));
+                        ConstraintDescriptorFactory.existsForLabel(false, LABEL1_ID, PROP1_ID),
+                        StoreCursors.NULL,
+                        EmptyMemoryTracker.INSTANCE));
 
         assertThat(e, tokenNameLookup)
                 .hasUserMessage("No label property existence constraint was found for (:Label1 {prop1}).");
@@ -161,7 +163,7 @@ class SchemaStorageTest {
         TokenNameLookup tokenNameLookup = getDefaultTokenNameLookup();
 
         SchemaStorage schemaStorageSpy = Mockito.spy(storage);
-        when(schemaStorageSpy.streamAllSchemaRules(false, StoreCursors.NULL))
+        when(schemaStorageSpy.streamAllSchemaRules(false, StoreCursors.NULL, EmptyMemoryTracker.INSTANCE))
                 .thenReturn(Stream.of(
                         getUniquePropertyConstraintRule(1L, LABEL1_ID, PROP1_ID),
                         getUniquePropertyConstraintRule(2L, LABEL1_ID, PROP1_ID)));
@@ -169,7 +171,9 @@ class SchemaStorageTest {
         var e = assertThrows(
                 DuplicateSchemaRuleException.class,
                 () -> schemaStorageSpy.constraintsGetSingle(
-                        ConstraintDescriptorFactory.uniqueForLabel(LABEL1_ID, PROP1_ID), StoreCursors.NULL));
+                        ConstraintDescriptorFactory.uniqueForLabel(LABEL1_ID, PROP1_ID),
+                        StoreCursors.NULL,
+                        EmptyMemoryTracker.INSTANCE));
 
         assertThat(e, tokenNameLookup)
                 .hasUserMessage("Multiple label uniqueness constraints found for (:Label1 {prop1}).");
@@ -182,7 +186,9 @@ class SchemaStorageTest {
         var e = assertThrows(
                 SchemaRuleNotFoundException.class,
                 () -> storage.constraintsGetSingle(
-                        ConstraintDescriptorFactory.existsForRelType(false, TYPE1_ID, PROP1_ID), StoreCursors.NULL));
+                        ConstraintDescriptorFactory.existsForRelType(false, TYPE1_ID, PROP1_ID),
+                        StoreCursors.NULL,
+                        EmptyMemoryTracker.INSTANCE));
         assertThat(e, tokenNameLookup)
                 .hasUserMessage(
                         "No relationship type property existence constraint was found for ()-[:Type1 {prop1}]-().");
@@ -193,7 +199,7 @@ class SchemaStorageTest {
         TokenNameLookup tokenNameLookup = getDefaultTokenNameLookup();
 
         SchemaStorage schemaStorageSpy = Mockito.spy(storage);
-        when(schemaStorageSpy.streamAllSchemaRules(false, StoreCursors.NULL))
+        when(schemaStorageSpy.streamAllSchemaRules(false, StoreCursors.NULL, EmptyMemoryTracker.INSTANCE))
                 .thenReturn(Stream.of(
                         getRelationshipPropertyExistenceConstraintRule(1L, TYPE1_ID, PROP1_ID, false),
                         getRelationshipPropertyExistenceConstraintRule(2L, TYPE1_ID, PROP1_ID, false)));
@@ -201,7 +207,9 @@ class SchemaStorageTest {
         var e = assertThrows(
                 DuplicateSchemaRuleException.class,
                 () -> schemaStorageSpy.constraintsGetSingle(
-                        ConstraintDescriptorFactory.existsForRelType(false, TYPE1_ID, PROP1_ID), StoreCursors.NULL));
+                        ConstraintDescriptorFactory.existsForRelType(false, TYPE1_ID, PROP1_ID),
+                        StoreCursors.NULL,
+                        EmptyMemoryTracker.INSTANCE));
 
         assertThat(e, tokenNameLookup)
                 .hasUserMessage(
@@ -262,7 +270,7 @@ class SchemaStorageTest {
         T record = store.newRecord();
         try (PageCursor pageCursor = store.openPageCursorForReading(0, NULL_CONTEXT)) {
             for (Long id : ids) {
-                store.getRecordByCursor(id, record, RecordLoad.CHECK, pageCursor);
+                store.getRecordByCursor(id, record, RecordLoad.CHECK, pageCursor, EmptyMemoryTracker.INSTANCE);
                 assertThat(record.inUse()).isEqualTo(expectInUse);
             }
         }

@@ -48,7 +48,6 @@ import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.
 import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.uniqueForLabel;
 import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.uniqueForSchema;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 
 import java.util.Arrays;
@@ -102,6 +101,7 @@ import org.neo4j.kernel.impl.locking.ResourceIds;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceType;
 import org.neo4j.logging.FormattedLogFormat;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.storageengine.api.CommandCreationContext;
 import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.storageengine.api.StorageLocks;
@@ -970,7 +970,7 @@ public class PlainOperationsTest extends OperationsTest {
                 mock(ConstraintSemantics.class),
                 mock(IndexingProvidersService.class),
                 Config.defaults(),
-                INSTANCE,
+                EmptyMemoryTracker.INSTANCE,
                 () -> Static.FULL);
 
         // when
@@ -996,8 +996,9 @@ public class PlainOperationsTest extends OperationsTest {
         when(ktx.securityContext()).thenReturn(SecurityContext.AUTH_DISABLED);
         CommandCreationContext commandCreationContext = mock(CommandCreationContext.class);
         DefaultPooledCursors cursors = mock(DefaultPooledCursors.class);
-        when(cursors.allocateFullAccessNodeCursor(NULL_CONTEXT)).thenReturn(mock(FullAccessNodeCursor.class));
-        when(cursors.allocateFullAccessPropertyCursor(NULL_CONTEXT, INSTANCE))
+        when(cursors.allocateFullAccessNodeCursor(NULL_CONTEXT, EmptyMemoryTracker.INSTANCE))
+                .thenReturn(mock(FullAccessNodeCursor.class));
+        when(cursors.allocateFullAccessPropertyCursor(NULL_CONTEXT, EmptyMemoryTracker.INSTANCE))
                 .thenReturn(mock(FullAccessPropertyCursor.class));
 
         Operations operations = new Operations(
@@ -1016,7 +1017,7 @@ public class PlainOperationsTest extends OperationsTest {
                 mock(ConstraintSemantics.class),
                 mock(IndexingProvidersService.class),
                 Config.defaults(),
-                INSTANCE,
+                EmptyMemoryTracker.INSTANCE,
                 () -> Static.FULL);
         operations.initialize(NULL_CONTEXT);
 
@@ -1060,7 +1061,7 @@ public class PlainOperationsTest extends OperationsTest {
                 mock(ConstraintSemantics.class),
                 mock(IndexingProvidersService.class),
                 Config.defaults(),
-                INSTANCE,
+                EmptyMemoryTracker.INSTANCE,
                 () -> Static.FULL);
 
         // when
@@ -1111,7 +1112,7 @@ public class PlainOperationsTest extends OperationsTest {
                 mock(ConstraintSemantics.class),
                 indexingProvidersService,
                 Config.defaults(),
-                INSTANCE,
+                EmptyMemoryTracker.INSTANCE,
                 () -> Static.FULL);
 
         // when

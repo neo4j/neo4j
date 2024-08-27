@@ -126,6 +126,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.cursor.CursorType;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
@@ -248,13 +249,17 @@ public class DetectRandomSabotageIT {
                 .getId();
         SchemaRecord schemaRecord = schemaStore.newRecord();
         var cursor = storageCursors.readCursor(RecordCursorTypes.SCHEMA_CURSOR);
-        schemaStore.getRecordByCursor(indexId, schemaRecord, RecordLoad.FORCE, cursor);
+        schemaStore.getRecordByCursor(indexId, schemaRecord, RecordLoad.FORCE, cursor, EmptyMemoryTracker.INSTANCE);
 
         PropertyRecord indexConfigPropertyRecord = propertyStore.newRecord();
         var propertyCursor = storageCursors.readCursor(RecordCursorTypes.PROPERTY_CURSOR);
         propertyStore.getRecordByCursor(
-                schemaRecord.getNextProp(), indexConfigPropertyRecord, RecordLoad.FORCE, propertyCursor);
-        propertyStore.ensureHeavy(indexConfigPropertyRecord, storageCursors);
+                schemaRecord.getNextProp(),
+                indexConfigPropertyRecord,
+                RecordLoad.FORCE,
+                propertyCursor,
+                EmptyMemoryTracker.INSTANCE);
+        propertyStore.ensureHeavy(indexConfigPropertyRecord, storageCursors, EmptyMemoryTracker.INSTANCE);
 
         // When
         int[] tokenId = new int[1];
@@ -513,9 +518,10 @@ public class DetectRandomSabotageIT {
                 PageCursor nodeCursor = storageCursors.readCursor(NODE_CURSOR);
                 NodeRecord node = randomRecord(random, store, usedRecord(), nodeCursor);
                 NodeRecord before = store.newRecord();
-                store.getRecordByCursor(node.getId(), before, RecordLoad.NORMAL, nodeCursor);
+                store.getRecordByCursor(
+                        node.getId(), before, RecordLoad.NORMAL, nodeCursor, EmptyMemoryTracker.INSTANCE);
                 NodeLabels nodeLabels = NodeLabelsField.parseLabelsField(node);
-                int[] existing = nodeLabels.get(store, storageCursors);
+                int[] existing = nodeLabels.get(store, storageCursors, EmptyMemoryTracker.INSTANCE);
                 if (random.nextBoolean()) {
                     // Change inlined
                     do {
@@ -523,7 +529,8 @@ public class DetectRandomSabotageIT {
                         if (!NodeLabelsField.fieldPointsToDynamicRecordOfLabels(labelField)) {
                             node.setLabelField(labelField, node.getDynamicLabelRecords());
                         }
-                    } while (Arrays.equals(existing, NodeLabelsField.get(node, store, storageCursors)));
+                    } while (Arrays.equals(
+                            existing, NodeLabelsField.get(node, store, storageCursors, EmptyMemoryTracker.INSTANCE)));
                 } else {
                     long existingLabelField = node.getLabelField();
                     do {
@@ -563,7 +570,8 @@ public class DetectRandomSabotageIT {
                 PageCursor relCursor = storageCursors.readCursor(RELATIONSHIP_CURSOR);
                 RelationshipRecord relationship = randomRecord(random, store, usedRecord(), relCursor);
                 RelationshipRecord before = store.newRecord();
-                store.getRecordByCursor(relationship.getId(), before, RecordLoad.NORMAL, relCursor);
+                store.getRecordByCursor(
+                        relationship.getId(), before, RecordLoad.NORMAL, relCursor, EmptyMemoryTracker.INSTANCE);
                 LongSupplier rng = () -> randomIdOrSometimesDefault(random, NULL_REFERENCE.longValue(), id -> true);
                 switch (random.nextInt(4)) {
                     case 0: // start node prev
@@ -647,7 +655,11 @@ public class DetectRandomSabotageIT {
                             PropertyStore propertyStore = stores.getPropertyStore();
                             PropertyRecord record = propertyStore.newRecord();
                             propertyStore.getRecordByCursor(
-                                    propertyId, record, RecordLoad.CHECK, storageCursors.readCursor(PROPERTY_CURSOR));
+                                    propertyId,
+                                    record,
+                                    RecordLoad.CHECK,
+                                    storageCursors.readCursor(PROPERTY_CURSOR),
+                                    EmptyMemoryTracker.INSTANCE);
                             return !record.inUse() || !NULL_REFERENCE.is(record.getPrevProp());
                         }),
                         storageCursors,
@@ -1034,7 +1046,7 @@ public class DetectRandomSabotageIT {
                     if (nodeRecord.inUse()) {
                         // Our node is in use, make sure it's a label it doesn't already have
                         NodeLabels labelsField = NodeLabelsField.parseLabelsField(nodeRecord);
-                        int[] labelsBefore = labelsField.get(store, storageCursors);
+                        int[] labelsBefore = labelsField.get(store, storageCursors, EmptyMemoryTracker.INSTANCE);
                         for (int labelIdBefore : labelsBefore) {
                             labelNames.remove(tokenHolders
                                     .labelTokens()
@@ -1242,7 +1254,7 @@ public class DetectRandomSabotageIT {
             PageCursor readCursor = storeCursors.readCursor(cursorType);
             T before = randomRecord(random, store, usedRecord(), readCursor);
             T record = store.newRecord();
-            store.getRecordByCursor(before.getId(), record, RecordLoad.NORMAL, readCursor);
+            store.getRecordByCursor(before.getId(), record, RecordLoad.NORMAL, readCursor, EmptyMemoryTracker.INSTANCE);
             record.setInUse(false);
             try (var storeCursor = storeCursors.writeCursor(cursorType)) {
                 store.updateRecord(record, storeCursor, NULL_CONTEXT, storeCursors);
@@ -1285,7 +1297,7 @@ public class DetectRandomSabotageIT {
             PageCursor readCursor = storeCursors.readCursor(cursorType);
             T before = randomRecord(random, store, filter, readCursor);
             T record = store.newRecord();
-            store.getRecordByCursor(before.getId(), record, RecordLoad.NORMAL, readCursor);
+            store.getRecordByCursor(before.getId(), record, RecordLoad.NORMAL, readCursor, EmptyMemoryTracker.INSTANCE);
             guaranteedChangedId(
                     () -> idGetter.applyAsLong(record), changedId -> idSetter.accept(record, changedId), rng);
             try (var storeCursor = storeCursors.writeCursor(cursorType)) {
@@ -1321,13 +1333,15 @@ public class DetectRandomSabotageIT {
                         random.nextLong(propertyStore.getIdGenerator().getHighId()),
                         propertyRecord,
                         RecordLoad.CHECK,
-                        propertyCursor);
+                        propertyCursor,
+                        EmptyMemoryTracker.INSTANCE);
                 if (propertyRecord.inUse()) {
                     try (var dynamicCursor = storeCursors.writeCursor(dynamicCursorType)) {
                         for (PropertyBlock block : propertyRecord) {
                             if (block.getType() == valueType
-                                    && checkability.test(block.getType().value(block, propertyStore, storeCursors))) {
-                                propertyStore.ensureHeavy(block, storeCursors);
+                                    && checkability.test(block.getType()
+                                            .value(block, propertyStore, storeCursors, EmptyMemoryTracker.INSTANCE))) {
+                                propertyStore.ensureHeavy(block, storeCursors, EmptyMemoryTracker.INSTANCE);
                                 if (block.getValueRecords().size() > 1) {
                                     DynamicRecord dynamicRecord = block.getValueRecords()
                                             .get(random.nextInt(
@@ -1337,7 +1351,8 @@ public class DetectRandomSabotageIT {
                                             dynamicRecord.getId(),
                                             before,
                                             RecordLoad.NORMAL,
-                                            storeCursors.readCursor(dynamicCursorType));
+                                            storeCursors.readCursor(dynamicCursorType),
+                                            EmptyMemoryTracker.INSTANCE);
                                     vandal.accept(dynamicRecord);
                                     dynamicStore.updateRecord(dynamicRecord, dynamicCursor, NULL_CONTEXT, storeCursors);
                                     return recordSabotage(before, dynamicRecord);
@@ -1373,7 +1388,8 @@ public class DetectRandomSabotageIT {
             T record = store.newRecord();
             do {
                 // Load with FORCE to ignore not-in-use and decoding errors at this stage.
-                store.getRecordByCursor(random.nextLong(highId), record, RecordLoad.FORCE, readCursor);
+                store.getRecordByCursor(
+                        random.nextLong(highId), record, RecordLoad.FORCE, readCursor, EmptyMemoryTracker.INSTANCE);
             } while (!filter.test(record));
             return record;
         }

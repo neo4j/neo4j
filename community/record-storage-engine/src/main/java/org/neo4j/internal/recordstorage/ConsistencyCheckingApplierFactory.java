@@ -30,6 +30,7 @@ import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.kernel.impl.store.record.Record;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.StorageEngineTransaction;
 
 /**
@@ -47,7 +48,7 @@ class ConsistencyCheckingApplierFactory implements TransactionApplierFactory {
 
     @Override
     public TransactionApplier startTx(StorageEngineTransaction transaction, BatchContext batchContext) {
-        return new ConsistencyCheckingApplier(neoStores, transaction.cursorContext());
+        return new ConsistencyCheckingApplier(neoStores, transaction.cursorContext(), batchContext.memoryTracker());
     }
 
     static class ConsistencyCheckingApplier extends TransactionApplier.Adapter {
@@ -56,11 +57,12 @@ class ConsistencyCheckingApplierFactory implements TransactionApplierFactory {
         private final RecordRelationshipScanCursor otherCursor;
         private final CachedStoreCursors storeCursors;
 
-        ConsistencyCheckingApplier(NeoStores neoStores, CursorContext cursorContext) {
+        ConsistencyCheckingApplier(NeoStores neoStores, CursorContext cursorContext, MemoryTracker memoryTracker) {
             RelationshipStore relationshipStore = neoStores.getRelationshipStore();
             storeCursors = new CachedStoreCursors(neoStores, cursorContext);
-            cursor = new RecordRelationshipScanCursor(relationshipStore, cursorContext, storeCursors);
-            otherCursor = new RecordRelationshipScanCursor(relationshipStore, cursorContext, storeCursors);
+            cursor = new RecordRelationshipScanCursor(relationshipStore, cursorContext, storeCursors, memoryTracker);
+            otherCursor =
+                    new RecordRelationshipScanCursor(relationshipStore, cursorContext, storeCursors, memoryTracker);
         }
 
         @Override

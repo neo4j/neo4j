@@ -28,6 +28,7 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.RecordLoadOverride;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.storageengine.api.Reference;
 import org.neo4j.storageengine.api.RelationshipVisitor;
@@ -39,11 +40,14 @@ abstract class RecordRelationshipCursor extends RelationshipRecord
     final RelationshipStore relationshipStore;
     RecordLoadOverride loadMode;
     private final CursorContext cursorContext;
+    protected final MemoryTracker memoryTracker;
 
-    RecordRelationshipCursor(RelationshipStore relationshipStore, CursorContext cursorContext) {
+    RecordRelationshipCursor(
+            RelationshipStore relationshipStore, CursorContext cursorContext, MemoryTracker memoryTracker) {
         super(NO_ID);
         this.relationshipStore = relationshipStore;
         this.cursorContext = cursorContext;
+        this.memoryTracker = memoryTracker;
         this.loadMode = RecordLoadOverride.none();
     }
 
@@ -96,7 +100,7 @@ abstract class RecordRelationshipCursor extends RelationshipRecord
     void relationship(RelationshipRecord record, long reference, PageCursor pageCursor) {
         // When scanning, we inspect RelationshipRecord.inUse(), so using RecordLoad.CHECK is fine
         relationshipStore.getRecordByCursor(
-                reference, record, loadMode.orElse(CHECK).lenient(), pageCursor);
+                reference, record, loadMode.orElse(CHECK).lenient(), pageCursor, memoryTracker);
     }
 
     void relationshipFull(RelationshipRecord record, long reference, PageCursor pageCursor) {
@@ -106,7 +110,7 @@ abstract class RecordRelationshipCursor extends RelationshipRecord
         // see
         //      org.neo4j.kernel.impl.store.RelationshipChainPointerChasingTest
         //      org.neo4j.kernel.impl.locking.RelationshipCreateDeleteIT
-        relationshipStore.getRecordByCursor(reference, record, loadMode.orElse(ALWAYS), pageCursor);
+        relationshipStore.getRecordByCursor(reference, record, loadMode.orElse(ALWAYS), pageCursor, memoryTracker);
     }
 
     long relationshipHighMark() {

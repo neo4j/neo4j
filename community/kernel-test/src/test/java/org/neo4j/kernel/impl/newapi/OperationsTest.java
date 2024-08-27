@@ -162,9 +162,9 @@ abstract class OperationsTest {
         nodeCursor = mock(FullAccessNodeCursor.class);
         propertyCursor = mock(FullAccessPropertyCursor.class);
         relationshipCursor = mock(FullAccessRelationshipScanCursor.class);
-        when(cursors.allocateFullAccessNodeCursor(any())).thenReturn(nodeCursor);
+        when(cursors.allocateFullAccessNodeCursor(any(), any())).thenReturn(nodeCursor);
         when(cursors.allocateFullAccessPropertyCursor(NULL_CONTEXT, INSTANCE)).thenReturn(propertyCursor);
-        when(cursors.allocateFullAccessRelationshipScanCursor(any())).thenReturn(relationshipCursor);
+        when(cursors.allocateFullAccessRelationshipScanCursor(any(), any())).thenReturn(relationshipCursor);
         StorageEngine engine = mock(StorageEngine.class);
         storageReader = mock(StorageReader.class);
         storageReaderSnapshot = mock(StorageSchemaReader.class);

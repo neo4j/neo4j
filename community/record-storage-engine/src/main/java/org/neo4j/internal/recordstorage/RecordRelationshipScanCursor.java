@@ -26,6 +26,7 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.AllRelationshipsScan;
 import org.neo4j.storageengine.api.StorageRelationshipScanCursor;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
@@ -44,8 +45,11 @@ public class RecordRelationshipScanCursor extends RecordRelationshipCursor imple
     private boolean batched;
 
     RecordRelationshipScanCursor(
-            RelationshipStore relationshipStore, CursorContext cursorContext, StoreCursors storeCursors) {
-        super(relationshipStore, cursorContext);
+            RelationshipStore relationshipStore,
+            CursorContext cursorContext,
+            StoreCursors storeCursors,
+            MemoryTracker memoryTracker) {
+        super(relationshipStore, cursorContext, memoryTracker);
         this.cursorContext = cursorContext;
         this.storeCursors = storeCursors;
     }
@@ -199,6 +203,6 @@ public class RecordRelationshipScanCursor extends RecordRelationshipCursor imple
 
     private void relationshipAdvance(RelationshipRecord record, PageCursor pageCursor) {
         // When scanning, we inspect RelationshipRecord.inUse(), so using RecordLoad.CHECK is fine
-        relationshipStore.nextRecordByCursor(record, loadMode.orElse(CHECK).lenient(), pageCursor);
+        relationshipStore.nextRecordByCursor(record, loadMode.orElse(CHECK).lenient(), pageCursor, memoryTracker);
     }
 }

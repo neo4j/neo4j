@@ -65,6 +65,7 @@ import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.transaction.log.LogTailLogVersionsMetadata;
 import org.neo4j.logging.internal.NullLogService;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.RandomSupport;
@@ -280,7 +281,8 @@ class RelationshipGroupDefragmenterTest {
         int newGroupCount = 0;
         int currentGroupLength = 0;
         for (long id = firstId; id < highGroupId; id++, newGroupCount++) {
-            store.getRecordByCursor(id, groupRecord, CHECK, storeCursors.readCursor(GROUP_CURSOR));
+            store.getRecordByCursor(
+                    id, groupRecord, CHECK, storeCursors.readCursor(GROUP_CURSOR), EmptyMemoryTracker.INSTANCE);
             if (!groupRecord.inUse()) {
                 // This will be the case if we have double record units, just assert that fact
                 assertTrue(units > 1);

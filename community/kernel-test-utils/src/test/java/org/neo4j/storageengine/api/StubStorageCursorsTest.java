@@ -34,6 +34,7 @@ import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.graphdb.Direction;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.util.EagerDegrees;
 import org.neo4j.test.RandomSupport;
@@ -71,7 +72,8 @@ class StubStorageCursorsTest {
             }
 
             // when
-            try (var nodeCursor = cursors.allocateNodeCursor(NULL_CONTEXT, StoreCursors.NULL)) {
+            try (var nodeCursor =
+                    cursors.allocateNodeCursor(NULL_CONTEXT, StoreCursors.NULL, EmptyMemoryTracker.INSTANCE)) {
                 expectedCountsPerNode.forEachKeyValue((node, expectedCounts) -> {
                     assertDegrees(nodeCursor, node, expectedCounts, ALL_RELATIONSHIPS);
                     for (int type = 0; type < numTypes; type++) {

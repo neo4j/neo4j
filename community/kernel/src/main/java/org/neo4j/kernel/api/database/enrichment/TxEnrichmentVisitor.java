@@ -175,8 +175,8 @@ public class TxEnrichmentVisitor extends TxStateVisitor.Delegator implements Enr
         this.nodePositions = HeapTrackingCollections.newLongIntMap(memoryTracker);
         this.relationshipPositions = HeapTrackingCollections.newLongIntMap(memoryTracker);
 
-        this.nodeCursor = store.allocateNodeCursor(cursorContext, storeCursors);
-        this.relCursor = store.allocateRelationshipScanCursor(cursorContext, storeCursors);
+        this.nodeCursor = store.allocateNodeCursor(cursorContext, storeCursors, memoryTracker);
+        this.relCursor = store.allocateRelationshipScanCursor(cursorContext, storeCursors, memoryTracker);
         this.propertiesCursor = store.allocatePropertyCursor(cursorContext, storeCursors, memoryTracker);
 
         if (kernelVersion.isAtLeast(KernelVersion.VERSION_CDC_USER_METADATA_INTRODUCED)) {

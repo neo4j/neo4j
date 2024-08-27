@@ -141,7 +141,9 @@ class StoreMigratorTest {
         // a participant that will fail during the moving phase
         var failingParticipant = mock(StoreMigrationParticipant.class);
         when(failingParticipant.getName()).thenReturn("Failing");
-        doThrow(new IOException("Just failing")).when(failingParticipant).moveMigratedFiles(any(), any(), any(), any());
+        doThrow(new IOException("Just failing"))
+                .when(failingParticipant)
+                .moveMigratedFiles(any(), any(), any(), any(), any());
         mockParticipantAddition(failingParticipant);
 
         var exception = assertThrows(
@@ -162,7 +164,7 @@ class StoreMigratorTest {
         // migrate not called ...
         verify(observingParticipant, never()).migrate(any(), any(), any(), any(), any(), any(), any());
         // ... but move and clean up yes
-        verify(observingParticipant).moveMigratedFiles(any(), any(), any(), any());
+        verify(observingParticipant).moveMigratedFiles(any(), any(), any(), any(), any());
         verify(observingParticipant).cleanup(any(DatabaseLayout.class));
 
         verifyDbStartAndFormat(PageAligned.LATEST_RECORD_FORMATS);
@@ -194,7 +196,7 @@ class StoreMigratorTest {
         storeMigrator.migrateIfNeeded(PageAligned.LATEST_NAME, false);
 
         verify(observingParticipant).migrate(any(), any(), any(), any(), any(), any(), any());
-        verify(observingParticipant).moveMigratedFiles(any(), any(), any(), any());
+        verify(observingParticipant).moveMigratedFiles(any(), any(), any(), any(), any());
         verify(observingParticipant).cleanup(any(DatabaseLayout.class));
 
         verifyDbStartAndFormat(PageAligned.LATEST_RECORD_FORMATS);
@@ -235,7 +237,7 @@ class StoreMigratorTest {
                         argThat(new VersionMatcher(PageAlignedTestFormat.WithMajorVersionBump.RECORD_FORMATS)),
                         any(),
                         any());
-        verify(observingParticipant).moveMigratedFiles(any(), any(), any(), any());
+        verify(observingParticipant).moveMigratedFiles(any(), any(), any(), any(), any());
         verify(observingParticipant).cleanup(any(DatabaseLayout.class));
 
         verifyDbStartAndFormat(PageAlignedTestFormat.WithMajorVersionBump.RECORD_FORMATS);
@@ -249,7 +251,9 @@ class StoreMigratorTest {
         // a participant that will fail during the migration phase
         var failingParticipant = mock(StoreMigrationParticipant.class);
         when(failingParticipant.getName()).thenReturn("Failing");
-        doThrow(new IOException("Just failing")).when(failingParticipant).moveMigratedFiles(any(), any(), any(), any());
+        doThrow(new IOException("Just failing"))
+                .when(failingParticipant)
+                .moveMigratedFiles(any(), any(), any(), any(), any());
         mockParticipantAddition(failingParticipant);
 
         var exception = assertThrows(
@@ -273,7 +277,8 @@ class StoreMigratorTest {
                         any(),
                         any(),
                         argThat(new VersionMatcher(StandardFormatWithMinorVersionBump.RECORD_FORMATS)),
-                        argThat(new VersionMatcher(PageAlignedTestFormat.WithMajorVersionBump.RECORD_FORMATS)));
+                        argThat(new VersionMatcher(PageAlignedTestFormat.WithMajorVersionBump.RECORD_FORMATS)),
+                        any());
         verify(observingParticipant)
                 .migrate(
                         any(),
@@ -288,7 +293,8 @@ class StoreMigratorTest {
                         any(),
                         any(),
                         argThat(new VersionMatcher(StandardFormatWithMinorVersionBump.RECORD_FORMATS)),
-                        argThat(new VersionMatcher(PageAlignedTestFormat.WithMajorVersionBump.RECORD_FORMATS)));
+                        argThat(new VersionMatcher(PageAlignedTestFormat.WithMajorVersionBump.RECORD_FORMATS)),
+                        any());
         verify(observingParticipant, times(2)).cleanup(any(DatabaseLayout.class));
 
         verifyDbStartAndFormat(PageAlignedTestFormat.WithMajorVersionBump.RECORD_FORMATS);
@@ -330,7 +336,7 @@ class StoreMigratorTest {
                         argThat(new VersionMatcher(StandardFormatWithMinorVersionBump.RECORD_FORMATS)),
                         any(),
                         any());
-        verify(observingParticipant).moveMigratedFiles(any(), any(), any(), any());
+        verify(observingParticipant).moveMigratedFiles(any(), any(), any(), any(), any());
         verify(observingParticipant).cleanup(any(DatabaseLayout.class));
 
         verifyDbStartAndFormat(StandardFormatWithMinorVersionBump.RECORD_FORMATS);
@@ -344,7 +350,9 @@ class StoreMigratorTest {
         // a participant that will fail during the migration phase
         var failingParticipant = mock(StoreMigrationParticipant.class);
         when(failingParticipant.getName()).thenReturn("Failing");
-        doThrow(new IOException("Just failing")).when(failingParticipant).moveMigratedFiles(any(), any(), any(), any());
+        doThrow(new IOException("Just failing"))
+                .when(failingParticipant)
+                .moveMigratedFiles(any(), any(), any(), any(), any());
         mockParticipantAddition(failingParticipant);
 
         var exception = assertThrows(

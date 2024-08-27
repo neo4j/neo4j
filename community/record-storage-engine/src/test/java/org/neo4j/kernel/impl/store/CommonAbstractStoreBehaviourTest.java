@@ -57,6 +57,8 @@ import org.neo4j.kernel.impl.store.format.BaseRecordFormat;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.memory.EmptyMemoryTracker;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.string.Mask;
 import org.neo4j.test.extension.Inject;
@@ -176,7 +178,7 @@ class CommonAbstractStoreBehaviourTest {
     void getRecordMustThrowOnPageOverflow() {
         verifyExceptionOnOutOfBoundsAccess(() -> {
             try (var cursor = store.openPageCursorForReading(0, NULL_CONTEXT)) {
-                store.getRecordByCursor(5, new IntRecord(5), NORMAL, cursor);
+                store.getRecordByCursor(5, new IntRecord(5), NORMAL, cursor, EmptyMemoryTracker.INSTANCE);
             }
         });
     }
@@ -185,7 +187,7 @@ class CommonAbstractStoreBehaviourTest {
     void getRecordMustThrowOnPageOverflowWithCheckLoadMode() {
         verifyExceptionOnOutOfBoundsAccess(() -> {
             try (var cursor = store.openPageCursorForReading(0, NULL_CONTEXT)) {
-                store.getRecordByCursor(5, new IntRecord(5), CHECK, cursor);
+                store.getRecordByCursor(5, new IntRecord(5), CHECK, cursor, EmptyMemoryTracker.INSTANCE);
             }
         });
     }
@@ -194,7 +196,7 @@ class CommonAbstractStoreBehaviourTest {
     void getRecordMustNotThrowOnPageOverflowWithForceLoadMode() {
         prepareStoreForOutOfBoundsAccess();
         try (var cursor = store.openPageCursorForReading(5, NULL_CONTEXT)) {
-            store.getRecordByCursor(5, new IntRecord(5), FORCE, cursor);
+            store.getRecordByCursor(5, new IntRecord(5), FORCE, cursor, EmptyMemoryTracker.INSTANCE);
         }
     }
 
@@ -211,7 +213,7 @@ class CommonAbstractStoreBehaviourTest {
     void getRecordMustThrowOnCursorError() {
         verifyExceptionOnCursorError(() -> {
             try (var cursor = store.openPageCursorForReading(0, NULL_CONTEXT)) {
-                store.getRecordByCursor(5, new IntRecord(5), NORMAL, cursor);
+                store.getRecordByCursor(5, new IntRecord(5), NORMAL, cursor, EmptyMemoryTracker.INSTANCE);
             }
         });
     }
@@ -220,7 +222,7 @@ class CommonAbstractStoreBehaviourTest {
     void getRecordMustThrowOnCursorErrorWithCheckLoadMode() {
         verifyExceptionOnCursorError(() -> {
             try (var cursor = store.openPageCursorForReading(0, NULL_CONTEXT)) {
-                store.getRecordByCursor(5, new IntRecord(5), CHECK, cursor);
+                store.getRecordByCursor(5, new IntRecord(5), CHECK, cursor, EmptyMemoryTracker.INSTANCE);
             }
         });
     }
@@ -229,7 +231,7 @@ class CommonAbstractStoreBehaviourTest {
     void getRecordMustNotThrowOnCursorErrorWithForceLoadMode() {
         prepareStoreForCursorError();
         try (var cursor = store.openPageCursorForReading(0, NULL_CONTEXT)) {
-            store.getRecordByCursor(5, new IntRecord(5), FORCE, cursor);
+            store.getRecordByCursor(5, new IntRecord(5), FORCE, cursor, EmptyMemoryTracker.INSTANCE);
         }
     }
 
@@ -375,7 +377,13 @@ class CommonAbstractStoreBehaviourTest {
         }
 
         @Override
-        public void read(IntRecord record, PageCursor cursor, RecordLoad mode, int recordSize, int recordsPerPage) {
+        public void read(
+                IntRecord record,
+                PageCursor cursor,
+                RecordLoad mode,
+                int recordSize,
+                int recordsPerPage,
+                MemoryTracker memoryTracker) {
             for (int i = 0; i < intsPerRecord; i++) {
                 record.value = cursor.getInt();
             }

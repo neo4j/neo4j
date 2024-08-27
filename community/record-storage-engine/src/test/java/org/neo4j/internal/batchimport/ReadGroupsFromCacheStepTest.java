@@ -39,6 +39,7 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
+import org.neo4j.memory.MemoryTracker;
 
 class ReadGroupsFromCacheStepTest {
     @Test
@@ -107,7 +108,11 @@ class ReadGroupsFromCacheStepTest {
         }
 
         @Override
-        protected void process(RelationshipGroupRecord[] batch, BatchSender sender, CursorContext cursorContext) {
+        protected void process(
+                RelationshipGroupRecord[] batch,
+                BatchSender sender,
+                CursorContext cursorContext,
+                MemoryTracker memoryTracker) {
             long lastOwningNode = lastBatchLastOwningNode;
             for (RelationshipGroupRecord record : batch) {
                 assertTrue(record.getOwningNode() >= lastOwningNode);

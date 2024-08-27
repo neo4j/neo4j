@@ -50,6 +50,7 @@ import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
@@ -114,8 +115,12 @@ class PropertyStoreTest {
 
                 doAnswer(invocation -> {
                             try (var cursor = store.openPageCursorForReading(propertyRecordId, NULL_CONTEXT)) {
-                                PropertyRecord recordBeforeWrite =
-                                        store.getRecordByCursor(propertyRecordId, store.newRecord(), FORCE, cursor);
+                                PropertyRecord recordBeforeWrite = store.getRecordByCursor(
+                                        propertyRecordId,
+                                        store.newRecord(),
+                                        FORCE,
+                                        cursor,
+                                        EmptyMemoryTracker.INSTANCE);
                                 assertFalse(recordBeforeWrite.inUse());
                                 return null;
                             }
