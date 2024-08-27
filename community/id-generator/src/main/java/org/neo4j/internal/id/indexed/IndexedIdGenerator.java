@@ -706,18 +706,15 @@ public class IndexedIdGenerator implements IdGenerator {
         return highId.get();
     }
 
+    /**
+     * HighId is only set if it's higher than the current highId (highId cannot be set to something lower than it already is).
+     */
     @Override
     public void setHighId(long newHighId) {
-        // Apparently there's this thing where there's a check that highId is only set if it's higher than the current
-        // highId,
-        // i.e. highId cannot be set to something lower than it already is. This check is done in the store
-        // implementation.
-        // But can we rely on it always guarding this, and can this even happen at all? Anyway here's a simple guard for
-        // not setting it to something lower.
         long expect;
         do {
-            expect = highId.get();
-        } while (newHighId > expect && !highId.compareAndSet(expect, newHighId));
+            expect = highId.getAcquire();
+        } while (newHighId > expect && !highId.weakCompareAndSetRelease(expect, newHighId));
     }
 
     @Override

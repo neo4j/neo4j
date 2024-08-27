@@ -119,20 +119,18 @@ import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.Race;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.LifeExtension;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.utils.TestDirectory;
 import org.neo4j.time.Clocks;
 
 @PageCacheExtension
-@ExtendWith({RandomExtension.class, LifeExtension.class})
+@ExtendWith(RandomExtension.class)
 class IndexedIdGeneratorTest {
     private static final long MAX_ID = 0x3_00000000L;
     private static final CursorContextFactory CONTEXT_FACTORY =
@@ -149,9 +147,6 @@ class IndexedIdGeneratorTest {
 
     @Inject
     private RandomSupport random;
-
-    @Inject
-    private LifeSupport lifeSupport;
 
     private IndexedIdGenerator idGenerator;
     private Path file;
