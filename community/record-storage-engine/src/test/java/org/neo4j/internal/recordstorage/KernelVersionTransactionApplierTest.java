@@ -44,7 +44,7 @@ public class KernelVersionTransactionApplierTest {
         when(kernelVersionRepository.kernelVersion()).thenReturn(from);
 
         // given  a command to update the kernel version
-        final var applier = new KernelVersionTransactionApplier.Factory(kernelVersionRepository);
+        final var applier = new KernelVersionTransactionApplierFactory(kernelVersionRepository);
         final var command = createMetaDataCommand(from, to);
         final var txToApply = mock(StorageEngineTransaction.class);
 

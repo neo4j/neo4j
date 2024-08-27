@@ -270,12 +270,14 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
     }
 
     private void buildApplierChains() {
+        var kernelVersionApplierFactory = new KernelVersionTransactionApplierFactory(kernelVersionRepository);
         for (TransactionApplicationMode mode : TransactionApplicationMode.values()) {
-            applierChains.put(mode, buildApplierFacadeChain(mode));
+            applierChains.put(mode, buildApplierFacadeChain(mode, kernelVersionApplierFactory));
         }
     }
 
-    private TransactionApplierFactoryChain buildApplierFacadeChain(TransactionApplicationMode mode) {
+    private TransactionApplierFactoryChain buildApplierFacadeChain(
+            TransactionApplicationMode mode, KernelVersionTransactionApplierFactory kernelVersionApplierFactory) {
         TransactionApplierFactoryChain.IdUpdateListenerFactory idUpdateListenerFunction =
                 mode.isReverseStep() ? (w, c) -> IdUpdateListener.IGNORE : IdGeneratorUpdatesWorkSync::newBatch;
         List<TransactionApplierFactory> appliers = new ArrayList<>();
@@ -283,7 +285,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
         if (consistencyCheckApply && mode.needsAuxiliaryStores()) {
             appliers.add(new ConsistencyCheckingApplierFactory(neoStores));
         }
-        appliers.add(new KernelVersionTransactionApplier.Factory(kernelVersionRepository));
+        appliers.add(kernelVersionApplierFactory);
         if (isMultiVersionedFormat()) {
             appliers.add(new NeoStoreTransactionApplierFactory(mode, neoStores, cacheAccess));
         } else {

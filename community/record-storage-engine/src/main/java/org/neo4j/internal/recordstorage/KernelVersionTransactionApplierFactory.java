@@ -19,23 +19,20 @@
  */
 package org.neo4j.internal.recordstorage;
 
-import org.neo4j.internal.helpers.Numbers;
-import org.neo4j.internal.recordstorage.Command.MetaDataCommand;
-import org.neo4j.kernel.KernelVersion;
+import java.io.IOException;
 import org.neo4j.kernel.KernelVersionRepository;
+import org.neo4j.storageengine.api.StorageEngineTransaction;
 
-public class KernelVersionTransactionApplier extends TransactionApplier.Adapter {
-    private final KernelVersionRepository kernelVersionRepository;
+public class KernelVersionTransactionApplierFactory implements TransactionApplierFactory {
+    private final KernelVersionTransactionApplier applier;
 
-    public KernelVersionTransactionApplier(KernelVersionRepository kernelVersionRepository) {
-        this.kernelVersionRepository = kernelVersionRepository;
+    public KernelVersionTransactionApplierFactory(KernelVersionRepository kernelVersionRepository) {
+        this.applier = new KernelVersionTransactionApplier(kernelVersionRepository);
     }
 
     @Override
-    public boolean visitMetaDataCommand(MetaDataCommand command) {
-        final var kernelVersion = KernelVersion.getForVersion(
-                Numbers.safeCastLongToByte(command.getAfter().getValue()));
-        kernelVersionRepository.setKernelVersion(kernelVersion);
-        return false;
+    public TransactionApplier startTx(StorageEngineTransaction transaction, BatchContext batchContext)
+            throws IOException {
+        return applier;
     }
 }
