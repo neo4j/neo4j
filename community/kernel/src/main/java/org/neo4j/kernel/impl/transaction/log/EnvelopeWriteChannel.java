@@ -323,14 +323,15 @@ public class EnvelopeWriteChannel implements PhysicalLogChannel {
     public EnvelopeWriteChannel putAll(ByteBuffer src) throws IOException {
         int length = src.remaining();
         int srcIndex = src.position();
-        while (srcIndex < length) {
+        int srcLimit = src.limit();
+        while (srcIndex < srcLimit) {
             int remainingPayloadSpace = nextSegmentOffset - buffer.position();
-            int payloadChunk = min(length - srcIndex, remainingPayloadSpace);
+            int payloadChunk = min(srcLimit - srcIndex, remainingPayloadSpace);
             buffer.put(buffer.position(), src, srcIndex, payloadChunk);
             buffer.position(buffer.position() + payloadChunk);
             srcIndex += payloadChunk;
 
-            if (srcIndex != length) {
+            if (srcIndex != srcLimit) {
                 // Still have data left to put
                 completeEnvelopeAndGoToNextSegment();
             }
