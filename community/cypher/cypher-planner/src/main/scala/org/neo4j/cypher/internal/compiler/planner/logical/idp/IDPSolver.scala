@@ -25,6 +25,9 @@ import org.neo4j.cypher.internal.compiler.planner.logical.ProjectingSelector
 import org.neo4j.cypher.internal.compiler.planner.logical.Selector
 import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.exceptions.InternalException
+import org.neo4j.gqlstatus.ErrorClassification
+import org.neo4j.gqlstatus.ErrorGqlStatusObjectImplementation
+import org.neo4j.gqlstatus.GqlStatusInfoCodes
 import org.neo4j.time.Stopwatch
 
 import java.util.concurrent.TimeUnit
@@ -163,7 +166,11 @@ class IDPSolver[Solvable, Result, Context](
       val bestInBlock: Option[(Goal, Result)] =
         goalSelector(s"Best candidate for block size $blockSize")(blockCandidates)
       val (goal, _) = bestInBlock.getOrElse {
+        val gql = ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_51N24)
+          .withClassification(ErrorClassification.CLIENT_ERROR)
+          .build()
         throw new InternalException(
+          gql,
           s"""Found no solution for block with size $blockSize,
              |$blockCandidates were the selected candidates from the table $table""".stripMargin
         )
@@ -188,12 +195,18 @@ class IDPSolver[Solvable, Result, Context](
       iterations += 1
       monitor.startIteration(iterations)
       val largestFinished = generateBestCandidates(toDo.size)
-      if (largestFinished <= 0) throw new InternalException(
-        s"""Unfortunately, the planner was unable to find a plan within the constraints provided.
-           |Try increasing the config values `${GraphDatabaseInternalSettings.cypher_idp_solver_table_threshold.name()}`
-           |and `${GraphDatabaseInternalSettings.cypher_idp_solver_duration_threshold.name()}` to allow
-           |for a larger sub-plan table and longer planning time.""".stripMargin
-      )
+      if (largestFinished <= 0) {
+        val gql = ErrorGqlStatusObjectImplementation.from(GqlStatusInfoCodes.STATUS_51N24)
+          .withClassification(ErrorClassification.CLIENT_ERROR)
+          .build()
+        throw new InternalException(
+          gql,
+          s"""Unfortunately, the planner was unable to find a plan within the constraints provided.
+             |Try increasing the config values `${GraphDatabaseInternalSettings.cypher_idp_solver_table_threshold.name()}`
+             |and `${GraphDatabaseInternalSettings.cypher_idp_solver_duration_threshold.name()}` to allow
+             |for a larger sub-plan table and longer planning time.""".stripMargin
+        )
+      }
       val bestGoal = findBestCandidateInBlock(largestFinished)
       monitor.endIteration(iterations, largestFinished, table.size)
       // Compaction is either done at the very end of the algorithm, or when we hit a table size or time limit.

@@ -33,6 +33,7 @@ public class ExhaustiveShortestPathForbiddenException extends CypherExecutionExc
                     + "the existential predicates on the path; note though that in this case all shortest paths are computed before\n"
                     + "start filtering.";
 
+    @Deprecated
     public ExhaustiveShortestPathForbiddenException() {
         super(ERROR_MSG);
     }

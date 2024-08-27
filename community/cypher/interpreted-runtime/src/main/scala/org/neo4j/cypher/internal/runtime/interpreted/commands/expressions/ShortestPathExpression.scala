@@ -31,6 +31,9 @@ import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.exceptions.ShortestPathCommonEndNodesForbiddenException
 import org.neo4j.exceptions.SyntaxException
+import org.neo4j.gqlstatus.ErrorClassification
+import org.neo4j.gqlstatus.ErrorGqlStatusObjectImplementation
+import org.neo4j.gqlstatus.GqlStatusInfoCodes
 import org.neo4j.graphdb.NotFoundException
 import org.neo4j.graphdb.Relationship
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor
@@ -62,7 +65,13 @@ case class ShortestPathExpression(
       if (
         !shortestPathPattern.allowZeroLength && disallowSameNode && sourceNodeId
           .equals(targetNodeId)
-      ) throw new ShortestPathCommonEndNodesForbiddenException
+      ) {
+        val gql = ErrorGqlStatusObjectImplementation.from(
+          GqlStatusInfoCodes.STATUS_51N23
+        ).withClassification(ErrorClassification.CLIENT_ERROR)
+          .build()
+        throw new ShortestPathCommonEndNodesForbiddenException(gql)
+      }
       getMatches(sourceNodeId, targetNodeId, state, memoryTracker)
     }
   }

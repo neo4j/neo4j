@@ -47,6 +47,9 @@ import org.neo4j.cypher.internal.util.Rewritable.RewritableAny
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.topDown
 import org.neo4j.exceptions.ExhaustiveShortestPathForbiddenException
+import org.neo4j.gqlstatus.ErrorClassification
+import org.neo4j.gqlstatus.ErrorGqlStatusObjectImplementation
+import org.neo4j.gqlstatus.GqlStatusInfoCodes
 import org.neo4j.notifications.ExhaustiveShortestPathForbiddenNotification
 
 case object planShortestRelationships {
@@ -177,7 +180,10 @@ case object planShortestRelationships {
 
     val rhs =
       if (context.settings.errorIfShortestPathFallbackUsedAtRuntime) {
-        lpp.planError(rhsArgument, new ExhaustiveShortestPathForbiddenException, context)
+        val gql = ErrorGqlStatusObjectImplementation.from(
+          GqlStatusInfoCodes.STATUS_51N22
+        ).withClassification(ErrorClassification.CLIENT_ERROR).build()
+        lpp.planError(rhsArgument, new ExhaustiveShortestPathForbiddenException(gql), context)
       } else {
         buildPlanShortestRelationshipsFallbackPlans(
           shortestRelationship,

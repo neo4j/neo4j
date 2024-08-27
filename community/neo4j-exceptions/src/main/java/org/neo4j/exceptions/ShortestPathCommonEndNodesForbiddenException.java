@@ -31,6 +31,7 @@ public class ShortestPathCommonEndNodesForbiddenException extends CypherExecutio
                     + "shortestPath between two common nodes, then re-write the query using a standard Cypher variable length pattern\n"
                     + "expression followed by ordering by path length and limiting to one result.";
 
+    @Deprecated
     public ShortestPathCommonEndNodesForbiddenException() {
         super(ERROR_MSG);
     }

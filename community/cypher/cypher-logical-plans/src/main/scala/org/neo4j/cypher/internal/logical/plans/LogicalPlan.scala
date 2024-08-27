@@ -79,6 +79,9 @@ import org.neo4j.cypher.internal.util.attribution.SameId
 import org.neo4j.cypher.internal.util.collection.immutable.ListSet
 import org.neo4j.exceptions.InternalException
 import org.neo4j.exceptions.ShortestPathCommonEndNodesForbiddenException
+import org.neo4j.gqlstatus.ErrorClassification
+import org.neo4j.gqlstatus.ErrorGqlStatusObjectImplementation
+import org.neo4j.gqlstatus.GqlStatusInfoCodes
 import org.neo4j.graphdb.schema.IndexType
 import org.neo4j.util.Preconditions
 
@@ -2280,7 +2283,11 @@ object FindShortestPaths {
 
     override def shouldReturnEmptyResult(sourceId: Long, targetId: Long, allowZeroLength: Boolean): Boolean =
       if (!allowZeroLength && sourceId == targetId) {
-        throw new ShortestPathCommonEndNodesForbiddenException
+        val gql = ErrorGqlStatusObjectImplementation.from(
+          GqlStatusInfoCodes.STATUS_51N23
+        ).withClassification(ErrorClassification.CLIENT_ERROR)
+          .build()
+        throw new ShortestPathCommonEndNodesForbiddenException(gql)
       } else {
         false
       }
