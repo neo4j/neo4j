@@ -27,6 +27,9 @@ import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
 import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.logical.plans.Expand.VariablePredicate
+import org.neo4j.cypher.internal.runtime.ast.TraversalEndpoint
+import org.neo4j.cypher.internal.runtime.ast.TraversalEndpoint.Endpoint.From
+import org.neo4j.cypher.internal.runtime.ast.TraversalEndpoint.Endpoint.To
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.Repetition
 import org.neo4j.cypher.internal.util.UpperBound.Unlimited
@@ -283,30 +286,65 @@ class convertToInlinedPredicatesTest extends CypherFunSuite with AstConstruction
   }
 
   test(
-    "Should not rewrite (outerStart)((innerStart{prop:1})--(innerEnd{prop:1}))*(outerEnd)"
+    "Rewrite (outerStart)((innerStart{prop:1})--(innerEnd{prop:1}))*(outerEnd)"
   ) {
     rewrite(Input(
       innerPredicates = Seq(propEquality("innerStart", "prop", 1), propEquality("innerEnd", "prop", 1))
-    )) shouldBe None
+    )) shouldBe Some(InlinedPredicates(relationshipPredicates =
+      Seq(
+        VariablePredicate(
+          v"  UNNAMED1",
+          equals(
+            propExpression(TraversalEndpoint(v"  UNNAMED2", From), "prop"),
+            literalInt(1)
+          )
+        ),
+        VariablePredicate(
+          v"  UNNAMED1",
+          equals(
+            propExpression(TraversalEndpoint(v"  UNNAMED3", To), "prop"),
+            literalInt(1)
+          )
+        )
+      )
+    ))
   }
 
   test(
-    "Should not rewrite (outerStart)((innerStart)--(innerEnd{prop:1}))+(outerEnd{prop:1})"
+    "Rewrite (outerStart)((innerStart)--(innerEnd{prop:1}))+(outerEnd{prop:1})"
   ) {
     rewrite(Input(
       innerPredicates = Seq(propEquality("innerEnd", "prop", 1)),
       outerPredicates = Seq(propEquality("outerEnd", "prop", 1)),
       minRep = 1
-    )) shouldBe None
+    )) shouldBe Some(InlinedPredicates(relationshipPredicates =
+      Seq(VariablePredicate(
+        v"  UNNAMED1",
+        equals(
+          propExpression(TraversalEndpoint(v"  UNNAMED2", To), "prop"),
+          literalInt(1)
+        )
+      ))
+    ))
   }
 
   test(
-    "Should not rewrite (outerStart{prop: 1})((innerStart{prop:1})--(innerEnd))*(outerEnd)"
+    "Rewrite (outerStart{prop: 1})((innerStart{prop:1})--(innerEnd))*(outerEnd)"
   ) {
     rewrite(Input(
       innerPredicates = Seq(propEquality("innerStart", "prop", 1)),
       outerPredicates = Seq(propEquality("outerStart", "prop", 1))
-    )) shouldBe None
+    )) shouldBe Some(InlinedPredicates(relationshipPredicates =
+      Seq(
+        VariablePredicate(
+          v"  UNNAMED1",
+          equals(
+            propExpression(TraversalEndpoint(v"  UNNAMED2", From), "prop"),
+            literalInt(1)
+          )
+        )
+      )
+    ))
   }
 
   test(
@@ -321,12 +359,23 @@ class convertToInlinedPredicatesTest extends CypherFunSuite with AstConstruction
   }
 
   test(
-    "Should not rewrite (outerStart)((innerStart)-[rel{prop:1}]-(innerEnd) WHERE innerStart.prop <> innerEnd.prop)*(outerEnd) - undirected relationship cannot refer to startNode and endNode"
+    "Rewrite (outerStart)((innerStart)-[rel{prop:1}]-(innerEnd) WHERE innerStart.prop <> innerEnd.prop)*(outerEnd)"
   ) {
     rewrite(Input(
       innerPredicates =
         Seq(propEquality("rel", "prop", 1), notEquals(prop("innerStart", "prop"), prop("innerEnd", "prop")))
-    )) shouldBe None
+    )) shouldBe Some(InlinedPredicates(relationshipPredicates =
+      Seq(
+        VariablePredicate(v"  UNNAMED1", propEquality("  UNNAMED1", "prop", 1)),
+        VariablePredicate(
+          v"  UNNAMED1",
+          notEquals(
+            propExpression(TraversalEndpoint(v"  UNNAMED2", From), "prop"),
+            propExpression(TraversalEndpoint(v"  UNNAMED3", To), "prop")
+          )
+        )
+      )
+    ))
   }
 
   test(
@@ -357,5 +406,39 @@ class convertToInlinedPredicatesTest extends CypherFunSuite with AstConstruction
         ),
       direction = OUTGOING
     )) shouldBe None
+  }
+
+  test(
+    "Rewrite (outerStart)((innerStart{prop:1})-[r]-(innerEnd))+(outerEnd) or (outerEnd)((innerEnd)-[r]-(innerStart{prop:1}))+(outerStart)"
+  ) {
+    rewrite(Input(
+      innerPredicates = Seq(propEquality("innerStart", "prop", 1)),
+      minRep = 1
+    )) shouldEqual Some(InlinedPredicates(relationshipPredicates =
+      Seq(VariablePredicate(
+        v"  UNNAMED1",
+        equals(
+          propExpression(TraversalEndpoint(v"  UNNAMED2", From), "prop"),
+          literalInt(1)
+        )
+      ))
+    ))
+  }
+
+  test(
+    "Rewrite (outerStart)((innerStart)-[r]-(innerEnd{prop:1}))+(outerEnd) or (outerEnd)((innerEnd{prop:1})-[r]-(innerStart))+(outerStart)"
+  ) {
+    rewrite(Input(
+      innerPredicates = Seq(propEquality("innerEnd", "prop", 1)),
+      minRep = 1
+    )) shouldEqual Some(InlinedPredicates(relationshipPredicates =
+      Seq(VariablePredicate(
+        v"  UNNAMED1",
+        equals(
+          propExpression(TraversalEndpoint(v"  UNNAMED2", To), "prop"),
+          literalInt(1)
+        )
+      ))
+    ))
   }
 }

@@ -37,7 +37,11 @@ import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.Pred
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.TrailParameters
 import org.neo4j.cypher.internal.logical.plans.Expand.ExpandAll
 import org.neo4j.cypher.internal.logical.plans.Expand.ExpandInto
+import org.neo4j.cypher.internal.logical.plans.Expand.VariablePredicate
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.runtime.ast.TraversalEndpoint
+import org.neo4j.cypher.internal.runtime.ast.TraversalEndpoint.Endpoint.From
+import org.neo4j.cypher.internal.runtime.ast.TraversalEndpoint.Endpoint.To
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.UpperBound
 import org.neo4j.cypher.internal.util.UpperBound.Limited
@@ -259,7 +263,7 @@ class TrailToVarExpandRewriterTest extends CypherFunSuite with LogicalPlanningTe
     rewrites(trail, expand)
   }
 
-  test("Preserves bidirectional MATCH (a) ((n)-[r]-(m) WHERE n.p <> m.p)+ (b) RETURN 1 AS s") {
+  test("Rewrites bidirectional MATCH (a) ((n)-[r]-(m) WHERE n.p <> m.p)+ (b) RETURN 1 AS s") {
     val trail = subPlanBuilder
       .projection("1 AS s")
       .trail(`(a) ((n)-[r]-(m))+ (b)`.empty)
@@ -268,7 +272,23 @@ class TrailToVarExpandRewriterTest extends CypherFunSuite with LogicalPlanningTe
       .|.argument("n_i")
       .allNodeScan("a")
       .build()
-    preserves(trail)
+
+    val expand = subPlanBuilder
+      .projection("1 AS s")
+      .expandExpr(
+        "(a)-[r_i*1..]-(b)",
+        relationshipPredicates = Seq(VariablePredicate(
+          v"  UNNAMED1",
+          notEquals(
+            propExpression(TraversalEndpoint(v"  UNNAMED2", From), "p"),
+            propExpression(TraversalEndpoint(v"  UNNAMED3", To), "p")
+          )
+        ))
+      )
+      .allNodeScan("a")
+      .build()
+
+    rewrites(trail, expand)
   }
 
   // pre-filter predicate with dependency on variable from previous clause

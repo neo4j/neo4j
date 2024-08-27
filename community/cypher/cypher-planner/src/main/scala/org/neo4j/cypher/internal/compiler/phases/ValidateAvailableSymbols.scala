@@ -33,6 +33,7 @@ import org.neo4j.cypher.internal.logical.plans.NestedPlanExpression
 import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath
 import org.neo4j.cypher.internal.rewriting.ValidatingCondition
 import org.neo4j.cypher.internal.runtime.ast.RuntimeConstant
+import org.neo4j.cypher.internal.runtime.ast.TraversalEndpoint
 import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
@@ -112,6 +113,10 @@ object ValidateAvailableSymbols extends ValidatingCondition {
           TraverseChildrenNewAccForSiblings[Set[LogicalVariable]](acc, _ - rc.variable)
       case cachedProp: CachedProperty => acc =>
           SkipChildren(acc + cachedProp.entityVariable)
+      case _: TraversalEndpoint => acc =>
+          // A TraversalEndpoint has a reference to a distinct anonymous variable
+          // which is used to store the id of the endpoint node when a relationship is traversed
+          SkipChildren(acc)
 
       // No special reason to skip the following, other than to save time
       case _: StatefulShortestPath => acc =>

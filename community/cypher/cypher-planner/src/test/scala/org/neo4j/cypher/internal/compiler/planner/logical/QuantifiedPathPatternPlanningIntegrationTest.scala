@@ -48,8 +48,12 @@ import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.crea
 import org.neo4j.cypher.internal.logical.plans.Expand.ExpandAll
 import org.neo4j.cypher.internal.logical.plans.Expand.ExpandInto
 import org.neo4j.cypher.internal.logical.plans.Expand.VariablePredicate
+import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.NestedPlanExistsExpression
+import org.neo4j.cypher.internal.runtime.ast.TraversalEndpoint
+import org.neo4j.cypher.internal.runtime.ast.TraversalEndpoint.Endpoint.From
+import org.neo4j.cypher.internal.runtime.ast.TraversalEndpoint.Endpoint.To
 import org.neo4j.cypher.internal.util.UpperBound
 import org.neo4j.cypher.internal.util.UpperBound.Limited
 import org.neo4j.cypher.internal.util.UpperBound.Unlimited
@@ -1608,6 +1612,7 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       .setLabelCardinality("B", 5)
       .setLabelCardinality("C", 5)
       .setRelationshipCardinality("(:A)-[]->()", 10)
+      .setRelationshipCardinality("(:B)-[]->()", 10)
       .setRelationshipCardinality("()-[]->(:B)", 10)
       .setRelationshipCardinality("(:A)-[]->(:A)", 10)
       .setRelationshipCardinality("(:A)-[]->(:B)", 10)
@@ -1615,7 +1620,7 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       .setRelationshipCardinality("(:B)-[]->(:B)", 10)
       .build()
 
-    val query = "MATCH (x:C) OPTIONAL MATCH (start:A)((a:A)-[r]->(b:B))*(end:B) DELETE x"
+    val query = "MATCH (x:C) OPTIONAL MATCH (start:A)((a:A)-[r1]->(b:B)-[r2]->(c:B))*(end:B) DELETE x"
     val plan = planner.plan(query).stripProduceResults
 
     val `(start)((a)-[r]->(b))*(end)` =
@@ -1625,10 +1630,10 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
         start = "start",
         end = "end",
         innerStart = "a",
-        innerEnd = "b",
+        innerEnd = "c",
         groupNodes = Set.empty,
         groupRelationships = Set.empty,
-        innerRelationships = Set("r"),
+        innerRelationships = Set("r1", "r2"),
         previouslyBoundRelationships = Set.empty,
         previouslyBoundRelationshipGroups = Set.empty,
         reverseGroupVariableProjections = false
@@ -1638,23 +1643,28 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       .emptyResult()
       .deleteNode("x")
       .eager(ListSet(
-        ReadDeleteConflict("b").withConflict(Conflict(Id(2), Id(7))),
-        ReadDeleteConflict("a").withConflict(Conflict(Id(2), Id(10))),
+        ReadDeleteConflict("c").withConflict(Conflict(Id(2), Id(7))),
+        ReadDeleteConflict("a").withConflict(Conflict(Id(2), Id(12))),
         ReadDeleteConflict("start").withConflict(Conflict(Id(2), Id(7))),
-        ReadDeleteConflict("end").withConflict(Conflict(Id(2), Id(6))),
-        ReadDeleteConflict("start").withConflict(Conflict(Id(2), Id(12))),
-        ReadDeleteConflict("b").withConflict(Conflict(Id(2), Id(9))),
-        ReadDeleteConflict("b").withConflict(Conflict(Id(2), Id(8))),
-        ReadDeleteConflict("a").withConflict(Conflict(Id(2), Id(9))),
         ReadDeleteConflict("a").withConflict(Conflict(Id(2), Id(7))),
-        ReadDeleteConflict("end").withConflict(Conflict(Id(2), Id(7)))
+        ReadDeleteConflict("end").withConflict(Conflict(Id(2), Id(7))),
+        ReadDeleteConflict("c").withConflict(Conflict(Id(2), Id(8))),
+        ReadDeleteConflict("c").withConflict(Conflict(Id(2), Id(9))),
+        ReadDeleteConflict("b").withConflict(Conflict(Id(2), Id(10))),
+        ReadDeleteConflict("end").withConflict(Conflict(Id(2), Id(6))),
+        ReadDeleteConflict("start").withConflict(Conflict(Id(2), Id(14))),
+        ReadDeleteConflict("a").withConflict(Conflict(Id(2), Id(11))),
+        ReadDeleteConflict("b").withConflict(Conflict(Id(2), Id(9))),
+        ReadDeleteConflict("b").withConflict(Conflict(Id(2), Id(11)))
       ))
       .apply()
       .|.optional("x")
       .|.filter("end:B")
       .|.trail(`(start)((a)-[r]->(b))*(end)`)
-      .|.|.filterExpressionOrString(isRepeatTrailUnique("r"), "b:B")
-      .|.|.expandAll("(a)-[r]->(b)")
+      .|.|.filterExpressionOrString("NOT r2 = r1", isRepeatTrailUnique("r2"), "c:B")
+      .|.|.expandAll("(b)-[r2]->(c)")
+      .|.|.filterExpressionOrString(isRepeatTrailUnique("r1"), "b:B")
+      .|.|.expandAll("(a)-[r1]->(b)")
       .|.|.filter("a:A")
       .|.|.argument("a", "x")
       .|.nodeByLabelScan("start", "A", "x")
@@ -2779,7 +2789,9 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
     plan shouldEqual expected
   }
 
-  test("should NOT rewrite single undirected relationships to varexpand") {
+  test(
+    "should rewrite single undirected relationships to varExpand - start expanding from left, with predicate on the right inner node"
+  ) {
     val planner = plannerBuilder()
       .setAllNodesCardinality(100)
       .setLabelCardinality("A", 10)
@@ -2792,7 +2804,7 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
 
     val query =
       """
-        |MATCH (a:A {name: "Foo"}) (()-[:R]-(neighbour) WHERE neighbour.name <> "Foo")* (e)
+        |MATCH (a:A {name: "Foo"}) (()-[:R]-(n) WHERE n.name <> "Foo")* (e)
         |RETURN DISTINCT e
         |""".stripMargin
 
@@ -2800,25 +2812,158 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
 
     val expected = planner.subPlanBuilder()
       .distinct("e AS e")
-      .trail(TrailParameters(
-        0,
-        Unlimited,
-        "a",
-        "e",
-        "anon_0",
-        "neighbour",
-        Set(),
-        Set(),
-        Set("anon_1"),
-        Set(),
-        Set(),
-        false
-      ))
-      .|.filterExpressionOrString("NOT neighbour.name = 'Foo'", isRepeatTrailUnique("anon_1"))
-      .|.expandAll("(anon_0)-[anon_1:R]-(neighbour)")
-      .|.argument("anon_0")
+      .bfsPruningVarExpandExpr(
+        "(a)-[:R*0..]-(e)",
+        relationshipPredicates = Seq(VariablePredicate(
+          v"anon_0",
+          not(equals(
+            propExpression(TraversalEndpoint(v"anon_1", To), "name"),
+            literalString("Foo")
+          ))
+        ))
+      )
       .filter("a.name = 'Foo'")
       .nodeByLabelScan("a", "A", IndexOrderNone)
+      .build()
+
+    plan shouldEqual expected
+  }
+
+  test(
+    "should not yet rewrite single undirected relationships to varExpand - start expanding from right, with predicate on the right inner node - benchmarks need to show that varExpand is better than trail in the case of a pre-filter"
+  ) {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setLabelCardinality("A", 10)
+      .setLabelCardinality("B", 10)
+      .setRelationshipCardinality("(:A)-[:R]->(:A)", 10)
+      .setRelationshipCardinality("()-[:R]->()", 10)
+      .setRelationshipCardinality("(:A)-[:R]->()", 10)
+      .setRelationshipCardinality("()-[:R]->(:A)", 10)
+      .build()
+
+    val query =
+      """
+        |MATCH (a) (()-[:R]-(n) WHERE n.name <> "Foo")* (e:A {name: "Foo"})
+        |RETURN DISTINCT e
+        |""".stripMargin
+
+    val plan = planner.plan(query).stripProduceResults
+
+    val trailParameters = TrailParameters(
+      min = 0,
+      max = Unlimited,
+      start = "e",
+      end = "a",
+      innerStart = "n",
+      innerEnd = "anon_0",
+      groupNodes = Set(),
+      groupRelationships = Set(),
+      innerRelationships = Set("anon_1"),
+      previouslyBoundRelationships = Set.empty,
+      previouslyBoundRelationshipGroups = Set.empty,
+      reverseGroupVariableProjections = true
+    )
+
+    val expected = planner.subPlanBuilder()
+      .orderedDistinct(Seq("e"), "e AS e")
+      .trail(trailParameters)
+      .|.filterExpression(isRepeatTrailUnique("anon_1"))
+      .|.expandAll("(n)-[anon_1:R]-(anon_0)")
+      .|.filter("NOT n.name = 'Foo'")
+      .|.argument("n")
+      .filter("e.name = 'Foo'")
+      .nodeByLabelScan("e", "A", IndexOrderAscending)
+      .build()
+
+    plan shouldEqual expected
+  }
+
+  test(
+    "should not yet rewrite single undirected relationships to varExpand - start expanding from left, with predicate on the left inner node - benchmarks need to show that varExpand is better than trail in the case of a pre-filter"
+  ) {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setLabelCardinality("A", 10)
+      .setLabelCardinality("B", 10)
+      .setRelationshipCardinality("(:A)-[:R]->(:A)", 10)
+      .setRelationshipCardinality("()-[:R]->()", 10)
+      .setRelationshipCardinality("(:A)-[:R]->()", 10)
+      .setRelationshipCardinality("()-[:R]->(:A)", 10)
+      .build()
+
+    val query =
+      """
+        |MATCH (a:A {name: "Foo"}) ((n)-[:R]-() WHERE n.name <> "Foo")* (e)
+        |RETURN DISTINCT e
+        |""".stripMargin
+
+    val plan = planner.plan(query).stripProduceResults
+
+    val trailParameters = TrailParameters(
+      min = 0,
+      max = Unlimited,
+      start = "a",
+      end = "e",
+      innerStart = "n",
+      innerEnd = "anon_1",
+      groupNodes = Set(),
+      groupRelationships = Set(),
+      innerRelationships = Set("anon_0"),
+      previouslyBoundRelationships = Set.empty,
+      previouslyBoundRelationshipGroups = Set.empty,
+      reverseGroupVariableProjections = false
+    )
+
+    val expected = planner.subPlanBuilder()
+      .distinct("e AS e")
+      .trail(trailParameters)
+      .|.filterExpression(isRepeatTrailUnique("anon_0"))
+      .|.expandAll("(n)-[anon_0:R]-(anon_1)")
+      .|.filter("NOT n.name = 'Foo'")
+      .|.argument("n")
+      .filter("a.name = 'Foo'")
+      .nodeByLabelScan("a", "A", IndexOrderNone)
+      .build()
+
+    plan shouldEqual expected
+  }
+
+  test(
+    "should rewrite single undirected relationships to varExpand - start expanding from right, with predicate on the left inner node"
+  ) {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setLabelCardinality("A", 10)
+      .setLabelCardinality("B", 10)
+      .setRelationshipCardinality("(:A)-[:R]->(:A)", 10)
+      .setRelationshipCardinality("()-[:R]->()", 10)
+      .setRelationshipCardinality("(:A)-[:R]->()", 10)
+      .setRelationshipCardinality("()-[:R]->(:A)", 10)
+      .build()
+
+    val query =
+      """
+        |MATCH (a) ((n)-[:R]-() WHERE n.name <> "Foo")* (e:A {name: "Foo"})
+        |RETURN DISTINCT e
+        |""".stripMargin
+
+    val plan = planner.plan(query).stripProduceResults
+
+    val expected = planner.subPlanBuilder()
+      .orderedDistinct(Seq("e"), "e AS e")
+      .bfsPruningVarExpandExpr(
+        "(e)-[:R*0..]-(a)",
+        relationshipPredicates = Seq(VariablePredicate(
+          v"anon_0",
+          not(equals(
+            propExpression(TraversalEndpoint(v"anon_1", To), "name"),
+            literalString("Foo")
+          ))
+        ))
+      )
+      .filter("e.name = 'Foo'")
+      .nodeByLabelScan("e", "A", IndexOrderAscending)
       .build()
 
     plan shouldEqual expected
@@ -3097,6 +3242,138 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       .filter("b = c", "NOT r1 IN r2")
       .expand("(a)-[r2*0..]->(c)", expandMode = ExpandAll, projectedDir = OUTGOING)
       .allRelationshipsScan("(a)-[r1]->(b)")
+      .build()
+  }
+
+  test("should rewrite QPP with predicate r.prop=ri.prop on directed relationship to VarLengthExpand(All)") {
+
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setRelationshipCardinality("()-[]->()", 500)
+      .build()
+
+    val query =
+      """
+        |MATCH (lo {id:1})((li)-[r]->(ri) WHERE r.prop=ri.prop)*(ro)
+        |RETURN lo, ro
+        |""".stripMargin
+
+    val plan = planner.plan(query)
+    println(plan)
+
+    plan shouldEqual planner.subPlanBuilder()
+      .produceResults("lo", "ro")
+      .expand(
+        "(lo)-[r*0..]->(ro)",
+        relationshipPredicates = Seq(Predicate("anon_0", "anon_0.prop = endNode(anon_0).prop"))
+      )
+      .filter("lo.id = 1")
+      .allNodeScan("lo")
+      .build()
+  }
+
+  test("should rewrite QPP with predicate r.prop=ri.prop on undirected relationship to VarLengthExpand(All)") {
+
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setRelationshipCardinality("()-[]->()", 500)
+      .build()
+
+    val query =
+      """
+        |MATCH (lo {id:1})((li)-[r]-(ri) WHERE r.prop=ri.prop)*(ro)
+        |RETURN lo, ro
+        |""".stripMargin
+
+    val plan = planner.plan(query)
+    println(plan)
+
+    plan shouldEqual planner.subPlanBuilder()
+      .produceResults("lo", "ro")
+      .expandExpr(
+        "(lo)-[r*0..]-(ro)",
+        relationshipPredicates = Seq(
+          VariablePredicate(
+            v"anon_0",
+            equals(
+              prop("anon_0", "prop"),
+              propExpression(TraversalEndpoint(v"anon_1", To), "prop")
+            )
+          )
+        )
+      )
+      .filter("lo.id = 1")
+      .allNodeScan("lo")
+      .build()
+  }
+
+  test("should rewrite QPP with predicate li.prop=ri.prop on undirected relationship to VarLengthExpand(All)") {
+
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setRelationshipCardinality("()-[]->()", 500)
+      .build()
+
+    val query =
+      """
+        |MATCH (lo {id:1})((li)-[r]-(ri) WHERE li.prop=ri.prop)*(ro)
+        |RETURN lo, ro
+        |""".stripMargin
+
+    val plan = planner.plan(query)
+    println(plan)
+
+    plan shouldEqual planner.subPlanBuilder()
+      .produceResults("lo", "ro")
+      .expandExpr(
+        "(lo)-[r*0..]-(ro)",
+        relationshipPredicates = Seq(
+          VariablePredicate(
+            v"anon_0",
+            equals(
+              propExpression(TraversalEndpoint(v"anon_1", From), "prop"),
+              propExpression(TraversalEndpoint(v"anon_2", To), "prop")
+            )
+          )
+        )
+      )
+      .filter("lo.id = 1")
+      .allNodeScan("lo")
+      .build()
+  }
+
+  test("should rewrite QPP with predicate li.prop=r.prop on undirected relationship to VarLengthExpand(All)") {
+
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setRelationshipCardinality("()-[]->()", 500)
+      .build()
+
+    val query =
+      """
+        |MATCH (lo {id:1})((li)-[r]-(ri) WHERE li.prop=r.prop)*(ro)
+        |RETURN lo, ro
+        |""".stripMargin
+
+    val plan = planner.plan(query)
+    println(plan)
+
+    plan shouldEqual planner.subPlanBuilder()
+      .produceResults("lo", "ro")
+      .expandExpr(
+        "(lo)-[r*0..]-(ro)",
+        relationshipPredicates = Seq(
+          VariablePredicate(
+            v"anon_0",
+            equals(
+              propExpression(TraversalEndpoint(v"anon_1", From), "prop"),
+              prop("anon_0", "prop")
+            )
+          )
+        )
+      )
+      .filter("lo.id = 1")
+      .allNodeScan("lo")
       .build()
   }
 }

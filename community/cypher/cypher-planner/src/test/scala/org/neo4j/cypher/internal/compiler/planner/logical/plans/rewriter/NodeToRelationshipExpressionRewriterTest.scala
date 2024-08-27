@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.planner.logical.NodeToRelationshipExpressionRewriter
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.scalatest.Assertion
@@ -34,8 +35,16 @@ class NodeToRelationshipExpressionRewriterTest extends CypherFunSuite with AstCo
 
   private val end = "end"
 
+  private val globalRel = "globalRel"
+
   def rewriterUnderTest: Rewriter =
-    NodeToRelationshipExpressionRewriter(varFor(start), varFor(end), varFor(rel)).instance
+    NodeToRelationshipExpressionRewriter(
+      varFor(start),
+      varFor(globalRel),
+      varFor(end),
+      varFor(rel),
+      new AnonymousVariableNameGenerator()
+    ).instance
 
   def rewrites(inputExpression: Expression, expectedRewrittenExpression: Expression): Assertion = {
     inputExpression.endoRewrite(rewriterUnderTest) should equal(expectedRewrittenExpression)

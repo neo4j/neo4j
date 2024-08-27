@@ -19,9 +19,11 @@
  */
 package org.neo4j.cypher.internal.runtime.ast
 
+import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.runtime.ast.TraversalEndpoint.Endpoint
+import org.neo4j.cypher.internal.runtime.ast.TraversalEndpoint.STRINGIFIER
 import org.neo4j.exceptions.InternalException
 
 /**
@@ -31,6 +33,7 @@ import org.neo4j.exceptions.InternalException
  */
 case class TraversalEndpoint(tempVar: LogicalVariable, endpoint: Endpoint) extends RuntimeExpression {
   def isConstantForQuery: Boolean = false
+  override def asCanonicalStringVal: String = STRINGIFIER(this)
 }
 
 object TraversalEndpoint {
@@ -51,4 +54,24 @@ object TraversalEndpoint {
     }
 
   case class AllocatedTraversalEndpoint(exprVarOffset: Int, endpoint: Endpoint)
+
+  val STRINGIFIER: ExpressionStringifier = ExpressionStringifier(
+    extensionStringifier = TraversalEndpointExpressionStringify,
+    alwaysParens = false,
+    alwaysBacktick = false,
+    preferSingleQuotes = true,
+    sensitiveParamsAsParams = false
+  )
+
+  private object TraversalEndpointExpressionStringify extends ExpressionStringifier.Extension {
+
+    override def apply(ctx: ExpressionStringifier)(expression: Expression): String = expression match {
+      case TraversalEndpoint(_, direction) => direction match {
+          case TraversalEndpoint.Endpoint.From => "FROM"
+          case TraversalEndpoint.Endpoint.To   => "TO"
+          case _                               => ""
+        }
+      case e => e.asCanonicalStringVal
+    }
+  }
 }

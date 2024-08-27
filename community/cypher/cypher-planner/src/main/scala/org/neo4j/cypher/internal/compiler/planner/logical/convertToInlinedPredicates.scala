@@ -35,6 +35,9 @@ import org.neo4j.cypher.internal.expressions.UnPositionedVariable.varFor
 import org.neo4j.cypher.internal.expressions.functions.EndNode
 import org.neo4j.cypher.internal.expressions.functions.StartNode
 import org.neo4j.cypher.internal.logical.plans.Expand.VariablePredicate
+import org.neo4j.cypher.internal.runtime.ast.TraversalEndpoint
+import org.neo4j.cypher.internal.runtime.ast.TraversalEndpoint.Endpoint.From
+import org.neo4j.cypher.internal.runtime.ast.TraversalEndpoint.Endpoint.To
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.Repetition
@@ -138,21 +141,37 @@ object convertToInlinedPredicates {
       val maybeRewrittenRelationshipPredicate = pathDirection match {
         case OUTGOING => Some(nodePredicate.endoRewrite(NodeToRelationshipExpressionRewriter(
             startNode = innerStartNode,
+            globalRelationshipVariable = innerRelationship,
             endNode = innerEndNode,
-            relationshipVariable = anonymousRelationshipVariable
+            perIterationRelationshipVariable = anonymousRelationshipVariable,
+            nameGenerator = anonymousVariableNameGenerator
           )))
         case INCOMING =>
           Some(nodePredicate.endoRewrite(NodeToRelationshipExpressionRewriter(
             startNode = innerEndNode,
+            globalRelationshipVariable = innerRelationship,
             endNode = innerStartNode,
-            relationshipVariable = anonymousRelationshipVariable
+            perIterationRelationshipVariable = anonymousRelationshipVariable,
+            nameGenerator = anonymousVariableNameGenerator
           )))
         case BOTH =>
-          None
+          // Replace the innerStartNode by TraversalEndpoint(newAnonymousVariable, From)
+          // Replace the innerEndNode by TraversalEndpoint(newAnonymousVariable, To)
+          Some(nodePredicate.endoRewrite(NodeToRelationshipExpressionRewriter(
+            startNode = innerStartNode,
+            globalRelationshipVariable = innerRelationship,
+            endNode = innerEndNode,
+            perIterationRelationshipVariable = anonymousRelationshipVariable,
+            nameGenerator = anonymousVariableNameGenerator,
+            isDirected = false
+          )))
       }
-      maybeRewrittenRelationshipPredicate.filter(
-        _.dependencies.contains(anonymousRelationshipVariable)
-      )
+      maybeRewrittenRelationshipPredicate.filter(pred => {
+        val containsTraversalEndpointExpression = pred.folder.treeFind[Expression] {
+          case _: TraversalEndpoint => true
+        }
+        pred.dependencies.contains(anonymousRelationshipVariable) || containsTraversalEndpointExpression.isDefined
+      })
     }
 
     val inlinedPredicates =
@@ -211,21 +230,38 @@ case class InlinedPredicates(
 )
 
 /**
- * This rewrite will replace all occurrences of the startNode and endNode in the expression with startNode(relationshipVariable) and endNode(relationshipVariable).
+ * This rewrite will replace all occurrences of the startNode and endNode in the expression.
  * This is used to rewrite expressions in a few QPP based plan rewriters.
- * @param startNode - the node to replace with the startNode(rel)
- * @param endNode - the node to replace with the endNode(rel)
- * @param relationshipVariable - the relationship variable to use in the replacement.
+ *
+ * @param startNode                        - the node to replace with the startNode(rel) (or TraversalEndpoint(rel, From) in case the relationship is undirected)
+ * @param globalRelationshipVariable       - the relationship variable that was specified in the query
+ * @param endNode                          - the node to replace with the endNode(rel) (or TraversalEndpoint(rel, To) in case the relationship is undirected)
+ * @param perIterationRelationshipVariable - the relationship variable to use in the replacement.
+ * @param nameGenerator                    - anonymous variable name generator to obtain new distinct variable names to put in the TraversalEndpoint expression
+ * @param isDirected                       - whether the relationship is directed or not
  */
 case class NodeToRelationshipExpressionRewriter(
   private val startNode: LogicalVariable,
+  private val globalRelationshipVariable: LogicalVariable,
   private val endNode: LogicalVariable,
-  private val relationshipVariable: LogicalVariable
+  private val perIterationRelationshipVariable: LogicalVariable,
+  private val nameGenerator: AnonymousVariableNameGenerator,
+  private val isDirected: Boolean = true
 ) extends Rewriter {
 
   private val innerRewriter: Rewriter = Rewriter.lift {
-    case `startNode` => StartNode(relationshipVariable)(InputPosition.NONE)
-    case `endNode`   => EndNode(relationshipVariable)(InputPosition.NONE)
+    case `startNode` =>
+      if (isDirected)
+        StartNode(perIterationRelationshipVariable)(InputPosition.NONE)
+      else
+        TraversalEndpoint(varFor(nameGenerator.nextName), From)
+    case `endNode` =>
+      if (isDirected)
+        EndNode(perIterationRelationshipVariable)(InputPosition.NONE)
+      else
+        TraversalEndpoint(varFor(nameGenerator.nextName), To)
+    case `globalRelationshipVariable` =>
+      perIterationRelationshipVariable
     case AndedPropertyInequalities(v, _, inequalities) if v == startNode || v == endNode =>
       Ands.create(inequalities.map(_.endoRewrite(this)).toListSet)
   }
