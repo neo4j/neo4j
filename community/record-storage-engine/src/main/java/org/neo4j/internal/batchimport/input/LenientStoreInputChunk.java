@@ -159,7 +159,7 @@ public abstract class LenientStoreInputChunk implements InputChunk {
                 }
                 prevProp = propertyRecord.getId();
 
-                for (PropertyBlock propBlock : propertyRecord) {
+                for (PropertyBlock propBlock : propertyRecord.propertyBlocks()) {
                     propertyStore.ensureHeavy(propBlock, storeCursors, memoryTracker);
                     String key = LenientStoreInput.getTokenByIdSafe(
                                     tokenHolders.propertyKeyTokens(), propBlock.getKeyIndexId())

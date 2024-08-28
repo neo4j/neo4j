@@ -77,7 +77,7 @@ public class IdRollbackTransactionApplier extends TransactionApplier.Adapter {
         var stringBlockDiffs = idMaps.computeIfAbsent(STRING_BLOCK, type -> getLongDiffSets());
         var arrayBlockDiffs = idMaps.computeIfAbsent(ARRAY_BLOCK, type -> getLongDiffSets());
 
-        for (PropertyBlock block : command.getAfter()) {
+        for (PropertyBlock block : command.getAfter().propertyBlocks()) {
             switch (block.getType()) {
                 case STRING -> markIds(block.getValueRecords(), stringBlockDiffs);
                 case ARRAY -> markIds(block.getValueRecords(), arrayBlockDiffs);
@@ -87,7 +87,7 @@ public class IdRollbackTransactionApplier extends TransactionApplier.Adapter {
             }
         }
 
-        for (PropertyBlock block : command.getBefore()) {
+        for (PropertyBlock block : command.getBefore().propertyBlocks()) {
             switch (block.getType()) {
                 case STRING -> markIdsUsed(block.getValueRecords(), stringBlockDiffs);
                 case ARRAY -> markIdsUsed(block.getValueRecords(), arrayBlockDiffs);

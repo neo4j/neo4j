@@ -141,7 +141,7 @@ class SafePropertyChainReader implements AutoCloseable {
                     chainIsOk = false;
                 }
 
-                for (PropertyBlock block : propertyRecord) {
+                for (PropertyBlock block : propertyRecord.propertyBlocks()) {
                     int propertyKeyId = block.getKeyIndexId();
                     if (internalTokens) {
                         if (!checkValidInternalToken(

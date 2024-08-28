@@ -335,7 +335,7 @@ public abstract class Command implements StorageCommand {
                 locks.add(lockService.acquireCustomLock(
                         RECOVERY_LOCK_TYPE_PROPERTY_DYNAMIC, deletedRecord.getId(), LockType.EXCLUSIVE));
             }
-            for (PropertyBlock block : record) {
+            for (PropertyBlock block : record.propertyBlocks()) {
                 for (DynamicRecord valueRecord : block.getValueRecords()) {
                     locks.add(lockService.acquireCustomLock(
                             RECOVERY_LOCK_TYPE_PROPERTY_DYNAMIC, valueRecord.getId(), LockType.EXCLUSIVE));

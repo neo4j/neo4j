@@ -83,8 +83,8 @@ public class FullyCoveringRecordKeys implements RecordKeys {
                     assertEquals(written.getRelId(), read.getRelId());
                 }
                 assertEquals(written.numberOfProperties(), read.numberOfProperties());
-                Iterator<PropertyBlock> writtenBlocks = written.iterator();
-                Iterator<PropertyBlock> readBlocks = read.iterator();
+                Iterator<PropertyBlock> writtenBlocks = written.propertyBlocks().iterator();
+                Iterator<PropertyBlock> readBlocks = read.propertyBlocks().iterator();
                 while (writtenBlocks.hasNext()) {
                     assertTrue(readBlocks.hasNext());
                     assertBlocksEquals(writtenBlocks.next(), readBlocks.next());

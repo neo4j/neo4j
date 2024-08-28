@@ -88,7 +88,7 @@ class PropertyStoreConsistentReadTest extends RecordStoreConsistentReadTest<Prop
     }
 
     private static void ensureHeavy(PropertyStore store, PropertyRecord record) {
-        for (PropertyBlock propertyBlock : record) {
+        for (PropertyBlock propertyBlock : record.propertyBlocks()) {
             store.ensureHeavy(propertyBlock, StoreCursors.NULL, EmptyMemoryTracker.INSTANCE);
         }
     }
@@ -107,8 +107,8 @@ class PropertyStoreConsistentReadTest extends RecordStoreConsistentReadTest<Prop
         assertThat(actualRecord.getId()).as("getId").isEqualTo(expectedRecord.getId());
         assertThat(actualRecord.getId()).as("getLongId").isEqualTo(expectedRecord.getId());
 
-        List<PropertyBlock> actualBlocks = Iterables.asList(actualRecord);
-        List<PropertyBlock> expectedBlocks = Iterables.asList(expectedRecord);
+        List<PropertyBlock> actualBlocks = Iterables.asList(actualRecord.propertyBlocks());
+        List<PropertyBlock> expectedBlocks = Iterables.asList(expectedRecord.propertyBlocks());
         assertThat(actualBlocks.size()).as("getPropertyBlocks().size").isEqualTo(expectedBlocks.size());
         for (int i = 0; i < actualBlocks.size(); i++) {
             PropertyBlock actualBlock = actualBlocks.get(i);

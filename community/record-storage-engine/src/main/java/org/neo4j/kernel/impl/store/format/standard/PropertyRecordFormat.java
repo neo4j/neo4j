@@ -123,7 +123,7 @@ public class PropertyRecordFormat extends BaseRecordFormat<PropertyRecord> {
 
             // Then go through the blocks
             int longsAppended = 0; // For marking the end of blocks
-            for (PropertyBlock block : record) {
+            for (PropertyBlock block : record.propertyBlocks()) {
                 long[] propBlockValues = block.getValueBlocks();
                 for (long propBlockValue : propBlockValues) {
                     cursor.putLong(propBlockValue);

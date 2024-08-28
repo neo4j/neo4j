@@ -48,6 +48,7 @@ import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.configuration.Config;
+import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
@@ -230,7 +231,7 @@ public class RecordPropertyCursorTest {
         PropertyStore store = neoStores.getPropertyStore();
         PropertyRecord propertyRecord = getRecord(store, firstProp, NORMAL);
         store.ensureHeavy(propertyRecord, new CachedStoreCursors(neoStores, NULL_CONTEXT), EmptyMemoryTracker.INSTANCE);
-        PropertyBlock block = propertyRecord.iterator().next();
+        PropertyBlock block = Iterables.first(propertyRecord.propertyBlocks());
         int cycleEndRecordIndex = random.nextInt(1, block.getValueRecords().size());
         DynamicRecord cycle = block.getValueRecords().get(cycleEndRecordIndex);
         int cycleStartIndex = random.nextInt(cycleEndRecordIndex);

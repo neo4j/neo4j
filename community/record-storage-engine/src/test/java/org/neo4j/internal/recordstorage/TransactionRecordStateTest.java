@@ -86,6 +86,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.Direction;
+import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.id.IdGeneratorFactory;
@@ -434,7 +435,7 @@ class TransactionRecordStateTest {
 
             private void verifyPropertyRecord(PropertyRecord record) {
                 if (record.getPrevProp() != Record.NO_NEXT_PROPERTY.intValue()) {
-                    for (PropertyBlock block : record) {
+                    for (PropertyBlock block : record.propertyBlocks()) {
                         assertTrue(block.isLight());
                     }
                 }
@@ -856,11 +857,11 @@ class TransactionRecordStateTest {
         // THEN
         PropertyRecord before = propertyCommand.getBefore();
         assertFalse(before.inUse());
-        assertFalse(before.iterator().hasNext());
+        assertThat(Iterables.count(before.propertyBlocks())).isEqualTo(0L);
 
         PropertyRecord after = propertyCommand.getAfter();
         assertTrue(after.inUse());
-        assertEquals(1, count(after));
+        assertEquals(1, count(after.propertyBlocks()));
     }
 
     @Test

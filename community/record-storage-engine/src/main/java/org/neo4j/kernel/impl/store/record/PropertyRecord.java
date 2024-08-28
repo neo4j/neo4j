@@ -43,7 +43,7 @@ import org.neo4j.string.Mask;
  * variable length, a full PropertyRecord can be holding just one
  * PropertyBlock.
  */
-public class PropertyRecord extends AbstractBaseRecord implements Iterable<PropertyBlock> {
+public class PropertyRecord extends AbstractBaseRecord {
     private static final long SHALLOW_SIZE = shallowSizeOfInstance(PropertyRecord.class);
     private static final int PAYLOAD_SIZE = PropertyType.getPayloadSizeLongs();
     public static final long INITIAL_SIZE = SHALLOW_SIZE
@@ -216,13 +216,15 @@ public class PropertyRecord extends AbstractBaseRecord implements Iterable<Prope
         return blockRecords;
     }
 
-    @Override
-    public Iterator<PropertyBlock> iterator() {
+    public Iterable<PropertyBlock> propertyBlocks() {
+        return this::iterator;
+    }
+
+    private Iterator<PropertyBlock> iterator() {
         ensureBlocksLoaded();
         return new Iterator<>() {
             // state for the Iterator aspect of this class.
             private int blockRecordsIteratorCursor;
-            private boolean canRemoveFromIterator;
 
             @Override
             public boolean hasNext() {
@@ -234,21 +236,12 @@ public class PropertyRecord extends AbstractBaseRecord implements Iterable<Prope
                 if (!hasNext()) {
                     throw new NoSuchElementException();
                 }
-                canRemoveFromIterator = true;
                 return blockRecords[blockRecordsIteratorCursor++];
             }
 
             @Override
             public void remove() {
-                if (!canRemoveFromIterator) {
-                    throw new IllegalStateException(
-                            "cursor:" + blockRecordsIteratorCursor + " canRemove:" + canRemoveFromIterator);
-                }
-
-                if (--blockRecordsCursor > --blockRecordsIteratorCursor) {
-                    blockRecords[blockRecordsIteratorCursor] = blockRecords[blockRecordsCursor];
-                }
-                canRemoveFromIterator = false;
+                throw new UnsupportedOperationException("This iterator does not support removal");
             }
         };
     }

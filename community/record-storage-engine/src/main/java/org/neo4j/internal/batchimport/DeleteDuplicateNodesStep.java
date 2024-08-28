@@ -112,7 +112,7 @@ public class DeleteDuplicateNodesStep extends ProcessorStep<long[]> {
     }
 
     private static void deletePropertyRecordIncludingValueRecords(PropertyRecord record) {
-        for (PropertyBlock block : record) {
+        for (PropertyBlock block : record.propertyBlocks()) {
             for (DynamicRecord valueRecord : block.getValueRecords()) {
                 assert valueRecord.inUse();
                 valueRecord.setInUse(false);

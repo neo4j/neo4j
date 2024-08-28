@@ -246,7 +246,7 @@ class ProduceNoopCommandsIT {
     }
 
     private static void fixPropertyRecord(PropertyRecord record) {
-        for (PropertyBlock block : record) {
+        for (PropertyBlock block : record.propertyBlocks()) {
             for (long valueBlock : block.getValueBlocks()) {
                 record.addLoadedBlock(valueBlock);
             }

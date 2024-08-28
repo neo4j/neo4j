@@ -127,7 +127,7 @@ class LogCommandSerializationV5_11 extends LogCommandSerializationV5_10 {
         var before = readPropertyRecord(id, channel);
 
         var after = new PropertyRecord(before);
-        for (PropertyBlock block : after) {
+        for (PropertyBlock block : after.propertyBlocks()) {
             for (DynamicRecord valueRecord : block.getValueRecords()) {
                 assert valueRecord.inUse();
                 valueRecord.setInUse(false);

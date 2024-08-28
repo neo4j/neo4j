@@ -138,7 +138,7 @@ public class TransactionCommandValidator implements CommandVisitor, TransactionV
         PropertyRecord propertyRecord = command.getAfter();
         checkStore(propertyRecord.getId(), getCursor(StoreType.PROPERTY), StoreType.PROPERTY);
         if (propertyRecord.inUse()) {
-            for (PropertyBlock block : propertyRecord) {
+            for (PropertyBlock block : propertyRecord.propertyBlocks()) {
                 if (!block.isLight() && block.getValueRecords().get(0).isCreated()) {
                     checkDynamicRecords(block.getValueRecords());
                 }

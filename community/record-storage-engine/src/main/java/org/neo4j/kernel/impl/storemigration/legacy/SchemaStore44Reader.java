@@ -203,7 +203,7 @@ public class SchemaStore44Reader implements AutoCloseable {
                                 + ") that is invalid: " + propRecord,
                         e);
             }
-            for (PropertyBlock propertyBlock : propRecord) {
+            for (PropertyBlock propertyBlock : propRecord.propertyBlocks()) {
                 PropertyKeyValue propertyKeyValue =
                         propertyBlock.newPropertyKeyValue(propertyStore, storeCursors, memoryTracker);
                 insertPropertyIntoMap(propertyKeyValue, props, tokenHolders);

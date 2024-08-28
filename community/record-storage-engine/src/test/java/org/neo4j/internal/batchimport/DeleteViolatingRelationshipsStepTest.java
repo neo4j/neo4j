@@ -178,7 +178,7 @@ class DeleteViolatingRelationshipsStepTest {
                         neoStores
                                 .getPropertyStore()
                                 .isInUse(propertyRecord.getId(), storeCursors.readCursor(PROPERTY_CURSOR)));
-                for (PropertyBlock property : propertyRecord) {
+                for (PropertyBlock property : propertyRecord.propertyBlocks()) {
                     // Verify property dynamic value records
                     for (DynamicRecord valueRecord : property.getValueRecords()) {
                         AbstractDynamicStore valueStore;

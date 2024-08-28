@@ -26,10 +26,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
@@ -48,7 +46,7 @@ class PropertyRecordTest {
         }
 
         // WHEN
-        Iterator<PropertyBlock> iterator = record.iterator();
+        Iterator<PropertyBlock> iterator = record.propertyBlocks().iterator();
 
         // THEN
         for (PropertyBlock block : blocks) {
@@ -59,46 +57,13 @@ class PropertyRecordTest {
     }
 
     @Test
-    void shouldBeAbleToRemoveBlocksDuringIteration() {
-        // GIVEN
-        PropertyRecord record = new PropertyRecord(0);
-        Set<PropertyBlock> blocks = new HashSet<>();
-        for (int i = 0; i < 4; i++) {
-            PropertyBlock block = new PropertyBlock();
-            block.setValueBlocks(new long[] {i});
-            record.addPropertyBlock(block);
-            blocks.add(block);
-        }
-
-        // WHEN
-        Iterator<PropertyBlock> iterator = record.iterator();
-        assertThrows(IllegalStateException.class, iterator::remove);
-
-        // THEN
-        int size = blocks.size();
-        for (int i = 0; i < size; i++) {
-            assertTrue(iterator.hasNext());
-            PropertyBlock block = iterator.next();
-            if (i % 2 == 1) {
-                iterator.remove();
-                assertThrows(IllegalStateException.class, iterator::remove);
-                blocks.remove(block);
-            }
-        }
-        assertFalse(iterator.hasNext());
-
-        // and THEN there should only be the non-removed blocks left
-        assertEquals(blocks, Iterables.asSet(record));
-    }
-
-    @Test
     void addLoadedBlock() {
         PropertyRecord record = new PropertyRecord(42);
 
         addBlock(record, 1, 2);
         addBlock(record, 3, 4);
 
-        List<PropertyBlock> blocks = Iterables.asList(record);
+        List<PropertyBlock> blocks = Iterables.asList(record.propertyBlocks());
         assertEquals(2, blocks.size());
         assertEquals(1, blocks.get(0).getKeyIndexId());
         assertEquals(2, blocks.get(0).getSingleValueInt());

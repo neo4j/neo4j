@@ -121,7 +121,7 @@ public class PropertyDeleter {
     }
 
     private void markValueRecordsAsCreated(PropertyRecord beforeRecord) {
-        for (var beforeBlock : beforeRecord) {
+        for (var beforeBlock : beforeRecord.propertyBlocks()) {
             markValueRecordsAsCreated(beforeBlock);
         }
     }
@@ -185,7 +185,7 @@ public class PropertyDeleter {
     }
 
     static void deletePropertyRecordIncludingValueRecords(PropertyRecord record) {
-        for (PropertyBlock block : record) {
+        for (PropertyBlock block : record.propertyBlocks()) {
             deleteValueRecords(record, block);
         }
         record.clearPropertyBlocks();

@@ -168,7 +168,7 @@ class TestPropertyBlocks extends AbstractNeo4jTestCase {
             propertyStore.getRecordByCursor(recordId, record, RecordLoad.FORCE, cursor, EmptyMemoryTracker.INSTANCE);
         }
         try (StoreCursors storeCursors = createStoreCursors()) {
-            record.forEach(block -> {
+            record.propertyBlocks().forEach(block -> {
                 final Object value = propertyStore
                         .getValue(block, storeCursors, EmptyMemoryTracker.INSTANCE)
                         .asObject();

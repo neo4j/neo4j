@@ -267,7 +267,7 @@ public class DetectRandomSabotageIT {
                 .propertyKeyTokens()
                 .getOrCreateInternalIds(new String[] {"foo"}, tokenId);
 
-        PropertyBlock block = indexConfigPropertyRecord.iterator().next();
+        PropertyBlock block = Iterables.first(indexConfigPropertyRecord.propertyBlocks());
         indexConfigPropertyRecord.removePropertyBlock(block.getKeyIndexId());
         PropertyBlock newBlock = new PropertyBlock();
         PropertyStore.encodeValue(newBlock, tokenId[0], intValue(11), null, null, NULL_CONTEXT, INSTANCE);
@@ -1206,7 +1206,7 @@ public class DetectRandomSabotageIT {
                         do {
                             property = randomRecord(
                                     random, propertyStore, usedRecord(), storageCursors.readCursor(PROPERTY_CURSOR));
-                            block = property.iterator().next();
+                            block = Iterables.first(property.propertyBlocks());
                             try {
                                 tokenHolders.propertyKeyTokens().getInternalTokenById(block.getKeyIndexId());
                             } catch (TokenNotFoundException e) {
@@ -1337,7 +1337,7 @@ public class DetectRandomSabotageIT {
                         EmptyMemoryTracker.INSTANCE);
                 if (propertyRecord.inUse()) {
                     try (var dynamicCursor = storeCursors.writeCursor(dynamicCursorType)) {
-                        for (PropertyBlock block : propertyRecord) {
+                        for (PropertyBlock block : propertyRecord.propertyBlocks()) {
                             if (block.getType() == valueType
                                     && checkability.test(block.getType()
                                             .value(block, propertyStore, storeCursors, EmptyMemoryTracker.INSTANCE))) {

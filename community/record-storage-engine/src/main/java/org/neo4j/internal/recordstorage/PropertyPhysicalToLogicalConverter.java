@@ -115,13 +115,13 @@ public class PropertyPhysicalToLogicalConverter {
                 break;
             }
 
-            for (PropertyBlock block : commandSelector.getBefore(change)) {
+            for (PropertyBlock block : commandSelector.getBefore(change).propertyBlocks()) {
                 if (beforeBlocksCursor == beforeBlocks.length) {
                     beforeBlocks = Arrays.copyOf(beforeBlocks, beforeBlocksCursor * 2);
                 }
                 beforeBlocks[beforeBlocksCursor++] = block;
             }
-            for (PropertyBlock block : commandSelector.getAfter(change)) {
+            for (PropertyBlock block : commandSelector.getAfter(change).propertyBlocks()) {
                 if (afterBlocksCursor == afterBlocks.length) {
                     afterBlocks = Arrays.copyOf(afterBlocks, afterBlocksCursor * 2);
                 }

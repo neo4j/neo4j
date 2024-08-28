@@ -333,7 +333,7 @@ class CsvInputEstimateCalculationIT {
             for (long id = 0; id < highId; id++) {
                 stores.getPropertyStore().getRecordByCursor(id, record, CHECK, cursor, EmptyMemoryTracker.INSTANCE);
                 if (record.inUse()) {
-                    count += count(record);
+                    count += count(record.propertyBlocks());
                 }
             }
         }

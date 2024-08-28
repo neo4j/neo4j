@@ -73,7 +73,7 @@ public class HighIdTransactionApplierBase extends TransactionApplier.Adapter {
     public boolean visitPropertyCommand(PropertyCommand command) {
         PropertyStore propertyStore = neoStores.getPropertyStore();
         track(propertyStore, command);
-        for (PropertyBlock block : command.getAfter()) {
+        for (PropertyBlock block : command.getAfter().propertyBlocks()) {
             switch (block.getType()) {
                 case STRING -> track(propertyStore.getStringStore(), block.getValueRecords());
                 case ARRAY -> track(propertyStore.getArrayStore(), block.getValueRecords());

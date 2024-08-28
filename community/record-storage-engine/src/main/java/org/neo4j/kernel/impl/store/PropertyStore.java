@@ -225,7 +225,7 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord, NoStoreHe
             StoreCursors storeCursors) {
         if (record.inUse()) {
             // Go through the blocks
-            for (PropertyBlock block : record) {
+            for (PropertyBlock block : record.propertyBlocks()) {
                 /*
                  * For each block we need to update its dynamic record chain if
                  * it is just created. Deleted dynamic records are in the property
@@ -271,7 +271,7 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord, NoStoreHe
 
     @Override
     public void ensureHeavy(PropertyRecord record, StoreCursors storeCursors, MemoryTracker memoryTracker) {
-        for (PropertyBlock block : record) {
+        for (PropertyBlock block : record.propertyBlocks()) {
             ensureHeavy(block, storeCursors, memoryTracker);
         }
     }

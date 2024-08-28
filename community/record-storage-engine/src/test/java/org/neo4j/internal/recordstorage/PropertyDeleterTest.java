@@ -43,6 +43,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
+import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
@@ -263,7 +264,7 @@ class PropertyDeleterTest {
 
         // create a cycle in the dynamic record chain cycle
         PropertyRecord firstPropRecord = getRecord(propertyStore, firstPropId, NORMAL);
-        PropertyBlock dynamicBlock = firstPropRecord.iterator().next();
+        PropertyBlock dynamicBlock = Iterables.first(firstPropRecord.propertyBlocks());
         createCycleIn(dynamicBlock);
 
         // when
@@ -294,7 +295,7 @@ class PropertyDeleterTest {
         initialChanges.commit(); // should update all the changed records directly into the store
 
         PropertyRecord firstPropRecord = getRecord(propertyStore, firstPropId, NORMAL);
-        PropertyBlock dynamicBlock = firstPropRecord.iterator().next();
+        PropertyBlock dynamicBlock = Iterables.first(firstPropRecord.propertyBlocks());
         makeSomeUnusedIn(dynamicBlock);
 
         // when
@@ -369,7 +370,7 @@ class PropertyDeleterTest {
             while (!Record.NO_NEXT_PROPERTY.is(propId)) {
                 propertyStore.getRecordByCursor(propId, record, NORMAL, cursor, EmptyMemoryTracker.INSTANCE);
                 propertyStore.ensureHeavy(record, storeCursors, EmptyMemoryTracker.INSTANCE);
-                for (PropertyBlock block : record) {
+                for (PropertyBlock block : record.propertyBlocks()) {
                     if (block.getValueRecords().size() > 1) {
                         blocks.add(block);
                     }
@@ -445,7 +446,7 @@ class PropertyDeleterTest {
     }
 
     private void readValuesFromPropertyRecord(PropertyRecord record, List<Value> values) {
-        for (PropertyBlock block : record) {
+        for (PropertyBlock block : record.propertyBlocks()) {
             values.add(block.getType().value(block, propertyStore, storeCursors, EmptyMemoryTracker.INSTANCE));
         }
     }
