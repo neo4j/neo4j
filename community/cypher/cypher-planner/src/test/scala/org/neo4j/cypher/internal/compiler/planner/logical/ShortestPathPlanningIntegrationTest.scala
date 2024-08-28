@@ -4450,4 +4450,543 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .build()
     )
   }
+
+  test(
+    "Should inline equality property predicate with same property on left-inner and right-inner node - rewrite right-inner to right-outer"
+  ) {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setRelationshipCardinality("()-[:R]->()", 500)
+      .build()
+
+    val query =
+      """
+        |MATCH ANY SHORTEST (leftOuter) ((leftInner)-[r1:R]->(m)-[r2:R]->(rightInner) WHERE leftInner.prop = rightInner.prop)* (rightOuter {id:1})
+        |RETURN leftOuter, rightOuter
+        |""".stripMargin
+
+    val plan = planner.plan(query)
+
+    plan shouldEqual planner.subPlanBuilder()
+      .produceResults("leftOuter", "rightOuter")
+      .statefulShortestPath(
+        "rightOuter",
+        "leftOuter",
+        "SHORTEST 1 (leftOuter) ((`leftInner`)-[`r1`]->(`m`)-[`r2`]->(`rightInner`)){0, } (rightOuter)",
+        None,
+        Set(),
+        Set(),
+        Set(("leftOuter", "leftOuter")),
+        Set(),
+        StatefulShortestPath.Selector.Shortest(1),
+        new TestNFABuilder(0, "rightOuter")
+          .addTransition(0, 1, "(rightOuter) (rightInner)")
+          .addTransition(0, 4, "(rightOuter) (leftOuter)")
+          .addTransition(1, 2, "(rightInner)<-[r2:R]-(m)")
+          .addTransition(2, 3, "(m)<-[r1:R]-(leftInner WHERE leftInner.prop = rightOuter.prop)")
+          .addTransition(3, 1, "(leftInner) (rightInner)")
+          .addTransition(3, 4, "(leftInner) (leftOuter)")
+          .setFinalState(4)
+          .build(),
+        ExpandAll,
+        true,
+        0,
+        None
+      )
+      .filter("rightOuter.id = 1")
+      .allNodeScan("rightOuter")
+      .build()
+  }
+
+  test(
+    "Should inline equality property predicate with same property on right-inner and left-inner node - rewrite right-inner to right-outer"
+  ) {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setRelationshipCardinality("()-[:R]->()", 500)
+      .build()
+
+    val query =
+      """
+        |MATCH ANY SHORTEST (leftOuter) ((leftInner)-[r1:R]->(m)-[r2:R]->(rightInner) WHERE rightInner.prop = leftInner.prop)* (rightOuter {id:1})
+        |RETURN leftOuter, rightOuter
+        |""".stripMargin
+
+    val plan = planner.plan(query)
+
+    plan shouldEqual planner.subPlanBuilder()
+      .produceResults("leftOuter", "rightOuter")
+      .statefulShortestPath(
+        "rightOuter",
+        "leftOuter",
+        "SHORTEST 1 (leftOuter) ((`leftInner`)-[`r1`]->(`m`)-[`r2`]->(`rightInner`)){0, } (rightOuter)",
+        None,
+        Set(),
+        Set(),
+        Set(("leftOuter", "leftOuter")),
+        Set(),
+        StatefulShortestPath.Selector.Shortest(1),
+        new TestNFABuilder(0, "rightOuter")
+          .addTransition(0, 1, "(rightOuter) (rightInner)")
+          .addTransition(0, 4, "(rightOuter) (leftOuter)")
+          .addTransition(1, 2, "(rightInner)<-[r2:R]-(m)")
+          .addTransition(2, 3, "(m)<-[r1:R]-(leftInner WHERE rightOuter.prop = leftInner.prop)")
+          .addTransition(3, 1, "(leftInner) (rightInner)")
+          .addTransition(3, 4, "(leftInner) (leftOuter)")
+          .setFinalState(4)
+          .build(),
+        ExpandAll,
+        true,
+        0,
+        None
+      )
+      .filter("rightOuter.id = 1")
+      .allNodeScan("rightOuter")
+      .build()
+  }
+
+  test(
+    "Should inline equality property predicate with same property on left-inner and right-inner node - rewrite left-inner to left-outer"
+  ) {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setRelationshipCardinality("()-[:R]->()", 500)
+      .build()
+
+    val query =
+      """
+        |MATCH ANY SHORTEST (leftOuter {id:1}) ((leftInner)-[r1:R]->(m)-[r2:R]->(rightInner) WHERE leftInner.prop = rightInner.prop)* (rightOuter)
+        |RETURN leftOuter, rightOuter
+        |""".stripMargin
+
+    val plan = planner.plan(query)
+
+    plan shouldEqual planner.subPlanBuilder()
+      .produceResults("leftOuter", "rightOuter")
+      .statefulShortestPath(
+        "leftOuter",
+        "rightOuter",
+        "SHORTEST 1 (leftOuter) ((`leftInner`)-[`r1`]->(`m`)-[`r2`]->(`rightInner`)){0, } (rightOuter)",
+        None,
+        Set(),
+        Set(),
+        Set(("rightOuter", "rightOuter")),
+        Set(),
+        StatefulShortestPath.Selector.Shortest(1),
+        new TestNFABuilder(0, "leftOuter")
+          .addTransition(0, 1, "(leftOuter) (leftInner)")
+          .addTransition(0, 4, "(leftOuter) (rightOuter)")
+          .addTransition(1, 2, "(leftInner)-[r1:R]->(m)")
+          .addTransition(2, 3, "(m)-[r2:R]->(rightInner WHERE leftOuter.prop = rightInner.prop)")
+          .addTransition(3, 1, "(rightInner) (leftInner)")
+          .addTransition(3, 4, "(rightInner) (rightOuter)")
+          .setFinalState(4)
+          .build(),
+        ExpandAll,
+        false,
+        0,
+        None
+      )
+      .filter("leftOuter.id = 1")
+      .allNodeScan("leftOuter")
+      .build()
+  }
+
+  test(
+    "Should inline equality property predicate with same property on right-inner and left-inner node - rewrite left-inner to left-outer"
+  ) {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setRelationshipCardinality("()-[:R]->()", 500)
+      .build()
+
+    val query =
+      """
+        |MATCH ANY SHORTEST (leftOuter {id:1}) ((leftInner)-[r1:R]->(m)-[r2:R]->(rightInner) WHERE rightInner.prop = leftInner.prop)* (rightOuter)
+        |RETURN leftOuter, rightOuter
+        |""".stripMargin
+
+    val plan = planner.plan(query)
+
+    plan shouldEqual planner.subPlanBuilder()
+      .produceResults("leftOuter", "rightOuter")
+      .statefulShortestPath(
+        "leftOuter",
+        "rightOuter",
+        "SHORTEST 1 (leftOuter) ((`leftInner`)-[`r1`]->(`m`)-[`r2`]->(`rightInner`)){0, } (rightOuter)",
+        None,
+        Set(),
+        Set(),
+        Set(("rightOuter", "rightOuter")),
+        Set(),
+        StatefulShortestPath.Selector.Shortest(1),
+        new TestNFABuilder(0, "leftOuter")
+          .addTransition(0, 1, "(leftOuter) (leftInner)")
+          .addTransition(0, 4, "(leftOuter) (rightOuter)")
+          .addTransition(1, 2, "(leftInner)-[r1:R]->(m)")
+          .addTransition(2, 3, "(m)-[r2:R]->(rightInner WHERE rightInner.prop = leftOuter.prop)")
+          .addTransition(3, 1, "(rightInner) (leftInner)")
+          .addTransition(3, 4, "(rightInner) (rightOuter)")
+          .setFinalState(4)
+          .build(),
+        ExpandAll,
+        false,
+        0,
+        None
+      )
+      .filter("leftOuter.id = 1")
+      .allNodeScan("leftOuter")
+      .build()
+  }
+
+  test(
+    "Should inline equality property predicate with same property on left-inner and right-inner node - rewrite left-inner to left-outer - both side already matched"
+  ) {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setRelationshipCardinality("()-[:R]->()", 500)
+      .build()
+
+    val query =
+      """
+        |MATCH (leftOuter {id:1}), (rightOuter)
+        |WHERE EXISTS {
+        |  ANY SHORTEST (leftOuter {id:1}) ((leftInner)-[r1:R]->(m)-[r2:R]->(rightInner) WHERE leftInner.prop = rightInner.prop)* (rightOuter)
+        |}
+        |RETURN leftOuter.prop, rightOuter.prop
+        |""".stripMargin
+
+    val plan = planner.plan(query)
+
+    plan shouldEqual planner.subPlanBuilder()
+      .produceResults("`leftOuter.prop`", "`rightOuter.prop`")
+      .projection("cacheN[leftOuter.prop] AS `leftOuter.prop`", "rightOuter.prop AS `rightOuter.prop`")
+      .semiApply()
+      .|.statefulShortestPath(
+        "leftOuter",
+        "rightOuter",
+        "SHORTEST 1 (leftOuter) ((`leftInner`)-[`r1`]->(`m`)-[`r2`]->(`rightInner`)){0, } (rightOuter)",
+        None,
+        Set(),
+        Set(),
+        Set(),
+        Set(),
+        StatefulShortestPath.Selector.Shortest(1),
+        new TestNFABuilder(0, "leftOuter")
+          .addTransition(0, 1, "(leftOuter) (leftInner)")
+          .addTransition(0, 4, "(leftOuter) (rightOuter)")
+          .addTransition(1, 2, "(leftInner)-[r1:R]->(m)")
+          .addTransition(2, 3, "(m)-[r2:R]->(rightInner WHERE cacheN[leftOuter.prop] = rightInner.prop)")
+          .addTransition(3, 1, "(rightInner) (leftInner)")
+          .addTransition(3, 4, "(rightInner) (rightOuter)")
+          .setFinalState(4)
+          .build(),
+        ExpandInto,
+        false,
+        0,
+        None
+      )
+      .|.filter("cacheN[leftOuter.id] = 1")
+      .|.argument("leftOuter", "rightOuter")
+      .cartesianProduct()
+      .|.allNodeScan("rightOuter")
+      .cacheProperties("cacheNFromStore[leftOuter.prop]")
+      .filter("cacheNFromStore[leftOuter.id] = 1")
+      .allNodeScan("leftOuter")
+      .build()
+  }
+
+  test(
+    "Should inline equality property predicate with same property on right-inner and left-inner node - rewrite left-inner to left-outer - both side already matched"
+  ) {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setRelationshipCardinality("()-[:R]->()", 500)
+      .build()
+
+    val query =
+      """
+        |MATCH (leftOuter {id:1}), (rightOuter)
+        |WHERE EXISTS {
+        |  ANY SHORTEST (leftOuter {id:1}) ((leftInner)-[r1:R]->(m)-[r2:R]->(rightInner) WHERE rightInner.prop = leftInner.prop)* (rightOuter)
+        |}
+        |RETURN leftOuter.prop, rightOuter.prop
+        |""".stripMargin
+
+    val plan = planner.plan(query)
+
+    plan shouldEqual planner.subPlanBuilder()
+      .produceResults("`leftOuter.prop`", "`rightOuter.prop`")
+      .projection("cacheN[leftOuter.prop] AS `leftOuter.prop`", "rightOuter.prop AS `rightOuter.prop`")
+      .semiApply()
+      .|.statefulShortestPath(
+        "leftOuter",
+        "rightOuter",
+        "SHORTEST 1 (leftOuter) ((`leftInner`)-[`r1`]->(`m`)-[`r2`]->(`rightInner`)){0, } (rightOuter)",
+        None,
+        Set(),
+        Set(),
+        Set(),
+        Set(),
+        StatefulShortestPath.Selector.Shortest(1),
+        new TestNFABuilder(0, "leftOuter")
+          .addTransition(0, 1, "(leftOuter) (leftInner)")
+          .addTransition(0, 4, "(leftOuter) (rightOuter)")
+          .addTransition(1, 2, "(leftInner)-[r1:R]->(m)")
+          .addTransition(2, 3, "(m)-[r2:R]->(rightInner WHERE rightInner.prop = cacheN[leftOuter.prop])")
+          .addTransition(3, 1, "(rightInner) (leftInner)")
+          .addTransition(3, 4, "(rightInner) (rightOuter)")
+          .setFinalState(4)
+          .build(),
+        ExpandInto,
+        false,
+        0,
+        None
+      )
+      .|.filter("cacheN[leftOuter.id] = 1")
+      .|.argument("leftOuter", "rightOuter")
+      .cartesianProduct()
+      .|.allNodeScan("rightOuter")
+      .cacheProperties("cacheNFromStore[leftOuter.prop]")
+      .filter("cacheNFromStore[leftOuter.id] = 1")
+      .allNodeScan("leftOuter")
+      .build()
+  }
+
+  test(
+    "Should inline equality property predicate with same property on left-inner and right-inner node - rewrite right-inner to right-outer - undirected relationships in the QPP"
+  ) {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setRelationshipCardinality("()-[:R]->()", 500)
+      .build()
+
+    val query =
+      """
+        |MATCH ANY SHORTEST (leftOuter) ((leftInner)-[r1:R]-(m)-[r2:R]-(rightInner) WHERE leftInner.prop = rightInner.prop)* (rightOuter {id:1})
+        |RETURN leftOuter, rightOuter
+        |""".stripMargin
+
+    val plan = planner.plan(query)
+
+    plan shouldEqual planner.subPlanBuilder()
+      .produceResults("leftOuter", "rightOuter")
+      .statefulShortestPath(
+        "rightOuter",
+        "leftOuter",
+        "SHORTEST 1 (leftOuter) ((`leftInner`)-[`r1`]-(`m`)-[`r2`]-(`rightInner`)){0, } (rightOuter)",
+        None,
+        Set(),
+        Set(),
+        Set(("leftOuter", "leftOuter")),
+        Set(),
+        StatefulShortestPath.Selector.Shortest(1),
+        new TestNFABuilder(0, "rightOuter")
+          .addTransition(0, 1, "(rightOuter) (rightInner)")
+          .addTransition(0, 4, "(rightOuter) (leftOuter)")
+          .addTransition(1, 2, "(rightInner)-[r2:R]-(m)")
+          .addTransition(2, 3, "(m)-[r1:R]-(leftInner WHERE leftInner.prop = rightOuter.prop)")
+          .addTransition(3, 1, "(leftInner) (rightInner)")
+          .addTransition(3, 4, "(leftInner) (leftOuter)")
+          .setFinalState(4)
+          .build(),
+        ExpandAll,
+        true,
+        0,
+        None
+      )
+      .filter("rightOuter.id = 1")
+      .allNodeScan("rightOuter")
+      .build()
+  }
+
+  test(
+    "Should inline equality property predicate with same property on left-inner and right-inner node - rewrite right-inner to right-outer - leftwards relationships in the QPP"
+  ) {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setRelationshipCardinality("()-[:R]->()", 500)
+      .build()
+
+    val query =
+      """
+        |MATCH ANY SHORTEST (leftOuter) ((leftInner)<-[r1:R]-(m)<-[r2:R]-(rightInner) WHERE leftInner.prop = rightInner.prop)* (rightOuter {id:1})
+        |RETURN leftOuter, rightOuter
+        |""".stripMargin
+
+    val plan = planner.plan(query)
+
+    plan shouldEqual planner.subPlanBuilder()
+      .produceResults("leftOuter", "rightOuter")
+      .statefulShortestPath(
+        "rightOuter",
+        "leftOuter",
+        "SHORTEST 1 (leftOuter) ((`leftInner`)<-[`r1`]-(`m`)<-[`r2`]-(`rightInner`)){0, } (rightOuter)",
+        None,
+        Set(),
+        Set(),
+        Set(("leftOuter", "leftOuter")),
+        Set(),
+        StatefulShortestPath.Selector.Shortest(1),
+        new TestNFABuilder(0, "rightOuter")
+          .addTransition(0, 1, "(rightOuter) (rightInner)")
+          .addTransition(0, 4, "(rightOuter) (leftOuter)")
+          .addTransition(1, 2, "(rightInner)-[r2:R]->(m)")
+          .addTransition(2, 3, "(m)-[r1:R]->(leftInner WHERE leftInner.prop = rightOuter.prop)")
+          .addTransition(3, 1, "(leftInner) (rightInner)")
+          .addTransition(3, 4, "(leftInner) (leftOuter)")
+          .setFinalState(4)
+          .build(),
+        ExpandAll,
+        true,
+        0,
+        None
+      )
+      .filter("rightOuter.id = 1")
+      .allNodeScan("rightOuter")
+      .build()
+  }
+
+  test(
+    "Should inline equality property predicate with same property on left-inner and right-inner node - rewrite right-inner to right-outer - mix of directions in the relationships of the QPP"
+  ) {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setRelationshipCardinality("()-[:R]->()", 500)
+      .build()
+
+    val query =
+      """
+        |MATCH ANY SHORTEST (leftOuter) ((leftInner)-[r1:R]-(m1)<-[r2:R]-(m2)-[r3:R]->(rightInner) WHERE leftInner.prop = rightInner.prop)* (rightOuter {id:1})
+        |RETURN leftOuter, rightOuter
+        |""".stripMargin
+
+    val plan = planner.plan(query)
+
+    plan shouldEqual planner.subPlanBuilder()
+      .produceResults("leftOuter", "rightOuter")
+      .statefulShortestPath(
+        "rightOuter",
+        "leftOuter",
+        "SHORTEST 1 (leftOuter) ((`leftInner`)-[`r1`]-(`m1`)<-[`r2`]-(`m2`)-[`r3`]->(`rightInner`)){0, } (rightOuter)",
+        None,
+        Set(),
+        Set(),
+        Set(("leftOuter", "leftOuter")),
+        Set(),
+        StatefulShortestPath.Selector.Shortest(1),
+        new TestNFABuilder(0, "rightOuter")
+          .addTransition(0, 1, "(rightOuter) (rightInner)")
+          .addTransition(0, 5, "(rightOuter) (leftOuter)")
+          .addTransition(1, 2, "(rightInner)<-[r3:R]-(m2)")
+          .addTransition(2, 3, "(m2)-[r2:R]->(m1)")
+          .addTransition(3, 4, "(m1)-[r1:R]-(leftInner WHERE leftInner.prop = rightOuter.prop)")
+          .addTransition(4, 1, "(leftInner) (rightInner)")
+          .addTransition(4, 5, "(leftInner) (leftOuter)")
+          .setFinalState(5)
+          .build(),
+        ExpandAll,
+        true,
+        0,
+        None
+      )
+      .filter("rightOuter.id = 1")
+      .allNodeScan("rightOuter")
+      .build()
+  }
+
+  test(
+    "Should inline equality property predicate with same property on left-inner and right-inner node - rewrite left-inner to left-outer - mix of directions in the relationships of the QPP"
+  ) {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setRelationshipCardinality("()-[:R]->()", 500)
+      .build()
+
+    val query =
+      """
+        |MATCH ANY SHORTEST (leftOuter {id:1}) ((leftInner)-[r1:R]-(m1)<-[r2:R]-(m2)-[r3:R]->(rightInner) WHERE leftInner.prop = rightInner.prop)* (rightOuter)
+        |RETURN leftOuter, rightOuter
+        |""".stripMargin
+
+    val plan = planner.plan(query)
+
+    plan shouldEqual planner.subPlanBuilder()
+      .produceResults("leftOuter", "rightOuter")
+      .statefulShortestPath(
+        "leftOuter",
+        "rightOuter",
+        "SHORTEST 1 (leftOuter) ((`leftInner`)-[`r1`]-(`m1`)<-[`r2`]-(`m2`)-[`r3`]->(`rightInner`)){0, } (rightOuter)",
+        None,
+        Set(),
+        Set(),
+        Set(("rightOuter", "rightOuter")),
+        Set(),
+        StatefulShortestPath.Selector.Shortest(1),
+        new TestNFABuilder(0, "leftOuter")
+          .addTransition(0, 1, "(leftOuter) (leftInner)")
+          .addTransition(0, 5, "(leftOuter) (rightOuter)")
+          .addTransition(1, 2, "(leftInner)-[r1:R]-(m1)")
+          .addTransition(2, 3, "(m1)<-[r2:R]-(m2)")
+          .addTransition(3, 4, "(m2)-[r3:R]->(rightInner WHERE leftOuter.prop = rightInner.prop)")
+          .addTransition(4, 1, "(rightInner) (leftInner)")
+          .addTransition(4, 5, "(rightInner) (rightOuter)")
+          .setFinalState(5)
+          .build(),
+        ExpandAll,
+        false,
+        0,
+        None
+      )
+      .filter("leftOuter.id = 1")
+      .allNodeScan("leftOuter")
+      .build()
+  }
+
+  test(
+    "Should NOT rewrite equality property predicate which involves different property keys - transitivity does not hold"
+  ) {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setRelationshipCardinality("()-[:R]->()", 500)
+      .build()
+
+    val query =
+      """
+        |MATCH ANY SHORTEST (leftOuter {id:1}) ((leftInner)-[r1:R]->(m)-[r2:R]->(rightInner) WHERE leftInner.prop = rightInner.p)* (rightOuter)
+        |RETURN leftOuter, rightOuter
+        |""".stripMargin
+
+    val plan = planner.plan(query)
+
+    plan shouldEqual planner.subPlanBuilder()
+      .produceResults("leftOuter", "rightOuter")
+      .statefulShortestPath(
+        "leftOuter",
+        "rightOuter",
+        "SHORTEST 1 (leftOuter) ((`leftInner`)-[`r1`]->(`m`)-[`r2`]->(`rightInner`)){0, } (rightOuter)",
+        Some("all(anon_0 IN range(0, size(leftInner) - 1) WHERE (leftInner[anon_0]).prop = (rightInner[anon_0]).p)"),
+        Set(("leftInner", "leftInner"), ("rightInner", "rightInner")),
+        Set(),
+        Set(("rightOuter", "rightOuter")),
+        Set(),
+        StatefulShortestPath.Selector.Shortest(1),
+        new TestNFABuilder(0, "leftOuter")
+          .addTransition(0, 1, "(leftOuter) (leftInner)")
+          .addTransition(0, 4, "(leftOuter) (rightOuter)")
+          .addTransition(1, 2, "(leftInner)-[r1:R]->(m)")
+          .addTransition(2, 3, "(m)-[r2:R]->(rightInner)")
+          .addTransition(3, 1, "(rightInner) (leftInner)")
+          .addTransition(3, 4, "(rightInner) (rightOuter)")
+          .setFinalState(4)
+          .build(),
+        ExpandAll,
+        false,
+        0,
+        None
+      )
+      .filter("leftOuter.id = 1")
+      .allNodeScan("leftOuter")
+      .build()
+  }
 }

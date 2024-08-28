@@ -30,9 +30,11 @@ import org.neo4j.cypher.internal.compiler.planner.logical.idp.expandSolverStep.p
 import org.neo4j.cypher.internal.expressions.Add
 import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.Disjoint
+import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.NoneOfRelationships
+import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.RelationshipUniquenessPredicate
 import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
 import org.neo4j.cypher.internal.expressions.UnPositionedVariable.varFor
@@ -416,6 +418,98 @@ object expandSolverStep {
     )
   }
 
+  private def rewritePredicatesToInlinableForm(
+    spp: SelectivePathPattern,
+    availableSymbols: Set[LogicalVariable]
+  ): Selections = {
+    spp.pathPattern.connections.foldLeft(spp.selections) {
+      case (updatedSelections, nodeConnection) =>
+        nodeConnection match {
+          case qpp: QuantifiedPathPattern =>
+            rewritePredicatesToInlinableForm(
+              updatedSelections,
+              qpp.leftBinding.outer,
+              qpp.leftBinding.inner,
+              qpp.rightBinding.inner,
+              qpp.rightBinding.outer,
+              availableSymbols
+            )
+          case _ => updatedSelections
+        }
+    }
+  }
+
+  /**
+   * An equality predicate referring to the same property on the left-inner and right-inner node of a QPP
+   * for example `li.prop=ri.prop` in: (lo) ((li)-->()-->()-->()-->(ri) WHERE li.prop=ri.prop)* (ro)
+   * can be rewritten 
+   * into:    `li.prop=ro.prop`
+   * or into: `lo.prop=ri.prop`.
+   * If `ro` is already bound, then `li.prop=ro.prop` can be inlined.
+   * If `lo` is already bound, then `lo.prop=ri.prop` can be inlined.
+   * Therefore, we will rewrite this predicate depending on what variable is already bound.
+   *
+   * Proof by induction that this rewrite is correct (li[i].prop=ri[i].prop into lo.prop=ri[i].prop):
+   * - Iteration 0: lo and li[0] are juxtaposed, therefore li[0].prop=ri[0].prop is equivalent to lo.prop=ri[0].prop
+   * Induction hypothesis: For iteration k, it holds that li[k].prop=ri[k].prop is equivalent to lo.prop=ri[k].prop
+   * Iteration k+1: li[k+1] is juxtaposed with the ri[k], therefore li[k+1].prop=ri[k+1].prop is equivalent to ri[k].prop=ri[k+1].prop. Transitivity with the induction hypothesis (lo.prop=ri[k].prop) gives lo.prop=ri[k+1].prop.
+   * This proves that for any number of iterations this rewrite is correct.
+   * In case of zero iterations, the predicate has no effect, therefore the rewrite is also correct when the minimum number of iterations is zero, as is the case with Kleene Star.
+   * Note: the property key on both sides of the equals operator must be the same!
+   *
+   * The other rewrite (li[i].prop=ri[i].prop into li[i].prop=ro.prop) is similar when reasoning from the other side.
+   *
+   * @param selections       The selections that might be rewritten
+   * @param qppLeftOuter     The left-outer node of a qpp
+   * @param qppLeftInner     The left-inner node of a qpp
+   * @param qppRightInner    The right-inner node of a qpp
+   * @param qppRightOuter    The right-outer node of a qpp
+   * @param availableSymbols The variables that have already been bounded
+   * @return The rewritten selections
+   */
+  private def rewritePredicatesToInlinableForm(
+    selections: Selections,
+    qppLeftOuter: LogicalVariable,
+    qppLeftInner: LogicalVariable,
+    qppRightInner: LogicalVariable,
+    qppRightOuter: LogicalVariable,
+    availableSymbols: Set[LogicalVariable]
+  ): Selections = {
+    val updatedExpression = selections.flatPredicates.map {
+      case far @ ForAllRepetitions(
+          _,
+          variableGroupings,
+          eq @ Equals(Property(lhsVar, lhsPropKey), Property(rhsVar, rhsPropKey))
+        )
+        if lhsPropKey == rhsPropKey &&
+          ((lhsVar == qppLeftInner && rhsVar == qppRightInner)
+            || (lhsVar == qppRightInner && rhsVar == qppLeftInner)) =>
+        if (availableSymbols.contains(qppLeftOuter)) {
+          // Translate (leftOuter)((leftInner)--()-...-()--(rightInner) WHERE leftInner.prop = rightInner.prop)*(rightOuter)
+          // to        (leftOuter)((leftInner)--()-...-()--(rightInner) WHERE leftOuter.prop = rightInner.prop)*(rightOuter)
+          val groupOfRightInnerVariable = variableGroupings.filter(_.singleton == qppRightInner).head.group
+          ForAllRepetitions(
+            groupOfRightInnerVariable,
+            variableGroupings,
+            eq.replaceAllOccurrencesBy(qppLeftInner, qppLeftOuter)
+          )(far.position)
+        } else if (availableSymbols.contains(qppRightOuter)) {
+          // Translate (leftOuter)((leftInner)--()-...-()--(rightInner) WHERE leftInner.prop = rightInner.prop)*(rightOuter)
+          // to        (leftOuter)((leftInner)--()-...-()--(rightInner) WHERE leftInner.prop = rightOuter.prop)*(rightOuter)
+          val groupOfLeftInnerVariable = variableGroupings.filter(_.singleton == qppLeftInner).head.group
+          ForAllRepetitions(
+            groupOfLeftInnerVariable,
+            variableGroupings,
+            eq.replaceAllOccurrencesBy(qppRightInner, qppRightOuter)
+          )(far.position)
+        } else {
+          far
+        }
+      case other => other
+    }
+    Selections.from(updatedExpression)
+  }
+
   /**
    * Predicates that were extracted from Quantified Path Patterns within a Selective Path Pattern during
    * [[org.neo4j.cypher.internal.compiler.planner.logical.MoveQuantifiedPathPatternPredicates]] gets
@@ -425,6 +519,7 @@ object expandSolverStep {
    * @return Updated SelectivePathPattern with extracted QPP Predicates inlined and reverted back to its original form
    */
   def inlineQPPPredicates(spp: SelectivePathPattern, availableSymbols: Set[LogicalVariable]): SelectivePathPattern = {
+    val rewrittenSppSelections = rewritePredicatesToInlinableForm(spp, availableSymbols)
     // We need to collect the updated node connections as well as the inlined predicates so we can remove them from the SPP Selections.
     val (newConnections, liftedPredicates) =
       spp.pathPattern.connections.foldLeft((Seq[ExhaustiveNodeConnection](), Set[Expression]())) {
@@ -463,7 +558,7 @@ object expandSolverStep {
               val extractedPredicates = variableGroupings.map {
                 case VariableGroupingSet(variableGrouping, inlineCheck) =>
                   val extracted = extractQPPPredicates(
-                    spp.selections.flatPredicates,
+                    rewrittenSppSelections.flatPredicates,
                     variableGrouping,
                     availableSymbols
                   )
@@ -489,7 +584,7 @@ object expandSolverStep {
 
     spp.copy(
       pathPattern = spp.pathPattern.copy(connections = NonEmptyList.from(newConnections)),
-      selections = spp.selections -- Selections.from(liftedPredicates)
+      selections = rewrittenSppSelections -- Selections.from(liftedPredicates)
     )
   }
 
