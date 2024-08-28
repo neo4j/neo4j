@@ -346,8 +346,8 @@ trait GraphIcing {
     def createNodeVectorIndex(
       label: String,
       property: String,
-      maybeSettings: Option[VectorIndexSettings],
-      maybeName: Option[String] = None
+      maybeName: Option[String] = None,
+      maybeSettings: Option[VectorIndexSettings] = None
     ): IndexDefinition = {
       createNodeIndex(
         maybeName,
@@ -361,8 +361,8 @@ trait GraphIcing {
     def createRelationshipVectorIndex(
       relType: String,
       property: String,
-      maybeSettings: Option[VectorIndexSettings],
-      maybeName: Option[String] = None
+      maybeName: Option[String] = None,
+      maybeSettings: Option[VectorIndexSettings] = None
     ): IndexDefinition = {
       createRelationshipIndex(
         maybeName,

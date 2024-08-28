@@ -39,6 +39,7 @@ import org.neo4j.kernel.api.exceptions.InvalidArgumentsException
 import org.neo4j.kernel.api.impl.schema.vector.VectorIndexConfigUtils
 import org.neo4j.kernel.api.impl.schema.vector.VectorIndexVersion
 import org.neo4j.values.AnyValue
+import org.neo4j.values.storable.BooleanValue
 import org.neo4j.values.storable.IntegralValue
 import org.neo4j.values.storable.TextValue
 import org.neo4j.values.utils.PrettyPrinter
@@ -65,8 +66,8 @@ case class CreateVectorIndexOptionsConverter(context: QueryContext)
     schemaType: String,
     maybeIndexProvider: Option[IndexProviderDescriptor]
   ): IndexConfig = {
-    // current keys: vector.(dimensions|similarity_function)
-    // current values: Long, String
+    // current keys: vector.(dimensions|similarity_function|quantization.enabled|hnsw.m|hnsw.ef_construction)
+    // current values: Long, String, Boolean
 
     def assertInvalidConfigValues(
       pp: PrettyPrinter,
@@ -106,13 +107,17 @@ case class CreateVectorIndexOptionsConverter(context: QueryContext)
 
     def exceptionWrongType(suppliedValue: AnyValue): InvalidArgumentsException =
       new InvalidArgumentsException(
-        s"${invalidConfigValueString(new PrettyPrinter(), suppliedValue, schemaType)}. Expected a map from String to Strings and Integers."
+        s"${invalidConfigValueString(new PrettyPrinter(), suppliedValue, schemaType)}. Expected a map from String to Strings, Integers and Booleans."
       )
 
     def assertConfigSettingsCorrectTypes(validationRecords: IndexConfigValidationRecords, itemsMap: MapValue): Unit = {
       // note: in cypher 6 probably should refer to these as INTEGER and STRING respectively
       val validTypes: Map[Class[_], String] =
-        Map(classOf[IntegralValue] -> "an Integer", classOf[TextValue] -> "a String")
+        Map(
+          classOf[IntegralValue] -> "an Integer",
+          classOf[TextValue] -> "a String",
+          classOf[BooleanValue] -> "a Boolean"
+        )
 
       validationRecords.get(INCORRECT_TYPE).asScala.foreach {
         // valid type for vector index config, *but* invalid for that setting
