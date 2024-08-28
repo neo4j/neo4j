@@ -140,6 +140,7 @@ import org.neo4j.kernel.api.exceptions.schema.ConstraintWithNameAlreadyExistsExc
 import org.neo4j.kernel.api.exceptions.schema.DropConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
 import org.neo4j.kernel.api.exceptions.schema.EquivalentSchemaRuleAlreadyExistsException;
+import org.neo4j.kernel.api.exceptions.schema.IncompatibleGraphTypeDependenceException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBelongsToConstraintException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
 import org.neo4j.kernel.api.exceptions.schema.IndexWithNameAlreadyExistsException;
@@ -1888,7 +1889,7 @@ public class Operations implements Write, SchemaWrite, Upgrade {
     private void assertNoBlockingSchemaRulesExists(ConstraintDescriptor constraint)
             throws EquivalentSchemaRuleAlreadyExistsException, IndexWithNameAlreadyExistsException,
                     ConstraintWithNameAlreadyExistsException, ConflictingConstraintException,
-                    AlreadyConstrainedException, AlreadyIndexedException {
+                    AlreadyConstrainedException, AlreadyIndexedException, IncompatibleGraphTypeDependenceException {
         final String name = constraint.getName();
         if (name == null) {
             throw new IllegalStateException("Expected constraint to always have a name by this point");
@@ -1902,6 +1903,29 @@ public class Operations implements Write, SchemaWrite, Upgrade {
         assertNoConflictingConstraints(constraint, constraintsWithSameSchema);
         assertNotAlreadyIndexed(constraint);
         assertConstraintNotBackedBySimilarIndexDroppedInThisTx(constraint);
+        assertNoConflictingGraphTypeDependence(constraint);
+    }
+
+    private void assertNoConflictingGraphTypeDependence(ConstraintDescriptor constraint)
+            throws IncompatibleGraphTypeDependenceException {
+        GraphTypeDependence thisDependence = constraint.graphTypeDependence();
+        if (thisDependence == GraphTypeDependence.UNDESIGNATED) {
+            return;
+        }
+        SchemaDescriptor schema = constraint.schema();
+        Iterator<ConstraintDescriptor> constraintsWithSameEntityToken =
+                switch (schema.entityType()) {
+                    case NODE -> schemaRead.constraintsGetForLabel(schema.getLabelId());
+                    case RELATIONSHIP -> schemaRead.constraintsGetForRelationshipType(schema.getRelTypeId());
+                };
+
+        while (constraintsWithSameEntityToken.hasNext()) {
+            ConstraintDescriptor constraintWithSameEntityToken = constraintsWithSameEntityToken.next();
+            GraphTypeDependence thatDependence = constraintWithSameEntityToken.graphTypeDependence();
+            if (thatDependence != GraphTypeDependence.UNDESIGNATED && thisDependence != thatDependence) {
+                throw new IncompatibleGraphTypeDependenceException(constraint, constraintWithSameEntityToken, token);
+            }
+        }
     }
 
     private void assertConstraintNotBackedBySimilarIndexDroppedInThisTx(ConstraintDescriptor constraint) {

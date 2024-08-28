@@ -702,6 +702,7 @@ public class PlainOperationsTest extends OperationsTest {
         when(tokenHolders.relationshipTypeTokens().getTokenById(relTypeId))
                 .thenReturn(new NamedToken("RelType", relTypeId));
         when(tokenHolders.propertyKeyTokens().getTokenById(propertyId)).thenReturn(new NamedToken("prop", relTypeId));
+        when(storageReader.constraintsGetForRelationshipType(anyInt())).thenReturn(Collections.emptyIterator());
 
         // when
         try {

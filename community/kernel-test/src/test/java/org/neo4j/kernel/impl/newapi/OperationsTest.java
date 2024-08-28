@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.newapi;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -38,6 +39,7 @@ import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.values.storable.Values.intValue;
 
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -53,6 +55,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.dbms.DbmsRuntimeVersionProvider;
 import org.neo4j.graphdb.security.AuthorizationViolationException;
+import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.EntityLocks;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.QueryContext;
@@ -69,6 +72,7 @@ import org.neo4j.internal.kernel.api.security.AccessMode.Static;
 import org.neo4j.internal.kernel.api.security.CommunitySecurityLog;
 import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
+import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.EndpointType;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
@@ -78,6 +82,7 @@ import org.neo4j.internal.schema.RelationshipEndpointSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorImplementation;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.internal.schema.SchemaState;
+import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.index.IndexProvider;
@@ -172,6 +177,7 @@ abstract class OperationsTest {
         when(storageReader.constraintsGetForLabel(anyInt())).thenReturn(Collections.emptyIterator());
         when(storageReader.constraintsGetAll()).thenReturn(Collections.emptyIterator());
         when(storageReader.constraintsGetForSchema(any())).thenReturn(Collections.emptyIterator());
+        when(storageReader.constraintsGetForRelationshipType(anyInt())).thenReturn(Collections.emptyIterator());
         when(storageReader.schemaSnapshot()).thenReturn(storageReaderSnapshot);
         when(engine.newReader()).thenReturn(storageReader);
         when(engine.createStorageCursors(any())).thenReturn(storeCursors);
@@ -393,7 +399,27 @@ abstract class OperationsTest {
         verify(locks).acquireExclusive(any(), eq(ResourceType.LABEL), eq((long) requiredLabelId));
     }
 
-    protected String runForSecurityLevel(Executable executable, AccessMode mode, boolean shoudldBeAuthorized)
+    @Test
+    void shouldFailAssertWhenIncompatibleGraphTypeDependence() throws Exception {
+        int labelId = 1;
+        int propertyId = 2;
+        int otherPropertyId = 3;
+        Iterator<ConstraintDescriptor> iterator =
+                Iterators.iterator(ConstraintDescriptorFactory.existsForLabel(true, labelId, propertyId));
+        LabelSchemaDescriptor schemaDescriptor = SchemaDescriptors.forLabel(labelId, otherPropertyId);
+        when(storageReader.constraintsGetForSchema(schemaDescriptor)).thenReturn(Collections.emptyIterator());
+        when(storageReader.constraintsGetForLabel(labelId)).thenReturn(iterator);
+        when(txState.hasChanges()).thenReturn(false);
+        when(storageReader.constraintExists(any())).thenReturn(true);
+
+        when(tokenHolders.labelTokens().getTokenById(anyInt())).thenReturn(new NamedToken("Label", labelId));
+        when(tokenHolders.propertyKeyTokens().getTokenById(anyInt()))
+                .thenReturn(new NamedToken("Property", propertyId));
+        assertThatThrownBy(() -> operations.nodePropertyExistenceConstraintCreate(schemaDescriptor, "name2", false))
+                .hasMessageContainingAll("Graph Type", "dependent", "independent", "incompatible");
+    }
+
+    protected String runForSecurityLevel(Executable executable, AccessMode mode, boolean shouldBeAuthorized)
             throws Exception {
         SecurityContext securityContext =
                 SecurityContext.authDisabled(mode, ClientConnectionInfo.EMBEDDED_CONNECTION, DB_NAME);
@@ -404,7 +430,7 @@ abstract class OperationsTest {
         when(nodeCursor.hasLabel(2)).thenReturn(false);
         when(nodeCursor.hasLabel(3)).thenReturn(true);
         when(tokenHolders.labelTokens().getTokenById(anyInt())).thenReturn(new NamedToken("Label", 2));
-        if (shoudldBeAuthorized) {
+        if (shouldBeAuthorized) {
             assertAuthorized(executable);
             return null;
         } else {
