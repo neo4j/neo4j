@@ -212,7 +212,7 @@ public class PropertyRecord extends AbstractBaseRecord {
         return blockRecordsCursor;
     }
 
-    public PropertyBlock[] getPropertyBlocks() {
+    public PropertyBlock[] propertyBlocksArray() {
         return blockRecords;
     }
 

@@ -546,7 +546,7 @@ class LogCommandSerializationV5_0 extends LogCommandSerializationV4_4 {
 
         int numberOfProperties = record.numberOfProperties();
         channel.put((byte) numberOfProperties); // 1
-        PropertyBlock[] blocks = record.getPropertyBlocks();
+        PropertyBlock[] blocks = record.propertyBlocksArray();
         for (int i = 0; i < numberOfProperties; i++) {
             PropertyBlock block = blocks[i];
             assert block.getSize() > 0 : record + " has incorrect size";

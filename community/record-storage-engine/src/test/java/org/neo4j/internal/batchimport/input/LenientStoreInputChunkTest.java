@@ -165,7 +165,7 @@ class LenientStoreInputChunkTest {
             PropertyRecord targetRecord = invocationOnMock.getArgument(1);
             targetRecord.setId(sourceRecord.getId());
             targetRecord.initialize(true, sourceRecord.getPrevProp(), sourceRecord.getNextProp());
-            for (PropertyBlock propertyBlock : sourceRecord.getPropertyBlocks()) {
+            for (PropertyBlock propertyBlock : sourceRecord.propertyBlocksArray()) {
                 if (propertyBlock != null) {
                     targetRecord.addPropertyBlock(propertyBlock);
                 }
