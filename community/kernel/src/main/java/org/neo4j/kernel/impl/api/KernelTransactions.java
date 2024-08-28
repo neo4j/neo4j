@@ -40,6 +40,7 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.DbmsRuntimeVersionProvider;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.dbms.identity.ServerIdentity;
+import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel;
 import org.neo4j.function.Factory;
 import org.neo4j.gqlstatus.ErrorClassification;
 import org.neo4j.gqlstatus.ErrorGqlStatusObjectImplementation;
@@ -169,6 +170,7 @@ public class KernelTransactions extends LifecycleAdapter
     private final ApplyEnrichmentStrategy enrichmentStrategy;
     private final AbstractSecurityLog securityLog;
     private final boolean multiVersioned;
+    private final TopologyGraphDbmsModel.HostedOnMode mode;
     private final DatabaseSerialGuard databaseSerialGuard;
     private final SpdKernelTransactionDecorator spdKernelTransactionDecorator;
     private ScopedMemoryPool transactionMemoryPool;
@@ -220,7 +222,8 @@ public class KernelTransactions extends LifecycleAdapter
             DatabaseHealth databaseHealth,
             TransactionValidatorFactory transactionValidatorFactory,
             LogProvider internalLogProvider,
-            SpdKernelTransactionDecorator spdKernelTransactionDecorator) {
+            SpdKernelTransactionDecorator spdKernelTransactionDecorator,
+            TopologyGraphDbmsModel.HostedOnMode mode) {
         this.config = config;
         this.lockManager = lockManager;
         this.constraintIndexCreator = constraintIndexCreator;
@@ -260,6 +263,7 @@ public class KernelTransactions extends LifecycleAdapter
         this.leaseService = leaseService;
         this.transactionIdSequence = transactionIdSequence;
         this.multiVersioned = storageEngine.getOpenOptions().contains(MULTI_VERSIONED);
+        this.mode = mode;
         this.txPool = new MonitoredTransactionPool(
                 new GlobalKernelTransactionPool(
                         allTransactions, new KernelTransactionImplementationFactory(allTransactions, tracers)),
@@ -574,7 +578,8 @@ public class KernelTransactions extends LifecycleAdapter
                     internalLogProvider,
                     transactionValidatorFactory,
                     databaseSerialGuard,
-                    multiVersioned);
+                    multiVersioned,
+                    mode);
             this.transactions.add(tx);
             return tx;
         }

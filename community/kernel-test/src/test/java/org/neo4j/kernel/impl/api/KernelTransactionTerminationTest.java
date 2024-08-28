@@ -56,6 +56,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.dbms.DbmsRuntimeVersionProvider;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.dbms.identity.ServerIdentity;
+import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.CommunitySecurityLog;
@@ -306,7 +307,8 @@ class KernelTransactionTerminationTest {
                     NullLogProvider.getInstance(),
                     TransactionValidatorFactory.EMPTY_VALIDATOR_FACTORY,
                     EMPTY_GUARD,
-                    false);
+                    false,
+                    TopologyGraphDbmsModel.HostedOnMode.SINGLE);
 
             this.monitor = monitor;
         }

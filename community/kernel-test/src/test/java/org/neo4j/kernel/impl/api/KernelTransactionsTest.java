@@ -80,6 +80,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.DbmsRuntimeVersionProvider;
 import org.neo4j.dbms.identity.ServerIdentity;
+import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel;
 import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.security.AuthorizationExpiredException;
 import org.neo4j.internal.id.IdController;
@@ -822,7 +823,8 @@ class KernelTransactionsTest {
                 mock(DatabaseHealth.class),
                 EMPTY_VALIDATOR_FACTORY,
                 NullLogProvider.getInstance(),
-                null);
+                null,
+                TopologyGraphDbmsModel.HostedOnMode.SINGLE);
     }
 
     private static TestKernelTransactions createTestTransactions(
@@ -948,7 +950,8 @@ class KernelTransactionsTest {
                     mock(DatabaseHealth.class),
                     EMPTY_VALIDATOR_FACTORY,
                     NullLogProvider.getInstance(),
-                    null);
+                    null,
+                    TopologyGraphDbmsModel.HostedOnMode.SINGLE);
         }
 
         @Override

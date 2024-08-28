@@ -27,6 +27,7 @@ import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_I
 
 import java.util.List;
 import org.apache.commons.lang3.mutable.MutableLong;
+import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.HostedOnMode;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.TransactionRollbackException;
 import org.neo4j.internal.helpers.Exceptions;
@@ -79,6 +80,7 @@ public final class ChunkCommitter implements TransactionCommitter {
     private final ValidationLockDumper validationLockDumper;
     private final SerialExecutionGuard serialExecutionGuard;
     private final Log log;
+    private final HostedOnMode mode;
     private long lastTransactionIdWhenStarted;
     private long startTimeMillis;
     private LeaseClient leaseClient;
@@ -96,7 +98,8 @@ public final class ChunkCommitter implements TransactionCommitter {
             TransactionValidator transactionValidator,
             ValidationLockDumper validationLockDumper,
             SerialExecutionGuard serialExecutionGuard,
-            LogProvider logProvider) {
+            LogProvider logProvider,
+            HostedOnMode mode) {
         this.ktx = ktx;
         this.commitmentFactory = commitmentFactory;
         this.kernelVersionProvider = kernelVersionProvider;
@@ -110,6 +113,7 @@ public final class ChunkCommitter implements TransactionCommitter {
         this.validationLockDumper = validationLockDumper;
         this.serialExecutionGuard = serialExecutionGuard;
         this.log = logProvider.getLog(ChunkCommitter.class);
+        this.mode = mode;
     }
 
     @Override
@@ -193,14 +197,22 @@ public final class ChunkCommitter implements TransactionCommitter {
             try {
                 validateCurrentKernelVersion();
                 prepareRollBackEntry();
-                chunkedRollbackProcess.rollbackChunks(transactionPayload, rollbackEvent);
+                if (isSingleInstance()) {
+                    chunkedRollbackProcess.rollbackChunks(transactionPayload, rollbackEvent);
+                }
                 writeRollbackEntry(rollbackEvent);
             } catch (Exception e) {
-                databaseHealth.panic(e);
+                if (isSingleInstance()) {
+                    databaseHealth.panic(e);
+                }
                 Exceptions.throwIfInstanceOf(e, TransactionRollbackException.class);
                 throw new TransactionRollbackException("Transaction rollback failed", e);
             }
         }
+    }
+
+    private boolean isSingleInstance() {
+        return HostedOnMode.SINGLE == mode;
     }
 
     private ChunkedTransaction getTransaction(CursorContext cursorContext) {

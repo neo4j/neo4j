@@ -44,6 +44,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.dbms.DbmsRuntimeVersionProvider;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.dbms.identity.ServerIdentity;
+import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel;
 import org.neo4j.internal.kernel.api.security.CommunitySecurityLog;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.schema.SchemaState;
@@ -150,7 +151,8 @@ public final class KernelTransactionFactory {
                 NullLogProvider.getInstance(),
                 TransactionValidatorFactory.EMPTY_VALIDATOR_FACTORY,
                 EMPTY_GUARD,
-                storageEngine.getOpenOptions().contains(MULTI_VERSIONED));
+                storageEngine.getOpenOptions().contains(MULTI_VERSIONED),
+                TopologyGraphDbmsModel.HostedOnMode.SINGLE);
 
         DatabaseReference defaultSessionDb = Mockito.mock(DatabaseReference.class);
         Mockito.when(defaultSessionDb.fullName()).thenReturn(new NormalizedDatabaseName(DEFAULT_DATABASE_NAME));

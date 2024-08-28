@@ -59,6 +59,7 @@ import org.neo4j.configuration.database.readonly.ConfigBasedLookupFactory;
 import org.neo4j.dbms.DbmsRuntimeVersionProvider;
 import org.neo4j.dbms.database.readonly.DefaultReadOnlyDatabases;
 import org.neo4j.dbms.identity.ServerIdentity;
+import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel;
 import org.neo4j.internal.kernel.api.security.CommunitySecurityLog;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
@@ -278,7 +279,8 @@ class KernelTransactionTestBase {
                 NullLogProvider.getInstance(),
                 validatorFactory,
                 EMPTY_GUARD,
-                storageEngine.getOpenOptions().contains(MULTI_VERSIONED));
+                storageEngine.getOpenOptions().contains(MULTI_VERSIONED),
+                TopologyGraphDbmsModel.HostedOnMode.SINGLE);
     }
 
     KernelTransactionImplementation newNotInitializedTransaction(LeaseService leaseService) {

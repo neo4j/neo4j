@@ -56,6 +56,7 @@ import org.neo4j.configuration.LocalConfig;
 import org.neo4j.dbms.DbmsRuntimeVersionProvider;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.dbms.identity.ServerIdentity;
+import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.exceptions.UnspecifiedKernelException;
 import org.neo4j.gqlstatus.ErrorClassification;
@@ -351,7 +352,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             LogProvider logProvider,
             TransactionValidatorFactory transactionValidatorFactory,
             DatabaseSerialGuard databaseSerialGuard,
-            boolean multiVersioned) {
+            boolean multiVersioned,
+            TopologyGraphDbmsModel.HostedOnMode mode) {
         this.logProvider = logProvider;
         this.closed = true;
         this.timeout = TransactionTimeout.NO_TIMEOUT;
@@ -470,7 +472,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 transactionValidatorFactory.createTransactionValidator(memoryTracker, transactionMonitor);
         this.validationLockDumper = transactionValidatorFactory.createValidationLockDumper();
         this.serialExecutionGuard = createSerialGuard(multiVersioned);
-        this.committer = createCommitter(commitmentFactory, multiVersioned);
+        this.committer = createCommitter(commitmentFactory, multiVersioned, mode);
         this.transactionEventListeners = new TransactionEventListeners(transactionEventListeners, this, storageReader);
         this.txStateWriter = createChunkWriter(multiVersioned);
         registerConfigChangeListeners(config);
@@ -1626,7 +1628,9 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     }
 
     private TransactionCommitter createCommitter(
-            TransactionCommitmentFactory commitmentFactory, boolean multiVersioned) {
+            TransactionCommitmentFactory commitmentFactory,
+            boolean multiVersioned,
+            TopologyGraphDbmsModel.HostedOnMode mode) {
         return multiVersioned
                 ? new ChunkCommitter(
                         this,
@@ -1641,7 +1645,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                         transactionValidator,
                         validationLockDumper,
                         serialExecutionGuard,
-                        logProvider)
+                        logProvider,
+                        mode)
                 : new DefaultCommitter(
                         this,
                         commitmentFactory,

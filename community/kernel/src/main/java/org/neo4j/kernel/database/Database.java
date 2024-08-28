@@ -1032,7 +1032,8 @@ public class Database extends AbstractDatabase {
                 databaseHealth,
                 transactionValidatorFactory,
                 internalLogProvider,
-                spdKernelTransactionDecorator));
+                spdKernelTransactionDecorator,
+                mode));
 
         var transactionMonitor = buildTransactionMonitor(kernelTransactions, transactionIdStore, databaseConfig);
 
