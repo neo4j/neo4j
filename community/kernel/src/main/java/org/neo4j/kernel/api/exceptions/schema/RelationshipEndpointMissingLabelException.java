@@ -21,6 +21,7 @@ package org.neo4j.kernel.api.exceptions.schema;
 
 import static java.lang.String.format;
 
+import java.util.Locale;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.internal.schema.constraints.RelationshipEndpointConstraintDescriptor;
@@ -48,7 +49,7 @@ public final class RelationshipEndpointMissingLabelException extends ConstraintV
                 "Relationship(%s) with type %s requires it's %s Node(%s) to have label %s",
                 relationshipReference,
                 tokenNameLookup.relationshipTypeGetName(descriptor.schema().getRelTypeId()),
-                descriptor.endpointType().name(),
+                descriptor.endpointType().name().toLowerCase(Locale.ROOT),
                 nodeReference,
                 tokenNameLookup.labelGetName(descriptor.endpointLabelId()));
     }

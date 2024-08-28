@@ -55,6 +55,6 @@ public final class RelationshipEndpointMissingLabelExceptionTest {
 
         assertThat(userMessage)
                 .isEqualTo(
-                        "Relationship(1) with type RelationshipType requires it's START Node(2) to have label EndpointLabel");
+                        "Relationship(1) with type RelationshipType requires it's start Node(2) to have label EndpointLabel");
     }
 }
