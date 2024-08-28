@@ -26,8 +26,11 @@ import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.Predicate
 import org.neo4j.cypher.internal.logical.plans.Expand.ExpandInto
+import org.neo4j.cypher.internal.logical.plans.Expand.VariablePredicate
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.runtime.InputValues
+import org.neo4j.cypher.internal.runtime.ast.TraversalEndpoint
+import org.neo4j.cypher.internal.runtime.ast.TraversalEndpoint.Endpoint
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
@@ -1348,6 +1351,64 @@ abstract class VarLengthExpandTestBase[CONTEXT <: RuntimeContext](
     // then
     val expectedRowCount = sizeHint * Math.pow(outDegree, depth).asInstanceOf[Int] * outDegree
     runtimeResult should beColumns("a", "b", "c").withRows(rowCount(expectedRowCount))
+  }
+
+  test(
+    "TraversalEndpoint(To) should resolve as the next node of a relationship traversal during predicate evaluation"
+  ) {
+    val (a, b, c) = givenGraph {
+      val graph = fromTemplate("""
+        (c:TO)-->(a)-->(b:TO)
+                  |
+                  v
+              (ignored)
+       """)
+      (graph node "a", graph node "b", graph node "c")
+    }
+
+    val relPredicates = Seq(
+      VariablePredicate(varFor("r"), hasLabels(TraversalEndpoint(varFor("temp"), Endpoint.To), "TO"))
+    )
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("t")
+      .expandExpr("(s)-[r*]-(t)", relationshipPredicates = relPredicates)
+      .nodeByIdSeek("s", Set.empty, a.getId)
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    runtimeResult should beColumns("t").withRows(inAnyOrder(Seq(Array(b), Array(c))))
+  }
+
+  test(
+    "TraversalEndpoint(From) should resolve as the previous node of a relationship traversal during predicate evaluation"
+  ) {
+    val (a, b, c) = givenGraph {
+      val graph = fromTemplate("""
+        (a:FROM)<--(b:FROM)-->(c)-->()
+       """)
+      (graph node "a", graph node "b", graph node "c")
+    }
+
+    val relPredicates = Seq(
+      VariablePredicate(varFor("r"), hasLabels(TraversalEndpoint(varFor("temp"), Endpoint.From), "FROM"))
+    )
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("s", "t")
+      .expandExpr("(s)-[r*]-(t)", relationshipPredicates = relPredicates)
+      .nodeByIdSeek("s", Set.empty, a.getId)
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    val expected = inAnyOrder(Seq(
+      Array(a, b),
+      Array(a, c)
+    ))
+
+    runtimeResult should beColumns("s", "t").withRows(expected)
   }
 
   // HELPERS

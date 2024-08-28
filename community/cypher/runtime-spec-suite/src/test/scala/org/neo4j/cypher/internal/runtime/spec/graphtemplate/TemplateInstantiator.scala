@@ -24,6 +24,8 @@ import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.Relationship
 import org.neo4j.graphdb.RelationshipType
 import org.neo4j.graphdb.Transaction
+import org.neo4j.values.virtual.PathReference
+import org.neo4j.values.virtual.VirtualValues
 
 trait TemplateInstantiator[Node, Rel] {
   def createNode(labels: Seq[String]): Node
@@ -38,6 +40,22 @@ case class InstantiatedGraph[Node, Rel](
 ) {
   def node(name: String): Node = namedNodes(name)
   def rel(name: String): Rel = namedRels(name)
+}
+
+object InstantiatedGraph {
+
+  implicit class DbInstantiatedGraph(graph: InstantiatedGraph[Node, Relationship]) {
+
+    def pathReference(names: String*): PathReference = {
+      val nodes = names.zipWithIndex.collect { case (n, i) if i % 2 == 0 => graph.node(n).getId }
+      val rels = names.zipWithIndex.collect { case (r, i) if i % 2 == 1 => graph.rel(r).getId }
+
+      VirtualValues.pathReference(
+        nodes.toArray,
+        rels.toArray
+      )
+    }
+  }
 }
 
 class TransactionTemplateInstantiator(tx: Transaction, defaultRelType: String = "R")

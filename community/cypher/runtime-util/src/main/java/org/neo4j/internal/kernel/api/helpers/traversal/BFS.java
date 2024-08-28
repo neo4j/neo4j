@@ -36,6 +36,7 @@ import org.neo4j.internal.kernel.api.KernelReadTracer;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
+import org.neo4j.internal.kernel.api.RelationshipTraversalEntities;
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelections;
 import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.memory.MemoryTracker;
@@ -60,7 +61,7 @@ abstract class BFS<STEPS> implements AutoCloseable {
     RelationshipTraversalCursor selectionCursor;
     final MemoryTracker memoryTracker;
     LongPredicate nodeFilter;
-    Predicate<RelationshipTraversalCursor> relFilter;
+    Predicate<RelationshipTraversalEntities> relFilter;
     HeapTrackingLongHashSet currentLevel;
     LongIterator currentLevelItr;
     HeapTrackingLongHashSet nextLevel;
@@ -87,7 +88,7 @@ abstract class BFS<STEPS> implements AutoCloseable {
             RelationshipTraversalCursor relCursor,
             MemoryTracker memoryTracker,
             LongPredicate nodeFilter,
-            Predicate<RelationshipTraversalCursor> relFilter,
+            Predicate<RelationshipTraversalEntities> relFilter,
             boolean needOnlyOnePath) {
         this.needOnlyOnePath = needOnlyOnePath;
         this.startNodeId = startNodeId;
@@ -121,7 +122,7 @@ abstract class BFS<STEPS> implements AutoCloseable {
     }
 
     void resetWithStartNode(
-            long startNodeId, LongPredicate nodeFilter, Predicate<RelationshipTraversalCursor> relFilter) {
+            long startNodeId, LongPredicate nodeFilter, Predicate<RelationshipTraversalEntities> relFilter) {
         this.startNodeId = startNodeId;
         this.nodeFilter = nodeFilter;
         this.relFilter = relFilter;
@@ -138,7 +139,7 @@ abstract class BFS<STEPS> implements AutoCloseable {
             NodeCursor nodeCursor,
             RelationshipTraversalCursor relCursor,
             LongPredicate nodeFilter,
-            Predicate<RelationshipTraversalCursor> relFilter) {
+            Predicate<RelationshipTraversalEntities> relFilter) {
         this.nodeCursor = nodeCursor;
         this.relCursor = relCursor;
         resetWithStartNode(startNodeId, nodeFilter, relFilter);
@@ -186,7 +187,7 @@ abstract class BFS<STEPS> implements AutoCloseable {
                 RelationshipTraversalCursor relCursor,
                 MemoryTracker memoryTracker,
                 LongPredicate nodeFilter,
-                Predicate<RelationshipTraversalCursor> relFilter) {
+                Predicate<RelationshipTraversalEntities> relFilter) {
             super(
                     startNodeId,
                     types,
@@ -286,7 +287,7 @@ abstract class BFS<STEPS> implements AutoCloseable {
 
         @Override
         void resetWithStartNode(
-                long startNodeId, LongPredicate nodeFilter, Predicate<RelationshipTraversalCursor> relFilter) {
+                long startNodeId, LongPredicate nodeFilter, Predicate<RelationshipTraversalEntities> relFilter) {
             this.foundIntersectionNode = StatementConstants.NO_SUCH_NODE;
             super.resetWithStartNode(startNodeId, nodeFilter, relFilter);
         }
@@ -307,7 +308,7 @@ abstract class BFS<STEPS> implements AutoCloseable {
                 RelationshipTraversalCursor relCursor,
                 MemoryTracker memoryTracker,
                 LongPredicate nodeFilter,
-                Predicate<RelationshipTraversalCursor> relFilter) {
+                Predicate<RelationshipTraversalEntities> relFilter) {
             super(
                     startNodeId,
                     types,
@@ -355,7 +356,7 @@ abstract class BFS<STEPS> implements AutoCloseable {
                 NodeCursor nodeCursor,
                 RelationshipTraversalCursor relCursor,
                 LongPredicate nodeFilter,
-                Predicate<RelationshipTraversalCursor> relFilter) {
+                Predicate<RelationshipTraversalEntities> relFilter) {
             super.resetWithStartNode(startNodeId, nodeCursor, relCursor, nodeFilter, relFilter);
             this.availableArrayListsCurrentIndex = 0;
             this.availableArrayListsEnd = this.availableArrayLists.size();
@@ -363,7 +364,7 @@ abstract class BFS<STEPS> implements AutoCloseable {
 
         @Override
         public void resetWithStartNode(
-                long startNodeId, LongPredicate nodeFilter, Predicate<RelationshipTraversalCursor> relFilter) {
+                long startNodeId, LongPredicate nodeFilter, Predicate<RelationshipTraversalEntities> relFilter) {
             super.resetWithStartNode(startNodeId, nodeFilter, relFilter);
             this.availableArrayListsCurrentIndex = 0;
             this.availableArrayListsEnd = this.availableArrayLists.size();
@@ -387,7 +388,7 @@ abstract class BFS<STEPS> implements AutoCloseable {
                 RelationshipTraversalCursor relCursor,
                 MemoryTracker memoryTracker,
                 LongPredicate nodeFilter,
-                Predicate<RelationshipTraversalCursor> relFilter) {
+                Predicate<RelationshipTraversalEntities> relFilter) {
             super(startNodeId, types, direction, read, nodeCursor, relCursor, memoryTracker, nodeFilter, relFilter);
         }
 
@@ -461,13 +462,13 @@ abstract class BFS<STEPS> implements AutoCloseable {
                 RelationshipTraversalCursor relCursor,
                 MemoryTracker memoryTracker,
                 LongPredicate nodeFilter,
-                Predicate<RelationshipTraversalCursor> relFilter) {
+                Predicate<RelationshipTraversalEntities> relFilter) {
             super(startNodeId, types, direction, read, nodeCursor, relCursor, memoryTracker, nodeFilter, relFilter);
         }
 
         @Override
         public void resetWithStartNode(
-                long startNodeId, LongPredicate nodeFilter, Predicate<RelationshipTraversalCursor> relFilter) {
+                long startNodeId, LongPredicate nodeFilter, Predicate<RelationshipTraversalEntities> relFilter) {
             this.foundIntersectionNode = StatementConstants.NO_SUCH_NODE;
             this.currentNode = StatementConstants.NO_SUCH_NODE;
             super.resetWithStartNode(startNodeId, nodeFilter, relFilter);

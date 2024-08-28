@@ -38,6 +38,7 @@ import org.neo4j.internal.kernel.api.KernelReadTracer;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
+import org.neo4j.internal.kernel.api.RelationshipTraversalEntities;
 import org.neo4j.memory.MemoryTracker;
 
 /**
@@ -75,7 +76,7 @@ public abstract class BFSPruningVarExpandCursor extends DefaultCloseListenable i
     final RelationshipTraversalCursor relCursor;
     RelationshipTraversalCursor selectionCursor;
     final LongPredicate nodeFilter;
-    final Predicate<RelationshipTraversalCursor> relFilter;
+    final Predicate<RelationshipTraversalEntities> relFilter;
     final long soughtEndNode;
 
     public static BFSPruningVarExpandCursor outgoingExpander(
@@ -87,7 +88,7 @@ public abstract class BFSPruningVarExpandCursor extends DefaultCloseListenable i
             NodeCursor nodeCursor,
             RelationshipTraversalCursor cursor,
             LongPredicate nodeFilter,
-            Predicate<RelationshipTraversalCursor> relFilter,
+            Predicate<RelationshipTraversalEntities> relFilter,
             long soughtEndNode,
             MemoryTracker memoryTracker) {
         return new OutgoingBFSPruningVarExpandCursor(
@@ -113,7 +114,7 @@ public abstract class BFSPruningVarExpandCursor extends DefaultCloseListenable i
             NodeCursor nodeCursor,
             RelationshipTraversalCursor cursor,
             LongPredicate nodeFilter,
-            Predicate<RelationshipTraversalCursor> relFilter,
+            Predicate<RelationshipTraversalEntities> relFilter,
             long endNode,
             MemoryTracker memoryTracker) {
         return new IncomingBFSPruningVarExpandCursor(
@@ -139,7 +140,7 @@ public abstract class BFSPruningVarExpandCursor extends DefaultCloseListenable i
             NodeCursor nodeCursor,
             RelationshipTraversalCursor cursor,
             LongPredicate nodeFilter,
-            Predicate<RelationshipTraversalCursor> relFilter,
+            Predicate<RelationshipTraversalEntities> relFilter,
             long soughtEndNode,
             MemoryTracker memoryTracker) {
         if (includeStartNode) {
@@ -191,7 +192,7 @@ public abstract class BFSPruningVarExpandCursor extends DefaultCloseListenable i
             NodeCursor nodeCursor,
             RelationshipTraversalCursor relCursor,
             LongPredicate nodeFilter,
-            Predicate<RelationshipTraversalCursor> relFilter,
+            Predicate<RelationshipTraversalEntities> relFilter,
             long soughtEndNode) {
         this.types = types;
         this.maxDepth = maxDepth;
@@ -278,7 +279,7 @@ public abstract class BFSPruningVarExpandCursor extends DefaultCloseListenable i
                 NodeCursor nodeCursor,
                 RelationshipTraversalCursor relCursor,
                 LongPredicate nodeFilter,
-                Predicate<RelationshipTraversalCursor> relFilter,
+                Predicate<RelationshipTraversalEntities> relFilter,
                 long endNode,
                 MemoryTracker memoryTracker) {
             super(types, maxDepth, read, nodeCursor, relCursor, nodeFilter, relFilter, endNode);
@@ -378,7 +379,7 @@ public abstract class BFSPruningVarExpandCursor extends DefaultCloseListenable i
                 NodeCursor nodeCursor,
                 RelationshipTraversalCursor cursor,
                 LongPredicate nodeFilter,
-                Predicate<RelationshipTraversalCursor> relFilter,
+                Predicate<RelationshipTraversalEntities> relFilter,
                 long soughtEndNode,
                 MemoryTracker memoryTracker) {
             super(
@@ -412,7 +413,7 @@ public abstract class BFSPruningVarExpandCursor extends DefaultCloseListenable i
                 NodeCursor nodeCursor,
                 RelationshipTraversalCursor cursor,
                 LongPredicate nodeFilter,
-                Predicate<RelationshipTraversalCursor> relFilter,
+                Predicate<RelationshipTraversalEntities> relFilter,
                 long soughtEndNode,
                 MemoryTracker memoryTracker) {
             super(
@@ -473,7 +474,7 @@ public abstract class BFSPruningVarExpandCursor extends DefaultCloseListenable i
                 NodeCursor nodeCursor,
                 RelationshipTraversalCursor cursor,
                 LongPredicate nodeFilter,
-                Predicate<RelationshipTraversalCursor> relFilter,
+                Predicate<RelationshipTraversalEntities> relFilter,
                 long soughtEndNode,
                 MemoryTracker memoryTracker) {
             super(types, maxDepth, read, nodeCursor, cursor, nodeFilter, relFilter, soughtEndNode);
@@ -672,7 +673,7 @@ public abstract class BFSPruningVarExpandCursor extends DefaultCloseListenable i
                 NodeCursor nodeCursor,
                 RelationshipTraversalCursor cursor,
                 LongPredicate nodeFilter,
-                Predicate<RelationshipTraversalCursor> relFilter,
+                Predicate<RelationshipTraversalEntities> relFilter,
                 long endNode,
                 MemoryTracker memoryTracker) {
             super(types, maxDepth, read, nodeCursor, cursor, nodeFilter, relFilter, endNode);

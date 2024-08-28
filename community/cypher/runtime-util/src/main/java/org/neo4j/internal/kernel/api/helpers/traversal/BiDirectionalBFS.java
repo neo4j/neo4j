@@ -27,6 +27,7 @@ import org.neo4j.internal.kernel.api.KernelReadTracer;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
+import org.neo4j.internal.kernel.api.RelationshipTraversalEntities;
 import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.util.CalledFromGeneratedCode;
@@ -86,7 +87,7 @@ public class BiDirectionalBFS implements AutoCloseable {
             RelationshipTraversalCursor relCursor,
             MemoryTracker memoryTracker,
             LongPredicate nodeFilter,
-            Predicate<RelationshipTraversalCursor> relFilter,
+            Predicate<RelationshipTraversalEntities> relFilter,
             boolean needOnlyOnePath,
             boolean allowZeroLength) {
         BiDirectionalBFSImpl<?> bfs;
@@ -265,7 +266,7 @@ public class BiDirectionalBFS implements AutoCloseable {
             long sourceNodeId,
             long targetNodeId,
             LongPredicate nodeFilter,
-            Predicate<RelationshipTraversalCursor> relFilter) {
+            Predicate<RelationshipTraversalEntities> relFilter) {
         inner.resetForNewRow(sourceNodeId, targetNodeId, nodeFilter, relFilter);
     }
 
@@ -275,7 +276,7 @@ public class BiDirectionalBFS implements AutoCloseable {
             NodeCursor nodeCursor,
             RelationshipTraversalCursor relCursor,
             LongPredicate nodeFilter,
-            Predicate<RelationshipTraversalCursor> relFilter) {
+            Predicate<RelationshipTraversalEntities> relFilter) {
         inner.resetForNewRow(sourceNodeId, targetNodeId, nodeCursor, relCursor, nodeFilter, relFilter);
     }
 

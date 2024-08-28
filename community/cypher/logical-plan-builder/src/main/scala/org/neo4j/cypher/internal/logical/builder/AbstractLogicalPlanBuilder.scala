@@ -801,6 +801,22 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     relationshipPredicates: Seq[Predicate] = Seq.empty,
     mode: ExpansionMode = ExpandAll
   ): IMPL = {
+    bfsPruningVarExpandExpr(
+      pattern,
+      depthName,
+      nodePredicates.map(_.asVariablePredicate),
+      relationshipPredicates.map(_.asVariablePredicate),
+      mode
+    )
+  }
+
+  def bfsPruningVarExpandExpr(
+    pattern: String,
+    depthName: Option[String] = None,
+    nodePredicates: Seq[VariablePredicate] = Seq.empty,
+    relationshipPredicates: Seq[VariablePredicate] = Seq.empty,
+    mode: ExpansionMode = ExpandAll
+  ): IMPL = {
     val p = patternParser.parse(pattern)
     newRelationship(varFor(p.relName))
     if (mode == ExpandAll) {
@@ -819,8 +835,8 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
             maxLength = maybeMax.getOrElse(Int.MaxValue),
             depthName.map(varFor),
             mode,
-            nodePredicates.map(_.asVariablePredicate),
-            relationshipPredicates.map(_.asVariablePredicate)
+            nodePredicates,
+            relationshipPredicates
           )(_)
         ))
       case _ =>

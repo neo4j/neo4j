@@ -22,10 +22,13 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.Predicate
+import org.neo4j.cypher.internal.logical.plans.Expand.VariablePredicate
 import org.neo4j.cypher.internal.logical.plans.FindShortestPaths.AllowSameNode
 import org.neo4j.cypher.internal.logical.plans.FindShortestPaths.DisallowSameNode
 import org.neo4j.cypher.internal.logical.plans.FindShortestPaths.SkipSameNode
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
+import org.neo4j.cypher.internal.runtime.ast.TraversalEndpoint
+import org.neo4j.cypher.internal.runtime.ast.TraversalEndpoint.Endpoint
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RowCount
@@ -1232,6 +1235,72 @@ abstract class ShortestPathTestBase[CONTEXT <: RuntimeContext](
 
     // then
     runtimeResult should beColumns("path").withRows(assertPaths(rowCount(100))(p => p.size() == 10))
+  }
+
+  test(
+    "TraversalEndpoint(To) should resolve as the next node of a relationship traversal during predicate evaluation"
+  ) {
+    val graph = givenGraph {
+      fromTemplate("""
+
+        (a)<-[ab]-(b:TO)-[bc]->(c:TO)
+         |                       ^
+         '---------->()----------'
+
+       """)
+    }
+
+    val relPredicates = Seq(
+      VariablePredicate(varFor("r"), hasLabels(TraversalEndpoint(varFor("temp"), Endpoint.To), "TO"))
+    )
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("path")
+      .shortestPathExpr("(a)-[r*]-(c)", pathName = Some("path"), relationshipPredicates = relPredicates)
+      .cartesianProduct()
+      .|.nodeByIdSeek("a", Set.empty, graph.node("a").getId)
+      .nodeByIdSeek("c", Set.empty, graph.node("c").getId)
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    val expected = inAnyOrder(Seq(
+      Array(graph.pathReference("a", "ab", "b", "bc", "c"))
+    ))
+
+    runtimeResult should beColumns("path").withRows(expected)
+  }
+
+  test(
+    "TraversalEndpoint(From) should resolve as the previous node of a relationship traversal during predicate evaluation"
+  ) {
+    val graph = givenGraph {
+      fromTemplate("""
+        (a:FROM)<-[ab]-(b:FROM)-[bc]->(c)
+         |                             ^
+         '------------->()-------------'
+       """)
+    }
+
+    val relPredicates = Seq(
+      VariablePredicate(varFor("r"), hasLabels(TraversalEndpoint(varFor("temp"), Endpoint.From), "FROM"))
+    )
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("path")
+      .shortestPathExpr("(a)-[r*]-(c)", pathName = Some("path"), relationshipPredicates = relPredicates)
+      .cartesianProduct()
+      .|.nodeByIdSeek("a", Set.empty, graph.node("a").getId)
+      .nodeByIdSeek("c", Set.empty, graph.node("c").getId)
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    val expected = inAnyOrder(Seq(
+      Array(graph.pathReference("a", "ab", "b", "bc", "c"))
+    ))
+
+    runtimeResult should beColumns("path").withRows(expected)
   }
 
   case class assertPaths(rowsMatcher: RowsMatcher)(check: VirtualPathValue => Boolean) extends RowsMatcher {

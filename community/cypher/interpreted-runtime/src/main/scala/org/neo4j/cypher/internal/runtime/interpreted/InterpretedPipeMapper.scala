@@ -206,7 +206,6 @@ import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.ParameterMapping
 import org.neo4j.cypher.internal.runtime.ProcedureCallMode
 import org.neo4j.cypher.internal.runtime.QueryIndexRegistrator
-import org.neo4j.cypher.internal.runtime.ast.ExpressionVariable
 import org.neo4j.cypher.internal.runtime.interpreted.commands.CommandNFA
 import org.neo4j.cypher.internal.runtime.interpreted.commands.KeyTokenResolver
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.ExpressionConverters
@@ -341,6 +340,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.TopNPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.TrailPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.TransactionApplyPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.TransactionForeachPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.TraversalPredicates
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.TriadicSelectionPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.UndirectedAllRelationshipsScanPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.UndirectedRelationshipByIdSeekPipe
@@ -355,7 +355,6 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.UnionPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.UnwindPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.ValueHashJoinPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.VarLengthExpandPipe
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.VarLengthPredicate
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.VoidProcedureCallPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation.GroupingAggTable
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation.NonGroupingAggTable
@@ -367,8 +366,6 @@ import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.exceptions.InternalException
 import org.neo4j.internal.kernel.api.helpers.traversal.SlotOrName
 import org.neo4j.values.AnyValue
-import org.neo4j.values.virtual.VirtualNodeValue
-import org.neo4j.values.virtual.VirtualRelationshipValue
 
 /**
  * Responsible for turning a logical plan with argument pipes into a new pipe.
@@ -1249,7 +1246,7 @@ case class InterpretedPipeMapper(
           nodePredicates,
           relationshipPredicates
         ) =>
-        val predicate = varLengthPredicates(id, nodePredicates, relationshipPredicates)
+        val predicate = createTraversalPredicates(id, nodePredicates, relationshipPredicates)
 
         val nodeInScope = expansionMode match {
           case ExpandAll  => false
@@ -1274,7 +1271,7 @@ case class InterpretedPipeMapper(
         OptionalPipe(inner.availableSymbols.map(_.name) -- protectedSymbols.map(_.name), source)(id = id)
 
       case PruningVarExpand(_, from, dir, types, toName, minLength, maxLength, nodePredicate, relationshipPredicate) =>
-        val predicate = varLengthPredicates(id, nodePredicate, relationshipPredicate)
+        val predicate = createTraversalPredicates(id, nodePredicate, relationshipPredicate)
         PruningVarLengthExpandPipe(
           source,
           from.name,
@@ -1299,7 +1296,7 @@ case class InterpretedPipeMapper(
           nodePredicate,
           relationshipPredicate
         ) =>
-        val predicate = varLengthPredicates(id, nodePredicate, relationshipPredicate)
+        val predicate = createTraversalPredicates(id, nodePredicate, relationshipPredicate)
         BFSPruningVarLengthExpandPipe(
           source,
           from.name,
@@ -1468,7 +1465,7 @@ case class InterpretedPipeMapper(
         ) =>
         val single = shortestPathPattern.expr.single
 
-        val filteringStep = varLengthPredicates(id, perStepNodePredicates, perStepRelPredicates)
+        val filteringStep = createTraversalPredicates(id, perStepNodePredicates, perStepRelPredicates)
         val commandPathPredicates = pathPredicates.map(buildPredicate(id, _))
 
         val patternRelationship = shortestPathPattern.rel
@@ -1846,38 +1843,12 @@ case class InterpretedPipeMapper(
     }
   }
 
-  def asCommand(id: Id)(variablePredicate: VariablePredicate): (CypherRow, QueryState, AnyValue) => Boolean = {
-    val command = buildPredicate(id, variablePredicate.predicate)
-    val ev = ExpressionVariable.cast(variablePredicate.variable)
-
-    (context: CypherRow, state: QueryState, entity: AnyValue) => {
-      state.expressionVariables(ev.offset) = entity
-      command.isTrue(context, state)
-    }
-  }
-
-  def varLengthPredicates(
+  def createTraversalPredicates(
     id: Id,
     nodePredicates: Seq[VariablePredicate],
     relationshipPredicates: Seq[VariablePredicate]
-  ): VarLengthPredicate = {
-
-    // Creates commands out of the predicates
-
-    (nodePredicates, relationshipPredicates) match {
-      case (Seq(), Seq()) => VarLengthPredicate.NONE
-      case _ =>
-        val nodeCommands = nodePredicates.map(asCommand(id))
-        val relCommands = relationshipPredicates.map(asCommand(id))
-
-        new VarLengthPredicate {
-          override def filterNode(row: CypherRow, state: QueryState)(node: VirtualNodeValue): Boolean =
-            nodeCommands.forall(nodeCommand => nodeCommand(row, state, node))
-
-          override def filterRelationship(row: CypherRow, state: QueryState)(rel: VirtualRelationshipValue): Boolean =
-            relCommands.forall(relCommand => relCommand(row, state, rel))
-        }
-    }
+  ): TraversalPredicates = {
+    TraversalPredicates.create(nodePredicates, relationshipPredicates, buildPredicate(id, _))
   }
 
   override def onTwoChildPlan(plan: LogicalPlan, lhs: Pipe, rhs: Pipe): Pipe = {

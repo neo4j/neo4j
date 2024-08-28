@@ -26,22 +26,17 @@ import org.neo4j.cypher.internal.physicalplanning.SlotConfiguration
 import org.neo4j.cypher.internal.physicalplanning.SlotConfigurationUtils.makeGetPrimitiveNodeFromSlotFunctionFor
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
-import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.RelationshipContainer
 import org.neo4j.cypher.internal.runtime.RelationshipIterator
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.Pipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.PipeWithSource
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.RelationshipTypes
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.TraversalPredicates
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.VarLengthExpandPipe.projectBackwards
 import org.neo4j.cypher.internal.runtime.slotted.SlottedRow
 import org.neo4j.cypher.internal.runtime.slotted.helpers.NullChecker.entityIsNull
-import org.neo4j.cypher.internal.runtime.slotted.pipes.VarLengthExpandSlottedPipe.SlottedVariablePredicate
-import org.neo4j.cypher.internal.runtime.slotted.pipes.VarLengthExpandSlottedPipe.predicateIsTrue
 import org.neo4j.cypher.internal.util.attribution.Id
-import org.neo4j.values.AnyValue
-import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.ListValue
 import org.neo4j.values.virtual.VirtualValues
 
@@ -62,8 +57,7 @@ case class VarLengthExpandSlottedPipe(
   maxDepth: Option[Int],
   shouldExpandAll: Boolean,
   slots: SlotConfiguration,
-  nodePredicates: Seq[SlottedVariablePredicate],
-  relationshipPredicates: Seq[SlottedVariablePredicate],
+  predicates: TraversalPredicates,
   argumentSize: SlotConfiguration.Size
 )(val id: Id = Id.INVALID_ID) extends PipeWithSource(source) {
   type LNode = Long
@@ -112,30 +106,17 @@ case class VarLengthExpandSlottedPipe(
 
             if (relationshipIsUniqueInPath) {
               // Before expanding, check that both the relationship and node in question fulfil the predicate
+              val rel = state.query.relationshipById(
+                relId,
+                relationships.startNodeId(),
+                relationships.endNodeId(),
+                relationships.typeId()
+              )
+              val otherNode = VirtualValues.node(relationships.otherNodeId(fromNode))
+
               if (
-                relationshipPredicates.forall(relPred =>
-                  predicateIsTrue(
-                    row,
-                    state,
-                    relPred.tempOffset,
-                    relPred.predicate,
-                    state.query.relationshipById(
-                      relId,
-                      relationships.startNodeId(),
-                      relationships.endNodeId(),
-                      relationships.typeId()
-                    )
-                  )
-                ) &&
-                nodePredicates.forall(nodePred =>
-                  predicateIsTrue(
-                    row,
-                    state,
-                    nodePred.tempOffset,
-                    nodePred.predicate,
-                    VirtualValues.node(relationships.otherNodeId(fromNode))
-                  )
-                )
+                predicates.filterNode(row, state, otherNode) &&
+                predicates.filterRelationship(row, state, rel, VirtualValues.node(fromNode), otherNode)
               ) {
                 stackOfNodes.push(relationships.otherNodeId(fromNode))
                 stackOfRelContainers.push(rels.append(VirtualValues.relationship(
@@ -178,11 +159,7 @@ case class VarLengthExpandSlottedPipe(
           ClosingIterator.empty
         } else {
           // Ensure that the start-node also adheres to the node predicate
-          if (
-            nodePredicates.forall(nodePred =>
-              predicateIsTrue(inputRow, state, nodePred.tempOffset, nodePred.predicate, state.query.nodeById(fromNode))
-            )
-          ) {
+          if (predicates.filterNode(inputRow, state, state.query.nodeById(fromNode))) {
 
             val paths: ClosingIterator[(LNode, (Int, ListValue))] = varLengthExpand(fromNode, state, inputRow)
             paths collect {
@@ -204,20 +181,4 @@ case class VarLengthExpandSlottedPipe(
 
   private def isToNodeValid(row: CypherRow, node: LNode): Boolean =
     shouldExpandAll || getToNodeFunction.applyAsLong(row) == node
-}
-
-object VarLengthExpandSlottedPipe {
-
-  case class SlottedVariablePredicate(tempOffset: Int, predicate: Expression)
-
-  def predicateIsTrue(
-    row: ReadableRow,
-    state: QueryState,
-    tempOffset: Int,
-    predicate: Expression,
-    entity: AnyValue
-  ): Boolean = {
-    state.expressionVariables(tempOffset) = entity
-    predicate(row, state) eq Values.TRUE
-  }
 }

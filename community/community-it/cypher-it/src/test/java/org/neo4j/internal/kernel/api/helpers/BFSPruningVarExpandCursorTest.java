@@ -54,6 +54,7 @@ import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
+import org.neo4j.internal.kernel.api.RelationshipTraversalEntities;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.kernel.api.Kernel;
@@ -381,7 +382,7 @@ class BFSPruningVarExpandCursorTest {
             write.relationshipCreate(a4, rel, b4);
             write.relationshipCreate(a5, rel, b5);
 
-            Predicate<RelationshipTraversalCursor> relPred = cursor ->
+            Predicate<RelationshipTraversalEntities> relPred = cursor ->
                     cursor.relationshipReference() != filterThis && cursor.relationshipReference() != andFilterThat;
 
             // then
@@ -453,7 +454,7 @@ class BFSPruningVarExpandCursorTest {
             write.relationshipCreate(a4, rel, b4);
             write.relationshipCreate(a5, rel, b5);
 
-            Predicate<RelationshipTraversalCursor> relPred = cursor ->
+            Predicate<RelationshipTraversalEntities> relPred = cursor ->
                     cursor.relationshipReference() != filterThis && cursor.relationshipReference() != andFilterThat;
 
             // then
@@ -1651,7 +1652,7 @@ class BFSPruningVarExpandCursorTest {
             write.relationshipCreate(b, rel, d);
             write.relationshipCreate(c, rel, d);
 
-            Predicate<RelationshipTraversalCursor> relPredicate = r -> r.relationshipReference() != r1;
+            Predicate<RelationshipTraversalEntities> relPredicate = r -> r.relationshipReference() != r1;
 
             // then
             assertThat(f.cursor(BOTH, start).max(0).relPred(relPredicate).toGraph())
@@ -1842,7 +1843,7 @@ class BFSPruningVarExpandCursorTest {
             write.relationshipCreate(b, rel, d);
             write.relationshipCreate(c, rel, d);
 
-            Predicate<RelationshipTraversalCursor> relPredicate =
+            Predicate<RelationshipTraversalEntities> relPredicate =
                     r -> r.relationshipReference() != r1 && r.relationshipReference() != r2;
 
             // then
@@ -2963,7 +2964,7 @@ class BFSPruningVarExpandCursorTest {
             private boolean includeStartNode = true;
             private int maxDepth = Integer.MAX_VALUE;
             private LongPredicate nodeFilter = Predicates.ALWAYS_TRUE_LONG;
-            private Predicate<RelationshipTraversalCursor> relFilter = Predicates.alwaysTrue();
+            private Predicate<RelationshipTraversalEntities> relFilter = Predicates.alwaysTrue();
             private long soughtEndNode = NO_SUCH_ENTITY;
             private MemoryTracker memoryTracker = NO_TRACKING;
 
@@ -3033,7 +3034,7 @@ class BFSPruningVarExpandCursorTest {
                 return this;
             }
 
-            CursorBuilder relPred(Predicate<RelationshipTraversalCursor> relFilter) {
+            CursorBuilder relPred(Predicate<RelationshipTraversalEntities> relFilter) {
                 this.relFilter = relFilter;
                 return this;
             }

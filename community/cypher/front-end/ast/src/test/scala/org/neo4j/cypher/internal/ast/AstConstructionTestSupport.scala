@@ -217,7 +217,7 @@ trait AstConstructionTestSupport {
   def hasTypes(v: String, types: String*): HasTypes =
     HasTypes(varFor(v), types.map(relTypeName(_)))(pos)
 
-  def hasLabels(v: LogicalVariable, labels: String*): HasLabels =
+  def hasLabels(v: Expression, labels: String*): HasLabels =
     HasLabels(v, labels.map(labelName(_)))(pos)
 
   def hasAnyLabel(v: LogicalVariable, labels: String*): HasAnyLabel =

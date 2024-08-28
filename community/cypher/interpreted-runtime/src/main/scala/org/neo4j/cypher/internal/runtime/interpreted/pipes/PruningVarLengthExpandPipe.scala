@@ -43,7 +43,7 @@ case class PruningVarLengthExpandPipe(
   dir: SemanticDirection,
   min: Int,
   max: Int,
-  filteringStep: VarLengthPredicate = VarLengthPredicate.NONE
+  filteringStep: TraversalPredicates = TraversalPredicates.NONE
 )(val id: Id = Id.INVALID_ID) extends PipeWithSource(source) with Pipe {
   self =>
 
@@ -262,8 +262,8 @@ case class PruningVarLengthExpandPipe(
             VirtualValues.relationship(allRels.next(), allRels.startNodeId(), allRels.endNodeId(), allRels.typeId())
           val otherNode = VirtualValues.node(allRels.otherNodeId(node.id()))
           if (
-            filteringStep.filterRelationship(row, queryState)(rel) &&
-            filteringStep.filterNode(row, queryState)(otherNode)
+            filteringStep.filterRelationship(row, queryState, rel, node, otherNode) &&
+            filteringStep.filterNode(row, queryState, otherNode)
           ) {
             builder += ((rel, otherNode))
             memoryTracker.allocateHeap(rel.estimatedHeapUsage)
@@ -301,7 +301,7 @@ case class PruningVarLengthExpandPipe(
           val fromValue = inputRow.getByName(fromName)
           fromValue match {
             case node: VirtualNodeValue =>
-              if (filteringStep.filterNode(inputRow, queryState)(node)) pushStartNode(node)
+              if (filteringStep.filterNode(inputRow, queryState, node)) pushStartNode(node)
               else null
 
             case IsNoValue() => null
@@ -324,7 +324,7 @@ case class PruningVarLengthExpandPipe(
     }
 
     def pushStartNode(node: VirtualNodeValue): VirtualNodeValue = {
-      if (filteringStep.filterNode(inputRow, queryState)(node)) {
+      if (filteringStep.filterNode(inputRow, queryState, node)) {
         push(
           node,
           pathLength = 0,

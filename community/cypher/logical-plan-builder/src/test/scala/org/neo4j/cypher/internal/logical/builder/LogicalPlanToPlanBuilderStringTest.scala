@@ -535,6 +535,47 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName wi
   )
 
   testPlan(
+    "bfsPruningVarExpandExpr",
+    new TestPlanBuilder()
+      .produceResults("x")
+      .bfsPruningVarExpandExpr("(x)-[*0..0]->(y)")
+      .bfsPruningVarExpandExpr("(x)<-[*0..1]-(y)")
+      .bfsPruningVarExpandExpr("(x)-[*1..5]->(y)")
+      .bfsPruningVarExpandExpr("(x)-[:REL*1..2]->(y)")
+      .bfsPruningVarExpandExpr("(x)<-[:REL|LER*1..2]-(y)")
+      .bfsPruningVarExpandExpr("(x)-[*1..2]->(y)")
+      .bfsPruningVarExpandExpr("(x)-[*1..2]->(y)")
+      .bfsPruningVarExpandExpr(
+        "(x)-[*1..2]->(y)",
+        nodePredicates = Seq(VariablePredicate(varFor("n"), notEquals(id(varFor("n")), literal(5))))
+      )
+      .bfsPruningVarExpandExpr(
+        "(x)-[*1..3]->(y)",
+        relationshipPredicates = Seq(VariablePredicate(varFor("r"), notEquals(id(varFor("r")), literal(5))))
+      )
+      .bfsPruningVarExpandExpr(
+        "(x)-[*1..2]->(y)",
+        nodePredicates = Seq(
+          VariablePredicate(varFor("n"), notEquals(id(varFor("n")), literal(5))),
+          VariablePredicate(varFor("n2"), greaterThan(id(varFor("n2")), literal(5)))
+        )
+      )
+      .bfsPruningVarExpandExpr(
+        "(x)-[*1..3]->(y)",
+        relationshipPredicates = Seq(
+          VariablePredicate(varFor("r"), notEquals(id(varFor("r")), literal(5))),
+          VariablePredicate(varFor("r2"), greaterThan(id(varFor("r2")), literal(5)))
+        )
+      )
+      .bfsPruningVarExpandExpr(
+        "(x)-[*1..3]->(y)",
+        depthName = Some("depth")
+      )
+      .argument()
+      .build()
+  )
+
+  testPlan(
     "expandInto",
     new TestPlanBuilder()
       .produceResults("x")

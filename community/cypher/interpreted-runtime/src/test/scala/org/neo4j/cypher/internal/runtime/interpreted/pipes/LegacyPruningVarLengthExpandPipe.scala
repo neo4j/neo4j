@@ -43,7 +43,7 @@ case class LegacyPruningVarLengthExpandPipe(
   dir: SemanticDirection,
   min: Int,
   max: Int,
-  filteringStep: VarLengthPredicate = VarLengthPredicate.NONE
+  filteringStep: TraversalPredicates = TraversalPredicates.NONE
 )(val id: Id = Id.INVALID_ID) extends PipeWithSource(source) with Pipe {
   self =>
 
@@ -332,8 +332,8 @@ case class LegacyPruningVarLengthExpandPipe(
         relationships,
         r => (VirtualValues.relationship(r), VirtualValues.node(relationships.otherNodeId(node.id())))
       ).filter {
-        case (rel, other) => filteringStep.filterRelationship(row, state)(rel) &&
-          filteringStep.filterNode(row, state)(other)
+        case (rel, other) => filteringStep.filterRelationship(row, state, rel, node, other) &&
+          filteringStep.filterNode(row, state, other)
       }
     }
   }

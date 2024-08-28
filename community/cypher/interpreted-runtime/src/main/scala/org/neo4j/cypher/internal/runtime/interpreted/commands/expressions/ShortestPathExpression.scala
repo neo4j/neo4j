@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
-import org.eclipse.collections.impl.block.factory.primitive.LongPredicates
 import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.commands.ShortestPath
@@ -31,12 +30,12 @@ import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.exceptions.ShortestPathCommonEndNodesForbiddenException
 import org.neo4j.exceptions.SyntaxException
+import org.neo4j.function.Predicates
 import org.neo4j.gqlstatus.ErrorClassification
 import org.neo4j.gqlstatus.ErrorGqlStatusObjectImplementation
 import org.neo4j.gqlstatus.GqlStatusInfoCodes
 import org.neo4j.graphdb.NotFoundException
 import org.neo4j.graphdb.Relationship
-import org.neo4j.internal.kernel.api.RelationshipTraversalCursor
 import org.neo4j.internal.kernel.api.helpers.traversal.BiDirectionalBFS
 import org.neo4j.memory.MemoryTracker
 import org.neo4j.values.AnyValue
@@ -99,8 +98,8 @@ case class ShortestPathExpression(
       nodeCursor,
       traversalCursor,
       memoryTracker,
-      LongPredicates.alwaysTrue(),
-      (_: RelationshipTraversalCursor) => true,
+      Predicates.ALWAYS_TRUE_LONG,
+      Predicates.alwaysTrue(),
       shortestPathPattern.single,
       true
     )

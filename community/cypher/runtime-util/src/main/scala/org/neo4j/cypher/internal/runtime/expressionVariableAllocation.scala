@@ -35,6 +35,7 @@ import org.neo4j.cypher.internal.runtime.ast.ConstantExpressionVariable
 import org.neo4j.cypher.internal.runtime.ast.ExpressionVariable
 import org.neo4j.cypher.internal.runtime.ast.RuntimeConstant
 import org.neo4j.cypher.internal.runtime.ast.TemporaryExpressionVariable
+import org.neo4j.cypher.internal.runtime.ast.TraversalEndpoint
 import org.neo4j.cypher.internal.util.Foldable
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildrenNewAccForSiblings
@@ -98,6 +99,11 @@ object expressionVariableAllocation {
       case x: ScopeExpression =>
         outerVars =>
           val innerVars = allocateVariables(outerVars, x.introducedVariables)
+          TraverseChildrenNewAccForSiblings(innerVars, _ => outerVars)
+
+      case x: TraversalEndpoint =>
+        outerVars =>
+          val innerVars = allocateVariables(outerVars, Set(x.tempVar))
           TraverseChildrenNewAccForSiblings(innerVars, _ => outerVars)
 
       case x: VarExpand =>

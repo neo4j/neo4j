@@ -143,6 +143,7 @@ import org.neo4j.cypher.internal.runtime.ast.MakeTraversable
 import org.neo4j.cypher.internal.runtime.ast.ParameterFromSlot
 import org.neo4j.cypher.internal.runtime.ast.PropertiesUsingCachedProperties
 import org.neo4j.cypher.internal.runtime.ast.RuntimeConstant
+import org.neo4j.cypher.internal.runtime.ast.TraversalEndpoint
 import org.neo4j.cypher.internal.runtime.interpreted.CommandProjection
 import org.neo4j.cypher.internal.runtime.interpreted.GroupingExpression
 import org.neo4j.cypher.internal.runtime.interpreted.commands
@@ -492,7 +493,8 @@ case class CommunityExpressionConverter(
       case GraphFunctionReference(GraphByName(name)) => NameExpressionGraphReference(self.toCommandExpression(id, name))
       case GraphFunctionReference(GraphByElementId(elementId)) =>
         IdExpressionGraphReference(self.toCommandExpression(id, elementId))
-      case _ => null
+      case TraversalEndpoint(v, _) => variable(v)
+      case _                       => null
     }
 
     Option(result)

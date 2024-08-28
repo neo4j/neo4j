@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.runtime.RelationshipIterator
 import org.neo4j.cypher.internal.runtime.ResourceManager
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.EagerTypes
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.TraversalPredicates
 import org.neo4j.cypher.internal.util.symbols.CTList
 import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.symbols.CTRelationship
@@ -111,8 +112,7 @@ class VarLengthExpandSlottedPipeTest extends CypherFunSuite {
       None,
       shouldExpandAll = true,
       slots,
-      Seq(),
-      Seq(),
+      TraversalPredicates.NONE,
       SlotConfiguration.Size(0, 0)
     )()
     // exhaust
@@ -155,8 +155,7 @@ class VarLengthExpandSlottedPipeTest extends CypherFunSuite {
       None,
       shouldExpandAll = true,
       slots,
-      Seq(),
-      Seq(),
+      TraversalPredicates.NONE,
       SlotConfiguration.Size(0, 0)
     )()
     val result = pipe.createResults(state)

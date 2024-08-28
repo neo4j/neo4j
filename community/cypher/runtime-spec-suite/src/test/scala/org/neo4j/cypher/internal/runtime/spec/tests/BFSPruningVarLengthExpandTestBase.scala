@@ -23,7 +23,10 @@ import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.Predicate
 import org.neo4j.cypher.internal.logical.plans.Expand.ExpandInto
+import org.neo4j.cypher.internal.logical.plans.Expand.VariablePredicate
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
+import org.neo4j.cypher.internal.runtime.ast.TraversalEndpoint
+import org.neo4j.cypher.internal.runtime.ast.TraversalEndpoint.Endpoint
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
@@ -1821,6 +1824,64 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     runtimeResult should beColumns("x", "depth").withRows(Array(Array(node, 1)))
+  }
+
+  test(
+    "TraversalEndpoint(To) should resolve as the next node of a relationship traversal during predicate evaluation"
+  ) {
+    val (a, b, c) = givenGraph {
+      val graph = fromTemplate("""
+        (c:TO)-->(a)-->(b:TO)
+                  |
+                  v
+              (ignored)
+       """)
+      (graph node "a", graph node "b", graph node "c")
+    }
+
+    val relPredicates = Seq(
+      VariablePredicate(varFor("r"), hasLabels(TraversalEndpoint(varFor("temp"), Endpoint.To), "TO"))
+    )
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("t")
+      .bfsPruningVarExpandExpr("(s)-[r*]-(t)", relationshipPredicates = relPredicates)
+      .nodeByIdSeek("s", Set.empty, a.getId)
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    runtimeResult should beColumns("t").withRows(inAnyOrder(Seq(Array(b), Array(c))))
+  }
+
+  test(
+    "TraversalEndpoint(From) should resolve as the previous node of a relationship traversal during predicate evaluation"
+  ) {
+    val (a, b, c) = givenGraph {
+      val graph = fromTemplate("""
+        (a:FROM)<--(b:FROM)-->(c)-->()
+       """)
+      (graph node "a", graph node "b", graph node "c")
+    }
+
+    val relPredicates = Seq(
+      VariablePredicate(varFor("r"), hasLabels(TraversalEndpoint(varFor("temp"), Endpoint.From), "FROM"))
+    )
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("s", "t")
+      .bfsPruningVarExpandExpr("(s)-[r*]-(t)", relationshipPredicates = relPredicates)
+      .nodeByIdSeek("s", Set.empty, a.getId)
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    val expected = inAnyOrder(Seq(
+      Array(a, b),
+      Array(a, c)
+    ))
+
+    runtimeResult should beColumns("s", "t").withRows(expected)
   }
 
   // HELPERS

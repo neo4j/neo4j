@@ -19,17 +19,18 @@
  */
 package org.neo4j.internal.kernel.api;
 
-/**
- * Cursor for traversing the relationships of a single node.
- */
-public interface RelationshipTraversalCursor extends RelationshipTraversalEntities, RelationshipDataAccessor, Cursor {
-    /**
-     * Get the other node, the one that this cursor was not initialized from.
-     * <p>
-     * Relationship cursors have context, and know which node they are traversing relationships for, making it
-     * possible and convenient to access the other node.
-     *
-     * @param cursor the cursor to use for accessing the other node.
-     */
-    void otherNode(NodeCursor cursor);
+/** Read-only interface for accessing entities during a relationship traversal */
+public interface RelationshipTraversalEntities {
+
+    long relationshipReference();
+
+    int type();
+
+    long sourceNodeReference();
+
+    long targetNodeReference();
+
+    long otherNodeReference();
+
+    long originNodeReference();
 }

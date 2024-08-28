@@ -47,7 +47,7 @@ case class ShortestPathPipe(
   relsName: String,
   types: RelationshipTypes,
   direction: SemanticDirection,
-  filteringStep: VarLengthPredicate,
+  filteringStep: TraversalPredicates,
   pathPredicates: Seq[commands.predicates.Predicate],
   returnOneShortestPathOnly: Boolean,
   sameNodeMode: SameNodeMode,
@@ -98,20 +98,17 @@ case class ShortestPathPipe(
 
               case (sourceNode: VirtualNodeValue, targetNode: VirtualNodeValue) =>
                 if (
-                  filteringStep.filterNode(row, state)(sourceNode) && filteringStep.filterNode(row, state)(targetNode)
+                  filteringStep.filterNode(row, state, sourceNode) && filteringStep.filterNode(row, state, targetNode)
                 ) {
                   if (sameNodeMode.shouldReturnEmptyResult(sourceNode.id(), targetNode.id(), allowZeroLength)) {
                     ClosingIterator.empty
                   } else {
 
-                    val (nodePredicate, relationshipPredicate) =
-                      VarLengthPredicate.createPredicates(filteringStep, state, row)
-
                     biDirectionalBFS.resetForNewRow(
                       sourceNode.id(),
                       targetNode.id(),
-                      nodePredicate,
-                      relationshipPredicate
+                      filteringStep.asNodeIdPredicate(row, state),
+                      filteringStep.asRelCursorPredicate(row, state)
                     )
 
                     val shortestPaths = biDirectionalBFS.shortestPathIterator()

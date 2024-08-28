@@ -183,7 +183,6 @@ import org.neo4j.cypher.internal.physicalplanning.SlotConfiguration.isRefSlotAnd
 import org.neo4j.cypher.internal.physicalplanning.SlotConfigurationUtils
 import org.neo4j.cypher.internal.physicalplanning.SlotConfigurationUtils.finalizeSlotConfiguration
 import org.neo4j.cypher.internal.physicalplanning.SlottedIndexedProperty
-import org.neo4j.cypher.internal.physicalplanning.VariablePredicates.expressionSlotForPredicate
 import org.neo4j.cypher.internal.physicalplanning.ast.NodeFromSlot
 import org.neo4j.cypher.internal.physicalplanning.ast.NullCheckVariable
 import org.neo4j.cypher.internal.physicalplanning.ast.RelationshipFromSlot
@@ -224,6 +223,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.SetPropertyOperation
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.Top1Pipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.Top1WithTiesPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.TopNPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.TraversalPredicates
 import org.neo4j.cypher.internal.runtime.slotted
 import org.neo4j.cypher.internal.runtime.slotted.SlottedPipeMapper.DistinctAllPrimitive
 import org.neo4j.cypher.internal.runtime.slotted.SlottedPipeMapper.DistinctWithReferences
@@ -320,7 +320,6 @@ import org.neo4j.cypher.internal.runtime.slotted.pipes.UnionSlottedPipe
 import org.neo4j.cypher.internal.runtime.slotted.pipes.UnwindSlottedPipe
 import org.neo4j.cypher.internal.runtime.slotted.pipes.ValueHashJoinSlottedPipe
 import org.neo4j.cypher.internal.runtime.slotted.pipes.VarLengthExpandSlottedPipe
-import org.neo4j.cypher.internal.runtime.slotted.pipes.VarLengthExpandSlottedPipe.SlottedVariablePredicate
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.symbols.CTRelationship
@@ -1174,17 +1173,11 @@ class SlottedPipeMapper(
 
         // The node/relationship predicates are evaluated on the source pipeline, not the produced one
         val sourceSlots = physicalPlan.slotConfigurations(sourcePlan.id)
-        val nodeSlottedPredicates = nodePredicates.map(nodePred =>
-          SlottedVariablePredicate(
-            expressionSlotForPredicate(nodePred),
-            expressionConverters.toCommandExpression(id, nodePred.predicate)
-          )
-        )
-        val relSlottedPredicates = relationshipPredicates.map(relPred =>
-          SlottedVariablePredicate(
-            expressionSlotForPredicate(relPred),
-            expressionConverters.toCommandExpression(id, relPred.predicate)
-          )
+
+        val predicates = TraversalPredicates.create(
+          nodePredicates,
+          relationshipPredicates,
+          expressionConverters.toCommandExpression(id, _)
         )
 
         argumentSize = SlotConfiguration.Size(sourceSlots.numberOfLongs, sourceSlots.numberOfReferences)
@@ -1200,8 +1193,7 @@ class SlottedPipeMapper(
           max,
           shouldExpandAll,
           slots,
-          nodePredicates = nodeSlottedPredicates,
-          relationshipPredicates = relSlottedPredicates,
+          predicates,
           argumentSize = argumentSize
         )(id)
 
@@ -1224,17 +1216,11 @@ class SlottedPipeMapper(
 
         // The node/relationship predicates are evaluated on the source pipeline, not the produced one
         val sourceSlots = physicalPlan.slotConfigurations(source.id)
-        val nodeSlottedPredicates = nodePredicates.map(nodePred =>
-          SlottedVariablePredicate(
-            expressionSlotForPredicate(nodePred),
-            expressionConverters.toCommandExpression(id, nodePred.predicate)
-          )
-        )
-        val relSlottedPredicates = relationshipPredicates.map(relPred =>
-          SlottedVariablePredicate(
-            expressionSlotForPredicate(relPred),
-            expressionConverters.toCommandExpression(id, relPred.predicate)
-          )
+
+        val predicates = TraversalPredicates.create(
+          nodePredicates,
+          relationshipPredicates,
+          expressionConverters.toCommandExpression(id, _)
         )
 
         argumentSize = SlotConfiguration.Size(sourceSlots.numberOfLongs, sourceSlots.numberOfReferences)
@@ -1249,8 +1235,7 @@ class SlottedPipeMapper(
           max,
           slots,
           mode,
-          nodePredicates = nodeSlottedPredicates,
-          relationshipPredicates = relSlottedPredicates
+          predicates
         )(id = id)
 
       case FindShortestPaths(
@@ -1302,18 +1287,10 @@ class SlottedPipeMapper(
           throw new IllegalArgumentException("We don't allow -[*1..]- for AllowSameNode")
         }
 
-        val perStepNodeSlottedPredicates = perStepNodePredicates.map(nodePred =>
-          SlottedVariablePredicate(
-            expressionSlotForPredicate(nodePred),
-            expressionConverters.toCommandExpression(id, nodePred.predicate)
-          )
-        )
-
-        val perStepRelSlottedPredicates = perStepRelPredicates.map(relPred =>
-          SlottedVariablePredicate(
-            expressionSlotForPredicate(relPred),
-            expressionConverters.toCommandExpression(id, relPred.predicate)
-          )
+        val predicates = TraversalPredicates.create(
+          perStepNodePredicates,
+          perStepRelPredicates,
+          expressionConverters.toCommandExpression(id, _)
         )
 
         val pathCommandPredicates =
@@ -1327,8 +1304,7 @@ class SlottedPipeMapper(
           relsOffset,
           RelationshipTypes(patternRelationship.types.toArray),
           patternRelationship.dir,
-          perStepNodeSlottedPredicates,
-          perStepRelSlottedPredicates,
+          predicates,
           pathCommandPredicates,
           returnOneShortestPathOnly = single,
           sameNodeMode = sameNodeMode,

@@ -34,9 +34,8 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.Pipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.PipeWithSource
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.RelationshipTypes
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.TraversalPredicates
 import org.neo4j.cypher.internal.runtime.slotted.SlottedRow
-import org.neo4j.cypher.internal.runtime.slotted.pipes.VarLengthExpandSlottedPipe.SlottedVariablePredicate
-import org.neo4j.cypher.internal.runtime.slotted.pipes.VarLengthExpandSlottedPipe.predicateIsTrue
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.internal.kernel.api.helpers.traversal.BiDirectionalBFS
 import org.neo4j.kernel.api.StatementConstants
@@ -52,8 +51,7 @@ case class ShortestPathSlottedPipe(
   relsOffset: Int,
   types: RelationshipTypes,
   dir: SemanticDirection,
-  nodePredicates: Seq[SlottedVariablePredicate],
-  relationshipPredicates: Seq[SlottedVariablePredicate],
+  predicates: TraversalPredicates,
   pathPredicates: Seq[Predicate],
   returnOneShortestPathOnly: Boolean,
   sameNodeMode: SameNodeMode,
@@ -100,39 +98,17 @@ case class ShortestPathSlottedPipe(
           if (
             sourceNode != StatementConstants.NO_SUCH_NODE &&
             targetNode != StatementConstants.NO_SUCH_NODE &&
-            nodePredicates.forall(nodePred =>
-              predicateIsTrue(
-                row,
-                state,
-                nodePred.tempOffset,
-                nodePred.predicate,
-                state.query.nodeById(sourceNode)
-              ) &&
-                predicateIsTrue(
-                  row,
-                  state,
-                  nodePred.tempOffset,
-                  nodePred.predicate,
-                  state.query.nodeById(targetNode)
-                )
-            )
+            predicates.filterNode(row, state, state.query.nodeById(sourceNode)) &&
+            predicates.filterNode(row, state, state.query.nodeById(targetNode))
           ) {
             if (sameNodeMode.shouldReturnEmptyResult(sourceNode, targetNode, allowZeroLength)) {
               ClosingIterator.empty
             } else {
-              val (nodePredicate, relationshipPredicate) =
-                BFSPruningVarLengthExpandSlottedPipe.createPredicates(
-                  state,
-                  row,
-                  nodePredicates,
-                  relationshipPredicates
-                )
-
               biDirectionalBFS.resetForNewRow(
                 sourceNode,
                 targetNode,
-                nodePredicate,
-                relationshipPredicate
+                predicates.asNodeIdPredicate(row, state),
+                predicates.asRelCursorPredicate(row, state)
               )
 
               ClosingIterator.asClosingIterator {

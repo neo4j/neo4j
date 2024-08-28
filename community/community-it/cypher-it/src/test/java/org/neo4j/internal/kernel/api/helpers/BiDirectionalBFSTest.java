@@ -338,11 +338,11 @@ class BiDirectionalBFSTest {
                     null, Direction.BOTH, 10, true, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING, true, false);
 
             // (start)-->(a1)-->(b1)
-            bfs.resetForNewRow(start, b1, LongPredicates.alwaysTrue(), r -> r.reference() != a1ToB1);
+            bfs.resetForNewRow(start, b1, LongPredicates.alwaysTrue(), r -> r.relationshipReference() != a1ToB1);
             assertThat(bfs.shortestPathIterator()).isExhausted();
-            bfs.resetForNewRow(start, b1, LongPredicates.alwaysTrue(), r -> r.reference() != startToA1);
+            bfs.resetForNewRow(start, b1, LongPredicates.alwaysTrue(), r -> r.relationshipReference() != startToA1);
             assertThat(bfs.shortestPathIterator()).isExhausted();
-            bfs.resetForNewRow(start, b1, LongPredicates.alwaysTrue(), r -> r.reference() != a2ToB2);
+            bfs.resetForNewRow(start, b1, LongPredicates.alwaysTrue(), r -> r.relationshipReference() != a2ToB2);
             assertThat(single(bfs.shortestPathIterator()))
                     .isEqualTo(pathReference(new long[] {start, a1, b1}, new long[] {startToA1, a1ToB1}));
         }

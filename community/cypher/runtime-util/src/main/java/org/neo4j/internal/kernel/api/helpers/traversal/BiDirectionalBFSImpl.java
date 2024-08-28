@@ -30,6 +30,7 @@ import org.neo4j.internal.kernel.api.KernelReadTracer;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
+import org.neo4j.internal.kernel.api.RelationshipTraversalEntities;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.values.virtual.PathReference;
 
@@ -105,7 +106,7 @@ abstract class BiDirectionalBFSImpl<STEPS> implements AutoCloseable {
             RelationshipTraversalCursor relCursor,
             MemoryTracker memoryTracker,
             LongPredicate nodeFilter,
-            Predicate<RelationshipTraversalCursor> relFilter,
+            Predicate<RelationshipTraversalEntities> relFilter,
             boolean allowZeroLength) {
         this.maxDepth = maxDepth;
         this.allowZeroLength = allowZeroLength;
@@ -121,7 +122,7 @@ abstract class BiDirectionalBFSImpl<STEPS> implements AutoCloseable {
                 relCursor,
                 memoryTracker,
                 nodeFilter,
-                relFilter);
+                new ReversedRelTraversalEntitiesPredicate(relFilter));
         sourceBFS.setOther(targetBFS);
         targetBFS.setOther(sourceBFS);
     }
@@ -135,7 +136,7 @@ abstract class BiDirectionalBFSImpl<STEPS> implements AutoCloseable {
             RelationshipTraversalCursor relCursor,
             MemoryTracker memoryTracker,
             LongPredicate nodeFilter,
-            Predicate<RelationshipTraversalCursor> relFilter);
+            Predicate<RelationshipTraversalEntities> relFilter);
 
     abstract Iterator<PathReference> pathTracingIterator(LongIterator iterator);
 
@@ -149,9 +150,9 @@ abstract class BiDirectionalBFSImpl<STEPS> implements AutoCloseable {
             long sourceNodeId,
             long targetNodeId,
             LongPredicate nodeFilter,
-            Predicate<RelationshipTraversalCursor> relFilter) {
+            Predicate<RelationshipTraversalEntities> relFilter) {
         sourceBFS.resetWithStartNode(sourceNodeId, nodeFilter, relFilter);
-        targetBFS.resetWithStartNode(targetNodeId, nodeFilter, relFilter);
+        targetBFS.resetWithStartNode(targetNodeId, nodeFilter, new ReversedRelTraversalEntitiesPredicate(relFilter));
         algorithmState = State.CAN_SEARCH_FOR_INTERSECTION;
     }
 
@@ -161,9 +162,10 @@ abstract class BiDirectionalBFSImpl<STEPS> implements AutoCloseable {
             NodeCursor nodeCursor,
             RelationshipTraversalCursor relCursor,
             LongPredicate nodeFilter,
-            Predicate<RelationshipTraversalCursor> relFilter) {
+            Predicate<RelationshipTraversalEntities> relFilter) {
         sourceBFS.resetWithStartNode(sourceNodeId, nodeCursor, relCursor, nodeFilter, relFilter);
-        targetBFS.resetWithStartNode(targetNodeId, nodeCursor, relCursor, nodeFilter, relFilter);
+        targetBFS.resetWithStartNode(
+                targetNodeId, nodeCursor, relCursor, nodeFilter, new ReversedRelTraversalEntitiesPredicate(relFilter));
         algorithmState = State.CAN_SEARCH_FOR_INTERSECTION;
     }
 
@@ -227,7 +229,7 @@ abstract class BiDirectionalBFSImpl<STEPS> implements AutoCloseable {
                 RelationshipTraversalCursor relCursor,
                 MemoryTracker memoryTracker,
                 LongPredicate nodeFilter,
-                Predicate<RelationshipTraversalCursor> relFilter,
+                Predicate<RelationshipTraversalEntities> relFilter,
                 boolean allowZeroLength) {
             super(
                     sourceNodeId,
@@ -254,7 +256,7 @@ abstract class BiDirectionalBFSImpl<STEPS> implements AutoCloseable {
                 RelationshipTraversalCursor relCursor,
                 MemoryTracker memoryTracker,
                 LongPredicate nodeFilter,
-                Predicate<RelationshipTraversalCursor> relFilter) {
+                Predicate<RelationshipTraversalEntities> relFilter) {
             return new BFS.SinglePathBFS(
                     sourceNodeId, types, direction, read, nodeCursor, relCursor, memoryTracker, nodeFilter, relFilter);
         }
@@ -282,7 +284,7 @@ abstract class BiDirectionalBFSImpl<STEPS> implements AutoCloseable {
                 RelationshipTraversalCursor relCursor,
                 MemoryTracker memoryTracker,
                 LongPredicate nodeFilter,
-                Predicate<RelationshipTraversalCursor> relFilter,
+                Predicate<RelationshipTraversalEntities> relFilter,
                 boolean allowZeroLength) {
             super(
                     sourceNodeId,
@@ -319,7 +321,7 @@ abstract class BiDirectionalBFSImpl<STEPS> implements AutoCloseable {
                 RelationshipTraversalCursor relCursor,
                 MemoryTracker memoryTracker,
                 LongPredicate nodeFilter,
-                Predicate<RelationshipTraversalCursor> relFilter) {
+                Predicate<RelationshipTraversalEntities> relFilter) {
             return new BFS.LazyBFS(
                     sourceNodeId, types, direction, read, nodeCursor, relCursor, memoryTracker, nodeFilter, relFilter);
         }
@@ -337,7 +339,7 @@ abstract class BiDirectionalBFSImpl<STEPS> implements AutoCloseable {
                 RelationshipTraversalCursor relCursor,
                 MemoryTracker memoryTracker,
                 LongPredicate nodeFilter,
-                Predicate<RelationshipTraversalCursor> relFilter,
+                Predicate<RelationshipTraversalEntities> relFilter,
                 boolean allowZeroLength) {
             super(
                     sourceNodeId,
@@ -364,7 +366,7 @@ abstract class BiDirectionalBFSImpl<STEPS> implements AutoCloseable {
                 RelationshipTraversalCursor relCursor,
                 MemoryTracker memoryTracker,
                 LongPredicate nodeFilter,
-                Predicate<RelationshipTraversalCursor> relFilter) {
+                Predicate<RelationshipTraversalEntities> relFilter) {
             return new BFS.EagerBFS(
                     sourceNodeId, types, direction, read, nodeCursor, relCursor, memoryTracker, nodeFilter, relFilter);
         }

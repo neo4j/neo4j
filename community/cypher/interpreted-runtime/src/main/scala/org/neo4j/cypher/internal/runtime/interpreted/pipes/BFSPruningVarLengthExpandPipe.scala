@@ -33,7 +33,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContex
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.BFSPruningVarLengthExpandPipe.bfsIterator
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.exceptions.InternalException
-import org.neo4j.internal.kernel.api.RelationshipTraversalCursor
+import org.neo4j.internal.kernel.api.RelationshipTraversalEntities
 import org.neo4j.internal.kernel.api.helpers.BFSPruningVarExpandCursor.allExpander
 import org.neo4j.internal.kernel.api.helpers.BFSPruningVarExpandCursor.incomingExpander
 import org.neo4j.internal.kernel.api.helpers.BFSPruningVarExpandCursor.outgoingExpander
@@ -57,7 +57,7 @@ case class BFSPruningVarLengthExpandPipe(
   includeStartNode: Boolean,
   max: Int,
   mode: ExpansionMode,
-  filteringStep: VarLengthPredicate = VarLengthPredicate.NONE
+  filteringStep: TraversalPredicates = TraversalPredicates.NONE
 )(val id: Id = Id.INVALID_ID) extends PipeWithSource(source) with Pipe {
   self =>
 
@@ -69,9 +69,7 @@ case class BFSPruningVarLengthExpandPipe(
     state: QueryState
   ): ClosingIterator[CypherRow] = {
     def expand(row: CypherRow, fromNode: VirtualNodeValue, toNodeId: Long): ClosingIterator[CypherRow] = {
-      if (filteringStep.filterNode(row, state)(fromNode)) {
-        val (nodePredicate, relationshipPredicate) =
-          VarLengthPredicate.createPredicates(filteringStep, state, row)
+      if (filteringStep.filterNode(row, state, fromNode)) {
         val memoryTracker = state.memoryTrackerForOperatorProvider.memoryTrackerForOperator(id.x)
 
         val expand = bfsIterator(
@@ -83,8 +81,8 @@ case class BFSPruningVarLengthExpandPipe(
           includeStartNode,
           max,
           mode,
-          nodePredicate,
-          relationshipPredicate,
+          filteringStep.asNodeIdPredicate(row, state),
+          filteringStep.asRelCursorPredicate(row, state),
           memoryTracker
         )
         PrimitiveLongHelper.map(
@@ -146,7 +144,7 @@ object BFSPruningVarLengthExpandPipe {
     max: Int,
     mode: ExpansionMode,
     nodePredicate: LongPredicate,
-    relPredicate: Predicate[RelationshipTraversalCursor],
+    relPredicate: Predicate[RelationshipTraversalEntities],
     memoryTracker: MemoryTracker
   ): ClosingLongIteratorWithDepth = {
     val nodeCursor = query.nodeCursor()

@@ -90,6 +90,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.PipeTreeBuilder
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.ProjectionPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.RelationshipTypes
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.SkipPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.TraversalPredicates
 import org.neo4j.cypher.internal.runtime.slotted.aggregation.SlottedPrimitiveGroupingAggTable
 import org.neo4j.cypher.internal.runtime.slotted.expressions.NodeProperty
 import org.neo4j.cypher.internal.runtime.slotted.expressions.SlottedCommandProjection
@@ -544,8 +545,7 @@ class SlottedPipeMapperTest extends CypherFunSuite with LogicalPlanningTestSuppo
       varLength.max,
       shouldExpandAll = true,
       varExpandSlots,
-      Seq(),
-      Seq(),
+      TraversalPredicates.NONE,
       Size(1, 0)
     )())
   }
@@ -612,8 +612,7 @@ class SlottedPipeMapperTest extends CypherFunSuite with LogicalPlanningTestSuppo
         varLength.max,
         shouldExpandAll = false,
         varExpandSlots,
-        Seq(), // no node predicate
-        Seq(), // no relationship predicate
+        TraversalPredicates.NONE,
         Size(3, 0)
       )()
     )
