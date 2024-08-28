@@ -28,8 +28,8 @@ public interface Transition {
 
     default State state(TraversalDirection direction) {
         return switch (direction) {
-            case Forward -> targetState();
-            case Backward -> sourceState();
+            case FORWARD -> targetState();
+            case BACKWARD -> sourceState();
         };
     }
 }

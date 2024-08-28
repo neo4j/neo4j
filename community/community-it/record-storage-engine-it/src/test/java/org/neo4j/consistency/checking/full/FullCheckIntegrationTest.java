@@ -3222,7 +3222,6 @@ public class FullCheckIntegrationTest {
             case OUTGOING -> group.setFirstOut(rel);
             case INCOMING -> group.setFirstIn(rel);
             case BOTH -> group.setFirstLoop(rel);
-            default -> throw new IllegalArgumentException(direction.name());
         }
         return group;
     }

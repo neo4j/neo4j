@@ -349,7 +349,7 @@ class ProductGraphTraversalCursorTest extends CypherFunSuite with GraphDatabaseT
             .flatMap(state => graph.adjacencyLists(PGNode(nodeId, state.id)))
             .filter(_.id != StatementConstants.NO_SUCH_RELATIONSHIP)
 
-        pgCursor.setNodeAndStates(nodeId, statesSubset.toList.asJava, TraversalDirection.Forward)
+        pgCursor.setNodeAndStates(nodeId, statesSubset.toList.asJava, TraversalDirection.FORWARD)
         val foundRelationships = new Iterator[PGRelationship] {
           def hasNext: Boolean = pgCursor.next()
 

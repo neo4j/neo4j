@@ -84,8 +84,8 @@ public final class NodeState implements AutoCloseable, Measurable {
 
     public void discover(TraversalDirection direction) {
         switch (direction) {
-            case Forward -> this.discoveredForward = true;
-            case Backward -> this.discoveredBackward = true;
+            case FORWARD -> this.discoveredForward = true;
+            case BACKWARD -> this.discoveredBackward = true;
         }
     }
 
@@ -295,8 +295,8 @@ public final class NodeState implements AutoCloseable, Measurable {
     }
 
     public boolean hasBeenSeen(TraversalDirection direction) {
-        return direction == TraversalDirection.Forward && discoveredForward
-                || direction == TraversalDirection.Backward && discoveredBackward;
+        return direction == TraversalDirection.FORWARD && discoveredForward
+                || direction == TraversalDirection.BACKWARD && discoveredBackward;
     }
 
     public boolean hasSourceSignpost(TwoWaySignpost signpost) {

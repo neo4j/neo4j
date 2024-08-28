@@ -79,7 +79,7 @@ public final class FoundNodes implements AutoCloseable {
     private HeapTrackingLongObjectHashMap<HeapTrackingArrayList<NodeState>>
             backwardFrontier; // nodeId x stateId -> NodeState
 
-    private BufferState bufferState = BufferState.Closed;
+    private BufferState bufferState = BufferState.CLOSED;
     private HeapTrackingLongObjectHashMap<HeapTrackingArrayList<NodeState>>
             frontierBuffer; // nodeId x stateId -> NodeState
 
@@ -104,7 +104,7 @@ public final class FoundNodes implements AutoCloseable {
     }
 
     public void addToBuffer(NodeState nodeState) {
-        Preconditions.checkState(bufferState == BufferState.Open, "NodeState added to closed buffer");
+        Preconditions.checkState(bufferState == BufferState.OPEN, "NodeState added to closed buffer");
         var nodeStates = frontierBuffer.get(nodeState.id());
         if (nodeStates == null) {
             nodeStates = HeapTrackingArrayList.newEmptyArrayList(nfaStateCount, memoryTracker);
@@ -155,25 +155,25 @@ public final class FoundNodes implements AutoCloseable {
 
     /** Allocates a new buffer based on the size of the previous one */
     public void openBuffer() {
-        Preconditions.checkState(bufferState == BufferState.Closed, "Buffer opened when it was not closed");
+        Preconditions.checkState(bufferState == BufferState.CLOSED, "Buffer opened when it was not closed");
         frontierBuffer = HeapTrackingLongObjectHashMap.createLongObjectHashMap(
                 this.memoryTracker, Math.max(1, frontierBuffer.size()));
-        bufferState = BufferState.Open;
+        bufferState = BufferState.OPEN;
     }
 
     /** Shifts the previous frontier into history, and the frontier buffer into the current frontier */
     public void commitBuffer(TraversalDirection direction) {
-        Preconditions.checkState(bufferState == BufferState.Open, "Buffer closed when it was not open");
+        Preconditions.checkState(bufferState == BufferState.OPEN, "Buffer closed when it was not open");
 
         switch (direction) {
-            case Forward -> {
+            case FORWARD -> {
                 if (forwardFrontier.notEmpty()) {
                     history.add(forwardFrontier);
                 }
                 forwardDepth += 1;
                 forwardFrontier = frontierBuffer;
             }
-            case Backward -> {
+            case BACKWARD -> {
                 if (backwardFrontier.notEmpty()) {
                     history.add(backwardFrontier);
                 }
@@ -181,26 +181,34 @@ public final class FoundNodes implements AutoCloseable {
                 backwardFrontier = frontierBuffer;
             }
         }
-        bufferState = BufferState.Closed;
+        bufferState = BufferState.CLOSED;
     }
 
     public HeapTrackingLongObjectHashMap<HeapTrackingArrayList<NodeState>> frontier(TraversalDirection direction) {
         return switch (direction) {
-            case Forward -> forwardFrontier;
-            case Backward -> backwardFrontier;
+            case FORWARD -> forwardFrontier;
+            case BACKWARD -> backwardFrontier;
         };
     }
 
     public TraversalDirection getNextExpansionDirection() {
-        if (mode == SearchMode.Unidirectional) return TraversalDirection.Forward;
-        if (forwardFrontier.isEmpty()) return TraversalDirection.Backward;
-        if (backwardFrontier.isEmpty()) return TraversalDirection.Forward;
-        if (backwardFrontier.size() < forwardFrontier.size()) return TraversalDirection.Backward;
-        return TraversalDirection.Forward;
+        if (mode == SearchMode.Unidirectional) {
+            return TraversalDirection.FORWARD;
+        }
+        if (forwardFrontier.isEmpty()) {
+            return TraversalDirection.BACKWARD;
+        }
+        if (backwardFrontier.isEmpty()) {
+            return TraversalDirection.FORWARD;
+        }
+        if (backwardFrontier.size() < forwardFrontier.size()) {
+            return TraversalDirection.BACKWARD;
+        }
+        return TraversalDirection.FORWARD;
     }
 
     public boolean hasMore() {
-        Preconditions.checkState(bufferState == BufferState.Closed, "Should not check frontier state when buffer open");
+        Preconditions.checkState(bufferState == BufferState.CLOSED, "Should not check frontier state when buffer open");
 
         if (mode == SearchMode.Unidirectional) {
             return forwardFrontier.notEmpty();
@@ -228,7 +236,7 @@ public final class FoundNodes implements AutoCloseable {
     }
 
     private enum BufferState {
-        Open,
-        Closed
+        OPEN,
+        CLOSED
     }
 }

@@ -63,7 +63,7 @@ final class BFSExpander implements AutoCloseable {
         for (var nj : state.getNodeJuxtapositions(direction)) {
             if (nj.state(direction).test(node.id())) {
                 switch (direction) {
-                    case Forward -> {
+                    case FORWARD -> {
                         var nextNode = encounter(node.id(), nj.targetState(), direction);
                         var signpost =
                                 TwoWaySignpost.fromNodeJuxtaposition(mt, node, nextNode, foundNodes.forwardDepth());
@@ -73,7 +73,7 @@ final class BFSExpander implements AutoCloseable {
                         }
                     }
 
-                    case Backward -> {
+                    case BACKWARD -> {
                         var nextNode = encounter(node.id(), nj.sourceState(), direction);
                         var signpost = TwoWaySignpost.fromNodeJuxtaposition(mt, nextNode, node);
 
@@ -129,7 +129,7 @@ final class BFSExpander implements AutoCloseable {
                 var re = pgCursor.relationshipExpansion();
 
                 switch (direction) {
-                    case Forward -> {
+                    case FORWARD -> {
                         var nextNode = encounter(foundNode, re.targetState(), direction);
                         var node = statesById.get(re.sourceState().id());
 
@@ -142,7 +142,7 @@ final class BFSExpander implements AutoCloseable {
                         }
                     }
 
-                    case Backward -> {
+                    case BACKWARD -> {
                         var nextNode = encounter(foundNode, re.sourceState(), direction);
                         var node = statesById.get(re.targetState().id());
 

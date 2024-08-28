@@ -35,25 +35,25 @@ public final class DirectedTypes {
      * Enum to represent whether either direction has an unspecified type
      */
     private enum DirectionCombination {
-        Neither(null) {
+        NEITHER(null) {
             @Override
             public Direction combine(Direction direction) {
                 return direction;
             }
         },
-        Outgoing(Direction.OUTGOING) {
+        OUTGOING(Direction.OUTGOING) {
             @Override
             public Direction combine(Direction direction) {
                 return direction == Direction.OUTGOING ? Direction.OUTGOING : Direction.BOTH;
             }
         },
-        Incoming(Direction.INCOMING) {
+        INCOMING(Direction.INCOMING) {
             @Override
             public Direction combine(Direction direction) {
                 return direction == Direction.INCOMING ? Direction.INCOMING : Direction.BOTH;
             }
         },
-        Both(Direction.BOTH) {
+        BOTH(Direction.BOTH) {
             @Override
             public Direction combine(Direction direction) {
                 return Direction.BOTH;
@@ -68,55 +68,55 @@ public final class DirectedTypes {
 
         public boolean matchesDirection(Direction direction) {
             return switch (this) {
-                case Neither -> false;
-                case Outgoing -> direction == Direction.OUTGOING;
-                case Incoming -> direction == Direction.INCOMING;
-                case Both -> true;
+                case NEITHER -> false;
+                case OUTGOING -> direction == Direction.OUTGOING;
+                case INCOMING -> direction == Direction.INCOMING;
+                case BOTH -> true;
             };
         }
 
         public boolean matchesOutgoing() {
-            return this == Outgoing || this == Both;
+            return this == OUTGOING || this == BOTH;
         }
 
         public boolean matchesIncoming() {
-            return this == Incoming || this == Both;
+            return this == INCOMING || this == BOTH;
         }
 
         public boolean matchesLoop() {
-            return this != Neither;
+            return this != NEITHER;
         }
 
         private DirectionCombination fromDirection(Direction direction) {
             return switch (direction) {
-                case OUTGOING -> Outgoing;
-                case INCOMING -> Incoming;
-                case BOTH -> Both;
+                case OUTGOING -> OUTGOING;
+                case INCOMING -> INCOMING;
+                case BOTH -> BOTH;
             };
         }
 
         public int numberOfCriteria() {
             return switch (this) {
-                case Neither -> 0;
-                case Incoming, Outgoing, Both -> 1;
+                case NEITHER -> 0;
+                case INCOMING, OUTGOING, BOTH -> 1;
             };
         }
 
         public DirectionCombination addDirection(Direction direction) {
             return switch (this) {
-                case Neither -> fromDirection(direction);
-                case Outgoing -> (direction == Direction.INCOMING) || (direction == Direction.BOTH) ? Both : this;
-                case Incoming -> (direction == Direction.OUTGOING) || (direction == Direction.BOTH) ? Both : this;
-                case Both -> this;
+                case NEITHER -> fromDirection(direction);
+                case OUTGOING -> (direction == Direction.INCOMING) || (direction == Direction.BOTH) ? BOTH : this;
+                case INCOMING -> (direction == Direction.OUTGOING) || (direction == Direction.BOTH) ? BOTH : this;
+                case BOTH -> this;
             };
         }
 
         public DirectionCombination reverse() {
             return switch (this) {
-                case Neither -> Neither;
-                case Outgoing -> Incoming;
-                case Incoming -> Outgoing;
-                case Both -> Both;
+                case NEITHER -> NEITHER;
+                case OUTGOING -> INCOMING;
+                case INCOMING -> OUTGOING;
+                case BOTH -> BOTH;
             };
         }
 
@@ -147,8 +147,8 @@ public final class DirectedTypes {
         this(
                 HeapTrackingIntArrayList.newIntArrayList(memoryTracker),
                 HeapTrackingArrayList.newArrayList(memoryTracker),
-                DirectionCombination.Neither,
-                DirectionCombination.Neither);
+                DirectionCombination.NEITHER,
+                DirectionCombination.NEITHER);
     }
 
     private boolean hasTypeInDirection(int type, RelationshipDirection direction) {
@@ -172,10 +172,10 @@ public final class DirectedTypes {
 
     public Direction computeDirection() {
         return switch (this.existingDirections) {
-            case Outgoing -> Direction.OUTGOING;
-            case Incoming -> Direction.INCOMING;
-            case Both -> Direction.BOTH;
-            case Neither -> throw new IllegalStateException("This should not happen");
+            case OUTGOING -> Direction.OUTGOING;
+            case INCOMING -> Direction.INCOMING;
+            case BOTH -> Direction.BOTH;
+            case NEITHER -> throw new IllegalStateException("This should not happen");
         };
     }
 
@@ -193,11 +193,11 @@ public final class DirectedTypes {
     }
 
     public boolean hasTypesInBothDirections() {
-        return this.existingDirections == DirectionCombination.Both;
+        return this.existingDirections == DirectionCombination.BOTH;
     }
 
     public boolean isTypeLimited() {
-        return this.untyped == DirectionCombination.Neither;
+        return this.untyped == DirectionCombination.NEITHER;
     }
 
     public int numberOfCriteria() {
@@ -217,10 +217,10 @@ public final class DirectedTypes {
                     : "Index out of bounds that we don't pay for checking when assertions are turned off";
 
             return switch (untyped) {
-                case Outgoing -> Direction.OUTGOING;
-                case Incoming -> Direction.INCOMING;
-                case Both -> Direction.BOTH;
-                case Neither -> throw new IllegalStateException(
+                case OUTGOING -> Direction.OUTGOING;
+                case INCOMING -> Direction.INCOMING;
+                case BOTH -> Direction.BOTH;
+                case NEITHER -> throw new IllegalStateException(
                         "The numberOfCriteria returned from Neither is 0 so this should never happen");
             };
         }
@@ -233,7 +233,7 @@ public final class DirectedTypes {
 
         if (index < types.size()) {
             return types.get(index);
-        } else if (untyped != DirectionCombination.Neither) {
+        } else if (untyped != DirectionCombination.NEITHER) {
             assert index == types.size()
                     : "Index out of bounds that we don't pay for checking when assertions are turned off";
             return ANY_RELATIONSHIP_TYPE;
@@ -250,7 +250,7 @@ public final class DirectedTypes {
     }
 
     public boolean allowsAll() {
-        return untyped == DirectionCombination.Both;
+        return untyped == DirectionCombination.BOTH;
     }
 
     public void addUntyped(Direction direction) {
@@ -285,7 +285,7 @@ public final class DirectedTypes {
                 if (existingDirection != Direction.BOTH && existingDirection != direction) {
                     // If the new direction isn't already covered, it must result in BOTH after update
                     this.directions.set(i, Direction.BOTH);
-                    this.existingDirections = DirectionCombination.Both;
+                    this.existingDirections = DirectionCombination.BOTH;
                 }
 
                 return;
@@ -308,7 +308,7 @@ public final class DirectedTypes {
     }
 
     public DirectedTypes reverse() {
-        if (untyped == DirectionCombination.Both) {
+        if (untyped == DirectionCombination.BOTH) {
             DirectedTypes reverse = new DirectedTypes(types.clone(), directions.clone(), untyped, existingDirections);
             reverse.isCompacted = this.isCompacted;
             return reverse;
@@ -324,20 +324,20 @@ public final class DirectedTypes {
     }
 
     public void clear() {
-        untyped = DirectionCombination.Neither;
-        existingDirections = DirectionCombination.Neither;
+        untyped = DirectionCombination.NEITHER;
+        existingDirections = DirectionCombination.NEITHER;
         types.clear();
         directions.clear();
         this.isCompacted = true;
     }
 
     public void compact() {
-        if (this.isCompacted || untyped == DirectionCombination.Neither) {
+        if (this.isCompacted || untyped == DirectionCombination.NEITHER) {
             this.isCompacted = true;
             return;
         }
 
-        if (untyped == DirectionCombination.Both) {
+        if (untyped == DirectionCombination.BOTH) {
             types.truncate(0);
             directions.truncate(0);
             this.isCompacted = true;
@@ -405,17 +405,17 @@ public final class DirectedTypes {
 
     public LongIterator addedRelationships(NodeState transactionState) {
         return switch (untyped) {
-            case Outgoing -> PrimitiveLongCollections.concat(
+            case OUTGOING -> PrimitiveLongCollections.concat(
                     transactionState.getAddedRelationships(Direction.OUTGOING),
                     addedRelationshipsInner(transactionState, RelationshipDirection.INCOMING));
 
-            case Incoming -> PrimitiveLongCollections.concat(
+            case INCOMING -> PrimitiveLongCollections.concat(
                     transactionState.getAddedRelationships(Direction.INCOMING),
                     addedRelationshipsInner(transactionState, RelationshipDirection.OUTGOING));
 
-            case Both -> transactionState.getAddedRelationships();
+            case BOTH -> transactionState.getAddedRelationships();
 
-            case Neither -> addedRelationshipsInner(transactionState);
+            case NEITHER -> addedRelationshipsInner(transactionState);
         };
     }
 
@@ -428,8 +428,8 @@ public final class DirectedTypes {
             }
             builder.append(types.get(i)).append(":").append(directions.get(i));
         }
-        if (untyped != DirectionCombination.Neither) {
-            if (types.size() > 0) {
+        if (untyped != DirectionCombination.NEITHER) {
+            if (!types.isEmpty()) {
                 builder.append(", ");
             }
             builder.append("*:").append(untyped.direction);

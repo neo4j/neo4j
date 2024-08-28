@@ -1283,17 +1283,9 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
     private static void createRelationship(RelationshipDirection direction, long start, int type, Write write)
             throws EntityNotFoundException {
         switch (direction) {
-            case OUTGOING:
-                write.relationshipCreate(start, type, write.nodeCreate());
-                break;
-            case INCOMING:
-                write.relationshipCreate(write.nodeCreate(), type, start);
-                break;
-            case LOOP:
-                write.relationshipCreate(start, type, start);
-                break;
-            default:
-                throw new IllegalStateException("Checkstyle, you win again!");
+            case OUTGOING -> write.relationshipCreate(start, type, write.nodeCreate());
+            case INCOMING -> write.relationshipCreate(write.nodeCreate(), type, start);
+            case LOOP -> write.relationshipCreate(start, type, start);
         }
     }
 }

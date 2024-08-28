@@ -135,7 +135,7 @@ object ProductGraph {
 
       // Expand node juxtapositions
       for (nodeJuxtaposition <- toExpand.state.getNodeJuxtapositions) {
-        if (nodeJuxtaposition.state(TraversalDirection.Forward).test(toExpand.node.id)) {
+        if (nodeJuxtaposition.state(TraversalDirection.FORWARD).test(toExpand.node.id)) {
           val newNode = PGNode(toExpand.node.id, nodeJuxtaposition.targetState.id)
           if (seen.add(newNode)) {
             queue.push(ToExpand(newNode, nodeJuxtaposition.targetState))
@@ -145,7 +145,7 @@ object ProductGraph {
       }
 
       // Expand relationship expansions
-      pgCursor.setNodeAndStates(toExpand.node.id, Collections.singletonList(toExpand.state), TraversalDirection.Forward)
+      pgCursor.setNodeAndStates(toExpand.node.id, Collections.singletonList(toExpand.state), TraversalDirection.FORWARD)
       while (pgCursor.next) {
         val newNode = PGNode(pgCursor.otherNodeReference, pgCursor.targetState.id)
         if (seen.add(newNode)) {

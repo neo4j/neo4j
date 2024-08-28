@@ -25,7 +25,7 @@ final class RelationshipExpansionCursor implements SourceCursor<State, Relations
     private int index = -1;
     private State state;
 
-    private TraversalDirection direction = TraversalDirection.Forward;
+    private TraversalDirection direction = TraversalDirection.FORWARD;
 
     public void setDirection(TraversalDirection direction) {
         this.direction = direction;

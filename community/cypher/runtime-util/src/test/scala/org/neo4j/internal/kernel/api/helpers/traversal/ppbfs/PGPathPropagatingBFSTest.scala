@@ -778,7 +778,7 @@ class PGPathPropagatingBFSTest extends CypherFunSuite {
       .withNfa(anyDirectedPath)
       .events()
 
-    events should (contain(Expand(TraversalDirection.Backward, 2, 1)))
+    events should (contain(Expand(TraversalDirection.BACKWARD, 2, 1)))
   }
 
   test("bidirectional search stops searching if the component around the target is exhausted") {
@@ -800,8 +800,8 @@ class PGPathPropagatingBFSTest extends CypherFunSuite {
       .events()
 
     events.ofType[ExpandNode] shouldBe Seq(
-      ExpandNode(a, TraversalDirection.Forward),
-      ExpandNode(d, TraversalDirection.Backward)
+      ExpandNode(a, TraversalDirection.FORWARD),
+      ExpandNode(d, TraversalDirection.BACKWARD)
     )
     events.ofType[ReturnPath] shouldBe Seq.empty
   }
@@ -820,7 +820,7 @@ class PGPathPropagatingBFSTest extends CypherFunSuite {
       .withNfa(`(s) ((a)-->(b))* (t)`)
       .events()
 
-    events.ofType[ExpandNode] shouldBe Seq(ExpandNode(a, TraversalDirection.Forward))
+    events.ofType[ExpandNode] shouldBe Seq(ExpandNode(a, TraversalDirection.FORWARD))
     events.ofType[ReturnPath] shouldBe Seq.empty
   }
 

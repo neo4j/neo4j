@@ -280,22 +280,22 @@ public final class PGPathPropagatingBFS<Row> extends PrefetchingIterator<Row> im
         hooks.nextLevel(0);
 
         foundNodes.openBuffer();
-        bfsExpander.discover(sourceNodeState, TraversalDirection.Forward);
+        bfsExpander.discover(sourceNodeState, TraversalDirection.FORWARD);
         if (sourceNodeState.isTarget()) {
             targets.addTarget(sourceNodeState);
         }
-        foundNodes.commitBuffer(TraversalDirection.Forward);
+        foundNodes.commitBuffer(TraversalDirection.FORWARD);
 
         if (searchMode == SearchMode.Bidirectional) {
             foundNodes.openBuffer();
 
             // we use encounter rather than discover in case the target NodeState was already discovered when flooding
             // node juxtapositions from the source
-            bfsExpander.encounter(intoTarget, finalState, TraversalDirection.Backward);
+            bfsExpander.encounter(intoTarget, finalState, TraversalDirection.BACKWARD);
 
             // we don't add the targetNodeState to our set of targets for the 0th level; if it is accessible from the
             // source node then it will have been discovered when flooding node juxtapositions from the source
-            foundNodes.commitBuffer(TraversalDirection.Backward);
+            foundNodes.commitBuffer(TraversalDirection.BACKWARD);
         }
 
         return targets.hasCurrentUnsaturatedTargets();

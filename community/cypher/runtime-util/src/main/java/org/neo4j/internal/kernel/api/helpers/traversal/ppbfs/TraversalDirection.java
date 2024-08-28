@@ -20,6 +20,6 @@
 package org.neo4j.internal.kernel.api.helpers.traversal.ppbfs;
 
 public enum TraversalDirection {
-    Forward,
-    Backward
+    FORWARD,
+    BACKWARD
 }

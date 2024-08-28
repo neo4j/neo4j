@@ -45,18 +45,9 @@ public class EagerDegrees implements Degrees, Degrees.Mutator {
 
     public void add(int type, RelationshipDirection direction, int count) {
         switch (direction) {
-            case OUTGOING:
-                addOutgoing(type, count);
-                break;
-            case INCOMING:
-                addIncoming(type, count);
-                break;
-            case LOOP:
-                addLoop(type, count);
-                break;
-            default:
-                // ignore
-                break;
+            case OUTGOING -> addOutgoing(type, count);
+            case INCOMING -> addIncoming(type, count);
+            case LOOP -> addLoop(type, count);
         }
     }
 
@@ -122,16 +113,11 @@ public class EagerDegrees implements Degrees, Degrees.Mutator {
         if (degree == null) {
             return 0;
         }
-        switch (direction) {
-            case OUTGOING:
-                return degree.outgoing + degree.loop;
-            case INCOMING:
-                return degree.incoming + degree.loop;
-            case BOTH:
-                return degree.outgoing + degree.incoming + degree.loop;
-            default:
-                throw new IllegalArgumentException("Unrecognized direction " + direction);
-        }
+        return switch (direction) {
+            case OUTGOING -> degree.outgoing + degree.loop;
+            case INCOMING -> degree.incoming + degree.loop;
+            case BOTH -> degree.outgoing + degree.incoming + degree.loop;
+        };
     }
 
     public Degree findDegree(int type) {

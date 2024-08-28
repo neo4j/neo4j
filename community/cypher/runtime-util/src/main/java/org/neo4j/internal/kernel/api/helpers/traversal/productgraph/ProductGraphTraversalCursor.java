@@ -43,7 +43,7 @@ public class ProductGraphTraversalCursor implements AutoCloseable {
     private boolean initialized = false;
     private final DirectedTypes directedTypes;
     private final ComposedSourceCursor<List<State>, State, RelationshipExpansion> nfaCursor;
-    private TraversalDirection direction = TraversalDirection.Forward;
+    private TraversalDirection direction = TraversalDirection.FORWARD;
 
     public ProductGraphTraversalCursor(
             Read read, NodeCursor nodeCursor, RelationshipTraversalCursor relCursor, MemoryTracker mt) {
@@ -107,8 +107,8 @@ public class ProductGraphTraversalCursor implements AutoCloseable {
         var expansion = nfaCursor.current();
         var expansionDir =
                 switch (direction) {
-                    case Forward -> expansion.direction();
-                    case Backward -> expansion.direction().reverse();
+                    case FORWARD -> expansion.direction();
+                    case BACKWARD -> expansion.direction().reverse();
                 };
         return graphCursor.direction().matches(expansionDir)
                 && (expansion.types() == null || ArrayUtils.contains(expansion.types(), graphCursor.type()))
@@ -128,8 +128,8 @@ public class ProductGraphTraversalCursor implements AutoCloseable {
             var expansion = this.nfaCursor.current();
             var expansionDir =
                     switch (direction) {
-                        case Forward -> expansion.direction();
-                        case Backward -> expansion.direction().reverse();
+                        case FORWARD -> expansion.direction();
+                        case BACKWARD -> expansion.direction().reverse();
                     };
             directedTypes.addTypes(expansion.types(), expansionDir);
         }

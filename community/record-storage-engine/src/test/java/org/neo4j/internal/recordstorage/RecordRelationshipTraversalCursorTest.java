@@ -381,7 +381,6 @@ public class RecordRelationshipTraversalCursorTest {
                 case BOTH -> assertThat(FIRST_OWNING_NODE == cursor.sourceNodeReference()
                                 || FIRST_OWNING_NODE == cursor.targetNodeReference())
                         .isTrue();
-                default -> throw new UnsupportedOperationException(direction.name());
             }
         }
         assertThat(found).isEqualTo(count);

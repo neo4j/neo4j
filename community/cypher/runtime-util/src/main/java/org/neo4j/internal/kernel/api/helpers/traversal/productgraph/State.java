@@ -84,15 +84,15 @@ public final class State {
 
     public NodeJuxtaposition[] getNodeJuxtapositions(TraversalDirection direction) {
         return switch (direction) {
-            case Forward -> nodeJuxtapositions;
-            case Backward -> reverseNodeJuxtapositions;
+            case FORWARD -> nodeJuxtapositions;
+            case BACKWARD -> reverseNodeJuxtapositions;
         };
     }
 
     public RelationshipExpansion[] getRelationshipExpansions(TraversalDirection direction) {
         return switch (direction) {
-            case Forward -> relationshipExpansions;
-            case Backward -> reverseRelationshipExpansions;
+            case FORWARD -> relationshipExpansions;
+            case BACKWARD -> reverseRelationshipExpansions;
         };
     }
 
