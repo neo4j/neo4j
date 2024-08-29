@@ -24,7 +24,6 @@ import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.AliasedReturnItem
 import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.GraphSelection
-import org.neo4j.cypher.internal.ast.ImportingWithSubqueryCall
 import org.neo4j.cypher.internal.ast.InputDataStream
 import org.neo4j.cypher.internal.ast.Query
 import org.neo4j.cypher.internal.ast.Return
@@ -65,8 +64,7 @@ case class FabricStitcher(
   queryString: String,
   compositeContext: Boolean,
   pipeline: FabricFrontEnd#Pipeline,
-  useHelper: UseHelper,
-  callInTransactionsEnabled: Boolean
+  useHelper: UseHelper
 ) {
 
   /**
@@ -77,12 +75,7 @@ case class FabricStitcher(
   def convert(fragment: Fragment): Fragment = fragment match {
     case chain: Fragment.Chain =>
       val convertedChain = convertChain(chain)
-      if (callInTransactionsEnabled) {
-        if (compositeContext) processCompositeCallInTx(convertedChain) else convertedChain
-      } else {
-        if (compositeContext) validateNoTransactionalSubquery(convertedChain)
-        convertedChain
-      }
+      if (compositeContext) processCompositeCallInTx(convertedChain) else convertedChain
     case union: Fragment.Union => convertUnion(union)
     case command: Fragment.Command =>
       if (!compositeContext && !UseEvaluation.isStatic(command.use.graphSelection)) {

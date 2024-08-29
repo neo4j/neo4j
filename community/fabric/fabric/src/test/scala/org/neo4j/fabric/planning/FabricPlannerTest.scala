@@ -91,7 +91,7 @@ class FabricPlannerTest
     with AstConstructionTestSupport {
 
   private def makeConfig() =
-    new FabricConfig(() => Duration.ZERO, new FabricConfig.DataStream(0, 0, 0, 0), false, false)
+    new FabricConfig(() => Duration.ZERO, new FabricConfig.DataStream(0, 0, 0, 0), false)
 
   private val config = makeConfig()
   private val planner = FabricPlanner(config, cypherConfig, monitors, cacheFactory)

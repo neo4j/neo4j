@@ -153,7 +153,7 @@ case class FabricPlanner(
       val compositeContext = useHelper.rootTargetsCompositeContext(fragments)
 
       val stitcher =
-        FabricStitcher(query.statement, compositeContext, pipeline, useHelper, config.isCallInTransactionEnabled)
+        FabricStitcher(query.statement, compositeContext, pipeline, useHelper)
       val stitchedFragments = stitcher.convert(fragments)
 
       FabricPlan(

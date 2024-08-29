@@ -84,7 +84,7 @@ class FabricTransactionMonitorTest {
         var catalogManager = mock(CatalogManager.class);
         var config = Config.defaults(transaction_timeout, DEFAULT_TX_TIMEOUT);
         var globalProcedures = mock(GlobalProcedures.class);
-        var fabricConfig = new FabricConfig(() -> DEFAULT_TX_TIMEOUT, null, false, false);
+        var fabricConfig = new FabricConfig(() -> DEFAULT_TX_TIMEOUT, null, false);
 
         var logService = mock(LogService.class);
         when(logService.getInternalLog(TransactionMonitor.class)).thenReturn(log);

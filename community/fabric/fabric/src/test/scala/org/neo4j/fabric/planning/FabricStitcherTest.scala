@@ -22,7 +22,6 @@ package org.neo4j.fabric.planning
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsParameters
 import org.neo4j.cypher.internal.util.symbols.CTAny
-import org.neo4j.exceptions.SyntaxException
 import org.neo4j.fabric.FabricTest
 import org.neo4j.fabric.FragmentTestUtils
 import org.neo4j.fabric.ProcedureSignatureResolverTestSupport
@@ -52,13 +51,12 @@ class FabricStitcherTest
 
   "Single-graph:" - {
 
-    def stitching(fragment: Fragment, callInTransactionsEnabled: Boolean = false) =
+    def stitching(fragment: Fragment) =
       FabricStitcher(
         dummyQuery,
         compositeContext = false,
         dummyPipeline,
-        new UseHelper(Catalog.empty, defaultGraphName),
-        callInTransactionsEnabled
+        new UseHelper(Catalog.empty, defaultGraphName)
       )
         .convert(fragment).withoutLocalAndRemote
 
@@ -241,7 +239,7 @@ class FabricStitcherTest
             singleQuery(
               with_(literal(1).as("x"), literal(2).as("y"), literal(3).as("z")),
               scopeClauseSubqueryCall(
-                false,
+                isImportingAll = false,
                 Seq(varFor("y"), varFor("z")),
                 union(
                   singleQuery(with_(varFor("y").as("y")), return_(varFor("y").as("a"))),
@@ -265,13 +263,12 @@ class FabricStitcherTest
     val catalog =
       Catalog.byQualifiedName(Seq(Catalog.Composite(0, fabricRef)))
 
-    def stitching(fragment: Fragment, callInTransactionsEnabled: Boolean = false) =
+    def stitching(fragment: Fragment) =
       FabricStitcher(
         dummyQuery,
         compositeContext = true,
         dummyPipeline,
-        new UseHelper(catalog, defaultGraphName),
-        callInTransactionsEnabled
+        new UseHelper(catalog, defaultGraphName)
       )
         .convert(fragment).withoutLocalAndRemote
 
@@ -377,8 +374,7 @@ class FabricStitcherTest
                   ),
               inTransactionParameters
             )
-            .leaf(Seq(return_(literal(2).as("b"))), Seq("b")),
-          callInTransactionsEnabled = true
+            .leaf(Seq(return_(literal(2).as("b"))), Seq("b"))
         )
         val expected = init(defaultUse)
           .apply(
@@ -446,8 +442,7 @@ class FabricStitcherTest
                   ),
               inTransactionParameters
             )
-            .leaf(Seq(return_(literal(1).as("d"))), Seq("d")),
-          true
+            .leaf(Seq(return_(literal(1).as("d"))), Seq("d"))
         )
         val expected = init(defaultUse)
           .exec(
@@ -486,108 +481,6 @@ class FabricStitcherTest
           .exec(singleQuery(input(varFor("b"), varFor("c")), return_(literal(1).as("d"))), Seq("d"))
         actual.shouldEqual(
           expected
-        )
-      }
-    }
-
-    "errors" - {
-      val inTransactionParameters = Some(InTransactionsParameters(None, None, None, None)(pos))
-
-      "disallows call in transactions as apply" in {
-        /*
-        WITH 1 as a
-        CALL {
-          WITH a as a
-          USE foo
-          RETURN 2 as b
-        } IN TRANSACTIONS
-        RETURN 3 as c
-         */
-        val e = the[SyntaxException].thrownBy(
-          stitching(
-            init(defaultUse)
-              .leaf(Seq(with_(literal(1).as("a"))), Seq("a"))
-              .apply(
-                _ =>
-                  init(Declared(use("foo")), Seq("a"), Seq("a"))
-                    .leaf(Seq(with_(varFor("a").as("a")), use("foo"), return_(literal(2).as("b"))), Seq("b")),
-                inTransactionParameters
-              )
-              .leaf(Seq(return_(literal(3).as("c"))), Seq("c")),
-            callInTransactionsEnabled = false
-          )
-        )
-
-        e.getMessage.should(
-          include("Transactional subquery is not allowed here. This feature is not supported on composite databases.")
-        )
-      }
-
-      "disallows call in transactions as nested apply" in {
-        // Think this case is illegal in cypher anyway due to
-        // org.neo4j.exceptions.SyntaxException: CALL { ... } IN TRANSACTIONS nested in a regular CALL is not supported
-        val e = the[SyntaxException].thrownBy(
-          stitching(
-            init(defaultUse)
-              .leaf(Seq(with_(literal(1).as("a"))), Seq("a"))
-              .apply(oldUse =>
-                init(Inherited(oldUse)(pos), Seq("a"), Seq("a"))
-                  .apply(
-                    _ =>
-                      init(Declared(use("foo")), Seq("a"), Seq("a"))
-                        .leaf(Seq(with_(varFor("a").as("a")), use("foo"), return_(literal(2).as("b"))), Seq("b")),
-                    inTransactionParameters
-                  )
-              )
-              .leaf(Seq(return_(literal(3).as("c"))), Seq("c")),
-            callInTransactionsEnabled = false
-          )
-        )
-
-        e.getMessage.should(
-          include("Transactional subquery is not allowed here. This feature is not supported on composite databases.")
-        )
-      }
-
-      "disallows call in transactions as subquery call" in {
-        val e = the[SyntaxException].thrownBy(
-          stitching(
-            init(defaultUse)
-              .leaf(
-                Seq(with_(literal(1).as("a")), importingWithSubqueryCallInTransactions(create(nodePat(Some("n"))))),
-                Seq("a")
-              ),
-            callInTransactionsEnabled = false
-          )
-        )
-
-        e.getMessage.should(
-          include("Transactional subquery is not allowed here. This feature is not supported on composite databases.")
-        )
-      }
-
-      "disallows scoped call in transactions as subquery call" in {
-        val e = the[SyntaxException].thrownBy(
-          stitching(
-            init(defaultUse)
-              .leaf(
-                Seq(
-                  with_(literal(1).as("a")),
-                  scopeClauseSubqueryCallInTransactions(
-                    false,
-                    Seq.empty,
-                    inTransactionsParameters(None, None, None, None),
-                    create(nodePat(Some("n")))
-                  )
-                ),
-                Seq("a")
-              ),
-            callInTransactionsEnabled = false
-          )
-        )
-
-        e.getMessage.should(
-          include("Transactional subquery is not allowed here. This feature is not supported on composite databases.")
         )
       }
     }
