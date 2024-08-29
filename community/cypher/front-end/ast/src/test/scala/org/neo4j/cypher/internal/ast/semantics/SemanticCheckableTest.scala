@@ -369,9 +369,9 @@ class SemanticCheckableTest extends CypherFunSuite with SemanticAnalysisTooling 
           missingMsg
         }
 
-        override def createSelfReferenceError(name: String): String = selfReferenceMsg
+        override def createSelfReferenceError(name: String, clauseName: String): String = selfReferenceMsg
 
-        override def createSelfReferenceError(name: String, variableType: String): String = {
+        override def createSelfReferenceError(name: String, variableType: String, clauseName: String): String = {
           selfReferenceMsg
         }
 

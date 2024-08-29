@@ -193,18 +193,18 @@ public class MessageUtil {
     }
 
     private static final String SELF_REFERENCE_TO_VARIABLE_WITH_UNKNOWN_TYPE_IN_CREATE_PATTERN_ERROR =
-            "The variable '%1$s' is referencing an entity that is created in the same CREATE clause which is not allowed. "
+            "The variable '%1$s' is referencing an entity that is created in the same %2$s clause which is not allowed. "
                     + "Please only reference variables created in earlier clauses.";
 
     private static final String SELF_REFERENCE_TO_VARIABLE_IN_CREATE_PATTERN_ERROR =
-            "The %1$s variable '%2$s' is referencing a %1$s that is created in the same CREATE clause which is not allowed. "
+            "The %1$s variable '%2$s' is referencing a %1$s that is created in the same %3$s clause which is not allowed. "
                     + "Please only reference variables created in earlier clauses.";
 
-    public static String createSelfReferenceError(String name) {
-        return String.format(SELF_REFERENCE_TO_VARIABLE_WITH_UNKNOWN_TYPE_IN_CREATE_PATTERN_ERROR, name);
+    public static String createSelfReferenceError(String name, String clauseName) {
+        return String.format(SELF_REFERENCE_TO_VARIABLE_WITH_UNKNOWN_TYPE_IN_CREATE_PATTERN_ERROR, name, clauseName);
     }
 
-    public static String createSelfReferenceError(String name, String variableType) {
-        return String.format(SELF_REFERENCE_TO_VARIABLE_IN_CREATE_PATTERN_ERROR, variableType, name);
+    public static String createSelfReferenceError(String name, String variableType, String clauseName) {
+        return String.format(SELF_REFERENCE_TO_VARIABLE_IN_CREATE_PATTERN_ERROR, variableType, name, clauseName);
     }
 }

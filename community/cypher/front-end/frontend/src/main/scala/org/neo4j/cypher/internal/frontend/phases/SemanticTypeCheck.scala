@@ -20,6 +20,7 @@ import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.ast.Create
 import org.neo4j.cypher.internal.ast.CreateOrInsert
 import org.neo4j.cypher.internal.ast.Insert
+import org.neo4j.cypher.internal.ast.Merge
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.UpdateClause
 import org.neo4j.cypher.internal.ast.semantics.SemanticError
@@ -179,14 +180,31 @@ case class SelfReferenceCheckWithinPatternPart(cypherVersion: CypherVersion) ext
 
   def check: SemanticErrorCheck = (baseState, baseContext) => {
     val semanticTable = baseState.semanticTable()
+    val errorMessageProvider = baseContext.errorMessageProvider
+
     baseState.statement().folder.treeFold(Seq.empty[SemanticError]) {
       case c: CreateOrInsert =>
         accErrors =>
-          val errors = findSelfReferenceVariablesWithinPatternParts(c.pattern, semanticTable)
-            .map(createError(_, semanticTable, baseContext.errorMessageProvider))
-            .toSeq
+          val errors = checkPattern(c, c.pattern, semanticTable, errorMessageProvider)
+          SkipChildren(accErrors ++ errors)
+
+      case m: Merge if DeprecatedFeature.SelfReferenceInMerge.errorIn(cypherVersion) =>
+        accErrors =>
+          val pattern = Pattern.ForUpdate(Seq(m.pattern))(m.pattern.position)
+          val errors = checkPattern(m, pattern, semanticTable, errorMessageProvider)
           SkipChildren(accErrors ++ errors)
     }
+  }
+
+  private def checkPattern(
+    clause: UpdateClause,
+    pattern: Pattern,
+    semanticTable: SemanticTable,
+    errorMessageProvider: ErrorMessageProvider
+  ): Seq[SemanticError] = {
+    findSelfReferenceVariablesWithinPatternParts(pattern, semanticTable)
+      .map(createError(clause, _, semanticTable, errorMessageProvider))
+      .toSeq
   }
 
   private def findSelfReferenceVariablesWithinPatternParts(
@@ -199,13 +217,14 @@ case class SelfReferenceCheckWithinPatternPart(cypherVersion: CypherVersion) ext
   }
 
   private def createError(
+    clause: UpdateClause,
     variable: LogicalVariable,
     semanticTable: SemanticTable,
     errorMessageProvider: ErrorMessageProvider
   ): SemanticError = {
     val msg = semanticTable.typeFor(variable).typeInfo.map(_.toShortString) match {
-      case Some(typ) => errorMessageProvider.createSelfReferenceError(variable.name, typ)
-      case None      => errorMessageProvider.createSelfReferenceError(variable.name)
+      case Some(typ) => errorMessageProvider.createSelfReferenceError(variable.name, typ, clause.name)
+      case None      => errorMessageProvider.createSelfReferenceError(variable.name, clause.name)
     }
 
     SemanticError(msg, variable.position)

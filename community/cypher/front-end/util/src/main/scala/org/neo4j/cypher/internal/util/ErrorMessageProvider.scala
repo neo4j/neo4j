@@ -31,9 +31,9 @@ trait ErrorMessageProvider {
     additionalInfo: String
   ): String
 
-  def createSelfReferenceError(name: String): String
+  def createSelfReferenceError(name: String, clauseName: String): String
 
-  def createSelfReferenceError(name: String, variableType: String): String
+  def createSelfReferenceError(name: String, variableType: String, clauseName: String): String
 
   def createUseClauseUnsupportedError(): String
 
@@ -54,9 +54,9 @@ object NotImplementedErrorMessageProvider extends ErrorMessageProvider {
     additionalInfo: String
   ): String = ???
 
-  override def createSelfReferenceError(name: String): String = ???
+  override def createSelfReferenceError(name: String, clauseName: String): String = ???
 
-  override def createSelfReferenceError(name: String, variableType: String): String = ???
+  override def createSelfReferenceError(name: String, variableType: String, clauseName: String): String = ???
 
   override def createUseClauseUnsupportedError(): String = ???
 
@@ -77,9 +77,9 @@ object EmptyErrorMessageProvider extends ErrorMessageProvider {
     additionalInfo: String
   ): String = ""
 
-  override def createSelfReferenceError(name: String): String = ""
+  override def createSelfReferenceError(name: String, clauseName: String): String = ""
 
-  override def createSelfReferenceError(name: String, variableType: String): String = ""
+  override def createSelfReferenceError(name: String, variableType: String, clauseName: String): String = ""
 
   override def createUseClauseUnsupportedError(): String = ""
 

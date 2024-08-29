@@ -40,12 +40,12 @@ object MessageUtilProvider extends ErrorMessageProvider {
       additionalInfo
     )
 
-  override def createSelfReferenceError(name: String): String = {
-    MessageUtil.createSelfReferenceError(name)
+  override def createSelfReferenceError(name: String, clauseName: String): String = {
+    MessageUtil.createSelfReferenceError(name, clauseName)
   }
 
-  override def createSelfReferenceError(name: String, variableType: String): String = {
-    MessageUtil.createSelfReferenceError(name, variableType)
+  override def createSelfReferenceError(name: String, variableType: String, clauseName: String): String = {
+    MessageUtil.createSelfReferenceError(name, variableType, clauseName)
   }
 
   override def createUseClauseUnsupportedError(): String =

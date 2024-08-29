@@ -251,6 +251,82 @@ class SemanticTypeCheckTest extends CypherFunSuite with LoneElement {
     runReferenceAcrossPatternsTests("CREATE", CypherVersion.Cypher6)
   }
 
+  private case class SelfReferenceWithinPatternTestQueries(
+    disallowedNode: Seq[String],
+    disallowedRel: Seq[String],
+    allowed: Seq[String]
+  )
+
+  private object SelfReferenceWithinPatternTestQueries {
+
+    def forClause(clause: String): SelfReferenceWithinPatternTestQueries = {
+      val disallowedNode = Seq(
+        s"$clause (a {prop:'p'})-[:T]->(b {prop:a.prop})",
+        s"$clause (a {prop:'p'})<-[:T]-(b {prop:a.prop})",
+        s"$clause (a {prop:'p'})-[:T]-(b {prop:a.prop})",
+        s"CREATE ({prop:'p'})-[:T]->({prop:'p'}) $clause (b {prop:a.prop})-[:T]->(a {prop:'p'})",
+        s"$clause (a {prop:'p'})-[b:T {prop:a.prop}]->()",
+        s"FOREACH (x in [1,2,3] | $clause (a {prop:'p'})-[:R]-(b {prop:a.prop}))"
+      )
+
+      val disallowedRel = Seq(
+        s"$clause ()-[a:T {prop:'p'}]->()<-[b :S {prop:a.prop}]-()"
+      )
+
+      val allowed = Seq(
+        s"MATCH (a {prop:'p'}) $clause (b {prop:a.prop})",
+        s"$clause (a {prop:'p'}) $clause (a)-[:T]->(b {prop:a.prop})"
+      )
+      SelfReferenceWithinPatternTestQueries(disallowedNode, disallowedRel, allowed)
+    }
+  }
+
+  private def runReferenceWithinPatternTests(clause: String, cypherVersion: CypherVersion): Unit = {
+    val queries = SelfReferenceWithinPatternTestQueries.forClause(clause)
+
+    for (query <- queries.disallowedNode) {
+      withClue(s"Failing query: $query") {
+        runPipeline(query, cypherVersion).errors.map(e => e.msg) should
+          contain(MessageUtilProvider.createSelfReferenceError("a", "Node", clause))
+      }
+    }
+    for (query <- queries.disallowedRel) {
+      withClue(s"Failing query: $query") {
+        runPipeline(query, cypherVersion).errors.map(e => e.msg) should
+          contain(MessageUtilProvider.createSelfReferenceError("a", "Relationship", clause))
+      }
+    }
+
+    for (query <- queries.allowed) {
+      withClue(s"Failing query: $query") {
+        runPipeline(query, cypherVersion).errors should be(empty)
+      }
+    }
+  }
+
+  test("property references within patterns should not be allowed in INSERT") {
+    runReferenceWithinPatternTests("INSERT", CypherVersion.Cypher5)
+    runReferenceWithinPatternTests("INSERT", CypherVersion.Cypher6)
+  }
+
+  test("property references within patterns should not be allowed in CREATE") {
+    runReferenceWithinPatternTests("CREATE", CypherVersion.Cypher5)
+    runReferenceWithinPatternTests("CREATE", CypherVersion.Cypher6)
+  }
+
+  test("property references within patterns should be allowed in MERGE, CYPHER 5") {
+    val queries = SelfReferenceWithinPatternTestQueries.forClause("MERGE")
+    for (query <- queries.allowed ++ queries.disallowedNode ++ queries.disallowedRel) {
+      withClue(s"Failing query: $query") {
+        runPipeline(query, CypherVersion.Cypher5).errors should be(empty)
+      }
+    }
+  }
+
+  test("property references within patterns should not be allowed in MERGE, CYPHER 6") {
+    runReferenceWithinPatternTests("MERGE", CypherVersion.Cypher6)
+  }
+
   private def runPipeline(
     query: String,
     cypherVersion: CypherVersion = CypherVersion.Default

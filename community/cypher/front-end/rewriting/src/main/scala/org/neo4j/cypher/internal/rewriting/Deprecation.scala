@@ -261,7 +261,7 @@ object Deprecations {
           Deprecation(None, Some(DeprecatedPropertyReferenceInCreate(e.position, e.name)))
         }
 
-      case Merge(patternPart, _, _) =>
+      case Merge(patternPart, _, _) if DeprecatedFeature.SelfReferenceInMerge.deprecatedIn(cypherVersion) =>
         // Create an update pattern consisting of the one patternPart from the MERGE clause
         val pattern = Pattern.ForUpdate(Seq(patternPart))(patternPart.position)
         propertyUsageOfNewVariable(pattern, semanticTable).collectFirst { e =>
@@ -305,6 +305,8 @@ object DeprecatedFeature {
   // add features here for easier code navigation
 
   case object SelfReferenceAcrossPatternsInCreate extends DeprecatedIn5ErrorIn6
+
+  case object SelfReferenceInMerge extends DeprecatedIn5ErrorIn6
 
   sealed trait DeprecatedIn5ErrorIn6 extends DeprecatedFeature {
 
