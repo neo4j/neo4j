@@ -22,8 +22,8 @@ import org.neo4j.cypher.internal.ast.Match
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.UnaliasedReturnItem
-import org.neo4j.cypher.internal.ast.UnionDistinct
 import org.neo4j.cypher.internal.ast.test.util.AstParsing.Cypher5JavaCc
+import org.neo4j.cypher.internal.ast.test.util.AstParsing.Cypher6
 import org.neo4j.cypher.internal.ast.test.util.AstParsingTestBase
 import org.neo4j.cypher.internal.ast.test.util.LegacyAstParsingTestSupport
 import org.neo4j.cypher.internal.expressions.AllIterablePredicate
@@ -382,24 +382,44 @@ class CountExpressionParserTest extends AstParsingTestBase with LegacyAstParsing
       |WHERE COUNT { MATCH (m) RETURN m UNION MATCH (p) RETURN p } >= 3
       |RETURN m""".stripMargin
   ) {
-    val countExpression: CountExpression = CountExpression(
-      UnionDistinct(
-        singleQuery(
-          match_(nodePat(name = Some("m"), namePos = InputPosition(31, 2, 22), position = InputPosition(30, 2, 21))),
-          return_(variableReturnItem("m"))
-        ),
-        singleQuery(
-          match_(nodePat(name = Some("p"), namePos = InputPosition(56, 2, 47), position = InputPosition(55, 2, 46))),
-          return_(variableReturnItem("p"))
-        )
-      )(InputPosition(43, 2, 34))
-    )(InputPosition(16, 2, 7), None, None)
+    val lhs = singleQuery(
+      match_(nodePat(name = Some("m"), namePos = InputPosition(31, 2, 22), position = InputPosition(30, 2, 21))),
+      return_(variableReturnItem("m"))
+    )
+    val rhs = singleQuery(
+      match_(nodePat(name = Some("p"), namePos = InputPosition(56, 2, 47), position = InputPosition(55, 2, 46))),
+      return_(variableReturnItem("p"))
+    )
 
-    parses[Statement].toAstPositioned {
-      singleQuery(
-        match_(nodePat(name = Some("m")), where = Some(where(gte(countExpression, literal(3))))),
-        return_(variableReturnItem("m"))
-      )
+    parsesIn[Statement] {
+      case Cypher6 => _.toAst(
+          singleQuery(
+            match_(
+              nodePat(name = Some("m")),
+              where = Some(where(gte(
+                CountExpression(
+                  union(lhs, rhs)
+                )(InputPosition(16, 2, 7), None, None),
+                literal(3)
+              )))
+            ),
+            return_(variableReturnItem("m"))
+          )
+        )
+      case _ => _.toAst(
+          singleQuery(
+            match_(
+              nodePat(name = Some("m")),
+              where = Some(where(gte(
+                CountExpression(
+                  union(lhs, rhs, differentReturnOrderAllowed = true)
+                )(InputPosition(16, 2, 7), None, None),
+                literal(3)
+              )))
+            ),
+            return_(variableReturnItem("m"))
+          )
+        )
     }
   }
 

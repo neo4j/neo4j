@@ -24,6 +24,8 @@ import org.mockito.Mockito
 import org.mockito.Mockito.when
 import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.ast.Query
+import org.neo4j.cypher.internal.ast.UnionAll
+import org.neo4j.cypher.internal.ast.UnionDistinct
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.UseAsMultipleGraphsSelector
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.UseAsSingleGraphSelector
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
@@ -34,6 +36,8 @@ import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.parser.AstParserFactory
 import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.Neo4jCypherExceptionFactory
+import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.bottomUp
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.messages.MessageUtilProvider
 import org.neo4j.dbms.api.DatabaseNotFoundException
@@ -279,10 +283,10 @@ class VerifyGraphTargetTest extends CypherFunSuite {
   }
 
   private def parse(query: String): Query = {
-    val defaultStatement = parse(CypherVersion.Default, query)
+    val defaultStatement = rewriteASTDifferences(parse(CypherVersion.Default, query))
     CypherVersion.values().foreach { version =>
       if (version != CypherVersion.Default) {
-        Try(parse(version, query)) match {
+        Try(rewriteASTDifferences(parse(version, query))) match {
           case Success(otherStatement) if otherStatement == defaultStatement =>
           case notEqual => throw new AssertionError(
               s"""Unexpected result in $version
@@ -301,4 +305,15 @@ class VerifyGraphTargetTest extends CypherFunSuite {
       case q: Query => q
       case _        => fail(s"Must be a Query, it's not in $version")
     }
+
+  /**
+   * There are some AST changes done at the parser level for semantic analysis that won't affect the plan.
+   * This rewriter can be expanded to update those parts.
+   */
+  def rewriteASTDifferences(statement: Query): Query = {
+    statement.endoRewrite(bottomUp(Rewriter.lift {
+      case u: UnionDistinct => u.copy(differentReturnOrderAllowed = true)(u.position)
+      case u: UnionAll      => u.copy(differentReturnOrderAllowed = true)(u.position)
+    }))
+  }
 }

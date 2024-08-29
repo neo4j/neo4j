@@ -19,8 +19,8 @@ package org.neo4j.cypher.internal.ast.factory.expression
 import org.neo4j.cypher.internal.ast.ExistsExpression
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.Statements
-import org.neo4j.cypher.internal.ast.UnionDistinct
 import org.neo4j.cypher.internal.ast.test.util.AstParsing.Cypher5JavaCc
+import org.neo4j.cypher.internal.ast.test.util.AstParsing.Cypher6
 import org.neo4j.cypher.internal.ast.test.util.AstParsingTestBase
 import org.neo4j.cypher.internal.expressions.AllIterablePredicate
 import org.neo4j.cypher.internal.expressions.Equals
@@ -151,24 +151,42 @@ class ExistsExpressionParserTest extends AstParsingTestBase {
       |WHERE EXISTS { MATCH (m) RETURN m UNION MATCH (p) RETURN p }
       |RETURN m""".stripMargin
   ) {
-    val existsExpression: ExistsExpression = ExistsExpression(
-      UnionDistinct(
-        singleQuery(
-          match_(nodePat(name = Some("m"), None)),
-          return_(variableReturnItem("m"))
-        ),
-        singleQuery(
-          match_(nodePat(name = Some("p"), None)),
-          return_(variableReturnItem("p"))
-        )
-      )(InputPosition(44, 2, 35))
-    )(InputPosition(16, 2, 7), None, None)
+    val lhs = singleQuery(
+      match_(nodePat(name = Some("m"), None)),
+      return_(variableReturnItem("m"))
+    )
+    val rhs = singleQuery(
+      match_(nodePat(name = Some("p"), None)),
+      return_(variableReturnItem("p"))
+    )
 
-    parses[Statement].toAstPositioned {
-      singleQuery(
-        match_(nodePat(name = Some("m")), where = Some(where(existsExpression))),
-        return_(variableReturnItem("m"))
-      )
+    parsesIn[Statement] {
+      case Cypher6 => _.toAst(
+          singleQuery(
+            match_(
+              nodePat(name = Some("m")),
+              where = Some(where(
+                ExistsExpression(
+                  union(lhs, rhs)
+                )(InputPosition(16, 2, 7), None, None)
+              ))
+            ),
+            return_(variableReturnItem("m"))
+          )
+        )
+      case _ => _.toAst(
+          singleQuery(
+            match_(
+              nodePat(name = Some("m")),
+              where = Some(where(
+                ExistsExpression(
+                  union(lhs, rhs, differentReturnOrderAllowed = true)
+                )(InputPosition(16, 2, 7), None, None)
+              ))
+            ),
+            return_(variableReturnItem("m"))
+          )
+        )
     }
   }
 

@@ -77,12 +77,12 @@ case object addDependenciesToProjectionsInSubqueryExpressions extends StepSequen
   private def rewriteQuery(query: Query, scopeDependencies: Set[LogicalVariable], shouldSplitReturn: Boolean): Query =
     query match {
       case sq: SingleQuery => rewriteSingleQuery(sq, scopeDependencies, shouldSplitReturn)
-      case union @ UnionAll(lhs, rhs) =>
+      case union @ UnionAll(lhs, rhs, _) =>
         union.copy(
           lhs = rewriteQuery(lhs, scopeDependencies, shouldSplitReturn),
           rhs = rewriteSingleQuery(rhs, scopeDependencies, shouldSplitReturn)
         )(union.position)
-      case union @ UnionDistinct(lhs, rhs) =>
+      case union @ UnionDistinct(lhs, rhs, _) =>
         union.copy(
           lhs = rewriteQuery(lhs, scopeDependencies, shouldSplitReturn),
           rhs = rewriteSingleQuery(rhs, scopeDependencies, shouldSplitReturn)

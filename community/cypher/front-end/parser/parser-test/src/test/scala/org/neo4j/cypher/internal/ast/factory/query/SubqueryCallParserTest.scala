@@ -19,6 +19,7 @@ package org.neo4j.cypher.internal.ast.factory.query
 import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.SubqueryCall
 import org.neo4j.cypher.internal.ast.test.util.AstParsing.Cypher5JavaCc
+import org.neo4j.cypher.internal.ast.test.util.AstParsing.Cypher6
 import org.neo4j.cypher.internal.ast.test.util.AstParsingTestBase
 
 class SubqueryCallParserTest extends AstParsingTestBase {
@@ -32,12 +33,23 @@ class SubqueryCallParserTest extends AstParsingTestBase {
   }
 
   test("CALL { RETURN 1 AS a UNION RETURN 2 AS a }") {
-    parsesTo[SubqueryCall](importingWithSubqueryCall(
-      unionDistinct(
-        singleQuery(return_(literalInt(1).as("a"))),
-        singleQuery(return_(literalInt(2).as("a")))
-      )
-    ))
+    parsesIn[SubqueryCall] {
+      case Cypher6 => _.toAst(
+          importingWithSubqueryCall(
+            union(
+              singleQuery(return_(literalInt(1).as("a"))),
+              singleQuery(return_(literalInt(2).as("a")))
+            )
+          )
+        )
+      case _ => _.toAst(importingWithSubqueryCall(
+          union(
+            singleQuery(return_(literalInt(1).as("a"))),
+            singleQuery(return_(literalInt(2).as("a"))),
+            differentReturnOrderAllowed = true
+          )
+        ))
+    }
   }
 
   test("CALL { }") {

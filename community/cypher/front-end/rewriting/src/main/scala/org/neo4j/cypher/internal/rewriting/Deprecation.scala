@@ -95,12 +95,12 @@ object Deprecations {
             s":${stringifier.stringifyLabelExpression(rewrittenExpression)}"
           ))
         )
-      case UnionAll(lhs: Query, rhs: SingleQuery) if unionReturnItemsInDifferentOrder(lhs, rhs) =>
+      case UnionAll(lhs: Query, rhs: SingleQuery, true) if unionReturnItemsInDifferentOrder(lhs, rhs) =>
         Deprecation(
           None,
           Some(UnionReturnItemsInDifferentOrder(lhs.position))
         )
-      case UnionDistinct(lhs: Query, rhs: SingleQuery) if unionReturnItemsInDifferentOrder(lhs, rhs) =>
+      case UnionDistinct(lhs: Query, rhs: SingleQuery, true) if unionReturnItemsInDifferentOrder(lhs, rhs) =>
         Deprecation(
           None,
           Some(UnionReturnItemsInDifferentOrder(lhs.position))

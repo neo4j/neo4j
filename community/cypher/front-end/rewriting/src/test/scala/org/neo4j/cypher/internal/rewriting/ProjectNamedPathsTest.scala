@@ -912,7 +912,7 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
 
         SingleQuery(List(WITH1, WITH2, RETURN))(pos)
       }
-      ImportingWithSubqueryCall(UnionDistinct(LEFT, RIGHT)(pos), None)(pos)
+      ImportingWithSubqueryCall(UnionDistinct(LEFT, RIGHT, differentReturnOrderAllowed = true)(pos), None)(pos)
     }
 
     val RETURN =

@@ -19,152 +19,228 @@ package org.neo4j.cypher.internal.ast.factory.query
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.test.util.AstParsing.Cypher5JavaCc
+import org.neo4j.cypher.internal.ast.test.util.AstParsing.Cypher6
 import org.neo4j.cypher.internal.ast.test.util.AstParsingTestBase
 
 class UnionParserTest extends AstParsingTestBase {
 
   test("RETURN 1 AS a UNION RETURN 2 AS a") {
-    parsesTo[Statement](
-      union(
-        singleQuery(return_(aliasedReturnItem(literal(1), "a"))),
-        singleQuery(return_(aliasedReturnItem(literal(2), "a")))
-      )
-    )
+    parsesIn[Statement] {
+      case Cypher6 => _.toAst(union(
+          singleQuery(return_(aliasedReturnItem(literal(1), "a"))),
+          singleQuery(return_(aliasedReturnItem(literal(2), "a")))
+        ))
+      case _ => _.toAst(union(
+          singleQuery(return_(aliasedReturnItem(literal(1), "a"))),
+          singleQuery(return_(aliasedReturnItem(literal(2), "a"))),
+          differentReturnOrderAllowed = true
+        ))
+    }
   }
 
   test("RETURN 1 AS a UNION DISTINCT RETURN 2 AS a") {
-    parsesTo[Statement](
-      union(
-        singleQuery(return_(aliasedReturnItem(literal(1), "a"))),
-        singleQuery(return_(aliasedReturnItem(literal(2), "a")))
-      )
-    )
+    parsesIn[Statement] {
+      case Cypher6 => _.toAst(union(
+          singleQuery(return_(aliasedReturnItem(literal(1), "a"))),
+          singleQuery(return_(aliasedReturnItem(literal(2), "a")))
+        ))
+      case _ => _.toAst(union(
+          singleQuery(return_(aliasedReturnItem(literal(1), "a"))),
+          singleQuery(return_(aliasedReturnItem(literal(2), "a"))),
+          differentReturnOrderAllowed = true
+        ))
+    }
   }
 
   test("RETURN 1 AS a UNION ALL RETURN 2 AS a") {
-    parsesTo[Statement](
-      union(
-        singleQuery(return_(aliasedReturnItem(literal(1), "a"))),
-        singleQuery(return_(aliasedReturnItem(literal(2), "a")))
-      ).all
-    )
+    parsesIn[Statement] {
+      case Cypher6 => _.toAst(union(
+          singleQuery(return_(aliasedReturnItem(literal(1), "a"))),
+          singleQuery(return_(aliasedReturnItem(literal(2), "a")))
+        ).all)
+      case _ => _.toAst(union(
+          singleQuery(return_(aliasedReturnItem(literal(1), "a"))),
+          singleQuery(return_(aliasedReturnItem(literal(2), "a"))),
+          differentReturnOrderAllowed = true
+        ).all)
+    }
   }
 
   // invalid Cypher accepted by parser
   test("RETURN 1 AS a UNION RETURN 2 AS b") {
-    parsesTo[Statement](
-      union(
-        singleQuery(return_(aliasedReturnItem(literal(1), "a"))),
-        singleQuery(return_(aliasedReturnItem(literal(2), "b")))
-      )
-    )
+    parsesIn[Statement] {
+      case Cypher6 => _.toAst(union(
+          singleQuery(return_(aliasedReturnItem(literal(1), "a"))),
+          singleQuery(return_(aliasedReturnItem(literal(2), "b")))
+        ))
+      case _ => _.toAst(union(
+          singleQuery(return_(aliasedReturnItem(literal(1), "a"))),
+          singleQuery(return_(aliasedReturnItem(literal(2), "b"))),
+          differentReturnOrderAllowed = true
+        ))
+    }
   }
 
   // invalid Cypher accepted by parser
   test("RETURN 1 AS a UNION DISTINCT RETURN 2 AS b") {
-    parsesTo[Statement](
-      union(
-        singleQuery(return_(aliasedReturnItem(literal(1), "a"))),
-        singleQuery(return_(aliasedReturnItem(literal(2), "b")))
-      )
-    )
+    parsesIn[Statement] {
+      case Cypher6 => _.toAst(union(
+          singleQuery(return_(aliasedReturnItem(literal(1), "a"))),
+          singleQuery(return_(aliasedReturnItem(literal(2), "b")))
+        ))
+      case _ => _.toAst(union(
+          singleQuery(return_(aliasedReturnItem(literal(1), "a"))),
+          singleQuery(return_(aliasedReturnItem(literal(2), "b"))),
+          differentReturnOrderAllowed = true
+        ))
+    }
   }
 
   // invalid Cypher accepted by parser
   test("RETURN 1 AS a UNION ALL RETURN 2 AS b") {
-    parsesTo[Statement](
-      union(
-        singleQuery(return_(aliasedReturnItem(literal(1), "a"))),
-        singleQuery(return_(aliasedReturnItem(literal(2), "b")))
-      ).all
-    )
+    parsesIn[Statement] {
+      case Cypher6 => _.toAst(union(
+          singleQuery(return_(aliasedReturnItem(literal(1), "a"))),
+          singleQuery(return_(aliasedReturnItem(literal(2), "b")))
+        ).all)
+      case _ => _.toAst(union(
+          singleQuery(return_(aliasedReturnItem(literal(1), "a"))),
+          singleQuery(return_(aliasedReturnItem(literal(2), "b"))),
+          differentReturnOrderAllowed = true
+        ).all)
+    }
   }
 
   // invalid Cypher accepted by parser
   test("RETURN 1 AS a UNION FINISH") {
-    parsesTo[Statement](
-      union(
-        singleQuery(return_(aliasedReturnItem(literal(1), "a"))),
-        singleQuery(finish())
-      )
-    )
+    parsesIn[Statement] {
+      case Cypher6 => _.toAst(union(
+          singleQuery(return_(aliasedReturnItem(literal(1), "a"))),
+          singleQuery(finish())
+        ))
+      case _ => _.toAst(union(
+          singleQuery(return_(aliasedReturnItem(literal(1), "a"))),
+          singleQuery(finish()),
+          differentReturnOrderAllowed = true
+        ))
+    }
   }
 
   // invalid Cypher accepted by parser
   test("RETURN 1 AS a UNION DISTINCT FINISH") {
-    parsesTo[Statement](
-      union(
-        singleQuery(return_(aliasedReturnItem(literal(1), "a"))),
-        singleQuery(finish())
-      )
-    )
+    parsesIn[Statement] {
+      case Cypher6 => _.toAst(union(
+          singleQuery(return_(aliasedReturnItem(literal(1), "a"))),
+          singleQuery(finish())
+        ))
+      case _ => _.toAst(union(
+          singleQuery(return_(aliasedReturnItem(literal(1), "a"))),
+          singleQuery(finish()),
+          differentReturnOrderAllowed = true
+        ))
+    }
   }
 
   // invalid Cypher accepted by parser
   test("RETURN 1 AS a UNION ALL FINISH") {
-    parsesTo[Statement](
-      union(
-        singleQuery(return_(aliasedReturnItem(literal(1), "a"))),
-        singleQuery(finish())
-      ).all
-    )
+    parsesIn[Statement] {
+      case Cypher6 => _.toAst(union(
+          singleQuery(return_(aliasedReturnItem(literal(1), "a"))),
+          singleQuery(finish())
+        ).all)
+      case _ => _.toAst(union(
+          singleQuery(return_(aliasedReturnItem(literal(1), "a"))),
+          singleQuery(finish()),
+          differentReturnOrderAllowed = true
+        ).all)
+    }
   }
 
   test("FINISH UNION FINISH") {
-    parsesTo[Statement](
-      union(
-        singleQuery(finish()),
-        singleQuery(finish())
-      )
-    )
+    parsesIn[Statement] {
+      case Cypher6 => _.toAst(union(
+          singleQuery(finish()),
+          singleQuery(finish())
+        ))
+      case _ => _.toAst(union(
+          singleQuery(finish()),
+          singleQuery(finish()),
+          differentReturnOrderAllowed = true
+        ))
+    }
   }
 
   test("FINISH UNION DISTINCT FINISH") {
-    parsesTo[Statement](
-      union(
-        singleQuery(finish()),
-        singleQuery(finish())
-      )
-    )
+    parsesIn[Statement] {
+      case Cypher6 => _.toAst(union(
+          singleQuery(finish()),
+          singleQuery(finish())
+        ))
+      case _ => _.toAst(union(
+          singleQuery(finish()),
+          singleQuery(finish()),
+          differentReturnOrderAllowed = true
+        ))
+    }
   }
 
   test("FINISH UNION ALL FINISH") {
-    parsesTo[Statement](
-      union(
-        singleQuery(finish()),
-        singleQuery(finish())
-      ).all
-    )
+    parsesIn[Statement] {
+      case Cypher6 => _.toAst(union(
+          singleQuery(finish()),
+          singleQuery(finish())
+        ).all)
+      case _ => _.toAst(union(
+          singleQuery(finish()),
+          singleQuery(finish()),
+          differentReturnOrderAllowed = true
+        ).all)
+    }
   }
 
   // invalid Cypher accepted by parser
   test("FINISH UNION RETURN 2 AS a") {
-    parsesTo[Statement](
-      union(
-        singleQuery(finish()),
-        singleQuery(return_(aliasedReturnItem(literal(2), "a")))
-      )
-    )
+    parsesIn[Statement] {
+      case Cypher6 => _.toAst(union(
+          singleQuery(finish()),
+          singleQuery(return_(aliasedReturnItem(literal(2), "a")))
+        ))
+      case _ => _.toAst(union(
+          singleQuery(finish()),
+          singleQuery(return_(aliasedReturnItem(literal(2), "a"))),
+          differentReturnOrderAllowed = true
+        ))
+    }
   }
 
   // invalid Cypher accepted by parser
   test("FINISH UNION DISTINCT RETURN 2 AS a") {
-    parsesTo[Statement](
-      union(
-        singleQuery(finish()),
-        singleQuery(return_(aliasedReturnItem(literal(2), "a")))
-      )
-    )
+    parsesIn[Statement] {
+      case Cypher6 => _.toAst(union(
+          singleQuery(finish()),
+          singleQuery(return_(aliasedReturnItem(literal(2), "a")))
+        ))
+      case _ => _.toAst(union(
+          singleQuery(finish()),
+          singleQuery(return_(aliasedReturnItem(literal(2), "a"))),
+          differentReturnOrderAllowed = true
+        ))
+    }
   }
 
   // invalid Cypher accepted by parser
   test("FINISH UNION ALL RETURN 2 AS a") {
-    parsesTo[Statement](
-      union(
-        singleQuery(finish()),
-        singleQuery(return_(aliasedReturnItem(literal(2), "a")))
-      ).all
-    )
+    parsesIn[Statement] {
+      case Cypher6 => _.toAst(union(
+          singleQuery(finish()),
+          singleQuery(return_(aliasedReturnItem(literal(2), "a")))
+        ).all)
+      case _ => _.toAst(union(
+          singleQuery(finish()),
+          singleQuery(return_(aliasedReturnItem(literal(2), "a"))),
+          differentReturnOrderAllowed = true
+        ).all)
+    }
   }
 
   test("RETURN 1 AS a UNION UNION RETURN 2 AS a") {
@@ -179,114 +255,231 @@ class UnionParserTest extends AstParsingTestBase {
   }
 
   test("RETURN 1 AS a UNION RETURN 2 AS a UNION RETURN 3 AS a") {
-    parsesTo[Statement](
-      union(
-        union(
-          singleQuery(return_(aliasedReturnItem(literal(1), "a"))),
-          singleQuery(return_(aliasedReturnItem(literal(2), "a")))
-        ),
-        singleQuery(return_(aliasedReturnItem(literal(3), "a")))
-      )
-    )
+    parsesIn[Statement] {
+      case Cypher6 => _.toAst(
+          union(
+            union(
+              singleQuery(return_(aliasedReturnItem(literal(1), "a"))),
+              singleQuery(return_(aliasedReturnItem(literal(2), "a")))
+            ),
+            singleQuery(return_(aliasedReturnItem(literal(3), "a")))
+          )
+        )
+      case _ => _.toAst(
+          union(
+            union(
+              singleQuery(return_(aliasedReturnItem(literal(1), "a"))),
+              singleQuery(return_(aliasedReturnItem(literal(2), "a"))),
+              differentReturnOrderAllowed = true
+            ),
+            singleQuery(return_(aliasedReturnItem(literal(3), "a"))),
+            differentReturnOrderAllowed = true
+          )
+        )
+    }
   }
 
   test("RETURN 1 AS a UNION DISTINCT RETURN 2 AS a UNION RETURN 3 AS a") {
-    parsesTo[Statement](
-      union(
-        union(
-          singleQuery(return_(aliasedReturnItem(literal(1), "a"))),
-          singleQuery(return_(aliasedReturnItem(literal(2), "a")))
-        ),
-        singleQuery(return_(aliasedReturnItem(literal(3), "a")))
-      )
-    )
+    parsesIn[Statement] {
+      case Cypher6 => _.toAst(
+          union(
+            union(
+              singleQuery(return_(aliasedReturnItem(literal(1), "a"))),
+              singleQuery(return_(aliasedReturnItem(literal(2), "a")))
+            ),
+            singleQuery(return_(aliasedReturnItem(literal(3), "a")))
+          )
+        )
+      case _ => _.toAst(
+          union(
+            union(
+              singleQuery(return_(aliasedReturnItem(literal(1), "a"))),
+              singleQuery(return_(aliasedReturnItem(literal(2), "a"))),
+              differentReturnOrderAllowed = true
+            ),
+            singleQuery(return_(aliasedReturnItem(literal(3), "a"))),
+            differentReturnOrderAllowed = true
+          )
+        )
+    }
   }
 
   test("RETURN 1 AS a UNION RETURN 2 AS a UNION DISTINCT RETURN 3 AS a") {
-    parsesTo[Statement](
-      union(
-        union(
-          singleQuery(return_(aliasedReturnItem(literal(1), "a"))),
-          singleQuery(return_(aliasedReturnItem(literal(2), "a")))
-        ),
-        singleQuery(return_(aliasedReturnItem(literal(3), "a")))
-      )
-    )
+    parsesIn[Statement] {
+      case Cypher6 => _.toAst(
+          union(
+            union(
+              singleQuery(return_(aliasedReturnItem(literal(1), "a"))),
+              singleQuery(return_(aliasedReturnItem(literal(2), "a")))
+            ),
+            singleQuery(return_(aliasedReturnItem(literal(3), "a")))
+          )
+        )
+      case _ => _.toAst(
+          union(
+            union(
+              singleQuery(return_(aliasedReturnItem(literal(1), "a"))),
+              singleQuery(return_(aliasedReturnItem(literal(2), "a"))),
+              differentReturnOrderAllowed = true
+            ),
+            singleQuery(return_(aliasedReturnItem(literal(3), "a"))),
+            differentReturnOrderAllowed = true
+          )
+        )
+    }
   }
 
   test("RETURN 1 AS a UNION DISTINCT RETURN 2 AS a UNION DISTINCT RETURN 3 AS a") {
-    parsesTo[Statement](
-      union(
-        union(
-          singleQuery(return_(aliasedReturnItem(literal(1), "a"))),
-          singleQuery(return_(aliasedReturnItem(literal(2), "a")))
-        ),
-        singleQuery(return_(aliasedReturnItem(literal(3), "a")))
-      )
-    )
+    parsesIn[Statement] {
+      case Cypher6 => _.toAst(
+          union(
+            union(
+              singleQuery(return_(aliasedReturnItem(literal(1), "a"))),
+              singleQuery(return_(aliasedReturnItem(literal(2), "a")))
+            ),
+            singleQuery(return_(aliasedReturnItem(literal(3), "a")))
+          )
+        )
+      case _ => _.toAst(
+          union(
+            union(
+              singleQuery(return_(aliasedReturnItem(literal(1), "a"))),
+              singleQuery(return_(aliasedReturnItem(literal(2), "a"))),
+              differentReturnOrderAllowed = true
+            ),
+            singleQuery(return_(aliasedReturnItem(literal(3), "a"))),
+            differentReturnOrderAllowed = true
+          )
+        )
+    }
   }
 
   test("RETURN 1 AS a UNION ALL RETURN 2 AS a UNION ALL RETURN 3 AS a") {
-    parsesTo[Statement](
-      union(
-        union(
-          singleQuery(return_(aliasedReturnItem(literal(1), "a"))),
-          singleQuery(return_(aliasedReturnItem(literal(2), "a")))
-        ).all,
-        singleQuery(return_(aliasedReturnItem(literal(3), "a")))
-      ).all
-    )
+    parsesIn[Statement] {
+      case Cypher6 => _.toAst(
+          union(
+            union(
+              singleQuery(return_(aliasedReturnItem(literal(1), "a"))),
+              singleQuery(return_(aliasedReturnItem(literal(2), "a")))
+            ).all,
+            singleQuery(return_(aliasedReturnItem(literal(3), "a")))
+          ).all
+        )
+      case _ => _.toAst(
+          union(
+            union(
+              singleQuery(return_(aliasedReturnItem(literal(1), "a"))),
+              singleQuery(return_(aliasedReturnItem(literal(2), "a"))),
+              differentReturnOrderAllowed = true
+            ).all,
+            singleQuery(return_(aliasedReturnItem(literal(3), "a"))),
+            differentReturnOrderAllowed = true
+          ).all
+        )
+    }
   }
 
   // invalid Cypher accepted by parser
   test("RETURN 1 AS a UNION RETURN 2 AS a UNION ALL RETURN 3 AS a") {
-    parsesTo[Statement](
-      union(
-        union(
-          singleQuery(return_(aliasedReturnItem(literal(1), "a"))),
-          singleQuery(return_(aliasedReturnItem(literal(2), "a")))
-        ),
-        singleQuery(return_(aliasedReturnItem(literal(3), "a")))
-      ).all
-    )
+    parsesIn[Statement] {
+      case Cypher6 => _.toAst(
+          union(
+            union(
+              singleQuery(return_(aliasedReturnItem(literal(1), "a"))),
+              singleQuery(return_(aliasedReturnItem(literal(2), "a")))
+            ),
+            singleQuery(return_(aliasedReturnItem(literal(3), "a")))
+          ).all
+        )
+      case _ => _.toAst(
+          union(
+            union(
+              singleQuery(return_(aliasedReturnItem(literal(1), "a"))),
+              singleQuery(return_(aliasedReturnItem(literal(2), "a"))),
+              differentReturnOrderAllowed = true
+            ),
+            singleQuery(return_(aliasedReturnItem(literal(3), "a"))),
+            differentReturnOrderAllowed = true
+          ).all
+        )
+    }
   }
 
   // invalid Cypher accepted by parser
   test("RETURN 1 AS a UNION DISTINCT RETURN 2 AS a UNION ALL RETURN 3 AS a") {
-    parsesTo[Statement](
-      union(
-        union(
-          singleQuery(return_(aliasedReturnItem(literal(1), "a"))),
-          singleQuery(return_(aliasedReturnItem(literal(2), "a")))
-        ),
-        singleQuery(return_(aliasedReturnItem(literal(3), "a")))
-      ).all
-    )
+    parsesIn[Statement] {
+      case Cypher6 => _.toAst(
+          union(
+            union(
+              singleQuery(return_(aliasedReturnItem(literal(1), "a"))),
+              singleQuery(return_(aliasedReturnItem(literal(2), "a")))
+            ),
+            singleQuery(return_(aliasedReturnItem(literal(3), "a")))
+          ).all
+        )
+      case _ => _.toAst(
+          union(
+            union(
+              singleQuery(return_(aliasedReturnItem(literal(1), "a"))),
+              singleQuery(return_(aliasedReturnItem(literal(2), "a"))),
+              differentReturnOrderAllowed = true
+            ),
+            singleQuery(return_(aliasedReturnItem(literal(3), "a"))),
+            differentReturnOrderAllowed = true
+          ).all
+        )
+    }
   }
 
   // invalid Cypher accepted by parser
   test("RETURN 1 AS a UNION ALL RETURN 2 AS a UNION RETURN 3 AS a") {
-    parsesTo[Statement](
-      union(
-        union(
-          singleQuery(return_(aliasedReturnItem(literal(1), "a"))),
-          singleQuery(return_(aliasedReturnItem(literal(2), "a")))
-        ).all,
-        singleQuery(return_(aliasedReturnItem(literal(3), "a")))
-      )
-    )
+    parsesIn[Statement] {
+      case Cypher6 => _.toAst(
+          union(
+            union(
+              singleQuery(return_(aliasedReturnItem(literal(1), "a"))),
+              singleQuery(return_(aliasedReturnItem(literal(2), "a")))
+            ).all,
+            singleQuery(return_(aliasedReturnItem(literal(3), "a")))
+          )
+        )
+      case _ => _.toAst(
+          union(
+            union(
+              singleQuery(return_(aliasedReturnItem(literal(1), "a"))),
+              singleQuery(return_(aliasedReturnItem(literal(2), "a"))),
+              differentReturnOrderAllowed = true
+            ).all,
+            singleQuery(return_(aliasedReturnItem(literal(3), "a"))),
+            differentReturnOrderAllowed = true
+          )
+        )
+    }
   }
 
   // invalid Cypher accepted by parser
   test("RETURN 1 AS a UNION ALL RETURN 2 AS a UNION DISTINCT RETURN 3 AS a") {
-    parsesTo[Statement](
-      union(
-        union(
-          singleQuery(return_(aliasedReturnItem(literal(1), "a"))),
-          singleQuery(return_(aliasedReturnItem(literal(2), "a")))
-        ).all,
-        singleQuery(return_(aliasedReturnItem(literal(3), "a")))
-      )
-    )
+    parsesIn[Statement] {
+      case Cypher6 => _.toAst(
+          union(
+            union(
+              singleQuery(return_(aliasedReturnItem(literal(1), "a"))),
+              singleQuery(return_(aliasedReturnItem(literal(2), "a")))
+            ).all,
+            singleQuery(return_(aliasedReturnItem(literal(3), "a")))
+          )
+        )
+      case _ => _.toAst(
+          union(
+            union(
+              singleQuery(return_(aliasedReturnItem(literal(1), "a"))),
+              singleQuery(return_(aliasedReturnItem(literal(2), "a"))),
+              differentReturnOrderAllowed = true
+            ).all,
+            singleQuery(return_(aliasedReturnItem(literal(3), "a"))),
+            differentReturnOrderAllowed = true
+          )
+        )
+    }
   }
 }

@@ -20,6 +20,8 @@ import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.StatementHelper.RichStatement
+import org.neo4j.cypher.internal.ast.UnionAll
+import org.neo4j.cypher.internal.ast.UnionDistinct
 import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.ast.prettifier.Prettifier
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
@@ -32,7 +34,9 @@ import org.neo4j.cypher.internal.rewriting.rewriters.normalizeWithAndReturnClaus
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
+import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
+import org.neo4j.cypher.internal.util.bottomUp
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.kernel.database.DatabaseReference
 import org.neo4j.kernel.database.NormalizedDatabaseName
@@ -141,15 +145,26 @@ trait RewritePhaseTest {
   private def parseAndRewrite(query: String, features: SemanticFeature*): Statement = {
     // Quick and dirty hack to try to make sure we have sufficient coverage of all cypher versions.
     // Feel free to improve ¯\_(ツ)_/¯.
-    val defaultResult = parseAndRewrite(CypherVersion.Default, query, features: _*)
+    val defaultResult = rewriteOtherASTDifferences(parseAndRewrite(CypherVersion.Default, query, features: _*))
     CypherVersion.values().foreach { version =>
       if (version != CypherVersion.Default) {
         withClue(s"Parser $version") {
-          parseAndRewrite(version, query, features: _*) shouldBe defaultResult
+          rewriteOtherASTDifferences(parseAndRewrite(version, query, features: _*)) shouldBe defaultResult
         }
       }
     }
     defaultResult
+  }
+
+  /**
+   * There are some AST changes done at the parser level for semantic analysis that won't affect the plan.
+   * This rewriter can be expanded to update those parts.
+   */
+  def rewriteOtherASTDifferences(statement: Statement): Statement = {
+    statement.endoRewrite(bottomUp(Rewriter.lift {
+      case u: UnionDistinct => u.copy(differentReturnOrderAllowed = true)(u.position)
+      case u: UnionAll      => u.copy(differentReturnOrderAllowed = true)(u.position)
+    }))
   }
 
   def sessionDatabase: String = null

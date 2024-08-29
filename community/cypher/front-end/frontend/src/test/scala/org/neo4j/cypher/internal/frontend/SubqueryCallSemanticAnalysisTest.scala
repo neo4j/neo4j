@@ -16,6 +16,7 @@
  */
 package org.neo4j.cypher.internal.frontend
 
+import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.semantics.SemanticError
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
@@ -522,6 +523,14 @@ class SubqueryCallSemanticAnalysisTest
     "*, n, m"
   )
 
+  // Utilities for the following tests
+  private val returnStarOrderedNMCombinations = Seq(
+    "n",
+    "m",
+    "n, m",
+    "*"
+  )
+
   private def containedVariables(returnStarNMCombination: String): Set[String] = {
     val strings = returnStarNMCombination.split(',').map(_.trim)
     if (strings.contains("*")) {
@@ -582,7 +591,42 @@ class SubqueryCallSemanticAnalysisTest
            |RETURN $finalReturn
            |""".stripMargin
       withClue(query) {
-        val result = runSemanticAnalysis(query)
+        val result = runSemanticAnalysisWithCypherVersion(Seq(CypherVersion.Cypher5), query)
+        result.errors should be(empty)
+
+        val statement = result.state.statement().asInstanceOf[SingleQuery]
+        val semanticState = result.state.semantics()
+        val finalVariables = semanticState.scope(statement.clauses.last).get.symbolNames
+        finalVariables should equal(finalReturnVars)
+      }
+    }
+  }
+
+  test("RETURN * in UNION in a CALL should export variables - with matching return columns") {
+    for {
+      firstSubqueryReturn <- returnStarOrderedNMCombinations
+      firstSubqueryReturnVars = containedVariables(firstSubqueryReturn)
+      secondSubqueryReturn <- returnStarOrderedNMCombinations
+      secondSubqueryReturnVars = containedVariables(secondSubqueryReturn)
+      if secondSubqueryReturnVars == firstSubqueryReturnVars
+      finalReturn <- returnStarOrderedNMCombinations
+      finalReturnVars = containedVariables(finalReturn)
+      if finalReturnVars.subsetOf(firstSubqueryReturnVars)
+    } {
+      val query =
+        s"""
+           |CALL {
+           |  MATCH (n), (m)
+           |  RETURN $firstSubqueryReturn
+           |    UNION
+           |  MATCH (n), (m)
+           |  RETURN $secondSubqueryReturn
+           |}
+           |RETURN $finalReturn
+           |""".stripMargin
+
+      withClue(query) {
+        val result = runSemanticAnalysisWithCypherVersion(Seq(CypherVersion.Cypher6), query)
         result.errors should be(empty)
 
         val statement = result.state.statement().asInstanceOf[SingleQuery]
@@ -622,7 +666,47 @@ class SubqueryCallSemanticAnalysisTest
            |RETURN $finalReturn
            |""".stripMargin
       withClue(query) {
-        val result = runSemanticAnalysis(query)
+        val result = runSemanticAnalysisWithCypherVersion(Seq(CypherVersion.Cypher5), query)
+        result.errors should be(empty)
+
+        val statement = result.state.statement().asInstanceOf[SingleQuery]
+        val semanticState = result.state.semantics()
+        val finalVariables = semanticState.scope(statement.clauses.last).get.symbolNames
+        finalVariables should equal(finalReturnVars)
+      }
+    }
+  }
+
+  test("RETURN * in 3-way-UNION in a CALL should export variables - with matching return columns") {
+    for {
+      firstSubqueryReturn <- returnStarOrderedNMCombinations
+      firstSubqueryReturnVars = containedVariables(firstSubqueryReturn)
+      secondSubqueryReturn <- returnStarOrderedNMCombinations
+      secondSubqueryReturnVars = containedVariables(secondSubqueryReturn)
+      if secondSubqueryReturnVars == firstSubqueryReturnVars
+      thirdSubqueryReturn <- returnStarOrderedNMCombinations
+      thirdSubqueryReturnVars = containedVariables(thirdSubqueryReturn)
+      if thirdSubqueryReturnVars == firstSubqueryReturnVars
+      finalReturn <- returnStarOrderedNMCombinations
+      finalReturnVars = containedVariables(finalReturn)
+      if finalReturnVars.subsetOf(firstSubqueryReturnVars)
+    } {
+      val query =
+        s"""
+           |CALL {
+           |  MATCH (n), (m)
+           |  RETURN $firstSubqueryReturn
+           |    UNION
+           |  MATCH (n), (m)
+           |  RETURN $firstSubqueryReturn
+           |    UNION
+           |  MATCH (n), (m)
+           |  RETURN $thirdSubqueryReturn
+           |}
+           |RETURN $finalReturn
+           |""".stripMargin
+      withClue(query) {
+        val result = runSemanticAnalysisWithCypherVersion(Seq(CypherVersion.Cypher6), query)
         result.errors should be(empty)
 
         val statement = result.state.statement().asInstanceOf[SingleQuery]

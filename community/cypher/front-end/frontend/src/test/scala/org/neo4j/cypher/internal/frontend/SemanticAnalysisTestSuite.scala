@@ -128,6 +128,18 @@ trait SemanticAnalysisTestSuite extends CypherFunSuite {
   ): SemanticAnalysisResult =
     runSemanticAnalysisWithPipeline(pipelineWithSemanticFeatures(semanticFeatures: _*), query)
 
+  def runSemanticAnalysisWithCypherVersion(
+    cypherVersions: Seq[CypherVersion],
+    query: String
+  ): SemanticAnalysisResult =
+    runSemanticAnalysisWithPipelineAndState(
+      pipelineWithSemanticFeatures(),
+      () => initialStateWithQuery(query),
+      isComposite = false,
+      defaultDatabaseName,
+      cypherVersions
+    )
+
   def runSemanticAnalysis(query: String): SemanticAnalysisResult =
     runSemanticAnalysisWithSemanticFeatures(Seq.empty, query)
 

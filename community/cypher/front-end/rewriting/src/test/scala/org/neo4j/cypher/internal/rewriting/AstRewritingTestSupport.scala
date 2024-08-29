@@ -19,19 +19,23 @@ package org.neo4j.cypher.internal.rewriting
 import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.Statement
+import org.neo4j.cypher.internal.ast.UnionAll
+import org.neo4j.cypher.internal.ast.UnionDistinct
 import org.neo4j.cypher.internal.parser.AstParserFactory
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
+import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.bottomUp
 
 trait AstRewritingTestSupport extends AstConstructionTestSupport {
 
   def parse(query: String, exceptionFactory: CypherExceptionFactory): Statement = {
-    val defaultStatement = parse(CypherVersion.Default, query, exceptionFactory)
+    val defaultStatement = rewriteASTDifferences(parse(CypherVersion.Default, query, exceptionFactory))
 
     // Quick and dirty hack to try to make sure we have sufficient coverage of all cypher versions.
     // Feel free to improve ¯\_(ツ)_/¯.
     CypherVersion.values().foreach { version =>
       if (version != CypherVersion.Default) {
-        val otherStatement = parse(version, query, exceptionFactory)
+        val otherStatement = rewriteASTDifferences(parse(version, query, exceptionFactory))
         if (otherStatement != defaultStatement) {
           throw new AssertionError(
             s"""Query parse differently in $version
@@ -47,5 +51,16 @@ trait AstRewritingTestSupport extends AstConstructionTestSupport {
 
   def parse(version: CypherVersion, query: String, exceptionFactory: CypherExceptionFactory): Statement = {
     AstParserFactory(version)(query, exceptionFactory, None).singleStatement()
+  }
+
+  /**
+   * There are some AST changes done at the parser level for semantic analysis that won't affect the plan.
+   * This rewriter can be expanded to update those parts.
+   */
+  def rewriteASTDifferences(statement: Statement): Statement = {
+    statement.endoRewrite(bottomUp(Rewriter.lift {
+      case u: UnionDistinct => u.copy(differentReturnOrderAllowed = true)(u.position)
+      case u: UnionAll      => u.copy(differentReturnOrderAllowed = true)(u.position)
+    }))
   }
 }

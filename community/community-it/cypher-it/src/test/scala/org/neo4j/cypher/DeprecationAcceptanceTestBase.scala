@@ -400,7 +400,8 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
     assertNotification(
       queries,
       shouldContainNotification = true,
-      unionReturnOrder
+      unionReturnOrder,
+      cypherVersions = Set(CypherVersion.cypher5)
     )
   }
 

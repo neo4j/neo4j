@@ -16,8 +16,10 @@
  */
 package org.neo4j.cypher.internal.ast.factory.query
 
+import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.test.util.AstParsing.Cypher5JavaCc
+import org.neo4j.cypher.internal.ast.test.util.AstParsing.Cypher6
 import org.neo4j.cypher.internal.ast.test.util.AstParsingTestBase
 import org.neo4j.cypher.internal.ast.test.util.LegacyAstParsingTestSupport
 
@@ -74,11 +76,16 @@ class UseParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport 
   }
 
   test("USE foo UNION ALL RETURN 1") {
-    parsesTo[Statements] {
-      union(
-        singleQuery(use(List("foo"))),
-        singleQuery(return_(returnItem(literal(1), "1")))
-      ).all
+    parsesIn[Statement] {
+      case Cypher6 => _.toAst(union(
+          singleQuery(use(List("foo"))),
+          singleQuery(return_(returnItem(literal(1), "1")))
+        ).all)
+      case _ => _.toAst(union(
+          singleQuery(use(List("foo"))),
+          singleQuery(return_(returnItem(literal(1), "1"))),
+          differentReturnOrderAllowed = true
+        ).all)
     }
   }
 

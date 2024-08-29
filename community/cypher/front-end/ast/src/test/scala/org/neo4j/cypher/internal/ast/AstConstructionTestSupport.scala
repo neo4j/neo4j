@@ -847,7 +847,7 @@ trait AstConstructionTestSupport {
     SingleQuery(cs)(pos)
 
   def unionDistinct(qs: SingleQuery*): Query =
-    qs.reduceLeft[Query](UnionDistinct(_, _)(pos))
+    qs.reduceLeft[Query](UnionDistinct(_, _, differentReturnOrderAllowed = false)(pos))
 
   def importingWithSubqueryCall(cs: Clause*): ImportingWithSubqueryCall =
     ImportingWithSubqueryCall(SingleQuery(cs)(pos), None)(pos)
@@ -1094,7 +1094,8 @@ trait AstConstructionTestSupport {
     UseGraph(graphReference)(pos)
   }
 
-  def union(lhs: Query, rhs: SingleQuery): UnionDistinct = UnionDistinct(lhs, rhs)(pos)
+  def union(lhs: Query, rhs: SingleQuery, differentReturnOrderAllowed: Boolean = false): UnionDistinct =
+    UnionDistinct(lhs, rhs, differentReturnOrderAllowed)(pos)
 
   def yieldClause(
     returnItems: ReturnItems,
@@ -1219,7 +1220,7 @@ trait AstConstructionTestSupport {
   }
 
   implicit class UnionLiteralOps(u: UnionDistinct) {
-    def all: UnionAll = UnionAll(u.lhs, u.rhs)(pos)
+    def all: UnionAll = UnionAll(u.lhs, u.rhs, differentReturnOrderAllowed = u.differentReturnOrderAllowed)(pos)
   }
 
   implicit class NonPrefixedPatternPartOps(part: NonPrefixedPatternPart) {

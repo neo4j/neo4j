@@ -19,10 +19,11 @@ package org.neo4j.cypher.internal.ast.factory.expression
 import org.neo4j.cypher.internal.ast.AliasedReturnItem
 import org.neo4j.cypher.internal.ast.CollectExpression
 import org.neo4j.cypher.internal.ast.Match
+import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.UnaliasedReturnItem
-import org.neo4j.cypher.internal.ast.UnionDistinct
 import org.neo4j.cypher.internal.ast.test.util.AstParsing.Cypher5JavaCc
+import org.neo4j.cypher.internal.ast.test.util.AstParsing.Cypher6
 import org.neo4j.cypher.internal.ast.test.util.AstParsingTestBase
 import org.neo4j.cypher.internal.ast.test.util.LegacyAstParsingTestSupport
 import org.neo4j.cypher.internal.expressions.AllIterablePredicate
@@ -412,24 +413,44 @@ class CollectExpressionParserTest extends AstParsingTestBase with LegacyAstParsi
       |WHERE COLLECT { MATCH (m) RETURN m.prop AS a UNION MATCH (p) RETURN p.prop AS a } = [1, 2, 3]
       |RETURN m""".stripMargin
   ) {
-    val collectExpression: CollectExpression = CollectExpression(
-      UnionDistinct(
-        singleQuery(
-          match_(nodePat(name = Some("m"), namePos = InputPosition(33, 2, 24), position = InputPosition(32, 2, 23))),
-          return_(aliasedReturnItem(prop("m", "prop"), "a"))
-        ),
-        singleQuery(
-          match_(nodePat(name = Some("p"), namePos = InputPosition(68, 2, 59), position = InputPosition(67, 2, 58))),
-          return_(aliasedReturnItem(prop("p", "prop"), "a"))
-        )
-      )(InputPosition(55, 2, 46))
-    )(InputPosition(16, 2, 7), None, None)
+    val lhs = singleQuery(
+      match_(nodePat(name = Some("m"), namePos = InputPosition(33, 2, 24), position = InputPosition(32, 2, 23))),
+      return_(aliasedReturnItem(prop("m", "prop"), "a"))
+    )
+    val rhs = singleQuery(
+      match_(nodePat(name = Some("p"), namePos = InputPosition(68, 2, 59), position = InputPosition(67, 2, 58))),
+      return_(aliasedReturnItem(prop("p", "prop"), "a"))
+    )
 
-    parses[Statements].toAstPositioned {
-      singleQuery(
-        match_(nodePat(name = Some("m")), where = Some(where(eq(collectExpression, listOfInt(1, 2, 3))))),
-        return_(variableReturnItem("m"))
-      )
+    parsesIn[Statement] {
+      case Cypher6 => _.toAst(
+          singleQuery(
+            match_(
+              nodePat(name = Some("m")),
+              where = Some(where(eq(
+                CollectExpression(
+                  union(lhs, rhs)
+                )(InputPosition(16, 2, 7), None, None),
+                listOfInt(1, 2, 3)
+              )))
+            ),
+            return_(variableReturnItem("m"))
+          )
+        )
+      case _ => _.toAst(
+          singleQuery(
+            match_(
+              nodePat(name = Some("m")),
+              where = Some(where(eq(
+                CollectExpression(
+                  union(lhs, rhs, differentReturnOrderAllowed = true)
+                )(InputPosition(16, 2, 7), None, None),
+                listOfInt(1, 2, 3)
+              )))
+            ),
+            return_(variableReturnItem("m"))
+          )
+        )
     }
   }
 

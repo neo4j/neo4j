@@ -131,9 +131,9 @@ case class normalizeWithAndReturnClauses(
   private def rewriteTopLevelQuery(query: org.neo4j.cypher.internal.ast.Query): org.neo4j.cypher.internal.ast.Query =
     query match {
       case sq: SingleQuery => rewriteTopLevelSingleQuery(sq)
-      case union @ UnionAll(lhs, rhs) =>
+      case union @ UnionAll(lhs, rhs, _) =>
         union.copy(lhs = rewriteTopLevelQuery(lhs), rhs = rewriteTopLevelSingleQuery(rhs))(union.position)
-      case union @ UnionDistinct(lhs, rhs) =>
+      case union @ UnionDistinct(lhs, rhs, _) =>
         union.copy(lhs = rewriteTopLevelQuery(lhs), rhs = rewriteTopLevelSingleQuery(rhs))(union.position)
       case _: ProjectingUnion =>
         throw new IllegalStateException("Didn't expect ProjectingUnion, only SingleQuery, UnionAll, or UnionDistinct.")

@@ -664,6 +664,7 @@ object Union {
 sealed trait Union extends Query {
   def lhs: Query
   def rhs: SingleQuery
+  def differentReturnOrderAllowed: Boolean = true
 
   def unionMappings: List[UnionMapping]
 
@@ -695,6 +696,11 @@ sealed trait Union extends Query {
           }
       }
 
+    def unionReturnItemsInDifferentOrder(): Boolean = {
+      rhs.returnColumns.nonEmpty && lhs.returnColumns.nonEmpty &&
+      !rhs.returnColumns.map(v => v.name).equals(lhs.returnColumns.map(v => v.name))
+    }
+
     SemanticCheck.fromState(state => {
       checkUnionAggregation chain
         checkNestedQuery(lhs) chain
@@ -704,7 +710,13 @@ sealed trait Union extends Query {
         checkSingleQuery(rhs) chain
         checkColumnNamesAgree chain
         defineUnionVariables chain
-        SemanticState.recordCurrentScope(this)
+        SemanticState.recordCurrentScope(this) chain
+        when(!differentReturnOrderAllowed && unionReturnItemsInDifferentOrder()) {
+          SemanticError(
+            s"All subqueries in a UNION [ALL] must have the same ordering for the return columns.",
+            lhs.position
+          )
+        }
     })
   }
 
@@ -888,13 +900,17 @@ sealed trait ProjectingUnion extends Union {
   override def checkColumnNamesAgree: SemanticCheck = SemanticCheck.success
 }
 
-final case class UnionAll(lhs: Query, rhs: SingleQuery)(val position: InputPosition) extends UnmappedUnion {
+final case class UnionAll(lhs: Query, rhs: SingleQuery, override val differentReturnOrderAllowed: Boolean)(
+  val position: InputPosition
+) extends UnmappedUnion {
 
   override def mapEachSingleQuery(f: SingleQuery => SingleQuery): Query =
     copy(lhs.mapEachSingleQuery(f), f(rhs))(position)
 }
 
-final case class UnionDistinct(lhs: Query, rhs: SingleQuery)(val position: InputPosition) extends UnmappedUnion {
+final case class UnionDistinct(lhs: Query, rhs: SingleQuery, override val differentReturnOrderAllowed: Boolean)(
+  val position: InputPosition
+) extends UnmappedUnion {
 
   override def mapEachSingleQuery(f: SingleQuery => SingleQuery): Query =
     copy(lhs.mapEachSingleQuery(f), f(rhs))(position)

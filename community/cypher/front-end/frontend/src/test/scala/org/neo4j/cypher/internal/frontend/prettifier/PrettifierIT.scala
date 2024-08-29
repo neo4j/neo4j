@@ -18,12 +18,16 @@ package org.neo4j.cypher.internal.frontend.prettifier
 
 import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.ast.Statement
+import org.neo4j.cypher.internal.ast.UnionAll
+import org.neo4j.cypher.internal.ast.UnionDistinct
 import org.neo4j.cypher.internal.ast.factory.neo4j.JavaCCParser
 import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.ast.prettifier.Prettifier
 import org.neo4j.cypher.internal.parser.AstParserFactory
 import org.neo4j.cypher.internal.util.Neo4jCypherExceptionFactory
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
+import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.bottomUp
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.WindowsStringSafe
 
@@ -2881,11 +2885,11 @@ class PrettifierIT extends CypherFunSuite {
   tests foreach {
     case (inputString, expected) if parsesSameInAllCypherVersions(inputString) =>
       test(inputString) {
-        val statementJavaCc = JavaCCParser.parse(inputString, OpenCypherExceptionFactory(None))
+        val statementJavaCc = rewriteASTDifferences(JavaCCParser.parse(inputString, OpenCypherExceptionFactory(None)))
         prettifier.asString(statementJavaCc) should equal(expected)
 
         CypherVersion.values().foreach { version =>
-          val statement = parseAntlr(version, inputString)
+          val statement = rewriteASTDifferences(parseAntlr(version, inputString))
           statement shouldBe statementJavaCc
           prettifier.asString(statement) should equal(expected)
         }
@@ -2903,6 +2907,17 @@ class PrettifierIT extends CypherFunSuite {
           prettifier.asString(statement) should equal(expectedNotCypher5)
         }
       }
+  }
+
+  /**
+   * There are some AST changes done at the parser level for semantic analysis that won't affect the plan.
+   * This rewriter can be expanded to update those parts.
+   */
+  def rewriteASTDifferences(statement: Statement): Statement = {
+    statement.endoRewrite(bottomUp(Rewriter.lift {
+      case u: UnionDistinct => u.copy(differentReturnOrderAllowed = true)(u.position)
+      case u: UnionAll      => u.copy(differentReturnOrderAllowed = true)(u.position)
+    }))
   }
 
   private def parseAntlr(version: CypherVersion, cypher: String): Statement =

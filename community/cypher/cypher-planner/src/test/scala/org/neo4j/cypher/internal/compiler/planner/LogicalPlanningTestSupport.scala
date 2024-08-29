@@ -32,6 +32,8 @@ import org.neo4j.cypher.internal.ast.ASTAnnotationMap
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.Hint
 import org.neo4j.cypher.internal.ast.Statement
+import org.neo4j.cypher.internal.ast.UnionAll
+import org.neo4j.cypher.internal.ast.UnionDistinct
 import org.neo4j.cypher.internal.ast.semantics.ExpressionTypeInfo
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
@@ -120,6 +122,8 @@ import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.Neo4jCypherExceptionFactory
 import org.neo4j.cypher.internal.util.PropertyKeyId
 import org.neo4j.cypher.internal.util.RelTypeId
+import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.bottomUp
 import org.neo4j.cypher.internal.util.devNullLogger
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -157,7 +161,18 @@ trait LogicalPlanningTestSupport extends AstConstructionTestSupport with Logical
   }
 
   def parse(version: CypherVersion, query: String, exceptionFactory: CypherExceptionFactory): Statement =
-    AstParserFactory(version)(query, exceptionFactory, None).singleStatement()
+    rewriteASTDifferences(AstParserFactory(version)(query, exceptionFactory, None).singleStatement())
+
+  /**
+   * There are some AST changes done at the parser level for semantic analysis that won't affect the plan.
+   * This rewriter can be expanded to update those parts.
+   */
+  def rewriteASTDifferences(statement: Statement): Statement = {
+    statement.endoRewrite(bottomUp(Rewriter.lift {
+      case u: UnionDistinct => u.copy(differentReturnOrderAllowed = true)(u.position)
+      case u: UnionAll      => u.copy(differentReturnOrderAllowed = true)(u.position)
+    }))
+  }
 
   def newPatternRelationship(
     start: String,

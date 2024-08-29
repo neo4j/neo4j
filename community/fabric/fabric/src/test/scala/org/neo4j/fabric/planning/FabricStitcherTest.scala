@@ -212,7 +212,8 @@ class FabricStitcherTest
           .exec(
             union(
               singleQuery(importParams("y"), return_(literal(1).as("a"))),
-              singleQuery(importParams("z"), return_(literal(2).as("a")))
+              singleQuery(importParams("z"), return_(literal(2).as("a"))),
+              differentReturnOrderAllowed = true
             ),
             Seq("a")
           )
@@ -243,7 +244,8 @@ class FabricStitcherTest
                 Seq(varFor("y"), varFor("z")),
                 union(
                   singleQuery(with_(varFor("y").as("y")), return_(varFor("y").as("a"))),
-                  singleQuery(with_(varFor("z").as("z")), return_(varFor("z").as("a")))
+                  singleQuery(with_(varFor("z").as("z")), return_(varFor("z").as("a"))),
+                  differentReturnOrderAllowed = true
                 )
               ),
               return_(literal(4).as("c"))
