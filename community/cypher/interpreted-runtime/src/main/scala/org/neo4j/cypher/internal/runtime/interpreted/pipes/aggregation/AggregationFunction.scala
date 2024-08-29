@@ -31,8 +31,6 @@ import org.neo4j.values.AnyValue
  */
 abstract class AggregationFunction {
 
-  private var seenNoValue: Boolean = false
-
   /**
    * Adds this data to the aggregated total.
    */
@@ -44,12 +42,6 @@ abstract class AggregationFunction {
   def result(state: QueryState): AnyValue
 
   protected def onNoValue(state: QueryState): Unit = {
-    // seenNoValue is not needed for correctness but since we only
-    // need to warn once this will create less deduplication work
-    // for the query state
-    if (!seenNoValue) {
-      state.newRuntimeNotification(AggregationSkippedNull)
-      seenNoValue = true
-    }
+    state.newRuntimeNotification(AggregationSkippedNull)
   }
 }

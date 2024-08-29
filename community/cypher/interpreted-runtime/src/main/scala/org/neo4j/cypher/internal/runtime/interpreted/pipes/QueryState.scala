@@ -76,7 +76,9 @@ class QueryState(
   private var _rowFactory: CypherRowFactory = _
   private var _closed = false
 
-  private val _notifications = new util.HashSet[InternalNotification]()
+  // NOTE: used as a simple cache to avoid flooding the map with adding the same object
+  private[this] var lastCachedNotification: InternalNotification = _
+  private[this] val _notifications = new util.HashSet[InternalNotification]()
 
   def newRow(rowFactory: CypherRowFactory): CypherRow = {
     initialContext match {
@@ -86,7 +88,10 @@ class QueryState(
   }
 
   def newRuntimeNotification(notification: InternalNotification): Unit = {
-    _notifications.add(notification)
+    if (notification ne lastCachedNotification) {
+      _notifications.add(notification)
+      lastCachedNotification = notification
+    }
   }
 
   def notifications(): util.Set[InternalNotification] = _notifications
