@@ -27,14 +27,17 @@ import org.neo4j.cypher.internal.frontend.phases.PreparatoryRewriting
 import org.neo4j.cypher.internal.frontend.phases.SemanticAnalysis
 import org.neo4j.cypher.internal.frontend.phases.SemanticTypeCheck
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
+import org.neo4j.cypher.internal.util.ErrorMessageProvider
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.messages.MessageUtilProvider
+import org.scalatest.LoneElement
 
-class SemanticTypeCheckTest extends CypherFunSuite {
+class SemanticTypeCheckTest extends CypherFunSuite with LoneElement {
 
-  private val pipeline = Parse(true, CypherVersion.Default) andThen
+  private def pipeline(cypherVersion: CypherVersion) = Parse(useAntlr = true, cypherVersion) andThen
     PreparatoryRewriting andThen
     SemanticAnalysis(warn = false) andThen
-    SemanticTypeCheck
+    SemanticTypeCheck(cypherVersion)
 
   // PatternExpressionInNonExistenceCheck
   test("should fail if pattern expression is used wherever we don't expect a boolean value") {
@@ -172,57 +175,91 @@ class SemanticTypeCheckTest extends CypherFunSuite {
     }
   }
 
-  test("property references across patterns should not be allowed in INSERT ") {
-    val disallowed = Seq(
-      "INSERT (a {foo:1}), (b {foo:a.foo})",
-      "INSERT (b {prop: a.prop}), (a)",
-      "INSERT (a), (b)-[r: REL {prop: a.prop}]->(c)",
-      "INSERT (b)-[r: REL {prop: a.prop}]->(c), (a)",
-      "INSERT (b)-[a: REL]->(c), (d {prop:a.prop})",
-      "INSERT (a), (b {prop: EXISTS {(a)-->()}})",
-      "INSERT (b {prop: EXISTS {(a)-->()}}), (a)",
-      "INSERT (a), (a)-[:REL]->({prop:a.prop})",
-      "INSERT (a), (b {prop: labels(a)})",
-      "INSERT (a), (b {prop: true IN [x IN labels(a) | true]})"
-    )
+  private case class SelfReferenceAcrossPatternsTestQueries(disallowed: Seq[String], allowed: Seq[String])
 
-    val allowed = Seq(
-      "MATCH (n) INSERT (a {prop: n.prop})",
-      "MATCH (a) INSERT (a)-[:REL]->({prop:a.prop})",
-      "INSERT (a)-[:REL]->(a)",
-      "INSERT (a), (a)-[:REL]->(b)",
+  private object SelfReferenceAcrossPatternsTestQueries {
 
-      // These cases are shadowing and not references so should not be disallowed
-      "INSERT (n {prop: true IN [n IN [false] | true]})",
-      "INSERT (n {prop: true IN [n IN [false] | n]})",
-      "INSERT (a)-[r:R {prop: true IN [r IN [false] | true]}]->(b)",
-      "INSERT (a)-[r:R {prop: true IN [r IN [false] | r]}]->(b)",
-      "INSERT (a)-[r:R {prop: true IN [a IN [false] | a]}]->(b)",
-      "INSERT (a)-[r:R]->(b {prop: true IN [r IN [false] | r]})",
-      "INSERT (a)-[r:R]->(b {prop: true IN [a IN [false] | a]})",
-      "MATCH p=()-[]->() INSERT (a)-[r:R {prop: true IN [a in nodes(p) | a.prop = 1]}]->(b)"
-    )
+    def forClause(clause: String): SelfReferenceAcrossPatternsTestQueries = {
+      val disallowed = Seq(
+        s"$clause (a {foo:1}), (b {foo:a.foo})",
+        s"$clause (b {prop: a.prop}), (a)",
+        s"$clause (a), (b)-[r: REL {prop: a.prop}]->(c)",
+        s"$clause (b)-[r: REL {prop: a.prop}]->(c), (a)",
+        s"$clause (b)-[a: REL]->(c), (d {prop:a.prop})",
+        s"$clause (a), (b {prop: EXISTS {(a)-->()}})",
+        s"$clause (b {prop: EXISTS {(a)-->()}}), (a)",
+        s"$clause (a), (a)-[:REL]->({prop:a.prop})",
+        s"$clause (a), (b {prop: labels(a)})",
+        s"$clause (a), (b {prop: true IN [x IN labels(a) | true]})"
+      )
+
+      val allowed = Seq(
+        s"MATCH (n) $clause (a {prop: n.prop})",
+        s"MATCH (a) $clause (a)-[:REL]->({prop:a.prop})",
+        s"$clause (a)-[:REL]->(a)",
+        s"$clause (a), (a)-[:REL]->(b)",
+
+        // These cases are shadowing and not references so should not be disallowed
+        s"$clause (n {prop: true IN [n IN [false] | true]})",
+        s"$clause (n {prop: true IN [n IN [false] | n]})",
+        s"$clause (a)-[r:R {prop: true IN [r IN [false] | true]}]->(b)",
+        s"$clause (a)-[r:R {prop: true IN [r IN [false] | r]}]->(b)",
+        s"$clause (a)-[r:R {prop: true IN [a IN [false] | a]}]->(b)",
+        s"$clause (a)-[r:R]->(b {prop: true IN [r IN [false] | r]})",
+        s"$clause (a)-[r:R]->(b {prop: true IN [a IN [false] | a]})",
+        s"MATCH p=()-[]->() $clause (a)-[r:R {prop: true IN [a in nodes(p) | a.prop = 1]}]->(b)"
+      )
+
+      SelfReferenceAcrossPatternsTestQueries(disallowed, allowed)
+    }
+  }
+
+  private def runReferenceAcrossPatternsTests(clause: String, cypherVersion: CypherVersion): Unit = {
+    val queries = SelfReferenceAcrossPatternsTestQueries.forClause(clause)
 
     val errorMessage =
-      "Creating an entity (a) and referencing that entity in a property definition in the same INSERT is not allowed. Only reference variables created in earlier clauses."
+      s"Creating an entity (a) and referencing that entity in a property definition in the same $clause is not allowed. Only reference variables created in earlier clauses."
 
-    for (query <- disallowed) {
+    for (query <- queries.disallowed) {
       withClue(s"Failing query: $query") {
-        runPipeline(query).errors.map(e => e.msg) should equal(List(errorMessage))
+        runPipeline(query, cypherVersion).errors.loneElement.msg shouldEqual errorMessage
       }
     }
 
-    for (query <- allowed) {
+    for (query <- queries.allowed) {
       withClue(s"Failing query: $query") {
-        runPipeline(query).errors.size shouldBe 0
+        runPipeline(query, cypherVersion).errors should be(empty)
       }
     }
   }
 
-  private def runPipeline(query: String): ErrorCollectingContext = {
+  test("property references across patterns should not be allowed in INSERT ") {
+    runReferenceAcrossPatternsTests("INSERT", CypherVersion.Cypher5)
+    runReferenceAcrossPatternsTests("INSERT", CypherVersion.Cypher6)
+  }
+
+  test("property references across patterns should be allowed in CREATE, CYPHER 5") {
+    val queries = SelfReferenceAcrossPatternsTestQueries.forClause("CREATE")
+    for (query <- queries.disallowed ++ queries.allowed) {
+      withClue(s"Failing query: $query") {
+        runPipeline(query, CypherVersion.Cypher5).errors should be(empty)
+      }
+    }
+  }
+
+  test("property references across patterns should not be allowed in CREATE, CYPHER 6") {
+    runReferenceAcrossPatternsTests("CREATE", CypherVersion.Cypher6)
+  }
+
+  private def runPipeline(
+    query: String,
+    cypherVersion: CypherVersion = CypherVersion.Default
+  ): ErrorCollectingContext = {
     val startState = InitialState(query, NoPlannerName, new AnonymousVariableNameGenerator)
-    val context = new ErrorCollectingContext()
-    pipeline.transform(startState, context)
+    val context = new ErrorCollectingContext() {
+      override def errorMessageProvider: ErrorMessageProvider = MessageUtilProvider
+    }
+    pipeline(cypherVersion).transform(startState, context)
 
     context
   }

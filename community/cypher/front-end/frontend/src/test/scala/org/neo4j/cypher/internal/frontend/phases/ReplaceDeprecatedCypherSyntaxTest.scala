@@ -16,8 +16,9 @@
  */
 package org.neo4j.cypher.internal.frontend.phases
 
+import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
-import org.neo4j.cypher.internal.rewriting.Deprecations.semanticallyDeprecatedFeatures
+import org.neo4j.cypher.internal.rewriting.Deprecations.SemanticallyDeprecatedFeatures
 import org.neo4j.cypher.internal.rewriting.Deprecations.syntacticallyDeprecatedFeatures
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
@@ -27,7 +28,7 @@ class ReplaceDeprecatedCypherSyntaxTest extends CypherFunSuite with AstConstruct
     SyntaxDeprecationWarningsAndReplacements(syntacticallyDeprecatedFeatures) andThen
       PreparatoryRewriting andThen
       SemanticAnalysis(warn = true) andThen
-      SyntaxDeprecationWarningsAndReplacements(semanticallyDeprecatedFeatures)
+      SyntaxDeprecationWarningsAndReplacements(SemanticallyDeprecatedFeatures(CypherVersion.Default))
 
   override def astRewriteAndAnalyze: Boolean = false
 

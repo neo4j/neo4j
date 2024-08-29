@@ -16,6 +16,7 @@
  */
 package org.neo4j.cypher.internal.rewriting
 
+import org.neo4j.cypher.internal.CypherVersion
 import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.Create
 import org.neo4j.cypher.internal.ast.CreateDatabase
@@ -177,7 +178,7 @@ object Deprecations {
   }
 
   // add new semantically deprecated features here
-  case object semanticallyDeprecatedFeatures extends SemanticDeprecations {
+  case class SemanticallyDeprecatedFeatures(cypherVersion: CypherVersion) extends SemanticDeprecations {
 
     // Returns the set of variables that are defined in a `CREATE` or `MERGE` and then used in the same `CREATE` or `MERGE` for property read
     // E.g. `CREATE (a {prop: 5}), (b {prop: a.prop})
@@ -245,7 +246,7 @@ object Deprecations {
           Some(DeprecatedImportingWithInSubqueryCall(c.position, importing))
         ))
 
-      case Create(pattern) =>
+      case Create(pattern) if DeprecatedFeature.SelfReferenceAcrossPatternsInCreate.deprecatedIn(cypherVersion) =>
         /*
         Note: When this deprecation turns into a semantic error in 6.0,
         we can clean up some code.
@@ -292,4 +293,27 @@ trait SyntacticDeprecations extends Deprecations {
 
 trait SemanticDeprecations extends Deprecations {
   def find(semanticTable: SemanticTable): PartialFunction[Any, Deprecation]
+}
+
+sealed trait DeprecatedFeature {
+  def deprecatedIn(cypherVersion: CypherVersion): Boolean
+  def errorIn(cypherVersion: CypherVersion): Boolean
+}
+
+object DeprecatedFeature {
+
+  // add features here for easier code navigation
+
+  case object SelfReferenceAcrossPatternsInCreate extends DeprecatedIn5ErrorIn6
+
+  sealed trait DeprecatedIn5ErrorIn6 extends DeprecatedFeature {
+
+    override def deprecatedIn(cypherVersion: CypherVersion): Boolean = {
+      cypherVersion == CypherVersion.Cypher5
+    }
+
+    override def errorIn(cypherVersion: CypherVersion): Boolean = {
+      cypherVersion != CypherVersion.Cypher5
+    }
+  }
 }

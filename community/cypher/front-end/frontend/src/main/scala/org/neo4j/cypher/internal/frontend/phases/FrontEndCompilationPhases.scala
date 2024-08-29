@@ -64,8 +64,10 @@ trait FrontEndCompilationPhases {
       ) andThen
       SemanticAnalysis(warn = true, config.semanticFeatures: _*) andThen
       RemoveDuplicateUseClauses andThen
-      SemanticTypeCheck andThen
-      SyntaxDeprecationWarningsAndReplacements(Deprecations.semanticallyDeprecatedFeatures) andThen
+      SemanticTypeCheck(config.cypherVersion) andThen
+      SyntaxDeprecationWarningsAndReplacements(
+        Deprecations.SemanticallyDeprecatedFeatures(config.cypherVersion)
+      ) andThen
       IsolateSubqueriesInMutatingPatterns andThen
       SemanticAnalysis(warn = false, config.semanticFeatures: _*)
   }
