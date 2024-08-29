@@ -19,8 +19,10 @@
  */
 package org.neo4j.fabric.executor;
 
+import static org.neo4j.notifications.StandardGqlStatusObject.isStandardGqlStatusCode;
 import static scala.jdk.javaapi.CollectionConverters.asJava;
 
+import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Executor;
@@ -370,8 +372,14 @@ abstract class SingleQueryFragmentExecutor {
         if (summary != null) {
             this.statistics.add(summary.getQueryStatistics());
             this.notifications.addAll(summary.getNotifications());
-            this.gqlStatusObjects.addAll(summary.getGqlStatusObjects());
+            mergeGqlStatusObjects(summary.getGqlStatusObjects());
         }
+    }
+
+    private void mergeGqlStatusObjects(Collection<GqlStatusObject> newGqlStatusObjects) {
+        // The standard statuses of the inner queries should be overwritten by the one from the outer query
+        this.gqlStatusObjects.removeIf(gso -> isStandardGqlStatusCode(gso.gqlStatus()));
+        this.gqlStatusObjects.addAll(newGqlStatusObjects);
     }
 
     record PrepareResult(Catalog.Graph graph, Map<String, AnyValue> argumentValues, TransactionMode transactionMode) {}

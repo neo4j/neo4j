@@ -60,4 +60,11 @@ public class StandardGqlStatusObject extends CommonGqlStatusObjectImplementation
                 || gso == StandardGqlStatusObject.OMITTED_RESULT
                 || gso == StandardGqlStatusObject.UNKNOWN_NO_DATA;
     }
+
+    public static boolean isStandardGqlStatusCode(String gqlStatus) {
+        return gqlStatus.equals(StandardGqlStatusObject.NO_DATA.gqlStatus())
+                || gqlStatus.equals(StandardGqlStatusObject.SUCCESS.gqlStatus())
+                || gqlStatus.equals(StandardGqlStatusObject.OMITTED_RESULT.gqlStatus())
+                || gqlStatus.equals(StandardGqlStatusObject.UNKNOWN_NO_DATA.gqlStatus());
+    }
 }
