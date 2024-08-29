@@ -1577,15 +1577,15 @@ class NotificationCodeWithDescriptionTest {
 
         verifyNotification(
                 notification,
-                "null value eliminated in set function",
+                "null value eliminated in set function.",
                 SeverityLevel.WARNING,
                 "Neo.ClientNotification.Statement.AggregationSkippedNull",
-                "null value eliminated in set function",
+                "null value eliminated in set function.",
                 NotificationCategory.UNRECOGNIZED,
                 NotificationClassification.UNRECOGNIZED,
                 "01G11",
                 new DiagnosticRecord(warning, NotificationClassification.UNRECOGNIZED, -1, -1, -1, Map.of()).asMap(),
-                "warn: null value eliminated in set function.");
+                "warn: null value eliminated in set function");
     }
 
     private void verifyNotification(
@@ -1718,8 +1718,7 @@ class NotificationCodeWithDescriptionTest {
         byte[] notificationHash = DigestUtils.sha256(notificationBuilder.toString());
 
         byte[] expectedHash = new byte[] {
-            119, 7, -110, -103, -100, -68, 118, 61, -118, 71, -100, -18, 99, -49, 28, 104, -43, 79, 36, 23, -107, 12,
-            -96, 53, -119, 89, 111, -46, -107, -35, -37, 18
+                -10, -50, -13, -89, 96, 75, 0, -121, 96, 38, 88, 60, -57, 104, 92, -94, 115, 86, 30, -8, 85, 40, -5, 21, 106, -35, -38, -20, 49, 115, 26, -78
         };
 
         if (!Arrays.equals(notificationHash, expectedHash)) {

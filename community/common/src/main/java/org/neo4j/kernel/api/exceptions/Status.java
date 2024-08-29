@@ -367,7 +367,7 @@ public interface Status {
         // client notifications (runtime)
         AggregationSkippedNull(
                 ClientNotification,
-                "null value eliminated in set function",
+                "null value eliminated in set function.",
                 SeverityLevel.WARNING,
                 NotificationCategory.UNRECOGNIZED),
         ;
