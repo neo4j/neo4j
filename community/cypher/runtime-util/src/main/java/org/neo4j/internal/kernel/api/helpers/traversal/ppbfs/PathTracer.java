@@ -196,11 +196,21 @@ public final class PathTracer extends PrefetchingIterator<PathTracer.TracedPath>
             TwoWaySignpost signpost = stack.signpost(i);
             sourceLength += signpost.dataGraphLength();
             if (signpost instanceof TwoWaySignpost.RelSignpost rel) {
-                var bitset = stack.rels.get(rel.relId);
+                var bitset = stack.relationshipPresenceAtDepth.get(rel.relId);
                 assert bitset.get(i);
                 if (bitset.length() > i + 1) {
                     hooks.invalidTrail(stack::currentPath);
                     return false;
+                }
+            } else if (signpost instanceof TwoWaySignpost.MultiRelSignpost rels) {
+                for (int j = 0; j < rels.rels.length; j++) {
+                    long relId = rels.rels[j];
+                    var bitset = stack.relationshipPresenceAtDepth.get(relId);
+                    assert bitset.get(i);
+                    if (bitset.length() > i + 1) {
+                        hooks.invalidTrail(stack::currentPath);
+                        return false;
+                    }
                 }
             }
             if (!signpost.isVerifiedAtLength(sourceLength)) {

@@ -20,8 +20,10 @@
 package org.neo4j.internal.kernel.api.helpers.traversal.ppbfs;
 
 import org.neo4j.collection.trackable.HeapTrackingArrayList;
+import org.neo4j.collection.trackable.HeapTrackingLongArrayList;
 import org.neo4j.internal.kernel.api.KernelReadTracer;
 import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.hooks.PPBFSHooks;
+import org.neo4j.internal.kernel.api.helpers.traversal.productgraph.MultiRelationshipExpansion;
 import org.neo4j.internal.kernel.api.helpers.traversal.productgraph.ProductGraphTraversalCursor;
 import org.neo4j.internal.kernel.api.helpers.traversal.productgraph.State;
 import org.neo4j.memory.MemoryTracker;
@@ -31,6 +33,7 @@ final class BFSExpander implements AutoCloseable {
     private final PPBFSHooks hooks;
     private final GlobalState globalState;
     private final ProductGraphTraversalCursor pgCursor;
+    private final ProductGraphTraversalCursor.DataGraphRelationshipCursor relCursor;
     private final long intoTarget;
 
     // allocated once and reused per source nodeState
@@ -41,12 +44,14 @@ final class BFSExpander implements AutoCloseable {
             FoundNodes foundNodes,
             GlobalState globalState,
             ProductGraphTraversalCursor pgCursor,
+            ProductGraphTraversalCursor.DataGraphRelationshipCursor relCursor,
             long intoTarget,
             int nfaStateCount) {
         this.mt = globalState.mt;
         this.hooks = globalState.hooks;
         this.globalState = globalState;
         this.pgCursor = pgCursor;
+        this.relCursor = relCursor;
         this.intoTarget = intoTarget;
         this.statesList = HeapTrackingArrayList.newArrayList(nfaStateCount, mt);
         this.foundNodes = foundNodes;
@@ -61,7 +66,7 @@ final class BFSExpander implements AutoCloseable {
         var state = node.state();
 
         for (var nj : state.getNodeJuxtapositions(direction)) {
-            if (nj.state(direction).test(node.id())) {
+            if (nj.endState(direction).test(node.id())) {
                 switch (direction) {
                     case FORWARD -> {
                         var nextNode = encounter(node.id(), nj.targetState(), direction);
@@ -104,11 +109,129 @@ final class BFSExpander implements AutoCloseable {
         return nodeState;
     }
 
+    private void multiHopDFS(NodeState startNode, MultiRelationshipExpansion expansion, TraversalDirection direction) {
+        var rels = new long[expansion.length()];
+        var nodes = new long[expansion.length() - 1];
+
+        var nodeTree = new HeapTrackingLongArrayList[expansion.length() + 1];
+        nodeTree[0] = HeapTrackingLongArrayList.newLongArrayList(1, mt);
+        nodeTree[0].add(startNode.id());
+        var relTree = new HeapTrackingLongArrayList[expansion.length()];
+
+        int depth = 0;
+        while (depth != -1) {
+            assert depth <= expansion.length()
+                    : "Multi-hop depth first search should never exceed total expansion length";
+            if (nodeTree[depth] == null || nodeTree[depth].isEmpty()) {
+                if (depth > 0) {
+                    rels[direction.isBackward() ? (rels.length - depth) : depth - 1] = 0;
+
+                    if (depth <= nodes.length) {
+                        nodes[direction.isBackward() ? (nodes.length - depth) : depth - 1] = 0;
+                    }
+                }
+
+                depth--;
+            } else if (depth == expansion.length()) {
+                var endNode = nodeTree[depth].removeLast();
+                var rel = relTree[depth - 1].removeLast();
+                rels[direction.isBackward() ? (rels.length - depth) : depth - 1] = rel;
+
+                var nextNode = encounter(endNode, expansion.endState(direction), direction);
+
+                switch (direction) {
+                    case FORWARD -> {
+                        var signpost = TwoWaySignpost.fromMultiRel(
+                                mt,
+                                startNode,
+                                rels.clone(),
+                                nodes.clone(),
+                                expansion,
+                                nextNode,
+                                foundNodes.forwardDepth());
+                        if (globalState.searchMode == SearchMode.Unidirectional
+                                || !nextNode.hasSourceSignpost(signpost)) {
+                            nextNode.addSourceSignpost(signpost, foundNodes.forwardDepth());
+                        }
+                    }
+                    case BACKWARD -> {
+                        var signpost = TwoWaySignpost.fromMultiRel(
+                                mt, nextNode, rels.clone(), nodes.clone(), expansion, startNode);
+                        if (!nextNode.hasTargetSignpost(signpost)) {
+                            var addedSignpost = startNode.upsertSourceSignpost(signpost);
+                            addedSignpost.setMinTargetDistance(
+                                    foundNodes.backwardDepth(), PGPathPropagatingBFS.Phase.Expansion);
+                        }
+                    }
+                }
+            } else {
+                var node = nodeTree[depth].removeLast();
+                if (depth > 0) {
+                    var rel = relTree[depth - 1].removeLast();
+                    rels[direction.isBackward() ? (rels.length - depth) : depth - 1] = rel;
+
+                    if (depth <= nodes.length) {
+                        nodes[direction.isBackward() ? (nodes.length - depth) : depth - 1] = node;
+                    }
+                }
+
+                var relHop = expansion.rel(depth, direction);
+                var nodePredicate = expansion.nodePredicate(depth, direction);
+
+                var sel = relHop.getSelection(direction);
+                relCursor.setNode(node, sel);
+                boolean canExpand = false;
+                while (relCursor.nextRelationship()) {
+                    if (relHop.predicate().test(relCursor) && nodePredicate.test(relCursor.otherNode())) {
+                        // test for uniqueness
+                        boolean isUnique = true;
+                        switch (direction) {
+                            case FORWARD -> {
+                                for (int i = 0; i < depth && isUnique; i++) {
+                                    isUnique = rels[i] != relCursor.relationshipReference();
+                                }
+                            }
+                            case BACKWARD -> {
+                                for (int i = rels.length - 1; i > rels.length - depth - 1 && isUnique; i--) {
+                                    isUnique = rels[i] != relCursor.relationshipReference();
+                                }
+                            }
+                        }
+
+                        if (isUnique) {
+                            if (nodeTree[depth + 1] == null) {
+                                nodeTree[depth + 1] = HeapTrackingLongArrayList.newLongArrayList(mt);
+                            }
+                            nodeTree[depth + 1].add(relCursor.otherNode());
+
+                            if (relTree[depth] == null) {
+                                relTree[depth] = HeapTrackingLongArrayList.newLongArrayList(mt);
+                            }
+                            relTree[depth].add(relCursor.relationshipReference());
+                            canExpand = true;
+                        }
+                    }
+                }
+
+                if (canExpand) {
+                    depth++;
+                }
+            }
+        }
+    }
+
     public void expand() {
         foundNodes.openBuffer();
-
         var direction = foundNodes.getNextExpansionDirection();
         hooks.expand(direction, foundNodes);
+
+        // look in the priority queue to see if there are any var-length transitions to expand at this depth.
+        // if there are then run DFS on them and add the final node states to the collection
+        for (var mre = foundNodes.dequeueScheduled(direction);
+                mre != null;
+                mre = foundNodes.dequeueScheduled(direction)) {
+            multiHopDFS(mre.start(), mre.expansion(), direction);
+        }
 
         for (var pair : foundNodes.frontier(direction).keyValuesView()) {
             var dbNodeId = pair.getOne();
@@ -118,6 +241,14 @@ final class BFSExpander implements AutoCloseable {
             for (var nodeState : statesById) {
                 if (nodeState != null) {
                     statesList.add(nodeState.state());
+
+                    // iterate over any var-length transitions and add them to the appropriate priority queue at depth +
+                    // length
+                    for (var mre : nodeState.state().getMultiRelationshipExpansions(direction)) {
+                        // here we subtract 1 to account for the initial source/target nodes being discovered at depth 0
+                        var depth = foundNodes.depth(direction) - 1 + mre.length();
+                        foundNodes.enqueueScheduled(depth, nodeState, mre, direction);
+                    }
                 }
             }
 

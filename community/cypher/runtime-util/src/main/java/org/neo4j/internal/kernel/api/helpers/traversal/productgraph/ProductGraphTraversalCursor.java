@@ -113,7 +113,7 @@ public class ProductGraphTraversalCursor implements AutoCloseable {
         return graphCursor.direction().matches(expansionDir)
                 && (expansion.types() == null || ArrayUtils.contains(expansion.types(), graphCursor.type()))
                 && expansion.testRelationship(graphCursor)
-                && expansion.state(direction).test(graphCursor.otherNode());
+                && expansion.endState(direction).test(graphCursor.otherNode());
     }
 
     public void setNodeAndStates(long nodeId, List<State> states, TraversalDirection direction) {

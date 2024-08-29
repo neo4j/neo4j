@@ -21,6 +21,8 @@ package org.neo4j.internal.kernel.api.helpers.traversal.ppbfs;
 
 import org.neo4j.collection.trackable.HeapTrackingArrayList;
 import org.neo4j.collection.trackable.HeapTrackingLongObjectHashMap;
+import org.neo4j.cypher.internal.collection.DefaultComparatorSortTable;
+import org.neo4j.internal.kernel.api.helpers.traversal.productgraph.MultiRelationshipExpansion;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.util.Preconditions;
 
@@ -91,6 +93,9 @@ public final class FoundNodes implements AutoCloseable {
 
     private int backwardDepth = 0;
 
+    private final DefaultComparatorSortTable<ScheduledExpansion> forwardMultiHopQueue;
+    private final DefaultComparatorSortTable<ScheduledExpansion> backwardMultiHopQueue;
+
     public FoundNodes(MemoryTracker memoryTracker, SearchMode mode, int nfaStateCount) {
         this.memoryTracker = memoryTracker.getScopedMemoryTracker();
         this.mode = mode;
@@ -101,6 +106,10 @@ public final class FoundNodes implements AutoCloseable {
         }
         this.frontierBuffer = HeapTrackingLongObjectHashMap.createLongObjectHashMap(this.memoryTracker);
         this.nfaStateCount = nfaStateCount;
+        this.forwardMultiHopQueue =
+                new DefaultComparatorSortTable<>(ScheduledExpansion::compareTo, 1, this.memoryTracker);
+        this.backwardMultiHopQueue =
+                new DefaultComparatorSortTable<>(ScheduledExpansion::compareTo, 1, this.memoryTracker);
     }
 
     public void addToBuffer(NodeState nodeState) {
@@ -191,16 +200,33 @@ public final class FoundNodes implements AutoCloseable {
         };
     }
 
+    /** The decision of which direction we should expand next.
+     *
+     * Obviously if we are performing unidirectional search then it can only be FORWARD.
+     *
+     * Otherwise, look at the multi-hop queues - if either has expansions queued then we should continue expanding
+     * in that direction, else we would violate some assumptions of bidirectional search.
+     * To elaborate:
+     * Imagine that we have queued a two-hop expansion at depth 2, but then we switch to the other traversal direction
+     * and leave it unexpanded. If the frontiers eventually meet, they will be one depth 'late' because they really
+     * should have met halfway along the two-hop expansion. This would then wreak havoc on all the other assumptions
+     * on which the PPBFS algorithm/propagation logic relies.
+     * */
     public TraversalDirection getNextExpansionDirection() {
         if (mode == SearchMode.Unidirectional) {
             return TraversalDirection.FORWARD;
         }
+
+        if (!forwardMultiHopQueue.isEmpty()) return TraversalDirection.FORWARD;
+        if (!backwardMultiHopQueue.isEmpty()) return TraversalDirection.BACKWARD;
+
         if (forwardFrontier.isEmpty()) {
             return TraversalDirection.BACKWARD;
         }
         if (backwardFrontier.isEmpty()) {
             return TraversalDirection.FORWARD;
         }
+
         if (backwardFrontier.size() < forwardFrontier.size()) {
             return TraversalDirection.BACKWARD;
         }
@@ -211,10 +237,11 @@ public final class FoundNodes implements AutoCloseable {
         Preconditions.checkState(bufferState == BufferState.CLOSED, "Should not check frontier state when buffer open");
 
         if (mode == SearchMode.Unidirectional) {
-            return forwardFrontier.notEmpty();
+            return !forwardMultiHopQueue.isEmpty() || forwardFrontier.notEmpty();
         }
 
-        return forwardFrontier.notEmpty() && backwardFrontier.notEmpty();
+        return (!forwardMultiHopQueue.isEmpty() || forwardFrontier.notEmpty())
+                && (!backwardMultiHopQueue.isEmpty() || backwardFrontier.notEmpty());
     }
 
     @Override
@@ -235,8 +262,45 @@ public final class FoundNodes implements AutoCloseable {
         return forwardDepth + backwardDepth;
     }
 
+    public int depth(TraversalDirection direction) {
+        return switch (direction) {
+            case FORWARD -> forwardDepth;
+            case BACKWARD -> backwardDepth;
+        };
+    }
+
+    public ScheduledExpansion dequeueScheduled(TraversalDirection direction) {
+        var queue = queue(direction);
+        if (!queue.isEmpty() && queue.peek().depth <= depth(direction)) {
+            return queue(direction).poll();
+        }
+        return null;
+    }
+
+    public void enqueueScheduled(
+            int depth, NodeState start, MultiRelationshipExpansion expansion, TraversalDirection direction) {
+        assert queue(direction.inverse()).isEmpty() : "Cannot support expansions in both queues";
+        queue(direction).add(new ScheduledExpansion(depth, start, expansion));
+    }
+
+    private DefaultComparatorSortTable<ScheduledExpansion> queue(TraversalDirection direction) {
+        return switch (direction) {
+            case FORWARD -> forwardMultiHopQueue;
+            case BACKWARD -> backwardMultiHopQueue;
+        };
+    }
+
     private enum BufferState {
         OPEN,
         CLOSED
+    }
+
+    public record ScheduledExpansion(int depth, NodeState start, MultiRelationshipExpansion expansion)
+            implements Comparable<ScheduledExpansion> {
+
+        @Override
+        public int compareTo(ScheduledExpansion o) {
+            return Integer.compare(this.depth, o.depth);
+        }
     }
 }

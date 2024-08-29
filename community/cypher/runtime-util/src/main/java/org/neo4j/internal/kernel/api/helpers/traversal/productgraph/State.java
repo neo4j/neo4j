@@ -31,8 +31,10 @@ public final class State {
     private final LongPredicate predicate;
     private NodeJuxtaposition[] nodeJuxtapositions;
     private RelationshipExpansion[] relationshipExpansions;
+    private MultiRelationshipExpansion[] multiRelationshipExpansions;
     private NodeJuxtaposition[] reverseNodeJuxtapositions;
     private RelationshipExpansion[] reverseRelationshipExpansions;
+    private MultiRelationshipExpansion[] reverseMultiRelationshipExpansions;
 
     public State(int id, SlotOrName slotOrName, LongPredicate predicate, boolean isStartState, boolean isFinalState) {
         this.id = id;
@@ -42,8 +44,14 @@ public final class State {
         this.isFinalState = isFinalState;
         this.nodeJuxtapositions = new NodeJuxtaposition[0];
         this.relationshipExpansions = new RelationshipExpansion[0];
+        this.multiRelationshipExpansions = new MultiRelationshipExpansion[0];
         this.reverseNodeJuxtapositions = new NodeJuxtaposition[0];
         this.reverseRelationshipExpansions = new RelationshipExpansion[0];
+        this.reverseMultiRelationshipExpansions = new MultiRelationshipExpansion[0];
+    }
+
+    public LongPredicate predicate() {
+        return this.predicate;
     }
 
     public boolean test(long nodeId) {
@@ -58,12 +66,20 @@ public final class State {
         this.relationshipExpansions = relationshipExpansions;
     }
 
+    public void setMultiRelationshipExpansions(MultiRelationshipExpansion[] multiRelationshipExpansions) {
+        this.multiRelationshipExpansions = multiRelationshipExpansions;
+    }
+
     public void setReverseNodeJuxtapositions(NodeJuxtaposition[] reverseNodeJuxtapositions) {
         this.reverseNodeJuxtapositions = reverseNodeJuxtapositions;
     }
 
     public void setReverseRelationshipExpansions(RelationshipExpansion[] reverseRelationshipExpansions) {
         this.reverseRelationshipExpansions = reverseRelationshipExpansions;
+    }
+
+    public void setReverseMultiRelationshipExpansions(MultiRelationshipExpansion[] reverseMultiRelationshipExpansions) {
+        this.reverseMultiRelationshipExpansions = reverseMultiRelationshipExpansions;
     }
 
     public NodeJuxtaposition[] getNodeJuxtapositions() {
@@ -74,12 +90,20 @@ public final class State {
         return relationshipExpansions;
     }
 
+    public MultiRelationshipExpansion[] getMultiRelationshipExpansions() {
+        return multiRelationshipExpansions;
+    }
+
     public NodeJuxtaposition[] getReverseNodeJuxtapositions() {
         return reverseNodeJuxtapositions;
     }
 
     public RelationshipExpansion[] getReverseRelationshipExpansions() {
         return reverseRelationshipExpansions;
+    }
+
+    public MultiRelationshipExpansion[] getReverseMultiRelationshipExpansions() {
+        return reverseMultiRelationshipExpansions;
     }
 
     public NodeJuxtaposition[] getNodeJuxtapositions(TraversalDirection direction) {
@@ -93,6 +117,13 @@ public final class State {
         return switch (direction) {
             case FORWARD -> relationshipExpansions;
             case BACKWARD -> reverseRelationshipExpansions;
+        };
+    }
+
+    public MultiRelationshipExpansion[] getMultiRelationshipExpansions(TraversalDirection direction) {
+        return switch (direction) {
+            case FORWARD -> multiRelationshipExpansions;
+            case BACKWARD -> reverseMultiRelationshipExpansions;
         };
     }
 

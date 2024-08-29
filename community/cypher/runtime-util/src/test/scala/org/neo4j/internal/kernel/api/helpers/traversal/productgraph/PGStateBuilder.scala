@@ -24,6 +24,8 @@ import org.neo4j.function.Predicates
 import org.neo4j.graphdb.Direction
 import org.neo4j.internal.kernel.api.RelationshipDataReader
 import org.neo4j.internal.kernel.api.helpers.traversal.SlotOrName
+import org.neo4j.internal.kernel.api.helpers.traversal.productgraph.MultiRelationshipExpansion.Node
+import org.neo4j.internal.kernel.api.helpers.traversal.productgraph.MultiRelationshipExpansion.Rel
 import org.neo4j.internal.kernel.api.helpers.traversal.productgraph.PGStateBuilder.BuilderState
 
 import java.util.function.LongPredicate
@@ -54,12 +56,68 @@ object PGStateBuilder {
       target.state.setReverseRelationshipExpansions(extend(target.state.getReverseRelationshipExpansions, re))
     }
 
+    def addMultiRelationshipExpansion(
+      target: PGStateBuilder.BuilderState,
+      rels: Array[Rel],
+      nodes: Array[Node]
+    ): Unit = {
+      val mre = new MultiRelationshipExpansion(this.state, rels, nodes, target.state)
+      this.state.setMultiRelationshipExpansions(extend(this.state.getMultiRelationshipExpansions, mre))
+      target.state.setReverseMultiRelationshipExpansions(extend(
+        target.state.getReverseMultiRelationshipExpansions,
+        mre
+      ))
+    }
+
+    def addMultiRelationshipExpansion(target: BuilderState, builder: MultiRelationshipBuilder): Unit = {
+      addMultiRelationshipExpansion(target, builder.rels.toArray, builder.nodes.toArray)
+    }
+
     private def extend[T: ClassTag](existing: Array[T], item: T): Array[T] = {
       val arr = new Array[T](existing.length + 1)
+
       System.arraycopy(existing, 0, arr, 0, existing.length)
       arr(existing.length) = item
       arr
     }
+  }
+
+  case class MultiRelationshipBuilder(rels: Vector[Rel], nodes: Vector[Node]) {
+
+    def r(
+      name: String = null,
+      predicate: Predicate[RelationshipDataReader] = Predicates.alwaysTrue(),
+      types: Array[Int] = null,
+      direction: Direction = Direction.BOTH
+    ): MultiRelationshipBuilder =
+      copy(rels =
+        rels :+ new Rel(
+          predicate,
+          types,
+          direction,
+          if (name == null) SlotOrName.none else SlotOrName.VarName(name, isGroup = true)
+        )
+      )
+
+    def n(
+      name: String = null,
+      predicate: LongPredicate = Predicates.ALWAYS_TRUE_LONG
+    ): MultiRelationshipBuilder =
+      copy(nodes =
+        nodes :+ new Node(predicate, if (name == null) SlotOrName.none else SlotOrName.VarName(name, isGroup = true))
+      )
+  }
+
+  object MultiRelationshipBuilder {
+    def empty: MultiRelationshipBuilder = MultiRelationshipBuilder(Vector.empty, Vector.empty)
+
+    def r(
+      name: String = null,
+      predicate: Predicate[RelationshipDataReader] = Predicates.alwaysTrue(),
+      types: Array[Int] = null,
+      direction: Direction = Direction.BOTH
+    ): MultiRelationshipBuilder =
+      empty.r(name, predicate, types, direction)
   }
 }
 

@@ -113,7 +113,7 @@ public final class PGPathPropagatingBFS<Row> extends PrefetchingIterator<Row> im
         this.globalState =
                 new GlobalState(propagator, targets, searchMode, this.memoryTracker, hooks, initialCountForTargetNodes);
         var cursor = new ProductGraphTraversalCursor(graphCursor, this.memoryTracker);
-        this.bfsExpander = new BFSExpander(foundNodes, globalState, cursor, intoTarget, nfaStateCount);
+        this.bfsExpander = new BFSExpander(foundNodes, globalState, cursor, graphCursor, intoTarget, nfaStateCount);
 
         this.sourceNodeState = new NodeState(globalState, source, startState, intoTarget);
 

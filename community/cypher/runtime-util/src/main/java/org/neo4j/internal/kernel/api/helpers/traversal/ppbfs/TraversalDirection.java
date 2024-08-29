@@ -21,5 +21,16 @@ package org.neo4j.internal.kernel.api.helpers.traversal.ppbfs;
 
 public enum TraversalDirection {
     FORWARD,
-    BACKWARD
+    BACKWARD;
+
+    public boolean isBackward() {
+        return this == BACKWARD;
+    }
+
+    public TraversalDirection inverse() {
+        return switch (this) {
+            case FORWARD -> BACKWARD;
+            case BACKWARD -> FORWARD;
+        };
+    }
 }

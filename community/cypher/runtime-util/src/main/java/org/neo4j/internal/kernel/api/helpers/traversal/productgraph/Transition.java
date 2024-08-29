@@ -26,7 +26,7 @@ public interface Transition {
 
     State targetState();
 
-    default State state(TraversalDirection direction) {
+    default State endState(TraversalDirection direction) {
         return switch (direction) {
             case FORWARD -> targetState();
             case BACKWARD -> sourceState();

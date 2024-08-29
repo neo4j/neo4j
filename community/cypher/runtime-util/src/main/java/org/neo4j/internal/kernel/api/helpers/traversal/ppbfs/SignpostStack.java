@@ -24,6 +24,7 @@ import java.util.BitSet;
 import org.neo4j.collection.trackable.HeapTrackingArrayList;
 import org.neo4j.collection.trackable.HeapTrackingIntArrayList;
 import org.neo4j.collection.trackable.HeapTrackingLongObjectHashMap;
+import org.neo4j.common.EntityType;
 import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.hooks.PPBFSHooks;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.util.Preconditions;
@@ -42,6 +43,8 @@ public class SignpostStack {
      */
     private final HeapTrackingArrayList<TwoWaySignpost> activeSignposts;
 
+    private int entityCount = 0;
+
     /**
      * The index of each signpost in activeSignposts, relative to its NodeState parent
      */
@@ -55,12 +58,12 @@ public class SignpostStack {
     private int dgLength = -1;
     private int dgLengthToTarget = -1;
 
-    public final HeapTrackingLongObjectHashMap<BitSet> rels;
+    public final HeapTrackingLongObjectHashMap<BitSet> relationshipPresenceAtDepth;
 
     SignpostStack(MemoryTracker memoryTracker, PPBFSHooks hooks) {
         this.activeSignposts = HeapTrackingArrayList.newArrayList(memoryTracker);
         this.nodeSourceSignpostIndices = HeapTrackingIntArrayList.newIntArrayList(memoryTracker);
-        this.rels = HeapTrackingLongObjectHashMap.createLongObjectHashMap(memoryTracker);
+        this.relationshipPresenceAtDepth = HeapTrackingLongObjectHashMap.createLongObjectHashMap(memoryTracker);
         this.targetTrails = new BitSet();
         this.targetTrails.set(0);
         this.hooks = hooks;
@@ -78,8 +81,9 @@ public class SignpostStack {
     public void reset() {
         this.targetNode = null;
 
-        this.rels.clear();
+        this.relationshipPresenceAtDepth.clear();
         this.activeSignposts.clear();
+        this.entityCount = 0;
 
         this.nodeSourceSignpostIndices.clear();
         this.dgLength = -1;
@@ -151,7 +155,8 @@ public class SignpostStack {
      * Returns the nodes and relationships that form the current active path, top-down (from source to target).
      */
     public PathTracer.TracedPath currentPath() {
-        var entities = new PathTracer.PathEntity[activeSignposts.size() + dgLengthToTarget + 1];
+        // TODO: remove the traced path from production code and simply write straight to the row
+        var entities = new PathTracer.PathEntity[entityCount + 1];
 
         int index = entities.length - 1;
         entities[index--] = PathTracer.PathEntity.fromNode(targetNode);
@@ -159,6 +164,21 @@ public class SignpostStack {
         for (var signpost : activeSignposts) {
             if (signpost instanceof TwoWaySignpost.RelSignpost relSignpost) {
                 entities[index--] = PathTracer.PathEntity.fromRel(relSignpost);
+            } else if (signpost instanceof TwoWaySignpost.MultiRelSignpost multiRelSignpost) {
+                var lastRel = multiRelSignpost.rels[multiRelSignpost.rels.length - 1];
+                var lastSlot =
+                        multiRelSignpost.transition.rels()[multiRelSignpost.transition.rels().length - 1].slotOrName();
+                entities[index--] = new PathTracer.PathEntity(lastSlot, lastRel, EntityType.RELATIONSHIP);
+
+                for (int i = multiRelSignpost.nodes.length - 1; i >= 0; i--) {
+                    var node = multiRelSignpost.nodes[i];
+                    var nodeSlot = multiRelSignpost.transition.nodes()[i].slotOrName();
+                    entities[index--] = new PathTracer.PathEntity(nodeSlot, node, EntityType.NODE);
+
+                    var rel = multiRelSignpost.rels[i];
+                    var relSlot = multiRelSignpost.transition.rels()[i].slotOrName();
+                    entities[index--] = new PathTracer.PathEntity(relSlot, rel, EntityType.RELATIONSHIP);
+                }
             }
 
             entities[index--] = PathTracer.PathEntity.fromNode(signpost.prevNode);
@@ -186,6 +206,7 @@ public class SignpostStack {
         }
         var signpost = current.getSourceSignpost(nextIndex);
         activeSignposts.add(signpost);
+        entityCount += signpost.entityCount();
 
         targetTrails.set(size(), targetTrails.get(size() - 1) && distanceToDuplicate() == 0);
 
@@ -194,12 +215,23 @@ public class SignpostStack {
         nodeSourceSignpostIndices.add(-1);
 
         if (signpost instanceof TwoWaySignpost.RelSignpost rel) {
-            var depths = this.rels.get(rel.relId);
+            var depths = this.relationshipPresenceAtDepth.get(rel.relId);
             if (depths == null) {
                 depths = new BitSet();
-                this.rels.put(rel.relId, depths);
+                this.relationshipPresenceAtDepth.put(rel.relId, depths);
             }
             depths.set(size() - 1);
+        } else if (signpost instanceof TwoWaySignpost.MultiRelSignpost multiRel) {
+            for (long relId : multiRel.rels) {
+                var depths = this.relationshipPresenceAtDepth.get(relId);
+                if (depths == null) {
+                    depths = new BitSet();
+                    this.relationshipPresenceAtDepth.put(relId, depths);
+                }
+                // here we take advantage of the fact that multi rel signposts already have relationship uniqueness,
+                // so we can compress them into a single bit of the depth bitset per rel
+                depths.set(size() - 1);
+            }
         }
 
         hooks.activateSignpost(lengthFromSource(), signpost);
@@ -209,7 +241,7 @@ public class SignpostStack {
 
     public int distanceToDuplicate() {
         if (headSignpost() instanceof TwoWaySignpost.RelSignpost rel) {
-            var stack = rels.get(rel.relId);
+            var stack = relationshipPresenceAtDepth.get(rel.relId);
             if (stack == null) {
                 return 0;
             }
@@ -223,6 +255,32 @@ public class SignpostStack {
                 return 0;
             }
             return last - 1 - next;
+        } else if (headSignpost() instanceof TwoWaySignpost.MultiRelSignpost rels) {
+            var min = 0;
+            for (var relId : rels.rels) {
+                var stack = relationshipPresenceAtDepth.get(relId);
+                if (stack == null) {
+                    continue;
+                }
+                int last = stack.length();
+                if (last == 0) {
+                    continue;
+                }
+
+                int next = stack.previousSetBit(last - 2);
+                if (next == -1) {
+                    continue;
+                }
+
+                int value = last - 1 - next;
+
+                if (min == 0) {
+                    min = value;
+                } else {
+                    min = Math.min(min, value);
+                }
+            }
+            return min;
         }
         return 0;
     }
@@ -238,12 +296,21 @@ public class SignpostStack {
         }
 
         var signpost = activeSignposts.removeLast();
+        entityCount -= signpost.entityCount();
         dgLengthToTarget -= signpost.dataGraphLength();
         if (signpost instanceof TwoWaySignpost.RelSignpost rel) {
-            var depths = rels.get(rel.relId);
+            var depths = relationshipPresenceAtDepth.get(rel.relId);
             depths.clear(size());
             if (depths.isEmpty()) {
-                rels.remove(rel.relId);
+                relationshipPresenceAtDepth.remove(rel.relId);
+            }
+        } else if (signpost instanceof TwoWaySignpost.MultiRelSignpost relsSignpost) {
+            for (long relId : relsSignpost.rels) {
+                var depths = relationshipPresenceAtDepth.get(relId);
+                depths.clear(size());
+                if (depths.isEmpty()) {
+                    relationshipPresenceAtDepth.remove(relId);
+                }
             }
         }
 

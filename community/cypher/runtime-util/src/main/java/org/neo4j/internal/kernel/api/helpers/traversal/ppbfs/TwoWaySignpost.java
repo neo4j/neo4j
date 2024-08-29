@@ -19,8 +19,11 @@
  */
 package org.neo4j.internal.kernel.api.helpers.traversal.ppbfs;
 
+import java.util.Arrays;
 import java.util.Objects;
+import org.neo4j.graphdb.Direction;
 import org.neo4j.internal.kernel.api.helpers.traversal.SlotOrName;
+import org.neo4j.internal.kernel.api.helpers.traversal.productgraph.MultiRelationshipExpansion;
 import org.neo4j.internal.kernel.api.helpers.traversal.productgraph.RelationshipExpansion;
 import org.neo4j.memory.HeapEstimator;
 import org.neo4j.memory.Measurable;
@@ -46,15 +49,14 @@ public abstract sealed class TwoWaySignpost implements Measurable {
     // targetSignpost
     protected int minTargetDistance = NO_TARGET_DISTANCE;
 
-    protected TwoWaySignpost(MemoryTracker mt, NodeState prevNode, NodeState forwardNode) {
+    protected TwoWaySignpost(NodeState prevNode, NodeState forwardNode) {
         this.prevNode = prevNode;
         this.forwardNode = forwardNode;
         this.lengths = new Lengths();
-        mt.allocateHeap(estimatedHeapUsage());
     }
 
-    protected TwoWaySignpost(MemoryTracker mt, NodeState prevNode, NodeState forwardNode, int sourceLength) {
-        this(mt, prevNode, forwardNode);
+    protected TwoWaySignpost(NodeState prevNode, NodeState forwardNode, int sourceLength) {
+        this(prevNode, forwardNode);
         this.lengths.set(sourceLength, Lengths.Type.Source);
     }
 
@@ -65,7 +67,7 @@ public abstract sealed class TwoWaySignpost implements Measurable {
             NodeState forwardNode,
             RelationshipExpansion relationshipExpansion,
             int sourceLength) {
-        return new RelSignpost(mt, prevNode, relId, forwardNode, relationshipExpansion, sourceLength);
+        return allocate(mt, new RelSignpost(prevNode, relId, forwardNode, relationshipExpansion, sourceLength));
     }
 
     public static RelSignpost fromRelExpansion(
@@ -74,17 +76,46 @@ public abstract sealed class TwoWaySignpost implements Measurable {
             long relId,
             NodeState forwardNode,
             RelationshipExpansion relationshipExpansion) {
-        return new RelSignpost(mt, prevNode, relId, forwardNode, relationshipExpansion);
+        return allocate(mt, new RelSignpost(prevNode, relId, forwardNode, relationshipExpansion));
     }
 
     public static NodeSignpost fromNodeJuxtaposition(
             MemoryTracker mt, NodeState prevNode, NodeState forwardNode, int sourceLength) {
-        return new NodeSignpost(mt, prevNode, forwardNode, sourceLength);
+        return allocate(mt, new NodeSignpost(prevNode, forwardNode, sourceLength));
     }
 
     public static NodeSignpost fromNodeJuxtaposition(MemoryTracker mt, NodeState prevNode, NodeState forwardNode) {
-        return new NodeSignpost(mt, prevNode, forwardNode);
+        return allocate(mt, new NodeSignpost(prevNode, forwardNode));
     }
+
+    public static MultiRelSignpost fromMultiRel(
+            MemoryTracker mt,
+            NodeState prevNode,
+            long[] rels,
+            long[] nodes,
+            MultiRelationshipExpansion expansion,
+            NodeState forwardNode) {
+        return allocate(mt, new MultiRelSignpost(prevNode, rels, nodes, forwardNode, expansion));
+    }
+
+    public static MultiRelSignpost fromMultiRel(
+            MemoryTracker mt,
+            NodeState prevNode,
+            long[] rels,
+            long[] nodes,
+            MultiRelationshipExpansion expansion,
+            NodeState forwardNode,
+            int sourceLength) {
+        return allocate(mt, new MultiRelSignpost(prevNode, rels, nodes, forwardNode, expansion, sourceLength));
+    }
+
+    private static <T extends TwoWaySignpost> T allocate(MemoryTracker mt, T signpost) {
+        mt.allocateHeap(signpost.estimatedHeapUsage());
+        return signpost;
+    }
+
+    /** The number of entities this signpost represents for tracing: prevNode, plus any interior relationship/nodes */
+    public abstract int entityCount();
 
     public abstract int dataGraphLength();
 
@@ -150,26 +181,26 @@ public abstract sealed class TwoWaySignpost implements Measurable {
         public final RelationshipExpansion relationshipExpansion;
 
         private RelSignpost(
-                MemoryTracker mt,
                 NodeState prevNode,
                 long relId,
                 NodeState forwardNode,
                 RelationshipExpansion relationshipExpansion,
                 int lengthFromSource) {
-            super(mt, prevNode, forwardNode, lengthFromSource);
+            super(prevNode, forwardNode, lengthFromSource);
             this.relId = relId;
             this.relationshipExpansion = relationshipExpansion;
         }
 
         private RelSignpost(
-                MemoryTracker mt,
-                NodeState prevNode,
-                long relId,
-                NodeState forwardNode,
-                RelationshipExpansion relationshipExpansion) {
-            super(mt, prevNode, forwardNode);
+                NodeState prevNode, long relId, NodeState forwardNode, RelationshipExpansion relationshipExpansion) {
+            super(prevNode, forwardNode);
             this.relId = relId;
             this.relationshipExpansion = relationshipExpansion;
+        }
+
+        @Override
+        public int entityCount() {
+            return 2; // prevNode and rel
         }
 
         @Override
@@ -177,16 +208,12 @@ public abstract sealed class TwoWaySignpost implements Measurable {
             return 1;
         }
 
-        private SlotOrName slotOrName() {
-            return relationshipExpansion.slotOrName();
-        }
-
         @Override
         public String toString() {
             var sb = new StringBuilder("RE ").append(prevNode).append("-[");
 
-            if (slotOrName() != SlotOrName.none()) {
-                sb.append(slotOrName()).append("@");
+            if (relationshipExpansion.slotOrName() != SlotOrName.none()) {
+                sb.append(relationshipExpansion.slotOrName()).append("@");
             }
 
             sb.append(relId).append("]->").append(forwardNode);
@@ -227,13 +254,18 @@ public abstract sealed class TwoWaySignpost implements Measurable {
     /** A signpost that points across a node juxtaposition */
     public static final class NodeSignpost extends TwoWaySignpost {
 
-        private NodeSignpost(MemoryTracker mt, NodeState prevNode, NodeState forwardNode, int lengthFromSource) {
-            super(mt, prevNode, forwardNode, lengthFromSource);
+        private NodeSignpost(NodeState prevNode, NodeState forwardNode, int lengthFromSource) {
+            super(prevNode, forwardNode, lengthFromSource);
             assert prevNode != forwardNode : "A state cannot have a node juxtaposition to itself";
         }
 
-        private NodeSignpost(MemoryTracker mt, NodeState prevNode, NodeState forwardNode) {
-            super(mt, prevNode, forwardNode);
+        @Override
+        public int entityCount() {
+            return 1; // prevNode
+        }
+
+        private NodeSignpost(NodeState prevNode, NodeState forwardNode) {
+            super(prevNode, forwardNode);
             assert prevNode != forwardNode : "A state cannot have a node juxtaposition to itself";
         }
 
@@ -276,6 +308,122 @@ public abstract sealed class TwoWaySignpost implements Measurable {
         @Override
         public int hashCode() {
             return Objects.hash(prevNode, forwardNode);
+        }
+    }
+
+    public static final class MultiRelSignpost extends TwoWaySignpost {
+
+        public final long[] rels;
+        public final long[] nodes;
+        public final MultiRelationshipExpansion transition;
+
+        private MultiRelSignpost(
+                NodeState prevNode,
+                long[] rels,
+                long[] nodes,
+                NodeState forwardNode,
+                MultiRelationshipExpansion transition,
+                int lengthFromSource) {
+            super(prevNode, forwardNode, lengthFromSource);
+            this.rels = rels;
+            this.nodes = nodes;
+            this.transition = transition;
+
+            assert rels.length == transition.rels().length;
+            assert nodes.length == transition.nodes().length;
+        }
+
+        private MultiRelSignpost(
+                NodeState prevNode,
+                long[] rels,
+                long[] nodes,
+                NodeState forwardNode,
+                MultiRelationshipExpansion transition) {
+            super(prevNode, forwardNode);
+            this.rels = rels;
+            this.nodes = nodes;
+            this.transition = transition;
+
+            assert rels.length == transition.rels().length;
+            assert nodes.length == transition.nodes().length;
+        }
+
+        @Override
+        public long estimatedHeapUsage() {
+            return SHALLOW_SIZE + Lengths.SHALLOW_SIZE + HeapEstimator.sizeOf(rels) + HeapEstimator.sizeOf(nodes);
+        }
+
+        private static long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance(MultiRelSignpost.class);
+
+        @Override
+        public int entityCount() {
+            return 1 + rels.length + nodes.length;
+        }
+
+        @Override
+        public int dataGraphLength() {
+            return transition.length();
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            MultiRelSignpost that = (MultiRelSignpost) o;
+            // we can skip comparing interior nodes because those are implied by the relationships
+            return prevNode == that.prevNode && forwardNode == that.forwardNode && Arrays.equals(rels, that.rels);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(prevNode, forwardNode, Arrays.hashCode(rels));
+        }
+
+        @Override
+        public String toString() {
+            var sb = new StringBuilder("MRE ").append(prevNode);
+            if (transition.rels()[0].direction() == Direction.INCOMING) {
+                sb.append("<");
+            }
+            sb.append("-[");
+
+            for (int i = 0; i < transition.length(); i++) {
+                var rel = transition.rels()[i];
+                if (rel.slotOrName() != SlotOrName.none()) {
+                    sb.append(rel.slotOrName()).append("@");
+                }
+
+                sb.append(rels[i]).append("]-");
+                if (rel.direction() == Direction.OUTGOING) {
+                    sb.append(">");
+                }
+
+                if (i < nodes.length) {
+                    sb.append("(");
+                    var node = transition.nodes()[i];
+                    if (node.slotOrName() != SlotOrName.none()) {
+                        sb.append(node.slotOrName()).append("@");
+                    }
+                    sb.append(nodes[i]).append(")");
+                    if (transition.rels()[i + 1].direction() == Direction.INCOMING) {
+                        sb.append("<");
+                    }
+                    sb.append("-[");
+                }
+            }
+
+            sb.append(forwardNode);
+
+            if (minTargetDistance != NO_TARGET_DISTANCE) {
+                sb.append(", minTargetDistance: ").append(minTargetDistance);
+            }
+
+            var sourceLengths = lengths.renderSourceLengths();
+            if (!sourceLengths.isEmpty()) {
+                sb.append(", sourceLengths: ").append(sourceLengths);
+            }
+
+            return sb.toString();
         }
     }
 }
