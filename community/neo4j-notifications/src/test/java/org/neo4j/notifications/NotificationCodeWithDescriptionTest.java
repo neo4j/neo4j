@@ -1585,7 +1585,7 @@ class NotificationCodeWithDescriptionTest {
                 NotificationClassification.UNRECOGNIZED,
                 "01G11",
                 new DiagnosticRecord(warning, NotificationClassification.UNRECOGNIZED, -1, -1, -1, Map.of()).asMap(),
-                "warn: null value eliminated in set function");
+                "warn: null value eliminated in set function.");
     }
 
     private void verifyNotification(

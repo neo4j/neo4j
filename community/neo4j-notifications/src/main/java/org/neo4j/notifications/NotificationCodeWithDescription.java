@@ -310,7 +310,7 @@ public enum NotificationCodeWithDescription {
     AGGREGATION_SKIPPED_NULL(
             Status.Statement.AggregationSkippedNull,
             GqlStatusInfoCodes.STATUS_01G11,
-            "null value eliminated in set function");
+            "null value eliminated in set function.");
 
     private final Status status;
     private final GqlStatusInfoCodes gqlStatusInfo;
