@@ -132,8 +132,7 @@ class IndexPopulationIT {
         populationJobCompleted.await();
 
         long nativeMemoryAfterIndexCompletion = otherTracker.usedNativeMemory();
-        // TODO memorytracking find out what memory is not released
-        // assertEquals(estimatedHeapBefore, otherTracker.estimatedHeapMemory());
+        assertEquals(estimatedHeapBefore, otherTracker.estimatedHeapMemory());
         assertEquals(usedNativeBefore, nativeMemoryAfterIndexCompletion);
         assertThat(peakUsage.get()).isGreaterThan(nativeMemoryAfterIndexCompletion);
     }

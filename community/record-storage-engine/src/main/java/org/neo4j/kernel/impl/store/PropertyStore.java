@@ -417,6 +417,8 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord, NoStoreHe
                 buffer = propertyCursor.growBuffer(data.length);
             }
             buffer.put(data, 0, data.length);
+            // release memory used by dynamic record to keep its payload
+            memoryTracker.releaseHeap(data.length);
 
             // An arbitrarily high threshold so that it's very likely only hit on actual chain cycle
             if (++count >= CYCLE_DETECTION_THRESHOLD) {
