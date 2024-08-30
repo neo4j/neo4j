@@ -64,6 +64,13 @@ class PrettifierIT extends CypherFunSuite {
         |  SKIP 1
         |  LIMIT 2
         |  WHERE true""".stripMargin,
+    "match (a) with distinct a, b as X, 3+3 as six order by b.prop, b.foo descending offset 1 limit 2 where true" ->
+      """MATCH (a)
+        |WITH DISTINCT a, b AS X, 3 + 3 AS six
+        |  ORDER BY b.prop ASCENDING, b.foo DESCENDING
+        |  SKIP 1
+        |  LIMIT 2
+        |  WHERE true""".stripMargin,
     "MATCH (n WHERE n:N)" -> "MATCH (n WHERE n:N)",
     "MATCH (n:(A| (B)))" -> "MATCH (n:A|B)",
     "MATCH (n:(A| ( B & %)))" -> "MATCH (n:A|(B&%))",
@@ -103,6 +110,27 @@ class PrettifierIT extends CypherFunSuite {
     "mAtch SHORTeST path group (a)-->(b)     rETuRN a" ->
       """MATCH SHORTEST 1 PATH GROUPS (a)-->(b)
         |RETURN a""".stripMargin,
+    "ORDER BY a.prop SKIP 1 LIMIT 1" ->
+      """WITH *
+        |  ORDER BY a.prop ASCENDING
+        |  SKIP 1
+        |  LIMIT 1""".stripMargin,
+    "ORDER BY a.prop OFFSET 1 LIMIT 1" ->
+      """WITH *
+        |  ORDER BY a.prop ASCENDING
+        |  SKIP 1
+        |  LIMIT 1""".stripMargin,
+    "ORDER BY a.prop LIMIT 1" ->
+      """WITH *
+        |  ORDER BY a.prop ASCENDING
+        |  LIMIT 1""".stripMargin,
+    "LIMIT 10 ORDER BY a.prop OFFSET 1 LIMIT 1" ->
+      """WITH *
+        |  LIMIT 10
+        |WITH *
+        |  ORDER BY a.prop ASCENDING
+        |  SKIP 1
+        |  LIMIT 1""".stripMargin,
     "CALL nsp.proc()" ->
       """CALL nsp.proc()""".stripMargin,
     "CALL proc()" ->
@@ -997,6 +1025,12 @@ class PrettifierIT extends CypherFunSuite {
         |  ORDER BY name ASCENDING
         |  SKIP 1
         |  LIMIT 1""".stripMargin,
+    "show index yield name order by name offset 1 limit 1" ->
+      """SHOW ALL INDEXES
+        |YIELD name
+        |  ORDER BY name ASCENDING
+        |  SKIP 1
+        |  LIMIT 1""".stripMargin,
     "show text index yield name return name" ->
       """SHOW TEXT INDEXES
         |YIELD name
@@ -1073,6 +1107,12 @@ class PrettifierIT extends CypherFunSuite {
         |  WHERE name = "neo4j"
         |RETURN *""".stripMargin,
     "show constraint yield name order by name skip 1 limit 1" ->
+      """SHOW ALL CONSTRAINTS
+        |YIELD name
+        |  ORDER BY name ASCENDING
+        |  SKIP 1
+        |  LIMIT 1""".stripMargin,
+    "show constraint yield name order by name offset 1 limit 1" ->
       """SHOW ALL CONSTRAINTS
         |YIELD name
         |  ORDER BY name ASCENDING

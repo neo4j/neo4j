@@ -590,6 +590,7 @@ TOKEN [IGNORE_CASE] :
     | < NOWAIT: "NOWAIT">
     | < NULL: "null">
     | < OF: "OF" >
+    | < OFFSET: "OFFSET" >
     | < ON: "ON" >
     | < ONLY: "ONLY" >
     | < OPTIONAL: "OPTIONAL" >
@@ -1754,6 +1755,7 @@ CLAUSE Clause() throws Exception:
         | x=SubqueryClause()
         | x=LoadCSVClause()
         | x=ForeachClause()
+        | x=OrderBySkipLimitClause()
     )
     {
         return x;
@@ -1897,7 +1899,7 @@ EXPRESSION Skip() throws Exception:
     EXPRESSION e;
 }
 {
-    <SKIPROWS> e=Expression()
+    ( <OFFSET> | <SKIPROWS> ) e=Expression()
     {
         return e;
     }
@@ -2375,6 +2377,31 @@ SUBQUERY_IN_TRANSACTIONS_REPORT_PARAMETERS SubqueryInTransactionsReportParameter
     t=<REPORT> <STATUS> <AS> v=Variable()
     {
         return astFactory.subqueryInTransactionsReportParameters( pos( t ), v );
+    }
+}
+
+// ORDER BY AND PAGE STATEMENT
+CLAUSE OrderBySkipLimitClause() throws Exception:
+{
+    Token t = null;
+    Token orderPos = null;
+    Token skipPos = null;
+    Token limitPos = null;
+    EXPRESSION skip = null;
+    EXPRESSION limit = null;
+    List<ORDER_ITEM> order = new ArrayList<>();
+    ORDER_ITEM o = null;
+}
+{
+
+    {t = token;}
+    (
+        ( ( orderPos=<ORDER> <BY> o=OrderItem() { t=orderPos; order.add( o ); } ( <COMMA> o=OrderItem() {order.add( o ); } )* ) ( { skipPos=token.next; } skip=Skip() )? ( { limitPos=token.next; } limit=Limit() )? )
+        | ( ( { skipPos=token.next; t=skipPos; } skip=Skip() ) ( { limitPos=token.next; } limit=Limit() )? )
+        | ( { limitPos=token.next; t=limitPos;} limit=Limit() )
+    )
+    {
+        return astFactory.orderBySkipLimitClause( pos( t ), order, pos( orderPos ), skip, pos( skipPos ), limit, pos( limitPos ) );
     }
 }
 
@@ -4720,7 +4747,7 @@ YIELD YieldClause() throws Exception:
     ( <TIMES> { returnAll = true; }  |
     ( item=YieldItem() { returnItems.add( item ); } (<COMMA> item=YieldItem() { returnItems.add( item ); } )*))
     ( orderToken=<ORDER> <BY> o=OrderItem() { orders.add( o ); } ( <COMMA> o=OrderItem() {orders.add( o ); } )*)?
-    ( skipPosition=<SKIPROWS> skip=SignedIntegerLiteral() )?
+    ( ( skipPosition=<SKIPROWS> skip=SignedIntegerLiteral() ) | ( skipPosition=<OFFSET> skip=SignedIntegerLiteral() ) )?
     ( limitPosition=<LIMITROWS> limit=SignedIntegerLiteral() )?
     ( where=WhereClause() ) ?
     {
@@ -7681,6 +7708,7 @@ Token UnescapedLabelSymbolicNameString() :
         | t=<NOTHING>
         | t=<NOWAIT>
         | t=<OF>
+        | t=<OFFSET>
         | t=<ON>
         | t=<ONLY>
         | t=<OPTIONAL>

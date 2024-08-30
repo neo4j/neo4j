@@ -404,7 +404,7 @@ class QuantifiedPathPatternInMatchParserTest extends AstParsingTestBase with Leg
     failsParsing[Statements].in {
       case Cypher5JavaCc => _.withMessageStart("Invalid input '('")
       case _ => _.withSyntaxError(
-          """Invalid input '(': expected an expression, 'FOREACH', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'UNION', 'UNWIND', 'USE', 'WITH' or <EOF> (line 1, column 26 (offset: 25))
+          """Invalid input '(': expected an expression, 'FOREACH', 'ORDER BY', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'LIMIT', 'MATCH', 'MERGE', 'NODETACH', 'OFFSET', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'SKIP', 'UNION', 'UNWIND', 'USE', 'WITH' or <EOF> (line 1, column 26 (offset: 25))
             |"MATCH (n), (m) WHERE (n) ((a)-->(b))+ (m) RETURN *"
             |                          ^""".stripMargin
         )

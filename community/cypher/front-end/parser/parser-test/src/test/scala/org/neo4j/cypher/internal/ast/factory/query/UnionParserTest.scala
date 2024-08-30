@@ -247,7 +247,7 @@ class UnionParserTest extends AstParsingTestBase {
     failsParsing[Statements].in {
       case Cypher5JavaCc => _.withMessageStart("Invalid input 'UNION'")
       case _ => _.withSyntaxError(
-          """Invalid input 'UNION': expected 'FOREACH', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'UNWIND', 'USE' or 'WITH' (line 1, column 21 (offset: 20))
+          """Invalid input 'UNION': expected 'FOREACH', 'ORDER BY', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'LIMIT', 'MATCH', 'MERGE', 'NODETACH', 'OFFSET', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'SKIP', 'UNWIND', 'USE' or 'WITH' (line 1, column 21 (offset: 20))
             |"RETURN 1 AS a UNION UNION RETURN 2 AS a"
             |                     ^""".stripMargin
         )

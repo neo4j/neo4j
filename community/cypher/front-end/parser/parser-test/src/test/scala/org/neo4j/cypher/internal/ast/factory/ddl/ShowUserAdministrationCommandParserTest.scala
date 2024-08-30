@@ -83,6 +83,19 @@ class ShowUserAdministrationCommandParserTest extends UserAdministrationCommandP
     parsesTo[Statements](ShowUsers(Some(Left((columns, None))), withAuth = false)(pos))
   }
 
+  test("SHOW USERS YIELD user ORDER BY user OFFSET 1 LIMIT 10 WHERE user ='none'") {
+    val orderByClause = orderBy(sortItem(varUser))
+    val whereClause = where(equals(varUser, noneString))
+    val columns = yieldClause(
+      returnItems(variableReturnItem(userString)),
+      Some(orderByClause),
+      Some(skip(1)),
+      Some(limit(10)),
+      Some(whereClause)
+    )
+    parsesTo[Statements](ShowUsers(Some(Left((columns, None))), withAuth = false)(pos))
+  }
+
   test("SHOW USERS YIELD user SKIP -1") {
     val columns = yieldClause(returnItems(variableReturnItem(userString)), skip = Some(skip(-1)))
     parsesTo[Statements](ShowUsers(Some(Left((columns, None))), withAuth = false)(pos))
@@ -172,6 +185,7 @@ class ShowUserAdministrationCommandParserTest extends UserAdministrationCommandP
       case Cypher5JavaCc => _.withMessage(
           """Invalid input 'WITH': expected
             |  "LIMIT"
+            |  "OFFSET"
             |  "ORDER"
             |  "RETURN"
             |  "SKIP"
@@ -179,7 +193,7 @@ class ShowUserAdministrationCommandParserTest extends UserAdministrationCommandP
             |  <EOF> (line 1, column 20 (offset: 19))""".stripMargin
         )
       case _ => _.withSyntaxError(
-          """Invalid input 'WITH': expected 'ORDER BY', 'LIMIT', 'RETURN', 'SKIP', 'WHERE' or <EOF> (line 1, column 20 (offset: 19))
+          """Invalid input 'WITH': expected 'ORDER BY', 'LIMIT', 'OFFSET', 'RETURN', 'SKIP', 'WHERE' or <EOF> (line 1, column 20 (offset: 19))
             |"SHOW USERS YIELD * WITH AUTH"
             |                    ^""".stripMargin
         )

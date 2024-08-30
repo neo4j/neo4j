@@ -271,6 +271,31 @@ class TerminateTransactionsCommandParserTest extends AdministrationAndSchemaComm
     )
   }
 
+  test(
+    "USE db TERMINATE TRANSACTIONS 'db1-transaction-123' YIELD transactionId, username AS pp ORDER BY pp OFFSET 2 LIMIT 5 WHERE length(pp) < 5 RETURN transactionId"
+  ) {
+    assertAst(
+      singleQuery(
+        use(List("db")),
+        TerminateTransactionsClause(
+          Right(literalString("db1-transaction-123")),
+          List(commandResultItem("transactionId"), commandResultItem("username", Some("pp"))),
+          yieldAll = false,
+          None
+        )(pos),
+        withFromYield(
+          returnAllItems.withDefaultOrderOnColumns(List("transactionId", "pp")),
+          Some(orderBy(sortItem(varFor("pp")))),
+          Some(skip(2)),
+          Some(limit(5)),
+          Some(where(lessThan(function("length", varFor("pp")), literalInt(5L))))
+        ),
+        return_(variableReturnItem("transactionId"))
+      ),
+      comparePosition = false
+    )
+  }
+
   test("TERMINATE TRANSACTIONS 'where' YIELD transactionId AS TRANSACTION, username AS OUTPUT") {
     assertAst(
       singleQuery(
@@ -798,7 +823,7 @@ class TerminateTransactionsCommandParserTest extends AdministrationAndSchemaComm
       failsParsing[Statements].in {
         case Cypher5JavaCc => _.withMessageStart("Invalid input 'TERMINATE': expected")
         case _ => _.withSyntaxErrorContaining(
-            """Invalid input 'TERMINATE': expected 'FOREACH', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'UNION', 'UNWIND', 'USE', 'WITH' or <EOF>"""
+            """Invalid input 'TERMINATE': expected 'FOREACH', 'ORDER BY', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'LIMIT', 'MATCH', 'MERGE', 'NODETACH', 'OFFSET', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'SKIP', 'UNION', 'UNWIND', 'USE', 'WITH' or <EOF>""".stripMargin
           )
       }
     }
@@ -818,7 +843,7 @@ class TerminateTransactionsCommandParserTest extends AdministrationAndSchemaComm
       failsParsing[Statements].in {
         case Cypher5JavaCc => _.withMessageStart("Invalid input 'TERMINATE': expected")
         case _ => _.withSyntaxErrorContaining(
-            """Invalid input 'TERMINATE': expected 'FOREACH', ',', 'ORDER BY', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'LIMIT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'SKIP', 'UNION', 'UNWIND', 'USE', 'WHERE', 'WITH' or <EOF>"""
+            """Invalid input 'TERMINATE': expected 'FOREACH', ',', 'ORDER BY', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'LIMIT', 'MATCH', 'MERGE', 'NODETACH', 'OFFSET', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'SKIP', 'UNION', 'UNWIND', 'USE', 'WHERE', 'WITH' or <EOF>""".stripMargin
           )
       }
     }
@@ -857,7 +882,7 @@ class TerminateTransactionsCommandParserTest extends AdministrationAndSchemaComm
       failsParsing[Statements].in {
         case Cypher5JavaCc => _.withMessageStart("Invalid input 'WITH': expected")
         case _ => _.withSyntaxErrorContaining(
-            """Invalid input 'WITH': expected ',', 'AS', 'ORDER BY', 'LIMIT', 'RETURN', 'SHOW', 'SKIP', 'TERMINATE', 'WHERE' or <EOF>"""
+            """Invalid input 'WITH': expected ',', 'AS', 'ORDER BY', 'LIMIT', 'OFFSET', 'RETURN', 'SHOW', 'SKIP', 'TERMINATE', 'WHERE' or <EOF>"""
           )
       }
     }
@@ -876,7 +901,7 @@ class TerminateTransactionsCommandParserTest extends AdministrationAndSchemaComm
       failsParsing[Statements].in {
         case Cypher5JavaCc => _.withMessageStart("Invalid input 'UNWIND': expected")
         case _ => _.withSyntaxErrorContaining(
-            """Invalid input 'UNWIND': expected ',', 'AS', 'ORDER BY', 'LIMIT', 'RETURN', 'SHOW', 'SKIP', 'TERMINATE', 'WHERE' or <EOF>"""
+            """Invalid input 'UNWIND': expected ',', 'AS', 'ORDER BY', 'LIMIT', 'OFFSET', 'RETURN', 'SHOW', 'SKIP', 'TERMINATE', 'WHERE' or <EOF>"""
           )
       }
     }

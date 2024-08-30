@@ -353,6 +353,8 @@ public interface ASTFactory<
 
     SUBQUERY_IN_TRANSACTIONS_REPORT_PARAMETERS subqueryInTransactionsReportParameters(POS p, VARIABLE v);
 
+    CLAUSE orderBySkipLimitClause(
+            POS t, List<ORDER_ITEM> order, POS orderPos, EXPRESSION skip, POS skipPos, EXPRESSION limit, POS limitPos);
     // Commands
     STATEMENT_WITH_GRAPH useGraph(STATEMENT_WITH_GRAPH statement, USE_GRAPH useGraph);
 

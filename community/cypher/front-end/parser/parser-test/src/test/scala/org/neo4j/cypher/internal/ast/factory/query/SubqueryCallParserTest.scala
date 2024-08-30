@@ -56,7 +56,7 @@ class SubqueryCallParserTest extends AstParsingTestBase {
     failsParsing[Statements].in {
       case Cypher5JavaCc => _.withMessageStart("Invalid input '}'")
       case _ => _.withMessage(
-          """Invalid input '}': expected 'FOREACH', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'UNWIND', 'USE' or 'WITH' (line 1, column 8 (offset: 7))
+          """Invalid input '}': expected 'FOREACH', 'ORDER BY', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'LIMIT', 'MATCH', 'MERGE', 'NODETACH', 'OFFSET', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'SKIP', 'UNWIND', 'USE' or 'WITH' (line 1, column 8 (offset: 7))
             |"CALL { }"
             |        ^""".stripMargin
         )

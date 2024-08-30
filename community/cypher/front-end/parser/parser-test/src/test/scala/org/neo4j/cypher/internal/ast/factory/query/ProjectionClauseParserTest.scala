@@ -17,7 +17,10 @@
 package org.neo4j.cypher.internal.ast.factory.query
 
 import org.neo4j.cypher.internal.ast
+import org.neo4j.cypher.internal.ast.AliasedReturnItem
+import org.neo4j.cypher.internal.ast.AscSortItem
 import org.neo4j.cypher.internal.ast.Clause
+import org.neo4j.cypher.internal.ast.OrderBy
 import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.test.util.AstParsing.Cypher5JavaCc
 import org.neo4j.cypher.internal.ast.test.util.AstParsingTestBase
@@ -40,6 +43,59 @@ class ProjectionClauseParserTest extends AstParsingTestBase {
       includeExisting = true,
       Seq(ast.AliasedReturnItem(literalInt(1), varFor("a"))(pos))
     )(pos))(pos))
+  }
+
+  test("WITH * OFFSET 1 LIMIT 1") {
+    parsesTo[Clause](ast.With(
+      distinct = false,
+      ast.ReturnItems(includeExisting = true, Seq.empty)(pos),
+      orderBy = None,
+      skip = Some(skip(1)),
+      limit = Some(limit(1)),
+      where = None
+    )(pos))
+  }
+
+  test("WITH 1 AS a ORDER BY a OFFSET 1 LIMIT 1") {
+    parsesTo[Clause](ast.With(
+      distinct = false,
+      ast.ReturnItems(
+        includeExisting = false,
+        Seq(ast.AliasedReturnItem(literalInt(1), varFor("a"))(pos))
+      )(pos),
+      orderBy = Some(OrderBy(List(AscSortItem(varFor(name = "a"))(pos)))(pos)),
+      skip = Some(skip(1)),
+      limit = Some(limit(1)),
+      where = None
+    )(pos))
+  }
+
+  test("WITH 1 AS a ORDER BY a SKIP 1 LIMIT 1") {
+    parsesTo[Clause](ast.With(
+      distinct = false,
+      ast.ReturnItems(
+        includeExisting = false,
+        Seq(ast.AliasedReturnItem(literalInt(1), varFor("a"))(pos))
+      )(pos),
+      orderBy = Some(OrderBy(List(AscSortItem(varFor(name = "a"))(pos)))(pos)),
+      skip = Some(skip(1)),
+      limit = Some(limit(1)),
+      where = None
+    )(pos))
+  }
+
+  test("WITH *, 1 AS a OFFSET 1 LIMIT 1") {
+    parsesTo[Clause](ast.With(
+      distinct = false,
+      ast.ReturnItems(
+        includeExisting = true,
+        Seq(ast.AliasedReturnItem(literalInt(1), varFor("a"))(pos))
+      )(pos),
+      orderBy = None,
+      skip = Some(skip(1)),
+      limit = Some(limit(1)),
+      where = None
+    )(pos))
   }
 
   test("WITH ") {
@@ -69,6 +125,70 @@ class ProjectionClauseParserTest extends AstParsingTestBase {
       includeExisting = true,
       Seq(ast.AliasedReturnItem(literalInt(1), varFor("a"))(pos))
     )(pos))(pos))
+  }
+
+  test("RETURN * SKIP 1 LIMIT 1") {
+    parsesTo[Clause](ast.Return(
+      distinct = false,
+      ast.ReturnItems(includeExisting = true, Seq.empty)(pos),
+      orderBy = None,
+      skip = Some(skip(1)),
+      limit = Some(limit(1))
+    )(pos))
+  }
+
+  test("RETURN 1 AS a ORDER BY a OFFSET 1 LIMIT 1") {
+    parsesTo[Clause](ast.Return(
+      distinct = false,
+      ast.ReturnItems(
+        includeExisting = false,
+        items = List(
+          AliasedReturnItem(
+            literalInt(1),
+            varFor("a")
+          )(pos)
+        )
+      )(pos),
+      orderBy = Some(OrderBy(List(AscSortItem(varFor(name = "a"))(pos)))(pos)),
+      skip = Some(skip(1)),
+      limit = Some(limit(1))
+    )(pos))
+  }
+
+  test("RETURN 1 AS a ORDER BY a SKIP 1 LIMIT 1") {
+    parsesTo[Clause](ast.Return(
+      distinct = false,
+      ast.ReturnItems(
+        includeExisting = false,
+        items = List(
+          AliasedReturnItem(
+            literalInt(1),
+            varFor("a")
+          )(pos)
+        )
+      )(pos),
+      orderBy = Some(OrderBy(List(AscSortItem(varFor(name = "a"))(pos)))(pos)),
+      skip = Some(skip(1)),
+      limit = Some(limit(1))
+    )(pos))
+  }
+
+  test("RETURN *, 1 AS a ORDER BY a OFFSET 1 LIMIT 1") {
+    parsesTo[Clause](ast.Return(
+      distinct = false,
+      ast.ReturnItems(
+        includeExisting = true,
+        items = List(
+          AliasedReturnItem(
+            literalInt(1),
+            varFor("a")
+          )(pos)
+        )
+      )(pos),
+      orderBy = Some(OrderBy(List(AscSortItem(varFor(name = "a"))(pos)))(pos)),
+      skip = Some(skip(1)),
+      limit = Some(limit(1))
+    )(pos))
   }
 
   test("RETURN ") {

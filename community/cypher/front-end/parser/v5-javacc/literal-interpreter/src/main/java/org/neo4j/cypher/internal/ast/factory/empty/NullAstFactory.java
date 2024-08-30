@@ -896,6 +896,12 @@ public class NullAstFactory
     }
 
     @Override
+    public NULL orderBySkipLimitClause(
+            NULL t, List<NULL> order, NULL orderPos, NULL skip, NULL skipPos, NULL limit, NULL limitPos) {
+        return null;
+    }
+
+    @Override
     public NULL useGraph(NULL aNull, NULL aNull2) {
         return null;
     }

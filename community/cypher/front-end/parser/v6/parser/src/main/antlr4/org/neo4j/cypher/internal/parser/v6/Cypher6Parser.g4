@@ -51,6 +51,7 @@ clause
    | subqueryClause
    | loadCSVClause
    | foreachClause
+   | orderBySkipLimitClause
    ;
 
 useClause
@@ -100,7 +101,7 @@ orderBy
    ;
 
 skip
-   : SKIPROWS expression
+   : (OFFSET | SKIPROWS) expression
    ;
 
 limit
@@ -231,6 +232,12 @@ subqueryInTransactionsErrorParameters
 
 subqueryInTransactionsReportParameters
    : REPORT STATUS AS variable
+   ;
+
+orderBySkipLimitClause
+   : orderBy skip? limit?
+   | skip limit?
+   | limit
    ;
 
 patternList
@@ -836,7 +843,7 @@ yieldItem
    ;
 
 yieldSkip
-   : SKIPROWS signedIntegerLiteral
+   : (OFFSET | SKIPROWS) signedIntegerLiteral
    ;
 
 yieldLimit
@@ -1870,6 +1877,7 @@ unescapedLabelSymbolicNameString
    | NOTHING
    | NOWAIT
    | OF
+   | OFFSET
    | ON
    | ONLY
    | OPTIONAL

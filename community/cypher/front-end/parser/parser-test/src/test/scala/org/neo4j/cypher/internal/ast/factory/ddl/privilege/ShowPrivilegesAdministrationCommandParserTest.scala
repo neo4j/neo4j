@@ -803,6 +803,7 @@ class ShowPrivilegesAdministrationCommandParserTest extends AdministrationAndSch
     val exceptionMessage =
       s"""Invalid input ',': expected
          |  "LIMIT"
+         |  "OFFSET"
          |  "ORDER"
          |  "RETURN"
          |  "SKIP"
@@ -812,7 +813,7 @@ class ShowPrivilegesAdministrationCommandParserTest extends AdministrationAndSch
     failsParsing[Statements].in {
       case Cypher5JavaCc => _.withMessage(exceptionMessage)
       case _ => _.withSyntaxError(
-          """Invalid input ',': expected 'ORDER BY', 'LIMIT', 'RETURN', 'SKIP', 'WHERE' or <EOF> (line 1, column 34 (offset: 33))
+          """Invalid input ',': expected 'ORDER BY', 'LIMIT', 'OFFSET', 'RETURN', 'SKIP', 'WHERE' or <EOF> (line 1, column 34 (offset: 33))
             |"SHOW USER user PRIVILEGES YIELD *, blah RETURN user"
             |                                  ^""".stripMargin
         )

@@ -1309,6 +1309,12 @@ class AstGenerator(
     where <- option(_where)
   } yield With(distinct, ReturnItems(inclExisting, retItems)(pos), orderBy, skip, limit, where)(pos)
 
+  def _orderByAndPageStatement: Gen[With] = for {
+    orderBy <- option(_orderBy)
+    skip <- option(_skip)
+    limit <- option(_limit)
+  } yield With(distinct = false, ReturnItems(includeExisting = true, Seq.empty)(pos), orderBy, skip, limit, None)(pos)
+
   def _return: Gen[Return] = for {
     distinct <- boolean
     inclExisting <- boolean
@@ -1512,6 +1518,7 @@ class AstGenerator(
   def _clause: Gen[Clause] = oneOf(
     lzy(_use),
     lzy(_with),
+    lzy(_orderByAndPageStatement),
     lzy(_return),
     lzy(_match),
     lzy(_create),

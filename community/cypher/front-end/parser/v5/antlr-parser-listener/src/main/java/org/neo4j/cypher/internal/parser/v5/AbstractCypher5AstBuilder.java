@@ -87,6 +87,8 @@ public abstract class AbstractCypher5AstBuilder implements Cypher5ParserListener
             case Cypher5Parser
                     .RULE_subqueryInTransactionsReportParameters -> exitSubqueryInTransactionsReportParameters(
                     (Cypher5Parser.SubqueryInTransactionsReportParametersContext) ctx);
+            case Cypher5Parser.RULE_orderBySkipLimitClause -> exitOrderBySkipLimitClause(
+                    (Cypher5Parser.OrderBySkipLimitClauseContext) ctx);
             case Cypher5Parser.RULE_patternList -> exitPatternList((Cypher5Parser.PatternListContext) ctx);
             case Cypher5Parser.RULE_insertPatternList -> exitInsertPatternList(
                     (Cypher5Parser.InsertPatternListContext) ctx);

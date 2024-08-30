@@ -219,6 +219,20 @@ class ShowSettingsCommandParserTest extends AdministrationAndSchemaCommandParser
     ))
   }
 
+  test("SHOW SETTINGS YIELD * ORDER BY name OFFSET 2 LIMIT 5") {
+    assertAst(singleQuery(
+      ShowSettingsClause(Left(List.empty[String]), None, List.empty, yieldAll = true)(defaultPos),
+      withFromYield(
+        returnAllItems((1, 23, 22)),
+        Some(OrderBy(Seq(
+          sortItem(varFor("name"))
+        ))((1, 23, 22))),
+        Some(skip(2)),
+        Some(limit(5))
+      )
+    ))
+  }
+
   test("SHOW SETTING YIELD name, description, value WHERE name = 'db.setting.sub_setting'") {
     assertAst(singleQuery(
       ShowSettingsClause(

@@ -84,6 +84,20 @@ class ServerManagementCommandParserTest extends AdministrationAndSchemaCommandPa
     assertAst(ShowServers(yieldOrWhere)(defaultPos))
   }
 
+  test("SHOW SERVERS YIELD address ORDER BY name OFFSET 1 LIMIT 2 WHERE name = 'badger' RETURN *") {
+    val orderByClause = orderBy(sortItem(varFor("name")))
+    val whereClause = where(equals(varFor("name"), literalString("badger")))
+    val columns = yieldClause(
+      returnItems(variableReturnItem("address")),
+      Some(orderByClause),
+      Some(skip(1)),
+      Some(limit(2)),
+      Some(whereClause)
+    )
+    val yieldOrWhere = Some(Left((columns, Some(returnAll))))
+    assertAst(ShowServers(yieldOrWhere)(defaultPos))
+  }
+
   test("SHOW SERVERS YIELD * RETURN id") {
     val yieldOrWhere: Left[(Yield, Some[Return]), Nothing] =
       Left((yieldClause(returnAllItems), Some(return_(variableReturnItem("id")))))

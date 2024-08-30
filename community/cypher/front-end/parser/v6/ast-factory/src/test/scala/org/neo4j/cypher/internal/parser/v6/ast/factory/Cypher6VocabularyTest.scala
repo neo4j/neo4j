@@ -239,6 +239,7 @@ class Cypher6VocabularyTest extends CypherFunSuite {
     Cypher6Parser.NOWAIT -> "'NOWAIT'",
     Cypher6Parser.NULL -> "'NULL'",
     Cypher6Parser.OF -> "'OF'",
+    Cypher6Parser.OFFSET -> "'OFFSET'",
     Cypher6Parser.ON -> "'ON'",
     Cypher6Parser.ONLY -> "'ONLY'",
     Cypher6Parser.OPTIONAL -> "'OPTIONAL'",

@@ -2152,7 +2152,7 @@ class CombinedCommandParserTest extends AdministrationAndSchemaCommandParserTest
     failsParsing[ast.Statements].in {
       case Cypher5JavaCc => _.withMessageStart("Invalid input")
       case _ => _.withSyntaxError(
-          """Invalid input 'TERMINATE': expected a graph pattern, 'FOREACH', ',', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'UNION', 'UNWIND', 'USE', 'USING', 'WHERE', 'WITH' or <EOF> (line 1, column 11 (offset: 10))
+          """Invalid input 'TERMINATE': expected a graph pattern, 'FOREACH', ',', 'ORDER BY', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'LIMIT', 'MATCH', 'MERGE', 'NODETACH', 'OFFSET', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'SKIP', 'UNION', 'UNWIND', 'USE', 'USING', 'WHERE', 'WITH' or <EOF> (line 1, column 11 (offset: 10))
             |"MATCH (n) TERMINATE TRANSACTION"
             |           ^""".stripMargin
         )

@@ -111,7 +111,25 @@ class ShowDatabaseAdministrationCommandParserTest extends AdministrationAndSchem
       parsesTo[Statements](command(Some(Left((columns, None))))(pos))
     }
 
+    test(s"SHOW $dbType YIELD access ORDER BY access OFFSET 1 LIMIT 10 WHERE access ='none'") {
+      val orderByClause = orderBy(sortItem(accessVar))
+      val whereClause = where(equals(accessVar, noneString))
+      val columns = yieldClause(
+        returnItems(variableReturnItem(accessString)),
+        Some(orderByClause),
+        Some(skip(1)),
+        Some(limit(10)),
+        Some(whereClause)
+      )
+      parsesTo[Statements](command(Some(Left((columns, None))))(pos))
+    }
+
     test(s"SHOW $dbType YIELD access SKIP -1") {
+      val columns = yieldClause(returnItems(variableReturnItem(accessString)), skip = Some(skip(-1)))
+      parsesTo[Statements](command(Some(Left((columns, None))))(pos))
+    }
+
+    test(s"SHOW $dbType YIELD access OFFSET -1") {
       val columns = yieldClause(returnItems(variableReturnItem(accessString)), skip = Some(skip(-1)))
       parsesTo[Statements](command(Some(Left((columns, None))))(pos))
     }

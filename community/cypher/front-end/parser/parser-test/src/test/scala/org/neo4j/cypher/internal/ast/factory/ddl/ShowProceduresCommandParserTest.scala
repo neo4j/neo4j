@@ -188,6 +188,34 @@ class ShowProceduresCommandParserTest extends AdministrationAndSchemaCommandPars
     )
   }
 
+  test(
+    "USE db SHOW PROCEDURES EXECUTABLE YIELD name, description AS pp ORDER BY pp OFFSET 2 LIMIT 5 WHERE pp < 50.0 RETURN name"
+  ) {
+    assertAst(
+      singleQuery(
+        use(List("db")),
+        ShowProceduresClause(
+          Some(CurrentUser),
+          None,
+          List(
+            commandResultItem("name"),
+            commandResultItem("description", Some("pp"))
+          ),
+          yieldAll = false
+        )(pos),
+        withFromYield(
+          returnAllItems.withDefaultOrderOnColumns(List("name", "pp")),
+          Some(orderBy(sortItem(varFor("pp")))),
+          Some(skip(2)),
+          Some(limit(5)),
+          Some(where(lessThan(varFor("pp"), literalFloat(50.0))))
+        ),
+        return_(variableReturnItem("name"))
+      ),
+      comparePosition = false
+    )
+  }
+
   test("SHOW PROCEDURES YIELD name AS PROCEDURE, mode AS OUTPUT") {
     assertAst(
       singleQuery(
@@ -601,7 +629,7 @@ class ShowProceduresCommandParserTest extends AdministrationAndSchemaCommandPars
       failsParsing[Statements].in {
         case Cypher5JavaCc => _.withMessageStart("Invalid input 'SHOW': expected")
         case _ => _.withSyntaxErrorContaining(
-            """Invalid input 'SHOW': expected 'FOREACH', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'UNION', 'UNWIND', 'USE', 'WITH' or <EOF>""".stripMargin
+            """Invalid input 'SHOW': expected 'FOREACH', 'ORDER BY', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'LIMIT', 'MATCH', 'MERGE', 'NODETACH', 'OFFSET', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'SKIP', 'UNION', 'UNWIND', 'USE', 'WITH' or <EOF>""".stripMargin
           )
       }
 
@@ -622,7 +650,7 @@ class ShowProceduresCommandParserTest extends AdministrationAndSchemaCommandPars
       failsParsing[Statements].in {
         case Cypher5JavaCc => _.withMessageStart("Invalid input 'SHOW': expected")
         case _ => _.withSyntaxErrorContaining(
-            """Invalid input 'SHOW': expected 'FOREACH', ',', 'ORDER BY', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'LIMIT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'SKIP', 'UNION', 'UNWIND', 'USE', 'WHERE', 'WITH' or <EOF>""".stripMargin
+            """Invalid input 'SHOW': expected 'FOREACH', ',', 'ORDER BY', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'LIMIT', 'MATCH', 'MERGE', 'NODETACH', 'OFFSET', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'SKIP', 'UNION', 'UNWIND', 'USE', 'WHERE', 'WITH' or <EOF>""".stripMargin
           )
       }
 
@@ -662,7 +690,7 @@ class ShowProceduresCommandParserTest extends AdministrationAndSchemaCommandPars
       failsParsing[Statements].in {
         case Cypher5JavaCc => _.withMessageStart("Invalid input 'WITH': expected")
         case _ => _.withSyntaxErrorContaining(
-            """Invalid input 'WITH': expected ',', 'AS', 'ORDER BY', 'LIMIT', 'RETURN', 'SHOW', 'SKIP', 'TERMINATE', 'WHERE' or <EOF>""".stripMargin
+            """Invalid input 'WITH': expected ',', 'AS', 'ORDER BY', 'LIMIT', 'OFFSET', 'RETURN', 'SHOW', 'SKIP', 'TERMINATE', 'WHERE' or <EOF>""".stripMargin
           )
       }
 
@@ -672,7 +700,7 @@ class ShowProceduresCommandParserTest extends AdministrationAndSchemaCommandPars
       failsParsing[Statements].in {
         case Cypher5JavaCc => _.withMessageStart("Invalid input 'UNWIND': expected")
         case _ => _.withSyntaxErrorContaining(
-            """Invalid input 'UNWIND': expected ',', 'AS', 'ORDER BY', 'LIMIT', 'RETURN', 'SHOW', 'SKIP', 'TERMINATE', 'WHERE' or <EOF>""".stripMargin
+            """Invalid input 'UNWIND': expected ',', 'AS', 'ORDER BY', 'LIMIT', 'OFFSET', 'RETURN', 'SHOW', 'SKIP', 'TERMINATE', 'WHERE' or <EOF>""".stripMargin
           )
       }
 
@@ -764,6 +792,7 @@ class ShowProceduresCommandParserTest extends AdministrationAndSchemaCommandPars
             |  "IN"
             |  "IS"
             |  "LIMIT"
+            |  "OFFSET"
             |  "OR"
             |  "RETURN"
             |  "SHOW"
@@ -777,7 +806,7 @@ class ShowProceduresCommandParserTest extends AdministrationAndSchemaCommandPars
             |  <EOF> (line 1, column 41 (offset: 40))""".stripMargin
         )
       case _ => _.withSyntaxError(
-          """Invalid input 'AST': expected an expression, ',', 'ASC', 'ASCENDING', 'DESC', 'DESCENDING', 'LIMIT', 'RETURN', 'SHOW', 'SKIP', 'TERMINATE', 'WHERE' or <EOF> (line 1, column 41 (offset: 40))
+          """Invalid input 'AST': expected an expression, ',', 'ASC', 'ASCENDING', 'DESC', 'DESCENDING', 'LIMIT', 'OFFSET', 'RETURN', 'SHOW', 'SKIP', 'TERMINATE', 'WHERE' or <EOF> (line 1, column 41 (offset: 40))
             |"SHOW PROCEDURE YIELD name ORDER BY name AST RETURN *"
             |                                         ^""".stripMargin
         )

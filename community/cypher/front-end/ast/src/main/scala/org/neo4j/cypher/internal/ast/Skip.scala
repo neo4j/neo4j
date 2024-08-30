@@ -20,6 +20,7 @@ import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.InputPosition
 
+// The SKIP AST corresponds to the keywords OFFSET and SKIP
 case class Skip(expression: Expression)(val position: InputPosition) extends ASTNode with ASTSlicingPhrase {
   override def name = "SKIP" // ASTSlicingPhrase name
 }

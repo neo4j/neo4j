@@ -959,6 +959,9 @@ trait AstConstructionTestSupport {
   def withAll(where: Option[Where] = None): With =
     With(distinct = false, returnAllItems, None, None, None, where = where)(pos)
 
+  def withAll(orderBy: Option[OrderBy], skip: Option[Skip], limit: Option[Limit]): With =
+    With(distinct = false, returnAllItems, orderBy, skip, limit, None)(pos)
+
   def set_(items: Seq[SetItem]): SetClause =
     SetClause(items)(pos)
 

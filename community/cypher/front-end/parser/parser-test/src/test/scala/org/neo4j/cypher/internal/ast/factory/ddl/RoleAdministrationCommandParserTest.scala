@@ -205,6 +205,23 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
     )
   }
 
+  test("SHOW POPULATED ROLES YIELD role ORDER BY role OFFSET -1") {
+    parsesTo[Statements](
+      ShowRoles(
+        withUsers = false,
+        showAll = false,
+        Some(Left((
+          yieldClause(
+            returnItems(variableReturnItem(roleString)),
+            Some(orderBy(sortItem(varFor(roleString)))),
+            Some(skip(-1))
+          ),
+          None
+        )))
+      )(pos)
+    )
+  }
+
   test("SHOW POPULATED ROLES YIELD role ORDER BY role LIMIT -1") {
     parsesTo[Statements](
       ShowRoles(
@@ -277,6 +294,7 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
     val exceptionMessage =
       s"""Invalid input ',': expected
          |  "LIMIT"
+         |  "OFFSET"
          |  "ORDER"
          |  "RETURN"
          |  "SKIP"
@@ -285,7 +303,7 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
     failsParsing[Statements].in {
       case Cypher5JavaCc => _.withMessageStart(exceptionMessage)
       case _ => _.withSyntaxError(
-          """Invalid input ',': expected 'ORDER BY', 'LIMIT', 'RETURN', 'SKIP', 'WHERE' or <EOF> (line 1, column 29 (offset: 28))
+          """Invalid input ',': expected 'ORDER BY', 'LIMIT', 'OFFSET', 'RETURN', 'SKIP', 'WHERE' or <EOF> (line 1, column 29 (offset: 28))
             |"SHOW POPULATED ROLES YIELD *,blah RETURN role"
             |                             ^""".stripMargin
         )

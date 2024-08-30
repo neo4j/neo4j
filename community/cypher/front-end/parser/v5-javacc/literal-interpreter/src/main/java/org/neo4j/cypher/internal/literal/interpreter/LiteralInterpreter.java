@@ -507,6 +507,12 @@ public class LiteralInterpreter
     }
 
     @Override
+    public NULL orderBySkipLimitClause(
+            NULL t, List<NULL> order, NULL orderPos, Object skip, NULL skipPos, Object limit, NULL limitPos) {
+        throw new UnsupportedOperationException("orderBySkipLimitClause is not a literal");
+    }
+
+    @Override
     public NULL yieldClause(
             NULL p,
             boolean returnAll,

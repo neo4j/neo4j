@@ -113,6 +113,8 @@ public interface Cypher6ParserListener extends ParseTreeListener {
 
     void exitSubqueryInTransactionsReportParameters(Cypher6Parser.SubqueryInTransactionsReportParametersContext ctx);
 
+    void exitOrderBySkipLimitClause(Cypher6Parser.OrderBySkipLimitClauseContext ctx);
+
     void exitPatternList(Cypher6Parser.PatternListContext ctx);
 
     void exitInsertPatternList(Cypher6Parser.InsertPatternListContext ctx);

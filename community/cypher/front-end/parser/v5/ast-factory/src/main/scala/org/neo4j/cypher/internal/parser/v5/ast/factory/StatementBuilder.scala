@@ -36,6 +36,7 @@ import org.neo4j.cypher.internal.ast.Match
 import org.neo4j.cypher.internal.ast.Merge
 import org.neo4j.cypher.internal.ast.OnCreate
 import org.neo4j.cypher.internal.ast.OnMatch
+import org.neo4j.cypher.internal.ast.OrderBy
 import org.neo4j.cypher.internal.ast.ProcedureResult
 import org.neo4j.cypher.internal.ast.ProcedureResultItem
 import org.neo4j.cypher.internal.ast.Query
@@ -541,6 +542,17 @@ trait StatementBuilder extends Cypher5ParserListener {
     ctx: Cypher5Parser.SubqueryInTransactionsReportParametersContext
   ): Unit = {
     ctx.ast = SubqueryCall.InTransactionsReportParameters(ctxChild(ctx, 3).ast())(pos(ctx))
+  }
+
+  override def exitOrderBySkipLimitClause(ctx: Cypher5Parser.OrderBySkipLimitClauseContext): Unit = {
+    ctx.ast = With(
+      distinct = false,
+      ReturnItems(includeExisting = true, Seq.empty)(pos(ctx)),
+      astOpt[OrderBy](ctx.orderBy()),
+      astOpt[Skip](ctx.skip()),
+      astOpt[Limit](ctx.limit()),
+      None
+    )(pos(ctx))
   }
 
   final override def exitPeriodicCommitQueryHintFailure(

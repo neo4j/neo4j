@@ -369,7 +369,7 @@ class CypherTransactionsParserTest extends AstParsingTestBase with LegacyAstPars
       case Cypher5JavaCc =>
         _.withMessageStart("Invalid input 'CONTINUE'")
       case _ => _.withSyntaxError(
-          """Invalid input 'CONTINUE': expected 'FOREACH', 'REPORT STATUS AS', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'ON ERROR', 'FINISH', 'INSERT', 'MATCH', 'MERGE', 'NODETACH', 'OF', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'UNION', 'UNWIND', 'USE', 'WITH' or <EOF> (line 1, column 52 (offset: 51))
+          """Invalid input 'CONTINUE': expected 'FOREACH', 'REPORT STATUS AS', 'ORDER BY', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'ON ERROR', 'FINISH', 'INSERT', 'LIMIT', 'MATCH', 'MERGE', 'NODETACH', 'OF', 'OFFSET', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'SKIP', 'UNION', 'UNWIND', 'USE', 'WITH' or <EOF> (line 1, column 52 (offset: 51))
             |"CALL { CREATE (n) } IN TRANSACTIONS ON ERROR BREAK CONTINUE"
             |                                                    ^""".stripMargin
         )

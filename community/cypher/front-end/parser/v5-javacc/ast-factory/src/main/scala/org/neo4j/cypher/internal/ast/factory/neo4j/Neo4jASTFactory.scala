@@ -958,6 +958,29 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
     }
   }
 
+  override def orderBySkipLimitClause(
+    p: InputPosition,
+    order: util.List[SortItem],
+    orderPosition: InputPosition,
+    skip: Expression,
+    skipPosition: InputPosition,
+    limit: Expression,
+    limitPosition: InputPosition
+  ): With = {
+    val orderList = order.asScala.toList
+    With(
+      distinct = false,
+      ReturnItems(
+        includeExisting = true,
+        Seq.empty
+      )(p),
+      if (order.isEmpty) None else Some(OrderBy(orderList)(orderPosition)),
+      Option(skip).map(e => Skip(e)(skipPosition)),
+      Option(limit).map(e => Limit(e)(limitPosition)),
+      None
+    )(p)
+  }
+
   // PATTERNS
 
   override def namedPattern(v: Variable, pattern: PatternPart): PatternPart =

@@ -45,7 +45,7 @@ class FinishParserTest extends AstParsingTestBase {
     failsParsing[Statements].in {
       case Cypher5JavaCc => _.withMessageStart("Invalid input '*'")
       case _ => _.withSyntaxError(
-          """Invalid input '*': expected 'FOREACH', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'UNION', 'UNWIND', 'USE', 'WITH' or <EOF> (line 1, column 8 (offset: 7))
+          """Invalid input '*': expected 'FOREACH', 'ORDER BY', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'LIMIT', 'MATCH', 'MERGE', 'NODETACH', 'OFFSET', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'SKIP', 'UNION', 'UNWIND', 'USE', 'WITH' or <EOF> (line 1, column 8 (offset: 7))
             |"FINISH *"
             |        ^""".stripMargin
         )
@@ -56,7 +56,7 @@ class FinishParserTest extends AstParsingTestBase {
     failsParsing[Statements].in {
       case Cypher5JavaCc => _.withMessageStart("Invalid input 'a'")
       case _ => _.withSyntaxError(
-          """Invalid input 'a': expected 'FOREACH', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'UNION', 'UNWIND', 'USE', 'WITH' or <EOF> (line 1, column 8 (offset: 7))
+          """Invalid input 'a': expected 'FOREACH', 'ORDER BY', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'LIMIT', 'MATCH', 'MERGE', 'NODETACH', 'OFFSET', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'SKIP', 'UNION', 'UNWIND', 'USE', 'WITH' or <EOF> (line 1, column 8 (offset: 7))
             |"FINISH a, b"
             |        ^""".stripMargin
         )
@@ -68,7 +68,7 @@ class FinishParserTest extends AstParsingTestBase {
     failsParsing[Statements].in {
       case Cypher5JavaCc => _.withMessageStart("Invalid input 'DISTINCT'")
       case _ => _.withSyntaxError(
-          """Invalid input 'DISTINCT': expected 'FOREACH', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'UNION', 'UNWIND', 'USE', 'WITH' or <EOF> (line 1, column 8 (offset: 7))
+          """Invalid input 'DISTINCT': expected 'FOREACH', 'ORDER BY', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'LIMIT', 'MATCH', 'MERGE', 'NODETACH', 'OFFSET', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'SKIP', 'UNION', 'UNWIND', 'USE', 'WITH' or <EOF> (line 1, column 8 (offset: 7))
             |"FINISH DISTINCT *"
             |        ^""".stripMargin
         )
@@ -79,7 +79,7 @@ class FinishParserTest extends AstParsingTestBase {
     failsParsing[Statements].in {
       case Cypher5JavaCc => _.withMessageStart("Invalid input 'DISTINCT'")
       case _ => _.withSyntaxError(
-          """Invalid input 'DISTINCT': expected 'FOREACH', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'UNION', 'UNWIND', 'USE', 'WITH' or <EOF> (line 1, column 8 (offset: 7))
+          """Invalid input 'DISTINCT': expected 'FOREACH', 'ORDER BY', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'LIMIT', 'MATCH', 'MERGE', 'NODETACH', 'OFFSET', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'SKIP', 'UNION', 'UNWIND', 'USE', 'WITH' or <EOF> (line 1, column 8 (offset: 7))
             |"FINISH DISTINCT a, b"
             |        ^""".stripMargin
         )
@@ -90,7 +90,7 @@ class FinishParserTest extends AstParsingTestBase {
     failsParsing[Statements].in {
       case Cypher5JavaCc => _.withMessageStart("Invalid input 'n'")
       case _ => _.withSyntaxError(
-          """Invalid input 'n': expected 'FOREACH', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'UNION', 'UNWIND', 'USE', 'WITH' or <EOF> (line 1, column 8 (offset: 7))
+          """Invalid input 'n': expected 'FOREACH', 'ORDER BY', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'LIMIT', 'MATCH', 'MERGE', 'NODETACH', 'OFFSET', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'SKIP', 'UNION', 'UNWIND', 'USE', 'WITH' or <EOF> (line 1, column 8 (offset: 7))
             |"FINISH n:A"
             |        ^""".stripMargin
         )
@@ -101,7 +101,7 @@ class FinishParserTest extends AstParsingTestBase {
     failsParsing[Statements].in {
       case Cypher5JavaCc => _.withMessageStart("Invalid input 'n'")
       case _ => _.withSyntaxError(
-          """Invalid input 'n': expected 'FOREACH', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'UNION', 'UNWIND', 'USE', 'WITH' or <EOF> (line 1, column 8 (offset: 7))
+          """Invalid input 'n': expected 'FOREACH', 'ORDER BY', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'LIMIT', 'MATCH', 'MERGE', 'NODETACH', 'OFFSET', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'SKIP', 'UNION', 'UNWIND', 'USE', 'WITH' or <EOF> (line 1, column 8 (offset: 7))
             |"FINISH n:A&B"
             |        ^""".stripMargin
         )

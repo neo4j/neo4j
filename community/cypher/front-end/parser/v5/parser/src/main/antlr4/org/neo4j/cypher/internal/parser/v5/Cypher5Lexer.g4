@@ -786,6 +786,10 @@ OF
    : O F
    ;
 
+OFFSET
+   : O F F S E T
+   ;
+
 ON
    : O N
    ;

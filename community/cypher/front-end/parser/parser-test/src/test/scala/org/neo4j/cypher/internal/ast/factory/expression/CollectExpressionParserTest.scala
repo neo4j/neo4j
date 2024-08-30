@@ -593,7 +593,7 @@ class CollectExpressionParserTest extends AstParsingTestBase with LegacyAstParsi
     failsParsing[Statements].in {
       case Cypher5JavaCc => identity
       case _ => _.withSyntaxError(
-          """Invalid input 'WHERE': expected an expression, 'FOREACH', ',', 'AS', 'ORDER BY', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'LIMIT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'SKIP', 'UNION', 'UNWIND', 'USE', 'WITH' or '}' (line 2, column 36 (offset: 45))
+          """Invalid input 'WHERE': expected an expression, 'FOREACH', ',', 'AS', 'ORDER BY', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'LIMIT', 'MATCH', 'MERGE', 'NODETACH', 'OFFSET', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'SKIP', 'UNION', 'UNWIND', 'USE', 'WITH' or '}' (line 2, column 36 (offset: 45))
             |"WHERE COLLECT { MATCH (b) RETURN b WHERE true } = [1, 2, 3]"
             |                                    ^""".stripMargin
         )

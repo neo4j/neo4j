@@ -1574,6 +1574,20 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
     assertAst(ShowAliases(yieldOrWhere)(defaultPos))
   }
 
+  test("SHOW ALIASES FOR DATABASE YIELD location ORDER BY database OFFSET 1 LIMIT 2 WHERE name = 'alias1' RETURN *") {
+    val orderByClause = orderBy(sortItem(varFor("database")))
+    val whereClause = where(equals(varFor("name"), literalString("alias1")))
+    val columns = yieldClause(
+      returnItems(variableReturnItem("location")),
+      Some(orderByClause),
+      Some(skip(1)),
+      Some(limit(2)),
+      Some(whereClause)
+    )
+    val yieldOrWhere = Some(Left((columns, Some(returnAll))))
+    assertAst(ShowAliases(yieldOrWhere)(defaultPos))
+  }
+
   test("SHOW ALIASES FOR DATABASE YIELD *") {
     assertAst(ShowAliases(Some(Left((yieldClause(returnAllItems), None))))(defaultPos))
   }

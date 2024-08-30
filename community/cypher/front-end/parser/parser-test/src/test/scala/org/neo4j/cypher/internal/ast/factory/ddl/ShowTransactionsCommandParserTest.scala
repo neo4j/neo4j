@@ -328,6 +328,34 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
     )
   }
 
+  test(
+    "USE db SHOW TRANSACTIONS YIELD transactionId, activeLockCount AS pp ORDER BY pp OFFSET 2 LIMIT 5 WHERE pp < 50 RETURN transactionId"
+  ) {
+    assertAst(
+      singleQuery(
+        use(List("db")),
+        ShowTransactionsClause(
+          Left(List.empty),
+          None,
+          List(
+            commandResultItem("transactionId"),
+            commandResultItem("activeLockCount", Some("pp"))
+          ),
+          yieldAll = false
+        )(pos),
+        withFromYield(
+          returnAllItems.withDefaultOrderOnColumns(List("transactionId", "pp")),
+          Some(orderBy(sortItem(varFor("pp")))),
+          Some(skip(2)),
+          Some(limit(5)),
+          Some(where(lessThan(varFor("pp"), literalInt(50L))))
+        ),
+        return_(variableReturnItem("transactionId"))
+      ),
+      comparePosition = false
+    )
+  }
+
   test("SHOW TRANSACTIONS $param YIELD transactionId AS TRANSACTION, database AS OUTPUT") {
     assertAst(
       singleQuery(
@@ -875,7 +903,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
       failsParsing[Statements].in {
         case Cypher5JavaCc => _.withMessageStart("Invalid input 'SHOW': expected")
         case _ => _.withSyntaxErrorContaining(
-            """Invalid input 'SHOW': expected 'FOREACH', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'UNION', 'UNWIND', 'USE', 'WITH' or <EOF>"""
+            """Invalid input 'SHOW': expected 'FOREACH', 'ORDER BY', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'LIMIT', 'MATCH', 'MERGE', 'NODETACH', 'OFFSET', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'SKIP', 'UNION', 'UNWIND', 'USE', 'WITH' or <EOF>""".stripMargin
           )
       }
     }
@@ -895,7 +923,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
       failsParsing[Statements].in {
         case Cypher5JavaCc => _.withMessageStart("Invalid input 'SHOW': expected")
         case _ => _.withSyntaxErrorContaining(
-            """Invalid input 'SHOW': expected 'FOREACH', ',', 'ORDER BY', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'LIMIT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'SKIP', 'UNION', 'UNWIND', 'USE', 'WHERE', 'WITH' or <EOF>"""
+            """Invalid input 'SHOW': expected 'FOREACH', ',', 'ORDER BY', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'LIMIT', 'MATCH', 'MERGE', 'NODETACH', 'OFFSET', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'SKIP', 'UNION', 'UNWIND', 'USE', 'WHERE', 'WITH' or <EOF>"""
           )
       }
     }
@@ -934,7 +962,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
       failsParsing[Statements].in {
         case Cypher5JavaCc => _.withMessageStart("Invalid input 'WITH': expected")
         case _ => _.withSyntaxErrorContaining(
-            """Invalid input 'WITH': expected ',', 'AS', 'ORDER BY', 'LIMIT', 'RETURN', 'SHOW', 'SKIP', 'TERMINATE', 'WHERE' or <EOF>"""
+            """Invalid input 'WITH': expected ',', 'AS', 'ORDER BY', 'LIMIT', 'OFFSET', 'RETURN', 'SHOW', 'SKIP', 'TERMINATE', 'WHERE' or <EOF>"""
           )
       }
     }
@@ -943,7 +971,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
       failsParsing[Statements].in {
         case Cypher5JavaCc => _.withMessageStart("Invalid input 'UNWIND': expected")
         case _ => _.withSyntaxErrorContaining(
-            """Invalid input 'UNWIND': expected ',', 'AS', 'ORDER BY', 'LIMIT', 'RETURN', 'SHOW', 'SKIP', 'TERMINATE', 'WHERE' or <EOF>"""
+            """Invalid input 'UNWIND': expected ',', 'AS', 'ORDER BY', 'LIMIT', 'OFFSET', 'RETURN', 'SHOW', 'SKIP', 'TERMINATE', 'WHERE' or <EOF>"""
           )
       }
     }
