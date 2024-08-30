@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.store;
 
 import static java.util.Objects.requireNonNull;
+import static org.neo4j.internal.recordstorage.InconsistentDataReadException.CYCLE_DETECTION_THRESHOLD;
 import static org.neo4j.memory.HeapEstimator.ARRAY_HEADER_BYTES;
 import static org.neo4j.memory.HeapEstimator.alignObjectSize;
 
@@ -28,12 +29,17 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.function.LongPredicate;
 import org.eclipse.collections.api.set.ImmutableSet;
+import org.eclipse.collections.api.set.primitive.MutableLongSet;
+import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.neo4j.configuration.Config;
+import org.neo4j.function.Predicates;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.IdType;
+import org.neo4j.internal.recordstorage.InconsistentDataReadException;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
@@ -42,6 +48,7 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.Record;
+import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
@@ -157,7 +164,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore<DynamicRe
     /**
      * @return Pair&lt; header-in-first-record , all-other-bytes &gt;
      */
-    public static HeavyRecordData readFullByteArrayFromHeavyRecords(
+    static HeavyRecordData readFullByteArrayFromHeavyRecords(
             Iterable<DynamicRecord> records, PropertyType propertyType) {
         byte[] header = null;
         List<byte[]> byteList = new ArrayList<>();
@@ -201,6 +208,90 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore<DynamicRe
         }
 
         return readFullByteArrayFromHeavyRecords(records, propertyType);
+    }
+
+    /**
+     * Reads records that belong together, a chain of records that as a whole forms the entirety of a data item.
+     *
+     * @param firstId record id of the first record to start loading from.
+     * @param mode {@link RecordLoad} mode.
+     * @param guardForCycles Set to {@code true} if we need to take extra care in guarding for cycles in the chain.
+     * When a cycle is found, a {@link RecordChainCycleDetectedException} will be thrown.
+     * If {@code false}, then chain cycles will likely end up causing an {@link OutOfMemoryError}.
+     * A cycle would only occur if the store is inconsistent, though.
+     * @param pageCursor page cursor to be used for record reading
+     * @param memoryTracker to track allocated memory
+     * @return {@link Collection} of records in the loaded chain.
+     * @throws InvalidRecordException if some record not in use and the {@code mode} allows for throwing.
+     */
+    List<DynamicRecord> getRecords(
+            long firstId, RecordLoad mode, boolean guardForCycles, PageCursor pageCursor, MemoryTracker memoryTracker)
+            throws InvalidRecordException {
+        ArrayList<DynamicRecord> list = new ArrayList<>();
+        streamRecords(firstId, mode, guardForCycles, pageCursor, list::add, memoryTracker);
+        return list;
+    }
+
+    /**
+     * Streams records that belong together, a chain of records that as a whole forms the entirety of a data item.
+     *
+     * @param firstId record id of the first record to start loading from.
+     * @param mode {@link RecordLoad} mode.
+     * @param guardForCycles Set to {@code true} if we need to take extra care in guarding for cycles in the chain.
+     * When a cycle is found, a {@link RecordChainCycleDetectedException} will be thrown.
+     * If {@code false}, then chain cycles will likely end up causing an {@link OutOfMemoryError}.
+     * A cycle would only occur if the store is inconsistent, though.
+     * @param cursor page cursor to be used for record reading
+     * @param subscriber The subscriber of the data, will receive records until the subscriber returns <code>false</code>
+     * @param memoryTracker to track allocated memory
+     */
+    public void streamRecords(
+            long firstId,
+            RecordLoad mode,
+            boolean guardForCycles,
+            PageCursor cursor,
+            RecordSubscriber<DynamicRecord> subscriber,
+            MemoryTracker memoryTracker) {
+        if (Record.NULL_REFERENCE.is(firstId)) {
+            return;
+        }
+        LongPredicate cycleGuard = guardForCycles ? createRecordCycleGuard() : Predicates.ALWAYS_FALSE_LONG;
+
+        long id = firstId;
+        MutableLongSet seenRecordIds = null;
+        int count = 0;
+        do {
+            var record = newRecord();
+            if (cycleGuard.test(id)) {
+                throw newCycleDetectedException(firstId, id);
+            }
+            getRecordByCursor(id, record, mode, cursor, memoryTracker);
+            // Even unused records gets added and returned
+            if (!subscriber.onRecord(record)) {
+                return;
+            }
+            id = recordFormat.getNextRecordReference(record);
+
+            if (++count >= CYCLE_DETECTION_THRESHOLD) {
+                if (seenRecordIds == null) {
+                    seenRecordIds = LongSets.mutable.empty();
+                }
+                if (!seenRecordIds.add(id)) {
+                    throw new InconsistentDataReadException(
+                            "Chain cycle detected while reading chain in store %s starting at id:%d", this, firstId);
+                }
+            }
+        } while (!Record.NULL_REFERENCE.is(id));
+    }
+
+    private static LongPredicate createRecordCycleGuard() {
+        MutableLongSet observedSet = LongSets.mutable.empty();
+        return id -> !observedSet.add(id);
+    }
+
+    private RecordChainCycleDetectedException newCycleDetectedException(long firstId, long conflictingId) {
+        return new RecordChainCycleDetectedException("Cycle detected in DynamicRecord chain starting at id " + firstId
+                + ", and finding id " + conflictingId + " twice in the chain.");
     }
 
     private static class DynamicStoreHeaderFormat extends IntStoreHeaderFormat {

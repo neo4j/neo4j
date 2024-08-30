@@ -282,7 +282,7 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord, NoStoreHe
         }
 
         PropertyType type = block.getType();
-        RecordStore<DynamicRecord> dynamicStore = dynamicStoreForValueType(type);
+        var dynamicStore = dynamicStoreForValueType(type);
         if (dynamicStore != null) {
             var cursorForType = dynamicStoreCursorForType(storeCursors, type);
             List<DynamicRecord> dynamicRecords =
@@ -302,7 +302,7 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord, NoStoreHe
         };
     }
 
-    private RecordStore<DynamicRecord> dynamicStoreForValueType(PropertyType type) {
+    private AbstractDynamicStore dynamicStoreForValueType(PropertyType type) {
         return switch (type) {
             case ARRAY -> arrayStore;
             case STRING -> stringStore;

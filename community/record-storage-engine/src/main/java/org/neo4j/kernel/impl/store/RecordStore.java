@@ -21,8 +21,6 @@ package org.neo4j.kernel.impl.store;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.Collection;
-import java.util.List;
 import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.id.IdSequence;
@@ -38,15 +36,15 @@ import org.neo4j.storageengine.util.IdUpdateListener;
 
 /**
  * A store for {@link #updateRecord(AbstractBaseRecord, PageCursor, CursorContext, StoreCursors) updating} and
- * {@link #getRecordByCursor(long, AbstractBaseRecord, RecordLoad, PageCursor)} getting} records.
+ * {@link #getRecordByCursor(long, AbstractBaseRecord, RecordLoad, PageCursor, MemoryTracker)} getting} records.
  *
  * There are two ways of getting records, either one-by-one using
- * {@link #getRecordByCursor(long, AbstractBaseRecord, RecordLoad, PageCursor)}, passing in record retrieved from {@link #newRecord()}.
+ * {@link #getRecordByCursor(long, AbstractBaseRecord, RecordLoad, PageCursor, MemoryTracker)}, passing in record retrieved from {@link #newRecord()}.
  * This to make a conscious decision about who will create the record instance and in that process figure out
  * ways to reduce number of record instances created.
  * <p>
  * The other way is to use {@link #openPageCursorForReading(long, CursorContext)} to open a cursor and use it to read records using
- * {@link #getRecordByCursor(long, AbstractBaseRecord, RecordLoad, PageCursor)}. A {@link PageCursor} can be ket open
+ * {@link #getRecordByCursor(long, AbstractBaseRecord, RecordLoad, PageCursor, MemoryTracker)}. A {@link PageCursor} can be ket open
  * to read multiple records before closing it.
  *
  * @param <RECORD> type of {@link AbstractBaseRecord}.
@@ -84,13 +82,13 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> {
     int getStoreHeaderInt();
 
     /**
-     * @return a new record instance for receiving data by {@link #getRecordByCursor(long, AbstractBaseRecord, RecordLoad, PageCursor)}.
+     * @return a new record instance for receiving data by {@link #getRecordByCursor(long, AbstractBaseRecord, RecordLoad, PageCursor, MemoryTracker)}.
      */
     RECORD newRecord();
 
     /**
      * Opens a {@link PageCursor} on this store, capable of reading records using
-     * {@link #getRecordByCursor(long, AbstractBaseRecord, RecordLoad, PageCursor)}.
+     * {@link #getRecordByCursor(long, AbstractBaseRecord, RecordLoad, PageCursor, MemoryTracker)}.
      * The caller is responsible for closing it when done with it.
      *
      * @param id cursor will initially be placed at the page containing this record id.
@@ -111,7 +109,7 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> {
 
     /**
      * Opens a {@link PageCursor} on this store, capable of reading records using
-     * {@link #getRecordByCursor(long, AbstractBaseRecord, RecordLoad, PageCursor)}.
+     * {@link #getRecordByCursor(long, AbstractBaseRecord, RecordLoad, PageCursor, MemoryTracker)}.
      * The caller is responsible for closing it when done with it.
      * The opened cursor will make use of pre-fetching for optimal scanning performance.
      *
@@ -156,7 +154,7 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> {
      * {@code id} as part of this method call.
      * @param mode loading behaviour, read more in method description.
      * @param cursor the PageCursor to use for record loading.
-     * @param memoryTracker
+     * @param memoryTracker to track allocated memory
      * @throws InvalidRecordException if record not in use and the {@code mode} allows for throwing.
      */
     RECORD getRecordByCursor(long id, RECORD target, RecordLoad mode, PageCursor cursor, MemoryTracker memoryTracker)
@@ -164,16 +162,17 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> {
 
     /**
      * Reads a record from the store into {@code target}, see
-     * {@link RecordStore#getRecordByCursor(long, AbstractBaseRecord, RecordLoad, PageCursor)}.
+     * {@link RecordStore#getRecordByCursor(long, AbstractBaseRecord, RecordLoad, PageCursor, MemoryTracker)}.
      * <p>
      * This method requires that the cursor page and offset point to the first byte of the record in target on calling.
      * The provided page cursor will be used to get the record, and in doing this it will be redirected to the
      * next page if the input record was the last on it's page.
      *
      * @param target the record to fill.
-     * @param mode loading behaviour, read more in {@link RecordStore#getRecordByCursor(long, AbstractBaseRecord, RecordLoad, PageCursor)}.
+     * @param mode loading behaviour, read more in
+     * {@link RecordStore#getRecordByCursor(long, AbstractBaseRecord, RecordLoad, PageCursor, MemoryTracker)}.
      * @param cursor pageCursor to use for record loading.
-     * @param memoryTracker
+     * @param memoryTracker to track allocated memory
      * @throws InvalidRecordException if record not in use and the {@code mode} allows for throwing.
      */
     void nextRecordByCursor(RECORD target, RecordLoad mode, PageCursor cursor, MemoryTracker memoryTracker)
@@ -186,48 +185,9 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> {
      *
      * @param record record to make heavy, if not already.
      * @param storeCursors pageCursor provider to be used for record loading.
-     * @param memoryTracker
+     * @param memoryTracker to track allocated memory
      */
     void ensureHeavy(RECORD record, StoreCursors storeCursors, MemoryTracker memoryTracker);
-
-    /**
-     * Reads records that belong together, a chain of records that as a whole forms the entirety of a data item.
-     *
-     * @param firstId record id of the first record to start loading from.
-     * @param mode {@link RecordLoad} mode.
-     * @param guardForCycles Set to {@code true} if we need to take extra care in guarding for cycles in the chain.
-     * When a cycle is found, a {@link RecordChainCycleDetectedException} will be thrown.
-     * If {@code false}, then chain cycles will likely end up causing an {@link OutOfMemoryError}.
-     * A cycle would only occur if the store is inconsistent, though.
-     * @param pageCursor page cursor to be used for record reading
-     * @param memoryTracker
-     * @return {@link Collection} of records in the loaded chain.
-     * @throws InvalidRecordException if some record not in use and the {@code mode} is allows for throwing.
-     */
-    List<RECORD> getRecords(
-            long firstId, RecordLoad mode, boolean guardForCycles, PageCursor pageCursor, MemoryTracker memoryTracker)
-            throws InvalidRecordException;
-
-    /**
-     * Streams records that belong together, a chain of records that as a whole forms the entirety of a data item.
-     *
-     * @param firstId record id of the first record to start loading from.
-     * @param mode {@link RecordLoad} mode.
-     * @param guardForCycles Set to {@code true} if we need to take extra care in guarding for cycles in the chain.
-     * When a cycle is found, a {@link RecordChainCycleDetectedException} will be thrown.
-     * If {@code false}, then chain cycles will likely end up causing an {@link OutOfMemoryError}.
-     * A cycle would only occur if the store is inconsistent, though.
-     * @param pageCursor page cursor to be used for record reading
-     * @param subscriber The subscriber of the data, will receive records until the subscriber returns <code>false</code>
-     * @param memoryTracker
-     */
-    void streamRecords(
-            long firstId,
-            RecordLoad mode,
-            boolean guardForCycles,
-            PageCursor pageCursor,
-            RecordSubscriber<RECORD> subscriber,
-            MemoryTracker memoryTracker);
 
     /**
      * Updates this store with the contents of {@code record} at the record id
@@ -296,7 +256,7 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> {
      * cloned if you want to save it for later.
      * @param visitor {@link Visitor} notified about all records.
      * @param pageCursor pageCursor to use for record reading.
-     * @param memoryTracker
+     * @param memoryTracker to track allocated memory
      * @throws EXCEPTION on error reading from store.
      */
     <EXCEPTION extends Exception> void scanAllRecords(
@@ -314,7 +274,6 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> {
     /**
      * Conservatively estimate how much reserved space is available for (re)use.
      * @return available reserved space estimate in bytes
-     * @throws IOException on error reading from store.
      */
     long estimateAvailableReservedSpace();
 }

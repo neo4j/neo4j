@@ -23,7 +23,6 @@ import static java.lang.String.format;
 import static java.nio.file.StandardOpenOption.CREATE;
 import static org.neo4j.internal.helpers.Exceptions.throwIfUnchecked;
 import static org.neo4j.internal.id.IdSlotDistribution.SINGLE_IDS;
-import static org.neo4j.internal.recordstorage.InconsistentDataReadException.CYCLE_DETECTION_THRESHOLD;
 import static org.neo4j.io.pagecache.PageCacheOpenOptions.ANY_PAGE_SIZE;
 import static org.neo4j.io.pagecache.PagedFile.PF_EAGER_FLUSH;
 import static org.neo4j.io.pagecache.PagedFile.PF_NO_CHAIN_FOLLOW;
@@ -38,15 +37,9 @@ import java.io.IOException;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.function.LongPredicate;
 import org.eclipse.collections.api.set.ImmutableSet;
-import org.eclipse.collections.api.set.primitive.MutableLongSet;
-import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.neo4j.configuration.Config;
 import org.neo4j.exceptions.UnderlyingStorageException;
-import org.neo4j.function.Predicates;
 import org.neo4j.internal.diagnostics.DiagnosticsLogger;
 import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.internal.id.FreeIds;
@@ -55,7 +48,6 @@ import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.IdSequence;
 import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.id.IdValidator;
-import org.neo4j.internal.recordstorage.InconsistentDataReadException;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
@@ -66,7 +58,6 @@ import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
-import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
@@ -867,67 +858,6 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord, HEA
                 visitor.visit(record);
             }
         }
-    }
-
-    @Override
-    public List<RECORD> getRecords(
-            long firstId, RecordLoad mode, boolean guardForCycles, PageCursor pageCursor, MemoryTracker memoryTracker) {
-        ArrayList<RECORD> list = new ArrayList<>();
-        streamRecords(firstId, mode, guardForCycles, pageCursor, list::add, memoryTracker);
-        return list;
-    }
-
-    @Override
-    public void streamRecords(
-            long firstId,
-            RecordLoad mode,
-            boolean guardForCycles,
-            PageCursor cursor,
-            RecordSubscriber<RECORD> subscriber,
-            MemoryTracker memoryTracker) {
-        if (Record.NULL_REFERENCE.is(firstId)) {
-            return;
-        }
-        LongPredicate cycleGuard = guardForCycles ? createRecordCycleGuard() : Predicates.ALWAYS_FALSE_LONG;
-
-        long id = firstId;
-        MutableLongSet seenRecordIds = null;
-        int count = 0;
-        RECORD record;
-        do {
-            record = newRecord();
-            if (cycleGuard.test(id)) {
-                throw newCycleDetectedException(firstId, id, record);
-            }
-            getRecordByCursor(id, record, mode, cursor, memoryTracker);
-            // Even unused records gets added and returned
-            if (!subscriber.onRecord(record)) {
-                return;
-            }
-            id = recordFormat.getNextRecordReference(record);
-
-            if (++count >= CYCLE_DETECTION_THRESHOLD) {
-                if (seenRecordIds == null) {
-                    seenRecordIds = LongSets.mutable.empty();
-                }
-                if (!seenRecordIds.add(id)) {
-                    throw new InconsistentDataReadException(
-                            "Chain cycle detected while reading chain in store %s starting at id:%d", this, firstId);
-                }
-            }
-        } while (!Record.NULL_REFERENCE.is(id));
-    }
-
-    private static LongPredicate createRecordCycleGuard() {
-        MutableLongSet observedSet = LongSets.mutable.empty();
-        return id -> !observedSet.add(id);
-    }
-
-    private RecordChainCycleDetectedException newCycleDetectedException(
-            long firstId, long conflictingId, RECORD record) {
-        return new RecordChainCycleDetectedException(
-                "Cycle detected in " + record.getClass().getSimpleName() + " chain starting at id " + firstId
-                        + ", and finding id " + conflictingId + " twice in the chain.");
     }
 
     private void verifyAfterNotRead(RECORD record, RecordLoad mode) {
