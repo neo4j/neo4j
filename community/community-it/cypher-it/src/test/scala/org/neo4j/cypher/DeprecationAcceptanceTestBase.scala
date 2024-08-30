@@ -23,6 +23,14 @@ import org.neo4j.cypher.internal.javacompat.NotificationTestSupport.TestFunction
 import org.neo4j.cypher.internal.javacompat.NotificationTestSupport.TestProcedures
 import org.neo4j.cypher.internal.options.CypherVersion
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.gqlstatus.GqlStatusInfoCodes.STATUS_01N00
+import org.neo4j.gqlstatus.GqlStatusInfoCodes.STATUS_01N01
+import org.neo4j.gqlstatus.GqlStatusInfoCodes.STATUS_01N02
+import org.neo4j.gqlstatus.GqlStatusInfoCodes.STATUS_01N03
+import org.neo4j.gqlstatus.GqlStatusInfoCodes.STATUS_01N51
+import org.neo4j.gqlstatus.GqlStatusInfoCodes.STATUS_01N60
+import org.neo4j.gqlstatus.NotificationClassification
+import org.neo4j.graphdb.SeverityLevel
 import org.neo4j.kernel.api.impl.schema.TextIndexProvider
 import org.neo4j.kernel.api.impl.schema.trigram.TrigramIndexProvider
 import org.neo4j.notifications.NotificationCodeWithDescription.deprecatedConnectComponentsPlannerPreParserOption
@@ -69,7 +77,16 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
       queries,
       shouldContainNotification = true,
       detail,
-      (pos, detail) => deprecatedProcedureWithoutReplacement(pos, detail, "oldProcNotReplaced")
+      (pos, detail) => deprecatedProcedureWithoutReplacement(pos, detail, "oldProcNotReplaced"),
+      List(
+        TestGqlStatusObject(
+          STATUS_01N02.getStatusString,
+          "warn: feature deprecated without replacement. `oldProcNotReplaced` is deprecated and will be removed without a replacement.",
+          SeverityLevel.WARNING,
+          NotificationClassification.DEPRECATION
+        ),
+        testOmittedResult
+      )
     )
   }
 
@@ -80,7 +97,16 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
       queries,
       shouldContainNotification = true,
       detail,
-      (pos, detail) => deprecatedProcedureWithReplacement(pos, detail, "oldProc", "newProc")
+      (pos, detail) => deprecatedProcedureWithReplacement(pos, detail, "oldProc", "newProc"),
+      List(
+        TestGqlStatusObject(
+          STATUS_01N01.getStatusString,
+          "warn: feature deprecated with replacement. `oldProc` is deprecated. It is replaced by `newProc`.",
+          SeverityLevel.WARNING,
+          NotificationClassification.DEPRECATION
+        ),
+        testOmittedResult
+      )
     )
   }
 
@@ -97,7 +123,16 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
       Seq(query),
       shouldContainNotification = true,
       detail,
-      (pos, detail) => deprecatedProcedureReturnField(pos, detail, "changedProc", "oldField")
+      (pos, detail) => deprecatedProcedureReturnField(pos, detail, "changedProc", "oldField"),
+      List(
+        TestGqlStatusObject(
+          STATUS_01N03.getStatusString,
+          "warn: procedure field deprecated. `oldField` for procedure `changedProc` is deprecated.",
+          SeverityLevel.WARNING,
+          NotificationClassification.DEPRECATION
+        ),
+        testOmittedResult
+      )
     )
   }
 
@@ -118,7 +153,16 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
       queries,
       shouldContainNotification = true,
       detail,
-      (pos, detail) => deprecatedFunctionField(pos, detail, "org.example.com.FuncWithDepInput", "value")
+      (pos, detail) => deprecatedFunctionField(pos, detail, "org.example.com.FuncWithDepInput", "value"),
+      List(
+        TestGqlStatusObject(
+          STATUS_01N00.getStatusString,
+          "warn: feature deprecated. `value` used by the function `org.example.com.FuncWithDepInput` is deprecated.",
+          SeverityLevel.WARNING,
+          NotificationClassification.DEPRECATION
+        ),
+        testOmittedResult
+      )
     )
   }
 
@@ -131,7 +175,16 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
       queries,
       shouldContainNotification = true,
       detail,
-      (pos, detail) => deprecatedProcedureField(pos, detail, "changedProc2", "value")
+      (pos, detail) => deprecatedProcedureField(pos, detail, "changedProc2", "value"),
+      List(
+        TestGqlStatusObject(
+          STATUS_01N00.getStatusString,
+          "warn: feature deprecated. `value` used by the procedure `changedProc2` is deprecated.",
+          SeverityLevel.WARNING,
+          NotificationClassification.DEPRECATION
+        ),
+        testOmittedResult
+      )
     )
   }
 
@@ -139,19 +192,38 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
     val queries = Seq(
       "CALL changedProc2(org.example.com.oldFuncNotReplaced())"
     )
+
+    val expectedGqlStatusObjects = List(
+      TestGqlStatusObject(
+        STATUS_01N00.getStatusString,
+        "warn: feature deprecated. `value` used by the procedure `changedProc2` is deprecated.",
+        SeverityLevel.WARNING,
+        NotificationClassification.DEPRECATION
+      ),
+      TestGqlStatusObject(
+        STATUS_01N02.getStatusString,
+        "warn: feature deprecated without replacement. `org.example.com.oldFuncNotReplaced` is deprecated and will be removed without a replacement.",
+        SeverityLevel.WARNING,
+        NotificationClassification.DEPRECATION
+      ),
+      testOmittedResult
+    )
+
     val detail1 = NotificationDetail.deprecatedInputField("changedProc2", "value")
     assertNotification(
       queries,
       shouldContainNotification = true,
       detail1,
-      (pos, detail) => deprecatedProcedureField(pos, detail, "changedProc2", "value")
+      (pos, detail) => deprecatedProcedureField(pos, detail, "changedProc2", "value"),
+      expectedGqlStatusObjects
     )
     val detail2 = NotificationDetail.deprecatedName("org.example.com.oldFuncNotReplaced")
     assertNotification(
       queries,
       shouldContainNotification = true,
       detail2,
-      (pos, detail) => deprecatedFunctionWithoutReplacement(pos, detail, "org.example.com.oldFuncNotReplaced")
+      (pos, detail) => deprecatedFunctionWithoutReplacement(pos, detail, "org.example.com.oldFuncNotReplaced"),
+      expectedGqlStatusObjects
     )
   }
 
@@ -166,7 +238,16 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
       queries,
       shouldContainNotification = true,
       detail,
-      (pos, detail) => deprecatedFunctionWithoutReplacement(pos, detail, "org.example.com.oldFuncNotReplaced")
+      (pos, detail) => deprecatedFunctionWithoutReplacement(pos, detail, "org.example.com.oldFuncNotReplaced"),
+      List(
+        TestGqlStatusObject(
+          STATUS_01N02.getStatusString,
+          "warn: feature deprecated without replacement. `org.example.com.oldFuncNotReplaced` is deprecated and will be removed without a replacement.",
+          SeverityLevel.WARNING,
+          NotificationClassification.DEPRECATION
+        ),
+        testOmittedResult
+      )
     )
   }
 
@@ -182,7 +263,16 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
       shouldContainNotification = true,
       detail,
       (pos, detail) =>
-        deprecatedFunctionWithReplacement(pos, detail, "org.example.com.oldFunc", "org.example.com.newFunc")
+        deprecatedFunctionWithReplacement(pos, detail, "org.example.com.oldFunc", "org.example.com.newFunc"),
+      List(
+        TestGqlStatusObject(
+          STATUS_01N01.getStatusString,
+          "warn: feature deprecated with replacement. `org.example.com.oldFunc` is deprecated. It is replaced by `org.example.com.newFunc`.",
+          SeverityLevel.WARNING,
+          NotificationClassification.DEPRECATION
+        ),
+        testOmittedResult
+      )
     )
   }
 
@@ -197,7 +287,16 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
       shouldContainNotification = true,
       detail,
       (pos, detail) =>
-        deprecatedFunctionWithReplacement(pos, detail, "org.example.com.oldAggFunc", "org.example.com.newAggFunc")
+        deprecatedFunctionWithReplacement(pos, detail, "org.example.com.oldAggFunc", "org.example.com.newAggFunc"),
+      List(
+        TestGqlStatusObject(
+          STATUS_01N01.getStatusString,
+          "warn: feature deprecated with replacement. `org.example.com.oldAggFunc` is deprecated. It is replaced by `org.example.com.newAggFunc`.",
+          SeverityLevel.WARNING,
+          NotificationClassification.DEPRECATION
+        ),
+        testOmittedResult
+      )
     )
   }
 
@@ -223,6 +322,7 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
   // DEPRECATIONS in 5.X
 
   test("deprecated legacy reltype separator") {
+
     val queries = Seq(
       "MATCH (a)-[:A|:B|:C]-() RETURN a"
     )
@@ -231,7 +331,34 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
       queries,
       shouldContainNotification = true,
       deprecationNotificationDetail(":A|B|C"),
-      (pos, detail) => deprecatedRelationshipTypeSeparator(pos, detail, ":A|:B|:C", ":A|B|C")
+      (pos, detail) => deprecatedRelationshipTypeSeparator(pos, detail, ":A|:B|:C", ":A|B|C"),
+      List(
+        TestGqlStatusObject(
+          STATUS_01N01.getStatusString,
+          "warn: feature deprecated with replacement. `:A|:B|:C` is deprecated. It is replaced by `:A|B|C`.",
+          SeverityLevel.WARNING,
+          NotificationClassification.DEPRECATION
+        ),
+        TestGqlStatusObject(
+          STATUS_01N51.getStatusString,
+          "warn: unknown relationship type. The relationship type `A` does not exist. Verify that the spelling is correct.",
+          SeverityLevel.WARNING,
+          NotificationClassification.UNRECOGNIZED
+        ),
+        TestGqlStatusObject(
+          STATUS_01N51.getStatusString,
+          "warn: unknown relationship type. The relationship type `B` does not exist. Verify that the spelling is correct.",
+          SeverityLevel.WARNING,
+          NotificationClassification.UNRECOGNIZED
+        ),
+        TestGqlStatusObject(
+          STATUS_01N51.getStatusString,
+          "warn: unknown relationship type. The relationship type `C` does not exist. Verify that the spelling is correct.",
+          SeverityLevel.WARNING,
+          NotificationClassification.UNRECOGNIZED
+        ),
+        testOmittedResult
+      )
     )
 
     // clear caches of the rewritten queries to not keep notifications around
@@ -242,25 +369,61 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
     assertNotification(
       Seq("MATCH (g)-[r:KNOWS]->(k) SET g = r"),
       shouldContainNotification = true,
-      pos => deprecatedNodeOrRelationshipOnRhsSetClause(pos, "SET g = r", "SET g = properties(r)")
+      pos => deprecatedNodeOrRelationshipOnRhsSetClause(pos, "SET g = r", "SET g = properties(r)"),
+      List(
+        TestGqlStatusObject(
+          STATUS_01N01.getStatusString,
+          "warn: feature deprecated with replacement. `SET g = r` is deprecated. It is replaced by `SET g = properties(r)`.",
+          SeverityLevel.WARNING,
+          NotificationClassification.DEPRECATION
+        ),
+        testOmittedResult
+      )
     )
 
     assertNotification(
       Seq("MATCH (g)-[r:KNOWS]->(k) SET g = k"),
       shouldContainNotification = true,
-      pos => deprecatedNodeOrRelationshipOnRhsSetClause(pos, "SET g = k", "SET g = properties(k)")
+      pos => deprecatedNodeOrRelationshipOnRhsSetClause(pos, "SET g = k", "SET g = properties(k)"),
+      List(
+        TestGqlStatusObject(
+          STATUS_01N01.getStatusString,
+          "warn: feature deprecated with replacement. `SET g = k` is deprecated. It is replaced by `SET g = properties(k)`.",
+          SeverityLevel.WARNING,
+          NotificationClassification.DEPRECATION
+        ),
+        testOmittedResult
+      )
     )
 
     assertNotification(
       Seq("MATCH (g)-[r:KNOWS]->(k) SET g += r"),
       shouldContainNotification = true,
-      pos => deprecatedNodeOrRelationshipOnRhsSetClause(pos, "SET g += r", "SET g += properties(r)")
+      pos => deprecatedNodeOrRelationshipOnRhsSetClause(pos, "SET g += r", "SET g += properties(r)"),
+      List(
+        TestGqlStatusObject(
+          STATUS_01N01.getStatusString,
+          "warn: feature deprecated with replacement. `SET g += r` is deprecated. It is replaced by `SET g += properties(r)`.",
+          SeverityLevel.WARNING,
+          NotificationClassification.DEPRECATION
+        ),
+        testOmittedResult
+      )
     )
 
     assertNotification(
       Seq("MATCH (g)-[r:KNOWS]->(k) SET g += k"),
       shouldContainNotification = true,
-      pos => deprecatedNodeOrRelationshipOnRhsSetClause(pos, "SET g += k", "SET g += properties(k)")
+      pos => deprecatedNodeOrRelationshipOnRhsSetClause(pos, "SET g += k", "SET g += properties(k)"),
+      List(
+        TestGqlStatusObject(
+          STATUS_01N01.getStatusString,
+          "warn: feature deprecated with replacement. `SET g += k` is deprecated. It is replaced by `SET g += properties(k)`.",
+          SeverityLevel.WARNING,
+          NotificationClassification.DEPRECATION
+        ),
+        testOmittedResult
+      )
     )
   }
 
@@ -293,7 +456,16 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
           pos,
           "allShortestPaths((a)-[r]->(b))",
           "allShortestPaths((a)-[r*1..1]->(b))"
-        )
+        ),
+      List(
+        TestGqlStatusObject(
+          STATUS_01N01.getStatusString,
+          "warn: feature deprecated with replacement. `allShortestPaths((a)-[r]->(b))` is deprecated. It is replaced by `allShortestPaths((a)-[r*1..1]->(b))`.",
+          SeverityLevel.WARNING,
+          NotificationClassification.DEPRECATION
+        ),
+        testOmittedResult
+      )
     )
 
     assertNotification(
@@ -304,7 +476,22 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
           pos,
           "shortestPath((a)<-[r:TYPE]-(b))",
           "shortestPath((a)<-[r:TYPE*1..1]-(b))"
-        )
+        ),
+      List(
+        TestGqlStatusObject(
+          STATUS_01N01.getStatusString,
+          "warn: feature deprecated with replacement. `shortestPath((a)<-[r:TYPE]-(b))` is deprecated. It is replaced by `shortestPath((a)<-[r:TYPE*1..1]-(b))`.",
+          SeverityLevel.WARNING,
+          NotificationClassification.DEPRECATION
+        ),
+        TestGqlStatusObject(
+          STATUS_01N51.getStatusString,
+          "warn: unknown relationship type. The relationship type `TYPE` does not exist. Verify that the spelling is correct.",
+          SeverityLevel.WARNING,
+          NotificationClassification.UNRECOGNIZED
+        ),
+        testOmittedResult
+      )
     )
   }
 
@@ -317,7 +504,16 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
     assertNotification(
       deprecatedProviderQueries,
       shouldContainNotification = true,
-      deprecatedTextIndexProvider
+      deprecatedTextIndexProvider,
+      List(
+        TestGqlStatusObject(
+          STATUS_01N01.getStatusString,
+          "warn: feature deprecated with replacement. `text-1.0` is deprecated. It is replaced by `text-2.0`.",
+          SeverityLevel.WARNING,
+          NotificationClassification.DEPRECATION
+        ),
+        testOmittedResult
+      )
     )
 
     val validProvider = TrigramIndexProvider.DESCRIPTOR.name()
@@ -401,6 +597,15 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
       queries,
       shouldContainNotification = true,
       unionReturnOrder,
+      List(
+        TestGqlStatusObject(
+          STATUS_01N00.getStatusString,
+          "warn: feature deprecated. All subqueries in a UNION [ALL] should have the same ordering for the return columns. Using differently ordered return items in a UNION [ALL] clause is deprecated and will be removed in a future version.",
+          SeverityLevel.WARNING,
+          NotificationClassification.DEPRECATION
+        ),
+        testOmittedResult
+      ),
       cypherVersions = Set(CypherVersion.cypher5)
     )
   }
@@ -450,7 +655,16 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
       queries,
       shouldContainNotification = true,
       detail,
-      (pos, detail) => deprecatedFunctionWithoutReplacement(pos, detail, "id")
+      (pos, detail) => deprecatedFunctionWithoutReplacement(pos, detail, "id"),
+      List(
+        TestGqlStatusObject(
+          STATUS_01N02.getStatusString,
+          "warn: feature deprecated without replacement. `id` is deprecated and will be removed without a replacement.",
+          SeverityLevel.WARNING,
+          NotificationClassification.DEPRECATION
+        ),
+        testOmittedResult
+      )
     )
   }
 
@@ -462,7 +676,16 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
     assertNotification(
       queries,
       shouldContainNotification = true,
-      deprecatedConnectComponentsPlannerPreParserOption
+      deprecatedConnectComponentsPlannerPreParserOption,
+      List(
+        TestGqlStatusObject(
+          STATUS_01N02.getStatusString,
+          "warn: feature deprecated without replacement. `connectComponentsPlanner` is deprecated and will be removed without a replacement.",
+          SeverityLevel.WARNING,
+          NotificationClassification.DEPRECATION
+        ),
+        testOmittedResult
+      )
     )
   }
 
@@ -502,6 +725,15 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
       shouldContainNotification = true,
       "a",
       deprecatedPropertyReferenceInCreate,
+      List(
+        TestGqlStatusObject(
+          STATUS_01N00.getStatusString,
+          "warn: feature deprecated. Creating an entity (a) and referencing that entity in a property definition in the same CREATE is deprecated.",
+          SeverityLevel.WARNING,
+          NotificationClassification.DEPRECATION
+        ),
+        testOmittedResult
+      ),
       cypherVersions = CypherVersion.values
     )
 
@@ -529,6 +761,15 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
       shouldContainNotification = true,
       "a",
       deprecatedPropertyReferenceInMerge,
+      List(
+        TestGqlStatusObject(
+          STATUS_01N00.getStatusString,
+          "warn: feature deprecated. Merging an entity (a) and referencing that entity in a property definition in the same MERGE is deprecated.",
+          SeverityLevel.WARNING,
+          NotificationClassification.DEPRECATION
+        ),
+        testOmittedResult
+      ),
       cypherVersions = CypherVersion.values
     )
 
@@ -552,6 +793,15 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
       deprecated,
       shouldContainNotification = true,
       deprecatedIdentifierWhitespaceUnicode(_, '\u0085', "f\u0085oo"),
+      List(
+        TestGqlStatusObject(
+          STATUS_01N00.getStatusString,
+          "warn: feature deprecated. The Unicode character `\\u0085` is deprecated for unescaped identifiers and will be considered as a whitespace character in the future. To continue using it, escape the identifier by adding backticks around the identifier `f\u0085oo`.",
+          SeverityLevel.WARNING,
+          NotificationClassification.DEPRECATION
+        ),
+        testOmittedResult
+      ),
       Set(CypherVersion.cypher5)
     )
 
@@ -559,38 +809,46 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
   }
 
   // Parser Deprecations: See CIP-120
+  private val deprecatedExtendedUnicodeChars = Seq(
+    // Category Cc
+    '\u0000', '\u0001', '\u0002', '\u0003', '\u0004', '\u0005', '\u0006', '\u0007',
+    '\u0008', '\u000E', '\u000F', '\u0010', '\u0011', '\u0012', '\u0013', '\u0014',
+    '\u0015', '\u0016', '\u0017', '\u0018', '\u0019', '\u001A', '\u001B', '\u007F',
+    '\u0080', '\u0081', '\u0082', '\u0083', '\u0084', '\u0086', '\u0087', '\u0088',
+    '\u0089', '\u008A', '\u008B', '\u008C', '\u008D', '\u008E', '\u008F', '\u0090',
+    '\u0091', '\u0092', '\u0093', '\u0094', '\u0095', '\u0096', '\u0097', '\u0098',
+    '\u0099', '\u009A', '\u009B', '\u009C', '\u009D', '\u009E', '\u009F',
+    // Category Sc
+    '\u0024', '\u00A2', '\u00A3', '\u00A4', '\u00A5',
+    // Category Cf
+    '\u00AD', '\u0600', '\u0601', '\u0602', '\u0603', '\u0604', '\u0605', '\u061C',
+    '\u06DD', '\u070F', '\u08E2', '\u180E', '\u200B', '\u200C', '\u200D', '\u200E',
+    '\u200F', '\u202A', '\u202B', '\u202C', '\u202D', '\u202E', '\u2060', '\u2061',
+    '\u2062', '\u2063', '\u2064', '\u2066', '\u2067', '\u2068', '\u2069', '\u206A',
+    '\u206B', '\u206C', '\u206D', '\u206E', '\u206F', '\u2E2F', '\uFEFF', '\uFFF9',
+    '\uFFFA', '\uFFFB'
+  )
+
   test("Deprecated Unicode Characters in Identifier Extend") {
-    val deprecatedExtendedUnicodeChars = Seq(
-      // Category Cc
-      '\u0000', '\u0001', '\u0002', '\u0003', '\u0004', '\u0005', '\u0006', '\u0007',
-      '\u0008', '\u000E', '\u000F', '\u0010', '\u0011', '\u0012', '\u0013', '\u0014',
-      '\u0015', '\u0016', '\u0017', '\u0018', '\u0019', '\u001A', '\u001B', '\u007F',
-      '\u0080', '\u0081', '\u0082', '\u0083', '\u0084', '\u0086', '\u0087', '\u0088',
-      '\u0089', '\u008A', '\u008B', '\u008C', '\u008D', '\u008E', '\u008F', '\u0090',
-      '\u0091', '\u0092', '\u0093', '\u0094', '\u0095', '\u0096', '\u0097', '\u0098',
-      '\u0099', '\u009A', '\u009B', '\u009C', '\u009D', '\u009E', '\u009F',
-      // Category Sc
-      '\u0024', '\u00A2', '\u00A3', '\u00A4', '\u00A5',
-      // Category Cf
-      '\u00AD', '\u0600', '\u0601', '\u0602', '\u0603', '\u0604', '\u0605', '\u061C',
-      '\u06DD', '\u070F', '\u08E2', '\u180E', '\u200B', '\u200C', '\u200D', '\u200E',
-      '\u200F', '\u202A', '\u202B', '\u202C', '\u202D', '\u202E', '\u2060', '\u2061',
-      '\u2062', '\u2063', '\u2064', '\u2066', '\u2067', '\u2068', '\u2069', '\u206A',
-      '\u206B', '\u206C', '\u206D', '\u206E', '\u206F', '\u2E2F', '\uFEFF', '\uFFF9',
-      '\uFFFA', '\uFFFB'
-    )
+    // Add label and reltype to the database to avoid unrecognized warnings
+    val transaction = dbms.begin()
+
+    // Kernel already errors on the unicode char: \u0000 in tokens, so skip over
+    deprecatedExtendedUnicodeChars.filterNot(unicode => unicode == '\u0000').foreach(deprecatedUnicode => {
+      transaction.execute(s"CALL db.createLabel('a${deprecatedUnicode}bc')")
+      transaction.execute(s"CALL db.createRelationshipType('a${deprecatedUnicode}bc')")
+    })
+    transaction.commit()
 
     val deprecatedParamQueries: Seq[(Char, Seq[String])] = deprecatedExtendedUnicodeChars.map { deprecatedUnicodeChar =>
       // Kernel already errors on the unicode char: \u0000 in tokens, so skip over for some queries
       if (deprecatedUnicodeChar == '\u0000') {
         deprecatedUnicodeChar -> Seq(
-          s"RETURN $$a${deprecatedUnicodeChar}bc",
           s"RETURN { a${deprecatedUnicodeChar}bc : 1 }",
           s"WITH 1 AS a${deprecatedUnicodeChar}bc RETURN 1"
         )
       } else {
         deprecatedUnicodeChar -> Seq(
-          s"RETURN $$a${deprecatedUnicodeChar}bc",
           s"RETURN { a${deprecatedUnicodeChar}bc : 1 }",
           s"WITH 1 AS a${deprecatedUnicodeChar}bc RETURN 1",
           s"MATCH (b:a${deprecatedUnicodeChar}bc) RETURN b",
@@ -600,11 +858,64 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
 
     }
 
+    def expectedGqlStatuses(unicode: Char): List[TestGqlStatusObject] = {
+      val unicodeString = f"\\u${Integer.valueOf(unicode)}%04x"
+
+      List(
+        TestGqlStatusObject(
+          STATUS_01N00.getStatusString,
+          s"warn: feature deprecated. The character with the Unicode representation `$unicodeString` is deprecated for unescaped identifiers and will not be supported in the future. " +
+            s"To continue using it, escape the identifier by adding backticks around the identifier `a${unicode}bc`.",
+          SeverityLevel.WARNING,
+          NotificationClassification.DEPRECATION
+        ),
+        testOmittedResult
+      )
+    }
+
     deprecatedParamQueries.foreach { deprecateQueries =>
       assertNotification(
         deprecateQueries._2,
         shouldContainNotification = true,
         deprecatedIdentifierUnicode(_, deprecateQueries._1, s"a${deprecateQueries._1}bc"),
+        expectedGqlStatuses(deprecateQueries._1),
+        Set(CypherVersion.cypher5)
+      )
+    }
+  }
+
+  test("Deprecated Unicode Characters in Identifier Extend with parameter") {
+    val deprecatedParamQueries: Seq[(Char, Seq[String])] = deprecatedExtendedUnicodeChars.map { deprecatedUnicodeChar =>
+      deprecatedUnicodeChar -> Seq(s"RETURN $$a${deprecatedUnicodeChar}bc")
+    }
+
+    def expectedGqlStatuses(unicode: Char): List[TestGqlStatusObject] = {
+      val unicodeString = f"\\u${Integer.valueOf(unicode)}%04x"
+
+      List(
+        TestGqlStatusObject(
+          STATUS_01N00.getStatusString,
+          s"warn: feature deprecated. The character with the Unicode representation `$unicodeString` is deprecated for unescaped identifiers and will not be supported in the future. " +
+            s"To continue using it, escape the identifier by adding backticks around the identifier `a${unicode}bc`.",
+          SeverityLevel.WARNING,
+          NotificationClassification.DEPRECATION
+        ),
+        TestGqlStatusObject(
+          STATUS_01N60.getStatusString,
+          s"warn: parameter missing. The query plan cannot be cached and is not executable without `EXPLAIN` due to the undefined parameter(s) `$$a${unicode}bc`. Provide the parameter(s).",
+          SeverityLevel.WARNING,
+          NotificationClassification.GENERIC
+        ),
+        testOmittedResult
+      )
+    }
+
+    deprecatedParamQueries.foreach { deprecateQueries =>
+      assertNotification(
+        deprecateQueries._2,
+        shouldContainNotification = true,
+        deprecatedIdentifierUnicode(_, deprecateQueries._1, s"a${deprecateQueries._1}bc"),
+        expectedGqlStatuses(deprecateQueries._1),
         Set(CypherVersion.cypher5)
       )
     }
@@ -614,12 +925,35 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
     val deprecatedStartUnicodeChar = '\u2e2f'
     val deprecatedExtendedUnicodeChar = '\u206E'
 
+    // Add label and reltype to the database to avoid unrecognized warnings
+    val transaction = dbms.begin()
+    transaction.execute(s"CALL db.createLabel('${deprecatedStartUnicodeChar}b${deprecatedExtendedUnicodeChar}c')")
+    transaction.execute(
+      s"CALL db.createRelationshipType('${deprecatedStartUnicodeChar}b${deprecatedExtendedUnicodeChar}c')"
+    )
+    transaction.commit()
+
     val queriesWithDeprecatedStartChar = Seq(
-      s"RETURN $$${deprecatedStartUnicodeChar}b${deprecatedExtendedUnicodeChar}c",
       s"RETURN { ${deprecatedStartUnicodeChar}b${deprecatedExtendedUnicodeChar}c : 1 }",
       s"WITH 1 AS ${deprecatedStartUnicodeChar}b${deprecatedExtendedUnicodeChar}c RETURN 1",
       s"MATCH (b:${deprecatedStartUnicodeChar}b${deprecatedExtendedUnicodeChar}c) RETURN b",
       s"MATCH ()-[r:${deprecatedStartUnicodeChar}b${deprecatedExtendedUnicodeChar}c]->() RETURN r"
+    )
+
+    val expectedGqlStatuses = List(
+      TestGqlStatusObject(
+        STATUS_01N00.getStatusString,
+        "warn: feature deprecated. The character with the Unicode representation `\\u206e` is deprecated for unescaped identifiers and will not be supported in the future. To continue using it, escape the identifier by adding backticks around the identifier `ⸯb\u206Ec`.",
+        SeverityLevel.WARNING,
+        NotificationClassification.DEPRECATION
+      ),
+      TestGqlStatusObject(
+        STATUS_01N00.getStatusString,
+        "warn: feature deprecated. The character with the Unicode representation `\\u2e2f` is deprecated for unescaped identifiers and will not be supported in the future. To continue using it, escape the identifier by adding backticks around the identifier `ⸯb\u206Ec`.",
+        SeverityLevel.WARNING,
+        NotificationClassification.DEPRECATION
+      ),
+      testOmittedResult
     )
 
     assertNotification(
@@ -630,6 +964,7 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
         deprecatedStartUnicodeChar,
         s"${deprecatedStartUnicodeChar}b${deprecatedExtendedUnicodeChar}c"
       ),
+      expectedGqlStatuses,
       Set(CypherVersion.cypher5)
     )
 
@@ -641,6 +976,60 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
         deprecatedExtendedUnicodeChar,
         s"${deprecatedStartUnicodeChar}b${deprecatedExtendedUnicodeChar}c"
       ),
+      expectedGqlStatuses,
+      Set(CypherVersion.cypher5)
+    )
+  }
+
+  test("Multiple deprecated Unicode Characters in Identifier with parameter") {
+    val deprecatedStartUnicodeChar = '\u2e2f'
+    val deprecatedExtendedUnicodeChar = '\u206E'
+
+    val queryWithDeprecatedStartChar = s"RETURN $$${deprecatedStartUnicodeChar}b${deprecatedExtendedUnicodeChar}c"
+
+    val expectedGqlStatuses = List(
+      TestGqlStatusObject(
+        STATUS_01N00.getStatusString,
+        "warn: feature deprecated. The character with the Unicode representation `\\u2e2f` is deprecated for unescaped identifiers and will not be supported in the future. To continue using it, escape the identifier by adding backticks around the identifier `\u2e2fb\u206Ec`.",
+        SeverityLevel.WARNING,
+        NotificationClassification.DEPRECATION
+      ),
+      TestGqlStatusObject(
+        STATUS_01N00.getStatusString,
+        "warn: feature deprecated. The character with the Unicode representation `\\u206e` is deprecated for unescaped identifiers and will not be supported in the future. To continue using it, escape the identifier by adding backticks around the identifier `\u2e2fb\u206Ec`.",
+        SeverityLevel.WARNING,
+        NotificationClassification.DEPRECATION
+      ),
+      TestGqlStatusObject(
+        STATUS_01N60.getStatusString,
+        "warn: parameter missing. The query plan cannot be cached and is not executable without `EXPLAIN` due to the undefined parameter(s) `$\u2e2fb\u206Ec`. Provide the parameter(s).",
+        SeverityLevel.WARNING,
+        NotificationClassification.GENERIC
+      ),
+      testOmittedResult
+    )
+
+    assertNotification(
+      Seq(queryWithDeprecatedStartChar),
+      shouldContainNotification = true,
+      deprecatedIdentifierUnicode(
+        _,
+        deprecatedStartUnicodeChar,
+        s"${deprecatedStartUnicodeChar}b${deprecatedExtendedUnicodeChar}c"
+      ),
+      expectedGqlStatuses,
+      Set(CypherVersion.cypher5)
+    )
+
+    assertNotification(
+      Seq(queryWithDeprecatedStartChar),
+      shouldContainNotification = true,
+      deprecatedIdentifierUnicode(
+        _,
+        deprecatedExtendedUnicodeChar,
+        s"${deprecatedStartUnicodeChar}b${deprecatedExtendedUnicodeChar}c"
+      ),
+      expectedGqlStatuses,
       Set(CypherVersion.cypher5)
     )
   }
@@ -648,8 +1037,13 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
   test("Deprecated Unicode Characters in Identifier Start") {
     val deprecatedStartUnicodeChar = '\u2e2f'
 
+    // Add label and reltype to the database to avoid unrecognized warnings
+    val transaction = dbms.begin()
+    transaction.execute(s"CALL db.createLabel('${deprecatedStartUnicodeChar}bc')")
+    transaction.execute(s"CALL db.createRelationshipType('${deprecatedStartUnicodeChar}bc')")
+    transaction.commit()
+
     val queriesWithDeprecatedStartChar = Seq(
-      s"RETURN $$${deprecatedStartUnicodeChar}bc",
       s"RETURN { ${deprecatedStartUnicodeChar}bc : 1 }",
       s"WITH 1 AS ${deprecatedStartUnicodeChar}bc RETURN 1",
       s"MATCH (b:${deprecatedStartUnicodeChar}bc) RETURN b",
@@ -660,6 +1054,42 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
       queriesWithDeprecatedStartChar,
       shouldContainNotification = true,
       deprecatedIdentifierUnicode(_, deprecatedStartUnicodeChar, s"${deprecatedStartUnicodeChar}bc"),
+      List(
+        TestGqlStatusObject(
+          STATUS_01N00.getStatusString,
+          "warn: feature deprecated. The character with the Unicode representation `\\u2e2f` is deprecated for unescaped identifiers and will not be supported in the future. To continue using it, escape the identifier by adding backticks around the identifier `\u2e2fbc`.",
+          SeverityLevel.WARNING,
+          NotificationClassification.DEPRECATION
+        ),
+        testOmittedResult
+      ),
+      Set(CypherVersion.cypher5)
+    )
+  }
+
+  test("Deprecated Unicode Characters in Identifier Start with parameter") {
+    val deprecatedStartUnicodeChar = '\u2e2f'
+    val queryWithDeprecatedStartChar = s"RETURN $$${deprecatedStartUnicodeChar}bc"
+
+    assertNotification(
+      Seq(queryWithDeprecatedStartChar),
+      shouldContainNotification = true,
+      deprecatedIdentifierUnicode(_, deprecatedStartUnicodeChar, s"${deprecatedStartUnicodeChar}bc"),
+      List(
+        TestGqlStatusObject(
+          STATUS_01N00.getStatusString,
+          "warn: feature deprecated. The character with the Unicode representation `\\u2e2f` is deprecated for unescaped identifiers and will not be supported in the future. To continue using it, escape the identifier by adding backticks around the identifier `\u2e2fbc`.",
+          SeverityLevel.WARNING,
+          NotificationClassification.DEPRECATION
+        ),
+        TestGqlStatusObject(
+          STATUS_01N60.getStatusString,
+          "warn: parameter missing. The query plan cannot be cached and is not executable without `EXPLAIN` due to the undefined parameter(s) `$\u2e2fbc`. Provide the parameter(s).",
+          SeverityLevel.WARNING,
+          NotificationClassification.GENERIC
+        ),
+        testOmittedResult
+      ),
       Set(CypherVersion.cypher5)
     )
   }
@@ -672,7 +1102,16 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
       queries,
       shouldContainNotification = true,
       "",
-      (pos, detail) => deprecatedImportingWithInSubqueryCall(pos, detail)
+      (pos, detail) => deprecatedImportingWithInSubqueryCall(pos, detail),
+      List(
+        TestGqlStatusObject(
+          STATUS_01N00.getStatusString,
+          "warn: feature deprecated. CALL subquery without a variable scope clause is now deprecated. Use CALL () { ... }",
+          SeverityLevel.WARNING,
+          NotificationClassification.DEPRECATION
+        ),
+        testOmittedResult
+      )
     )
   }
 
@@ -684,7 +1123,16 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
       queries,
       shouldContainNotification = true,
       "a",
-      (pos, detail) => deprecatedImportingWithInSubqueryCall(pos, detail)
+      (pos, detail) => deprecatedImportingWithInSubqueryCall(pos, detail),
+      List(
+        TestGqlStatusObject(
+          STATUS_01N00.getStatusString,
+          "warn: feature deprecated. CALL subquery without a variable scope clause is now deprecated. Use CALL (a) { ... }",
+          SeverityLevel.WARNING,
+          NotificationClassification.DEPRECATION
+        ),
+        testOmittedResult
+      )
     )
   }
 }

@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.testing.api
 
+import org.neo4j.graphdb.GqlStatusObject
 import org.neo4j.graphdb.Notification
 
 trait StatementResult extends AutoCloseable {
@@ -34,6 +35,8 @@ trait StatementResult extends AutoCloseable {
   def iterator(): Iterator[Map[String, AnyRef]]
 
   def getNotifications(): Iterable[Notification]
+
+  def getGqlStatusObjects(): Iterable[GqlStatusObject]
 
   override def close(): Unit
 }

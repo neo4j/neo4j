@@ -25,6 +25,7 @@ import org.neo4j.cypher.testing.impl.http.HttpStatementResult.Result
 import org.neo4j.cypher.testing.impl.shared.NotificationImpl
 import org.neo4j.exceptions.Neo4jException
 import org.neo4j.graphdb
+import org.neo4j.graphdb.GqlStatusObject
 import org.neo4j.graphdb.InputPosition
 import org.neo4j.kernel.api.exceptions.Status
 import org.neo4j.test.server.HTTP
@@ -59,6 +60,8 @@ case class HttpStatementResult(result: Result, notifications: Seq[Notification])
         )
       )
       .toList
+
+  override def getGqlStatusObjects(): Iterable[GqlStatusObject] = ???
   override def iterator(): Iterator[Map[String, AnyRef]] = ???
   override def close(): Unit = {}
 }

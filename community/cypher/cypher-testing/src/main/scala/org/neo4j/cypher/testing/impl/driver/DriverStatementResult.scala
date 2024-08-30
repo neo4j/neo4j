@@ -20,13 +20,19 @@
 package org.neo4j.cypher.testing.impl.driver
 
 import org.neo4j.cypher.testing.api.StatementResult
+import org.neo4j.cypher.testing.impl.shared.GqlStatusObjImpl
 import org.neo4j.cypher.testing.impl.shared.NotificationImpl
 import org.neo4j.driver
 import org.neo4j.driver.NotificationSeverity
 import org.neo4j.driver.Result
+import org.neo4j.driver.internal.value.StringValue
+import org.neo4j.driver.summary
+import org.neo4j.gqlstatus.NotificationClassification
+import org.neo4j.graphdb.GqlStatusObject
 import org.neo4j.graphdb.InputPosition
 import org.neo4j.graphdb.Notification
 import org.neo4j.graphdb.NotificationCategory
+import org.neo4j.graphdb.SeverityLevel
 
 import scala.jdk.CollectionConverters.IterableHasAsScala
 import scala.jdk.CollectionConverters.IteratorHasAsScala
@@ -57,6 +63,39 @@ case class DriverStatementResult(private val driverResult: Result) extends State
           n.rawCategory().orElseGet(() => NotificationCategory.UNKNOWN.name())
         )
       )
+
+  override def getGqlStatusObjects(): List[GqlStatusObject] =
+    driverResult.consume().gqlStatusObjects().asScala.toList
+      .map((gso: summary.GqlStatusObject) => {
+        val diagnosticRecord = gso.diagnosticRecord().asInstanceOf[java.util.Map[String, Object]]
+
+        val rawPosition = diagnosticRecord.get("_position")
+        val position = if (rawPosition != null) {
+          val positionMap = rawPosition.asInstanceOf[org.neo4j.driver.internal.value.MapValue]
+          new InputPosition(
+            positionMap.get("offset").asInstanceOf[org.neo4j.driver.internal.value.IntegerValue].asInt(),
+            positionMap.get("line").asInstanceOf[org.neo4j.driver.internal.value.IntegerValue].asInt(),
+            positionMap.get("column").asInstanceOf[org.neo4j.driver.internal.value.IntegerValue].asInt()
+          )
+        } else {
+          InputPosition.empty
+        }
+
+        GqlStatusObjImpl.fromRaw(
+          gso.gqlStatus(),
+          gso.statusDescription(),
+          diagnosticRecord,
+          diagnosticRecord
+            .getOrDefault("_severity", new StringValue(SeverityLevel.UNKNOWN.name()))
+            .asInstanceOf[StringValue]
+            .asString(),
+          position,
+          diagnosticRecord
+            .getOrDefault("_classification", new StringValue(NotificationClassification.UNKNOWN.name()))
+            .asInstanceOf[StringValue]
+            .asString()
+        )
+      })
 
   override def iterator(): Iterator[Map[String, AnyRef]] = driverResult.asScala.map(toValue)
   override def close(): Unit = {}

@@ -21,8 +21,13 @@ package org.neo4j.cypher
 
 import org.neo4j.cypher.internal.options.CypherVersion
 import org.neo4j.cypher.testing.impl.FeatureDatabaseManagementService
+import org.neo4j.gqlstatus.NotificationClassification
+import org.neo4j.graphdb.GqlStatusObject
 import org.neo4j.graphdb.InputPosition
 import org.neo4j.graphdb.Notification
+import org.neo4j.graphdb.SeverityLevel
+import org.neo4j.kernel.api.exceptions.NotificationCategory
+import org.neo4j.notifications.StandardGqlStatusObject
 import org.scalatest.Suite
 import org.scalatest.matchers.should.Matchers
 
@@ -35,6 +40,7 @@ trait DeprecationTestSupport extends Suite with Matchers {
     shouldContainNotification: Boolean,
     details: String,
     createNotification: (InputPosition, String) => Notification,
+    expectedGqlStatusObjects: List[TestGqlStatusObject],
     cypherVersions: Set[CypherVersion] = CypherVersion.values
   ): Unit = {
     cypherVersions.foreach { version =>
@@ -51,6 +57,15 @@ trait DeprecationTestSupport extends Suite with Matchers {
             withClue(notifications) {
               hasNotification should be(shouldContainNotification)
             }
+
+            val gqlStatusObjects: List[GqlStatusObject] = result.getGqlStatusObjects().toList
+            gqlStatusObjects.size should be(expectedGqlStatusObjects.size)
+
+            val actualGqlStatusObject = gqlStatusObjects.map(gso =>
+              TestGqlStatusObject(gso.gqlStatus(), gso.statusDescription(), gso.getSeverity, gso.getClassification)
+            )
+
+            actualGqlStatusObject should contain theSameElementsAs expectedGqlStatusObjects
           } finally {
             transaction.rollback()
           }
@@ -62,13 +77,15 @@ trait DeprecationTestSupport extends Suite with Matchers {
   def assertNotification(
     queries: Seq[String],
     shouldContainNotification: Boolean,
-    createNotification: InputPosition => Notification
+    createNotification: InputPosition => Notification,
+    expectedGqlStatusObjects: List[TestGqlStatusObject]
   ): Unit = {
     assertNotification(
       queries,
       shouldContainNotification,
       "",
       (pos, _) => createNotification(pos),
+      expectedGqlStatusObjects,
       CypherVersion.values
     )
   }
@@ -77,6 +94,7 @@ trait DeprecationTestSupport extends Suite with Matchers {
     queries: Seq[String],
     shouldContainNotification: Boolean,
     createNotification: InputPosition => Notification,
+    expectedGqlStatusObjects: List[TestGqlStatusObject],
     cypherVersions: Set[CypherVersion]
   ): Unit = {
     assertNotification(
@@ -84,13 +102,16 @@ trait DeprecationTestSupport extends Suite with Matchers {
       shouldContainNotification,
       "",
       (pos, _) => createNotification(pos),
+      expectedGqlStatusObjects,
       cypherVersions
     )
   }
 
-  // this is hacky but we have no other way to probe the notification's status (`Status.Statement.FeatureDeprecationWarning`)
   private def isDeprecation(notification: Notification): Boolean =
-    notification.getTitle == "This feature is deprecated and will be removed in future versions."
+    notification.getCategory == NotificationCategory.DEPRECATION
+
+  private def isDeprecation(gso: GqlStatusObject): Boolean =
+    gso.getClassification == NotificationClassification.DEPRECATION
 
   def assertNoDeprecations(
     queries: Seq[String],
@@ -102,13 +123,22 @@ trait DeprecationTestSupport extends Suite with Matchers {
           val transaction = dbms.begin()
           try {
             val result = transaction.execute(s"EXPLAIN CYPHER ${version.version} $query")
-            val deprecations = result.getNotifications().filter(isDeprecation)
+            val deprecationsNotificationApi = result.getNotifications().filter(isDeprecation)
             withClue(
-              s"""Expected no notifications to be found but was:
-                 |${deprecations.map(_.getDescription).mkString("'", "', '", "'")}
+              s"""Expected no deprecations to be found using the Notification API but was:
+                 |${deprecationsNotificationApi.map(_.getDescription).mkString("'", "', '", "'")}
                  |""".stripMargin
             ) {
-              deprecations shouldBe empty
+              deprecationsNotificationApi shouldBe empty
+            }
+
+            val deprecationsGqlStatusAPI = result.getGqlStatusObjects().filter(isDeprecation)
+            withClue(
+              s"""Expected no deprecations to be found using the GqlStatusObject API but was:
+                 |${deprecationsGqlStatusAPI.map(_.gqlStatus()).mkString("'", "', '", "'")}
+                 |""".stripMargin
+            ) {
+              deprecationsGqlStatusAPI shouldBe empty
             }
           } finally {
             transaction.rollback()
@@ -128,6 +158,19 @@ trait DeprecationTestSupport extends Suite with Matchers {
     notification.getCode.equals(expected.getCode) &&
     notification.getDescription.equals(expected.getDescription) &&
     notification.getSeverity.equals(expected.getSeverity)
-    // TODO: also compare messages once those are public (https://trello.com/c/VoNT60cD/100-make-notification-visible-to-the-drivers)
   }
+
+  case class TestGqlStatusObject(
+    gqlStatus: String,
+    statusDescription: String,
+    severity: SeverityLevel,
+    classification: NotificationClassification
+  )
+
+  val testOmittedResult: TestGqlStatusObject = TestGqlStatusObject(
+    StandardGqlStatusObject.OMITTED_RESULT.gqlStatus(),
+    StandardGqlStatusObject.OMITTED_RESULT.statusDescription(),
+    SeverityLevel.UNKNOWN,
+    NotificationClassification.UNKNOWN
+  )
 }

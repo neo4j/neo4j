@@ -19,43 +19,45 @@
  */
 package org.neo4j.cypher.testing.impl.shared
 
+import org.neo4j.gqlstatus.NotificationClassification
+import org.neo4j.graphdb.GqlStatusObject
 import org.neo4j.graphdb.InputPosition
-import org.neo4j.graphdb.Notification
-import org.neo4j.graphdb.NotificationCategory
 import org.neo4j.graphdb.SeverityLevel
 
-case class NotificationImpl(
-  code: String,
-  title: String,
-  description: String,
+import java.util
+
+case class GqlStatusObjImpl(
+  status: String,
+  statusDescr: String,
+  diagnosticRec: util.Map[String, AnyRef],
   severity: SeverityLevel,
   position: InputPosition,
-  category: NotificationCategory
-) extends Notification {
-  override def getCode: String = code
-  override def getTitle: String = title
-  override def getDescription: String = description
+  classification: NotificationClassification
+) extends GqlStatusObject {
+  override def gqlStatus(): String = status
+  override def statusDescription(): String = statusDescr
+  override def diagnosticRecord(): util.Map[String, AnyRef] = diagnosticRec
   override def getSeverity: SeverityLevel = severity
   override def getPosition: InputPosition = position
-  override def getCategory: NotificationCategory = category
+  override def getClassification: NotificationClassification = classification
 }
 
-object NotificationImpl {
+object GqlStatusObjImpl {
 
   def fromRaw(
-    code: String,
-    title: String,
-    description: String,
+    status: String,
+    statusDescr: String,
+    diagnosticRec: util.Map[String, AnyRef],
     severity: String,
     position: InputPosition,
-    category: String
-  ): NotificationImpl =
-    NotificationImpl(
-      code,
-      title,
-      description,
+    classification: String
+  ): GqlStatusObjImpl =
+    GqlStatusObjImpl(
+      status,
+      statusDescr,
+      diagnosticRec,
       SeverityLevel.valueOf(severity),
       position,
-      NotificationCategory.valueOf(category)
+      NotificationClassification.valueOf(classification)
     )
 }

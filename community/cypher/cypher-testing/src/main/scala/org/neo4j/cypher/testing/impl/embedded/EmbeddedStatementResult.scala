@@ -20,6 +20,7 @@
 package org.neo4j.cypher.testing.impl.embedded
 
 import org.neo4j.cypher.testing.api.StatementResult
+import org.neo4j.graphdb.GqlStatusObject
 import org.neo4j.graphdb.Notification
 import org.neo4j.graphdb.Result
 import org.neo4j.internal.helpers.collection.Iterables
@@ -35,6 +36,9 @@ case class EmbeddedStatementResult(private val embeddedResult: Result) extends S
 
   override def getNotifications(): List[Notification] =
     Iterables.asList(embeddedResult.getNotifications).asScala.toList
+
+  override def getGqlStatusObjects(): Iterable[GqlStatusObject] =
+    Iterables.asList(embeddedResult.getGqlStatusObjects).asScala.toList
 
   override def iterator(): Iterator[Map[String, AnyRef]] =
     embeddedResult.asScala.map(EmbeddedRecordConverter.convertMap)

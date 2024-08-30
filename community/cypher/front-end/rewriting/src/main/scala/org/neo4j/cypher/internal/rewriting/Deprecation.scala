@@ -106,11 +106,11 @@ object Deprecations {
           Some(UnionReturnItemsInDifferentOrder(lhs.position))
         )
 
-      case ShortestPathsPatternPart(
-          RelationshipChain(
-            _: NodePattern,
+      case s @ ShortestPathsPatternPart(
+          relChain @ RelationshipChain(
+            node1: NodePattern,
             relPat @ RelationshipPattern(variable, labelExpression, None, properties, predicate, direction),
-            _
+            node2
           ),
           single
         ) =>
@@ -125,14 +125,16 @@ object Deprecations {
           predicate,
           direction
         )(relPat.position)
-        val deprecated = if (single) s"shortestPath(${relPat.asCanonicalStringVal})"
-        else s"allShortestPaths(${relPat.asCanonicalStringVal})"
-        val replacement = if (single) s"shortestPath(${newRelPat.asCanonicalStringVal})"
-        else s"allShortestPaths(${newRelPat.asCanonicalStringVal})"
+
+        val replacement =
+          ShortestPathsPatternPart(RelationshipChain(node1, newRelPat, node2)(relChain.position), single)(s.position)
+
+        val deprecatedParameter = stringifier.patterns.apply(s)
+        val replacementParameter = stringifier.patterns.apply(replacement)
 
         Deprecation(
           None,
-          Some(FixedLengthRelationshipInShortestPath(relPat.position, deprecated, replacement))
+          Some(FixedLengthRelationshipInShortestPath(relPat.position, deprecatedParameter, replacementParameter))
         )
 
       case c @ CreateDatabase(nn @ NamespacedName(_, Some(_)), _, _, _, _) =>
