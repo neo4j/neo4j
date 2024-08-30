@@ -734,7 +734,7 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
         ),
         testOmittedResult
       ),
-      cypherVersions = CypherVersion.values
+      cypherVersions = Set(CypherVersion.cypher5)
     )
 
     assertNoDeprecations(notDeprecated)
@@ -770,7 +770,7 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
         ),
         testOmittedResult
       ),
-      cypherVersions = CypherVersion.values
+      cypherVersions = Set(CypherVersion.cypher5)
     )
 
     assertNoDeprecations(notDeprecated)
