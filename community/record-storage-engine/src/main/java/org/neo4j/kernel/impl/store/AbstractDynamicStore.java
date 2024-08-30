@@ -261,7 +261,8 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore<DynamicRe
         MutableLongSet seenRecordIds = null;
         int count = 0;
         do {
-            var record = newRecord();
+            memoryTracker.allocateHeap(DynamicRecord.SHALLOW_SIZE);
+            var record = new DynamicRecord(-1);
             if (cycleGuard.test(id)) {
                 throw newCycleDetectedException(firstId, id);
             }
@@ -270,7 +271,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore<DynamicRe
             if (!subscriber.onRecord(record)) {
                 return;
             }
-            id = recordFormat.getNextRecordReference(record);
+            id = record.getNextBlock();
 
             if (++count >= CYCLE_DETECTION_THRESHOLD) {
                 if (seenRecordIds == null) {
