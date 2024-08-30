@@ -29,6 +29,7 @@ import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.RecordLoadOverride;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.storageengine.api.LongReference;
 import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.storageengine.api.Reference;
 import org.neo4j.storageengine.api.RelationshipVisitor;
@@ -44,7 +45,7 @@ abstract class RecordRelationshipCursor extends RelationshipRecord
 
     RecordRelationshipCursor(
             RelationshipStore relationshipStore, CursorContext cursorContext, MemoryTracker memoryTracker) {
-        super(NO_ID);
+        super(LongReference.NULL);
         this.relationshipStore = relationshipStore;
         this.cursorContext = cursorContext;
         this.memoryTracker = memoryTracker;
@@ -53,7 +54,7 @@ abstract class RecordRelationshipCursor extends RelationshipRecord
 
     @Override
     public long entityReference() {
-        return inUse() ? getId() : NO_ID;
+        return inUse() ? getId() : LongReference.NULL;
     }
 
     @Override
@@ -63,7 +64,7 @@ abstract class RecordRelationshipCursor extends RelationshipRecord
 
     @Override
     public boolean hasProperties() {
-        return nextProp != NO_ID;
+        return nextProp != LongReference.NULL;
     }
 
     @Override
@@ -90,7 +91,18 @@ abstract class RecordRelationshipCursor extends RelationshipRecord
     @Override
     public void visit(long relationshipId, int typeId, long startNodeId, long endNodeId) {
         setId(relationshipId);
-        initialize(true, NO_ID, startNodeId, endNodeId, typeId, NO_ID, NO_ID, NO_ID, NO_ID, false, false);
+        initialize(
+                true,
+                LongReference.NULL,
+                startNodeId,
+                endNodeId,
+                typeId,
+                LongReference.NULL,
+                LongReference.NULL,
+                LongReference.NULL,
+                LongReference.NULL,
+                false,
+                false);
     }
 
     protected void resetState() {

@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.store.record;
 
 import java.util.Objects;
+import org.neo4j.storageengine.api.LongReference;
 import org.neo4j.string.Mask;
 
 /**
@@ -39,7 +40,6 @@ import org.neo4j.string.Mask;
  * </ul>
  */
 public abstract class AbstractBaseRecord implements Mask.Maskable {
-    public static final int NO_ID = -1;
     private long id;
     // Used for the "record unit" feature where one logical record may span two physical records,
     // as to still keep low and fixed record size, but support occasionally bigger records.
@@ -74,7 +74,7 @@ public abstract class AbstractBaseRecord implements Mask.Maskable {
     protected AbstractBaseRecord initialize(boolean inUse) {
         this.inUse = inUse;
         this.created = false;
-        this.secondaryUnitId = NO_ID;
+        this.secondaryUnitId = LongReference.NULL;
         this.requiresSecondaryUnit = false;
         this.useFixedReferences = false;
         return this;
@@ -89,7 +89,7 @@ public abstract class AbstractBaseRecord implements Mask.Maskable {
     public void clear() {
         inUse = false;
         created = false;
-        secondaryUnitId = NO_ID;
+        secondaryUnitId = LongReference.NULL;
         requiresSecondaryUnit = false;
         createdSecondaryUnit = false;
         useFixedReferences = false;
@@ -113,7 +113,7 @@ public abstract class AbstractBaseRecord implements Mask.Maskable {
      */
     public void setSecondaryUnitIdOnLoad(long id) {
         this.secondaryUnitId = id;
-        this.requiresSecondaryUnit = secondaryUnitId != NO_ID;
+        this.requiresSecondaryUnit = secondaryUnitId != LongReference.NULL;
     }
 
     /**
@@ -124,7 +124,7 @@ public abstract class AbstractBaseRecord implements Mask.Maskable {
     public void setSecondaryUnitIdOnCreate(long id) {
         this.secondaryUnitId = id;
         this.createdSecondaryUnit = true;
-        this.requiresSecondaryUnit = secondaryUnitId != NO_ID;
+        this.requiresSecondaryUnit = secondaryUnitId != LongReference.NULL;
     }
 
     public void setSecondaryUnitCreated(boolean value) {
@@ -132,7 +132,7 @@ public abstract class AbstractBaseRecord implements Mask.Maskable {
     }
 
     public boolean hasSecondaryUnitId() {
-        return secondaryUnitId != NO_ID;
+        return secondaryUnitId != LongReference.NULL;
     }
 
     /**

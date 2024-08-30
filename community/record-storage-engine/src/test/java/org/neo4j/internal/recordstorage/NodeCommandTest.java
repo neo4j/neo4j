@@ -28,7 +28,6 @@ import static org.neo4j.kernel.impl.store.DynamicNodeLabels.dynamicPointer;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 import static org.neo4j.kernel.impl.store.ShortArray.LONG;
 import static org.neo4j.kernel.impl.store.StoreType.NODE_LABEL;
-import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import java.io.IOException;
@@ -59,6 +58,7 @@ import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
 import org.neo4j.kernel.impl.transaction.log.LogTailLogVersionsMetadata;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.memory.EmptyMemoryTracker;
+import org.neo4j.storageengine.api.LongReference;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.LatestVersions;
 import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
@@ -171,7 +171,7 @@ class NodeCommandTest {
         NodeRecord before = new NodeRecord(13).initialize(false, 2, false, 1, 0);
         before.setInUse(true);
         before.setSecondaryUnitIdOnLoad(
-                NO_ID); // this and the previous line set the defaults, they are here for clarity
+                LongReference.NULL); // this and the previous line set the defaults, they are here for clarity
         NodeRecord after = new NodeRecord(13).initialize(false, 2, false, 1, 0);
         after.setInUse(true);
         after.setSecondaryUnitIdOnCreate(14L);

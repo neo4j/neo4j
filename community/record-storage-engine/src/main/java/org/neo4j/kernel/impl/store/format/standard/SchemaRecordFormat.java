@@ -23,11 +23,11 @@ import java.io.IOException;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.store.format.BaseOneByteHeaderRecordFormat;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
-import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.storageengine.api.LongReference;
 
 public class SchemaRecordFormat extends BaseOneByteHeaderRecordFormat<SchemaRecord>
         implements RecordFormat<SchemaRecord> {
@@ -51,7 +51,7 @@ public class SchemaRecordFormat extends BaseOneByteHeaderRecordFormat<SchemaReco
 
     @Override
     public SchemaRecord newRecord() {
-        return new SchemaRecord(AbstractBaseRecord.NO_ID);
+        return new SchemaRecord(LongReference.NULL);
     }
 
     @Override

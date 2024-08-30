@@ -25,7 +25,6 @@ import static org.neo4j.internal.recordstorage.RecordCursorTypes.DYNAMIC_ARRAY_S
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.DYNAMIC_STRING_STORE_CURSOR;
 import static org.neo4j.io.IOUtils.closeAllUnchecked;
 import static org.neo4j.kernel.impl.store.NoStoreHeaderFormat.NO_STORE_HEADER_FORMAT;
-import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
 import java.nio.ByteBuffer;
@@ -55,6 +54,7 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.storageengine.api.LongReference;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.util.IdUpdateListener;
 import org.neo4j.string.UTF8;
@@ -429,7 +429,7 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord, NoStoreHe
                             store, firstReference);
                 }
             }
-        } while (reference != NO_ID);
+        } while (reference != LongReference.NULL);
     }
 
     private static class PropertyBlockValueWriter extends TemporalValueWriterAdapter<IllegalArgumentException> {

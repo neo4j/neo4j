@@ -30,6 +30,7 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.storageengine.api.LongReference;
 import org.neo4j.storageengine.api.ReadTracer;
 import org.neo4j.storageengine.api.RelationshipSelection;
 import org.neo4j.storageengine.api.StorageRelationshipTraversalCursor;
@@ -49,7 +50,7 @@ class RecordRelationshipTraversalCursor extends RecordRelationshipCursor impleme
 
     private RelationshipSelection selection;
     private long originNodeReference;
-    private long next = NO_ID;
+    private long next = LongReference.NULL;
     private PageCursor pageCursor;
     private final RecordRelationshipGroupCursor group;
     private GroupState groupState = GroupState.NONE;
@@ -74,7 +75,7 @@ class RecordRelationshipTraversalCursor extends RecordRelationshipCursor impleme
 
     @Override
     public void init(long nodeReference, long reference, RelationshipSelection selection) {
-        if (reference == NO_ID) {
+        if (reference == LongReference.NULL) {
             resetState();
             return;
         }
@@ -86,7 +87,7 @@ class RecordRelationshipTraversalCursor extends RecordRelationshipCursor impleme
     }
 
     private void init(long nodeReference, long reference, boolean isDense, RelationshipSelection selection) {
-        if (reference == NO_ID) {
+        if (reference == LongReference.NULL) {
             resetState();
             return;
         }
@@ -107,7 +108,7 @@ class RecordRelationshipTraversalCursor extends RecordRelationshipCursor impleme
      */
     private void chain(long nodeReference, long reference) {
         ensureCursor();
-        setId(NO_ID);
+        setId(LongReference.NULL);
         this.groupState = GroupState.NONE;
         this.originNodeReference = nodeReference;
         this.next = reference;
@@ -117,8 +118,8 @@ class RecordRelationshipTraversalCursor extends RecordRelationshipCursor impleme
      * Reference to a group record. Traversal returns mixed types and directions.
      */
     private void groups(long nodeReference, long groupReference) {
-        setId(NO_ID);
-        this.next = NO_ID;
+        setId(LongReference.NULL);
+        this.next = LongReference.NULL;
         this.groupState = GroupState.INCOMING;
         this.originNodeReference = nodeReference;
         this.group.direct(nodeReference, groupReference);
@@ -150,7 +151,7 @@ class RecordRelationshipTraversalCursor extends RecordRelationshipCursor impleme
                 traverseDenseNode();
             }
 
-            if (next == NO_ID) {
+            if (next == LongReference.NULL) {
                 resetState();
                 return false;
             }
@@ -168,7 +169,7 @@ class RecordRelationshipTraversalCursor extends RecordRelationshipCursor impleme
     }
 
     private void traverseDenseNode() {
-        while (next == NO_ID) {
+        while (next == LongReference.NULL) {
             /*
              Dense nodes looks something like:
 
@@ -205,7 +206,7 @@ class RecordRelationshipTraversalCursor extends RecordRelationshipCursor impleme
                 case INCOMING:
                     boolean hasNext = group.next();
                     if (!hasNext) {
-                        assert next == NO_ID;
+                        assert next == LongReference.NULL;
                         return; // no more groups nor relationships
                     }
                     if (tracer != null) {
@@ -301,7 +302,7 @@ class RecordRelationshipTraversalCursor extends RecordRelationshipCursor impleme
     protected void resetState() {
         super.resetState();
         group.loadMode = loadMode;
-        setId(next = NO_ID);
+        setId(next = LongReference.NULL);
         groupState = GroupState.NONE;
         selection = null;
     }

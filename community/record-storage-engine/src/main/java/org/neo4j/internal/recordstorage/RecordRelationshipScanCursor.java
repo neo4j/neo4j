@@ -28,6 +28,7 @@ import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.AllRelationshipsScan;
+import org.neo4j.storageengine.api.LongReference;
 import org.neo4j.storageengine.api.StorageRelationshipScanCursor;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.string.Mask;
@@ -56,25 +57,25 @@ public class RecordRelationshipScanCursor extends RecordRelationshipCursor imple
 
     @Override
     public void scan() {
-        if (getId() != NO_ID) {
+        if (getId() != LongReference.NULL) {
             resetState();
         }
         selectScanCursor();
         this.next = 0;
         this.highMark = relationshipHighMark();
-        this.nextStoreReference = NO_ID;
+        this.nextStoreReference = LongReference.NULL;
         this.open = true;
     }
 
     @Override
     public void single(long reference) {
-        if (getId() != NO_ID) {
+        if (getId() != LongReference.NULL) {
             resetState();
         }
         selectSingleCursor();
-        this.next = reference >= 0 ? reference : NO_ID;
-        this.highMark = NO_ID;
-        this.nextStoreReference = NO_ID;
+        this.next = reference >= 0 ? reference : LongReference.NULL;
+        this.highMark = LongReference.NULL;
+        this.nextStoreReference = LongReference.NULL;
         this.open = true;
     }
 
@@ -85,12 +86,12 @@ public class RecordRelationshipScanCursor extends RecordRelationshipCursor imple
 
     @Override
     public boolean scanBatch(AllRelationshipsScan scan, long sizeHint) {
-        if (getId() != NO_ID) {
+        if (getId() != LongReference.NULL) {
             reset();
         }
         this.batched = true;
         this.open = true;
-        this.nextStoreReference = NO_ID;
+        this.nextStoreReference = LongReference.NULL;
 
         return ((RecordRelationshipScan) scan).scanBatch(sizeHint, this);
     }
@@ -113,7 +114,7 @@ public class RecordRelationshipScanCursor extends RecordRelationshipCursor imple
 
     @Override
     public boolean next() {
-        if (next == NO_ID) {
+        if (next == LongReference.NULL) {
             resetState();
             return false;
         }
@@ -132,14 +133,14 @@ public class RecordRelationshipScanCursor extends RecordRelationshipCursor imple
                 if (isSingle() || batched) {
                     // we are a "single cursor" or a "batched scan"
                     // we don't want to set a new highMark
-                    next = NO_ID;
+                    next = LongReference.NULL;
                     return inUse();
                 } else {
                     // we are a "scan cursor"
                     // Check if there is a new high mark
                     highMark = relationshipHighMark();
                     if (next > highMark) {
-                        next = NO_ID;
+                        next = LongReference.NULL;
                         return inUse();
                     }
                 }
@@ -159,7 +160,7 @@ public class RecordRelationshipScanCursor extends RecordRelationshipCursor imple
     @Override
     protected void resetState() {
         super.resetState();
-        setId(next = NO_ID);
+        setId(next = LongReference.NULL);
     }
 
     @Override
@@ -173,7 +174,7 @@ public class RecordRelationshipScanCursor extends RecordRelationshipCursor imple
     }
 
     private boolean isSingle() {
-        return highMark == NO_ID;
+        return highMark == LongReference.NULL;
     }
 
     @Override

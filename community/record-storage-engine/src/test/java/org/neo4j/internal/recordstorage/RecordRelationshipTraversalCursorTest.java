@@ -29,7 +29,6 @@ import static org.neo4j.internal.recordstorage.RecordNodeCursor.relationshipsRef
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.defaultFormat;
-import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
 import static org.neo4j.storageengine.api.RelationshipDirection.INCOMING;
@@ -72,6 +71,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.transaction.log.LogTailLogVersionsMetadata;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.memory.EmptyMemoryTracker;
+import org.neo4j.storageengine.api.LongReference;
 import org.neo4j.storageengine.api.ReadTracer;
 import org.neo4j.storageengine.api.RelationshipDirection;
 import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
@@ -172,7 +172,7 @@ public class RecordRelationshipTraversalCursorTest {
             while (cursor.next()) {
                 assertThat(cursor.entityReference()).isEqualTo(expectedRelationshipIds[relationshipIndex++]);
             }
-            assertThat(cursor.entityReference()).isEqualTo(NO_ID);
+            assertThat(cursor.entityReference()).isEqualTo(LongReference.NULL);
         }
     }
 
@@ -188,7 +188,7 @@ public class RecordRelationshipTraversalCursorTest {
 
             // THEN
             assertThat(cursor.next()).isFalse();
-            assertThat(cursor.entityReference()).isEqualTo(NO_ID);
+            assertThat(cursor.entityReference()).isEqualTo(LongReference.NULL);
         }
     }
 
@@ -364,7 +364,7 @@ public class RecordRelationshipTraversalCursorTest {
                 countAfterDeletion++;
             }
             assertThat(countAfterDeletion).isEqualTo(count - 1);
-            assertThat(cursor.entityReference()).isEqualTo(NO_ID);
+            assertThat(cursor.entityReference()).isEqualTo(LongReference.NULL);
         }
     }
 
@@ -384,7 +384,7 @@ public class RecordRelationshipTraversalCursorTest {
             }
         }
         assertThat(found).isEqualTo(count);
-        assertThat(cursor.entityReference()).isEqualTo(NO_ID);
+        assertThat(cursor.entityReference()).isEqualTo(LongReference.NULL);
     }
 
     private static void assertNbrGroupsVisited(AtomicInteger dbHits, int nbrExpectedGroupsVisited) {

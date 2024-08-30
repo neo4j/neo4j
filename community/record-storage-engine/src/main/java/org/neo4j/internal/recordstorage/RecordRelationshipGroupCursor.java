@@ -35,6 +35,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.Degrees;
+import org.neo4j.storageengine.api.LongReference;
 import org.neo4j.storageengine.api.RelationshipDirection;
 import org.neo4j.storageengine.api.RelationshipSelection;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
@@ -45,7 +46,7 @@ class RecordRelationshipGroupCursor extends RelationshipGroupRecord implements A
     private final RelationshipGroupStore groupStore;
     private final RelationshipGroupDegreesStore groupDegreesStore;
     private final CursorContext cursorContext;
-    private final RelationshipRecord edge = new RelationshipRecord(NO_ID);
+    private final RelationshipRecord edge = new RelationshipRecord(LongReference.NULL);
 
     private PageCursor page;
     private PageCursor edgePage;
@@ -62,7 +63,7 @@ class RecordRelationshipGroupCursor extends RelationshipGroupRecord implements A
             CursorContext cursorContext,
             StoreCursors storeCursors,
             MemoryTracker memoryTracker) {
-        super(NO_ID);
+        super(LongReference.NULL);
         this.relationshipStore = relationshipStore;
         this.groupStore = groupStore;
         this.groupDegreesStore = groupDegreesStore;
@@ -74,7 +75,7 @@ class RecordRelationshipGroupCursor extends RelationshipGroupRecord implements A
 
     void init(long nodeReference, long reference, boolean nodeIsDense) {
         // the relationships for this node are not grouped in the store
-        if (reference != NO_ID && !nodeIsDense) {
+        if (reference != LongReference.NULL && !nodeIsDense) {
             throw new UnsupportedOperationException("Not a dense node");
         } else // this is a normal group reference.
         {
@@ -95,7 +96,7 @@ class RecordRelationshipGroupCursor extends RelationshipGroupRecord implements A
 
     boolean next() {
         do {
-            if (getNext() == NO_ID) {
+            if (getNext() == LongReference.NULL) {
                 // We have now run out of groups from the store, however there may still
                 // be new types that was added in the transaction that we haven't visited yet.
                 return false;
@@ -121,7 +122,7 @@ class RecordRelationshipGroupCursor extends RelationshipGroupRecord implements A
             RelationshipDirection direction,
             Degrees.Mutator mutator,
             RelationshipSelection selection) {
-        if (reference == NO_ID || !selection.test(direction)) {
+        if (reference == LongReference.NULL || !selection.test(direction)) {
             return true;
         }
 

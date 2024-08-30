@@ -41,6 +41,7 @@ import org.neo4j.kernel.impl.store.record.RecordLoadOverride;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.AllNodeScan;
 import org.neo4j.storageengine.api.Degrees;
+import org.neo4j.storageengine.api.LongReference;
 import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.storageengine.api.Reference;
 import org.neo4j.storageengine.api.RelationshipDirection;
@@ -80,7 +81,7 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor {
             CursorContext cursorContext,
             StoreCursors storeCursors,
             MemoryTracker memoryTracker) {
-        super(NO_ID);
+        super(LongReference.NULL);
         this.read = read;
         this.groupDegreesStore = groupDegreesStore;
         this.cursorContext = cursorContext;
@@ -93,39 +94,39 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor {
 
     @Override
     public void scan() {
-        if (getId() != NO_ID) {
+        if (getId() != LongReference.NULL) {
             resetState();
         }
         selectScanCursor();
         this.next = 0;
         this.highMark = nodeHighMark();
-        this.nextStoreReference = NO_ID;
+        this.nextStoreReference = LongReference.NULL;
         this.open = true;
         this.batched = false;
     }
 
     @Override
     public void single(long reference) {
-        if (getId() != NO_ID) {
+        if (getId() != LongReference.NULL) {
             resetState();
         }
         selectSingleCursor();
-        this.next = reference >= 0 ? reference : NO_ID;
+        this.next = reference >= 0 ? reference : LongReference.NULL;
         // This marks the cursor as a "single cursor"
-        this.highMark = NO_ID;
-        this.nextStoreReference = NO_ID;
+        this.highMark = LongReference.NULL;
+        this.nextStoreReference = LongReference.NULL;
         this.open = true;
         this.batched = false;
     }
 
     @Override
     public boolean scanBatch(AllNodeScan scan, long sizeHint) {
-        if (getId() != NO_ID) {
+        if (getId() != LongReference.NULL) {
             reset();
         }
         this.batched = true;
         this.open = true;
-        this.nextStoreReference = NO_ID;
+        this.nextStoreReference = LongReference.NULL;
 
         return ((RecordNodeScan) scan).scanBatch(sizeHint, this);
     }
@@ -168,7 +169,7 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor {
 
     @Override
     public boolean hasProperties() {
-        return nextProp != NO_ID;
+        return nextProp != LongReference.NULL;
     }
 
     @Override
@@ -335,7 +336,7 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor {
 
     @Override
     public boolean next() {
-        if (next == NO_ID) {
+        if (next == LongReference.NULL) {
             resetState();
             return false;
         }
@@ -354,14 +355,14 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor {
                 if (isSingle() || batched) {
                     // we are a "single cursor" or a "batched scan"
                     // we don't want to set a new highMark
-                    next = NO_ID;
+                    next = LongReference.NULL;
                     return inUse();
                 } else {
                     // we are a "scan cursor"
                     // Check if there is a new high mark
                     highMark = nodeHighMark();
                     if (next > highMark) {
-                        next = NO_ID;
+                        next = LongReference.NULL;
                         return inUse();
                     }
                 }
@@ -379,8 +380,8 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor {
     }
 
     private void resetState() {
-        next = NO_ID;
-        setId(NO_ID);
+        next = LongReference.NULL;
+        setId(LongReference.NULL);
         clear();
         this.loadMode = RecordLoadOverride.none();
         if (groupCursor != null) {
@@ -389,7 +390,7 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor {
     }
 
     private boolean isSingle() {
-        return highMark == NO_ID;
+        return highMark == LongReference.NULL;
     }
 
     @Override

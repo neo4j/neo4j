@@ -26,7 +26,6 @@ import static org.neo4j.internal.recordstorage.RecordCursorTypes.RELATIONSHIP_CU
 import static org.neo4j.io.IOUtils.closeAllUnchecked;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
-import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -52,6 +51,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.transaction.log.LogTailLogVersionsMetadata;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.memory.EmptyMemoryTracker;
+import org.neo4j.storageengine.api.LongReference;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
@@ -104,7 +104,7 @@ class RecordRelationshipScanCursorTest {
             assertThat(cursor.next()).isTrue();
             assertThat(cursor.entityReference()).isEqualTo(RELATIONSHIP_ID);
             assertThat(cursor.next()).isFalse();
-            assertThat(cursor.entityReference()).isEqualTo(NO_ID);
+            assertThat(cursor.entityReference()).isEqualTo(LongReference.NULL);
         }
     }
 
@@ -119,7 +119,7 @@ class RecordRelationshipScanCursorTest {
         try (RecordRelationshipScanCursor cursor = createRelationshipCursor()) {
             cursor.single(RELATIONSHIP_ID);
             assertThat(cursor.next()).isFalse();
-            assertThat(cursor.entityReference()).isEqualTo(NO_ID);
+            assertThat(cursor.entityReference()).isEqualTo(LongReference.NULL);
         }
     }
 
@@ -175,7 +175,7 @@ class RecordRelationshipScanCursorTest {
             for (int i = 0, n = random.nextInt(2, 10); i < n; i++) {
                 assertThat(rels.scanBatch(scan, Long.MAX_VALUE)).isFalse();
             }
-            assertThat(rels.entityReference()).isEqualTo(NO_ID);
+            assertThat(rels.entityReference()).isEqualTo(LongReference.NULL);
         }
     }
 
@@ -188,7 +188,7 @@ class RecordRelationshipScanCursorTest {
                         .as(cursor.toString())
                         .isTrue();
             }
-            assertThat(cursor.entityReference()).isEqualTo(NO_ID);
+            assertThat(cursor.entityReference()).isEqualTo(LongReference.NULL);
         }
         assertThat(expected).isEmpty();
     }

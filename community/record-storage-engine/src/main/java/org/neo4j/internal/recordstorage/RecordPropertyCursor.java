@@ -72,7 +72,7 @@ public class RecordPropertyCursor extends PropertyRecord implements StoragePrope
     private final CursorContext cursorContext;
     private final StoreCursors storeCursors;
     private final MemoryTracker memoryTracker;
-    private long next = NO_ID;
+    private long next = LongReference.NULL;
     private int block;
     private ScopedBuffer scopedBuffer;
     private ByteBuffer buffer;
@@ -95,7 +95,7 @@ public class RecordPropertyCursor extends PropertyRecord implements StoragePrope
             CursorContext cursorContext,
             StoreCursors storeCursors,
             MemoryTracker memoryTracker) {
-        super(NO_ID);
+        super(LongReference.NULL);
         this.propertyStore = propertyStore;
         this.cursorContext = cursorContext;
         this.storeCursors = storeCursors;
@@ -120,7 +120,7 @@ public class RecordPropertyCursor extends PropertyRecord implements StoragePrope
      */
     private void init(
             Reference reference, PropertySelection selection, long ownerReference, EntityType ownerEntityType) {
-        if (getId() != NO_ID) {
+        if (getId() != LongReference.NULL) {
             clear();
         }
 
@@ -129,7 +129,7 @@ public class RecordPropertyCursor extends PropertyRecord implements StoragePrope
         this.block = Integer.MAX_VALUE;
         this.ownerReference = ownerReference;
         this.ownerEntityType = ownerEntityType;
-        if (referenceId != NO_ID) {
+        if (referenceId != LongReference.NULL) {
             if (page == null) {
                 page = storeCursors.readCursor(RecordCursorTypes.PROPERTY_CURSOR);
             }
@@ -173,7 +173,7 @@ public class RecordPropertyCursor extends PropertyRecord implements StoragePrope
                 }
             }
 
-            if (next == NO_ID) {
+            if (next == LongReference.NULL) {
                 return false;
             }
 
@@ -206,9 +206,9 @@ public class RecordPropertyCursor extends PropertyRecord implements StoragePrope
             clear();
             numSeenPropertyRecords = 0;
             block = Integer.MAX_VALUE;
-            next = NO_ID;
-            first = NO_ID;
-            ownerReference = NO_ID;
+            next = LongReference.NULL;
+            first = LongReference.NULL;
+            ownerReference = LongReference.NULL;
             cycleDetection = null;
             selection = PropertySelection.NO_PROPERTIES;
         }
