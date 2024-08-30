@@ -183,7 +183,7 @@ import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.logging.log4j.Log4jLogProvider;
 import org.neo4j.memory.EmptyMemoryTracker;
-import org.neo4j.memory.LocalMemoryTracker;
+import org.neo4j.memory.ThreadSafePeakMemoryTracker;
 import org.neo4j.storageengine.api.EntityTokenUpdate;
 import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
@@ -3167,7 +3167,8 @@ public class FullCheckIntegrationTest {
         ConsistencySummaryStatistics summary = new ConsistencySummaryStatistics();
         PageCacheTracer cacheTracer = PageCacheTracer.NULL;
 
-        LocalMemoryTracker memoryTracker = new LocalMemoryTracker();
+        // used to check that native memory is not leaked
+        var memoryTracker = new ThreadSafePeakMemoryTracker();
         try (RecordStorageConsistencyChecker checker = new RecordStorageConsistencyChecker(
                 dependencyResolver.resolveDependency(FileSystemAbstraction.class),
                 RecordDatabaseLayout.convert(fixture.databaseLayout()),
@@ -3190,8 +3191,6 @@ public class FullCheckIntegrationTest {
             checker.check();
         }
         assertThat(memoryTracker.usedNativeMemory()).isZero();
-        // TODO memorytracking find out what memory is not released
-        // assertThat(memoryTracker.estimatedHeapMemory()).isZero();
         return summary;
     }
 
