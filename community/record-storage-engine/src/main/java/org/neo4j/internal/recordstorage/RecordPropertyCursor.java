@@ -48,7 +48,6 @@ import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.storageengine.api.Reference;
 import org.neo4j.storageengine.api.StoragePropertyCursor;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
-import org.neo4j.string.Mask;
 import org.neo4j.util.BitBuffer;
 import org.neo4j.values.storable.ArrayValue;
 import org.neo4j.values.storable.BooleanValue;
@@ -63,11 +62,12 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.Values;
 
-public class RecordPropertyCursor extends PropertyRecord implements StoragePropertyCursor {
+public class RecordPropertyCursor implements StoragePropertyCursor {
     private static final int MAX_BYTES_IN_SHORT_STRING_OR_SHORT_ARRAY = 32;
     private static final int INITIAL_POSITION = -1;
     public static final int DEFAULT_PROPERTY_BUFFER_CAPACITY = 512;
 
+    private final PropertyRecord propertyRecord;
     private final PropertyStore propertyStore;
     private final CursorContext cursorContext;
     private final StoreCursors storeCursors;
@@ -95,12 +95,12 @@ public class RecordPropertyCursor extends PropertyRecord implements StoragePrope
             CursorContext cursorContext,
             StoreCursors storeCursors,
             MemoryTracker memoryTracker) {
-        super(LongReference.NULL);
         this.propertyStore = propertyStore;
         this.cursorContext = cursorContext;
         this.storeCursors = storeCursors;
         this.memoryTracker = memoryTracker;
         loadMode = RecordLoadOverride.none();
+        this.propertyRecord = new PropertyRecord(LongReference.NULL);
     }
 
     @Override
@@ -120,8 +120,8 @@ public class RecordPropertyCursor extends PropertyRecord implements StoragePrope
      */
     private void init(
             Reference reference, PropertySelection selection, long ownerReference, EntityType ownerEntityType) {
-        if (getId() != LongReference.NULL) {
-            clear();
+        if (propertyRecord.getId() != LongReference.NULL) {
+            propertyRecord.clear();
         }
 
         // Set to high value to force a read
@@ -148,7 +148,7 @@ public class RecordPropertyCursor extends PropertyRecord implements StoragePrope
     public boolean next() {
         while (true) {
             // Figure out number of blocks of record
-            int numberOfBlocks = getNumberOfBlocks();
+            int numberOfBlocks = propertyRecord.getNumberOfBlocks();
             while (block < numberOfBlocks) {
                 // We have just read a record, so we are at the beginning
                 if (block == INITIAL_POSITION) {
@@ -177,8 +177,8 @@ public class RecordPropertyCursor extends PropertyRecord implements StoragePrope
                 return false;
             }
 
-            property(this, next, page);
-            next = getNextProp();
+            property(propertyRecord, next, page);
+            next = propertyRecord.getNextProp();
             block = INITIAL_POSITION;
 
             if (++numSeenPropertyRecords >= CYCLE_DETECTION_THRESHOLD) {
@@ -195,7 +195,7 @@ public class RecordPropertyCursor extends PropertyRecord implements StoragePrope
     }
 
     private long currentBlock() {
-        return getBlocks()[block];
+        return propertyRecord.getBlocks()[block];
     }
 
     @Override
@@ -203,7 +203,7 @@ public class RecordPropertyCursor extends PropertyRecord implements StoragePrope
         if (open) {
             open = false;
             loadMode = RecordLoadOverride.none();
-            clear();
+            propertyRecord.clear();
             numSeenPropertyRecords = 0;
             block = Integer.MAX_VALUE;
             next = LongReference.NULL;
@@ -253,7 +253,7 @@ public class RecordPropertyCursor extends PropertyRecord implements StoragePrope
             throw new InconsistentDataReadException(
                     e,
                     "Unable to read property value in record:%d, starting at property record id:%d from owner %s:%d",
-                    getId(),
+                    propertyRecord.getId(),
                     first,
                     ownerEntityType,
                     ownerReference);
@@ -284,11 +284,11 @@ public class RecordPropertyCursor extends PropertyRecord implements StoragePrope
     }
 
     private Value geometryValue() {
-        return GeometryType.decode(getBlocks(), block);
+        return GeometryType.decode(propertyRecord.getBlocks(), block);
     }
 
     private Value temporalValue() {
-        return TemporalType.decode(getBlocks(), block);
+        return TemporalType.decode(propertyRecord.getBlocks(), block);
     }
 
     private ArrayValue readLongArray() {
@@ -311,13 +311,13 @@ public class RecordPropertyCursor extends PropertyRecord implements StoragePrope
         BitBuffer bits = BitBuffer.bits(MAX_BYTES_IN_SHORT_STRING_OR_SHORT_ARRAY);
         int blocksUsed = ShortArray.calculateNumberOfBlocksUsed(currentBlock());
         for (int i = 0; i < blocksUsed; i++) {
-            bits.put(getBlocks()[block + i]);
+            bits.put(propertyRecord.getBlocks()[block + i]);
         }
         return ShortArray.decode(bits);
     }
 
     private TextValue readShortString() {
-        return LongerShortString.decode(getBlocks(), block);
+        return LongerShortString.decode(propertyRecord.getBlocks(), block);
     }
 
     private TextValue readChar() {
@@ -325,7 +325,7 @@ public class RecordPropertyCursor extends PropertyRecord implements StoragePrope
     }
 
     private DoubleValue readDouble() {
-        return Values.doubleValue(Double.longBitsToDouble(getBlocks()[block + 1]));
+        return Values.doubleValue(Double.longBitsToDouble(propertyRecord.getBlocks()[block + 1]));
     }
 
     private FloatValue readFloat() {
@@ -336,7 +336,7 @@ public class RecordPropertyCursor extends PropertyRecord implements StoragePrope
         if (PropertyBlock.valueIsInlined(currentBlock())) {
             return Values.longValue(PropertyBlock.fetchLong(currentBlock()) >>> 1);
         } else {
-            return Values.longValue(getBlocks()[block + 1]);
+            return Values.longValue(propertyRecord.getBlocks()[block + 1]);
         }
     }
 
@@ -354,16 +354,6 @@ public class RecordPropertyCursor extends PropertyRecord implements StoragePrope
 
     private BooleanValue readBoolean() {
         return Values.booleanValue(PropertyBlock.fetchByte(currentBlock()) == 1);
-    }
-
-    @Override
-    public String toString(Mask mask) {
-        if (!open) {
-            return "RecordPropertyCursor[closed state]";
-        } else {
-            return "RecordPropertyCursor[id=" + getId() + ", open state with: block=" + block + ", next=" + next
-                    + ", underlying record=" + super.toString(mask) + "]";
-        }
     }
 
     @Override
@@ -412,7 +402,7 @@ public class RecordPropertyCursor extends PropertyRecord implements StoragePrope
         return propertyStore.readArrayFromBuffer(buffer);
     }
 
-    public void setScopedBuffer(ScopedBuffer scopedBuffer) {
+    private void setScopedBuffer(ScopedBuffer scopedBuffer) {
         this.scopedBuffer = scopedBuffer;
         this.buffer = scopedBuffer.getBuffer();
     }

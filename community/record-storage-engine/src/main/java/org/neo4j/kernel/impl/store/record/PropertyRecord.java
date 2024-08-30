@@ -43,7 +43,7 @@ import org.neo4j.string.Mask;
  * variable length, a full PropertyRecord can be holding just one
  * PropertyBlock.
  */
-public class PropertyRecord extends AbstractBaseRecord {
+public final class PropertyRecord extends AbstractBaseRecord {
     private static final long SHALLOW_SIZE = shallowSizeOfInstance(PropertyRecord.class);
     private static final int PAYLOAD_SIZE = PropertyType.getPayloadSizeLongs();
     public static final long INITIAL_SIZE = SHALLOW_SIZE
