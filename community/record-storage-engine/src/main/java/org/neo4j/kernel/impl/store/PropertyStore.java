@@ -271,9 +271,11 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord, NoStoreHe
 
     @Override
     public void ensureHeavy(PropertyRecord record, StoreCursors storeCursors, MemoryTracker memoryTracker) {
+        long heapBefore = memoryTracker.estimatedHeapMemory();
         for (PropertyBlock block : record.propertyBlocks()) {
             ensureHeavy(block, storeCursors, memoryTracker);
         }
+        record.heavyHeapSize = memoryTracker.estimatedHeapMemory() - heapBefore;
     }
 
     public void ensureHeavy(PropertyBlock block, StoreCursors storeCursors, MemoryTracker memoryTracker) {

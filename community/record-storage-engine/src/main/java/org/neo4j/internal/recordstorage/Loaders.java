@@ -197,7 +197,6 @@ public class Loaders {
             @Override
             public PropertyRecord load(
                     long key, PrimitiveRecord additionalData, RecordLoad load, MemoryTracker memoryTracker) {
-                memoryTracker.allocateHeap(PropertyRecord.INITIAL_SIZE);
                 PropertyRecord record = super.load(key, additionalData, load, memoryTracker);
                 setOwner(record, additionalData);
                 return record;
@@ -205,7 +204,7 @@ public class Loaders {
 
             @Override
             public PropertyRecord copy(PropertyRecord propertyRecord, MemoryTracker memoryTracker) {
-                memoryTracker.allocateHeap(PropertyRecord.INITIAL_SIZE);
+                memoryTracker.allocateHeap(PropertyRecord.INITIAL_SIZE + propertyRecord.heavyHeapSize);
                 return new PropertyRecord(propertyRecord);
             }
         };

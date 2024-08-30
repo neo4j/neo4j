@@ -76,6 +76,8 @@ public class PropertyRecord extends AbstractBaseRecord {
     private byte entityType;
     private List<DynamicRecord> deletedRecords;
 
+    public long heavyHeapSize = 0;
+
     public PropertyRecord(long id) {
         super(id);
     }
@@ -90,6 +92,7 @@ public class PropertyRecord extends AbstractBaseRecord {
         this.blocksCursor = other.blocksCursor;
         this.blockRecordsCursor = other.blockRecordsCursor;
         this.blocksLoaded = other.blocksLoaded;
+        this.heavyHeapSize = other.heavyHeapSize;
         arraycopy(other.blocks, 0, this.blocks, 0, other.blocks.length);
 
         for (int i = 0; i < blockRecordsCursor; i++) {
