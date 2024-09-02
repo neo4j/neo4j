@@ -596,6 +596,11 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
             newBuilder("internal.dbms.upgrade_restriction_enabled", BOOL, false).build();
 
     @Internal
+    @Description("Configure if the database should create the default admin user.")
+    public static final Setting<Boolean> create_default_user =
+            newBuilder("internal.dbms.create_default_user", BOOL, true).build();
+
+    @Internal
     @Description(
             "The maximum amount of time to wait for the database to become available, when starting a new transaction.")
     public static final Setting<Duration> transaction_start_timeout = newBuilder(

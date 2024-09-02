@@ -66,6 +66,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.database.KeepFirstDuplicateBuilder;
 import org.neo4j.dbms.database.SystemGraphComponent;
@@ -203,6 +204,16 @@ class UserSecurityGraphComponentIT {
     void shouldInitializeAndUpgradeSystemGraph(
             UserSecurityGraphComponentVersion version, SystemGraphComponent.Status initialStatus) throws Exception {
         initUserSecurityComponent(version);
+        assertCanUpgradeThisVersionAndThenUpgradeIt(initialStatus);
+    }
+
+    @ParameterizedTest
+    @MethodSource("versionAndStatusProvider")
+    void shouldInitializeAndUpgradeSystemGraphWithoutDefaultUser(
+            UserSecurityGraphComponentVersion version, SystemGraphComponent.Status initialStatus) throws Exception {
+        var config = Config.defaults();
+        config.set(GraphDatabaseInternalSettings.create_default_user, false);
+        initUserSecurityComponent(version, config);
         assertCanUpgradeThisVersionAndThenUpgradeIt(initialStatus);
     }
 
@@ -468,6 +479,11 @@ class UserSecurityGraphComponentIT {
     }
 
     private static void initUserSecurityComponent(UserSecurityGraphComponentVersion version) throws Exception {
+        initUserSecurityComponent(version, Config.defaults());
+    }
+
+    private static void initUserSecurityComponent(UserSecurityGraphComponentVersion version, Config config)
+            throws Exception {
         KnownCommunitySecurityComponentVersion builder =
                 userSecurityGraphComponent.findSecurityGraphComponentVersion(version);
         // initialize schema and then upgrade to version
@@ -477,7 +493,7 @@ class UserSecurityGraphComponentIT {
                 .create());
         inTx(tx -> builder.upgradeSecurityGraphSchema(tx, FIRST_VALID_COMMUNITY_SECURITY_COMPONENT_VERSION));
 
-        inTx(builder::setupUsers);
+        inTx(tx1 -> builder.setupUsers(tx1, config));
         inTx(tx -> builder.setVersionProperty(tx, version.getVersion()));
 
         userSecurityGraphComponent.postInitialization(system, true);

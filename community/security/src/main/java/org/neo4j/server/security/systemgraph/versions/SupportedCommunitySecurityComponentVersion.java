@@ -23,6 +23,8 @@ import static org.neo4j.kernel.api.security.AuthManager.INITIAL_PASSWORD;
 import static org.neo4j.kernel.api.security.AuthManager.INITIAL_USER_NAME;
 
 import java.util.Optional;
+import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.dbms.database.ComponentVersion;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.security.AbstractSecurityLog;
@@ -48,8 +50,14 @@ public abstract class SupportedCommunitySecurityComponentVersion extends KnownCo
     }
 
     @Override
-    public void setupUsers(Transaction tx) throws Exception {
-        addDefaultUser(tx);
+    public void setupUsers(Transaction tx, Config config) throws Exception {
+        if (Boolean.TRUE.equals(config.get(GraphDatabaseInternalSettings.create_default_user))) {
+            addDefaultUser(tx);
+        } else {
+            debugLog.info(String.format(
+                    "Not creating default user as per config setting: %s",
+                    GraphDatabaseInternalSettings.create_default_user.name()));
+        }
     }
 
     private void addDefaultUser(Transaction tx) throws Exception {

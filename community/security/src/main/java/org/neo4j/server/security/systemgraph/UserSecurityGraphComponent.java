@@ -125,7 +125,7 @@ public class UserSecurityGraphComponent extends AbstractSystemGraphComponent
         KnownCommunitySecurityComponentVersion latest = knownUserSecurityComponentVersions.latestComponentVersion();
         debugLog.debug(
                 String.format("Latest version of component '%s' is %s", SECURITY_USER_COMPONENT, latest.version));
-        latest.setupUsers(tx);
+        latest.setupUsers(tx, config);
         latest.setVersionProperty(tx, latest.version);
     }
 

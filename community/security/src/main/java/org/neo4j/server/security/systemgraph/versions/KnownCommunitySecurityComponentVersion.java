@@ -25,6 +25,7 @@ import static org.neo4j.server.security.systemgraph.SecurityGraphHelper.NATIVE_A
 
 import java.util.List;
 import java.util.UUID;
+import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.ComponentVersion;
 import org.neo4j.dbms.database.KnownSystemComponentVersion;
 import org.neo4j.graphdb.Label;
@@ -69,7 +70,7 @@ public abstract class KnownCommunitySecurityComponentVersion extends KnownSystem
         this.securityLog = securityLog;
     }
 
-    public abstract void setupUsers(Transaction tx) throws Exception;
+    public abstract void setupUsers(Transaction tx, Config config) throws Exception;
 
     public void addUser(
             Transaction tx,
