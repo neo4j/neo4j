@@ -35,7 +35,7 @@ Feature: DynamicLabelsAcceptance
       SET <query>
       RETURN labels(n) as newLabels
       """
-    Then the result should be, in any order:
+    Then the result should be (ignoring element order for lists):
       | newLabels |
       | <labels>  |
     And the side effects should be:
@@ -44,7 +44,7 @@ Feature: DynamicLabelsAcceptance
       | existing_node | label_definitions           | query                            | labels     | new_labels_count |
       | ()            | "A" AS a                    | n:$(a)                           | ['A']      | 1                |
       | ()            | "A" AS a                    | n IS $(a)                        | ['A']      | 1                |
-      | ()            | "A" AS a, "B" as b          | n:$(a):$(b)                      | ['A', 'B'] | 2                |
+      | ()            | "A" AS a, "B" as b          | n:$(a):$(b)                      | ['B', 'A'] | 2                |
       | ()            | "A" AS a, "B" as b          | n IS $(a), n IS $(b)             | ['A', 'B'] | 2                |
       | ()            | 1 as numericLabel, "A" as a | n:$(a):$(toString(numericLabel)) | ['A','1']  | 2                |
       | (:A)          | "B" as b                    | n:$(b)                           | ['A', 'B'] | 1                |
