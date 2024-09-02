@@ -100,6 +100,7 @@ import org.neo4j.cypher.internal.label_expressions.LabelExpression.Leaf
 import org.neo4j.cypher.internal.label_expressions.LabelExpressionPredicate
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.CartesianProductNotification
+import org.neo4j.cypher.internal.util.DeprecatedFeature
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
@@ -1145,6 +1146,12 @@ case class Merge(pattern: NonPrefixedPatternPart, actions: Seq[MergeAction], whe
   }
 }
 
+object Merge {
+  // MERGE (a)-[r]->(b {prop: a.prop})
+  //                          ^
+  case object SelfReference extends DeprecatedFeature.DeprecatedIn5ErrorIn6
+}
+
 case class Create(pattern: Pattern.ForUpdate)(val position: InputPosition) extends CreateOrInsert
     with SingleRelTypeCheck {
   override def name = "CREATE"
@@ -1158,6 +1165,12 @@ case class Create(pattern: Pattern.ForUpdate)(val position: InputPosition) exten
 
   override def mapExpressions(f: Expression => Expression): UpdateClause =
     copy(pattern.mapExpressions(f))(this.position)
+}
+
+object Create {
+  // CREATE (a), (b {prop: a.prop})
+  //                       ^
+  case object SelfReferenceAcrossPatterns extends DeprecatedFeature.DeprecatedIn5ErrorIn6
 }
 
 case class Insert(pattern: Pattern.ForUpdate)(val position: InputPosition) extends CreateOrInsert

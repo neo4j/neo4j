@@ -246,7 +246,7 @@ object Deprecations {
           Some(DeprecatedImportingWithInSubqueryCall(c.position, importing))
         ))
 
-      case Create(pattern) if DeprecatedFeature.SelfReferenceAcrossPatternsInCreate.deprecatedIn(cypherVersion) =>
+      case Create(pattern) if Create.SelfReferenceAcrossPatterns.deprecatedIn(cypherVersion) =>
         /*
         Note: When this deprecation turns into a semantic error in 6.0,
         we can clean up some code.
@@ -261,7 +261,7 @@ object Deprecations {
           Deprecation(None, Some(DeprecatedPropertyReferenceInCreate(e.position, e.name)))
         }
 
-      case Merge(patternPart, _, _) if DeprecatedFeature.SelfReferenceInMerge.deprecatedIn(cypherVersion) =>
+      case Merge(patternPart, _, _) if Merge.SelfReference.deprecatedIn(cypherVersion) =>
         // Create an update pattern consisting of the one patternPart from the MERGE clause
         val pattern = Pattern.ForUpdate(Seq(patternPart))(patternPart.position)
         propertyUsageOfNewVariable(pattern, semanticTable).collectFirst { e =>
@@ -293,29 +293,4 @@ trait SyntacticDeprecations extends Deprecations {
 
 trait SemanticDeprecations extends Deprecations {
   def find(semanticTable: SemanticTable): PartialFunction[Any, Deprecation]
-}
-
-sealed trait DeprecatedFeature {
-  def deprecatedIn(cypherVersion: CypherVersion): Boolean
-  def errorIn(cypherVersion: CypherVersion): Boolean
-}
-
-object DeprecatedFeature {
-
-  // add features here for easier code navigation
-
-  case object SelfReferenceAcrossPatternsInCreate extends DeprecatedIn5ErrorIn6
-
-  case object SelfReferenceInMerge extends DeprecatedIn5ErrorIn6
-
-  sealed trait DeprecatedIn5ErrorIn6 extends DeprecatedFeature {
-
-    override def deprecatedIn(cypherVersion: CypherVersion): Boolean = {
-      cypherVersion == CypherVersion.Cypher5
-    }
-
-    override def errorIn(cypherVersion: CypherVersion): Boolean = {
-      cypherVersion != CypherVersion.Cypher5
-    }
-  }
 }

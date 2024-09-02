@@ -41,7 +41,6 @@ import org.neo4j.cypher.internal.frontend.phases.ListCoercedToBooleanCheck.listC
 import org.neo4j.cypher.internal.frontend.phases.PatternExpressionInNonExistenceCheck.patternExpressionInNonExistenceCheck
 import org.neo4j.cypher.internal.frontend.phases.SemanticTypeCheck.SemanticErrorCheck
 import org.neo4j.cypher.internal.frontend.phases.factories.ParsePipelineTransformerFactory
-import org.neo4j.cypher.internal.rewriting.DeprecatedFeature
 import org.neo4j.cypher.internal.rewriting.conditions.SemanticInfoAvailable
 import org.neo4j.cypher.internal.rewriting.rewriters.LiteralExtractionStrategy
 import org.neo4j.cypher.internal.util.ASTNode
@@ -188,7 +187,7 @@ case class SelfReferenceCheckWithinPatternPart(cypherVersion: CypherVersion) ext
           val errors = checkPattern(c, c.pattern, semanticTable, errorMessageProvider)
           SkipChildren(accErrors ++ errors)
 
-      case m: Merge if DeprecatedFeature.SelfReferenceInMerge.errorIn(cypherVersion) =>
+      case m: Merge if Merge.SelfReference.errorIn(cypherVersion) =>
         accErrors =>
           val pattern = Pattern.ForUpdate(Seq(m.pattern))(m.pattern.position)
           val errors = checkPattern(m, pattern, semanticTable, errorMessageProvider)
@@ -241,7 +240,7 @@ case class SelfReferenceCheckAcrossPatternParts(cypherVersion: CypherVersion) ex
           val errors = checkPattern(i, i.pattern, semanticTable)
           SkipChildren(accErrors ++ errors)
 
-      case c: Create if DeprecatedFeature.SelfReferenceAcrossPatternsInCreate.errorIn(cypherVersion) =>
+      case c: Create if Create.SelfReferenceAcrossPatterns.errorIn(cypherVersion) =>
         accErrors =>
           val errors = checkPattern(c, c.pattern, semanticTable)
           SkipChildren(accErrors ++ errors)
