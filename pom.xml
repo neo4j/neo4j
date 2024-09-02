@@ -94,6 +94,7 @@
       -XX:+UseG1GC
       -XX:-OmitStackTraceInFastThrow
       -XX:+HeapDumpOnOutOfMemoryError
+      -XX:HeapDumpGzipLevel=5
       -XX:+ExitOnOutOfMemoryError
       -Djdk.nio.maxCachedBufferSize=1024
       -Dlog4j2.disable.jmx=true
