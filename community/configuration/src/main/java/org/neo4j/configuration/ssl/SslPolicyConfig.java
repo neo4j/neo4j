@@ -112,8 +112,8 @@ public class SslPolicyConfig implements GroupSetting {
         trust_expired = getBuilder("trust_expired", BOOL, true).build();
         client_auth = getBuilder("client_auth", ofEnum(ClientAuth.class), scope.authDefault)
                 .build();
-        tls_versions =
-                getBuilder("tls_versions", listOf(STRING), List.of("TLSv1.2")).build();
+        tls_versions = getBuilder("tls_versions", listOf(STRING), List.of("TLSv1.2", "TLSv1.3"))
+                .build();
         ciphers = getBuilder("ciphers", listOf(STRING), null).build();
         verify_hostname = getBuilder("verify_hostname", BOOL, false).build();
         private_key = getBuilder("private_key", PATH, Path.of("private.key"))

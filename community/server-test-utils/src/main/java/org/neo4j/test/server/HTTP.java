@@ -104,7 +104,7 @@ public final class HTTP {
 
     public static HttpClient newClient(HttpClient.Version httpVersion) {
         try {
-            var sslContext = SSLContext.getInstance("TLS");
+            var sslContext = SSLContext.getInstance("TLSv1.2");
             sslContext.init(null, new TrustManager[] {new InsecureTrustManager()}, null);
 
             return HttpClient.newBuilder()

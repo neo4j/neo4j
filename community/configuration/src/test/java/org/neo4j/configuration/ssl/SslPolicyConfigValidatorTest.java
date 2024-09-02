@@ -20,7 +20,6 @@
 package org.neo4j.configuration.ssl;
 
 import static java.util.Arrays.asList;
-import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -84,7 +83,7 @@ class SslPolicyConfigValidatorTest {
         assertEquals(revokedDir, revokedDirFromConfig);
         assertNull(privateKeyPassword);
         assertFalse(trustAll);
-        assertEquals(singletonList("TLSv1.2"), tlsVersions);
+        assertEquals(List.of("TLSv1.2", "TLSv1.3"), tlsVersions);
         assertNull(ciphers);
         assertEquals(ClientAuth.REQUIRE, clientAuth);
     }
