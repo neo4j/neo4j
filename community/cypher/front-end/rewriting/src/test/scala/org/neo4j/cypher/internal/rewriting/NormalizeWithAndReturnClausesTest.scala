@@ -18,7 +18,6 @@ package org.neo4j.cypher.internal.rewriting
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheckContext
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheckResult
-import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.LinkedUsers
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.MultipleDatabases
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.rewriting.rewriters.normalizeWithAndReturnClauses
@@ -1237,7 +1236,7 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
     but was rewritten to:${prettifier.asString(result)}"""
     )
     result.semanticCheck.run(
-      SemanticState.clean.withFeatures(MultipleDatabases, LinkedUsers),
+      SemanticState.clean.withFeatures(MultipleDatabases),
       SemanticCheckContext.default
     )
   }

@@ -57,10 +57,6 @@ object SemanticFeature {
     override def name: String = "Match modes"
   }
 
-  case object LinkedUsers extends SemanticFeature with FeatureToString {
-    override def name: String = "Linked users"
-  }
-
   case object ComposableCommands extends SemanticFeature with FeatureToString {
     override def name: String = "composable commands"
   }
@@ -72,7 +68,6 @@ object SemanticFeature {
     UseAsSingleGraphSelector,
     ShowSetting,
     MatchModes,
-    LinkedUsers,
     ComposableCommands
   )
 

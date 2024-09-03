@@ -1226,11 +1226,6 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
             newBuilder("internal.dbms.change_data_capture", BOOL, true).build();
 
     @Internal
-    @Description("A feature toggle behind which linked users feature is developed")
-    public static final Setting<Boolean> linked_users =
-            newBuilder("internal.dbms.linked_users", BOOL, false).build();
-
-    @Internal
     @Description("A feature toggle behind which show setting feature is developed")
     public static final Setting<Boolean> show_setting =
             newBuilder("internal.dbms.show_setting", BOOL, true).build();

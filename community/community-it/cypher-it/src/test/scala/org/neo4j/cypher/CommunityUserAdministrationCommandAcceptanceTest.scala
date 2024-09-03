@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME
 import org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME
 import org.neo4j.configuration.GraphDatabaseSettings.auth_enabled
@@ -71,8 +70,7 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
 
   override def databaseConfig(): Map[Setting[_], Object] =
     super.databaseConfig() ++ Map(
-      auth_enabled -> java.lang.Boolean.TRUE,
-      GraphDatabaseInternalSettings.linked_users -> java.lang.Boolean.TRUE
+      auth_enabled -> java.lang.Boolean.TRUE
     )
 
   def authManager: AuthManager = graph.getDependencyResolver.resolveDependency(classOf[AuthManager])

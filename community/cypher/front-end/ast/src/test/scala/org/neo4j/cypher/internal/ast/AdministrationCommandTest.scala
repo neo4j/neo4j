@@ -72,7 +72,6 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
   private val initialState =
     SemanticState.clean
       .withFeature(SemanticFeature.MultipleDatabases)
-      .withFeature(SemanticFeature.LinkedUsers)
 
   // Privilege command tests
 

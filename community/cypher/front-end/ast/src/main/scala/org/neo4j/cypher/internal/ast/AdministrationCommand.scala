@@ -224,17 +224,11 @@ final case class ShowUsers(
   override def name: String = "SHOW USERS"
 
   override def semanticCheck: SemanticCheck =
-    checkWithAuthFeatureFlag chain
-      super.semanticCheck chain
+    super.semanticCheck chain
       SemanticState.recordCurrentScope(this)
 
   override def withYieldOrWhere(newYieldOrWhere: YieldOrWhere): ShowUsers =
     this.copy(yieldOrWhere = newYieldOrWhere)(position)
-
-  private def checkWithAuthFeatureFlag: SemanticCheck = {
-    if (withAuth) requireFeatureSupport("The `WITH AUTH` clause", SemanticFeature.LinkedUsers, position)
-    else success
-  }
 }
 
 object ShowUsers {
@@ -316,14 +310,6 @@ sealed trait UserAuth extends SemanticAnalysisTooling {
     case _ => success
   }
 
-  protected def checkSetAuthFeatureFlag: SemanticCheck = {
-    newStyleAuth.headOption match {
-      case Some(auth) =>
-        requireFeatureSupport("The `SET AUTH` clause", SemanticFeature.LinkedUsers, auth.position)
-      case None => success
-    }
-  }
-
   val useOldStyleNativeAuth: Boolean = oldStyleAuth.nonEmpty
 }
 
@@ -350,8 +336,7 @@ final case class CreateUser(
         position
       )
     case _ =>
-      checkSetAuthFeatureFlag chain
-        checkAtLeastOneAuth chain
+      checkAtLeastOneAuth chain
         checkDuplicateAuth chain
         checkOldAndNewStyleCombination chain
         allAuths.foldSemanticCheck(auth =>
@@ -431,19 +416,8 @@ final case class AlterUser(
         error("Expected a non-empty String, non-empty List of non-empty Strings, or Parameter.", expr.position)
     }
 
-  private def checkRemoveAuthFeatureFlag: SemanticCheck =
-    removeAuth match {
-      case RemoveAuth(true, _) =>
-        requireFeatureSupport("The `REMOVE ALL AUTH` clause", SemanticFeature.LinkedUsers, position)
-      case RemoveAuth(false, auths) if auths.nonEmpty =>
-        requireFeatureSupport("The `REMOVE AUTH` clause", SemanticFeature.LinkedUsers, auths.head.position)
-      case _ => success
-    }
-
   override def semanticCheck: SemanticCheck =
-    checkSetAuthFeatureFlag chain
-      checkRemoveAuthFeatureFlag chain
-      checkAtLeastOneClause chain
+    checkAtLeastOneClause chain
       checkDuplicateAuth chain
       checkOldAndNewStyleCombination chain
       allAuths.foldSemanticCheck(auth =>
@@ -960,8 +934,6 @@ sealed abstract class PrivilegeCommand(
     (privilege match {
       case DbmsPrivilege(u: UnassignableAction) =>
         error(s"`GRANT`, `DENY` and `REVOKE` are not supported for `${u.name}`", position)
-      case DbmsPrivilege(a @ SetAuthAction) =>
-        requireFeatureSupport("The `SET AUTH` privilege", SemanticFeature.LinkedUsers, position)
       case GraphPrivilege(_, _: DefaultGraphScope) =>
         error("`ON DEFAULT GRAPH` is not supported. Use `ON HOME GRAPH` instead.", position)
       case DatabasePrivilege(_, _: DefaultDatabaseScope) =>

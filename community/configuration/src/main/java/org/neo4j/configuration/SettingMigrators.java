@@ -245,7 +245,8 @@ public final class SettingMigrators {
                 "internal.dbms.cluster.info_service_deallocated_enabled",
                 "internal.dbms.cluster.discovery.parallel_enabled",
                 "unsupported.dbms.kernel_id",
-                "internal.dbms.kernel_id");
+                "internal.dbms.kernel_id",
+                "internal.dbms.linked_users");
 
         private static final Collection<Mapping> LEGACY_UNSUPPORTED_SETTINGS_MAPPING = List.of(
                 new Mapping("dbms.capabilities.blocked", "internal.dbms.capabilities.blocked"),
