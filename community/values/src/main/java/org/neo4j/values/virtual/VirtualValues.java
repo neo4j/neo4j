@@ -69,7 +69,7 @@ public final class VirtualValues {
     }
 
     public static ListValue range(long start, long end, long step) {
-        return new ListValue.IntegralRangeListValue(start, end, step);
+        return IntegralRangeListValue.rangeList(start, end, step);
     }
 
     public static ListValue.ArrayValueListValue fromArray(ArrayValue arrayValue) {

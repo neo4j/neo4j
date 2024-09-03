@@ -130,8 +130,8 @@ import org.neo4j.values.ValueMapper
 import org.neo4j.values.storable.TextValue
 import org.neo4j.values.storable.Value
 import org.neo4j.values.storable.Values
+import org.neo4j.values.virtual.IntegralRangeListValue
 import org.neo4j.values.virtual.ListValue
-import org.neo4j.values.virtual.ListValue.IntegralRangeListValue
 import org.neo4j.values.virtual.ListValueBuilder
 import org.neo4j.values.virtual.MapValue
 import org.neo4j.values.virtual.MapValueBuilder
