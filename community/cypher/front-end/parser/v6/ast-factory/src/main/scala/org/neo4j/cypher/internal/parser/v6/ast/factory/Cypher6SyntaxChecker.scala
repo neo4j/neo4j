@@ -194,7 +194,10 @@ final class Cypher6SyntaxChecker(exceptionFactory: CypherExceptionFactory) exten
   private def checkCreateAlias(ctx: Cypher6Parser.CreateAliasContext): Unit = {
     if (ctx.stringOrParameter() != null) {
       if (!(ctx.AT() == null && ctx.USER() == null && ctx.PASSWORD() == null && ctx.DRIVER() == null))
-        errorOnAliasNameContainingDots(ctx.symbolicAliasNameOrParameter())
+        errorOnAliasNameContainingDots(java.util.List.of(
+          ctx.aliasName().symbolicAliasNameOrParameter(),
+          ctx.databaseName().symbolicAliasNameOrParameter()
+        ))
     }
   }
 
@@ -207,7 +210,7 @@ final class Cypher6SyntaxChecker(exceptionFactory: CypherExceptionFactory) exten
 
     // Should only be checked in case of remote
     if (hasUrl || !usernames.isEmpty || !passwords.isEmpty || !driverSettings.isEmpty)
-      errorOnAliasNameContainingDots(java.util.List.of(ctx.symbolicAliasNameOrParameter()))
+      errorOnAliasNameContainingDots(java.util.List.of(ctx.aliasName().symbolicAliasNameOrParameter()))
 
     errorOnDuplicateCtx(driverSettings, "DRIVER")
     errorOnDuplicateCtx(usernames, "USER")

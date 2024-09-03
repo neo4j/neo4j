@@ -1601,18 +1601,26 @@ showDatabase
    | (DATABASE | DATABASES) symbolicAliasNameOrParameter? showCommandYield?
    ;
 
+aliasName
+   : symbolicAliasNameOrParameter
+   ;
+
+databaseName
+   : symbolicAliasNameOrParameter
+   ;
+
 // Alias commands
 
 createAlias
-   : ALIAS symbolicAliasNameOrParameter (IF NOT EXISTS)? FOR DATABASE symbolicAliasNameOrParameter (AT stringOrParameter USER commandNameExpression PASSWORD passwordExpression (DRIVER mapOrParameter)?)? (PROPERTIES mapOrParameter)?
+   : ALIAS aliasName (IF NOT EXISTS)? FOR DATABASE databaseName (AT stringOrParameter USER commandNameExpression PASSWORD passwordExpression (DRIVER mapOrParameter)?)? (PROPERTIES mapOrParameter)?
    ;
 
 dropAlias
-   : ALIAS symbolicAliasNameOrParameter (IF EXISTS)? FOR DATABASE
+   : ALIAS aliasName (IF EXISTS)? FOR DATABASE
    ;
 
 alterAlias
-   : ALIAS symbolicAliasNameOrParameter (IF EXISTS)? SET DATABASE (
+   : ALIAS aliasName (IF EXISTS)? SET DATABASE (
       alterAliasTarget
       | alterAliasUser
       | alterAliasPassword
@@ -1622,7 +1630,7 @@ alterAlias
    ;
 
 alterAliasTarget
-   : TARGET symbolicAliasNameOrParameter (AT stringOrParameter)?
+   : TARGET databaseName (AT stringOrParameter)?
    ;
 
 alterAliasUser
@@ -1642,7 +1650,7 @@ alterAliasProperties
    ;
 
 showAliases
-   : (ALIAS | ALIASES) symbolicAliasNameOrParameter? FOR (DATABASE | DATABASES) showCommandYield?
+   : (ALIAS | ALIASES) aliasName? FOR (DATABASE | DATABASES) showCommandYield?
    ;
 
 // Various strings, symbolic names, lists and maps

@@ -94,6 +94,8 @@ final protected class CypherAstBuildingAntlrParser(
     case Cypher6Parser.RULE_propertyList                     => false
     case Cypher6Parser.RULE_symbolicAliasName                => false
     case Cypher6Parser.RULE_symbolicAliasNameOrParameter     => false
+    case Cypher6Parser.RULE_aliasName                        => false
+    case Cypher6Parser.RULE_databaseName                     => false
     case Cypher6Parser.RULE_symbolicNameString               => false
     case Cypher6Parser.RULE_unescapedLabelSymbolicNameString => false
     case Cypher6Parser.RULE_unescapedSymbolicNameString      => false

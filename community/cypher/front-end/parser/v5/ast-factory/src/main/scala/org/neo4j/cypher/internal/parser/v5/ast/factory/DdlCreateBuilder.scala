@@ -512,8 +512,8 @@ trait DdlCreateBuilder extends Cypher5ParserListener {
     ctx: Cypher5Parser.CreateAliasContext
   ): Unit = {
     val parent = ctx.getParent.asInstanceOf[CreateCommandContext]
-    val aliasName = ctx.symbolicAliasNameOrParameter(0).ast[DatabaseName]()
-    val dbName = ctx.symbolicAliasNameOrParameter(1).ast[DatabaseName]()
+    val aliasName = ctx.aliasName().ast[DatabaseName]()
+    val dbName = ctx.databaseName().ast[DatabaseName]()
     val ifNotExists = ctx.EXISTS() != null
     val properties =
       if (ctx.PROPERTIES() != null) {

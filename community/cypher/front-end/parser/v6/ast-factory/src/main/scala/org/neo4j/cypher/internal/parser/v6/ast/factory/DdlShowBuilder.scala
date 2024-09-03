@@ -533,7 +533,7 @@ trait DdlShowBuilder extends Cypher6ParserListener {
     ctx: Cypher6Parser.ShowAliasesContext
   ): Unit = {
     ctx.ast = ShowAliases(
-      astOpt[DatabaseName](ctx.symbolicAliasNameOrParameter()),
+      astOpt[DatabaseName](ctx.aliasName()),
       astOpt[Either[(Yield, Option[Return]), Where]](ctx.showCommandYield())
     )(pos(ctx))
   }

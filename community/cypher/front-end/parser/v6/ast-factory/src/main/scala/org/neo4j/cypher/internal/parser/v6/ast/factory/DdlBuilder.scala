@@ -497,21 +497,22 @@ trait DdlBuilder extends Cypher6ParserListener {
   final override def exitDropAlias(
     ctx: Cypher6Parser.DropAliasContext
   ): Unit = {
-    ctx.ast = DropDatabaseAlias(ctx.symbolicAliasNameOrParameter().ast[DatabaseName](), ctx.EXISTS() != null)(pos(
-      ctx.getParent
-    ))
+    ctx.ast =
+      DropDatabaseAlias(ctx.aliasName().symbolicAliasNameOrParameter().ast[DatabaseName](), ctx.EXISTS() != null)(pos(
+        ctx.getParent
+      ))
   }
 
   final override def exitAlterAlias(
     ctx: Cypher6Parser.AlterAliasContext
   ): Unit = {
-    val aliasName = ctx.symbolicAliasNameOrParameter().ast[DatabaseName]()
+    val aliasName = ctx.aliasName().symbolicAliasNameOrParameter().ast[DatabaseName]()
     val aliasTargetCtx = ctx.alterAliasTarget()
     val (targetName, url) = {
       if (aliasTargetCtx.isEmpty) (None, None)
       else
         (
-          Some(aliasTargetCtx.get(0).symbolicAliasNameOrParameter().ast[DatabaseName]()),
+          Some(aliasTargetCtx.get(0).databaseName().symbolicAliasNameOrParameter().ast[DatabaseName]()),
           astOpt[Either[String, Parameter]](aliasTargetCtx.get(0).stringOrParameter())
         )
     }
@@ -536,7 +537,7 @@ trait DdlBuilder extends Cypher6ParserListener {
   }
 
   override def exitAlterAliasTarget(ctx: Cypher6Parser.AlterAliasTargetContext): Unit = {
-    val target = ctx.symbolicAliasNameOrParameter().ast[DatabaseName]()
+    val target = ctx.databaseName().symbolicAliasNameOrParameter().ast[DatabaseName]()
     val url = astOpt[Either[String, Parameter]](ctx.stringOrParameter())
     ctx.ast = (target, url)
   }
@@ -602,6 +603,14 @@ trait DdlBuilder extends Cypher6ParserListener {
         NamespacedName(s)(pos(ctx))
       } else
         ParameterName(ctx.parameter().ast())(pos(ctx))
+  }
+
+  final override def exitAliasName(ctx: Cypher6Parser.AliasNameContext): Unit = {
+    ctx.ast = ctx.symbolicAliasNameOrParameter().ast[DatabaseName]
+  }
+
+  final override def exitDatabaseName(ctx: Cypher6Parser.DatabaseNameContext): Unit = {
+    ctx.ast = ctx.symbolicAliasNameOrParameter().ast[DatabaseName]
   }
 
   final override def exitStringOrParameterExpression(

@@ -505,7 +505,7 @@ trait DdlBuilder extends Cypher5ParserListener {
   final override def exitDropAlias(
     ctx: Cypher5Parser.DropAliasContext
   ): Unit = {
-    ctx.ast = DropDatabaseAlias(ctx.symbolicAliasNameOrParameter().ast[DatabaseName](), ctx.EXISTS() != null)(pos(
+    ctx.ast = DropDatabaseAlias(ctx.aliasName().ast[DatabaseName](), ctx.EXISTS() != null)(pos(
       ctx.getParent
     ))
   }
@@ -513,13 +513,13 @@ trait DdlBuilder extends Cypher5ParserListener {
   final override def exitAlterAlias(
     ctx: Cypher5Parser.AlterAliasContext
   ): Unit = {
-    val aliasName = ctx.symbolicAliasNameOrParameter().ast[DatabaseName]()
+    val aliasName = ctx.aliasName().ast[DatabaseName]()
     val aliasTargetCtx = ctx.alterAliasTarget()
     val (targetName, url) = {
       if (aliasTargetCtx.isEmpty) (None, None)
       else
         (
-          Some(aliasTargetCtx.get(0).symbolicAliasNameOrParameter().ast[DatabaseName]()),
+          Some(aliasTargetCtx.get(0).databaseName().ast[DatabaseName]()),
           astOpt[Either[String, Parameter]](aliasTargetCtx.get(0).stringOrParameter())
         )
     }
@@ -544,7 +544,7 @@ trait DdlBuilder extends Cypher5ParserListener {
   }
 
   override def exitAlterAliasTarget(ctx: Cypher5Parser.AlterAliasTargetContext): Unit = {
-    val target = ctx.symbolicAliasNameOrParameter().ast[DatabaseName]()
+    val target = ctx.databaseName().ast[DatabaseName]()
     val url = astOpt[Either[String, Parameter]](ctx.stringOrParameter())
     ctx.ast = (target, url)
   }
@@ -610,6 +610,14 @@ trait DdlBuilder extends Cypher5ParserListener {
         NamespacedName(s)(pos(ctx))
       } else
         ParameterName(ctx.parameter().ast())(pos(ctx))
+  }
+
+  final override def exitAliasName(ctx: Cypher5Parser.AliasNameContext): Unit = {
+    ctx.ast = ctx.symbolicAliasNameOrParameter().ast[DatabaseName]
+  }
+
+  final override def exitDatabaseName(ctx: Cypher5Parser.DatabaseNameContext): Unit = {
+    ctx.ast = ctx.symbolicAliasNameOrParameter().ast[DatabaseName]
   }
 
   final override def exitStringOrParameterExpression(

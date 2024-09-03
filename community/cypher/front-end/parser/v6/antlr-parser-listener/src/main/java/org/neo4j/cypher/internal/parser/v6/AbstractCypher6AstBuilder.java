@@ -434,6 +434,8 @@ public abstract class AbstractCypher6AstBuilder implements Cypher6ParserListener
             case Cypher6Parser.RULE_waitClause -> exitWaitClause((Cypher6Parser.WaitClauseContext) ctx);
             case Cypher6Parser.RULE_secondsToken -> exitSecondsToken((Cypher6Parser.SecondsTokenContext) ctx);
             case Cypher6Parser.RULE_showDatabase -> exitShowDatabase((Cypher6Parser.ShowDatabaseContext) ctx);
+            case Cypher6Parser.RULE_aliasName -> exitAliasName((Cypher6Parser.AliasNameContext) ctx);
+            case Cypher6Parser.RULE_databaseName -> exitDatabaseName((Cypher6Parser.DatabaseNameContext) ctx);
             case Cypher6Parser.RULE_createAlias -> exitCreateAlias((Cypher6Parser.CreateAliasContext) ctx);
             case Cypher6Parser.RULE_dropAlias -> exitDropAlias((Cypher6Parser.DropAliasContext) ctx);
             case Cypher6Parser.RULE_alterAlias -> exitAlterAlias((Cypher6Parser.AlterAliasContext) ctx);

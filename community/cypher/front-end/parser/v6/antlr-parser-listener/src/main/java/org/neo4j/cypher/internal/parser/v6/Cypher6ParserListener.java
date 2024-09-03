@@ -613,6 +613,10 @@ public interface Cypher6ParserListener extends ParseTreeListener {
 
     void exitShowDatabase(Cypher6Parser.ShowDatabaseContext ctx);
 
+    void exitAliasName(Cypher6Parser.AliasNameContext ctx);
+
+    void exitDatabaseName(Cypher6Parser.DatabaseNameContext ctx);
+
     void exitCreateAlias(Cypher6Parser.CreateAliasContext ctx);
 
     void exitDropAlias(Cypher6Parser.DropAliasContext ctx);

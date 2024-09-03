@@ -447,6 +447,8 @@ public abstract class AbstractCypher5AstBuilder implements Cypher5ParserListener
             case Cypher5Parser.RULE_waitClause -> exitWaitClause((Cypher5Parser.WaitClauseContext) ctx);
             case Cypher5Parser.RULE_secondsToken -> exitSecondsToken((Cypher5Parser.SecondsTokenContext) ctx);
             case Cypher5Parser.RULE_showDatabase -> exitShowDatabase((Cypher5Parser.ShowDatabaseContext) ctx);
+            case Cypher5Parser.RULE_aliasName -> exitAliasName((Cypher5Parser.AliasNameContext) ctx);
+            case Cypher5Parser.RULE_databaseName -> exitDatabaseName((Cypher5Parser.DatabaseNameContext) ctx);
             case Cypher5Parser.RULE_createAlias -> exitCreateAlias((Cypher5Parser.CreateAliasContext) ctx);
             case Cypher5Parser.RULE_dropAlias -> exitDropAlias((Cypher5Parser.DropAliasContext) ctx);
             case Cypher5Parser.RULE_alterAlias -> exitAlterAlias((Cypher5Parser.AlterAliasContext) ctx);
