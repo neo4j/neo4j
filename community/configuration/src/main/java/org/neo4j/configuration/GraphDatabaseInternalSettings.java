@@ -1460,4 +1460,10 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
     public static final Setting<Duration> seed_with_metadata_timeout = newBuilder(
                     "internal.dbms.seed_with_metadata_timeout", DURATION, Duration.ofSeconds(60))
             .build();
+
+    @Internal
+    @Description("Push valid predicates into Remote Batch Properties")
+    public static final Setting<Boolean> push_predicates_into_remote_batch_properties = newBuilder(
+                    "internal.cypher.push_predicates_into_remote_batch_properties", BOOL, false)
+            .build();
 }

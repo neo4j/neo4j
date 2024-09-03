@@ -19,11 +19,17 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
+import org.neo4j.configuration.GraphDatabaseInternalSettings
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.expressions.CachedProperty
+import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.ExplicitParameter
+import org.neo4j.cypher.internal.expressions.HasDegreeGreaterThan
 import org.neo4j.cypher.internal.expressions.NODE_TYPE
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
+import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
+import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.plans.GetValue
@@ -32,12 +38,16 @@ import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class RemoteBatchPropertiesPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIntegrationTestSupport {
+import java.lang.Boolean.TRUE
+
+class RemoteBatchPropertiesPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIntegrationTestSupport
+    with AstConstructionTestSupport {
 
   // Graph counts based on a subset of LDBC SF 1
   final private val planner =
     plannerBuilder()
       .setDatabaseMode(DatabaseMode.SHARDED)
+      .withSetting(GraphDatabaseInternalSettings.push_predicates_into_remote_batch_properties, TRUE)
       .setAllNodesCardinality(3181725)
       .setLabelCardinality("Person", 9892)
       .setLabelCardinality("Message", 3055774)
@@ -125,7 +135,7 @@ class RemoteBatchPropertiesPlanningIntegrationTest extends CypherFunSuite with L
 
     val plan = planner.plan(query)
 
-    plan shouldEqual planner
+    val expected = planner
       .planBuilder()
       .produceResults("personLastName", "friendLastName", "knowsSince")
       .projection(
@@ -134,16 +144,16 @@ class RemoteBatchPropertiesPlanningIntegrationTest extends CypherFunSuite with L
         "cacheR[knows.creationDate] AS knowsSince"
       )
       .remoteBatchProperties("cacheNFromStore[person.lastName]", "cacheNFromStore[friend.lastName]")
-      .filter(
-        "cacheN[person.firstName] = cacheN[friend.firstName]",
-        "cacheR[knows.creationDate] < $max_creation_date",
-        "person:Person"
+      .filter("cacheN[person.firstName] = cacheN[friend.firstName]", "person:Person")
+      .remoteBatchPropertiesWithFilter("cacheRFromStore[knows.creationDate]", "cacheNFromStore[person.firstName]")(
+        "cacheRFromStore[knows.creationDate] < $max_creation_date"
       )
-      .remoteBatchProperties("cacheRFromStore[knows.creationDate]", "cacheNFromStore[person.firstName]")
       .expandAll("(friend)<-[knows:KNOWS]-(person)")
       .remoteBatchProperties("cacheNFromStore[friend.firstName]")
       .nodeByLabelScan("friend", "Person")
       .build()
+
+    plan shouldEqual expected
   }
 
   test("should retrieve properties from indexes where applicable") {
@@ -204,8 +214,9 @@ class RemoteBatchPropertiesPlanningIntegrationTest extends CypherFunSuite with L
       .remoteBatchProperties("cacheNFromStore[person.lastName]")
       .top(10, "earlyAdopterSince ASC")
       .projection("cacheN[person.creationDate] AS earlyAdopterSince")
-      .filter("cacheN[person.creationDate] < $max_creation_date")
-      .remoteBatchProperties("cacheNFromStore[person.creationDate]")
+      .remoteBatchPropertiesWithFilter("cacheNFromStore[person.creationDate]")(
+        "cacheNFromStore[person.creationDate] < $max_creation_date"
+      )
       .nodeByLabelScan("person", "Person")
       .build()
   }
@@ -304,9 +315,9 @@ class RemoteBatchPropertiesPlanningIntegrationTest extends CypherFunSuite with L
       )
       .top(20, "`message.creationDate` DESC", "`message.id` ASC")
       .projection("cacheN[message.creationDate] AS `message.creationDate`", "cacheN[message.id] AS `message.id`")
-      .remoteBatchProperties("cacheNFromStore[message.id]")
-      .filter("cacheN[message.creationDate] < $Date0")
-      .remoteBatchProperties("cacheNFromStore[message.creationDate]")
+      .remoteBatchPropertiesWithFilter("cacheNFromStore[message.creationDate]", "cacheNFromStore[message.id]")(
+        "cacheNFromStore[message.creationDate] < $Date0"
+      )
       .expandAll("(friend)<-[anon_0:POST_HAS_CREATOR|COMMENT_HAS_CREATOR]-(message)")
       .projection("friend AS friend")
       .filter("NOT person = friend")
@@ -316,6 +327,163 @@ class RemoteBatchPropertiesPlanningIntegrationTest extends CypherFunSuite with L
         paramExpr = Some(ExplicitParameter("Person", CTAny)(InputPosition.NONE)),
         unique = true
       )
+      .build()
+  }
+
+  test("should batch node properties with predicates and merge multiple batchings") {
+    val query =
+      """MATCH (person:Person) WHERE person.creationDate > 0
+        |RETURN person.firstName AS personFirstName,
+        |       person.lastName AS personLastName""".stripMargin
+
+    val plan = planner.plan(query)
+
+    plan shouldEqual planner
+      .planBuilder()
+      .produceResults("personFirstName", "personLastName")
+      .projection("cacheN[person.firstName] AS personFirstName", "cacheN[person.lastName] AS personLastName")
+      .remoteBatchPropertiesWithFilter(
+        "cacheNFromStore[person.creationDate]",
+        "cacheNFromStore[person.firstName]",
+        "cacheNFromStore[person.lastName]"
+      )("cacheNFromStore[person.creationDate] > 0")
+      .nodeByLabelScan("person", "Person")
+      .build()
+  }
+
+  test("should batch node properties without adding predicates when all predicates has multiple dependencies") {
+    val query =
+      """MATCH (person:Person)-[:KNOWS]->(friend) WHERE person.creationDate > friend.creationDate
+        |RETURN person.firstName AS personFirstName,
+        |       person.lastName AS personLastName""".stripMargin
+
+    val plan = planner.plan(query)
+
+    plan shouldEqual planner
+      .planBuilder()
+      .produceResults("personFirstName", "personLastName")
+      .projection("cacheN[person.firstName] AS personFirstName", "cacheN[person.lastName] AS personLastName")
+      .filter("cacheN[person.creationDate] > cacheN[friend.creationDate]")
+      .remoteBatchProperties("cacheNFromStore[friend.creationDate]")
+      .expandAll("(person)-[anon_0:KNOWS]->(friend)")
+      .remoteBatchProperties(
+        "cacheNFromStore[person.creationDate]",
+        "cacheNFromStore[person.firstName]",
+        "cacheNFromStore[person.lastName]"
+      )
+      .nodeByLabelScan("person", "Person")
+      .build()
+  }
+
+  test("should batch node properties only adding valid predicates") {
+    val query =
+      """MATCH (person:Person)-[:KNOWS]->(friend) WHERE person.creationDate > friend.creationDate AND person.creationDate CONTAINS "test"
+        |RETURN person.firstName AS personFirstName,
+        |       person.lastName AS personLastName""".stripMargin
+
+    val plan = planner.plan(query)
+
+    plan shouldEqual planner
+      .planBuilder()
+      .produceResults("personFirstName", "personLastName")
+      .projection("cacheN[person.firstName] AS personFirstName", "cacheN[person.lastName] AS personLastName")
+      .filter("cacheN[person.creationDate] > cacheN[friend.creationDate]")
+      .remoteBatchProperties("cacheNFromStore[friend.creationDate]")
+      .expandAll("(person)-[anon_0:KNOWS]->(friend)")
+      .remoteBatchPropertiesWithFilter(
+        "cacheNFromStore[person.creationDate]",
+        "cacheNFromStore[person.firstName]",
+        "cacheNFromStore[person.lastName]"
+      )("cacheNFromStore[person.creationDate] CONTAINS 'test'")
+      .nodeByLabelScan("person", "Person")
+      .build()
+  }
+
+  test("should batch node properties not adding invalid predicates") {
+    val query =
+      """MATCH (person:Person) WHERE person.creationDate = EXISTS{Match (person)-[:KNOWS]->(friend)}
+        |RETURN person.firstName AS personFirstName,
+        |       person.lastName AS personLastName""".stripMargin
+
+    val plan = planner.plan(query)
+
+    val filterExpr = Equals(
+      cachedNodeProp("person", "creationDate"),
+      HasDegreeGreaterThan(
+        varFor("person"),
+        Some(relTypeName("KNOWS")),
+        OUTGOING,
+        SignedDecimalIntegerLiteral("0")(pos)
+      )(pos)
+    )(pos)
+
+    plan shouldEqual planner
+      .planBuilder()
+      .produceResults("personFirstName", "personLastName")
+      .projection("cacheN[person.firstName] AS personFirstName", "cacheN[person.lastName] AS personLastName")
+      .remoteBatchProperties("cacheNFromStore[person.firstName]", "cacheNFromStore[person.lastName]")
+      .filterExpression(filterExpr)
+      .remoteBatchProperties("cacheNFromStore[person.creationDate]")
+      .nodeByLabelScan("person", "Person")
+      .build()
+
+  }
+
+  test("Should not add expressions referencing multiple variables") {
+    val query =
+      """MATCH (person:Person), (friend)
+        |WITH friend.creationDate AS friendDate
+        |MATCH (person)-[:KNOWS]->(friend) WHERE person.creationDate > friendDate
+        |RETURN person.firstName AS personFirstName,
+        |       person.lastName AS personLastName""".stripMargin
+
+    val plan = planner.plan(query)
+
+    plan shouldEqual planner
+      .planBuilder()
+      .produceResults("personFirstName", "personLastName")
+      .projection("cacheN[person.firstName] AS personFirstName", "cacheN[person.lastName] AS personLastName")
+      .remoteBatchProperties("cacheNFromStore[person.firstName]", "cacheNFromStore[person.lastName]")
+      .filter("cacheN[person.creationDate] > friendDate")
+      .remoteBatchProperties("cacheNFromStore[person.creationDate]")
+      .apply()
+      .|.relationshipTypeScan("(person)-[anon_0:KNOWS]->(friend)", "friendDate")
+      .projection("cacheN[friend.creationDate] AS friendDate")
+      .cartesianProduct()
+      .|.nodeByLabelScan("person", "Person")
+      .remoteBatchProperties("cacheNFromStore[friend.creationDate]")
+      .allNodeScan("friend")
+      .build()
+  }
+
+  test("Should not push down predicate that is not being cached in RemoteBatchProperties") {
+    val query =
+      """MATCH (person:Person), (friend)
+        |WITH friend.creationDate AS friendDate
+        |MATCH (person)-[:KNOWS]->(friend) WHERE person.creationDate > 0 AND friendDate > 1
+        |RETURN person.firstName AS personFirstName,
+        |       person.lastName AS personLastName""".stripMargin
+
+    val plan = planner.plan(query)
+
+    plan shouldEqual planner
+      .planBuilder()
+      .produceResults("personFirstName", "personLastName")
+      .projection("cacheN[person.firstName] AS personFirstName", "cacheN[person.lastName] AS personLastName")
+      .remoteBatchProperties("cacheNFromStore[person.firstName]", "cacheNFromStore[person.lastName]")
+      .filter("friendDate > 1")
+      .remoteBatchPropertiesWithFilter(
+        "cacheNFromStore[person.creationDate]"
+      )(
+        "cacheNFromStore[person.creationDate] > 0"
+      )
+      .apply()
+      .|.relationshipTypeScan("(person)-[anon_0:KNOWS]->(friend)", "friendDate")
+      .projection("cacheN[friend.creationDate] AS friendDate")
+      .cartesianProduct()
+      .|.nodeByLabelScan("person", "Person")
+      .remoteBatchProperties("cacheNFromStore[friend.creationDate]")
+      .allNodeScan("friend")
       .build()
   }
 }

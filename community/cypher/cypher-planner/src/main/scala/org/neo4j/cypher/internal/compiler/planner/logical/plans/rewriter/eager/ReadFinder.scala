@@ -139,6 +139,7 @@ import org.neo4j.cypher.internal.logical.plans.Projection
 import org.neo4j.cypher.internal.logical.plans.PruningVarExpand
 import org.neo4j.cypher.internal.logical.plans.RelationshipCountFromCountStore
 import org.neo4j.cypher.internal.logical.plans.RemoteBatchProperties
+import org.neo4j.cypher.internal.logical.plans.RemoteBatchPropertiesWithFilter
 import org.neo4j.cypher.internal.logical.plans.RemoveLabels
 import org.neo4j.cypher.internal.logical.plans.RepeatOptions
 import org.neo4j.cypher.internal.logical.plans.RightOuterHashJoin
@@ -858,6 +859,7 @@ object ReadFinder {
         OrderedDistinct(_, _, _) |
         ProcedureCall(_, _) |
         RemoteBatchProperties(_, _) |
+        RemoteBatchPropertiesWithFilter(_, _, _) |
         SelectOrAntiSemiApply(_, _, _) |
         SelectOrSemiApply(_, _, _) |
         SemiApply(_, _) |

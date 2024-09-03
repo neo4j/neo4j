@@ -290,6 +290,10 @@ object LogicalPlanToPlanBuilderString {
         wrapInQuotationsAndMkString(properties.toSeq.map(expressionStringifier(_)))
       case RemoteBatchProperties(_, properties) =>
         wrapInQuotationsAndMkString(properties.toSeq.map(expressionStringifier(_)))
+      case RemoteBatchPropertiesWithFilter(_, predicates, properties) =>
+        val exprStrings = wrapInQuotationsAndMkString(predicates.toSeq.map(expressionStringifier(_)))
+        val propStrings = wrapInQuotationsAndMkString(properties.toSeq.map(expressionStringifier(_)))
+        propStrings + ")(" + exprStrings
       case Create(_, commands) =>
         commands.map(createCreateCommandToString).mkString(", ")
       case Merge(_, createNodes, createRelationships, onMatch, onCreate, nodesToLock) =>

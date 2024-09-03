@@ -28,6 +28,8 @@ import org.neo4j.cypher.internal.compiler.phases.PlannerContext
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.AndedPropertyInequalitiesRemoved
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.CardinalityRewriter
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.LogicalPlanRewritten
+import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.MergeRemoteBatchPropertiesRewriter
+import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.RemoteBatchPropertiesFilterMergeRewriter
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.LogicalPlanContainsEagerIfNeeded
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.InsertCachedProperties.PropertyUsages
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.InsertCachedProperties.PropertyUsagesAndRenamings
@@ -146,7 +148,7 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean)
       if (pushdownPropertyReads || context.planContext.databaseMode == DatabaseMode.SHARDED) {
         val effectiveCardinalities = from.planningAttributes.effectiveCardinalities
         val attributes = from.planningAttributes.asAttributes(context.logicalPlanIdGen)
-        PushdownPropertyReads.pushdown(
+        val newPlan = PushdownPropertyReads.pushdown(
           from.logicalPlan,
           effectiveCardinalities,
           attributes,
@@ -154,6 +156,11 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean)
           if (from.logicalPlan.readOnly) context.planContext.databaseMode else DatabaseMode.SINGLE,
           context.cancellationChecker
         )
+        if (context.config.cachePropertiesForEntitiesWithFilter())
+          newPlan.endoRewrite(RemoteBatchPropertiesFilterMergeRewriter)
+            .endoRewrite(MergeRemoteBatchPropertiesRewriter)
+        else
+          newPlan
       } else {
         from.logicalPlan
       }

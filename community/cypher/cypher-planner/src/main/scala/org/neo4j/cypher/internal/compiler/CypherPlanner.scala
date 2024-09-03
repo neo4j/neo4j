@@ -313,4 +313,11 @@ class CypherPlannerConfiguration(
     )
     () => config.cachePropertiesForEntities
   }
+
+  val cachePropertiesForEntitiesWithFilter: () => Boolean = {
+    AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+      !GraphDatabaseInternalSettings.push_predicates_into_remote_batch_properties.dynamic()
+    )
+    () => config.cachePropertiesForEntitiesWithFilter
+  }
 }

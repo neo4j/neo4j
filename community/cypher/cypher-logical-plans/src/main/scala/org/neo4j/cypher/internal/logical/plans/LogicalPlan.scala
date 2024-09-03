@@ -1189,6 +1189,21 @@ case class RemoteBatchProperties(
 }
 
 /**
+ * Similar to [[RemoteBatchProperties]] but it also applies property predicates serverside.
+ */
+case class RemoteBatchPropertiesWithFilter(
+  override val source: LogicalPlan,
+  predicates: Set[Expression],
+  properties: Set[LogicalProperty]
+)(implicit idGen: IdGen) extends LogicalUnaryPlan(idGen) {
+  override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
+
+  override val availableSymbols: Set[LogicalVariable] = source.availableSymbols
+
+  override val distinctness: Distinctness = source.distinctness
+}
+
+/**
  * Cartesian Product
  *
  * {{{
