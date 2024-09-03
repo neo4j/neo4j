@@ -2843,6 +2843,14 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName wi
       .build()
   )
 
+  testPlan(
+    "planAny",
+    new TestPlanBuilder()
+      .produceResults("x", "y")
+      .planAny(_.argument())
+      .build()
+  )
+
   private def interpretPlanBuilder(code: String): LogicalPlan = {
     val completeCode =
       s"""
@@ -2935,6 +2943,7 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName wi
       "nestedPlanGetByNameExpressionProjection",
       "nestedPlanGetByNameExpressionInListComprehensionProjection",
       "pointDistanceNodeIndexSeekExpr",
+      "pointDistanceNodeIndexSeekParam",
       "pointDistanceRelationshipIndexSeekExpr",
       "pointBoundingBoxNodeIndexSeekExpr",
       "pointBoundingBoxRelationshipIndexSeekExpr",
@@ -2944,7 +2953,8 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName wi
       "repeatOptions",
       "varExpandAsShortest",
       "resetIndent",
-      "planIf"
+      "planIf",
+      "planAny"
     )
     withClue("tests missing for these operators:") {
       val methods = classOf[AbstractLogicalPlanBuilder[_, _]].getDeclaredMethods.filter { m =>

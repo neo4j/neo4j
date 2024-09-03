@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour
 import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.expressions.CachedHasProperty
 import org.neo4j.cypher.internal.expressions.CachedProperty
+import org.neo4j.cypher.internal.expressions.ExplicitParameter
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.FunctionName
@@ -839,7 +840,7 @@ object LogicalPlanToPlanBuilderString {
           labelToken,
           properties,
           RangeQueryExpression(PointDistanceSeekRangeWrapper(PointDistanceRange(
-            PointFunction(arg),
+            PointExpression(arg),
             distance,
             inclusive
           ))),
@@ -864,7 +865,7 @@ object LogicalPlanToPlanBuilderString {
           labelToken,
           properties,
           RangeQueryExpression(PointBoundingBoxSeekRangeWrapper(
-            PointBoundingBoxRange(PointFunction(lowerLeft), PointFunction(upperRight))
+            PointBoundingBoxRange(PointExpression(lowerLeft), PointExpression(upperRight))
           )),
           argumentIds,
           indexOrder,
@@ -938,7 +939,7 @@ object LogicalPlanToPlanBuilderString {
           typeToken,
           properties,
           RangeQueryExpression(PointBoundingBoxSeekRangeWrapper(
-            PointBoundingBoxRange(PointFunction(lowerLeft), PointFunction(upperRight))
+            PointBoundingBoxRange(PointExpression(lowerLeft), PointExpression(upperRight))
           )),
           argumentIds,
           indexOrder,
@@ -965,7 +966,7 @@ object LogicalPlanToPlanBuilderString {
           typeToken,
           properties,
           RangeQueryExpression(PointBoundingBoxSeekRangeWrapper(
-            PointBoundingBoxRange(PointFunction(lowerLeft), PointFunction(upperRight))
+            PointBoundingBoxRange(PointExpression(lowerLeft), PointExpression(upperRight))
           )),
           argumentIds,
           indexOrder,
@@ -992,7 +993,7 @@ object LogicalPlanToPlanBuilderString {
           typeToken,
           properties,
           RangeQueryExpression(PointDistanceSeekRangeWrapper(
-            PointDistanceRange(PointFunction(point), distance, inclusive)
+            PointDistanceRange(PointExpression(point), distance, inclusive)
           )),
           argumentIds,
           indexOrder,
@@ -1020,7 +1021,7 @@ object LogicalPlanToPlanBuilderString {
           typeToken,
           properties,
           RangeQueryExpression(PointDistanceSeekRangeWrapper(
-            PointDistanceRange(PointFunction(point), distance, inclusive)
+            PointDistanceRange(PointExpression(point), distance, inclusive)
           )),
           argumentIds,
           indexOrder,
@@ -2075,10 +2076,11 @@ object LogicalPlanToPlanBuilderString {
   }
 }
 
-object PointFunction {
+object PointExpression {
 
   def unapply(point: Expression): Option[Expression] = point match {
     case FunctionInvocation(FunctionName(_, "point"), _, args, _, _) => Some(args.head)
+    case parameter: ExplicitParameter                                => Some(parameter)
     case _                                                           => None
   }
 }

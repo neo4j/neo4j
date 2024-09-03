@@ -427,6 +427,10 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     }
   }
 
+  def planAny(builder: IMPL => IMPL): IMPL = {
+    builder(self)
+  }
+
   // OPERATORS
 
   def produceResults(inputs: AnyRef*): IMPL = {
@@ -460,6 +464,13 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
       val rewrittenResolvedCall =
         if (withFakedFullDeclarations) resolvedCall.withFakedFullDeclarations else resolvedCall
       ProcedureCall(lp, rewrittenResolvedCall)(_)
+    }))
+    self
+  }
+
+  def procedureCall(call: ResolvedCall): IMPL = {
+    appendAtCurrentIndent(UnaryOperator(lp => {
+      ProcedureCall(lp, call)(_)
     }))
     self
   }
@@ -1026,6 +1037,23 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
       )(_)
     ))
     self
+  }
+
+  def partialTop(
+    alreadySortedPrefix: Seq[ColumnOrder],
+    stillToSortSuffix: Seq[ColumnOrder],
+    limitExpr: Expression,
+    skipExpr: Option[Expression] = None
+  ): IMPL = {
+    appendAtCurrentIndent(UnaryOperator(lp =>
+      PartialTop(
+        lp,
+        alreadySortedPrefix,
+        stillToSortSuffix,
+        limitExpr,
+        skipExpr
+      )(_)
+    ))
   }
 
   def partialTop(
@@ -2114,6 +2142,50 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
       argumentIds,
       indexType
     )
+  }
+
+  def pointDistanceNodeIndexSeekParam(
+    node: String,
+    labelName: String,
+    property: String,
+    paramName: String,
+    distance: Double,
+    getValue: GetValueFromIndexBehavior = DoNotGetValue,
+    indexOrder: IndexOrder = IndexOrderNone,
+    argumentIds: Set[String] = Set.empty,
+    indexType: IndexType = IndexType.POINT,
+    inclusive: Boolean = true,
+    supportPartitionedScan: Boolean = false
+  ): IMPL = {
+    val label = resolver.getLabelId(labelName)
+
+    val propId = resolver.getPropertyKeyId(property)
+    val planBuilder = (idGen: IdGen) => {
+      val labelToken = LabelToken(labelName, LabelId(label))
+      val propToken = PropertyKeyToken(PropertyKeyName(property)(NONE), PropertyKeyId(propId))
+      val indexedProperty = IndexedProperty(propToken, getValue, NODE_TYPE)
+
+      val e: QueryExpression[PointDistanceSeekRangeWrapper] =
+        RangeQueryExpression(PointDistanceSeekRangeWrapper(PointDistanceRange[Expression](
+          asParameter(paramName),
+          literalFloat(distance),
+          inclusive
+        ))(NONE))
+
+      val plan = NodeIndexSeek(
+        varFor(node),
+        labelToken,
+        Seq(indexedProperty),
+        e,
+        argumentIds.map(varFor),
+        indexOrder,
+        indexType,
+        supportPartitionedScan
+      )(idGen)
+      newNode(plan.idName)
+      plan
+    }
+    appendAtCurrentIndent(LeafOperator(planBuilder))
   }
 
   def pointDistanceNodeIndexSeekExpr(
