@@ -43,6 +43,7 @@ import org.neo4j.cypher.internal.runtime.slotted.expressions.SlottedExpressionCo
 import org.neo4j.cypher.internal.util.CypherException
 import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.exceptions.CantCompileQueryException
+import org.neo4j.kernel.impl.query.TransactionalContext.DatabaseMode
 
 trait SlottedRuntime[-CONTEXT <: RuntimeContext] extends CypherRuntime[CONTEXT] with DebugPrettyPrinter {
   override def name: String = "slotted"
@@ -73,7 +74,11 @@ trait SlottedRuntime[-CONTEXT <: RuntimeContext] extends CypherRuntime[CONTEXT] 
   }
 
   @throws[CantCompileQueryException]
-  override def compileToExecutable(query: LogicalQuery, context: CONTEXT): ExecutionPlan = {
+  override def compileToExecutable(
+    query: LogicalQuery,
+    context: CONTEXT,
+    databaseMode: DatabaseMode
+  ): ExecutionPlan = {
     try {
       if (ENABLE_DEBUG_PRINTS && PRINT_PLAN_INFO_EARLY) {
         printPlanInfo(query)

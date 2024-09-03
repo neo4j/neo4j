@@ -881,7 +881,7 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](
     val runtimeContext = newRuntimeContext(queryContext)
     val rewrittenLogicalQuery =
       rewriteLogicalQuery(logicalQuery, runtimeContext.anonymousVariableNameGenerator, testPlanCombinationRewriterHints)
-    (runtime.compileToExecutable(rewrittenLogicalQuery, runtimeContext), runtimeContext)
+    (runtime.compileToExecutable(rewrittenLogicalQuery, runtimeContext, txContext.databaseMode()), runtimeContext)
   }
 
   private def rewriteLogicalQuery(

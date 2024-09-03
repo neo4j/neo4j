@@ -39,6 +39,7 @@ import org.neo4j.exceptions.RuntimeUnsupportedException
 import org.neo4j.internal.kernel.api.Procedures
 import org.neo4j.internal.kernel.api.SchemaRead
 import org.neo4j.kernel.api.AssertOpen
+import org.neo4j.kernel.impl.query.TransactionalContext.DatabaseMode
 import org.neo4j.logging.InternalLog
 import org.neo4j.notifications.RuntimeUnsupportedNotification
 
@@ -59,7 +60,11 @@ trait CypherRuntime[-CONTEXT <: RuntimeContext] {
    * @param context the compilation context
    * @return the executable plan
    */
-  def compileToExecutable(logicalQuery: LogicalQuery, context: CONTEXT): ExecutionPlan
+  def compileToExecutable(
+    logicalQuery: LogicalQuery,
+    context: CONTEXT,
+    databaseMode: DatabaseMode
+  ): ExecutionPlan
 
   def name: String
 
@@ -171,7 +176,11 @@ case class UnknownRuntime(requestedRuntime: String) extends CypherRuntime[Runtim
 
   override def correspondingRuntimeOption: Option[CypherRuntimeOption] = None
 
-  override def compileToExecutable(logicalQuery: LogicalQuery, context: RuntimeContext): ExecutionPlan =
+  override def compileToExecutable(
+    logicalQuery: LogicalQuery,
+    context: RuntimeContext,
+    databaseMode: DatabaseMode
+  ): ExecutionPlan =
     throw new CantCompileQueryException(
       s"This version of Neo4j does not support the requested runtime: `$requestedRuntime`"
     )
@@ -198,7 +207,11 @@ class FallbackRuntime[CONTEXT <: RuntimeContext](
     throw new RuntimeUnsupportedException(originalException.getMessage, originalException)
   }
 
-  override def compileToExecutable(logicalQuery: LogicalQuery, context: CONTEXT): ExecutionPlan = {
+  override def compileToExecutable(
+    logicalQuery: LogicalQuery,
+    context: CONTEXT,
+    databaseMode: DatabaseMode
+  ): ExecutionPlan = {
     val logger = new RecordingNotificationLogger()
 
     var i = 0
@@ -214,7 +227,7 @@ class FallbackRuntime[CONTEXT <: RuntimeContext](
       }
 
       try {
-        val plan = runtime.compileToExecutable(logicalQuery, context)
+        val plan = runtime.compileToExecutable(logicalQuery, context, databaseMode)
         val notifications = logger.notifications
         val notifiedPlan = if (notifications.isEmpty) plan else ExecutionPlanWithNotifications(plan, notifications)
         return notifiedPlan

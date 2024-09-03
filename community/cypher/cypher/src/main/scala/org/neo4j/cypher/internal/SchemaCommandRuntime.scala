@@ -115,7 +115,11 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
 
   override def correspondingRuntimeOption: Option[CypherRuntimeOption] = None
 
-  override def compileToExecutable(state: LogicalQuery, context: RuntimeContext): ExecutionPlan = {
+  override def compileToExecutable(
+    state: LogicalQuery,
+    context: RuntimeContext,
+    databaseMode: DatabaseMode
+  ): ExecutionPlan = {
     logicalToExecutable.applyOrElse(state.logicalPlan, throwCantCompile).apply(context)
   }
 

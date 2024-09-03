@@ -92,6 +92,7 @@ import org.neo4j.internal.kernel.api.security.Segment
 import org.neo4j.kernel.api.exceptions.Status
 import org.neo4j.kernel.api.exceptions.Status.HasStatus
 import org.neo4j.kernel.impl.api.security.RestrictedAccessMode
+import org.neo4j.kernel.impl.query.TransactionalContext.DatabaseMode
 import org.neo4j.server.security.systemgraph.UserSecurityGraphComponent
 import org.neo4j.values.storable.BooleanValue
 import org.neo4j.values.storable.TextValue
@@ -124,7 +125,11 @@ case class CommunityAdministrationCommandRuntime(
     )
   }
 
-  override def compileToExecutable(state: LogicalQuery, context: RuntimeContext): ExecutionPlan = {
+  override def compileToExecutable(
+    state: LogicalQuery,
+    context: RuntimeContext,
+    databaseMode: DatabaseMode
+  ): ExecutionPlan = {
     // Either the logical plan is a command that the partial function logicalToExecutable provides/understands OR we throw an error
     logicalToExecutable.applyOrElse(state.logicalPlan, throwCantCompile).apply(
       AdministrationCommandRuntimeContext(context)

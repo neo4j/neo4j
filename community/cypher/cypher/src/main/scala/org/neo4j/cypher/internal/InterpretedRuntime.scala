@@ -54,6 +54,7 @@ import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.kernel.impl.query.QuerySubscriber
+import org.neo4j.kernel.impl.query.TransactionalContext.DatabaseMode
 import org.neo4j.values.virtual.MapValue
 
 import scala.collection.immutable.ArraySeq
@@ -63,7 +64,11 @@ object InterpretedRuntime extends CypherRuntime[RuntimeContext] {
 
   override def correspondingRuntimeOption: Option[CypherRuntimeOption] = Some(CypherRuntimeOption.legacy)
 
-  override def compileToExecutable(query: LogicalQuery, context: RuntimeContext): ExecutionPlan = {
+  override def compileToExecutable(
+    query: LogicalQuery,
+    context: RuntimeContext,
+    databaseMode: DatabaseMode
+  ): ExecutionPlan = {
     val Result(logicalPlan, nExpressionSlots, availableExpressionVars) =
       expressionVariableAllocation.allocate(query.logicalPlan)
     val (withSlottedParameters, parameterMapping) = slottedParameters(logicalPlan)

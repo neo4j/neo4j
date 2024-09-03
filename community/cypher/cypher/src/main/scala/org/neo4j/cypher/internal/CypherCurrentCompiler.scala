@@ -243,7 +243,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](
 
     try {
       CachedExecutionPlan(
-        executionPlan = runtime.compileToExecutable(logicalQuery, runtimeContext),
+        executionPlan = runtime.compileToExecutable(logicalQuery, runtimeContext, transactionalContext.databaseMode()),
         effectiveCardinalities = planningAttributesCopy.effectiveCardinalities,
         providedOrders = planningAttributesCopy.providedOrders
       )
