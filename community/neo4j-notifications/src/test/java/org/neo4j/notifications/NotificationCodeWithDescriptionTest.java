@@ -1577,7 +1577,7 @@ class NotificationCodeWithDescriptionTest {
 
         verifyNotification(
                 notification,
-                "null value eliminated in set function.",
+                "The query contains an aggregation function that skips null values.",
                 SeverityLevel.WARNING,
                 "Neo.ClientNotification.Statement.AggregationSkippedNull",
                 "null value eliminated in set function.",
@@ -1718,7 +1718,8 @@ class NotificationCodeWithDescriptionTest {
         byte[] notificationHash = DigestUtils.sha256(notificationBuilder.toString());
 
         byte[] expectedHash = new byte[] {
-                -10, -50, -13, -89, 96, 75, 0, -121, 96, 38, 88, 60, -57, 104, 92, -94, 115, 86, 30, -8, 85, 40, -5, 21, 106, -35, -38, -20, 49, 115, 26, -78
+            64, 4, 125, -114, -66, 48, 123, 74, 11, 7, -20, 59, 92, -3, -37, -10, 62, 13, 44, 0, -14, -56, -13, -55,
+            -93, -120, 92, 103, 111, -25, -71, 6
         };
 
         if (!Arrays.equals(notificationHash, expectedHash)) {

@@ -367,7 +367,7 @@ public interface Status {
         // client notifications (runtime)
         AggregationSkippedNull(
                 ClientNotification,
-                "null value eliminated in set function.",
+                "The query contains an aggregation function that skips null values.",
                 SeverityLevel.WARNING,
                 NotificationCategory.UNRECOGNIZED),
         ;
