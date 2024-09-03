@@ -239,11 +239,13 @@ public interface TopologyGraphDbmsModel {
     RelationshipType HOSTED_ON_RELATIONSHIP = RelationshipType.withName("HOSTED_ON");
     RelationshipType WAS_HOSTED_ON_RELATIONSHIP = RelationshipType.withName("WAS_HOSTED_ON");
     String HOSTED_ON_INSTALLED_AT_PROPERTY = "installed_at";
-    String HOSTED_ON_BOOTSTRAPPER_PROPERTY = "bootstrapper";
+    String HOSTED_ON_INITIAL_PROPERTY =
+            "bootstrapper"; // the key and the value mismatch here, because of backward compatibility
     String HOSTED_ON_RAFT_MEMBER_ID_PROPERTY = "raftMemberId";
     String HOSTED_ON_MODE_PROPERTY = "mode";
     String WAS_HOSTED_ON_REMOVED_AT_PROPERTY = "removed_at";
-    String WAS_HOSTED_ON_BOOTSTRAPPER_PROPERTY = "was_bootstrapper";
+    String WAS_HOSTED_ON_INITIAL_PROPERTY =
+            "was_bootstrapper"; // the key and the value mismatch here, because of backward compatibility
     Label TOPOLOGY_GRAPH_CONFIG_LABEL = Label.label("TopologyGraphSettings");
 
     @Deprecated

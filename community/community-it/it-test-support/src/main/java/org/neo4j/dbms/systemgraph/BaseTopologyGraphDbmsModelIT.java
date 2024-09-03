@@ -60,7 +60,7 @@ import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DRIVER_SETTINGS_
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DatabaseStatus.OFFLINE;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.HAS_SHARD;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.HAS_SHARD_INDEX_PROPERTY;
-import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.HOSTED_ON_BOOTSTRAPPER_PROPERTY;
+import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.HOSTED_ON_INITIAL_PROPERTY;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.HOSTED_ON_MODE_PROPERTY;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.HOSTED_ON_RAFT_MEMBER_ID_PROPERTY;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.HOSTED_ON_RELATIONSHIP;
@@ -178,22 +178,16 @@ public abstract class BaseTopologyGraphDbmsModelIT {
             NamedDatabaseId databaseId,
             ServerId serverId,
             TopologyGraphDbmsModel.HostedOnMode mode,
-            boolean bootstrapper,
+            boolean initial,
             boolean wasHostedOn) {
-        connect(
-                databaseId,
-                serverId,
-                mode,
-                bootstrapper,
-                wasHostedOn,
-                mode == HostedOnMode.RAFT ? UUID.randomUUID() : null);
+        connect(databaseId, serverId, mode, initial, wasHostedOn, mode == HostedOnMode.RAFT ? UUID.randomUUID() : null);
     }
 
     protected void connect(
             NamedDatabaseId databaseId,
             ServerId serverId,
             TopologyGraphDbmsModel.HostedOnMode mode,
-            boolean bootstrapper,
+            boolean initial,
             boolean wasHostedOn,
             UUID raftMemberId) {
         try (var tx = db.beginTx()) {
@@ -201,8 +195,8 @@ public abstract class BaseTopologyGraphDbmsModelIT {
             var instance = findInstance(serverId, tx);
             var relationship = mergeHostOn(wasHostedOn, database, instance);
             relationship.setProperty(HOSTED_ON_MODE_PROPERTY, mode.modeName());
-            if (bootstrapper) {
-                relationship.setProperty(HOSTED_ON_BOOTSTRAPPER_PROPERTY, true);
+            if (initial) {
+                relationship.setProperty(HOSTED_ON_INITIAL_PROPERTY, true);
             }
             if (mode == HostedOnMode.RAFT && raftMemberId != null) {
                 relationship.setProperty(HOSTED_ON_RAFT_MEMBER_ID_PROPERTY, raftMemberId.toString());
