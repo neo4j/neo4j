@@ -27,6 +27,16 @@ import java.lang.Boolean.FALSE
 
 class CommunityShowSettingsAcceptanceTest extends ExecutionEngineFunSuite with ShowSettingsAcceptanceTestSupport {
 
+  private def nullLastOrdering: Ordering[String] = {
+    (x: String, y: String) =>
+      (x, y) match {
+        case (null, null) => 0
+        case (_, null)    => -1
+        case (null, _)    => +1
+        case (lh, rh)     => lh.compareTo(rh)
+      }
+  }
+
   test("SHOW SETTING should throw appropriate error message when show_setting feature is disabled") {
     // GIVEN
     restartWithConfig(databaseConfig() ++ Map(GraphDatabaseInternalSettings.show_setting -> FALSE))
@@ -85,6 +95,60 @@ class CommunityShowSettingsAcceptanceTest extends ExecutionEngineFunSuite with S
       .map(row => Map("nm" -> row.get("name").orNull))
     result.size should be(30)
     result.toList should contain allElementsOf expected
+  }
+
+  test("should show settings with yield and order by") {
+    // GIVEN
+    implicit val ordering: Ordering[String] = nullLastOrdering
+    // WHEN
+    val result = execute("SHOW SETTINGS YIELD name, value ORDER BY value")
+
+    // THEN
+    // all settings should exist in result
+    assertContains(allSettings(graph).map(m => m.view.filterKeys(Seq("name", "value").contains).toMap), result.toList)
+    // result should be sorted by "value" (equivalent to it's sorted self)
+    result.toList should contain theSameElementsInOrderAs result.toList.sortBy(
+      _.get("value").orNull.asInstanceOf[String]
+    )
+  }
+
+  test("should show settings with multiple order by") {
+    // GIVEN
+    implicit val ordering: Ordering[String] = nullLastOrdering
+    // WHEN
+    val result = execute("SHOW SETTINGS YIELD * ORDER BY name DESC RETURN name, value ORDER BY value ASC")
+
+    // THEN
+    result.executionPlanDescription() should includeSomewhere.aPlan("Sort").containingArgument("name DESC")
+    result.executionPlanDescription() should includeSomewhere.aPlan("Sort").containingArgument("value ASC")
+
+    val expected: Seq[Map[String, Any]] = allSettings(graph)
+      .sortBy(entry => entry("name").asInstanceOf[String]).reverse // DESC
+      .map(entry => Map("name" -> entry("name"), "value" -> entry("value"))) // RETURN name, value
+      .sortBy(entry => entry("value").asInstanceOf[String]) // ASC
+    result.toList should contain inOrderElementsOf expected
+  }
+
+  test("should be able to use old column name in ORDER BY and WHERE when renamed in YIELD") {
+    // GIVEN
+    val expectedSetting = allSettings(graph).head
+
+    // WHEN
+    // yield one column without renaming and three with renaming
+    // use all four in order by and where,
+    // one of renaming is just same name as before,
+    // and for the others use the old name for one and new name for the last one
+    val result = execute(
+      """SHOW SETTINGS
+        |YIELD name AS settingName, value, description AS explanation, isDynamic AS isDynamic
+        |ORDER BY name, value, explanation, isDynamic
+        |WHERE name = $settingParam AND value = $valueParam AND explanation IS NOT NULL AND isDynamic IS :: BOOLEAN
+        |RETURN settingName""".stripMargin,
+      Map("settingParam" -> expectedSetting("name"), "valueParam" -> expectedSetting("value"))
+    ).toList
+
+    // THEN
+    result should be(List(Map("settingName" -> expectedSetting("name"))))
   }
 
   test("should not show enterprise settings in community") {
