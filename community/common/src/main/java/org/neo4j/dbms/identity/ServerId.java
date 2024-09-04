@@ -27,7 +27,7 @@ import org.neo4j.util.Id;
  * ServerId is used for identifying a Neo4J instance.
  * It is persisted in the root of the data directory.
  */
-public final class ServerId extends Id {
+public final class ServerId extends Id implements Comparable<ServerId> {
 
     private static final int UUID_LEN = 36;
 
@@ -54,5 +54,10 @@ public final class ServerId extends Id {
     @Override
     public String toString() {
         return "ServerId{" + shortName() + '}';
+    }
+
+    @Override
+    public int compareTo(ServerId other) {
+        return this.uuid().compareTo(other.uuid());
     }
 }
